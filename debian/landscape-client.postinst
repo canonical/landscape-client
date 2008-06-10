@@ -1,0 +1,78 @@
+#!/bin/sh
+set -e
+
+# Use the default installed Python.  Running just "python" might run
+# something from /usr/local/bin, which doesn't necessarily support
+# running the landscape client.
+PYTHON=/usr/bin/python
+
+# 0.9.1 introduces non-backwards compatible changes.  This detects
+# whether or not the data is in the current format.  If not, all
+# existing data is removed.
+DATA_DIR=/var/lib/landscape
+
+if [ -d $DATA_DIR/data ]; then
+    rm -rf $DATA_DIR/*
+elif [ -f $DATA_DIR/client/data.bpickle ]; then
+    LAST_BYTE=`sed -n '$,$s/.*\(.\)/\1/p' $DATA_DIR/client/data.bpickle`
+    if [ "$LAST_BYTE" = e ]; then
+        rm -rf $DATA_DIR/*
+    fi
+fi
+
+# Add the 'landscape' system user, if one isn't already present.
+
+test "$1" = "configure" || exit 0
+
+getent passwd landscape >/dev/null || \
+  adduser --system --home /nonexistent --no-create-home landscape
+
+chown -R landscape /var/log/landscape /var/lib/landscape
+
+CONFIG_FILE=/etc/landscape/client.conf
+if [ ! -f $CONFIG_FILE ]; then
+  cat > $CONFIG_FILE <<END
+[client]
+log_level = info
+url = https://landscape.canonical.com/message-system
+ping_url = http://landscape.canonical.com/ping
+data_path = /var/lib/landscape/client
+END
+fi
+chown landscape $CONFIG_FILE
+
+# old monolithic clients have a single persist data file and a single
+# package hash db.  This data should be migrated to the new format
+# where each service has a persist and the package data is kept in a
+# sqlite database.
+
+DATA_BPICKLE=$DATA_DIR/client/data.bpickle
+BROKER_BPICKLE=$DATA_DIR/client/broker.bpickle
+
+if [ -f $DATA_BPICKLE -a ! -f $BROKER_BPICKLE ]; then
+  $PYTHON -c "from landscape.upgraders import legacy; legacy.migrate_data_file('$DATA_DIR/client')"
+  mv $DATA_BPICKLE $DATA_BPICKLE.migrated
+  echo "Old monolithic client data file migrated to new format."
+fi
+
+# Tell dbus to reload its configuration since we've installed a conf to its
+# system.d
+invoke-rc.d dbus reload
+
+# This is a cleanup of permissions on the smart directory
+find /var/lib/smart -type f -exec chmod 0644 {} \;
+find /var/lib/smart -type d -exec chmod 0755 {} \;
+
+# This is a cleanup of the ownership of the log files.
+# This fixes issue https://bugs.launchpad.net/landscape/+bug/215372
+LOCK_DIR=/var/lib/landscape/client/package
+test -f $LOCK_DIR/reporter.lock && chown landscape.root $LOCK_DIR/reporter.lock
+
+# update start order if needed
+# see bug #227414
+if ls /etc/rc*.d/S20landscape-client > /dev/null 2>&1; then
+    update-rc.d -f landscape-client remove > /dev/null
+    update-rc.d landscape-client start 25 2 3 4 5 . stop 15 1 . > /dev/null
+fi
+
+#DEBHELPER#

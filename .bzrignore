@@ -1,0 +1,10 @@
+_trial_temp
+docs/api
+build
+build-stamp
+debian/files
+debian/landscape-client
+debian/landscape-client.postinst.debhelper
+debian/landscape-client.postrm.debhelper
+debian/landscape-client.prerm.debhelper
+debian/landscape-client.substvars

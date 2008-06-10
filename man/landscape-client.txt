@@ -1,0 +1,45 @@
+NAME
+  landscape-client - Landscape system client
+
+SYNOPSIS
+
+  landscape-client [-c FILE, --bus BUS, --pid-file FILE, --daemon]
+
+DESCRIPTION
+
+The landscape-client is the client program for the landscape system
+management software. The client is responsible for communicating
+system information to the landscape server and executing remote
+managment commands on the system.
+
+OPTIONS
+ --version                                   Show program's version number and exit
+ -h, --help                                  Show this help message and exit
+ -c FILE, --config=FILE                      Use config from this file (any command line options override settings from the file).
+ --bus=BUS                                   Which DBUS bus to use. One of 'session' or 'system'. Default is 'system'.
+ --daemon                                    Fork and run in the background.
+ --pid-file=PID_FILE                         The file to write the PID to.
+
+
+EXAMPLES
+
+To run the client in the foreground, with all logging data printed to standard
+IO:
+
+  landscape-client
+
+To run the client in the background with a particular configuration file:
+
+  landscape-client --config=my.conf --daemon
+
+To run the client in the foreground, with a configuration file, but overriding
+the bus option:
+
+  landscape-client --config=my.conf --bus=session
+
+SEE ALSO
+
+  landscape-config (1)
+
+AUTHOR
+  Landscape Development Team <landscape-team@canonical.com>

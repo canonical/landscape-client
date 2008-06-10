@@ -1,0 +1,46 @@
+NAME
+  landscape-config - configure the Landscape management client
+
+SYNOPSIS
+  landscape-config [--no-start, -a ACCOUNT, -t TITLE, -t TITLE,
+                    -p PASSWORD, -l LOG, -k KEY, -d PATH]
+
+DESCRIPTION
+
+Before using the landscape-client it must be configured with account and
+computer information that is transmitted to the Landscape server when the
+client connects. The registration is done interactively, by asking the user a
+series of questions.
+
+Runnning the landscape-config program with no argument will start the program,
+prompting you for the necessary information to run the client. Optionally you
+can provide command-line arguments (detailed below) to specify default
+responses. You will be told if the registration was successful or if an error
+occurred. If the registration is successful then you are done, landscape is
+running on your system. Errors can occur if you provide incorrect registration
+details.
+
+OPTIONS
+ -h, --help                                  Show this help message and exit
+ -a, --acount-name=NAME                      The account this computer belongs to.
+ -p, --registration-password=PASSWORD        The account-wide password used for registering clients.
+ -t, --computer-title=TITLE                  The title of this computer
+ -n, --no-start                              Do not attempt to start the landscape-client. Only used for developmental testing.
+
+EXAMPLES
+
+To register your machine interactively:
+
+  landscape-config
+
+To register the machine specifying default values as the responses to the
+questions:
+
+  landscape-config -a my-account-name -p secret -t "Web Server 1"
+
+SEE ALSO
+
+  landscape-client (1)
+
+AUTHOR
+  Landscape Development Team <landscape-team@canonical.com>

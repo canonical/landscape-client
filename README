@@ -1,0 +1,7 @@
+To run the full test suite, you must have a dbus session bus
+running. If you don't have one (for example, if you're running the
+tests in an ssh session), run the following command:
+
+export DBUS_SESSION_BUS_ADDRESS=`dbus-daemon --print-address=1 --session --fork`
+
+Then your tests should pass.

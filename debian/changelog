@@ -1,0 +1,1350 @@
+landscape-client (1.0.4-hardy1-landscape1) hardy; urgency=low
+
+  * fixed permissions and ownership of some files and directories which could
+    prevent package data from being uploaded to the Landscape server
+  * fixed a problem where the root user password could not be changed
+  * the watchdog.log log file is now also rotated
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 16 Apr 2008 17:21:20 +0000
+
+landscape-client (1.0.4-gutsy1-landscape1) gutsy; urgency=low
+
+  * fixed permissions and ownership of some files and directories which could
+    prevent package data from being uploaded to the Landscape server
+  * fixed a problem where the root user password could not be changed
+  * the watchdog.log log file is now also rotated
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 16 Apr 2008 17:21:17 +0000
+
+landscape-client (1.0.4-feisty1-landscape1) feisty; urgency=low
+
+  * fixed permissions and ownership of some files and directories which could
+    prevent package data from being uploaded to the Landscape server
+  * fixed a problem where the root user password could not be changed
+  * the watchdog.log log file is now also rotated
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 16 Apr 2008 17:21:13 +0000
+
+landscape-client (1.0.4-edgy1-landscape1) edgy; urgency=low
+
+  * fixed permissions and ownership of some files and directories which could
+    prevent package data from being uploaded to the Landscape server
+  * fixed a problem where the root user password could not be changed
+  * the watchdog.log log file is now also rotated
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 16 Apr 2008 17:21:08 +0000
+
+landscape-client (1.0.4-dapper1-landscape1) dapper; urgency=low
+
+  * fixed permissions and ownership of some files and directories which could
+    prevent package data from being uploaded to the Landscape server
+  * fixed a problem where the root user password could not be changed
+  * the watchdog.log log file is now also rotated
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 16 Apr 2008 17:20:54 +0000
+
+landscape-client (1.0-hardy1-landscape4) hardy; urgency=low
+
+  * Memory consumption has is improved.  The client's functionality is
+    now broken up into a number of sub-processes.  Functionality that
+    would previously use or leak memory, such as package management,
+    run in independent processes that exit when they complete so the
+    OS can reclaim the memory.
+  * Security is improved with this design.  Monitoring plugins run as
+    the unpriviledged landscape user while management functions run as
+    root.
+  * Secure inter-process communication occurs over DBUS.
+
+
+ -- Michel Pelletier <pelletier.michel@gmail.com>  Wed, 27 Feb 2008 22:57:21 +0000
+
+landscape-client (1.0-gutsy1-landscape4) gutsy; urgency=low
+
+  * Memory consumption has is improved.  The client's functionality is
+    now broken up into a number of sub-processes.  Functionality that
+    would previously use or leak memory, such as package management,
+    run in independent processes that exit when they complete so the
+    OS can reclaim the memory.
+  * Security is improved with this design.  Monitoring plugins run as
+    the unpriviledged landscape user while management functions run as
+    root.
+  * Secure inter-process communication occurs over DBUS.
+
+
+ -- Michel Pelletier <pelletier.michel@gmail.com>  Wed, 27 Feb 2008 22:57:17 +0000
+
+landscape-client (1.0-feisty1-landscape4) feisty; urgency=low
+
+  * Memory consumption has is improved.  The client's functionality is
+    now broken up into a number of sub-processes.  Functionality that
+    would previously use or leak memory, such as package management,
+    run in independent processes that exit when they complete so the
+    OS can reclaim the memory.
+  * Security is improved with this design.  Monitoring plugins run as
+    the unpriviledged landscape user while management functions run as
+    root.
+  * Secure inter-process communication occurs over DBUS.
+
+
+ -- Michel Pelletier <pelletier.michel@gmail.com>  Wed, 27 Feb 2008 22:57:14 +0000
+
+landscape-client (1.0-edgy1-landscape4) edgy; urgency=low
+
+  * Memory consumption has is improved.  The client's functionality is
+    now broken up into a number of sub-processes.  Functionality that
+    would previously use or leak memory, such as package management,
+    run in independent processes that exit when they complete so the
+    OS can reclaim the memory.
+  * Security is improved with this design.  Monitoring plugins run as
+    the unpriviledged landscape user while management functions run as
+    root.
+  * Secure inter-process communication occurs over DBUS.
+
+
+ -- Michel Pelletier <pelletier.michel@gmail.com>  Wed, 27 Feb 2008 22:57:10 +0000
+
+landscape-client (1.0-dapper1-landscape4) dapper; urgency=low
+
+  * Memory consumption has is improved.  The client's functionality is
+    now broken up into a number of sub-processes.  Functionality that
+    would previously use or leak memory, such as package management,
+    run in independent processes that exit when they complete so the
+    OS can reclaim the memory.
+  * Security is improved with this design.  Monitoring plugins run as
+    the unpriviledged landscape user while management functions run as
+    root.
+  * Secure inter-process communication occurs over DBUS.
+
+
+ -- Michel Pelletier <pelletier.michel@gmail.com>  Wed, 27 Feb 2008 22:57:04 +0000
+
+landscape-client (1.0-hardy1-landscape3) hardy; urgency=low
+
+  * Memory consumption has is improved.  The client's functionality is
+    now broken up into a number of sub-processes.  Functionality that
+    would previously use or leak memory, such as package management,
+    run in independent processes that exit when they complete so the
+    OS can reclaim the memory.
+  * Security is improved with this design.  Monitoring plugins run as
+    the unpriviledged landscape user while management functions run as
+    root.
+  * Secure inter-process communication occurs over DBUS.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 27 Feb 2008 21:03:10 +0000
+
+landscape-client (1.0-gutsy1-landscape3) gutsy; urgency=low
+
+  * Memory consumption has is improved.  The client's functionality is
+    now broken up into a number of sub-processes.  Functionality that
+    would previously use or leak memory, such as package management,
+    run in independent processes that exit when they complete so the
+    OS can reclaim the memory.
+  * Security is improved with this design.  Monitoring plugins run as
+    the unpriviledged landscape user while management functions run as
+    root.
+  * Secure inter-process communication occurs over DBUS.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 27 Feb 2008 21:03:08 +0000
+
+landscape-client (1.0-feisty1-landscape3) feisty; urgency=low
+
+  * Memory consumption has is improved.  The client's functionality is
+    now broken up into a number of sub-processes.  Functionality that
+    would previously use or leak memory, such as package management,
+    run in independent processes that exit when they complete so the
+    OS can reclaim the memory.
+  * Security is improved with this design.  Monitoring plugins run as
+    the unpriviledged landscape user while management functions run as
+    root.
+  * Secure inter-process communication occurs over DBUS.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 27 Feb 2008 21:03:06 +0000
+
+landscape-client (1.0-edgy1-landscape3) edgy; urgency=low
+
+  * Memory consumption has is improved.  The client's functionality is
+    now broken up into a number of sub-processes.  Functionality that
+    would previously use or leak memory, such as package management,
+    run in independent processes that exit when they complete so the
+    OS can reclaim the memory.
+  * Security is improved with this design.  Monitoring plugins run as
+    the unpriviledged landscape user while management functions run as
+    root.
+  * Secure inter-process communication occurs over DBUS.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 27 Feb 2008 21:03:04 +0000
+
+landscape-client (1.0-dapper1-landscape3) dapper; urgency=low
+
+  * Memory consumption has is improved.  The client's functionality is
+    now broken up into a number of sub-processes.  Functionality that
+    would previously use or leak memory, such as package management,
+    run in independent processes that exit when they complete so the
+    OS can reclaim the memory.
+  * Security is improved with this design.  Monitoring plugins run as
+    the unpriviledged landscape user while management functions run as
+    root.
+  * Secure inter-process communication occurs over DBUS.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 27 Feb 2008 21:03:02 +0000
+
+landscape-client (1.0-hardy1-landscape2) hardy; urgency=low
+
+  * Memory consumption has is improved.  The client's functionality is
+    now broken up into a number of sub-processes.  Functionality that
+    would previously use or leak memory, such as package management,
+    run in independent processes that exit when they complete so the
+    OS can reclaim the memory.
+  * Security is improved with this design.  Monitoring plugins run as
+    the unpriviledged landscape user while management functions run as
+    root.
+  * Secure inter-process communication occurs over DBUS.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 27 Feb 2008 19:58:42 +0000
+
+landscape-client (1.0-gutsy1-landscape2) gutsy; urgency=low
+
+  * Memory consumption has is improved.  The client's functionality is
+    now broken up into a number of sub-processes.  Functionality that
+    would previously use or leak memory, such as package management,
+    run in independent processes that exit when they complete so the
+    OS can reclaim the memory.
+  * Security is improved with this design.  Monitoring plugins run as
+    the unpriviledged landscape user while management functions run as
+    root.
+  * Secure inter-process communication occurs over DBUS.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 27 Feb 2008 19:58:40 +0000
+
+landscape-client (1.0-feisty1-landscape2) feisty; urgency=low
+
+  * Memory consumption has is improved.  The client's functionality is
+    now broken up into a number of sub-processes.  Functionality that
+    would previously use or leak memory, such as package management,
+    run in independent processes that exit when they complete so the
+    OS can reclaim the memory.
+  * Security is improved with this design.  Monitoring plugins run as
+    the unpriviledged landscape user while management functions run as
+    root.
+  * Secure inter-process communication occurs over DBUS.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 27 Feb 2008 19:58:39 +0000
+
+landscape-client (1.0-edgy1-landscape2) edgy; urgency=low
+
+  * Memory consumption has is improved.  The client's functionality is
+    now broken up into a number of sub-processes.  Functionality that
+    would previously use or leak memory, such as package management,
+    run in independent processes that exit when they complete so the
+    OS can reclaim the memory.
+  * Security is improved with this design.  Monitoring plugins run as
+    the unpriviledged landscape user while management functions run as
+    root.
+  * Secure inter-process communication occurs over DBUS.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 27 Feb 2008 19:58:37 +0000
+
+landscape-client (1.0-dapper1-landscape2) dapper; urgency=low
+
+  * Memory consumption has is improved.  The client's functionality is
+    now broken up into a number of sub-processes.  Functionality that
+    would previously use or leak memory, such as package management,
+    run in independent processes that exit when they complete so the
+    OS can reclaim the memory.
+  * Security is improved with this design.  Monitoring plugins run as
+    the unpriviledged landscape user while management functions run as
+    root.
+  * Secure inter-process communication occurs over DBUS.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 27 Feb 2008 19:58:35 +0000
+
+landscape-client (1.0-hardy1-landscape1) hardy; urgency=low
+
+  * Memory consumption has is improved.  The client's functionality is
+    now broken up into a number of sub-processes.  Functionality that
+    would previously use or leak memory, such as package management,
+    run in independent processes that exit when they complete so the
+    OS can reclaim the memory.
+  * Security is improved with this design.  Monitoring plugins run as
+    the unpriviledged landscape user while management functions run as
+    root.
+  * Secure inter-process communication occurs over DBUS.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 27 Feb 2008 19:54:40 +0000
+
+landscape-client (1.0-gutsy1-landscape1) gutsy; urgency=low
+
+  * Memory consumption has is improved.  The client's functionality is
+    now broken up into a number of sub-processes.  Functionality that
+    would previously use or leak memory, such as package management,
+    run in independent processes that exit when they complete so the
+    OS can reclaim the memory.
+  * Security is improved with this design.  Monitoring plugins run as
+    the unpriviledged landscape user while management functions run as
+    root.
+  * Secure inter-process communication occurs over DBUS.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 27 Feb 2008 19:54:38 +0000
+
+landscape-client (1.0-feisty1-landscape1) feisty; urgency=low
+
+  * Memory consumption has is improved.  The client's functionality is
+    now broken up into a number of sub-processes.  Functionality that
+    would previously use or leak memory, such as package management,
+    run in independent processes that exit when they complete so the
+    OS can reclaim the memory.
+  * Security is improved with this design.  Monitoring plugins run as
+    the unpriviledged landscape user while management functions run as
+    root.
+  * Secure inter-process communication occurs over DBUS.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 27 Feb 2008 19:54:37 +0000
+
+landscape-client (1.0-edgy1-landscape1) edgy; urgency=low
+
+  * Memory consumption has is improved.  The client's functionality is
+    now broken up into a number of sub-processes.  Functionality that
+    would previously use or leak memory, such as package management,
+    run in independent processes that exit when they complete so the
+    OS can reclaim the memory.
+  * Security is improved with this design.  Monitoring plugins run as
+    the unpriviledged landscape user while management functions run as
+    root.
+  * Secure inter-process communication occurs over DBUS.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 27 Feb 2008 19:54:35 +0000
+
+landscape-client (1.0-dapper1-landscape1) dapper; urgency=low
+
+  * Memory consumption has is improved.  The client's functionality is
+    now broken up into a number of sub-processes.  Functionality that
+    would previously use or leak memory, such as package management,
+    run in independent processes that exit when they complete so the
+    OS can reclaim the memory.
+  * Security is improved with this design.  Monitoring plugins run as
+    the unpriviledged landscape user while management functions run as
+    root.
+  * Secure inter-process communication occurs over DBUS.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 27 Feb 2008 19:54:33 +0000
+
+landscape-client (1.0-hardy1-landscape1) hardy; urgency=low
+
+  * Memory consumption has is improved.  The client's functionality is
+    now broken up into a number of sub-processes.  Functionality that
+    would previously use or leak memory, such as package management,
+    run in independent processes that exit when they complete so the
+    OS can reclaim the memory.
+  * Security is improved with this design.  Monitoring plugins run as
+    the unpriviledged landscape user while management functions run as
+    root.
+  * Secure inter-process communication occurs over DBUS.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 27 Feb 2008 18:29:44 +0000
+
+landscape-client (1.0-gutsy1-landscape1) gutsy; urgency=low
+
+  * Memory consumption has is improved.  The client's functionality is
+    now broken up into a number of sub-processes.  Functionality that
+    would previously use or leak memory, such as package management,
+    run in independent processes that exit when they complete so the
+    OS can reclaim the memory.
+  * Security is improved with this design.  Monitoring plugins run as
+    the unpriviledged landscape user while management functions run as
+    root.
+  * Secure inter-process communication occurs over DBUS.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 27 Feb 2008 18:29:42 +0000
+
+landscape-client (1.0-feisty1-landscape1) feisty; urgency=low
+
+  * Memory consumption has is improved.  The client's functionality is
+    now broken up into a number of sub-processes.  Functionality that
+    would previously use or leak memory, such as package management,
+    run in independent processes that exit when they complete so the
+    OS can reclaim the memory.
+  * Security is improved with this design.  Monitoring plugins run as
+    the unpriviledged landscape user while management functions run as
+    root.
+  * Secure inter-process communication occurs over DBUS.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 27 Feb 2008 18:29:40 +0000
+
+landscape-client (1.0-edgy1-landscape1) edgy; urgency=low
+
+  * Memory consumption has is improved.  The client's functionality is
+    now broken up into a number of sub-processes.  Functionality that
+    would previously use or leak memory, such as package management,
+    run in independent processes that exit when they complete so the
+    OS can reclaim the memory.
+  * Security is improved with this design.  Monitoring plugins run as
+    the unpriviledged landscape user while management functions run as
+    root.
+  * Secure inter-process communication occurs over DBUS.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 27 Feb 2008 18:29:38 +0000
+
+landscape-client (1.0-dapper1-landscape1) dapper; urgency=low
+
+  * Memory consumption has is improved.  The client's functionality is
+    now broken up into a number of sub-processes.  Functionality that
+    would previously use or leak memory, such as package management,
+    run in independent processes that exit when they complete so the
+    OS can reclaim the memory.
+  * Security is improved with this design.  Monitoring plugins run as
+    the unpriviledged landscape user while management functions run as
+    root.
+  * Secure inter-process communication occurs over DBUS.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 27 Feb 2008 18:29:35 +0000
+
+landscape-client (1.0.0-hardy1-landscape1) hardy; urgency=low
+
+  * Memory consumption has is improved.  The client's functionality is
+    now broken up into a number of sub-processes.  Functionality that
+    would previously use or leak memory, such as package management,
+    run in independent processes that exit when they complete so the
+    OS can reclaim the memory.
+  * Security is improved with this design.  Monitoring plugins run as
+    the unpriviledged landscape user while management functions run as
+    root.
+  * Secure inter-process communication occurs over DBUS.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 27 Feb 2008 00:34:54 +0000
+
+landscape-client (1.0.0-gutsy1-landscape1) gutsy; urgency=low
+
+  * Memory consumption has is improved.  The client's functionality is
+    now broken up into a number of sub-processes.  Functionality that
+    would previously use or leak memory, such as package management,
+    run in independent processes that exit when they complete so the
+    OS can reclaim the memory.
+  * Security is improved with this design.  Monitoring plugins run as
+    the unpriviledged landscape user while management functions run as
+    root.
+  * Secure inter-process communication occurs over DBUS.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 27 Feb 2008 00:34:52 +0000
+
+landscape-client (1.0.0-feisty1-landscape1) feisty; urgency=low
+
+  * Memory consumption has is improved.  The client's functionality is
+    now broken up into a number of sub-processes.  Functionality that
+    would previously use or leak memory, such as package management,
+    run in independent processes that exit when they complete so the
+    OS can reclaim the memory.
+  * Security is improved with this design.  Monitoring plugins run as
+    the unpriviledged landscape user while management functions run as
+    root.
+  * Secure inter-process communication occurs over DBUS.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 27 Feb 2008 00:34:50 +0000
+
+landscape-client (1.0.0-edgy1-landscape1) edgy; urgency=low
+
+  * Memory consumption has is improved.  The client's functionality is
+    now broken up into a number of sub-processes.  Functionality that
+    would previously use or leak memory, such as package management,
+    run in independent processes that exit when they complete so the
+    OS can reclaim the memory.
+  * Security is improved with this design.  Monitoring plugins run as
+    the unpriviledged landscape user while management functions run as
+    root.
+  * Secure inter-process communication occurs over DBUS.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 27 Feb 2008 00:34:48 +0000
+
+landscape-client (1.0.0-dapper1-landscape1) dapper; urgency=low
+
+  * Memory consumption has is improved.  The client's functionality is
+    now broken up into a number of sub-processes.  Functionality that
+    would previously use or leak memory, such as package management,
+    run in independent processes that exit when they complete so the
+    OS can reclaim the memory.
+  * Security is improved with this design.  Monitoring plugins run as
+    the unpriviledged landscape user while management functions run as
+    root.
+  * Secure inter-process communication occurs over DBUS.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 27 Feb 2008 00:34:46 +0000
+
+landscape-client (0.17.0-hardy1-landscape1) hardy; urgency=low
+
+  * The client now reports the primary group for users.  I can also
+    modify it when requested by the server (#122212).
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 21 Nov 2007 19:14:29 +0000
+
+landscape-client (0.17.0-gutsy1-landscape1) gutsy; urgency=low
+
+  * The client now reports the primary group for users.  I can also
+    modify it when requested by the server (#122212).
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 21 Nov 2007 19:14:22 +0000
+
+landscape-client (0.17.0-feisty1-landscape1) feisty; urgency=low
+
+  * The client now reports the primary group for users.  I can also
+    modify it when requested by the server (#122212).
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 21 Nov 2007 19:14:19 +0000
+
+landscape-client (0.17.0-edgy1-landscape1) edgy; urgency=low
+
+  * The client now reports the primary group for users.  I can also
+    modify it when requested by the server (#122212).
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 21 Nov 2007 19:14:17 +0000
+
+landscape-client (0.17.0-dapper1-landscape1) dapper; urgency=low
+
+  * The client now reports the primary group for users.  I can also
+    modify it when requested by the server (#122212).
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 21 Nov 2007 19:14:12 +0000
+
+landscape-client (0.16.0-hardy1-landscape1) hardy; urgency=low
+
+  * The client no longer schedules an urgent exchange if it detects
+    that the server has not processed any messages in its most recent
+    exchange (#138135).
+  * The total number of pending messages are sent to the server to
+    make it possible to generate backlog statistics (#162733).
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 14 Nov 2007 23:09:58 +0000
+
+landscape-client (0.16.0-gutsy1-landscape1) gutsy; urgency=low
+
+  * The client no longer schedules an urgent exchange if it detects
+    that the server has not processed any messages in its most recent
+    exchange (#138135).
+  * The total number of pending messages are sent to the server to
+    make it possible to generate backlog statistics (#162733).
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 14 Nov 2007 23:09:56 +0000
+
+landscape-client (0.16.0-feisty1-landscape1) feisty; urgency=low
+
+  * The client no longer schedules an urgent exchange if it detects
+    that the server has not processed any messages in its most recent
+    exchange (#138135).
+  * The total number of pending messages are sent to the server to
+    make it possible to generate backlog statistics (#162733).
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 14 Nov 2007 23:09:53 +0000
+
+landscape-client (0.16.0-edgy1-landscape1) edgy; urgency=low
+
+  * The client no longer schedules an urgent exchange if it detects
+    that the server has not processed any messages in its most recent
+    exchange (#138135).
+  * The total number of pending messages are sent to the server to
+    make it possible to generate backlog statistics (#162733).
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 14 Nov 2007 23:09:50 +0000
+
+landscape-client (0.16.0-dapper1-landscape1) dapper; urgency=low
+
+  * The client no longer schedules an urgent exchange if it detects
+    that the server has not processed any messages in its most recent
+    exchange (#138135).
+  * The total number of pending messages are sent to the server to
+    make it possible to generate backlog statistics (#162733).
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 14 Nov 2007 23:09:48 +0000
+
+landscape-client (0.15.0-gutsy1-landscape1) gutsy; urgency=low
+
+  * Support for http_proxy and https_proxy variables in the
+    configuration file and in the interactive setup, as well as
+    --http-proxy and --https-proxy parameters is available (#151690).
+  * The client gracefully fails when unknown request-ids for
+    package-related operations are received (#151085).
+  * Child devices that have been removed are not reported when one of
+    their ancestors is also reported for deletion by the hardware
+    inventory plugin (#136497).
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Fri, 26 Oct 2007 23:23:20 +0000
+
+landscape-client (0.15.0-feisty1-landscape1) feisty; urgency=low
+
+  * Support for http_proxy and https_proxy variables in the
+    configuration file and in the interactive setup, as well as
+    --http-proxy and --https-proxy parameters is available (#151690).
+  * The client gracefully fails when unknown request-ids for
+    package-related operations are received (#151085).
+  * Child devices that have been removed are not reported when one of
+    their ancestors is also reported for deletion by the hardware
+    inventory plugin (#136497).
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Fri, 26 Oct 2007 23:23:18 +0000
+
+landscape-client (0.15.0-edgy1-landscape1) edgy; urgency=low
+
+  * Support for http_proxy and https_proxy variables in the
+    configuration file and in the interactive setup, as well as
+    --http-proxy and --https-proxy parameters is available (#151690).
+  * The client gracefully fails when unknown request-ids for
+    package-related operations are received (#151085).
+  * Child devices that have been removed are not reported when one of
+    their ancestors is also reported for deletion by the hardware
+    inventory plugin (#136497).
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Fri, 26 Oct 2007 23:23:15 +0000
+
+landscape-client (0.15.0-dapper1-landscape1) dapper; urgency=low
+
+  * Support for http_proxy and https_proxy variables in the
+    configuration file and in the interactive setup, as well as
+    --http-proxy and --https-proxy parameters is available (#151690).
+  * The client gracefully fails when unknown request-ids for
+    package-related operations are received (#151085).
+  * Child devices that have been removed are not reported when one of
+    their ancestors is also reported for deletion by the hardware
+    inventory plugin (#136497).
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Fri, 26 Oct 2007 23:23:06 +0000
+
+landscape-client (0.14.0-gutsy1-landscape1) gutsy; urgency=low
+
+  * Failures that would occur is a user wasn't in the shadow file are
+    fixed (#102071).
+  * Whitespace surrounding process command-line names is removed
+    before they are reported to the server (#149112).
+  * Test failures, some related to DBUS on gutsy, are fixed.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Thu, 25 Oct 2007 00:03:06 +0000
+
+landscape-client (0.14.0-feisty1-landscape1) feisty; urgency=low
+
+  * Failures that would occur is a user wasn't in the shadow file are
+    fixed (#102071).
+  * Whitespace surrounding process command-line names is removed
+    before they are reported to the server (#149112).
+  * Test failures, some related to DBUS on gutsy, are fixed.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Thu, 25 Oct 2007 00:03:04 +0000
+
+landscape-client (0.14.0-edgy1-landscape1) edgy; urgency=low
+
+  * Failures that would occur is a user wasn't in the shadow file are
+    fixed (#102071).
+  * Whitespace surrounding process command-line names is removed
+    before they are reported to the server (#149112).
+  * Test failures, some related to DBUS on gutsy, are fixed.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Thu, 25 Oct 2007 00:03:01 +0000
+
+landscape-client (0.14.0-dapper1-landscape1) dapper; urgency=low
+
+  * Failures that would occur is a user wasn't in the shadow file are
+    fixed (#102071).
+  * Whitespace surrounding process command-line names is removed
+    before they are reported to the server (#149112).
+  * Test failures, some related to DBUS on gutsy, are fixed.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Thu, 25 Oct 2007 00:02:56 +0000
+
+landscape-client (0.13.0-gutsy1-landscape1) gutsy; urgency=low
+
+  * When unknown package IDs are sent by the server message handling
+    is postponed until the client is aware of the unknown IDs
+    (#128796).
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 17 Oct 2007 17:36:11 +0000
+
+landscape-client (0.13.0-feisty1-landscape1) feisty; urgency=low
+
+  * When unknown package IDs are sent by the server message handling
+    is postponed until the client is aware of the unknown IDs
+    (#128796).
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 17 Oct 2007 17:36:08 +0000
+
+landscape-client (0.13.0-edgy1-landscape1) edgy; urgency=low
+
+  * When unknown package IDs are sent by the server message handling
+    is postponed until the client is aware of the unknown IDs
+    (#128796).
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 17 Oct 2007 17:36:06 +0000
+
+landscape-client (0.13.0-dapper1-landscape1) dapper; urgency=low
+
+  * When unknown package IDs are sent by the server message handling
+    is postponed until the client is aware of the unknown IDs
+    (#128796).
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 17 Oct 2007 17:35:58 +0000
+
+landscape-client (0.12.2-gutsy1-landscape1) gutsy; urgency=low
+
+  * The client now reports it's version correctly.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Thu, 11 Oct 2007 21:32:24 +0000
+
+landscape-client (0.12.2-feisty1-landscape1) feisty; urgency=low
+
+  * The client now reports it's version correctly.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Thu, 11 Oct 2007 21:32:21 +0000
+
+landscape-client (0.12.2-edgy1-landscape1) edgy; urgency=low
+
+  * The client now reports it's version correctly.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Thu, 11 Oct 2007 21:32:18 +0000
+
+landscape-client (0.12.2-dapper1-landscape1) dapper; urgency=low
+
+  * The client now reports it's version correctly.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Thu, 11 Oct 2007 21:32:13 +0000
+
+landscape-client (0.12.1-gutsy1-landscape1) gutsy; urgency=low
+
+  * A critical bug that would break configure-landscape is fixed.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Tue, 9 Oct 2007 21:10:02 +0000
+
+landscape-client (0.12.1-feisty1-landscape1) feisty; urgency=low
+
+  * A critical bug that would break configure-landscape is fixed.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Tue, 9 Oct 2007 21:09:59 +0000
+
+landscape-client (0.12.1-edgy1-landscape1) edgy; urgency=low
+
+  * A critical bug that would break configure-landscape is fixed.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Tue, 9 Oct 2007 21:09:56 +0000
+
+landscape-client (0.12.1-dapper1-landscape1) dapper; urgency=low
+
+  * A critical bug that would break configure-landscape is fixed.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Tue, 9 Oct 2007 21:09:51 +0000
+
+landscape-client (0.12.0-gutsy1-landscape7) gutsy; urgency=low
+
+  * Fixed typo in version string.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Sat, 6 Oct 2007 00:49:10 +0000
+
+landscape-client (0.12.0-feisty1-landscape7) feisty; urgency=low
+
+  * Fixed typo in version string.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Sat, 6 Oct 2007 00:49:07 +0000
+
+landscape-client (0.12.0-edgy1-landscape7) edgy; urgency=low
+
+  * Fixed typo in version string.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Sat, 6 Oct 2007 00:49:05 +0000
+
+landscape-client (0.12.0-dapper1-landscape7) dapper; urgency=low
+
+  * Fixed typo in version string.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Sat, 6 Oct 2007 00:49:00 +0000
+
+landscape-client (0.12.0-gutsy1-landscape6) gutsy; urgency=low
+
+  * Updated Depends to require new smartpm-core 0.52 packages.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Fri, 5 Oct 2007 23:23:17 +0000
+
+landscape-client (0.12.0-feisty1-landscape6) feisty; urgency=low
+
+  * Updated Depends to require new smartpm-core 0.52 packages.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Fri, 5 Oct 2007 23:23:15 +0000
+
+landscape-client (0.12.0-edgy1-landscape6) edgy; urgency=low
+
+  * Updated Depends to require new smartpm-core 0.52 packages.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Fri, 5 Oct 2007 23:23:12 +0000
+
+landscape-client (0.12.0-dapper1-landscape6) dapper; urgency=low
+
+  * Updated Depends to require new smartpm-core 0.52 packages.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Fri, 5 Oct 2007 23:23:04 +0000
+
+landscape-client (0.12.0-gutsy1-landscape5) gutsy; urgency=low
+
+  * No upstream changes.  New package build.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Thu, 4 Oct 2007 22:35:50 +0000
+
+landscape-client (0.12.0-feisty1-landscape5) feisty; urgency=low
+
+  * No upstream changes.  New package build.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Thu, 4 Oct 2007 22:35:47 +0000
+
+landscape-client (0.12.0-edgy1-landscape5) edgy; urgency=low
+
+  * No upstream changes.  New package build.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Thu, 4 Oct 2007 22:35:45 +0000
+
+landscape-client (0.12.0-dapper1-landscape5) dapper; urgency=low
+
+  * No upstream changes.  New package build.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Thu, 4 Oct 2007 22:35:42 +0000
+
+landscape-client (0.12.0-gutsy1-landscape4) gutsy; urgency=low
+
+  * Updated package requires current version of smartpm-core.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Tue, 2 Oct 2007 21:37:56 +0000
+
+landscape-client (0.12.0-feisty1-landscape4) feisty; urgency=low
+
+  * Updated package requires current version of smartpm-core.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Tue, 2 Oct 2007 21:37:53 +0000
+
+landscape-client (0.12.0-edgy1-landscape4) edgy; urgency=low
+
+  * Updated package requires current version of smartpm-core.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Tue, 2 Oct 2007 21:37:51 +0000
+
+landscape-client (0.12.0-dapper1-landscape4) dapper; urgency=low
+
+  * Updated package requires current version of smartpm-core.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Tue, 2 Oct 2007 21:37:48 +0000
+
+landscape-client (0.11.0-gutsy1-landscape1) gutsy; urgency=low
+
+  * The full command name for a process, where retrievable, is
+    reported to the server instead of just the first 16 characters
+    (#131878).
+  * The historic process plugin, unused for months, has been removed
+    (#134122).
+  * A new landscape-message command-line program is available.  It
+    allows administrators to send messages from a console that end up
+    in the account history (#125083).
+  * The landscape-client.log file is now logrotated regularly
+    (#78494).
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Thu, 13 Sep 2007 00:05:43 +0000
+
+landscape-client (0.11.0-feisty1-landscape1) feisty; urgency=low
+
+  * The full command name for a process, where retrievable, is
+    reported to the server instead of just the first 16 characters
+    (#131878).
+  * The historic process plugin, unused for months, has been removed
+    (#134122).
+  * A new landscape-message command-line program is available.  It
+    allows administrators to send messages from a console that end up
+    in the account history (#125083).
+  * The landscape-client.log file is now logrotated regularly
+    (#78494).
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Thu, 13 Sep 2007 00:05:41 +0000
+
+landscape-client (0.11.0-edgy1-landscape1) edgy; urgency=low
+
+  * The full command name for a process, where retrievable, is
+    reported to the server instead of just the first 16 characters
+    (#131878).
+  * The historic process plugin, unused for months, has been removed
+    (#134122).
+  * A new landscape-message command-line program is available.  It
+    allows administrators to send messages from a console that end up
+    in the account history (#125083).
+  * The landscape-client.log file is now logrotated regularly
+    (#78494).
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Thu, 13 Sep 2007 00:05:38 +0000
+
+landscape-client (0.11.0-dapper1-landscape1) dapper; urgency=low
+
+  * The full command name for a process, where retrievable, is
+    reported to the server instead of just the first 16 characters
+    (#131878).
+  * The historic process plugin, unused for months, has been removed
+    (#134122).
+  * A new landscape-message command-line program is available.  It
+    allows administrators to send messages from a console that end up
+    in the account history (#125083).
+  * The landscape-client.log file is now logrotated regularly
+    (#78494).
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Thu, 13 Sep 2007 00:05:36 +0000
+
+landscape-client (0.10.15-gutsy1-landscape1) gutsy; urgency=low
+
+  * THIS IS A TEST BUILD!
+  * The full command name, where retrievable, is reported to the
+    server instead of just the first 16 characters (#131878).
+  * The historic process plugin, unused for months, has been removed
+    (#134122).
+  * A new landscape-message command-line program is available.  It
+    allows administrators to send messages from a console that end up
+    in the account history (#125083).
+  * The landscape-client.log file is now logrotated regularly
+    (#78494).
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 12 Sep 2007 22:48:19 +0000
+
+landscape-client (0.10.15-feisty1-landscape1) feisty; urgency=low
+
+  * THIS IS A TEST BUILD!
+  * The full command name, where retrievable, is reported to the
+    server instead of just the first 16 characters (#131878).
+  * The historic process plugin, unused for months, has been removed
+    (#134122).
+  * A new landscape-message command-line program is available.  It
+    allows administrators to send messages from a console that end up
+    in the account history (#125083).
+  * The landscape-client.log file is now logrotated regularly
+    (#78494).
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 12 Sep 2007 22:48:17 +0000
+
+landscape-client (0.10.15-edgy1-landscape1) edgy; urgency=low
+
+  * THIS IS A TEST BUILD!
+  * The full command name, where retrievable, is reported to the
+    server instead of just the first 16 characters (#131878).
+  * The historic process plugin, unused for months, has been removed
+    (#134122).
+  * A new landscape-message command-line program is available.  It
+    allows administrators to send messages from a console that end up
+    in the account history (#125083).
+  * The landscape-client.log file is now logrotated regularly
+    (#78494).
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 12 Sep 2007 22:48:14 +0000
+
+landscape-client (0.10.15-dapper1-landscape1) dapper; urgency=low
+
+  * THIS IS A TEST BUILD!
+  * The full command name, where retrievable, is reported to the
+    server instead of just the first 16 characters (#131878).
+  * The historic process plugin, unused for months, has been removed
+    (#134122).
+  * A new landscape-message command-line program is available.  It
+    allows administrators to send messages from a console that end up
+    in the account history (#125083).
+  * The landscape-client.log file is now logrotated regularly
+    (#78494).
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 12 Sep 2007 22:48:12 +0000
+
+landscape-client (0.10.15-dapper1-landscape1) dapper; urgency=low
+
+  * THIS IS A TEST BUILD!
+  * The full command name, where retrievable, is reported to the
+    server instead of just the first 16 characters (#131878).
+  * The historic process plugin, unused for months, has been removed
+    (#134122).
+  * A new landscape-message command-line program is available.  It
+    allows administrators to send messages from a console that end up
+    in the account history (#125083).
+  * The landscape-client.log file is now logrotated regularly
+    (#78494).
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 12 Sep 2007 22:46:28 +0000
+
+landscape-client (0.10.15-dapper1-landscape1) dapper; urgency=low
+
+  * THIS IS A TEST BUILD!
+  * The full command name, where retrievable, is reported to the
+    server instead of just the first 16 characters (#131878).
+  * The historic process plugin, unused for months, has been removed
+    (#134122).
+  * A new landscape-message command-line program is available.  It
+    allows administrators to send messages from a console that end up
+    in the account history (#125083).
+  * The landscape-client.log file is now logrotated regularly
+    (#78494).
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 12 Sep 2007 22:45:13 +0000
+
+landscape-client (0.10.14-gutsy1-landscape7) gutsy; urgency=low
+
+  * Aargh.  Use the right testing branch.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 5 Sep 2007 23:27:16 +0000
+
+landscape-client (0.10.14-feisty1-landscape7) feisty; urgency=low
+
+  * Aargh.  Use the right testing branch.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 5 Sep 2007 23:27:13 +0000
+
+landscape-client (0.10.14-edgy1-landscape7) edgy; urgency=low
+
+  * Aargh.  Use the right testing branch.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 5 Sep 2007 23:27:09 +0000
+
+landscape-client (0.10.14-dapper1-landscape7) dapper; urgency=low
+
+  * Aargh.  Use the right testing branch.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 5 Sep 2007 23:27:04 +0000
+
+landscape-client (0.10.14-gutsy1-landscape7) gutsy; urgency=low
+
+  * Aargh.  Use the right testing branch.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 5 Sep 2007 23:27:16 +0000
+
+landscape-client (0.10.14-feisty1-landscape7) feisty; urgency=low
+
+  * Aargh.  Use the right testing branch.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 5 Sep 2007 23:27:13 +0000
+
+landscape-client (0.10.14-edgy1-landscape7) edgy; urgency=low
+
+  * Aargh.  Use the right testing branch.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 5 Sep 2007 23:27:09 +0000
+
+landscape-client (0.10.14-dapper1-landscape7) dapper; urgency=low
+
+  * Aargh.  Use the right testing branch.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 5 Sep 2007 23:27:04 +0000
+
+landscape-client (0.10.12-1ubuntu1) feisty; urgency=low
+
+  * New upstream release.
+  * Package Depends updated to use new smartpm-0.51-landscape4
+    package.  This makes the package installable on Ubuntu systems
+    with only the main repository enabled.
+
+ -- Landscape Team <landscape-team@canonical.com>  Tue, 7 Aug 2007 16:08:00 -0700
+
+landscape-client (0.10.11-1ubuntu1) feisty; urgency=low
+
+  * New upstream release.
+  * A bug related to package dependency reporting that would cause two
+    approvals for and upgrade package request has been fixed.
+  * Errors with the ping server are logged clearly now.
+  * A crashing postinit-related bug is fixed.
+
+ -- Landscape Team <landscape-team@canonical.com>  Fri, 3 Aug 2007 19:15:00 -0700
+
+landscape-client (0.10.10-1ubuntu1) feisty; urgency=low
+
+  * New upstream release.
+  * CA certificates are no longer hard-coded.  The default set of CAs
+    in the system are used instead.
+  * The client connects to the server immediately when it detects
+    changes in packages and users.  This dramatically reduces the
+    turn-around time of some operations.
+  * The new user and group change detection reports detailed
+    information to the server about changes made external to the
+    client, such as by local users.
+  * The client reports detailed information about the outcome of user
+    and group operations.
+  * The client has support for a new synchronization system.  If
+    either the server or client detect inconsistencies in the data
+    they have they can request a synchronization to get back in sync.
+  * The client has support to calculate and report package upgrades.
+  * The hostname is reported when clients first register with the
+    server.
+  * A new configure-landscape script eases registration including
+    automated and interactive registration modes.
+  * The client includes VM size and sleep average in active process
+    data.
+
+ -- Landscape Team <landscape-team@canonical.com>  Thu, 28 Jun 2007 16:19:00 -0700
+
+landscape-client (0.10.9-1ubuntu1) feisty; urgency=low
+
+  * New upstream release.
+  * Package depends on python-gdbm to install correctly on systems
+    without it.
+
+ -- Landscape Team <landscape-team@canonical.com>  Fri, 8 Jun 2007 11:02:00 -0700
+
+landscape-client (0.10.8-1ubuntu1) feisty; urgency=low
+
+  * New upstream release.
+  * The changes that included the new configure-landscape helper
+    script have been removed.  They were not quite ready for release.
+  * Added python-twisted-web to Debian package Depends to satisfy
+    dependencies introduced by the new ping plugin.
+
+ -- Landscape Team <landscape-team@canonical.com>  Thu, 7 Jun 2007 11:03:00 -0700
+
+landscape-client (0.10.7-1ubuntu1) feisty; urgency=low
+
+  * New upstream release.
+  * Package depends on new smartpm-core package which installs
+    correctly on dapper.
+
+ -- Landscape Team <landscape-team@canonical.com>  Wed, 6 Jun 2007 10:37:00 -0700
+
+landscape-client (0.10.6-1ubuntu1) feisty; urgency=low
+
+  * New upstream release.
+  * Mispelled smartpm-core version is fixed.
+
+ -- Landscape Team <landscape-team@canonical.com>  Mon, 1 Jun 2007 10:48:00 -0700
+
+landscape-client (0.10.5-1ubuntu1) feisty; urgency=low
+
+  * New upstream release.
+  * Mismatched operation status codes are fixed.
+
+ -- Landscape Team <landscape-team@canonical.com>  Thu, 31 May 2007 15:36:00 -0700
+
+landscape-client (0.10.4-1ubuntu1) feisty; urgency=low
+
+  * New upstream release.
+  * Links to a new version of smart with a fixed crontab entry.
+
+ -- Landscape Team <landscape-team@canonical.com>  Tue, 22 May 2007 23:29:00 -0700
+
+landscape-client (0.10.3-1ubuntu1) feisty; urgency=low
+
+  * New upstream release.
+  * A bug related to bpickle conversions with float-point values is
+    fixed (#114829).
+
+ -- Landscape Team <landscape-team@canonical.com>  Mon, 15 May 2007 16:31:00 -0700
+	
+landscape-client (0.10.2-1ubuntu1) feisty; urgency=low
+
+  * New upstream release.
+  * New package includes previously missing package management plugin.
+
+ -- Landscape Team <landscape-devel@lists.canonical.com>  Fri, 11 May 2007 10:20:00 -0700
+
+landscape-client (0.10.1-1ubuntu1) feisty; urgency=low
+
+  * New upstream release.
+  * Minor fix in package management plugin timings.
+
+ -- Landscape Team <landscape-devel@lists.canonical.com>  Thu, 10 May 2007 10:00:00 -0700
+	
+landscape-client (0.10.0-1ubuntu1) feisty; urgency=low
+
+  * New upstream release.
+  * Basic package management operations are now supported.  The client
+    reports package information to the server and can install and/or
+    remove packages.
+  * The client uses the new operations system.  Support for the now
+    unused action info system is gone.
+  * A minor bpickle bug was fixed.
+	
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Mon, 7 May 2007 20:16:00 -0700
+	
+landscape-client (0.9.6-1ubuntu1) feisty; urgency=low
+
+  * New upstream release.
+  * Bugs related to the handling of DBus types are fixed on feisty.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Fri, 13 Apr 2007 18:06:10 -0700
+
+landscape-client (0.9.5-1ubuntu1) feisty; urgency=low
+
+  * New upstream release.
+  * Old-school and oddly formatted GECOS fields are handled correctly.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Thu, 30 Mar 2007 16:50:49 -0400
+
+landscape-client (0.9.4-1ubuntu1) feisty; urgency=low
+
+  * New upstream release.
+  * Change architecture to all.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Thu, 30 Mar 2007 12:46:23 -0400
+
+landscape-client (0.9.3-1ubuntu1) feisty; urgency=low
+
+  * New upstream release.
+  * Add override file.
+  * Bump application and package versions.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Thu, 29 Mar 2007 17:21:50 -0400
+
+landscape-client (0.9.2-1ubuntu1) feisty; urgency=low
+
+  * Bump debhelper version.
+  * Build-Depend on python-dev, lsb-release.
+  * Pre-Depend on debconf | debconf-2.0.
+  * Move ${python:Depends} to Depends.
+  * Make the packaging compatible with dapper and newer distro releases.
+
+ -- Matthias Klose <doko@ubuntu.com>  Wed, 28 Mar 2007 21:21:20 +0200
+
+landscape-client (0.9.2-1) unstable; urgency=low
+
+  * New upstream release.
+  * Really fixed package.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Tue, 21 Mar 2007 09:57:00 -0400
+
+landscape-client (0.9.1-3) unstable; urgency=low
+
+  * Really fixed package.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Tue, 20 Mar 2007 16:35:00 -0400
+
+landscape-client (0.9.1-2) unstable; urgency=low
+
+  * Fixed package.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Tue, 20 Mar 2007 16:25:00 -0400
+
+landscape-client (0.9.1-1) unstable; urgency=low
+
+  * New upstream release.
+  * bpickle encoding format has changed in a non-backwards compatible
+    way to fix float encoding-related problems.
+  * API version updated to 2.0.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Tue, 20 Mar 2007 15:06:17 -0400
+
+landscape-client (0.9.0-1) unstable; urgency=low
+
+  * New upstream release.
+  * Group-management related tasks such as add/remove member and
+    create group are now supported.
+  * Client reports hardware inventory information to the server.
+  * Unicode handling with regards to the passwd file is improved.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Fri, 9 Mar 2007 16:04:51 -0800
+
+landscape-client (0.8.1-1) unstable; urgency=low
+
+  * New upstream release.
+  * Account registration log message no longer exposes account
+    password.
+	
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Thu, 18 Jan 2007 23:07:00 -0800
+
+landscape-client (0.8.0-1) unstable; urgency=low
+
+  * New upstream release.
+  * Process monitoring logic stops trying to restart the client if too
+    many restarts occur during a short period of time.
+  * Client includes an SSL certificate to verify the server with.
+  * Package depends on python2.4-pycurl, which is necessary for the
+    new SSL support.
+	
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Thu, 18 Jan 2007 10:48:00 -0800
+
+landscape-client (0.7.0-1) unstable; urgency=low
+
+  * New upstream release.
+  * Client can daemonize itself and perform basic process monitoring.
+  * Client writes a useful log now.  Command-line options have been
+    added to control log verbosity.
+  * Package depends on perl-modules, which is necessary for bare-bones
+    server installs.
+	
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Tue, 2 Jan 2007 12:54:00 -0800
+
+landscape-client (0.6.1-1) unstable; urgency=low
+
+  * User management plugin handles extra Ubuntu user fields.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Thu, 15 Dec 2006 10:22:00 -0800
+
+landscape-client (0.6.0-2) unstable; urgency=low
+
+  * Reverted to deprecated build rule to fix package breakage on
+    dapper.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Thu, 7 Dec 2006 10:54:00 -0800
+
+landscape-client (0.6.0-1) unstable; urgency=low
+
+  * New upstream release.
+  * The active-process-info plugin provides server-controllable
+    end/kill actions.
+  * Messages are no longer delivered twice if a broken message gets
+    into the message store.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Wed, 6 Dec 2006 14:47:00 -0800
+
+landscape-client (0.5.0-1) unstable; urgency=low
+
+  * New upstream release.
+  * Client-to-server exchanges now happen in a thread to avoid
+    blocking monitoring plugins.
+  * Problems that caused slow client registration have been fixed.
+  * The computer-info plugin now reports information about the
+    distribution installed on a machine.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Fri, 10 Nov 2006 12:47:00 -0800
+
+landscape-client (0.4.0-1) unstable; urgency=low
+
+  * New upstream release.
+  * Disk, load, memory/swap and temperature data is now reported at
+    300s-aligned intervals.
+  * Improvements to registration system.
+  * Improvements to plugin infrastructure.
+
+ -- Jamshed Kakar <jamshed.kakar@canonical.com>  Fri, 13 Oct 2006 09:25:00 -0300
+
+landscape-client (0.3.0-1) unstable; urgency=low
+
+  * New upstream release.
+  * Major reorganization of client code.
+
+ -- Christopher Armstrong <radix@canonical.com>  Tue, 22 Aug 2006 09:56:00 -0400
+
+landscape-client (0.2.5-1) unstable; urgency=low
+
+  * New upstream release.
+  * Fix a bug in the newly introduced client upgrade machinery.
+
+ -- Christopher Armstrong <radix@canonical.com>  Wed, 4 Aug 2006 10:45:00 -0500
+
+landscape-client (0.2.4-1) unstable; urgency=low
+
+  * New upstream release.
+  * User management should now be working.
+
+ -- Christopher Armstrong <radix@canonical.com>  Wed, 3 Aug 2006 15:12:00 -0500
+
+landscape-client (0.2.3-1) unstable; urgency=low
+
+  * New upstream release.
+  * Fixed a bug in the init script preventing landscape-client from
+    starting after reboots.
+
+ -- Christopher Armstrong <radix@canonical.com>  Wed, 26 Jul 2006 15:47:00 -0500
+
+landscape-client (0.2.2-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Christopher Armstrong <radix@canonical.com>  Thu, 6 Jul 2006 18:38:00 -0500
+
+landscape-client (0.2.1-1) unstable; urgency=low
+
+  * Added support for debconf.
+
+ -- Gustavo Niemeyer <gustavo@niemeyer.net>  Wed, 5 Jul 2006 14:13:25 -0300
+
+landscape-client (0.2.0-1) unstable; urgency=low
+
+  * Initial (internal) release.
+
+ -- Christopher Armstrong <radix@canonical.com>  Wed, 28 Jun 2006 14:32:30 -0500
+
+landscape-client (0.1) dapper; urgency=low
+
+  * Empty placeholder package
+
+ -- Matt Zimmerman <mdz@ubuntu.com>  Fri, 26 May 2006 06:37:55 -0700

@@ -1,0 +1,8 @@
+#!/usr/bin/python
+import sys, os
+if os.path.isdir("landscape"):
+    sys.path.insert(0, "./")
+
+from landscape.broker.deployment import run
+
+run(sys.argv)

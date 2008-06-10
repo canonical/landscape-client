@@ -1,0 +1,32 @@
+NAME
+  landscape-message - Send a message to the landscape web interface
+
+SYNOPSIS
+  landscape-message [MESSAGE] ...
+
+DESCRIPTION
+
+Invoking landscape-message will cause a message to appear in the
+History section for this computer in the Landscape web UI.
+
+If no MESSAGE is specified on the command line, then landscape-message
+will read the message from STDIN until EOF.
+
+
+OPTIONS
+ -h, --help                                  Show this help message and exit
+ --version                                   show program's version number and exit
+
+
+EXAMPLES
+
+  landscape-message Hello administrator
+
+
+SEE ALSO
+
+  landscape-client (1)
+
+
+AUTHOR
+  Landscape Development Team <landscape-team@canonical.com>

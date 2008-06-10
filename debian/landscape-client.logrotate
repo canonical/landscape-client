@@ -1,0 +1,11 @@
+/var/log/landscape/watchdog.log /var/log/landscape/broker.log /var/log/landscape/monitor.log /var/log/landscape/manager.log /var/log/landscape/package-reporter.log /var/log/landscape/package-changer.log {
+    weekly
+    rotate 4
+    missingok
+    notifempty
+    compress
+    nocreate
+    postrotate
+        kill -s USR1 `cat /var/run/landscape/landscape-client.pid` > /dev/null
+    endscript
+}
