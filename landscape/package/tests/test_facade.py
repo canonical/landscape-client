@@ -311,13 +311,13 @@ class SmartFacadeTest(LandscapeTest):
 
         self.assertTrue(exception,
                         "SmartError not raised. Output: %s" % repr(output))
-
-        self.assertEquals(str(exception),
-                          "\n[unpack] name1_version1-release1\n"
-                          "dpkg: requested operation requires "
-                          "superuser privilege\n"
-                          "ERROR: Sub-process dpkg returned an "
-                          "error code (2)\n")
+        # We can't check the whole message because the dpkg error can be
+        # localized. We can't use str(exception) either because it can contain
+        # unicode
+        self.assertIn("ERROR: Sub-process dpkg returned an error code (2)\n",
+                      exception.args[0])
+        self.assertIn("\n[unpack] name1_version1-release1\ndpkg: ",
+                      exception.args[0])
 
     def test_perform_changes_is_non_interactive(self):
         from smart.backends.deb.pm import DebPackageManager
