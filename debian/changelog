@@ -1,3 +1,11 @@
+landscape-client (1.0.9-dapper1-landscape1) dapper; urgency=low
+
+  * restrict users and groups list to local ones only, i.e., /etc/passwd
+    and /etc/group
+  * fixed some tests that were failing in locales other than english
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 11 Jun 2008 15:15:53 +0000
+
 landscape-client (1.0.4-hardy1-landscape1) hardy; urgency=low
 
   * fixed permissions and ownership of some files and directories which could
