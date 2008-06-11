@@ -1,3 +1,11 @@
+landscape-client (1.0.9-feisty1-landscape1) feisty; urgency=low
+
+  * restrict users and groups list to local ones only, i.e., /etc/passwd
+    and /etc/group
+  * fixed some tests that were failing in locales other than english
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 11 Jun 2008 15:16:04 +0000
+
 landscape-client (1.0.9-edgy1-landscape1) edgy; urgency=low
 
   * restrict users and groups list to local ones only, i.e., /etc/passwd
