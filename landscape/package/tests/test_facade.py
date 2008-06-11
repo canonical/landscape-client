@@ -168,7 +168,7 @@ class SmartFacadeTest(LandscapeTest):
         else:
             exception = None
         self.assertTrue(exception, "TransactionError not raised")
-        self.assertTrue("requirename" in str(exception))
+        self.assertIn("requirename", exception.args[0])
 
     def test_mark_install_dependency_error(self):
         """
@@ -291,7 +291,7 @@ class SmartFacadeTest(LandscapeTest):
         self.assertEquals(set(exception.packages), set([pkg1, pkg2]))
 
     def test_perform_changes_with_logged_error(self):
-        self.log_helper.ignore_errors(".*Sub-process dpkg returned an error.*")
+        self.log_helper.ignore_errors(".*dpkg")
 
         self.facade.reload_channels()
 
@@ -314,7 +314,7 @@ class SmartFacadeTest(LandscapeTest):
         # We can't check the whole message because the dpkg error can be
         # localized. We can't use str(exception) either because it can contain
         # unicode
-        self.assertIn("ERROR: Sub-process dpkg returned an error code (2)\n",
+        self.assertIn("ERROR",
                       exception.args[0])
         self.assertIn("\n[unpack] name1_version1-release1\ndpkg: ",
                       exception.args[0])

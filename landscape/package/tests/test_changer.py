@@ -203,7 +203,7 @@ class PackageChangerTest(LandscapeIsolatedTest):
         Verify that errors emitted by dpkg are correctly reported to
         the server as problems.
         """
-        self.log_helper.ignore_errors(".*Sub-process dpkg")
+        self.log_helper.ignore_errors(".*dpkg")
 
         self.store.set_hash_ids({HASH1: 1})
         self.store.add_task("changer",
@@ -225,8 +225,7 @@ class PackageChangerTest(LandscapeIsolatedTest):
             # We can't test the actual content of the message because the dpkg
             # error can be localized
             self.assertIn("\n[remove] name1_version1-release1\ndpkg: ", text)
-            self.assertIn("ERROR: Sub-process dpkg returned an error "
-                          "code (2)\n", text)
+            self.assertIn("ERROR", text)
         return result.addCallback(got_result)
 
     def test_dependency_error(self):
@@ -280,13 +279,14 @@ class PackageChangerTest(LandscapeIsolatedTest):
         result = self.changer.handle_tasks()
 
         def got_result(result):
-            result_text = ("Can't install name1_version1-release1: "
-                           "no package provides requirename1 = requireversion1")
-            self.assertMessages(self.get_pending_messages(),
-                                [{"operation-id": 123,
-                                  "result-code": 100,
-                                  "result-text": result_text,
-                                  "type": "change-packages-result"}])
+            result_text = ("requirename1 = requireversion1")
+            messages = self.get_pending_messages()
+            self.assertEquals(len(messages), 1)
+            message = messages[0]
+            self.assertEquals(message["operation-id"], 123)
+            self.assertEquals(message["result-code"], 100)
+            self.assertIn(result_text, message["result-text"])
+            self.assertEquals(message["type"], "change-packages-result")
         return result.addCallback(got_result)
 
     def test_tasks_are_isolated(self):
@@ -300,7 +300,7 @@ class PackageChangerTest(LandscapeIsolatedTest):
         operation will fail too, because the installation of package 2
         is still queued.
         """
-        self.log_helper.ignore_errors(".*Sub-process dpkg")
+        self.log_helper.ignore_errors(".*dpkg")
 
         self.store.set_hash_ids({HASH1: 1, HASH2: 2})
 
