@@ -314,8 +314,8 @@ class SmartFacadeTest(LandscapeTest):
         # We can't check the whole message because the dpkg error can be
         # localized. We can't use str(exception) either because it can contain
         # unicode
-        self.assertIn("ERROR",
-                      exception.args[0])
+        self.assertIn("ERROR", exception.args[0])
+        self.assertIn("(2)", exception.args[0])
         self.assertIn("\n[unpack] name1_version1-release1\ndpkg: ",
                       exception.args[0])
 

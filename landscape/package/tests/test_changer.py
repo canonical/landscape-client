@@ -226,6 +226,7 @@ class PackageChangerTest(LandscapeIsolatedTest):
             # error can be localized
             self.assertIn("\n[remove] name1_version1-release1\ndpkg: ", text)
             self.assertIn("ERROR", text)
+            self.assertIn("(2)", text)
         return result.addCallback(got_result)
 
     def test_dependency_error(self):
