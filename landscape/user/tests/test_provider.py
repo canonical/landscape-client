@@ -183,8 +183,9 @@ kevin:x:1000:
         for user in users:
             if user["username"] == user_1000.pw_name:
                 self.assertEquals(user["uid"], 1000)
-                self.assertEquals(user["name"],
-                                  user_1000.pw_gecos.split(",")[0])
+                user_1000_name = user_1000.pw_gecos.split(",")[0].decode(
+                    "utf-8", "replace")
+                self.assertEquals(user["name"], user_1000_name)
                 break
         else:
             self.fail("The user %s (uid=1000) was not found in the get_data "

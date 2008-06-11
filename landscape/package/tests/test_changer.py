@@ -215,15 +215,18 @@ class PackageChangerTest(LandscapeIsolatedTest):
         result = self.changer.handle_tasks()
 
         def got_result(result):
-            result_text = (u"\n"
-                "[remove] name1_version1-release1\n"
-                "dpkg: requested operation requires superuser privilege\n"
-                "ERROR: Sub-process dpkg returned an error code (2)\n")
-            self.assertMessages(self.get_pending_messages(),
-                                [{"operation-id": 123,
-                                  "result-code": 100,
-                                  "result-text": result_text,
-                                  "type": "change-packages-result"}])
+            messages = self.get_pending_messages()
+            self.assertEquals(len(messages), 1, "Too many messages")
+            message = messages[0]
+            self.assertEquals(message["operation-id"], 123)
+            self.assertEquals(message["result-code"], 100)
+            self.assertEquals(message["type"], "change-packages-result")
+            text = message["result-text"]
+            # We can't test the actual content of the message because the dpkg
+            # error can be localized
+            self.assertIn("\n[remove] name1_version1-release1\ndpkg: ", text)
+            self.assertIn("ERROR: Sub-process dpkg returned an error "
+                          "code (2)\n", text)
         return result.addCallback(got_result)
 
     def test_dependency_error(self):
