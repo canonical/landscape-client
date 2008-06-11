@@ -93,6 +93,7 @@ class RunScriptTests(LandscapeTest):
         info = pwd.getpwuid(uid)
         username = info.pw_name
         gid = info.pw_gid
+        path = info.pw_dir
 
         self.mocker.replay()
 
@@ -100,6 +101,7 @@ class RunScriptTests(LandscapeTest):
 
         self.assertEquals(len(factory.spawns), 1)
         spawn = factory.spawns[0]
+        self.assertEquals(spawn[4], path)
         self.assertEquals(spawn[5], uid)
         self.assertEquals(spawn[6], gid)
         result.addCallback(self.assertEquals, "foobar")
@@ -221,7 +223,7 @@ class RunScriptTests(LandscapeTest):
         script_file.write("#!interpreter\ncode")
         script_file.close()
 
-        process_factory.spawnProcess(ANY, ANY, uid=uid, gid=gid)
+        process_factory.spawnProcess(ANY, ANY, uid=uid, gid=gid, path=ANY)
 
         self.mocker.replay()
 
@@ -319,13 +321,13 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         mock_chown = self.mocker.replace("os.chown", passthrough=False)
         mock_chown(ARGS)
 
-        def spawn_called(protocol, filename, uid, gid):
+        def spawn_called(protocol, filename, uid, gid, path):
             protocol.childDataReceived(1, "hi!\n")
             protocol.processEnded(None)
             self._verify_script(filename, "python", "print 'hi'")
 
         process_factory = self.mocker.mock()
-        process_factory.spawnProcess(ANY, ANY, uid=uid, gid=gid)
+        process_factory.spawnProcess(ANY, ANY, uid=uid, gid=gid, path=ANY)
         self.mocker.call(spawn_called)
 
         self.mocker.replay()
@@ -397,13 +399,13 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         mock_chown = self.mocker.replace("os.chown", passthrough=False)
         mock_chown(ARGS)
 
-        def spawn_called(protocol, filename, uid, gid):
+        def spawn_called(protocol, filename, uid, gid, path):
             protocol.childDataReceived(1, "hi!\n")
             protocol.processEnded(None)
             self._verify_script(filename, "python", "print 'hi'")
 
         process_factory = self.mocker.mock()
-        process_factory.spawnProcess(ANY, ANY, uid=uid, gid=gid)
+        process_factory.spawnProcess(ANY, ANY, uid=uid, gid=gid, path=ANY)
         self.mocker.call(spawn_called)
 
         self.mocker.replay()

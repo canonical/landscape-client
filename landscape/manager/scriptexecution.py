@@ -113,10 +113,12 @@ class ScriptExecution(ManagerPlugin):
         """
         uid = None
         gid = None
+        path = None
         if user is not None:
             info = pwd.getpwnam(user)
             uid = info.pw_uid
             gid = info.pw_gid
+            path = info.pw_dir
 
         fd, filename = tempfile.mkstemp()
         script_file = os.fdopen(fd, "w")
@@ -131,7 +133,8 @@ class ScriptExecution(ManagerPlugin):
         script_file.write("#!%s\n%s" % (shell, code))
         script_file.close()
         pp = ProcessAccumulationProtocol(self.size_limit)
-        self.process_factory.spawnProcess(pp, filename, uid=uid, gid=gid)
+        self.process_factory.spawnProcess(pp, filename, uid=uid, gid=gid,
+                                          path=path)
         if time_limit is not None:
             self._scheduled_cancel = self.registry.reactor.call_later(
                 time_limit, pp.cancel)
