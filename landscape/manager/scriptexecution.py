@@ -119,6 +119,8 @@ class ScriptExecution(ManagerPlugin):
             uid = info.pw_uid
             gid = info.pw_gid
             path = info.pw_dir
+            if not os.path.exists(path):
+                path = "/"
 
         fd, filename = tempfile.mkstemp()
         script_file = os.fdopen(fd, "w")
