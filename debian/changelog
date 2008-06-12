@@ -1,3 +1,10 @@
+landscape-client (1.0.10-dapper1-landscape1) dapper; urgency=low
+
+  * Change the utilisation of the csv module to be compatible with 
+    python 2.4 as used in Dapper.
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 12 Jun 2008 17:57:43 +0000
+
 landscape-client (1.0.9-hardy1-landscape1) hardy; urgency=low
 
   * restrict users and groups list to local ones only, i.e., /etc/passwd
