@@ -106,20 +106,23 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                                   {"timestamp": 0, "type": "users",
                                   "operation-id": 123,
                                   "create-users": [{"home-phone": None,
-                                                  "username": "jdoe",
-                                                  "uid": 1000,
-                                                  "enabled": True,
-                                                  "location": None,
-                                                  "work-phone": None,
-                                                  "name": u"John Doe",
-                                                  "primary-gid": 1000}]}])
+                                                    "username": "jdoe",
+                                                    "uid": 1000,
+                                                    "enabled": True,
+                                                    "location": "Room 101",
+                                                    "work-phone": "+12345",
+                                                    "home-phone": None,
+                                                    "name": u"John Doe",
+                                                    "primary-gid": 1000}]}])
 
         self.setup_environment([], [], None)
 
         result = self.manager.dispatch_message(
             {"username": "jdoe", "name": "John Doe", "password": "password",
              "operation-id": 123, "require-password-reset": False,
-             "primary-group-name": None, "type": "add-user"})
+             "primary-group-name": None, "location": "Room 101",
+             "work-phone": "+12345", "home-phone": None,
+             "type": "add-user"})
 
         result.addCallback(handle_callback)
         return result
@@ -170,7 +173,8 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         result = self.manager.dispatch_message(
             {"username": "jdoe", "name": "John Doe", "password": "password",
              "operation-id": 123, "require-password-reset": False,
-             "primary-group-name": None, "type": "add-user"})
+             "primary-group-name": None, "type": "add-user",
+             "location": None, "home-phone": None, "work-phone": None})
 
         result.addCallback(handle_callback1)
         return result
@@ -211,7 +215,8 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         result = self.manager.dispatch_message(
             {"username": "jdoe", "name": "John Doe", "password": "password",
              "operation-id": 123, "require-password-reset": False, 
-             "type": "add-user", "primary-group-name": None})
+             "type": "add-user", "primary-group-name": None,
+             "location": None, "work-phone": None, "home-phone": None})
         result.addCallback(handle_callback)
         return result
 

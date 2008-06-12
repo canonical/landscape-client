@@ -25,7 +25,7 @@ class FakeUserManagement(object):
         shadow_file.close()
 
     def add_user(self, username, name, password, require_password_reset,
-                 primary_group_name):
+                 primary_group_name, location, work_phone, home_phone):
         try:
             uid = 1000
             if self._users:
@@ -36,9 +36,12 @@ class FakeUserManagement(object):
                 primary_gid = uid
             self._users[uid] = {"username": username, "name": name,
                                 "uid": uid, "enabled": True,
-                                "location": None, "work-phone": None,
-                                "home-phone": None, "primary-gid": primary_gid}
-            userdata = (username, "x", uid, primary_gid, "%s,,,," % name,
+                                "location": location, "work-phone": work_phone,
+                                "home-phone": home_phone,
+                                "primary-gid": primary_gid}
+            gecos_string = "%s,%s,%s,%s" % (name, location or '',
+                                            work_phone or '', home_phone or '')
+            userdata = (username, "x", uid, primary_gid, gecos_string,
                         "/bin/sh" , "/home/user")
             self.provider.users.append(userdata)
         except KeyError:
