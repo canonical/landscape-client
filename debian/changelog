@@ -1,3 +1,10 @@
+landscape-client (1.0.10-feisty1-landscape1) feisty; urgency=low
+
+  * Change the utilisation of the csv module to be compatible with 
+    python 2.4 as used in Dapper.
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 12 Jun 2008 17:57:58 +0000
+
 landscape-client (1.0.10-edgy1-landscape1) edgy; urgency=low
 
   * Change the utilisation of the csv module to be compatible with 
