@@ -28,11 +28,12 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         groups = [("users", "x", 1001, [])]
         provider = FakeUserProvider(groups=groups, popen=MockPopen(""))
         management = UserManagement(provider=provider)
-        management.add_user("jdoe", "John Doe", "password", False, "users")
+        management.add_user("jdoe", "John Doe", "password", False, "users",
+                            "Room 101", "+123456", None)
         self.assertEquals(len(provider.popen.popen_inputs), 2)
         self.assertEquals(provider.popen.popen_inputs[0],
                           ["adduser", "jdoe", "--disabled-password",
-                           "--gecos", "John Doe,,,,", "--gid", "1001"])
+                           "--gecos", "John Doe,Room 101,+123456,", "--gid", "1001"])
 
         usermod = provider.popen.popen_inputs[1]
         self.assertEquals(len(usermod), 4, usermod)
@@ -47,7 +48,8 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         provider = FakeUserProvider(popen=MockPopen("", return_codes=[1, 0]))
         management = UserManagement(provider=provider)
         self.assertRaises(UserManagementError, management.add_user,
-                          "jdoe", u"John Doe", "password", False, None)
+                          "jdoe", u"John Doe", "password", False, None, None,
+                          None, None)
 
     def test_change_password_error(self):
         """
@@ -57,7 +59,8 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         provider = FakeUserProvider(popen=MockPopen("", return_codes=[0, 1]))
         management = UserManagement(provider=provider)
         self.assertRaises(UserManagementError, management.add_user,
-                          "jdoe", u"John Doe", "password", False, None)
+                          "jdoe", u"John Doe", "password", False, None, None,
+                          None, None)
 
     def test_expire_password_error(self):
         """
@@ -68,7 +71,8 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
                                                     return_codes=[0, 0,1]))
         management = UserManagement(provider=provider)
         self.assertRaises(UserManagementError, management.add_user,
-                          "jdoe", u"John Doe", "password", True, None)
+                          "jdoe", u"John Doe", "password", True, None, None,
+                          None, None)
 
     def test_set_password(self):
         """

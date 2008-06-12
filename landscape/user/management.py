@@ -19,14 +19,15 @@ class UserManagement(object):
         self._provider = provider or UserProvider()
 
     def add_user(self, username, name, password, require_password_reset,
-                 primary_group_name):
+                 primary_group_name, location, work_phone, home_phone):
         """Add C{username} to the computer.
 
         @raises UserManagementError: Raised when C{adduser} fails.
         @raises UserManagementError: Raised when C{passwd} fails.
         """
         logging.info("Adding user %s.", username)
-        gecos = "%s,,,," % name
+        gecos = "%s,%s,%s,%s" % (name, location or '', work_phone or '',
+                                 home_phone or '')
         command = ["adduser", username, "--disabled-password", "--gecos",
                    gecos]
         if primary_group_name:
