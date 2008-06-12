@@ -119,7 +119,7 @@ class UserProvider(UserProviderBase):
         user_data = []
         passwd_file = open(self._passwd_file, "r")
         reader = csv.DictReader(passwd_file, fieldnames=self.passwd_fields,
-                                dialect="unixpwd")
+                                delimiter=":", quoting=csv.QUOTE_NONE)
         current_line = 0
         for row in reader:
             current_line += 1
@@ -148,7 +148,7 @@ class UserProvider(UserProviderBase):
         group_data = []
         group_file = open(self._group_file, "r")
         reader = csv.DictReader(group_file, fieldnames=self.group_fields,
-                                dialect="unixpwd")
+                                delimiter=":", quoting=csv.QUOTE_NONE)
         current_line = 0
         for row in reader:
             current_line += 1
@@ -165,4 +165,3 @@ class UserProvider(UserProviderBase):
         group_file.close()
         return group_data
  
-csv.register_dialect("unixpwd", delimiter=":", quoting=csv.QUOTE_NONE)
