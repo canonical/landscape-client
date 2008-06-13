@@ -94,7 +94,7 @@ class PackageMonitorTest(LandscapeIsolatedTest):
         self.mocker.replay()
 
         message = {"type": "package-ids", "ids": [None], "request-id": 1}
-        self.broker_service.reactor.fire(("message", "package-ids"), message)
+        self.monitor.dispatch_message(message)
         task = self.package_store.get_next_task("reporter")
         self.assertTrue(task)
         self.assertEquals(task.data, message)
