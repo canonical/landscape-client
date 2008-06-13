@@ -1,3 +1,38 @@
+landscape-client (1.0.11-hardy1-landscape1) hardy; urgency=low
+
+  * fixed a regression where an important fix was missing from the
+    new staging branch
+
+ -- Andreas Hasenack <andreas@canonical.com>  Fri, 13 Jun 2008 14:45:08 +0000
+
+landscape-client (1.0.11-gutsy1-landscape1) gutsy; urgency=low
+
+  * fixed a regression where an important fix was missing from the
+    new staging branch
+
+ -- Andreas Hasenack <andreas@canonical.com>  Fri, 13 Jun 2008 14:45:04 +0000
+
+landscape-client (1.0.11-feisty1-landscape1) feisty; urgency=low
+
+  * fixed a regression where an important fix was missing from the
+    new staging branch
+
+ -- Andreas Hasenack <andreas@canonical.com>  Fri, 13 Jun 2008 14:45:01 +0000
+
+landscape-client (1.0.11-edgy1-landscape1) edgy; urgency=low
+
+  * fixed a regression where an important fix was missing from the
+    new staging branch
+
+ -- Andreas Hasenack <andreas@canonical.com>  Fri, 13 Jun 2008 14:44:57 +0000
+
+landscape-client (1.0.11-dapper1-landscape1) dapper; urgency=low
+
+  * fixed a regression where an important fix was missing from the
+    new staging branch
+
+ -- Andreas Hasenack <andreas@canonical.com>  Fri, 13 Jun 2008 14:44:49 +0000
+
 landscape-client (1.0.10-hardy1-landscape1) hardy; urgency=low
 
   * Change the utilisation of the csv module to be compatible with 
