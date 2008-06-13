@@ -30,8 +30,8 @@ class PackageMonitor(MonitorPlugin):
                                     "package/database")
             self._package_store = PackageStore(filename)
 
-        registry.reactor.call_on(("message", "package-ids"),
-                                 self._enqueue_message_as_reporter_task)
+        registry.register_message("package-ids",
+                                  self._enqueue_message_as_reporter_task)
         registry.reactor.call_on("resynchronize", self._resynchronize)
         self.call_on_accepted("packages", self.spawn_reporter)
         self.run()
