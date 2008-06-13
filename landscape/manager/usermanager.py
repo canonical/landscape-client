@@ -100,7 +100,7 @@ class UserManager(ManagerPlugin):
         return self._management.set_user_details(
                  message["username"], password=message["password"],
                  name=message["name"], location=message["location"],
-                 work_number=message["work-number"],
+                 work_number=message["work-phone"],
                  home_number=message["home-number"],
                  primary_group_name=message["primary-group-name"])
 
