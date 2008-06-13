@@ -86,7 +86,7 @@ class UserManagement(object):
         for option, value in [("-r", location), ("-f", name),
                               ("-w", work_number), ("-h", home_number)]:
             if value is not None:
-                command += [option, value or '""']
+                command += [option, value or ""]
 
         if len(command) > 1:
             result, output = self.call_popen(command + [username])

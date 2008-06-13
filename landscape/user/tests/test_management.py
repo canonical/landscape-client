@@ -169,7 +169,22 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         management.set_user_details("jdoe", location="")
         self.assertEquals(len(provider.popen.popen_inputs), 1)
         self.assertEquals(provider.popen.popen_inputs,
-                          [["chfn", "-r", '""', "jdoe"]])
+                          [["chfn", "-r", "", "jdoe"]])
+
+    def test_clear_telephone_numbers(self):
+        """
+        L{UserManagement.set_user_details} should use C{chfn} to
+        change a user's telephone numbers.
+        """
+        data = [("jdoe", "x", 1000, 1000, "JD,,+123456,+123456", "/home/jdoe",
+                 "/bin/zsh")]
+        provider = FakeUserProvider(users=data, shadow_file=self.shadow_file,
+                                    popen=MockPopen("no output"))
+        management = UserManagement(provider=provider)
+        management.set_user_details("jdoe", home_number="", work_number="")
+        self.assertEquals(len(provider.popen.popen_inputs), 1)
+        self.assertEquals(provider.popen.popen_inputs,
+                          [["chfn", "-w", "", "-h", "", "jdoe"]])
 
     def test_set_user_details_fails(self):
         """
