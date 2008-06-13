@@ -127,7 +127,7 @@ class RunScriptTests(LandscapeTest):
         class pwnam(object):
             pw_uid = 1234
             pw_gid = 5678
-            pw_dir = self.mktemp()
+            pw_dir = self.make_path()
         
         self.expect(mock_getpwnam("user")).result(pwnam)
         
