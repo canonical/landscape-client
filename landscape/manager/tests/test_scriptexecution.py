@@ -116,7 +116,7 @@ class RunScriptTests(LandscapeTest):
         gid = info.pw_gid
         path = info.pw_dir
 
-        return  self._run_script(username, uid, gid, path)
+        return self._run_script(username, uid, gid, path)
 
     def test_user_no_home(self):
         """
@@ -131,7 +131,7 @@ class RunScriptTests(LandscapeTest):
         
         self.expect(mock_getpwnam("user")).result(pwnam)
         
-        return  self._run_script("user", 1234, 5678, "/")
+        return self._run_script("user", 1234, 5678, "/")
 
     def test_limit_size(self):
         """Data returned from the command is limited."""
