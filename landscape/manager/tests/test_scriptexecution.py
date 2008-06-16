@@ -77,22 +77,13 @@ class RunScriptTests(LandscapeTest):
         d2.addCallback(self.assertEquals, "")
         return gatherResults([d1, d2])
 
-    def test_user(self):
-        """
-        Running a script as a particular user calls
-        C{IReactorProcess.spawnProcess} with an appropriate C{uid} argument and
-        with the user's primary group as the C{gid} argument.
-        """
+    def _run_script(self, username, uid, gid, path):
         # ignore the call to chown!
         mock_chown = self.mocker.replace("os.chown", passthrough=False)
         mock_chown(ARGS)
 
         factory = StubProcessFactory()
         self.plugin.process_factory = factory
-        uid = os.getuid()
-        info = pwd.getpwuid(uid)
-        username = info.pw_name
-        gid = info.pw_gid
 
         self.mocker.replay()
 
@@ -100,6 +91,7 @@ class RunScriptTests(LandscapeTest):
 
         self.assertEquals(len(factory.spawns), 1)
         spawn = factory.spawns[0]
+        self.assertEquals(spawn[4], path)
         self.assertEquals(spawn[5], uid)
         self.assertEquals(spawn[6], gid)
         result.addCallback(self.assertEquals, "foobar")
@@ -110,6 +102,36 @@ class RunScriptTests(LandscapeTest):
             protocol.childConnectionLost(fd)
         protocol.processEnded(None)
         return result
+
+    def test_user(self):
+        """
+        Running a script as a particular user calls
+        C{IReactorProcess.spawnProcess} with an appropriate C{uid} argument,
+        with the user's primary group as the C{gid} argument and with the user
+        home as C{path} argument.
+        """
+        uid = os.getuid()
+        info = pwd.getpwuid(uid)
+        username = info.pw_name
+        gid = info.pw_gid
+        path = info.pw_dir
+
+        return self._run_script(username, uid, gid, path)
+
+    def test_user_no_home(self):
+        """
+        When the user specified to C{run_script} doesn't have a home, the
+        script executes in '/'.
+        """
+        mock_getpwnam = self.mocker.replace("pwd.getpwnam", passthrough=False)
+        class pwnam(object):
+            pw_uid = 1234
+            pw_gid = 5678
+            pw_dir = self.make_path()
+        
+        self.expect(mock_getpwnam("user")).result(pwnam)
+        
+        return self._run_script("user", 1234, 5678, "/")
 
     def test_limit_size(self):
         """Data returned from the command is limited."""
@@ -221,7 +243,7 @@ class RunScriptTests(LandscapeTest):
         script_file.write("#!interpreter\ncode")
         script_file.close()
 
-        process_factory.spawnProcess(ANY, ANY, uid=uid, gid=gid)
+        process_factory.spawnProcess(ANY, ANY, uid=uid, gid=gid, path=ANY)
 
         self.mocker.replay()
 
@@ -319,13 +341,13 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         mock_chown = self.mocker.replace("os.chown", passthrough=False)
         mock_chown(ARGS)
 
-        def spawn_called(protocol, filename, uid, gid):
+        def spawn_called(protocol, filename, uid, gid, path):
             protocol.childDataReceived(1, "hi!\n")
             protocol.processEnded(None)
             self._verify_script(filename, "python", "print 'hi'")
 
         process_factory = self.mocker.mock()
-        process_factory.spawnProcess(ANY, ANY, uid=uid, gid=gid)
+        process_factory.spawnProcess(ANY, ANY, uid=uid, gid=gid, path=ANY)
         self.mocker.call(spawn_called)
 
         self.mocker.replay()
@@ -397,13 +419,13 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         mock_chown = self.mocker.replace("os.chown", passthrough=False)
         mock_chown(ARGS)
 
-        def spawn_called(protocol, filename, uid, gid):
+        def spawn_called(protocol, filename, uid, gid, path):
             protocol.childDataReceived(1, "hi!\n")
             protocol.processEnded(None)
             self._verify_script(filename, "python", "print 'hi'")
 
         process_factory = self.mocker.mock()
-        process_factory.spawnProcess(ANY, ANY, uid=uid, gid=gid)
+        process_factory.spawnProcess(ANY, ANY, uid=uid, gid=gid, path=ANY)
         self.mocker.call(spawn_called)
 
         self.mocker.replay()
