@@ -39,8 +39,8 @@ class FakeUserManagement(object):
                                 "location": location, "work-phone": work_phone,
                                 "home-phone": home_phone,
                                 "primary-gid": primary_gid}
-            gecos_string = "%s,%s,%s,%s" % (name, location or '',
-                                            work_phone or '', home_phone or '')
+            gecos_string = "%s,%s,%s,%s" % (name, location or "",
+                                            work_phone or "", home_phone or "")
             userdata = (username, "x", uid, primary_gid, gecos_string,
                         "/bin/sh" , "/home/user")
             self.provider.users.append(userdata)
