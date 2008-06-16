@@ -26,8 +26,8 @@ class UserManagement(object):
         @raises UserManagementError: Raised when C{passwd} fails.
         """
         logging.info("Adding user %s.", username)
-        gecos = "%s,%s,%s,%s" % (name, location or '', work_phone or '',
-                                 home_phone or '')
+        gecos = "%s,%s,%s,%s" % (name, location or "", work_phone or "",
+                                 home_phone or "")
         command = ["adduser", username, "--disabled-password", "--gecos",
                    gecos]
         if primary_group_name:
