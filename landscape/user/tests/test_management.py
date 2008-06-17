@@ -33,7 +33,8 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         self.assertEquals(len(provider.popen.popen_inputs), 2)
         self.assertEquals(provider.popen.popen_inputs[0],
                           ["adduser", "jdoe", "--disabled-password",
-                           "--gecos", "John Doe,Room 101,+123456,", "--gid", "1001"])
+                           "--gecos", "John Doe,Room 101,+123456,",
+                           "--gid", "1001"])
 
         usermod = provider.popen.popen_inputs[1]
         self.assertEquals(len(usermod), 4, usermod)

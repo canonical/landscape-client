@@ -86,7 +86,7 @@ class UserManagement(object):
         for option, value in [("-r", location), ("-f", name),
                               ("-w", work_number), ("-h", home_number)]:
             if value is not None:
-                command += [option, value or ""]
+                command += [option, value]
 
         if len(command) > 1:
             result, output = self.call_popen(command + [username])
@@ -147,7 +147,8 @@ class UserManagement(object):
     def set_group_details(self, groupname, new_name):
         """Update details for the group matching C{gid}."""
         gid = self._provider.get_gid(groupname)
-        logging.info("Renaming group %s (GID %d) to %s.", groupname, gid, new_name)
+        logging.info("Renaming group %s (GID %d) to %s.",
+                     groupname, gid, new_name)
         command = ["groupmod", "-n", new_name, groupname]
         result, output = self.call_popen(command)
         if result != 0:
