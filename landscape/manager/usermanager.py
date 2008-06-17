@@ -90,7 +90,10 @@ class UserManager(ManagerPlugin):
         return self._management.add_user(message["username"], message["name"],
                                          message["password"],
                                          message["require-password-reset"],
-                                         message["primary-group-name"])
+                                         message["primary-group-name"],
+                                         message["location"],
+                                         message["work-phone"],
+                                         message["home-phone"])
 
     def _edit_user(self, message):
         """Run an C{edit-user} operation."""
