@@ -120,7 +120,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
             {"username": "jdoe", "name": "John Doe", "password": "password",
              "operation-id": 123, "require-password-reset": False,
              "primary-group-name": None, "location": "Room 101",
-             "work-phone": "+12345", "home-phone": None,
+             "work-number": "+12345", "home-number": None,
              "type": "add-user"})
 
         result.addCallback(handle_callback)
@@ -173,7 +173,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
             {"username": "jdoe", "name": "John Doe", "password": "password",
              "operation-id": 123, "require-password-reset": False,
              "primary-group-name": None, "type": "add-user",
-             "location": None, "home-phone": "+123456", "work-phone": None})
+             "location": None, "home-number": "+123456", "work-number": None})
 
         result.addCallback(handle_callback1)
         return result
@@ -215,7 +215,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
             {"username": "jdoe", "name": "John Doe", "password": "password",
              "operation-id": 123, "require-password-reset": False, 
              "type": "add-user", "primary-group-name": None,
-             "location": None, "work-phone": None, "home-phone": "+123456"})
+             "location": None, "work-number": None, "home-number": "+123456"})
         result.addCallback(handle_callback)
         return result
 

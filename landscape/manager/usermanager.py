@@ -92,8 +92,8 @@ class UserManager(ManagerPlugin):
                                          message["require-password-reset"],
                                          message["primary-group-name"],
                                          message["location"],
-                                         message["work-phone"],
-                                         message["home-phone"])
+                                         message["work-number"],
+                                         message["home-number"])
 
     def _edit_user(self, message):
         """Run an C{edit-user} operation."""
