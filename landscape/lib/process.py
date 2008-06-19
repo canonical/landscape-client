@@ -91,6 +91,17 @@ class ProcessInformation(object):
         try:
             parts = file.read().split()
             started_after_uptime = int(parts[21])
+            utime = int(parts[13])
+            stime = int(parts[14])
+            total_time = utime + stime
+            uptime = get_uptime()
+            seconds = uptime - started_after_uptime / self._jiffies_per_sec
+            if seconds:
+                pcpu = (total_time * 100L / self._jiffies_per_sec) / seconds
+                pcpu = round(min(pcpu, 99.0), 2)
+            else:
+                pcpu = 0.0
+            process_info["percent-cpu"] = pcpu
             delta = timedelta(0, started_after_uptime // self._jiffies_per_sec)
             if self._boot_time is None:
                 logging.warning("Skipping process (PID %s) without boot time.")
@@ -103,3 +114,8 @@ class ProcessInformation(object):
                and "name" in process_info and "uid" in process_info
                and "gid" in process_info and "start-time" in process_info)
         return process_info
+
+def get_uptime(uptime_file=u"/proc/uptime"):
+    data = file(uptime_file, "r").readline()
+    up, idle = data.split()
+    return float(up)
