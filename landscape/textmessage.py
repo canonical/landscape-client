@@ -11,12 +11,12 @@ from twisted.python import log
 from twisted.python.failure import Failure
 from twisted.internet.defer import fail
 
-from landscape.lib.dbus_util import get_bus
+from landscape.lib.dbus_util import (
+    get_bus, SecurityError, ServiceUnknownError, NoReplyError)
 
 from landscape import VERSION
 from landscape.broker.broker import BUS_NAME
-from landscape.broker.remote import (
-    RemoteBroker, SecurityError, ServiceUnknownError, NoReplyError)
+from landscape.broker.remote import RemoteBroker
 
 
 class AcceptedTypeError(Exception):

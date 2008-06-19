@@ -12,10 +12,11 @@ from twisted.internet.defer import Deferred
 from landscape.lib.dbus_util import (get_bus, get_object,
                                      method as async_method,
                                      byte_array, array_to_string,
-                                     Object)
-from landscape.lib import dbus_util
+                                     Object, ServiceUnknownError,
+                                     SecurityError)
 from landscape.tests.helpers import (
     LandscapeIsolatedTest, DBusHelper, LandscapeTest)
+from landscape.tests.mocker import ARGS, KWARGS
 
 
 class BoringService(Object):
@@ -231,6 +232,73 @@ class AsynchronousMethodTests(LandscapeIsolatedTest):
         return d.addErrback(got_error)
 
 
+class ErrorHandlingTests(LandscapeIsolatedTest):
+
+    helpers = [DBusHelper]
+
+    def test_service_unknown(self):
+        remote_service = get_object(self.bus, "com.foo", "/com/foo/Bar",
+                                    "com.foo", retry_timeout=0)
+        d = remote_service.foo()
+        self.assertFailure(d, ServiceUnknownError)
+        return d
+
+
+
+class SecurityErrorTests(LandscapeTest):
+    """Tests for cases that SecurityError is raised."""
+
+    def setUp(self):
+        super(SecurityErrorTests, self).setUp()
+        self.bus = self.mocker.mock()
+        self.service = self.mocker.mock()
+        self.bus.get_object("com.foo", "/com/foo", introspect=False)
+        self.mocker.result(self.service)
+        self.mocker.count(0, None)
+        self.remote = get_object(self.bus, "com.foo", "/com/foo")
+
+    def _test_security_error(self, error_message):
+        def raise_dbus_error(*args, **kw):
+            kw["error_handler"](DBusException(error_message))
+
+        self.service.send_message(ARGS, KWARGS)
+        self.mocker.call(raise_dbus_error)
+        self.mocker.replay()
+
+        d = self.remote.send_message({"type": "text-message",
+                                      "message": "hello"})
+        self.assertFailure(d, SecurityError)
+        return d
+
+    def test_feisty_security_error(self):
+        """
+        When an exception that looks like a security error from DBUS
+        0.80.x is raised, this should be translated to a
+        L{SecurityError}.
+        """
+        return self._test_security_error(
+            "A security policy in place prevents this sender from sending "
+            "this message to this recipient, see message bus configuration "
+            "file (rejected message had interface "
+            '"com.canonical.landscape" member "send_message" error name '
+            '"(unset)" destination ":1.107")')
+
+    def test_gutsy_security_error(self):
+        """
+        When an exception that looks like a security error on DBUS 0.82.x
+        is raised, this should be translated to a L{SecurityError}.
+        """
+        return self._test_security_error(
+            "org.freedesktop.DBus.Error.AccessDenied: A security "
+            "policy in place prevents this sender from sending this "
+            "message to this recipient, see message bus configuration "
+            "file (rejected message had interface "
+            '"com.canonical.landscape" member "send_message" error '
+            'name "(unset)" destination ":1.15")')
+
+
+
+
 class RetryTests(LandscapeIsolatedTest):
 
     helpers = [DBusHelper]
@@ -320,7 +388,7 @@ reactor.run()
 
         start_time = time.time()
         result = remote_service.add1(0)
-        self.assertFailure(result, DBusException)
+        self.assertFailure(result, ServiceUnknownError)
 
         def got_error(exception):
             self.assertTrue(time.time() - start_time > 1)
