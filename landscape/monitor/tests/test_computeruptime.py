@@ -2,7 +2,7 @@ from datetime import datetime
 import struct
 
 from landscape.monitor.computeruptime import (LoginInfo, LoginInfoReader,
-                                              ComputerUptime)
+                                              ComputerUptime, BootTimes)
 from landscape.tests.helpers import (LandscapeTest, MakePathHelper,
                                      MonitorHelper)
 from landscape.tests.mocker import ANY
@@ -310,3 +310,18 @@ class ComputerUptimeTest(LandscapeTest):
         plugin.run()
         self.mstore.set_accepted_types(["computer-uptime"])
         self.assertMessages(list(self.mstore.get_pending_messages()), [])
+
+
+class BootTimesTest(LandscapeTest):
+
+    helpers = [MakePathHelper]
+
+    def test_fallback_to_uptime(self):
+        """
+        When no data is available in C{/var/log/wtmp}
+        L{BootTimes.get_last_boot_time} falls back to C{/proc/uptime}.
+        """
+        wtmp_filename = self.make_path("")
+        append_login_data(wtmp_filename, tty_device="~", username="shutdown",
+                          entry_time_seconds=535)
+        self.assertTrue(BootTimes(filename=wtmp_filename).get_last_boot_time())

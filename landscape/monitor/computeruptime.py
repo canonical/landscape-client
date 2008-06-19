@@ -1,3 +1,4 @@
+import time
 from datetime import datetime
 import os
 import struct
@@ -93,6 +94,9 @@ class BootTimes(object):
     def get_last_boot_time(self):
         if self._last_boot is None:
             self.get_times()
+        if not self._last_boot:
+            running_time, idle_time = open("/proc/uptime").read().split()
+            self._last_boot = time.time() - float(running_time)
         return self._last_boot
 
 
