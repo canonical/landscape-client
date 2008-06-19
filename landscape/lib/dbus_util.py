@@ -14,19 +14,34 @@ import traceback
 
 from twisted.internet.defer import Deferred, execute
 from twisted.python.failure import Failure
+from twisted.python.reflect import namedClass
 
 from dbus.service import Object, BusName, method as dbus_method
 from dbus import Array, Byte
 from dbus.exceptions import DBusException
 import dbus
-from dbus import Interface
 
 from landscape.lib.log import log_failure
+
+# These should perhaps be registered externally
+SAFE_EXCEPTIONS = ["landscape.schema.InvalidError",
+                   "landscape.broker.registration.InvalidCredentialsError"]
+PYTHON_EXCEPTION_PREFIX = "org.freedesktop.DBus.Python."
+
+class ServiceUnknownError(Exception):
+    """Raised when the DBUS Service cannot be found."""
+
+class SecurityError(Exception):
+    """Raised when the DBUS Service is inaccessible."""
+
+class NoReplyError(Exception):
+    """Raised when a DBUS service doesn't respond."""
 
 
 class Object(Object):
     """
-    Convenience for creating dbus objects with a particular bus name and object path.
+    Convenience for creating dbus objects with a particular bus name and object
+    path.
 
     @cvar bus_name: The bus name to listen on.
     @cvar object_path: The path to listen on.
@@ -43,8 +58,8 @@ def _method_reply_error(connection, message, exception):
     elif exception.__module__ == '__main__':
         name = 'org.freedesktop.DBus.Python.%s' % exception.__class__.__name__
     else:
-        name = 'org.freedesktop.DBus.Python.%s.%s' % (exception.__module__,
-                                                      exception.__class__.__name__)
+        name = 'org.freedesktop.DBus.Python.%s.%s' % (
+            exception.__module__, exception.__class__.__name__)
 
     # LS CUSTOM
     current_exception = sys.exc_info()[1]
@@ -109,8 +124,9 @@ def method(interface, **kwargs):
 
         byte_arrays = kwargs.pop("byte_arrays", False)
         if byte_arrays:
-            raise NotImplementedError("Please don't use byte_arrays; "
-                                      "it doesn't work on old versions of python-dbus.")
+            raise NotImplementedError(
+                "Please don't use byte_arrays; it doesn't work on old "
+                "versions of python-dbus.")
 
         inner = dbus_method(interface, **kwargs)(inner)
         # We don't pass async_callbacks to dbus_method, because it does some
@@ -145,7 +161,35 @@ class AsynchronousProxyMethod(object):
     def __call__(self, *args, **kwargs):
         result = Deferred()
         self._call_with_retrying(result, args, kwargs)
+        result.addErrback(self._massage_errors)
         return result
+
+    def _massage_errors(self, failure):
+        """Python DBUS has terrible exception reporting.
+
+        Convert many types of errors which into things which are
+        actually catchable.
+        """
+        failure.trap(DBusException)
+        message = failure.getErrorMessage()
+        # handle different crappy error messages from various versions
+        # of DBUS.
+        if ("Did not receive a reply" in message
+            or "No reply within specified time" in message):
+            raise NoReplyError(message)
+        if (message.startswith("A security policy in place")
+            or message.startswith("org.freedesktop.DBus.Error.AccessDenied")):
+            raise SecurityError()
+        if "was not provided by any .service" in message:
+            raise ServiceUnknownError()
+
+        if message.startswith(PYTHON_EXCEPTION_PREFIX):
+            python_exception = message[len(PYTHON_EXCEPTION_PREFIX)
+                                       :message.find(":")]
+            if python_exception in SAFE_EXCEPTIONS:
+                raise namedClass(python_exception)(message)
+
+        return failure
 
     def _retry_on_failure(self, failure, result,
                           args, kwargs, first_failure_time):
