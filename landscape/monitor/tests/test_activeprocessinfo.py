@@ -440,81 +440,6 @@ class ActiveProcessInfoTest(LandscapeTest):
         self.assertEquals(message["kill-processes"], [672])
         self.assertEquals(message["add-processes"][0]["pid"], 672)
 
-    def test_get_last_boot_time_from_computer_uptime_plugin(self):
-        """
-        The Active process info fetches the real last boot time to calculate
-        the start time of a process.
-        """
-        wtmp_filename = self.make_path("")
-        append_login_data(wtmp_filename, tty_device="~", username="reboot",
-                          entry_time_seconds=3212)
-
-        self.builder.create_data(672, self.builder.RUNNING,
-                                 uid=1000, gid=1000, started_after_uptime=10,
-                                 process_name="blarpy")
-        plugin = ActiveProcessInfo(proc_dir=self.sample_dir, jiffies=1)
-        self.monitor.add(plugin)
-
-        plugin.exchange()
-
-        messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 1)
-        message = self.mstore.get_pending_messages()[0]
-
-        boot_time = BootTimes()
-        last_boot_time = boot_time.get_last_boot_time()
-
-        self.assertTrue("kill-all-processes" in message)
-        self.assertTrue("kill-processes" not in message)
-        self.assertTrue("add-processes" in message)
-        self.assertEquals(message["add-processes"][0]["pid"], 672)
-        self.assertEquals(message["add-processes"][0]["start-time"],
-                          last_boot_time + 10)
-
-    def test_no_last_boot_time(self):
-        """
-        When no boot time is available, the plugin will not report new
-        processes.
-        """
-        wtmp_filename = self.make_path("")
-        append_login_data(wtmp_filename, tty_device="~", username="reboot",
-                          entry_time_seconds=3212)
-        self.builder.create_data(672, self.builder.RUNNING,
-                                 uid=1000, gid=1000, started_after_uptime=10,
-                                 process_name="blarpy")
-
-        ## Mock out boot times
-        boot_times_factory = self.mocker.replace(
-            "landscape.monitor.computeruptime.BootTimes", passthrough=False)
-        boot_times_factory().get_last_boot_time()
-        self.mocker.result(None)
-        self.mocker.replay()
-        plugin = ActiveProcessInfo(proc_dir=self.sample_dir, jiffies=1)
-        self.monitor.add(plugin)
-
-        # We don't expect anything except the standard "kill all known
-        # processes" in the first message.
-        plugin.exchange()
-
-        messages = self.mstore.get_pending_messages()
-        self.assertEquals(messages,
-                          [{"api": API, "kill-all-processes": True,
-                            "timestamp": 0, "type": "active-process-info"}])
-        message = self.mstore.get_pending_messages()[0]
-
-        self.assertEquals(message["type"], "active-process-info")
-        self.assertTrue("kill-all-processes" in message)
-        self.assertTrue("kill-processes" not in message)
-        self.assertTrue("add-processes" not in message)
-
-        # Without an uptime we can't generate start times for
-        # processes, so we don't report anything.
-        plugin.exchange()
-        messages = self.mstore.get_pending_messages()
-        self.assertEquals(messages,
-                          [{"api": API, "kill-all-processes": True,
-                            "timestamp": 0, "type": "active-process-info"}])
-
     def test_call_on_accepted(self):
         """
         L{MonitorPlugin}-based plugins can provide a callable to call
@@ -702,7 +627,7 @@ class PluginManagerIntegrationTest(LandscapeTest):
 
     def test_generate_cpu_usage(self):
         stat_data = "1 Process S 1 0 0 0 0 0 0 0 " \
-                    "0 0 2375 0 0 0 0 0 0 10 0 0 " \
+                    "0 0 2650 0 0 0 0 0 0 10 0 0 " \
                     "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
 
         self.builder.create_data(1, self.builder.RUNNING, uid=0, gid=0,

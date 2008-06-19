@@ -2,8 +2,6 @@ import logging
 import os
 from datetime import timedelta, datetime
 
-from landscape.monitor.computeruptime import BootTimes
-
 from landscape.lib.timestamp import to_timestamp
 from landscape.jiffies import detect_jiffies
 
@@ -21,7 +19,7 @@ class ProcessInformation(object):
 
     def __init__(self, proc_dir="/proc", jiffies=None, boot_time=None):
         if boot_time is None:
-            boot_time = BootTimes().get_last_boot_time()
+            boot_time = get_uptime()
         if boot_time is not None:
             boot_time = datetime.utcfromtimestamp(boot_time)
         self._boot_time = boot_time
