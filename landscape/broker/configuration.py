@@ -11,12 +11,12 @@ import getpass
 from dbus import DBusException
 
 from landscape.sysvconfig import SysVConfig, ProcessError
-from landscape.lib.dbus_util import get_bus
+from landscape.lib.dbus_util import get_bus, NoReplyError, ServiceUnknownError
 from landscape.lib.twisted_util import gather_results
 
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.broker.deployment import BrokerConfiguration
-from landscape.broker.remote import RemoteBroker, NoReplyError
+from landscape.broker.remote import RemoteBroker
 from landscape.reactor import TwistedReactor
 
 
@@ -299,10 +299,9 @@ def register(config, reactor=None):
         reactor.fireSystemEvent("landscape-registration-error")
 
     def catch_all(failure):
-        if failure.check(DBusException):
-            print_text(str(failure.value))
-            print_text("Error occurred contacting the client. Is it running?",
-                       error=True)
+        if failure.check(ServiceUnknownError):
+            print_text("Error occurred contacting Landscape Client. "
+                       "Is it running?", error=True)
         else:
             print_text(failure.getTraceback(), error=True)
             print_text("Unknown error occurred.", error=True)
