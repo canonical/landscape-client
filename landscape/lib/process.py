@@ -65,9 +65,6 @@ class ProcessInformation(object):
                 elif parts[0] == "State":
                     state = parts[1].strip()
                     process_info["state"] = STATES[state]
-                elif parts[0] == "SleepAVG":
-                    value_parts = parts[1].split()
-                    process_info["sleep-average"] = int(value_parts[0][:-1])
                 elif parts[0] == "Uid":
                     value_parts = parts[1].split()
                     process_info["uid"] = int(value_parts[0])
