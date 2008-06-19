@@ -627,7 +627,7 @@ class PluginManagerIntegrationTest(LandscapeTest):
 
     def test_generate_cpu_usage(self):
         stat_data = "1 Process S 1 0 0 0 0 0 0 0 " \
-                    "0 0 2650 0 0 0 0 0 0 10 0 0 " \
+                    "0 0 2 0 0 0 0 0 0 10 0 0 " \
                     "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
 
         self.builder.create_data(1, self.builder.RUNNING, uid=0, gid=0,
@@ -647,13 +647,13 @@ class PluginManagerIntegrationTest(LandscapeTest):
         expected_process_0 = {"state": "R", "gid": 0, "pid": 1,
                               "vm-size": 11676, "name": u"Process",
                               "uid": 0, "start-time": 10,
-                              "percent-cpu": 1.00}
+                              "percent-cpu": 2.00}
         processes = message["add-processes"]
         self.assertEquals(processes, [expected_process_0])
 
     def test_generate_cpu_usage_capped(self):
         stat_data = "1 Process S 1 0 0 0 0 0 0 0 " \
-                    "0 0 290000 0 0 0 0 0 0 0 10 0 0 " \
+                    "0 0 150 0 0 0 0 0 0 10 0 0 " \
                     "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
 
         self.builder.create_data(1, self.builder.RUNNING, uid=0, gid=0,
@@ -672,7 +672,7 @@ class PluginManagerIntegrationTest(LandscapeTest):
         processes = message["add-processes"]
         expected_process_0 = {"state": "R", "gid": 0, "pid": 1,
                               "vm-size": 11676, "name": "Process",
-                              "uid": 0, "start-time": 11,
+                              "uid": 0, "start-time": 10,
                               "percent-cpu": 99.00}
         processes = message["add-processes"]
         self.assertEquals(processes, [expected_process_0])

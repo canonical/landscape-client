@@ -18,9 +18,10 @@ STATES = {"R (running)": "R",
 class ProcessInformation(object):
 
     def __init__(self, proc_dir="/proc", jiffies=None, boot_time=None):
+        self._uptime = boot_time or get_uptime()
         if boot_time is None:
-            boot_time = get_uptime()
-        if boot_time is not None:
+            boot_time = datetime.utcfromtimestamp(get_uptime())
+        elif boot_time is not None:
             boot_time = datetime.utcfromtimestamp(boot_time)
         self._boot_time = boot_time
         self._proc_dir = proc_dir
@@ -89,8 +90,7 @@ class ProcessInformation(object):
             utime = int(parts[13])
             stime = int(parts[14])
             total_time = utime + stime
-            uptime = get_uptime()
-            seconds = uptime - started_after_uptime / self._jiffies_per_sec
+            seconds = self._uptime - started_after_uptime / self._jiffies_per_sec
             if seconds:
                 pcpu = (total_time * 100L / self._jiffies_per_sec) / seconds
                 pcpu = round(min(pcpu, 99.0), 2)
