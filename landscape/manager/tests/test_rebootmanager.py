@@ -21,7 +21,8 @@ class RebootManagerTest(LandscapeIsolatedTest):
         C{shutdown} command should be called.
         """
         system = self.mocker.replace("os.system")
-        self.expect(system("shutdown -r now")).result(0)
+        command = "shutdown -r +5 'Landscape is restarting the system'"
+        self.expect(system(command)).result(0)
         self.mocker.replay()
         self.manager.dispatch_message({"type": "reboot", "shutdown": False})
 
@@ -31,7 +32,8 @@ class RebootManagerTest(LandscapeIsolatedTest):
         C{shutdown} command should be called.
         """
         system = self.mocker.replace("os.system")
-        self.expect(system("shutdown -h now")).result(0)
+        command = "shutdown -h +5 'Landscape is shutting down the system'"
+        self.expect(system(command)).result(0)
         self.mocker.replay()
         self.manager.dispatch_message({"type": "reboot", "shutdown": True})
 
@@ -42,9 +44,10 @@ class RebootManagerTest(LandscapeIsolatedTest):
         """
         self.log_helper.ignore_errors(RebootError)
         system = self.mocker.replace("os.system")
-        self.expect(system("shutdown -h now")).result(1)
+        command = "shutdown -h +5 'Landscape is shutting down the system'"
+        self.expect(system(command)).result(1)
         self.mocker.replay()
         self.manager.dispatch_message({"type": "reboot", "shutdown": True})
         self.assertIn(
-            "RebootError: 'shutdown -h now' had a non-zero exit value.",
+            "RebootError: 'shutdown' returned a non-zero exit value.",
             self.logfile.getvalue())

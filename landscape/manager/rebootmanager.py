@@ -17,8 +17,8 @@ class RebootManager(ManagerPlugin):
 
     def _reboot(self, message):
         if message["shutdown"]:
-            command = "shutdown -h now"
+            command = "shutdown -h +5 'Landscape is shutting down the system'"
         else:
-            command = "shutdown -r now"
+            command = "shutdown -r +5 'Landscape is restarting the system'"
         if os.system(command) != 0:
-            raise RebootError("'%s' had a non-zero exit value." % command)
+            raise RebootError("'shutdown' returned a non-zero exit value.")
