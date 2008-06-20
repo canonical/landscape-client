@@ -43,10 +43,7 @@ class CalculatePCPUTest(unittest.TestCase):
 
     def test_calculate_pcpu_floored(self):
         """
-        This calculates the pcpu based on 100000 jiffies allocated to a process
-        over 50000 jiffies.
-
-        This should be cpu utilisation of 99% as it's capped at 99% CPU
-        utilisation.
+        This calculates the pcpu based on 1 jiffies allocated to a process
+        over 80 jiffies this should be negative, but floored to 0.0.
         """
         self.assertEquals(calculate_pcpu(1, 0, 0, 0, 50, 800, 10), 0.0)
