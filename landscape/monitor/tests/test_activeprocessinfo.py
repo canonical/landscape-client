@@ -631,7 +631,7 @@ class PluginManagerIntegrationTest(LandscapeTest):
         the /proc/<pid>/stat file.
         """
         stat_data = "1 Process S 1 0 0 0 0 0 0 0 " \
-                    "0 0 4000 1000 0 0 0 0 0 50000 0 0 " \
+                    "0 0 10 10 0 0 0 0 0 3000 0 0 " \
                     "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
 
         self.builder.create_data(1, self.builder.RUNNING, uid=0, gid=0,
@@ -651,7 +651,7 @@ class PluginManagerIntegrationTest(LandscapeTest):
         expected_process_0 = {"state": "R", "gid": 0, "pid": 1,
                               "vm-size": 11676, "name": u"Process",
                               "uid": 0, "start-time": 100,
-                              "percent-cpu": 50.00}
+                              "percent-cpu": 2.00}
         processes = message["add-processes"]
         self.assertEquals(processes, [expected_process_0])
 

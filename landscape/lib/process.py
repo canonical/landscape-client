@@ -4,6 +4,7 @@ from datetime import timedelta, datetime
 
 from landscape.lib.timestamp import to_timestamp
 from landscape.jiffies import detect_jiffies
+from landscape.monitor.computeruptime import BootTimes
 
 
 STATES = {"R (running)": "R",
@@ -20,8 +21,8 @@ class ProcessInformation(object):
     def __init__(self, proc_dir="/proc", jiffies=None, boot_time=None):
         self._uptime = boot_time or get_uptime()
         if boot_time is None:
-            boot_time = datetime.utcfromtimestamp(get_uptime())
-        elif boot_time is not None:
+            boot_time = BootTimes().get_last_boot_time()
+        if boot_time is not None:
             boot_time = datetime.utcfromtimestamp(boot_time)
         self._boot_time = boot_time
         self._proc_dir = proc_dir
@@ -133,8 +134,10 @@ def calculate_pcpu(utime, stime, cutime, cstime, uptime, start_time, Hertz):
     if (pcpu > 99U) pcpu = 99U;
     return snprintf(outbuf, COLWID, "%2u", pcpu);
     """
+    pcpu = 0
     total_time = utime + stime
     total_time += cutime + cstime
     seconds = uptime - (start_time / Hertz)
-    pcpu = total_time * 100 / Hertz / seconds
+    if seconds:
+        pcpu = total_time * 100 / Hertz / seconds
     return round(min(pcpu, 99.0), 1)
