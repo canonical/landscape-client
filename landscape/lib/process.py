@@ -140,4 +140,4 @@ def calculate_pcpu(utime, stime, cutime, cstime, uptime, start_time, Hertz):
     seconds = uptime - (start_time / Hertz)
     if seconds:
         pcpu = total_time * 100 / Hertz / seconds
-    return round(min(pcpu, 99.0), 1)
+    return round(max(min(pcpu, 99.0), 0), 1)
