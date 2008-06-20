@@ -7,7 +7,8 @@ from landscape.broker.remote import (RemoteBroker,
 from landscape.manager.manager import ManagerPluginRegistry, ManagerDBusObject
 
 
-ALL_PLUGINS = ["ProcessKiller", "PackageManager", "UserManager"]
+ALL_PLUGINS = ["ProcessKiller", "PackageManager", "UserManager",
+               "RebootManager"]
 
 
 class ManagerConfiguration(Configuration):

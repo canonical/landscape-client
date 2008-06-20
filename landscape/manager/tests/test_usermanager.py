@@ -73,8 +73,9 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
 """)
         accepted_types = ["operation-result", "users"]
         self.broker_service.message_store.set_accepted_types(accepted_types)
-        self.manager = ManagerPluginRegistry(self.broker_service.reactor, self.remote,
-                                             self.broker_service.config, self.broker_service.bus)
+        self.manager = ManagerPluginRegistry(
+            self.broker_service.reactor, self.remote,
+            self.broker_service.config, self.broker_service.bus)
 
     def setup_environment(self, users, groups, shadow_file):
         provider = FakeUserProvider(users=users, groups=groups,
