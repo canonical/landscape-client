@@ -16,5 +16,13 @@ class UptimeTest(LandscapeTest):
 
 class CalculatePCPUTest(unittest.TestCase):
 
-    def test_calculate_pcpu(self):
-        self.assertEquals(calculate_pcpu(40000, 10000, 1000, 50000, 100), 10.0)
+    def test_calculate_pcpu_real_data(self):
+        self.assertEquals(calculate_pcpu(51286, 5000, 4, 9, 19000.07, 9281.0,
+                                         100), 3.0)
+
+    def test_calculate_pcpu_capped(self):
+        self.assertEquals(calculate_pcpu(40000, 10000, 0, 0, 1000, 50000, 100),
+                                         99.0)
+
+
+
