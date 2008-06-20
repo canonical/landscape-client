@@ -626,16 +626,20 @@ class PluginManagerIntegrationTest(LandscapeTest):
         self.assertEquals(processes, [expected_process_0])
 
     def test_generate_cpu_usage(self):
+        """
+        Test that we can calculate the CPU usage from system information and
+        the /proc/<pid>/stat file.
+        """
         stat_data = "1 Process S 1 0 0 0 0 0 0 0 " \
-                    "0 0 2 0 0 0 0 0 0 10 0 0 " \
+                    "0 0 4000 1000 0 0 0 0 0 50000 0 0 " \
                     "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
 
         self.builder.create_data(1, self.builder.RUNNING, uid=0, gid=0,
-                                 started_after_uptime=30,
+                                 started_after_uptime=4900,
                                  process_name="Process",
                                  generate_cmd_line=False,
                                  stat_data=stat_data)
-        plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=10,
+        plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=100,
                                    jiffies=10)
         self.monitor.add(plugin)
         plugin.exchange()
@@ -646,22 +650,26 @@ class PluginManagerIntegrationTest(LandscapeTest):
         processes = message["add-processes"]
         expected_process_0 = {"state": "R", "gid": 0, "pid": 1,
                               "vm-size": 11676, "name": u"Process",
-                              "uid": 0, "start-time": 10,
-                              "percent-cpu": 2.00}
+                              "uid": 0, "start-time": 100,
+                              "percent-cpu": 50.00}
         processes = message["add-processes"]
         self.assertEquals(processes, [expected_process_0])
 
     def test_generate_cpu_usage_capped(self):
+        """
+        Test that we can calculate the CPU usage from system information and
+        the /proc/<pid>/stat file.
+        """
         stat_data = "1 Process S 1 0 0 0 0 0 0 0 " \
-                    "0 0 150 0 0 0 0 0 0 10 0 0 " \
+                    "0 0 400000 1000 0 0 0 0 0 50000 0 0 " \
                     "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
 
         self.builder.create_data(1, self.builder.RUNNING, uid=0, gid=0,
-                                 started_after_uptime=30,
+                                 started_after_uptime=4900,
                                  process_name="Process",
                                  generate_cmd_line=False,
                                  stat_data=stat_data)
-        plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=10,
+        plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=100,
                                    jiffies=10)
         self.monitor.add(plugin)
         plugin.exchange()
@@ -671,8 +679,10 @@ class PluginManagerIntegrationTest(LandscapeTest):
         self.assertTrue("add-processes" in message)
         processes = message["add-processes"]
         expected_process_0 = {"state": "R", "gid": 0, "pid": 1,
-                              "vm-size": 11676, "name": "Process",
-                              "uid": 0, "start-time": 10,
+                              "vm-size": 11676, "name": u"Process",
+                              "uid": 0, "start-time": 100,
                               "percent-cpu": 99.00}
         processes = message["add-processes"]
         self.assertEquals(processes, [expected_process_0])
+
+

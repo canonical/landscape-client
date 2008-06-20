@@ -86,18 +86,13 @@ class ProcessInformation(object):
 
         try:
             parts = file.read().split()
-            started_after_uptime = int(parts[21])
+            starttime = int(parts[21])
             utime = int(parts[13])
             stime = int(parts[14])
-            total_time = utime + stime
-            seconds = self._uptime - started_after_uptime / self._jiffies_per_sec
-            if seconds:
-                pcpu = (total_time * 100L / self._jiffies_per_sec) / seconds
-                pcpu = round(min(pcpu, 99.0), 2)
-            else:
-                pcpu = 0.0
+            pcpu = calculate_pcpu(utime, stime, self._uptime, starttime,
+                                  self._jiffies_per_sec)
             process_info["percent-cpu"] = pcpu
-            delta = timedelta(0, started_after_uptime // self._jiffies_per_sec)
+            delta = timedelta(0, starttime // self._jiffies_per_sec)
             if self._boot_time is None:
                 logging.warning("Skipping process (PID %s) without boot time.")
                 return None
@@ -111,6 +106,29 @@ class ProcessInformation(object):
         return process_info
 
 def get_uptime(uptime_file=u"/proc/uptime"):
+    """
+    This parses a file in /proc/uptime format and returns a floating point
+    version of the first value (the actual uptime).
+    """
     data = file(uptime_file, "r").readline()
     up, idle = data.split()
     return float(up)
+
+
+def calculate_pcpu(utime, stime, uptime, start_time, Hertz):
+    """
+    Implement ps' algorithm to calculate the percentage cpu utilisation for a
+    process.
+
+    total_time = pp->utime + pp->stime;
+    if(include_dead_children) total_time += (pp->cutime + pp->cstime);
+    seconds = seconds_since_boot - pp->start_time / Hertz;
+    if(seconds) pcpu = (total_time * 1000ULL / Hertz) / seconds;
+    if (pcpu > 999U)
+      return snprintf(outbuf, COLWID, "%u", pcpu/10U);
+    """
+    total_time = utime + stime
+    seconds = uptime - start_time / Hertz
+    pcpu = (total_time * 100 / Hertz) / seconds
+    return round(min(pcpu / 10, 99.0), 1)
+
