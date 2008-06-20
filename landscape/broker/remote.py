@@ -37,6 +37,13 @@ class RemoteBroker(object):
         return self._perform_call("send_message",
                                   byte_array(dumps(message)), urgent)
 
+    def schedule_exchange(self, urgent=False):
+        """Schedule an exchange.
+
+        @param urgent: An urgent exchange is scheduled if the flag is C{True}.
+        """
+        return self._perform_call("schedule_exchange", urgent)
+
     def reload_configuration(self):
         """Reload the broker configuration.
 
@@ -95,6 +102,9 @@ class FakeRemoteBroker(object):
     def send_message(self, message, urgent=False):
         """Send to the previously given L{MessageExchange} object."""
         return execute(self.exchanger.send, message, urgent=urgent)
+
+    def schedule_exchange(self, urgent=False):
+        return succeed(self.exchanger.schedule_exchange(urgent=urgent))
 
 
 class DBusSignalToReactorTransmitter(object):
