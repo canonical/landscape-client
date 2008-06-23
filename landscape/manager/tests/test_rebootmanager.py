@@ -17,8 +17,9 @@ class RebootManagerTest(LandscapeIsolatedTest):
 
     def test_restart(self):
         """
-        When a C{reboot} message is received with a C{restart} directive, the
-        C{shutdown} command should be called.
+        When a C{reboot} message is received with a C{shutdown} directive set
+        to C{False}, the C{shutdown} command should be called to restart the
+        system 5 minutes from now.
         """
         run = self.mocker.replace("twisted.internet.utils.getProcessOutput")
         command = "shutdown -r +5 'Landscape is restarting the system'"
@@ -28,8 +29,9 @@ class RebootManagerTest(LandscapeIsolatedTest):
 
     def test_shutdown(self):
         """
-        When a C{reboot} message is received with a C{shutdown} directive, the
-        C{shutdown} command should be called.
+        When a C{reboot} message is received with a C{shutdown} directive set
+        to C{True}, the C{shutdown} command should be called to shutdown the
+        system 5 minutes from now.
         """
         run = self.mocker.replace("twisted.internet.utils.getProcessOutput")
         command = "shutdown -h +5 'Landscape is shutting down the system'"
