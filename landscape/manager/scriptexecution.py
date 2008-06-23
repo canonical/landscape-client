@@ -183,7 +183,7 @@ class ProcessAccumulationProtocol(ProcessProtocol):
         L{ProcessTimeLimitReachedError} will be fired with data accumulated so
         far.
         """
-        data = ''.join(self.data)
+        data = "".join(self.data)
         if self._error:
             self.result_deferred.errback(ProcessTimeLimitReachedError(data))
         else:
