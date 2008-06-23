@@ -32,7 +32,7 @@ class SampleDataBuilder(object):
 
     def create_data(self, process_id, state, uid, gid,
                     started_after_uptime, process_name=None,
-                    generate_cmd_line=True):
+                    generate_cmd_line=True, stat_data=None):
         """Creates sample data for a process.
 
         @param started_after_uptime: The amount of time, in jiffies,
@@ -86,15 +86,15 @@ CapEff: 0000000000000000
             file.write(sample_data)
         finally:
             file.close()
-
-        sample_data = """\
+        if stat_data is None:
+            stat_data = """\
 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 %d\
 """ % (started_after_uptime,)
         filename = os.path.join(process_dir, "stat")
 
         file = open(filename, "w+")
         try:
-            file.write(sample_data)
+            file.write(stat_data)
         finally:
             file.close()
 
@@ -223,14 +223,14 @@ class ActiveProcessInfoTest(LandscapeTest):
         self.assertTrue("kill-all-processes" in message)
         self.assertTrue("add-processes" in message)
         expected_process_0 = {"state": "R", "gid": 0, "pid": 1,
-                              "vm-size": 11676, "sleep-average": 87,
-                              "name": "init", "uid": 0, "start-time": 103}
+                              "vm-size": 11676, "name": "init", "uid": 0,
+                              "start-time": 103, "percent-cpu": 0.0}
         expected_process_1 = {"state": "T", "gid": 1000, "pid": 671,
-                              "vm-size": 11676, "sleep-average": 87,
-                              "name": "blargh", "uid": 1000, "start-time": 111}
+                              "vm-size": 11676, "name": "blargh", "uid": 1000,
+                              "start-time": 111, "percent-cpu": 0.0}
         expected_process_2 = {"state": "I", "gid": 1000, "pid": 672,
-                              "vm-size": 11676, "sleep-average": 87,
-                              "name": "blarpy", "uid": 1000, "start-time": 112}
+                              "vm-size": 11676, "name": "blarpy", "uid": 1000,
+                              "start-time": 112, "percent-cpu": 0.0}
         processes = message["add-processes"]
         processes.sort(key=operator.itemgetter("pid"))
         self.assertEquals(processes, [expected_process_0, expected_process_1,
@@ -255,8 +255,8 @@ class ActiveProcessInfoTest(LandscapeTest):
         self.assertTrue("add-processes" in message)
 
         expected_process = {"pid": 1, "state": "R", "name": "init",
-                            "vm-size": 11676, "sleep-average": 87,
-                            "uid": 0, "gid": 0, "start-time": 112}
+                            "vm-size": 11676, "uid": 0, "gid": 0,
+                            "start-time": 112, "percent-cpu": 0.0}
         self.assertEquals(message["add-processes"], [expected_process])
 
     def test_plugin_manager(self):
@@ -274,8 +274,9 @@ class ActiveProcessInfoTest(LandscapeTest):
             [{"type": "active-process-info",
               "kill-all-processes": True,
               "add-processes": [{"pid": 1, "state": "R", "name": "init",
-                                 "vm-size": 11676, "sleep-average": 87,
-                                 "uid": 0, "gid": 0, "start-time": 110}]}])
+                                 "vm-size": 11676, "uid": 0, "gid": 0,
+                                 "start-time": 110, "percent-cpu": 0.0}]}])
+
 
     def test_process_terminated(self):
         """Test that the plugin handles process changes in a diff-like way."""
@@ -312,14 +313,17 @@ class ActiveProcessInfoTest(LandscapeTest):
         self.assertEquals(message["kill-all-processes"], True)
         self.assertTrue("add-processes" in message)
         expected_process_0 = {"state": "R", "gid": 0, "pid": 1,
-                              "vm-size": 11676, "sleep-average": 87,
-                              "name": "init", "uid": 0, "start-time": 101}
+                              "vm-size": 11676, "name": "init", 
+                              "uid": 0, "start-time": 101,
+                              "percent-cpu": 0.0}
         expected_process_1 = {"state": "T", "gid": 1000, "pid": 671,
-                              "vm-size": 11676, "sleep-average": 87,
-                              "name": "blargh", "uid": 1000, "start-time": 102}
+                              "vm-size": 11676, "name": "blargh", 
+                              "uid": 1000, "start-time": 102,
+                              "percent-cpu": 0.0}
         expected_process_2 = {"state": "I", "gid": 1000, "pid": 672,
-                              "vm-size": 11676, "sleep-average": 87,
-                              "name": "blarpy", "uid": 1000, "start-time": 104}
+                              "vm-size": 11676, "name": "blarpy", 
+                              "uid": 1000, "start-time": 104,
+                              "percent-cpu": 0.0}
         processes = message["add-processes"]
         processes.sort(key=operator.itemgetter("pid"))
         self.assertEquals(processes, [expected_process_0, expected_process_1,
@@ -333,8 +337,9 @@ class ActiveProcessInfoTest(LandscapeTest):
         self.assertTrue("add-processes" in message)
         self.assertEquals(len(message["add-processes"]), 1)
         expected_process = {"state": "R", "gid": 0, "pid": 12753,
-                            "vm-size": 11676, "sleep-average": 87,
-                            "name": "wubble", "uid": 0, "start-time": 107}
+                            "vm-size": 11676, "name": "wubble",
+                            "uid": 0, "start-time": 107,
+                            "percent-cpu": 0.0}
         self.assertEquals(message["add-processes"], [expected_process])
 
         self.assertTrue("kill-processes" in message)
@@ -435,81 +440,6 @@ class ActiveProcessInfoTest(LandscapeTest):
         self.assertEquals(message["kill-processes"], [672])
         self.assertEquals(message["add-processes"][0]["pid"], 672)
 
-    def test_get_last_boot_time_from_computer_uptime_plugin(self):
-        """
-        The Active process info fetches the real last boot time to calculate
-        the start time of a process.
-        """
-        wtmp_filename = self.make_path("")
-        append_login_data(wtmp_filename, tty_device="~", username="reboot",
-                          entry_time_seconds=3212)
-
-        self.builder.create_data(672, self.builder.RUNNING,
-                                 uid=1000, gid=1000, started_after_uptime=10,
-                                 process_name="blarpy")
-        plugin = ActiveProcessInfo(proc_dir=self.sample_dir, jiffies=1)
-        self.monitor.add(plugin)
-
-        plugin.exchange()
-
-        messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 1)
-        message = self.mstore.get_pending_messages()[0]
-
-        boot_time = BootTimes()
-        last_boot_time = boot_time.get_last_boot_time()
-
-        self.assertTrue("kill-all-processes" in message)
-        self.assertTrue("kill-processes" not in message)
-        self.assertTrue("add-processes" in message)
-        self.assertEquals(message["add-processes"][0]["pid"], 672)
-        self.assertEquals(message["add-processes"][0]["start-time"],
-                          last_boot_time + 10)
-
-    def test_no_last_boot_time(self):
-        """
-        When no boot time is available, the plugin will not report new
-        processes.
-        """
-        wtmp_filename = self.make_path("")
-        append_login_data(wtmp_filename, tty_device="~", username="reboot",
-                          entry_time_seconds=3212)
-        self.builder.create_data(672, self.builder.RUNNING,
-                                 uid=1000, gid=1000, started_after_uptime=10,
-                                 process_name="blarpy")
-
-        ## Mock out boot times
-        boot_times_factory = self.mocker.replace(
-            "landscape.monitor.computeruptime.BootTimes", passthrough=False)
-        boot_times_factory().get_last_boot_time()
-        self.mocker.result(None)
-        self.mocker.replay()
-        plugin = ActiveProcessInfo(proc_dir=self.sample_dir, jiffies=1)
-        self.monitor.add(plugin)
-
-        # We don't expect anything except the standard "kill all known
-        # processes" in the first message.
-        plugin.exchange()
-
-        messages = self.mstore.get_pending_messages()
-        self.assertEquals(messages,
-                          [{"api": API, "kill-all-processes": True,
-                            "timestamp": 0, "type": "active-process-info"}])
-        message = self.mstore.get_pending_messages()[0]
-
-        self.assertEquals(message["type"], "active-process-info")
-        self.assertTrue("kill-all-processes" in message)
-        self.assertTrue("kill-processes" not in message)
-        self.assertTrue("add-processes" not in message)
-
-        # Without an uptime we can't generate start times for
-        # processes, so we don't report anything.
-        plugin.exchange()
-        messages = self.mstore.get_pending_messages()
-        self.assertEquals(messages,
-                          [{"api": API, "kill-all-processes": True,
-                            "timestamp": 0, "type": "active-process-info"}])
-
     def test_call_on_accepted(self):
         """
         L{MonitorPlugin}-based plugins can provide a callable to call
@@ -548,27 +478,27 @@ class ActiveProcessInfoTest(LandscapeTest):
                                {"gid": 1000,
                                 "name": u"blarpy",
                                 "pid": 672,
-                                "sleep-average": 87,
                                 "start-time": 112,
                                 "state": "I",
                                 "uid": 1000,
-                                "vm-size": 11676},
+                                "vm-size": 11676,
+                                "percent-cpu": 0.0},
                                {"gid": 0,
                                 "name": u"init",
                                 "pid": 1,
-                                "sleep-average": 87,
                                 "start-time": 103,
                                 "state": "R",
                                 "uid": 0,
-                                "vm-size": 11676},
+                                "vm-size": 11676,
+                                "percent-cpu": 0.0},
                                {"gid": 1000,
                                 "name": u"blargh",
                                 "pid": 671,
-                                "sleep-average": 87,
                                 "start-time": 111,
                                 "state": "T",
                                 "uid": 1000,
-                                "vm-size": 11676}],
+                                "vm-size": 11676,
+                                "percent-cpu": 0.0}],
                               "kill-all-processes": True,
                               "type": "active-process-info"}]
 
@@ -656,9 +586,8 @@ class PluginManagerIntegrationTest(LandscapeTest):
         self.assertTrue("kill-all-processes" in message)
         self.assertTrue("add-processes" in message)
         expected_process_0 = {"state": "R", "gid": 0, "pid": 1,
-                              "vm-size": 11676, "sleep-average": 87,
-                              "name": "NetworkManagerDaemon", "uid": 0,
-                              "start-time": 103}
+                              "vm-size": 11676, "name": "NetworkManagerDaemon",
+                              "uid": 0, "start-time": 103, "percent-cpu": 0.0}
         processes = message["add-processes"]
         self.assertEquals(processes, [expected_process_0])
 
@@ -691,8 +620,69 @@ class PluginManagerIntegrationTest(LandscapeTest):
         self.assertTrue("kill-all-processes" in message)
         self.assertTrue("add-processes" in message)
         expected_process_0 = {"state": "R", "gid": 0, "pid": 1,
-                              "vm-size": 11676, "sleep-average": 87,
-                              "name": "ProcessWithLong", "uid": 0,
-                              "start-time": 103}
+                              "vm-size": 11676, "name": "ProcessWithLong",
+                              "uid": 0, "start-time": 103, "percent-cpu": 0.0}
         processes = message["add-processes"]
         self.assertEquals(processes, [expected_process_0])
+
+    def test_generate_cpu_usage(self):
+        """
+        Test that we can calculate the CPU usage from system information and
+        the /proc/<pid>/stat file.
+        """
+        stat_data = "1 Process S 1 0 0 0 0 0 0 0 " \
+                    "0 0 10 10 0 0 0 0 0 3000 0 0 " \
+                    "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
+
+        self.builder.create_data(1, self.builder.RUNNING, uid=0, gid=0,
+                                 started_after_uptime=4900,
+                                 process_name="Process",
+                                 generate_cmd_line=False,
+                                 stat_data=stat_data)
+        plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=100,
+                                   jiffies=10)
+        self.monitor.add(plugin)
+        plugin.exchange()
+        message = self.mstore.get_pending_messages()[0]
+        self.assertEquals(message["type"], "active-process-info")
+        self.assertTrue("kill-all-processes" in message)
+        self.assertTrue("add-processes" in message)
+        processes = message["add-processes"]
+        expected_process_0 = {"state": "R", "gid": 0, "pid": 1,
+                              "vm-size": 11676, "name": u"Process",
+                              "uid": 0, "start-time": 100,
+                              "percent-cpu": 2.00}
+        processes = message["add-processes"]
+        self.assertEquals(processes, [expected_process_0])
+
+    def test_generate_cpu_usage_capped(self):
+        """
+        Test that we can calculate the CPU usage from system information and
+        the /proc/<pid>/stat file.
+        """
+        stat_data = "1 Process S 1 0 0 0 0 0 0 0 " \
+                    "0 0 400000 1000 0 0 0 0 0 50000 0 0 " \
+                    "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
+
+        self.builder.create_data(1, self.builder.RUNNING, uid=0, gid=0,
+                                 started_after_uptime=4900,
+                                 process_name="Process",
+                                 generate_cmd_line=False,
+                                 stat_data=stat_data)
+        plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=100,
+                                   jiffies=10)
+        self.monitor.add(plugin)
+        plugin.exchange()
+        message = self.mstore.get_pending_messages()[0]
+        self.assertEquals(message["type"], "active-process-info")
+        self.assertTrue("kill-all-processes" in message)
+        self.assertTrue("add-processes" in message)
+        processes = message["add-processes"]
+        expected_process_0 = {"state": "R", "gid": 0, "pid": 1,
+                              "vm-size": 11676, "name": u"Process",
+                              "uid": 0, "start-time": 100,
+                              "percent-cpu": 99.00}
+        processes = message["add-processes"]
+        self.assertEquals(processes, [expected_process_0])
+
+

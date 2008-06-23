@@ -23,9 +23,11 @@ ACTIVE_PROCESS_INFO = Message(
                                     "uid": Int(),
                                     "gid": Int(),
                                     "vm-size": Int(),
-                                    "start-time": Int()},
+                                    "start-time": Int(),
+                                    "percent-cpu": Float()},
                                    # Optional for backwards compatibility
-                                   optional=["vm-size", "sleep-average"])),
+                                   optional=["vm-size", "sleep-average",
+                                             "percent-cpu"])),
      },
     # XXX Really we don't want all three of these keys to be optional:
     # we always want _something_...
