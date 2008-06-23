@@ -4,7 +4,7 @@ from datetime import timedelta, datetime
 
 from landscape.lib.timestamp import to_timestamp
 from landscape.jiffies import detect_jiffies
-from landscape.monitor.computeruptime import BootTimes
+from landscape.monitor.computeruptime import BootTimes, get_uptime
 
 
 STATES = {"R (running)": "R",
@@ -85,18 +85,27 @@ class ProcessInformation(object):
             # which terminates before we open the stat file.
             return None
 
+        # These variable names are lifted directly from proc(5)
+        # utime: The number of jiffies that this process has been scheduled in
+        # user mode.
+        # stime: The number of jiffies that this process has been scheduled in
+        # kernel mode.
+        # cutime: The number of jiffies that this process's waited-for children
+        # have been scheduled in user mode.
+        # cstime: The number of jiffies that this process's waited-for children
+        # have been scheduled in kernel mode.
         try:
             parts = file.read().split()
-            starttime = int(parts[21])
+            start_time = int(parts[21])
             utime = int(parts[13])
             stime = int(parts[14])
             cutime = int(parts[15])
             cstime = int(parts[16])
 
             pcpu = calculate_pcpu(utime, stime, cutime, cstime, self._uptime,
-                                  starttime, self._jiffies_per_sec)
+                                  start_time, self._jiffies_per_sec)
             process_info["percent-cpu"] = pcpu
-            delta = timedelta(0, starttime // self._jiffies_per_sec)
+            delta = timedelta(0, start_time // self._jiffies_per_sec)
             if self._boot_time is None:
                 logging.warning("Skipping process (PID %s) without boot time.")
                 return None
@@ -109,35 +118,26 @@ class ProcessInformation(object):
                and "gid" in process_info and "start-time" in process_info)
         return process_info
 
-def get_uptime(uptime_file=u"/proc/uptime"):
-    """
-    This parses a file in /proc/uptime format and returns a floating point
-    version of the first value (the actual uptime).
-    """
-    data = file(uptime_file, "r").readline()
-    up, idle = data.split()
-    return float(up)
 
-
-def calculate_pcpu(utime, stime, cutime, cstime, uptime, start_time, Hertz):
+def calculate_pcpu(utime, stime, cutime, cstime, uptime, start_time, hertz):
     """
     Implement ps' algorithm to calculate the percentage cpu utilisation for a
-    process.
+    process.::
 
     unsigned long long total_time;   /* jiffies used by this process */
     unsigned pcpu = 0;               /* scaled %cpu, 99 means 99% */
     unsigned long long seconds;      /* seconds of process life */
     total_time = pp->utime + pp->stime;
     if(include_dead_children) total_time += (pp->cutime + pp->cstime);
-    seconds = seconds_since_boot - pp->start_time / Hertz;
-    if(seconds) pcpu = (total_time * 100ULL / Hertz) / seconds;
+    seconds = seconds_since_boot - pp->start_time / hertz;
+    if(seconds) pcpu = (total_time * 100ULL / hertz) / seconds;
     if (pcpu > 99U) pcpu = 99U;
     return snprintf(outbuf, COLWID, "%2u", pcpu);
     """
     pcpu = 0
     total_time = utime + stime
     total_time += cutime + cstime
-    seconds = uptime - (start_time / Hertz)
+    seconds = uptime - (start_time / hertz)
     if seconds:
-        pcpu = total_time * 100 / Hertz / seconds
+        pcpu = total_time * 100 / hertz / seconds
     return round(max(min(pcpu, 99.0), 0), 1)
