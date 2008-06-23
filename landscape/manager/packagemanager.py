@@ -54,9 +54,8 @@ class PackageManager(ManagerPlugin):
         if self.config.config:
             args.extend(["-c", self.config.config])
         if self._package_store.get_next_task("changer"):
-
-        # path is set to None so that getProcessOutput does not
-        # chdir to "." see bug #211373
+            # path is set to None so that getProcessOutput does not
+            # chdir to "." see bug #211373
             result = getProcessOutput(self._changer_command,
                                       args=args, env=os.environ,
                                       errortoo=1,

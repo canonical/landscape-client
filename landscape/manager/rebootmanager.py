@@ -17,4 +17,6 @@ class RebootManager(ManagerPlugin):
             command = "shutdown -h +5 'Landscape is shutting down the system'"
         else:
             command = "shutdown -r +5 'Landscape is restarting the system'"
-        return getProcessOutput(command, path=None)
+        # path is set to None so that getProcessOutput does not
+        # chdir to "." see bug #211373
+        return getProcessOutput(command, path=None, errortoo=1)

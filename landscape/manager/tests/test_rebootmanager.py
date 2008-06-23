@@ -22,7 +22,7 @@ class RebootManagerTest(LandscapeIsolatedTest):
         """
         run = self.mocker.replace("twisted.internet.utils.getProcessOutput")
         command = "shutdown -r +5 'Landscape is restarting the system'"
-        self.expect(run(command, path=None))
+        self.expect(run(command, path=None, errortoo=1))
         self.mocker.replay()
         self.manager.dispatch_message({"type": "reboot", "shutdown": False})
 
@@ -33,6 +33,6 @@ class RebootManagerTest(LandscapeIsolatedTest):
         """
         run = self.mocker.replace("twisted.internet.utils.getProcessOutput")
         command = "shutdown -h +5 'Landscape is shutting down the system'"
-        self.expect(run(command, path=None))
+        self.expect(run(command, path=None, errortoo=1))
         self.mocker.replay()
         self.manager.dispatch_message({"type": "reboot", "shutdown": True})
