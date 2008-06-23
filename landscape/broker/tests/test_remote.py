@@ -32,12 +32,12 @@ class RemoteBrokerTestsMixin(object):
         return done.addCallback(got_result)
 
     def test_schedule_exchange(self):
-        # Reset urgent flag.
-        self.exchanger.exchange()
-
         def scheduled_exchange(result):
             self.assertTrue(self.exchanger.is_urgent())
 
+        # Reset urgent flag.
+        self.exchanger.exchange()
+        self.assertFalse(self.exchanger.is_urgent())
         result = self.get_remote().schedule_exchange(urgent=True)
         result.addCallback(scheduled_exchange)
         return result
