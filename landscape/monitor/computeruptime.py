@@ -94,7 +94,6 @@ class BootTimes(object):
     def get_last_boot_time(self):
         if self._last_boot is None:
             from landscape.lib.process import get_uptime
-            running_time, idle_time = open("/proc/uptime").read().split()
             self._last_boot = int(time.time() - get_uptime())
         return self._last_boot
 
