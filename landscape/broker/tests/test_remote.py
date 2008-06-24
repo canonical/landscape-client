@@ -2,15 +2,12 @@ from dbus import DBusException
 
 from twisted.internet.defer import Deferred
 
-from landscape.lib.dbus_util import SecurityError
 from landscape.schema import Message, InvalidError, String, List, Dict
-from landscape.broker.remote import (RemoteBroker, FakeRemoteBroker,
+from landscape.broker.remote import (FakeRemoteBroker,
                                      DBusSignalToReactorTransmitter)
 from landscape.tests.helpers import (LandscapeIsolatedTest, LandscapeTest,
                                      ExchangeHelper, RemoteBrokerHelper)
-from landscape.broker.broker import BUS_NAME, OBJECT_PATH
 from landscape.reactor import FakeReactor
-from landscape.tests.mocker import ARGS, KWARGS
 
 
 class RemoteBrokerTestsMixin(object):

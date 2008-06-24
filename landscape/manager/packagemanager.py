@@ -1,5 +1,4 @@
 import logging
-import sys
 import os
 
 from twisted.internet.utils import getProcessOutput

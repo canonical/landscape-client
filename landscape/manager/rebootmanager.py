@@ -1,6 +1,3 @@
-import os
-
-from twisted.internet.defer import Deferred
 from twisted.internet.utils import getProcessOutput
 
 from landscape.manager.manager import ManagerPlugin

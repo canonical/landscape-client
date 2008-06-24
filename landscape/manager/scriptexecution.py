@@ -7,12 +7,9 @@ import os
 import pwd
 import tempfile
 import operator
-import traceback
 
-from twisted.internet.utils import getProcessOutput
 from twisted.internet.protocol import ProcessProtocol
 from twisted.internet.defer import Deferred
-from twisted.python.failure import Failure
 
 from landscape.manager.manager import ManagerPlugin, SUCCEEDED, FAILED
 
