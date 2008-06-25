@@ -99,10 +99,8 @@ class ProcessInformation(object):
             start_time = int(parts[21])
             utime = int(parts[13])
             stime = int(parts[14])
-            cutime = int(parts[15])
-            cstime = int(parts[16])
 
-            pcpu = calculate_pcpu(utime, stime, cutime, cstime, self._uptime,
+            pcpu = calculate_pcpu(utime, stime, self._uptime,
                                   start_time, self._jiffies_per_sec)
             process_info["percent-cpu"] = pcpu
             delta = timedelta(0, start_time // self._jiffies_per_sec)
@@ -119,7 +117,7 @@ class ProcessInformation(object):
         return process_info
 
 
-def calculate_pcpu(utime, stime, cutime, cstime, uptime, start_time, hertz):
+def calculate_pcpu(utime, stime, uptime, start_time, hertz):
     """
     Implement ps' algorithm to calculate the percentage cpu utilisation for a
     process.::
@@ -136,7 +134,6 @@ def calculate_pcpu(utime, stime, cutime, cstime, uptime, start_time, hertz):
     """
     pcpu = 0
     total_time = utime + stime
-    total_time += cutime + cstime
     seconds = uptime - (start_time / hertz)
     if seconds:
         pcpu = total_time * 100 / hertz / seconds
