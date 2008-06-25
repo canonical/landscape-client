@@ -31,17 +31,19 @@ class SampleDataBuilder(object):
         self._sample_dir = sample_dir
 
     def create_data(self, process_id, state, uid, gid,
-                    started_after_uptime, process_name=None,
+                    started_after_boot=0, process_name=None,
                     generate_cmd_line=True, stat_data=None):
+
         """Creates sample data for a process.
 
-        @param started_after_uptime: The amount of time, in jiffies,
+        @param started_after_boot: The amount of time, in jiffies,
         between the system uptime and start of the process.
         @param process_name: Used to generate the process name that appears in
         /proc/%(pid)s/status
         @param generate_cmd_line: If true, place the process_name in
         /proc/%(pid)s/cmdline, otherwise leave it empty (this simulates a
         kernel process)
+        @param stat_data: Array of items to write to the /proc/<pid>/stat file.
         """
         sample_data = """
 Name:   %(process_name)s
@@ -89,7 +91,7 @@ CapEff: 0000000000000000
         if stat_data is None:
             stat_data = """\
 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 %d\
-""" % (started_after_uptime,)
+""" % (started_after_boot,)
         filename = os.path.join(process_dir, "stat")
 
         file = open(filename, "w+")
@@ -149,7 +151,7 @@ class ActiveProcessInfoTest(LandscapeTest):
     def test_only_first_run_includes_kill_message(self):
         """Test ensures that only the first run queues a kill message."""
         self.builder.create_data(672, self.builder.TRACING_STOP,
-                                 uid=1000, gid=1000, started_after_uptime=10,
+                                 uid=1000, gid=1000, started_after_boot=10,
                                  process_name="blarpy")
 
         plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=10)
@@ -157,7 +159,7 @@ class ActiveProcessInfoTest(LandscapeTest):
         plugin.exchange()
 
         self.builder.create_data(671, self.builder.STOPPED, uid=1000,
-                                 gid=1000, started_after_uptime=15,
+                                 gid=1000, started_after_boot=15,
                                  process_name="blargh")
 
         plugin.exchange()
@@ -206,16 +208,16 @@ class ActiveProcessInfoTest(LandscapeTest):
     def test_read_sample_data(self):
         """Test reading a sample set of process data."""
         self.builder.create_data(1, self.builder.RUNNING, uid=0, gid=0,
-                                 started_after_uptime=30, process_name="init")
+                                 started_after_boot=1030, process_name="init")
         self.builder.create_data(671, self.builder.STOPPED, uid=1000,
-                                 gid=1000, started_after_uptime=110,
+                                 gid=1000, started_after_boot=1110,
                                  process_name="blargh")
         self.builder.create_data(672, self.builder.TRACING_STOP,
-                                 uid=1000, gid=1000, started_after_uptime=120,
+                                 uid=1000, gid=1000, started_after_boot=1120,
                                  process_name="blarpy")
 
         plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=100,
-                                   jiffies=10)
+                                   jiffies=10, boot_time=0)
         self.monitor.add(plugin)
         plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
@@ -239,14 +241,14 @@ class ActiveProcessInfoTest(LandscapeTest):
     def test_skip_non_numeric_subdirs(self):
         """Test ensures the plugin doesn't touch non-process dirs in /proc."""
         self.builder.create_data(1, self.builder.RUNNING, uid=0, gid=0,
-                                 started_after_uptime=120, process_name="init")
+                                 started_after_boot=1120, process_name="init")
 
         directory = os.path.join(self.sample_dir, "acpi")
         os.mkdir(directory)
         self.assertTrue(os.path.isdir(directory))
 
         plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=100,
-                                   jiffies=10)
+                                   jiffies=10, boot_time=0)
         self.monitor.add(plugin)
         plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
@@ -262,10 +264,10 @@ class ActiveProcessInfoTest(LandscapeTest):
     def test_plugin_manager(self):
         """Test plugin manager integration."""
         self.builder.create_data(1, self.builder.RUNNING, uid=0, gid=0,
-                                 started_after_uptime=100, process_name="init")
+                                 started_after_boot=1100, process_name="init")
 
         plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=100,
-                                   jiffies=10)
+                                   jiffies=10, boot_time=0)
         self.monitor.add(plugin)
         self.monitor.exchange()
 
@@ -282,23 +284,23 @@ class ActiveProcessInfoTest(LandscapeTest):
         """Test that the plugin handles process changes in a diff-like way."""
         # This test is *too big*
         self.builder.create_data(1, self.builder.RUNNING, uid=0, gid=0,
-                                 started_after_uptime=10, process_name="init")
+                                 started_after_boot=1010, process_name="init")
         self.builder.create_data(671, self.builder.STOPPED, uid=1000,
-                                 gid=1000, started_after_uptime=20,
+                                 gid=1000, started_after_boot=1020,
                                  process_name="blargh")
         self.builder.create_data(672, self.builder.TRACING_STOP,
-                                 uid=1000, gid=1000, started_after_uptime=40,
+                                 uid=1000, gid=1000, started_after_boot=1040,
                                  process_name="blarpy")
 
         plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=100,
-                                   jiffies=10)
+                                   jiffies=10, boot_time=0)
         self.monitor.add(plugin)
         plugin.exchange()
 
         # Terminate a process and start another.
         self.builder.remove_data(671)
         self.builder.create_data(12753, self.builder.RUNNING,
-                                 uid=0, gid=0, started_after_uptime=70,
+                                 uid=0, gid=0, started_after_boot=1070,
                                  process_name="wubble")
 
         plugin.exchange()
@@ -349,7 +351,7 @@ class ActiveProcessInfoTest(LandscapeTest):
     def test_only_queue_message_when_process_data_is_available(self):
         """Test ensures that messages are only queued when data changes."""
         self.builder.create_data(672, self.builder.TRACING_STOP,
-                                 uid=1000, gid=1000, started_after_uptime=10,
+                                 uid=1000, gid=1000, started_after_boot=10,
                                  process_name="blarpy")
 
         plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=10)
@@ -364,25 +366,25 @@ class ActiveProcessInfoTest(LandscapeTest):
     def test_only_report_active_processes(self):
         """Test ensures the plugin only reports active processes."""
         self.builder.create_data(672, self.builder.DEAD,
-                                 uid=1000, gid=1000, started_after_uptime=10,
+                                 uid=1000, gid=1000, started_after_boot=10,
                                  process_name="blarpy")
         self.builder.create_data(673, self.builder.ZOMBIE,
-                                 uid=1000, gid=1000, started_after_uptime=12,
+                                 uid=1000, gid=1000, started_after_boot=12,
                                  process_name="blarpitty")
         self.builder.create_data(674, self.builder.RUNNING,
-                                 uid=1000, gid=1000, started_after_uptime=13,
+                                 uid=1000, gid=1000, started_after_boot=13,
                                  process_name="blarpie")
         self.builder.create_data(675, self.builder.STOPPED,
-                                 uid=1000, gid=1000, started_after_uptime=14,
+                                 uid=1000, gid=1000, started_after_boot=14,
                                  process_name="blarping")
         self.builder.create_data(676, self.builder.TRACING_STOP,
-                                 uid=1000, gid=1000, started_after_uptime=15,
+                                 uid=1000, gid=1000, started_after_boot=15,
                                  process_name="floerp")
         self.builder.create_data(677, self.builder.DISK_SLEEP,
-                                 uid=1000, gid=1000, started_after_uptime=18,
+                                 uid=1000, gid=1000, started_after_boot=18,
                                  process_name="floerpidity")
         self.builder.create_data(678, self.builder.SLEEPING,
-                                 uid=1000, gid=1000, started_after_uptime=21,
+                                 uid=1000, gid=1000, started_after_boot=21,
                                  process_name="floerpiditting")
 
         plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=10)
@@ -404,7 +406,7 @@ class ActiveProcessInfoTest(LandscapeTest):
     def test_report_interesting_state_changes(self):
         """Test ensures that interesting state changes are reported."""
         self.builder.create_data(672, self.builder.RUNNING,
-                                 uid=1000, gid=1000, started_after_uptime=10,
+                                 uid=1000, gid=1000, started_after_boot=10,
                                  process_name="blarpy")
 
         # Report a running process.
@@ -425,7 +427,7 @@ class ActiveProcessInfoTest(LandscapeTest):
         # Convert the process to a zombie and ensure it gets reported.
         self.builder.remove_data(672)
         self.builder.create_data(672, self.builder.ZOMBIE,
-                                 uid=1000, gid=1000, started_after_uptime=10,
+                                 uid=1000, gid=1000, started_after_boot=10,
                                  process_name="blarpy")
 
         plugin.exchange()
@@ -459,16 +461,16 @@ class ActiveProcessInfoTest(LandscapeTest):
         held in memory by the activeprocess monitor.
         """
         self.builder.create_data(1, self.builder.RUNNING, uid=0, gid=0,
-                                 started_after_uptime=30, process_name="init")
+                                 started_after_boot=1030, process_name="init")
         self.builder.create_data(671, self.builder.STOPPED, uid=1000,
-                                 gid=1000, started_after_uptime=110,
+                                 gid=1000, started_after_boot=1110,
                                  process_name="blargh")
         self.builder.create_data(672, self.builder.TRACING_STOP,
-                                 uid=1000, gid=1000, started_after_uptime=120,
+                                 uid=1000, gid=1000, started_after_boot=1120,
                                  process_name="blarpy")
 
         plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=100,
-                                   jiffies=10)
+                                   jiffies=10, boot_time=0)
         self.monitor.add(plugin)
 
         plugin.exchange()
@@ -529,7 +531,7 @@ class ActiveProcessInfoTest(LandscapeTest):
         self.log_helper.ignore_errors(MyException)
 
         self.builder.create_data(672, self.builder.RUNNING,
-                                 uid=1000, gid=1000, started_after_uptime=10,
+                                 uid=1000, gid=1000, started_after_boot=10,
                                  process_name="python")
         plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=10)
         self.monitor.add(plugin)
@@ -574,11 +576,11 @@ class PluginManagerIntegrationTest(LandscapeTest):
     def test_read_long_process_name(self):
         """Test reading a process with a long name."""
         self.builder.create_data(1, self.builder.RUNNING, uid=0, gid=0,
-                                 started_after_uptime=30,
+                                 started_after_boot=1030,
                                  process_name="NetworkManagerDaemon")
 
-        plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=100,
-                                   jiffies=10)
+        plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=2000,
+                                   jiffies=10, boot_time=0)
         self.monitor.add(plugin)
         plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
@@ -594,7 +596,7 @@ class PluginManagerIntegrationTest(LandscapeTest):
     def test_strip_command_line_name_whitespace(self):
         """Whitespace should be stripped from command-line names."""
         self.builder.create_data(1, self.builder.RUNNING, uid=0, gid=0,
-                                 started_after_uptime=30,
+                                 started_after_boot=30,
                                  process_name=" postgres: writer process     ")
         plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=100,
                                    jiffies=10)
@@ -607,12 +609,12 @@ class PluginManagerIntegrationTest(LandscapeTest):
     def test_read_process_with_no_cmdline(self):
         """Test reading a process without a cmdline file."""
         self.builder.create_data(1, self.builder.RUNNING, uid=0, gid=0,
-                                 started_after_uptime=30,
+                                 started_after_boot=1030,
                                  process_name="ProcessWithLongName",
                                  generate_cmd_line=False)
 
         plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=100,
-                                   jiffies=10)
+                                   jiffies=10, boot_time=0)
         self.monitor.add(plugin)
         plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
@@ -631,16 +633,16 @@ class PluginManagerIntegrationTest(LandscapeTest):
         the /proc/<pid>/stat file.
         """
         stat_data = "1 Process S 1 0 0 0 0 0 0 0 " \
-                    "0 0 10 10 0 0 0 0 0 3000 0 0 " \
+                    "0 0 20 20 0 0 0 0 0 0 3000 0 " \
                     "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
 
         self.builder.create_data(1, self.builder.RUNNING, uid=0, gid=0,
-                                 started_after_uptime=4900,
+                                 started_after_boot=None,
                                  process_name="Process",
                                  generate_cmd_line=False,
                                  stat_data=stat_data)
-        plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=100,
-                                   jiffies=10)
+        plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=400,
+                                   jiffies=10, boot_time=0)
         self.monitor.add(plugin)
         plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
@@ -650,27 +652,28 @@ class PluginManagerIntegrationTest(LandscapeTest):
         processes = message["add-processes"]
         expected_process_0 = {"state": "R", "gid": 0, "pid": 1,
                               "vm-size": 11676, "name": u"Process",
-                              "uid": 0, "start-time": 100,
-                              "percent-cpu": 2.00}
+                              "uid": 0, "start-time": 300,
+                              "percent-cpu": 4.00}
         processes = message["add-processes"]
         self.assertEquals(processes, [expected_process_0])
 
     def test_generate_cpu_usage_capped(self):
         """
         Test that we can calculate the CPU usage from system information and
-        the /proc/<pid>/stat file.
+        the /proc/<pid>/stat file, the CPU usage should be capped at 99%.
         """
+
         stat_data = "1 Process S 1 0 0 0 0 0 0 0 " \
-                    "0 0 400000 1000 0 0 0 0 0 50000 0 0 " \
+                    "0 0 500 500 0 0 0 0 0 0 3000 0 " \
                     "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
 
         self.builder.create_data(1, self.builder.RUNNING, uid=0, gid=0,
-                                 started_after_uptime=4900,
+                                 started_after_boot=None,
                                  process_name="Process",
                                  generate_cmd_line=False,
                                  stat_data=stat_data)
-        plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=100,
-                                   jiffies=10)
+        plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=400,
+                                   jiffies=10, boot_time=0)
         self.monitor.add(plugin)
         plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
@@ -680,7 +683,7 @@ class PluginManagerIntegrationTest(LandscapeTest):
         processes = message["add-processes"]
         expected_process_0 = {"state": "R", "gid": 0, "pid": 1,
                               "vm-size": 11676, "name": u"Process",
-                              "uid": 0, "start-time": 100,
+                              "uid": 0, "start-time": 300,
                               "percent-cpu": 99.00}
         processes = message["add-processes"]
         self.assertEquals(processes, [expected_process_0])
