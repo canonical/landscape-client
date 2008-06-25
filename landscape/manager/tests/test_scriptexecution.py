@@ -387,7 +387,7 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
                   "operation-id": 123,
                   "status": FAILED,
                   "result-text": u"ONOEZ",
-                  "result-code": 101}])
+                  "result-code": 102}])
         result.addCallback(got_result)
         return result
 

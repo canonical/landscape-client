@@ -19,6 +19,7 @@ from landscape.manager.manager import ManagerPlugin, SUCCEEDED, FAILED
 
 ALL_USERS = object()
 
+TIMEOUT_RESULT = 102
 
 class ProcessTimeLimitReachedError(Exception):
     """
@@ -91,7 +92,7 @@ class ScriptExecution(ManagerPlugin):
 
     def _respond_timeout(self, failure, opid):
         failure.trap(ProcessTimeLimitReachedError)
-        return self._respond(FAILED, failure.value.data, opid, 101)
+        return self._respond(FAILED, failure.value.data, opid, 102)
 
     def run_script(self, shell, code, user=None, time_limit=None):
         """
