@@ -20,6 +20,9 @@ class ProcessInformation(object):
 
     def __init__(self, proc_dir="/proc", jiffies=None, boot_time=None,
                  uptime=None):
+        """
+        The uptime parameter here is only used for faking uptime in tests.
+        """
         if boot_time is None:
             boot_time = BootTimes().get_last_boot_time()
         if boot_time is not None:
