@@ -10,8 +10,8 @@ class ActiveProcessInfo(DataWatcher):
 
     message_type = "active-process-info"
 
-    def __init__(self, proc_dir="/proc", uptime=None, jiffies=None,
-                 popen=subprocess.Popen):
+    def __init__(self, proc_dir="/proc", boot_time=None, jiffies=None,
+                 uptime=None, popen=subprocess.Popen):
         super(ActiveProcessInfo, self).__init__()
         self._proc_dir = proc_dir
         self._persist_processes = None
@@ -23,7 +23,8 @@ class ActiveProcessInfo(DataWatcher):
         self._first_run = True
         self._process_info = ProcessInformation(proc_dir=proc_dir,
                                                 jiffies=jiffies,
-                                                boot_time=uptime)
+                                                boot_time=boot_time,
+                                                uptime=uptime)
 
     def register(self, manager):
         super(ActiveProcessInfo, self).register(manager)

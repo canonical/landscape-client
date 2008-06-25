@@ -18,8 +18,8 @@ STATES = {"R (running)": "R",
 
 class ProcessInformation(object):
 
-    def __init__(self, proc_dir="/proc", jiffies=None, boot_time=None):
-        self._uptime = boot_time or get_uptime()
+    def __init__(self, proc_dir="/proc", jiffies=None, boot_time=None,
+                 uptime=None):
         if boot_time is None:
             boot_time = BootTimes().get_last_boot_time()
         if boot_time is not None:
@@ -27,6 +27,7 @@ class ProcessInformation(object):
         self._boot_time = boot_time
         self._proc_dir = proc_dir
         self._jiffies_per_sec = jiffies or detect_jiffies()
+        self._uptime = uptime
 
     def get_process_info(self, process_id):
         cmd_line_name = ""
@@ -99,8 +100,8 @@ class ProcessInformation(object):
             start_time = int(parts[21])
             utime = int(parts[13])
             stime = int(parts[14])
-
-            pcpu = calculate_pcpu(utime, stime, self._uptime,
+            uptime = self._uptime or get_uptime()
+            pcpu = calculate_pcpu(utime, stime, uptime,
                                   start_time, self._jiffies_per_sec)
             process_info["percent-cpu"] = pcpu
             delta = timedelta(0, start_time // self._jiffies_per_sec)
