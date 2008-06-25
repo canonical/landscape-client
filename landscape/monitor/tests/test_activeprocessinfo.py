@@ -208,16 +208,16 @@ class ActiveProcessInfoTest(LandscapeTest):
     def test_read_sample_data(self):
         """Test reading a sample set of process data."""
         self.builder.create_data(1, self.builder.RUNNING, uid=0, gid=0,
-                                 started_after_boot=30, process_name="init")
+                                 started_after_boot=1030, process_name="init")
         self.builder.create_data(671, self.builder.STOPPED, uid=1000,
-                                 gid=1000, started_after_boot=110,
+                                 gid=1000, started_after_boot=1110,
                                  process_name="blargh")
         self.builder.create_data(672, self.builder.TRACING_STOP,
-                                 uid=1000, gid=1000, started_after_boot=120,
+                                 uid=1000, gid=1000, started_after_boot=1120,
                                  process_name="blarpy")
 
         plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=100,
-                                   jiffies=10)
+                                   jiffies=10, boot_time=0)
         self.monitor.add(plugin)
         plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
@@ -241,14 +241,14 @@ class ActiveProcessInfoTest(LandscapeTest):
     def test_skip_non_numeric_subdirs(self):
         """Test ensures the plugin doesn't touch non-process dirs in /proc."""
         self.builder.create_data(1, self.builder.RUNNING, uid=0, gid=0,
-                                 started_after_boot=120, process_name="init")
+                                 started_after_boot=1120, process_name="init")
 
         directory = os.path.join(self.sample_dir, "acpi")
         os.mkdir(directory)
         self.assertTrue(os.path.isdir(directory))
 
         plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=100,
-                                   jiffies=10)
+                                   jiffies=10, boot_time=0)
         self.monitor.add(plugin)
         plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
@@ -264,10 +264,10 @@ class ActiveProcessInfoTest(LandscapeTest):
     def test_plugin_manager(self):
         """Test plugin manager integration."""
         self.builder.create_data(1, self.builder.RUNNING, uid=0, gid=0,
-                                 started_after_boot=100, process_name="init")
+                                 started_after_boot=1100, process_name="init")
 
         plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=100,
-                                   jiffies=10)
+                                   jiffies=10, boot_time=0)
         self.monitor.add(plugin)
         self.monitor.exchange()
 
@@ -284,23 +284,23 @@ class ActiveProcessInfoTest(LandscapeTest):
         """Test that the plugin handles process changes in a diff-like way."""
         # This test is *too big*
         self.builder.create_data(1, self.builder.RUNNING, uid=0, gid=0,
-                                 started_after_boot=10, process_name="init")
+                                 started_after_boot=1010, process_name="init")
         self.builder.create_data(671, self.builder.STOPPED, uid=1000,
-                                 gid=1000, started_after_boot=20,
+                                 gid=1000, started_after_boot=1020,
                                  process_name="blargh")
         self.builder.create_data(672, self.builder.TRACING_STOP,
-                                 uid=1000, gid=1000, started_after_boot=40,
+                                 uid=1000, gid=1000, started_after_boot=1040,
                                  process_name="blarpy")
 
         plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=100,
-                                   jiffies=10)
+                                   jiffies=10, boot_time=0)
         self.monitor.add(plugin)
         plugin.exchange()
 
         # Terminate a process and start another.
         self.builder.remove_data(671)
         self.builder.create_data(12753, self.builder.RUNNING,
-                                 uid=0, gid=0, started_after_boot=70,
+                                 uid=0, gid=0, started_after_boot=1070,
                                  process_name="wubble")
 
         plugin.exchange()
@@ -461,16 +461,16 @@ class ActiveProcessInfoTest(LandscapeTest):
         held in memory by the activeprocess monitor.
         """
         self.builder.create_data(1, self.builder.RUNNING, uid=0, gid=0,
-                                 started_after_boot=30, process_name="init")
+                                 started_after_boot=1030, process_name="init")
         self.builder.create_data(671, self.builder.STOPPED, uid=1000,
-                                 gid=1000, started_after_boot=110,
+                                 gid=1000, started_after_boot=1110,
                                  process_name="blargh")
         self.builder.create_data(672, self.builder.TRACING_STOP,
-                                 uid=1000, gid=1000, started_after_boot=120,
+                                 uid=1000, gid=1000, started_after_boot=1120,
                                  process_name="blarpy")
 
         plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=100,
-                                   jiffies=10)
+                                   jiffies=10, boot_time=0)
         self.monitor.add(plugin)
 
         plugin.exchange()
