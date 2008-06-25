@@ -53,12 +53,14 @@ class ScriptExecution(ManagerPlugin):
         super(ScriptExecution, self).register(registry)
         registry.register_message("execute-script", self._handle_execute_script)
 
-    def _respond(self, status, data, opid):
-        return self.registry.broker.send_message(
-            {"type": "operation-result",
-             "status": status,
-             "result-text": data,
-             "operation-id": opid}, True)
+    def _respond(self, status, data, opid, result_code=None):
+        message =  {"type": "operation-result",
+                    "status": status,
+                    "result-text": data,
+                    "operation-id": opid}
+        if result_code:
+            message["result-code"] = result_code
+        return self.registry.broker.send_message(message, True)
 
     def _handle_execute_script(self, message):
         opid = message["operation-id"]
@@ -89,7 +91,7 @@ class ScriptExecution(ManagerPlugin):
 
     def _respond_timeout(self, failure, opid):
         failure.trap(ProcessTimeLimitReachedError)
-        return self._respond(FAILED, failure.value.data, opid)
+        return self._respond(FAILED, failure.value.data, opid, 101)
 
     def run_script(self, shell, code, user=None, time_limit=None):
         """
