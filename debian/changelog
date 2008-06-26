@@ -1,3 +1,19 @@
+landscape-client (1.0.12-feisty1-landscape1) feisty; urgency=low
+
+  * the sleep average value of a process is no longer provided by recent
+    kernels. The client now computes and sends the CPU usage instead.
+  * initial directory for script execution is now the target user's home
+    directory and, if that is unavailable, /. Previously it was /root.
+  * new user creation was ignoring some extra fields such as Location and
+    phone numbers
+  * the machine uptime was incorrectly reported after a logrotate run and if
+    there was no reboot afterwards. This affected the process listing page in
+    the web interface, where processes would show up as having been started
+    around 1970.
+
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 26 Jun 2008 16:17:51 +0000
+
 landscape-client (1.0.12-edgy1-landscape1) edgy; urgency=low
 
   * the sleep average value of a process is no longer provided by recent
