@@ -120,14 +120,6 @@ Please contact the Landscape team for more information.
         return self.exchange.send(message, urgent=urgent)
 
     @method(IFACE_NAME)
-    def schedule_exchange(self, urgent=False):
-        """Schedule an exchange.
-
-        @param urgent: An urgent exchange is scheduled if this flag is C{True}.
-        """
-        return self.exchange.schedule_exchange(urgent=urgent)
-
-    @method(IFACE_NAME)
     def is_message_pending(self, message_id):
         return self.message_store.is_pending(message_id)
 

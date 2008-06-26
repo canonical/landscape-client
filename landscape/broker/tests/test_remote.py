@@ -28,17 +28,6 @@ class RemoteBrokerTestsMixin(object):
             self.assertFalse(self.exchanger.is_urgent())
         return done.addCallback(got_result)
 
-    def test_schedule_exchange(self):
-        def scheduled_exchange(result):
-            self.assertTrue(self.exchanger.is_urgent())
-
-        # Reset urgent flag.
-        self.exchanger.exchange()
-        self.assertFalse(self.exchanger.is_urgent())
-        result = self.get_remote().schedule_exchange(urgent=True)
-        result.addCallback(scheduled_exchange)
-        return result
-
     def test_send_message_containing_string_remains_as_string(self):
         """
         Strings in messages should not be converted to unicode.
