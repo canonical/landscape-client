@@ -8,7 +8,7 @@ from landscape.manager.manager import ManagerPluginRegistry, ManagerDBusObject
 
 
 ALL_PLUGINS = ["ProcessKiller", "PackageManager", "UserManager",
-               "RebootManager"]
+               "ShutdownManager"]
 
 
 class ManagerConfiguration(Configuration):
