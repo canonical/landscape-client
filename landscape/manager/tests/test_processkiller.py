@@ -44,7 +44,7 @@ class ProcessKillerTests(LandscapeTest):
     def _test_signal_name(self, signame, signum):
         self.manager.add(self.signaller)
         self.builder.create_data(100, self.builder.RUNNING,
-                                 uid=1000, gid=1000, started_after_uptime=10,
+                                 uid=1000, gid=1000, started_after_boot=10,
                                  process_name="ooga")
 
         kill = self.mocker.replace("os.kill", passthrough=False)
@@ -148,7 +148,7 @@ class ProcessKillerTests(LandscapeTest):
         self.manager.add(self.signaller)
         pid = get_missing_pid()
         self.builder.create_data(pid, self.builder.RUNNING,
-                                 uid=1000, gid=1000, started_after_uptime=10,
+                                 uid=1000, gid=1000, started_after_boot=10,
                                  process_name="hostname")
 
         self.manager.dispatch_message(
@@ -182,7 +182,7 @@ class ProcessKillerTests(LandscapeTest):
         self.log_helper.ignore_errors(SignalProcessError)
         pid = get_missing_pid()
         self.builder.create_data(pid, self.builder.RUNNING,
-                                 uid=1000, gid=1000, started_after_uptime=10,
+                                 uid=1000, gid=1000, started_after_boot=10,
                                  process_name="hostname")
         self.assertRaises(SignalProcessError,
                           self.signaller.signal_process, pid,

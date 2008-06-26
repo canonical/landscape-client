@@ -2,9 +2,9 @@ from dbus import DBusException
 
 from twisted.internet.defer import Deferred
 
+from landscape.lib.dbus_util import SecurityError
 from landscape.schema import Message, InvalidError, String, List, Dict
 from landscape.broker.remote import (RemoteBroker, FakeRemoteBroker,
-                                     SecurityError,
                                      DBusSignalToReactorTransmitter)
 from landscape.tests.helpers import (LandscapeIsolatedTest, LandscapeTest,
                                      ExchangeHelper, RemoteBrokerHelper)
@@ -130,58 +130,6 @@ class RemoteBrokerTests(RemoteBrokerTestsMixin, LandscapeIsolatedTest):
             self.assertTrue("AssertionError" in str(exception))
         result.addCallback(got_result)
         return result
-
-
-class SimpleRemoteBrokerTest(LandscapeTest):
-    """Tests for L{RemoteBroker} which use a mock bus."""
-
-    def setUp(self):
-        super(SimpleRemoteBrokerTest, self).setUp()
-        self.bus = self.mocker.mock()
-        self.service = self.mocker.mock()
-        self.bus.get_object(BUS_NAME, OBJECT_PATH, introspect=False)
-        self.mocker.result(self.service)
-        self.mocker.count(0, None)
-        self.remote = RemoteBroker(self.bus)
-
-    def _test_security_error(self, error_message):
-        def raise_dbus_error(*args, **kw):
-            kw["error_handler"](DBusException(error_message))
-
-        self.service.send_message(ARGS, KWARGS)
-        self.mocker.call(raise_dbus_error)
-        self.mocker.replay()
-
-        d = self.remote.send_message({"type": "text-message",
-                                      "message": "hello"})
-        self.assertFailure(d, SecurityError)
-        return d
-
-    def test_feisty_security_error(self):
-        """
-        When an exception that looks like a security error from DBUS
-        0.80.x is raised, this should be translated to a
-        L{SecurityError}.
-        """
-        return self._test_security_error(
-            "A security policy in place prevents this sender from sending "
-            "this message to this recipient, see message bus configuration "
-            "file (rejected message had interface "
-            '"com.canonical.landscape" member "send_message" error name '
-            '"(unset)" destination ":1.107")')
-
-    def test_gutsy_security_error(self):
-        """
-        When an exception that looks like a security error on DBUS 0.82.x
-        is raised, this should be translated to a L{SecurityError}.
-        """
-        return self._test_security_error(
-            "org.freedesktop.DBus.Error.AccessDenied: A security "
-            "policy in place prevents this sender from sending this "
-            "message to this recipient, see message bus configuration "
-            "file (rejected message had interface "
-            '"com.canonical.landscape" member "send_message" error '
-            'name "(unset)" destination ":1.15")')
 
 
 def assertTransmitterActive(test_case, deployment_broker, target_reactor):

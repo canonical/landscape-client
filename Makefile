@@ -11,6 +11,7 @@ checkcertificate:
 clean:
 	-find landscape -name \*.pyc -exec rm {} \;
 	-rm tags
+	-rm _trial_temp -rf
 	-rm docs/api -rf;
 	-rm man/\*.1 -rf
 

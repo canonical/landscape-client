@@ -19,14 +19,15 @@ class UserManagement(object):
         self._provider = provider or UserProvider()
 
     def add_user(self, username, name, password, require_password_reset,
-                 primary_group_name):
+                 primary_group_name, location, work_phone, home_phone):
         """Add C{username} to the computer.
 
         @raises UserManagementError: Raised when C{adduser} fails.
         @raises UserManagementError: Raised when C{passwd} fails.
         """
         logging.info("Adding user %s.", username)
-        gecos = "%s,,,," % name
+        gecos = "%s,%s,%s,%s" % (name, location or "", work_phone or "",
+                                 home_phone or "")
         command = ["adduser", username, "--disabled-password", "--gecos",
                    gecos]
         if primary_group_name:
@@ -84,7 +85,7 @@ class UserManagement(object):
         command = ["chfn"]
         for option, value in [("-r", location), ("-f", name),
                               ("-w", work_number), ("-h", home_number)]:
-            if value:
+            if value is not None:
                 command += [option, value]
 
         if len(command) > 1:
@@ -146,7 +147,8 @@ class UserManagement(object):
     def set_group_details(self, groupname, new_name):
         """Update details for the group matching C{gid}."""
         gid = self._provider.get_gid(groupname)
-        logging.info("Renaming group %s (GID %d) to %s.", groupname, gid, new_name)
+        logging.info("Renaming group %s (GID %d) to %s.",
+                     groupname, gid, new_name)
         command = ["groupmod", "-n", new_name, groupname]
         result, output = self.call_popen(command)
         if result != 0:
