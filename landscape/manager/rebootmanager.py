@@ -11,9 +11,9 @@ class RebootManager(ManagerPlugin):
 
     def _reboot(self, message):
         if message["shutdown"]:
-            command = "shutdown -h +5 'Landscape is shutting down the system'"
+            args = ["-h", "+5", "'Landscape is shutting down the system'"]
         else:
-            command = "shutdown -r +5 'Landscape is restarting the system'"
+            args = ["-r", "+5", "'Landscape is restarting down the system'"]
         # path is set to None so that getProcessOutput does not
         # chdir to "." see bug #211373
-        return getProcessOutput(command, path=None, errortoo=1)
+        return getProcessOutput("shutdown", args=args, path=None, errortoo=1)

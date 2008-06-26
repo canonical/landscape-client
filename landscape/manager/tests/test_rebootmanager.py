@@ -22,8 +22,8 @@ class RebootManagerTest(LandscapeIsolatedTest):
         system 5 minutes from now.
         """
         run = self.mocker.replace("twisted.internet.utils.getProcessOutput")
-        command = "shutdown -r +5 'Landscape is restarting the system'"
-        self.expect(run(command, path=None, errortoo=1))
+        args = ["-r", "+5", "'Landscape is restarting down the system'"]
+        self.expect(run("shutdown", args=args, path=None, errortoo=1))
         self.mocker.replay()
         self.manager.dispatch_message({"type": "reboot", "shutdown": False})
 
@@ -34,7 +34,7 @@ class RebootManagerTest(LandscapeIsolatedTest):
         system 5 minutes from now.
         """
         run = self.mocker.replace("twisted.internet.utils.getProcessOutput")
-        command = "shutdown -h +5 'Landscape is shutting down the system'"
-        self.expect(run(command, path=None, errortoo=1))
+        args = ["-h", "+5", "'Landscape is shutting down the system'"]
+        self.expect(run("shutdown", args=args, path=None, errortoo=1))
         self.mocker.replay()
         self.manager.dispatch_message({"type": "reboot", "shutdown": True})
