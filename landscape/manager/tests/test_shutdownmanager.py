@@ -1,3 +1,5 @@
+from twisted.internet.defer import Deferred
+
 from landscape.manager.manager import ManagerPluginRegistry
 from landscape.manager.shutdownmanager import ShutdownManager
 from landscape.tests.helpers import LandscapeIsolatedTest, RemoteBrokerHelper
@@ -23,9 +25,13 @@ class ShutdownManagerTest(LandscapeIsolatedTest):
         """
         run = self.mocker.replace("twisted.internet.utils.getProcessOutput")
         args = ["-r", "+5", "'Landscape is restarting down the system'"]
-        self.expect(run("shutdown", args=args, path=None, errortoo=1))
+        getProcessOutput = self.expect(run("shutdown", args=args, path=None,
+                                           errortoo=1))
+        getProcessOutput.result(Deferred())
         self.mocker.replay()
-        self.manager.dispatch_message({"type": "shutdown", "reboot": True})
+        self.manager.dispatch_message({"type": "shutdown",
+                                       "operation-id": 100,
+                                       "reboot": True})
 
     def test_shutdown(self):
         """
@@ -35,6 +41,10 @@ class ShutdownManagerTest(LandscapeIsolatedTest):
         """
         run = self.mocker.replace("twisted.internet.utils.getProcessOutput")
         args = ["-h", "+5", "'Landscape is shutting down the system'"]
-        self.expect(run("shutdown", args=args, path=None, errortoo=1))
+        getProcessOutput = self.expect(run("shutdown", args=args, path=None,
+                                           errortoo=1))
+        getProcessOutput.result(Deferred())
         self.mocker.replay()
-        self.manager.dispatch_message({"type": "shutdown", "reboot": False})
+        self.manager.dispatch_message({"type": "shutdown",
+                                       "operation-id": 100,
+                                       "reboot": False})
