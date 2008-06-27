@@ -1,6 +1,6 @@
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import succeed, fail
 
-from landscape.manager.manager import ManagerPluginRegistry
+from landscape.manager.manager import ManagerPluginRegistry, SUCCEEDED
 from landscape.manager.shutdownmanager import ShutdownManager
 from landscape.tests.helpers import LandscapeIsolatedTest, RemoteBrokerHelper
 
@@ -11,7 +11,8 @@ class ShutdownManagerTest(LandscapeIsolatedTest):
 
     def setUp(self):
         super(ShutdownManagerTest, self).setUp()
-        self.broker_service.message_store.set_accepted_types(["shutdown"])
+        self.broker_service.message_store.set_accepted_types(
+            ["shutdown", "operation-result"])
         self.manager = ManagerPluginRegistry(
             self.broker_service.reactor, self.remote,
             self.broker_service.config, self.broker_service.bus)
@@ -27,11 +28,23 @@ class ShutdownManagerTest(LandscapeIsolatedTest):
         args = ["-r", "+5", "'Landscape is restarting down the system'"]
         getProcessOutput = self.expect(run("shutdown", args=args, path=None,
                                            errortoo=1))
-        getProcessOutput.result(Deferred())
+        getProcessOutput.result(succeed("Shutdown called!"))
         self.mocker.replay()
-        self.manager.dispatch_message({"type": "shutdown",
-                                       "operation-id": 100,
-                                       "reboot": True})
+
+        def got_result(result):
+            self.assertTrue(self.broker_service.exchanger.is_urgent())
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [{"type": "operation-result",
+                  "status": SUCCEEDED,
+                  "result-text": "Shutdown called!",
+                  "operation-id": 100}])
+
+        dispatched = self.manager.dispatch_message({"type": "shutdown",
+                                                    "operation-id": 100,
+                                                    "reboot": True})
+        dispatched.addCallback(got_result)
+        return dispatched
 
     def test_shutdown(self):
         """
@@ -43,8 +56,20 @@ class ShutdownManagerTest(LandscapeIsolatedTest):
         args = ["-h", "+5", "'Landscape is shutting down the system'"]
         getProcessOutput = self.expect(run("shutdown", args=args, path=None,
                                            errortoo=1))
-        getProcessOutput.result(Deferred())
+        getProcessOutput.result(succeed("Shutdown called!"))
         self.mocker.replay()
-        self.manager.dispatch_message({"type": "shutdown",
-                                       "operation-id": 100,
-                                       "reboot": False})
+
+        def got_result(result):
+            self.assertTrue(self.broker_service.exchanger.is_urgent())
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [{"type": "operation-result",
+                  "status": SUCCEEDED,
+                  "result-text": "Shutdown called!",
+                  "operation-id": 100}])
+
+        dispatched = self.manager.dispatch_message({"type": "shutdown",
+                                                    "operation-id": 100,
+                                                    "reboot": False})
+        dispatched.addCallback(got_result)
+        return dispatched
