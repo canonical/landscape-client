@@ -1,9 +1,20 @@
+import time
 from datetime import datetime
 import os
 import struct
 
 from landscape.lib.timestamp import to_timestamp
 from landscape.monitor.monitor import MonitorPlugin
+
+
+def get_uptime(uptime_file=u"/proc/uptime"):
+    """
+    This parses a file in /proc/uptime format and returns a floating point
+    version of the first value (the actual uptime).
+    """
+    data = file(uptime_file, "r").readline()
+    up, idle = data.split()
+    return float(up)
 
 
 class LoginInfo(object):
@@ -92,7 +103,7 @@ class BootTimes(object):
 
     def get_last_boot_time(self):
         if self._last_boot is None:
-            self.get_times()
+            self._last_boot = int(time.time() - get_uptime())
         return self._last_boot
 
 

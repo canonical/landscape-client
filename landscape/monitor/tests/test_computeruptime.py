@@ -2,7 +2,8 @@ from datetime import datetime
 import struct
 
 from landscape.monitor.computeruptime import (LoginInfo, LoginInfoReader,
-                                              ComputerUptime)
+                                              ComputerUptime, BootTimes,
+                                              get_uptime)
 from landscape.tests.helpers import (LandscapeTest, MakePathHelper,
                                      MonitorHelper)
 from landscape.tests.mocker import ANY
@@ -24,6 +25,16 @@ def append_login_data(filename, login_type=0, pid=0, tty_device="/dev/",
                                remote_ip_address[2], remote_ip_address[3], ""))
     finally:
         file.close()
+
+
+class UptimeTest(LandscapeTest):
+    """Test for parsing /proc/uptime data."""
+
+    def test_valid_uptime_file(self):
+        """Test ensures that we can read a valid /proc/uptime file."""
+        proc_file = self.make_path("17608.24 16179.25")
+        self.assertEquals("%0.2f" % get_uptime(proc_file),
+                          "17608.24")
 
 
 class LoginInfoReaderTest(LandscapeTest):
@@ -310,3 +321,18 @@ class ComputerUptimeTest(LandscapeTest):
         plugin.run()
         self.mstore.set_accepted_types(["computer-uptime"])
         self.assertMessages(list(self.mstore.get_pending_messages()), [])
+
+
+class BootTimesTest(LandscapeTest):
+
+    helpers = [MakePathHelper]
+
+    def test_fallback_to_uptime(self):
+        """
+        When no data is available in C{/var/log/wtmp}
+        L{BootTimes.get_last_boot_time} falls back to C{/proc/uptime}.
+        """
+        wtmp_filename = self.make_path("")
+        append_login_data(wtmp_filename, tty_device="~", username="shutdown",
+                          entry_time_seconds=535)
+        self.assertTrue(BootTimes(filename=wtmp_filename).get_last_boot_time())
