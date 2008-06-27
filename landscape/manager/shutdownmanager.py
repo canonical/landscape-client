@@ -28,8 +28,7 @@ class ShutdownManager(ManagerPlugin):
         return self._respond(SUCCEEDED, data, operation_id)
 
     def _respond_failure(self, failure, operation_id):
-        failure.trap(ProcessTerminated)
-        return self._respond(FAILED, failure.value.data, operation_id)
+        return self._respond(FAILED, str(failure.value), operation_id)
 
     def _respond(self, status, data, operation_id):
         message = {"type": "operation-result",
