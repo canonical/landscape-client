@@ -128,7 +128,7 @@ class ProcessKillerTests(LandscapeTest):
              "pid": pid, "name": "zsh", "start-time": 110,
              "signal": "KILL"})
         expected_text = ("ProcessNotFoundError: The process zsh with PID %d "
-                         "that started at 110 was not found" % (pid,))
+                         "that started at 1970-01-01 00:01:50 was not found" % (pid,))
 
         service = self.broker_service
         self.assertMessages(service.message_store.get_pending_messages(),
