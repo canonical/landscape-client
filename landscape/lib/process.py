@@ -2,10 +2,9 @@ import logging
 import os
 from datetime import timedelta, datetime
 
-from landscape.monitor.computeruptime import BootTimes
-
 from landscape.lib.timestamp import to_timestamp
 from landscape.jiffies import detect_jiffies
+from landscape.monitor.computeruptime import BootTimes, get_uptime
 
 
 STATES = {"R (running)": "R",
@@ -19,7 +18,11 @@ STATES = {"R (running)": "R",
 
 class ProcessInformation(object):
 
-    def __init__(self, proc_dir="/proc", jiffies=None, boot_time=None):
+    def __init__(self, proc_dir="/proc", jiffies=None, boot_time=None,
+                 uptime=None):
+        """
+        The uptime parameter here is only used for faking uptime in tests.
+        """
         if boot_time is None:
             boot_time = BootTimes().get_last_boot_time()
         if boot_time is not None:
@@ -27,6 +30,7 @@ class ProcessInformation(object):
         self._boot_time = boot_time
         self._proc_dir = proc_dir
         self._jiffies_per_sec = jiffies or detect_jiffies()
+        self._uptime = uptime
 
     def get_process_info(self, process_id):
         cmd_line_name = ""
@@ -65,9 +69,6 @@ class ProcessInformation(object):
                 elif parts[0] == "State":
                     state = parts[1].strip()
                     process_info["state"] = STATES[state]
-                elif parts[0] == "SleepAVG":
-                    value_parts = parts[1].split()
-                    process_info["sleep-average"] = int(value_parts[0][:-1])
                 elif parts[0] == "Uid":
                     value_parts = parts[1].split()
                     process_info["uid"] = int(value_parts[0])
@@ -88,10 +89,25 @@ class ProcessInformation(object):
             # which terminates before we open the stat file.
             return None
 
+        # These variable names are lifted directly from proc(5)
+        # utime: The number of jiffies that this process has been scheduled in
+        # user mode.
+        # stime: The number of jiffies that this process has been scheduled in
+        # kernel mode.
+        # cutime: The number of jiffies that this process's waited-for children
+        # have been scheduled in user mode.
+        # cstime: The number of jiffies that this process's waited-for children
+        # have been scheduled in kernel mode.
         try:
             parts = file.read().split()
-            started_after_uptime = int(parts[21])
-            delta = timedelta(0, started_after_uptime // self._jiffies_per_sec)
+            start_time = int(parts[21])
+            utime = int(parts[13])
+            stime = int(parts[14])
+            uptime = self._uptime or get_uptime()
+            pcpu = calculate_pcpu(utime, stime, uptime,
+                                  start_time, self._jiffies_per_sec)
+            process_info["percent-cpu"] = pcpu
+            delta = timedelta(0, start_time // self._jiffies_per_sec)
             if self._boot_time is None:
                 logging.warning("Skipping process (PID %s) without boot time.")
                 return None
@@ -103,3 +119,26 @@ class ProcessInformation(object):
                and "name" in process_info and "uid" in process_info
                and "gid" in process_info and "start-time" in process_info)
         return process_info
+
+
+def calculate_pcpu(utime, stime, uptime, start_time, hertz):
+    """
+    Implement ps' algorithm to calculate the percentage cpu utilisation for a
+    process.::
+
+    unsigned long long total_time;   /* jiffies used by this process */
+    unsigned pcpu = 0;               /* scaled %cpu, 99 means 99% */
+    unsigned long long seconds;      /* seconds of process life */
+    total_time = pp->utime + pp->stime;
+    if(include_dead_children) total_time += (pp->cutime + pp->cstime);
+    seconds = seconds_since_boot - pp->start_time / hertz;
+    if(seconds) pcpu = (total_time * 100ULL / hertz) / seconds;
+    if (pcpu > 99U) pcpu = 99U;
+    return snprintf(outbuf, COLWID, "%2u", pcpu);
+    """
+    pcpu = 0
+    total_time = utime + stime
+    seconds = uptime - (start_time / hertz)
+    if seconds:
+        pcpu = total_time * 100 / hertz / seconds
+    return round(max(min(pcpu, 99.0), 0), 1)

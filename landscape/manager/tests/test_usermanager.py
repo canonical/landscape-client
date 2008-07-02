@@ -106,20 +106,22 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                                   {"timestamp": 0, "type": "users",
                                   "operation-id": 123,
                                   "create-users": [{"home-phone": None,
-                                                  "username": "jdoe",
-                                                  "uid": 1000,
-                                                  "enabled": True,
-                                                  "location": None,
-                                                  "work-phone": None,
-                                                  "name": u"John Doe",
-                                                  "primary-gid": 1000}]}])
+                                                    "username": "jdoe",
+                                                    "uid": 1000,
+                                                    "enabled": True,
+                                                    "location": "Room 101",
+                                                    "work-phone": "+12345",
+                                                    "name": u"John Doe",
+                                                    "primary-gid": 1000}]}])
 
         self.setup_environment([], [], None)
 
         result = self.manager.dispatch_message(
             {"username": "jdoe", "name": "John Doe", "password": "password",
              "operation-id": 123, "require-password-reset": False,
-             "primary-group-name": None, "type": "add-user"})
+             "primary-group-name": None, "location": "Room 101",
+             "work-number": "+12345", "home-number": None,
+             "type": "add-user"})
 
         result.addCallback(handle_callback)
         return result
@@ -170,7 +172,8 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         result = self.manager.dispatch_message(
             {"username": "jdoe", "name": "John Doe", "password": "password",
              "operation-id": 123, "require-password-reset": False,
-             "primary-group-name": None, "type": "add-user"})
+             "primary-group-name": None, "type": "add-user",
+             "location": None, "home-number": "+123456", "work-number": None})
 
         result.addCallback(handle_callback1)
         return result
@@ -197,7 +200,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                                                     "primary-gid": 1000,
                                                     "work-phone": None}]},
                                  {"type": "users", "operation-id": 123,
-                                  "create-users": [{"home-phone": None,
+                                  "create-users": [{"home-phone": "+123456",
                                                     "username": "jdoe",
                                                     "uid": 1001,
                                                     "enabled": True,
@@ -211,7 +214,8 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         result = self.manager.dispatch_message(
             {"username": "jdoe", "name": "John Doe", "password": "password",
              "operation-id": 123, "require-password-reset": False, 
-             "type": "add-user", "primary-group-name": None})
+             "type": "add-user", "primary-group-name": None,
+             "location": None, "work-number": None, "home-number": "+123456"})
         result.addCallback(handle_callback)
         return result
 
@@ -231,8 +235,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                                   "status": SUCCEEDED,
                                   "operation-id": 99, "timestamp": 0,
                                   "result-text": "set_user_details succeeded"},
-                                 {"update-users": [{"home-phone": None,
-                                                    "username": "jdoe",
+                                 {"update-users": [{"username": "jdoe",
                                                     "uid": 1001,
                                                     "enabled": True,
                                                     "work-phone": "789WORK",

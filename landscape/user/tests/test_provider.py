@@ -179,13 +179,13 @@ kevin:x:1000:
         provider = UserProvider()
         provider.shadow_file = None
         users = provider.get_users()
-        user_1000 = pwd.getpwuid(1000)
+        user_0 = pwd.getpwuid(0)
         for user in users:
-            if user["username"] == user_1000.pw_name:
-                self.assertEquals(user["uid"], 1000)
-                user_1000_name = user_1000.pw_gecos.split(",")[0].decode(
+            if user["username"] == user_0.pw_name:
+                self.assertEquals(user["uid"], 0)
+                user_0_name = user_0.pw_gecos.split(",")[0].decode(
                     "utf-8", "replace")
-                self.assertEquals(user["name"], user_1000_name)
+                self.assertEquals(user["name"], user_0_name)
                 break
         else:
             self.fail("The user %s (uid=1000) was not found in the get_data "
@@ -313,12 +313,12 @@ kevin:x:1000:
         module.
         """
         provider = UserProvider()
-        group_1000 = grp.getgrgid(1000)
+        group_0 = grp.getgrgid(0)
         groups = provider.get_groups()
         for group in groups:
-            if group["name"] == group_1000.gr_name:
-                self.assertEquals(group["gid"], 1000)
-                self.assertEquals(group["members"], group_1000.gr_mem)
+            if group["name"] == group_0.gr_name:
+                self.assertEquals(group["gid"], 0)
+                self.assertEquals(group["members"], group_0.gr_mem)
                 break
         else:
             self.fail("The group %s (gid=1000) was not found in the get_data "

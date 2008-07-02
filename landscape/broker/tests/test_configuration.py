@@ -819,11 +819,8 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
         install_mock()
         print_text_mock("Please wait... ", "")
 
-        print_text_mock(ANY)
-        def got_dbus_error(text):
-            self.assertTrue("was not provided by any .service" in text)
-        self.mocker.call(got_dbus_error)
-        print_text_mock("Error occurred contacting the client. Is it running?",
+        print_text_mock("Error occurred contacting Landscape Client. "
+                        "Is it running?",
                         error=True)
 
         # WHOAH DUDE. This waits for callLater(0, reactor.stop).

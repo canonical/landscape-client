@@ -1,7 +1,6 @@
 """A client for the service in L{landscape.broker.broker.BrokerDBusObject}."""
 
 from twisted.internet.defer import execute, maybeDeferred, succeed
-from twisted.python.reflect import namedClass
 
 from dbus import DBusException
 
@@ -9,21 +8,6 @@ from landscape.schema import InvalidError
 from landscape.broker.broker import BUS_NAME, OBJECT_PATH, IFACE_NAME
 from landscape.lib.dbus_util import get_object, byte_array, array_to_string
 from landscape.lib.bpickle import dumps, loads
-
-
-SAFE_EXCEPTIONS = ["landscape.schema.InvalidError",
-                   "landscape.broker.registration.InvalidCredentialsError"]
-PYTHON_EXCEPTION_PREFIX = "org.freedesktop.DBus.Python."
-
-
-class ServiceUnknownError(Exception):
-    """Raised when the DBUS Service cannot be found."""
-
-class SecurityError(Exception):
-    """Raised when the DBUS Service is inaccessible."""
-
-class NoReplyError(Exception):
-    """Raised when a DBUS service doesn't respond."""
 
 
 class RemoteBroker(object):
@@ -92,38 +76,8 @@ class RemoteBroker(object):
 
     def _perform_call(self, name, *args, **kwargs):
         method = getattr(self.broker, name)
-        kwargs["dbus_interface"] = IFACE_NAME
         result = method(*args, **kwargs)
-        result.addErrback(self._massage_errors)
         return result
-
-    def _massage_errors(self, failure):
-        """Python DBUS has terrible exception reporting.
-
-        Convert many types of errors which into things which are
-        actually catchable.
-        """
-        failure.trap(DBusException)
-        message = failure.getErrorMessage()
-        # handle different crappy error messages from various versions
-        # of DBUS.
-        if ("Did not receive a reply" in message
-            or "No reply within specified time" in message):
-            raise NoReplyError(message)
-        if (message.startswith("A security policy in place")
-            or message.startswith("org.freedesktop.DBus.Error.AccessDenied")):
-            raise SecurityError()
-        if message.startswith("The name %s was not provided by any .service"
-                              % BUS_NAME):
-            raise ServiceUnknownError()
-
-        if message.startswith(PYTHON_EXCEPTION_PREFIX):
-            python_exception = message[len(PYTHON_EXCEPTION_PREFIX)
-                                       :message.find(":")]
-            if python_exception in SAFE_EXCEPTIONS:
-                raise namedClass(python_exception)(message)
-
-        return failure
 
 
 class FakeRemoteBroker(object):

@@ -19,6 +19,7 @@ from landscape.manager.manager import ManagerPlugin, SUCCEEDED, FAILED
 
 ALL_USERS = object()
 
+TIMEOUT_RESULT = 102
 
 class ProcessTimeLimitReachedError(Exception):
     """
@@ -53,12 +54,14 @@ class ScriptExecution(ManagerPlugin):
         super(ScriptExecution, self).register(registry)
         registry.register_message("execute-script", self._handle_execute_script)
 
-    def _respond(self, status, data, opid):
-        return self.registry.broker.send_message(
-            {"type": "operation-result",
-             "status": status,
-             "result-text": data,
-             "operation-id": opid}, True)
+    def _respond(self, status, data, opid, result_code=None):
+        message =  {"type": "operation-result",
+                    "status": status,
+                    "result-text": data,
+                    "operation-id": opid}
+        if result_code:
+            message["result-code"] = result_code
+        return self.registry.broker.send_message(message, True)
 
     def _handle_execute_script(self, message):
         opid = message["operation-id"]
@@ -89,7 +92,7 @@ class ScriptExecution(ManagerPlugin):
 
     def _respond_timeout(self, failure, opid):
         failure.trap(ProcessTimeLimitReachedError)
-        return self._respond(FAILED, failure.value.data, opid)
+        return self._respond(FAILED, failure.value.data, opid, 102)
 
     def run_script(self, shell, code, user=None, time_limit=None):
         """
@@ -113,10 +116,14 @@ class ScriptExecution(ManagerPlugin):
         """
         uid = None
         gid = None
+        path = None
         if user is not None:
             info = pwd.getpwnam(user)
             uid = info.pw_uid
             gid = info.pw_gid
+            path = info.pw_dir
+            if not os.path.exists(path):
+                path = "/"
 
         fd, filename = tempfile.mkstemp()
         script_file = os.fdopen(fd, "w")
@@ -131,7 +138,8 @@ class ScriptExecution(ManagerPlugin):
         script_file.write("#!%s\n%s" % (shell, code))
         script_file.close()
         pp = ProcessAccumulationProtocol(self.size_limit)
-        self.process_factory.spawnProcess(pp, filename, uid=uid, gid=gid)
+        self.process_factory.spawnProcess(pp, filename, uid=uid, gid=gid,
+                                          path=path)
         if time_limit is not None:
             self._scheduled_cancel = self.registry.reactor.call_later(
                 time_limit, pp.cancel)

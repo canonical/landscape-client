@@ -5,3 +5,16 @@ tests in an ssh session), run the following command:
 export DBUS_SESSION_BUS_ADDRESS=`dbus-daemon --print-address=1 --session --fork`
 
 Then your tests should pass.
+
+When you want to test the landscape client manually without management
+features, you can simply run:
+
+$ ./scripts/landscape-client
+
+This defaults to the 'landscape-client.conf' configuration file.
+
+When you want to test management features manually, you'll need to run as root.
+There's a configuration file 'root-client.conf' which specifies use of the
+system bus.
+
+$ sudo ./scripts/landscape-client -c root-client.conf
