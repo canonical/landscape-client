@@ -21,7 +21,7 @@ class ShutdownManager(ManagerPlugin):
 
     def __init__(self, process_factory=None):
         if process_factory is None:
-            from twisted.internet import rector as process_factory
+            from twisted.internet import reactor as process_factory
         self._process_factory = process_factory
 
     def register(self, registry):
