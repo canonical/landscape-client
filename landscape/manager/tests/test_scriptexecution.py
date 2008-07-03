@@ -8,36 +8,12 @@ from twisted.internet import reactor
 from landscape.manager.scriptexecution import (ScriptExecution,
                                                ProcessTimeLimitReachedError)
 from landscape.manager.manager import SUCCEEDED, FAILED
-from landscape.tests.helpers import (LandscapeTest, LandscapeIsolatedTest,
-                                     ManagerHelper, RemoteBrokerHelper)
+from landscape.tests.helpers import (
+    LandscapeTest, LandscapeIsolatedTest, ManagerHelper,
+    StubProcessFactory, DummyProcess)
 from landscape.tests.mocker import ANY, ARGS, MATCH
 
 # Test GPG-signing
-
-class StubProcessFactory(object):
-    """
-    A L{IReactorProcess} provider which records L{spawnProcess} calls and
-    allows tests to get at the protocol.
-    """
-    def __init__(self):
-        self.spawns = []
-
-    def spawnProcess(self, protocol, executable, args=(), env={}, path=None,
-                    uid=None, gid=None, usePTY=0, childFDs=None):
-        self.spawns.append((protocol, executable, args,
-                            env, path, uid, gid, usePTY, childFDs))
-
-
-class DummyProcess(object):
-    """A process (transport) that doesn't do anything."""
-    def __init__(self):
-        self.signals = []
-
-    def signalProcess(self, signal):
-        self.signals.append(signal)
-
-    def closeChildFD(self, fd):
-        pass
 
 
 class RunScriptTests(LandscapeTest):

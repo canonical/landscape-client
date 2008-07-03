@@ -1,107 +1,94 @@
 from twisted.python.failure import Failure
-from twisted.internet.error import ProcessTerminated
-from twisted.internet.defer import succeed, fail
+from twisted.internet.error import ProcessDone, ProcessTerminated
 
+from landscape import API
 from landscape.manager.manager import ManagerPluginRegistry, SUCCEEDED, FAILED
-from landscape.manager.shutdownmanager import ShutdownManager
-from landscape.tests.helpers import LandscapeIsolatedTest, RemoteBrokerHelper
+from landscape.manager.shutdownmanager import (
+    ShutdownManager, ShutdownProcessProtocol)
+from landscape.tests.helpers import (
+    LandscapeTest, ManagerHelper, StubProcessFactory, DummyProcess)
 
 
-class ShutdownManagerTest(LandscapeIsolatedTest):
+class ShutdownManagerTest(LandscapeTest):
 
-    helpers = [RemoteBrokerHelper]
+    helpers = [ManagerHelper]
 
     def setUp(self):
         super(ShutdownManagerTest, self).setUp()
         self.broker_service.message_store.set_accepted_types(
             ["shutdown", "operation-result"])
-        self.manager = ManagerPluginRegistry(
-            self.broker_service.reactor, self.remote,
-            self.broker_service.config, self.broker_service.bus)
-        self.manager.add(ShutdownManager())
+        self.process_factory = StubProcessFactory()
+        self.plugin = ShutdownManager(process_factory=self.process_factory)
+        self.manager.add(self.plugin)
 
     def test_restart(self):
         """
-        When a C{shutdown} message is received with a C{shutdown} directive set
-        to C{False}, the C{shutdown} command should be called to restart the
-        system 5 minutes from now.
+        C{shutdown} processes run until the shutdown is to be performed.  The
+        L{ShutdownProcessProtocol} watches a process for errors, for 10
+        seconds by default, and if none occur the activity is marked as
+        L{SUCCEEDED}.  Data printed by the process is included in the
+        activity's result text.
         """
-        run = self.mocker.replace("twisted.internet.utils.getProcessOutput")
-        args = ["-r", "+5", "'Landscape is restarting down the system'"]
-        getProcessOutput = self.expect(run("shutdown", args=args, path=None,
-                                           errortoo=1))
-        getProcessOutput.result(succeed("Shutdown called!"))
-        self.mocker.replay()
+        message = {"type": "shutdown", "reboot": True, "operation-id": 100}
+        self.plugin.perform_shutdown(message)
+        [arguments] = self.process_factory.spawns
+        protocol = arguments[0]
+        self.assertTrue(isinstance(protocol, ShutdownProcessProtocol))
+        self.assertEquals(
+            arguments[1:3],
+            ("/sbin/shutdown", ["-r", "+10",
+                                "Landscape is rebooting the system"]))
 
-        def got_result(result):
+        def restart_performed(ignore):
             self.assertTrue(self.broker_service.exchanger.is_urgent())
-            self.assertMessages(
+            self.assertEquals(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"type": "operation-result",
-                  "status": SUCCEEDED,
-                  "result-text": "Shutdown called!",
-                  "operation-id": 100}])
+                [{"type": "operation-result", "api": API,
+                  "operation-id": 100, "timestamp": 10, "status": SUCCEEDED,
+                  "result-text": u"Data may arrive in batches."}])
 
-        dispatched = self.manager.dispatch_message({"type": "shutdown",
-                                                    "operation-id": 100,
-                                                    "reboot": True})
-        dispatched.addCallback(got_result)
-        return dispatched
+        protocol.result.addCallback(restart_performed)
+        protocol.childDataReceived(0, "Data may arrive ")
+        protocol.childDataReceived(0, "in batches.")
+        self.manager.reactor.advance(10)
+        return protocol.result
 
     def test_shutdown(self):
         """
-        When a C{shutdown} message is received with a C{shutdown} directive set
-        to C{True}, the C{shutdown} command should be called to shutdown the
-        system 5 minutes from now.
+        C{shutdown} messages have a flag that indicates whether a reboot or
+        shutdown has been requested.  The C{shutdown} command is called
+        appropriately.
         """
-        run = self.mocker.replace("twisted.internet.utils.getProcessOutput")
-        args = ["-h", "+5", "'Landscape is shutting down the system'"]
-        getProcessOutput = self.expect(run("shutdown", args=args, path=None,
-                                           errortoo=1))
-        getProcessOutput.result(succeed("Shutdown called!"))
-        self.mocker.replay()
+        message = {"type": "shutdown", "reboot": False, "operation-id": 100}
+        self.plugin.perform_shutdown(message)
+        [arguments] = self.process_factory.spawns
+        self.assertEquals(
+            arguments[1:3],
+            ("/sbin/shutdown", ["-h", "+10",
+                                "Landscape is shutting down the system"]))
 
-        def got_result(result):
+    def test_restart_fails(self):
+        """
+        If an error occurs before the error checking timeout the activity will
+        be failed.  Data printed by the process prior to the failure is
+        included in the activity's result text.
+        """
+        message = {"type": "shutdown", "reboot": False, "operation-id": 100}
+        self.plugin.perform_shutdown(message)
+
+        def restart_failed(failure):
+            self.assertTrue(isinstance(failure.value, ShutdownFailedError))
             self.assertTrue(self.broker_service.exchanger.is_urgent())
-            self.assertMessages(
+            self.assertEquals(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"type": "operation-result",
-                  "status": SUCCEEDED,
-                  "result-text": "Shutdown called!",
-                  "operation-id": 100}])
+                [{"type": "operation-result", "api": API,
+                  "operation-id": 100, "timestamp": 0, "status": FAILED,
+                  "result-text": u"Data may arrive in batches."}])
 
-        dispatched = self.manager.dispatch_message({"type": "shutdown",
-                                                    "operation-id": 100,
-                                                    "reboot": False})
-        dispatched.addCallback(got_result)
-        return dispatched
-
-    def test_call_to_shutdown_fails(self):
-        """
-        If the C{shutdown} command fails we should return a failed
-        C{operation-result} message.
-        """
-        run = self.mocker.replace("twisted.internet.utils.getProcessOutput")
-        args = ["-r", "+5", "'Landscape is restarting down the system'"]
-        getProcessOutput = self.expect(run("shutdown", args=args, path=None,
-                                           errortoo=1))
-        getProcessOutput.result(fail(Failure(ProcessTerminated(exitCode=1))))
-        self.mocker.replay()
-
-        def got_result(result):
-            self.assertTrue(self.broker_service.exchanger.is_urgent())
-            message = ("A process has ended with a probable error condition: "
-                       "process ended with exit code 1.")
-            self.assertMessages(
-                self.broker_service.message_store.get_pending_messages(),
-                [{"type": "operation-result",
-                  "status": FAILED,
-                  "result-text": message,
-                  "operation-id": 100}])
-
-        dispatched = self.manager.dispatch_message({"type": "shutdown",
-                                                    "operation-id": 100,
-                                                    "reboot": True})
-        dispatched.addCallback(got_result)
-        return dispatched
-
+        [arguments] = self.process_factory.spawns
+        protocol = arguments[0]
+        protocol.result.addErrback(restart_failed)
+        protocol.childDataReceived(0, "Data may arrive ")
+        protocol.childDataReceived(0, "in batches.")
+        protocol.processEnded(Failure(ProcessTerminated(exitCode=1)))
+        return protocol.result
