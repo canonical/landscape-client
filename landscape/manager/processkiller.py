@@ -44,6 +44,7 @@ class ProcessKiller(ManagerPlugin):
                      signame, pid)
         process_info = self.process_info.get_process_info(pid)
         if not process_info:
+            start_time = datetime.utcfromtimestamp(start_time)
             message = ("The process %s with PID %d that started at %s was "
                        "not found") % (name, pid, start_time)
             raise ProcessNotFoundError(message)
