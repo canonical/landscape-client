@@ -87,9 +87,11 @@ class ShutdownProcessProtocol(ProcessProtocol):
         """
         minutes = "+%d" % (self.delay // 60,)
         if self.reboot:
-            arguments = ["-r", minutes, "Landscape is rebooting the system"]
+            arguments = ["/sbin/shutdown", "-r", minutes,
+                         "Landscape is rebooting the system"]
         else:
-            arguments = ["-h", minutes, "Landscape is shutting down the system"]
+            arguments = ["/sbin/shutdown", "-h", minutes,
+                         "Landscape is shutting down the system"]
         return "/sbin/shutdown", arguments
 
     def set_timeout(self, reactor, timeout=10):
@@ -118,18 +120,13 @@ class ShutdownProcessProtocol(ProcessProtocol):
             if reason.check(ProcessDone):
                 self._succeed()
             else:
-                self._fail()
+                data = "".join(self._data)
+                self.result.errback(ShutdownFailedError(data))
+                self._running = False
 
     def _succeed(self):
         """Fire C{result}'s callback with data accumulated from the process."""
         if self._running:
             data = "".join(self._data)
             self.result.callback(data)
-            self._running = False
-
-    def _fail(self):
-        """Fire C{result}'s errback with data accumulated from the process."""
-        if self._running:
-            data = "".join(self._data)
-            self.result.errback(ShutdownFailedError(data))
             self._running = False
