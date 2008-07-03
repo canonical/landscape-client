@@ -36,7 +36,7 @@ class ShutdownManagerTest(LandscapeTest):
         self.assertTrue(isinstance(protocol, ShutdownProcessProtocol))
         self.assertEquals(
             arguments[1:3],
-            ("/sbin/shutdown", ["-r", "+10",
+            ("/sbin/shutdown", ["-r", "+5",
                                 "Landscape is rebooting the system"]))
 
         def restart_performed(ignore):
@@ -64,7 +64,7 @@ class ShutdownManagerTest(LandscapeTest):
         [arguments] = self.process_factory.spawns
         self.assertEquals(
             arguments[1:3],
-            ("/sbin/shutdown", ["-h", "+10",
+            ("/sbin/shutdown", ["-h", "+5",
                                 "Landscape is shutting down the system"]))
 
     def test_restart_fails(self):

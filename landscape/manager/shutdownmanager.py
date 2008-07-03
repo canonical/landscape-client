@@ -69,11 +69,11 @@ class ShutdownProcessProtocol(ProcessProtocol):
     @ivar reboot: A flag indicating whether a shutdown or reboot should be
         performed.  Default is C{False}.
     @ivar delay: The time in seconds from now to schedule the shutdown.
-        Default is 600 seconds.  The time will be converted to minutes using
+        Default is 300 seconds.  The time will be converted to minutes using
         integer division when passed to C{shutdown}.
     """
 
-    def __init__(self, reboot=False, delay=600):
+    def __init__(self, reboot=False, delay=300):
         self.result = Deferred()
         self.reboot = reboot
         self.delay = delay
