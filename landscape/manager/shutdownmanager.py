@@ -25,10 +25,21 @@ class ShutdownManager(ManagerPlugin):
         self._process_factory = process_factory
 
     def register(self, registry):
+        """Add this plugin to C{registry}.
+
+        The shutdown manager handles C{shutdown} activity messages broadcast
+        from the server.
+        """
         super(ShutdownManager, self).register(registry)
         registry.register_message("shutdown", self.perform_shutdown)
 
     def perform_shutdown(self, message):
+        """Request a system restart or shutdown.
+
+        If the call to C{/sbin/shutdown} runs without errors the activity
+        specified in the message will be responded as succeeded.  Otherwise,
+        it will be responded as failed.
+        """
         operation_id = message["operation-id"]
         protocol = ShutdownProcessProtocol(reboot=message["reboot"])
         protocol.set_timeout(self.registry.reactor)
@@ -69,11 +80,11 @@ class ShutdownProcessProtocol(ProcessProtocol):
     @ivar reboot: A flag indicating whether a shutdown or reboot should be
         performed.  Default is C{False}.
     @ivar delay: The time in seconds from now to schedule the shutdown.
-        Default is 300 seconds.  The time will be converted to minutes using
+        Default is 240 seconds.  The time will be converted to minutes using
         integer division when passed to C{shutdown}.
     """
 
-    def __init__(self, reboot=False, delay=300):
+    def __init__(self, reboot=False, delay=240):
         self.result = Deferred()
         self.reboot = reboot
         self.delay = delay
@@ -93,6 +104,10 @@ class ShutdownProcessProtocol(ProcessProtocol):
             arguments = ["/sbin/shutdown", "-h", minutes,
                          "Landscape is shutting down the system"]
         return "/sbin/shutdown", arguments
+
+    def get_data(self):
+        """Get the data printed by the subprocess."""
+        return "".join(self._data)
 
     def set_timeout(self, reactor, timeout=10):
         """
@@ -120,13 +135,11 @@ class ShutdownProcessProtocol(ProcessProtocol):
             if reason.check(ProcessDone):
                 self._succeed()
             else:
-                data = "".join(self._data)
-                self.result.errback(ShutdownFailedError(data))
+                self.result.errback(ShutdownFailedError(self.get_data()))
                 self._running = False
 
     def _succeed(self):
         """Fire C{result}'s callback with data accumulated from the process."""
         if self._running:
-            data = "".join(self._data)
-            self.result.callback(data)
+            self.result.callback(self.get_data())
             self._running = False

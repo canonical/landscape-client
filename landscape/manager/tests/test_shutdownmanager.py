@@ -36,7 +36,7 @@ class ShutdownManagerTest(LandscapeTest):
         self.assertTrue(isinstance(protocol, ShutdownProcessProtocol))
         self.assertEquals(
             arguments[1:3],
-            ("/sbin/shutdown", ["/sbin/shutdown", "-r", "+5",
+            ("/sbin/shutdown", ["/sbin/shutdown", "-r", "+4",
                                 "Landscape is rebooting the system"]))
 
         def restart_performed(ignore):
@@ -64,7 +64,7 @@ class ShutdownManagerTest(LandscapeTest):
         [arguments] = self.process_factory.spawns
         self.assertEquals(
             arguments[1:3],
-            ("/sbin/shutdown", ["/sbin/shutdown", "-h", "+5",
+            ("/sbin/shutdown", ["/sbin/shutdown", "-h", "+4",
                                 "Landscape is shutting down the system"]))
 
     def test_restart_fails(self):
@@ -83,12 +83,48 @@ class ShutdownManagerTest(LandscapeTest):
                 self.broker_service.message_store.get_pending_messages(),
                 [{"type": "operation-result", "api": API,
                   "operation-id": 100, "timestamp": 0, "status": FAILED,
-                  "result-text": u"Data may arrive in batches."}])
+                  "result-text": u"Failure text is reported."}])
 
         [arguments] = self.process_factory.spawns
         protocol = arguments[0]
         protocol.result.addErrback(restart_failed)
-        protocol.childDataReceived(0, "Data may arrive ")
-        protocol.childDataReceived(0, "in batches.")
+        protocol.childDataReceived(0, "Failure text is reported.")
         protocol.processEnded(Failure(ProcessTerminated(exitCode=1)))
         return protocol.result
+
+    def test_process_ends_after_timeout(self):
+        """
+        If the process ends after the error checking timeout has passed
+        C{result} will not be re-fired.
+        """
+        message = {"type": "shutdown", "reboot": False, "operation-id": 100}
+        self.plugin.perform_shutdown(message)
+
+        stash = []
+        def restart_performed(ignore):
+            self.assertEquals(stash, [])
+            stash.append(True)
+
+        [arguments] = self.process_factory.spawns
+        protocol = arguments[0]
+        protocol.result.addCallback(restart_performed)
+        self.manager.reactor.advance(10)
+        protocol.processEnded(Failure(ProcessTerminated(exitCode=1)))
+        return protocol.result
+
+    def test_process_data_is_not_collected_after_firing_result(self):
+        """
+        Data printed in the sub-process is not collected after C{result} has
+        been fired.
+        """
+        message = {"type": "shutdown", "reboot": False, "operation-id": 100}
+        self.plugin.perform_shutdown(message)
+
+        [arguments] = self.process_factory.spawns
+        protocol = arguments[0]
+        protocol.childDataReceived(0, "Data may arrive ")
+        protocol.childDataReceived(0, "in batches.")
+        self.manager.reactor.advance(10)
+        self.assertEquals(protocol.get_data(), "Data may arrive in batches.")
+        protocol.childDataReceived(0, "Even when you least expect it.")
+        self.assertEquals(protocol.get_data(), "Data may arrive in batches.")
