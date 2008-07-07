@@ -12,11 +12,7 @@ from landscape.schema import (
 
 utf8 = UnicodeOrString("utf-8")
 
-ACTIVE_PROCESS_INFO = Message(
-    "active-process-info",
-    {"kill-processes": List(Int()),
-     "kill-all-processes": Bool(),
-     "add-processes": List(KeyDict({"pid": Int(),
+process_info = KeyDict({"pid": Int(),
                                     "name": utf8,
                                     "state": String(),
                                     "sleep-average": Int(),
@@ -25,14 +21,20 @@ ACTIVE_PROCESS_INFO = Message(
                                     "vm-size": Int(),
                                     "start-time": Int(),
                                     "percent-cpu": Float()},
-                                   # Optional for backwards compatibility
-                                   optional=["vm-size", "sleep-average",
-                                             "percent-cpu"])),
+                       # Optional for backwards compatibility
+                       optional=["vm-size", "sleep-average", "percent-cpu"])
+
+ACTIVE_PROCESS_INFO = Message(
+    "active-process-info",
+    {"kill-processes": List(Int()),
+     "kill-all-processes": Bool(),
+     "add-processes": List(process_info),
+     "update-processes": List(process_info)
      },
     # XXX Really we don't want all three of these keys to be optional:
     # we always want _something_...
-    optional=["add-processes", "kill-processes", "kill-all-processes"])
-
+    optional=["add-processes", "update-processes", "kill-processes",
+              "kill-all-processes"])
 
 COMPUTER_UPTIME = Message(
     "computer-uptime",
