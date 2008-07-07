@@ -47,6 +47,8 @@ class ActiveProcessInfo(DataWatcher):
 
     def persist_data(self):
         self._first_run = False
+        self._persist_processes = self._previous_processes
+        self._previous_processes = {}
 
     def _get_processes(self):
         processes = {}
@@ -73,7 +75,7 @@ class ActiveProcessInfo(DataWatcher):
             changes["kill-processes"] = list(deletes.iterkeys())
 
         # Update cached values for use on the next run.
-        self._persist_processes = processes
+        self._previous_processes = processes
         return changes
 
 
