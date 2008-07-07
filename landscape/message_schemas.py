@@ -13,14 +13,14 @@ from landscape.schema import (
 utf8 = UnicodeOrString("utf-8")
 
 process_info = KeyDict({"pid": Int(),
-                                    "name": utf8,
-                                    "state": String(),
-                                    "sleep-average": Int(),
-                                    "uid": Int(),
-                                    "gid": Int(),
-                                    "vm-size": Int(),
-                                    "start-time": Int(),
-                                    "percent-cpu": Float()},
+                        "name": utf8,
+                        "state": String(),
+                        "sleep-average": Int(),
+                        "uid": Int(),
+                        "gid": Int(),
+                        "vm-size": Int(),
+                        "start-time": Int(),
+                        "percent-cpu": Float()},
                        # Optional for backwards compatibility
                        optional=["vm-size", "sleep-average", "percent-cpu"])
 
