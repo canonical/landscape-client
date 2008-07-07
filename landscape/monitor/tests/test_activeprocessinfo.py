@@ -48,7 +48,6 @@ class SampleDataBuilder(object):
         sample_data = """
 Name:   %(process_name)s
 State:  %(state)s
-SleepAVG:       87%%
 Tgid:   24759
 Pid:    24759
 PPid:   17238
@@ -423,6 +422,7 @@ class ActiveProcessInfoTest(LandscapeTest):
         self.assertTrue("kill-processes" not in message)
         self.assertTrue("add-processes" in message)
         self.assertEquals(message["add-processes"][0]["pid"], 672)
+        self.assertEquals(message["add-processes"][0]["state"], u"R")
 
         # Convert the process to a zombie and ensure it gets reported.
         self.builder.remove_data(672)
@@ -437,10 +437,9 @@ class ActiveProcessInfoTest(LandscapeTest):
         message = messages[1]
 
         self.assertTrue("kill-all-processes" not in message)
-        self.assertTrue("kill-processes" in message)
-        self.assertTrue("add-processes" in message)
-        self.assertEquals(message["kill-processes"], [672])
-        self.assertEquals(message["add-processes"][0]["pid"], 672)
+        self.assertTrue("update-processes" in message)
+        self.assertEquals(message["update-processes"][0]["state"], u"Z")
+
 
     def test_call_on_accepted(self):
         """
