@@ -6,13 +6,10 @@ import subprocess
 
 from twisted.internet.defer import fail
 
-from landscape import API
 from landscape.monitor.activeprocessinfo import ActiveProcessInfo
-from landscape.monitor.computeruptime import BootTimes
 from landscape.tests.helpers import (LandscapeTest, MakePathHelper,
                                      MonitorHelper)
 from landscape.tests.mocker import ANY
-from landscape.monitor.tests.test_computeruptime import append_login_data
 
 
 class SampleDataBuilder(object):
@@ -32,7 +29,7 @@ class SampleDataBuilder(object):
 
     def create_data(self, process_id, state, uid, gid,
                     started_after_boot=0, process_name=None,
-                    generate_cmd_line=True, stat_data=None):
+                    generate_cmd_line=True, stat_data=None, vmsize=11676):
 
         """Creates sample data for a process.
 
@@ -57,7 +54,7 @@ Gid:    %(gid)d    0    0    0
 FDSize: 256
 Groups: 4 20 24 25 29 30 44 46 106 110 112 1000
 VmPeak:    11680 kB
-VmSize:    11676 kB
+VmSize:    %(vmsize)d kB
 VmLck:         0 kB
 VmHWM:      6928 kB
 VmRSS:      6924 kB
@@ -77,7 +74,7 @@ CapInh: 0000000000000000
 CapPrm: 0000000000000000
 CapEff: 0000000000000000
 """ % ({"process_name": process_name[:15], "state": state, "uid": uid,
-        "gid": gid,})
+        "gid": gid, "vmsize": vmsize})
         process_dir = os.path.join(self._sample_dir, str(process_id))
         os.mkdir(process_dir)
         filename = os.path.join(process_dir, "status")
@@ -155,13 +152,12 @@ class ActiveProcessInfoTest(LandscapeTest):
 
         plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=10)
         self.monitor.add(plugin)
-        plugin.exchange()
+        self.monitor.exchange()
 
         self.builder.create_data(671, self.builder.STOPPED, uid=1000,
                                  gid=1000, started_after_boot=15,
                                  process_name="blargh")
-
-        plugin.exchange()
+        self.monitor.exchange()
         messages = self.mstore.get_pending_messages()
         self.assertEquals(len(messages), 2)
         message = messages[0]
@@ -277,7 +273,6 @@ class ActiveProcessInfoTest(LandscapeTest):
               "add-processes": [{"pid": 1, "state": "R", "name": "init",
                                  "vm-size": 11676, "uid": 0, "gid": 0,
                                  "start-time": 110, "percent-cpu": 0.0}]}])
-
 
     def test_process_terminated(self):
         """Test that the plugin handles process changes in a diff-like way."""
@@ -549,6 +544,50 @@ class ActiveProcessInfoTest(LandscapeTest):
         result.addCallback(assert_message)
         return result
 
+    def test_process_updates(self):
+        """Test updates to processes are successfully reported."""
+        self.builder.create_data(1, self.builder.RUNNING, uid=0, gid=0,
+                                 started_after_boot=1100, process_name="init",)
+
+        plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=100,
+                                   jiffies=10, boot_time=0)
+        self.monitor.add(plugin)
+        plugin.exchange()
+
+        messages = self.mstore.get_pending_messages()
+        self.assertEquals(len(messages), 1)
+
+        self.builder.remove_data(1)
+        self.builder.create_data(1, self.builder.RUNNING, uid=0, gid=0,
+                                 started_after_boot=1100, process_name="init",
+                                 vmsize=20000)
+        plugin.exchange()
+
+        messages = self.mstore.get_pending_messages()
+        self.assertEquals(len(messages), 2)
+        self.assertMessages(messages, [{"timestamp": 0,
+                                        "api": "3.1",
+                                        "type": "active-process-info",
+                                        "kill-all-processes": True,
+                                        "add-processes": [{"start-time": 110,
+                                                           "name": u"init",
+                                                           "pid": 1,
+                                                            "percent-cpu": 0.0,
+                                                            "state": "R",
+                                                            "gid": 0,
+                                                            "vm-size": 11676,
+                                                            "uid": 0}]},
+                                       {"timestamp": 0,
+                                        "api": "3.1",
+                                        "type": "active-process-info",
+                                        "update-processes": [{"start-time": 110,
+                                                              "name": u"init",
+                                                              "pid": 1,
+                                                              "percent-cpu": 0.0,
+                                                              "state": "R",
+                                                              "gid": 0,
+                                                              "vm-size": 20000,
+                                                              "uid": 0}]}])
 
 class PluginManagerIntegrationTest(LandscapeTest):
 
@@ -686,5 +725,3 @@ class PluginManagerIntegrationTest(LandscapeTest):
                               "percent-cpu": 99.00}
         processes = message["add-processes"]
         self.assertEquals(processes, [expected_process_0])
-
-

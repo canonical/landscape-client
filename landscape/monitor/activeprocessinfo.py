@@ -16,6 +16,7 @@ class ActiveProcessInfo(DataWatcher):
         super(ActiveProcessInfo, self).__init__()
         self._proc_dir = proc_dir
         self._persist_processes = {}
+        self._previous_processes = {}
         self._jiffies_per_sec = jiffies or detect_jiffies()
         self._popen = popen
         self._first_run = True
@@ -33,6 +34,7 @@ class ActiveProcessInfo(DataWatcher):
         """Resynchronize active process data."""
         self._first_run = True
         self._persist_processes = {}
+        self._previous_processes = {}
 
     def get_message(self):
         message = {}
@@ -77,5 +79,3 @@ class ActiveProcessInfo(DataWatcher):
         # Update cached values for use on the next run.
         self._previous_processes = processes
         return changes
-
-
