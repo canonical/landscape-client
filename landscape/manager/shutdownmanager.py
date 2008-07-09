@@ -104,7 +104,7 @@ class ShutdownProcessProtocol(ProcessProtocol):
         self.reboot = reboot
         self.delay = delay
         self._data = []
-        self._running = True
+        self._waiting = True
 
     def get_data(self):
         """Get the data printed by the subprocess."""
@@ -122,7 +122,7 @@ class ShutdownProcessProtocol(ProcessProtocol):
 
         Add it to our buffer to pass to C{result} when it's fired.
         """
-        if self._running:
+        if self._waiting:
             self._data.append(data)
 
     def processEnded(self, reason):
@@ -132,15 +132,15 @@ class ShutdownProcessProtocol(ProcessProtocol):
         from the subprocess, or if the subprocess failed C{result}'s errback
         will be fired with the string of data received from the subprocess.
         """
-        if self._running:
+        if self._waiting:
             if reason.check(ProcessDone):
                 self._succeed()
             else:
                 self.result.errback(ShutdownFailedError(self.get_data()))
-                self._running = False
+                self._waiting = False
 
     def _succeed(self):
         """Fire C{result}'s callback with data accumulated from the process."""
-        if self._running:
+        if self._waiting:
             self.result.callback(self.get_data())
-            self._running = False
+            self._waiting = False
