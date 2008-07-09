@@ -41,13 +41,14 @@ class ShutdownManager(ManagerPlugin):
         it will be responded as failed.
         """
         operation_id = message["operation-id"]
-        protocol = ShutdownProcessProtocol(reboot=message["reboot"])
+        reboot = reboot=message["reboot"]
+        protocol = ShutdownProcessProtocol()
         protocol.set_timeout(self.registry.reactor)
         protocol.result.addCallbacks(
             self._respond_success, errback=self._respond_failure,
             callbackArgs=[operation_id], errbackArgs=[operation_id])
-        command, arguments = protocol.get_command_and_arguments()
-        self._process_factory.spawnProcess(protocol, command, args=arguments)
+        command, args = self._get_command_and_args(protocol, reboot)
+        self._process_factory.spawnProcess(protocol, command, args=args)
 
     def _respond_success(self, data, operation_id):
         logging.info("Shutdown request succeeded.")
@@ -63,6 +64,20 @@ class ShutdownManager(ManagerPlugin):
                    "result-text": data,
                    "operation-id": operation_id}
         return self.registry.broker.send_message(message, True)
+
+    def _get_command_and_args(self, protocol, reboot):
+        """
+        Returns a C{command, args} 2-tuple suitable for use with
+        L{IReactorProcess.spawnProcess}.
+        """
+        minutes = "+%d" % (protocol.delay // 60,)
+        if reboot:
+            args = ["/sbin/shutdown", "-r", minutes,
+                    "Landscape is rebooting the system"]
+        else:
+            args = ["/sbin/shutdown", "-h", minutes,
+                    "Landscape is shutting down the system"]
+        return "/sbin/shutdown", args
 
 
 class ShutdownProcessProtocol(ProcessProtocol):
@@ -90,20 +105,6 @@ class ShutdownProcessProtocol(ProcessProtocol):
         self.delay = delay
         self._data = []
         self._running = True
-
-    def get_command_and_arguments(self):
-        """
-        Returns a C{command, arguments} 2-tuple suitable for use with
-        L{IReactorProcess.spawnProcess}.
-        """
-        minutes = "+%d" % (self.delay // 60,)
-        if self.reboot:
-            arguments = ["/sbin/shutdown", "-r", minutes,
-                         "Landscape is rebooting the system"]
-        else:
-            arguments = ["/sbin/shutdown", "-h", minutes,
-                         "Landscape is shutting down the system"]
-        return "/sbin/shutdown", arguments
 
     def get_data(self):
         """Get the data printed by the subprocess."""
