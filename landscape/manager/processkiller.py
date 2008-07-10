@@ -44,15 +44,16 @@ class ProcessKiller(ManagerPlugin):
                      signame, pid)
         process_info = self.process_info.get_process_info(pid)
         if not process_info:
-            message = ("The process %s with PID %d that started at %s was "
+            start_time = datetime.utcfromtimestamp(start_time)
+            message = ("The process %s with PID %d that started at %s UTC was "
                        "not found") % (name, pid, start_time)
             raise ProcessNotFoundError(message)
         elif process_info["start-time"] != start_time:
             expected_time = datetime.utcfromtimestamp(start_time)
             actual_time = datetime.utcfromtimestamp(process_info["start-time"])
             message = ("The process %s with PID %d that started at "
-                       "%s was not found.  A process with the same "
-                       "PID that started at %s was found and not "
+                       "%s UTC was not found.  A process with the same "
+                       "PID that started at %s UTC was found and not "
                        "sent the %s signal") % (name, pid, expected_time,
                                                 actual_time, signame)
             raise ProcessMismatchError(message)
