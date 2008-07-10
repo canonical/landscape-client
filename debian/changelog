@@ -1,3 +1,14 @@
+landscape-client (1.0.13-feisty1-landscape1) feisty; urgency=low
+
+  * the timestamp in the error message from processkiller.py is now
+    formatted properly
+  * the process list sent to the server was only being updated for new
+    processes, and not when existing processes changed
+  * in script execution, a timeout error is now reported with a proper
+    error message instead of just a generic failure in the script
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 10 Jul 2008 14:24:07 +0000
+
 landscape-client (1.0.13-dapper1-landscape1) dapper; urgency=low
 
   * the timestamp in the error message from processkiller.py is now
