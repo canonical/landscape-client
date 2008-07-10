@@ -3,7 +3,6 @@ import pwd
 import tempfile
 
 from twisted.internet.defer import gatherResults
-from twisted.internet import reactor
 
 from landscape.manager.scriptexecution import (ScriptExecution,
                                                ProcessTimeLimitReachedError)
@@ -11,7 +10,7 @@ from landscape.manager.manager import SUCCEEDED, FAILED
 from landscape.tests.helpers import (
     LandscapeTest, LandscapeIsolatedTest, ManagerHelper,
     StubProcessFactory, DummyProcess)
-from landscape.tests.mocker import ANY, ARGS, MATCH
+from landscape.tests.mocker import ANY, ARGS
 
 # Test GPG-signing
 
