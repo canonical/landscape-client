@@ -3,7 +3,6 @@ import logging
 from twisted.internet.defer import Deferred
 from twisted.internet.protocol import ProcessProtocol
 from twisted.internet.error import ProcessDone
-from twisted.python.failure import Failure
 
 from landscape.manager.manager import ManagerPlugin, SUCCEEDED, FAILED
 

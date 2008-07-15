@@ -3,7 +3,6 @@ import signal
 import subprocess
 
 from landscape.tests.helpers import LandscapeTest, ManagerHelper
-from landscape.reactor import FakeReactor
 from landscape.lib.process import ProcessInformation
 from landscape.monitor.tests.test_activeprocessinfo import SampleDataBuilder
 
