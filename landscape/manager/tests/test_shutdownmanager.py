@@ -77,7 +77,6 @@ class ShutdownManagerTest(LandscapeTest):
         self.plugin.perform_shutdown(message)
 
         def restart_failed(failure):
-            self.assertTrue(isinstance(failure.value, ShutdownFailedError))
             self.assertTrue(self.broker_service.exchanger.is_urgent())
             self.assertEquals(
                 self.broker_service.message_store.get_pending_messages(),
@@ -87,6 +86,7 @@ class ShutdownManagerTest(LandscapeTest):
 
         [arguments] = self.process_factory.spawns
         protocol = arguments[0]
+        self.assertFailure(protocol.result, ShutdownFailedError)
         protocol.result.addErrback(restart_failed)
         protocol.childDataReceived(0, "Failure text is reported.")
         protocol.processEnded(Failure(ProcessTerminated(exitCode=1)))

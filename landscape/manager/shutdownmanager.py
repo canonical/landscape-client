@@ -3,6 +3,7 @@ import logging
 from twisted.internet.defer import Deferred
 from twisted.internet.protocol import ProcessProtocol
 from twisted.internet.error import ProcessDone
+from twisted.python.failure import Failure
 
 from landscape.manager.manager import ManagerPlugin, SUCCEEDED, FAILED
 
@@ -44,9 +45,8 @@ class ShutdownManager(ManagerPlugin):
         reboot = reboot=message["reboot"]
         protocol = ShutdownProcessProtocol()
         protocol.set_timeout(self.registry.reactor)
-        protocol.result.addCallbacks(
-            self._respond_success, errback=self._respond_failure,
-            callbackArgs=[operation_id], errbackArgs=[operation_id])
+        protocol.result.addCallback(self._respond_success, operation_id)
+        protocol.result.addErrback(self._respond_failure, operation_id)
         command, args = self._get_command_and_args(protocol, reboot)
         self._process_factory.spawnProcess(protocol, command, args=args)
 
