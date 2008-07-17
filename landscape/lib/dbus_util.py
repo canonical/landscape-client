@@ -75,7 +75,7 @@ def _method_reply_error(connection, message, exception):
     # END LS CUSTOM
 
     if dbus.version[:2] < (0, 80):
-        import dbus_bindings
+        from dbus import dbus_bindings
         reply = dbus_bindings.Error(message, name, contents)
         connection.send(reply)
     else:
