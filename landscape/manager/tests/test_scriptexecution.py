@@ -3,41 +3,16 @@ import pwd
 import tempfile
 
 from twisted.internet.defer import gatherResults
-from twisted.internet import reactor
 
 from landscape.manager.scriptexecution import (ScriptExecution,
                                                ProcessTimeLimitReachedError)
 from landscape.manager.manager import SUCCEEDED, FAILED
-from landscape.tests.helpers import (LandscapeTest, LandscapeIsolatedTest,
-                                     ManagerHelper, RemoteBrokerHelper)
-from landscape.tests.mocker import ANY, ARGS, MATCH
+from landscape.tests.helpers import (
+    LandscapeTest, LandscapeIsolatedTest, ManagerHelper,
+    StubProcessFactory, DummyProcess)
+from landscape.tests.mocker import ANY, ARGS
 
 # Test GPG-signing
-
-class StubProcessFactory(object):
-    """
-    A L{IReactorProcess} provider which records L{spawnProcess} calls and
-    allows tests to get at the protocol.
-    """
-    def __init__(self):
-        self.spawns = []
-
-    def spawnProcess(self, protocol, executable, args=(), env={}, path=None,
-                    uid=None, gid=None, usePTY=0, childFDs=None):
-        self.spawns.append((protocol, executable, args,
-                            env, path, uid, gid, usePTY, childFDs))
-
-
-class DummyProcess(object):
-    """A process (transport) that doesn't do anything."""
-    def __init__(self):
-        self.signals = []
-
-    def signalProcess(self, signal):
-        self.signals.append(signal)
-
-    def closeChildFD(self, fd):
-        pass
 
 
 class RunScriptTests(LandscapeTest):
@@ -128,9 +103,9 @@ class RunScriptTests(LandscapeTest):
             pw_uid = 1234
             pw_gid = 5678
             pw_dir = self.make_path()
-        
+
         self.expect(mock_getpwnam("user")).result(pwnam)
-        
+
         return self._run_script("user", 1234, 5678, "/")
 
     def test_limit_size(self):
