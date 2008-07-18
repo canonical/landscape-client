@@ -85,7 +85,7 @@ class ScriptExecution(ManagerPlugin):
             raise
 
     def _format_exception(self, e):
-        return u"%s: %s" % (type(e).__name__, e)
+        return u"%s: %s" % (e.__class__.__name__, e)
 
     def _respond_success(self, data, opid):
         return self._respond(SUCCEEDED, data, opid)
