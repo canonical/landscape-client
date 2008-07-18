@@ -214,7 +214,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         self.setup_environment(users, [], None)
         result = self.manager.dispatch_message(
             {"username": "jdoe", "name": "John Doe", "password": "password",
-             "operation-id": 123, "require-password-reset": False, 
+             "operation-id": 123, "require-password-reset": False,
              "type": "add-user", "primary-group-name": None,
              "location": None, "work-number": None, "home-number": "+123456"})
         result.addCallback(handle_callback)

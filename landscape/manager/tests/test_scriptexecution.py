@@ -103,9 +103,9 @@ class RunScriptTests(LandscapeTest):
             pw_uid = 1234
             pw_gid = 5678
             pw_dir = self.make_path()
-        
+
         self.expect(mock_getpwnam("user")).result(pwnam)
-        
+
         return self._run_script("user", 1234, 5678, "/")
 
     def test_limit_size(self):

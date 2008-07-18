@@ -4,7 +4,7 @@ from twisted.internet.error import ProcessTerminated
 from landscape import API
 from landscape.manager.manager import SUCCEEDED, FAILED
 from landscape.manager.shutdownmanager import (
-    ShutdownFailedError, ShutdownManager, ShutdownProcessProtocol)
+    ShutdownManager, ShutdownProcessProtocol)
 from landscape.tests.helpers import (
     LandscapeTest, ManagerHelper, StubProcessFactory)
 
@@ -76,7 +76,7 @@ class ShutdownManagerTest(LandscapeTest):
         message = {"type": "shutdown", "reboot": False, "operation-id": 100}
         self.plugin.perform_shutdown(message)
 
-        def restart_failed(exception):
+        def restart_failed(message_id):
             self.assertTrue(self.broker_service.exchanger.is_urgent())
             self.assertEquals(
                 self.broker_service.message_store.get_pending_messages(),
