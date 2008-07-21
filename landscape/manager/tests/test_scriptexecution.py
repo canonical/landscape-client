@@ -52,6 +52,18 @@ class RunScriptTests(LandscapeTest):
         d2.addCallback(self.assertEquals, "")
         return gatherResults([d1, d2])
 
+    def test_accented_run(self):
+        """
+        Scripts can contain accented data both in the content and in the
+        result.
+        """
+        accented_content = u"\N{LATIN SMALL LETTER E WITH ACUTE}"
+        result = self.plugin.run_script(
+            u"/bin/sh", u"echo %s" % (accented_content,))
+        result.addCallback(
+            self.assertEquals, "%s\n" % (accented_content.encode('utf-8'),))
+        return result
+
     def _run_script(self, username, uid, gid, path):
         # ignore the call to chown!
         mock_chown = self.mocker.replace("os.chown", passthrough=False)
