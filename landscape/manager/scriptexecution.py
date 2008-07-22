@@ -133,7 +133,7 @@ class ScriptExecution(ManagerPlugin):
         if uid is not None:
             os.chown(filename, uid, 0)
         script_file.write(
-            "#!%s\n%s" % (shell.encode('utf-8'), code.encode('utf-8')))
+            "#!%s\n%s" % (shell.encode("utf-8"), code.encode("utf-8")))
         script_file.close()
         pp = ProcessAccumulationProtocol(self.size_limit)
         self.process_factory.spawnProcess(pp, filename, uid=uid, gid=gid,

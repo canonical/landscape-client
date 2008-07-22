@@ -61,7 +61,7 @@ class RunScriptTests(LandscapeTest):
         result = self.plugin.run_script(
             u"/bin/sh", u"echo %s" % (accented_content,))
         result.addCallback(
-            self.assertEquals, "%s\n" % (accented_content.encode('utf-8'),))
+            self.assertEquals, "%s\n" % (accented_content.encode("utf-8"),))
         return result
 
     def _run_script(self, username, uid, gid, path):
