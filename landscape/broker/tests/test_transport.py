@@ -30,9 +30,6 @@ class DataCollectingResource(resource.Resource):
         return self
 
     def render(self, request):
-        # Let's kill the connection ASAP so that we don't leave connections
-        # around.
-        #request.channel.transport.loseConnection()
         self.request = request
         self.content = request.content.read()
         return bpickle.dumps("Great.")
@@ -103,7 +100,8 @@ class HTTPTransportTest(LandscapeTest):
             self.assertEquals(r.request.received_headers["x-computer-id"], "34")
             self.assertEquals(r.request.received_headers["user-agent"],
                               "landscape-client/%s" % (VERSION,))
-            self.assertEquals(r.request.received_headers["x-message-api"], "X.Y")
+            self.assertEquals(r.request.received_headers["x-message-api"],
+                              "X.Y")
             self.assertEquals(bpickle.loads(r.content), "HI")
         result.addCallback(got_result)
         return result
