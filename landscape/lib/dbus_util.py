@@ -183,9 +183,11 @@ class AsynchronousProxyMethod(object):
             raise NoReplyError(message)
         if (message.startswith("A security policy in place")
             or message.startswith("org.freedesktop.DBus.Error.AccessDenied")):
-            raise SecurityError()
+            raise SecurityError(message)
         if "was not provided by any .service" in message:
-            raise ServiceUnknownError()
+            raise ServiceUnknownError(message)
+        if "Could not get owner of name" in message:
+            raise ServiceUnknownError(message)
 
         if message.startswith(PYTHON_EXCEPTION_PREFIX):
             python_exception = message[len(PYTHON_EXCEPTION_PREFIX)
