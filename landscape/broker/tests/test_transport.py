@@ -5,13 +5,13 @@ from pycurl import error as PyCurlError
 from landscape import API, VERSION
 from landscape.broker.transport import HTTPTransport
 from landscape.lib import bpickle
-from landscape.reactor import TwistedReactor
 
 from landscape.tests.helpers import LandscapeTest, LogKeeperHelper
 
 from twisted.web import server, resource
 from twisted.internet import reactor
 from twisted.internet.ssl import DefaultOpenSSLContextFactory
+from twisted.internet.threads import deferToThread
 
 
 def sibpath(path):
@@ -32,7 +32,7 @@ class DataCollectingResource(resource.Resource):
     def render(self, request):
         # Let's kill the connection ASAP so that we don't leave connections
         # around.
-        request.channel.transport.loseConnection()
+        #request.channel.transport.loseConnection()
         self.request = request
         self.content = request.content.read()
         return bpickle.dumps("Great.")
@@ -56,15 +56,6 @@ class HTTPTransportTest(LandscapeTest):
         transport = HTTPTransport(url)
         self.assertEquals(transport.get_url(), url)
 
-
-    def _exchange_and_stop(self, transport, treactor, payload,
-                           computer_id=None, message_api=None):
-        treactor.call_in_thread(lambda r: treactor.stop(),
-                                lambda *e: treactor.stop(),
-                                transport.exchange, "HI",
-                                computer_id=computer_id,
-                                message_api=message_api)
-
     def test_request_data(self):
         """
         When a request is sent with HTTPTransport.exchange, it should
@@ -77,17 +68,18 @@ class HTTPTransportTest(LandscapeTest):
         self.ports.append(port)
         transport = HTTPTransport("http://localhost:%d/"
                                   % (port.getHost().port,))
-        treactor = TwistedReactor()
-        treactor.call_later(0, self._exchange_and_stop, transport, treactor,
-                            "HI", computer_id="34", message_api="X.Y")
-        treactor.run()
-
-        self.assertEquals(r.request.received_headers["x-computer-id"], "34")
-        self.assertEquals(r.request.received_headers["user-agent"],
-                          "landscape-client/%s" % (VERSION,))
-        self.assertEquals(r.request.received_headers["x-message-api"], "X.Y")
-        self.assertEquals(bpickle.loads(r.content), "HI")
-
+        result = deferToThread(transport.exchange, "HI", computer_id="34",
+                               message_api="X.Y")
+        
+        def got_result(result):
+            self.assertEquals(r.request.received_headers["x-computer-id"], "34")
+            self.assertEquals(r.request.received_headers["user-agent"],
+                              "landscape-client/%s" % (VERSION,))
+            self.assertEquals(r.request.received_headers["x-message-api"],
+                              "X.Y")
+            self.assertEquals(bpickle.loads(r.content), "HI")
+        result.addCallback(got_result)
+        return result
 
     def test_ssl_verification_positive(self):
         """
@@ -104,16 +96,17 @@ class HTTPTransportTest(LandscapeTest):
         transport = HTTPTransport("https://localhost:%d/"
                                   % (port.getHost().port,),
                                   pubkey=PUBKEY)
-        treactor = TwistedReactor()
-        treactor.call_later(0, self._exchange_and_stop, transport, treactor,
-                            "HI", computer_id="34", message_api="X.Y")
-        treactor.run()
+        result = deferToThread(transport.exchange, "HI", computer_id="34",
+                               message_api="X.Y")
 
-        self.assertEquals(r.request.received_headers["x-computer-id"], "34")
-        self.assertEquals(r.request.received_headers["user-agent"],
-                          "landscape-client/%s" % (VERSION,))
-        self.assertEquals(r.request.received_headers["x-message-api"], "X.Y")
-        self.assertEquals(bpickle.loads(r.content), "HI")
+        def got_result(result):
+            self.assertEquals(r.request.received_headers["x-computer-id"], "34")
+            self.assertEquals(r.request.received_headers["user-agent"],
+                              "landscape-client/%s" % (VERSION,))
+            self.assertEquals(r.request.received_headers["x-message-api"], "X.Y")
+            self.assertEquals(bpickle.loads(r.content), "HI")
+        result.addCallback(got_result)
+        return result
 
 
     def test_ssl_verification_negative(self):
@@ -132,12 +125,13 @@ class HTTPTransportTest(LandscapeTest):
         transport = HTTPTransport("https://localhost:%d/"
                                   % (port.getHost().port,),
                                   pubkey=PUBKEY)
-        treactor = TwistedReactor()
-        treactor.call_later(0, self._exchange_and_stop, transport, treactor,
-                            "HI", computer_id="34")
-        treactor.run()
 
-        self.assertEquals(r.request, None)
-        self.assertEquals(r.content, None)
-        self.assertTrue("server certificate verification failed"
-                        in self.logfile.getvalue())
+        result = deferToThread(transport.exchange, "HI", computer_id="34",
+                               message_api="X.Y")
+        def got_result(result):
+            self.assertEquals(r.request, None)
+            self.assertEquals(r.content, None)
+            self.assertTrue("server certificate verification failed"
+                            in self.logfile.getvalue())
+        result.addCallback(got_result)
+        return result
