@@ -52,9 +52,9 @@ class RunScriptTests(LandscapeTest):
         d2.addCallback(self.assertEquals, "")
         return gatherResults([d1, d2])
 
-    def test_accented_run(self):
+    def test_accented_run_in_code(self):
         """
-        Scripts can contain accented data both in the content and in the
+        Scripts can contain accented data both in the code and in the
         result.
         """
         accented_content = u"\N{LATIN SMALL LETTER E WITH ACUTE}"
@@ -62,6 +62,19 @@ class RunScriptTests(LandscapeTest):
             u"/bin/sh", u"echo %s" % (accented_content,))
         result.addCallback(
             self.assertEquals, "%s\n" % (accented_content.encode("utf-8"),))
+        return result
+
+    def test_accented_run_in_interpreter(self):
+        """
+        Scripts can also contain accents in the interpreter.
+        """
+        accented_content = u"\N{LATIN SMALL LETTER E WITH ACUTE}"
+        result = self.plugin.run_script(
+            u"/bin/echo %s" % (accented_content,), u"")
+        def check(result):
+            self.assertTrue(
+                "%s " % (accented_content.encode("utf-8"),) in result)
+        result.addCallback(check)
         return result
 
     def _run_script(self, username, uid, gid, path):
