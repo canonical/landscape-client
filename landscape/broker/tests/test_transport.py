@@ -2,7 +2,7 @@ import os
 
 from pycurl import error as PyCurlError
 
-from landscape import API, VERSION
+from landscape import VERSION
 from landscape.broker.transport import HTTPTransport
 from landscape.lib import bpickle
 
@@ -67,8 +67,8 @@ class HTTPTransportTest(LandscapeTest):
                                   % (port.getHost().port,))
         result = deferToThread(transport.exchange, "HI", computer_id="34",
                                message_api="X.Y")
-        
-        def got_result(result):
+
+        def got_result(ignored):
             self.assertEquals(r.request.received_headers["x-computer-id"], "34")
             self.assertEquals(r.request.received_headers["user-agent"],
                               "landscape-client/%s" % (VERSION,))
@@ -96,7 +96,7 @@ class HTTPTransportTest(LandscapeTest):
         result = deferToThread(transport.exchange, "HI", computer_id="34",
                                message_api="X.Y")
 
-        def got_result(result):
+        def got_result(ignored):
             self.assertEquals(r.request.received_headers["x-computer-id"], "34")
             self.assertEquals(r.request.received_headers["user-agent"],
                               "landscape-client/%s" % (VERSION,))
@@ -126,7 +126,7 @@ class HTTPTransportTest(LandscapeTest):
 
         result = deferToThread(transport.exchange, "HI", computer_id="34",
                                message_api="X.Y")
-        def got_result(result):
+        def got_result(ignored):
             self.assertEquals(r.request, None)
             self.assertEquals(r.content, None)
             self.assertTrue("server certificate verification failed"
