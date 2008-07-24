@@ -1,3 +1,11 @@
+landscape-client (1.0.14-dapper1-landscape1) dapper; urgency=low
+
+  * fixed some dbus errors in some of the supported distributions
+  * added restart/shutdown plugin
+  * scripts can now have accented characters in them
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 24 Jul 2008 13:05:58 +0000
+
 landscape-client (1.0.13-hardy1-landscape1) hardy; urgency=low
 
   * the timestamp in the error message from processkiller.py is now
