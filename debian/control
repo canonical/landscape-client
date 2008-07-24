@@ -9,7 +9,7 @@ XS-Python-Version: >= 2.4
 Package: landscape-client
 Architecture: all
 Pre-Depends: python, ${misc:Depends}
-Depends: ${python:Depends}, python-gobject, python-twisted-core, python-twisted-web, lsb-release, perl-modules, python-pycurl, python-dbus, python-gdbm, hal, smartpm-core (>= 0.52-hardy1-landscape4), ca-certificates
+Depends: ${python:Depends}, python-gobject, python-twisted-core, python-twisted-web, lsb-release, perl-modules, python-pycurl, python-dbus, python-gdbm, hal, smartpm-core (>= 0.52-intrepid1-landscape4), ca-certificates
 XB-Python-Version: ${python:Versions}
 Description: The Landscape administration system client
  Landscape is a web-based tool for managing Ubuntu systems. This
