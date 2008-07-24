@@ -11,7 +11,8 @@ import getpass
 from dbus import DBusException
 
 from landscape.sysvconfig import SysVConfig, ProcessError
-from landscape.lib.dbus_util import get_bus, NoReplyError, ServiceUnknownError
+from landscape.lib.dbus_util import (
+    get_bus, NoReplyError, ServiceUnknownError, SecurityError)
 from landscape.lib.twisted_util import gather_results
 
 from landscape.broker.registration import InvalidCredentialsError
@@ -299,7 +300,11 @@ def register(config, reactor=None):
         reactor.fireSystemEvent("landscape-registration-error")
 
     def catch_all(failure):
-        if failure.check(ServiceUnknownError):
+        # We catch SecurityError here too, because on some DBUS configurations
+        # if you try to connect to a dbus name that doesn't have a listener,
+        # it'll try auto-starting the service, but then the StartServiceByName
+        # call can raise a SecurityError.
+        if failure.check(ServiceUnknownError, SecurityError):
             print_text("Error occurred contacting Landscape Client. "
                        "Is it running?", error=True)
         else:

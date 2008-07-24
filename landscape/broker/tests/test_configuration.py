@@ -550,10 +550,7 @@ class ConfigurationFunctionsTest(LandscapeTest):
         register_mock = self.mocker.replace(register, passthrough=False)
         register_mock(ANY)
         self.mocker.replay()
-
         main(["--config", self.make_working_config()])
-
-
 
     def test_main_with_register(self): 
          setup_mock = self.mocker.replace(setup)
@@ -804,7 +801,13 @@ class RegisterFunctionTest(LandscapeIsolatedTest):
         return result
 
 
-class RegisterFunctionNoServiceTest(LandscapeTest):
+class RegisterFunctionNoServiceTest(LandscapeIsolatedTest):
+
+    def setUp(self):
+        super(RegisterFunctionNoServiceTest, self).setUp()
+        self.configuration = BrokerConfiguration()
+        # Let's not mess about with the system bus
+        self.configuration.load_command_line(["--bus", "session"])
 
     def test_register_dbus_error(self):
         """
@@ -835,7 +838,7 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
         self.mocker.replay()
 
         # DO IT!
-        register(BrokerConfiguration(), reactor_mock)
+        register(self.configuration, reactor_mock)
 
         return result
 
@@ -887,7 +890,7 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
 
         self.mocker.replay()
 
-        register(BrokerConfiguration(), reactor_mock)
+        register(self.configuration, reactor_mock)
 
         return result
 

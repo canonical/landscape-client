@@ -83,10 +83,11 @@ class BrokerDBusObject(Object):
             logging.error("Nobody handled the %s message." % (mtype,))
 
             result_text = """\
-Landscape client failed to handle this request (%s) because the plugin
-which should handle it wasn't available at that time. This could mean that
-the plugin has been intentionally disabled, or that the client isn't running
-properly.
+Landscape client failed to handle this request (%s) because the
+plugin which should handle it isn't available.  This could mean that the
+plugin has been intentionally disabled, or that the client isn't running
+properly, or you may be running an older version of the client that doesn't
+support this feature.
 
 Please contact the Landscape team for more information.
 """ % (mtype,)

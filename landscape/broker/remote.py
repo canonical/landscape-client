@@ -4,10 +4,9 @@ from twisted.internet.defer import execute, maybeDeferred, succeed
 
 from dbus import DBusException
 
-from landscape.schema import InvalidError
 from landscape.broker.broker import BUS_NAME, OBJECT_PATH, IFACE_NAME
-from landscape.lib.dbus_util import get_object, byte_array, array_to_string
-from landscape.lib.bpickle import dumps, loads
+from landscape.lib.dbus_util import ServiceUnknownError, get_object, byte_array
+from landscape.lib.bpickle import dumps
 
 
 class RemoteBroker(object):
