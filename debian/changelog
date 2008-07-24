@@ -1,3 +1,11 @@
+landscape-client (1.0.14-gutsy1-landscape1) gutsy; urgency=low
+
+  * fixed some dbus errors in some of the supported distributions
+  * added restart/shutdown plugin
+  * scripts can now have accented characters in them
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 24 Jul 2008 13:06:22 +0000
+
 landscape-client (1.0.14-feisty1-landscape1) feisty; urgency=low
 
   * fixed some dbus errors in some of the supported distributions
