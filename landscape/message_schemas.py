@@ -300,6 +300,14 @@ TEST = Message(
      "sequence": Int()},
     optional=["greeting", "consistency-error", "echo", "sequence"])
 
+CUSTOM_GRAPH = Message("custom-graph", {
+    # Tuple of timestamp, graph-id, value
+    "graph-data": List(Tuple(Float(), Int(), Float())),
+    # Tuple of graph-id, error-message
+    "error-messages": List(Tuple(Int(), Unicode()))},
+    optional=["error-messages"]
+    )
+
 message_schemas = {}
 for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                OPERATION_RESULT, COMPUTER_INFO, DISTRIBUTION_INFO,
@@ -307,5 +315,5 @@ for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                RESYNCHRONIZE, MOUNT_ACTIVITY, MOUNT_INFO, FREE_SPACE,
                REGISTER, TEMPERATURE, PROCESSOR_INFO, USERS, PACKAGES,
                CHANGE_PACKAGES_RESULT, UNKNOWN_PACKAGE_HASHES,
-               ADD_PACKAGES, TEXT_MESSAGE, TEST]:
+               ADD_PACKAGES, TEXT_MESSAGE, TEST, CUSTOM_GRAPH]:
     message_schemas[schema.type] = schema
