@@ -3,8 +3,8 @@ import sys, os
 if os.path.isdir("landscape"):
     sys.path.insert(0, "./")
 
-from landscape.motd.deployment import main
+from landscape.sysinfo.deployment import run
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    run(sys.argv[1:])
