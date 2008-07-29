@@ -1,3 +1,4 @@
+from landscape.lib.twisted_util import gather_results
 from landscape.plugin import PluginRegistry
 
 
@@ -23,3 +24,9 @@ class SysInfoPluginRegistry(PluginRegistry):
     def get_notes(self):
         """Get all eventual notes to be shown up to the administrator."""
         return self._notes
+
+    def run(self):
+        deferreds = []
+        for plugin in self.get_plugins():
+            deferreds.append(plugin.run())
+        return gather_results(deferreds)

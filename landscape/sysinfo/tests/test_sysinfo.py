@@ -1,6 +1,7 @@
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 from landscape.plugin import PluginRegistry
 from landscape.tests.helpers import LandscapeTest
+from twisted.internet.defer import Deferred
 
 
 class SysInfoPluginRegistryTest(LandscapeTest):
@@ -25,3 +26,33 @@ class SysInfoPluginRegistryTest(LandscapeTest):
         self.assertEquals(
             self.sysinfo.get_notes(),
             ["Your laptop is burning!", "Oh, your house too, btw."])
+
+    def test_run(self):
+        class Plugin(object):
+            def __init__(self, deferred):
+                self._deferred = deferred
+            def register(self, registry):
+                pass
+            def run(self):
+                return self._deferred
+
+        plugin_deferred1 = Deferred()
+        plugin_deferred2 = Deferred()
+
+        plugin1 = Plugin(plugin_deferred1)
+        plugin2 = Plugin(plugin_deferred2)
+
+        self.sysinfo.add(plugin1)
+        self.sysinfo.add(plugin2)
+
+        def check_result(result):
+            self.assertEquals(result, [123, 456])
+
+        deferred = self.sysinfo.run()
+        deferred.addBoth(check_result)
+
+        self.assertEquals(deferred.called, False)
+        plugin_deferred1.callback(123)
+        self.assertEquals(deferred.called, False)
+        plugin_deferred2.callback(456)
+        self.assertEquals(deferred.called, True)
