@@ -1,7 +1,8 @@
+from twisted.internet.defer import Deferred
+
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 from landscape.plugin import PluginRegistry
 from landscape.tests.helpers import LandscapeTest
-from twisted.internet.defer import Deferred
 
 
 class SysInfoPluginRegistryTest(LandscapeTest):
@@ -19,6 +20,8 @@ class SysInfoPluginRegistryTest(LandscapeTest):
         self.assertEquals(
             self.sysinfo.get_headers(),
             [("Memory usage", "65%"), ("Swap usage", "None")])
+        self.assertEquals(self.sysinfo.get_notes(), [])
+        self.assertEquals(self.sysinfo.get_footnotes(), [])
 
     def test_add_and_get_notes(self):
         self.sysinfo.add_note("Your laptop is burning!")
@@ -26,6 +29,17 @@ class SysInfoPluginRegistryTest(LandscapeTest):
         self.assertEquals(
             self.sysinfo.get_notes(),
             ["Your laptop is burning!", "Oh, your house too, btw."])
+        self.assertEquals(self.sysinfo.get_headers(), [])
+        self.assertEquals(self.sysinfo.get_footnotes(), [])
+
+    def test_add_and_get_footnotes(self):
+        self.sysinfo.add_footnote("Graphs available at http://graph")
+        self.sysinfo.add_footnote("Go! Go!")
+        self.assertEquals(
+            self.sysinfo.get_footnotes(),
+            ["Graphs available at http://graph", "Go! Go!"])
+        self.assertEquals(self.sysinfo.get_headers(), [])
+        self.assertEquals(self.sysinfo.get_notes(), [])
 
     def test_run(self):
         class Plugin(object):
