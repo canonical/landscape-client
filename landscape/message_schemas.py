@@ -301,8 +301,9 @@ TEST = Message(
     optional=["greeting", "consistency-error", "echo", "sequence"])
 
 CUSTOM_GRAPH = Message("custom-graph", {
-    # Tuple of timestamp, graph-id, value
-    "graph-data": List(Tuple(Float(), Int(), Float())),
+    # The tuples are timestamp, value
+    "graph-data": List(KeyDict({"graph-id": Int(),
+                                "data": List(Tuple(Float(), Float()))})),
     # Tuple of graph-id, error-message
     "error-messages": List(Tuple(Int(), Unicode()))},
     optional=["error-messages"]
