@@ -52,14 +52,13 @@ class Object(Object):
         self.bus = bus
 
 def _method_reply_error(connection, message, exception):
-    from dbus import dbus_bindings
     if '_dbus_error_name' in exception.__dict__:
         name = exception._dbus_error_name
-    elif exception.__module__ == '__main__':
+    elif exception.__class__.__module__ == '__main__':
         name = 'org.freedesktop.DBus.Python.%s' % exception.__class__.__name__
     else:
         name = 'org.freedesktop.DBus.Python.%s.%s' % (
-            exception.__module__, exception.__class__.__name__)
+            exception.__class__.__module__, exception.__class__.__name__)
 
     # LS CUSTOM
     current_exception = sys.exc_info()[1]
@@ -75,11 +74,16 @@ def _method_reply_error(connection, message, exception):
     contents = "%s: %s" % (name, contents)
     # END LS CUSTOM
 
-    reply = dbus_bindings.Error(message, name, contents)
+    if dbus.version[:2] < (0, 80):
+        from dbus import dbus_bindings
+        reply = dbus_bindings.Error(message, name, contents)
+        connection.send(reply)
+    else:
+        import _dbus_bindings
+        reply = _dbus_bindings.ErrorMessage(message, name, contents)
+        connection.send_message(reply)
 
-    connection.send(reply)
-
-if dbus.version[:2] <= (0, 70):
+if dbus.version[:3] <= (0, 80, 2):
     import dbus.service
     dbus.service._method_reply_error = _method_reply_error
 
@@ -179,9 +183,11 @@ class AsynchronousProxyMethod(object):
             raise NoReplyError(message)
         if (message.startswith("A security policy in place")
             or message.startswith("org.freedesktop.DBus.Error.AccessDenied")):
-            raise SecurityError()
+            raise SecurityError(message)
         if "was not provided by any .service" in message:
-            raise ServiceUnknownError()
+            raise ServiceUnknownError(message)
+        if "Could not get owner of name" in message:
+            raise ServiceUnknownError(message)
 
         if message.startswith(PYTHON_EXCEPTION_PREFIX):
             python_exception = message[len(PYTHON_EXCEPTION_PREFIX)

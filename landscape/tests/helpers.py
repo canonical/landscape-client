@@ -439,6 +439,31 @@ def mock_time():
     return mock_counter(100)
 
 
+class StubProcessFactory(object):
+    """
+    A L{IReactorProcess} provider which records L{spawnProcess} calls and
+    allows tests to get at the protocol.
+    """
+    def __init__(self):
+        self.spawns = []
+
+    def spawnProcess(self, protocol, executable, args=(), env={}, path=None,
+                    uid=None, gid=None, usePTY=0, childFDs=None):
+        self.spawns.append((protocol, executable, args,
+                            env, path, uid, gid, usePTY, childFDs))
+
+
+class DummyProcess(object):
+    """A process (transport) that doesn't do anything."""
+    def __init__(self):
+        self.signals = []
+
+    def signalProcess(self, signal):
+        self.signals.append(signal)
+
+    def closeChildFD(self, fd):
+        pass
+
 
 from twisted.python import log
 from twisted.python import failure

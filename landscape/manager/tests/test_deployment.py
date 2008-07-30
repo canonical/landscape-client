@@ -23,14 +23,14 @@ class DeploymentTest(LandscapeTest):
         configuration.load(["--manager-plugins", "ALL",
                             "-d", self.make_path()])
         manager_service = ManagerService(configuration)
-        self.assertEquals(len(manager_service.plugins), 3)
+        self.assertEquals(len(manager_service.plugins), 4)
 
     def test_include_script_execution(self):
         configuration = ManagerConfiguration()
         configuration.load(["--include-manager-plugins", "ScriptExecution",
                             "-d", self.make_path()])
         manager_service = ManagerService(configuration)
-        self.assertEquals(len(manager_service.plugins), 4)
+        self.assertEquals(len(manager_service.plugins), 5)
 
     def test_get_allowed_script_users_with_users(self):
         """

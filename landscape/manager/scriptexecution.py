@@ -7,12 +7,9 @@ import os
 import pwd
 import tempfile
 import operator
-import traceback
 
-from twisted.internet.utils import getProcessOutput
 from twisted.internet.protocol import ProcessProtocol
 from twisted.internet.defer import Deferred
-from twisted.python.failure import Failure
 
 from landscape.manager.manager import ManagerPlugin, SUCCEEDED, FAILED
 
@@ -85,7 +82,7 @@ class ScriptExecution(ManagerPlugin):
             raise
 
     def _format_exception(self, e):
-        return u"%s: %s" % (type(e).__name__, e)
+        return u"%s: %s" % (e.__class__.__name__, e)
 
     def _respond_success(self, data, opid):
         return self._respond(SUCCEEDED, data, opid)
@@ -135,7 +132,8 @@ class ScriptExecution(ManagerPlugin):
         os.chmod(filename, 0700)
         if uid is not None:
             os.chown(filename, uid, 0)
-        script_file.write("#!%s\n%s" % (shell, code))
+        script_file.write(
+            "#!%s\n%s" % (shell.encode("utf-8"), code.encode("utf-8")))
         script_file.close()
         pp = ProcessAccumulationProtocol(self.size_limit)
         self.process_factory.spawnProcess(pp, filename, uid=uid, gid=gid,
@@ -186,7 +184,7 @@ class ProcessAccumulationProtocol(ProcessProtocol):
         L{ProcessTimeLimitReachedError} will be fired with data accumulated so
         far.
         """
-        data = ''.join(self.data)
+        data = "".join(self.data)
         if self._error:
             self.result_deferred.errback(ProcessTimeLimitReachedError(data))
         else:
