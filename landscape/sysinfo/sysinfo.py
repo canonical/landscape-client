@@ -1,3 +1,5 @@
+import math
+
 from landscape.lib.twisted_util import gather_results
 from landscape.plugin import PluginRegistry
 
@@ -70,5 +72,99 @@ class SysInfoPluginRegistry(PluginRegistry):
         return gather_results(deferreds)
 
 
-# def format_output(headers, notes, footer):
-#    pass
+def format_sysinfo(headers, notes=[], footer=[],
+                   width=80, column_separator="   "):
+    headers_len = len(headers)
+    value_separator = ": "
+
+    # Compute the number of columns in the header.  To do that, we first
+    # do a rough estimative of the maximum number of columns feasible,
+    # and then we go back from there until we can fit things.
+    min_length = width
+    for header, value in headers:
+        min_length = min(min_length, len(header)+len(value)+2) # 2 for ": "
+    columns = int(math.ceil(float(width) /
+                            (min_length + len(column_separator))))
+
+    # Okay, we've got a base for the number of columns.  Now, since
+    # columns may have different lengths, and the length of each column
+    # will change as we compress headers in less and less columns, we
+    # have to perform some backtracking to compute a good feasible number
+    # of columns.
+    while True:
+        # Check if the current number of columns would fit in the screen.
+        # Note that headers are indented like this:
+        #
+        #     Header:         First value
+        #     Another header: Value
+        #
+        # So the column length is the sum of the widest header, plus the
+        # widest value, plus the value separator.
+        headers_per_column = int(math.ceil(headers_len / float(columns)))
+        header_lengths = []
+        total_length = 0
+        for column in range(columns):
+            # We must find the widest header and value, both to compute the
+            # column length, and also to compute per-column padding when
+            # outputing it.
+            widest_header_len = 0
+            widest_value_len = 0
+            for row in range(headers_per_column):
+                header_index = column * headers_per_column + row
+                # There's potentially less headers in the last column, so
+                # let's watch out for these here.
+                if header_index < headers_len:
+                    header, value = headers[header_index]
+                    widest_header_len = max(widest_header_len, len(header))
+                    widest_value_len = max(widest_value_len, len(value))
+
+            if column > 0:
+                # Account for the spacing between each column.
+                total_length += len(column_separator)
+
+            total_length += (widest_header_len + widest_value_len +
+                             len(value_separator))
+
+            # Keep track of these lengths for building the output later.
+            header_lengths.append((widest_header_len, widest_value_len))
+
+        if columns == 1 or total_length < width:
+            # If there's just one column, or if we're within the requested
+            # length, we're good to go.
+            break
+
+        # Otherwise, do the whole thing again with one less column.
+        columns -= 1
+
+
+    # Alright! Show time! Let's build the headers line by line.
+    lines = []
+    for row in range(headers_per_column):
+        line = ""
+        # Pick all columns for this line.  Note that this means that
+        # for 4 headers with 2 columns, we pick header 0 and 2 for
+        # the first line.
+        for column in range(columns):
+            header_index = column * headers_per_column + row
+            # There's potentially less headers in the last column, so
+            # let's watch out for these here.
+            if header_index < headers_len:
+                header, value = headers[header_index]
+                # Get the widest header/value on this column, for padding.
+                widest_header_len, widest_value_len = header_lengths[column]
+                if column > 0:
+                    # Add inter-column spacing.
+                    line += column_separator
+                # And append the column to the current line.
+                line += (header +
+                         value_separator +
+                         " " * (widest_header_len - len(header)) +
+                         value)
+                # If there are more columns in this line, pad it up so
+                # that the next column's header is correctly aligned.
+                if headers_len > (column+1) * headers_per_column + row:
+                     line += " " * (widest_value_len - len(value))
+        lines.append(line)
+    output = "\n".join(lines)
+
+    return output
