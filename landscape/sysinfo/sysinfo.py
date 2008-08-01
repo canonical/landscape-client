@@ -72,8 +72,12 @@ class SysInfoPluginRegistry(PluginRegistry):
         return gather_results(deferreds)
 
 
-def format_sysinfo(headers, notes=[], footer=[],
-                   width=80, column_separator="   "):
+def format_sysinfo(headers=[], notes=[], footer=[], width=80, indent="",
+                   column_separator="   ", note_prefix="=> "):
+
+    # Indentation spacing is easier to handle if we just take it off the width.
+    width -= len(indent)
+
     headers_len = len(headers)
     value_separator = ": "
 
@@ -140,7 +144,7 @@ def format_sysinfo(headers, notes=[], footer=[],
     # Alright! Show time! Let's build the headers line by line.
     lines = []
     for row in range(headers_per_column):
-        line = ""
+        line = indent
         # Pick all columns for this line.  Note that this means that
         # for 4 headers with 2 columns, we pick header 0 and 2 for
         # the first line.
@@ -165,6 +169,12 @@ def format_sysinfo(headers, notes=[], footer=[],
                 if headers_len > (column+1) * headers_per_column + row:
                      line += " " * (widest_value_len - len(value))
         lines.append(line)
-    output = "\n".join(lines)
 
-    return output
+    if notes:
+        if headers:
+            # Some spacing between headers and notes.
+            lines.append("")
+        # For notes, just prepend the prefix and we're done.
+        lines.extend(indent + note_prefix + note for note in notes)
+
+    return "\n".join(lines)

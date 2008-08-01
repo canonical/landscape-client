@@ -82,15 +82,32 @@ class FormatTest(LandscapeTest):
         output = format_sysinfo([("Header", "Value")])
         self.assertEquals(output, "Header: Value")
 
-    def test_parallel_headers(self):
+    def test_parallel_headers_with_just_enough_space(self):
         output = format_sysinfo([("Header1", "Value1"),
-                                 ("Header2", "Value2")])
+                                 ("Header2", "Value2")], width=34)
         self.assertEquals(output, "Header1: Value1   Header2: Value2")
 
-    def test_stacked_headers_with_insufficient_space(self):
+    def test_stacked_headers_which_barely_doesnt_fit(self):
+        output = format_sysinfo([("Header1", "Value1"),
+                                 ("Header2", "Value2")], width=33)
+        self.assertEquals(output, "Header1: Value1\nHeader2: Value2")
+
+    def test_stacked_headers_with_clearly_insufficient_space(self):
         output = format_sysinfo([("Header1", "Value1"),
                                  ("Header2", "Value2")], width=1)
-        self.assertEquals(output, "Header1: Value1\nHeader2: Value2")
+        self.assertEquals(output, "Header1: Value1\n"
+                                  "Header2: Value2")
+
+    def test_indent_headers_in_parallel_with_just_enough_space(self):
+        output = format_sysinfo([("Header1", "Value1"),
+                                 ("Header2", "Value2")], indent=">>", width=36)
+        self.assertEquals(output, ">>Header1: Value1   Header2: Value2")
+
+    def test_indent_headers_stacked_which_barely_doesnt_fit(self):
+        output = format_sysinfo([("Header1", "Value1"),
+                                 ("Header2", "Value2")], indent=">>", width=35)
+        self.assertEquals(output, ">>Header1: Value1\n"
+                                  ">>Header2: Value2")
 
     def test_parallel_and_stacked_headers(self):
         headers = [("Header%d" % i, "Value%d" % i) for i in range(1, 6)]
@@ -116,3 +133,30 @@ class FormatTest(LandscapeTest):
                           "Header one: Value one   Header4: Value4\n"
                           "Header2:    Value2      Header5: Value five\n"
                           "Header3:    Value3")
+
+    def test_one_note(self):
+        self.assertEquals(format_sysinfo(notes=["Something's wrong!"]),
+                          "=> Something's wrong!")
+
+    def test_more_notes(self):
+        self.assertEquals(format_sysinfo(notes=["Something's wrong",
+                                                "You should look at it",
+                                                "Really"]),
+                          "=> Something's wrong\n"
+                          "=> You should look at it\n"
+                          "=> Really")
+
+    def test_indented_notes(self):
+        self.assertEquals(format_sysinfo(notes=["Something's wrong",
+                                                "You should look at it",
+                                                "Really"], indent=">>"),
+                          ">>=> Something's wrong\n"
+                          ">>=> You should look at it\n"
+                          ">>=> Really")
+
+    def test_header_and_note(self):
+        self.assertEquals(format_sysinfo(headers=[("Header", "Value")],
+                                         notes=["Note"]),
+                          "Header: Value\n"
+                          "\n" 
+                          "=> Note")
