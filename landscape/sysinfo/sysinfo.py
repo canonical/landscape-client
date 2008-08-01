@@ -74,6 +74,23 @@ class SysInfoPluginRegistry(PluginRegistry):
 
 def format_sysinfo(headers=[], notes=[], footnotes=[], width=80, indent="",
                    column_separator="   ", note_prefix="=> "):
+    """Format sysinfo headers, notes and footnotes to be displayed.
+
+    This function will format headers notes and footnotes in a way that
+    looks similar to the following:
+
+        Header1: Value1   Header3: Value3
+        Header2: Value2   Header4: Value4
+
+        => This is first note
+        => This is the second note
+
+        The first footnote.
+        The second footnote.
+
+    Header columns will be dynamically adjusted to conform to the size
+    of header labels and values.
+    """
 
     # Indentation spacing is easier to handle if we just take it off the width.
     width -= len(indent)
