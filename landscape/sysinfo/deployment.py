@@ -2,12 +2,10 @@
 import os
 
 from twisted.python.reflect import namedClass
+from twisted.internet import reactor
 
 from landscape.deployment import Configuration
-from landscape.monitor.monitor import (MonitorPluginRegistry,
-                                       MonitorDBusObject)
-from landscape.broker.remote import (RemoteBroker,
-                                     DBusSignalToReactorTransmitter)
+from landscape.sysinfo.sysinfo import SysInfoPluginRegistry, format_sysinfo
 
 
 ALL_PLUGINS = ["Load"]
@@ -41,5 +39,22 @@ class SysInfoConfiguration(Configuration):
                 for plugin_name in self.plugin_factories]
 
 
-def run(args):
-    pass
+def run(args, run_reactor=True):
+    sysinfo = SysInfoPluginRegistry()
+    config = SysInfoConfiguration()
+    config.load(args)
+    for plugin in config.get_plugins():
+        sysinfo.add(plugin)
+    def show_output(result):
+        print format_sysinfo(sysinfo.get_headers(), sysinfo.get_notes(),
+                             sysinfo.get_footnotes(), indent="  ")
+    result = sysinfo.run()
+    result.addCallback(show_output)
+
+    if run_reactor:
+        # XXX No unittests for this. :-(
+        def stop_reactor(result):
+            reactor.callLater(0.1, reactor.stop)
+            return result
+        result.addBoth(stop_reactor)
+        reactor.run()
