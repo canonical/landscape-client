@@ -10,7 +10,7 @@ from landscape.broker.remote import (RemoteBroker,
                                      DBusSignalToReactorTransmitter)
 
 
-ALL_PLUGINS = ["Dummy"]
+ALL_PLUGINS = ["Load"]
 
 
 class SysInfoConfiguration(Configuration):
