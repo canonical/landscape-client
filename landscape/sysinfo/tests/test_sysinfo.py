@@ -160,3 +160,63 @@ class FormatTest(LandscapeTest):
                           "Header: Value\n"
                           "\n" 
                           "=> Note")
+
+    def test_one_footnote(self):
+        # Pretty dumb.
+        self.assertEquals(format_sysinfo(footnotes=["Graphs at http://..."]),
+                          "Graphs at http://...")
+
+    def test_one_footnote(self):
+        # Still dumb.
+        self.assertEquals(format_sysinfo(footnotes=["Graphs at http://...",
+                                                    "Lunch at ..."]),
+                          "Graphs at http://...\n"
+                          "Lunch at ...")
+
+    def test_indented_footnotes(self):
+        # Barely more interesting.
+        self.assertEquals(format_sysinfo(footnotes=["Graphs at http://...",
+                                                    "Lunch at ..."],
+                                         indent=">>"),
+                          ">>Graphs at http://...\n"
+                          ">>Lunch at ...")
+
+    def test_header_and_footnote(self):
+        # Warming up.
+        self.assertEquals(format_sysinfo(headers=[("Header", "Value")],
+                                         footnotes=["Footnote"]),
+                          "Header: Value\n"
+                          "\n"
+                          "Footnote"
+                          )
+
+    def test_header_note_and_footnote(self):
+        # Nice.
+        self.assertEquals(format_sysinfo(headers=[("Header", "Value")],
+                                         notes=["Note"],
+                                         footnotes=["Footnote"]),
+                          "Header: Value\n"
+                          "\n" 
+                          "=> Note\n"
+                          "\n"
+                          "Footnote"
+                          )
+
+    def test_indented_headers_notes_and_footnotes(self):
+        # Hot!
+        self.assertEquals(format_sysinfo(headers=[("Header1", "Value1"),
+                                                  ("Header2", "Value2"),
+                                                  ("Header3", "Value3")],
+                                         notes=["Note1", "Note2"],
+                                         footnotes=["Footnote1", "Footnote2"],
+                                         indent="  ",
+                                         width=36),
+                          "  Header1: Value1   Header3: Value3\n"
+                          "  Header2: Value2\n"
+                          "\n" 
+                          "  => Note1\n"
+                          "  => Note2\n"
+                          "\n"
+                          "  Footnote1\n"
+                          "  Footnote2"
+                          )

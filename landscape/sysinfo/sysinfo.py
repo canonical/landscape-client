@@ -72,7 +72,7 @@ class SysInfoPluginRegistry(PluginRegistry):
         return gather_results(deferreds)
 
 
-def format_sysinfo(headers=[], notes=[], footer=[], width=80, indent="",
+def format_sysinfo(headers=[], notes=[], footnotes=[], width=80, indent="",
                    column_separator="   ", note_prefix="=> "):
 
     # Indentation spacing is easier to handle if we just take it off the width.
@@ -115,8 +115,8 @@ def format_sysinfo(headers=[], notes=[], footer=[], width=80, indent="",
             widest_value_len = 0
             for row in range(headers_per_column):
                 header_index = column * headers_per_column + row
-                # There's potentially less headers in the last column, so
-                # let's watch out for these here.
+                # There are potentially less headers in the last column,
+                # so let's watch out for these here.
                 if header_index < headers_len:
                     header, value = headers[header_index]
                     widest_header_len = max(widest_header_len, len(header))
@@ -147,10 +147,11 @@ def format_sysinfo(headers=[], notes=[], footer=[], width=80, indent="",
         line = indent
         # Pick all columns for this line.  Note that this means that
         # for 4 headers with 2 columns, we pick header 0 and 2 for
-        # the first line.
+        # the first line, since we show headers 0 and 1 in the first
+        # column, and headers 2 and 3 in the second one.
         for column in range(columns):
             header_index = column * headers_per_column + row
-            # There's potentially less headers in the last column, so
+            # There are potentially less headers in the last column, so
             # let's watch out for these here.
             if header_index < headers_len:
                 header, value = headers[header_index]
@@ -171,10 +172,15 @@ def format_sysinfo(headers=[], notes=[], footer=[], width=80, indent="",
         lines.append(line)
 
     if notes:
-        if headers:
+        if lines:
             # Some spacing between headers and notes.
             lines.append("")
         # For notes, just prepend the prefix and we're done.
         lines.extend(indent + note_prefix + note for note in notes)
+
+    if footnotes:
+        if lines:
+            lines.append("")
+        lines.extend(indent + footnote for footnote in footnotes)
 
     return "\n".join(lines)
