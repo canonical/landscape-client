@@ -30,20 +30,6 @@ def print_text(text, end="\n", error=False):
     stream.flush()
 
 
-def check_config(*args):
-    names = args
-    def decorator(function):
-        def decorated(*args, **kwargs):
-            self = args[0]
-            for name in names:
-                if name in self.config.get_command_line_options():
-                    break
-            else:
-                function(*args, **kwargs)
-        return decorated
-    return decorator
-
-
 class BrokerConfigurationScript(object):
     """
     An interactive procedure which manages the prompting and temporary storage
@@ -131,8 +117,10 @@ class BrokerConfigurationScript(object):
             else:
                 return default
 
-    @check_config("computer_title")
     def query_computer_title(self):
+        if "computer_title" in self.config.get_command_line_options():
+            return
+
         self.show_help(
             """
             The computer title you provide will be used to represent this
@@ -143,8 +131,10 @@ class BrokerConfigurationScript(object):
 
         self.prompt("computer_title", "This computer's title", True)
 
-    @check_config("account_name")
     def query_account_name(self):
+        if "account_name" in self.config.get_command_line_options():
+            return
+
         self.show_help(
             """
             You must now specify the name of the Landscape account you
@@ -155,8 +145,10 @@ class BrokerConfigurationScript(object):
 
         self.prompt("account_name", "Account name", True)
 
-    @check_config("registration_password")
     def query_registration_password(self):
+        if "registration_password" in self.config.get_command_line_options():
+            return
+
         self.show_help(
             """
             A registration password may be associated with your Landscape
@@ -171,8 +163,11 @@ class BrokerConfigurationScript(object):
         self.password_prompt("registration_password",
                              "Account registration password")
 
-    @check_config("http_proxy", "https_proxy")
     def query_proxies(self):
+        options = self.config.get_command_line_options()
+        if "http_proxy" in options and "https_proxy" in options:
+            return
+
         self.show_help(
             """
             The Landscape client communicates with the server over HTTP and
@@ -181,11 +176,16 @@ class BrokerConfigurationScript(object):
             proxies now.  If you don't use a proxy, leave these fields empty.
             """)
 
-        self.prompt("http_proxy", "HTTP proxy URL")
-        self.prompt("https_proxy", "HTTPS proxy URL")
+        if not "http_proxy" in options:
+            self.prompt("http_proxy", "HTTP proxy URL")
+        if not "https_proxy" in options:
+            self.prompt("https_proxy", "HTTPS proxy URL")
 
-    @check_config("include_manager_plugins", "script_users")
     def query_script_plugin(self):
+        options = self.config.get_command_line_options()
+        if "include_manager_plugins" in options and "script_users" in options:
+            return
+
         self.show_help(
             """
             Landscape has a feature which enables administrators to run
