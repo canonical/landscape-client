@@ -415,8 +415,43 @@ class BrokerConfigurationScriptTest(LandscapeTest):
 
         self.config.load_command_line(
             ["--include-manager-plugins", "ScriptExecution",
-             "--script-users", "root,nobody"])
+             "--script-users", "root, nobody"])
         self.script.query_script_plugin()
+
+    def test_query_script_manager_plugins_defined_on_command_line(self):
+        self.config.include_manager_plugins = "FooPlugin"
+        self.mocker.order()
+        script_mock = self.mocker.patch(self.script)
+        script_mock.show_help(ANY)
+        script_mock.prompt_yes_no("Enable script execution?", default=False)
+        self.mocker.result(True)
+        script_mock.show_help(ANY)
+        script_mock.prompt("script_users", "Script users")
+        self.mocker.replay()
+
+        self.config.load_command_line(
+            ["--include-manager-plugins", "FooPlugin, ScriptExecution"])
+        self.script.query_script_plugin()
+        self.assertEquals(self.config.include_manager_plugins,
+                          "FooPlugin, ScriptExecution")
+
+    def test_query_script_users_defined_on_command_line(self):
+        self.config.include_manager_plugins = "FooPlugin"
+        self.mocker.order()
+        script_mock = self.mocker.patch(self.script)
+        script_mock.show_help(ANY)
+        script_mock.prompt_yes_no("Enable script execution?", default=False)
+        self.mocker.result(True)
+        script_mock.show_help(ANY)
+        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
+        self.expect(raw_input_mock(ANY)).count(0)
+        self.mocker.replay()
+
+        self.config.load_command_line(
+            ["--script-users", "root, nobody, landscape"])
+        self.script.query_script_plugin()
+        self.assertEquals(self.config.script_users,
+                          "root, nobody, landscape")
 
     def test_show_header(self):
         help_snippet = "This script will"

@@ -212,7 +212,8 @@ class BrokerConfigurationScript(object):
                 that scripts will be restricted to. To allow scripts to be run
                 by any user, enter "ALL".
                 """)
-            self.prompt("script_users", "Script users")
+            if not "script_users" in options:
+                self.prompt("script_users", "Script users")
         else:
             if "ScriptExecution" in included_plugins:
                 included_plugins.remove("ScriptExecution")
