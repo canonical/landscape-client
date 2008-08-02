@@ -1,15 +1,11 @@
 from optparse import OptionParser
 import logging
-import os
 import signal
 
 from landscape.lib.dbus_util import Object
-from landscape.lib.persist import Persist
-from landscape import deployment
 from landscape.deployment import (
     LandscapeService, Configuration, get_versioned_persist,
     assert_unowned_bus_name)
-from landscape.reactor import TwistedReactor, FakeReactor
 from landscape.tests.helpers import (
     LandscapeTest, LandscapeIsolatedTest, DBusHelper)
 from landscape.tests.mocker import ANY
