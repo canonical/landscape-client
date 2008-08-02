@@ -8,8 +8,6 @@ import sys
 import os
 import getpass
 
-from dbus import DBusException
-
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.lib.dbus_util import (
     get_bus, NoReplyError, ServiceUnknownError, SecurityError)
@@ -18,7 +16,6 @@ from landscape.lib.twisted_util import gather_results
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.broker.deployment import BrokerConfiguration
 from landscape.broker.remote import RemoteBroker
-from landscape.reactor import TwistedReactor
 
 
 def print_text(text, end="\n", error=False):

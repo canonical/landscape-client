@@ -10,7 +10,7 @@ from ConfigParser import ConfigParser
 
 import dbus.glib # Side-effects rule!
 
-from twisted.application.service import Application, Service, IService
+from twisted.application.service import Application, Service
 from twisted.application.app import startApplication
 
 from landscape import VERSION

@@ -65,7 +65,7 @@ class BrokerConfiguration(Configuration):
         # FIXME Why do we need this?  Can it be removed?
         parser.add_option("-n", "--no-start", action="store_true",
                           help="Don't start the client automatically.")
-        parser.add_option("--non-interactive", action="store_true",
+        parser.add_option("--silent", action="store_true",
                           help="Run without manual interaction.")
         parser.add_option("--disable", action="store_true",
                           help="Disable the client.")

@@ -4,7 +4,6 @@ from getpass import getpass
 from twisted.internet.defer import Deferred, succeed, fail
 from twisted.internet import reactor
 
-from landscape.reactor import FakeReactor
 from landscape.broker.configuration import (
     print_text, BrokerConfigurationScript, register, setup, main,
     setup_init_script)
@@ -601,7 +600,6 @@ class ConfigurationFunctionsTest(LandscapeTest):
                              "https_proxy = https://old.proxy\n"
                              "url = http://url\n")
 
-
     def test_main_with_failing_client_start(self):
         system_mock = self.mocker.replace("os.system")
         system_mock("/etc/init.d/landscape-client start")
@@ -650,7 +648,7 @@ class ConfigurationFunctionsTest(LandscapeTest):
         self.mocker.replay()
         main(["--config", self.make_working_config()])
 
-    def test_main_with_register(self): 
+    def test_main_with_register(self):
          setup_mock = self.mocker.replace(setup)
          setup_mock("DUMMY ARGS")
          self.mocker.result("DUMMY CONFIG")
@@ -658,7 +656,7 @@ class ConfigurationFunctionsTest(LandscapeTest):
          raw_input_mock("\nRequest a new registration for "
                         "this computer now? (Y/n): ")
          self.mocker.result("")
- 
+
          register_mock = self.mocker.replace(register, passthrough=False)
          register_mock("DUMMY CONFIG")
 
