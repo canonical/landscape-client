@@ -4,7 +4,7 @@ class ProcessError(Exception):
     """ Error running a process with os.system. """
 
 class SysVConfig(object):
-    
+
     def __init__(self, filename="/etc/default/landscape-client"):
         self._filename = filename
 

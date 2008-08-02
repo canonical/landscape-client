@@ -261,6 +261,13 @@ def setup_init_script(silent=False):
             sys.exit("Aborting Landscape configuration")
 
 
+def disable_init_script():
+    sysvconfig = SysVConfig()
+    if sysvconfig.is_configured_to_run():
+        sysvconfig.set_start_on_boot(False)
+        sysvconfig.stop_landscape()
+
+
 def setup(args, silent=False):
     """Prompt the user for config data and write out a configuration file."""
     config = BrokerConfiguration()
@@ -371,13 +378,25 @@ def register(config, reactor=None):
     reactor.run()
 
 
-def main(args):
+def check_and_pop(args, option):
     try:
-        args.pop(args.index("--silent"))
-        silent = True
+        args.pop(args.index(option))
     except ValueError:
-        silent = False
+        return False
+    return True
+
+
+def main(args):
+    # Disable startup on boot and stop a client, if running.
+    if check_and_pop(args, "--disable"):
+        disable_init_script()
+        return
+
+    # Setup client configuration.
+    silent = check_and_pop(args, "--silent")
     config = setup(args, silent=silent)
+
+    # Register the client.
     if silent:
         answer = "Y"
     else:

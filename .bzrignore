@@ -8,3 +8,6 @@ debian/landscape-client.postinst.debhelper
 debian/landscape-client.postrm.debhelper
 debian/landscape-client.prerm.debhelper
 debian/landscape-client.substvars
+man/landscape-client.1
+man/landscape-config.1
+man/landscape-message.1

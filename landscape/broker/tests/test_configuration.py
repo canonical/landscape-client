@@ -6,7 +6,7 @@ from twisted.internet import reactor
 
 from landscape.broker.configuration import (
     print_text, BrokerConfigurationScript, register, setup, main,
-    setup_init_script)
+    setup_init_script, disable_init_script)
 from landscape.broker.deployment import BrokerConfiguration
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.sysvconfig import SysVConfig
@@ -810,6 +810,34 @@ account_name = account
 
         self.mocker.replay()
         main(["--silent"])
+
+    def test_disable(self):
+        disable_init_script_mock = self.mocker.replace(disable_init_script)
+        disable_init_script_mock()
+
+        # No interaction should be requested.
+        raw_input_mock = self.mocker.replace(raw_input)
+        raw_input_mock(ANY)
+        self.mocker.count(0)
+
+        # Registration logic should not be invoked.
+        register_mock = self.mocker.replace(register, passthrough=False)
+        register_mock(ANY)
+        self.mocker.count(0)
+
+        self.mocker.replay()
+
+        main(["--disable"])
+
+    def test_disable_init_scripts(self):
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        sysvconfig_mock.is_configured_to_run()
+        self.mocker.result(True)
+        sysvconfig_mock.set_start_on_boot(False)
+        sysvconfig_mock.stop_landscape()
+        self.mocker.replay()
+
+        main(["--disable"])
 
 
 class RegisterFunctionTest(LandscapeIsolatedTest):

@@ -62,7 +62,6 @@ class BrokerConfiguration(Configuration):
                           help="The URL of the HTTP proxy, if one is needed.")
         parser.add_option("--https-proxy", metavar="URL",
                           help="The URL of the HTTPS proxy, if one is needed.")
-        # FIXME Why do we need this?  Can it be removed?
         parser.add_option("-n", "--no-start", action="store_true",
                           help="Don't start the client automatically.")
         parser.add_option("--silent", action="store_true",
