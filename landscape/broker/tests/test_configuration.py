@@ -307,6 +307,28 @@ class BrokerConfigurationScriptTest(LandscapeTest):
                                        "--https-proxy", "localhost:8443"])
         self.script.query_proxies()
 
+    def test_query_http_proxy_defined_on_command_line(self):
+        help_snippet = "The Landscape client communicates"
+        self.mocker.order()
+        script_mock = self.mocker.patch(self.script)
+        script_mock.show_help(self.get_matcher(help_snippet))
+        script_mock.prompt("https_proxy", "HTTPS proxy URL")
+        self.mocker.replay()
+
+        self.config.load_command_line(["--http-proxy", "localhost:8080"])
+        self.script.query_proxies()
+
+    def test_query_https_proxy_defined_on_command_line(self):
+        help_snippet = "The Landscape client communicates"
+        self.mocker.order()
+        script_mock = self.mocker.patch(self.script)
+        script_mock.show_help(self.get_matcher(help_snippet))
+        script_mock.prompt("http_proxy", "HTTP proxy URL")
+        self.mocker.replay()
+
+        self.config.load_command_line(["--https-proxy", "localhost:8443"])
+        self.script.query_proxies()
+
     def test_query_script_plugin_no(self):
         help_snippet = "Landscape has a feature which enables administrators"
         self.mocker.order()
