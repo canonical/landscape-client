@@ -554,8 +554,8 @@ class ConfigurationFunctionsTest(LandscapeTest):
 [client]
 url = https://landscape.canonical.com/message-system
 """)
-        args = ["--silent", "--config", filename, "-a", "account", "-t", "rex"]
-        config = setup(args)
+        args = ["--config", filename, "-a", "account", "-t", "rex"]
+        config = setup(args, silent=True)
         self.assertEquals(self.get_content(config), """\
 [client]
 url = https://landscape.canonical.com/message-system
@@ -582,8 +582,8 @@ registration_password = shared-secret
 log_level = debug
 random_key = random_value
 """)
-        args = ["--silent", "--config", filename, "-a", "account", "-t", "rex"]
-        config = setup(args)
+        args = ["--config", filename, "-a", "account", "-t", "rex"]
+        config = setup(args, silent=True)
         self.assertEquals(self.get_content(config), """\
 [client]
 url = https://landscape.canonical.com/message-system
@@ -633,8 +633,8 @@ account_name = account
 url = https://landscape.canonical.com/message-system
 registration_password = shared-secret
 """)
-        args = ["--silent", "--config", filename, "-a", "account", "-t", "rex"]
-        config = setup(args)
+        args = ["--config", filename, "-a", "account", "-t", "rex"]
+        config = setup(args, silent=True)
         self.assertEquals(self.get_content(config), """\
 [client]
 url = https://landscape.canonical.com/message-system
@@ -671,7 +671,7 @@ account_name = account
 
     def test_main_no_registration(self):
         setup_mock = self.mocker.replace(setup)
-        setup_mock(["args"])
+        setup_mock(["args"], silent=False)
 
         raw_input_mock = self.mocker.replace(raw_input)
         raw_input_mock("\nRequest a new registration for "
@@ -745,19 +745,19 @@ account_name = account
         main(["--config", self.make_working_config()])
 
     def test_main_with_register(self):
-         setup_mock = self.mocker.replace(setup)
-         setup_mock("DUMMY ARGS")
-         self.mocker.result("DUMMY CONFIG")
-         raw_input_mock = self.mocker.replace(raw_input)
-         raw_input_mock("\nRequest a new registration for "
-                        "this computer now? (Y/n): ")
-         self.mocker.result("")
+        setup_mock = self.mocker.replace(setup)
+        setup_mock(["DUMMY ARGS"], silent=False)
+        self.mocker.result("DUMMY CONFIG")
+        raw_input_mock = self.mocker.replace(raw_input)
+        raw_input_mock("\nRequest a new registration for "
+                       "this computer now? (Y/n): ")
+        self.mocker.result("")
 
-         register_mock = self.mocker.replace(register, passthrough=False)
-         register_mock("DUMMY CONFIG")
+        register_mock = self.mocker.replace(register, passthrough=False)
+        register_mock("DUMMY CONFIG")
 
-         self.mocker.replay()
-         main("DUMMY ARGS")
+        self.mocker.replay()
+        main(["DUMMY ARGS"])
 
     def test_setup_init_script(self):
         system_mock = self.mocker.replace("os.system")
@@ -789,6 +789,27 @@ account_name = account
         self.mocker.count(0)
         self.mocker.replay()
         setup_init_script(silent=True)
+
+    def test_register_silent(self):
+        """
+        Silent registration uses specified configuration to attempt a
+        registration with the server.
+        """
+        setup_mock = self.mocker.replace(setup)
+        setup_mock(ANY, silent=True)
+        self.mocker.result("dummy-config")
+        # No interaction should be requested.
+        raw_input_mock = self.mocker.replace(raw_input)
+        raw_input_mock(ANY)
+        self.mocker.count(0)
+
+        # The registration logic should be called and passed the configuration
+        # file.
+        register_mock = self.mocker.replace(register, passthrough=False)
+        register_mock("dummy-config")
+
+        self.mocker.replay()
+        main(["--silent"])
 
 
 class RegisterFunctionTest(LandscapeIsolatedTest):
@@ -1098,4 +1119,3 @@ class RegisterFunctionNoServiceTest(LandscapeIsolatedTest):
         register(self.configuration, reactor_mock)
 
         return result
-

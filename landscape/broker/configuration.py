@@ -261,14 +261,8 @@ def setup_init_script(silent=False):
             sys.exit("Aborting Landscape configuration")
 
 
-def setup(args):
+def setup(args, silent=False):
     """Prompt the user for config data and write out a configuration file."""
-    try:
-        args.pop(args.index("--silent"))
-        silent = True
-    except ValueError:
-        silent = False
-
     config = BrokerConfiguration()
     config.load(args)
     if not config.no_start:
@@ -306,15 +300,15 @@ def register(config, reactor=None):
 
     The broker will be instructed to reload its configuration and then to
     attempt a registration.
-    """
 
+    @param reactor: The reactor to use.  Please only pass reactor when you
+        have totally mangled everything with mocker.  Otherwise bad things
+        will happen.
+    """
     from twisted.internet.glib2reactor import install
     install()
-    # please only pass reactor when you have totally mangled everything with
-    # mocker. Otherwise bad things will happen.
     if reactor is None:
         from twisted.internet import reactor
-
 
     def failure():
         print_text("Invalid account name or "
@@ -378,8 +372,16 @@ def register(config, reactor=None):
 
 
 def main(args):
-    config = setup(args)
-    answer = raw_input("\nRequest a new registration for "
-                       "this computer now? (Y/n): ")
+    try:
+        args.pop(args.index("--silent"))
+        silent = True
+    except ValueError:
+        silent = False
+    config = setup(args, silent=silent)
+    if silent:
+        answer = "Y"
+    else:
+        answer = raw_input("\nRequest a new registration for "
+                           "this computer now? (Y/n): ")
     if not answer.upper().startswith("N"):
         register(config)
