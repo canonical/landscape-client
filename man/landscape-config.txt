@@ -2,7 +2,7 @@ NAME
   landscape-config - configure the Landscape management client
 
 SYNOPSIS
-  landscape-config [--no-start, --non-interactive, -a ACCOUNT, -t TITLE,
+  landscape-config [--no-start, --silent, -a ACCOUNT, -t TITLE,
                     -t TITLE, -p PASSWORD, -l LOG, -k KEY, -d PATH]
 
 DESCRIPTION
@@ -42,6 +42,11 @@ OPTIONS
                        clients.
  -t TITLE, --computer-title=TITLE
                        The title of this computer
+ --script-users=USERS  A comma-separated list of users to allow scripts to
+                       run.  To allow scripts to be run by any user, enter:
+                       ALL
+ --include-manager-plugins=PLUGINS
+                       A comma-separated list of manager plugins to load.
  -u URL, --url=URL     The server URL to connect to.
  -k SSL_PUBLIC_KEY, --ssl-public-key=SSL_PUBLIC_KEY
                        The public SSL key to verify the server. Only used if
@@ -54,7 +59,9 @@ OPTIONS
                        with.
  --http-proxy=URL      The URL of the HTTP proxy, if one is needed.
  --https-proxy=URL     The URL of the HTTPS proxy, if one is needed.
- -n, --no-start
+ -n, --no-start        Don't start the client automatically.
+ --silent              Run without manual interaction.
+ --disable             Disable the client.
 
 
 EXAMPLES
@@ -67,7 +74,7 @@ interactively:
 To register for the first time or to reconfigure a registered machine, without
 interaction:
 
-  landscape-config --non-interactive -a account-name -p secret -t "webapp1"
+  landscape-config --silent -a account-name -p secret -t "webapp1"
 
 To disable a client, stopping current instances and disabling start at bootup:
 
