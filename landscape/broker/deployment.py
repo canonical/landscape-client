@@ -36,6 +36,13 @@ class BrokerConfiguration(Configuration):
                                "clients.")
         parser.add_option("-t", "--computer-title", metavar="TITLE",
                           help="The title of this computer")
+        parser.add_option("--script-users", metavar="USERS",
+                          help="A comma-separated list of users to allow "
+                               "scripts to run.  To allow scripts to be run "
+                               "by any user, enter 'ALL'.")
+        parser.add_option("--include-manager-plugins", metavar="PLUGINS",
+                          help="A comma-separated list of manager plugins to "
+                               "load.")
         parser.add_option("-u", "--url", help="The server URL to connect to.")
         parser.add_option("-k", "--ssl-public-key",
                           help="The public SSL key to verify the server. "
@@ -45,8 +52,7 @@ class BrokerConfiguration(Configuration):
                           help="The number of seconds between server "
                                "exchanges.")
         parser.add_option("--urgent-exchange-interval", default=1*60,
-                          type="int",
-                          metavar="INTERVAL",
+                          type="int", metavar="INTERVAL",
                           help="The number of seconds between urgent server "
                                "exchanges.")
         parser.add_option("--ping-url",
@@ -56,7 +62,13 @@ class BrokerConfiguration(Configuration):
                           help="The URL of the HTTP proxy, if one is needed.")
         parser.add_option("--https-proxy", metavar="URL",
                           help="The URL of the HTTPS proxy, if one is needed.")
-        parser.add_option("-n", "--no-start", action="store_true")
+        # FIXME Why do we need this?  Can it be removed?
+        parser.add_option("-n", "--no-start", action="store_true",
+                          help="Don't start the client automatically.")
+        parser.add_option("--non-interactive", action="store_true",
+                          help="Run without manual interaction.")
+        parser.add_option("--disable", action="store_true",
+                          help="Disable the client.")
         return parser
 
     @property
@@ -89,7 +101,6 @@ class BrokerService(LandscapeService):
     """
 
     transport_factory = HTTPTransport
-
     service_name = "broker"
 
     def __init__(self, config):

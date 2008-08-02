@@ -201,6 +201,9 @@ class BaseConfiguration(object):
     def get_config_filename(self):
         return self._config_filename
 
+    def get_command_line_options(self):
+        return self._command_line_options
+
 
 class Configuration(BaseConfiguration):
     """Configuration data for Landscape client.

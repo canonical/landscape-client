@@ -30,6 +30,20 @@ def print_text(text, end="\n", error=False):
     stream.flush()
 
 
+def check_config(*args):
+    names = args
+    def decorator(function):
+        def decorated(*args, **kwargs):
+            self = args[0]
+            for name in names:
+                if name in self.config.get_command_line_options():
+                    break
+            else:
+                function(*args, **kwargs)
+        return decorated
+    return decorator
+
+
 class BrokerConfigurationScript(object):
     """
     An interactive procedure which manages the prompting and temporary storage
@@ -117,6 +131,7 @@ class BrokerConfigurationScript(object):
             else:
                 return default
 
+    @check_config("computer_title")
     def query_computer_title(self):
         self.show_help(
             """
@@ -128,6 +143,7 @@ class BrokerConfigurationScript(object):
 
         self.prompt("computer_title", "This computer's title", True)
 
+    @check_config("account_name")
     def query_account_name(self):
         self.show_help(
             """
@@ -139,6 +155,7 @@ class BrokerConfigurationScript(object):
 
         self.prompt("account_name", "Account name", True)
 
+    @check_config("registration_password")
     def query_registration_password(self):
         self.show_help(
             """
@@ -154,6 +171,7 @@ class BrokerConfigurationScript(object):
         self.password_prompt("registration_password",
                              "Account registration password")
 
+    @check_config("http_proxy", "https_proxy")
     def query_proxies(self):
         self.show_help(
             """
@@ -166,6 +184,7 @@ class BrokerConfigurationScript(object):
         self.prompt("http_proxy", "HTTP proxy URL")
         self.prompt("https_proxy", "HTTPS proxy URL")
 
+    @check_config("include_manager_plugins", "script_users")
     def query_script_plugin(self):
         self.show_help(
             """
@@ -176,7 +195,9 @@ class BrokerConfigurationScript(object):
             also configurable.
             """)
         msg = "Enable script execution?"
-        included_plugins = getattr(self.config, "include_manager_plugins", "")
+        included_plugins = getattr(self.config, "include_manager_plugins")
+        if not included_plugins:
+            included_plugins = ""
         included_plugins = [x.strip() for x in included_plugins.split(",")]
         if included_plugins == [""]:
             included_plugins = []
@@ -221,6 +242,7 @@ class BrokerConfigurationScript(object):
         self.query_proxies()
         self.query_script_plugin()
 
+
 def setup_init_script():
     sysvconfig = SysVConfig()
     if not sysvconfig.is_configured_to_run():
@@ -257,6 +279,7 @@ def setup(args):
 
     config.write()
     return config
+
 
 def register(config, reactor=None):
     """Instruct the Landscape Broker to register the client.

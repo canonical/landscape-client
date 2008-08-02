@@ -244,6 +244,14 @@ class BrokerConfigurationScriptTest(LandscapeTest):
 
         self.script.query_computer_title()
 
+    def test_query_computer_title_defined_on_command_line(self):
+        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
+        self.expect(raw_input_mock(ANY)).count(0)
+        self.mocker.replay()
+
+        self.config.load_command_line(["-t", "Computer title"])
+        self.script.query_computer_title()
+
     def test_query_account_name(self):
         help_snippet = "You must now specify the name of the Landscape account"
         self.mocker.order()
@@ -252,6 +260,14 @@ class BrokerConfigurationScriptTest(LandscapeTest):
         script_mock.prompt("account_name", "Account name", True)
         self.mocker.replay()
 
+        self.script.query_account_name()
+
+    def test_query_account_name_defined_on_command_line(self):
+        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
+        self.expect(raw_input_mock(ANY)).count(0)
+        self.mocker.replay()
+
+        self.config.load_command_line(["-a", "Account name"])
         self.script.query_account_name()
 
     def test_query_registration_password(self):
@@ -264,6 +280,14 @@ class BrokerConfigurationScriptTest(LandscapeTest):
         self.mocker.replay()
         self.script.query_registration_password()
 
+    def test_query_registration_password_defined_on_command_line(self):
+        getpass_mock = self.mocker.replace("getpass.getpass", passthrough=False)
+        self.expect(getpass_mock(ANY)).count(0)
+        self.mocker.replay()
+
+        self.config.load_command_line(["-p", "shared-secret"])
+        self.script.query_registration_password()
+
     def test_query_proxies(self):
         help_snippet = "The Landscape client communicates"
         self.mocker.order()
@@ -272,6 +296,15 @@ class BrokerConfigurationScriptTest(LandscapeTest):
         script_mock.prompt("http_proxy", "HTTP proxy URL")
         script_mock.prompt("https_proxy", "HTTPS proxy URL")
         self.mocker.replay()
+        self.script.query_proxies()
+
+    def test_query_proxies_defined_on_command_line(self):
+        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
+        self.expect(raw_input_mock(ANY)).count(0)
+        self.mocker.replay()
+
+        self.config.load_command_line(["--http-proxy", "localhost:8080",
+                                       "--https-proxy", "localhost:8443"])
         self.script.query_proxies()
 
     def test_query_script_plugin_no(self):
@@ -320,7 +353,6 @@ class BrokerConfigurationScriptTest(LandscapeTest):
         self.script.query_script_plugin()
         self.assertEquals(self.config.include_manager_plugins, "")
 
-
     def test_disabling_script_plugin_leaves_existing_inclusions(self):
         """
         Disabling the script execution plugin doesn't remove other included
@@ -354,6 +386,15 @@ class BrokerConfigurationScriptTest(LandscapeTest):
         self.assertEquals(self.config.include_manager_plugins,
                           "FooPlugin, ScriptExecution")
 
+    def test_query_script_plugin_defined_on_command_line(self):
+        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
+        self.expect(raw_input_mock(ANY)).count(0)
+        self.mocker.replay()
+
+        self.config.load_command_line(
+            ["--include-manager-plugins", "ScriptExecution",
+             "--script-users", "root,nobody"])
+        self.script.query_script_plugin()
 
     def test_show_header(self):
         help_snippet = "This script will"
