@@ -578,6 +578,7 @@ account_name = account
         filename = self.makeFile("""
 [client]
 url = https://landscape.canonical.com/message-system
+ping_url = http://landscape.canonical.com/ping
 registration_password = shared-secret
 log_level = debug
 random_key = random_value
@@ -588,6 +589,33 @@ random_key = random_value
 [client]
 url = https://landscape.canonical.com/message-system
 bus = system
+computer_title = rex
+ping_url = http://landscape.canonical.com/ping
+account_name = account
+""")
+
+    def test_silent_setup_with_ping_url(self):
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        sysvconfig_mock.is_configured_to_run()
+        self.mocker.result(True)
+        self.mocker.replay()
+
+        filename = self.makeFile("""
+[client]
+url = https://landscape.canonical.com/message-system
+ping_url = http://landscape.canonical.com/ping
+registration_password = shared-secret
+log_level = debug
+random_key = random_value
+""")
+        args = ["--config", filename, "-a", "account", "-t", "rex",
+                "--ping-url", "http://localhost/ping"]
+        config = setup(args, silent=True)
+        self.assertEquals(self.get_content(config), """\
+[client]
+url = https://landscape.canonical.com/message-system
+bus = system
+ping_url = http://localhost/ping
 computer_title = rex
 account_name = account
 """)

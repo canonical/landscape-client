@@ -286,7 +286,7 @@ def setup(args, silent=False):
         config.url = url
         config.write()
         config.load(args)
-        if ping_url:
+        if ping_url and not config.get("ping_url"):
             config.ping_url = ping_url
 
     if config.http_proxy is None and os.environ.get("http_proxy"):
@@ -378,7 +378,7 @@ def register(config, reactor=None):
     reactor.run()
 
 
-def check_and_pop(args, option):
+def pop_argument(args, option):
     try:
         args.pop(args.index(option))
     except ValueError:
@@ -387,16 +387,17 @@ def check_and_pop(args, option):
 
 
 def main(args):
-    # Disable startup on boot and stop a client, if running.
-    if check_and_pop(args, "--disable"):
+    # If --disable is specified disable startup on boot and stop the client,
+    # if one is running.
+    if pop_argument(args, "--disable"):
         disable_init_script()
         return
 
     # Setup client configuration.
-    silent = check_and_pop(args, "--silent")
+    silent = pop_argument(args, "--silent")
     config = setup(args, silent=silent)
 
-    # Register the client.
+    # Attempt to register the client.
     if silent:
         answer = "Y"
     else:
