@@ -241,12 +241,15 @@ class BrokerConfigurationScript(object):
         self.query_script_plugin()
 
 
-def setup_init_script():
+def setup_init_script(silent=False):
     sysvconfig = SysVConfig()
     if not sysvconfig.is_configured_to_run():
-        answer = raw_input("\nThe Landscape client must be started "
-                           "on boot to operate correctly.\n\n"
-                           "Start Landscape client on boot? (Y/n): ")
+        if silent:
+            answer = "Y"
+        else:
+            answer = raw_input("\nThe Landscape client must be started "
+                               "on boot to operate correctly.\n\n"
+                               "Start Landscape client on boot? (Y/n): ")
         if not answer.upper().startswith("N"):
             sysvconfig.set_start_on_boot(True)
             try:
@@ -260,20 +263,39 @@ def setup_init_script():
 
 def setup(args):
     """Prompt the user for config data and write out a configuration file."""
+    try:
+        args.pop(args.index("--silent"))
+        silent = True
+    except ValueError:
+        silent = False
+
     config = BrokerConfiguration()
     config.load(args)
-
     if not config.no_start:
-        setup_init_script()
+        setup_init_script(silent=silent)
+
+    if silent:
+        # Clear existing configuration, keeping only required values and
+        # values provided on the command line.
+        bus = config.get("bus")
+        url = config.get("url")
+        ping_url = config.get("ping_url")
+        config.clear()
+        config.bus = bus
+        config.url = url
+        config.write()
+        config.load(args)
+        if ping_url:
+            config.ping_url = ping_url
 
     if config.http_proxy is None and os.environ.get("http_proxy"):
         config.http_proxy = os.environ["http_proxy"]
-
     if config.https_proxy is None and os.environ.get("https_proxy"):
         config.https_proxy = os.environ["https_proxy"]
 
-    script = BrokerConfigurationScript(config)
-    script.run()
+    if not silent:
+        script = BrokerConfigurationScript(config)
+        script.run()
 
     config.write()
     return config

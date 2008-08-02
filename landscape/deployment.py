@@ -54,10 +54,16 @@ class BaseConfiguration(object):
         self._config_file_options = {}
         self._parser = self.make_parser()
         self._command_line_defaults = self._parser.defaults.copy()
-
-        # We don't want them mixed with explicitly given options, otherwise
-        # we can't define the precedence properly.
+        # We don't want them mixed with explicitly given options,
+        # otherwise we can't define the precedence properly.
         self._parser.defaults.clear()
+
+    def clear(self, defaults=False):
+        self._set_options = {}
+        self._command_line_args = []
+        self._command_line_options = {}
+        self._config_file_options = {}
+        self._command_line_defaults = self._parser.defaults.copy()
 
     def __getattr__(self, name):
         """Find and return the value of the given configuration parameter.
@@ -90,6 +96,12 @@ class BaseConfiguration(object):
             if option is not None:
                 value = option.convert_value(None, value)
         return value
+
+    def get(self, name, default=None):
+        try:
+            return self.__getattr__(name)
+        except AttributeError:
+            return default
 
     def __setattr__(self, name, value):
         """Set a configuration parameter.
@@ -161,7 +173,7 @@ class BaseConfiguration(object):
 
         1. Manually set options (config.option = value)
         2. Options passed in the command line
-        3. Previously existent options in the configuration file  
+        3. Previously existent options in the configuration file
 
         The filename picked for saving configuration options is:
 

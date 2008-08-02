@@ -28,6 +28,24 @@ class ConfigurationTest(LandscapeTest):
         self.config = MyConfiguration()
         self.parser = self.config.make_parser()
 
+    def test_clear(self):
+        self.write_config_file(log_level="file")
+        self.config.load([])
+        self.assertEquals(self.config.log_level, "file")
+        self.config.clear()
+        self.config.bus = "system"
+        self.config.url = "https://landscape.canonical.com/message-system"
+        self.config.write()
+
+        self.config.load([])
+        self.assertEquals(self.config.log_level, None)
+
+    def test_get(self):
+        self.write_config_file(log_level="file")
+        self.config.load([])
+        self.assertEquals(self.config.get("log_level"), "file")
+        self.assertEquals(self.config.get("random_key"), None)
+
     def write_config_file(self, **kwargs):
         config = "\n".join(["[client]"] +
                            ["%s = %s" % pair for pair in kwargs.items()])

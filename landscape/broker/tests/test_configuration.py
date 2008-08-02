@@ -477,6 +477,17 @@ class ConfigurationFunctionsTest(LandscapeTest):
 
     helpers = [EnvironSaverHelper]
 
+    def get_content(self, config):
+        """Write C{config} to a file and return it's contents as a string."""
+        config_file = self.makeFile("")
+        original_config = config.config
+        try:
+            config.config = config_file
+            config.write()
+            return open(config.config, "r").read().strip() + "\n"
+        finally:
+            config.config = original_config
+
     def test_setup(self):
         filename = self.makeFile("[client]\n"
                                  "computer_title = Old Title\n"
@@ -517,7 +528,7 @@ class ConfigurationFunctionsTest(LandscapeTest):
 
         self.assertEquals(type(config), BrokerConfiguration)
 
-        # Reload it to enusre it was written down.
+        # Reload it to ensure it was written down.
         config.reload()
 
         self.assertEquals(config.computer_title, "New Title")
@@ -526,6 +537,60 @@ class ConfigurationFunctionsTest(LandscapeTest):
         self.assertEquals(config.http_proxy, "http://new.proxy")
         self.assertEquals(config.https_proxy, "https://new.proxy")
         self.assertEquals(config.include_manager_plugins, "")
+
+    def test_silent_setup(self):
+        """
+        Only command-line options are used in silent mode and registration is
+        attempted.
+        """
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        sysvconfig_mock.is_configured_to_run()
+        self.mocker.result(False)
+        sysvconfig_mock.set_start_on_boot(True)
+        sysvconfig_mock.start_landscape()
+        self.mocker.replay()
+
+        filename = self.makeFile("""
+[client]
+url = https://landscape.canonical.com/message-system
+""")
+        args = ["--silent", "--config", filename, "-a", "account", "-t", "rex"]
+        config = setup(args)
+        self.assertEquals(self.get_content(config), """\
+[client]
+url = https://landscape.canonical.com/message-system
+bus = system
+computer_title = rex
+account_name = account
+""")
+
+    def test_silent_setup_clears_existing_unnecessary_config_keys(self):
+        """
+        Only command-line options are used in silent mode.  If a configuration
+        already exists, any values not specified on the command line are
+        removed.
+        """
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        sysvconfig_mock.is_configured_to_run()
+        self.mocker.result(True)
+        self.mocker.replay()
+
+        filename = self.makeFile("""
+[client]
+url = https://landscape.canonical.com/message-system
+registration_password = shared-secret
+log_level = debug
+random_key = random_value
+""")
+        args = ["--silent", "--config", filename, "-a", "account", "-t", "rex"]
+        config = setup(args)
+        self.assertEquals(self.get_content(config), """\
+[client]
+url = https://landscape.canonical.com/message-system
+bus = system
+computer_title = rex
+account_name = account
+""")
 
     def test_setup_with_proxies_from_environment(self):
         os.environ["http_proxy"] = "http://environ"
@@ -548,6 +613,37 @@ class ConfigurationFunctionsTest(LandscapeTest):
 
         self.assertEquals(config.http_proxy, "http://environ")
         self.assertEquals(config.https_proxy, "https://environ")
+
+    def test_silent_setup_with_proxies_from_environment(self):
+        """
+        Only command-line options are used in silent mode and registration is
+        attempted.
+        """
+        os.environ["http_proxy"] = "http://environ"
+        os.environ["https_proxy"] = "https://environ"
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        sysvconfig_mock.is_configured_to_run()
+        self.mocker.result(False)
+        sysvconfig_mock.set_start_on_boot(True)
+        sysvconfig_mock.start_landscape()
+        self.mocker.replay()
+
+        filename = self.makeFile("""
+[client]
+url = https://landscape.canonical.com/message-system
+registration_password = shared-secret
+""")
+        args = ["--silent", "--config", filename, "-a", "account", "-t", "rex"]
+        config = setup(args)
+        self.assertEquals(self.get_content(config), """\
+[client]
+url = https://landscape.canonical.com/message-system
+bus = system
+computer_title = rex
+http_proxy = http://environ
+https_proxy = https://environ
+account_name = account
+""")
 
     def test_setup_prefers_proxies_from_config_over_environment(self):
         os.environ["http_proxy"] = "http://environ"
@@ -680,6 +776,19 @@ class ConfigurationFunctionsTest(LandscapeTest):
         self.mocker.result("")
         self.mocker.replay()
         setup_init_script()
+
+    def test_setup_init_script_silent(self):
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        sysvconfig_mock.is_configured_to_run()
+        self.mocker.result(False)
+        sysvconfig_mock.set_start_on_boot(True)
+        sysvconfig_mock.start_landscape()
+
+        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
+        raw_input_mock(ANY)
+        self.mocker.count(0)
+        self.mocker.replay()
+        setup_init_script(silent=True)
 
 
 class RegisterFunctionTest(LandscapeIsolatedTest):

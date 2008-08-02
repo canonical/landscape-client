@@ -12,13 +12,13 @@ computer information that is transmitted to the Landscape server when the
 client connects.  The registration can be performed with or without user
 interaction.
 
-Running the landscape-config program without arguments will start the program,
-prompting you for the necessary information to run the client.  Optionally you
-can provide command-line arguments (detailed below) to specify default
-responses.  You will be told if the registration was successful or if an error
-occurred.  When the registration is successful Landscape is configured and
-running on your system.  Errors can occur if you provide incorrect
-registration details.
+Running the landscape-config program without arguments will start the
+program, prompting you for the necessary information to run the client.
+Optionally you can provide command-line arguments (detailed below) to
+specify default responses.  You will be told if the registration was
+successful or if an error occurred.  When registration is successful
+Landscape is configured and running on your system.  Errors can occur if
+you provide incorrect registration details.
 
 OPTIONS
  --version             show program's version number and exit
@@ -66,19 +66,22 @@ OPTIONS
 
 EXAMPLES
 
-To register for the first time or to reconfigure a registered machine,
-interactively:
+Register a machine for the first time, or reconfigure an already
+registered machine, interactively:
 
   landscape-config
 
-To register for the first time or to reconfigure a registered machine, without
-interaction:
+Register a machine for the first time, or reconfigure an already
+registered machine, without interaction.  The client will be configured
+to start on boot automatically:
 
-  landscape-config --silent -a account-name -p secret -t "webapp1"
+  landscape-config --silent -a account-name -p shared-secret -t `hostname`
 
-To disable a client, stopping current instances and disabling start at bootup:
+To disable a client, stopping current instances and disabling start at
+bootup:
 
   landscape-config --disable
+
 
 SEE ALSO
 
