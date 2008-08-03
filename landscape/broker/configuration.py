@@ -295,9 +295,7 @@ def setup(args, silent=False):
         if not config.get("account_name") or not config.get("computer_title"):
             raise ConfigurationError("An account name and computer title are "
                                      "required.")
-        if (config.get("script_users") and
-            (not config.include_manager_plugins or
-             not "ScriptExecution" in config.include_manager_plugins)):
+        if config.get("script_users") and not config.include_manager_plugins:
             config.include_manager_plugins = "ScriptExecution"
 
     if config.http_proxy is None and os.environ.get("http_proxy"):
