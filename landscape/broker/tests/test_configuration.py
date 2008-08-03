@@ -416,6 +416,9 @@ class BrokerConfigurationScriptTest(LandscapeTest):
             ["--include-manager-plugins", "ScriptExecution",
              "--script-users", "root, nobody"])
         self.script.query_script_plugin()
+        self.assertEquals(self.config.include_manager_plugins,
+                          "ScriptExecution")
+        self.assertEquals(self.config.script_users, "root, nobody")
 
     def test_query_script_manager_plugins_defined_on_command_line(self):
         self.config.include_manager_plugins = "FooPlugin"
@@ -595,6 +598,39 @@ url = https://landscape.canonical.com/message-system
 """)
         args = ["--config", filename, "-t", "rex"]
         self.assertRaises(ConfigurationError, setup, args, silent=True)
+
+    def test_silent_script_users_imply_script_execution_plugin(self):
+        """
+        If C{--script-users} is specified, without C{ScriptExecution} in the
+        list of manager plugins, it will be automatically added.
+        """
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        sysvconfig_mock.is_configured_to_run()
+        self.mocker.result(True)
+
+        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
+        self.expect(raw_input_mock(ANY)).count(0)
+        self.mocker.replay()
+
+        filename = self.makeFile("""
+[client]
+url = https://landscape.canonical.com/message-system
+bus = system
+""")
+
+        args = ["--config", filename, "-a", "account", "-t", "rex",
+                "--script-users", "root, nobody"]
+        setup(args, silent=True)
+        contents = open(filename, "r").read().strip() + "\n"
+        self.assertEquals(contents, """\
+[client]
+url = https://landscape.canonical.com/message-system
+bus = system
+computer_title = rex
+include_manager_plugins = ScriptExecution
+script_users = root, nobody
+account_name = account
+""")
 
     def test_silent_setup_clears_existing_unnecessary_config_keys(self):
         """
