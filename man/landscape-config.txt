@@ -56,10 +56,15 @@ interaction for provided values.
   landscape-config
 
 Register a machine for the first time, or reconfigure an already
-registered machine, without interaction. The client will be configured
-to start on boot automatically:
+registered machine, without requiring user interaction. The client
+will be configured to start on boot automatically:
 
   landscape-config --silent -a account-name -p secret -t `hostname`
+
+Register a machine with the script execution plugin enabled, without
+requiring user interaction:
+
+  landscape-config --silent -a account-name -p secret -t `hostname` --script-users nobody,landscape,root
 
 To disable a client, stopping current instances and disabling start at
 bootup:

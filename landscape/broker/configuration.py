@@ -273,8 +273,14 @@ def disable_init_script():
 
 
 def setup_silent(args, config):
-    # Clear existing configuration, keeping only required values and values
-    # provided on the command line.
+    """Create a configuration without prompting the user for any information.
+
+    Any non-essential values in a pre-existing configuration are cleared
+    before the configuration is updated with values from the command-line.
+
+    @raises ConfigurationError: Raised if required configuration values aren't
+        available.
+    """
     bus = config.get("bus")
     url = config.get("url")
     ping_url = config.get("ping_url")
