@@ -6,7 +6,7 @@ from twisted.internet import reactor
 
 from landscape.broker.configuration import (
     print_text, BrokerConfigurationScript, register, setup, main,
-    setup_init_script, disable_init_script)
+    setup_init_script, disable_init_script, ConfigurationError)
 from landscape.broker.deployment import BrokerConfiguration
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.sysvconfig import SysVConfig
@@ -563,6 +563,38 @@ bus = system
 computer_title = rex
 account_name = account
 """)
+
+    def test_silent_setup_without_computer_title(self):
+        """A computer title is required."""
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        sysvconfig_mock.is_configured_to_run()
+        self.mocker.result(False)
+        sysvconfig_mock.set_start_on_boot(True)
+        sysvconfig_mock.start_landscape()
+        self.mocker.replay()
+
+        filename = self.makeFile("""
+[client]
+url = https://landscape.canonical.com/message-system
+""")
+        args = ["--config", filename, "-a", "account"]
+        self.assertRaises(ConfigurationError, setup, args, silent=True)
+
+    def test_silent_setup_without_account_name(self):
+        """An account name is required."""
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        sysvconfig_mock.is_configured_to_run()
+        self.mocker.result(False)
+        sysvconfig_mock.set_start_on_boot(True)
+        sysvconfig_mock.start_landscape()
+        self.mocker.replay()
+
+        filename = self.makeFile("""
+[client]
+url = https://landscape.canonical.com/message-system
+""")
+        args = ["--config", filename, "-t", "rex"]
+        self.assertRaises(ConfigurationError, setup, args, silent=True)
 
     def test_silent_setup_clears_existing_unnecessary_config_keys(self):
         """

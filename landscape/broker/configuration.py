@@ -18,6 +18,10 @@ from landscape.broker.deployment import BrokerConfiguration
 from landscape.broker.remote import RemoteBroker
 
 
+class ConfigurationError(Exception):
+    """Raised when required configuration values are missing."""
+
+
 def print_text(text, end="\n", error=False):
     if error:
         stream = sys.stderr
@@ -288,6 +292,9 @@ def setup(args, silent=False):
         config.load(args)
         if ping_url and not config.get("ping_url"):
             config.ping_url = ping_url
+        if not config.get("account_name") or not config.get("computer_title"):
+            raise ConfigurationError("An account name and computer title are "
+                                     "required.")
 
     if config.http_proxy is None and os.environ.get("http_proxy"):
         config.http_proxy = os.environ["http_proxy"]
@@ -395,7 +402,11 @@ def main(args):
 
     # Setup client configuration.
     silent = pop_argument(args, "--silent")
-    config = setup(args, silent=silent)
+    try:
+        config = setup(args, silent=silent)
+    except ConfigurationError, e:
+        print_text(str(e))
+        return
 
     # Attempt to register the client.
     if silent:
