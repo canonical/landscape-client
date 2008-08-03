@@ -272,6 +272,26 @@ def disable_init_script():
         sysvconfig.stop_landscape()
 
 
+def setup_silent(args, config):
+    # Clear existing configuration, keeping only required values and values
+    # provided on the command line.
+    bus = config.get("bus")
+    url = config.get("url")
+    ping_url = config.get("ping_url")
+    config.clear()
+    config.bus = bus
+    config.url = url
+    config.write()
+    config.load(args)
+    if not config.get("account_name") or not config.get("computer_title"):
+        raise ConfigurationError("An account name and computer title are "
+                                 "required.")
+    if config.get("script_users") and not config.include_manager_plugins:
+        config.include_manager_plugins = "ScriptExecution"
+    if ping_url and not config.get("ping_url"):
+        config.ping_url = ping_url
+
+
 def setup(args, silent=False):
     """Prompt the user for config data and write out a configuration file."""
     config = BrokerConfiguration()
@@ -280,23 +300,7 @@ def setup(args, silent=False):
         setup_init_script(silent=silent)
 
     if silent:
-        # Clear existing configuration, keeping only required values and
-        # values provided on the command line.
-        bus = config.get("bus")
-        url = config.get("url")
-        ping_url = config.get("ping_url")
-        config.clear()
-        config.bus = bus
-        config.url = url
-        config.write()
-        config.load(args)
-        if ping_url and not config.get("ping_url"):
-            config.ping_url = ping_url
-        if not config.get("account_name") or not config.get("computer_title"):
-            raise ConfigurationError("An account name and computer title are "
-                                     "required.")
-        if config.get("script_users") and not config.include_manager_plugins:
-            config.include_manager_plugins = "ScriptExecution"
+        setup_silent(args, config)
 
     if config.http_proxy is None and os.environ.get("http_proxy"):
         config.http_proxy = os.environ["http_proxy"]
