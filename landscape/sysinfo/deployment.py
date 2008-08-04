@@ -1,6 +1,4 @@
 """Deployment code for the sysinfo tool."""
-import os
-
 from twisted.python.reflect import namedClass
 from twisted.internet import reactor
 

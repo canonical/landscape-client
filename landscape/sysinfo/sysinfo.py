@@ -72,7 +72,7 @@ class SysInfoPluginRegistry(PluginRegistry):
         return gather_results(deferreds)
 
 
-def format_sysinfo(headers=[], notes=[], footnotes=[], width=80, indent="",
+def format_sysinfo(headers=(), notes=(), footnotes=(), width=80, indent="",
                    column_separator="   ", note_prefix="=> "):
     """Format sysinfo headers, notes and footnotes to be displayed.
 

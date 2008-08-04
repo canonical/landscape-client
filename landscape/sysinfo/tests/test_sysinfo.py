@@ -166,7 +166,7 @@ class FormatTest(LandscapeTest):
         self.assertEquals(format_sysinfo(footnotes=["Graphs at http://..."]),
                           "Graphs at http://...")
 
-    def test_one_footnote(self):
+    def test_more_footnotes(self):
         # Still dumb.
         self.assertEquals(format_sysinfo(footnotes=["Graphs at http://...",
                                                     "Lunch at ..."]),
