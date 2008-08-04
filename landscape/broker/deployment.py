@@ -67,7 +67,8 @@ class BrokerConfiguration(Configuration):
         parser.add_option("--silent", action="store_true",
                           help="Run without manual interaction.")
         parser.add_option("--disable", action="store_true",
-                          help="Disable the client.")
+                          help="Stop running clients and disable start at "
+                               "boot.")
         return parser
 
     @property

@@ -44,7 +44,7 @@ OPTIONS
  --https-proxy=URL                           The URL of the HTTPS proxy, if one is needed
  -n, --no-start                              Don't start the client automatically
  --silent                                    Run without manual interaction
- --disable                                   Disable the client
+ --disable                                   Stop running clients and disable start at boot
 
 
 EXAMPLES
