@@ -6,7 +6,7 @@ from twisted.internet import reactor
 
 from landscape.configuration import (
     print_text, LandscapeSetupScript, LandscapeSetupConfiguration,
-    register, setup, main, setup_init_script,
+    register, setup, main, setup_init_script_and_start_client,
     stop_client_and_disable_init_script, ConfigurationError)
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.sysvconfig import SysVConfig
@@ -550,8 +550,6 @@ class ConfigurationFunctionsTest(LandscapeTest):
         attempted.
         """
         sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.is_configured_to_run()
-        self.mocker.result(False)
         sysvconfig_mock.set_start_on_boot(True)
         sysvconfig_mock.start_landscape()
         self.mocker.replay()
@@ -573,8 +571,6 @@ account_name = account
     def test_silent_setup_without_computer_title(self):
         """A computer title is required."""
         sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.is_configured_to_run()
-        self.mocker.result(False)
         sysvconfig_mock.set_start_on_boot(True)
         sysvconfig_mock.start_landscape()
         self.mocker.replay()
@@ -590,8 +586,6 @@ url = https://landscape.canonical.com/message-system
     def test_silent_setup_without_account_name(self):
         """An account name is required."""
         sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.is_configured_to_run()
-        self.mocker.result(False)
         sysvconfig_mock.set_start_on_boot(True)
         sysvconfig_mock.start_landscape()
         self.mocker.replay()
@@ -610,7 +604,8 @@ url = https://landscape.canonical.com/message-system
         list of manager plugins, it will be automatically added.
         """
         sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.is_configured_to_run()
+        sysvconfig_mock.set_start_on_boot(True)
+        sysvconfig_mock.start_landscape()
         self.mocker.result(True)
 
         raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
@@ -640,7 +635,8 @@ account_name = account
 
     def test_silent_setup_with_ping_url(self):
         sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.is_configured_to_run()
+        sysvconfig_mock.set_start_on_boot(True)
+        sysvconfig_mock.start_landscape()
         self.mocker.result(True)
         self.mocker.replay()
 
@@ -696,8 +692,6 @@ account_name = account
         os.environ["http_proxy"] = "http://environ"
         os.environ["https_proxy"] = "https://environ"
         sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.is_configured_to_run()
-        self.mocker.result(False)
         sysvconfig_mock.set_start_on_boot(True)
         sysvconfig_mock.start_landscape()
         self.mocker.replay()
@@ -776,8 +770,6 @@ account_name = account
         self.mocker.result(-1)
 
         sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.is_configured_to_run()
-        self.mocker.result(False)
         sysvconfig_mock.set_start_on_boot(True)
 
         print_text_mock = self.mocker.replace(print_text)
@@ -795,8 +787,6 @@ account_name = account
 
     def test_register(self):
         sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.is_configured_to_run()
-        self.mocker.result(False)
         sysvconfig_mock.set_start_on_boot(True)
         sysvconfig_mock.start_landscape()
 
@@ -832,28 +822,19 @@ account_name = account
         self.mocker.replay()
         main(["-c", self.make_working_config()])
 
-    def test_setup_init_script(self):
+    def test_setup_init_script_and_start_client(self):
         system_mock = self.mocker.replace("os.system")
         system_mock("/etc/init.d/landscape-client start")
         self.mocker.result(0)
 
         sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.is_configured_to_run()
-        self.mocker.result(False)
         sysvconfig_mock.set_start_on_boot(True)
-
-        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
-        raw_input_mock("\nThe Landscape client must be started "
-                       "on boot to operate correctly.\n\n"
-                       "Start Landscape client on boot? (Y/n): ")
-        self.mocker.result("")
         self.mocker.replay()
-        setup_init_script()
 
-    def test_setup_init_script_silent(self):
+        setup_init_script_and_start_client()
+
+    def test_setup_init_script_and_start_client_silent(self):
         sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.is_configured_to_run()
-        self.mocker.result(False)
         sysvconfig_mock.set_start_on_boot(True)
         sysvconfig_mock.start_landscape()
 
@@ -861,7 +842,7 @@ account_name = account
         raw_input_mock(ANY)
         self.mocker.count(0)
         self.mocker.replay()
-        setup_init_script(enable=True)
+        setup_init_script_and_start_client()
 
     def test_register_silent(self):
         """

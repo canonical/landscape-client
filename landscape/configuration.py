@@ -272,37 +272,34 @@ class LandscapeSetupScript(object):
         self.query_script_plugin()
 
 
-def setup_init_script(enable=False):
+def setup_init_script_and_start_client():
     sysvconfig = SysVConfig()
-    if not sysvconfig.is_configured_to_run():
-        if enable:
-            answer = "Y"
-        else:
-            answer = raw_input("\nThe Landscape client must be started "
-                               "on boot to operate correctly.\n\n"
-                               "Start Landscape client on boot? (Y/n): ")
-        if not answer.upper().startswith("N"):
-            sysvconfig.set_start_on_boot(True)
-            try:
-                sysvconfig.start_landscape()
-            except ProcessError:
-                print_text("Error starting client cannot continue.")
-                sys.exit(-1)
-        else:
-            sys.exit("Aborting Landscape configuration")
+    sysvconfig.set_start_on_boot(True)
+    try:
+        sysvconfig.start_landscape()
+    except ProcessError:
+        print_text("Error starting client cannot continue.")
+        sys.exit(-1)
 
 
 def stop_client_and_disable_init_script():
     sysvconfig = SysVConfig()
-    sysvconfig.set_start_on_boot(False)
     sysvconfig.stop_landscape()
+    sysvconfig.set_start_on_boot(False)
 
 
 def setup(config):
-    if config.silent:
-        setup_init_script(enable=True)
-    elif not config.no_start:
-        setup_init_script()
+    if not config.no_start:
+        if config.silent:
+            setup_init_script_and_start_client()
+        else:
+            answer = raw_input("\nThe Landscape client must be started "
+                               "on boot to operate correctly.\n\n"
+                               "Start Landscape client on boot? (Y/n): ")
+            if not answer.upper().startswith("N"):
+                setup_init_script_and_start_client()
+            else:
+                sys.exit("Aborting Landscape configuration")
 
     if config.http_proxy is None and os.environ.get("http_proxy"):
         config.http_proxy = os.environ["http_proxy"]
@@ -416,9 +413,9 @@ def main(args):
 
     # Attempt to register the client.
     if config.silent:
-        answer = "Y"
+        register(config)
     else:
         answer = raw_input("\nRequest a new registration for "
                            "this computer now? (Y/n): ")
-    if not answer.upper().startswith("N"):
-        register(config)
+        if not answer.upper().startswith("N"):
+            register(config)
