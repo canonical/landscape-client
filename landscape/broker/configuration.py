@@ -224,6 +224,8 @@ class BrokerSetupScript(object):
             """)
         msg = "Enable script execution?"
         included_plugins = getattr(self.config, "include_manager_plugins")
+        # FIXME For some reason self.config.include_manager_plugins is None,
+        # instead of missing or "".
         if not included_plugins:
             included_plugins = ""
         included_plugins = [x.strip() for x in included_plugins.split(",")]
