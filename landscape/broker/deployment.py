@@ -36,7 +36,8 @@ class BrokerConfiguration(Configuration):
                                "clients.")
         parser.add_option("-t", "--computer-title", metavar="TITLE",
                           help="The title of this computer")
-        parser.add_option("-u", "--url", help="The server URL to connect to.")
+        parser.add_option("-u", "--url",
+                          help="The server URL to connect to.")
         parser.add_option("-k", "--ssl-public-key",
                           help="The public SSL key to verify the server. "
                                "Only used if the given URL is https.")

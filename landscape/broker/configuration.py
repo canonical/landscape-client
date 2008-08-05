@@ -34,6 +34,8 @@ def print_text(text, end="\n", error=False):
 
 class BrokerSetupConfiguration(BrokerConfiguration):
 
+    unsaved_options = ("no_start", "disable", "silent")
+
     def make_parser(self):
         """
         Specialize L{Configuration.make_parser}, adding many
@@ -51,9 +53,9 @@ class BrokerSetupConfiguration(BrokerConfiguration):
                                "load.")
         parser.add_option("-n", "--no-start", action="store_true",
                           help="Don't start the client automatically.")
-        parser.add_option("--silent", action="store_true",
+        parser.add_option("--silent", action="store_true", default=False,
                           help="Run without manual interaction.")
-        parser.add_option("--disable", action="store_true",
+        parser.add_option("--disable", action="store_true", default=False,
                           help="Stop running clients and disable start at "
                                "boot.")
         return parser
@@ -297,10 +299,8 @@ def stop_and_disable_init_script():
     sysvconfig.stop_landscape()
 
 
-def setup(args):
+def setup(config):
     """Prompt the user for config data and write out a configuration file."""
-    config = BrokerSetupConfiguration()
-    config.load(args)
     if not config.no_start:
         setup_init_script()
 
@@ -311,23 +311,18 @@ def setup(args):
 
     script = BrokerSetupScript(config)
     script.run()
-
     config.write()
-    return config
 
 
-def setup_silent(args):
+def setup_silent(config):
     """Create a configuration without prompting the user for any information.
 
     @raises ConfigurationError: Raised if required configuration values aren't
         available.
     """
-    config = BrokerSetupConfiguration()
-    config.load(args)
     if not config.no_start:
         setup_init_script(enable=True)
 
-    config.load(args)
     if not config.get("account_name") or not config.get("computer_title"):
         raise ConfigurationError("An account name and computer title are "
                                  "required.")
@@ -339,7 +334,6 @@ def setup_silent(args):
         config.https_proxy = os.environ["https_proxy"]
 
     config.write()
-    return config
 
 
 def register(config, reactor=None):
@@ -427,25 +421,26 @@ def pop_argument(args, option):
 
 
 def main(args):
-    # If --disable is specified disable startup on boot and stop the client,
-    # if one is running.
-    if pop_argument(args, "--disable"):
+    config = BrokerSetupConfiguration()
+    config.load(args)
+
+    # Disable startup on boot and stop the client, if one is running.
+    if config.disable:
         stop_and_disable_init_script()
         return
 
     # Setup client configuration.
-    silent = pop_argument(args, "--silent")
     try:
-        if silent:
-            config = setup_silent(args)
+        if config.silent:
+            setup_silent(config)
         else:
-            config = setup(args)
+            setup(config)
     except ConfigurationError, e:
         print_text(str(e))
         sys.exit("Aborting Landscape configuration")
 
     # Attempt to register the client.
-    if silent:
+    if config.silent:
         answer = "Y"
     else:
         answer = raw_input("\nRequest a new registration for "

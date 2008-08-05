@@ -480,6 +480,11 @@ class ConfigurationFunctionsTest(LandscapeTest):
 
     helpers = [EnvironSaverHelper]
 
+    def get_config(self, args):
+        config = BrokerSetupConfiguration()
+        config.load(args)
+        return config
+
     def get_content(self, config):
         """Write C{config} to a file and return it's contents as a string."""
         config_file = self.makeFile("")
@@ -525,10 +530,8 @@ class ConfigurationFunctionsTest(LandscapeTest):
 
         self.mocker.replay()
 
-        args = ["--no-start", "--config", filename]
-
-        config = setup(args)
-
+        config = self.get_config(["--no-start", "--config", filename])
+        setup(config)
         self.assertEquals(type(config), BrokerSetupConfiguration)
 
         # Reload it to ensure it was written down.
@@ -557,8 +560,9 @@ class ConfigurationFunctionsTest(LandscapeTest):
 [client]
 url = https://landscape.canonical.com/message-system
 """)
-        args = ["--config", filename, "-a", "account", "-t", "rex"]
-        config = setup_silent(args)
+        config = self.get_config(["--config", filename, "-a", "account",
+                                  "-t", "rex"])
+        setup_silent(config)
         self.assertEquals(self.get_content(config), """\
 [client]
 url = https://landscape.canonical.com/message-system
@@ -579,8 +583,8 @@ account_name = account
 [client]
 url = https://landscape.canonical.com/message-system
 """)
-        args = ["--config", filename, "-a", "account"]
-        self.assertRaises(ConfigurationError, setup_silent, args)
+        config = self.get_config(["--config", filename, "-a", "account"])
+        self.assertRaises(ConfigurationError, setup_silent, config)
 
     def test_silent_setup_without_account_name(self):
         """An account name is required."""
@@ -595,8 +599,8 @@ url = https://landscape.canonical.com/message-system
 [client]
 url = https://landscape.canonical.com/message-system
 """)
-        args = ["--config", filename, "-t", "rex"]
-        self.assertRaises(ConfigurationError, setup_silent, args)
+        config = self.get_config(["--config", filename, "-t", "rex"])
+        self.assertRaises(ConfigurationError, setup_silent, config)
 
     def test_silent_script_users_imply_script_execution_plugin(self):
         """
@@ -617,9 +621,10 @@ url = https://localhost:8080/message-system
 bus = session
 """)
 
-        args = ["--config", filename, "-a", "account", "-t", "rex",
-                "--script-users", "root, nobody"]
-        setup_silent(args)
+        config = self.get_config(["--config", filename,
+                                  "-a", "account", "-t", "rex",
+                                  "--script-users", "root, nobody"])
+        setup_silent(config)
         contents = open(filename, "r").read().strip() + "\n"
         self.assertEquals(contents, """\
 [client]
@@ -645,9 +650,10 @@ registration_password = shared-secret
 log_level = debug
 random_key = random_value
 """)
-        args = ["--config", filename, "-a", "account", "-t", "rex",
-                "--ping-url", "http://localhost/ping"]
-        config = setup_silent(args)
+        config = self.get_config(["--config", filename,
+                                  "-a", "account", "-t", "rex",
+                                  "--ping-url", "http://localhost/ping"])
+        setup_silent(config)
         self.assertEquals(self.get_content(config), """\
 [client]
 log_level = debug
@@ -671,9 +677,8 @@ account_name = account
 
         self.mocker.replay()
 
-        args = ["--no-start", "--config", filename]
-
-        config = setup(args)
+        config = self.get_config(["--no-start", "--config", filename])
+        setup(config)
 
         # Reload it to ensure it was written down.
         config.reload()
@@ -700,8 +705,9 @@ account_name = account
 url = https://landscape.canonical.com/message-system
 registration_password = shared-secret
 """)
-        args = ["--config", filename, "-a", "account", "-t", "rex"]
-        config = setup_silent(args)
+        config = self.get_config(["--config", filename, "-a", "account",
+                                  "-t", "rex"])
+        setup_silent(config)
         self.assertEquals(self.get_content(config), """\
 [client]
 url = https://landscape.canonical.com/message-system
@@ -726,9 +732,8 @@ account_name = account
 
         self.mocker.replay()
 
-        args = ["--no-start", "--config", filename]
-
-        config = setup(args)
+        config = self.get_config(["--no-start", "--config", filename])
+        setup(config)
 
         # Reload it to enusre it was written down.
         config.reload()
@@ -738,7 +743,7 @@ account_name = account
 
     def test_main_no_registration(self):
         setup_mock = self.mocker.replace(setup)
-        setup_mock(["args"])
+        setup_mock(ANY)
 
         raw_input_mock = self.mocker.replace(raw_input)
         raw_input_mock("\nRequest a new registration for "
@@ -747,12 +752,12 @@ account_name = account
 
         # This must not be called.
         register_mock = self.mocker.replace(register, passthrough=False)
-        register_mock()
+        register_mock(ANY)
         self.mocker.count(0)
 
         self.mocker.replay()
 
-        main(["args"])
+        main(["-c", self.make_working_config()])
 
     def make_working_config(self):
         return self.makeFile("[client]\n"
@@ -813,18 +818,17 @@ account_name = account
 
     def test_main_with_register(self):
         setup_mock = self.mocker.replace(setup)
-        setup_mock(["DUMMY ARGS"])
-        self.mocker.result("DUMMY CONFIG")
+        setup_mock(ANY)
         raw_input_mock = self.mocker.replace(raw_input)
         raw_input_mock("\nRequest a new registration for "
                        "this computer now? (Y/n): ")
         self.mocker.result("")
 
         register_mock = self.mocker.replace(register, passthrough=False)
-        register_mock("DUMMY CONFIG")
+        register_mock(ANY)
 
         self.mocker.replay()
-        main(["DUMMY ARGS"])
+        main(["-c", self.make_working_config()])
 
     def test_setup_init_script(self):
         system_mock = self.mocker.replace("os.system")
@@ -864,7 +868,6 @@ account_name = account
         """
         setup_silent_mock = self.mocker.replace(setup_silent)
         setup_silent_mock(ANY)
-        self.mocker.result("dummy-config")
         # No interaction should be requested.
         raw_input_mock = self.mocker.replace(raw_input)
         raw_input_mock(ANY)
@@ -873,10 +876,11 @@ account_name = account
         # The registration logic should be called and passed the configuration
         # file.
         register_mock = self.mocker.replace(register, passthrough=False)
-        register_mock("dummy-config")
+        register_mock(ANY)
 
         self.mocker.replay()
-        main(["--silent"])
+
+        main(["--silent", "-c", self.make_working_config()])
 
     def test_disable(self):
         stop_and_disable_init_script_mock = self.mocker.replace(
@@ -895,7 +899,7 @@ account_name = account
 
         self.mocker.replay()
 
-        main(["--disable"])
+        main(["--disable", "-c", self.make_working_config()])
 
     def test_stop_and_disable_init_scripts(self):
         sysvconfig_mock = self.mocker.patch(SysVConfig)
@@ -904,7 +908,7 @@ account_name = account
         sysvconfig_mock.stop_landscape()
         self.mocker.replay()
 
-        main(["--disable"])
+        main(["--disable", "-c", self.make_working_config()])
 
 
 class RegisterFunctionTest(LandscapeIsolatedTest):
