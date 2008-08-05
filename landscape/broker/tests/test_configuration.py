@@ -562,7 +562,6 @@ url = https://landscape.canonical.com/message-system
         self.assertEquals(self.get_content(config), """\
 [client]
 url = https://landscape.canonical.com/message-system
-bus = system
 computer_title = rex
 account_name = account
 """)
@@ -614,8 +613,8 @@ url = https://landscape.canonical.com/message-system
 
         filename = self.makeFile("""
 [client]
-url = https://landscape.canonical.com/message-system
-bus = system
+url = https://localhost:8080/message-system
+bus = session
 """)
 
         args = ["--config", filename, "-a", "account", "-t", "rex",
@@ -624,41 +623,11 @@ bus = system
         contents = open(filename, "r").read().strip() + "\n"
         self.assertEquals(contents, """\
 [client]
-url = https://landscape.canonical.com/message-system
-bus = system
+url = https://localhost:8080/message-system
+bus = session
 computer_title = rex
 include_manager_plugins = ScriptExecution
 script_users = root, nobody
-account_name = account
-""")
-
-    def test_silent_setup_clears_existing_unnecessary_config_keys(self):
-        """
-        Only command-line options are used in silent mode.  If a configuration
-        already exists, any values not specified on the command line are
-        removed.
-        """
-        sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.is_configured_to_run()
-        self.mocker.result(True)
-        self.mocker.replay()
-
-        filename = self.makeFile("""
-[client]
-url = https://landscape.canonical.com/message-system
-ping_url = http://landscape.canonical.com/ping
-registration_password = shared-secret
-log_level = debug
-random_key = random_value
-""")
-        args = ["--config", filename, "-a", "account", "-t", "rex"]
-        config = setup(args, silent=True)
-        self.assertEquals(self.get_content(config), """\
-[client]
-url = https://landscape.canonical.com/message-system
-bus = system
-computer_title = rex
-ping_url = http://landscape.canonical.com/ping
 account_name = account
 """)
 
@@ -681,10 +650,12 @@ random_key = random_value
         config = setup(args, silent=True)
         self.assertEquals(self.get_content(config), """\
 [client]
-url = https://landscape.canonical.com/message-system
-bus = system
-ping_url = http://localhost/ping
+log_level = debug
+registration_password = shared-secret
 computer_title = rex
+url = https://landscape.canonical.com/message-system
+ping_url = http://localhost/ping
+random_key = random_value
 account_name = account
 """)
 
@@ -734,10 +705,10 @@ registration_password = shared-secret
         self.assertEquals(self.get_content(config), """\
 [client]
 url = https://landscape.canonical.com/message-system
-bus = system
 computer_title = rex
 http_proxy = http://environ
 https_proxy = https://environ
+registration_password = shared-secret
 account_name = account
 """)
 

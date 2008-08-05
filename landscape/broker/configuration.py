@@ -281,21 +281,12 @@ def setup_silent(args, config):
     @raises ConfigurationError: Raised if required configuration values aren't
         available.
     """
-    bus = config.get("bus")
-    url = config.get("url")
-    ping_url = config.get("ping_url")
-    config.clear()
-    config.bus = bus
-    config.url = url
-    config.write()
     config.load(args)
     if not config.get("account_name") or not config.get("computer_title"):
         raise ConfigurationError("An account name and computer title are "
                                  "required.")
     if config.get("script_users") and not config.include_manager_plugins:
         config.include_manager_plugins = "ScriptExecution"
-    if ping_url and not config.get("ping_url"):
-        config.ping_url = ping_url
 
 
 def setup(args, silent=False):
