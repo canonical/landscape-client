@@ -292,7 +292,7 @@ def setup_init_script(enable=False):
             sys.exit("Aborting Landscape configuration")
 
 
-def stop_and_disable_init_script():
+def stop_client_and_disable_init_script():
     sysvconfig = SysVConfig()
     sysvconfig.set_start_on_boot(False)
     sysvconfig.stop_landscape()
@@ -404,7 +404,7 @@ def main(args):
 
     # Disable startup on boot and stop the client, if one is running.
     if config.disable:
-        stop_and_disable_init_script()
+        stop_client_and_disable_init_script()
         return
 
     # Setup client configuration.

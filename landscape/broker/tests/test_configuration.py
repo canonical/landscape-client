@@ -7,7 +7,7 @@ from twisted.internet import reactor
 from landscape.broker.configuration import (
     print_text, BrokerSetupScript, BrokerSetupConfiguration,
     register, setup, main, setup_init_script,
-    stop_and_disable_init_script, ConfigurationError)
+    stop_client_and_disable_init_script, ConfigurationError)
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.sysvconfig import SysVConfig
 from landscape.tests.helpers import (LandscapeTest, LandscapeIsolatedTest,
@@ -720,7 +720,6 @@ url = https://landscape.canonical.com/message-system
 account_name = account
 """)
 
-
     def test_setup_prefers_proxies_from_config_over_environment(self):
         os.environ["http_proxy"] = "http://environ"
         os.environ["https_proxy"] = "https://environ"
@@ -886,9 +885,9 @@ account_name = account
         main(["--silent", "-c", self.make_working_config()])
 
     def test_disable(self):
-        stop_and_disable_init_script_mock = self.mocker.replace(
-            stop_and_disable_init_script)
-        stop_and_disable_init_script_mock()
+        stop_client_and_disable_init_script_mock = self.mocker.replace(
+            stop_client_and_disable_init_script)
+        stop_client_and_disable_init_script_mock()
 
         # No interaction should be requested.
         raw_input_mock = self.mocker.replace(raw_input)
@@ -904,7 +903,7 @@ account_name = account
 
         main(["--disable", "-c", self.make_working_config()])
 
-    def test_stop_and_disable_init_scripts(self):
+    def test_stop_client_and_disable_init_scripts(self):
         sysvconfig_mock = self.mocker.patch(SysVConfig)
         self.mocker.result(True)
         sysvconfig_mock.set_start_on_boot(False)
