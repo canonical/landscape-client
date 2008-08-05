@@ -24,18 +24,6 @@ class ConfigurationTest(LandscapeTest):
         self.config = MyConfiguration()
         self.parser = self.config.make_parser()
 
-    def test_clear(self):
-        self.write_config_file(log_level="file")
-        self.config.load([])
-        self.assertEquals(self.config.log_level, "file")
-        self.config.clear()
-        self.config.bus = "system"
-        self.config.url = "https://landscape.canonical.com/message-system"
-        self.config.write()
-
-        self.config.load([])
-        self.assertEquals(self.config.log_level, None)
-
     def test_get(self):
         self.write_config_file(log_level="file")
         self.config.load([])

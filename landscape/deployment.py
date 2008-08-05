@@ -58,13 +58,6 @@ class BaseConfiguration(object):
         # otherwise we can't define the precedence properly.
         self._parser.defaults.clear()
 
-    def clear(self, defaults=False):
-        self._set_options = {}
-        self._command_line_args = []
-        self._command_line_options = {}
-        self._config_file_options = {}
-        self._command_line_defaults = self._parser.defaults.copy()
-
     def __getattr__(self, name):
         """Find and return the value of the given configuration parameter.
 
