@@ -6,7 +6,7 @@ from twisted.internet import reactor
 
 from landscape.broker.configuration import (
     print_text, BrokerSetupScript, BrokerSetupConfiguration,
-    register, setup, setup_silent, main, setup_init_script,
+    register, setup, main, setup_init_script,
     stop_and_disable_init_script, ConfigurationError)
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.sysvconfig import SysVConfig
@@ -560,9 +560,9 @@ class ConfigurationFunctionsTest(LandscapeTest):
 [client]
 url = https://landscape.canonical.com/message-system
 """)
-        config = self.get_config(["--config", filename, "-a", "account",
-                                  "-t", "rex"])
-        setup_silent(config)
+        config = self.get_config(["--config", filename, "--silent",
+                                  "-a", "account", "-t", "rex"])
+        setup(config)
         self.assertEquals(self.get_content(config), """\
 [client]
 url = https://landscape.canonical.com/message-system
@@ -583,8 +583,9 @@ account_name = account
 [client]
 url = https://landscape.canonical.com/message-system
 """)
-        config = self.get_config(["--config", filename, "-a", "account"])
-        self.assertRaises(ConfigurationError, setup_silent, config)
+        config = self.get_config(["--config", filename, "--silent",
+                                  "-a", "account"])
+        self.assertRaises(ConfigurationError, setup, config)
 
     def test_silent_setup_without_account_name(self):
         """An account name is required."""
@@ -599,8 +600,9 @@ url = https://landscape.canonical.com/message-system
 [client]
 url = https://landscape.canonical.com/message-system
 """)
-        config = self.get_config(["--config", filename, "-t", "rex"])
-        self.assertRaises(ConfigurationError, setup_silent, config)
+        config = self.get_config(["--config", filename, "--silent",
+                                  "-t", "rex"])
+        self.assertRaises(ConfigurationError, setup, config)
 
     def test_silent_script_users_imply_script_execution_plugin(self):
         """
@@ -621,10 +623,10 @@ url = https://localhost:8080/message-system
 bus = session
 """)
 
-        config = self.get_config(["--config", filename,
+        config = self.get_config(["--config", filename, "--silent",
                                   "-a", "account", "-t", "rex",
                                   "--script-users", "root, nobody"])
-        setup_silent(config)
+        setup(config)
         contents = open(filename, "r").read().strip() + "\n"
         self.assertEquals(contents, """\
 [client]
@@ -650,10 +652,10 @@ registration_password = shared-secret
 log_level = debug
 random_key = random_value
 """)
-        config = self.get_config(["--config", filename,
+        config = self.get_config(["--config", filename, "--silent",
                                   "-a", "account", "-t", "rex",
                                   "--ping-url", "http://localhost/ping"])
-        setup_silent(config)
+        setup(config)
         self.assertEquals(self.get_content(config), """\
 [client]
 log_level = debug
@@ -705,18 +707,19 @@ account_name = account
 url = https://landscape.canonical.com/message-system
 registration_password = shared-secret
 """)
-        config = self.get_config(["--config", filename, "-a", "account",
-                                  "-t", "rex"])
-        setup_silent(config)
+        config = self.get_config(["--config", filename, "--silent",
+                                  "-a", "account", "-t", "rex"])
+        setup(config)
         self.assertEquals(self.get_content(config), """\
 [client]
-url = https://landscape.canonical.com/message-system
+registration_password = shared-secret
 computer_title = rex
 http_proxy = http://environ
 https_proxy = https://environ
-registration_password = shared-secret
+url = https://landscape.canonical.com/message-system
 account_name = account
 """)
+
 
     def test_setup_prefers_proxies_from_config_over_environment(self):
         os.environ["http_proxy"] = "http://environ"
@@ -866,8 +869,8 @@ account_name = account
         Silent registration uses specified configuration to attempt a
         registration with the server.
         """
-        setup_silent_mock = self.mocker.replace(setup_silent)
-        setup_silent_mock(ANY)
+        setup_mock = self.mocker.replace(setup)
+        setup_mock(ANY)
         # No interaction should be requested.
         raw_input_mock = self.mocker.replace(raw_input)
         raw_input_mock(ANY)

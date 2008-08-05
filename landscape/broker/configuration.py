@@ -300,8 +300,9 @@ def stop_and_disable_init_script():
 
 
 def setup(config):
-    """Prompt the user for config data and write out a configuration file."""
-    if not config.no_start:
+    if config.silent:
+        setup_init_script(enable=True)
+    elif not config.no_start:
         setup_init_script()
 
     if config.http_proxy is None and os.environ.get("http_proxy"):
@@ -309,29 +310,15 @@ def setup(config):
     if config.https_proxy is None and os.environ.get("https_proxy"):
         config.https_proxy = os.environ["https_proxy"]
 
-    script = BrokerSetupScript(config)
-    script.run()
-    config.write()
-
-
-def setup_silent(config):
-    """Create a configuration without prompting the user for any information.
-
-    @raises ConfigurationError: Raised if required configuration values aren't
-        available.
-    """
-    if not config.no_start:
-        setup_init_script(enable=True)
-
-    if not config.get("account_name") or not config.get("computer_title"):
-        raise ConfigurationError("An account name and computer title are "
-                                 "required.")
-    if config.get("script_users") and not config.include_manager_plugins:
-        config.include_manager_plugins = "ScriptExecution"
-    if config.http_proxy is None and os.environ.get("http_proxy"):
-        config.http_proxy = os.environ["http_proxy"]
-    if config.https_proxy is None and os.environ.get("https_proxy"):
-        config.https_proxy = os.environ["https_proxy"]
+    if config.silent:
+        if not config.get("account_name") or not config.get("computer_title"):
+            raise ConfigurationError("An account name and computer title are "
+                                     "required.")
+        if config.get("script_users") and not config.include_manager_plugins:
+            config.include_manager_plugins = "ScriptExecution"
+    else:
+        script = BrokerSetupScript(config)
+        script.run()
 
     config.write()
 
@@ -431,10 +418,7 @@ def main(args):
 
     # Setup client configuration.
     try:
-        if config.silent:
-            setup_silent(config)
-        else:
-            setup(config)
+        setup(config)
     except ConfigurationError, e:
         print_text(str(e))
         sys.exit("Aborting Landscape configuration")
