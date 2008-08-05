@@ -6,7 +6,7 @@ from twisted.internet import reactor
 
 from landscape.broker.configuration import (
     print_text, BrokerConfigurationScript, register, setup, main,
-    setup_init_script, disable_init_script, ConfigurationError)
+    setup_init_script, stop_and_disable_init_script, ConfigurationError)
 from landscape.broker.deployment import BrokerConfiguration
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.sysvconfig import SysVConfig
@@ -879,8 +879,9 @@ account_name = account
         main(["--silent"])
 
     def test_disable(self):
-        disable_init_script_mock = self.mocker.replace(disable_init_script)
-        disable_init_script_mock()
+        stop_and_disable_init_script_mock = self.mocker.replace(
+            stop_and_disable_init_script)
+        stop_and_disable_init_script_mock()
 
         # No interaction should be requested.
         raw_input_mock = self.mocker.replace(raw_input)
@@ -896,9 +897,8 @@ account_name = account
 
         main(["--disable"])
 
-    def test_disable_init_scripts(self):
+    def test_stop_and_disable_init_scripts(self):
         sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.is_configured_to_run()
         self.mocker.result(True)
         sysvconfig_mock.set_start_on_boot(False)
         sysvconfig_mock.stop_landscape()
