@@ -36,13 +36,6 @@ class BrokerConfiguration(Configuration):
                                "clients.")
         parser.add_option("-t", "--computer-title", metavar="TITLE",
                           help="The title of this computer")
-        parser.add_option("--script-users", metavar="USERS",
-                          help="A comma-separated list of users to allow "
-                               "scripts to run.  To allow scripts to be run "
-                               "by any user, enter: ALL")
-        parser.add_option("--include-manager-plugins", metavar="PLUGINS",
-                          help="A comma-separated list of manager plugins to "
-                               "load.")
         parser.add_option("-u", "--url", help="The server URL to connect to.")
         parser.add_option("-k", "--ssl-public-key",
                           help="The public SSL key to verify the server. "
@@ -62,13 +55,6 @@ class BrokerConfiguration(Configuration):
                           help="The URL of the HTTP proxy, if one is needed.")
         parser.add_option("--https-proxy", metavar="URL",
                           help="The URL of the HTTPS proxy, if one is needed.")
-        parser.add_option("-n", "--no-start", action="store_true",
-                          help="Don't start the client automatically.")
-        parser.add_option("--silent", action="store_true",
-                          help="Run without manual interaction.")
-        parser.add_option("--disable", action="store_true",
-                          help="Stop running clients and disable start at "
-                               "boot.")
         return parser
 
     @property

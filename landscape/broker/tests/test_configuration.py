@@ -5,9 +5,9 @@ from twisted.internet.defer import Deferred, succeed, fail
 from twisted.internet import reactor
 
 from landscape.broker.configuration import (
-    print_text, BrokerConfigurationScript, register, setup, main,
-    setup_init_script, stop_and_disable_init_script, ConfigurationError)
-from landscape.broker.deployment import BrokerConfiguration
+    print_text, BrokerSetupScript, BrokerSetupConfiguration,
+    register, setup, main, setup_init_script, stop_and_disable_init_script,
+    ConfigurationError)
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.sysvconfig import SysVConfig
 from landscape.tests.helpers import (LandscapeTest, LandscapeIsolatedTest,
@@ -66,15 +66,15 @@ class PrintTextTest(LandscapeTest):
         print_text("Hi!", "END")
 
 
-class BrokerConfigurationScriptTest(LandscapeTest):
+class BrokerSetupScriptTest(LandscapeTest):
 
     def setUp(self):
-        super(BrokerConfigurationScriptTest, self).setUp()
+        super(BrokerSetupScriptTest, self).setUp()
         self.config_filename = self.makeFile()
-        class MyBrokerConfiguration(BrokerConfiguration):
+        class MyBrokerSetupConfiguration(BrokerSetupConfiguration):
             default_config_filenames = [self.config_filename]
-        self.config = MyBrokerConfiguration()
-        self.script = BrokerConfigurationScript(self.config)
+        self.config = MyBrokerSetupConfiguration()
+        self.script = BrokerSetupScript(self.config)
 
     def test_show_help(self):
         print_text_mock = self.mocker.replace(print_text)
@@ -529,7 +529,7 @@ class ConfigurationFunctionsTest(LandscapeTest):
 
         config = setup(args)
 
-        self.assertEquals(type(config), BrokerConfiguration)
+        self.assertEquals(type(config), BrokerSetupConfiguration)
 
         # Reload it to ensure it was written down.
         config.reload()
@@ -663,7 +663,7 @@ account_name = account
         os.environ["http_proxy"] = "http://environ"
         os.environ["https_proxy"] = "https://environ"
 
-        script_mock = self.mocker.patch(BrokerConfigurationScript)
+        script_mock = self.mocker.patch(BrokerSetupScript)
         script_mock.run()
 
         filename = self.makeFile("[client]\n"
@@ -716,7 +716,7 @@ account_name = account
         os.environ["http_proxy"] = "http://environ"
         os.environ["https_proxy"] = "https://environ"
 
-        script_mock = self.mocker.patch(BrokerConfigurationScript)
+        script_mock = self.mocker.patch(BrokerSetupScript)
         script_mock.run()
 
         filename = self.makeFile("[client]\n"
@@ -793,7 +793,7 @@ account_name = account
         sysvconfig_mock.set_start_on_boot(True)
         sysvconfig_mock.start_landscape()
 
-        script_mock = self.mocker.patch(BrokerConfigurationScript)
+        script_mock = self.mocker.patch(BrokerSetupScript)
         script_mock.run()
 
         raw_input_mock = self.mocker.replace(raw_input)
@@ -1126,7 +1126,7 @@ class RegisterFunctionNoServiceTest(LandscapeIsolatedTest):
 
     def setUp(self):
         super(RegisterFunctionNoServiceTest, self).setUp()
-        self.configuration = BrokerConfiguration()
+        self.configuration = BrokerSetupConfiguration()
         # Let's not mess about with the system bus
         self.configuration.load_command_line(["--bus", "session"])
 

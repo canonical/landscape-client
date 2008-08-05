@@ -31,7 +31,34 @@ def print_text(text, end="\n", error=False):
     stream.flush()
 
 
-class BrokerConfigurationScript(object):
+
+class BrokerSetupConfiguration(BrokerConfiguration):
+
+    def make_parser(self):
+        """
+        Specialize L{Configuration.make_parser}, adding many
+        broker-specific options.
+        """
+        parser = super(BrokerSetupConfiguration, self).make_parser()
+
+        parser.add_option("--script-users", metavar="USERS",
+                          help="A comma-separated list of users to allow "
+                               "scripts to run.  To allow scripts to be run "
+                               "by any user, enter: ALL")
+        parser.add_option("--include-manager-plugins", metavar="PLUGINS",
+                          help="A comma-separated list of manager plugins to "
+                               "load.")
+        parser.add_option("-n", "--no-start", action="store_true",
+                          help="Don't start the client automatically.")
+        parser.add_option("--silent", action="store_true",
+                          help="Run without manual interaction.")
+        parser.add_option("--disable", action="store_true",
+                          help="Stop running clients and disable start at "
+                               "boot.")
+        return parser
+
+
+class BrokerSetupScript(object):
     """
     An interactive procedure which manages the prompting and temporary storage
     of configuration parameters.
@@ -290,7 +317,7 @@ def setup_silent(args, config):
 
 def setup(args, silent=False):
     """Prompt the user for config data and write out a configuration file."""
-    config = BrokerConfiguration()
+    config = BrokerSetupConfiguration()
     config.load(args)
     if not config.no_start:
         setup_init_script(silent=silent)
@@ -304,7 +331,7 @@ def setup(args, silent=False):
         config.https_proxy = os.environ["https_proxy"]
 
     if not silent:
-        script = BrokerConfigurationScript(config)
+        script = BrokerSetupScript(config)
         script.run()
 
     config.write()
