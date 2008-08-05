@@ -46,6 +46,7 @@ class BrokerSetupConfiguration(BrokerConfiguration):
                                "scripts to run.  To allow scripts to be run "
                                "by any user, enter: ALL")
         parser.add_option("--include-manager-plugins", metavar="PLUGINS",
+                          default="",
                           help="A comma-separated list of manager plugins to "
                                "load.")
         parser.add_option("-n", "--no-start", action="store_true",
@@ -224,10 +225,6 @@ class BrokerSetupScript(object):
             """)
         msg = "Enable script execution?"
         included_plugins = getattr(self.config, "include_manager_plugins")
-        # FIXME For some reason self.config.include_manager_plugins is None,
-        # instead of missing or "".
-        if not included_plugins:
-            included_plugins = ""
         included_plugins = [x.strip() for x in included_plugins.split(",")]
         if included_plugins == [""]:
             included_plugins = []
