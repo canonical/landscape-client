@@ -41,6 +41,16 @@ def init_logging(configuration, program_name):
 
 
 class BaseConfiguration(object):
+    """Base class for configuration implementations.
+
+    @var required_options: Optionally, a sequence of key names to require when
+        reading or writing a configuration.
+    @var unstored_options: Optionally, a sequence of key names to never write
+        to the configuration file.  This is useful when you want to provide
+        command-line options that should never end up in a configuration file.
+    @var default_config_filenames: A sequence of filenames to check when
+        reading or writing a configuration.
+    """
 
     required_options = ()
     default_config_filenames = ("landscape-client.conf",

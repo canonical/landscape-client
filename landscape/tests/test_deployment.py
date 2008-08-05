@@ -1,3 +1,4 @@
+import sys
 from optparse import OptionParser
 import logging
 import signal
@@ -17,11 +18,13 @@ class ConfigurationTest(LandscapeTest):
         super(ConfigurationTest, self).setUp()
         self.reset_config()
 
-    def reset_config(self):
-        class MyConfiguration(Configuration):
-            default_config_filenames = []
-        self.config_class = MyConfiguration
-        self.config = MyConfiguration()
+    def reset_config(self, configuration_class=None):
+        if not configuration_class:
+            class MyConfiguration(Configuration):
+                default_config_filenames = []
+            configuration_class = MyConfiguration
+        self.config_class = configuration_class
+        self.config = configuration_class()
         self.parser = self.config.make_parser()
 
     def test_get(self):
@@ -49,6 +52,27 @@ class ConfigurationTest(LandscapeTest):
                 parser.add_option("--foo-bar")
                 return parser
         self.assertEquals(MyConfiguration().foo_bar, None)
+
+    def test_command_line_with_required_options(self):
+        class MyConfiguration(Configuration):
+            required_options = ("foo_bar",)
+            config = None
+            def make_parser(self):
+                parser = super(MyConfiguration, self).make_parser()
+                # Keep the dash in the option name to ensure it works.
+                parser.add_option("--foo-bar", metavar="NAME")
+                return parser
+        self.reset_config(configuration_class=MyConfiguration)
+        self.write_config_file()
+
+        sys_exit_mock = self.mocker.replace(sys.exit)
+        sys_exit_mock(ANY)
+        self.mocker.count(1)
+        self.mocker.replay()
+
+        self.config.load([]) # This will call our mocked sys.exit.
+        self.config.load(["--foo-bar", "ooga"])
+        self.assertEquals(self.config.foo_bar, "ooga")
 
     def test_config_file_has_precedence_over_default(self):
         self.write_config_file(log_level="file")
