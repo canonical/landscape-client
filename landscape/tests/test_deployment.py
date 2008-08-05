@@ -74,6 +74,25 @@ class ConfigurationTest(LandscapeTest):
         self.config.load(["--foo-bar", "ooga"])
         self.assertEquals(self.config.foo_bar, "ooga")
 
+    def test_command_line_with_unsaved_options(self):
+        class MyConfiguration(Configuration):
+            unsaved_options = ("foo_bar",)
+            config = None
+            def make_parser(self):
+                parser = super(MyConfiguration, self).make_parser()
+                # Keep the dash in the option name to ensure it works.
+                parser.add_option("--foo-bar", metavar="NAME")
+                return parser
+        self.reset_config(configuration_class=MyConfiguration)
+        self.write_config_file()
+
+        self.config.load(["--foo-bar", "ooga"])
+        self.assertEquals(self.config.foo_bar, "ooga")
+        self.config.write()
+
+        self.config.load([])
+        self.assertEquals(self.config.foo_bar, None)
+
     def test_config_file_has_precedence_over_default(self):
         self.write_config_file(log_level="file")
         self.config.load([])

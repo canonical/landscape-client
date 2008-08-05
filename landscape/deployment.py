@@ -45,7 +45,7 @@ class BaseConfiguration(object):
 
     @var required_options: Optionally, a sequence of key names to require when
         reading or writing a configuration.
-    @var unstored_options: Optionally, a sequence of key names to never write
+    @var unsaved_options: Optionally, a sequence of key names to never write
         to the configuration file.  This is useful when you want to provide
         command-line options that should never end up in a configuration file.
     @var default_config_filenames: A sequence of filenames to check when
@@ -53,6 +53,7 @@ class BaseConfiguration(object):
     """
 
     required_options = ()
+    unsaved_options = ()
     default_config_filenames = ("landscape-client.conf",
                                 "/etc/landscape/client.conf")
 
@@ -191,6 +192,7 @@ class BaseConfiguration(object):
         all_options.update(self._set_options)
         for name, value in all_options.items():
             if (name != "config" and
+                name not in self.unsaved_options and
                 value != self._command_line_defaults.get(name)):
                 config_parser.set("client", name, value)
         filename = (self.config or self._config_filename or
