@@ -1,18 +1,19 @@
-import os
 import pwd
+import os
 import tempfile
 
 from twisted.internet.defer import gatherResults
+from twisted.internet.error import ProcessDone
+from twisted.python.failure import Failure
 
 from landscape.manager.scriptexecution import (ScriptExecution,
-                                               ProcessTimeLimitReachedError)
+                                               ProcessTimeLimitReachedError,
+                                               PROCESS_FAILED_RESULT)
 from landscape.manager.manager import SUCCEEDED, FAILED
 from landscape.tests.helpers import (
     LandscapeTest, LandscapeIsolatedTest, ManagerHelper,
     StubProcessFactory, DummyProcess)
 from landscape.tests.mocker import ANY, ARGS
-
-# Test GPG-signing
 
 
 class RunScriptTests(LandscapeTest):
@@ -100,7 +101,7 @@ class RunScriptTests(LandscapeTest):
         protocol.childDataReceived(1, "foobar")
         for fd in (0, 1, 2):
             protocol.childConnectionLost(fd)
-        protocol.processEnded(None)
+        protocol.processEnded(Failure(ProcessDone(0)))
         return result
 
     def test_user(self):
@@ -145,7 +146,7 @@ class RunScriptTests(LandscapeTest):
         protocol.childDataReceived(1, "x"*200)
         for fd in (0, 1, 2):
             protocol.childConnectionLost(fd)
-        protocol.processEnded(None)
+        protocol.processEnded(Failure(ProcessDone(0)))
 
         return result
 
@@ -170,7 +171,7 @@ class RunScriptTests(LandscapeTest):
         protocol.makeConnection(DummyProcess())
         protocol.childDataReceived(1, "hi\n")
         self.manager.reactor.advance(501)
-        protocol.processEnded(None)
+        protocol.processEnded(Failure(ProcessDone(0)))
         def got_error(f):
             self.assertTrue(f.check(ProcessTimeLimitReachedError))
             self.assertEquals(f.value.data, "hi\n")
@@ -188,7 +189,7 @@ class RunScriptTests(LandscapeTest):
         transport = DummyProcess()
         protocol.makeConnection(transport)
         protocol.childDataReceived(1, "hi\n")
-        protocol.processEnded(None)
+        protocol.processEnded(Failure(ProcessDone(0)))
         self.manager.reactor.advance(501)
         self.assertEquals(transport.signals, [])
 
@@ -205,7 +206,7 @@ class RunScriptTests(LandscapeTest):
         protocol = factory.spawns[0][0]
         protocol.makeConnection(DummyProcess())
         protocol.childDataReceived(1, "hi")
-        protocol.processEnded(None)
+        protocol.processEnded(Failure(ProcessDone(0)))
         self.manager.reactor.advance(501)
         def got_error(f):
             print f
@@ -319,7 +320,7 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
 
         # Now let's simulate the completion of the process
         factory.spawns[0][0].childDataReceived(1, "hi!\n")
-        factory.spawns[0][0].processEnded(None)
+        factory.spawns[0][0].processEnded(Failure(ProcessDone(0)))
 
         def got_result(r):
             self.assertMessages(
@@ -343,7 +344,7 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
 
         def spawn_called(protocol, filename, uid, gid, path):
             protocol.childDataReceived(1, "hi!\n")
-            protocol.processEnded(None)
+            protocol.processEnded(Failure(ProcessDone(0)))
             self._verify_script(filename, "python", "print 'hi'")
 
         process_factory = self.mocker.mock()
@@ -378,7 +379,7 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         protocol.makeConnection(DummyProcess())
         protocol.childDataReceived(2, "ONOEZ")
         self.manager.reactor.advance(31)
-        protocol.processEnded(None)
+        protocol.processEnded(Failure(ProcessDone(0)))
 
         def got_result(r):
             self.assertMessages(
@@ -422,7 +423,7 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
 
         def spawn_called(protocol, filename, uid, gid, path):
             protocol.childDataReceived(1, "hi!\n")
-            protocol.processEnded(None)
+            protocol.processEnded(Failure(ProcessDone(0)))
             self._verify_script(filename, "python", "print 'hi'")
 
         process_factory = self.mocker.mock()
@@ -466,3 +467,64 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
               "status": FAILED}])
 
         self.assertTrue("KeyError: 'username'" in self.logfile.getvalue())
+
+    def test_non_zero_exit_fails_operation(self):
+        """
+        If a script exits with a nen-zero exit code, the operation associated
+        with it should fail, but the data collected should still be sent.
+        """
+        # Mock a bunch of crap so that we can run a real process
+        self.mocker.replace("os.chown", passthrough=False)(ARGS)
+        self.mocker.replace("os.setuid", passthrough=False)(ARGS)
+        self.mocker.count(0, None)
+        self.mocker.replace("os.setgid", passthrough=False)(ARGS)
+        self.mocker.count(0, None)
+        self.mocker.replay()
+
+        self.manager.add(ScriptExecution())
+        result = self._send_script("/bin/bash", "echo hi; exit 1")
+
+        def got_result(ignored):
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [{"type": "operation-result",
+                  "operation-id": 123,
+                  "result-text": "hi\n",
+                  "result-code": PROCESS_FAILED_RESULT,
+                  "status": FAILED}])
+        return result.addCallback(got_result)
+
+
+    def test_unknown_error(self):
+        """
+        When a completely unknown error comes back from the process protocol,
+        the operation fails and the formatted failure is included in the
+        response message.
+        """
+        factory = StubProcessFactory()
+
+        # ignore the call to chown!
+        mock_chown = self.mocker.replace("os.chown", passthrough=False)
+        mock_chown(ARGS)
+
+        self.manager.add(ScriptExecution(process_factory=factory))
+
+        self.mocker.replay()
+        result = self._send_script("python", "print 'hi'")
+
+        self._verify_script(factory.spawns[0][1], "python", "print 'hi'")
+        self.assertMessages(
+            self.broker_service.message_store.get_pending_messages(), [])
+
+        failure = Failure(RuntimeError("Oh noes!"))
+        factory.spawns[0][0].result_deferred.errback(failure)
+
+        def got_result(r):
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [{"type": "operation-result",
+                  "operation-id": 123,
+                  "status": FAILED,
+                  "result-text": str(failure)}])
+        result.addCallback(got_result)
+        return result
