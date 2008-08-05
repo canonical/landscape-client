@@ -272,10 +272,10 @@ class BrokerSetupScript(object):
         self.query_script_plugin()
 
 
-def setup_init_script(silent=False):
+def setup_init_script(enable=False):
     sysvconfig = SysVConfig()
     if not sysvconfig.is_configured_to_run():
-        if silent:
+        if enable:
             answer = "Y"
         else:
             answer = raw_input("\nThe Landscape client must be started "
@@ -298,41 +298,46 @@ def stop_and_disable_init_script():
     sysvconfig.stop_landscape()
 
 
-def setup_silent(args, config):
-    """Create a configuration without prompting the user for any information.
-
-    Any non-essential values in a pre-existing configuration are cleared
-    before the configuration is updated with values from the command-line.
-
-    @raises ConfigurationError: Raised if required configuration values aren't
-        available.
-    """
-    config.load(args)
-    if not config.get("account_name") or not config.get("computer_title"):
-        raise ConfigurationError("An account name and computer title are "
-                                 "required.")
-    if config.get("script_users") and not config.include_manager_plugins:
-        config.include_manager_plugins = "ScriptExecution"
-
-
-def setup(args, silent=False):
+def setup(args):
     """Prompt the user for config data and write out a configuration file."""
     config = BrokerSetupConfiguration()
     config.load(args)
     if not config.no_start:
-        setup_init_script(silent=silent)
-
-    if silent:
-        setup_silent(args, config)
+        setup_init_script()
 
     if config.http_proxy is None and os.environ.get("http_proxy"):
         config.http_proxy = os.environ["http_proxy"]
     if config.https_proxy is None and os.environ.get("https_proxy"):
         config.https_proxy = os.environ["https_proxy"]
 
-    if not silent:
-        script = BrokerSetupScript(config)
-        script.run()
+    script = BrokerSetupScript(config)
+    script.run()
+
+    config.write()
+    return config
+
+
+def setup_silent(args):
+    """Create a configuration without prompting the user for any information.
+
+    @raises ConfigurationError: Raised if required configuration values aren't
+        available.
+    """
+    config = BrokerSetupConfiguration()
+    config.load(args)
+    if not config.no_start:
+        setup_init_script(enable=True)
+
+    config.load(args)
+    if not config.get("account_name") or not config.get("computer_title"):
+        raise ConfigurationError("An account name and computer title are "
+                                 "required.")
+    if config.get("script_users") and not config.include_manager_plugins:
+        config.include_manager_plugins = "ScriptExecution"
+    if config.http_proxy is None and os.environ.get("http_proxy"):
+        config.http_proxy = os.environ["http_proxy"]
+    if config.https_proxy is None and os.environ.get("https_proxy"):
+        config.https_proxy = os.environ["https_proxy"]
 
     config.write()
     return config
@@ -432,7 +437,10 @@ def main(args):
     # Setup client configuration.
     silent = pop_argument(args, "--silent")
     try:
-        config = setup(args, silent=silent)
+        if silent:
+            config = setup_silent(args)
+        else:
+            config = setup(args)
     except ConfigurationError, e:
         print_text(str(e))
         sys.exit("Aborting Landscape configuration")

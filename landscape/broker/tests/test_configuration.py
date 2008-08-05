@@ -6,8 +6,8 @@ from twisted.internet import reactor
 
 from landscape.broker.configuration import (
     print_text, BrokerSetupScript, BrokerSetupConfiguration,
-    register, setup, main, setup_init_script, stop_and_disable_init_script,
-    ConfigurationError)
+    register, setup, setup_silent, main, setup_init_script,
+    stop_and_disable_init_script, ConfigurationError)
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.sysvconfig import SysVConfig
 from landscape.tests.helpers import (LandscapeTest, LandscapeIsolatedTest,
@@ -558,7 +558,7 @@ class ConfigurationFunctionsTest(LandscapeTest):
 url = https://landscape.canonical.com/message-system
 """)
         args = ["--config", filename, "-a", "account", "-t", "rex"]
-        config = setup(args, silent=True)
+        config = setup_silent(args)
         self.assertEquals(self.get_content(config), """\
 [client]
 url = https://landscape.canonical.com/message-system
@@ -580,7 +580,7 @@ account_name = account
 url = https://landscape.canonical.com/message-system
 """)
         args = ["--config", filename, "-a", "account"]
-        self.assertRaises(ConfigurationError, setup, args, silent=True)
+        self.assertRaises(ConfigurationError, setup_silent, args)
 
     def test_silent_setup_without_account_name(self):
         """An account name is required."""
@@ -596,7 +596,7 @@ url = https://landscape.canonical.com/message-system
 url = https://landscape.canonical.com/message-system
 """)
         args = ["--config", filename, "-t", "rex"]
-        self.assertRaises(ConfigurationError, setup, args, silent=True)
+        self.assertRaises(ConfigurationError, setup_silent, args)
 
     def test_silent_script_users_imply_script_execution_plugin(self):
         """
@@ -619,7 +619,7 @@ bus = session
 
         args = ["--config", filename, "-a", "account", "-t", "rex",
                 "--script-users", "root, nobody"]
-        setup(args, silent=True)
+        setup_silent(args)
         contents = open(filename, "r").read().strip() + "\n"
         self.assertEquals(contents, """\
 [client]
@@ -647,7 +647,7 @@ random_key = random_value
 """)
         args = ["--config", filename, "-a", "account", "-t", "rex",
                 "--ping-url", "http://localhost/ping"]
-        config = setup(args, silent=True)
+        config = setup_silent(args)
         self.assertEquals(self.get_content(config), """\
 [client]
 log_level = debug
@@ -701,7 +701,7 @@ url = https://landscape.canonical.com/message-system
 registration_password = shared-secret
 """)
         args = ["--config", filename, "-a", "account", "-t", "rex"]
-        config = setup(args, silent=True)
+        config = setup_silent(args)
         self.assertEquals(self.get_content(config), """\
 [client]
 url = https://landscape.canonical.com/message-system
@@ -738,7 +738,7 @@ account_name = account
 
     def test_main_no_registration(self):
         setup_mock = self.mocker.replace(setup)
-        setup_mock(["args"], silent=False)
+        setup_mock(["args"])
 
         raw_input_mock = self.mocker.replace(raw_input)
         raw_input_mock("\nRequest a new registration for "
@@ -813,7 +813,7 @@ account_name = account
 
     def test_main_with_register(self):
         setup_mock = self.mocker.replace(setup)
-        setup_mock(["DUMMY ARGS"], silent=False)
+        setup_mock(["DUMMY ARGS"])
         self.mocker.result("DUMMY CONFIG")
         raw_input_mock = self.mocker.replace(raw_input)
         raw_input_mock("\nRequest a new registration for "
@@ -855,15 +855,15 @@ account_name = account
         raw_input_mock(ANY)
         self.mocker.count(0)
         self.mocker.replay()
-        setup_init_script(silent=True)
+        setup_init_script(enable=True)
 
     def test_register_silent(self):
         """
         Silent registration uses specified configuration to attempt a
         registration with the server.
         """
-        setup_mock = self.mocker.replace(setup)
-        setup_mock(ANY, silent=True)
+        setup_silent_mock = self.mocker.replace(setup_silent)
+        setup_silent_mock(ANY)
         self.mocker.result("dummy-config")
         # No interaction should be requested.
         raw_input_mock = self.mocker.replace(raw_input)
