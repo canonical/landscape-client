@@ -1,7 +1,7 @@
 """Interactive configuration support for Landscape.
 
-This module, and specifically L{BrokerSetupScript}, implements the support for
-the C{landscape-config} script.
+This module, and specifically L{LandscapeSetupScript}, implements the support
+for the C{landscape-config} script.
 """
 
 import sys
@@ -31,7 +31,7 @@ def print_text(text, end="\n", error=False):
     stream.flush()
 
 
-class BrokerSetupConfiguration(BrokerConfiguration):
+class LandscapeSetupConfiguration(BrokerConfiguration):
 
     unsaved_options = ("no_start", "disable", "silent")
 
@@ -40,7 +40,7 @@ class BrokerSetupConfiguration(BrokerConfiguration):
         Specialize L{Configuration.make_parser}, adding many
         broker-specific options.
         """
-        parser = super(BrokerSetupConfiguration, self).make_parser()
+        parser = super(LandscapeSetupConfiguration, self).make_parser()
 
         parser.add_option("--script-users", metavar="USERS",
                           help="A comma-separated list of users to allow "
@@ -60,7 +60,7 @@ class BrokerSetupConfiguration(BrokerConfiguration):
         return parser
 
 
-class BrokerSetupScript(object):
+class LandscapeSetupScript(object):
     """
     An interactive procedure which manages the prompting and temporary storage
     of configuration parameters.
@@ -316,7 +316,7 @@ def setup(config):
         if config.get("script_users") and not config.include_manager_plugins:
             config.include_manager_plugins = "ScriptExecution"
     else:
-        script = BrokerSetupScript(config)
+        script = LandscapeSetupScript(config)
         script.run()
 
     config.write()
@@ -399,7 +399,7 @@ def register(config, reactor=None):
 
 
 def main(args):
-    config = BrokerSetupConfiguration()
+    config = LandscapeSetupConfiguration()
     config.load(args)
 
     # Disable startup on boot and stop the client, if one is running.
