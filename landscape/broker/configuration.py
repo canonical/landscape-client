@@ -1,7 +1,7 @@
 """Interactive configuration support for Landscape.
 
-This module, and specifically L{BrokerConfigurationScript}, implements the
-support for the C{landscape-config} script.
+This module, and specifically L{BrokerSetupScript}, implements the support for
+the C{landscape-config} script.
 """
 
 import sys
@@ -29,7 +29,6 @@ def print_text(text, end="\n", error=False):
         stream = sys.stdout
     stream.write(text+end)
     stream.flush()
-
 
 
 class BrokerSetupConfiguration(BrokerConfiguration):
@@ -397,14 +396,6 @@ def register(config, reactor=None):
     # will be called for the very first deferred that fails.
     gather_results(deferreds, consume_errors=True).addErrback(catch_all)
     reactor.run()
-
-
-def pop_argument(args, option):
-    try:
-        args.pop(args.index(option))
-    except ValueError:
-        return False
-    return True
 
 
 def main(args):
