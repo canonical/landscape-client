@@ -15,8 +15,6 @@ from landscape.tests.helpers import (
     StubProcessFactory, DummyProcess)
 from landscape.tests.mocker import ANY, ARGS
 
-# Test GPG-signing
-
 
 class RunScriptTests(LandscapeTest):
 
@@ -495,3 +493,38 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
                   "result-code": PROCESS_FAILED_RESULT,
                   "status": FAILED}])
         return result.addCallback(got_result)
+
+
+    def test_unknown_error(self):
+        """
+        When a completely unknown error comes back from the process protocol,
+        the operation fails and the formatted failure is included in the
+        response message.
+        """
+        factory = StubProcessFactory()
+
+        # ignore the call to chown!
+        mock_chown = self.mocker.replace("os.chown", passthrough=False)
+        mock_chown(ARGS)
+
+        self.manager.add(ScriptExecution(process_factory=factory))
+
+        self.mocker.replay()
+        result = self._send_script("python", "print 'hi'")
+
+        self._verify_script(factory.spawns[0][1], "python", "print 'hi'")
+        self.assertMessages(
+            self.broker_service.message_store.get_pending_messages(), [])
+
+        failure = Failure(RuntimeError("Oh noes!"))
+        factory.spawns[0][0].result_deferred.errback(failure)
+
+        def got_result(r):
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [{"type": "operation-result",
+                  "operation-id": 123,
+                  "status": FAILED,
+                  "result-text": str(failure)}])
+        result.addCallback(got_result)
+        return result
