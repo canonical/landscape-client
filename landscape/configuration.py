@@ -4,6 +4,7 @@ This module, and specifically L{LandscapeSetupScript}, implements the support
 for the C{landscape-config} script.
 """
 
+import time
 import sys
 import os
 import getpass
@@ -380,6 +381,7 @@ def register(config, reactor=None):
 
     print_text("Please wait... ", "")
 
+    time.sleep(2)
     remote = RemoteBroker(get_bus(config.bus), retry_timeout=0)
     # This is a bit unfortunate. Every method of remote returns a deferred,
     # even stuff like connect_to_signal, because the fetching of the DBus

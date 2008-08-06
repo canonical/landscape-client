@@ -810,6 +810,7 @@ account_name = account
 
         register_mock = self.mocker.replace(register, passthrough=False)
         register_mock(ANY)
+
         self.mocker.replay()
         main(["--config", self.make_working_config()])
 
@@ -927,6 +928,10 @@ class RegisterFunctionTest(LandscapeIsolatedTest):
         # This very informative message is printed out.
         print_text_mock("Please wait... ", "")
 
+        time_mock = self.mocker.replace("time")
+        time_mock.sleep(ANY)
+        self.mocker.count(1)
+
         reactor_mock.run()
 
         # After a nice dance the configuration is reloaded.
@@ -981,6 +986,10 @@ class RegisterFunctionTest(LandscapeIsolatedTest):
         # This very informative message is printed out.
         print_text_mock("Please wait... ", "")
 
+        time_mock = self.mocker.replace("time")
+        time_mock.sleep(ANY)
+        self.mocker.count(1)
+
         reactor_mock.run()
 
         # After a nice dance the configuration is reloaded.
@@ -1033,6 +1042,10 @@ class RegisterFunctionTest(LandscapeIsolatedTest):
 
         # This very informative message is printed out.
         print_text_mock("Please wait... ", "")
+
+        time_mock = self.mocker.replace("time")
+        time_mock.sleep(ANY)
+        self.mocker.count(1)
 
         reactor_mock.run()
 
@@ -1088,6 +1101,10 @@ class RegisterFunctionTest(LandscapeIsolatedTest):
 
         # This very informative message is printed out.
         print_text_mock("Please wait... ", "")
+
+        time_mock = self.mocker.replace("time")
+        time_mock.sleep(ANY)
+        self.mocker.count(1)
 
         reactor_mock.run()
 
@@ -1145,7 +1162,6 @@ class RegisterFunctionNoServiceTest(LandscapeIsolatedTest):
         self.mocker.call(lambda seconds, thingy: thingy())
         reactor_mock.stop()
         self.mocker.call(lambda: result.callback(None))
-
         reactor_mock.run()
 
         self.mocker.replay()
@@ -1172,6 +1188,9 @@ class RegisterFunctionNoServiceTest(LandscapeIsolatedTest):
 
         install_mock()
         print_text_mock("Please wait... ", "")
+        time_mock = self.mocker.replace("time")
+        time_mock.sleep(ANY)
+        self.mocker.count(1)
 
         # SNORE
         remote_broker = remote_broker_factory(ANY, retry_timeout=0)
