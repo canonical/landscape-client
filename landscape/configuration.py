@@ -276,7 +276,7 @@ def setup_init_script_and_start_client():
     sysvconfig = SysVConfig()
     sysvconfig.set_start_on_boot(True)
     try:
-        sysvconfig.start_landscape()
+        sysvconfig.restart_landscape()
     except ProcessError:
         print_text("Error starting client cannot continue.")
         sys.exit(-1)
@@ -317,6 +317,10 @@ def setup(config):
         script.run()
 
     config.write()
+    # Restart the client to ensure that it's using the new configuration.
+    if not config.no_start:
+        sysvconfig = SysVConfig()
+        sysvconfig.restart_landscape()
 
 
 def register(config, reactor=None):

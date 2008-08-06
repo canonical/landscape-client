@@ -551,7 +551,8 @@ class ConfigurationFunctionsTest(LandscapeTest):
         """
         sysvconfig_mock = self.mocker.patch(SysVConfig)
         sysvconfig_mock.set_start_on_boot(True)
-        sysvconfig_mock.start_landscape()
+        sysvconfig_mock.restart_landscape()
+        self.mocker.count(2)
         self.mocker.replay()
 
         filename = self.makeFile("""
@@ -572,7 +573,7 @@ account_name = account
         """A computer title is required."""
         sysvconfig_mock = self.mocker.patch(SysVConfig)
         sysvconfig_mock.set_start_on_boot(True)
-        sysvconfig_mock.start_landscape()
+        sysvconfig_mock.restart_landscape()
         self.mocker.replay()
 
         filename = self.makeFile("""
@@ -587,7 +588,7 @@ url = https://landscape.canonical.com/message-system
         """An account name is required."""
         sysvconfig_mock = self.mocker.patch(SysVConfig)
         sysvconfig_mock.set_start_on_boot(True)
-        sysvconfig_mock.start_landscape()
+        sysvconfig_mock.restart_landscape()
         self.mocker.replay()
 
         filename = self.makeFile("""
@@ -605,7 +606,8 @@ url = https://landscape.canonical.com/message-system
         """
         sysvconfig_mock = self.mocker.patch(SysVConfig)
         sysvconfig_mock.set_start_on_boot(True)
-        sysvconfig_mock.start_landscape()
+        sysvconfig_mock.restart_landscape()
+        self.mocker.count(2)
         self.mocker.result(True)
 
         raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
@@ -636,7 +638,8 @@ account_name = account
     def test_silent_setup_with_ping_url(self):
         sysvconfig_mock = self.mocker.patch(SysVConfig)
         sysvconfig_mock.set_start_on_boot(True)
-        sysvconfig_mock.start_landscape()
+        sysvconfig_mock.restart_landscape()
+        self.mocker.count(2)
         self.mocker.result(True)
         self.mocker.replay()
 
@@ -693,7 +696,8 @@ account_name = account
         os.environ["https_proxy"] = "https://environ"
         sysvconfig_mock = self.mocker.patch(SysVConfig)
         sysvconfig_mock.set_start_on_boot(True)
-        sysvconfig_mock.start_landscape()
+        sysvconfig_mock.restart_landscape()
+        self.mocker.count(2)
         self.mocker.replay()
 
         filename = self.makeFile("""
@@ -766,7 +770,7 @@ account_name = account
 
     def test_main_with_failing_client_start(self):
         system_mock = self.mocker.replace("os.system")
-        system_mock("/etc/init.d/landscape-client start")
+        system_mock("/etc/init.d/landscape-client restart")
         self.mocker.result(-1)
 
         sysvconfig_mock = self.mocker.patch(SysVConfig)
@@ -788,7 +792,8 @@ account_name = account
     def test_register(self):
         sysvconfig_mock = self.mocker.patch(SysVConfig)
         sysvconfig_mock.set_start_on_boot(True)
-        sysvconfig_mock.start_landscape()
+        sysvconfig_mock.restart_landscape()
+        self.mocker.count(2)
 
         script_mock = self.mocker.patch(LandscapeSetupScript)
         script_mock.run()
@@ -824,7 +829,7 @@ account_name = account
 
     def test_setup_init_script_and_start_client(self):
         system_mock = self.mocker.replace("os.system")
-        system_mock("/etc/init.d/landscape-client start")
+        system_mock("/etc/init.d/landscape-client restart")
         self.mocker.result(0)
 
         sysvconfig_mock = self.mocker.patch(SysVConfig)
@@ -836,7 +841,7 @@ account_name = account
     def test_setup_init_script_and_start_client_silent(self):
         sysvconfig_mock = self.mocker.patch(SysVConfig)
         sysvconfig_mock.set_start_on_boot(True)
-        sysvconfig_mock.start_landscape()
+        sysvconfig_mock.restart_landscape()
 
         raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
         raw_input_mock(ANY)
