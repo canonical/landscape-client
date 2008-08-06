@@ -225,8 +225,8 @@ class LandscapeSetupScript(object):
             also configurable.
             """)
         msg = "Enable script execution?"
-        included_plugins = getattr(self.config, "include_manager_plugins")
-        included_plugins = [x.strip() for x in included_plugins.split(",")]
+        included_plugins = [
+            p.strip() for p in self.config.include_manager_plugins.split(",")]
         if included_plugins == [""]:
             included_plugins = []
         default = "ScriptExecution" in included_plugins
@@ -245,7 +245,7 @@ class LandscapeSetupScript(object):
         else:
             if "ScriptExecution" in included_plugins:
                 included_plugins.remove("ScriptExecution")
-        self.config.include_manager_plugins = ', '.join(included_plugins)
+        self.config.include_manager_plugins = ", ".join(included_plugins)
 
     def show_header(self):
         self.show_help(
