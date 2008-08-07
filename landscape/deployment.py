@@ -3,7 +3,7 @@ import os
 import sys
 
 from logging import (getLevelName, getLogger,
-                     FileHandler, StreamHandler, Formatter, info, debug)
+                     FileHandler, StreamHandler, Formatter, info)
 
 from optparse import OptionParser
 from ConfigParser import ConfigParser
