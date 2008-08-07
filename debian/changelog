@@ -1,3 +1,11 @@
+landscape-client (1.0.15-intrepid1-landscape1) intrepid; urgency=low
+
+  * introduce a basic landscape-sysinfo tool
+  * properly report a script execution error if its exit status is not
+    zero
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 7 Aug 2008 18:33:41 +0000
+
 landscape-client (1.0.15-hardy1-landscape1) hardy; urgency=low
 
   * introduce a basic landscape-sysinfo tool
