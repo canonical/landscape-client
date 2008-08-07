@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name="Landscape Client",
-      version="AUTOPPA_VERSION(1.0.15-gutsy1-landscape1)"[len("AUTOPPA_VERSION("):-1],
+      version="AUTOPPA_VERSION(1.0.15-hardy1-landscape1)"[len("AUTOPPA_VERSION("):-1],
       description="Landscape Client",
       author="Landscape Team",
       author_email="landscape-team@canonical.com",
