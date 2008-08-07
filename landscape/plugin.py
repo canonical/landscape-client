@@ -24,8 +24,8 @@ class PluginRegistry(object):
     def add(self, plugin):
         """Register a plugin.
 
-        The plugin's C{register} method will be called with this Monitor as its
-        argument.
+        The plugin's C{register} method will be called with this registry as
+        its argument.
 
         If the plugin has a C{plugin_name} attribute, it will be possible to
         look up the plugin later with L{get_plugin}.

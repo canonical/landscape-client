@@ -3,7 +3,7 @@ import os
 from datetime import timedelta, datetime
 
 from landscape.lib.timestamp import to_timestamp
-from landscape.jiffies import detect_jiffies
+from landscape.lib.jiffies import detect_jiffies
 from landscape.monitor.computeruptime import BootTimes, get_uptime
 
 
