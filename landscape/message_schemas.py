@@ -303,11 +303,9 @@ TEST = Message(
 CUSTOM_GRAPH = Message("custom-graph", {
     # The tuples are timestamp, value
     "graph-data": List(KeyDict({"graph-id": Int(),
-                                "data": List(Tuple(Float(), Float()))})),
-    # Tuple of graph-id, error-message
-    "error-messages": List(Tuple(Int(), Unicode()))},
-    optional=["error-messages"]
-    )
+                                "data": List(Tuple(Float(), Float())),
+                                "error": Unicode()})),
+    })
 
 message_schemas = {}
 for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
