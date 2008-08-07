@@ -2,41 +2,75 @@ NAME
   landscape-config - configure the Landscape management client
 
 SYNOPSIS
-  landscape-config [--no-start, -a ACCOUNT, -t TITLE, -t TITLE,
-                    -p PASSWORD, -l LOG, -k KEY, -d PATH]
+  landscape-config [--silent, -a ACCOUNT, -t TITLE, -p PASSWORD, -l LOG,
+                    -k KEY, -d PATH]
 
 DESCRIPTION
 
 Before using the landscape-client it must be configured with account and
 computer information that is transmitted to the Landscape server when the
-client connects. The registration is done interactively, by asking the user a
-series of questions.
+client connects. The registration can be performed with or without user
+interaction.
 
-Runnning the landscape-config program with no argument will start the program,
-prompting you for the necessary information to run the client. Optionally you
-can provide command-line arguments (detailed below) to specify default
-responses. You will be told if the registration was successful or if an error
-occurred. If the registration is successful then you are done, landscape is
-running on your system. Errors can occur if you provide incorrect registration
-details.
+Running the landscape-config program without arguments will start the
+program, prompting you for the necessary information to run the client.
+Optionally you can provide command-line arguments (detailed below) to
+specify default responses. You will be told if the registration was
+successful or if an error occurred. When registration is successful
+Landscape is configured and running on your system. Errors can occur if
+you provide incorrect registration details.
 
 OPTIONS
- -h, --help                                  Show this help message and exit
- -a, --acount-name=NAME                      The account this computer belongs to.
- -p, --registration-password=PASSWORD        The account-wide password used for registering clients.
- -t, --computer-title=TITLE                  The title of this computer
- -n, --no-start                              Do not attempt to start the landscape-client. Only used for developmental testing.
+ --version                                   show program's version number and exit
+ -h, --help                                  show this help message and exit
+ -c FILE, --config=FILE                      Use config from this file (any command line options override settings from the file)
+ --bus=BUS                                   The DBUS bus to use. One of 'session' or 'system'
+ -d PATH, --data-path=PATH                   The directory to store data files in
+ -q, --quiet                                 Do not log to the standard output
+ -l FILE, --log-dir=FILE                     The directory to write log files to
+ --log-level=LOG_LEVEL                       One of debug, info, warning, error or critical
+ --ignore-sigint                             Ignore interrupt signals
+ -a NAME, --account-name=NAME                The account this computer belongs to
+ -p SECRET, --registration-password=SECRET   The account-wide password used for registering clients
+ -t TITLE, --computer-title=TITLE            The title of this computer
+ --script-users=USERS                        A comma-separated list of users to allow scripts to run. To allow scripts to be run by any user, enter ALL
+ --include-manager-plugins=PLUGINS           A comma-separated list of manager plugins to load
+ -u URL, --url=URL                           The server URL to connect to
+ -k SSL_KEY, --ssl-public-key=SSL_KEY        The public SSL key to verify the server, only used if the given URL is https
+ --exchange-interval=INTERVAL                The number of seconds between server exchanges
+ --urgent-exchange-interval=INTERVAL         The number of seconds between urgent server exchanges
+ --ping-url=PING_URL                         The URL to perform lightweight exchange initiation with
+ --http-proxy=URL                            The URL of the HTTP proxy, if one is needed
+ --https-proxy=URL                           The URL of the HTTPS proxy, if one is needed
+ -n, --no-start                              Don't start the client automatically
+ --silent                                    Run without manual interaction
+ --disable                                   Stop running clients and disable start at boot
+
 
 EXAMPLES
 
-To register your machine interactively:
+Register a machine for the first time, or reconfigure an already
+registered machine, interactively. Command line parameters suppress
+interaction for provided values.
 
   landscape-config
 
-To register the machine specifying default values as the responses to the
-questions:
+Register a machine for the first time, or reconfigure an already
+registered machine, without requiring user interaction. The client
+will be configured to start on boot automatically:
 
-  landscape-config -a my-account-name -p secret -t "Web Server 1"
+  landscape-config --silent -a account-name -p secret -t `hostname`
+
+Register a machine with the script execution plugin enabled, without
+requiring user interaction:
+
+  landscape-config --silent -a account-name -p secret -t `hostname` --script-users nobody,landscape,root
+
+To disable a client, stopping current instances and disabling start at
+bootup:
+
+  landscape-config --disable
+
 
 SEE ALSO
 

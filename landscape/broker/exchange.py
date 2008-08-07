@@ -143,9 +143,11 @@ class MessageExchange(object):
 
         start_time = self._create_time()
         if self._urgent_exchange:
-            logging.info("Starting urgent message exchange.")
+            logging.info("Starting urgent message exchange with %s."
+                         % self._transport.get_url())
         else:
-            logging.info("Starting message exchange.")
+            logging.info("Starting message exchange with %s."
+                         % self._transport.get_url())
 
         def handle_result(result):
             self._exchanging = False
