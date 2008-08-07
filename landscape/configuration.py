@@ -276,11 +276,6 @@ class LandscapeSetupScript(object):
 def setup_init_script_and_start_client():
     sysvconfig = SysVConfig()
     sysvconfig.set_start_on_boot(True)
-    try:
-        sysvconfig.restart_landscape()
-    except ProcessError:
-        print_text("Error starting client cannot continue.")
-        sys.exit(-1)
 
 
 def stop_client_and_disable_init_script():
@@ -290,10 +285,11 @@ def stop_client_and_disable_init_script():
 
 
 def setup(config):
+    sysvconfig = SysVConfig()
     if not config.no_start:
         if config.silent:
             setup_init_script_and_start_client()
-        else:
+        elif not sysvconfig.is_configured_to_run():
             answer = raw_input("\nThe Landscape client must be started "
                                "on boot to operate correctly.\n\n"
                                "Start Landscape client on boot? (Y/n): ")
@@ -320,7 +316,6 @@ def setup(config):
     config.write()
     # Restart the client to ensure that it's using the new configuration.
     if not config.no_start:
-        sysvconfig = SysVConfig()
         sysvconfig.restart_landscape()
 
 
