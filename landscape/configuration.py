@@ -408,7 +408,7 @@ def main(args):
     # Setup client configuration.
     try:
         setup(config)
-    except ConfigurationError, e:
+    except Exception, e:
         print_text(str(e))
         sys.exit("Aborting Landscape configuration")
 
