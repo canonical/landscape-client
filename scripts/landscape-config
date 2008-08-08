@@ -3,7 +3,7 @@ import sys, os
 if os.path.isdir("landscape"):
     sys.path.insert(0, "./")
 
-from landscape.broker.configuration import main
+from landscape.configuration import main
 
 
 if __name__ == "__main__":

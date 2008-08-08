@@ -4,13 +4,12 @@ from getpass import getpass
 from twisted.internet.defer import Deferred, succeed, fail
 from twisted.internet import reactor
 
-from landscape.reactor import FakeReactor
-from landscape.broker.configuration import (
-    print_text, BrokerConfigurationScript, register, setup, main,
-    setup_init_script)
-from landscape.broker.deployment import BrokerConfiguration
+from landscape.configuration import (
+    print_text, LandscapeSetupScript, LandscapeSetupConfiguration,
+    register, setup, main, setup_init_script_and_start_client,
+    stop_client_and_disable_init_script, ConfigurationError)
 from landscape.broker.registration import InvalidCredentialsError
-from landscape.sysvconfig import SysVConfig
+from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.tests.helpers import (LandscapeTest, LandscapeIsolatedTest,
                                      RemoteBrokerHelper, EnvironSaverHelper)
 from landscape.tests.mocker import ARGS, KWARGS, ANY, MATCH, CONTAINS, expect
@@ -67,15 +66,15 @@ class PrintTextTest(LandscapeTest):
         print_text("Hi!", "END")
 
 
-class BrokerConfigurationScriptTest(LandscapeTest):
+class LandscapeSetupScriptTest(LandscapeTest):
 
     def setUp(self):
-        super(BrokerConfigurationScriptTest, self).setUp()
+        super(LandscapeSetupScriptTest, self).setUp()
         self.config_filename = self.makeFile()
-        class MyBrokerConfiguration(BrokerConfiguration):
+        class MyLandscapeSetupConfiguration(LandscapeSetupConfiguration):
             default_config_filenames = [self.config_filename]
-        self.config = MyBrokerConfiguration()
-        self.script = BrokerConfigurationScript(self.config)
+        self.config = MyLandscapeSetupConfiguration()
+        self.script = LandscapeSetupScript(self.config)
 
     def test_show_help(self):
         print_text_mock = self.mocker.replace(print_text)
@@ -244,6 +243,14 @@ class BrokerConfigurationScriptTest(LandscapeTest):
 
         self.script.query_computer_title()
 
+    def test_query_computer_title_defined_on_command_line(self):
+        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
+        self.expect(raw_input_mock(ANY)).count(0)
+        self.mocker.replay()
+
+        self.config.load_command_line(["-t", "Computer title"])
+        self.script.query_computer_title()
+
     def test_query_account_name(self):
         help_snippet = "You must now specify the name of the Landscape account"
         self.mocker.order()
@@ -252,6 +259,14 @@ class BrokerConfigurationScriptTest(LandscapeTest):
         script_mock.prompt("account_name", "Account name", True)
         self.mocker.replay()
 
+        self.script.query_account_name()
+
+    def test_query_account_name_defined_on_command_line(self):
+        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
+        self.expect(raw_input_mock(ANY)).count(0)
+        self.mocker.replay()
+
+        self.config.load_command_line(["-a", "Account name"])
         self.script.query_account_name()
 
     def test_query_registration_password(self):
@@ -264,6 +279,14 @@ class BrokerConfigurationScriptTest(LandscapeTest):
         self.mocker.replay()
         self.script.query_registration_password()
 
+    def test_query_registration_password_defined_on_command_line(self):
+        getpass_mock = self.mocker.replace("getpass.getpass", passthrough=False)
+        self.expect(getpass_mock(ANY)).count(0)
+        self.mocker.replay()
+
+        self.config.load_command_line(["-p", "shared-secret"])
+        self.script.query_registration_password()
+
     def test_query_proxies(self):
         help_snippet = "The Landscape client communicates"
         self.mocker.order()
@@ -272,6 +295,37 @@ class BrokerConfigurationScriptTest(LandscapeTest):
         script_mock.prompt("http_proxy", "HTTP proxy URL")
         script_mock.prompt("https_proxy", "HTTPS proxy URL")
         self.mocker.replay()
+        self.script.query_proxies()
+
+    def test_query_proxies_defined_on_command_line(self):
+        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
+        self.expect(raw_input_mock(ANY)).count(0)
+        self.mocker.replay()
+
+        self.config.load_command_line(["--http-proxy", "localhost:8080",
+                                       "--https-proxy", "localhost:8443"])
+        self.script.query_proxies()
+
+    def test_query_http_proxy_defined_on_command_line(self):
+        help_snippet = "The Landscape client communicates"
+        self.mocker.order()
+        script_mock = self.mocker.patch(self.script)
+        script_mock.show_help(self.get_matcher(help_snippet))
+        script_mock.prompt("https_proxy", "HTTPS proxy URL")
+        self.mocker.replay()
+
+        self.config.load_command_line(["--http-proxy", "localhost:8080"])
+        self.script.query_proxies()
+
+    def test_query_https_proxy_defined_on_command_line(self):
+        help_snippet = "The Landscape client communicates"
+        self.mocker.order()
+        script_mock = self.mocker.patch(self.script)
+        script_mock.show_help(self.get_matcher(help_snippet))
+        script_mock.prompt("http_proxy", "HTTP proxy URL")
+        self.mocker.replay()
+
+        self.config.load_command_line(["--https-proxy", "localhost:8443"])
         self.script.query_proxies()
 
     def test_query_script_plugin_no(self):
@@ -320,7 +374,6 @@ class BrokerConfigurationScriptTest(LandscapeTest):
         self.script.query_script_plugin()
         self.assertEquals(self.config.include_manager_plugins, "")
 
-
     def test_disabling_script_plugin_leaves_existing_inclusions(self):
         """
         Disabling the script execution plugin doesn't remove other included
@@ -354,6 +407,53 @@ class BrokerConfigurationScriptTest(LandscapeTest):
         self.assertEquals(self.config.include_manager_plugins,
                           "FooPlugin, ScriptExecution")
 
+    def test_query_script_plugin_defined_on_command_line(self):
+        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
+        self.expect(raw_input_mock(ANY)).count(0)
+        self.mocker.replay()
+
+        self.config.load_command_line(
+            ["--include-manager-plugins", "ScriptExecution",
+             "--script-users", "root, nobody"])
+        self.script.query_script_plugin()
+        self.assertEquals(self.config.include_manager_plugins,
+                          "ScriptExecution")
+        self.assertEquals(self.config.script_users, "root, nobody")
+
+    def test_query_script_manager_plugins_defined_on_command_line(self):
+        self.config.include_manager_plugins = "FooPlugin"
+        self.mocker.order()
+        script_mock = self.mocker.patch(self.script)
+        script_mock.show_help(ANY)
+        script_mock.prompt_yes_no("Enable script execution?", default=False)
+        self.mocker.result(True)
+        script_mock.show_help(ANY)
+        script_mock.prompt("script_users", "Script users")
+        self.mocker.replay()
+
+        self.config.load_command_line(
+            ["--include-manager-plugins", "FooPlugin, ScriptExecution"])
+        self.script.query_script_plugin()
+        self.assertEquals(self.config.include_manager_plugins,
+                          "FooPlugin, ScriptExecution")
+
+    def test_query_script_users_defined_on_command_line(self):
+        self.config.include_manager_plugins = "FooPlugin"
+        self.mocker.order()
+        script_mock = self.mocker.patch(self.script)
+        script_mock.show_help(ANY)
+        script_mock.prompt_yes_no("Enable script execution?", default=False)
+        self.mocker.result(True)
+        script_mock.show_help(ANY)
+        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
+        self.expect(raw_input_mock(ANY)).count(0)
+        self.mocker.replay()
+
+        self.config.load_command_line(
+            ["--script-users", "root, nobody, landscape"])
+        self.script.query_script_plugin()
+        self.assertEquals(self.config.script_users,
+                          "root, nobody, landscape")
 
     def test_show_header(self):
         help_snippet = "This script will"
@@ -379,6 +479,22 @@ class BrokerConfigurationScriptTest(LandscapeTest):
 class ConfigurationFunctionsTest(LandscapeTest):
 
     helpers = [EnvironSaverHelper]
+
+    def get_config(self, args):
+        config = LandscapeSetupConfiguration()
+        config.load(args)
+        return config
+
+    def get_content(self, config):
+        """Write C{config} to a file and return it's contents as a string."""
+        config_file = self.makeFile("")
+        original_config = config.config
+        try:
+            config.config = config_file
+            config.write()
+            return open(config.config, "r").read().strip() + "\n"
+        finally:
+            config.config = original_config
 
     def test_setup(self):
         filename = self.makeFile("[client]\n"
@@ -414,13 +530,11 @@ class ConfigurationFunctionsTest(LandscapeTest):
 
         self.mocker.replay()
 
-        args = ["--no-start", "--config", filename]
+        config = self.get_config(["--no-start", "--config", filename])
+        setup(config)
+        self.assertEquals(type(config), LandscapeSetupConfiguration)
 
-        config = setup(args)
-
-        self.assertEquals(type(config), BrokerConfiguration)
-
-        # Reload it to enusre it was written down.
+        # Reload it to ensure it was written down.
         config.reload()
 
         self.assertEquals(config.computer_title, "New Title")
@@ -430,11 +544,128 @@ class ConfigurationFunctionsTest(LandscapeTest):
         self.assertEquals(config.https_proxy, "https://new.proxy")
         self.assertEquals(config.include_manager_plugins, "")
 
+    def test_silent_setup(self):
+        """
+        Only command-line options are used in silent mode and registration is
+        attempted.
+        """
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        sysvconfig_mock.set_start_on_boot(True)
+        sysvconfig_mock.restart_landscape()
+        self.mocker.replay()
+
+        filename = self.makeFile("""
+[client]
+url = https://landscape.canonical.com/message-system
+""")
+        config = self.get_config(["--config", filename, "--silent",
+                                  "-a", "account", "-t", "rex"])
+        setup(config)
+        self.assertEquals(self.get_content(config), """\
+[client]
+url = https://landscape.canonical.com/message-system
+computer_title = rex
+account_name = account
+""")
+
+    def test_silent_setup_without_computer_title(self):
+        """A computer title is required."""
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        sysvconfig_mock.set_start_on_boot(True)
+        self.mocker.replay()
+
+        filename = self.makeFile("""
+[client]
+url = https://landscape.canonical.com/message-system
+""")
+        config = self.get_config(["--config", filename, "--silent",
+                                  "-a", "account"])
+        self.assertRaises(ConfigurationError, setup, config)
+
+    def test_silent_setup_without_account_name(self):
+        """An account name is required."""
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        sysvconfig_mock.set_start_on_boot(True)
+        self.mocker.replay()
+
+        filename = self.makeFile("""
+[client]
+url = https://landscape.canonical.com/message-system
+""")
+        config = self.get_config(["--config", filename, "--silent",
+                                  "-t", "rex"])
+        self.assertRaises(ConfigurationError, setup, config)
+
+    def test_silent_script_users_imply_script_execution_plugin(self):
+        """
+        If C{--script-users} is specified, without C{ScriptExecution} in the
+        list of manager plugins, it will be automatically added.
+        """
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        sysvconfig_mock.set_start_on_boot(True)
+        sysvconfig_mock.restart_landscape()
+        self.mocker.result(True)
+
+        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
+        self.expect(raw_input_mock(ANY)).count(0)
+        self.mocker.replay()
+
+        filename = self.makeFile("""
+[client]
+url = https://localhost:8080/message-system
+bus = session
+""")
+
+        config = self.get_config(["--config", filename, "--silent",
+                                  "-a", "account", "-t", "rex",
+                                  "--script-users", "root, nobody"])
+        setup(config)
+        contents = open(filename, "r").read().strip() + "\n"
+        self.assertEquals(contents, """\
+[client]
+url = https://localhost:8080/message-system
+bus = session
+computer_title = rex
+include_manager_plugins = ScriptExecution
+script_users = root, nobody
+account_name = account
+""")
+
+    def test_silent_setup_with_ping_url(self):
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        sysvconfig_mock.set_start_on_boot(True)
+        sysvconfig_mock.restart_landscape()
+        self.mocker.result(True)
+        self.mocker.replay()
+
+        filename = self.makeFile("""
+[client]
+url = https://landscape.canonical.com/message-system
+ping_url = http://landscape.canonical.com/ping
+registration_password = shared-secret
+log_level = debug
+random_key = random_value
+""")
+        config = self.get_config(["--config", filename, "--silent",
+                                  "-a", "account", "-t", "rex",
+                                  "--ping-url", "http://localhost/ping"])
+        setup(config)
+        self.assertEquals(self.get_content(config), """\
+[client]
+log_level = debug
+registration_password = shared-secret
+computer_title = rex
+url = https://landscape.canonical.com/message-system
+ping_url = http://localhost/ping
+random_key = random_value
+account_name = account
+""")
+
     def test_setup_with_proxies_from_environment(self):
         os.environ["http_proxy"] = "http://environ"
         os.environ["https_proxy"] = "https://environ"
 
-        script_mock = self.mocker.patch(BrokerConfigurationScript)
+        script_mock = self.mocker.patch(LandscapeSetupScript)
         script_mock.run()
 
         filename = self.makeFile("[client]\n"
@@ -442,9 +673,8 @@ class ConfigurationFunctionsTest(LandscapeTest):
 
         self.mocker.replay()
 
-        args = ["--no-start", "--config", filename]
-
-        config = setup(args)
+        config = self.get_config(["--no-start", "--config", filename])
+        setup(config)
 
         # Reload it to ensure it was written down.
         config.reload()
@@ -452,11 +682,41 @@ class ConfigurationFunctionsTest(LandscapeTest):
         self.assertEquals(config.http_proxy, "http://environ")
         self.assertEquals(config.https_proxy, "https://environ")
 
+    def test_silent_setup_with_proxies_from_environment(self):
+        """
+        Only command-line options are used in silent mode and registration is
+        attempted.
+        """
+        os.environ["http_proxy"] = "http://environ"
+        os.environ["https_proxy"] = "https://environ"
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        sysvconfig_mock.set_start_on_boot(True)
+        sysvconfig_mock.restart_landscape()
+        self.mocker.replay()
+
+        filename = self.makeFile("""
+[client]
+url = https://landscape.canonical.com/message-system
+registration_password = shared-secret
+""")
+        config = self.get_config(["--config", filename, "--silent",
+                                  "-a", "account", "-t", "rex"])
+        setup(config)
+        self.assertEquals(self.get_content(config), """\
+[client]
+registration_password = shared-secret
+computer_title = rex
+http_proxy = http://environ
+https_proxy = https://environ
+url = https://landscape.canonical.com/message-system
+account_name = account
+""")
+
     def test_setup_prefers_proxies_from_config_over_environment(self):
         os.environ["http_proxy"] = "http://environ"
         os.environ["https_proxy"] = "https://environ"
 
-        script_mock = self.mocker.patch(BrokerConfigurationScript)
+        script_mock = self.mocker.patch(LandscapeSetupScript)
         script_mock.run()
 
         filename = self.makeFile("[client]\n"
@@ -466,9 +726,8 @@ class ConfigurationFunctionsTest(LandscapeTest):
 
         self.mocker.replay()
 
-        args = ["--no-start", "--config", filename]
-
-        config = setup(args)
+        config = self.get_config(["--no-start", "--config", filename])
+        setup(config)
 
         # Reload it to enusre it was written down.
         config.reload()
@@ -478,7 +737,7 @@ class ConfigurationFunctionsTest(LandscapeTest):
 
     def test_main_no_registration(self):
         setup_mock = self.mocker.replace(setup)
-        setup_mock(["args"])
+        setup_mock(ANY)
 
         raw_input_mock = self.mocker.replace(raw_input)
         raw_input_mock("\nRequest a new registration for "
@@ -487,12 +746,12 @@ class ConfigurationFunctionsTest(LandscapeTest):
 
         # This must not be called.
         register_mock = self.mocker.replace(register, passthrough=False)
-        register_mock()
+        register_mock(ANY)
         self.mocker.count(0)
 
         self.mocker.replay()
 
-        main(["args"])
+        main(["-c", self.make_working_config()])
 
     def make_working_config(self):
         return self.makeFile("[client]\n"
@@ -503,38 +762,14 @@ class ConfigurationFunctionsTest(LandscapeTest):
                              "https_proxy = https://old.proxy\n"
                              "url = http://url\n")
 
-
-    def test_main_with_failing_client_start(self):
-        system_mock = self.mocker.replace("os.system")
-        system_mock("/etc/init.d/landscape-client start")
-        self.mocker.result(-1)
-
-        sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.is_configured_to_run()
-        self.mocker.result(False)
-        sysvconfig_mock.set_start_on_boot(True)
-
-        print_text_mock = self.mocker.replace(print_text)
-        print_text_mock("Error starting client cannot continue.")
-
-        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
-        raw_input_mock("\nThe Landscape client must be started "
-                       "on boot to operate correctly.\n\n"
-                       "Start Landscape client on boot? (Y/n): ")
-        self.mocker.result("")
-        self.mocker.replay()
-
-        self.assertRaises(SystemExit, main, ["--config",
-                                             self.make_working_config()])
-
     def test_register(self):
         sysvconfig_mock = self.mocker.patch(SysVConfig)
         sysvconfig_mock.is_configured_to_run()
         self.mocker.result(False)
         sysvconfig_mock.set_start_on_boot(True)
-        sysvconfig_mock.start_landscape()
+        sysvconfig_mock.restart_landscape()
 
-        script_mock = self.mocker.patch(BrokerConfigurationScript)
+        script_mock = self.mocker.patch(LandscapeSetupScript)
         script_mock.run()
 
         raw_input_mock = self.mocker.replace(raw_input)
@@ -549,41 +784,89 @@ class ConfigurationFunctionsTest(LandscapeTest):
 
         register_mock = self.mocker.replace(register, passthrough=False)
         register_mock(ANY)
+
         self.mocker.replay()
         main(["--config", self.make_working_config()])
 
-    def test_main_with_register(self): 
-         setup_mock = self.mocker.replace(setup)
-         setup_mock("DUMMY ARGS")
-         self.mocker.result("DUMMY CONFIG")
-         raw_input_mock = self.mocker.replace(raw_input)
-         raw_input_mock("\nRequest a new registration for "
-                        "this computer now? (Y/n): ")
-         self.mocker.result("")
- 
-         register_mock = self.mocker.replace(register, passthrough=False)
-         register_mock("DUMMY CONFIG")
+    def test_main_with_register(self):
+        setup_mock = self.mocker.replace(setup)
+        setup_mock(ANY)
+        raw_input_mock = self.mocker.replace(raw_input)
+        raw_input_mock("\nRequest a new registration for "
+                       "this computer now? (Y/n): ")
+        self.mocker.result("")
 
-         self.mocker.replay()
-         main("DUMMY ARGS")
+        register_mock = self.mocker.replace(register, passthrough=False)
+        register_mock(ANY)
 
-    def test_setup_init_script(self):
-        system_mock = self.mocker.replace("os.system")
-        system_mock("/etc/init.d/landscape-client start")
-        self.mocker.result(0)
+        self.mocker.replay()
+        main(["-c", self.make_working_config()])
 
+    def test_setup_init_script_and_start_client(self):
         sysvconfig_mock = self.mocker.patch(SysVConfig)
-        sysvconfig_mock.is_configured_to_run()
-        self.mocker.result(False)
+        sysvconfig_mock.set_start_on_boot(True)
+        self.mocker.replay()
+
+        setup_init_script_and_start_client()
+
+    def test_setup_init_script_and_start_client_silent(self):
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
         sysvconfig_mock.set_start_on_boot(True)
 
         raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
-        raw_input_mock("\nThe Landscape client must be started "
-                       "on boot to operate correctly.\n\n"
-                       "Start Landscape client on boot? (Y/n): ")
-        self.mocker.result("")
+        raw_input_mock(ANY)
+        self.mocker.count(0)
         self.mocker.replay()
-        setup_init_script()
+        setup_init_script_and_start_client()
+
+    def test_register_silent(self):
+        """
+        Silent registration uses specified configuration to attempt a
+        registration with the server.
+        """
+        setup_mock = self.mocker.replace(setup)
+        setup_mock(ANY)
+        # No interaction should be requested.
+        raw_input_mock = self.mocker.replace(raw_input)
+        raw_input_mock(ANY)
+        self.mocker.count(0)
+
+        # The registration logic should be called and passed the configuration
+        # file.
+        register_mock = self.mocker.replace(register, passthrough=False)
+        register_mock(ANY)
+
+        self.mocker.replay()
+
+        main(["--silent", "-c", self.make_working_config()])
+
+    def test_disable(self):
+        stop_client_and_disable_init_script_mock = self.mocker.replace(
+            stop_client_and_disable_init_script)
+        stop_client_and_disable_init_script_mock()
+
+        # No interaction should be requested.
+        raw_input_mock = self.mocker.replace(raw_input)
+        raw_input_mock(ANY)
+        self.mocker.count(0)
+
+        # Registration logic should not be invoked.
+        register_mock = self.mocker.replace(register, passthrough=False)
+        register_mock(ANY)
+        self.mocker.count(0)
+
+        self.mocker.replay()
+
+        main(["--disable", "-c", self.make_working_config()])
+
+    def test_stop_client_and_disable_init_scripts(self):
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        self.mocker.result(True)
+        sysvconfig_mock.set_start_on_boot(False)
+        sysvconfig_mock.stop_landscape()
+        self.mocker.replay()
+
+        main(["--disable", "-c", self.make_working_config()])
 
 
 class RegisterFunctionTest(LandscapeIsolatedTest):
@@ -613,6 +896,10 @@ class RegisterFunctionTest(LandscapeIsolatedTest):
 
         # This very informative message is printed out.
         print_text_mock("Please wait... ", "")
+
+        time_mock = self.mocker.replace("time")
+        time_mock.sleep(ANY)
+        self.mocker.count(1)
 
         reactor_mock.run()
 
@@ -668,6 +955,10 @@ class RegisterFunctionTest(LandscapeIsolatedTest):
         # This very informative message is printed out.
         print_text_mock("Please wait... ", "")
 
+        time_mock = self.mocker.replace("time")
+        time_mock.sleep(ANY)
+        self.mocker.count(1)
+
         reactor_mock.run()
 
         # After a nice dance the configuration is reloaded.
@@ -720,6 +1011,10 @@ class RegisterFunctionTest(LandscapeIsolatedTest):
 
         # This very informative message is printed out.
         print_text_mock("Please wait... ", "")
+
+        time_mock = self.mocker.replace("time")
+        time_mock.sleep(ANY)
+        self.mocker.count(1)
 
         reactor_mock.run()
 
@@ -776,6 +1071,10 @@ class RegisterFunctionTest(LandscapeIsolatedTest):
         # This very informative message is printed out.
         print_text_mock("Please wait... ", "")
 
+        time_mock = self.mocker.replace("time")
+        time_mock.sleep(ANY)
+        self.mocker.count(1)
+
         reactor_mock.run()
 
         # After a nice dance the configuration is reloaded.
@@ -805,7 +1104,7 @@ class RegisterFunctionNoServiceTest(LandscapeIsolatedTest):
 
     def setUp(self):
         super(RegisterFunctionNoServiceTest, self).setUp()
-        self.configuration = BrokerConfiguration()
+        self.configuration = LandscapeSetupConfiguration()
         # Let's not mess about with the system bus
         self.configuration.load_command_line(["--bus", "session"])
 
@@ -832,7 +1131,6 @@ class RegisterFunctionNoServiceTest(LandscapeIsolatedTest):
         self.mocker.call(lambda seconds, thingy: thingy())
         reactor_mock.stop()
         self.mocker.call(lambda: result.callback(None))
-
         reactor_mock.run()
 
         self.mocker.replay()
@@ -859,6 +1157,9 @@ class RegisterFunctionNoServiceTest(LandscapeIsolatedTest):
 
         install_mock()
         print_text_mock("Please wait... ", "")
+        time_mock = self.mocker.replace("time")
+        time_mock.sleep(ANY)
+        self.mocker.count(1)
 
         # SNORE
         remote_broker = remote_broker_factory(ANY, retry_timeout=0)
@@ -893,4 +1194,3 @@ class RegisterFunctionNoServiceTest(LandscapeIsolatedTest):
         register(self.configuration, reactor_mock)
 
         return result
-

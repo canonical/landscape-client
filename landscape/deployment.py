@@ -10,7 +10,7 @@ from ConfigParser import ConfigParser
 
 import dbus.glib # Side-effects rule!
 
-from twisted.application.service import Application, Service, IService
+from twisted.application.service import Application, Service
 from twisted.application.app import startApplication
 
 from landscape import VERSION
@@ -41,8 +41,19 @@ def init_logging(configuration, program_name):
 
 
 class BaseConfiguration(object):
+    """Base class for configuration implementations.
+
+    @var required_options: Optionally, a sequence of key names to require when
+        reading or writing a configuration.
+    @var unsaved_options: Optionally, a sequence of key names to never write
+        to the configuration file.  This is useful when you want to provide
+        command-line options that should never end up in a configuration file.
+    @var default_config_filenames: A sequence of filenames to check when
+        reading or writing a configuration.
+    """
 
     required_options = ()
+    unsaved_options = ()
     default_config_filenames = ("landscape-client.conf",
                                 "/etc/landscape/client.conf")
 
@@ -54,9 +65,8 @@ class BaseConfiguration(object):
         self._config_file_options = {}
         self._parser = self.make_parser()
         self._command_line_defaults = self._parser.defaults.copy()
-
-        # We don't want them mixed with explicitly given options, otherwise
-        # we can't define the precedence properly.
+        # We don't want them mixed with explicitly given options,
+        # otherwise we can't define the precedence properly.
         self._parser.defaults.clear()
 
     def __getattr__(self, name):
@@ -90,6 +100,12 @@ class BaseConfiguration(object):
             if option is not None:
                 value = option.convert_value(None, value)
         return value
+
+    def get(self, name, default=None):
+        try:
+            return self.__getattr__(name)
+        except AttributeError:
+            return default
 
     def __setattr__(self, name, value):
         """Set a configuration parameter.
@@ -161,7 +177,7 @@ class BaseConfiguration(object):
 
         1. Manually set options (config.option = value)
         2. Options passed in the command line
-        3. Previously existent options in the configuration file  
+        3. Previously existent options in the configuration file
 
         The filename picked for saving configuration options is:
 
@@ -176,6 +192,7 @@ class BaseConfiguration(object):
         all_options.update(self._set_options)
         for name, value in all_options.items():
             if (name != "config" and
+                name not in self.unsaved_options and
                 value != self._command_line_defaults.get(name)):
                 config_parser.set("client", name, value)
         filename = (self.config or self._config_filename or
@@ -200,6 +217,9 @@ class BaseConfiguration(object):
 
     def get_config_filename(self):
         return self._config_filename
+
+    def get_command_line_options(self):
+        return self._command_line_options
 
 
 class Configuration(BaseConfiguration):
