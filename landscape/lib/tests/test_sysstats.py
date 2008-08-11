@@ -1,4 +1,4 @@
-from landscape.lib.sysinfo import get_memory_info
+from landscape.lib.sysstats import MemoryStats
 from landscape.tests.helpers import LandscapeTest, MakePathHelper
 from landscape.tests.mocker import ANY
 
@@ -30,12 +30,21 @@ VmallocChunk:   510252 kB
 """
 
 
-class MemoryInfoTest(LandscapeTest):
+class MemoryStatsTest(LandscapeTest):
 
     helpers = [MakePathHelper]
 
     def test_get_memory_info(self):
         filename = self.make_path(SAMPLE_MEMORY_INFO)
-        free_mem, free_swap = get_memory_info(filename)
-        self.assertEquals(free_mem, 503)
-        self.assertEquals(free_swap, 1567)
+        memstats = MemoryStats(filename)
+        self.assertEquals(memstats.total_memory, 1510)
+        self.assertEquals(memstats.free_memory, 503)
+        self.assertEquals(memstats.used_memory, 1007)
+        self.assertEquals(memstats.total_swap, 1584)
+        self.assertEquals(memstats.free_swap, 1567)
+        self.assertEquals(memstats.used_swap, 17)
+        self.assertEquals("%.2f" % memstats.free_memory_percentage, "33.31")
+        self.assertEquals("%.2f" % memstats.free_swap_percentage, "98.93")
+        self.assertEquals("%.2f" % memstats.used_memory_percentage, "66.69")
+        self.assertEquals("%.2f" % memstats.used_swap_percentage, "1.07")
+

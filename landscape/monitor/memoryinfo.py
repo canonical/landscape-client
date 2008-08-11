@@ -1,7 +1,7 @@
 import time
 
 from landscape.lib.monitor import CoverageMonitor
-from landscape.lib.sysinfo import get_memory_info
+from landscape.lib.sysstats import MemoryStats
 
 from landscape.accumulate import Accumulator
 from landscape.monitor.monitor import MonitorPlugin
@@ -51,10 +51,10 @@ class MemoryInfo(MonitorPlugin):
     def run(self):
         self._monitor.ping()
         new_timestamp = int(self._create_time())
-        free_memory_now, free_swap_now = get_memory_info(self._source_filename)
-        memory_step_data = self._accumulate(new_timestamp, free_memory_now,
+        memstats = MemoryStats(self._source_filename)
+        memory_step_data = self._accumulate(new_timestamp, memstats.free_memory,
                                             "accumulate-memory")
-        swap_step_data = self._accumulate(new_timestamp, free_swap_now,
+        swap_step_data = self._accumulate(new_timestamp, memstats.free_swap,
                                           "accumulate-swap")
 
         if memory_step_data and swap_step_data:
