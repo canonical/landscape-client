@@ -204,3 +204,23 @@ class ProcessKillerTests(LandscapeTest):
                               "status": FAILED,
                               "result-text": expected_text}])
         self.assertTrue("SignalProcessError" in self.logfile.getvalue())
+
+    def test_accept_small_start_time_skews(self):
+        """
+        The boot time isn't very precise, so accept small skews in the
+        computed process start time.
+        """
+        self.manager.add(self.signaller)
+        self.builder.create_data(100, self.builder.RUNNING,
+                                 uid=1000, gid=1000, started_after_boot=10,
+                                 process_name="ooga")
+
+        kill = self.mocker.replace("os.kill", passthrough=False)
+        kill(100, signal.SIGKILL)
+        self.mocker.replay()
+
+        self.manager.dispatch_message(
+            {"type": "signal-process",
+             "operation-id": 1,
+             "pid": 100, "name": "ooga",
+             "start-time": 21, "signal": "KILL"})

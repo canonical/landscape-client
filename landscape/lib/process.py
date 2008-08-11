@@ -4,6 +4,9 @@ from datetime import timedelta, datetime
 
 from landscape.lib.timestamp import to_timestamp
 from landscape.lib.jiffies import detect_jiffies
+
+# FIXME: It'd be nice to avoid having library code which depends on
+#        landscape-specific modules.
 from landscape.monitor.computeruptime import BootTimes, get_uptime
 
 
