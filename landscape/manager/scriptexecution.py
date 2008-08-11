@@ -7,6 +7,7 @@ import os
 import pwd
 import tempfile
 import operator
+import shutil
 
 from twisted.internet.protocol import ProcessProtocol
 from twisted.internet.defer import Deferred
@@ -19,6 +20,7 @@ ALL_USERS = object()
 
 TIMEOUT_RESULT = 102
 PROCESS_FAILED_RESULT = 103
+
 
 class ProcessTimeLimitReachedError(Exception):
     """
@@ -34,7 +36,7 @@ class ProcessTimeLimitReachedError(Exception):
 
 class ProcessFailedError(Exception):
     """Raised when a process exits with a non-0 exit code.
-    
+
     @ivar data: The data that the process printed before reaching the time
         limit.
     """
@@ -59,7 +61,6 @@ class ScriptExecution(ManagerPlugin):
         if process_factory is None:
             from twisted.internet import reactor as process_factory
         self.process_factory = process_factory
-        self._scheduled_cancel = None
 
     def register(self, registry):
         super(ScriptExecution, self).register(registry)
@@ -87,7 +88,7 @@ class ScriptExecution(ManagerPlugin):
 
             d = self.run_script(message["interpreter"], message["code"],
                                 time_limit=message["time-limit"],
-                                user=user)
+                                user=user, attachments=message["attachments"])
             d.addCallback(self._respond_success, opid)
             d.addErrback(self._respond_failure, opid)
             return d
@@ -112,7 +113,8 @@ class ScriptExecution(ManagerPlugin):
         else:
             return self._respond(FAILED, str(failure), opid)
 
-    def run_script(self, shell, code, user=None, time_limit=None):
+    def run_script(self, shell, code, user=None, time_limit=None,
+                   attachments=None):
         """
         Run a script based on a shell and the code.
 
@@ -128,6 +130,7 @@ class ScriptExecution(ManagerPlugin):
         @param time_limit: The number of seconds to allow the process to run
             before killing it and failing the returned Deferred with a
             L{ProcessTimeLimitReachedError}.
+        @param attachments: C{dict} of filename/data attached to the script.
 
         @return: A deferred that will fire with the data printed by the process
             or fail with a L{ProcessTimeLimitReachedError}.
@@ -156,23 +159,42 @@ class ScriptExecution(ManagerPlugin):
         script_file.write(
             "#!%s\n%s" % (shell.encode("utf-8"), code.encode("utf-8")))
         script_file.close()
-        pp = ProcessAccumulationProtocol(self.size_limit)
+        env = {}
+        attachment_dir = ""
+        if attachments:
+            attachment_dir = tempfile.mkdtemp()
+            env["LANDSCAPE_ATTACHMENTS"] = attachment_dir
+            for attachment_filename, data in attachments.iteritems():
+                full_filename = os.path.join(
+                    attachment_dir, attachment_filename)
+                attachment = file(full_filename, "wb")
+                os.chmod(full_filename, 0600)
+                if uid is not None:
+                    os.chown(full_filename, uid, 0)
+                attachment.write(data)
+                attachment.close()
+            os.chmod(attachment_dir, 0700)
+            if uid is not None:
+                os.chown(attachment_dir, uid, 0)
+        pp = ProcessAccumulationProtocol(
+            self.registry.reactor, self.size_limit)
         self.process_factory.spawnProcess(pp, filename, uid=uid, gid=gid,
-                                          path=path)
+                                          path=path, env=env)
         if time_limit is not None:
-            self._scheduled_cancel = self.registry.reactor.call_later(
-                time_limit, pp.cancel)
+            pp.schedule_cancel(time_limit)
         result = pp.result_deferred
-        result.addCallback(self._cancel_timeout)
-        return result.addBoth(self._remove_script, filename)
+        return result.addBoth(self._remove_script, filename, attachment_dir)
 
-    def _cancel_timeout(self, ignored):
-        if self._scheduled_cancel is not None:
-            self.registry.reactor.cancel_call(self._scheduled_cancel)
-        return ignored
-
-    def _remove_script(self, result, filename):
-        os.unlink(filename)
+    def _remove_script(self, result, filename, attachment_dir):
+        try:
+            os.unlink(filename)
+        except:
+            pass
+        if attachment_dir:
+            try:
+                shutil.rmtree(attachment_dir)
+            except:
+                pass
         return result
 
 
@@ -182,11 +204,17 @@ class ProcessAccumulationProtocol(ProcessProtocol):
     @ivar size_limit: The number of bytes at which to truncate output.
     """
 
-    def __init__(self, size_limit):
+    def __init__(self, reactor, size_limit):
         self.data = []
         self.result_deferred = Deferred()
         self._cancelled = False
         self.size_limit = size_limit
+        self.reactor = reactor
+        self._scheduled_cancel = None
+
+    def schedule_cancel(self, time_limit):
+        self._scheduled_cancel = self.reactor.call_later(
+            time_limit, self._cancel)
 
     def childDataReceived(self, fd, data):
         """Some data was received from the child.
@@ -209,13 +237,17 @@ class ProcessAccumulationProtocol(ProcessProtocol):
         if self._cancelled:
             self.result_deferred.errback(ProcessTimeLimitReachedError(data))
         else:
+            if self._scheduled_cancel is not None:
+                scheduled = self._scheduled_cancel
+                self._scheduled_cancel = None
+                self.reactor.cancel_call(scheduled)
+
             if reason.check(ProcessDone):
                 self.result_deferred.callback(data)
             else:
                 self.result_deferred.errback(ProcessFailedError(data))
 
-
-    def cancel(self):
+    def _cancel(self):
         """
         Close filedescriptors, kill the process, and indicate that a
         L{ProcessTimeLimitReachedError} should be fired on the deferred.
@@ -225,7 +257,7 @@ class ProcessAccumulationProtocol(ProcessProtocol):
         # process, "cat" won't die when we kill its shell. I'm not sure if this
         # is really sufficient: maybe there's a way we can walk over all
         # children of the process we started and kill them all.
-        for i in (0,1,2):
+        for i in (0, 1, 2):
             self.transport.closeChildFD(i)
         self.transport.signalProcess("KILL")
         self._cancelled = True

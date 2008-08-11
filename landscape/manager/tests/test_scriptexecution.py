@@ -1,6 +1,7 @@
 import pwd
 import os
 import tempfile
+import stat
 
 from twisted.internet.defer import gatherResults
 from twisted.internet.error import ProcessDone
@@ -78,6 +79,39 @@ class RunScriptTests(LandscapeTest):
         result.addCallback(check)
         return result
 
+    def test_run_with_attachments(self):
+        result = self.plugin.run_script(
+            u"/bin/sh",
+            u"ls $LANDSCAPE_ATTACHMENTS && cat $LANDSCAPE_ATTACHMENTS/file1",
+            attachments={u"file1": "some data"})
+        def check(result):
+            self.assertEquals(result, "file1\nsome data")
+        result.addCallback(check)
+        return result
+
+    def test_self_remove_script(self):
+        """
+        If a script removes itself, it doesn't create an error when the script
+        execution plugin tries to remove the script file.
+        """
+        result = self.plugin.run_script("/bin/sh", "echo hi && rm $0")
+        result.addCallback(self.assertEquals, "hi\n")
+        return result
+
+    def test_self_remove_attachments(self):
+        """
+        If a script removes its attachments, it doesn't create an error when
+        the script execution plugin tries to remove the attachments directory.
+        """
+        result = self.plugin.run_script(
+            u"/bin/sh",
+            u"ls $LANDSCAPE_ATTACHMENTS && rm -r $LANDSCAPE_ATTACHMENTS",
+            attachments={u"file1": "some data"})
+        def check(result):
+            self.assertEquals(result, "file1\n")
+        result.addCallback(check)
+        return result
+
     def _run_script(self, username, uid, gid, path):
         # ignore the call to chown!
         mock_chown = self.mocker.replace("os.chown", passthrough=False)
@@ -133,6 +167,43 @@ class RunScriptTests(LandscapeTest):
         self.expect(mock_getpwnam("user")).result(pwnam)
 
         return self._run_script("user", 1234, 5678, "/")
+
+    def test_user_with_attachments(self):
+        uid = os.getuid()
+        info = pwd.getpwuid(uid)
+        username = info.pw_name
+        gid = info.pw_gid
+        path = info.pw_dir
+
+        mock_chown = self.mocker.replace("os.chown", passthrough=False)
+        mock_chown(ANY, uid, 0)
+        self.mocker.count(3)
+
+        factory = StubProcessFactory()
+        self.plugin.process_factory = factory
+
+        self.mocker.replay()
+
+        result = self.plugin.run_script("/bin/sh", "echo hi", user=username,
+            attachments={u"file 1": "some data"})
+
+        self.assertEquals(len(factory.spawns), 1)
+        spawn = factory.spawns[0]
+        self.assertEquals(spawn[3].keys(), ["LANDSCAPE_ATTACHMENTS"])
+        attachment_dir = spawn[3]["LANDSCAPE_ATTACHMENTS"]
+        self.assertEquals(stat.S_IMODE(os.stat(attachment_dir).st_mode), 0700)
+        filename = os.path.join(attachment_dir, "file 1")
+        self.assertEquals(stat.S_IMODE(os.stat(filename).st_mode), 0600)
+
+        protocol = spawn[0]
+        protocol.childDataReceived(1, "foobar")
+        for fd in (0, 1, 2):
+            protocol.childConnectionLost(fd)
+        protocol.processEnded(Failure(ProcessDone(0)))
+        def check(data):
+            self.assertEquals(data, "foobar")
+            self.assertFalse(os.path.exists(attachment_dir))
+        return result.addCallback(check)
 
     def test_limit_size(self):
         """Data returned from the command is limited."""
@@ -244,7 +315,8 @@ class RunScriptTests(LandscapeTest):
         script_file.write("#!interpreter\ncode")
         script_file.close()
 
-        process_factory.spawnProcess(ANY, ANY, uid=uid, gid=gid, path=ANY)
+        process_factory.spawnProcess(
+            ANY, ANY, uid=uid, gid=gid, path=ANY, env={})
 
         self.mocker.replay()
 
@@ -293,7 +365,8 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
              "code": code,
              "operation-id": operation_id,
              "username": user,
-             "time-limit": time_limit})
+             "time-limit": time_limit,
+             "attachments": {}})
 
     def test_success(self):
         """
@@ -342,13 +415,14 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         mock_chown = self.mocker.replace("os.chown", passthrough=False)
         mock_chown(ARGS)
 
-        def spawn_called(protocol, filename, uid, gid, path):
+        def spawn_called(protocol, filename, uid, gid, path, env):
             protocol.childDataReceived(1, "hi!\n")
             protocol.processEnded(Failure(ProcessDone(0)))
             self._verify_script(filename, "python", "print 'hi'")
 
         process_factory = self.mocker.mock()
-        process_factory.spawnProcess(ANY, ANY, uid=uid, gid=gid, path=ANY)
+        process_factory.spawnProcess(
+            ANY, ANY, uid=uid, gid=gid, path=ANY, env={})
         self.mocker.call(spawn_called)
 
         self.mocker.replay()
@@ -421,13 +495,14 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         mock_chown = self.mocker.replace("os.chown", passthrough=False)
         mock_chown(ARGS)
 
-        def spawn_called(protocol, filename, uid, gid, path):
+        def spawn_called(protocol, filename, uid, gid, path, env):
             protocol.childDataReceived(1, "hi!\n")
             protocol.processEnded(Failure(ProcessDone(0)))
             self._verify_script(filename, "python", "print 'hi'")
 
         process_factory = self.mocker.mock()
-        process_factory.spawnProcess(ANY, ANY, uid=uid, gid=gid, path=ANY)
+        process_factory.spawnProcess(
+            ANY, ANY, uid=uid, gid=gid, path=ANY, env={})
         self.mocker.call(spawn_called)
 
         self.mocker.replay()
