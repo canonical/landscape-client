@@ -155,7 +155,7 @@ class ScriptExecution(ManagerPlugin):
         # to mention we can't get errno.
         os.chmod(filename, 0700)
         if uid is not None:
-            os.chown(filename, uid, 0)
+            os.chown(filename, uid, gid)
         script_file.write(
             "#!%s\n%s" % (shell.encode("utf-8"), code.encode("utf-8")))
         script_file.close()
@@ -170,12 +170,12 @@ class ScriptExecution(ManagerPlugin):
                 attachment = file(full_filename, "wb")
                 os.chmod(full_filename, 0600)
                 if uid is not None:
-                    os.chown(full_filename, uid, 0)
+                    os.chown(full_filename, uid, gid)
                 attachment.write(data)
                 attachment.close()
             os.chmod(attachment_dir, 0700)
             if uid is not None:
-                os.chown(attachment_dir, uid, 0)
+                os.chown(attachment_dir, uid, gid)
         pp = ProcessAccumulationProtocol(
             self.registry.reactor, self.size_limit)
         self.process_factory.spawnProcess(pp, filename, uid=uid, gid=gid,

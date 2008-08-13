@@ -176,7 +176,7 @@ class RunScriptTests(LandscapeTest):
         path = info.pw_dir
 
         mock_chown = self.mocker.replace("os.chown", passthrough=False)
-        mock_chown(ANY, uid, 0)
+        mock_chown(ANY, uid, gid)
         self.mocker.count(3)
 
         factory = StubProcessFactory()
@@ -310,7 +310,7 @@ class RunScriptTests(LandscapeTest):
 
         script_file = mock_fdopen(99, "w")
         mock_chmod("tempo!", 0700)
-        mock_chown("tempo!", uid, 0)
+        mock_chown("tempo!", uid, gid)
         # The contents are written *after* the permissions have been set up!
         script_file.write("#!interpreter\ncode")
         script_file.close()
