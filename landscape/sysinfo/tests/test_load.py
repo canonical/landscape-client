@@ -14,13 +14,7 @@ class LoadTest(LandscapeTest):
         self.sysinfo.add(self.load)
 
     def test_run_returns_succeeded_deferred(self):
-        result = self.load.run()
-        self.assertTrue(isinstance(result, Deferred))
-        called = []
-        def callback(result):
-            called.append(True)
-        result.addCallback(callback)
-        self.assertTrue(called)
+        self.assertDeferredSucceeded(self.load.run())
 
     def test_run_adds_header(self):
         mock = self.mocker.replace("os.getloadavg")

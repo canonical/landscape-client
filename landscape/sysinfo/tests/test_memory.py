@@ -47,13 +47,7 @@ class MemoryTest(LandscapeTest):
         self.sysinfo.add(self.memory)
 
     def test_run_returns_succeeded_deferred(self):
-        result = self.memory.run()
-        self.assertTrue(isinstance(result, Deferred))
-        called = []
-        def callback(result):
-            called.append(True)
-        result.addCallback(callback)
-        self.assertTrue(called)
+        self.assertDeferredSucceeded(self.memory.run())
 
     def test_run_adds_header(self):
         self.memory.run()

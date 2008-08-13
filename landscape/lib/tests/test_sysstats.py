@@ -52,7 +52,7 @@ class MemoryStatsTest(LandscapeTest):
         self.assertEquals("%.2f" % memstats.used_swap_percentage, "1.07")
 
 
-class LoggedUsersTest(LandscapeTest):
+class FakeWhoQTest(LandscapeTest):
 
     helpers = [EnvironSaverHelper]
 
@@ -69,6 +69,9 @@ class LoggedUsersTest(LandscapeTest):
         who.close()
 
         os.chmod(self.who_path, 0770)
+
+
+class LoggedUsersTest(FakeWhoQTest):
 
     def test_one_user(self):
         self.fake_who("joe")
