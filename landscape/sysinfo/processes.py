@@ -1,5 +1,3 @@
-import os
-
 from twisted.internet.defer import succeed
 
 from landscape.lib.process import ProcessInformation
@@ -16,14 +14,10 @@ class Processes(object):
     def run(self):
         num_processes = 0
         num_zombies = 0
-        for fn in os.listdir(self._proc_dir):
-            try:
-                pid = int(fn)
-                num_processes += 1
-            except ValueError:
-                continue
-            info = ProcessInformation(proc_dir=self._proc_dir)
-            if info.get_process_info(pid)["state"] == "Z":
+        info = ProcessInformation(proc_dir=self._proc_dir)
+        for process_info in info.get_all_process_info():
+            num_processes += 1
+            if process_info["state"] == "Z":
                 num_zombies += 1
         if num_zombies:
             if num_zombies == 1:
