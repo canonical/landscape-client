@@ -63,6 +63,7 @@ class LoggedUsersTest(LandscapeTest):
         self.who_path = os.path.join(dirname, "who")
         who = open(self.who_path, "w")
         who.write("#!/bin/sh\n")
+        who.write("test x$1 = x-q || echo missing-parameter\n")
         who.write("echo %s\n" % users)
         who.write("echo '# users=%d'\n" % len(users.split()))
         who.close()

@@ -47,7 +47,7 @@ class MemoryStats(object):
 
 
 def get_logged_users():
-    status, output = commands.getstatusoutput("who")
+    status, output = commands.getstatusoutput("who -q")
     if status != 0:
         raise CommandError(output)
     first_line = output.split("\n", 1)[0]
