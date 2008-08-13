@@ -33,6 +33,10 @@ class ProcessesTest(LandscapeTest):
         self.assertEquals(self.sysinfo.get_headers(),
                           [("Processes", "3")])
 
+    def test_no_zombies(self):
+        self.processes.run()
+        self.assertEquals(self.sysinfo.get_notes(), [])
+
     def test_number_of_zombies(self):
         """The number of zombies is added as a note."""
         self.builder.create_data(99, self.builder.ZOMBIE, uid=0, gid=0,
