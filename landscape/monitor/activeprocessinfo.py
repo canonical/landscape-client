@@ -54,15 +54,9 @@ class ActiveProcessInfo(DataWatcher):
 
     def _get_processes(self):
         processes = {}
-        for filename in os.listdir(self._proc_dir):
-            try:
-                process_id = int(filename)
-            except ValueError:
-                continue
-            process_info = self._process_info.get_process_info(process_id)
-            if process_info:
-                if process_info["state"] != "X":
-                    processes[process_info["pid"]] = process_info
+        for process_info in self._process_info.get_all_process_info():
+            if process_info["state"] != "X":
+                processes[process_info["pid"]] = process_info
         return processes
 
     def _detect_process_changes(self):

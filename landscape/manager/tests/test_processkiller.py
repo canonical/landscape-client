@@ -2,9 +2,9 @@ from datetime import datetime
 import signal
 import subprocess
 
-from landscape.tests.helpers import LandscapeTest, ManagerHelper
+from landscape.tests.helpers import (LandscapeTest, ManagerHelper,
+                                     ProcessDataBuilder)
 from landscape.lib.process import ProcessInformation
-from landscape.monitor.tests.test_activeprocessinfo import SampleDataBuilder
 
 from landscape.manager.manager import SUCCEEDED, FAILED
 from landscape.manager.processkiller import (
@@ -33,7 +33,7 @@ class ProcessKillerTests(LandscapeTest):
     def setUp(self):
         LandscapeTest.setUp(self)
         self.sample_dir = self.make_dir()
-        self.builder = SampleDataBuilder(self.sample_dir)
+        self.builder = ProcessDataBuilder(self.sample_dir)
         self.process_info = ProcessInformation(proc_dir=self.sample_dir,
                                                jiffies=1, boot_time=10)
         self.signaller = ProcessKiller(process_info=self.process_info)
