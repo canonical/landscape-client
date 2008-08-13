@@ -10,6 +10,7 @@ import operator
 
 from twisted.internet.protocol import ProcessProtocol
 from twisted.internet.defer import Deferred
+from twisted.internet.error import ProcessDone
 
 from landscape.manager.manager import ManagerPlugin, SUCCEEDED, FAILED
 
@@ -17,12 +18,25 @@ from landscape.manager.manager import ManagerPlugin, SUCCEEDED, FAILED
 ALL_USERS = object()
 
 TIMEOUT_RESULT = 102
+PROCESS_FAILED_RESULT = 103
 
 class ProcessTimeLimitReachedError(Exception):
     """
     Raised when a process has been running for too long.
 
-    @ivar: The data that the process printed before reaching the time limit.
+    @ivar data: The data that the process printed before reaching the time
+        limit.
+    """
+
+    def __init__(self, data):
+        self.data = data
+
+
+class ProcessFailedError(Exception):
+    """Raised when a process exits with a non-0 exit code.
+    
+    @ivar data: The data that the process printed before reaching the time
+        limit.
     """
 
     def __init__(self, data):
@@ -75,7 +89,7 @@ class ScriptExecution(ManagerPlugin):
                                 time_limit=message["time-limit"],
                                 user=user)
             d.addCallback(self._respond_success, opid)
-            d.addErrback(self._respond_timeout, opid)
+            d.addErrback(self._respond_failure, opid)
             return d
         except Exception, e:
             self._respond(FAILED, self._format_exception(e), opid)
@@ -87,9 +101,16 @@ class ScriptExecution(ManagerPlugin):
     def _respond_success(self, data, opid):
         return self._respond(SUCCEEDED, data, opid)
 
-    def _respond_timeout(self, failure, opid):
-        failure.trap(ProcessTimeLimitReachedError)
-        return self._respond(FAILED, failure.value.data, opid, 102)
+    def _respond_failure(self, failure, opid):
+        code = None
+        if failure.check(ProcessTimeLimitReachedError):
+            code = TIMEOUT_RESULT
+        elif failure.check(ProcessFailedError):
+            code = PROCESS_FAILED_RESULT
+        if code is not None:
+            return self._respond(FAILED, failure.value.data, opid, code)
+        else:
+            return self._respond(FAILED, str(failure), opid)
 
     def run_script(self, shell, code, user=None, time_limit=None):
         """
@@ -164,7 +185,7 @@ class ProcessAccumulationProtocol(ProcessProtocol):
     def __init__(self, size_limit):
         self.data = []
         self.result_deferred = Deferred()
-        self._error = False
+        self._cancelled = False
         self.size_limit = size_limit
 
     def childDataReceived(self, fd, data):
@@ -185,10 +206,14 @@ class ProcessAccumulationProtocol(ProcessProtocol):
         far.
         """
         data = "".join(self.data)
-        if self._error:
+        if self._cancelled:
             self.result_deferred.errback(ProcessTimeLimitReachedError(data))
         else:
-            self.result_deferred.callback(data)
+            if reason.check(ProcessDone):
+                self.result_deferred.callback(data)
+            else:
+                self.result_deferred.errback(ProcessFailedError(data))
+
 
     def cancel(self):
         """
@@ -203,4 +228,4 @@ class ProcessAccumulationProtocol(ProcessProtocol):
         for i in (0,1,2):
             self.transport.closeChildFD(i)
         self.transport.signalProcess("KILL")
-        self._error = True
+        self._cancelled = True

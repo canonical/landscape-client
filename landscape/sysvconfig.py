@@ -3,8 +3,9 @@ import os
 class ProcessError(Exception):
     """ Error running a process with os.system. """
 
+
 class SysVConfig(object):
-    
+
     def __init__(self, filename="/etc/default/landscape-client"):
         self._filename = filename
 
@@ -13,9 +14,9 @@ class SysVConfig(object):
         current["RUN"] = flag and 1 or 0
         self._write_file(current)
 
-    def start_landscape(self):
-        if os.system("/etc/init.d/landscape-client start"):
-            raise ProcessError("Could not start client")
+    def restart_landscape(self):
+        if os.system("/etc/init.d/landscape-client restart"):
+            raise ProcessError("Could not restart client")
 
     def stop_landscape(self):
         if os.system("/etc/init.d/landscape-client stop"):

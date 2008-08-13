@@ -46,6 +46,11 @@ endif
 MESSAGE_DIR = `pwd`/runclient-messages
 LOG_FILE = `pwd`/runclient.log
 
+reinstall:
+	-sudo dpkg -P landscape-client
+	-sudo rm -rf /var/log/landscape /etc/landscape /var/lib/landscape /etc/default/landscape-client
+	-sudo apt-get install landscape-client
+
 freshdata:
 	-sudo rm -rf $(MESSAGE_DIR)
 	-sudo mkdir $(MESSAGE_DIR)

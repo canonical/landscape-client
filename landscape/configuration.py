@@ -1,14 +1,13 @@
 """Interactive configuration support for Landscape.
 
-This module, and specifically L{BrokerConfigurationScript}, implements the
-support for the C{landscape-config} script.
+This module, and specifically L{LandscapeSetupScript}, implements the support
+for the C{landscape-config} script.
 """
 
+import time
 import sys
 import os
 import getpass
-
-from dbus import DBusException
 
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.lib.dbus_util import (
@@ -18,7 +17,10 @@ from landscape.lib.twisted_util import gather_results
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.broker.deployment import BrokerConfiguration
 from landscape.broker.remote import RemoteBroker
-from landscape.reactor import TwistedReactor
+
+
+class ConfigurationError(Exception):
+    """Raised when required configuration values are missing."""
 
 
 def print_text(text, end="\n", error=False):
@@ -30,7 +32,36 @@ def print_text(text, end="\n", error=False):
     stream.flush()
 
 
-class BrokerConfigurationScript(object):
+class LandscapeSetupConfiguration(BrokerConfiguration):
+
+    unsaved_options = ("no_start", "disable", "silent")
+
+    def make_parser(self):
+        """
+        Specialize L{Configuration.make_parser}, adding many
+        broker-specific options.
+        """
+        parser = super(LandscapeSetupConfiguration, self).make_parser()
+
+        parser.add_option("--script-users", metavar="USERS",
+                          help="A comma-separated list of users to allow "
+                               "scripts to run.  To allow scripts to be run "
+                               "by any user, enter: ALL")
+        parser.add_option("--include-manager-plugins", metavar="PLUGINS",
+                          default="",
+                          help="A comma-separated list of manager plugins to "
+                               "load.")
+        parser.add_option("-n", "--no-start", action="store_true",
+                          help="Don't start the client automatically.")
+        parser.add_option("--silent", action="store_true", default=False,
+                          help="Run without manual interaction.")
+        parser.add_option("--disable", action="store_true", default=False,
+                          help="Stop running clients and disable start at "
+                               "boot.")
+        return parser
+
+
+class LandscapeSetupScript(object):
     """
     An interactive procedure which manages the prompting and temporary storage
     of configuration parameters.
@@ -118,6 +149,9 @@ class BrokerConfigurationScript(object):
                 return default
 
     def query_computer_title(self):
+        if "computer_title" in self.config.get_command_line_options():
+            return
+
         self.show_help(
             """
             The computer title you provide will be used to represent this
@@ -129,6 +163,9 @@ class BrokerConfigurationScript(object):
         self.prompt("computer_title", "This computer's title", True)
 
     def query_account_name(self):
+        if "account_name" in self.config.get_command_line_options():
+            return
+
         self.show_help(
             """
             You must now specify the name of the Landscape account you
@@ -140,6 +177,9 @@ class BrokerConfigurationScript(object):
         self.prompt("account_name", "Account name", True)
 
     def query_registration_password(self):
+        if "registration_password" in self.config.get_command_line_options():
+            return
+
         self.show_help(
             """
             A registration password may be associated with your Landscape
@@ -155,6 +195,10 @@ class BrokerConfigurationScript(object):
                              "Account registration password")
 
     def query_proxies(self):
+        options = self.config.get_command_line_options()
+        if "http_proxy" in options and "https_proxy" in options:
+            return
+
         self.show_help(
             """
             The Landscape client communicates with the server over HTTP and
@@ -163,10 +207,16 @@ class BrokerConfigurationScript(object):
             proxies now.  If you don't use a proxy, leave these fields empty.
             """)
 
-        self.prompt("http_proxy", "HTTP proxy URL")
-        self.prompt("https_proxy", "HTTPS proxy URL")
+        if not "http_proxy" in options:
+            self.prompt("http_proxy", "HTTP proxy URL")
+        if not "https_proxy" in options:
+            self.prompt("https_proxy", "HTTPS proxy URL")
 
     def query_script_plugin(self):
+        options = self.config.get_command_line_options()
+        if "include_manager_plugins" in options and "script_users" in options:
+            return
+
         self.show_help(
             """
             Landscape has a feature which enables administrators to run
@@ -176,8 +226,8 @@ class BrokerConfigurationScript(object):
             also configurable.
             """)
         msg = "Enable script execution?"
-        included_plugins = getattr(self.config, "include_manager_plugins", "")
-        included_plugins = [x.strip() for x in included_plugins.split(",")]
+        included_plugins = [
+            p.strip() for p in self.config.include_manager_plugins.split(",")]
         if included_plugins == [""]:
             included_plugins = []
         default = "ScriptExecution" in included_plugins
@@ -191,11 +241,12 @@ class BrokerConfigurationScript(object):
                 that scripts will be restricted to. To allow scripts to be run
                 by any user, enter "ALL".
                 """)
-            self.prompt("script_users", "Script users")
+            if not "script_users" in options:
+                self.prompt("script_users", "Script users")
         else:
             if "ScriptExecution" in included_plugins:
                 included_plugins.remove("ScriptExecution")
-        self.config.include_manager_plugins = ', '.join(included_plugins)
+        self.config.include_manager_plugins = ", ".join(included_plugins)
 
     def show_header(self):
         self.show_help(
@@ -221,57 +272,67 @@ class BrokerConfigurationScript(object):
         self.query_proxies()
         self.query_script_plugin()
 
-def setup_init_script():
+
+def setup_init_script_and_start_client():
     sysvconfig = SysVConfig()
-    if not sysvconfig.is_configured_to_run():
-        answer = raw_input("\nThe Landscape client must be started "
-                           "on boot to operate correctly.\n\n"
-                           "Start Landscape client on boot? (Y/n): ")
-        if not answer.upper().startswith("N"):
-            sysvconfig.set_start_on_boot(True)
-            try:
-                sysvconfig.start_landscape()
-            except ProcessError:
-                print_text("Error starting client cannot continue.")
-                sys.exit(-1)
-        else:
-            sys.exit("Aborting Landscape configuration")
+    sysvconfig.set_start_on_boot(True)
 
 
-def setup(args):
-    """Prompt the user for config data and write out a configuration file."""
-    config = BrokerConfiguration()
-    config.load(args)
+def stop_client_and_disable_init_script():
+    sysvconfig = SysVConfig()
+    sysvconfig.stop_landscape()
+    sysvconfig.set_start_on_boot(False)
 
+
+def setup(config):
+    sysvconfig = SysVConfig()
     if not config.no_start:
-        setup_init_script()
+        if config.silent:
+            setup_init_script_and_start_client()
+        elif not sysvconfig.is_configured_to_run():
+            answer = raw_input("\nThe Landscape client must be started "
+                               "on boot to operate correctly.\n\n"
+                               "Start Landscape client on boot? (Y/n): ")
+            if not answer.upper().startswith("N"):
+                setup_init_script_and_start_client()
+            else:
+                sys.exit("Aborting Landscape configuration")
 
     if config.http_proxy is None and os.environ.get("http_proxy"):
         config.http_proxy = os.environ["http_proxy"]
-
     if config.https_proxy is None and os.environ.get("https_proxy"):
         config.https_proxy = os.environ["https_proxy"]
 
-    script = BrokerConfigurationScript(config)
-    script.run()
+    if config.silent:
+        if not config.get("account_name") or not config.get("computer_title"):
+            raise ConfigurationError("An account name and computer title are "
+                                     "required.")
+        if config.get("script_users") and not config.include_manager_plugins:
+            config.include_manager_plugins = "ScriptExecution"
+    else:
+        script = LandscapeSetupScript(config)
+        script.run()
 
     config.write()
-    return config
+    # Restart the client to ensure that it's using the new configuration.
+    if not config.no_start:
+        sysvconfig.restart_landscape()
+
 
 def register(config, reactor=None):
     """Instruct the Landscape Broker to register the client.
 
     The broker will be instructed to reload its configuration and then to
     attempt a registration.
-    """
 
+    @param reactor: The reactor to use.  Please only pass reactor when you
+        have totally mangled everything with mocker.  Otherwise bad things
+        will happen.
+    """
     from twisted.internet.glib2reactor import install
     install()
-    # please only pass reactor when you have totally mangled everything with
-    # mocker. Otherwise bad things will happen.
     if reactor is None:
         from twisted.internet import reactor
-
 
     def failure():
         print_text("Invalid account name or "
@@ -315,6 +376,7 @@ def register(config, reactor=None):
 
     print_text("Please wait... ", "")
 
+    time.sleep(2)
     remote = RemoteBroker(get_bus(config.bus), retry_timeout=0)
     # This is a bit unfortunate. Every method of remote returns a deferred,
     # even stuff like connect_to_signal, because the fetching of the DBus
@@ -335,8 +397,26 @@ def register(config, reactor=None):
 
 
 def main(args):
-    config = setup(args)
-    answer = raw_input("\nRequest a new registration for "
-                       "this computer now? (Y/n): ")
-    if not answer.upper().startswith("N"):
+    config = LandscapeSetupConfiguration()
+    config.load(args)
+
+    # Disable startup on boot and stop the client, if one is running.
+    if config.disable:
+        stop_client_and_disable_init_script()
+        return
+
+    # Setup client configuration.
+    try:
+        setup(config)
+    except Exception, e:
+        print_text(str(e))
+        sys.exit("Aborting Landscape configuration")
+
+    # Attempt to register the client.
+    if config.silent:
         register(config)
+    else:
+        answer = raw_input("\nRequest a new registration for "
+                           "this computer now? (Y/n): ")
+        if not answer.upper().startswith("N"):
+            register(config)

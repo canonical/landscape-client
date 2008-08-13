@@ -36,7 +36,8 @@ class BrokerConfiguration(Configuration):
                                "clients.")
         parser.add_option("-t", "--computer-title", metavar="TITLE",
                           help="The title of this computer")
-        parser.add_option("-u", "--url", help="The server URL to connect to.")
+        parser.add_option("-u", "--url",
+                          help="The server URL to connect to.")
         parser.add_option("-k", "--ssl-public-key",
                           help="The public SSL key to verify the server. "
                                "Only used if the given URL is https.")
@@ -45,8 +46,7 @@ class BrokerConfiguration(Configuration):
                           help="The number of seconds between server "
                                "exchanges.")
         parser.add_option("--urgent-exchange-interval", default=1*60,
-                          type="int",
-                          metavar="INTERVAL",
+                          type="int", metavar="INTERVAL",
                           help="The number of seconds between urgent server "
                                "exchanges.")
         parser.add_option("--ping-url",
@@ -56,7 +56,6 @@ class BrokerConfiguration(Configuration):
                           help="The URL of the HTTP proxy, if one is needed.")
         parser.add_option("--https-proxy", metavar="URL",
                           help="The URL of the HTTPS proxy, if one is needed.")
-        parser.add_option("-n", "--no-start", action="store_true")
         return parser
 
     @property
@@ -89,7 +88,6 @@ class BrokerService(LandscapeService):
     """
 
     transport_factory = HTTPTransport
-
     service_name = "broker"
 
     def __init__(self, config):
