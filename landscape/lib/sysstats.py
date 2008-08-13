@@ -1,3 +1,8 @@
+import commands
+
+
+class CommandError(Exception):
+    """Raised when an external command returns a non-zero status."""
 
 
 class MemoryStats(object):
@@ -38,3 +43,12 @@ class MemoryStats(object):
     @property
     def used_swap_percentage(self):
         return 100 - self.free_swap_percentage
+
+
+
+def get_logged_users():
+    status, output = commands.getstatusoutput("who")
+    if status != 0:
+        raise CommandError(output)
+    first_line = output.split("\n", 1)[0]
+    return sorted(set(first_line.split()))

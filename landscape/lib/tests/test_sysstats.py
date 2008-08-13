@@ -1,5 +1,8 @@
-from landscape.lib.sysstats import MemoryStats
-from landscape.tests.helpers import LandscapeTest, MakePathHelper
+import os
+
+from landscape.lib.sysstats import MemoryStats, CommandError, get_logged_users
+from landscape.tests.helpers import (
+    LandscapeTest, MakePathHelper, EnvironSaverHelper)
 from landscape.tests.mocker import ANY
 
 
@@ -48,3 +51,39 @@ class MemoryStatsTest(LandscapeTest):
         self.assertEquals("%.2f" % memstats.used_memory_percentage, "66.69")
         self.assertEquals("%.2f" % memstats.used_swap_percentage, "1.07")
 
+
+class LoggedUsersTest(LandscapeTest):
+
+    helpers = [EnvironSaverHelper]
+
+    def fake_who(self, users):
+        dirname = self.makeDir() 
+        os.environ["PATH"] = "%s:%s" % (dirname, os.environ["PATH"])
+
+        self.who_path = os.path.join(dirname, "who")
+        who = open(self.who_path, "w")
+        who.write("#!/bin/sh\n")
+        who.write("echo %s\n" % users)
+        who.write("echo '# users=%d'\n" % len(users.split()))
+        who.close()
+
+        os.chmod(self.who_path, 0770)
+
+    def test_one_user(self):
+        self.fake_who("joe")
+        self.assertEquals(get_logged_users(), ["joe"])
+
+    def test_one_user_multiple_times(self):
+        self.fake_who("joe joe joe joe")
+        self.assertEquals(get_logged_users(), ["joe"])
+
+    def test_many_users(self):
+        self.fake_who("joe moe boe doe")
+        self.assertEquals(get_logged_users(), ["boe", "doe", "joe", "moe"])
+
+    def test_command_error(self):
+        self.fake_who("")
+        who = open(self.who_path, "w")
+        who.write("#!/bin/sh\nexit 1\n")
+        who.close()
+        self.assertRaises(CommandError, get_logged_users)
