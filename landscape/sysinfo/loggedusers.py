@@ -1,5 +1,3 @@
-import os
-
 from twisted.internet.defer import succeed
 
 from landscape.lib.sysstats import get_logged_users, CommandError

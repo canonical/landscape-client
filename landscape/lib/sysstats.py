@@ -55,7 +55,9 @@ def get_logged_users():
     return sorted(set(first_line.split()))
 
 
-def get_thermal_zones(thermal_zone_path="/proc/acpi/thermal_zone"):
+def get_thermal_zones(thermal_zone_path=None):
+    if thermal_zone_path is None:
+        thermal_zone_path = "/proc/acpi/thermal_zone"
     if os.path.isdir(thermal_zone_path):
         for zone_name in sorted(os.listdir(thermal_zone_path)):
             yield ThermalZone(thermal_zone_path, zone_name)

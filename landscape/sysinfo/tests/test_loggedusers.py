@@ -1,7 +1,6 @@
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 from landscape.sysinfo.loggedusers import LoggedUsers
 from landscape.lib.tests.test_sysstats import FakeWhoQTest
-from landscape.tests.helpers import LandscapeTest
 
 
 class LoggedUsersTest(FakeWhoQTest):

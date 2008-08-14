@@ -6,7 +6,7 @@ from landscape.deployment import Configuration
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry, format_sysinfo
 
 
-ALL_PLUGINS = ["Load", "Memory", "LoggedUsers"]
+ALL_PLUGINS = ["Load", "Memory", "Temperature", "LoggedUsers"]
 
 
 class SysInfoConfiguration(Configuration):

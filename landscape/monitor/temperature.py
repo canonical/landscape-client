@@ -16,8 +16,7 @@ class Temperature(MonitorPlugin):
     run_interval = None
 
     def __init__(self, interval=30, monitor_interval=60*60,
-                 thermal_zone_path="/proc/acpi/thermal_zone",
-                 create_time=time.time):
+                 thermal_zone_path=None, create_time=time.time):
         self.thermal_zone_path = thermal_zone_path
         self._interval = interval
         self._monitor_interval = monitor_interval
