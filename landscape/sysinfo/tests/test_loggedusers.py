@@ -20,3 +20,13 @@ class LoggedUsersTest(FakeWhoQTest):
         self.logged_users.run()
         self.assertEquals(self.sysinfo.get_headers(),
                           [("Logged users", "3")])
+
+    def test_ignore_errors_on_command(self):
+        self.fake_who("")
+        who = open(self.who_path, "w")
+        who.write("#!/bin/sh\necho ERROR >&2\nexit 1\n")
+        who.close()
+        # Nothing bad should happen if who isn't installed, or
+        # if anything else happens with the command execution.
+        self.logged_users.run()
+        self.assertEquals(self.sysinfo.get_headers(), [])
