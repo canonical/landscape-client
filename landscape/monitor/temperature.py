@@ -2,6 +2,7 @@ import time
 import os
 
 from landscape.lib.monitor import CoverageMonitor
+from landscape.lib.sysstats import get_thermal_zones
 
 from landscape.accumulate import Accumulator
 from landscape.monitor.monitor import MonitorPlugin
@@ -15,22 +16,18 @@ class Temperature(MonitorPlugin):
     run_interval = None
 
     def __init__(self, interval=30, monitor_interval=60*60,
-                 thermal_zone_dir="/proc/acpi/thermal_zone",
+                 thermal_zone_path="/proc/acpi/thermal_zone",
                  create_time=time.time):
-        self.thermal_zone_dir = thermal_zone_dir
+        self.thermal_zone_path = thermal_zone_path
         self._interval = interval
         self._monitor_interval = monitor_interval
         self._create_time = create_time
         self._thermal_zones = []
         self._temperatures = {}
 
-        # A machine that doesn't have any thermal zones will have an
-        # empty /proc/acpi/thermal_zone directory.
-        if os.path.isdir(self.thermal_zone_dir):
-            filenames = sorted(os.listdir(self.thermal_zone_dir))
-            for filename in filenames:
-                self._thermal_zones.append(filename)
-                self._temperatures[filename] = []
+        for thermal_zone in get_thermal_zones(self.thermal_zone_path):
+            self._thermal_zones.append(thermal_zone.name)
+            self._temperatures[thermal_zone.name] = []
 
     def register(self, registry):
         super(Temperature, self).register(registry)
@@ -68,19 +65,12 @@ class Temperature(MonitorPlugin):
         self.registry.broker.call_if_accepted("temperature",
                                               self.send_messages, urgent)
 
-    def _fetch_temperature(self, zone):
-        file = open(os.path.join(self.thermal_zone_dir, zone, "temperature"))
-        for line in file:
-            if line.startswith("temperature"):
-                temp = line.split(':', 1)[1].strip().split(' ')[0].strip()
-                return int(temp)
-
     def run(self):
         self._monitor.ping()
         now = int(self._create_time())
-        for zone in self._thermal_zones:
-            key = ("accumulate", zone)
-            new_temperature = self._fetch_temperature(zone)
-            step_data = self._accumulate(now, new_temperature, key)
-            if step_data:
-                self._temperatures[zone].append(step_data)
+        for zone in get_thermal_zones(self.thermal_zone_path):
+            if zone.temperature_value is not None:
+                key = ("accumulate", zone.name)
+                step_data = self._accumulate(now, zone.temperature_value, key)
+                if step_data:
+                    self._temperatures[zone.name].append(step_data)

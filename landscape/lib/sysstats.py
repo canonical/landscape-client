@@ -57,8 +57,8 @@ def get_logged_users():
 
 def get_thermal_zones(thermal_zone_path="/proc/acpi/thermal_zone"):
     if os.path.isdir(thermal_zone_path):
-        for zone_name in os.listdir(thermal_zone_path):
-            yield ThermalZone(os.path.join(thermal_zone_path, zone_name))
+        for zone_name in sorted(os.listdir(thermal_zone_path)):
+            yield ThermalZone(thermal_zone_path, zone_name)
 
 
 class ThermalZone(object):
@@ -67,8 +67,10 @@ class ThermalZone(object):
     temperature_value = None
     temperature_unit = None
 
-    def __init__(self, zone_path):
-        temperature_path = os.path.join(zone_path, "temperature")
+    def __init__(self, base_path, name):
+        self.name = name
+        self.path = os.path.join(base_path, name)
+        temperature_path = os.path.join(self.path, "temperature")
         if os.path.isfile(temperature_path):
             for line in open(temperature_path):
                 if line.startswith("temperature:"):

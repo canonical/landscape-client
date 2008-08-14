@@ -125,9 +125,13 @@ class GetThermalZonesTest(ThermalZoneTest):
         self.write_thermal_zone("THM0", "50 C")
         thermal_zones = self.get_thermal_zones()
         self.assertEquals(len(thermal_zones), 1)
+
+        self.assertEquals(thermal_zones[0].name, "THM0")
         self.assertEquals(thermal_zones[0].temperature, "50 C")
         self.assertEquals(thermal_zones[0].temperature_value, 50)
         self.assertEquals(thermal_zones[0].temperature_unit, "C")
+        self.assertEquals(thermal_zones[0].path,
+                          os.path.join(self.thermal_zone_path, "THM0"))
 
     def test_two_thermal_zones(self):
         self.write_thermal_zone("THM0", "50 C")
