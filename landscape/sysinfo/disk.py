@@ -6,6 +6,7 @@ from twisted.internet.defer import succeed
 
 from landscape.monitor.mountinfo import MountInfo
 
+
 def format_megabytes(megabytes):
     if megabytes >= 1024*1024:
         return "%.2fTB" % (megabytes/(1024*1024))
@@ -14,9 +15,10 @@ def format_megabytes(megabytes):
     else:
         return "%dMB" % (megabytes)
 
+
 class Disk(object):
 
-    def __init__(self, mounts_file, statvfs):
+    def __init__(self, mounts_file="/proc/mounts", statvfs=os.statvfs):
         self._mounts_file = mounts_file
         self._statvfs = statvfs
 
@@ -31,5 +33,5 @@ class Disk(object):
             if used >= 85:
                 self._sysinfo.add_note("%s is using %0.1f%% of %s"
                                        % (info["mount-point"], used,
-                                          format_megabytes(total / 1024)))
+                                          format_megabytes(total)))
         return succeed(None)
