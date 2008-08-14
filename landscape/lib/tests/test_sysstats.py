@@ -1,6 +1,7 @@
 import os
 
-from landscape.lib.sysstats import MemoryStats, CommandError, get_logged_users
+from landscape.lib.sysstats import (
+    MemoryStats, CommandError, get_logged_users, get_thermal_zones)
 from landscape.tests.helpers import (
     LandscapeTest, MakePathHelper, EnvironSaverHelper)
 from landscape.tests.mocker import ANY
@@ -91,3 +92,80 @@ class LoggedUsersTest(FakeWhoQTest):
         who.write("#!/bin/sh\nexit 1\n")
         who.close()
         self.assertRaises(CommandError, get_logged_users)
+
+
+class ThermalZoneTest(LandscapeTest):
+
+    def setUp(self):
+        super(ThermalZoneTest, self).setUp()
+        self.thermal_zone_path = self.makeDir()
+
+    def get_thermal_zones(self):
+        return list(get_thermal_zones(self.thermal_zone_path))
+
+    def write_thermal_zone(self, name, temperature):
+        zone_path = os.path.join(self.thermal_zone_path, name)
+        if not os.path.isdir(zone_path):
+            os.mkdir(zone_path)
+        file = open(os.path.join(zone_path, "temperature"), "w")
+        file.write("temperature:             " + temperature)
+        file.close()
+
+
+class GetThermalZonesTest(ThermalZoneTest):
+
+    def test_non_existent_thermal_zone_directory(self):
+        thermal_zones = list(get_thermal_zones("/non-existent/thermal_zone"))
+        self.assertEquals(thermal_zones, [])
+
+    def test_empty_thermal_zone_directory(self):
+        self.assertEquals(self.get_thermal_zones(), [])
+
+    def test_one_thermal_zone(self):
+        self.write_thermal_zone("THM0", "50 C")
+        thermal_zones = self.get_thermal_zones()
+        self.assertEquals(len(thermal_zones), 1)
+        self.assertEquals(thermal_zones[0].temperature, "50 C")
+        self.assertEquals(thermal_zones[0].temperature_value, 50)
+        self.assertEquals(thermal_zones[0].temperature_unit, "C")
+
+    def test_two_thermal_zones(self):
+        self.write_thermal_zone("THM0", "50 C")
+        self.write_thermal_zone("THM1", "51 C")
+        thermal_zones = self.get_thermal_zones()
+        self.assertEquals(len(thermal_zones), 2)
+        self.assertEquals(thermal_zones[0].temperature, "50 C")
+        self.assertEquals(thermal_zones[0].temperature_value, 50)
+        self.assertEquals(thermal_zones[0].temperature_unit, "C")
+        self.assertEquals(thermal_zones[1].temperature, "51 C")
+        self.assertEquals(thermal_zones[1].temperature_value, 51)
+        self.assertEquals(thermal_zones[1].temperature_unit, "C")
+
+    def test_badly_formatted_temperature(self):
+        self.write_thermal_zone("THM0", "SOMETHING BAD")
+        thermal_zones = self.get_thermal_zones()
+        self.assertEquals(len(thermal_zones), 1)
+        self.assertEquals(thermal_zones[0].temperature, "SOMETHING BAD")
+        self.assertEquals(thermal_zones[0].temperature_value, None)
+        self.assertEquals(thermal_zones[0].temperature_unit, None)
+
+    def test_badly_formatted_with_missing_space(self):
+        self.write_thermal_zone("THM0", "SOMETHINGBAD")
+        thermal_zones = self.get_thermal_zones()
+        self.assertEquals(len(thermal_zones), 1)
+        self.assertEquals(thermal_zones[0].temperature, "SOMETHINGBAD")
+        self.assertEquals(thermal_zones[0].temperature_value, None)
+        self.assertEquals(thermal_zones[0].temperature_unit, None)
+
+    def test_temperature_file_with_missing_label(self):
+        self.write_thermal_zone("THM0", "SOMETHINGBAD")
+        temperature_path = os.path.join(self.thermal_zone_path,
+                                        "THM0/temperature")
+        file = open(temperature_path, "w")
+        file.write("bad-label: foo bar\n")
+        file.close()
+        thermal_zones = self.get_thermal_zones()
+        self.assertEquals(len(thermal_zones), 1)
+        self.assertEquals(thermal_zones[0].temperature, None)
+        self.assertEquals(thermal_zones[0].temperature_value, None)
+        self.assertEquals(thermal_zones[0].temperature_unit, None)

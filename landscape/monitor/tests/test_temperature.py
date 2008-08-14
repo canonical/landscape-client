@@ -39,7 +39,7 @@ class TemperatureTestWithSampleData(LandscapeTest):
     def update_temperature(self, zone, temperature):
         """Create a sample thermal zone with the specified temperature."""
         create_thermal_zone(self.thermal_zone_dir, zone_dir=zone,
-                             temperature=temperature)
+                            temperature=temperature)
 
     def test_wb_disabled_with_no_thermal_zones(self):
         """

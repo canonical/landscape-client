@@ -1,4 +1,5 @@
 import commands
+import os
 
 
 class CommandError(Exception):
@@ -52,3 +53,29 @@ def get_logged_users():
         raise CommandError(output)
     first_line = output.split("\n", 1)[0]
     return sorted(set(first_line.split()))
+
+
+def get_thermal_zones(thermal_zone_path="/proc/acpi/thermal_zone"):
+    if os.path.isdir(thermal_zone_path):
+        for zone_name in os.listdir(thermal_zone_path):
+            yield ThermalZone(os.path.join(thermal_zone_path, zone_name))
+
+
+class ThermalZone(object):
+
+    temperature = None
+    temperature_value = None
+    temperature_unit = None
+
+    def __init__(self, zone_path):
+        temperature_path = os.path.join(zone_path, "temperature")
+        if os.path.isfile(temperature_path):
+            for line in open(temperature_path):
+                if line.startswith("temperature:"):
+                    self.temperature = line[12:].strip()
+                    try:
+                        value, unit = self.temperature.split()
+                        self.temperature_value = int(value)
+                        self.temperature_unit = unit
+                    except ValueError:
+                        pass
