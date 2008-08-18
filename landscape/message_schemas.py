@@ -300,12 +300,12 @@ TEST = Message(
      "sequence": Int()},
     optional=["greeting", "consistency-error", "echo", "sequence"])
 
+# The tuples are timestamp, value
+GRAPH_DATA = KeyDict({"values": List(Tuple(Float(), Float())),
+                      "error": Unicode()})
+
 CUSTOM_GRAPH = Message("custom-graph", {
-    # The tuples are timestamp, value
-    "graph-data": List(KeyDict({"graph-id": Int(),
-                                "data": List(Tuple(Float(), Float())),
-                                "error": Unicode()})),
-    })
+    "data": Dict(Int(), GRAPH_DATA)})
 
 message_schemas = {}
 for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
