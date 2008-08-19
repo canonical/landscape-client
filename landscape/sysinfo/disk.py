@@ -1,10 +1,12 @@
 from __future__ import division
 
 import os
+import statvfs
 
 from twisted.internet.defer import succeed
 
 from landscape.monitor.mountinfo import MountInfo
+from landscape.lib.disk import get_mount_info
 
 
 def format_megabytes(megabytes):
@@ -26,10 +28,13 @@ class Disk(object):
         self._sysinfo = sysinfo
 
     def run(self):
-        mi = MountInfo(mounts_file=self._mounts_file, statvfs=self._statvfs)
-        for info in mi._get_mount_info():
-            total, free = mi._get_space(info["mount-point"])
-            used = ((total - free) / total) * 100
+        for info in get_mount_info(self._mounts_file, self._statvfs):
+            total = info["total-space"]
+            if total > 0:
+                used = ((total - info["free-space"]) / total) * 100
+            else:
+                # Some "virtual" filesystems have 0 total space. ignore them.
+                used = 0
             if used >= 85:
                 self._sysinfo.add_note("%s is using %0.1f%% of %s"
                                        % (info["mount-point"], used,

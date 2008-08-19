@@ -23,6 +23,8 @@ class MountInfoTest(LandscapeTest):
     def get_mount_info(self, *args, **kwargs):
         hal_devices = kwargs.pop("hal_devices", [])
         kwargs["hal_manager"] = MockHALManager(hal_devices)
+        if "statvfs" not in kwargs:
+            kwargs["statvfs"] = lambda path: (0,0,0,0,0,0,0,0,0,0)
         return MountInfo(*args, **kwargs)
 
     def test_read_proc_mounts(self):
@@ -36,6 +38,7 @@ class MountInfoTest(LandscapeTest):
         """
         plugin = self.get_mount_info(create_time=self.reactor.time)
         self.monitor.add(plugin)
+        
         self.reactor.advance(self.monitor.step_size)
 
         message = plugin.create_mount_info_message()

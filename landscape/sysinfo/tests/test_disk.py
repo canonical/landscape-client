@@ -16,6 +16,11 @@ class DiskTest(LandscapeTest):
         self.sysinfo = SysInfoPluginRegistry()
         self.sysinfo.add(self.disk)
 
+    def set_mounts(self, content):
+        f = open(self.mount_file, "w")
+        f.write(content)
+        f.close()
+
     def test_run_returns_succeeded_deferred(self):
         result = self.disk.run()
         self.assertTrue(isinstance(result, Deferred))
@@ -29,16 +34,26 @@ class DiskTest(LandscapeTest):
         self.disk.run()
         self.assertEquals(self.sysinfo.get_notes(), [])
 
+    def test_zero_total_space(self):
+        """
+        When the total space for a mount is 0, the plugin shouldn't flip out
+        and kill everybody.
+        
+        This is a regression test for a ZeroDivisionError!
+        """
+        self.stat_results["/sys"] = (4096, 4096, 0L, 0L, 0L, 0L, 0L, 0L, 14,
+                                     255)
+        self.set_mounts("/sys /sys sysfs rw,noexec 0 0")
+        self.disk.run()
+        self.assertEquals(self.sysinfo.get_notes(), [])
+
     def test_over_85_percent(self):
         """
         When a filesystem is using more than 85% capacity, a note will be
         displayed.
         """
         self.stat_results["/"] = (4096, 0, 1000000, 150000, 0, 0, 0, 0, 0)
-        f = open(self.mount_file, "w")
-        f.write("/dev/sda1 / rootfs rw 0 0\n")
-        f.close()
-
+        self.set_mounts("/dev/sda1 / rootfs rw 0 0\n")
         self.disk.run()
         self.assertEquals(self.sysinfo.get_notes(),
                           ["/ is using 85.0% of 3.81GB"])
@@ -47,10 +62,7 @@ class DiskTest(LandscapeTest):
         """No note is displayed for a filesystem using less than 85% capacity.
         """
         self.stat_results["/"] = (1024, 0, 1000000, 151000, 0, 0, 0, 0, 0)
-        f = open(self.mount_file, "w")
-        f.write("/dev/sda1 / rootfs rw 0 0\n")
-        f.close()
-
+        self.set_mounts("/dev/sda1 / rootfs rw 0 0\n")
         self.disk.run()
         self.assertEquals(self.sysinfo.get_notes(), [])
 
@@ -62,14 +74,11 @@ class DiskTest(LandscapeTest):
         self.stat_results["/use"] = (2048, 0, 2000000, 200000, 0, 0, 0, 0, 0)
         self.stat_results["/emp"] = (4096, 0, 3000000, 460000, 0, 0, 0, 0, 0)
 
-        f = open(self.mount_file, "w")
-        f.write("""\
+        self.set_mounts("""\
 /dev/sda1 / rootfs rw 0 0
 /dev/sda2 /use rootfs rw 0 0
 /dev/sda3 /emp rootfs rw 0 0
 """)
-        f.close()
-
         self.disk.run()
         self.assertEquals(self.sysinfo.get_notes(),
                           ["/ is using 85.0% of 976MB",
