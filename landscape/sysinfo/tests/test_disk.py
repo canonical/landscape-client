@@ -101,3 +101,8 @@ class DiskTest(LandscapeTest):
         self.disk.run()
         self.assertEquals(self.sysinfo.get_headers(),
                           [("Usage of /home", "66.7%")])
+
+        self.set_mounts([("/", 4096, 1000, 500)])
+        self.disk.run()
+        self.assertEquals(self.sysinfo.get_headers()[-1],
+                          ("Usage of /", "66.7%"))
