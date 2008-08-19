@@ -6,7 +6,7 @@ import statvfs
 from twisted.internet.defer import succeed
 
 from landscape.monitor.mountinfo import MountInfo
-from landscape.lib.disk import get_mount_info
+from landscape.lib.disk import get_mount_info, get_filesystem_for_path
 
 
 def format_megabytes(megabytes):
@@ -16,6 +16,10 @@ def format_megabytes(megabytes):
         return "%.2fGB" % (megabytes/1024)
     else:
         return "%dMB" % (megabytes)
+
+
+def percent(used, total):
+    return "%0.1f%%" % ((used / total) * 100)
 
 
 class Disk(object):
@@ -28,6 +32,11 @@ class Disk(object):
         self._sysinfo = sysinfo
 
     def run(self):
+        main_filesystem = get_filesystem_for_path("/home", self._mounts_file,
+                                                  self._statvfs)
+        self._sysinfo.add_header("Usage of " + main_filesystem["mount-point"],
+                                 percent(main_filesystem["total-space"] - main_filesystem["free-space"],
+                                         main_filesystem["total-space"]))
         for info in get_mount_info(self._mounts_file, self._statvfs):
             total = info["total-space"]
             if total > 0:

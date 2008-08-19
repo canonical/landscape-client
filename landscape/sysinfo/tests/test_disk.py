@@ -16,12 +16,20 @@ class DiskTest(LandscapeTest):
         self.sysinfo = SysInfoPluginRegistry()
         self.sysinfo.add(self.disk)
 
-    def set_mounts(self, content):
+    def set_mounts(self, mounts):
+        mounts_content = []
+        for i, mount in enumerate(mounts):
+            (mount_point, block_size, total_blocks, free_blocks) = mount
+            mounts_content.append("/dev/sd%d %s fsfs rw 0 0" % (i, mount_point))
+            self.stat_results[mount_point] = (block_size, 0,
+                                              total_blocks, free_blocks,
+                                              0, 0, 0, 0, 0)
         f = open(self.mount_file, "w")
-        f.write(content)
+        f.write("\n".join(mounts_content))
         f.close()
 
     def test_run_returns_succeeded_deferred(self):
+        self.set_mounts([("/", 4096, 1000, 1000)])
         result = self.disk.run()
         self.assertTrue(isinstance(result, Deferred))
         called = []
@@ -31,6 +39,7 @@ class DiskTest(LandscapeTest):
         self.assertTrue(called)
 
     def test_everything_is_cool(self):
+        self.set_mounts([("/", 4096, 1000, 1000)])
         self.disk.run()
         self.assertEquals(self.sysinfo.get_notes(), [])
 
@@ -41,9 +50,8 @@ class DiskTest(LandscapeTest):
         
         This is a regression test for a ZeroDivisionError!
         """
-        self.stat_results["/sys"] = (4096, 4096, 0L, 0L, 0L, 0L, 0L, 0L, 14,
-                                     255)
-        self.set_mounts("/sys /sys sysfs rw,noexec 0 0")
+        self.set_mounts([("/sys", 4096, 0, 0),
+                         ("/", 4096, 1000, 1000)])
         self.disk.run()
         self.assertEquals(self.sysinfo.get_notes(), [])
 
@@ -52,8 +60,7 @@ class DiskTest(LandscapeTest):
         When a filesystem is using more than 85% capacity, a note will be
         displayed.
         """
-        self.stat_results["/"] = (4096, 0, 1000000, 150000, 0, 0, 0, 0, 0)
-        self.set_mounts("/dev/sda1 / rootfs rw 0 0\n")
+        self.set_mounts([("/", 4096, 1000000, 150000)])
         self.disk.run()
         self.assertEquals(self.sysinfo.get_notes(),
                           ["/ is using 85.0% of 3.81GB"])
@@ -61,8 +68,7 @@ class DiskTest(LandscapeTest):
     def test_under_85_percent(self):
         """No note is displayed for a filesystem using less than 85% capacity.
         """
-        self.stat_results["/"] = (1024, 0, 1000000, 151000, 0, 0, 0, 0, 0)
-        self.set_mounts("/dev/sda1 / rootfs rw 0 0\n")
+        self.set_mounts([("/", 1024, 1000000, 151000)])
         self.disk.run()
         self.assertEquals(self.sysinfo.get_notes(), [])
 
@@ -70,15 +76,9 @@ class DiskTest(LandscapeTest):
         """
         A note will be displayed for each filesystem using 85% or more capacity.
         """
-        self.stat_results["/"] = (1024, 0, 1000000, 150000, 0, 0, 0, 0, 0)
-        self.stat_results["/use"] = (2048, 0, 2000000, 200000, 0, 0, 0, 0, 0)
-        self.stat_results["/emp"] = (4096, 0, 3000000, 460000, 0, 0, 0, 0, 0)
-
-        self.set_mounts("""\
-/dev/sda1 / rootfs rw 0 0
-/dev/sda2 /use rootfs rw 0 0
-/dev/sda3 /emp rootfs rw 0 0
-""")
+        self.set_mounts([("/", 1024, 1000000, 150000),
+                         ("/use", 2048, 2000000, 200000),
+                         ("/emp", 4096, 3000000, 460000)])
         self.disk.run()
         self.assertEquals(self.sysinfo.get_notes(),
                           ["/ is using 85.0% of 976MB",
@@ -90,3 +90,14 @@ class DiskTest(LandscapeTest):
         self.assertEquals(format_megabytes(1024), "1.00GB")
         self.assertEquals(format_megabytes(1024*1024-1), "1024.00GB")
         self.assertEquals(format_megabytes(1024*1024), "1.00TB")
+
+    def test_header(self):
+        """
+        A header is printed with usage for the 'primary' filesystem, where
+        'primary' means 'filesystem that has /home on it'.
+        """
+        self.set_mounts([("/", 4096, 1000, 500),
+                         ("/home", 4096, 1000, 500)])
+        self.disk.run()
+        self.assertEquals(self.sysinfo.get_headers(),
+                          [("Usage of /home", "66.7%")])
