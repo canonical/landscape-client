@@ -1,4 +1,5 @@
 import os
+import re
 
 from landscape.lib.sysstats import (
     MemoryStats, CommandError, get_logged_users, get_thermal_zones)
@@ -51,6 +52,19 @@ class MemoryStatsTest(LandscapeTest):
         self.assertEquals("%.2f" % memstats.free_swap_percentage, "98.93")
         self.assertEquals("%.2f" % memstats.used_memory_percentage, "66.69")
         self.assertEquals("%.2f" % memstats.used_swap_percentage, "1.07")
+
+    def test_get_memory_info_without_swap(self):
+        sample = re.subn(r"Swap(Free|Total): *\d+ kB", r"Swap\1:       0",
+                         SAMPLE_MEMORY_INFO)[0]
+        filename = self.make_path(sample)
+        memstats = MemoryStats(filename)
+        self.assertEquals(memstats.total_swap, 0)
+        self.assertEquals(memstats.free_swap, 0)
+        self.assertEquals(memstats.used_swap, 0)
+        self.assertEquals(memstats.used_swap_percentage, 0)
+        self.assertEquals(memstats.free_swap_percentage, 0)
+        self.assertEquals(type(memstats.used_swap_percentage), float)
+        self.assertEquals(type(memstats.free_swap_percentage), float)
 
 
 class FakeWhoQTest(LandscapeTest):

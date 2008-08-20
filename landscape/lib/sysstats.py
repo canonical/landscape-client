@@ -35,7 +35,10 @@ class MemoryStats(object):
 
     @property
     def free_swap_percentage(self):
-        return (self.free_swap / float(self.total_swap)) * 100
+        if self.total_swap == 0:
+            return 0.0
+        else:
+            return (self.free_swap / float(self.total_swap)) * 100
 
     @property
     def used_memory_percentage(self):
@@ -43,7 +46,10 @@ class MemoryStats(object):
 
     @property
     def used_swap_percentage(self):
-        return 100 - self.free_swap_percentage
+        if self.total_swap == 0:
+            return 0.0
+        else:
+            return 100 - self.free_swap_percentage
 
 
 
