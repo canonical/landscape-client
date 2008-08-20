@@ -1,11 +1,9 @@
 from __future__ import division
 
 import os
-import statvfs
 
 from twisted.internet.defer import succeed
 
-from landscape.monitor.mountinfo import MountInfo
 from landscape.lib.disk import get_mount_info, get_filesystem_for_path
 
 
