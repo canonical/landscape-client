@@ -35,6 +35,17 @@ class ProcessInformation(object):
         self._jiffies_per_sec = jiffies or detect_jiffies()
         self._uptime = uptime
 
+    def get_all_process_info(self):
+        """Get process information for all processes on the system."""
+        for filename in os.listdir(self._proc_dir):
+            try:
+                process_id = int(filename)
+            except ValueError:
+                continue
+            process_info = self.get_process_info(process_id)
+            if process_info:
+                yield process_info
+
     def get_process_info(self, process_id):
         cmd_line_name = ""
         process_dir = os.path.join(self._proc_dir, str(process_id))
