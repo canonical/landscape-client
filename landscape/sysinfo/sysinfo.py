@@ -38,7 +38,17 @@ class SysInfoPluginRegistry(PluginRegistry):
         self._footnotes = []
 
     def add_header(self, name, value):
-        """Add a new information header to be displayed to the user."""
+        """Add a new information header to be displayed to the user.
+
+        Each header name is only present once.  If a header is added
+        multiple times, the last value added will be returned in
+        the get_headers() call.
+
+        Headers with value None are not returned by get_headers(), but
+        they still allocate a position in the list.  This fact may be
+        explored to create a deterministic ordering even when dealing
+        with values obtained asynchornously.
+        """
         index = self._header_index.get(name)
         if index is None:
             self._header_index[name] = len(self._headers)
@@ -47,7 +57,11 @@ class SysInfoPluginRegistry(PluginRegistry):
             self._headers[index] = (name, value)
 
     def get_headers(self):
-        """Get all information headers to be displayed to the user."""
+        """Get all information headers to be displayed to the user.
+
+        Headers which were added with value None are not included in
+        the result.
+        """
         return [pair for pair in self._headers if pair[1] is not None]
 
     def add_note(self, note):
