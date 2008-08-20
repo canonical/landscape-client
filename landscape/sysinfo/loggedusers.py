@@ -3,7 +3,7 @@ from twisted.internet.defer import succeed
 from landscape.lib.sysstats import get_logged_in_users, CommandError
 
 
-class LoggedUsers(object):
+class LoggedInUsers(object):
 
     def register(self, sysinfo):
         self._sysinfo = sysinfo

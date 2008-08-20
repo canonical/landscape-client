@@ -1,13 +1,13 @@
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
-from landscape.sysinfo.loggedusers import LoggedUsers
+from landscape.sysinfo.loggedusers import LoggedInUsers
 from landscape.lib.tests.test_sysstats import FakeWhoQTest
 
 
-class LoggedUsersTest(FakeWhoQTest):
+class LoggedInUsersTest(FakeWhoQTest):
 
     def setUp(self):
-        super(LoggedUsersTest, self).setUp()
-        self.logged_users = LoggedUsers()
+        super(LoggedInUsersTest, self).setUp()
+        self.logged_users = LoggedInUsers()
         self.sysinfo = SysInfoPluginRegistry()
         self.sysinfo.add(self.logged_users)
 

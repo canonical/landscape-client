@@ -85,7 +85,7 @@ class FakeWhoQTest(LandscapeTest):
         os.chmod(self.who_path, 0770)
 
 
-class LoggedUsersTest(FakeWhoQTest):
+class LoggedInUsersTest(FakeWhoQTest):
 
     def test_one_user(self):
         self.fake_who("joe")
