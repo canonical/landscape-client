@@ -93,20 +93,20 @@ class DiskTest(LandscapeTest):
         'primary' means 'filesystem that has /home on it'.
         """
         self.add_mount("/")
-        self.add_mount("/home", capacity=1000, unused=500)
+        self.add_mount("/home", capacity=1024, unused=512)
         self.disk.run()
         self.assertEquals(self.sysinfo.get_headers(),
-                          [("Usage of /home", "66.7%")])
+                          [("Usage of /home", "50.0% of 4MB")])
 
     def test_header_shows_actual_filesystem(self):
         """
         If /home isn't on its own filesystem, the header will show whatever
         filesystem it's a part of.
         """
-        self.add_mount("/", capacity=1000, unused=500)
+        self.add_mount("/", capacity=1024, unused=512)
         self.disk.run()
         self.assertEquals(self.sysinfo.get_headers(),
-                          [("Usage of /", "66.7%")])
+                          [("Usage of /", "50.0% of 4MB")])
 
     def test_ignore_optical_drives(self):
         """
