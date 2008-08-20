@@ -38,6 +38,8 @@ class Disk(object):
                                  percent(main_filesystem["total-space"] - main_filesystem["free-space"],
                                          main_filesystem["total-space"]))
         for info in get_mount_info(self._mounts_file, self._statvfs):
+            if info["filesystem"] in ("udf", "iso9660"):
+                continue
             total = info["total-space"]
             if total > 0:
                 used = ((total - info["free-space"]) / total) * 100

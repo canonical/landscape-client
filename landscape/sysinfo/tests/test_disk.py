@@ -16,20 +16,16 @@ class DiskTest(LandscapeTest):
         self.sysinfo = SysInfoPluginRegistry()
         self.sysinfo.add(self.disk)
 
-    def set_mounts(self, mounts):
-        mounts_content = []
-        for i, mount in enumerate(mounts):
-            (mount_point, block_size, total_blocks, free_blocks) = mount
-            mounts_content.append("/dev/sd%d %s fsfs rw 0 0" % (i, mount_point))
-            self.stat_results[mount_point] = (block_size, 0,
-                                              total_blocks, free_blocks,
-                                              0, 0, 0, 0, 0)
-        f = open(self.mount_file, "w")
-        f.write("\n".join(mounts_content))
+    def add_mount(self, point, block_size=4096, capacity=1000, unused=1000,
+                  fs="ext3"):
+        self.stat_results[point] = (block_size, 0, capacity, unused,
+                                    0, 0, 0, 0, 0)
+        f = open(self.mount_file, "a")
+        f.write("/dev/%s %s %s rw 0 0\n" % (point.replace("/", "_"), point, fs))
         f.close()
 
     def test_run_returns_succeeded_deferred(self):
-        self.set_mounts([("/", 4096, 1000, 1000)])
+        self.add_mount("/")
         result = self.disk.run()
         self.assertTrue(isinstance(result, Deferred))
         called = []
@@ -39,7 +35,7 @@ class DiskTest(LandscapeTest):
         self.assertTrue(called)
 
     def test_everything_is_cool(self):
-        self.set_mounts([("/", 4096, 1000, 1000)])
+        self.add_mount("/")
         self.disk.run()
         self.assertEquals(self.sysinfo.get_notes(), [])
 
@@ -50,8 +46,8 @@ class DiskTest(LandscapeTest):
         
         This is a regression test for a ZeroDivisionError!
         """
-        self.set_mounts([("/sys", 4096, 0, 0),
-                         ("/", 4096, 1000, 1000)])
+        self.add_mount("/sys", capacity=0, unused=0)
+        self.add_mount("/")
         self.disk.run()
         self.assertEquals(self.sysinfo.get_notes(), [])
 
@@ -60,7 +56,7 @@ class DiskTest(LandscapeTest):
         When a filesystem is using more than 85% capacity, a note will be
         displayed.
         """
-        self.set_mounts([("/", 4096, 1000000, 150000)])
+        self.add_mount("/", capacity=1000000, unused=150000)
         self.disk.run()
         self.assertEquals(self.sysinfo.get_notes(),
                           ["/ is using 85.0% of 3.81GB"])
@@ -68,7 +64,7 @@ class DiskTest(LandscapeTest):
     def test_under_85_percent(self):
         """No note is displayed for a filesystem using less than 85% capacity.
         """
-        self.set_mounts([("/", 1024, 1000000, 151000)])
+        self.add_mount("/", block_size=1024, capacity=1000000, unused=151000)
         self.disk.run()
         self.assertEquals(self.sysinfo.get_notes(), [])
 
@@ -76,9 +72,9 @@ class DiskTest(LandscapeTest):
         """
         A note will be displayed for each filesystem using 85% or more capacity.
         """
-        self.set_mounts([("/", 1024, 1000000, 150000),
-                         ("/use", 2048, 2000000, 200000),
-                         ("/emp", 4096, 3000000, 460000)])
+        self.add_mount("/", block_size=1024, capacity=1000000, unused=150000)
+        self.add_mount("/use", block_size=2048, capacity=2000000, unused=200000)
+        self.add_mount("/emp", block_size=4096, capacity=3000000, unused=460000)
         self.disk.run()
         self.assertEquals(self.sysinfo.get_notes(),
                           ["/ is using 85.0% of 976MB",
@@ -96,13 +92,29 @@ class DiskTest(LandscapeTest):
         A header is printed with usage for the 'primary' filesystem, where
         'primary' means 'filesystem that has /home on it'.
         """
-        self.set_mounts([("/", 4096, 1000, 500),
-                         ("/home", 4096, 1000, 500)])
+        self.add_mount("/")
+        self.add_mount("/home", capacity=1000, unused=500)
         self.disk.run()
         self.assertEquals(self.sysinfo.get_headers(),
                           [("Usage of /home", "66.7%")])
 
-        self.set_mounts([("/", 4096, 1000, 500)])
+    def test_header_shows_actual_filesystem(self):
+        """
+        If /home isn't on its own filesystem, the header will show whatever
+        filesystem it's a part of.
+        """
+        self.add_mount("/", capacity=1000, unused=500)
         self.disk.run()
-        self.assertEquals(self.sysinfo.get_headers()[-1],
-                          ("Usage of /", "66.7%"))
+        self.assertEquals(self.sysinfo.get_headers(),
+                          [("Usage of /", "66.7%")])
+
+    def test_ignore_optical_drives(self):
+        """
+        Optical drives (those with filesystems of udf or iso9660) should be
+        ignored.
+        """
+        self.add_mount("/", capacity=1000, unused=1000, fs="ext3")
+        self.add_mount("/media/dvdrom", capacity=1000, unused=0, fs="udf")
+        self.add_mount("/media/cdrom", capacity=1000, unused=0, fs="iso9660")
+        self.disk.run()
+        self.assertEquals(self.sysinfo.get_notes(), [])
