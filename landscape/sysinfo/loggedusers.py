@@ -9,10 +9,10 @@ class LoggedUsers(object):
         self._sysinfo = sysinfo
 
     def run(self):
-        try:
-            logged_users = get_logged_users()
-        except CommandError:
-            pass
-        else:
+        self._sysinfo.add_header("Logged users", None)
+        def add_header(logged_users):
             self._sysinfo.add_header("Logged users", str(len(logged_users)))
-        return succeed(None)
+        result = get_logged_users()
+        result.addCallback(add_header)
+        result.addErrback(lambda failure: None)
+        return result
