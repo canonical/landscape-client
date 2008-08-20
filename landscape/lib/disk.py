@@ -10,7 +10,7 @@ def get_mount_info(mounts_file, statvfs_):
     keys:
 
      - device: The device file which is mounted.
-     - mount-point
+     - mount-point: The path at which the filesystem is mounted.
      - filesystem: The filesystem type.
      - total-space: The capacity of the filesystem in megabytes.
      - free-space: The amount of space available in megabytes.
