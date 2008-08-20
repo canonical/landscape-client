@@ -16,7 +16,7 @@ class LoggedInUsersTest(FakeWhoQTest):
         result = self.logged_users.run()
         def check_headers(result):
             self.assertEquals(self.sysinfo.get_headers(),
-                              [("Logged users", "3")])
+                              [("Users logged-in", "3")])
         return result.addCallback(check_headers)
 
     def test_order_is_preserved_even_if_asynchronous(self):
@@ -27,7 +27,7 @@ class LoggedInUsersTest(FakeWhoQTest):
         def check_headers(result):
             self.assertEquals(self.sysinfo.get_headers(),
                               [("Before", "1"),
-                               ("Logged users", "3"),
+                               ("Users logged-in", "3"),
                                ("After", "2")])
         return result.addCallback(check_headers)
 
