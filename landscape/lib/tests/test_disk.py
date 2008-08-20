@@ -1,5 +1,6 @@
-from landscape.lib.disk import get_filesystem_for_path
+import os
 
+from landscape.lib.disk import get_filesystem_for_path
 from landscape.tests.helpers import LandscapeTest
 
 
@@ -40,3 +41,11 @@ class DiskUtilitiesTest(LandscapeTest):
         self.set_mount_points(["/", "/ho"])
         info = get_filesystem_for_path("/home", self.mount_file, self.statvfs)
         self.assertEquals(info["mount-point"], "/")
+
+    def test_symlink_home(self):
+        symlink_path = self.make_path()
+        os.symlink("/foo/bar", symlink_path)
+        self.set_mount_points(["/", "/foo"])
+        info = get_filesystem_for_path(symlink_path,
+                                       self.mount_file, self.statvfs)
+        self.assertEquals(info["mount-point"], "/foo")

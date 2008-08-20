@@ -33,6 +33,7 @@ def get_mount_info(mounts_file, statvfs_):
 
 def get_filesystem_for_path(path, mounts_file, statvfs_):
     candidate = None
+    path = os.path.realpath(path)
     path_segments = path.split("/")
     for info in get_mount_info(mounts_file, statvfs_):
         mount_segments = info["mount-point"].split("/")
