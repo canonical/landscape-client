@@ -48,7 +48,7 @@ class SysInfoPluginRegistry(PluginRegistry):
 
     def get_headers(self):
         """Get all information headers to be displayed to the user."""
-        return self._headers
+        return [pair for pair in self._headers if pair[1] is not None]
 
     def add_note(self, note):
         """Add a new eventual note to be shown up to the administrator."""
