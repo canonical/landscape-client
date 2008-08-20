@@ -89,22 +89,33 @@ class LoggedUsersTest(FakeWhoQTest):
 
     def test_one_user(self):
         self.fake_who("joe")
-        self.assertEquals(get_logged_users(), ["joe"])
+        result = get_logged_users()
+        result.addCallback(self.assertEquals, ["joe"])
+        return result
 
     def test_one_user_multiple_times(self):
         self.fake_who("joe joe joe joe")
-        self.assertEquals(get_logged_users(), ["joe"])
+        result = get_logged_users()
+        result.addCallback(self.assertEquals, ["joe"])
+        return result
 
     def test_many_users(self):
         self.fake_who("joe moe boe doe")
-        self.assertEquals(get_logged_users(), ["boe", "doe", "joe", "moe"])
+        result = get_logged_users()
+        result.addCallback(self.assertEquals, ["boe", "doe", "joe", "moe"])
+        return result
 
     def test_command_error(self):
         self.fake_who("")
         who = open(self.who_path, "w")
-        who.write("#!/bin/sh\nexit 1\n")
+        who.write("#!/bin/sh\necho ERROR 1>&2\nexit 1\n")
         who.close()
-        self.assertRaises(CommandError, get_logged_users)
+        result = get_logged_users()
+        def assert_failure(failure):
+            failure.trap(CommandError)
+            self.assertEquals(str(failure.value), "ERROR\n")
+        result.addErrback(assert_failure)
+        return result
 
 
 class ThermalZoneTest(LandscapeTest):

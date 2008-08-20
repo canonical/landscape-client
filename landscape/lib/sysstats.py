@@ -1,3 +1,4 @@
+from twisted.internet.utils import getProcessOutputAndValue
 import commands
 import os
 
@@ -54,11 +55,13 @@ class MemoryStats(object):
 
 
 def get_logged_users():
-    status, output = commands.getstatusoutput("who -q")
-    if status != 0:
-        raise CommandError(output)
-    first_line = output.split("\n", 1)[0]
-    return sorted(set(first_line.split()))
+    result = getProcessOutputAndValue("who", ["-q"], env=os.environ)
+    def parse_output((stdout_data, stderr_data, status)):
+        if status != 0:
+            raise CommandError(stderr_data)
+        first_line = stdout_data.split("\n", 1)[0]
+        return sorted(set(first_line.split()))
+    return result.addCallback(parse_output)
 
 
 def get_thermal_zones(thermal_zone_path=None):
