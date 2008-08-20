@@ -1,5 +1,4 @@
 import time
-import os
 
 from landscape.lib.monitor import CoverageMonitor
 from landscape.lib.sysstats import get_thermal_zones

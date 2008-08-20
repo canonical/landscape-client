@@ -1,10 +1,9 @@
 import os
-import shutil
 import tempfile
 
 from landscape.monitor.temperature import Temperature
 from landscape.lib.tests.test_sysstats import ThermalZoneTest
-from landscape.tests.helpers import LandscapeTest, MonitorHelper
+from landscape.tests.helpers import MonitorHelper
 from landscape.tests.mocker import ANY
 
 

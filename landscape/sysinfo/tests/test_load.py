@@ -1,5 +1,3 @@
-from twisted.internet.defer import Deferred
-
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 from landscape.sysinfo.load import Load
 from landscape.tests.helpers import LandscapeTest

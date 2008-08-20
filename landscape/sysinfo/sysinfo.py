@@ -32,13 +32,19 @@ class SysInfoPluginRegistry(PluginRegistry):
 
     def __init__(self):
         super(SysInfoPluginRegistry, self).__init__()
+        self._header_index = {}
         self._headers = []
         self._notes = []
         self._footnotes = []
 
     def add_header(self, name, value):
         """Add a new information header to be displayed to the user."""
-        self._headers.append((name, value))
+        index = self._header_index.get(name)
+        if index is None:
+            self._header_index[name] = len(self._headers)
+            self._headers.append((name, value))
+        else:
+            self._headers[index] = (name, value)
 
     def get_headers(self):
         """Get all information headers to be displayed to the user."""

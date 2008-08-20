@@ -5,7 +5,6 @@ from landscape.lib.sysstats import (
     MemoryStats, CommandError, get_logged_users, get_thermal_zones)
 from landscape.tests.helpers import (
     LandscapeTest, MakePathHelper, EnvironSaverHelper)
-from landscape.tests.mocker import ANY
 
 
 SAMPLE_MEMORY_INFO = """
