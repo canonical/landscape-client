@@ -2,7 +2,7 @@ import os
 import re
 
 from landscape.lib.sysstats import (
-    MemoryStats, CommandError, get_logged_users, get_thermal_zones)
+    MemoryStats, CommandError, get_logged_in_users, get_thermal_zones)
 from landscape.tests.helpers import (
     LandscapeTest, MakePathHelper, EnvironSaverHelper)
 
@@ -89,19 +89,19 @@ class LoggedUsersTest(FakeWhoQTest):
 
     def test_one_user(self):
         self.fake_who("joe")
-        result = get_logged_users()
+        result = get_logged_in_users()
         result.addCallback(self.assertEquals, ["joe"])
         return result
 
     def test_one_user_multiple_times(self):
         self.fake_who("joe joe joe joe")
-        result = get_logged_users()
+        result = get_logged_in_users()
         result.addCallback(self.assertEquals, ["joe"])
         return result
 
     def test_many_users(self):
         self.fake_who("joe moe boe doe")
-        result = get_logged_users()
+        result = get_logged_in_users()
         result.addCallback(self.assertEquals, ["boe", "doe", "joe", "moe"])
         return result
 
@@ -110,7 +110,7 @@ class LoggedUsersTest(FakeWhoQTest):
         who = open(self.who_path, "w")
         who.write("#!/bin/sh\necho ERROR 1>&2\nexit 1\n")
         who.close()
-        result = get_logged_users()
+        result = get_logged_in_users()
         def assert_failure(failure):
             failure.trap(CommandError)
             self.assertEquals(str(failure.value), "ERROR\n")
