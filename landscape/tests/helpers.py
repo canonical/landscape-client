@@ -10,6 +10,7 @@ import sys
 import dbus
 
 from twisted.trial.unittest import TestCase
+from twisted.internet.defer import Deferred
 
 from landscape.tests.subunit import run_isolated
 from landscape.tests.mocker import MockerTestCase
@@ -86,6 +87,14 @@ class LandscapeTest(MockerTestCase, TestCase):
             extra = pprint.pformat(obtained[-diff:])
             raise self.failureException("Got %d more messages than expected:\n"
                                         "%s" % (diff, extra))
+
+    def assertDeferredSucceeded(self, deferred):
+        self.assertTrue(isinstance(deferred, Deferred))
+        called = []
+        def callback(result):
+            called.append(True)
+        deferred.addCallback(callback)
+        self.assertTrue(called)
 
     def make_dir(self):
         path = self.make_path()

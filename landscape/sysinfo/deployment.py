@@ -6,7 +6,7 @@ from landscape.deployment import Configuration
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry, format_sysinfo
 
 
-ALL_PLUGINS = ["Load", "Processes"]
+ALL_PLUGINS = ["Load", "Memory", "Temperature", "Processes", "LoggedInUsers"]
 
 
 class SysInfoConfiguration(Configuration):
@@ -56,3 +56,5 @@ def run(args, run_reactor=True):
             return result
         result.addBoth(stop_reactor)
         reactor.run()
+
+    return result

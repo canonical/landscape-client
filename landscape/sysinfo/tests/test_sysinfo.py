@@ -23,6 +23,29 @@ class SysInfoPluginRegistryTest(LandscapeTest):
         self.assertEquals(self.sysinfo.get_notes(), [])
         self.assertEquals(self.sysinfo.get_footnotes(), [])
 
+    def test_add_same_header_twice(self):
+        self.sysinfo.add_header("Header1", "Value1")
+        self.sysinfo.add_header("Header2", "Value2")
+        self.sysinfo.add_header("Header3", "Value3")
+        self.sysinfo.add_header("Header2", "Value4")
+        self.assertEquals(self.sysinfo.get_headers(),
+                          [("Header1", "Value1"),
+                           ("Header2", "Value4"),
+                           ("Header3", "Value3")])
+
+    def test_add_header_with_none_value(self):
+        self.sysinfo.add_header("Header1", "Value1")
+        self.sysinfo.add_header("Header2", None)
+        self.sysinfo.add_header("Header3", "Value3")
+        self.assertEquals(self.sysinfo.get_headers(),
+                          [("Header1", "Value1"),
+                           ("Header3", "Value3")])
+        self.sysinfo.add_header("Header2", "Value2")
+        self.assertEquals(self.sysinfo.get_headers(),
+                          [("Header1", "Value1"),
+                           ("Header2", "Value2"),
+                           ("Header3", "Value3")])
+
     def test_add_and_get_notes(self):
         self.sysinfo.add_note("Your laptop is burning!")
         self.sysinfo.add_note("Oh, your house too, btw.")
