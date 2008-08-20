@@ -8,7 +8,7 @@ def get_mount_info(mounts_file, statvfs_):
     """
     Given a mounts file (e.g., /proc/mounts), generate dicts with the following
     keys:
-    
+
      - device: The device file which is mounted.
      - mount-point
      - filesystem: The filesystem type.

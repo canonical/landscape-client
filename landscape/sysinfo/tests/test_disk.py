@@ -43,7 +43,7 @@ class DiskTest(LandscapeTest):
         """
         When the total space for a mount is 0, the plugin shouldn't flip out
         and kill everybody.
-        
+
         This is a regression test for a ZeroDivisionError!
         """
         self.add_mount("/sys", capacity=0, unused=0)
