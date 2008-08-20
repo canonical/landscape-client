@@ -56,3 +56,5 @@ def run(args, run_reactor=True):
             return result
         result.addBoth(stop_reactor)
         reactor.run()
+
+    return result

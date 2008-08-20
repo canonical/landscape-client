@@ -38,5 +38,7 @@ class LoggedInUsersTest(FakeWhoQTest):
         who.close()
         # Nothing bad should happen if who isn't installed, or
         # if anything else happens with the command execution.
-        self.logged_users.run()
-        self.assertEquals(self.sysinfo.get_headers(), [])
+        result = self.logged_users.run()
+        def check_headers(result):
+            self.assertEquals(self.sysinfo.get_headers(), [])
+        return result.addCallback(check_headers)
