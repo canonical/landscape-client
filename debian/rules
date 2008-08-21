@@ -32,6 +32,7 @@ install: build
 		etc/dbus-1/system.d \
 		var/lib/landscape \
 		var/log/landscape \
+		usr/share/lintian/overrides \
 
 	python setup.py install --root $(root_dir)
 
@@ -41,8 +42,11 @@ binary-arch:
 # do nothing 
 #
 binary-indep: build install
-	# That's not present in old Ubuntu releases we still support.
+	# That's not present in Ubuntu releases we still support, so
+	# we're just installing the lintian overrides file by hand
+	# for now.
 	#dh_lintian
+	cp debian/$(package).lintian-overrides $(root_dir)/usr/share/lintian/overrides/$(package)
 	dh_testdir
 	dh_testroot
 	dh_installdocs
