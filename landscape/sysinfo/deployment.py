@@ -1,6 +1,6 @@
 """Deployment code for the sysinfo tool."""
 from twisted.python.reflect import namedClass
-from twisted.internet import reactor
+from twisted.internet.defer import Deferred, maybeDeferred
 
 from landscape.deployment import Configuration
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry, format_sysinfo
@@ -38,24 +38,38 @@ class SysInfoConfiguration(Configuration):
                 for plugin_name in self.plugin_factories]
 
 
-def run(args, run_reactor=True):
-    sysinfo = SysInfoPluginRegistry()
+def run(args, reactor=None, sysinfo=None):
+    """
+    @param reactor: The reactor to (optionally) run the sysinfo plugins in.
+    """
+    if sysinfo is None:
+        sysinfo = SysInfoPluginRegistry()
     config = SysInfoConfiguration()
     config.load(args)
     for plugin in config.get_plugins():
         sysinfo.add(plugin)
+
     def show_output(result):
         print format_sysinfo(sysinfo.get_headers(), sysinfo.get_notes(),
                              sysinfo.get_footnotes(), indent="  ")
-    result = sysinfo.run()
-    result.addCallback(show_output)
 
-    if run_reactor:
-        # XXX No unittests for this. :-(
+    def run_sysinfo():
+        return sysinfo.run().addCallback(show_output)
+
+    if reactor is not None:
+        # In case any plugins run processes or do other things that require the
+        # reactor to already be started, we delay them until the reactor is
+        # running.
+        done = Deferred()
+        reactor.callWhenRunning(
+            lambda: maybeDeferred(run_sysinfo).chainDeferred(done))
         def stop_reactor(result):
-            reactor.callLater(0.1, reactor.stop)
+            # We won't need to use callLater here once we use Twisted >8.
+            # tm:3011
+            reactor.callLater(0, reactor.stop)
             return result
-        result.addBoth(stop_reactor)
+        done.addBoth(stop_reactor)
         reactor.run()
-
-    return result
+    else:
+        done = run_sysinfo()
+    return done

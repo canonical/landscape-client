@@ -6,7 +6,7 @@ from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 from landscape.sysinfo.load import Load
 
 from landscape.tests.helpers import LandscapeTest, StandardIOHelper
-from landscape.tests.mocker import ARGS, KWARGS
+from landscape.tests.mocker import ARGS, KWARGS, ANY
 
 
 class DeploymentTest(LandscapeTest):
@@ -28,12 +28,31 @@ class DeploymentTest(LandscapeTest):
         self.assertEquals(len(plugins), len(ALL_PLUGINS))
 
 
+class FakeReactor(object):
+    """
+    Something that's easier to understand and more reusable than a bunch of
+    mocker
+    """
+    def __init__(self):
+        self.queued_calls = []
+        self.scheduled_calls = []
+        self.running = False
+    def callWhenRunning(self, callable):
+        self.queued_calls.append(callable)
+    def run(self):
+        self.running = True
+    def callLater(self, seconds, callable, *args, **kwargs):
+        self.scheduled_calls.append((seconds, callable, args, kwargs))
+    def stop(self):
+        self.running = False
+
+
 class RunTest(LandscapeTest):
 
     helpers = [StandardIOHelper]
 
     def test_registry_runs_plugin_and_gets_correct_information(self):
-        run(["--sysinfo-plugins", "TestPlugin"], run_reactor=False)
+        run(["--sysinfo-plugins", "TestPlugin"])
 
         from landscape.sysinfo.testplugin import current_instance
 
@@ -54,7 +73,7 @@ class RunTest(LandscapeTest):
         self.mocker.count(0)
         self.mocker.replay()
 
-        run(["--sysinfo-plugins", "TestPlugin"], run_reactor=False)
+        run(["--sysinfo-plugins", "TestPlugin"])
 
     def test_format_sysinfo_output_is_printed(self):
         format_sysinfo = self.mocker.replace("landscape.sysinfo.sysinfo."
@@ -63,7 +82,7 @@ class RunTest(LandscapeTest):
         self.mocker.result("Hello there!")
         self.mocker.replay()
 
-        run(["--sysinfo-plugins", "TestPlugin"], run_reactor=False)
+        run(["--sysinfo-plugins", "TestPlugin"])
 
         self.assertEquals(self.stdout.getvalue(), "Hello there!\n")
 
@@ -75,15 +94,59 @@ class RunTest(LandscapeTest):
         self.mocker.result(deferred)
         self.mocker.replay()
 
-        run(["--sysinfo-plugins", "TestPlugin"], run_reactor=False)
+        run(["--sysinfo-plugins", "TestPlugin"])
 
         self.assertNotIn("Test note", self.stdout.getvalue())
         deferred.callback(None)
         self.assertIn("Test note", self.stdout.getvalue())
 
     def test_default_arguments_load_default_plugins(self):
-        result = run([], run_reactor=False)
+        result = run([])
         def check_result(result):
             self.assertIn("System load", self.stdout.getvalue())
             self.assertNotIn("Test note", self.stdout.getvalue())
         return result.addCallback(check_result)
+
+    def test_plugins_called_after_reactor_starts(self):
+        """
+        Plugins are invoked after the reactor has started, so that they can
+        spawn processes without concern for race conditions.
+        """
+        reactor = FakeReactor()
+        run(["--sysinfo-plugins", "TestPlugin"], reactor=reactor)
+        self.assertEquals(self.stdout.getvalue(), "")
+
+        self.assertTrue(reactor.running)
+        for x in reactor.queued_calls:
+            x()
+
+        self.assertEquals(
+            self.stdout.getvalue(),
+            "  Test header: Test value\n\n  => Test note\n\n  Test footnote\n")
+
+    def test_stop_scheduled_in_callback(self):
+        """
+        Because of tm:3011, reactor.stop() must be called in a scheduled call.
+        """
+        reactor = FakeReactor()
+        run(["--sysinfo-plugins", "TestPlugin"], reactor=reactor)
+        for x in reactor.queued_calls:
+            x()
+        self.assertEquals(reactor.scheduled_calls, [(0, reactor.stop, (), {})])
+
+    def test_stop_reactor_even_when_sync_exception_from_sysinfo_run(self):
+        """
+        Even when there's a synchronous exception from run_sysinfo, the reactor
+        should be stopped.
+        """
+        self.log_helper.ignore_errors(ZeroDivisionError)
+        reactor = FakeReactor()
+        sysinfo = SysInfoPluginRegistry()
+        sysinfo.run = lambda: 1 / 0
+        run(["--sysinfo-plugins", "TestPlugin"], reactor=reactor,
+            sysinfo=sysinfo)
+
+        for x in reactor.queued_calls:
+            x()
+
+        self.assertEquals(reactor.scheduled_calls, [(0, reactor.stop, (), {})])
