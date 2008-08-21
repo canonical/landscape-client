@@ -63,16 +63,15 @@ invoke-rc.d dbus reload
 find /var/lib/smart -type f -exec chmod 0644 {} \;
 find /var/lib/smart -type d -exec chmod 0755 {} \;
 
-# This is a cleanup of the ownership of the log files.
-# This fixes issue https://bugs.launchpad.net/landscape/+bug/215372
+# This is a cleanup of the ownership of the log files.  See bug #215372.
 LOCK_DIR=/var/lib/landscape/client/package
 test -f $LOCK_DIR/reporter.lock && chown landscape.root $LOCK_DIR/reporter.lock
 
-# update start order if needed
-# see bug #227414
+# Update start order if needed.  See bug #227414.
 if ls /etc/rc*.d/S20landscape-client > /dev/null 2>&1; then
     update-rc.d -f landscape-client remove > /dev/null
-    update-rc.d landscape-client start 25 2 3 4 5 . stop 15 1 . > /dev/null
 fi
 
 #DEBHELPER#
+
+exit 0
