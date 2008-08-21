@@ -40,7 +40,7 @@ case "$1" in
 	stop)
 		log_daemon_msg "Stopping $NAME daemon"
 		log_end_msg $?
-		start-stop-daemon --stop --quiet --pidfile $PIDFILE
+		start-stop-daemon --retry 30 --stop --quiet --pidfile $PIDFILE
 		;;
 
 	status)
@@ -57,7 +57,7 @@ case "$1" in
 		;;
 
 	restart|force-reload)
-		$0 stop && sleep 2 && $0 start
+		$0 stop && $0 start
 		;;
 
 	*)
