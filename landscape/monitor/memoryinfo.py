@@ -1,6 +1,7 @@
 import time
 
 from landscape.lib.monitor import CoverageMonitor
+from landscape.lib.sysstats import MemoryStats
 
 from landscape.accumulate import Accumulator
 from landscape.monitor.monitor import MonitorPlugin
@@ -50,10 +51,10 @@ class MemoryInfo(MonitorPlugin):
     def run(self):
         self._monitor.ping()
         new_timestamp = int(self._create_time())
-        new_values = self._get_memory_info()
-        memory_step_data = self._accumulate(new_timestamp, new_values[0],
+        memstats = MemoryStats(self._source_filename)
+        memory_step_data = self._accumulate(new_timestamp, memstats.free_memory,
                                             "accumulate-memory")
-        swap_step_data = self._accumulate(new_timestamp, new_values[1],
+        swap_step_data = self._accumulate(new_timestamp, memstats.free_swap,
                                           "accumulate-swap")
 
         if memory_step_data and swap_step_data:
@@ -61,23 +62,3 @@ class MemoryInfo(MonitorPlugin):
             free_memory = int(memory_step_data[1])
             free_swap = int(swap_step_data[1])
             self._memory_info.append((timestamp, free_memory, free_swap))
-
-    def _get_memory_info(self):
-        """Gets data in megabytes and returns a C{(memory, swap)} tuple."""
-        file = open(self._source_filename)
-        try:
-            data = {}
-            for line in file.readlines():
-                if line != "\n":
-                    parts = line.split(":")
-                    key = parts[0]
-
-                    if key in ["Active", "MemTotal", "SwapFree"]:
-                        value = int(parts[1].strip().split(" ")[0])
-                        data[key] = value
-
-            free_memory = data["MemTotal"] - data["Active"]
-            free_swap = data["SwapFree"]
-            return (free_memory // 1024, free_swap // 1024)
-        finally:
-            file.close()

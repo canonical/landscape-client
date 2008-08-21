@@ -82,6 +82,8 @@ class RunTest(LandscapeTest):
         self.assertIn("Test note", self.stdout.getvalue())
 
     def test_default_arguments_load_default_plugins(self):
-        run([], run_reactor=False)
-        self.assertIn("System load", self.stdout.getvalue())
-        self.assertNotIn("Test note", self.stdout.getvalue())
+        result = run([], run_reactor=False)
+        def check_result(result):
+            self.assertIn("System load", self.stdout.getvalue())
+            self.assertNotIn("Test note", self.stdout.getvalue())
+        return result.addCallback(check_result)
