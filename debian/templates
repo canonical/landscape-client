@@ -1,18 +1,12 @@
-Template: landscape-client/computer_title
-Type: string
-Description: Computer Title:
- Descriptive text to identify this computer uniquely in the
- Landscape user interface.
-
 Template: landscape-client/account_name
 Type: string
-Description: Account Name:
+_Description: Account Name:
  Short lowercase identifier of the Landscape account this computer
- will be assigned to.
+ will be assigned.
 
 Template: landscape-client/registration_password
 Type: password
-Description: Registration Password:
+_Description: Registration Password:
  Client registration password for the given Landscape account.  Only
  needed if the given account is requesting a client registration
  password.
