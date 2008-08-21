@@ -41,7 +41,8 @@ binary-arch:
 # do nothing 
 #
 binary-indep: build install
-	dh_lintian
+	# That's not present in old Ubuntu releases we still support.
+	#dh_lintian
 	dh_testdir
 	dh_testroot
 	dh_installdocs
