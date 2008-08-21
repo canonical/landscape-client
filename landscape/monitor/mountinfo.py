@@ -1,7 +1,7 @@
 import time
-import statvfs
 import os
 
+from landscape.lib.disk import get_mount_info
 from landscape.lib.monitor import CoverageMonitor
 from landscape.accumulate import Accumulator
 from landscape.hal import HALManager
@@ -14,12 +14,14 @@ class MountInfo(MonitorPlugin):
 
     def __init__(self, interval=300, monitor_interval=60*60,
                  mounts_file="/proc/mounts", create_time=time.time,
-                 statvfs=os.statvfs, hal_manager=None, mtab_file="/etc/mtab"):
+                 statvfs=None, hal_manager=None, mtab_file="/etc/mtab"):
         self.run_interval = interval
         self._monitor_interval = monitor_interval
         self._create_time = create_time
         self._mounts_file = mounts_file
         self._mtab_file = mtab_file
+        if statvfs is None:
+            statvfs = os.statvfs
         self._statvfs = statvfs
         self._create_time = create_time
         self._free_space = []
@@ -84,8 +86,7 @@ class MountInfo(MonitorPlugin):
         current_mount_points = set()
         for mount_info in self._get_mount_info():
             mount_point = mount_info["mount-point"]
-            total_space, free_space = self._get_space(mount_point)
-            mount_info["total-space"] = total_space
+            free_space = mount_info.pop("free-space")
 
             key = ("accumulate-free-space", mount_point)
             step_data = self._accumulate(now, free_space, key)
@@ -109,15 +110,6 @@ class MountInfo(MonitorPlugin):
             if mount_point not in current_mount_points:
                 self._mount_activity.append((now, mount_point, False))
                 self._prev_mount_activity[mount_point] = False
-
-    def _get_space(self, mount_point):
-        """Calculate total and free space for the specified mount point."""
-        megabytes = 1024 * 1024
-        stats = self._statvfs(mount_point)
-        block_size = stats[statvfs.F_BSIZE]
-        total_space = (stats[statvfs.F_BLOCKS] * block_size) // megabytes
-        free_space = (stats[statvfs.F_BFREE] * block_size) // megabytes
-        return total_space, free_space
 
     def _get_removable_devices(self):
         block_devices = {} # {udi: [device, ...]}
@@ -178,25 +170,16 @@ class MountInfo(MonitorPlugin):
         """Generator yields local mount points worth recording data for."""
         file = open(self._mounts_file, "r")
         removable_devices = self._get_removable_devices()
-        try:
-            lines = file.readlines()
-        finally:
-            file.close()
-
         bound_mount_points = self._get_bound_mount_points()
 
-        for line in lines:
-            try:
-                device, mount_point, filesystem = line.split()[:3]
-                mount_point = mount_point.decode("string-escape")
-            except ValueError:
-                continue
+        for info in get_mount_info(self._mounts_file, self._statvfs):
+            device = info["device"]
+            mount_point = info["mount-point"]
             if (device.startswith("/dev/") and
                 not mount_point.startswith("/dev/") and
                 not device in removable_devices and
                 not mount_point in bound_mount_points):
-                yield {"device": device, "mount-point": mount_point,
-                       "filesystem": filesystem}
+                yield info
 
     def _get_bound_mount_points(self):
         """
