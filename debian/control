@@ -2,14 +2,14 @@ Source: landscape-client
 Section: universe/admin
 Priority: optional
 Maintainer: Landscape Team <landscape-team@canonical.com>
-Build-Depends: debhelper (>= 5), python-dev, python-central, lsb-release, gawk
+Build-Depends: debhelper (>= 5), python-dev, python-support, lsb-release, gawk
 Standards-Version: 3.7.2
 XS-Python-Version: >= 2.4
 
 Package: landscape-client
 Architecture: all
 Pre-Depends: python, ${misc:Depends}
-Depends: ${python:Depends}, python-gobject, python-twisted-core, python-twisted-web, lsb-release, perl-modules, python-pycurl, python-dbus, python-gdbm, hal, smartpm-core (>= 0.52-intrepid1-landscape4), ca-certificates
+Depends: ${python:Depends}, libcurl3 (>= 7.15.1-1ubuntu3), python-gobject, python-twisted-core, python-twisted-web, lsb-release, perl-modules, python2.4-pycurl, python2.4-dbus, python2.4-pysqlite2, python-gdbm, hal, smartpm-core (>= 0.52-dapper1-landscape4), ca-certificates
 XB-Python-Version: ${python:Versions}
 Description: The Landscape administration system client
  Landscape is a web-based tool for managing Ubuntu systems. This

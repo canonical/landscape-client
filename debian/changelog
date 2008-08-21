@@ -1,3 +1,12 @@
+landscape-client (1.0.17-dapper1-landscape1) dapper; urgency=low
+
+  * more landscape-sysinfo plugins: memory, swap, temperature, logged
+    in users, processes
+  * support for script attachments
+  * improved timestamp accuracy used for process killing
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 21 Aug 2008 14:01:27 +0000
+
 landscape-client (1.0.16-intrepid1-landscape1) intrepid; urgency=low
 
   * landscape-config can now be run in a non-interactive mode
