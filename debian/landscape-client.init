@@ -5,68 +5,65 @@
 # Required-Start: $local_fs $remote_fs hal dbus
 # Required-Stop: $local_fs $remote_fs hal dbus
 # Default-Start: 2 3 4 5
-# Default-Stop: S 0 1 6
+# Default-Stop: 0 1 6
 # Short-Description: Landscape client daemons
 # Description: The Landscape client daemons are needed so the
 #              Landscape server can manage a computer.
 ### END INIT INFO
 
-LANDSCAPE_CLIENT=/usr/bin/landscape-client
 LANDSCAPE_DEFAULTS=/etc/default/landscape-client
-LANDSCAPE_CONF=/etc/landscape/client.conf
+NAME=landscape-client
+DAEMON=/usr/bin/$NAME
+PIDFILE=/var/run/$NAME.pid
+PARAMS='--daemon --pid-file $PIDFILE'
 RUN=0 # overridden in /etc/default/landscape-client
 
-[ -f $LANDSCAPE_CLIENT ] || exit 0
+[ -f $DAEMON ] || exit 0
 
 . /lib/lsb/init-functions
 [ -f $LANDSCAPE_DEFAULTS ] && . $LANDSCAPE_DEFAULTS
 
-LANDSCAPE_PID=/var/run/landscape/landscape-client.pid
-
-d_start() {
-    mkdir -p `dirname $LANDSCAPE_PID`
-    $LANDSCAPE_CLIENT --daemon --pid-file $LANDSCAPE_PID
-}
-
-d_stop() {
-    if [ ! -f $LANDSCAPE_PID ]; then
-        echo "Landscape PID file not found.  Is it running?"
-    else
-        PID=`cat $LANDSCAPE_PID`
-        kill $PID
-        while [ -d /proc/$PID ]; do
-            sleep 0.1
-        done
-        rm -f $LANDSCAPE_PID
-    fi
-}
-
 if test $RUN -eq 0; then
-    echo "Landscape client is not configured, please run landscape-config."
-    exit 0
+	echo "$NAME is not configured, please run landscape-config."
+	exit 0
 fi
 
+
+
 case "$1" in
-    start)
-	echo "Starting Landscape client: landscape-client"
-	d_start
-	echo "."
-        ;;
-    stop)
-        echo "Stopping Landscape client: landscape-client"
-        d_stop
-        echo "."
-        ;;
-    restart|force-reload)
-        echo "Restarting Landscape client: landscape-client"
-        d_stop
-        d_start
-        echo "."
-        ;;
-    *)
-        echo "Usage: /etc/init.d/landscape-client {start|stop|restart}"
-        exit 1
-        ;;
+	start)
+		log_daemon_msg "Starting the $NAME daemon"
+		start-stop-daemon --start --quiet --oknodo --exec $DAEMON -- --daemon --pid-file $PIDFILE
+		log_end_msg $?
+		;;
+
+	stop)
+		log_daemon_msg "Stopping $NAME daemon"
+		log_end_msg $?
+		start-stop-daemon --stop --quiet --pidfile $PIDFILE
+		;;
+
+	status)
+		# We want to maintain backward compatibility with Dapper,
+		# so we're not going to use status_of_proc()
+		pidofproc -p $PIDFILE $DAEMON >/dev/null
+		status=$?
+		if [ $status -eq 0 ]; then
+			log_success_msg "$NAME is running"
+		else
+			log_failure_msg "$NAME is not running"
+		fi
+		exit $status
+		;;
+
+	restart|force-reload)
+		$0 stop && sleep 2 && $0 start
+		;;
+
+	*)
+		echo "Usage: $0 {start|stop|status|restart|force-reload}"
+		exit 1
+		;;
 esac
 
 exit 0
