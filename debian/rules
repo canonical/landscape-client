@@ -20,43 +20,40 @@ clean:
 	rm -f build-stamp
 	rm -rf build
 	dh_clean
+	debconf-updatepo
 
 install: build
 	dh_testdir
 	dh_testroot
 	dh_clean -k
 	dh_installdirs \
-		var/run/landscape \
 		etc/landscape \
 		etc/dbus-1 \
 		etc/dbus-1/system.d \
 		var/lib/landscape \
-		var/log/landscape
+		var/log/landscape \
 
 	python setup.py install --root $(root_dir)
 
 	cp dbus/landscape.conf $(root_dir)/etc/dbus-1/system.d/landscape.conf
 
+binary-arch:
+# do nothing 
+#
 binary-indep: build install
-# nothing to do
-
-binary-arch: build install
+	dh_lintian
 	dh_testdir
 	dh_testroot
 	dh_installdocs
-	man/txt2man -P Landscape -t landscape-client < man/landscape-client.txt > man/landscape-client.1
-	man/txt2man -P Landscape -t landscape-config < man/landscape-config.txt > man/landscape-config.1
-	man/txt2man -P Landscape -t landscape-message < man/landscape-message.txt > man/landscape-message.1
 	dh_installman man/landscape-client.1 man/landscape-config.1 man/landscape-message.1
 	dh_installchangelogs
-#       dh_install
+	dh_install
 	dh_installinit -- start 25 2 3 4 5 . stop 15 1 .
-	dh_installdebconf
 	dh_installlogrotate
+	dh_installdebconf
 	dh_compress
 	dh_fixperms
 
-#	chmod 600 $(root_dir)/etc/landscape/client.conf
 
 ifeq ($(use_pycentral),yes)
 	DH_PYCENTRAL=nomove dh_pycentral
@@ -68,6 +65,6 @@ endif
 	dh_md5sums
 	dh_builddeb
 
-binary: binary-indep binary-arch
+binary: binary-arch binary-indep
 
 .PHONY: binary binary-arch binary-indep clean
