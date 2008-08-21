@@ -8,112 +8,8 @@ from twisted.internet.defer import fail
 
 from landscape.monitor.activeprocessinfo import ActiveProcessInfo
 from landscape.tests.helpers import (LandscapeTest, MakePathHelper,
-                                     MonitorHelper)
+                                     MonitorHelper, ProcessDataBuilder)
 from landscape.tests.mocker import ANY
-
-
-class SampleDataBuilder(object):
-    """Builder creates sample data for the process info plugin to consume."""
-
-    RUNNING = "R (running)"
-    STOPPED = "T (stopped)"
-    TRACING_STOP = "T (tracing stop)"
-    DISK_SLEEP = "D (disk sleep)"
-    SLEEPING = "S (sleeping)"
-    DEAD = "X (dead)"
-    ZOMBIE = "Z (zombie)"
-
-    def __init__(self, sample_dir):
-        """Initialize factory with directory for sample data."""
-        self._sample_dir = sample_dir
-
-    def create_data(self, process_id, state, uid, gid,
-                    started_after_boot=0, process_name=None,
-                    generate_cmd_line=True, stat_data=None, vmsize=11676):
-
-        """Creates sample data for a process.
-
-        @param started_after_boot: The amount of time, in jiffies,
-        between the system uptime and start of the process.
-        @param process_name: Used to generate the process name that appears in
-        /proc/%(pid)s/status
-        @param generate_cmd_line: If true, place the process_name in
-        /proc/%(pid)s/cmdline, otherwise leave it empty (this simulates a
-        kernel process)
-        @param stat_data: Array of items to write to the /proc/<pid>/stat file.
-        """
-        sample_data = """
-Name:   %(process_name)s
-State:  %(state)s
-Tgid:   24759
-Pid:    24759
-PPid:   17238
-TracerPid:      0
-Uid:    %(uid)d    0    0    0
-Gid:    %(gid)d    0    0    0
-FDSize: 256
-Groups: 4 20 24 25 29 30 44 46 106 110 112 1000
-VmPeak:    11680 kB
-VmSize:    %(vmsize)d kB
-VmLck:         0 kB
-VmHWM:      6928 kB
-VmRSS:      6924 kB
-VmData:     1636 kB
-VmStk:       196 kB
-VmExe:      1332 kB
-VmLib:      4240 kB
-VmPTE:        20 kB
-Threads:        1
-SigQ:   0/4294967295
-SigPnd: 0000000000000000
-ShdPnd: 0000000000000000
-SigBlk: 0000000000000000
-SigIgn: 0000000000000000
-SigCgt: 0000000059816eff
-CapInh: 0000000000000000
-CapPrm: 0000000000000000
-CapEff: 0000000000000000
-""" % ({"process_name": process_name[:15], "state": state, "uid": uid,
-        "gid": gid, "vmsize": vmsize})
-        process_dir = os.path.join(self._sample_dir, str(process_id))
-        os.mkdir(process_dir)
-        filename = os.path.join(process_dir, "status")
-
-        file = open(filename, "w+")
-        try:
-            file.write(sample_data)
-        finally:
-            file.close()
-        if stat_data is None:
-            stat_data = """\
-0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 %d\
-""" % (started_after_boot,)
-        filename = os.path.join(process_dir, "stat")
-
-        file = open(filename, "w+")
-        try:
-            file.write(stat_data)
-        finally:
-            file.close()
-
-        if generate_cmd_line:
-            sample_data = """\
-/usr/sbin/%(process_name)s\0--pid-file\0/var/run/%(process_name)s.pid\0
-""" % {"process_name": process_name}
-        else:
-            sample_data = ""
-        filename = os.path.join(process_dir, "cmdline")
-
-        file = open(filename, "w+")
-        try:
-            file.write(sample_data)
-        finally:
-            file.close()
-
-    def remove_data(self, process_id):
-        """Remove sample data for the process that matches C{process_id}."""
-        process_dir = os.path.join(self._sample_dir, str(process_id))
-        shutil.rmtree(process_dir)
 
 
 class ActiveProcessInfoTest(LandscapeTest):
@@ -125,7 +21,7 @@ class ActiveProcessInfoTest(LandscapeTest):
         """Initialize helpers and sample data builder."""
         LandscapeTest.setUp(self)
         self.sample_dir = tempfile.mkdtemp()
-        self.builder = SampleDataBuilder(self.sample_dir)
+        self.builder = ProcessDataBuilder(self.sample_dir)
         self.mstore.set_accepted_types(["active-process-info"])
 
     def tearDown(self):
@@ -596,7 +492,7 @@ class PluginManagerIntegrationTest(LandscapeTest):
     def setUp(self):
         LandscapeTest.setUp(self)
         self.sample_dir = self.make_dir()
-        self.builder = SampleDataBuilder(self.sample_dir)
+        self.builder = ProcessDataBuilder(self.sample_dir)
         self.mstore.set_accepted_types(["active-process-info",
                                         "operation-result"])
 
