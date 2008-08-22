@@ -6,7 +6,7 @@ from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 from landscape.sysinfo.load import Load
 
 from landscape.tests.helpers import LandscapeTest, StandardIOHelper
-from landscape.tests.mocker import ARGS, KWARGS, ANY
+from landscape.tests.mocker import ARGS, KWARGS
 
 
 class DeploymentTest(LandscapeTest):
