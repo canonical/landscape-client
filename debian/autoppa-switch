@@ -11,7 +11,7 @@ def main(args):
             return match.group(2)+"\n"
         return ""
     include_re = re.compile("^AUTOPPA_INCLUDE\(([^)]+)\):(.*)$\n?", re.M)
-    version_re = re.compile("AUTOPPA_VERSION\(([^)]+)\)")
+    version_re = re.compile("AUTOPPA_VERSION\(([\w._-]+)\)")
     for root, dirs, files in os.walk("."):
         if "/." not in root:
             for file in files:
@@ -19,7 +19,7 @@ def main(args):
                 data = open(path).read()
                 if "AUTOPPA_" in data:
                     data = include_re.subn(replace_include_match, data)[0]
-                    data = version_re.subn("AUTOPPA_VERSION(1.0.16-0ubuntu1)" % version,
+                    data = version_re.subn("AUTOPPA_VERSION(%s)" % version,
                                            data)[0]
                     if path.endswith(".autoppa"):
                         path = path[:-len(".autoppa")]
