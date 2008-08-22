@@ -143,3 +143,15 @@ class DiskTest(LandscapeTest):
         self.disk.run()
         self.assertEquals(self.sysinfo.get_notes(),
                           ["/ is using 100.0% of 3MB"])
+
+    def test_shorter_not_lexical(self):
+        """
+        This is a test for a fix for a regression, because I accidentally took
+        the lexically "smallest" mount point instead of the shortest one.
+        """
+        self.add_mount("/")
+        self.add_mount("/abc", capacity=1000, unused=1, device="/dev/horgle")
+        self.add_mount("/b", capacity=1000, unused=1, device="/dev/horgle")
+        self.disk.run()
+        self.assertEquals(self.sysinfo.get_notes(),
+                          ["/b is using 100.0% of 3MB"])
