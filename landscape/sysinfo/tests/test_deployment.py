@@ -113,7 +113,7 @@ class RunTest(LandscapeTest):
         spawn processes without concern for race conditions.
         """
         reactor = FakeReactor()
-        run(["--sysinfo-plugins", "TestPlugin"], reactor=reactor)
+        d = run(["--sysinfo-plugins", "TestPlugin"], reactor=reactor)
         self.assertEquals(self.stdout.getvalue(), "")
 
         self.assertTrue(reactor.running)
@@ -123,16 +123,18 @@ class RunTest(LandscapeTest):
         self.assertEquals(
             self.stdout.getvalue(),
             "  Test header: Test value\n\n  => Test note\n\n  Test footnote\n")
+        return d
 
     def test_stop_scheduled_in_callback(self):
         """
         Because of tm:3011, reactor.stop() must be called in a scheduled call.
         """
         reactor = FakeReactor()
-        run(["--sysinfo-plugins", "TestPlugin"], reactor=reactor)
+        d = run(["--sysinfo-plugins", "TestPlugin"], reactor=reactor)
         for x in reactor.queued_calls:
             x()
         self.assertEquals(reactor.scheduled_calls, [(0, reactor.stop, (), {})])
+        return d
 
     def test_stop_reactor_even_when_sync_exception_from_sysinfo_run(self):
         """
@@ -143,10 +145,11 @@ class RunTest(LandscapeTest):
         reactor = FakeReactor()
         sysinfo = SysInfoPluginRegistry()
         sysinfo.run = lambda: 1 / 0
-        run(["--sysinfo-plugins", "TestPlugin"], reactor=reactor,
-            sysinfo=sysinfo)
+        d = run(["--sysinfo-plugins", "TestPlugin"], reactor=reactor,
+                sysinfo=sysinfo)
 
         for x in reactor.queued_calls:
             x()
 
         self.assertEquals(reactor.scheduled_calls, [(0, reactor.stop, (), {})])
+        return self.assertFailure(d, ZeroDivisionError)
