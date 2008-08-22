@@ -43,13 +43,13 @@ class Disk(object):
         infos.sort(key=lambda i: i["mount-point"])
         for info in infos:
             total = info["total-space"]
-
-            if info["mount-point"] in seen_mounts:
-                continue
-            seen_mounts.add(info["mount-point"]) 
-            if info["device"] in seen_devices:
-                continue
+            mount_seen = info["mount-point"] in seen_mounts
+            device_seen = info["device"] in seen_devices
+            seen_mounts.add(info["mount-point"])
             seen_devices.add(info["device"])
+            if mount_seen or device_seen:
+                continue
+
             if info["filesystem"] in ("udf", "iso9660"):
                 continue
             if total <= 0:
