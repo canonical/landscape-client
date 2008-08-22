@@ -50,7 +50,7 @@ class Disk(object):
             if mount_seen or device_seen:
                 continue
 
-            if info["filesystem"] in ("udf", "iso9660"):
+            if info["filesystem"] in ("udf", "iso9660", "fuse.gvfs-fuse-daemon"):
                 continue
             if total <= 0:
                 # Some "virtual" filesystems have 0 total space. ignore them.

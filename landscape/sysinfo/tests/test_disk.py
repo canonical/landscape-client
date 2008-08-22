@@ -110,14 +110,19 @@ class DiskTest(LandscapeTest):
         self.assertEquals(self.sysinfo.get_headers(),
                           [("Usage of /", "50.0% of 4MB")])
 
-    def test_ignore_optical_drives(self):
+    def test_ignore_boring_filesystem_types(self):
         """
         Optical drives (those with filesystems of udf or iso9660) should be
         ignored.
+
+        Also, gvfs mounts should be ignored, because they actually reflect the
+        size of /.
         """
         self.add_mount("/", capacity=1000, unused=1000, fs="ext3")
         self.add_mount("/media/dvdrom", capacity=1000, unused=0, fs="udf")
         self.add_mount("/media/cdrom", capacity=1000, unused=0, fs="iso9660")
+        self.add_mount("/home/radix/.gvfs", capacity=1000, unused=0,
+                       fs="fuse.gvfs-fuse-daemon")
         self.disk.run()
         self.assertEquals(self.sysinfo.get_notes(), [])
 
