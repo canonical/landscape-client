@@ -25,7 +25,7 @@ fi
 test "$1" = "configure" || exit 0
 
 getent passwd landscape >/dev/null || \
-  adduser --system --home /nonexistent --no-create-home landscape
+  adduser --system --home /var/lib/landscape --no-create-home landscape
 
 chown -R landscape /var/log/landscape /var/lib/landscape
 
