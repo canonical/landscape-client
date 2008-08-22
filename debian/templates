@@ -1,3 +1,9 @@
+Template: landscape-client/computer_title
+Type: string
+_Description: Computer Title:
+ Descriptive text to identify this computer uniquely in the
+ Landscape user interface.
+
 Template: landscape-client/account_name
 Type: string
 _Description: Account Name:

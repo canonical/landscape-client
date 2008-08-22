@@ -1,15 +1,14 @@
-# landscape-client
-# Copyright (C) 2008
-# This file is distributed under the same license as the landscape-client
-# package.
-# Dustin Kirkland <kirkland@canonical.com>, 2008.
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: 1.0.16\n"
-"Report-Msgid-Bugs-To: https://bugs.launchpad.net/ubuntu/+source/landscape-client\n"
-"POT-Creation-Date: 2008-08-21 12:14+0100\n"
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: Source: landscape-client@packages.debian.org\n"
+"POT-Creation-Date: 2008-08-22 11:41-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -20,12 +19,26 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../templates:1001
-msgid "Account Name:"
+msgid "Computer Title:"
 msgstr ""
 
 #. Type: string
 #. Description
 #: ../templates:1001
+msgid ""
+"Descriptive text to identify this computer uniquely in the Landscape user "
+"interface."
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../templates:2001
+msgid "Account Name:"
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../templates:2001
 msgid ""
 "Short lowercase identifier of the Landscape account this computer will be "
 "assigned."
@@ -33,13 +46,13 @@ msgstr ""
 
 #. Type: password
 #. Description
-#: ../templates:2001
+#: ../templates:3001
 msgid "Registration Password:"
 msgstr ""
 
 #. Type: password
 #. Description
-#: ../templates:2001
+#: ../templates:3001
 msgid ""
 "Client registration password for the given Landscape account.  Only needed "
 "if the given account is requesting a client registration password."

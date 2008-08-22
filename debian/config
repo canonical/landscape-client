@@ -17,18 +17,21 @@ get_var_from_file() {
 # Load config file, if it exists.
 if [ -e $CONFIGFILE ]; then
 	# Config file is "ini" type, not shell, so we cannot source it
+	COMPUTER_TITLE=$(get_var_from_file "computer_title" "$CONFIGFILE")
 	ACCOUNT_NAME=$(get_var_from_file "account_name" "$CONFIGFILE")
 	REGISTRATION_PASSWORD=$(get_var_from_file "registration_password" "$CONFIGFILE")
 
         # Store values from config file into
         # debconf db.
 
+        db_set $PACKAGE/computer_title $COMPUTER_TITLE
         db_set $PACKAGE/account_name $ACCOUNT_NAME
         db_set $PACKAGE/registration_password $REGISTRATION_PASSWORD
 
 fi
 
 # Ask questions.
+db_input medium $PACKAGE/computer_title || true
 db_input medium $PACKAGE/account_name || true
 db_input medium $PACKAGE/registration_password || true
 db_go

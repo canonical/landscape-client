@@ -1,6 +1,8 @@
 #!/bin/sh
 set -e
 
+PACKAGE=landscape-client
+
 # Use the default installed Python.  Running just "python" might run
 # something from /usr/local/bin, which doesn't necessarily support
 # running the landscape client.
@@ -44,11 +46,11 @@ END
   # In case the configuration doesn't yet exist, try to run debconf to
   # get the client registered.
 
-  # TODO: debconf should ask for the computer title too.
-
   . /usr/share/debconf/confmodule
 
   # Do debconf configuration
+  db_get $PACKAGE/computer_title
+  COMPUTER_TITLE="${RET}"
   db_get $PACKAGE/account_name
   ACCOUNT_NAME="${RET}"
   db_get $PACKAGE/registration_password
