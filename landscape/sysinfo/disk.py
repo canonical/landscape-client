@@ -32,14 +32,24 @@ class Disk(object):
 
     def run(self):
         main_info = get_filesystem_for_path("/home", self._mounts_file,
-                                                  self._statvfs)
+                                            self._statvfs)
         total = main_info["total-space"]
         self._sysinfo.add_header("Usage of " + main_info["mount-point"],
                                  usage(main_info))
 
-        for info in get_mount_info(self._mounts_file, self._statvfs):
+        seen_mounts = set()
+        seen_devices = set()
+        infos = list(get_mount_info(self._mounts_file, self._statvfs))
+        infos.sort(key=lambda i: len(i["mount-point"]))
+        for info in infos:
             total = info["total-space"]
 
+            if info["mount-point"] in seen_mounts:
+                continue
+            seen_mounts.add(info["mount-point"])
+            if info["device"] in seen_devices:
+                continue
+            seen_devices.add(info["device"])
             if info["filesystem"] in ("udf", "iso9660"):
                 continue
             if total <= 0:

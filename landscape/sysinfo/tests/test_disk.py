@@ -17,11 +17,13 @@ class DiskTest(LandscapeTest):
         self.sysinfo.add(self.disk)
 
     def add_mount(self, point, block_size=4096, capacity=1000, unused=1000,
-                  fs="ext3"):
+                  fs="ext3", device=None):
+        if device is None:
+            device = "/dev/" + point.replace("/", "_")
         self.stat_results[point] = (block_size, 0, capacity, unused,
                                     0, 0, 0, 0, 0)
         f = open(self.mount_file, "a")
-        f.write("/dev/%s %s %s rw 0 0\n" % (point.replace("/", "_"), point, fs))
+        f.write("/dev/%s %s %s rw 0 0\n" % (device, point, fs))
         f.close()
 
     def test_run_returns_succeeded_deferred(self):
@@ -118,3 +120,38 @@ class DiskTest(LandscapeTest):
         self.add_mount("/media/cdrom", capacity=1000, unused=0, fs="iso9660")
         self.disk.run()
         self.assertEquals(self.sysinfo.get_notes(), [])
+
+    def test_no_duplicate_roots(self):
+        self.add_mount("/", capacity=0, unused=0, fs="rootfs")
+        self.add_mount("/", capacity=1000, unused=1, fs="ext3")
+        self.disk.run()
+        self.assertEquals(self.sysinfo.get_notes(),
+                          ["/ is using 100.0% of 3MB"])
+
+    def test_no_duplicate_devices(self):
+        self.add_mount("/", capacity=1000, unused=1, device="/dev/horgle")
+        self.add_mount("/dev/.static/dev", capacity=1000, unused=1,
+                       device="/dev/horgle")
+        self.disk.run()
+        self.assertEquals(self.sysinfo.get_notes(),
+                          ["/ is using 100.0% of 3MB"])
+
+    def test_shorter_mount_point_in_case_of_duplicate_devices(self):
+        self.add_mount("/dev/.static/dev", capacity=1000, unused=1,
+                       device="/dev/horgle")
+        self.add_mount("/", capacity=1000, unused=1, device="/dev/horgle")
+        self.disk.run()
+        self.assertEquals(self.sysinfo.get_notes(),
+                          ["/ is using 100.0% of 3MB"])
+
+    def test_shorter_not_lexical(self):
+        """
+        This is a test for a fix for a regression, because I accidentally took
+        the lexically "smallest" mount point instead of the shortest one.
+        """
+        self.add_mount("/")
+        self.add_mount("/abc", capacity=1000, unused=1, device="/dev/horgle")
+        self.add_mount("/b", capacity=1000, unused=1, device="/dev/horgle")
+        self.disk.run()
+        self.assertEquals(self.sysinfo.get_notes(),
+                          ["/b is using 100.0% of 3MB"])
