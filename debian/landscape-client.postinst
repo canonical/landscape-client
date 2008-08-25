@@ -91,7 +91,7 @@ find /var/lib/smart -type d -exec chmod 0755 {} \;
 
 # This is a cleanup of the ownership of the log files.  See bug #215372.
 LOCK_DIR=/var/lib/landscape/client/package
-test -f $LOCK_DIR/reporter.lock && chown landscape.root $LOCK_DIR/reporter.lock
+test -f $LOCK_DIR/reporter.lock && chown landscape:root $LOCK_DIR/reporter.lock
 
 # Update start order if needed.  See bug #227414.
 if ls /etc/rc*.d/S20landscape-client > /dev/null 2>&1; then
