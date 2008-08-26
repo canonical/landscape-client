@@ -1,3 +1,373 @@
+landscape-client (1.0.16-0ubuntu1) intrepid; urgency=low
+
+  [ Dustin Kirkland and Rick Clark ]
+  * debian/compat: updated to 6.
+  * debian/config: initial debconf config.
+  * debian/control: reformatted depends and changed smartpm-core version;
+    changed Standards-Version to 3.8.0; added adduser to depends as needed by
+    postinst and postrm; updates smartpm-core dep to >1.0; moved most build
+    deps to Build-Depends-Indep; add po-debconf build dependency.
+  * debian/copyright: updated copyright date; removed incorrect symlink to
+    GPL-3; added Dustin and Rick to the packaging credits.
+  * debian/landscape-client.init: removed S from stop; rewritten to be more
+    lsb/Debian compliant; added status action; fixed whitespacing
+    inconsistency; use $NAME whenever possible; comment why we're not using
+    status_of_proc().
+  * debian/landscape-client.lintian-overrides: added with two overrides
+  * debian/landscape-client.overrides: removed.
+  * debian/landscape-client.postinst: fixed deprecated chmod call; changed
+    home dir of landscape user; removed uneeded update-rc.d; added code to
+    handle debconf; created a function for retrieving values from ini config.
+  * debian/landscape-client.postrm: added debhelper tag.
+  * debian/rules: added po debconf bits for translation.
+  * debian/pycompat: initial creation.
+  * debian/po/POTFILES.in, debian/po/templates.pot: initial creation.
+  * man/txt2man, man/*.txt: removed; manpages should *really* be in native
+    format.
+  * man/landscape-client.1, man/landscape-config.1, man/landscape-message.1:
+    manpages in roff format, initially created by txt2man, some minor tweaks
+    to the title and such.
+
+ -- Dustin Kirkland <kirkland@ubuntu.com>  Thu, 21 Aug 2008 12:31:29 +0100
+
+landscape-client (1.0.16-hardy1-landscape1) hardy; urgency=low
+
+  * landscape-config can now be run in a non-interactive mode
+
+ -- Andreas Hasenack <andreas@canonical.com>  Fri, 8 Aug 2008 14:34:43 +0000
+
+landscape-client (1.0.16-gutsy1-landscape1) gutsy; urgency=low
+
+  * landscape-config can now be run in a non-interactive mode
+
+ -- Andreas Hasenack <andreas@canonical.com>  Fri, 8 Aug 2008 14:34:40 +0000
+
+landscape-client (1.0.16-feisty1-landscape1) feisty; urgency=low
+
+  * landscape-config can now be run in a non-interactive mode
+
+ -- Andreas Hasenack <andreas@canonical.com>  Fri, 8 Aug 2008 14:34:36 +0000
+
+landscape-client (1.0.16-dapper1-landscape1) dapper; urgency=low
+
+  * landscape-config can now be run in a non-interactive mode
+
+ -- Andreas Hasenack <andreas@canonical.com>  Fri, 8 Aug 2008 14:34:30 +0000
+
+landscape-client (1.0.15-intrepid1-landscape1) intrepid; urgency=low
+
+  * introduce a basic landscape-sysinfo tool
+  * properly report a script execution error if its exit status is not
+    zero
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 7 Aug 2008 18:33:41 +0000
+
+landscape-client (1.0.15-hardy1-landscape1) hardy; urgency=low
+
+  * introduce a basic landscape-sysinfo tool
+  * properly report a script execution error if its exit status is not
+    zero
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 7 Aug 2008 18:33:37 +0000
+
+landscape-client (1.0.15-gutsy1-landscape1) gutsy; urgency=low
+
+  * introduce a basic landscape-sysinfo tool
+  * properly report a script execution error if its exit status is not
+    zero
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 7 Aug 2008 18:33:34 +0000
+
+landscape-client (1.0.15-feisty1-landscape1) feisty; urgency=low
+
+  * introduce a basic landscape-sysinfo tool
+  * properly report a script execution error if its exit status is not
+    zero
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 7 Aug 2008 18:33:31 +0000
+
+landscape-client (1.0.15-dapper1-landscape1) dapper; urgency=low
+
+  * introduce a basic landscape-sysinfo tool
+  * properly report a script execution error if its exit status is not
+    zero
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 7 Aug 2008 18:33:21 +0000
+
+landscape-client (1.0.14-intrepid1-landscape1) intrepid; urgency=low
+
+  * fixed some dbus errors in some of the supported distributions
+  * added restart/shutdown plugin
+  * scripts can now have accented characters in them
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 24 Jul 2008 13:06:34 +0000
+
+landscape-client (1.0.14-hardy1-landscape1) hardy; urgency=low
+
+  * fixed some dbus errors in some of the supported distributions
+  * added restart/shutdown plugin
+  * scripts can now have accented characters in them
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 24 Jul 2008 13:06:28 +0000
+
+landscape-client (1.0.14-gutsy1-landscape1) gutsy; urgency=low
+
+  * fixed some dbus errors in some of the supported distributions
+  * added restart/shutdown plugin
+  * scripts can now have accented characters in them
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 24 Jul 2008 13:06:22 +0000
+
+landscape-client (1.0.14-feisty1-landscape1) feisty; urgency=low
+
+  * fixed some dbus errors in some of the supported distributions
+  * added restart/shutdown plugin
+  * scripts can now have accented characters in them
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 24 Jul 2008 13:06:15 +0000
+
+landscape-client (1.0.14-dapper1-landscape1) dapper; urgency=low
+
+  * fixed some dbus errors in some of the supported distributions
+  * added restart/shutdown plugin
+  * scripts can now have accented characters in them
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 24 Jul 2008 13:05:58 +0000
+
+landscape-client (1.0.13-hardy1-landscape1) hardy; urgency=low
+
+  * the timestamp in the error message from processkiller.py is now
+    formatted properly
+  * the process list sent to the server was only being updated for new
+    processes, and not when existing processes changed
+  * in script execution, a timeout error is now reported with a proper
+    error message instead of just a generic failure in the script
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 10 Jul 2008 14:24:15 +0000
+
+landscape-client (1.0.13-gutsy1-landscape1) gutsy; urgency=low
+
+  * the timestamp in the error message from processkiller.py is now
+    formatted properly
+  * the process list sent to the server was only being updated for new
+    processes, and not when existing processes changed
+  * in script execution, a timeout error is now reported with a proper
+    error message instead of just a generic failure in the script
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 10 Jul 2008 14:24:11 +0000
+
+landscape-client (1.0.13-feisty1-landscape1) feisty; urgency=low
+
+  * the timestamp in the error message from processkiller.py is now
+    formatted properly
+  * the process list sent to the server was only being updated for new
+    processes, and not when existing processes changed
+  * in script execution, a timeout error is now reported with a proper
+    error message instead of just a generic failure in the script
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 10 Jul 2008 14:24:07 +0000
+
+landscape-client (1.0.13-dapper1-landscape1) dapper; urgency=low
+
+  * the timestamp in the error message from processkiller.py is now
+    formatted properly
+  * the process list sent to the server was only being updated for new
+    processes, and not when existing processes changed
+  * in script execution, a timeout error is now reported with a proper
+    error message instead of just a generic failure in the script
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 10 Jul 2008 14:23:56 +0000
+
+landscape-client (1.0.12-hardy1-landscape1) hardy; urgency=low
+
+  * the sleep average value of a process is no longer provided by recent
+    kernels. The client now computes and sends the CPU usage instead.
+  * initial directory for script execution is now the target user's home
+    directory and, if that is unavailable, /. Previously it was /root.
+  * new user creation was ignoring some extra fields such as Location and
+    phone numbers
+  * the machine uptime was incorrectly reported after a logrotate run and if
+    there was no reboot afterwards. This affected the process listing page in
+    the web interface, where processes would show up as having been started
+    around 1970.
+
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 26 Jun 2008 16:17:59 +0000
+
+landscape-client (1.0.12-gutsy1-landscape1) gutsy; urgency=low
+
+  * the sleep average value of a process is no longer provided by recent
+    kernels. The client now computes and sends the CPU usage instead.
+  * initial directory for script execution is now the target user's home
+    directory and, if that is unavailable, /. Previously it was /root.
+  * new user creation was ignoring some extra fields such as Location and
+    phone numbers
+  * the machine uptime was incorrectly reported after a logrotate run and if
+    there was no reboot afterwards. This affected the process listing page in
+    the web interface, where processes would show up as having been started
+    around 1970.
+
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 26 Jun 2008 16:17:56 +0000
+
+landscape-client (1.0.12-feisty1-landscape1) feisty; urgency=low
+
+  * the sleep average value of a process is no longer provided by recent
+    kernels. The client now computes and sends the CPU usage instead.
+  * initial directory for script execution is now the target user's home
+    directory and, if that is unavailable, /. Previously it was /root.
+  * new user creation was ignoring some extra fields such as Location and
+    phone numbers
+  * the machine uptime was incorrectly reported after a logrotate run and if
+    there was no reboot afterwards. This affected the process listing page in
+    the web interface, where processes would show up as having been started
+    around 1970.
+
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 26 Jun 2008 16:17:51 +0000
+
+landscape-client (1.0.12-edgy1-landscape1) edgy; urgency=low
+
+  * the sleep average value of a process is no longer provided by recent
+    kernels. The client now computes and sends the CPU usage instead.
+  * initial directory for script execution is now the target user's home
+    directory and, if that is unavailable, /. Previously it was /root.
+  * new user creation was ignoring some extra fields such as Location and
+    phone numbers
+  * the machine uptime was incorrectly reported after a logrotate run and if
+    there was no reboot afterwards. This affected the process listing page in
+    the web interface, where processes would show up as having been started
+    around 1970.
+
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 26 Jun 2008 16:17:48 +0000
+
+landscape-client (1.0.12-dapper1-landscape1) dapper; urgency=low
+
+  * the sleep average value of a process is no longer provided by recent
+    kernels. The client now computes and sends the CPU usage instead.
+  * initial directory for script execution is now the target user's home
+    directory and, if that is unavailable, /. Previously it was /root.
+  * new user creation was ignoring some extra fields such as Location and
+    phone numbers
+  * the machine uptime was incorrectly reported after a logrotate run and if
+    there was no reboot afterwards. This affected the process listing page in
+    the web interface, where processes would show up as having been started
+    around 1970.
+
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 26 Jun 2008 16:17:39 +0000
+
+landscape-client (1.0.11-hardy1-landscape1) hardy; urgency=low
+
+  * fixed a regression where an important fix was missing from the
+    new staging branch
+
+ -- Andreas Hasenack <andreas@canonical.com>  Fri, 13 Jun 2008 14:45:08 +0000
+
+landscape-client (1.0.11-gutsy1-landscape1) gutsy; urgency=low
+
+  * fixed a regression where an important fix was missing from the
+    new staging branch
+
+ -- Andreas Hasenack <andreas@canonical.com>  Fri, 13 Jun 2008 14:45:04 +0000
+
+landscape-client (1.0.11-feisty1-landscape1) feisty; urgency=low
+
+  * fixed a regression where an important fix was missing from the
+    new staging branch
+
+ -- Andreas Hasenack <andreas@canonical.com>  Fri, 13 Jun 2008 14:45:01 +0000
+
+landscape-client (1.0.11-edgy1-landscape1) edgy; urgency=low
+
+  * fixed a regression where an important fix was missing from the
+    new staging branch
+
+ -- Andreas Hasenack <andreas@canonical.com>  Fri, 13 Jun 2008 14:44:57 +0000
+
+landscape-client (1.0.11-dapper1-landscape1) dapper; urgency=low
+
+  * fixed a regression where an important fix was missing from the
+    new staging branch
+
+ -- Andreas Hasenack <andreas@canonical.com>  Fri, 13 Jun 2008 14:44:49 +0000
+
+landscape-client (1.0.10-hardy1-landscape1) hardy; urgency=low
+
+  * Change the utilisation of the csv module to be compatible with 
+    python 2.4 as used in Dapper.
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 12 Jun 2008 17:58:05 +0000
+
+landscape-client (1.0.10-gutsy1-landscape1) gutsy; urgency=low
+
+  * Change the utilisation of the csv module to be compatible with 
+    python 2.4 as used in Dapper.
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 12 Jun 2008 17:58:01 +0000
+
+landscape-client (1.0.10-feisty1-landscape1) feisty; urgency=low
+
+  * Change the utilisation of the csv module to be compatible with 
+    python 2.4 as used in Dapper.
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 12 Jun 2008 17:57:58 +0000
+
+landscape-client (1.0.10-edgy1-landscape1) edgy; urgency=low
+
+  * Change the utilisation of the csv module to be compatible with 
+    python 2.4 as used in Dapper.
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 12 Jun 2008 17:57:54 +0000
+
+landscape-client (1.0.10-dapper1-landscape1) dapper; urgency=low
+
+  * Change the utilisation of the csv module to be compatible with 
+    python 2.4 as used in Dapper.
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 12 Jun 2008 17:57:43 +0000
+
+landscape-client (1.0.9-hardy1-landscape1) hardy; urgency=low
+
+  * restrict users and groups list to local ones only, i.e., /etc/passwd
+    and /etc/group
+  * fixed some tests that were failing in locales other than english
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 11 Jun 2008 15:16:12 +0000
+
+landscape-client (1.0.9-gutsy1-landscape1) gutsy; urgency=low
+
+  * restrict users and groups list to local ones only, i.e., /etc/passwd
+    and /etc/group
+  * fixed some tests that were failing in locales other than english
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 11 Jun 2008 15:16:08 +0000
+
+landscape-client (1.0.9-feisty1-landscape1) feisty; urgency=low
+
+  * restrict users and groups list to local ones only, i.e., /etc/passwd
+    and /etc/group
+  * fixed some tests that were failing in locales other than english
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 11 Jun 2008 15:16:04 +0000
+
+landscape-client (1.0.9-edgy1-landscape1) edgy; urgency=low
+
+  * restrict users and groups list to local ones only, i.e., /etc/passwd
+    and /etc/group
+  * fixed some tests that were failing in locales other than english
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 11 Jun 2008 15:15:59 +0000
+
+landscape-client (1.0.9-dapper1-landscape1) dapper; urgency=low
+
+  * restrict users and groups list to local ones only, i.e., /etc/passwd
+    and /etc/group
+  * fixed some tests that were failing in locales other than english
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 11 Jun 2008 15:15:53 +0000
+
 landscape-client (1.0.4-hardy1-landscape1) hardy; urgency=low
 
   * fixed permissions and ownership of some files and directories which could
