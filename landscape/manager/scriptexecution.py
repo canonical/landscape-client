@@ -159,33 +159,37 @@ class ScriptExecution(ManagerPlugin):
         script_file.write(
             "#!%s\n%s" % (shell.encode("utf-8"), code.encode("utf-8")))
         script_file.close()
-        old_umask = os.umask(0022)
         env = {}
         attachment_dir = ""
-        if attachments:
-            attachment_dir = tempfile.mkdtemp()
-            env["LANDSCAPE_ATTACHMENTS"] = attachment_dir
-            for attachment_filename, data in attachments.iteritems():
-                full_filename = os.path.join(
-                    attachment_dir, attachment_filename)
-                attachment = file(full_filename, "wb")
-                os.chmod(full_filename, 0600)
+        old_umask = os.umask(0022)
+        try:
+            if attachments:
+                attachment_dir = tempfile.mkdtemp()
+                env["LANDSCAPE_ATTACHMENTS"] = attachment_dir
+                for attachment_filename, data in attachments.iteritems():
+                    full_filename = os.path.join(
+                        attachment_dir, attachment_filename)
+                    attachment = file(full_filename, "wb")
+                    os.chmod(full_filename, 0600)
+                    if uid is not None:
+                        os.chown(full_filename, uid, gid)
+                    attachment.write(data)
+                    attachment.close()
+                os.chmod(attachment_dir, 0700)
                 if uid is not None:
-                    os.chown(full_filename, uid, gid)
-                attachment.write(data)
-                attachment.close()
-            os.chmod(attachment_dir, 0700)
-            if uid is not None:
-                os.chown(attachment_dir, uid, gid)
-        pp = ProcessAccumulationProtocol(
-            self.registry.reactor, self.size_limit)
-        self.process_factory.spawnProcess(pp, filename, uid=uid, gid=gid,
-                                          path=path, env=env)
-        if time_limit is not None:
-            pp.schedule_cancel(time_limit)
-        result = pp.result_deferred
-        return result.addBoth(self._remove_script, filename, attachment_dir,
-                              old_umask)
+                    os.chown(attachment_dir, uid, gid)
+            pp = ProcessAccumulationProtocol(
+                self.registry.reactor, self.size_limit)
+            self.process_factory.spawnProcess(pp, filename, uid=uid, gid=gid,
+                                              path=path, env=env)
+            if time_limit is not None:
+                pp.schedule_cancel(time_limit)
+            result = pp.result_deferred
+            return result.addBoth(self._remove_script, filename, attachment_dir,
+                                  old_umask)
+        except:
+            os.umask(old_umask)
+            raise
 
     def _remove_script(self, result, filename, attachment_dir, old_umask):
         try:

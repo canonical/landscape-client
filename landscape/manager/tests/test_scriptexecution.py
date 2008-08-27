@@ -93,6 +93,22 @@ class RunScriptTests(LandscapeTest):
         result.addCallback(self.assertEquals, "0022\n")
         return result
 
+    def test_restore_umask_in_event_of_error(self):
+        """
+        We set the umask before executing the script, in the event that there's
+        an error setting up the script, we want to restore the umask.
+        """
+        mock_umask = self.mocker.replace("os.umask")
+        mock_umask(0022)
+        self.mocker.result(0077)
+        mock_mkdtemp = self.mocker.replace("tempfile.mkdtemp", passthrough=False)
+        mock_mkdtemp()
+        self.mocker.throw(OSError("Fail!"))
+        mock_umask(0077)
+        self.mocker.replay()
+        self.assertRaises(OSError, self.plugin.run_script, "/bin/sh", "umask",
+                          attachments={u"file1": "some data"})
+
     def test_run_with_attachments(self):
         result = self.plugin.run_script(
             u"/bin/sh",
