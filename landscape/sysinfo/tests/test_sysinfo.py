@@ -1,4 +1,7 @@
-from twisted.internet.defer import Deferred
+from cStringIO import StringIO
+from logging import getLogger, StreamHandler
+
+from twisted.internet.defer import Deferred, succeed
 
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry, format_sysinfo
 from landscape.plugin import PluginRegistry
@@ -10,6 +13,14 @@ class SysInfoPluginRegistryTest(LandscapeTest):
     def setUp(self):
         super(SysInfoPluginRegistryTest, self).setUp()
         self.sysinfo = SysInfoPluginRegistry()
+        self.sysinfo_logfile = StringIO()
+        self.handler = StreamHandler(self.sysinfo_logfile)
+        self.logger = getLogger("landscape-sysinfo")
+        self.logger.addHandler(self.handler)
+
+    def tearDown(self):
+        super(SysInfoPluginRegistryTest, self).tearDown()
+        self.logger.removeHandler(self.handler)
 
     def test_is_plugin_registry(self):
         self.assertTrue(isinstance(self.sysinfo, PluginRegistry))
@@ -93,6 +104,36 @@ class SysInfoPluginRegistryTest(LandscapeTest):
         self.assertEquals(deferred.called, False)
         plugin_deferred2.callback(456)
         self.assertEquals(deferred.called, True)
+
+    def test_plugins_run_after_synchronous_error(self):
+        """
+        Even when a plugin raises a synchronous error, other plugins will
+        continue to be run.
+        """
+        self.log_helper.ignore_errors(ZeroDivisionError)
+        plugins_what_run = []
+        class BadPlugin(object):
+            def register(self, registry):
+                pass
+            def run(self):
+                plugins_what_run.append(self)
+                1/0
+        class GoodPlugin(object):
+            def register(self, registry):
+                pass
+            def run(self):
+                plugins_what_run.append(self)
+                return succeed(None)
+        plugin1 = BadPlugin()
+        plugin2 = GoodPlugin()
+        self.sysinfo.add(plugin1)
+        self.sysinfo.add(plugin2)
+        self.sysinfo.run()
+        self.assertEquals(plugins_what_run, [plugin1, plugin2])
+        log = self.sysinfo_logfile.getvalue()
+        self.assertIn("BadPlugin raised an exception", log)
+        self.assertIn("1/0", log)
+        self.assertIn("ZeroDivisionError", log)
 
 
 class FormatTest(LandscapeTest):

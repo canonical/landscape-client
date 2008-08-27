@@ -1,6 +1,10 @@
+from logging import getLogger
 import math
 
+from twisted.internet.defer import maybeDeferred
+
 from landscape.lib.twisted_util import gather_results
+from landscape.lib.log import log_failure
 from landscape.plugin import PluginRegistry
 
 
@@ -88,7 +92,13 @@ class SysInfoPluginRegistry(PluginRegistry):
         """
         deferreds = []
         for plugin in self.get_plugins():
-            deferreds.append(plugin.run())
+            try:
+                result = plugin.run()
+            except:
+                getLogger("landscape-sysinfo").exception(
+                    "%s raised an exception" % plugin.__class__.__name__)
+            else:
+                deferreds.append(result)
         return gather_results(deferreds)
 
 
