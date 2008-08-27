@@ -79,6 +79,20 @@ class RunScriptTests(LandscapeTest):
         result.addCallback(check)
         return result
 
+    def test_set_umask_appropriately(self):
+        """
+        We should be setting the umask to 0022 before executing a script, and
+        restoring it to the previous value when finishing.
+        """
+        mock_umask = self.mocker.replace("os.umask", passthrough=False)
+        mock_umask(0022)
+        self.mocker.result(0077)
+        mock_umask(0077)
+        self.mocker.replay()
+        result = self.plugin.run_script("/bin/sh", "echo hi")
+        result.addCallback(self.assertEquals, "hi\n")
+        return result
+
     def test_run_with_attachments(self):
         result = self.plugin.run_script(
             u"/bin/sh",

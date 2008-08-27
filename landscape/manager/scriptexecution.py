@@ -159,6 +159,7 @@ class ScriptExecution(ManagerPlugin):
         script_file.write(
             "#!%s\n%s" % (shell.encode("utf-8"), code.encode("utf-8")))
         script_file.close()
+        old_umask = os.umask(0022)
         env = {}
         attachment_dir = ""
         if attachments:
@@ -183,9 +184,10 @@ class ScriptExecution(ManagerPlugin):
         if time_limit is not None:
             pp.schedule_cancel(time_limit)
         result = pp.result_deferred
-        return result.addBoth(self._remove_script, filename, attachment_dir)
+        return result.addBoth(self._remove_script, filename, attachment_dir,
+                              old_umask)
 
-    def _remove_script(self, result, filename, attachment_dir):
+    def _remove_script(self, result, filename, attachment_dir, old_umask):
         try:
             os.unlink(filename)
         except:
@@ -195,6 +197,7 @@ class ScriptExecution(ManagerPlugin):
                 shutil.rmtree(attachment_dir)
             except:
                 pass
+        os.umask(old_umask)
         return result
 
 
