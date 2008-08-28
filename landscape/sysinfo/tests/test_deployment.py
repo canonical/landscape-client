@@ -10,22 +10,41 @@ from landscape.tests.mocker import ARGS, KWARGS
 
 
 class DeploymentTest(LandscapeTest):
+    def setUp(self):
+        super(DeploymentTest, self).setUp()
+        self.configuration = SysInfoConfiguration()
+        self.configuration.default_config_filenames = []
 
     def test_get_plugins(self):
-        configuration = SysInfoConfiguration()
-        configuration.load(["--sysinfo-plugins", "Load,TestPlugin",
+        self.configuration.load(["--sysinfo-plugins", "Load,TestPlugin",
                             "-d", self.make_path()])
-        plugins = configuration.get_plugins()
+        plugins = self.configuration.get_plugins()
         self.assertEquals(len(plugins), 2)
         self.assertTrue(isinstance(plugins[0], Load))
         self.assertTrue(isinstance(plugins[1], TestPlugin))
 
     def test_get_all_plugins(self):
-        configuration = SysInfoConfiguration()
-        configuration.load(["--sysinfo-plugins", "ALL",
-                            "-d", self.make_path()])
-        plugins = configuration.get_plugins()
+        self.configuration.load(["-d", self.make_path()])
+        plugins = self.configuration.get_plugins()
         self.assertEquals(len(plugins), len(ALL_PLUGINS))
+
+    def test_exclude_plugins(self):
+        exclude = ",".join(x for x in ALL_PLUGINS if x != "Load")
+        self.configuration.load(["--exclude-sysinfo-plugins", exclude,
+                            "-d", self.make_path()])
+        plugins = self.configuration.get_plugins()
+        self.assertEquals(len(plugins), 1)
+        self.assertTrue(isinstance(plugins[0], Load))
+
+    def test_config_file(self):
+        filename = self.make_path()
+        f = open(filename, "w")
+        f.write("[sysinfo]\nsysinfo_plugins = TestPlugin\n")
+        f.close()
+        self.configuration.load(["--config", filename, "-d", self.make_path()])
+        plugins = self.configuration.get_plugins()
+        self.assertEquals(len(plugins), 1)
+        self.assertTrue(isinstance(plugins[0], TestPlugin))
 
 
 class FakeReactor(object):
