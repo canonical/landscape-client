@@ -103,10 +103,11 @@ class SysInfoPluginRegistry(PluginRegistry):
         return gather_results(deferreds)
 
     def _log_plugin_error(self, failure, plugin):
+        message = "%s plugin raised an exception." % plugin.__class__.__name__
+        self.add_note(message
+                      + "  See ~/.landscape-sysinfo.log for information.")
         logger = getLogger("landscape-sysinfo")
-        log_failure(failure,
-                    "%s raised an exception" % plugin.__class__.__name__,
-                    logger=logger)
+        log_failure(failure, message, logger=logger)
 
 
 def format_sysinfo(headers=(), notes=(), footnotes=(), width=80, indent="",

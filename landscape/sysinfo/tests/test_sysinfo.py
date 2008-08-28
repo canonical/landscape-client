@@ -131,9 +131,13 @@ class SysInfoPluginRegistryTest(LandscapeTest):
         self.sysinfo.run()
         self.assertEquals(plugins_what_run, [plugin1, plugin2])
         log = self.sysinfo_logfile.getvalue()
-        self.assertIn("BadPlugin raised an exception", log)
+        message = "BadPlugin plugin raised an exception."
+        self.assertIn(message, log)
         self.assertIn("1/0", log)
         self.assertIn("ZeroDivisionError", log)
+        self.assertEquals(
+            self.sysinfo.get_notes(),
+            [message + "  See ~/.landscape-sysinfo.log for information."])
 
     def test_asynchronous_errors_logged(self):
         self.log_helper.ignore_errors(ZeroDivisionError)
@@ -146,8 +150,12 @@ class SysInfoPluginRegistryTest(LandscapeTest):
         self.sysinfo.add(plugin)
         self.sysinfo.run()
         log = self.sysinfo_logfile.getvalue()
-        self.assertIn("BadPlugin raised an exception", log)
+        message = "BadPlugin plugin raised an exception."
+        self.assertIn(message, log)
         self.assertIn("ZeroDivisionError: yay", log)
+        self.assertEquals(
+            self.sysinfo.get_notes(),
+            [message + "  See ~/.landscape-sysinfo.log for information."])
 
 
 class FormatTest(LandscapeTest):
