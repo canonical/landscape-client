@@ -1,7 +1,7 @@
 from cStringIO import StringIO
 from logging import getLogger, StreamHandler
 
-from twisted.internet.defer import Deferred, succeed
+from twisted.internet.defer import Deferred, succeed, fail
 
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry, format_sysinfo
 from landscape.plugin import PluginRegistry
@@ -134,6 +134,20 @@ class SysInfoPluginRegistryTest(LandscapeTest):
         self.assertIn("BadPlugin raised an exception", log)
         self.assertIn("1/0", log)
         self.assertIn("ZeroDivisionError", log)
+
+    def test_asynchronous_errors_logged(self):
+        self.log_helper.ignore_errors(ZeroDivisionError)
+        class BadPlugin(object):
+            def register(self, registry):
+                pass
+            def run(self):
+                return fail(ZeroDivisionError("yay"))
+        plugin = BadPlugin()
+        self.sysinfo.add(plugin)
+        self.sysinfo.run()
+        log = self.sysinfo_logfile.getvalue()
+        self.assertIn("BadPlugin raised an exception", log)
+        self.assertIn("ZeroDivisionError: yay", log)
 
 
 class FormatTest(LandscapeTest):
