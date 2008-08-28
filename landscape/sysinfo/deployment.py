@@ -1,4 +1,9 @@
 """Deployment code for the sysinfo tool."""
+
+import os
+from logging import getLogger, Formatter
+from logging.handlers import TimedRotatingFileHandler
+
 from twisted.python.reflect import namedClass
 from twisted.internet.defer import Deferred, maybeDeferred
 
@@ -38,10 +43,21 @@ class SysInfoConfiguration(Configuration):
                 for plugin_name in self.plugin_factories]
 
 
+def setup_logging():
+    logger = getLogger("landscape-sysinfo")
+    logger.propagate = False
+    log_filename = os.path.expanduser("~/.landscape-sysinfo.log")
+    handler = TimedRotatingFileHandler(log_filename, when="D", interval=7)
+    logger.addHandler(handler)
+    handler.setFormatter(Formatter("%(asctime)s %(levelname)-8s %(message)s"))
+
+
 def run(args, reactor=None, sysinfo=None):
     """
     @param reactor: The reactor to (optionally) run the sysinfo plugins in.
     """
+    setup_logging()
+
     if sysinfo is None:
         sysinfo = SysInfoPluginRegistry()
     config = SysInfoConfiguration()
