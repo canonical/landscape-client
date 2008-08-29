@@ -1,4 +1,6 @@
-from logging.handlers import TimedRotatingFileHandler
+import os
+
+from logging.handlers import RotatingFileHandler
 from logging import getLogger
 
 from twisted.internet.defer import Deferred
@@ -176,10 +178,17 @@ class RunTest(LandscapeTest):
         logger = getLogger("landscape-sysinfo")
         self.assertEquals(len(logger.handlers), 1)
         handler = logger.handlers[0]
-        self.assertTrue(isinstance(handler, TimedRotatingFileHandler))
-        self.assertEquals(handler.when, "D")
-        self.assertEquals(handler.interval, 60 * 60 * 24 * 7)
+        self.assertTrue(isinstance(handler, RotatingFileHandler))
+        self.assertEquals(handler.maxBytes, 500*1024)
+        self.assertEquals(handler.backupCount, 1)
         self.assertFalse(logger.propagate)
+
+    def test_create_log_dir(self):
+        log_dir = self.make_path()
+        self.assertFalse(os.path.exists(log_dir))
+        setup_logging(landscape_dir=log_dir)
+        self.assertTrue(os.path.exists(log_dir))
+        
 
     def test_run_sets_up_logging(self):
         setup_logging_mock = self.mocker.replace(

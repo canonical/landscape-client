@@ -2,7 +2,7 @@
 
 import os
 from logging import getLogger, Formatter
-from logging.handlers import TimedRotatingFileHandler
+from logging.handlers import RotatingFileHandler
 
 from twisted.python.reflect import namedClass
 from twisted.internet.defer import Deferred, maybeDeferred
@@ -43,11 +43,14 @@ class SysInfoConfiguration(Configuration):
                 for plugin_name in self.plugin_factories]
 
 
-def setup_logging():
+def setup_logging(landscape_dir=os.path.expanduser("~/.landscape")):
     logger = getLogger("landscape-sysinfo")
     logger.propagate = False
-    log_filename = os.path.expanduser("~/.landscape-sysinfo.log")
-    handler = TimedRotatingFileHandler(log_filename, when="D", interval=7)
+    if not os.path.isdir(landscape_dir):
+        os.mkdir(landscape_dir)
+    log_filename = os.path.join(landscape_dir,  "sysinfo.log")
+    handler = RotatingFileHandler(log_filename,
+                                  maxBytes=500 * 1024, backupCount=1)
     logger.addHandler(handler)
     handler.setFormatter(Formatter("%(asctime)s %(levelname)-8s %(message)s"))
 
