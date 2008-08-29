@@ -1,7 +1,6 @@
 from logging import getLogger
 import math
 
-from twisted.internet.defer import maybeDeferred
 from twisted.python.failure import Failure
 
 from landscape.lib.twisted_util import gather_results
