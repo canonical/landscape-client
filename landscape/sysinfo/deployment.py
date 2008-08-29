@@ -29,9 +29,11 @@ class SysInfoConfiguration(Configuration):
         parser.add_option("--sysinfo-plugins", metavar="PLUGIN_LIST",
                           help="Comma-delimited list of sysinfo plugins to "
                                "use. Default is to use all plugins.")
+
         parser.add_option("--exclude-sysinfo-plugins", metavar="PLUGIN_LIST",
                           help="Comma-delimited list of sysinfo plugins to "
-                               "NOT use.")
+                               "NOT use. This always take precedence over "
+                               "plugins to include.")
 
         parser.epilog = "Default plugins: %s" % (", ".join(ALL_PLUGINS))
         return parser

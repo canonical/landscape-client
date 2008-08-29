@@ -17,7 +17,7 @@ class DeploymentTest(LandscapeTest):
 
     def test_get_plugins(self):
         self.configuration.load(["--sysinfo-plugins", "Load,TestPlugin",
-                            "-d", self.make_path()])
+                                 "-d", self.make_path()])
         plugins = self.configuration.get_plugins()
         self.assertEquals(len(plugins), 2)
         self.assertTrue(isinstance(plugins[0], Load))
@@ -31,7 +31,7 @@ class DeploymentTest(LandscapeTest):
     def test_exclude_plugins(self):
         exclude = ",".join(x for x in ALL_PLUGINS if x != "Load")
         self.configuration.load(["--exclude-sysinfo-plugins", exclude,
-                            "-d", self.make_path()])
+                                 "-d", self.make_path()])
         plugins = self.configuration.get_plugins()
         self.assertEquals(len(plugins), 1)
         self.assertTrue(isinstance(plugins[0], Load))
