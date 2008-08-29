@@ -10,7 +10,7 @@ import operator
 import shutil
 
 from twisted.internet.protocol import ProcessProtocol
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import Deferred, fail
 from twisted.internet.error import ProcessDone
 
 from landscape.manager.manager import ManagerPlugin, SUCCEEDED, FAILED
@@ -135,6 +135,9 @@ class ScriptExecution(ManagerPlugin):
         @return: A deferred that will fire with the data printed by the process
             or fail with a L{ProcessTimeLimitReachedError}.
         """
+        if not os.path.exists(shell.split()[0]):
+            return fail(
+                ProcessFailedError("Unknown interpreter: '%s'" % shell))
         uid = None
         gid = None
         path = None

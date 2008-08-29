@@ -1,5 +1,6 @@
 import pwd
 import os
+import sys
 import tempfile
 import stat
 
@@ -7,9 +8,9 @@ from twisted.internet.defer import gatherResults
 from twisted.internet.error import ProcessDone
 from twisted.python.failure import Failure
 
-from landscape.manager.scriptexecution import (ScriptExecution,
-                                               ProcessTimeLimitReachedError,
-                                               PROCESS_FAILED_RESULT)
+from landscape.manager.scriptexecution import (
+    ScriptExecution, ProcessTimeLimitReachedError, PROCESS_FAILED_RESULT,
+    ProcessFailedError)
 from landscape.manager.manager import SUCCEEDED, FAILED
 from landscape.tests.helpers import (
     LandscapeTest, LandscapeIsolatedTest, ManagerHelper,
@@ -240,7 +241,7 @@ class RunScriptTests(LandscapeTest):
         factory = StubProcessFactory()
         self.plugin.process_factory = factory
         self.plugin.size_limit = 100
-        result = self.plugin.run_script("", "")
+        result = self.plugin.run_script("/bin/sh", "")
         result.addCallback(self.assertEquals, "x"*100)
 
         protocol = factory.spawns[0][0]
@@ -267,7 +268,7 @@ class RunScriptTests(LandscapeTest):
         """
         factory = StubProcessFactory()
         self.plugin.process_factory = factory
-        result = self.plugin.run_script("", "", time_limit=500)
+        result = self.plugin.run_script("/bin/sh", "", time_limit=500)
         protocol = factory.spawns[0][0]
         protocol.makeConnection(DummyProcess())
         protocol.childDataReceived(1, "hi\n")
@@ -285,7 +286,7 @@ class RunScriptTests(LandscapeTest):
         """
         factory = StubProcessFactory()
         self.plugin.process_factory = factory
-        result = self.plugin.run_script("", "", time_limit=500)
+        result = self.plugin.run_script("/bin/sh", "", time_limit=500)
         protocol = factory.spawns[0][0]
         transport = DummyProcess()
         protocol.makeConnection(transport)
@@ -303,7 +304,7 @@ class RunScriptTests(LandscapeTest):
         """
         factory = StubProcessFactory()
         self.plugin.process_factory = factory
-        result = self.plugin.run_script("", "", time_limit=500)
+        result = self.plugin.run_script("/bin/sh", "", time_limit=500)
         protocol = factory.spawns[0][0]
         protocol.makeConnection(DummyProcess())
         protocol.childDataReceived(1, "hi")
@@ -342,7 +343,7 @@ class RunScriptTests(LandscapeTest):
         mock_chmod("tempo!", 0700)
         mock_chown("tempo!", uid, gid)
         # The contents are written *after* the permissions have been set up!
-        script_file.write("#!interpreter\ncode")
+        script_file.write("#!/bin/sh\ncode")
         script_file.close()
 
         process_factory.spawnProcess(
@@ -352,7 +353,7 @@ class RunScriptTests(LandscapeTest):
 
         # We don't really care about the deferred that's returned, as long as
         # those things happened in the correct order.
-        self.plugin.run_script("interpreter", "code",
+        self.plugin.run_script("/bin/sh", "code",
                                user=pwd.getpwuid(uid)[0])
 
     def test_script_removed(self):
@@ -367,6 +368,22 @@ class RunScriptTests(LandscapeTest):
         d = self.plugin.run_script("/bin/sh", "true")
         d.addCallback(lambda ign: self.assertFalse(os.path.exists(filename)))
         return d
+
+    def test_unknown_interpreter(self):
+        """
+        If the script is run with an unknow interpreter, it raises a meaningful
+        error instead of crashing in execvpe.
+        """
+        d = self.plugin.run_script("/bin/cantpossiblyexist", "stuff")
+        def cb(ignore):
+            self.fail("Should not be there")
+        def eb(failure):
+            failure.trap(ProcessFailedError)
+            self.assertEquals(
+                failure.value.data,
+                "Unknown interpreter: '/bin/cantpossiblyexist'")
+        return d.addCallback(cb).addErrback(eb)
+
 
 class ScriptExecutionMessageTests(LandscapeIsolatedTest):
     helpers = [ManagerHelper]
@@ -415,9 +432,9 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         self.manager.add(ScriptExecution(process_factory=factory))
 
         self.mocker.replay()
-        result = self._send_script("python", "print 'hi'")
+        result = self._send_script(sys.executable, "print 'hi'")
 
-        self._verify_script(factory.spawns[0][1], "python", "print 'hi'")
+        self._verify_script(factory.spawns[0][1], sys.executable, "print 'hi'")
         self.assertMessages(
             self.broker_service.message_store.get_pending_messages(), [])
 
@@ -448,7 +465,7 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         def spawn_called(protocol, filename, uid, gid, path, env):
             protocol.childDataReceived(1, "hi!\n")
             protocol.processEnded(Failure(ProcessDone(0)))
-            self._verify_script(filename, "python", "print 'hi'")
+            self._verify_script(filename, sys.executable, "print 'hi'")
 
         process_factory = self.mocker.mock()
         process_factory.spawnProcess(
@@ -459,9 +476,8 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
 
         self.manager.add(ScriptExecution(process_factory=process_factory))
 
-        result = self._send_script("python", "print 'hi'", user=username)
+        result = self._send_script(sys.executable, "print 'hi'", user=username)
         return result
-
 
     def test_timeout(self):
         """
@@ -476,8 +492,8 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         mock_chown(ARGS)
 
         self.mocker.replay()
-        result = self._send_script("foo", "bar", time_limit=30)
-        self._verify_script(factory.spawns[0][1], "foo", "bar")
+        result = self._send_script(sys.executable, "bar", time_limit=30)
+        self._verify_script(factory.spawns[0][1], sys.executable, "bar")
 
         protocol = factory.spawns[0][0]
         protocol.makeConnection(DummyProcess())
@@ -503,7 +519,7 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         """
         self.manager.add(ScriptExecution())
         self.manager.config.script_users = "landscape, nobody"
-        result = self._send_script("foo", "bar", user="whatever")
+        result = self._send_script(sys.executable, "bar", user="whatever")
         def got_result(r):
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
@@ -513,7 +529,6 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
                   "result-text": u"Scripts cannot be run as user whatever."}])
         result.addCallback(got_result)
         return result
-
 
     def test_urgent_response(self):
         """Responses to script execution messages are urgent."""
@@ -528,7 +543,7 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         def spawn_called(protocol, filename, uid, gid, path, env):
             protocol.childDataReceived(1, "hi!\n")
             protocol.processEnded(Failure(ProcessDone(0)))
-            self._verify_script(filename, "python", "print 'hi'")
+            self._verify_script(filename, sys.executable, "print 'hi'")
 
         process_factory = self.mocker.mock()
         process_factory.spawnProcess(
@@ -548,10 +563,9 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
                   "result-text": u"hi!\n",
                   "status": SUCCEEDED}])
 
-        result = self._send_script("python", "print 'hi'")
+        result = self._send_script(sys.executable, "print 'hi'")
         result.addCallback(got_result)
         return result
-
 
     def test_parse_error_causes_operation_failure(self):
         """
@@ -587,7 +601,7 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         self.mocker.replay()
 
         self.manager.add(ScriptExecution())
-        result = self._send_script("/bin/bash", "echo hi; exit 1")
+        result = self._send_script("/bin/sh", "echo hi; exit 1")
 
         def got_result(ignored):
             self.assertMessages(
@@ -598,7 +612,6 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
                   "result-code": PROCESS_FAILED_RESULT,
                   "status": FAILED}])
         return result.addCallback(got_result)
-
 
     def test_unknown_error(self):
         """
@@ -615,9 +628,9 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         self.manager.add(ScriptExecution(process_factory=factory))
 
         self.mocker.replay()
-        result = self._send_script("python", "print 'hi'")
+        result = self._send_script(sys.executable, "print 'hi'")
 
-        self._verify_script(factory.spawns[0][1], "python", "print 'hi'")
+        self._verify_script(factory.spawns[0][1], sys.executable, "print 'hi'")
         self.assertMessages(
             self.broker_service.message_store.get_pending_messages(), [])
 
