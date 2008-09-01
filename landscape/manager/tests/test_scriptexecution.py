@@ -371,8 +371,8 @@ class RunScriptTests(LandscapeTest):
 
     def test_unknown_interpreter(self):
         """
-        If the script is run with an unknow interpreter, it raises a meaningful
-        error instead of crashing in execvpe.
+        If the script is run with an unknown interpreter, it raises a
+        meaningful error instead of crashing in execvpe.
         """
         d = self.plugin.run_script("/bin/cantpossiblyexist", "stuff")
         def cb(ignore):
