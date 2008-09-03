@@ -7,8 +7,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"Report-Msgid-Bugs-To: Source: landscape-client@packages.debian.org\n"
-"POT-Creation-Date: 2008-08-22 11:41-0300\n"
+"Report-Msgid-Bugs-To: landscape-client@packages.debian.org\n"
+"POT-Creation-Date: 2008-08-27 12:19-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -56,4 +56,18 @@ msgstr ""
 msgid ""
 "Client registration password for the given Landscape account.  Only needed "
 "if the given account is requesting a client registration password."
+msgstr ""
+
+#. Type: boolean
+#. Description
+#: ../templates:4001
+msgid "Register this system with the Landscape server?"
+msgstr ""
+
+#. Type: boolean
+#. Description
+#: ../templates:4001
+msgid ""
+"Register this system with a preexisting Landscape account.  Please go to "
+"http://landscape.canonical.com if you need a Landscape account."
 msgstr ""

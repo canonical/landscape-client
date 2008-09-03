@@ -28,25 +28,21 @@ install: build
 	dh_clean -k
 	dh_installdirs \
 		etc/landscape \
-		etc/dbus-1 \
-		etc/dbus-1/system.d \
 		var/lib/landscape \
 		var/log/landscape \
-		usr/share/lintian/overrides \
 
 	python setup.py install --root $(root_dir)
 
-	cp dbus/landscape.conf $(root_dir)/etc/dbus-1/system.d/landscape.conf
+	install -D -o root -g root -m 644 dbus/landscape.conf $(root_dir)/etc/dbus-1/system.d/landscape.conf
 
 binary-arch:
-# do nothing 
+# do nothing
 #
 binary-indep: build install
 	# That's not present in Ubuntu releases we still support, so
 	# we're just installing the lintian overrides file by hand
 	# for now.
-	#dh_lintian
-	cp debian/$(package).lintian-overrides $(root_dir)/usr/share/lintian/overrides/$(package)
+	dh_lintian
 	dh_testdir
 	dh_testroot
 	dh_installdocs
