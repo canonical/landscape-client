@@ -48,7 +48,10 @@ class ProcessKiller(ManagerPlugin):
             message = ("The process %s with PID %d that started at %s UTC was "
                        "not found") % (name, pid, start_time)
             raise ProcessNotFoundError(message)
-        elif process_info["start-time"] != start_time:
+        elif abs(process_info["start-time"] - start_time) > 2:
+            # We don't check that the start time matches precisely because
+            # the way we obtain boot times isn't very precise, and this may
+            # cascade into having imprecise process start times.
             expected_time = datetime.utcfromtimestamp(start_time)
             actual_time = datetime.utcfromtimestamp(process_info["start-time"])
             message = ("The process %s with PID %d that started at "

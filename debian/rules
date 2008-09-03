@@ -31,12 +31,10 @@ install: build
 		etc/dbus-1 \
 		etc/dbus-1/system.d \
 		var/lib/landscape \
-		var/log/landscape \
-		usr/share/lintian/overrides
+		var/log/landscape
 
 	python setup.py install --root $(root_dir)
 
-	cp debian/$(package).overrides $(root_dir)/usr/share/lintian/overrides/$(package)
 	cp dbus/landscape.conf $(root_dir)/etc/dbus-1/system.d/landscape.conf
 
 binary-indep: build install
