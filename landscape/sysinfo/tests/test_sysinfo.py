@@ -105,6 +105,10 @@ class SysInfoPluginRegistryTest(LandscapeTest):
         plugin_deferred2.callback(456)
         self.assertEquals(deferred.called, True)
 
+    plugin_exception_message = (
+        "There were exceptions while processing one or more plugins. "
+        "See ~/.landscape/sysinfo.log for more information.")
+
     def test_plugins_run_after_synchronous_error(self):
         """
         Even when a plugin raises a synchronous error, other plugins will
@@ -137,7 +141,7 @@ class SysInfoPluginRegistryTest(LandscapeTest):
         self.assertIn("ZeroDivisionError", log)
         self.assertEquals(
             self.sysinfo.get_notes(),
-            [message + "  See ~/.landscape-sysinfo.log for information."])
+            [self.plugin_exception_message])
 
     def test_asynchronous_errors_logged(self):
         self.log_helper.ignore_errors(ZeroDivisionError)
@@ -155,7 +159,32 @@ class SysInfoPluginRegistryTest(LandscapeTest):
         self.assertIn("ZeroDivisionError: yay", log)
         self.assertEquals(
             self.sysinfo.get_notes(),
-            [message + "  See ~/.landscape-sysinfo.log for information."])
+            [self.plugin_exception_message])
+
+    def test_multiple_exceptions_get_one_note(self):
+        self.log_helper.ignore_errors(ZeroDivisionError)
+        class RegularBadPlugin(object):
+            def register(self, registry):
+                pass
+            def run(self):
+                1/0
+
+        class AsyncBadPlugin(object):
+            def register(self, registry):
+                pass
+            def run(self):
+                return fail(ZeroDivisionError("Hi"))
+
+        plugin1 = RegularBadPlugin()
+        plugin2 = AsyncBadPlugin()
+        self.sysinfo.add(plugin1)
+        self.sysinfo.add(plugin2)
+        self.sysinfo.run()
+
+        self.assertEquals(
+            self.sysinfo.get_notes(),
+            [self.plugin_exception_message])
+        
 
 
 class FormatTest(LandscapeTest):
@@ -306,3 +335,14 @@ class FormatTest(LandscapeTest):
                           "  Footnote1\n"
                           "  Footnote2"
                           )
+
+    def test_wrap_long_notes(self):
+        self.assertEquals(
+            format_sysinfo(notes=[
+                "I do believe that a very long note, such as one that is "
+                "longer than about 50 characters, should wrap at the specified "
+                "width."], width=50, indent="Z"),
+            """\
+Z=> I do believe that a very long note, such as
+    one that is longer than about 50 characters,
+    should wrap at the specified width.""")

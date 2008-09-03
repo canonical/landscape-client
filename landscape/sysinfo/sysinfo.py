@@ -1,3 +1,4 @@
+import textwrap
 from logging import getLogger
 import math
 
@@ -40,6 +41,7 @@ class SysInfoPluginRegistry(PluginRegistry):
         self._headers = []
         self._notes = []
         self._footnotes = []
+        self._plugin_error = False
 
     def add_header(self, name, value):
         """Add a new information header to be displayed to the user.
@@ -99,14 +101,20 @@ class SysInfoPluginRegistry(PluginRegistry):
             else:
                 result.addErrback(self._log_plugin_error, plugin)
                 deferreds.append(result)
-        return gather_results(deferreds)
+        return gather_results(deferreds).addCallback(self._report_error_note)
 
     def _log_plugin_error(self, failure, plugin):
+        self._plugin_error = True
         message = "%s plugin raised an exception." % plugin.__class__.__name__
-        self.add_note(message
-                      + "  See ~/.landscape-sysinfo.log for information.")
         logger = getLogger("landscape-sysinfo")
         log_failure(failure, message, logger=logger)
+
+    def _report_error_note(self, result):
+        if self._plugin_error:
+            self.add_note(
+                "There were exceptions while processing one or more plugins. "
+                "See ~/.landscape/sysinfo.log for more information.")
+        return result
 
 
 def format_sysinfo(headers=(), notes=(), footnotes=(), width=80, indent="",
@@ -229,8 +237,13 @@ def format_sysinfo(headers=(), notes=(), footnotes=(), width=80, indent="",
         if lines:
             # Some spacing between headers and notes.
             lines.append("")
-        # For notes, just prepend the prefix and we're done.
-        lines.extend(indent + note_prefix + note for note in notes)
+        initial_indent = indent + note_prefix
+        for note in notes:
+            lines.extend(
+                textwrap.wrap(note,
+                              initial_indent=initial_indent,
+                              subsequent_indent=" "*len(initial_indent),
+                              width=width))
 
     if footnotes:
         if lines:
