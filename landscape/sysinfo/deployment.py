@@ -1,4 +1,5 @@
 """Deployment code for the sysinfo tool."""
+import os
 from twisted.python.reflect import namedClass
 from twisted.internet.defer import Deferred, maybeDeferred
 
@@ -13,6 +14,11 @@ ALL_PLUGINS = ["Load", "Disk", "Memory", "Temperature", "Processes",
 class SysInfoConfiguration(Configuration):
     """Specialized configuration for the Landscape sysinfo tool."""
 
+    default_config_filenames = (
+        os.path.expanduser("~/.landscape/sysinfo.conf"),)
+
+    config_section = "sysinfo"
+
     def make_parser(self):
         """
         Specialize L{Configuration.make_parser}, adding any
@@ -22,20 +28,32 @@ class SysInfoConfiguration(Configuration):
 
         parser.add_option("--sysinfo-plugins", metavar="PLUGIN_LIST",
                           help="Comma-delimited list of sysinfo plugins to "
-                               "use. ALL means use all plugins.",
-                          default="ALL")
+                               "use. Default is to use all plugins.")
+
+        parser.add_option("--exclude-sysinfo-plugins", metavar="PLUGIN_LIST",
+                          help="Comma-delimited list of sysinfo plugins to "
+                               "NOT use. This always take precedence over "
+                               "plugins to include.")
+
+        parser.epilog = "Default plugins: %s" % (", ".join(ALL_PLUGINS))
         return parser
 
-    @property
-    def plugin_factories(self):
-        if self.sysinfo_plugins == "ALL":
-            return ALL_PLUGINS
-        return [x.strip() for x in self.sysinfo_plugins.split(",")]
+    def get_plugin_names(self, plugin_spec):
+        return [x.strip() for x in plugin_spec.split(",")]
 
     def get_plugins(self):
+        if self.sysinfo_plugins is None:
+            include = ALL_PLUGINS
+        else:
+            include = self.get_plugin_names(self.sysinfo_plugins)
+        if self.exclude_sysinfo_plugins is None:
+            exclude = []
+        else:
+            exclude = self.get_plugin_names(self.exclude_sysinfo_plugins)
+        plugins = [x for x in include if x not in exclude]
         return [namedClass("landscape.sysinfo.%s.%s"
                            % (plugin_name.lower(), plugin_name))()
-                for plugin_name in self.plugin_factories]
+                for plugin_name in plugins]
 
 
 def run(args, reactor=None, sysinfo=None):
