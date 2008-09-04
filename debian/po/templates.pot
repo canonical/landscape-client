@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: landscape-client@packages.debian.org\n"
-"POT-Creation-Date: 2008-08-27 12:19-0500\n"
+"POT-Creation-Date: 2008-09-03 16:35-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -70,4 +70,26 @@ msgstr ""
 msgid ""
 "Register this system with a preexisting Landscape account.  Please go to "
 "http://landscape.canonical.com if you need a Landscape account."
+msgstr ""
+
+#. Type: boolean
+#. Description
+#: ../templates:5001
+msgid "Automatically update the MOTD with system information?"
+msgstr ""
+
+#. Type: boolean
+#. Description
+#: ../templates:5001
+msgid ""
+"Landscape includes a tool and a set of modules that gather system status, "
+"information, and statistics."
+msgstr ""
+
+#. Type: boolean
+#. Description
+#: ../templates:5001
+msgid ""
+"This information can be automatically written to /etc/motd and displayed on "
+"login (ssh and console)."
 msgstr ""

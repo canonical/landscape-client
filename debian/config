@@ -34,4 +34,5 @@ fi
 db_input medium $PACKAGE/computer_title || true
 db_input medium $PACKAGE/account_name || true
 db_input medium $PACKAGE/registration_password || true
+db_input medium $PACKAGE/sysinfo_in_motd || true
 db_go

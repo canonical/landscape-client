@@ -110,6 +110,15 @@ END
         # Tell dbus to reload its configuration since we've installed a conf
         # to its system.d
         invoke-rc.d dbus reload || true
+
+        db_input medium $PACKAGE/sysinfo_in_motd || true
+        db_get $PACKAGE/sysinfo_in_motd
+        SYSINFO_IN_MOTD="${RET:-true}"
+        if [ "$RET" = true ]; then
+            ln -s /usr/bin/landscape-sysinfo /etc/update-motd.d/50-landscape-sysinfo
+        else
+            rm -f /etc/update-motd.d/50-landscape-sysinfo 2>/dev/null || true
+        fi
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

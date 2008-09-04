@@ -24,3 +24,12 @@ _Description: Register this system with the Landscape server?
  Register this system with a preexisting Landscape account.  Please
  go to http://landscape.canonical.com if you need a Landscape account.
 
+Template: landscape-client/sysinfo_in_motd
+Type: boolean
+Default: false
+_Description: Automatically update the MOTD with system information?
+ Landscape includes a tool and a set of modules that gather system
+ status, information, and statistics.
+ .
+ This information can be automatically written to /etc/motd and
+ displayed on login (ssh and console).
