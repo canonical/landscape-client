@@ -19,7 +19,10 @@ set -e
 
 case "$1" in
     remove|upgrade|deconfigure)
-    rm -f /etc/update-motd.d/50-landscape-sysinfo 2>/dev/null || true
+        if rm -f /etc/update-motd.d/50-landscape-sysinfo 2>/dev/null; then
+            /etc/init.d/update-motd refresh || true
+        fi
+        rm -f /etc/profile.d/landscape-sysinfo.sh 2>/dev/null || true
     ;;
 
     failed-upgrade)

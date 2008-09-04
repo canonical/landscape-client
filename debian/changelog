@@ -7,7 +7,8 @@ landscape-client (1.0.17-0ubuntu1) intrepid; urgency=low
     changed Standards-Version to 3.8.0; added adduser to depends as needed by
     postinst and postrm; updates smartpm-core dep to >1.0; moved most build
     deps to Build-Depends-Indep; add po-debconf build dependency; added
-    debconf hooks for installing landscape-sysinfo as an update-motd script.
+    debconf hooks for installing landscape-sysinfo as an update-motd or
+    profile.d script.
   * debian/copyright: updated copyright date; removed incorrect symlink to
     GPL-3; added Dustin and Rick to the packaging credits.
   * debian/landscape-client.init: removed S from stop; rewritten to be more
@@ -17,11 +18,11 @@ landscape-client (1.0.17-0ubuntu1) intrepid; urgency=low
   * debian/landscape-client.lintian-overrides: added with two overrides
   * debian/landscape-client.overrides: removed.
   * debian/landscape-client.prerm: initial creation, remove landscape-sysinfo
-    update-motd script, if any exists.
+    update-motd or profile.d script, if any exists.
   * debian/landscape-client.postinst: fixed deprecated chmod call; changed
     home dir of landscape user; removed uneeded update-rc.d; added code to
     handle debconf; created a function for retrieving values from ini config;
-    /usr/share/debconf/comfmodule to top of postinst.
+    /usr/share/debconf/comfmodule to top of postinst; add db_stop back in.
   * debian/landscape-client.postrm: added debhelper tag.
   * debian/rules: added po debconf bits for translation; depend on update-motd.
   * debian/pycompat: initial creation.
@@ -53,7 +54,7 @@ landscape-client (1.0.17-0ubuntu1) intrepid; urgency=low
   * removed .override file
   * removed .autoppa files
 
- -- Dustin Kirkland <kirkland@ubuntu.com>  Wed, 03 Sep 2008 14:06:22 -0500
+ -- Dustin Kirkland <kirkland@ubuntu.com>  Thu, 04 Sep 2008 13:28:14 -0500
 
 landscape-client (1.0.16-intrepid1-landscape1) intrepid; urgency=low
 

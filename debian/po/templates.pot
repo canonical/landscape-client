@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: landscape-client@packages.debian.org\n"
-"POT-Creation-Date: 2008-09-03 16:35-0500\n"
+"POT-Creation-Date: 2008-09-04 13:38-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -72,24 +72,47 @@ msgid ""
 "http://landscape.canonical.com if you need a Landscape account."
 msgstr ""
 
-#. Type: boolean
-#. Description
-#: ../templates:5001
-msgid "Automatically update the MOTD with system information?"
-msgstr ""
-
-#. Type: boolean
-#. Description
-#: ../templates:5001
-msgid ""
-"Landscape includes a tool and a set of modules that gather system status, "
-"information, and statistics."
-msgstr ""
-
-#. Type: boolean
-#. Description
+#. Type: select
+#. Choices
+#. Translators beware! the following three strings form a single
+#. Choices menu. - Every one of these strings has to fit in a standard
+#. 80 characters console, as the fancy screen setup takes up some space
+#. try to keep below ~71 characters.
+#. DO NOT USE commas (,) in Choices translations otherwise
+#. this will break the choices shown to users
 #: ../templates:5001
 msgid ""
-"This information can be automatically written to /etc/motd and displayed on "
-"login (ssh and console)."
+"Do not display sysinfo on login, Cache sysinfo in /etc/motd, Run sysinfo on "
+"every login"
+msgstr ""
+
+#. Type: select
+#. Description
+#: ../templates:5002
+msgid "landscape-sysinfo configuration:"
+msgstr ""
+
+#. Type: select
+#. Description
+#: ../templates:5002
+msgid ""
+"Landscape includes a tool and a set of modules that can display system "
+"status, information, and statistics on login."
+msgstr ""
+
+#. Type: select
+#. Description
+#: ../templates:5002
+msgid ""
+"This information can be gathered periodically (every 10 minutes) and "
+"automatically written to /etc/motd.  The data could be a few minutes out-of-"
+"date."
+msgstr ""
+
+#. Type: select
+#. Description
+#: ../templates:5002
+msgid ""
+"Or, this information can be gathered at login.  The data will be more "
+"current, but might introduce a small delay at login."
 msgstr ""

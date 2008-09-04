@@ -25,6 +25,29 @@ PYTHON=/usr/bin/python
 case "$1" in
     configure)
 
+        db_input medium $PACKAGE/sysinfo_in_motd || true
+        db_get $PACKAGE/sysinfo
+        # Choices:
+        #  * Do not display sysinfo on login
+        #  * Cache sysinfo in /etc/motd
+        #  * Run sysinfo on every login
+        SYSINFO="${RET:-Cache sysinfo in /etc/motd}"
+        if [ "$RET" = "Cache sysinfo in /etc/motd" ]; then
+            rm -f /etc/profile.d/landscape-sysinfo.sh 2>/dev/null || true
+            ln -s /usr/bin/landscape-sysinfo /etc/update-motd.d/50-landscape-sysinfo
+            /etc/init.d/update-motd refresh || true
+        elif [ "$RET" = "Run sysinfo on every login" ]; then
+            if rm -f /etc/update-motd.d/50-landscape-sysinfo 2>/dev/null; then
+                /etc/init.d/update-motd refresh || true
+            fi
+            echo /usr/bin/landscape-sysinfo > /etc/profile.d/landscape-sysinfo.sh
+        else
+            if rm -f /etc/update-motd.d/50-landscape-sysinfo 2>/dev/null; then
+                /etc/init.d/update-motd refresh || true
+            fi
+            rm -f /etc/profile.d/landscape-sysinfo.sh || true
+        fi
+
         # 0.9.1 introduces non-backwards compatible changes.  This detects
         # whether or not the data is in the current format.  If not, all
         # existing data is removed.
@@ -80,6 +103,7 @@ END
             db_get $PACKAGE/account_name
             ACCOUNT_NAME="${RET}"
             db_get $PACKAGE/registration_password
+            db_stop
             REGISTRATION_PASSWORD="${RET}"
 
             # If we got the needed information, actually do the registration.
@@ -110,15 +134,6 @@ END
         # Tell dbus to reload its configuration since we've installed a conf
         # to its system.d
         invoke-rc.d dbus reload || true
-
-        db_input medium $PACKAGE/sysinfo_in_motd || true
-        db_get $PACKAGE/sysinfo_in_motd
-        SYSINFO_IN_MOTD="${RET:-true}"
-        if [ "$RET" = true ]; then
-            ln -s /usr/bin/landscape-sysinfo /etc/update-motd.d/50-landscape-sysinfo
-        else
-            rm -f /etc/update-motd.d/50-landscape-sysinfo 2>/dev/null || true
-        fi
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
