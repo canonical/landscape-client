@@ -73,6 +73,10 @@ case "$1" in
         # Fix prior ownerships
         chown -R landscape /var/log/landscape /var/lib/landscape
 
+        # Tell dbus to reload its configuration since we've installed a conf
+        # to its system.d. We must do this before invoking landscape-config.
+        invoke-rc.d dbus reload || true
+
         CONFIG_FILE=/etc/landscape/client.conf
         if [ ! -f $CONFIG_FILE ]; then
             # Create new configuration, with private mode
@@ -131,9 +135,6 @@ END
             echo "Old monolithic client data file migrated to new format."
         fi
 
-        # Tell dbus to reload its configuration since we've installed a conf
-        # to its system.d
-        invoke-rc.d dbus reload || true
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
