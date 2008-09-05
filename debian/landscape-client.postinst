@@ -111,7 +111,7 @@ END
             REGISTRATION_PASSWORD="${RET}"
 
             # If we got the needed information, actually do the registration.
-            if [ -n "$ACCOUNT_NAME" ]; then
+            if [ -n "$ACCOUNT_NAME" -a -n "$COMPUTER_TITLE" ]; then
                 landscape-config --silent -a "$ACCOUNT_NAME" \
                                           -p "$REGISTRATION_PASSWORD" \
                                           -t "$COMPUTER_TITLE"
