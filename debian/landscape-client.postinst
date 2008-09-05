@@ -14,6 +14,7 @@ set -e
 # the debian-policy package
 
 . /usr/share/debconf/confmodule
+trap "db_stop || true" EXIT HUP INT QUIT TERM
 
 PACKAGE=landscape-client
 
@@ -103,7 +104,6 @@ END
             db_get $PACKAGE/account_name
             ACCOUNT_NAME="${RET}"
             db_get $PACKAGE/registration_password
-            db_stop
             REGISTRATION_PASSWORD="${RET}"
 
             # If we got the needed information, actually do the registration.
