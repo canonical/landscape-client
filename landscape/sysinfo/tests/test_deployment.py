@@ -1,6 +1,12 @@
+import os
+
+from logging.handlers import RotatingFileHandler
+from logging import getLogger
+
 from twisted.internet.defer import Deferred
 
-from landscape.sysinfo.deployment import SysInfoConfiguration, ALL_PLUGINS, run
+from landscape.sysinfo.deployment import (
+    SysInfoConfiguration, ALL_PLUGINS, run, setup_logging)
 from landscape.sysinfo.testplugin import TestPlugin
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 from landscape.sysinfo.load import Load
@@ -69,6 +75,12 @@ class FakeReactor(object):
 class RunTest(LandscapeTest):
 
     helpers = [StandardIOHelper]
+
+    def tearDown(self):
+        super(RunTest, self).tearDown()
+        logger = getLogger("landscape-sysinfo")
+        for handler in logger.handlers[:]:
+            logger.removeHandler(handler)
 
     def test_registry_runs_plugin_and_gets_correct_information(self):
         run(["--sysinfo-plugins", "TestPlugin"])
@@ -172,3 +184,35 @@ class RunTest(LandscapeTest):
 
         self.assertEquals(reactor.scheduled_calls, [(0, reactor.stop, (), {})])
         return self.assertFailure(d, ZeroDivisionError)
+
+    def test_wb_logging_setup(self):
+        """
+        setup_logging sets up a "landscape-sysinfo" logger which rotates every
+        week and does not propagate logs to higher-level handlers.
+        """
+        # This hecka whiteboxes but there aren't any underscores!
+        logger = getLogger("landscape-sysinfo")
+        self.assertEquals(logger.handlers, [])
+        setup_logging()
+        logger = getLogger("landscape-sysinfo")
+        self.assertEquals(len(logger.handlers), 1)
+        handler = logger.handlers[0]
+        self.assertTrue(isinstance(handler, RotatingFileHandler))
+        self.assertEquals(handler.maxBytes, 500*1024)
+        self.assertEquals(handler.backupCount, 1)
+        self.assertFalse(logger.propagate)
+
+    def test_create_log_dir(self):
+        log_dir = self.make_path()
+        self.assertFalse(os.path.exists(log_dir))
+        setup_logging(landscape_dir=log_dir)
+        self.assertTrue(os.path.exists(log_dir))
+        
+
+    def test_run_sets_up_logging(self):
+        setup_logging_mock = self.mocker.replace(
+            "landscape.sysinfo.deployment.setup_logging")
+        setup_logging_mock()
+        self.mocker.replay()
+
+        run(["--sysinfo-plugins", "TestPlugin"])
