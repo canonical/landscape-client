@@ -54,8 +54,11 @@ class BaseConfiguration(object):
 
     required_options = ()
     unsaved_options = ()
-    default_config_filenames = ("landscape-client.conf",
-                                "/etc/landscape/client.conf")
+    default_config_filenames = ["/etc/landscape/client.conf"]
+    if (os.path.dirname(os.path.abspath(sys.argv[0]))
+        == os.path.abspath("scripts")):
+        default_config_filenames.insert(0, "landscape-client.conf")
+    default_config_filenames = tuple(default_config_filenames)
     config_section = "client"
 
     def __init__(self):
