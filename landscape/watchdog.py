@@ -27,6 +27,7 @@ from twisted.application.app import startApplication
 from landscape.deployment import Configuration, init_logging
 from landscape.lib.dbus_util import get_bus
 from landscape.lib.twisted_util import gather_results
+from landscape.lib.log import log_failure
 from landscape.lib.bootstrap import (BootstrapList, BootstrapFile,
                                      BootstrapDirectory)
 from landscape.log import rotate_logs
@@ -425,6 +426,7 @@ def daemonize():
                 raise
     os.close(null)
 
+exit_code = 0
 
 class WatchDogService(Service):
 
@@ -436,6 +438,7 @@ class WatchDogService(Service):
                                  config=config.config)
 
     def startService(self):
+        global exit_code
         info("Watchdog watching for daemons on %r bus." % self._config.bus)
         Service.startService(self)
 
@@ -449,12 +452,10 @@ class WatchDogService(Service):
                 daemon = failure.value.args[0]
                 error("ERROR: %s is already running" % daemon.program)
             else:
-                error("UNKNOWN ERROR: %s: %s" % (failure.type.__name__,
-                                                 failure.getErrorMessage()))
-            os._exit(1)
-
-        result.addErrback(got_error)
-        result.addCallback(self._daemonize)
+                log_failure(failure, "UNKNOWN ERROR")
+            exit_code = 1
+            reactor.crash() # use crash so stopService isn't called
+        result.addCallbacks(self._daemonize, got_error)
         return result
 
     def _daemonize(self, result):
@@ -464,7 +465,6 @@ class WatchDogService(Service):
                 stream = open(self._config.pid_file, "w")
                 stream.write(str(os.getpid()))
                 stream.close()
-        
 
     def stopService(self):
         info("Stopping client...")
@@ -500,3 +500,4 @@ def run(args=sys.argv):
     startApplication(application, False)
     from twisted.internet import reactor
     reactor.run()
+    return exit_code

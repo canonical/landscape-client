@@ -10,4 +10,4 @@ install()
 from landscape.watchdog import run
 
 if __name__ == "__main__":
-    run()
+    sys.exit(run())
