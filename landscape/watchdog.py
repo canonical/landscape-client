@@ -449,11 +449,22 @@ class WatchDogService(Service):
                 daemon = failure.value.args[0]
                 error("ERROR: %s is already running" % daemon.program)
             else:
-                error("UNKNOWN ERROR: " + failure.getErrorMessage())
+                error("UNKNOWN ERROR: %s: %s" % (failure.type.__name__,
+                                                 failure.getErrorMessage()))
             os._exit(1)
 
         result.addErrback(got_error)
+        result.addCallback(self._daemonize)
         return result
+
+    def _daemonize(self, result):
+        if self._config.daemon:
+            daemonize()
+            if self._config.pid_file:
+                stream = open(self._config.pid_file, "w")
+                stream.write(str(os.getpid()))
+                stream.close()
+        
 
     def stopService(self):
         info("Stopping client...")
@@ -483,13 +494,6 @@ def run(args=sys.argv):
 
     if os.getuid() != 0:
         warning("Daemons will be run as %s" % pwd.getpwuid(os.getuid()).pw_name)
-
-    if config.daemon:
-        daemonize()
-        if config.pid_file:
-            stream = open(config.pid_file, "w")
-            stream.write(str(os.getpid()))
-            stream.close()
 
     application = Application("landscape-client")
     WatchDogService(config).setServiceParent(application)

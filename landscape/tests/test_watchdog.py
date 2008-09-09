@@ -875,8 +875,7 @@ class WatchDogOptionsTest(LandscapeTest):
 
 class WatchDogScriptTest(LandscapeTest):
 
-    def setUp(self):
-        super(WatchDogScriptTest, self).setUp()
+    def test_daemonize(self):
         daemonize = self.mocker.replace("landscape.watchdog.daemonize",
                                         passthrough=False)
         daemonize()
@@ -892,7 +891,6 @@ class WatchDogScriptTest(LandscapeTest):
         reactor.run()
         self.mocker.count(0, None)
 
-    def test_daemonize(self):
         self.mocker.replay()
         try:
             run(["--daemon", "--log-dir", self.make_dir()])
@@ -902,10 +900,29 @@ class WatchDogScriptTest(LandscapeTest):
 
     def test_pid_file(self):
         pid_file = self.make_path()
+
+        daemonize = self.mocker.replace("landscape.watchdog.daemonize",
+                                        passthrough=False)
+        daemonize()
+        self.mocker.count(0, None)
+
+        watchdog = self.mocker.patch(WatchDog)
+        watchdog.start()
+        self.mocker.result(succeed(None))
+
+        reactor = self.mocker.replace("twisted.internet.reactor",
+                                      passthrough=False)
+        reactor.run()
+        self.mocker.count(0, None)
+
+        reactor.addSystemEventTrigger(ARGS, KWARGS)
+        self.mocker.count(0, None)
+
         self.mocker.replay()
         try:
             run(["--daemon", "--pid-file", pid_file,
-                 "--log-dir", self.make_dir()])
+                 "--log-dir", self.make_dir(),
+                 "--data-path", self.make_dir()])
             self.mocker.verify()
         finally:
             self.mocker.reset()
@@ -953,7 +970,8 @@ class WatchDogServiceTest(LandscapeTest):
         return service.startService()
 
     def test_start_service_exits_when_unknown_errors_occur(self):
-        self.log_helper.ignore_errors("UNKNOWN ERROR: I'm an unknown error!")
+        self.log_helper.ignore_errors(
+            "UNKNOWN ERROR: AttributeError: I'm an unknown error!")
         service = WatchDogService(self.configuration)
 
         bootstrap_list_mock = self.mocker.patch(bootstrap_list)
