@@ -426,7 +426,6 @@ def daemonize():
                 raise
     os.close(null)
 
-exit_code = 0
 
 class WatchDogService(Service):
 
@@ -436,9 +435,9 @@ class WatchDogService(Service):
         self.watchdog = WatchDog(self.bus,
                                  verbose=not config.daemon,
                                  config=config.config)
+        self.exit_code = 0
 
     def startService(self):
-        global exit_code
         info("Watchdog watching for daemons on %r bus." % self._config.bus)
         Service.startService(self)
 
@@ -453,7 +452,7 @@ class WatchDogService(Service):
                 error("ERROR: %s is already running" % daemon.program)
             else:
                 log_failure(failure, "UNKNOWN ERROR")
-            exit_code = 1
+            self.exit_code = 1
             reactor.crash() # use crash so stopService isn't called
         result.addCallbacks(self._daemonize, got_error)
         return result
@@ -496,8 +495,9 @@ def run(args=sys.argv):
         warning("Daemons will be run as %s" % pwd.getpwuid(os.getuid()).pw_name)
 
     application = Application("landscape-client")
-    WatchDogService(config).setServiceParent(application)
+    watchdog_service = WatchDogService(config)
+    watchdog_service.setServiceParent(application)
     startApplication(application, False)
     from twisted.internet import reactor
     reactor.run()
-    return exit_code
+    return watchdog_service.exit_code
