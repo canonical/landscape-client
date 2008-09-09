@@ -961,6 +961,7 @@ class WatchDogScriptTest(LandscapeTest):
             self.mocker.verify()
         finally:
             self.mocker.reset()
+        self.assertFalse(os.path.exists(pid_file))
 
 
 class WatchDogServiceTest(LandscapeTest):
