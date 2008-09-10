@@ -1,3 +1,19 @@
+landscape-client (1.0.19-hardy1-landscape1) hardy; urgency=low
+
+  * relaxed the default umask for script execution to be 0022 instead
+    of 0077 (#255856)
+  * don't write out a pidfile if the daemon is not going to stay
+    running (#257079)
+  * many packaging improvements, merged back from the Intrepid package
+  * landscape-sysinfo now logs errors in ~/.landscape/sysinfo.log
+  * landscape-sysinfo now supports a configuration file in
+    ~/.landscape/sysinfo.conf
+  * other landscape-sysinfo improvements (#260231, #260230, #264870,
+    #259585)
+  * added a better check for the interpreter in script execution
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 10 Sep 2008 17:27:13 +0000
+
 landscape-client (1.0.19-gutsy1-landscape1) gutsy; urgency=low
 
   * relaxed the default umask for script execution to be 0022 instead
