@@ -1,0 +1,26 @@
+Template: landscape-client/computer_title
+Type: string
+_Description: Computer Title:
+ Descriptive text to identify this computer uniquely in the
+ Landscape user interface.
+
+Template: landscape-client/account_name
+Type: string
+_Description: Account Name:
+ Short lowercase identifier of the Landscape account this computer
+ will be assigned.
+
+Template: landscape-client/registration_password
+Type: password
+_Description: Registration Password:
+ Client registration password for the given Landscape account.  Only
+ needed if the given account is requesting a client registration
+ password.
+
+Template: landscape-client/register_system
+Type: boolean
+Default: false
+_Description: Register this system with the Landscape server?
+ Register this system with a preexisting Landscape account.  Please
+ go to http://landscape.canonical.com if you need a Landscape account.
+
