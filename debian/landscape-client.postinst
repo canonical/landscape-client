@@ -26,53 +26,6 @@ PYTHON=/usr/bin/python
 case "$1" in
     configure)
 
-        db_input medium $PACKAGE/sysinfo_in_motd || true
-        db_get $PACKAGE/sysinfo
-        # Choices:
-        #  * Do not display sysinfo on login
-        #  * Cache sysinfo in /etc/motd
-        #  * Run sysinfo on every login
-        SYSINFO="${RET:-Cache sysinfo in /etc/motd}"
-        if [ "$RET" = "Cache sysinfo in /etc/motd" ]; then
-            rm -f /etc/profile.d/landscape-sysinfo.sh 2>/dev/null || true
-            ln -s /usr/bin/landscape-sysinfo /etc/update-motd.d/50-landscape-sysinfo
-            /etc/init.d/update-motd refresh || true
-        elif [ "$RET" = "Run sysinfo on every login" ]; then
-            if rm -f /etc/update-motd.d/50-landscape-sysinfo 2>/dev/null; then
-                /etc/init.d/update-motd refresh || true
-            fi
-            echo /usr/bin/landscape-sysinfo > /etc/profile.d/landscape-sysinfo.sh
-        else
-            if rm -f /etc/update-motd.d/50-landscape-sysinfo 2>/dev/null; then
-                /etc/init.d/update-motd refresh || true
-            fi
-            rm -f /etc/profile.d/landscape-sysinfo.sh || true
-        fi
-
-        # 0.9.1 introduces non-backwards compatible changes.  This detects
-        # whether or not the data is in the current format.  If not, all
-        # existing data is removed.
-        DATA_DIR=/var/lib/landscape
-
-        if [ -d $DATA_DIR/data ]; then
-            rm -rf $DATA_DIR/*
-        elif [ -f $DATA_DIR/client/data.bpickle ]; then
-            LAST_BYTE=`sed -n '$,$s/.*\(.\)/\1/p' $DATA_DIR/client/data.bpickle`
-            if [ "$LAST_BYTE" = e ]; then
-                rm -rf $DATA_DIR/*
-            fi
-        fi
-
-        # Create landscape system user
-        if ! getent passwd landscape >/dev/null; then
-            adduser --quiet --system --disabled-password \
-                --gecos "Landscape Client Daemon" \
-                --home /var/lib/landscape --no-create-home landscape
-        fi
-
-        # Fix prior ownerships
-        chown -R landscape /var/log/landscape /var/lib/landscape
-
         # Tell dbus to reload its configuration since we've installed a conf
         # to its system.d. We must do this before invoking landscape-config.
         invoke-rc.d dbus reload || true

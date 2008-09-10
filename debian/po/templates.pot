@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: landscape-client@packages.debian.org\n"
-"POT-Creation-Date: 2008-09-04 13:38-0500\n"
+"POT-Creation-Date: 2008-09-10 16:00-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,13 +18,13 @@ msgstr ""
 
 #. Type: string
 #. Description
-#: ../templates:1001
+#: ../landscape-client.templates:1001
 msgid "Computer Title:"
 msgstr ""
 
 #. Type: string
 #. Description
-#: ../templates:1001
+#: ../landscape-client.templates:1001
 msgid ""
 "Descriptive text to identify this computer uniquely in the Landscape user "
 "interface."
@@ -32,13 +32,13 @@ msgstr ""
 
 #. Type: string
 #. Description
-#: ../templates:2001
+#: ../landscape-client.templates:2001
 msgid "Account Name:"
 msgstr ""
 
 #. Type: string
 #. Description
-#: ../templates:2001
+#: ../landscape-client.templates:2001
 msgid ""
 "Short lowercase identifier of the Landscape account this computer will be "
 "assigned."
@@ -46,13 +46,13 @@ msgstr ""
 
 #. Type: password
 #. Description
-#: ../templates:3001
+#: ../landscape-client.templates:3001
 msgid "Registration Password:"
 msgstr ""
 
 #. Type: password
 #. Description
-#: ../templates:3001
+#: ../landscape-client.templates:3001
 msgid ""
 "Client registration password for the given Landscape account.  Only needed "
 "if the given account is requesting a client registration password."
@@ -60,13 +60,13 @@ msgstr ""
 
 #. Type: boolean
 #. Description
-#: ../templates:4001
+#: ../landscape-client.templates:4001
 msgid "Register this system with the Landscape server?"
 msgstr ""
 
 #. Type: boolean
 #. Description
-#: ../templates:4001
+#: ../landscape-client.templates:4001
 msgid ""
 "Register this system with a preexisting Landscape account.  Please go to "
 "http://landscape.canonical.com if you need a Landscape account."
@@ -80,7 +80,7 @@ msgstr ""
 #. try to keep below ~71 characters.
 #. DO NOT USE commas (,) in Choices translations otherwise
 #. this will break the choices shown to users
-#: ../templates:5001
+#: ../landscape-common.templates:1001
 msgid ""
 "Do not display sysinfo on login, Cache sysinfo in /etc/motd, Run sysinfo on "
 "every login"
@@ -88,13 +88,13 @@ msgstr ""
 
 #. Type: select
 #. Description
-#: ../templates:5002
+#: ../landscape-common.templates:1002
 msgid "landscape-sysinfo configuration:"
 msgstr ""
 
 #. Type: select
 #. Description
-#: ../templates:5002
+#: ../landscape-common.templates:1002
 msgid ""
 "Landscape includes a tool and a set of modules that can display system "
 "status, information, and statistics on login."
@@ -102,7 +102,7 @@ msgstr ""
 
 #. Type: select
 #. Description
-#: ../templates:5002
+#: ../landscape-common.templates:1002
 msgid ""
 "This information can be gathered periodically (every 10 minutes) and "
 "automatically written to /etc/motd.  The data could be a few minutes out-of-"
@@ -111,7 +111,7 @@ msgstr ""
 
 #. Type: select
 #. Description
-#: ../templates:5002
+#: ../landscape-common.templates:1002
 msgid ""
 "Or, this information can be gathered at login.  The data will be more "
 "current, but might introduce a small delay at login."

@@ -1,3 +1,9 @@
+landscape-client (1.0.18-0ubuntu1) intrepid; urgency=low
+
+  * New upstream release.
+
+ -- Mathias Gug <mathiaz@ubuntu.com>  Tue, 09 Sep 2008 17:25:55 -0400
+
 landscape-client (1.0.17-0ubuntu1) intrepid; urgency=low
 
   [ Dustin Kirkland and Rick Clark ]

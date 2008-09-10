@@ -16,7 +16,6 @@ set -e
 
 case "$1" in
     purge)
-        deluser --quiet --system landscape >/dev/null || true
     ;;
 
     remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
