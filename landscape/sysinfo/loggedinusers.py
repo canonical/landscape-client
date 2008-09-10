@@ -9,9 +9,9 @@ class LoggedInUsers(object):
         self._sysinfo = sysinfo
 
     def run(self):
-        self._sysinfo.add_header("Users logged-in", None)
+        self._sysinfo.add_header("Users logged in", None)
         def add_header(logged_users):
-            self._sysinfo.add_header("Users logged-in", str(len(logged_users)))
+            self._sysinfo.add_header("Users logged in", str(len(logged_users)))
         result = get_logged_in_users()
         result.addCallback(add_header)
         result.addErrback(lambda failure: None)

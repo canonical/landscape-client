@@ -1,6 +1,11 @@
+import textwrap
+from logging import getLogger
 import math
 
+from twisted.python.failure import Failure
+
 from landscape.lib.twisted_util import gather_results
+from landscape.lib.log import log_failure
 from landscape.plugin import PluginRegistry
 
 
@@ -36,6 +41,7 @@ class SysInfoPluginRegistry(PluginRegistry):
         self._headers = []
         self._notes = []
         self._footnotes = []
+        self._plugin_error = False
 
     def add_header(self, name, value):
         """Add a new information header to be displayed to the user.
@@ -88,8 +94,27 @@ class SysInfoPluginRegistry(PluginRegistry):
         """
         deferreds = []
         for plugin in self.get_plugins():
-            deferreds.append(plugin.run())
-        return gather_results(deferreds)
+            try:
+                result = plugin.run()
+            except:
+                self._log_plugin_error(Failure(), plugin)
+            else:
+                result.addErrback(self._log_plugin_error, plugin)
+                deferreds.append(result)
+        return gather_results(deferreds).addCallback(self._report_error_note)
+
+    def _log_plugin_error(self, failure, plugin):
+        self._plugin_error = True
+        message = "%s plugin raised an exception." % plugin.__class__.__name__
+        logger = getLogger("landscape-sysinfo")
+        log_failure(failure, message, logger=logger)
+
+    def _report_error_note(self, result):
+        if self._plugin_error:
+            self.add_note(
+                "There were exceptions while processing one or more plugins. "
+                "See ~/.landscape/sysinfo.log for more information.")
+        return result
 
 
 def format_sysinfo(headers=(), notes=(), footnotes=(), width=80, indent="",
@@ -212,8 +237,13 @@ def format_sysinfo(headers=(), notes=(), footnotes=(), width=80, indent="",
         if lines:
             # Some spacing between headers and notes.
             lines.append("")
-        # For notes, just prepend the prefix and we're done.
-        lines.extend(indent + note_prefix + note for note in notes)
+        initial_indent = indent + note_prefix
+        for note in notes:
+            lines.extend(
+                textwrap.wrap(note,
+                              initial_indent=initial_indent,
+                              subsequent_indent=" "*len(initial_indent),
+                              width=width))
 
     if footnotes:
         if lines:

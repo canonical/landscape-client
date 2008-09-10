@@ -34,7 +34,8 @@ class ConfigurationTest(LandscapeTest):
         self.assertEquals(self.config.get("random_key"), None)
 
     def write_config_file(self, **kwargs):
-        config = "\n".join(["[client]"] +
+        section_name = kwargs.pop("section_name", "client")
+        config = "\n".join(["[%s]" % (section_name,)] +
                            ["%s = %s" % pair for pair in kwargs.items()])
         self.config_filename = self.makeFile(config)
         self.config.default_config_filenames[:] = [self.config_filename]
@@ -97,6 +98,19 @@ class ConfigurationTest(LandscapeTest):
         self.write_config_file(log_level="file")
         self.config.load([])
         self.assertEquals(self.config.log_level, "file")
+
+    def test_different_config_file_section(self):
+        class MyConfiguration(Configuration):
+            config_section = "babble"
+            default_config_filenames = []
+            def make_parser(self):
+                parser = super(MyConfiguration, self).make_parser()
+                parser.add_option("--whatever", metavar="STUFF")
+                return parser
+        self.reset_config(configuration_class=MyConfiguration)
+        self.write_config_file(section_name="babble", whatever="yay")
+        self.config.load([])
+        self.assertEquals(self.config.whatever, "yay")
 
     def test_write_configuration(self):
         self.write_config_file(log_level="debug")

@@ -1,16 +1,26 @@
 """Deployment code for the sysinfo tool."""
+import os
+from logging import getLogger, Formatter
+from logging.handlers import RotatingFileHandler
+
 from twisted.python.reflect import namedClass
-from twisted.internet import reactor
+from twisted.internet.defer import Deferred, maybeDeferred
 
 from landscape.deployment import Configuration
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry, format_sysinfo
 
 
-ALL_PLUGINS = ["Load", "Memory", "Temperature", "Processes", "LoggedInUsers"]
+ALL_PLUGINS = ["Load", "Disk", "Memory", "Temperature", "Processes",
+               "LoggedInUsers", "LandscapeLink"]
 
 
 class SysInfoConfiguration(Configuration):
     """Specialized configuration for the Landscape sysinfo tool."""
+
+    default_config_filenames = (
+        os.path.expanduser("~/.landscape/sysinfo.conf"),)
+
+    config_section = "sysinfo"
 
     def make_parser(self):
         """
@@ -21,40 +31,80 @@ class SysInfoConfiguration(Configuration):
 
         parser.add_option("--sysinfo-plugins", metavar="PLUGIN_LIST",
                           help="Comma-delimited list of sysinfo plugins to "
-                               "use. ALL means use all plugins.",
-                          default="ALL")
+                               "use. Default is to use all plugins.")
+
+        parser.add_option("--exclude-sysinfo-plugins", metavar="PLUGIN_LIST",
+                          help="Comma-delimited list of sysinfo plugins to "
+                               "NOT use. This always take precedence over "
+                               "plugins to include.")
+
+        parser.epilog = "Default plugins: %s" % (", ".join(ALL_PLUGINS))
         return parser
 
-    @property
-    def plugin_factories(self):
-        if self.sysinfo_plugins == "ALL":
-            return ALL_PLUGINS
-        return [x.strip() for x in self.sysinfo_plugins.split(",")]
+    def get_plugin_names(self, plugin_spec):
+        return [x.strip() for x in plugin_spec.split(",")]
 
     def get_plugins(self):
+        if self.sysinfo_plugins is None:
+            include = ALL_PLUGINS
+        else:
+            include = self.get_plugin_names(self.sysinfo_plugins)
+        if self.exclude_sysinfo_plugins is None:
+            exclude = []
+        else:
+            exclude = self.get_plugin_names(self.exclude_sysinfo_plugins)
+        plugins = [x for x in include if x not in exclude]
         return [namedClass("landscape.sysinfo.%s.%s"
                            % (plugin_name.lower(), plugin_name))()
-                for plugin_name in self.plugin_factories]
+                for plugin_name in plugins]
 
 
-def run(args, run_reactor=True):
-    sysinfo = SysInfoPluginRegistry()
+def setup_logging(landscape_dir=os.path.expanduser("~/.landscape")):
+    logger = getLogger("landscape-sysinfo")
+    logger.propagate = False
+    if not os.path.isdir(landscape_dir):
+        os.mkdir(landscape_dir)
+    log_filename = os.path.join(landscape_dir,  "sysinfo.log")
+    handler = RotatingFileHandler(log_filename,
+                                  maxBytes=500 * 1024, backupCount=1)
+    logger.addHandler(handler)
+    handler.setFormatter(Formatter("%(asctime)s %(levelname)-8s %(message)s"))
+
+
+def run(args, reactor=None, sysinfo=None):
+    """
+    @param reactor: The reactor to (optionally) run the sysinfo plugins in.
+    """
+    setup_logging()
+
+    if sysinfo is None:
+        sysinfo = SysInfoPluginRegistry()
     config = SysInfoConfiguration()
     config.load(args)
     for plugin in config.get_plugins():
         sysinfo.add(plugin)
+
     def show_output(result):
         print format_sysinfo(sysinfo.get_headers(), sysinfo.get_notes(),
                              sysinfo.get_footnotes(), indent="  ")
-    result = sysinfo.run()
-    result.addCallback(show_output)
 
-    if run_reactor:
-        # XXX No unittests for this. :-(
+    def run_sysinfo():
+        return sysinfo.run().addCallback(show_output)
+
+    if reactor is not None:
+        # In case any plugins run processes or do other things that require the
+        # reactor to already be started, we delay them until the reactor is
+        # running.
+        done = Deferred()
+        reactor.callWhenRunning(
+            lambda: maybeDeferred(run_sysinfo).chainDeferred(done))
         def stop_reactor(result):
-            reactor.callLater(0.1, reactor.stop)
+            # We won't need to use callLater here once we use Twisted >8.
+            # tm:3011
+            reactor.callLater(0, reactor.stop)
             return result
-        result.addBoth(stop_reactor)
+        done.addBoth(stop_reactor)
         reactor.run()
-
-    return result
+    else:
+        done = run_sysinfo()
+    return done

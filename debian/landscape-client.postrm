@@ -7,3 +7,5 @@ update-rc.d landscape-client remove >/dev/null || exit $?
 getent passwd landscape >/dev/null || exit 0
 ! deluser --version >/dev/null 2>&1 || exec deluser landscape
 echo 'deluser program not available, not removing system user "landscape".' >&2
+
+#DEBHELPER#

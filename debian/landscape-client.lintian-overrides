@@ -1,0 +1,2 @@
+landscape-client: duplicate-updaterc.d-calls-in-postinst landscape-client
+landscape-client: duplicate-updaterc.d-calls-in-postrm landscape-client

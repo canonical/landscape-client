@@ -56,6 +56,7 @@ class BaseConfiguration(object):
     unsaved_options = ()
     default_config_filenames = ("landscape-client.conf",
                                 "/etc/landscape/client.conf")
+    config_section = "client"
 
     def __init__(self):
         self._set_options = {}
@@ -166,7 +167,8 @@ class BaseConfiguration(object):
         self._config_filename = filename
         config_parser = ConfigParser()
         config_parser.read(filename)
-        self._config_file_options = dict(config_parser.items("client"))
+        self._config_file_options = dict(
+            config_parser.items(self.config_section))
 
     def write(self):
         """Write back configuration to the configuration file.

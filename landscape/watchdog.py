@@ -27,6 +27,7 @@ from twisted.application.app import startApplication
 from landscape.deployment import Configuration, init_logging
 from landscape.lib.dbus_util import get_bus
 from landscape.lib.twisted_util import gather_results
+from landscape.lib.log import log_failure
 from landscape.lib.bootstrap import (BootstrapList, BootstrapFile,
                                      BootstrapDirectory)
 from landscape.log import rotate_logs
@@ -434,6 +435,7 @@ class WatchDogService(Service):
         self.watchdog = WatchDog(self.bus,
                                  verbose=not config.daemon,
                                  config=config.config)
+        self.exit_code = 0
 
     def startService(self):
         info("Watchdog watching for daemons on %r bus." % self._config.bus)
@@ -449,11 +451,19 @@ class WatchDogService(Service):
                 daemon = failure.value.args[0]
                 error("ERROR: %s is already running" % daemon.program)
             else:
-                error("UNKNOWN ERROR: " + failure.getErrorMessage())
-            os._exit(1)
-
-        result.addErrback(got_error)
+                log_failure(failure, "UNKNOWN ERROR")
+            self.exit_code = 1
+            reactor.crash() # use crash so stopService isn't called
+        result.addCallbacks(self._daemonize, got_error)
         return result
+
+    def _daemonize(self, result):
+        if self._config.daemon:
+            daemonize()
+            if self._config.pid_file:
+                stream = open(self._config.pid_file, "w")
+                stream.write(str(os.getpid()))
+                stream.close()
 
     def stopService(self):
         info("Stopping client...")
@@ -484,15 +494,10 @@ def run(args=sys.argv):
     if os.getuid() != 0:
         warning("Daemons will be run as %s" % pwd.getpwuid(os.getuid()).pw_name)
 
-    if config.daemon:
-        daemonize()
-        if config.pid_file:
-            stream = open(config.pid_file, "w")
-            stream.write(str(os.getpid()))
-            stream.close()
-
     application = Application("landscape-client")
-    WatchDogService(config).setServiceParent(application)
+    watchdog_service = WatchDogService(config)
+    watchdog_service.setServiceParent(application)
     startApplication(application, False)
     from twisted.internet import reactor
     reactor.run()
+    return watchdog_service.exit_code

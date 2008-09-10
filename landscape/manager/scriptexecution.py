@@ -10,7 +10,7 @@ import operator
 import shutil
 
 from twisted.internet.protocol import ProcessProtocol
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import Deferred, fail
 from twisted.internet.error import ProcessDone
 
 from landscape.manager.manager import ManagerPlugin, SUCCEEDED, FAILED
@@ -135,6 +135,9 @@ class ScriptExecution(ManagerPlugin):
         @return: A deferred that will fire with the data printed by the process
             or fail with a L{ProcessTimeLimitReachedError}.
         """
+        if not os.path.exists(shell.split()[0]):
+            return fail(
+                ProcessFailedError("Unknown interpreter: '%s'" % shell))
         uid = None
         gid = None
         path = None
@@ -161,31 +164,37 @@ class ScriptExecution(ManagerPlugin):
         script_file.close()
         env = {}
         attachment_dir = ""
-        if attachments:
-            attachment_dir = tempfile.mkdtemp()
-            env["LANDSCAPE_ATTACHMENTS"] = attachment_dir
-            for attachment_filename, data in attachments.iteritems():
-                full_filename = os.path.join(
-                    attachment_dir, attachment_filename)
-                attachment = file(full_filename, "wb")
-                os.chmod(full_filename, 0600)
+        old_umask = os.umask(0022)
+        try:
+            if attachments:
+                attachment_dir = tempfile.mkdtemp()
+                env["LANDSCAPE_ATTACHMENTS"] = attachment_dir
+                for attachment_filename, data in attachments.iteritems():
+                    full_filename = os.path.join(
+                        attachment_dir, attachment_filename)
+                    attachment = file(full_filename, "wb")
+                    os.chmod(full_filename, 0600)
+                    if uid is not None:
+                        os.chown(full_filename, uid, gid)
+                    attachment.write(data)
+                    attachment.close()
+                os.chmod(attachment_dir, 0700)
                 if uid is not None:
-                    os.chown(full_filename, uid, gid)
-                attachment.write(data)
-                attachment.close()
-            os.chmod(attachment_dir, 0700)
-            if uid is not None:
-                os.chown(attachment_dir, uid, gid)
-        pp = ProcessAccumulationProtocol(
-            self.registry.reactor, self.size_limit)
-        self.process_factory.spawnProcess(pp, filename, uid=uid, gid=gid,
-                                          path=path, env=env)
-        if time_limit is not None:
-            pp.schedule_cancel(time_limit)
-        result = pp.result_deferred
-        return result.addBoth(self._remove_script, filename, attachment_dir)
+                    os.chown(attachment_dir, uid, gid)
+            pp = ProcessAccumulationProtocol(
+                self.registry.reactor, self.size_limit)
+            self.process_factory.spawnProcess(pp, filename, uid=uid, gid=gid,
+                                              path=path, env=env)
+            if time_limit is not None:
+                pp.schedule_cancel(time_limit)
+            result = pp.result_deferred
+            return result.addBoth(self._remove_script, filename, attachment_dir,
+                                  old_umask)
+        except:
+            os.umask(old_umask)
+            raise
 
-    def _remove_script(self, result, filename, attachment_dir):
+    def _remove_script(self, result, filename, attachment_dir, old_umask):
         try:
             os.unlink(filename)
         except:
@@ -195,6 +204,7 @@ class ScriptExecution(ManagerPlugin):
                 shutil.rmtree(attachment_dir)
             except:
                 pass
+        os.umask(old_umask)
         return result
 
 
