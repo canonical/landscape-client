@@ -44,18 +44,6 @@ END
             chown landscape $TEMPFILE
             mv $TEMPFILE $CONFIG_FILE
 
-            # Do debconf configuration
-            db_get $PACKAGE/register_system
-            if [ "$RET" = true ]; then
-                priority=high
-            else
-                priority=medium
-            fi
-            db_input "$priority" $PACKAGE/computer_title || true
-            db_input "$priority" $PACKAGE/account_name || true
-            db_input "$priority" $PACKAGE/registration_password || true
-            db_go || true
-
             db_get $PACKAGE/computer_title
             COMPUTER_TITLE="${RET}"
             db_get $PACKAGE/account_name
