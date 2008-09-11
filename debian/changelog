@@ -9,10 +9,6 @@ landscape-client (1.0.18-0ubuntu2) intrepid; urgency=low
     - debian/control: move some dependencies to landscape-client so that
       landscape-common doesn't install unecessary packages in the 
       default -server install.
-  * landscape-client.config:
-    Move account registration questions to debconf priority of high so that 
-    (re)configuring landscape-client asks if the system should be 
-    registered. (LP: #268351)
   * debian/landscape-client.postrm: delete /etc/landscape/client.conf when 
     the package is purged.
   * debian/landscape-client.postinst: remove sysinfo_in_motd debconf question
@@ -25,7 +21,7 @@ landscape-client (1.0.18-0ubuntu2) intrepid; urgency=low
     - debian/rules: Install wrapper into /usr/share/landscape.
     - debian/landscape-cliest.postinst: Link wrapper into place.
 
- -- Mathias Gug <mathiaz@ubuntu.com>  Wed, 10 Sep 2008 23:59:37 -0400
+ -- Mathias Gug <mathiaz@ubuntu.com>  Thu, 11 Sep 2008 14:54:20 -0400
 
 landscape-client (1.0.18-0ubuntu1) intrepid; urgency=low
 
