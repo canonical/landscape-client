@@ -1,8 +1,21 @@
 landscape-client (1.0.18-0ubuntu2) intrepid; urgency=low
 
-  * Split the package. 
+  * Split the package into two packages:
+    - landscape-common: has the python libraries and the landscape-sysinfo
+      command. A landscape account is not required to use this package.
+    - landscape-client: has all the binaries required to run the
+      landscape-client. Requires a landscape account.
+    - debian/control: move some dependencies to landscape-client so that
+      landscape-common doesn't install unecessary packages in the 
+      default -server install.
+  * (re)configuring landscape-client asks if the system should be 
+    registered. (LP: #268351)
+  * debian/landscape-client.postrm: delete /etc/landscape/client.conf when 
+    the package is purged.
+  * debian/landscape-client.postinst: remove sysinfo_in_motd debconf question
+    as it wasn't used.
 
- -- Mathias Gug <mathiaz@ubuntu.com>  Wed, 10 Sep 2008 17:07:40 -0400
+ -- Mathias Gug <mathiaz@ubuntu.com>  Wed, 10 Sep 2008 22:22:39 -0400
 
 landscape-client (1.0.18-0ubuntu1) intrepid; urgency=low
 
