@@ -1,5 +1,6 @@
 landscape-client (1.0.18-0ubuntu2) intrepid; urgency=low
 
+  [ Mathias Gug ]
   * Split the package into two packages:
     - landscape-common: has the python libraries and the landscape-sysinfo
       command. A landscape account is not required to use this package.
@@ -15,7 +16,14 @@ landscape-client (1.0.18-0ubuntu2) intrepid; urgency=low
   * debian/landscape-client.postinst: remove sysinfo_in_motd debconf question
     as it wasn't used.
 
- -- Mathias Gug <mathiaz@ubuntu.com>  Wed, 10 Sep 2008 22:22:39 -0400
+  [ Christopher Armstrong ]
+  * Fixes for (LP: #268352).
+    - scripts/landscape-sysinfo.wrapper: New script to run landscape-sysinfo
+      with leading whitespace.
+    - debian/rules: Install wrapper into /usr/share/landscape.
+    - debian/landscape-cliest.postinst: Link wrapper into place.
+
+ -- Mathias Gug <mathiaz@ubuntu.com>  Wed, 10 Sep 2008 22:42:50 -0400
 
 landscape-client (1.0.18-0ubuntu1) intrepid; urgency=low
 

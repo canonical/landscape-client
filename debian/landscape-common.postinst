@@ -32,20 +32,19 @@ case "$1" in
         #  * Cache sysinfo in /etc/motd
         #  * Run sysinfo on every login
         SYSINFO="${RET:-Cache sysinfo in /etc/motd}"
+        WRAPPER=/usr/share/landscape/landscape-sysinfo.wrapper
+        PROFILE_LOCATION=/etc/profile.d/50-landscape-sysinfo.sh
+        UPDATE_MOTD_LOCATION=/etc/update-motd.d/50-landscape-sysinfo
         if [ "$RET" = "Cache sysinfo in /etc/motd" ]; then
-            rm -f /etc/profile.d/landscape-sysinfo.sh 2>/dev/null || true
-            ln -s /usr/bin/landscape-sysinfo /etc/update-motd.d/50-landscape-sysinfo
+            rm -f $PROFILE_LOCATION 2>/dev/null || true
+            ln -s $WRAPPER $UPDATE_MOTD_LOCATION
             invoke-rc.d update-motd refresh || true
         elif [ "$RET" = "Run sysinfo on every login" ]; then
-            if rm -f /etc/update-motd.d/50-landscape-sysinfo 2>/dev/null; then
-                invoke-rc.d update-motd refresh || true
-            fi
-            echo /usr/bin/landscape-sysinfo > /etc/profile.d/landscape-sysinfo.sh
+            rm -f $UPDATE_MOTD_LOCATION 2>/dev/null &&  /etc/init.d/update-motd refresh || true
+            ln -s $WRAPPER $PROFILE_LOCATION
         else
-            if rm -f /etc/update-motd.d/50-landscape-sysinfo 2>/dev/null; then
-                invoke-rc.d update-motd refresh || true
-            fi
-            rm -f /etc/profile.d/landscape-sysinfo.sh || true
+            rm -f $UPDATE_MOTD_LOCATION 2>/dev/null &&  /etc/init.d/update-motd refresh || true
+            rm -f $PROFILE_LOCATION || true
         fi
 
         # 0.9.1 introduces non-backwards compatible changes.  This detects
