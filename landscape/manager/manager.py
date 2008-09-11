@@ -4,6 +4,7 @@ from logging import exception
 
 from landscape.log import format_object
 from landscape.plugin import Plugin, PluginRegistry, BrokerPlugin
+from landscape.manager.store import ManagerStore
 from landscape.lib.dbus_util import method
 
 # Protocol messages! Same constants are defined in the server.
@@ -32,12 +33,16 @@ class ManagerDBusObject(BrokerPlugin):
 class ManagerPluginRegistry(PluginRegistry):
     """Central point of integration for the Landscape Manager."""
 
-    def __init__(self, reactor, broker, config, bus=None):
+    def __init__(self, reactor, broker, config, bus=None, store_filename=None):
         super(ManagerPluginRegistry, self).__init__()
         self.reactor = reactor
         self.broker = broker
         self.config = config
         self.bus = bus
+        if store_filename:
+            self.store = ManagerStore(store_filename)
+        else:
+            self.store = None
 
 
 class ManagerPlugin(Plugin):
