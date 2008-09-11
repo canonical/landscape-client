@@ -23,18 +23,9 @@ class MonitorDBusObject(BrokerPlugin):
     bus_name = BUS_NAME
     object_path = OBJECT_PATH
 
-    def __init__(self, bus, monitor):
-        super(MonitorDBusObject, self).__init__(bus, monitor)
-        bus.add_signal_receiver(self.notify_exchange, "impending_exchange")
-
-    def notify_exchange(self):
-        info("Got notification of impending exchange. Notifying all plugins.")
-        self.registry.exchange()
-
     ping = method(IFACE_NAME)(BrokerPlugin.ping)
     exit = method(IFACE_NAME)(BrokerPlugin.exit)
     message = method(IFACE_NAME)(BrokerPlugin.message)
-
 
 
 class MonitorPluginRegistry(PluginRegistry):
@@ -62,12 +53,7 @@ class MonitorPluginRegistry(PluginRegistry):
 
     def exchange(self):
         """Call C{exchange} on all plugins."""
-        for plugin in self._plugins:
-            if hasattr(plugin, "exchange"):
-                try:
-                    plugin.exchange()
-                except:
-                    exception("Error during plugin exchange")
+        super(MonitorPluginRegistry, self).exchange()
         self.flush()
 
 
