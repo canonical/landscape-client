@@ -29,4 +29,4 @@ Description: The Landscape administration system client
  package is necessary if you want your machine to be managed in a
  Landscape account.
  .
- This package provides the client.
+ This package provides the Landscape client and requires a Landscape account.
