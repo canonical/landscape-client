@@ -16,6 +16,8 @@ set -e
 
 case "$1" in
     purge)
+    CONFIG_FILE=/etc/landscape/client.conf
+    rm -f "${CONFIG_FILE}"
     ;;
 
     remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
