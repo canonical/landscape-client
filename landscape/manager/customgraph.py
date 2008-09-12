@@ -131,9 +131,6 @@ class CustomGraphManager(ManagerPlugin, ScriptRunnerMixin):
         for graph_id, filename, user in graphes:
             if graph_id not in self._data:
                 self._data[graph_id] = {"values": [], "error": u""}
-            uid = None
-            gid = None
-            path = None
             if user is not None:
                 if not self.is_user_allowed(user):
                     d = fail(ProcessFailedError(
@@ -141,7 +138,7 @@ class CustomGraphManager(ManagerPlugin, ScriptRunnerMixin):
                     d.addErrback(self._handle_error, graph_id)
                     dl.append(d)
                     continue
-                uid, gid, path = self.get_pwd_infos(user)
+            uid, gid, path = self.get_pwd_infos(user)
             pp = ProcessAccumulationProtocol(
                 self.registry.reactor, self.size_limit)
             self.process_factory.spawnProcess(
