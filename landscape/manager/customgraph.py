@@ -77,6 +77,10 @@ class CustomGraphManager(ManagerPlugin):
             filename = os.path.join(
                 scripts_directory, "graph-%d" % (graph_id,))
 
+            if os.path.exists(filename):
+                os.chmod(filename, 0777)
+                os.unlink(filename)
+
             script_file = file(filename, "w")
             uid = None
             gid = None
@@ -152,8 +156,10 @@ class CustomGraphManager(ManagerPlugin):
                     path = "/"
                 allowed_users = self.registry.config.get_allowed_script_users()
                 if allowed_users != ALL_USERS and user not in allowed_users:
-                    dl.append(fail(ProcessFailedError(
-                        u"Custom graph cannot be run as user %s." % (user,))))
+                    d = fail(ProcessFailedError(
+                        u"Custom graph cannot be run as user %s." % (user,)))
+                    d.addErrback(self._handle_error, graph_id)
+                    dl.append(d)
                     continue
             pp = ProcessAccumulationProtocol(
                 self.registry.reactor, self.size_limit)

@@ -7,7 +7,8 @@ from twisted.python.failure import Failure
 from landscape.manager.customgraph import CustomGraphManager
 
 from landscape.tests.helpers import (
-    LandscapeTest, LandscapeIsolatedTest, ManagerHelper, StubProcessFactory)
+    LandscapeIsolatedTest, ManagerHelper, StubProcessFactory)
+from landscape.tests.mocker import ANY
 
 
 class StubManagerStore(object):
@@ -75,6 +76,71 @@ class CustomGraphManagerTests(LandscapeIsolatedTest):
         result.addCallback(got_result)
         return result
 
+    def test_add_graph_for_user(self):
+        mock_chown = self.mocker.replace("os.chown", passthrough=False)
+        mock_chown(ANY, 1234, 5678)
+
+        mock_chmod = self.mocker.replace("os.chmod", passthrough=False)
+        mock_chmod(ANY, 0700)
+
+        mock_getpwnam = self.mocker.replace("pwd.getpwnam", passthrough=False)
+        class pwnam(object):
+            pw_uid = 1234
+            pw_gid = 5678
+            pw_dir = self.make_path()
+
+        self.expect(mock_getpwnam("bar")).result(pwnam)
+        self.mocker.replay()
+        result = self.manager.dispatch_message(
+            {"type": "custom-graph-add",
+                     "interpreter": "/bin/sh",
+                     "code": "echo hi!",
+                     "username": "bar",
+                     "operation-id": 456,
+                     "graph-id": 123})
+        def got_result(r):
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [{"api": "3.1",
+                  "operation-id": 456,
+                  "result-text": u"",
+                  "status": 6,
+                  "timestamp": 0,
+                  "type": "operation-result"}])
+            self.assertEquals(
+                self.store.graphes,
+                {123: (os.path.join(self.data_path, "custom-graph-scripts",
+                                    "graph-123"),
+                       "bar")})
+        result.addCallback(got_result)
+        return result
+
+    def test_add_unknow_user(self):
+        uid = os.getuid()
+        info = pwd.getpwuid(uid)
+        username = info.pw_name
+        self.manager.config.script_users = "foo"
+        result = self.manager.dispatch_message(
+            {"type": "custom-graph-add",
+                     "interpreter": "/bin/sh",
+                     "code": "echo hi!",
+                     "username": username,
+                     "operation-id": 456,
+                     "graph-id": 123})
+        def got_result(r):
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [{"api": "3.1",
+                  "operation-id": 456,
+                  "result-text": u"Custom graph cannot be run as user therve.",
+                  "status": 5,
+                  "timestamp": 0,
+                  "type": "operation-result"}])
+
+            self.assertEquals(self.store.graphes, {})
+        result.addCallback(got_result)
+        return result
+
     def test_remove_unknown_graph(self):
         self.manager.dispatch_message(
             {"type": "custom-graph-remove",
@@ -128,7 +194,7 @@ class CustomGraphManagerTests(LandscapeIsolatedTest):
         for fd in (0, 1, 2):
             protocol.childConnectionLost(fd)
         protocol.processEnded(Failure(ProcessDone(0)))
-        
+
         def check(ignore):
             self.graph_manager.exchange()
             self.assertMessages(
@@ -140,4 +206,64 @@ class CustomGraphManagerTests(LandscapeIsolatedTest):
                              "values": []}},
                   "timestamp": 0,
                   "type": "custom-graph"}])
+        return result.addCallback(check)
+
+    def test_run_user(self):
+        self.store.add_graph(123, "foo", "bar")
+        factory = StubProcessFactory()
+        self.graph_manager.process_factory = factory
+
+        mock_getpwnam = self.mocker.replace("pwd.getpwnam", passthrough=False)
+        class pwnam(object):
+            pw_uid = 1234
+            pw_gid = 5678
+            pw_dir = self.make_path()
+
+        self.expect(mock_getpwnam("bar")).result(pwnam)
+        self.mocker.replay()
+
+        result = self.graph_manager.run()
+
+        self.assertEquals(len(factory.spawns), 1)
+        spawn = factory.spawns[0]
+        self.assertEquals(spawn[1], "foo")
+        self.assertEquals(spawn[2], ())
+        self.assertEquals(spawn[3], {})
+        self.assertEquals(spawn[4], "/")
+        self.assertEquals(spawn[5], 1234)
+        self.assertEquals(spawn[6], 5678)
+
+        protocol = spawn[0]
+        protocol.childDataReceived(1, "spam")
+        for fd in (0, 1, 2):
+            protocol.childConnectionLost(fd)
+        protocol.processEnded(Failure(ProcessDone(0)))
+
+        return result
+
+    def test_run_dissallowed_user(self):
+        uid = os.getuid()
+        info = pwd.getpwuid(uid)
+        username = info.pw_name
+        self.manager.config.script_users = "foo"
+
+        self.store.add_graph(123, "foo", username)
+        factory = StubProcessFactory()
+        self.graph_manager.process_factory = factory
+        result = self.graph_manager.run()
+
+        self.assertEquals(len(factory.spawns), 0)
+
+        def check(ignore):
+            self.graph_manager.exchange()
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [{"api": "3.1",
+                  "data": {123:
+                      {"error":
+                          u"Custom graph cannot be run as user therve.",
+                       "values": []}},
+                  "timestamp": 0,
+                  "type": "custom-graph"}])
+
         return result.addCallback(check)
