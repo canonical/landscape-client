@@ -5,9 +5,10 @@ from twisted.internet.error import ProcessDone
 from twisted.python.failure import Failure
 
 from landscape.manager.customgraph import CustomGraphManager
+from landscape.manager.manager import SUCCEEDED, FAILED
 
 from landscape.tests.helpers import (
-    LandscapeIsolatedTest, ManagerHelper, StubProcessFactory)
+    LandscapeTest, ManagerHelper, StubProcessFactory, DummyProcess)
 from landscape.tests.mocker import ANY
 
 
@@ -32,7 +33,7 @@ class StubManagerStore(object):
         self.graphes.pop(graph_id, None)
 
 
-class CustomGraphManagerTests(LandscapeIsolatedTest):
+class CustomGraphManagerTests(LandscapeTest):
     helpers = [ManagerHelper]
 
     def setUp(self):
@@ -62,11 +63,9 @@ class CustomGraphManagerTests(LandscapeIsolatedTest):
         def got_result(r):
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"api": "3.1",
-                  "operation-id": 456,
+                [{"operation-id": 456,
                   "result-text": u"",
-                  "status": 6,
-                  "timestamp": 0,
+                  "status": SUCCEEDED,
                   "type": "operation-result"}])
             self.assertEquals(
                 self.store.graphes,
@@ -101,11 +100,9 @@ class CustomGraphManagerTests(LandscapeIsolatedTest):
         def got_result(r):
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"api": "3.1",
-                  "operation-id": 456,
+                [{"operation-id": 456,
                   "result-text": u"",
-                  "status": 6,
-                  "timestamp": 0,
+                  "status": SUCCEEDED,
                   "type": "operation-result"}])
             self.assertEquals(
                 self.store.graphes,
@@ -115,7 +112,7 @@ class CustomGraphManagerTests(LandscapeIsolatedTest):
         result.addCallback(got_result)
         return result
 
-    def test_add_unknow_user(self):
+    def test_add_unknown_user(self):
         uid = os.getuid()
         info = pwd.getpwuid(uid)
         username = info.pw_name
@@ -130,11 +127,10 @@ class CustomGraphManagerTests(LandscapeIsolatedTest):
         def got_result(r):
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"api": "3.1",
-                  "operation-id": 456,
-                  "result-text": u"Custom graph cannot be run as user therve.",
-                  "status": 5,
-                  "timestamp": 0,
+                [{"operation-id": 456,
+                  "result-text":
+                      u"Custom graph cannot be run as user %s." % (username,),
+                  "status": FAILED,
                   "type": "operation-result"}])
 
             self.assertEquals(self.store.graphes, {})
@@ -155,11 +151,9 @@ class CustomGraphManagerTests(LandscapeIsolatedTest):
         def got_result(r):
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"api": "3.1",
-                  "operation-id": 456,
+                [{"operation-id": 456,
                   "result-text": u"Unknown interpreter: '/cantpossiblyexist'",
-                  "status": 5,
-                  "timestamp": 0,
+                  "status": FAILED,
                   "type": "operation-result"}])
 
             self.assertEquals(self.store.graphes, {})
@@ -185,9 +179,6 @@ class CustomGraphManagerTests(LandscapeIsolatedTest):
         self.assertFalse(os.path.exists(filename))
 
     def test_run(self):
-        uid = os.getuid()
-        info = pwd.getpwuid(uid)
-        username = info.pw_name
         filename = self.makeFile()
         tempfile = file(filename, "w")
         tempfile.write("#!/bin/sh\necho 1")
@@ -198,9 +189,7 @@ class CustomGraphManagerTests(LandscapeIsolatedTest):
             self.graph_manager.exchange()
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"api": "3.1",
-                  "data": {123: {"error": u"", "values": [(1, 1.0)]}},
-                  "timestamp": 0,
+                [{"data": {123: {"error": u"", "values": [(1, 1.0)]}},
                   "type": "custom-graph"}])
         return self.graph_manager.run().addCallback(check)
 
@@ -224,12 +213,10 @@ class CustomGraphManagerTests(LandscapeIsolatedTest):
             self.graph_manager.exchange()
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"api": "3.1",
-                  "data":
+                [{"data":
                       {123: {"error":
                           u"ValueError: invalid literal for float(): foobar",
                              "values": []}},
-                  "timestamp": 0,
                   "type": "custom-graph"}])
         return result.addCallback(check)
 
@@ -283,12 +270,37 @@ class CustomGraphManagerTests(LandscapeIsolatedTest):
             self.graph_manager.exchange()
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"api": "3.1",
-                  "data": {123:
+                [{"data": {123:
                       {"error":
-                          u"Custom graph cannot be run as user therve.",
+                          u"Custom graph cannot be run as user %s." %
+                          (username,),
                        "values": []}},
-                  "timestamp": 0,
+                  "type": "custom-graph"}])
+
+        return result.addCallback(check)
+
+    def test_run_timeout(self):
+        self.store.add_graph(123, "foo", None)
+        factory = StubProcessFactory()
+        self.graph_manager.process_factory = factory
+        result = self.graph_manager.run()
+
+        self.assertEquals(len(factory.spawns), 1)
+        spawn = factory.spawns[0]
+        protocol = spawn[0]
+        protocol.makeConnection(DummyProcess())
+        self.assertEquals(spawn[1], "foo")
+
+        self.manager.reactor.advance(110)
+        protocol.processEnded(Failure(ProcessDone(0)))
+
+        def check(ignore):
+            self.graph_manager.exchange()
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [{"data": {123: {"error":
+                                    u"Process exceed the 10 seconds limit",
+                                "values": []}},
                   "type": "custom-graph"}])
 
         return result.addCallback(check)

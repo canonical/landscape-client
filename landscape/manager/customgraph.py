@@ -6,7 +6,8 @@ from twisted.internet.defer import fail, DeferredList
 from landscape.manager.manager import ManagerPlugin, SUCCEEDED, FAILED
 
 from landscape.manager.scriptexecution import (
-    ProcessAccumulationProtocol, ProcessFailedError, ScriptRunnerMixin)
+    ProcessAccumulationProtocol, ProcessFailedError, ScriptRunnerMixin,
+    ProcessTimeLimitReachedError)
 
 
 class CustomGraphManager(ManagerPlugin, ScriptRunnerMixin):
@@ -120,6 +121,9 @@ class CustomGraphManager(ManagerPlugin, ScriptRunnerMixin):
     def _handle_error(self, failure, graph_id):
         if failure.check(ProcessFailedError):
             self._data[graph_id]["error"] = failure.value.data
+        elif failure.check(ProcessTimeLimitReachedError):
+            self._data[graph_id]["error"] = (
+                u"Process exceed the %d seconds limit" % (self.time_limit,))
         else:
             self._data[graph_id]["error"] = self._format_exception(
                 failure.value)
