@@ -122,7 +122,7 @@ class CustomGraphManager(ManagerPlugin):
         try:
             data = float(output)
         except ValueError, e:
-            self._data[graph_id]["error"] = str(e)
+            self._data[graph_id]["error"] = self._format_exception(e)
         else:
             self._data[graph_id]["values"].append((now, data))
 
@@ -130,7 +130,8 @@ class CustomGraphManager(ManagerPlugin):
         if failure.check(ProcessFailedError):
             self._data[graph_id]["error"] = failure.value.data
         else:
-            self._data[graph_id]["error"] = str(failure.value)
+            self._data[graph_id]["error"] = self._format_exception(
+                failure.value)
 
     def run(self):
         dl = []
@@ -138,7 +139,7 @@ class CustomGraphManager(ManagerPlugin):
         now = int(self._create_time())
         for graph_id, filename, user in graphes:
             if graph_id not in self._data:
-                self._data[graph_id] = {"values": []}
+                self._data[graph_id] = {"values": [], "error": u""}
             uid = None
             gid = None
             path = None

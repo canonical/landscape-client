@@ -1,10 +1,13 @@
 import os
 import pwd
 
+from twisted.internet.error import ProcessDone
+from twisted.python.failure import Failure
+
 from landscape.manager.customgraph import CustomGraphManager
 
 from landscape.tests.helpers import (
-    LandscapeTest, LandscapeIsolatedTest, ManagerHelper)
+    LandscapeTest, LandscapeIsolatedTest, ManagerHelper, StubProcessFactory)
 
 
 class StubManagerStore(object):
@@ -101,7 +104,40 @@ class CustomGraphManagerTests(LandscapeIsolatedTest):
         os.chmod(filename, 0777)
         self.store.add_graph(123, filename, None)
         def check(ignore):
-            self.assertEquals(
-                self.graph_manager._data,
-                {123: {'values': [(1, 1.0)]}})
+            self.graph_manager.exchange()
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [{"api": "3.1",
+                  "data": {123: {"error": u"", "values": [(1, 1.0)]}},
+                  "timestamp": 0,
+                  "type": "custom-graph"}])
         return self.graph_manager.run().addCallback(check)
+
+    def test_run_cast_result_error(self):
+        self.store.add_graph(123, "foo", None)
+        factory = StubProcessFactory()
+        self.graph_manager.process_factory = factory
+        result = self.graph_manager.run()
+
+        self.assertEquals(len(factory.spawns), 1)
+        spawn = factory.spawns[0]
+        self.assertEquals(spawn[1], "foo")
+
+        protocol = spawn[0]
+        protocol.childDataReceived(1, "foobar")
+        for fd in (0, 1, 2):
+            protocol.childConnectionLost(fd)
+        protocol.processEnded(Failure(ProcessDone(0)))
+        
+        def check(ignore):
+            self.graph_manager.exchange()
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [{"api": "3.1",
+                  "data":
+                      {123: {"error":
+                          u"ValueError: invalid literal for float(): foobar",
+                             "values": []}},
+                  "timestamp": 0,
+                  "type": "custom-graph"}])
+        return result.addCallback(check)
