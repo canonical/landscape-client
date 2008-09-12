@@ -1,5 +1,4 @@
 import os
-import pwd
 import time
 
 from twisted.internet.defer import fail, DeferredList
@@ -7,10 +6,10 @@ from twisted.internet.defer import fail, DeferredList
 from landscape.manager.manager import ManagerPlugin, SUCCEEDED, FAILED
 
 from landscape.manager.scriptexecution import (
-    ALL_USERS, ProcessAccumulationProtocol, ProcessFailedError)
+    ProcessAccumulationProtocol, ProcessFailedError, ScriptRunnerMixin)
 
 
-class CustomGraphManager(ManagerPlugin):
+class CustomGraphManager(ManagerPlugin, ScriptRunnerMixin):
     """
     Manage adding and deleting custom graph scripts.
     """
@@ -23,9 +22,7 @@ class CustomGraphManager(ManagerPlugin):
         @param process_factory: The L{IReactorProcess} provider to run the
             process with.
         """
-        if process_factory is None:
-            from twisted.internet import reactor as process_factory
-        self.process_factory = process_factory
+        super(CustomGraphManager, self).__init__(process_factory)
         self._create_time = create_time
         self._data = {}
 
@@ -54,8 +51,7 @@ class CustomGraphManager(ManagerPlugin):
         opid = message["operation-id"]
         try:
             user = message["username"]
-            allowed_users = self.registry.config.get_allowed_script_users()
-            if allowed_users != ALL_USERS and user not in allowed_users:
+            if not self.is_user_allowed(user):
                 return self._respond(
                     FAILED,
                     u"Custom graph cannot be run as user %s." % (user,),
@@ -82,18 +78,9 @@ class CustomGraphManager(ManagerPlugin):
                 os.unlink(filename)
 
             script_file = file(filename, "w")
-            uid = None
-            gid = None
-            if user is not None:
-                info = pwd.getpwnam(user)
-                uid = info.pw_uid
-                gid = info.pw_gid
-            os.chmod(filename, 0700)
-            if uid is not None:
-                os.chown(filename, uid, gid)
-            script_file.write(
-                "#!%s\n%s" % (shell.encode("utf-8"), code.encode("utf-8")))
-            script_file.close()
+            uid, gid = self.get_pwd_infos(user)[:2]
+            self.write_script_file(
+                script_file, filename, shell, code, uid, gid)
         except Exception, e:
             self._respond(FAILED, self._format_exception(e), opid)
             raise
@@ -148,19 +135,13 @@ class CustomGraphManager(ManagerPlugin):
             gid = None
             path = None
             if user is not None:
-                info = pwd.getpwnam(user)
-                uid = info.pw_uid
-                gid = info.pw_gid
-                path = info.pw_dir
-                if not os.path.exists(path):
-                    path = "/"
-                allowed_users = self.registry.config.get_allowed_script_users()
-                if allowed_users != ALL_USERS and user not in allowed_users:
+                if not self.is_user_allowed(user):
                     d = fail(ProcessFailedError(
                         u"Custom graph cannot be run as user %s." % (user,)))
                     d.addErrback(self._handle_error, graph_id)
                     dl.append(d)
                     continue
+                uid, gid, path = self.get_pwd_infos(user)
             pp = ProcessAccumulationProtocol(
                 self.registry.reactor, self.size_limit)
             self.process_factory.spawnProcess(

@@ -45,13 +45,7 @@ class ProcessFailedError(Exception):
         self.data = data
 
 
-class ScriptExecution(ManagerPlugin):
-    """A plugin which allows execution of arbitrary shell scripts.
-
-    @ivar size_limit: The number of bytes at which to truncate process output.
-    """
-
-    size_limit = 500000
+class ScriptRunnerMixin(object):
 
     def __init__(self, process_factory=None):
         """
@@ -61,6 +55,44 @@ class ScriptExecution(ManagerPlugin):
         if process_factory is None:
             from twisted.internet import reactor as process_factory
         self.process_factory = process_factory
+
+    def is_user_allowed(self, user):
+        allowed_users = self.registry.config.get_allowed_script_users()
+        return allowed_users == ALL_USERS or user in allowed_users
+
+    def get_pwd_infos(self, user):
+        uid = None
+        gid = None
+        path = None
+        if user is not None:
+            info = pwd.getpwnam(user)
+            uid = info.pw_uid
+            gid = info.pw_gid
+            path = info.pw_dir
+            if not os.path.exists(path):
+                path = "/"
+        return uid, gid, path
+
+    def write_script_file(self, script_file, filename, shell, code, uid, gid):
+        # Chown and chmod it before we write the data in it - the script may
+        # have sensitive content
+        # It would be nice to use fchown(2) and fchmod(2), but they're not
+        # available in python and using it with ctypes is pretty tedious, not
+        # to mention we can't get errno.
+        os.chmod(filename, 0700)
+        if uid is not None:
+            os.chown(filename, uid, gid)
+        script_file.write(
+            "#!%s\n%s" % (shell.encode("utf-8"), code.encode("utf-8")))
+        script_file.close()
+
+class ScriptExecution(ManagerPlugin, ScriptRunnerMixin):
+    """A plugin which allows execution of arbitrary shell scripts.
+
+    @ivar size_limit: The number of bytes at which to truncate process output.
+    """
+
+    size_limit = 500000
 
     def register(self, registry):
         super(ScriptExecution, self).register(registry)
@@ -79,8 +111,7 @@ class ScriptExecution(ManagerPlugin):
         opid = message["operation-id"]
         try:
             user = message["username"]
-            allowed_users = self.registry.config.get_allowed_script_users()
-            if allowed_users != ALL_USERS and user not in allowed_users:
+            if not self.is_user_allowed(user):
                 return self._respond(
                     FAILED,
                     u"Scripts cannot be run as user %s." % (user,),
@@ -138,30 +169,13 @@ class ScriptExecution(ManagerPlugin):
         if not os.path.exists(shell.split()[0]):
             return fail(
                 ProcessFailedError("Unknown interpreter: '%s'" % shell))
-        uid = None
-        gid = None
-        path = None
-        if user is not None:
-            info = pwd.getpwnam(user)
-            uid = info.pw_uid
-            gid = info.pw_gid
-            path = info.pw_dir
-            if not os.path.exists(path):
-                path = "/"
+
+        uid, gid, path = self.get_pwd_infos(user)
 
         fd, filename = tempfile.mkstemp()
         script_file = os.fdopen(fd, "w")
-        # Chown and chmod it before we write the data in it - the script may
-        # have sensitive content
-        # It would be nice to use fchown(2) and fchmod(2), but they're not
-        # available in python and using it with ctypes is pretty tedious, not
-        # to mention we can't get errno.
-        os.chmod(filename, 0700)
-        if uid is not None:
-            os.chown(filename, uid, gid)
-        script_file.write(
-            "#!%s\n%s" % (shell.encode("utf-8"), code.encode("utf-8")))
-        script_file.close()
+        self.write_script_file(script_file, filename, shell, code, uid, gid)
+
         env = {}
         attachment_dir = ""
         old_umask = os.umask(0022)
