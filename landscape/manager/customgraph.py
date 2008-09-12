@@ -12,7 +12,8 @@ from landscape.manager.scriptexecution import (
 
 class CustomGraphManager(ManagerPlugin, ScriptRunnerMixin):
     """
-    Manage adding and deleting custom graph scripts.
+    Manage adding and deleting custom graph scripts, and then run the scripts
+    in a loop.
     """
     run_interval = 300
     size_limit = 1000
@@ -36,6 +37,10 @@ class CustomGraphManager(ManagerPlugin, ScriptRunnerMixin):
         registry.reactor.call_every(self.run_interval, self.run)
 
     def _handle_custom_graph_remove(self, message):
+        """
+        Handle remove custom-graph operation, deleting the custom graph scripts
+        if found.
+        """
         opid = message["operation-id"]
         graph_id = message["graph-id"]
         graph = self.registry.store.get_graph(graph_id)
@@ -49,6 +54,10 @@ class CustomGraphManager(ManagerPlugin, ScriptRunnerMixin):
         self._respond(SUCCEEDED, "", opid)
 
     def _handle_custom_graph_add(self, message):
+        """
+        Handle add custom-graph operation, which can also update an existing
+        custom graph script.
+        """
         opid = message["operation-id"]
         try:
             user = message["username"]
@@ -129,6 +138,10 @@ class CustomGraphManager(ManagerPlugin, ScriptRunnerMixin):
                 failure.value)
 
     def run(self):
+        """
+        Iterate all the custom graphes stored and then execute each script and
+        handle the output.
+        """
         dl = []
         graphes = self.registry.store.get_graphes()
         now = int(self._create_time())
