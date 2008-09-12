@@ -21,7 +21,7 @@ class StoreProxy(object):
     def get(self, key, default):
         graph_accumulate = self.store.get_graph_accumulate(key)
         if graph_accumulate:
-            return graph_accumulate
+            return graph_accumulate[1:]
         else:
             return default
 
@@ -53,7 +53,6 @@ class CustomGraphManager(ManagerPlugin, ScriptRunnerMixin):
             "custom-graph-add", self._handle_custom_graph_add)
         registry.register_message(
             "custom-graph-remove", self._handle_custom_graph_remove)
-        registry.reactor.call_every(self.run_interval, self.run)
         self._persist = StoreProxy(self.registry.store)
         self._accumulate = Accumulator(self._persist, self.run_interval)
 
@@ -171,7 +170,7 @@ class CustomGraphManager(ManagerPlugin, ScriptRunnerMixin):
         handle the output.
         """
         dl = []
-        graphes = self.registry.store.get_graphes()
+        graphes = list(self.registry.store.get_graphes())
         now = int(self._create_time())
         for graph_id, filename, user in graphes:
             if graph_id not in self._data:

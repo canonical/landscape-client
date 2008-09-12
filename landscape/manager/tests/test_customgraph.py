@@ -36,7 +36,7 @@ class StubManagerStore(object):
     def get_graph_accumulate(self, graph_id):
         accumulate = self.accumulate.get(graph_id)
         if accumulate:
-            return graph_id, accumulate[1], accumulate[2]
+            return graph_id, accumulate[0], accumulate[1]
 
     def set_graph_accumulate(self, graph_id, timestamp, value):
         self.accumulate[graph_id] = (timestamp, value)
@@ -55,7 +55,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.manager.config.data_path = self.data_path
         self.manager.config.script_users = "ALL"
         self.graph_manager = CustomGraphManager(
-            create_time=range(5, 0, -1).pop)
+            create_time=range(1500, 0, -300).pop)
         self.manager.add(self.graph_manager)
 
     def test_add_graph(self):
@@ -198,8 +198,10 @@ class CustomGraphManagerTests(LandscapeTest):
             self.graph_manager.exchange()
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
-                [])
-            self.assertEquals(self.store.accumulate, {123: (1, 1.0)})
+                [{"data":
+                      {123: {"error": u"",
+                             "values": [(300, 1.0)]}},
+                  "type": "custom-graph"}])
         return self.graph_manager.run().addCallback(check)
 
     def test_run_cast_result_error(self):
