@@ -141,6 +141,31 @@ class CustomGraphManagerTests(LandscapeIsolatedTest):
         result.addCallback(got_result)
         return result
 
+    def test_add_graph_unknown_interpreter(self):
+        uid = os.getuid()
+        info = pwd.getpwuid(uid)
+        username = info.pw_name
+        result = self.manager.dispatch_message(
+            {"type": "custom-graph-add",
+                     "interpreter": "/cantpossiblyexist",
+                     "code": "echo hi!",
+                     "username": username,
+                     "operation-id": 456,
+                     "graph-id": 123})
+        def got_result(r):
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [{"api": "3.1",
+                  "operation-id": 456,
+                  "result-text": u"Unknown interpreter: '/cantpossiblyexist'",
+                  "status": 5,
+                  "timestamp": 0,
+                  "type": "operation-result"}])
+
+            self.assertEquals(self.store.graphes, {})
+        result.addCallback(got_result)
+        return result
+
     def test_remove_unknown_graph(self):
         self.manager.dispatch_message(
             {"type": "custom-graph-remove",
