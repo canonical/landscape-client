@@ -16,6 +16,7 @@ class StubManagerStore(object):
 
     def __init__(self):
         self.graphes = {}
+        self.accumulate = {}
 
     def add_graph(self, graph_id, filename, user):
         self.graphes[graph_id] = (filename, user)
@@ -31,6 +32,14 @@ class StubManagerStore(object):
 
     def remove_graph(self, graph_id):
         self.graphes.pop(graph_id, None)
+
+    def get_graph_accumulate(self, graph_id):
+        accumulate = self.accumulate.get(graph_id)
+        if accumulate:
+            return graph_id, accumulate[1], accumulate[2]
+
+    def set_graph_accumulate(self, graph_id, timestamp, value):
+        self.accumulate[graph_id] = (timestamp, value)
 
 
 class CustomGraphManagerTests(LandscapeTest):
@@ -189,8 +198,8 @@ class CustomGraphManagerTests(LandscapeTest):
             self.graph_manager.exchange()
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"data": {123: {"error": u"", "values": [(1, 1.0)]}},
-                  "type": "custom-graph"}])
+                [])
+            self.assertEquals(self.store.accumulate, {123: (1, 1.0)})
         return self.graph_manager.run().addCallback(check)
 
     def test_run_cast_result_error(self):

@@ -10,6 +10,7 @@ class ManagerStoreTest(LandscapeTest):
         self.filename = self.makeFile()
         self.store = ManagerStore(self.filename)
         self.store.add_graph(1, u"file 1", u"user1")
+        self.store.set_graph_accumulate(1, 1234, 1.0)
 
     def test_get_unknow_graph(self):
         graph = self.store.get_graph(1000)
@@ -47,3 +48,17 @@ class ManagerStoreTest(LandscapeTest):
         self.store.remove_graph(2)
         graphes = self.store.get_graphes()
         self.assertEquals(graphes, [(1, u"file 1", u"user1")])
+
+    def test_get_accumulate_unknown_graph(self):
+        accumulate = self.store.get_graph_accumulate(2)
+        self.assertIdentical(accumulate, None)
+
+    def test_set_accumulate_graph(self):
+        self.store.set_graph_accumulate(2, 1234, 2.0)
+        accumulate = self.store.get_graph_accumulate(2)
+        self.assertEquals(accumulate, (2, 1234, 2.0))
+
+    def test_update_accumulate_graph(self):
+        self.store.set_graph_accumulate(1, 4567, 2.0)
+        accumulate = self.store.get_graph_accumulate(1)
+        self.assertEquals(accumulate, (1, 4567, 2.0))

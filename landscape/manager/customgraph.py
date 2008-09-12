@@ -3,11 +3,30 @@ import time
 
 from twisted.internet.defer import fail, DeferredList
 
+from landscape.accumulate import Accumulator
 from landscape.manager.manager import ManagerPlugin, SUCCEEDED, FAILED
-
 from landscape.manager.scriptexecution import (
     ProcessAccumulationProtocol, ProcessFailedError, ScriptRunnerMixin,
     ProcessTimeLimitReachedError)
+
+
+class StoreProxy(object):
+    """
+    Persist-like interface to store graph-points into SQLite store.
+    """
+
+    def __init__(self, store):
+        self.store = store
+
+    def get(self, key, default):
+        graph_accumulate = self.store.get_graph_accumulate(key)
+        if graph_accumulate:
+            return graph_accumulate
+        else:
+            return default
+
+    def set(self, key, value):
+        self.store.set_graph_accumulate(key, value[0], value[1])
 
 
 class CustomGraphManager(ManagerPlugin, ScriptRunnerMixin):
@@ -35,6 +54,8 @@ class CustomGraphManager(ManagerPlugin, ScriptRunnerMixin):
         registry.register_message(
             "custom-graph-remove", self._handle_custom_graph_remove)
         registry.reactor.call_every(self.run_interval, self.run)
+        self._persist = StoreProxy(self.registry.store)
+        self._accumulate = Accumulator(self._persist, self.run_interval)
 
     def _handle_custom_graph_remove(self, message):
         """
@@ -113,7 +134,12 @@ class CustomGraphManager(ManagerPlugin, ScriptRunnerMixin):
             "custom-graph", self.send_message, urgent)
 
     def send_message(self, urgent):
-        if not self._data:
+        has_data = False
+        for graph in self._data.values():
+            if graph["values"] or graph["error"]:
+                has_data = True
+                break
+        if not has_data:
             return
         message = {"type": "custom-graph", "data": self._data}
         self._data = {}
@@ -125,7 +151,9 @@ class CustomGraphManager(ManagerPlugin, ScriptRunnerMixin):
         except ValueError, e:
             self._data[graph_id]["error"] = self._format_exception(e)
         else:
-            self._data[graph_id]["values"].append((now, data))
+            step_data = self._accumulate(now, data, graph_id)
+            if step_data:
+                self._data[graph_id]["values"].append(step_data)
 
     def _handle_error(self, failure, graph_id):
         if failure.check(ProcessFailedError):

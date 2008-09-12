@@ -42,6 +42,29 @@ class ManagerStore(object):
     def remove_graph(self, cursor, graph_id):
         cursor.execute("DELETE FROM graph WHERE graph_id=?", (graph_id,))
 
+    @with_cursor
+    def set_graph_accumulate(self, cursor, graph_id, timestamp, value):
+        cursor.execute(
+            "SELECT graph_id, graph_timestamp, graph_value FROM "
+            "graph_accumulate WHERE graph_id=?", (graph_id,))
+        graph_accumulate = cursor.fetchone()
+        if graph_accumulate:
+            cursor.execute(
+                "UPDATE graph_accumulate SET graph_timestamp = ?, "
+                "graph_value = ? WHERE graph_id=?",
+                (timestamp, value, graph_id))
+        else:
+            cursor.execute(
+                "INSERT INTO graph_accumulate (graph_id, graph_timestamp, "
+                "graph_value) VALUES (?, ?, ?)", (graph_id, timestamp, value))
+
+    @with_cursor
+    def get_graph_accumulate(self, cursor, graph_id):
+        cursor.execute(
+            "SELECT graph_id, graph_timestamp, graph_value FROM "
+            "graph_accumulate WHERE graph_id=?", (graph_id,))
+        return cursor.fetchone()
+
 
 def ensure_schema(db):
     cursor = db.cursor()
@@ -49,6 +72,9 @@ def ensure_schema(db):
         cursor.execute("CREATE TABLE graph"
                        " (graph_id INTEGER PRIMARY KEY,"
                        " filename TEXT NOT NULL, user TEXT)")
+        cursor.execute("CREATE TABLE graph_accumulate"
+                       " (graph_id INTEGER PRIMARY KEY,"
+                       " graph_timestamp INTEGER, graph_value FLOAT)")
     except sqlite3.OperationalError:
         cursor.close()
         db.rollback()
