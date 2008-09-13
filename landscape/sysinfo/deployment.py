@@ -17,8 +17,10 @@ ALL_PLUGINS = ["Load", "Disk", "Memory", "Temperature", "Processes",
 class SysInfoConfiguration(Configuration):
     """Specialized configuration for the Landscape sysinfo tool."""
 
-    default_config_filenames = (
-        os.path.expanduser("~/.landscape/sysinfo.conf"),)
+    default_config_filenames = ("/etc/landscape/client.conf",)
+    if os.getuid() != 0:
+        default_config_filenames += (
+            os.path.expanduser("~/.landscape/sysinfo.conf"),)
 
     config_section = "sysinfo"
 
@@ -59,7 +61,13 @@ class SysInfoConfiguration(Configuration):
                 for plugin_name in plugins]
 
 
-def setup_logging(landscape_dir=os.path.expanduser("~/.landscape")):
+def setup_logging(landscape_dir=None):
+    if landscape_dir is None:
+        if os.getuid() == 0:
+            landscape_dir = "/var/log/landscape"
+        else:
+            landscape_dir = os.path.expanduser("~/.landscape")
+        
     logger = getLogger("landscape-sysinfo")
     logger.propagate = False
     if not os.path.isdir(landscape_dir):
