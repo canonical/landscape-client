@@ -145,14 +145,10 @@ class CustomGraphManager(ManagerPlugin, ScriptRunnerMixin):
         self.registry.broker.send_message(message, urgent=urgent)
 
     def _handle_data(self, output, graph_id, now):
-        try:
-            data = float(output)
-        except ValueError, e:
-            self._data[graph_id]["error"] = self._format_exception(e)
-        else:
-            step_data = self._accumulate(now, data, graph_id)
-            if step_data:
-                self._data[graph_id]["values"].append(step_data)
+        data = float(output)
+        step_data = self._accumulate(now, data, graph_id)
+        if step_data:
+            self._data[graph_id]["values"].append(step_data)
 
     def _handle_error(self, failure, graph_id):
         if failure.check(ProcessFailedError):
