@@ -112,6 +112,14 @@ class ConfigurationTest(LandscapeTest):
         self.config.load([])
         self.assertEquals(self.config.whatever, "yay")
 
+    def test_no_section_available(self):
+        config_filename = self.makeFile("")
+        class MyConfiguration(Configuration):
+            config_section = "nonexistent"
+            default_config_filenames = (config_filename,)
+        self.reset_config(configuration_class=MyConfiguration)
+        self.config.load([])
+
     def test_write_configuration(self):
         self.write_config_file(log_level="debug")
         self.config.log_level = "warning"

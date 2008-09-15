@@ -6,7 +6,7 @@ from logging import (getLevelName, getLogger,
                      FileHandler, StreamHandler, Formatter, info)
 
 from optparse import OptionParser
-from ConfigParser import ConfigParser
+from ConfigParser import ConfigParser, NoSectionError
 
 import dbus.glib # Side-effects rule!
 
@@ -170,8 +170,11 @@ class BaseConfiguration(object):
         self._config_filename = filename
         config_parser = ConfigParser()
         config_parser.read(filename)
-        self._config_file_options = dict(
-            config_parser.items(self.config_section))
+        try:
+            self._config_file_options = dict(
+                config_parser.items(self.config_section))
+        except NoSectionError:
+            pass
 
     def write(self):
         """Write back configuration to the configuration file.
