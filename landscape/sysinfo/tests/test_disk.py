@@ -58,10 +58,10 @@ class DiskTest(LandscapeTest):
         When the total space for /home is 0, no header will be printed.
         """
         self.add_mount("/home", capacity=0, unused=0)
-        self.add_mount("/")
+        self.add_mount("/", capacity=1000, unused=1000)
         self.disk.run()
         self.assertEquals(self.sysinfo.get_headers(),
-                          [("Usage of /home", "unknown")])
+                          [("Usage of /", "0.0% of 3MB")])
 
     def test_over_85_percent(self):
         """
