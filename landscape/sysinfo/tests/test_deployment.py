@@ -204,9 +204,14 @@ class RunTest(LandscapeTest):
         self.assertFalse(logger.propagate)
 
     def test_setup_logging_logs_to_var_log_if_run_as_root(self):
-        getuid_mock = self.mocker.replace("os.getuid")
-        getuid_mock()
+        mock_os = self.mocker.replace("os")
+        mock_os.getuid()
         self.mocker.result(0)
+
+        # Ugh, sorry
+        mock_os.path.isdir("/var/log/landscape")
+        self.mocker.result(False)
+        mock_os.mkdir("/var/log/landscape")
 
         self.mocker.replace("__builtin__.open", passthrough=False)(
             "/var/log/landscape/sysinfo.log", "a")

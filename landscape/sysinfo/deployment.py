@@ -67,7 +67,7 @@ def setup_logging(landscape_dir=None):
             landscape_dir = "/var/log/landscape"
         else:
             landscape_dir = os.path.expanduser("~/.landscape")
-        
+
     logger = getLogger("landscape-sysinfo")
     logger.propagate = False
     if not os.path.isdir(landscape_dir):
