@@ -193,18 +193,26 @@ class BaseConfiguration(object):
         2. The last loaded configuration file, if any
         3. The first filename in self.default_config_filenames
         """
+        # The filename we'll write to
+        filename = (self.config or self._config_filename or
+                    self.default_config_filenames[0])
+
         config_parser = ConfigParser()
-        config_parser.add_section("client")
+        # Make sure we read the old values from the config file so that we
+        # don't remove *unrelated* values.
+        config_parser.read(filename)
+        if not config_parser.has_section(self.config_section):
+            config_parser.add_section(self.config_section)
         all_options = self._config_file_options.copy()
         all_options.update(self._command_line_options)
         all_options.update(self._set_options)
         for name, value in all_options.items():
             if (name != "config" and
-                name not in self.unsaved_options and
-                value != self._command_line_defaults.get(name)):
-                config_parser.set("client", name, value)
-        filename = (self.config or self._config_filename or
-                    self.default_config_filenames[0])
+                name not in self.unsaved_options):
+                if value == self._command_line_defaults.get(name):
+                    config_parser.remove_option(self.config_section, name)
+                else:
+                    config_parser.set(self.config_section, name, value)
         config_file = open(filename, "w")
         config_parser.write(config_file)
         config_file.close()
