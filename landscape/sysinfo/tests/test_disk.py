@@ -55,13 +55,24 @@ class DiskTest(LandscapeTest):
 
     def test_zero_total_space_for_home(self):
         """
-        When the total space for /home is 0, no header will be printed.
+        When the total space for /home is 0, we'll fall back to /.
         """
         self.add_mount("/home", capacity=0, unused=0)
         self.add_mount("/", capacity=1000, unused=1000)
         self.disk.run()
         self.assertEquals(self.sysinfo.get_headers(),
                           [("Usage of /", "0.0% of 3MB")])
+
+    def test_zero_total_space_for_home_and_root(self):
+        """
+        In a very strange situation, when both /home and / have a capacity of
+        0, we'll show 'unknown' for the usage of /.
+        """
+        self.add_mount("/home", capacity=0, unused=0)
+        self.add_mount("/", capacity=0, unused=0)
+        self.disk.run()
+        self.assertEquals(self.sysinfo.get_headers(),
+                          [("Usage of /", "unknown")])
 
     def test_over_85_percent(self):
         """
