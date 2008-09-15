@@ -34,8 +34,12 @@ class Disk(object):
         main_info = get_filesystem_for_path("/home", self._mounts_file,
                                             self._statvfs)
         total = main_info["total-space"]
+        if total > 0:
+            main_total = usage(main_info)
+        else:
+            main_total = "unknown"
         self._sysinfo.add_header("Usage of " + main_info["mount-point"],
-                                 usage(main_info))
+                                 main_total)
 
         seen_mounts = set()
         seen_devices = set()

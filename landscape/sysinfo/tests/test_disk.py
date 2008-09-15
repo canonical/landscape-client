@@ -53,6 +53,16 @@ class DiskTest(LandscapeTest):
         self.disk.run()
         self.assertEquals(self.sysinfo.get_notes(), [])
 
+    def test_zero_total_space_for_home(self):
+        """
+        When the total space for /home is 0, no header will be printed.
+        """
+        self.add_mount("/home", capacity=0, unused=0)
+        self.add_mount("/")
+        self.disk.run()
+        self.assertEquals(self.sysinfo.get_headers(),
+                          [("Usage of /home", "unknown")])
+
     def test_over_85_percent(self):
         """
         When a filesystem is using more than 85% capacity, a note will be
