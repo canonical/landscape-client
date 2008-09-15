@@ -6,9 +6,12 @@ landscape-client (1.0.18-0ubuntu2) intrepid; urgency=low
       command. A landscape account is not required to use this package.
     - landscape-client: has all the binaries required to run the
       landscape-client. Requires a landscape account.
-    - debian/control: move some dependencies to landscape-client so that
-      landscape-common doesn't install unecessary packages in the 
-      default -server install.
+    - debian/control: 
+      + move some dependencies to landscape-client so that
+        landscape-common doesn't install unecessary packages in the 
+        default -server install.
+      + move python-gobject to a Pre-Depends so that landscape-config can
+        register the system during the postinst (LP: #268838).
   * debian/control:
     - depend on python-smartpm instead of smartpm-core.
   * debian/landscape-client.postrm: delete /etc/landscape/client.conf when 
@@ -21,9 +24,9 @@ landscape-client (1.0.18-0ubuntu2) intrepid; urgency=low
     - scripts/landscape-sysinfo.wrapper: New script to run landscape-sysinfo
       with leading whitespace.
     - debian/rules: Install wrapper into /usr/share/landscape.
-    - debian/landscape-cliest.postinst: Link wrapper into place.
+    - debian/landscape-client.postinst: Link wrapper into place.
 
- -- Mathias Gug <mathiaz@ubuntu.com>  Fri, 12 Sep 2008 10:41:37 -0400
+ -- Mathias Gug <mathiaz@ubuntu.com>  Mon, 15 Sep 2008 17:21:53 -0400
 
 landscape-client (1.0.18-0ubuntu1) intrepid; urgency=low
 
