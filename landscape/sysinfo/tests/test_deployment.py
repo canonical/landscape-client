@@ -77,8 +77,14 @@ class RunTest(LandscapeTest):
 
     helpers = [StandardIOHelper]
 
+    def setUp(self):
+        super(RunTest, self).setUp()
+        self._old_filenames = SysInfoConfiguration.default_config_filenames
+        SysInfoConfiguration.default_config_filenames = ()
+
     def tearDown(self):
         super(RunTest, self).tearDown()
+        SysInfoConfiguration.default_config_filenames = self._old_filenames
         logger = getLogger("landscape-sysinfo")
         for handler in logger.handlers[:]:
             logger.removeHandler(handler)
