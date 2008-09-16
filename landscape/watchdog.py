@@ -226,7 +226,7 @@ class WatchedProcessProtocol(ProcessProtocol):
     def kill(self):
         self._terminate()
         return self.wait()
-    
+
     def _terminate(self, warn=False):
         if self.transport is not None:
             if warn:
@@ -260,7 +260,7 @@ class WatchedProcessProtocol(ProcessProtocol):
     def wait(self):
         self._wait_result = Deferred()
         return self._wait_result
-    
+
     def wait_or_die(self):
         self._delayed_terminate = reactor.callLater(GRACEFUL_WAIT_PERIOD,
                                                     self._terminate, warn=True)
@@ -323,12 +323,22 @@ class WatchDog(object):
             started. If a daemon could not be started, the deferred will fail
             with L{DaemonError}.
         """
-        results = []
-        for daemon in self.daemons:
-            result = daemon.is_running()
-            result.addCallback(lambda is_running, d=daemon: (is_running, d))
-            results.append(result)
-        return gather_results(results).addCallback(self._start_if_not_running)
+        d = Deferred()
+        def continue_start(ignore):
+            results = []
+            for daemon in self.daemons:
+                result = daemon.is_running()
+                result.addCallback(
+                    lambda is_running, d=daemon: (is_running, d))
+                results.append(result)
+            return gather_results(results).addCallback(
+                self._start_if_not_running)
+        # We add a small delay to work around a Twisted bug: this method should
+        # only be called when the reactor is running, but we still get a
+        # PotentialZombieWarning.
+        d.addCallback(continue_start)
+        self.reactor.callLater(0, d.callback, None)
+        return d
 
     def _start_if_not_running(self, results):
         for is_running, daemon in results:

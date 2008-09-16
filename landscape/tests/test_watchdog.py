@@ -110,8 +110,10 @@ class WatchDogTest(LandscapeTest):
 
         self.mocker.replay()
 
-        dog = WatchDog(self.bus)
+        clock = Clock()
+        dog = WatchDog(self.bus, clock)
         dog.start()
+        clock.advance(0)
         return dog.request_exit()
 
     def test_request_exit(self):
@@ -155,6 +157,7 @@ class WatchDogTest(LandscapeTest):
 
         dog = WatchDog(self.bus, clock)
         dog.start()
+        clock.advance(0)
         clock.advance(5)
         result = dog.request_exit()
         monitor_ping_result.callback(False)
@@ -184,7 +187,7 @@ class BoringDaemon(object):
 
     def wait(self):
         return succeed(None)
-    
+
     def wait_or_die(self):
         return self.wait()
 
