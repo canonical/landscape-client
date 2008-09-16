@@ -1,3 +1,9 @@
+landscape-client (1.0.19-gutsy1-landscape2) gutsy; urgency=low
+
+  * fixed path to the pid file in logrotate
+
+ -- Andreas Hasenack <andreas@canonical.com>  Tue, 16 Sep 2008 21:48:09 +0000
+
 landscape-client (1.0.19-feisty1-landscape2) feisty; urgency=low
 
   * fixed path to the pid file in logrotate
