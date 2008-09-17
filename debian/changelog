@@ -1,3 +1,9 @@
+landscape-client (1.0.20-dapper1-landscape1) dapper; urgency=low
+
+  * reverted pidfile fix as it introduced serious regressions
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 17 Sep 2008 15:41:44 +0000
+
 landscape-client (1.0.19-hardy1-landscape2) hardy; urgency=low
 
   * fixed path to the pid file in logrotate
