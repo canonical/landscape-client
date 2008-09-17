@@ -18,9 +18,13 @@ from landscape.tests.helpers import (
     LandscapeIsolatedTest, LandscapeTest, DBusHelper, RemoteBrokerHelper)
 from landscape.watchdog import (
     Daemon, WatchDog, WatchDogService, ExecutableNotFoundError,
-    AlreadyRunningError, run, WatchDogConfiguration, bootstrap_list,
+    run, WatchDogConfiguration, bootstrap_list,
     MAXIMUM_CONSECUTIVE_RESTARTS, RESTART_BURST_DELAY)
 import landscape.watchdog
+
+
+class StubDaemon(object):
+    program = "program-name"
 
 
 class WatchDogTest(LandscapeTest):
@@ -56,38 +60,28 @@ class WatchDogTest(LandscapeTest):
         self.mocker.replay()
         WatchDog(self.bus)
 
-    def test_start_checks_for_existing_broker(self):
+    def test_check_running_one(self):
         self.expect(self.broker.is_running()).result(succeed(True))
         self.expect(self.monitor.is_running()).result(succeed(False))
         self.expect(self.manager.is_running()).result(succeed(False))
         self.mocker.replay()
-        result = WatchDog(self.bus).start()
-        self.assertFailure(result, AlreadyRunningError)
-        return result
+        result = WatchDog(self.bus).check_running()
+        def got_result(r):
+            self.assertEquals([daemon.program for daemon in r],
+                              ["landscape-broker"])
+        return result.addCallback(got_result)
 
-    def test_start_checks_for_existing_monitor(self):
-        self.expect(self.broker.is_running()).result(succeed(False))
+    def test_check_running_many(self):
+        self.expect(self.broker.is_running()).result(succeed(True))
         self.expect(self.monitor.is_running()).result(succeed(True))
-        self.expect(self.manager.is_running()).result(succeed(False))
-        self.mocker.replay()
-        result = WatchDog(self.bus).start()
-        self.assertFailure(result, AlreadyRunningError)
-        return result
-
-    def test_start_checks_for_existing_manager(self):
-        self.expect(self.broker.is_running()).result(succeed(False))
-        self.expect(self.monitor.is_running()).result(succeed(False))
         self.expect(self.manager.is_running()).result(succeed(True))
         self.mocker.replay()
-        result = WatchDog(self.bus).start()
-        self.assertFailure(result, AlreadyRunningError)
-        return result
-
-    def none_are_running(self):
-        self.expect(self.broker.is_running()).result(succeed(False))
-        self.expect(self.monitor.is_running()).result(succeed(False))
-        self.expect(self.manager.is_running()).result(succeed(False))
-
+        result = WatchDog(self.bus).check_running()
+        def got_result(r):
+            self.assertEquals([daemon.program for daemon in r],
+                              ["landscape-broker", "landscape-monitor",
+                               "landscape-manager"])
+        return result.addCallback(got_result)
 
     def expect_request_exit(self):
         self.expect(self.broker.request_exit()).result(succeed(False))
@@ -99,8 +93,6 @@ class WatchDogTest(LandscapeTest):
     def test_start_and_stop_daemons(self):
         """The WatchDog will start all daemons, starting with the broker."""
         self.mocker.order()
-
-        self.none_are_running()
 
         self.broker.start()
         self.monitor.start()
@@ -134,7 +126,6 @@ class WatchDogTest(LandscapeTest):
         ping response should not cause the process to be restarted.
         """
         self.mocker.order()
-        self.none_are_running()
 
         self.broker.start()
         self.monitor.start()
@@ -874,97 +865,6 @@ class WatchDogOptionsTest(LandscapeTest):
         self.assertEquals(self.config.pid_file, None)
 
 
-class WatchDogScriptTest(LandscapeTest):
-
-    def test_daemonize(self):
-        daemonize = self.mocker.replace("landscape.watchdog.daemonize",
-                                        passthrough=False)
-        daemonize()
-        self.mocker.count(0, None)
-
-        startApplication = self.mocker.replace(
-            "twisted.application.app.startApplication", passthrough=False)
-        startApplication(ANY, False)
-        self.mocker.count(0, None)
-
-        reactor = self.mocker.replace("twisted.internet.reactor",
-                                      passthrough=False)
-        reactor.run()
-        self.mocker.count(0, None)
-
-        self.mocker.replay()
-        try:
-            run(["--daemon", "--log-dir", self.make_dir()])
-            self.mocker.verify()
-        finally:
-            self.mocker.reset()
-
-    def test_pid_file(self):
-        pid_file = self.make_path()
-
-        daemonize = self.mocker.replace("landscape.watchdog.daemonize",
-                                        passthrough=False)
-        daemonize()
-        self.mocker.count(1)
-
-        watchdog = self.mocker.patch(WatchDog)
-        watchdog.start()
-        self.mocker.result(succeed(None))
-
-        reactor = self.mocker.replace("twisted.internet.reactor",
-                                      passthrough=False)
-        reactor.run()
-        self.mocker.count(1)
-
-        reactor.addSystemEventTrigger(ARGS, KWARGS)
-        self.mocker.count(1)
-
-        self.mocker.replay()
-        try:
-            run(["--daemon", "--pid-file", pid_file,
-                 "--log-dir", self.make_dir(),
-                 "--data-path", self.make_dir()])
-            self.mocker.verify()
-        finally:
-            self.mocker.reset()
-        self.assertEquals(int(open(pid_file, "r").read()), os.getpid())
-
-    def test_dont_write_pid_file_until_we_really_start(self):
-        """
-        If the client can't be started because another client is still running,
-        the client shouldn't be daemonized and the pid file shouldn't be
-        written.
-        """
-        self.log_helper.ignore_errors(ZeroDivisionError)
-        pid_file = self.make_path()
-
-        daemonize = self.mocker.replace("landscape.watchdog.daemonize",
-                                        passthrough=False)
-        daemonize()
-        self.mocker.count(0)
-
-        watchdog = self.mocker.patch(WatchDog)
-        watchdog.start()
-        self.mocker.result(fail(ZeroDivisionError("AN ERROR OCCURED")))
-
-        reactor = self.mocker.replace("twisted.internet.reactor",
-                                      passthrough=False)
-        reactor.run()
-        reactor.crash()
-
-        reactor.addSystemEventTrigger(ARGS, KWARGS)
-
-        self.mocker.replay()
-        try:
-            run(["--daemon", "--pid-file", pid_file,
-                 "--log-dir", self.make_dir(),
-                 "--data-path", self.make_dir()])
-            self.mocker.verify()
-        finally:
-            self.mocker.reset()
-        self.assertFalse(os.path.exists(pid_file))
-
-
 class WatchDogServiceTest(LandscapeTest):
 
     def setUp(self):
@@ -976,14 +876,89 @@ class WatchDogServiceTest(LandscapeTest):
                                  "--data-path", self.data_path,
                                  "--log-dir", self.log_dir])
 
+    def test_daemonize(self):
+        self.mocker.order()
+        watchdog = self.mocker.patch(WatchDog)
+        watchdog.check_running()
+        self.mocker.result(succeed([]))
+        daemonize = self.mocker.replace("landscape.watchdog.daemonize",
+                                        passthrough=False)
+        daemonize()
+        watchdog.start()
+        self.mocker.result(succeed(None))
+
+        self.mocker.replay()
+        self.configuration.daemon = True
+
+        service = WatchDogService(self.configuration)
+        service.startService()
+
+    def test_pid_file(self):
+        pid_file = self.make_path()
+
+        watchdog = self.mocker.patch(WatchDog)
+        watchdog.check_running()
+        self.mocker.result(succeed([]))
+        daemonize = self.mocker.replace("landscape.watchdog.daemonize",
+                                        passthrough=False)
+        daemonize()
+        watchdog.start()
+        self.mocker.result(succeed(None))
+
+        self.mocker.replay()
+        self.configuration.daemon = True
+        self.configuration.pid_file = pid_file
+
+        service = WatchDogService(self.configuration)
+        service.startService()
+        self.assertEquals(int(open(pid_file, "r").read()), os.getpid())
+
+    def test_dont_write_pid_file_until_we_really_start(self):
+        """
+        If the client can't be started because another client is still running,
+        the client shouldn't be daemonized and the pid file shouldn't be
+        written.
+        """
+        self.log_helper.ignore_errors(
+            "ERROR: The following daemons are already running: program-name")
+        pid_file = self.make_path()
+
+        daemonize = self.mocker.replace("landscape.watchdog.daemonize",
+                                        passthrough=False)
+        daemonize()
+        # daemonize should *not* be called
+        self.mocker.count(0)
+
+        watchdog = self.mocker.patch(WatchDog)
+        watchdog.check_running()
+        self.mocker.result(succeed([StubDaemon()]))
+        watchdog.start()
+        self.mocker.count(0)
+
+        reactor = self.mocker.replace("twisted.internet.reactor",
+                                      passthrough=False)
+        reactor.crash()
+
+        self.mocker.replay()
+
+        self.configuration.daemon = True
+        self.configuration.pid_file = pid_file
+        service = WatchDogService(self.configuration)
+
+        try:
+            service.startService()
+            self.mocker.verify()
+        finally:
+            self.mocker.reset()
+        self.assertFalse(os.path.exists(pid_file))
+
     def test_start_service_uses_right_bus(self):
         service = WatchDogService(self.configuration)
         self.assertEquals(type(service.bus), dbus.SystemBus)
 
     def test_start_service_exits_when_already_running(self):
-        self.log_helper.ignore_errors("ERROR: program-name is already running")
-        class StubDaemon(object):
-            program = "program-name"
+        self.log_helper.ignore_errors(
+            "ERROR: The following daemons are already running: program-name")
 
         bootstrap_list_mock = self.mocker.patch(bootstrap_list)
         bootstrap_list_mock.bootstrap(data_path=self.data_path,
@@ -994,9 +969,8 @@ class WatchDogServiceTest(LandscapeTest):
         self.mocker.order()
 
         watchdog_mock = self.mocker.replace(service.watchdog)
-        watchdog_mock.start()
-        deferred = fail(AlreadyRunningError(StubDaemon()))
-        self.mocker.result(deferred)
+        watchdog_mock.check_running()
+        self.mocker.result(succeed([StubDaemon()]))
 
         reactor = self.mocker.replace("twisted.internet.reactor",
                                       passthrough=False)
@@ -1021,6 +995,8 @@ class WatchDogServiceTest(LandscapeTest):
         self.mocker.order()
 
         watchdog_mock = self.mocker.replace(service.watchdog)
+        watchdog_mock.check_running()
+        self.mocker.result(succeed([]))
         watchdog_mock.start()
         deferred = fail(ZeroDivisionError("I'm an unknown error!"))
         self.mocker.result(deferred)

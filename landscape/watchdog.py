@@ -50,12 +50,6 @@ class ExecutableNotFoundError(Exception):
     """An executable was not found."""
 
 
-class AlreadyRunningError(Exception):
-    """
-    A daemon was already running.
-    """
-
-
 class Daemon(object):
     """A Landscape daemon which can be started and tracked.
 
@@ -313,6 +307,17 @@ class WatchDog(object):
 
         self._ping_failures = {}
 
+    def check_running(self):
+        """Return a list of any daemons that are already running."""
+        results = []
+        for daemon in self.daemons:
+            result = daemon.is_running()
+            result.addCallback(lambda is_running, d=daemon: (is_running, d))
+            results.append(result)
+        def got_all_results(r):
+            return [x[1] for x in r if x[0]]
+        return gather_results(results).addCallback(got_all_results)
+
     def start(self):
         """
         Start all daemons. The broker will be started first, and no other
@@ -323,32 +328,9 @@ class WatchDog(object):
             started. If a daemon could not be started, the deferred will fail
             with L{DaemonError}.
         """
-        d = Deferred()
-        def continue_start(ignore):
-            results = []
-            for daemon in self.daemons:
-                result = daemon.is_running()
-                result.addCallback(
-                    lambda is_running, d=daemon: (is_running, d))
-                results.append(result)
-            return gather_results(results).addCallback(
-                self._start_if_not_running)
-        # We add a small delay to work around a Twisted bug: this method should
-        # only be called when the reactor is running, but we still get a
-        # PotentialZombieWarning.
-        d.addCallback(continue_start)
-        self.reactor.callLater(0, d.callback, None)
-        return d
-
-    def _start_if_not_running(self, results):
-        for is_running, daemon in results:
-            if is_running:
-                raise AlreadyRunningError(daemon)
-
         self.broker.start()
         self.monitor.start()
         self.manager.start()
-
         self.start_monitoring()
 
     def start_monitoring(self):
@@ -454,20 +436,26 @@ class WatchDogService(Service):
         bootstrap_list.bootstrap(data_path=self._config.data_path,
                                  log_dir=self._config.log_dir)
 
-        result = self.watchdog.start()
+        result = self.watchdog.check_running()
 
-        def got_error(failure):
-            if failure.check(AlreadyRunningError):
-                daemon = failure.value.args[0]
-                error("ERROR: %s is already running" % daemon.program)
-            else:
-                log_failure(failure, "UNKNOWN ERROR")
+        def start_if_not_running(running_daemons):
+            if running_daemons:
+                error("ERROR: The following daemons are already running: %s"
+                      % (", ".join(x.program for x in running_daemons)))
+                self.exit_code = 1
+                reactor.crash() # so stopService isn't called.
+                return
+            self._daemonize()
+            return self.watchdog.start()
+        def die(failure):
             self.exit_code = 1
-            reactor.crash() # use crash so stopService isn't called
-        result.addCallbacks(self._daemonize, got_error)
+            reactor.crash()
+        result.addCallback(start_if_not_running)
+        result.addErrback(die)
+
         return result
 
-    def _daemonize(self, result):
+    def _daemonize(self):
         if self._config.daemon:
             daemonize()
             if self._config.pid_file:
@@ -507,7 +495,12 @@ def run(args=sys.argv):
     application = Application("landscape-client")
     watchdog_service = WatchDogService(config)
     watchdog_service.setServiceParent(application)
-    startApplication(application, False)
+
     from twisted.internet import reactor
+    # We add a small delay to work around a Twisted bug: this method should
+    # only be called when the reactor is running, but we still get a
+    # PotentialZombieWarning.
+    reactor.callLater(0, startApplication, application, False)
+
     reactor.run()
     return watchdog_service.exit_code
