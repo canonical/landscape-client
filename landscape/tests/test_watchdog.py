@@ -12,13 +12,13 @@ from twisted.internet.defer import Deferred, succeed, fail
 from twisted.internet import reactor
 
 from landscape.broker.broker import BUS_NAME, OBJECT_PATH, IFACE_NAME
-from landscape.tests.mocker import ARGS, KWARGS, ANY
+from landscape.tests.mocker import ARGS, KWARGS
 from landscape.tests.clock import Clock
 from landscape.tests.helpers import (
     LandscapeIsolatedTest, LandscapeTest, DBusHelper, RemoteBrokerHelper)
 from landscape.watchdog import (
     Daemon, WatchDog, WatchDogService, ExecutableNotFoundError,
-    run, WatchDogConfiguration, bootstrap_list,
+    WatchDogConfiguration, bootstrap_list,
     MAXIMUM_CONSECUTIVE_RESTARTS, RESTART_BURST_DELAY)
 import landscape.watchdog
 
