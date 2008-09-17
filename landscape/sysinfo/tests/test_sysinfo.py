@@ -1,4 +1,7 @@
-from twisted.internet.defer import Deferred
+from cStringIO import StringIO
+from logging import getLogger, StreamHandler
+
+from twisted.internet.defer import Deferred, succeed, fail
 
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry, format_sysinfo
 from landscape.plugin import PluginRegistry
@@ -10,6 +13,14 @@ class SysInfoPluginRegistryTest(LandscapeTest):
     def setUp(self):
         super(SysInfoPluginRegistryTest, self).setUp()
         self.sysinfo = SysInfoPluginRegistry()
+        self.sysinfo_logfile = StringIO()
+        self.handler = StreamHandler(self.sysinfo_logfile)
+        self.logger = getLogger("landscape-sysinfo")
+        self.logger.addHandler(self.handler)
+
+    def tearDown(self):
+        super(SysInfoPluginRegistryTest, self).tearDown()
+        self.logger.removeHandler(self.handler)
 
     def test_is_plugin_registry(self):
         self.assertTrue(isinstance(self.sysinfo, PluginRegistry))
@@ -93,6 +104,87 @@ class SysInfoPluginRegistryTest(LandscapeTest):
         self.assertEquals(deferred.called, False)
         plugin_deferred2.callback(456)
         self.assertEquals(deferred.called, True)
+
+    plugin_exception_message = (
+        "There were exceptions while processing one or more plugins. "
+        "See ~/.landscape/sysinfo.log for more information.")
+
+    def test_plugins_run_after_synchronous_error(self):
+        """
+        Even when a plugin raises a synchronous error, other plugins will
+        continue to be run.
+        """
+        self.log_helper.ignore_errors(ZeroDivisionError)
+        plugins_what_run = []
+        class BadPlugin(object):
+            def register(self, registry):
+                pass
+            def run(self):
+                plugins_what_run.append(self)
+                1/0
+        class GoodPlugin(object):
+            def register(self, registry):
+                pass
+            def run(self):
+                plugins_what_run.append(self)
+                return succeed(None)
+        plugin1 = BadPlugin()
+        plugin2 = GoodPlugin()
+        self.sysinfo.add(plugin1)
+        self.sysinfo.add(plugin2)
+        self.sysinfo.run()
+        self.assertEquals(plugins_what_run, [plugin1, plugin2])
+        log = self.sysinfo_logfile.getvalue()
+        message = "BadPlugin plugin raised an exception."
+        self.assertIn(message, log)
+        self.assertIn("1/0", log)
+        self.assertIn("ZeroDivisionError", log)
+        self.assertEquals(
+            self.sysinfo.get_notes(),
+            [self.plugin_exception_message])
+
+    def test_asynchronous_errors_logged(self):
+        self.log_helper.ignore_errors(ZeroDivisionError)
+        class BadPlugin(object):
+            def register(self, registry):
+                pass
+            def run(self):
+                return fail(ZeroDivisionError("yay"))
+        plugin = BadPlugin()
+        self.sysinfo.add(plugin)
+        self.sysinfo.run()
+        log = self.sysinfo_logfile.getvalue()
+        message = "BadPlugin plugin raised an exception."
+        self.assertIn(message, log)
+        self.assertIn("ZeroDivisionError: yay", log)
+        self.assertEquals(
+            self.sysinfo.get_notes(),
+            [self.plugin_exception_message])
+
+    def test_multiple_exceptions_get_one_note(self):
+        self.log_helper.ignore_errors(ZeroDivisionError)
+        class RegularBadPlugin(object):
+            def register(self, registry):
+                pass
+            def run(self):
+                1/0
+
+        class AsyncBadPlugin(object):
+            def register(self, registry):
+                pass
+            def run(self):
+                return fail(ZeroDivisionError("Hi"))
+
+        plugin1 = RegularBadPlugin()
+        plugin2 = AsyncBadPlugin()
+        self.sysinfo.add(plugin1)
+        self.sysinfo.add(plugin2)
+        self.sysinfo.run()
+
+        self.assertEquals(
+            self.sysinfo.get_notes(),
+            [self.plugin_exception_message])
+        
 
 
 class FormatTest(LandscapeTest):
@@ -243,3 +335,14 @@ class FormatTest(LandscapeTest):
                           "  Footnote1\n"
                           "  Footnote2"
                           )
+
+    def test_wrap_long_notes(self):
+        self.assertEquals(
+            format_sysinfo(notes=[
+                "I do believe that a very long note, such as one that is "
+                "longer than about 50 characters, should wrap at the specified "
+                "width."], width=50, indent="Z"),
+            """\
+Z=> I do believe that a very long note, such as
+    one that is longer than about 50 characters,
+    should wrap at the specified width.""")

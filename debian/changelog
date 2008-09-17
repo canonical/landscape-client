@@ -1,3 +1,115 @@
+landscape-client (1.0.20-hardy1-landscape1) hardy; urgency=low
+
+  * reverted pidfile fix as it introduced serious regressions
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 17 Sep 2008 15:42:00 +0000
+
+landscape-client (1.0.20-gutsy1-landscape1) gutsy; urgency=low
+
+  * reverted pidfile fix as it introduced serious regressions
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 17 Sep 2008 15:41:56 +0000
+
+landscape-client (1.0.20-feisty1-landscape1) feisty; urgency=low
+
+  * reverted pidfile fix as it introduced serious regressions
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 17 Sep 2008 15:41:52 +0000
+
+landscape-client (1.0.20-dapper1-landscape1) dapper; urgency=low
+
+  * reverted pidfile fix as it introduced serious regressions
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 17 Sep 2008 15:41:44 +0000
+
+landscape-client (1.0.19-hardy1-landscape2) hardy; urgency=low
+
+  * fixed path to the pid file in logrotate
+
+ -- Andreas Hasenack <andreas@canonical.com>  Tue, 16 Sep 2008 21:48:13 +0000
+
+landscape-client (1.0.19-gutsy1-landscape2) gutsy; urgency=low
+
+  * fixed path to the pid file in logrotate
+
+ -- Andreas Hasenack <andreas@canonical.com>  Tue, 16 Sep 2008 21:48:09 +0000
+
+landscape-client (1.0.19-feisty1-landscape2) feisty; urgency=low
+
+  * fixed path to the pid file in logrotate
+
+ -- Andreas Hasenack <andreas@canonical.com>  Tue, 16 Sep 2008 21:48:04 +0000
+
+landscape-client (1.0.19-dapper1-landscape2) dapper; urgency=low
+
+  * fixed path to the pid file in logrotate
+
+ -- Andreas Hasenack <andreas@canonical.com>  Tue, 16 Sep 2008 21:47:53 +0000
+
+landscape-client (1.0.19-hardy1-landscape1) hardy; urgency=low
+
+  * relaxed the default umask for script execution to be 0022 instead
+    of 0077 (#255856)
+  * don't write out a pidfile if the daemon is not going to stay
+    running (#257079)
+  * many packaging improvements, merged back from the Intrepid package
+  * landscape-sysinfo now logs errors in ~/.landscape/sysinfo.log
+  * landscape-sysinfo now supports a configuration file in
+    ~/.landscape/sysinfo.conf
+  * other landscape-sysinfo improvements (#260231, #260230, #264870,
+    #259585)
+  * added a better check for the interpreter in script execution
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 10 Sep 2008 17:27:13 +0000
+
+landscape-client (1.0.19-gutsy1-landscape1) gutsy; urgency=low
+
+  * relaxed the default umask for script execution to be 0022 instead
+    of 0077 (#255856)
+  * don't write out a pidfile if the daemon is not going to stay
+    running (#257079)
+  * many packaging improvements, merged back from the Intrepid package
+  * landscape-sysinfo now logs errors in ~/.landscape/sysinfo.log
+  * landscape-sysinfo now supports a configuration file in
+    ~/.landscape/sysinfo.conf
+  * other landscape-sysinfo improvements (#260231, #260230, #264870,
+    #259585)
+  * added a better check for the interpreter in script execution
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 10 Sep 2008 17:27:09 +0000
+
+landscape-client (1.0.19-feisty1-landscape1) feisty; urgency=low
+
+  * relaxed the default umask for script execution to be 0022 instead
+    of 0077 (#255856)
+  * don't write out a pidfile if the daemon is not going to stay
+    running (#257079)
+  * many packaging improvements, merged back from the Intrepid package
+  * landscape-sysinfo now logs errors in ~/.landscape/sysinfo.log
+  * landscape-sysinfo now supports a configuration file in
+    ~/.landscape/sysinfo.conf
+  * other landscape-sysinfo improvements (#260231, #260230, #264870,
+    #259585)
+  * added a better check for the interpreter in script execution
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 10 Sep 2008 17:27:04 +0000
+
+landscape-client (1.0.19-dapper1-landscape1) dapper; urgency=low
+
+  * relaxed the default umask for script execution to be 0022 instead
+    of 0077 (#255856)
+  * don't write out a pidfile if the daemon is not going to stay
+    running (#257079)
+  * many packaging improvements, merged back from the Intrepid package
+  * landscape-sysinfo now logs errors in ~/.landscape/sysinfo.log
+  * landscape-sysinfo now supports a configuration file in
+    ~/.landscape/sysinfo.conf
+  * other landscape-sysinfo improvements (#260231, #260230, #264870,
+    #259585)
+  * added a better check for the interpreter in script execution
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 10 Sep 2008 17:26:49 +0000
+
 landscape-client (1.0.17-hardy1-landscape1) hardy; urgency=low
 
   * more landscape-sysinfo plugins: memory, swap, temperature, logged

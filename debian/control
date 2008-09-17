@@ -1,9 +1,9 @@
 Source: landscape-client
-Section: universe/admin
+Section: admin
 Priority: optional
 Maintainer: Landscape Team <landscape-team@canonical.com>
 Build-Depends: debhelper (>= 5), python-dev, python-central, lsb-release, gawk
-Standards-Version: 3.7.2
+Standards-Version: 3.8.0
 XS-Python-Version: >= 2.4
 
 Package: landscape-client

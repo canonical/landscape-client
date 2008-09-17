@@ -1,0 +1,59 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: Source: landscape-client@packages.debian.org\n"
+"POT-Creation-Date: 2008-08-22 11:41-0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. Type: string
+#. Description
+#: ../templates:1001
+msgid "Computer Title:"
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../templates:1001
+msgid ""
+"Descriptive text to identify this computer uniquely in the Landscape user "
+"interface."
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../templates:2001
+msgid "Account Name:"
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../templates:2001
+msgid ""
+"Short lowercase identifier of the Landscape account this computer will be "
+"assigned."
+msgstr ""
+
+#. Type: password
+#. Description
+#: ../templates:3001
+msgid "Registration Password:"
+msgstr ""
+
+#. Type: password
+#. Description
+#: ../templates:3001
+msgid ""
+"Client registration password for the given Landscape account.  Only needed "
+"if the given account is requesting a client registration password."
+msgstr ""
