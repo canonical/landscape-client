@@ -982,6 +982,7 @@ class WatchDogServiceTest(LandscapeTest):
             self.mocker.verify()
         finally:
             self.mocker.reset()
+        self.assertEquals(service.exit_code, 1)
         return result
 
     def test_start_service_exits_when_unknown_errors_occur(self):
@@ -1011,6 +1012,7 @@ class WatchDogServiceTest(LandscapeTest):
             self.mocker.verify()
         finally:
             self.mocker.reset()
+        self.assertEquals(service.exit_code, 2)
         return result
 
     def test_bootstrap(self):

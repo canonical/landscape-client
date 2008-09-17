@@ -448,7 +448,7 @@ class WatchDogService(Service):
             self._daemonize()
             return self.watchdog.start()
         def die(failure):
-            self.exit_code = 1
+            self.exit_code = 2
             reactor.crash()
         result.addCallback(start_if_not_running)
         result.addErrback(die)
