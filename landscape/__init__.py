@@ -1,2 +1,2 @@
-VERSION = "AUTOPPA_VERSION(1.0.16-0ubuntu1)"[len("AUTOPPA_VERSION("):-1]
+VERSION = "AUTOPPA_VERSION(1.0.19-hardy1-landscape2)"[len("AUTOPPA_VERSION("):-1]
 API = "3.1"
