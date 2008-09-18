@@ -959,6 +959,7 @@ class WatchDogServiceTest(LandscapeTest):
         daemonize()
         watchdog = self.mocker.patch(WatchDog)
         watchdog.request_exit()
+        self.mocker.result(succeed(None))
 
         self.mocker.replay()
 
@@ -975,6 +976,7 @@ class WatchDogServiceTest(LandscapeTest):
         #don't really request an exit
         watchdog = self.mocker.patch(WatchDog)
         watchdog.request_exit()
+        self.mocker.result(succeed(None))
 
         self.mocker.replay()
 
@@ -994,6 +996,7 @@ class WatchDogServiceTest(LandscapeTest):
 
         watchdog = self.mocker.patch(WatchDog)
         watchdog.request_exit()
+        self.mocker.result(succeed(None))
         self.mocker.replay()
 
         self.configuration.pid_file = pid_file

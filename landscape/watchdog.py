@@ -466,18 +466,22 @@ class WatchDogService(Service):
     def stopService(self):
         info("Stopping client...")
         Service.stopService(self)
+
+        # If CTRL-C is pressed twice in a row, the second SIGINT actually
+        # kills us before subprocesses die, and that makes them hang around.
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+        done = self.watchdog.request_exit()
+        done.addBoth(lambda r: self._remove_pid())
+        return done
+
+    def _remove_pid(self):
         if os.access(self._config.pid_file, os.W_OK):
             stream = open(self._config.pid_file)
             pid = stream.read()
             stream.close()
             if pid == str(os.getpid()):
                 os.unlink(self._config.pid_file)
-
-        # If CTRL-C is pressed twice in a row, the second SIGINT actually
-        # kills us before subprocesses die, and that makes them hang around.
-        signal.signal(signal.SIGINT, signal.SIG_IGN)
-
-        return self.watchdog.request_exit()
 
 
 bootstrap_list = BootstrapList([
