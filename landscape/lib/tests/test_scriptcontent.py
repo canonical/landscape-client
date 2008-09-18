@@ -9,6 +9,10 @@ class ScriptContentTest(unittest.TestCase):
         self.assertEquals(build_script(u"/bin/sh", u"echo 1.0\n"), 
                           "#!/bin/sh\necho 1.0\n")
 
+    def test_concatenate_null_strings(self):
+        self.assertEquals(build_script(None, None), 
+                          "#!\n")
+
     def test_generate_script_hash(self):
         hash1 = generate_script_hash("#!/bin/sh\necho 1.0\n")
         hash2 = generate_script_hash("#!/bin/sh\necho 1.0\n")
