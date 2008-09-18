@@ -430,7 +430,6 @@ class WatchDogService(Service):
         self.exit_code = 0
 
     def startService(self):
-        info("Watchdog watching for daemons on %r bus." % self._config.bus)
         Service.startService(self)
 
         bootstrap_list.bootstrap(data_path=self._config.data_path,
@@ -446,6 +445,7 @@ class WatchDogService(Service):
                 reactor.crash() # so stopService isn't called.
                 return
             self._daemonize()
+            info("Watchdog watching for daemons on %r bus." % self._config.bus)
             return self.watchdog.start()
         def die(failure):
             self.exit_code = 2
