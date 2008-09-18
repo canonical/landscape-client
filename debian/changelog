@@ -1,4 +1,4 @@
-landscape-client (1.0.18-0ubuntu4) intrepid; urgency=low
+landscape-client (1.0.21-0ubuntu1) intrepid; urgency=low
 
   * New upstream release
     - Avoid the PotentialZombieWarning on landscape-client startup.
@@ -10,7 +10,7 @@ landscape-client (1.0.18-0ubuntu4) intrepid; urgency=low
       already running. (LP: #269634)
     - Remove the pid file when shutting down the client. (LP: #257081)
 
- -- Christopher Armstrong <radix@ubuntu.com>  Thu, 18 Sep 2008 14:33:51 -0400
+ -- Christopher Armstrong <radix@ubuntu.com>  Thu, 18 Sep 2008 15:01:14 -0400
 
 landscape-client (1.0.18-0ubuntu3) intrepid; urgency=low
 
