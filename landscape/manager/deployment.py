@@ -1,3 +1,5 @@
+import os
+
 from twisted.python.reflect import namedClass
 
 from landscape.deployment import (LandscapeService, Configuration,
@@ -77,8 +79,9 @@ class ManagerService(LandscapeService):
     def startService(self):
         super(ManagerService, self).startService()
         self.remote_broker = RemoteBroker(self.bus)
+        store_name = os.path.join(self.config.data_path, "manager_store")
         self.registry = ManagerPluginRegistry(self.reactor, self.remote_broker,
-                                              self.config, self.bus)
+                                              self.config, self.bus, store_name)
         self.dbus_service = ManagerDBusObject(self.bus, self.registry)
         DBusSignalToReactorTransmitter(self.bus, self.reactor)
         self.remote_broker.register_plugin(self.dbus_service.bus_name,

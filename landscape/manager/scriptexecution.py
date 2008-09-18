@@ -300,6 +300,6 @@ class ScriptExecution(ManagerPlugin):
         self._custom_graph = CustomGraphPlugin()
 
     def register(self, registry):
-        super(ScriptExecutionPlugin, self).register(registry)
+        super(ScriptExecution, self).register(registry)
         self._script_execution.register(registry)
         self._custom_graph.register(registry)
