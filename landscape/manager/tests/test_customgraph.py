@@ -4,7 +4,7 @@ import pwd
 from twisted.internet.error import ProcessDone
 from twisted.python.failure import Failure
 
-from landscape.manager.customgraph import CustomGraph
+from landscape.manager.customgraph import CustomGraphPlugin
 from landscape.manager.manager import SUCCEEDED, FAILED
 from landscape.manager.store import ManagerStore
 
@@ -25,7 +25,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.data_path = self.make_dir()
         self.manager.config.data_path = self.data_path
         self.manager.config.script_users = "ALL"
-        self.graph_manager = CustomGraph(
+        self.graph_manager = CustomGraphPlugin(
             create_time=range(1500, 0, -300).pop)
         self.manager.add(self.graph_manager)
 

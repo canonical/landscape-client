@@ -86,7 +86,8 @@ class ScriptRunnerMixin(object):
             "#!%s\n%s" % (shell.encode("utf-8"), code.encode("utf-8")))
         script_file.close()
 
-class ScriptExecution(ManagerPlugin, ScriptRunnerMixin):
+
+class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
     """A plugin which allows execution of arbitrary shell scripts.
 
     @ivar size_limit: The number of bytes at which to truncate process output.
@@ -95,8 +96,9 @@ class ScriptExecution(ManagerPlugin, ScriptRunnerMixin):
     size_limit = 500000
 
     def register(self, registry):
-        super(ScriptExecution, self).register(registry)
-        registry.register_message("execute-script", self._handle_execute_script)
+        super(ScriptExecutionPlugin, self).register(registry)
+        registry.register_message(
+            "execute-script", self._handle_execute_script)
 
     def _respond(self, status, data, opid, result_code=None):
         message =  {"type": "operation-result",
@@ -202,8 +204,8 @@ class ScriptExecution(ManagerPlugin, ScriptRunnerMixin):
             if time_limit is not None:
                 pp.schedule_cancel(time_limit)
             result = pp.result_deferred
-            return result.addBoth(self._remove_script, filename, attachment_dir,
-                                  old_umask)
+            return result.addBoth(
+                self._remove_script, filename, attachment_dir, old_umask)
         except:
             os.umask(old_umask)
             raise
@@ -285,3 +287,19 @@ class ProcessAccumulationProtocol(ProcessProtocol):
             self.transport.closeChildFD(i)
         self.transport.signalProcess("KILL")
         self._cancelled = True
+
+
+class ScriptExecution(ManagerPlugin):
+    """
+    Meta-plugin wrapping ScriptExecutionPlugin and CustomGraphPlugin.
+    """
+
+    def __init__(self):
+        from landscape.manager.customgraph import CustomGraphPlugin
+        self._script_execution = ScriptExecutionPlugin()
+        self._custom_graph = CustomGraphPlugin()
+
+    def register(self, registry):
+        super(ScriptExecutionPlugin, self).register(registry)
+        self._script_execution.register(registry)
+        self._custom_graph.register(registry)

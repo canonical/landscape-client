@@ -29,7 +29,7 @@ class StoreProxy(object):
         self.store.set_graph_accumulate(key, value[0], value[1])
 
 
-class CustomGraph(ManagerPlugin, ScriptRunnerMixin):
+class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
     """
     Manage adding and deleting custom graph scripts, and then run the scripts
     in a loop.
@@ -43,12 +43,12 @@ class CustomGraph(ManagerPlugin, ScriptRunnerMixin):
         @param process_factory: The L{IReactorProcess} provider to run the
             process with.
         """
-        super(CustomGraph, self).__init__(process_factory)
+        super(CustomGraphPlugin, self).__init__(process_factory)
         self._create_time = create_time
         self._data = {}
 
     def register(self, registry):
-        super(CustomGraph, self).register(registry)
+        super(CustomGraphPlugin, self).register(registry)
         registry.register_message(
             "custom-graph-add", self._handle_custom_graph_add)
         registry.register_message(

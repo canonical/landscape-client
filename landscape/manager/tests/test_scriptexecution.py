@@ -9,7 +9,7 @@ from twisted.internet.error import ProcessDone
 from twisted.python.failure import Failure
 
 from landscape.manager.scriptexecution import (
-    ScriptExecution, ProcessTimeLimitReachedError, PROCESS_FAILED_RESULT,
+    ScriptExecutionPlugin, ProcessTimeLimitReachedError, PROCESS_FAILED_RESULT,
     ProcessFailedError)
 from landscape.manager.manager import SUCCEEDED, FAILED
 from landscape.tests.helpers import (
@@ -24,7 +24,7 @@ class RunScriptTests(LandscapeTest):
 
     def setUp(self):
         super(RunScriptTests, self).setUp()
-        self.plugin = ScriptExecution()
+        self.plugin = ScriptExecutionPlugin()
         self.manager.add(self.plugin)
 
     def test_basic_run(self):
@@ -43,7 +43,7 @@ class RunScriptTests(LandscapeTest):
         return result
 
     def test_concurrent(self):
-        """Scripts run with the ScriptExecution plugin are run concurrently."""
+        """Scripts run with the ScriptExecutionPlugin plugin are run concurrently."""
         fifo = self.make_path()
         os.mkfifo(fifo)
         # If the first process is blocking on a fifo, and the second process
@@ -429,7 +429,7 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         mock_chown = self.mocker.replace("os.chown", passthrough=False)
         mock_chown(ARGS)
 
-        self.manager.add(ScriptExecution(process_factory=factory))
+        self.manager.add(ScriptExecutionPlugin(process_factory=factory))
 
         self.mocker.replay()
         result = self._send_script(sys.executable, "print 'hi'")
@@ -474,7 +474,7 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
 
         self.mocker.replay()
 
-        self.manager.add(ScriptExecution(process_factory=process_factory))
+        self.manager.add(ScriptExecutionPlugin(process_factory=process_factory))
 
         result = self._send_script(sys.executable, "print 'hi'", user=username)
         return result
@@ -485,7 +485,7 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         operation-result should have a failed status.
         """
         factory = StubProcessFactory()
-        self.manager.add(ScriptExecution(process_factory=factory))
+        self.manager.add(ScriptExecutionPlugin(process_factory=factory))
 
         # ignore the call to chown!
         mock_chown = self.mocker.replace("os.chown", passthrough=False)
@@ -517,7 +517,7 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         Messages which try to run a script as a user that is not allowed should
         be rejected.
         """
-        self.manager.add(ScriptExecution())
+        self.manager.add(ScriptExecutionPlugin())
         self.manager.config.script_users = "landscape, nobody"
         result = self._send_script(sys.executable, "bar", user="whatever")
         def got_result(r):
@@ -552,7 +552,7 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
 
         self.mocker.replay()
 
-        self.manager.add(ScriptExecution(process_factory=process_factory))
+        self.manager.add(ScriptExecutionPlugin(process_factory=process_factory))
 
         def got_result(r):
             self.assertTrue(self.broker_service.exchanger.is_urgent())
@@ -573,7 +573,7 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         sent (assuming operation-id *is* successfully parsed).
         """
         self.log_helper.ignore_errors(KeyError)
-        self.manager.add(ScriptExecution())
+        self.manager.add(ScriptExecutionPlugin())
 
         self.manager.dispatch_message(
             {"type": "execute-script", "operation-id": 444})
@@ -600,7 +600,7 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         self.mocker.count(0, None)
         self.mocker.replay()
 
-        self.manager.add(ScriptExecution())
+        self.manager.add(ScriptExecutionPlugin())
         result = self._send_script("/bin/sh", "echo hi; exit 1")
 
         def got_result(ignored):
@@ -625,7 +625,7 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         mock_chown = self.mocker.replace("os.chown", passthrough=False)
         mock_chown(ARGS)
 
-        self.manager.add(ScriptExecution(process_factory=factory))
+        self.manager.add(ScriptExecutionPlugin(process_factory=factory))
 
         self.mocker.replay()
         result = self._send_script(sys.executable, "print 'hi'")
