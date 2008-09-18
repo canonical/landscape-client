@@ -1,6 +1,6 @@
 import md5
 
-def concatenate_script(interpreter, code):
+def build_script(interpreter, code):
     """
     Concatenates a interpreter and script into an executable script.
     """
