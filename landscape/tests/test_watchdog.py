@@ -952,6 +952,59 @@ class WatchDogServiceTest(LandscapeTest):
             self.mocker.reset()
         self.assertFalse(os.path.exists(pid_file))
 
+    def test_remove_pid_file(self):
+        #don't really daemonize or request an exit
+        daemonize = self.mocker.replace("landscape.watchdog.daemonize",
+                                        passthrough=False)
+        daemonize()
+        watchdog = self.mocker.patch(WatchDog)
+        watchdog.request_exit()
+        self.mocker.result(succeed(None))
+
+        self.mocker.replay()
+
+        pid_file = self.make_path()
+        self.configuration.daemon = True
+        self.configuration.pid_file = pid_file
+        service = WatchDogService(self.configuration)
+        service.startService()
+        self.assertEquals(int(open(pid_file).read()), os.getpid())
+        service.stopService()
+        self.assertFalse(os.path.exists(pid_file))
+
+    def test_remove_pid_file_only_when_ours(self):
+        #don't really request an exit
+        watchdog = self.mocker.patch(WatchDog)
+        watchdog.request_exit()
+        self.mocker.result(succeed(None))
+
+        self.mocker.replay()
+
+        pid_file = self.make_path()
+        self.configuration.pid_file = pid_file
+        service = WatchDogService(self.configuration)
+        open(pid_file, "w").write("abc")
+        service.stopService()
+        self.assertTrue(os.path.exists(pid_file))
+
+    def test_remove_pid_file_doesnt_explode_on_inaccessibility(self):
+        pid_file = self.make_path()
+        # Make os.access say that the file isn't writable
+        mock_os = self.mocker.replace("os")
+        mock_os.access(pid_file, os.W_OK)
+        self.mocker.result(False)
+
+        watchdog = self.mocker.patch(WatchDog)
+        watchdog.request_exit()
+        self.mocker.result(succeed(None))
+        self.mocker.replay()
+
+        self.configuration.pid_file = pid_file
+        service = WatchDogService(self.configuration)
+        open(pid_file, "w").write(str(os.getpid()))
+        service.stopService()
+        self.assertTrue(os.path.exists(pid_file))
+
     def test_start_service_uses_right_bus(self):
         service = WatchDogService(self.configuration)
         self.assertEquals(type(service.bus), dbus.SystemBus)
