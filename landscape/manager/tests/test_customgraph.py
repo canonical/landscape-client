@@ -6,40 +6,11 @@ from twisted.python.failure import Failure
 
 from landscape.manager.customgraph import CustomGraph
 from landscape.manager.manager import SUCCEEDED, FAILED
+from landscape.manager.store import ManagerStore
 
 from landscape.tests.helpers import (
     LandscapeTest, ManagerHelper, StubProcessFactory, DummyProcess)
 from landscape.tests.mocker import ANY
-
-
-class StubManagerStore(object):
-
-    def __init__(self):
-        self.graphes = {}
-        self.accumulate = {}
-
-    def add_graph(self, graph_id, filename, user):
-        self.graphes[graph_id] = (filename, user)
-
-    def get_graphes(self):
-        for graph_id, (filename, user) in self.graphes.items():
-            yield graph_id, filename, user
-
-    def get_graph(self, graph_id):
-        graph = self.graphes.get(graph_id)
-        if graph:
-            return graph_id, graph[0], graph[1]
-
-    def remove_graph(self, graph_id):
-        self.graphes.pop(graph_id, None)
-
-    def get_graph_accumulate(self, graph_id):
-        accumulate = self.accumulate.get(graph_id)
-        if accumulate:
-            return graph_id, accumulate[0], accumulate[1]
-
-    def set_graph_accumulate(self, graph_id, timestamp, value):
-        self.accumulate[graph_id] = (timestamp, value)
 
 
 class CustomGraphManagerTests(LandscapeTest):
@@ -47,7 +18,7 @@ class CustomGraphManagerTests(LandscapeTest):
 
     def setUp(self):
         super(CustomGraphManagerTests, self).setUp()
-        self.store = StubManagerStore()
+        self.store = ManagerStore(":memory:")
         self.manager.store = self.store
         self.broker_service.message_store.set_accepted_types(
             ["operation-result", "custom-graph"])
@@ -77,10 +48,11 @@ class CustomGraphManagerTests(LandscapeTest):
                   "status": SUCCEEDED,
                   "type": "operation-result"}])
             self.assertEquals(
-                self.store.graphes,
-                {123: (os.path.join(self.data_path, "custom-graph-scripts",
-                                    "graph-123"),
-                       username)})
+                self.store.get_graphs(),
+                [(123,
+                  os.path.join(self.data_path, "custom-graph-scripts",
+                               "graph-123"),
+                  username)])
         result.addCallback(got_result)
         return result
 
@@ -114,10 +86,10 @@ class CustomGraphManagerTests(LandscapeTest):
                   "status": SUCCEEDED,
                   "type": "operation-result"}])
             self.assertEquals(
-                self.store.graphes,
-                {123: (os.path.join(self.data_path, "custom-graph-scripts",
+                self.store.get_graphs(),
+                [(123, os.path.join(self.data_path, "custom-graph-scripts",
                                     "graph-123"),
-                       "bar")})
+                       "bar")])
         result.addCallback(got_result)
         return result
 
@@ -142,7 +114,7 @@ class CustomGraphManagerTests(LandscapeTest):
                   "status": FAILED,
                   "type": "operation-result"}])
 
-            self.assertEquals(self.store.graphes, {})
+            self.assertEquals(self.store.get_graphs(), [])
         result.addCallback(got_result)
         return result
 
@@ -165,7 +137,7 @@ class CustomGraphManagerTests(LandscapeTest):
                   "status": FAILED,
                   "type": "operation-result"}])
 
-            self.assertEquals(self.store.graphes, {})
+            self.assertEquals(self.store.get_graphs(), [])
         result.addCallback(got_result)
         return result
 

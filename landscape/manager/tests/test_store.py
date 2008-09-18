@@ -12,7 +12,7 @@ class ManagerStoreTest(LandscapeTest):
         self.store.add_graph(1, u"file 1", u"user1")
         self.store.set_graph_accumulate(1, 1234, 1.0)
 
-    def test_get_unknow_graph(self):
+    def test_get_unknown_graph(self):
         graph = self.store.get_graph(1000)
         self.assertIdentical(graph, None)
 
@@ -21,13 +21,13 @@ class ManagerStoreTest(LandscapeTest):
         self.assertEquals(graph, (1, u"file 1", u"user1"))
 
     def test_get_graphs(self):
-        graphes = self.store.get_graphes()
-        self.assertEquals(graphes, [(1, u"file 1", u"user1")])
+        graphs = self.store.get_graphs()
+        self.assertEquals(graphs, [(1, u"file 1", u"user1")])
 
-    def test_get_no_graphes(self):
+    def test_get_no_graphs(self):
         self.store.remove_graph(1)
-        graphes = self.store.get_graphes()
-        self.assertEquals(graphes, [])
+        graphs = self.store.get_graphs()
+        self.assertEquals(graphs, [])
 
     def test_add_graph(self):
         self.store.add_graph(2, u"file 2", u"user2")
@@ -41,13 +41,13 @@ class ManagerStoreTest(LandscapeTest):
 
     def test_remove_graph(self):
         self.store.remove_graph(1)
-        graphes = self.store.get_graphes()
-        self.assertEquals(graphes, [])
+        graphs = self.store.get_graphs()
+        self.assertEquals(graphs, [])
 
-    def test_remove_unknow_graph(self):
+    def test_remove_unknown_graph(self):
         self.store.remove_graph(2)
-        graphes = self.store.get_graphes()
-        self.assertEquals(graphes, [(1, u"file 1", u"user1")])
+        graphs = self.store.get_graphs()
+        self.assertEquals(graphs, [(1, u"file 1", u"user1")])
 
     def test_get_accumulate_unknown_graph(self):
         accumulate = self.store.get_graph_accumulate(2)

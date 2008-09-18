@@ -162,13 +162,13 @@ class CustomGraph(ManagerPlugin, ScriptRunnerMixin):
 
     def run(self):
         """
-        Iterate all the custom graphes stored and then execute each script and
+        Iterate all the custom graphs stored and then execute each script and
         handle the output.
         """
         dl = []
-        graphes = list(self.registry.store.get_graphes())
+        graphs = list(self.registry.store.get_graphs())
         now = int(self._create_time())
-        for graph_id, filename, user in graphes:
+        for graph_id, filename, user in graphs:
             if graph_id not in self._data:
                 self._data[graph_id] = {"values": [], "error": u""}
             if user is not None:

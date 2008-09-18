@@ -20,7 +20,7 @@ class ManagerStore(object):
         return cursor.fetchone()
 
     @with_cursor
-    def get_graphes(self, cursor):
+    def get_graphs(self, cursor):
         cursor.execute("SELECT graph_id, filename, user FROM graph")
         return cursor.fetchall()
 
