@@ -1,3 +1,17 @@
+landscape-client (1.0.18-0ubuntu4) intrepid; urgency=low
+
+  * New upstream release
+    - Avoid the PotentialZombieWarning on landscape-client startup.
+     (LP: #257346)
+    - When run as root, read sysinfo configuration from /etc and and write
+      logs to /var/log instead of /root. (LP: #268560)
+    - Avoid ZeroDivisionErrors when /home is an autofs. (LP: #269634)
+    - Don't corrupt a pid file when trying to start the client when it's
+      already running. (LP: #269634)
+    - Remove the pid file when shutting down the client. (LP: #257081)
+
+ -- Christopher Armstrong <radix@ubuntu.com>  Thu, 18 Sep 2008 14:33:51 -0400
+
 landscape-client (1.0.18-0ubuntu3) intrepid; urgency=low
 
   * debian/control: Add Replaces for landscape-common since
