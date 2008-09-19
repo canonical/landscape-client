@@ -3,6 +3,7 @@ import time
 
 from twisted.internet.defer import fail, DeferredList
 
+from landscape.lib.scriptcontent import generate_script_hash
 from landscape.accumulate import Accumulator
 from landscape.manager.manager import ManagerPlugin, SUCCEEDED, FAILED
 from landscape.manager.scriptexecution import (
@@ -160,6 +161,12 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
             self._data[graph_id]["error"] = self._format_exception(
                 failure.value)
 
+    def _get_script_hash(self, filename):
+        file_object = file(filename)
+        script_content = file_object.read()
+        file_object.close()
+        return generate_script_hash(script_content)
+
     def run(self):
         """
         Iterate all the custom graphs stored and then execute each script and
@@ -170,7 +177,9 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         now = int(self._create_time())
         for graph_id, filename, user in graphs:
             if graph_id not in self._data:
-                self._data[graph_id] = {"values": [], "error": u""}
+                script_hash = self._get_script_hash(filename)
+                self._data[graph_id] = {
+                    "values": [], "error": u"", "script-hash": script_hash}
             if user is not None:
                 if not self.is_user_allowed(user):
                     d = fail(ProcessFailedError(

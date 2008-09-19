@@ -172,7 +172,10 @@ class CustomGraphManagerTests(LandscapeTest):
                 self.broker_service.message_store.get_pending_messages(),
                 [{"data":
                       {123: {"error": u"",
-                             "values": [(300, 1.0)]}},
+                             "values": [(300, 1.0)],
+                             "script-hash": "483f2304b49063680c75e3c9e09cf6d0"
+                            }
+                      },
                   "type": "custom-graph"}])
         return self.graph_manager.run().addCallback(check)
 
@@ -180,6 +183,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.store.add_graph(123, "foo", None)
         factory = StubProcessFactory()
         self.graph_manager.process_factory = factory
+        self.graph_manager._get_script_hash = lambda x: "md5"
         result = self.graph_manager.run()
 
         self.assertEquals(len(factory.spawns), 1)
@@ -199,7 +203,7 @@ class CustomGraphManagerTests(LandscapeTest):
                 [{"data":
                       {123: {"error":
                           u"ValueError: invalid literal for float(): foobar",
-                             "values": []}},
+                             "values": [], "script-hash": "md5"}},
                   "type": "custom-graph"}])
         return result.addCallback(check)
 
@@ -207,6 +211,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.store.add_graph(123, "foo", "bar")
         factory = StubProcessFactory()
         self.graph_manager.process_factory = factory
+        self.graph_manager._get_script_hash = lambda x: "md5"
 
         mock_getpwnam = self.mocker.replace("pwd.getpwnam", passthrough=False)
         class pwnam(object):
@@ -245,6 +250,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.store.add_graph(123, "foo", username)
         factory = StubProcessFactory()
         self.graph_manager.process_factory = factory
+        self.graph_manager._get_script_hash = lambda x: "md5"
         result = self.graph_manager.run()
 
         self.assertEquals(len(factory.spawns), 0)
@@ -257,6 +263,7 @@ class CustomGraphManagerTests(LandscapeTest):
                       {"error":
                           u"Custom graph cannot be run as user %s." %
                           (username,),
+                       "script-hash": "md5",
                        "values": []}},
                   "type": "custom-graph"}])
 
@@ -266,6 +273,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.store.add_graph(123, "foo", None)
         factory = StubProcessFactory()
         self.graph_manager.process_factory = factory
+        self.graph_manager._get_script_hash = lambda x: "md5"
         result = self.graph_manager.run()
 
         self.assertEquals(len(factory.spawns), 1)
@@ -283,6 +291,7 @@ class CustomGraphManagerTests(LandscapeTest):
                 self.broker_service.message_store.get_pending_messages(),
                 [{"data": {123: {"error":
                                     u"Process exceed the 10 seconds limit",
+                                "script-hash": "md5",
                                 "values": []}},
                   "type": "custom-graph"}])
 
