@@ -1,8 +1,8 @@
-landscape-client (1.0.21-0ubuntu2) intrepid; urgency=low
+landscape-client (1.0.21-0ubuntu2) UNRELEASED; urgency=low
 
   * debian/control: Add VCS-* headers.
 
- -- Mathias Gug <mathiaz@ubuntu.com>  Fri, 19 Sep 2008 17:57:17 -0400
+ -- Mathias Gug <mathiaz@ubuntu.com>  Fri, 19 Sep 2008 19:01:58 -0400
 
 landscape-client (1.0.21-0ubuntu1) intrepid; urgency=low
 
