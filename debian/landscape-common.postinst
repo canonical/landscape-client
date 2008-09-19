@@ -37,13 +37,15 @@ case "$1" in
         UPDATE_MOTD_LOCATION=/etc/update-motd.d/50-landscape-sysinfo
         if [ "$RET" = "Cache sysinfo in /etc/motd" ]; then
             rm -f $PROFILE_LOCATION 2>/dev/null || true
-            ln -s $WRAPPER $UPDATE_MOTD_LOCATION
-            invoke-rc.d update-motd refresh || true
+            ln -sf $WRAPPER $UPDATE_MOTD_LOCATION
+            /usr/sbin/update-motd 2>/dev/null || true
         elif [ "$RET" = "Run sysinfo on every login" ]; then
-            rm -f $UPDATE_MOTD_LOCATION 2>/dev/null &&  /etc/init.d/update-motd refresh || true
-            ln -s $WRAPPER $PROFILE_LOCATION
+            rm -f $UPDATE_MOTD_LOCATION 2>/dev/null || true
+            /usr/sbin/update-motd 2>/dev/null || true
+            ln -sf $WRAPPER $PROFILE_LOCATION
         else
-            rm -f $UPDATE_MOTD_LOCATION 2>/dev/null &&  /etc/init.d/update-motd refresh || true
+            rm -f $UPDATE_MOTD_LOCATION 2>/dev/null || true
+            /usr/sbin/update-motd 2>/dev/null || true
             rm -f $PROFILE_LOCATION || true
         fi
 

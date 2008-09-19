@@ -1,3 +1,17 @@
+landscape-client (1.0.18-0ubuntu4) intrepid; urgency=low
+
+  [ Christopher Armstrong ]
+  * debian/landscape-common.postinst: Don't blow up when the landscape-sysinfo
+    symlinks already exist (LP: #270131)
+
+  [ Mathias Gug ]
+  * debian/landscape-common.postinst, debian/landscape-common.prerm: don't
+    call update-motd init script as it's no longer available in the
+    update-motd package. Call directly /usr/sbin/update-motd instead. 
+    (LP: #271854)
+
+ -- Mathias Gug <mathiaz@ubuntu.com>  Thu, 18 Sep 2008 16:47:08 -0400
+
 landscape-client (1.0.18-0ubuntu3) intrepid; urgency=low
 
   * debian/control: Add Replaces for landscape-common since
