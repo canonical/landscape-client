@@ -13,6 +13,7 @@ from twisted.internet.protocol import ProcessProtocol
 from twisted.internet.defer import Deferred, fail
 from twisted.internet.error import ProcessDone
 
+from landscape.lib.scriptcontent import build_script
 from landscape.manager.manager import ManagerPlugin, SUCCEEDED, FAILED
 
 
@@ -82,8 +83,7 @@ class ScriptRunnerMixin(object):
         os.chmod(filename, 0700)
         if uid is not None:
             os.chown(filename, uid, gid)
-        script_file.write(
-            "#!%s\n%s" % (shell.encode("utf-8"), code.encode("utf-8")))
+        script_file.write(build_script(shell, code))
         script_file.close()
 
 
