@@ -1,7 +1,8 @@
 landscape-client (1.0.21-0ubuntu1) intrepid; urgency=low
 
   [ Christopher Armstrong ]
-  * New upstream release
+  * New upstream release (LP: #271886):
+    - Bug fix release:
     - Avoid the PotentialZombieWarning on landscape-client startup.
      (LP: #257346)
     - When run as root, read sysinfo configuration from /etc and and write
@@ -16,7 +17,7 @@ landscape-client (1.0.21-0ubuntu1) intrepid; urgency=low
     instead of --exec when starting landscape-client so that the init script
     doesn't fail if landscape-client is already running.
 
- -- Mathias Gug <mathiaz@ubuntu.com>  Fri, 19 Sep 2008 16:31:59 -0400
+ -- Mathias Gug <mathiaz@ubuntu.com>  Fri, 19 Sep 2008 17:28:08 -0400
 
 landscape-client (1.0.18-0ubuntu4) intrepid; urgency=low
 
