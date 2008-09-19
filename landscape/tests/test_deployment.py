@@ -12,6 +12,15 @@ from landscape.tests.helpers import (
 from landscape.tests.mocker import ANY
 
 
+class BabbleConfiguration(Configuration):
+    config_section = "babble"
+    default_config_filenames = []
+    def make_parser(self):
+        parser = super(BabbleConfiguration, self).make_parser()
+        parser.add_option("--whatever", metavar="STUFF")
+        return parser
+
+
 class ConfigurationTest(LandscapeTest):
 
     def setUp(self):
@@ -100,17 +109,18 @@ class ConfigurationTest(LandscapeTest):
         self.assertEquals(self.config.log_level, "file")
 
     def test_different_config_file_section(self):
-        class MyConfiguration(Configuration):
-            config_section = "babble"
-            default_config_filenames = []
-            def make_parser(self):
-                parser = super(MyConfiguration, self).make_parser()
-                parser.add_option("--whatever", metavar="STUFF")
-                return parser
-        self.reset_config(configuration_class=MyConfiguration)
+        self.reset_config(configuration_class=BabbleConfiguration)
         self.write_config_file(section_name="babble", whatever="yay")
         self.config.load([])
         self.assertEquals(self.config.whatever, "yay")
+
+    def test_no_section_available(self):
+        config_filename = self.makeFile("")
+        class MyConfiguration(Configuration):
+            config_section = "nonexistent"
+            default_config_filenames = (config_filename,)
+        self.reset_config(configuration_class=MyConfiguration)
+        self.config.load([])
 
     def test_write_configuration(self):
         self.write_config_file(log_level="debug")
@@ -118,6 +128,31 @@ class ConfigurationTest(LandscapeTest):
         self.config.write()
         data = open(self.config_filename).read()
         self.assertEquals(data.strip(), "[client]\nlog_level = warning")
+
+    def test_write_configuration_with_section(self):
+        self.reset_config(configuration_class=BabbleConfiguration)
+        self.write_config_file(section_name="babble", whatever="yay")
+        self.config.whatever = "boo"
+        self.config.write()
+        data = open(self.config_filename).read()
+        self.assertEquals(data.strip(), "[babble]\nwhatever = boo")
+
+    def test_write_unrelated_configuration_back(self):
+        """
+        If a configuration file has a section that isn't processed by a
+        particular configuration object, that unrelated configuration section
+        will be maintained even when written back.
+        """
+        self.reset_config(configuration_class=BabbleConfiguration)
+        config = "[babble]\nwhatever = zoot\n[goojy]\nunrelated = yes"
+        config_filename = self.makeFile(config)
+        self.config.load_configuration_file(config_filename)
+        self.config.whatever = "boo"
+        self.config.write()
+        data = open(config_filename).read()
+        self.assertEquals(
+            data.strip(),
+            "[babble]\nwhatever = boo\n\n[goojy]\nunrelated = yes")
 
     def test_write_on_the_right_default_config_file(self):
         self.write_config_file(log_level="debug")
@@ -135,6 +170,17 @@ class ConfigurationTest(LandscapeTest):
         self.config.write()
         data = open(self.config_filename).read()
         self.assertEquals(data.strip(), "[client]")
+
+    def test_dont_delete_explicitly_set_default_options(self):
+        """
+        If the user explicitly sets a configuration option to its default
+        value, we shouldn't delete that option from the conf file when we
+        write it, just to be nice.
+        """
+        self.write_config_file(log_level="info")
+        self.config.write()
+        data = open(self.config_filename).read()
+        self.assertEquals(data.strip(), "[client]\nlog_level = info")
 
     def test_dont_write_config_option(self):
         self.write_config_file()
