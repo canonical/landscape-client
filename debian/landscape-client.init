@@ -30,7 +30,7 @@ fi
 case "$1" in
 	start)
 		log_daemon_msg "Starting the $NAME daemon"
-		start-stop-daemon --start --quiet --oknodo --exec $DAEMON --pidfile $PIDFILE -- --daemon --pid-file $PIDFILE
+		start-stop-daemon --start --quiet --oknodo --startas $DAEMON --pidfile $PIDFILE -- --daemon --pid-file $PIDFILE
 		log_end_msg $?
 		;;
 
