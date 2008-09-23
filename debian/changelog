@@ -1,8 +1,14 @@
 landscape-client (1.0.21-0ubuntu2) UNRELEASED; urgency=low
 
-  * debian/control: Add VCS-* headers.
+  * debian/rules: Install an hourly cron job to update smart package data.
+    Thanks to Christopher Armstrong (LP: #268765).
+  * debian/control:
+    - Move ${misc:Depends} to Depends.
+    - Add VCS-* headers.
+  * debian/landscape-client.postrm:
+    - remove /etc/default/landscape-client when the package is purged.
 
- -- Mathias Gug <mathiaz@ubuntu.com>  Fri, 19 Sep 2008 19:01:58 -0400
+ -- Mathias Gug <mathiaz@ubuntu.com>  Tue, 23 Sep 2008 18:01:54 -0400
 
 landscape-client (1.0.21-0ubuntu1) intrepid; urgency=low
 
