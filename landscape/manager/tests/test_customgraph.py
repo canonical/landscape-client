@@ -5,7 +5,6 @@ from twisted.internet.error import ProcessDone
 from twisted.python.failure import Failure
 
 from landscape.manager.customgraph import CustomGraphPlugin
-from landscape.manager.manager import SUCCEEDED, FAILED
 from landscape.manager.store import ManagerStore
 
 from landscape.tests.helpers import (
@@ -33,28 +32,20 @@ class CustomGraphManagerTests(LandscapeTest):
         uid = os.getuid()
         info = pwd.getpwuid(uid)
         username = info.pw_name
-        result = self.manager.dispatch_message(
+        self.manager.dispatch_message(
             {"type": "custom-graph-add",
                      "interpreter": "/bin/sh",
                      "code": "echo hi!",
                      "username": username,
                      "operation-id": 456,
                      "graph-id": 123})
-        def got_result(r):
-            self.assertMessages(
-                self.broker_service.message_store.get_pending_messages(),
-                [{"operation-id": 456,
-                  "result-text": u"",
-                  "status": SUCCEEDED,
-                  "type": "operation-result"}])
-            self.assertEquals(
-                self.store.get_graphs(),
-                [(123,
-                  os.path.join(self.data_path, "custom-graph-scripts",
-                               "graph-123"),
-                  username)])
-        result.addCallback(got_result)
-        return result
+
+        self.assertEquals(
+            self.store.get_graphs(),
+            [(123,
+              os.path.join(self.data_path, "custom-graph-scripts",
+                           "graph-123"),
+              username)])
 
     def test_add_graph_for_user(self):
         mock_chown = self.mocker.replace("os.chown", passthrough=False)
@@ -71,75 +62,18 @@ class CustomGraphManagerTests(LandscapeTest):
 
         self.expect(mock_getpwnam("bar")).result(pwnam)
         self.mocker.replay()
-        result = self.manager.dispatch_message(
+        self.manager.dispatch_message(
             {"type": "custom-graph-add",
                      "interpreter": "/bin/sh",
                      "code": "echo hi!",
                      "username": "bar",
                      "operation-id": 456,
                      "graph-id": 123})
-        def got_result(r):
-            self.assertMessages(
-                self.broker_service.message_store.get_pending_messages(),
-                [{"operation-id": 456,
-                  "result-text": u"",
-                  "status": SUCCEEDED,
-                  "type": "operation-result"}])
-            self.assertEquals(
-                self.store.get_graphs(),
-                [(123, os.path.join(self.data_path, "custom-graph-scripts",
-                                    "graph-123"),
-                       "bar")])
-        result.addCallback(got_result)
-        return result
-
-    def test_add_unknown_user(self):
-        uid = os.getuid()
-        info = pwd.getpwuid(uid)
-        username = info.pw_name
-        self.manager.config.script_users = "foo"
-        result = self.manager.dispatch_message(
-            {"type": "custom-graph-add",
-                     "interpreter": "/bin/sh",
-                     "code": "echo hi!",
-                     "username": username,
-                     "operation-id": 456,
-                     "graph-id": 123})
-        def got_result(r):
-            self.assertMessages(
-                self.broker_service.message_store.get_pending_messages(),
-                [{"operation-id": 456,
-                  "result-text":
-                      u"Custom graph cannot be run as user %s." % (username,),
-                  "status": FAILED,
-                  "type": "operation-result"}])
-
-            self.assertEquals(self.store.get_graphs(), [])
-        result.addCallback(got_result)
-        return result
-
-    def test_add_graph_unknown_interpreter(self):
-        uid = os.getuid()
-        info = pwd.getpwuid(uid)
-        username = info.pw_name
-        result = self.manager.dispatch_message(
-            {"type": "custom-graph-add",
-                     "interpreter": "/cantpossiblyexist",
-                     "code": "echo hi!",
-                     "username": username,
-                     "operation-id": 456,
-                     "graph-id": 123})
-        def got_result(r):
-            self.assertMessages(
-                self.broker_service.message_store.get_pending_messages(),
-                [{"operation-id": 456,
-                  "result-text": u"Unknown interpreter: '/cantpossiblyexist'",
-                  "status": FAILED,
-                  "type": "operation-result"}])
-
-            self.assertEquals(self.store.get_graphs(), [])
-        result.addCallback(got_result)
-        return result
+        self.assertEquals(
+            self.store.get_graphs(),
+            [(123, os.path.join(self.data_path, "custom-graph-scripts",
+                                "graph-123"),
+                   "bar")])
 
     def test_remove_unknown_graph(self):
         self.manager.dispatch_message(

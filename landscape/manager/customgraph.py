@@ -5,7 +5,7 @@ from twisted.internet.defer import fail, DeferredList
 
 from landscape.lib.scriptcontent import generate_script_hash
 from landscape.accumulate import Accumulator
-from landscape.manager.manager import ManagerPlugin, SUCCEEDED, FAILED
+from landscape.manager.manager import ManagerPlugin
 from landscape.manager.scriptexecution import (
     ProcessAccumulationProtocol, ProcessFailedError, ScriptRunnerMixin,
     ProcessTimeLimitReachedError)
@@ -62,7 +62,6 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         Handle remove custom-graph operation, deleting the custom graph scripts
         if found.
         """
-        opid = message["operation-id"]
         graph_id = message["graph-id"]
         graph = self.registry.store.get_graph(graph_id)
         if graph:
@@ -72,62 +71,36 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
             os.unlink(filename)
 
         self.registry.store.remove_graph(graph_id)
-        self._respond(SUCCEEDED, "", opid)
 
     def _handle_custom_graph_add(self, message):
         """
         Handle add custom-graph operation, which can also update an existing
         custom graph script.
         """
-        opid = message["operation-id"]
-        try:
-            user = message["username"]
-            if not self.is_user_allowed(user):
-                return self._respond(
-                    FAILED,
-                    u"Custom graph cannot be run as user %s." % (user,),
-                    opid)
+        user = message["username"]
+        shell = message["interpreter"]
+        code = message["code"]
+        graph_id = message["graph-id"]
 
-            shell = message["interpreter"]
-            code = message["code"]
-            graph_id = message["graph-id"]
-            if not os.path.exists(shell.split()[0]):
-                return self._respond(
-                    FAILED,
-                    u"Unknown interpreter: '%s'" % (shell,),
-                    opid)
+        data_path = self.registry.config.data_path
+        scripts_directory = os.path.join(data_path, "custom-graph-scripts")
+        if not os.path.exists(scripts_directory):
+            os.makedirs(scripts_directory)
+        filename = os.path.join(
+            scripts_directory, "graph-%d" % (graph_id,))
 
-            data_path = self.registry.config.data_path
-            scripts_directory = os.path.join(data_path, "custom-graph-scripts")
-            if not os.path.exists(scripts_directory):
-                os.makedirs(scripts_directory)
-            filename = os.path.join(
-                scripts_directory, "graph-%d" % (graph_id,))
+        if os.path.exists(filename):
+            os.chmod(filename, 0777)
+            os.unlink(filename)
 
-            if os.path.exists(filename):
-                os.chmod(filename, 0777)
-                os.unlink(filename)
-
-            script_file = file(filename, "w")
-            uid, gid = self.get_pwd_infos(user)[:2]
-            self.write_script_file(
-                script_file, filename, shell, code, uid, gid)
-        except Exception, e:
-            self._respond(FAILED, self._format_exception(e), opid)
-            raise
-        else:
-            self.registry.store.add_graph(graph_id, filename, user)
-            return self._respond(SUCCEEDED, "", opid)
+        script_file = file(filename, "w")
+        uid, gid = self.get_pwd_infos(user)[:2]
+        self.write_script_file(
+            script_file, filename, shell, code, uid, gid)
+        self.registry.store.add_graph(graph_id, filename, user)
 
     def _format_exception(self, e):
         return u"%s: %s" % (e.__class__.__name__, e)
-
-    def _respond(self, status, data, opid):
-        message =  {"type": "operation-result",
-                    "status": status,
-                    "result-text": data,
-                    "operation-id": opid}
-        return self.registry.broker.send_message(message, True)
 
     def exchange(self, urgent=False):
         self.registry.broker.call_if_accepted(
