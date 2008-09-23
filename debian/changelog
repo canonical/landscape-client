@@ -1,4 +1,4 @@
-landscape-client (1.0.21-0ubuntu2) UNRELEASED; urgency=low
+landscape-client (1.0.21-0ubuntu2) intrepid; urgency=low
 
   * debian/rules: Install an hourly cron job to update smart package data.
     Thanks to Christopher Armstrong (LP: #268765).
@@ -8,7 +8,7 @@ landscape-client (1.0.21-0ubuntu2) UNRELEASED; urgency=low
   * debian/landscape-client.postrm:
     - remove /etc/default/landscape-client when the package is purged.
 
- -- Mathias Gug <mathiaz@ubuntu.com>  Tue, 23 Sep 2008 18:01:54 -0400
+ -- Mathias Gug <mathiaz@ubuntu.com>  Tue, 23 Sep 2008 18:19:26 -0400
 
 landscape-client (1.0.21-0ubuntu1) intrepid; urgency=low
 
