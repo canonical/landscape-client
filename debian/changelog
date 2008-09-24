@@ -1,3 +1,51 @@
+landscape-client (1.0.22-hardy1-landscape1) hardy; urgency=low
+
+  * remove pid file when the daemon exits
+  * landscape-client now returns non-zero when something failed
+  * better fix for not corrupting the pid file when starting up
+  * fixed location of pid file in logrotate script
+  * fixed zombie warning
+  * fixed divide-by-zero error in sysinfo disk plugin
+  * use system wide log and conf files when running as root
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 24 Sep 2008 18:08:35 +0000
+
+landscape-client (1.0.22-gutsy1-landscape1) gutsy; urgency=low
+
+  * remove pid file when the daemon exits
+  * landscape-client now returns non-zero when something failed
+  * better fix for not corrupting the pid file when starting up
+  * fixed location of pid file in logrotate script
+  * fixed zombie warning
+  * fixed divide-by-zero error in sysinfo disk plugin
+  * use system wide log and conf files when running as root
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 24 Sep 2008 18:08:31 +0000
+
+landscape-client (1.0.22-feisty1-landscape1) feisty; urgency=low
+
+  * remove pid file when the daemon exits
+  * landscape-client now returns non-zero when something failed
+  * better fix for not corrupting the pid file when starting up
+  * fixed location of pid file in logrotate script
+  * fixed zombie warning
+  * fixed divide-by-zero error in sysinfo disk plugin
+  * use system wide log and conf files when running as root
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 24 Sep 2008 18:08:27 +0000
+
+landscape-client (1.0.22-dapper1-landscape1) dapper; urgency=low
+
+  * remove pid file when the daemon exits
+  * landscape-client now returns non-zero when something failed
+  * better fix for not corrupting the pid file when starting up
+  * fixed location of pid file in logrotate script
+  * fixed zombie warning
+  * fixed divide-by-zero error in sysinfo disk plugin
+  * use system wide log and conf files when running as root
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 24 Sep 2008 18:08:18 +0000
+
 landscape-client (1.0.20-hardy1-landscape1) hardy; urgency=low
 
   * reverted pidfile fix as it introduced serious regressions
