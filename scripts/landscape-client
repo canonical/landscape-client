@@ -1,6 +1,6 @@
 #!/usr/bin/python
 import sys, os
-if os.path.isdir("landscape"):
+if os.path.dirname(os.path.abspath(sys.argv[0])) == os.path.abspath("scripts"):
     sys.path.insert(0, "./")
 
 # This is needed for DBUS listeners to work.
@@ -10,4 +10,4 @@ install()
 from landscape.watchdog import run
 
 if __name__ == "__main__":
-    run()
+    sys.exit(run())
