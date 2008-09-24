@@ -956,8 +956,13 @@ class WatchDogServiceTest(LandscapeTest):
         #don't really daemonize or request an exit
         daemonize = self.mocker.replace("landscape.watchdog.daemonize",
                                         passthrough=False)
-        daemonize()
         watchdog = self.mocker.patch(WatchDog)
+
+        watchdog.check_running()
+        self.mocker.result(succeed([]))
+
+        daemonize()
+
         watchdog.request_exit()
         self.mocker.result(succeed(None))
 
