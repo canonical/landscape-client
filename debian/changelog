@@ -1,3 +1,9 @@
+landscape-client (1.0.21-0ubuntu3) intrepid; urgency=low
+
+  * debian/control: Depend on cron. 
+
+ -- Mathias Gug <mathiaz@ubuntu.com>  Wed, 24 Sep 2008 19:07:03 -0400
+
 landscape-client (1.0.21-0ubuntu2) intrepid; urgency=low
 
   * debian/rules: Install an hourly cron job to update smart package data.
