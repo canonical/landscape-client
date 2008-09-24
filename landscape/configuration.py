@@ -9,6 +9,8 @@ import sys
 import os
 import getpass
 
+from dbus.exceptions import DBusException
+
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.lib.dbus_util import (
     get_bus, NoReplyError, ServiceUnknownError, SecurityError)
@@ -274,6 +276,7 @@ class LandscapeSetupScript(object):
 
 
 def setup_init_script_and_start_client():
+    # XXX This function is misnamed; it doesn't start the client.
     sysvconfig = SysVConfig()
     sysvconfig.set_start_on_boot(True)
 
@@ -316,7 +319,13 @@ def setup(config):
     config.write()
     # Restart the client to ensure that it's using the new configuration.
     if not config.no_start:
-        sysvconfig.restart_landscape()
+        try:
+            sysvconfig.restart_landscape()
+        except ProcessError:
+            print_text("Couldn't restart the Landscape client.", error=True)
+            print_text("This machine will be registered with the provided "
+                       "details when the client runs.", error=True)
+            sys.exit()
 
 
 def register(config, reactor=None):
@@ -373,11 +382,17 @@ def register(config, reactor=None):
             print_text("Unknown error occurred.", error=True)
         reactor.callLater(0, reactor.stop)
 
-
     print_text("Please wait... ", "")
 
     time.sleep(2)
-    remote = RemoteBroker(get_bus(config.bus), retry_timeout=0)
+    try:
+        remote = RemoteBroker(get_bus(config.bus), retry_timeout=0)
+    except DBusException:
+        print_text("There was an error communicating with the Landscape client "
+                   "via DBus.", error=True)
+        print_text("This machine will be registered with the provided "
+                   "details when the client runs.", error=True)
+        sys.exit()
     # This is a bit unfortunate. Every method of remote returns a deferred,
     # even stuff like connect_to_signal, because the fetching of the DBus
     # object itself is asynchronous. We can *mostly* fire-and-forget these

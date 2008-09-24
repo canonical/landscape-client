@@ -1,6 +1,8 @@
 import os
 from getpass import getpass
 
+from dbus import DBusException
+
 from twisted.internet.defer import Deferred, succeed, fail
 from twisted.internet import reactor
 
@@ -788,6 +790,32 @@ account_name = account
         self.mocker.replay()
         main(["--config", self.make_working_config()])
 
+    def test_errors_from_restart_landscape(self):
+        """
+        If a ProcessError exception is raised from restart_landscape (because
+        the client failed to be restarted), an informative message is printed
+        and the script exits.
+        """
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        print_text_mock = self.mocker.replace(print_text)
+
+        sysvconfig_mock.set_start_on_boot(True)
+        sysvconfig_mock.restart_landscape()
+        self.mocker.throw(ProcessError)
+        
+        print_text_mock("Couldn't restart the Landscape client.", error=True)
+        print_text_mock(CONTAINS("This machine will be registered"), error=True)
+
+        self.mocker.replay()
+
+        filename = self.makeFile("""
+[client]
+url = https://example.com/message-system
+""")
+        config = self.get_config(["--config", filename, "--silent",
+                                  "-a", "account", "-t", "rex"])
+        self.assertRaises(SystemExit, setup, config)
+
     def test_main_with_register(self):
         setup_mock = self.mocker.replace(setup)
         setup_mock(ANY)
@@ -1098,6 +1126,34 @@ class RegisterFunctionTest(LandscapeIsolatedTest):
         register(service.config, reactor_mock)
 
         return result
+
+    def test_register_bus_connection_failure(self):
+        """
+        If the bus can't be connected to, landscape-config will print an
+        explanatory message and exit cleanly.
+        """
+        remote_broker_factory = self.mocker.replace(
+            "landscape.broker.remote.RemoteBroker", passthrough=False)
+        print_text_mock = self.mocker.replace(print_text)
+        install_mock = self.mocker.replace("twisted.internet."
+                                           "glib2reactor.install")
+        time_mock = self.mocker.replace("time")
+
+        install_mock()
+        print_text_mock(ARGS)
+        time_mock.sleep(ANY)
+
+        remote_broker_factory(ARGS, KWARGS)
+        self.mocker.throw(DBusException)
+
+        print_text_mock(
+            CONTAINS("There was an error communicating with the "
+                     "Landscape client"),
+            error=True)
+        print_text_mock(CONTAINS("This machine will be registered"), error=True)
+
+        self.mocker.replay()
+        self.assertRaises(SystemExit, register, self.broker_service.config)
 
 
 class RegisterFunctionNoServiceTest(LandscapeIsolatedTest):
