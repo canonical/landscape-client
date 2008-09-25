@@ -36,12 +36,11 @@ def print_text(text, end="\n", error=False):
 
 class LandscapeSetupConfiguration(BrokerConfiguration):
 
-    unsaved_options = ("no_start", "disable", "silent")
+    unsaved_options = ("no_start", "disable", "silent", "ok_no_register")
 
     def make_parser(self):
         """
-        Specialize L{Configuration.make_parser}, adding many
-        broker-specific options.
+        Specialize the parser, adding configure-specific options.
         """
         parser = super(LandscapeSetupConfiguration, self).make_parser()
 
@@ -55,6 +54,9 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
                                "load.")
         parser.add_option("-n", "--no-start", action="store_true",
                           help="Don't start the client automatically.")
+        parser.add_option("--ok-no-register", action="store_true",
+                          help="Return exit code 0 instead of 2 if the client "
+                          "can't be registered.")
         parser.add_option("--silent", action="store_true", default=False,
                           help="Run without manual interaction.")
         parser.add_option("--disable", action="store_true", default=False,
@@ -325,7 +327,10 @@ def setup(config):
             print_text("Couldn't restart the Landscape client.", error=True)
             print_text("This machine will be registered with the provided "
                        "details when the client runs.", error=True)
-            sys.exit(2)
+            exit_code = 2
+            if config.ok_no_register:
+                exit_code = 0
+            sys.exit(exit_code)
 
 
 def register(config, reactor=None):
@@ -342,6 +347,9 @@ def register(config, reactor=None):
     install()
     if reactor is None:
         from twisted.internet import reactor
+    
+    # XXX: many of these reactor.stop() calls should also specify a non-0 exit
+    # code, unless ok-no-register is passed.
 
     def failure():
         print_text("Invalid account name or "
@@ -392,7 +400,10 @@ def register(config, reactor=None):
                    "via DBus.", error=True)
         print_text("This machine will be registered with the provided "
                    "details when the client runs.", error=True)
-        sys.exit(2)
+        exit_code = 2
+        if config.ok_no_register:
+            exit_code = 0
+        sys.exit(exit_code)
     # This is a bit unfortunate. Every method of remote returns a deferred,
     # even stuff like connect_to_signal, because the fetching of the DBus
     # object itself is asynchronous. We can *mostly* fire-and-forget these
