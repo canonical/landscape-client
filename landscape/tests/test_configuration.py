@@ -814,7 +814,8 @@ url = https://example.com/message-system
 """)
         config = self.get_config(["--config", filename, "--silent",
                                   "-a", "account", "-t", "rex"])
-        self.assertRaises(SystemExit, setup, config)
+        system_exit = self.assertRaises(SystemExit, setup, config)
+        self.assertEquals(system_exit.code, 2)
 
     def test_main_with_register(self):
         setup_mock = self.mocker.replace(setup)
@@ -1153,7 +1154,9 @@ class RegisterFunctionTest(LandscapeIsolatedTest):
         print_text_mock(CONTAINS("This machine will be registered"), error=True)
 
         self.mocker.replay()
-        self.assertRaises(SystemExit, register, self.broker_service.config)
+        system_exit = self.assertRaises(SystemExit,
+                                        register, self.broker_service.config)
+        self.assertEquals(system_exit.code, 2)
 
 
 class RegisterFunctionNoServiceTest(LandscapeIsolatedTest):

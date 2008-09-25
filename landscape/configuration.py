@@ -325,7 +325,7 @@ def setup(config):
             print_text("Couldn't restart the Landscape client.", error=True)
             print_text("This machine will be registered with the provided "
                        "details when the client runs.", error=True)
-            sys.exit()
+            sys.exit(2)
 
 
 def register(config, reactor=None):
@@ -392,7 +392,7 @@ def register(config, reactor=None):
                    "via DBus.", error=True)
         print_text("This machine will be registered with the provided "
                    "details when the client runs.", error=True)
-        sys.exit()
+        sys.exit(2)
     # This is a bit unfortunate. Every method of remote returns a deferred,
     # even stuff like connect_to_signal, because the fetching of the DBus
     # object itself is asynchronous. We can *mostly* fire-and-forget these
