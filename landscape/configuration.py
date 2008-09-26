@@ -9,6 +9,8 @@ import sys
 import os
 import getpass
 
+from dbus.exceptions import DBusException
+
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.lib.dbus_util import (
     get_bus, NoReplyError, ServiceUnknownError, SecurityError)
@@ -34,12 +36,11 @@ def print_text(text, end="\n", error=False):
 
 class LandscapeSetupConfiguration(BrokerConfiguration):
 
-    unsaved_options = ("no_start", "disable", "silent")
+    unsaved_options = ("no_start", "disable", "silent", "ok_no_register")
 
     def make_parser(self):
         """
-        Specialize L{Configuration.make_parser}, adding many
-        broker-specific options.
+        Specialize the parser, adding configure-specific options.
         """
         parser = super(LandscapeSetupConfiguration, self).make_parser()
 
@@ -53,6 +54,9 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
                                "load.")
         parser.add_option("-n", "--no-start", action="store_true",
                           help="Don't start the client automatically.")
+        parser.add_option("--ok-no-register", action="store_true",
+                          help="Return exit code 0 instead of 2 if the client "
+                          "can't be registered.")
         parser.add_option("--silent", action="store_true", default=False,
                           help="Run without manual interaction.")
         parser.add_option("--disable", action="store_true", default=False,
@@ -274,6 +278,7 @@ class LandscapeSetupScript(object):
 
 
 def setup_init_script_and_start_client():
+    # XXX This function is misnamed; it doesn't start the client.
     sysvconfig = SysVConfig()
     sysvconfig.set_start_on_boot(True)
 
@@ -316,7 +321,16 @@ def setup(config):
     config.write()
     # Restart the client to ensure that it's using the new configuration.
     if not config.no_start:
-        sysvconfig.restart_landscape()
+        try:
+            sysvconfig.restart_landscape()
+        except ProcessError:
+            print_text("Couldn't restart the Landscape client.", error=True)
+            print_text("This machine will be registered with the provided "
+                       "details when the client runs.", error=True)
+            exit_code = 2
+            if config.ok_no_register:
+                exit_code = 0
+            sys.exit(exit_code)
 
 
 def register(config, reactor=None):
@@ -333,6 +347,9 @@ def register(config, reactor=None):
     install()
     if reactor is None:
         from twisted.internet import reactor
+    
+    # XXX: many of these reactor.stop() calls should also specify a non-0 exit
+    # code, unless ok-no-register is passed.
 
     def failure():
         print_text("Invalid account name or "
@@ -373,11 +390,20 @@ def register(config, reactor=None):
             print_text("Unknown error occurred.", error=True)
         reactor.callLater(0, reactor.stop)
 
-
     print_text("Please wait... ", "")
 
     time.sleep(2)
-    remote = RemoteBroker(get_bus(config.bus), retry_timeout=0)
+    try:
+        remote = RemoteBroker(get_bus(config.bus), retry_timeout=0)
+    except DBusException:
+        print_text("There was an error communicating with the Landscape client "
+                   "via DBus.", error=True)
+        print_text("This machine will be registered with the provided "
+                   "details when the client runs.", error=True)
+        exit_code = 2
+        if config.ok_no_register:
+            exit_code = 0
+        sys.exit(exit_code)
     # This is a bit unfortunate. Every method of remote returns a deferred,
     # even stuff like connect_to_signal, because the fetching of the DBus
     # object itself is asynchronous. We can *mostly* fire-and-forget these
