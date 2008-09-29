@@ -94,6 +94,13 @@ class Plugin(object):
         if hasattr(self, "run") and self.run_interval is not None:
             registry.reactor.call_every(self.run_interval, self.run)
 
+    def call_on_accepted(self, type, callable, *args, **kwargs):
+        def acceptance_changed(acceptance):
+            if acceptance:
+                return callable(*args, **kwargs)
+        self.registry.reactor.call_on(("message-type-acceptance-changed", type),
+                                      acceptance_changed)
+
 
 
 class BrokerPlugin(Object):

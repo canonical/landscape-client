@@ -1,11 +1,11 @@
 """The Landscape monitor plugin system."""
 
 import os
-from logging import exception, info
+from logging import info
 
 from twisted.internet.defer import succeed
 
-from landscape.lib.dbus_util import Object, method
+from landscape.lib.dbus_util import method
 from landscape.lib.log import log_failure
 
 from landscape.log import format_object
@@ -72,13 +72,6 @@ class MonitorPlugin(Plugin):
         super(MonitorPlugin, self).register(registry)
         if self.persist_name is not None:
             self._persist = registry.persist.root_at(self.persist_name)
-
-    def call_on_accepted(self, type, callable, *args, **kwargs):
-        def acceptance_changed(acceptance):
-            if acceptance:
-                return callable(*args, **kwargs)
-        self.registry.reactor.call_on(("message-type-acceptance-changed", type),
-                                      acceptance_changed)
 
 
 class DataWatcher(MonitorPlugin):

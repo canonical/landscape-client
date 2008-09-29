@@ -49,9 +49,6 @@ class LoadAverage(MonitorPlugin):
         if len(message["load-averages"]):
             self.registry.broker.send_message(message, urgent=urgent)
 
-    def exchange(self):
-        self.registry.broker.call_if_accepted("load-average", self.send_message)
-
     def run(self):
         self._monitor.ping()
         new_timestamp = int(self._create_time())
