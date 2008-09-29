@@ -231,3 +231,96 @@ class CustomGraphManagerTests(LandscapeTest):
                   "type": "custom-graph"}])
 
         return result.addCallback(check)
+
+    def test_send_message_add_stored_graph(self):
+        """
+        C{send_message} send the graph with no data, to notify the server of
+        the existence of the script, even if the script hasn't been run yet.
+        """
+        uid = os.getuid()
+        info = pwd.getpwuid(uid)
+        username = info.pw_name
+        self.manager.dispatch_message(
+            {"type": "custom-graph-add",
+                     "interpreter": "/bin/sh",
+                     "code": "echo hi!",
+                     "username": username,
+                     "operation-id": 456,
+                     "graph-id": 123})
+        self.graph_manager.exchange()
+        self.assertMessages(
+            self.broker_service.message_store.get_pending_messages(),
+            [{"api": "3.1",
+              "data": {123: {"error": u"",
+                             "script-hash": "e00a2f44dbc7b6710ce32af2348aec9b",
+                             "values": []}},
+              "timestamp": 0,
+              "type": "custom-graph"}])
+
+    def test_send_message_dont_rehash(self):
+        """
+        C{send_message} uses hash already stored if still no data has been
+        found.
+        """
+        uid = os.getuid()
+        info = pwd.getpwuid(uid)
+        username = info.pw_name
+        self.manager.dispatch_message(
+            {"type": "custom-graph-add",
+                     "interpreter": "/bin/sh",
+                     "code": "echo hi!",
+                     "username": username,
+                     "operation-id": 456,
+                     "graph-id": 123})
+        self.graph_manager.exchange()
+        self.graph_manager._get_script_hash = lambda x: 1/0
+        self.graph_manager.exchange()
+        self.assertMessages(
+            self.broker_service.message_store.get_pending_messages(),
+            [{"api": "3.1",
+              "data": {123: {"error": u"",
+                             "script-hash": "e00a2f44dbc7b6710ce32af2348aec9b",
+                             "values": []}},
+              "timestamp": 0,
+              "type": "custom-graph"},
+             {"api": "3.1",
+              "data": {123: {"error": u"",
+                             "script-hash": "e00a2f44dbc7b6710ce32af2348aec9b",
+                             "values": []}},
+              "timestamp": 0,
+              "type": "custom-graph"}])
+
+    def test_send_message_rehash_if_necessary(self):
+        uid = os.getuid()
+        info = pwd.getpwuid(uid)
+        username = info.pw_name
+        self.manager.dispatch_message(
+            {"type": "custom-graph-add",
+                     "interpreter": "/bin/sh",
+                     "code": "echo hi!",
+                     "username": username,
+                     "operation-id": 456,
+                     "graph-id": 123})
+        self.graph_manager.exchange()
+        self.manager.dispatch_message(
+            {"type": "custom-graph-add",
+                     "interpreter": "/bin/sh",
+                     "code": "echo bye!",
+                     "username": username,
+                     "operation-id": 456,
+                     "graph-id": 123})
+        self.graph_manager.exchange()
+        self.assertMessages(
+            self.broker_service.message_store.get_pending_messages(),
+            [{"api": "3.1",
+              "data": {123: {"error": u"",
+                             "script-hash": "e00a2f44dbc7b6710ce32af2348aec9b",
+                             "values": []}},
+              "timestamp": 0,
+              "type": "custom-graph"},
+             {"api": "3.1",
+              "data": {123: {"error": u"",
+                             "script-hash": "d483816dc0fbb51ede42502a709b0e2a",
+                             "values": []}},
+              "timestamp": 0,
+              "type": "custom-graph"}])

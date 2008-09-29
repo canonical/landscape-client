@@ -101,6 +101,9 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
             script_file, filename, shell, code, uid, gid)
         self.registry.store.add_graph(graph_id, filename, user)
 
+        if graph_id in self._data:
+            del self._data[graph_id]
+
     def _format_exception(self, e):
         return u"%s: %s" % (e.__class__.__name__, e)
 
@@ -109,8 +112,22 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
             "custom-graph", self.send_message, urgent)
 
     def send_message(self, urgent):
+        graphs = list(self.registry.store.get_graphs())
+        for graph_id, filename, user in graphs:
+            if graph_id not in self._data:
+                script_hash = self._get_script_hash(filename)
+                self._data[graph_id] = {
+                    "values": [], "error": u"", "script-hash": script_hash}
+
         message = {"type": "custom-graph", "data": self._data}
-        self._data = {}
+
+        new_data = {}
+        for graph_id, item in self._data.iteritems():
+            script_hash = item["script-hash"]
+            new_data[graph_id] = {
+                "values": [], "error": u"", "script-hash": script_hash}
+        self._data = new_data
+
         self.registry.broker.send_message(message, urgent=urgent)
 
     def _handle_data(self, output, graph_id, now):
