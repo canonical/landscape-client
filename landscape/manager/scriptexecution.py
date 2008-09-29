@@ -303,3 +303,6 @@ class ScriptExecution(ManagerPlugin):
         super(ScriptExecution, self).register(registry)
         self._script_execution.register(registry)
         self._custom_graph.register(registry)
+
+    def exchange(self, urgent=False):
+        self._custom_graph.exchange(urgent)

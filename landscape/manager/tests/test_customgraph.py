@@ -52,6 +52,7 @@ class CustomGraphManagerTests(LandscapeTest):
         mock_chown(ANY, 1234, 5678)
 
         mock_chmod = self.mocker.replace("os.chmod", passthrough=False)
+        mock_chmod(ANY, 0777)
         mock_chmod(ANY, 0700)
 
         mock_getpwnam = self.mocker.replace("pwd.getpwnam", passthrough=False)

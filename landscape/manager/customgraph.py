@@ -87,6 +87,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         scripts_directory = os.path.join(data_path, "custom-graph-scripts")
         if not os.path.exists(scripts_directory):
             os.makedirs(scripts_directory)
+            os.chmod(scripts_directory, 0777)
         filename = os.path.join(
             scripts_directory, "graph-%d" % (graph_id,))
 
@@ -120,7 +121,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
 
     def _handle_error(self, failure, graph_id):
         if failure.check(ProcessFailedError):
-            self._data[graph_id]["error"] = failure.value.data
+            self._data[graph_id]["error"] = failure.value.data.decode("utf-8")
         elif failure.check(ProcessTimeLimitReachedError):
             self._data[graph_id]["error"] = (
                 u"Process exceed the %d seconds limit" % (self.time_limit,))
