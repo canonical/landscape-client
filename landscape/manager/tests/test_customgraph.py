@@ -268,6 +268,7 @@ class CustomGraphManagerTests(LandscapeTest):
                      "graph-id": 123})
         self.graph_manager.exchange()
         self.graph_manager._get_script_hash = lambda x: 1/0
+        self.graph_manager.do_send = True
         self.graph_manager.exchange()
         self.assertMessages(
             self.broker_service.message_store.get_pending_messages(),
@@ -301,6 +302,7 @@ class CustomGraphManagerTests(LandscapeTest):
                      "code": "echo bye!",
                      "username": username,
                      "graph-id": 123})
+        self.graph_manager.do_send = True
         self.graph_manager.exchange()
         self.assertMessages(
             self.broker_service.message_store.get_pending_messages(),

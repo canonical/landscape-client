@@ -48,6 +48,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         super(CustomGraphPlugin, self).__init__(process_factory)
         self._create_time = create_time
         self._data = {}
+        self.do_send = True
 
     def register(self, registry):
         super(CustomGraphPlugin, self).register(registry)
@@ -114,6 +115,9 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
             self.message_type, self.send_message, urgent)
 
     def send_message(self, urgent):
+        if not self.do_send:
+            return
+        self.do_send = False
         graphs = list(self.registry.store.get_graphs())
         for graph_id, filename, user in graphs:
             if graph_id not in self._data:
@@ -163,6 +167,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         Iterate all the custom graphs stored and then execute each script and
         handle the output.
         """
+        self.do_send = True
         dl = []
         graphs = list(self.registry.store.get_graphs())
         now = int(self._create_time())
