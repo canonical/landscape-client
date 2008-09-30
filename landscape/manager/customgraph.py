@@ -72,6 +72,8 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
             os.unlink(filename)
 
         self.registry.store.remove_graph(graph_id)
+        if graph_id in self._data:
+            del self._data[graph_id]
 
     def _handle_custom_graph_add(self, message):
         """
@@ -131,12 +133,16 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         self.registry.broker.send_message(message, urgent=urgent)
 
     def _handle_data(self, output, graph_id, now):
+        if graph_id not in self._data:
+            return
         data = float(output)
         step_data = self._accumulate(now, data, graph_id)
         if step_data:
             self._data[graph_id]["values"].append(step_data)
 
     def _handle_error(self, failure, graph_id):
+        if graph_id not in self._data:
+            return
         if failure.check(ProcessFailedError):
             self._data[graph_id]["error"] = failure.value.data.decode("utf-8")
         elif failure.check(ProcessTimeLimitReachedError):

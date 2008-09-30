@@ -20,7 +20,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.store = ManagerStore(":memory:")
         self.manager.store = self.store
         self.broker_service.message_store.set_accepted_types(
-            ["operation-result", "custom-graph"])
+            ["custom-graph"])
         self.data_path = self.make_dir()
         self.manager.config.data_path = self.data_path
         self.manager.config.script_users = "ALL"
@@ -37,7 +37,6 @@ class CustomGraphManagerTests(LandscapeTest):
                      "interpreter": "/bin/sh",
                      "code": "echo hi!",
                      "username": username,
-                     "operation-id": 456,
                      "graph-id": 123})
 
         self.assertEquals(
@@ -68,7 +67,6 @@ class CustomGraphManagerTests(LandscapeTest):
                      "interpreter": "/bin/sh",
                      "code": "echo hi!",
                      "username": "bar",
-                     "operation-id": 456,
                      "graph-id": 123})
         self.assertEquals(
             self.store.get_graphs(),
@@ -79,7 +77,6 @@ class CustomGraphManagerTests(LandscapeTest):
     def test_remove_unknown_graph(self):
         self.manager.dispatch_message(
             {"type": "custom-graph-remove",
-                     "operation-id": 456,
                      "graph-id": 123})
 
     def test_remove_graph(self):
@@ -90,7 +87,6 @@ class CustomGraphManagerTests(LandscapeTest):
         self.store.add_graph(123, filename, u"user")
         self.manager.dispatch_message(
             {"type": "custom-graph-remove",
-                     "operation-id": 456,
                      "graph-id": 123})
         self.assertFalse(os.path.exists(filename))
 
@@ -245,7 +241,6 @@ class CustomGraphManagerTests(LandscapeTest):
                      "interpreter": "/bin/sh",
                      "code": "echo hi!",
                      "username": username,
-                     "operation-id": 456,
                      "graph-id": 123})
         self.graph_manager.exchange()
         self.assertMessages(
@@ -270,7 +265,6 @@ class CustomGraphManagerTests(LandscapeTest):
                      "interpreter": "/bin/sh",
                      "code": "echo hi!",
                      "username": username,
-                     "operation-id": 456,
                      "graph-id": 123})
         self.graph_manager.exchange()
         self.graph_manager._get_script_hash = lambda x: 1/0
@@ -299,7 +293,6 @@ class CustomGraphManagerTests(LandscapeTest):
                      "interpreter": "/bin/sh",
                      "code": "echo hi!",
                      "username": username,
-                     "operation-id": 456,
                      "graph-id": 123})
         self.graph_manager.exchange()
         self.manager.dispatch_message(
@@ -307,7 +300,6 @@ class CustomGraphManagerTests(LandscapeTest):
                      "interpreter": "/bin/sh",
                      "code": "echo bye!",
                      "username": username,
-                     "operation-id": 456,
                      "graph-id": 123})
         self.graph_manager.exchange()
         self.assertMessages(
@@ -324,3 +316,92 @@ class CustomGraphManagerTests(LandscapeTest):
                              "values": []}},
               "timestamp": 0,
               "type": "custom-graph"}])
+
+    def test_run_with_script_updated(self):
+        """
+        If a script is updated while a data point is being retrieved, the data
+        point is discarded and no value is sent, but the new script is
+        mentioned.
+        """
+        uid = os.getuid()
+        info = pwd.getpwuid(uid)
+        username = info.pw_name
+        self.manager.dispatch_message(
+            {"type": "custom-graph-add",
+                     "interpreter": "/bin/sh",
+            "code": "echo 1.0",
+                     "username": username,
+                     "graph-id": 123})
+
+        factory = StubProcessFactory()
+        self.graph_manager.process_factory = factory
+        result = self.graph_manager.run()
+
+        self.assertEquals(len(factory.spawns), 1)
+        spawn = factory.spawns[0]
+
+        self.manager.dispatch_message(
+            {"type": "custom-graph-add",
+                     "interpreter": "/bin/sh",
+                     "code": "echo 2.0",
+                     "username": username,
+                     "graph-id": 123})
+
+        protocol = spawn[0]
+        protocol.childDataReceived(1, "1.0")
+        for fd in (0, 1, 2):
+            protocol.childConnectionLost(fd)
+        protocol.processEnded(Failure(ProcessDone(0)))
+
+        def check(ignore):
+            self.graph_manager.exchange()
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [{"api": "3.1",
+                  "data": {123: {"error": u"",
+                                 "script-hash": "991e15a81929c79fe1d243b2afd99c62",
+                                 "values": []}},
+                  "timestamp": 0,
+                  "type": "custom-graph"}])
+
+        return result.addCallback(check)
+
+    def test_run_with_script_removed(self):
+        """
+        If a script is removed while a data point is being retrieved, the data
+        point is discarded and no data is sent at all.
+        """
+        uid = os.getuid()
+        info = pwd.getpwuid(uid)
+        username = info.pw_name
+        self.manager.dispatch_message(
+            {"type": "custom-graph-add",
+                     "interpreter": "/bin/sh",
+                     "code": "echo 1.0",
+                     "username": username,
+                     "graph-id": 123})
+
+        factory = StubProcessFactory()
+        self.graph_manager.process_factory = factory
+        result = self.graph_manager.run()
+
+        self.assertEquals(len(factory.spawns), 1)
+        spawn = factory.spawns[0]
+
+        self.manager.dispatch_message(
+            {"type": "custom-graph-remove",
+                     "graph-id": 123})
+
+        protocol = spawn[0]
+        protocol.childDataReceived(1, "1.0")
+        for fd in (0, 1, 2):
+            protocol.childConnectionLost(fd)
+        protocol.processEnded(Failure(ProcessDone(0)))
+
+        def check(ignore):
+            self.graph_manager.exchange()
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [{"api": "3.1", "data": {}, "timestamp": 0, "type":
+                  "custom-graph"}])
+        return result.addCallback(check)
