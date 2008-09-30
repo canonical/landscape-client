@@ -38,6 +38,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
     run_interval = 300
     size_limit = 1000
     time_limit = 10
+    message_type = "custom-graph"
 
     def __init__(self, process_factory=None, create_time=time.time):
         """
@@ -56,7 +57,6 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
             "custom-graph-remove", self._handle_custom_graph_remove)
         self._persist = StoreProxy(self.registry.store)
         self._accumulate = Accumulator(self._persist, self.run_interval)
-        self.call_on_accepted("custom-graph", self.send_message, True)
 
     def _handle_custom_graph_remove(self, message):
         """
@@ -111,7 +111,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
 
     def exchange(self, urgent=False):
         self.registry.broker.call_if_accepted(
-            "custom-graph", self.send_message, urgent)
+            self.message_type, self.send_message, urgent)
 
     def send_message(self, urgent):
         graphs = list(self.registry.store.get_graphs())
@@ -121,7 +121,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
                 self._data[graph_id] = {
                     "values": [], "error": u"", "script-hash": script_hash}
 
-        message = {"type": "custom-graph", "data": self._data}
+        message = {"type": self.message_type, "data": self._data}
 
         new_data = {}
         for graph_id, item in self._data.iteritems():
