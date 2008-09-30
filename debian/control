@@ -5,7 +5,7 @@ Maintainer: Ubuntu Core Developers <ubuntu-devel-discuss@lists.ubuntu.com>
 Build-Depends: debhelper (>= 6.0.7~), po-debconf
 Build-Depends-Indep: python-dev, python-central, lsb-release, gawk
 Standards-Version: 3.8.0
-Vcs-Bzr: http://bazaar.launchpad.net/~ubuntu-core-dev/landscape-client/ubuntu/files
+Vcs-Bzr: http://bazaar.launchpad.net/~ubuntu-core-dev/landscape-client/ubuntu
 XS-Python-Version: >= 2.4
 
 Package: landscape-common
