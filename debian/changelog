@@ -1,3 +1,11 @@
+landscape-client (1.0.21.1-0ubuntu2) UNRELEASED; urgency=low
+
+  * debian/control: fix bzr url
+  * debian/landscape-sysinfo.wrapper: print a timestamp before the sysinfo
+    data to ensure appropriate context (LP: #270862)
+
+ -- Dustin Kirkland <kirkland@ubuntu.com>  Tue, 30 Sep 2008 17:13:18 -0500
+
 landscape-client (1.0.21.1-0ubuntu1) intrepid; urgency=low
 
   * New upstream version: 
