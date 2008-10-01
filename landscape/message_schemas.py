@@ -302,7 +302,8 @@ TEST = Message(
 
 # The tuples are timestamp, value
 GRAPH_DATA = KeyDict({"values": List(Tuple(Float(), Float())),
-                      "error": Unicode()})
+                      "error": Unicode(),
+                      "script-hash": String()})
 
 CUSTOM_GRAPH = Message("custom-graph", {
     "data": Dict(Int(), GRAPH_DATA)})

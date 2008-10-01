@@ -18,8 +18,9 @@ from landscape.tests.mocker import ARGS, KWARGS
 class DeploymentTest(LandscapeTest):
     def setUp(self):
         super(DeploymentTest, self).setUp()
-        self.configuration = SysInfoConfiguration()
-        self.configuration.default_config_filenames = []
+        class TestConfiguration(SysInfoConfiguration):
+            default_config_filenames = ()
+        self.configuration = TestConfiguration()
 
     def test_get_plugins(self):
         self.configuration.load(["--sysinfo-plugins", "Load,TestPlugin",
@@ -76,8 +77,14 @@ class RunTest(LandscapeTest):
 
     helpers = [StandardIOHelper]
 
+    def setUp(self):
+        super(RunTest, self).setUp()
+        self._old_filenames = SysInfoConfiguration.default_config_filenames
+        SysInfoConfiguration.default_config_filenames = ()
+
     def tearDown(self):
         super(RunTest, self).tearDown()
+        SysInfoConfiguration.default_config_filenames = self._old_filenames
         logger = getLogger("landscape-sysinfo")
         for handler in logger.handlers[:]:
             logger.removeHandler(handler)
@@ -201,6 +208,30 @@ class RunTest(LandscapeTest):
         self.assertEquals(handler.maxBytes, 500*1024)
         self.assertEquals(handler.backupCount, 1)
         self.assertFalse(logger.propagate)
+
+    def test_setup_logging_logs_to_var_log_if_run_as_root(self):
+        mock_os = self.mocker.replace("os")
+        mock_os.getuid()
+        self.mocker.result(0)
+
+        # Ugh, sorry
+        mock_os.path.isdir("/var/log/landscape")
+        self.mocker.result(False)
+        mock_os.mkdir("/var/log/landscape")
+
+        self.mocker.replace("__builtin__.open", passthrough=False)(
+            "/var/log/landscape/sysinfo.log", "a")
+
+        self.mocker.replay()
+
+        logger = getLogger("landscape-sysinfo")
+        self.assertEquals(logger.handlers, [])
+
+        setup_logging()
+        handler = logger.handlers[0]
+        self.assertTrue(isinstance(handler, RotatingFileHandler))
+        self.assertEquals(handler.baseFilename,
+                          "/var/log/landscape/sysinfo.log")
 
     def test_create_log_dir(self):
         log_dir = self.make_path()
