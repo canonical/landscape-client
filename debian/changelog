@@ -1,8 +1,14 @@
-landscape-client (1.0.21-0ubuntu3) intrepid; urgency=low
+landscape-client (1.0.21.1-0ubuntu1) intrepid; urgency=low
 
+  * New upstream version: 
+    * Add ok-no-register option to landscape-config script to not fail if
+      dbus isn't started or landscape-client isn't running.
+    * lower timeout related to package management in landscape.
   * debian/control: Depend on cron. 
+  * debian/landscape-client.postinst: use ok-no-register option so that the
+    postinst script doesn't fail when run from the installer. (LP: #274573).
 
- -- Mathias Gug <mathiaz@ubuntu.com>  Wed, 24 Sep 2008 19:07:03 -0400
+ -- Mathias Gug <mathiaz@ubuntu.com>  Thu, 25 Sep 2008 17:54:00 -0400
 
 landscape-client (1.0.21-0ubuntu2) intrepid; urgency=low
 
