@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: landscape-client@packages.debian.org\n"
-"POT-Creation-Date: 2008-09-10 16:00-0400\n"
+"POT-Creation-Date: 2008-10-03 15:08-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -68,8 +68,8 @@ msgstr ""
 #. Description
 #: ../landscape-client.templates:4001
 msgid ""
-"Register this system with a preexisting Landscape account.  Please go to "
-"http://landscape.canonical.com if you need a Landscape account."
+"Register this system with a preexisting Landscape account.  Please\n"
+" go to http://landscape.canonical.com if you need a Landscape account."
 msgstr ""
 
 #. Type: select
