@@ -1,4 +1,4 @@
-landscape-client (1.0.21.1-0ubuntu2) UNRELEASED; urgency=low
+landscape-client (1.0.21.1-0ubuntu2) intrepid; urgency=low
 
   * debian/control: fix bzr url
   * debian/landscape-sysinfo.wrapper: print a timestamp before the sysinfo
