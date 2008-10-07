@@ -6,7 +6,7 @@ import signal
 from landscape.lib.dbus_util import Object
 from landscape.deployment import (
     LandscapeService, Configuration, get_versioned_persist,
-    assert_unowned_bus_name)
+    assert_unowned_bus_name, run_landscape_service)
 from landscape.tests.helpers import (
     LandscapeTest, LandscapeIsolatedTest, DBusHelper)
 from landscape.tests.mocker import ANY
@@ -383,3 +383,22 @@ class AssertUnownedBusNameTest(LandscapeIsolatedTest):
     def test_do_nothing_when_unowned(self):
         assert_unowned_bus_name(self.bus, self.BoringService.bus_name)
 
+
+class RunLandscapeServiceTests(LandscapeTest):
+    def test_wrong_user(self):
+        getuid_mock = self.mocker.replace("os.getuid")
+        reactor_install_mock = self.mocker.replace(
+            "twisted.internet.glib2reactor.install")
+        reactor_install_mock()
+        getuid_mock()
+        self.mocker.result(1)
+        self.mocker.replay()
+
+        class MyService(LandscapeService):
+            service_name = "broker"
+
+        sys_exit = self.assertRaises(
+            SystemExit, run_landscape_service, Configuration,
+            MyService, [], "whatever")
+        self.assertIn("landscape-broker must be run as landscape",
+                      str(sys_exit))

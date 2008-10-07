@@ -493,6 +493,12 @@ class ConfigurationFunctionsTest(LandscapeTest):
 
     helpers = [EnvironSaverHelper]
 
+    def setUp(self):
+        super(ConfigurationFunctionsTest, self).setUp()
+        self.mocker.replace("os.getuid")()
+        self.mocker.count(0, None)
+        self.mocker.result(0)
+
     def get_config(self, args):
         return get_config(self, args)
 
@@ -901,12 +907,20 @@ account_name = account
 
     def test_stop_client_and_disable_init_scripts(self):
         sysvconfig_mock = self.mocker.patch(SysVConfig)
-        self.mocker.result(True)
         sysvconfig_mock.set_start_on_boot(False)
         sysvconfig_mock.stop_landscape()
         self.mocker.replay()
 
         main(["--disable", "-c", self.make_working_config()])
+
+    def test_non_root(self):
+        self.mocker.reset() # Forget the thing done in setUp
+        self.mocker.replace("os.getuid")()
+        self.mocker.result(1000)
+        self.mocker.replay()
+        sys_exit = self.assertRaises(SystemExit,
+                                      main, ["-c", self.make_working_config()])
+        self.assertIn("landscape-config must be run as root", str(sys_exit))
 
 
 class RegisterFunctionTest(LandscapeIsolatedTest):
