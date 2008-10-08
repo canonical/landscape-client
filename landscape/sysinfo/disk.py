@@ -51,14 +51,14 @@ class Disk(object):
         infos.sort(key=lambda i: len(i["mount-point"]))
         for info in infos:
             total = info["total-space"]
-
-            if info["mount-point"] in seen_mounts:
-                continue
+            mount_seen = info["mount-point"] in seen_mounts
+            device_seen = info["device"] in seen_devices
             seen_mounts.add(info["mount-point"])
-            if info["device"] in seen_devices:
-                continue
             seen_devices.add(info["device"])
-            if info["filesystem"] in ("udf", "iso9660"):
+            if mount_seen or device_seen:
+                continue
+
+            if info["filesystem"] in ("udf", "iso9660", "fuse.gvfs-fuse-daemon"):
                 continue
             if total <= 0:
                 # Some "virtual" filesystems have 0 total space. ignore them.

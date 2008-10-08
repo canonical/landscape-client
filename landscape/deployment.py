@@ -1,6 +1,7 @@
 import signal
 import os
 import sys
+import pwd
 
 from logging import (getLevelName, getLogger,
                      FileHandler, StreamHandler, Formatter, info)
@@ -329,6 +330,10 @@ def assert_unowned_bus_name(bus, bus_name):
         sys.exit("error: DBus name %s is owned. "
                  "Is the process already running?" % bus_name)
 
+_required_users = {
+    "broker": "landscape",
+    "monitor": "landscape",
+    "manager": "root"}
 
 def run_landscape_service(configuration_class, service_class, args, bus_name):
     """Run a Landscape service.
@@ -350,6 +355,14 @@ def run_landscape_service(configuration_class, service_class, args, bus_name):
 
     configuration = configuration_class()
     configuration.load(args)
+
+    if configuration.bus == "system":
+        required_user = _required_users[service_class.service_name]
+        if required_user != pwd.getpwuid(os.getuid())[0]:
+            sys.exit(
+                "When using the system bus, landscape-%s must be run as %s."
+                % (service_class.service_name, required_user))
+
     init_logging(configuration, service_class.service_name)
 
     assert_unowned_bus_name(get_bus(configuration.bus), bus_name)
