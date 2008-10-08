@@ -29,38 +29,6 @@ class MonitorTest(LandscapeTest):
         persist.load(self.monitor.persist_filename)
         self.assertEquals(persist.get("a"), 1)
 
-    def test_exchange_calls_exchanges(self):
-        """
-        The L{Monitor.exchange} method calls C{exchange} on all
-        plugins, if available.
-        """
-        plugin1 = SamplePlugin()
-        self.assertFalse(hasattr(plugin1, "exchange"))
-
-        exchange_plugin1 = ExchangePlugin()
-        exchange_plugin2 = ExchangePlugin()
-
-        self.monitor.add(plugin1)
-        self.monitor.add(exchange_plugin1)
-        self.monitor.add(exchange_plugin2)
-        self.monitor.add(SamplePlugin())
-
-        self.monitor.exchange()
-        self.assertEquals(exchange_plugin1.exchanged, 1)
-        self.assertEquals(exchange_plugin2.exchanged, 1)
-
-    def test_exchange_logs_errors_and_continues(self):
-        self.log_helper.ignore_errors(ZeroDivisionError)
-        plugin1 = SamplePlugin()
-        plugin2 = ExchangePlugin()
-        plugin1.exchange = lambda: 1/0
-        self.monitor.add(plugin1)
-        self.monitor.add(plugin2)
-
-        self.monitor.exchange()
-        self.assertEquals(plugin2.exchanged, 1)
-        self.assertTrue("ZeroDivisionError" in self.logfile.getvalue())
-
     def test_flush_after_exchange(self):
         """
         The L{Monitor.exchange} method flushes the monitor after
