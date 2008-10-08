@@ -206,8 +206,9 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
                 os.chmod(attachment_dir, 0700)
                 if uid is not None:
                     os.chown(attachment_dir, uid, gid)
-            
-            result = self._run_script(filename, uid, gid, path, env, time_limit)
+
+            result = self._run_script(
+                filename, uid, gid, path, env, time_limit)
             return result.addBoth(
                 self._remove_script, filename, attachment_dir, old_umask)
         except:
