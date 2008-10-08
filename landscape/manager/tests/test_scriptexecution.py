@@ -18,7 +18,7 @@ from landscape.tests.helpers import (
 from landscape.tests.mocker import ANY, ARGS
 
 
-def get_default_env(get_user=True):
+def get_default_environment(get_user=True):
     environment =  {
         "PATH": UBUNTU_PATH,
         "USER": "",
@@ -61,7 +61,7 @@ class RunScriptTests(LandscapeTest):
         Non-shell interpreters don't have their paths set by the shell, so we
         need to check that other interpreters have environment variables set.
         """
-        expected = str(get_default_env(get_user=False)) + "\n"
+        expected = str(get_default_environment(get_user=False)) + "\n"
         result = self.plugin.run_script(
             "/usr/bin/python",
             "import os\nprint os.environ")
@@ -372,7 +372,8 @@ class RunScriptTests(LandscapeTest):
         script_file.write("#!/bin/sh\ncode")
         script_file.close()
         process_factory.spawnProcess(
-            ANY, ANY, uid=uid, gid=gid, path=ANY, env=get_default_env())
+            ANY, ANY, uid=uid, gid=gid, path=ANY,
+            env=get_default_environment())
         self.mocker.replay()
         # We don't really care about the deferred that's returned, as long as
         # those things happened in the correct order.
@@ -490,7 +491,8 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
             self._verify_script(filename, sys.executable, "print 'hi'")
         process_factory = self.mocker.mock()
         process_factory.spawnProcess(
-            ANY, ANY, uid=uid, gid=gid, path=ANY, env=get_default_env())
+            ANY, ANY, uid=uid, gid=gid, path=ANY,
+            env=get_default_environment())
         self.mocker.call(spawn_called)
         self.mocker.replay()
         self.manager.add(ScriptExecution(process_factory=process_factory))
@@ -564,7 +566,8 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
             self._verify_script(filename, sys.executable, "print 'hi'")
         process_factory = self.mocker.mock()
         process_factory.spawnProcess(
-            ANY, ANY, uid=uid, gid=gid, path=ANY, env=get_default_env())
+            ANY, ANY, uid=uid, gid=gid, path=ANY,
+            env=get_default_environment())
         self.mocker.call(spawn_called)
 
         self.mocker.replay()
