@@ -221,7 +221,7 @@ class CustomGraphManagerTests(LandscapeTest):
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
                 [{"data": {123: {"error":
-                                    u"Process exceed the 10 seconds limit",
+                                    u"Process exceeded the 10 seconds limit",
                                 "script-hash": "md5",
                                 "values": []}},
                   "type": "custom-graph"}])

@@ -1,8 +1,11 @@
+import os
+
 from landscape.tests.helpers import (
     LandscapeTest, LandscapeIsolatedTest, RemoteBrokerHelper)
 from landscape.manager.deployment import ManagerService, ManagerConfiguration
 from landscape.manager.processkiller import ProcessKiller
 from landscape.manager.scriptexecution import ALL_USERS
+from landscape.manager.store import ManagerStore
 from landscape.broker.tests.test_remote import assertTransmitterActive
 from landscape.tests.test_plugin import assertReceivesMessages
 
@@ -87,8 +90,12 @@ class DeploymentBusTests(LandscapeIsolatedTest):
 
     def test_manager_store(self):
         configuration = ManagerConfiguration()
-        configuration.load(["-d", self.make_dir(), "--bus", "session",
+        path = self.make_dir()
+        configuration.load(["-d", path, "--bus", "session",
                             "--manager-plugins", "ProcessKiller"])
         manager_service = ManagerService(configuration)
         manager_service.startService()
         self.assertNotIdentical(manager_service.registry.store, None)
+        self.assertTrue(
+            isinstance(manager_service.registry.store, ManagerStore))
+        self.assertTrue(os.path.isfile(os.path.join(path, "manager.database")))

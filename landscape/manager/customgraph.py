@@ -64,7 +64,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         Handle remove custom-graph operation, deleting the custom graph scripts
         if found.
         """
-        graph_id = message["graph-id"]
+        graph_id = int(message["graph-id"])
         graph = self.registry.store.get_graph(graph_id)
         if graph:
             filename = graph[1]
@@ -82,7 +82,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         user = message["username"]
         shell = message["interpreter"]
         code = message["code"]
-        graph_id = message["graph-id"]
+        graph_id = int(message["graph-id"])
 
         data_path = self.registry.config.data_path
         scripts_directory = os.path.join(data_path, "custom-graph-scripts")
@@ -145,7 +145,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
             self._data[graph_id]["error"] = failure.value.data.decode("utf-8")
         elif failure.check(ProcessTimeLimitReachedError):
             self._data[graph_id]["error"] = (
-                u"Process exceed the %d seconds limit" % (self.time_limit,))
+                u"Process exceeded the %d seconds limit" % (self.time_limit,))
         else:
             self._data[graph_id]["error"] = self._format_exception(
                 failure.value)
@@ -162,7 +162,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         handle the output.
         """
         self.do_send = True
-        dl = []
+        defferred_list = []
         graphs = list(self.registry.store.get_graphs())
         now = int(self._create_time())
         for graph_id, filename, user in graphs:
@@ -175,7 +175,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
                     d = fail(ProcessFailedError(
                         u"Custom graph cannot be run as user %s." % (user,)))
                     d.addErrback(self._handle_error, graph_id)
-                    dl.append(d)
+                    defferred_list.append(d)
                     continue
             uid, gid, path = self.get_pwd_infos(user)
             pp = ProcessAccumulationProtocol(
@@ -186,5 +186,5 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
             result = pp.result_deferred
             result.addCallback(self._handle_data, graph_id, now)
             result.addErrback(self._handle_error, graph_id)
-            dl.append(result)
-        return DeferredList(dl)
+            defferred_list.append(result)
+        return DeferredList(defferred_list)

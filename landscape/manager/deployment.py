@@ -79,7 +79,7 @@ class ManagerService(LandscapeService):
     def startService(self):
         super(ManagerService, self).startService()
         self.remote_broker = RemoteBroker(self.bus)
-        store_name = os.path.join(self.config.data_path, "manager_store")
+        store_name = os.path.join(self.config.data_path, "manager.database")
         self.registry = ManagerPluginRegistry(self.reactor, self.remote_broker,
                                               self.config, self.bus, store_name)
         self.dbus_service = ManagerDBusObject(self.bus, self.registry)
