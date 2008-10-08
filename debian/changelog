@@ -1,3 +1,12 @@
+landscape-client (1.0.23-feisty1-landscape1) feisty; urgency=low
+
+  * don't show unnecessary warnings for / (#260230)
+  * don't crash when run as the incorrect user (#268879)
+  * use lower timeouts for package activities (#268218)
+  * don't crash when restart failed or dbus is not available (#274819)
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 8 Oct 2008 17:55:25 +0000
+
 landscape-client (1.0.23-dapper1-landscape1) dapper; urgency=low
 
   * don't show unnecessary warnings for / (#260230)
