@@ -111,15 +111,15 @@ class CustomGraphManagerTests(LandscapeTest):
         return self.graph_manager.run().addCallback(check)
 
     def test_run_cast_result_error(self):
-        self.store.add_graph(123, "foo", None)
+        filename = self.make_path("some_content")
+        self.store.add_graph(123, filename, None)
         factory = StubProcessFactory()
         self.graph_manager.process_factory = factory
-        self.graph_manager._get_script_hash = lambda x: "md5"
         result = self.graph_manager.run()
 
         self.assertEquals(len(factory.spawns), 1)
         spawn = factory.spawns[0]
-        self.assertEquals(spawn[1], "foo")
+        self.assertEquals(spawn[1], filename)
 
         protocol = spawn[0]
         protocol.childDataReceived(1, "foobar")
@@ -134,15 +134,16 @@ class CustomGraphManagerTests(LandscapeTest):
                 [{"data":
                       {123: {"error":
                           u"ValueError: invalid literal for float(): foobar",
-                             "values": [], "script-hash": "md5"}},
+                             "values": [], "script-hash":
+                                 "baab6c16d9143523b7865d46896e4596"}},
                   "type": "custom-graph"}])
         return result.addCallback(check)
 
     def test_run_user(self):
-        self.store.add_graph(123, "foo", "bar")
+        filename = self.make_path("some content")
+        self.store.add_graph(123, filename, "bar")
         factory = StubProcessFactory()
         self.graph_manager.process_factory = factory
-        self.graph_manager._get_script_hash = lambda x: "md5"
 
         mock_getpwnam = self.mocker.replace("pwd.getpwnam", passthrough=False)
         class pwnam(object):
@@ -157,7 +158,7 @@ class CustomGraphManagerTests(LandscapeTest):
 
         self.assertEquals(len(factory.spawns), 1)
         spawn = factory.spawns[0]
-        self.assertEquals(spawn[1], "foo")
+        self.assertEquals(spawn[1], filename)
         self.assertEquals(spawn[2], ())
         self.assertEquals(spawn[3], {})
         self.assertEquals(spawn[4], "/")
@@ -178,10 +179,10 @@ class CustomGraphManagerTests(LandscapeTest):
         username = info.pw_name
         self.manager.config.script_users = "foo"
 
-        self.store.add_graph(123, "foo", username)
+        filename = self.make_path("some content")
+        self.store.add_graph(123, filename, username)
         factory = StubProcessFactory()
         self.graph_manager.process_factory = factory
-        self.graph_manager._get_script_hash = lambda x: "md5"
         result = self.graph_manager.run()
 
         self.assertEquals(len(factory.spawns), 0)
@@ -194,24 +195,24 @@ class CustomGraphManagerTests(LandscapeTest):
                       {"error":
                           u"Custom graph cannot be run as user %s." %
                           (username,),
-                       "script-hash": "md5",
+                       "script-hash": "9893532233caff98cd083a116b013c0b",
                        "values": []}},
                   "type": "custom-graph"}])
 
         return result.addCallback(check)
 
     def test_run_timeout(self):
-        self.store.add_graph(123, "foo", None)
+        filename = self.make_path("some content")
+        self.store.add_graph(123, filename, None)
         factory = StubProcessFactory()
         self.graph_manager.process_factory = factory
-        self.graph_manager._get_script_hash = lambda x: "md5"
         result = self.graph_manager.run()
 
         self.assertEquals(len(factory.spawns), 1)
         spawn = factory.spawns[0]
         protocol = spawn[0]
         protocol.makeConnection(DummyProcess())
-        self.assertEquals(spawn[1], "foo")
+        self.assertEquals(spawn[1], filename)
 
         self.manager.reactor.advance(110)
         protocol.processEnded(Failure(ProcessDone(0)))
@@ -222,11 +223,31 @@ class CustomGraphManagerTests(LandscapeTest):
                 self.broker_service.message_store.get_pending_messages(),
                 [{"data": {123: {"error":
                                     u"Process exceeded the 10 seconds limit",
-                                "script-hash": "md5",
+                                "script-hash":
+                                    "9893532233caff98cd083a116b013c0b",
                                 "values": []}},
                   "type": "custom-graph"}])
 
         return result.addCallback(check)
+
+    def test_run_removed_file(self):
+        """
+        If run is called on a script file that has been removed, it doesn't try
+        to run it, and remove the graph from the store.
+        """
+        self.store.add_graph(123, "/nonexistent", None)
+        factory = StubProcessFactory()
+        self.graph_manager.process_factory = factory
+        result = self.graph_manager.run()
+
+        self.assertEquals(len(factory.spawns), 0)
+
+        self.graph_manager.exchange()
+        self.assertMessages(
+            self.broker_service.message_store.get_pending_messages(),
+            [{"data": {},
+              "type": "custom-graph"}])
+        self.assertIdentical(self.store.get_graph(123), None)
 
     def test_send_message_add_stored_graph(self):
         """
@@ -251,6 +272,31 @@ class CustomGraphManagerTests(LandscapeTest):
                              "values": []}},
               "timestamp": 0,
               "type": "custom-graph"}])
+
+    def test_send_message_remove_not_present_graph(self):
+        """
+        C{send_message} checks the presence of the custom-graph script, and
+        remove the graph if the file is not present anymore.
+        """
+        uid = os.getuid()
+        info = pwd.getpwuid(uid)
+        username = info.pw_name
+        self.manager.dispatch_message(
+            {"type": "custom-graph-add",
+                     "interpreter": "/bin/sh",
+                     "code": "echo hi!",
+                     "username": username,
+                     "graph-id": 123})
+        filename = self.store.get_graph(123)[1]
+        os.unlink(filename)
+        self.graph_manager.exchange()
+        self.assertMessages(
+            self.broker_service.message_store.get_pending_messages(),
+            [{"api": "3.1",
+              "data": {},
+              "timestamp": 0,
+              "type": "custom-graph"}])
+        self.assertIdentical(self.store.get_graph(123), None)
 
     def test_send_message_dont_rehash(self):
         """

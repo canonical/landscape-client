@@ -114,9 +114,13 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         graphs = list(self.registry.store.get_graphs())
         for graph_id, filename, user in graphs:
             if graph_id not in self._data:
-                script_hash = self._get_script_hash(filename)
-                self._data[graph_id] = {
-                    "values": [], "error": u"", "script-hash": script_hash}
+                if not os.path.isfile(filename):
+                    # Remove the graph to get resync, and don't add to data
+                    self.registry.store.remove_graph(graph_id)
+                else:
+                    script_hash = self._get_script_hash(filename)
+                    self._data[graph_id] = {
+                        "values": [], "error": u"", "script-hash": script_hash}
 
         message = {"type": self.message_type, "data": self._data}
 
@@ -165,10 +169,17 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         graphs = list(self.registry.store.get_graphs())
         now = int(self._create_time())
         for graph_id, filename, user in graphs:
+            if not os.path.isfile(filename):
+                # The script file has been remove, let's remove the graph from
+                # the database to get resync by the server
+                self.registry.store.remove_graph(graph_id)
+                continue
+            script_hash = self._get_script_hash(filename)
             if graph_id not in self._data:
-                script_hash = self._get_script_hash(filename)
                 self._data[graph_id] = {
                     "values": [], "error": u"", "script-hash": script_hash}
+            else:
+                self._data[graph_id]["script-hash"] = script_hash
             if user is not None:
                 if not self.is_user_allowed(user):
                     d = fail(ProcessFailedError(
