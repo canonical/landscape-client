@@ -18,6 +18,20 @@ from landscape.tests.helpers import (
 from landscape.tests.mocker import ANY, ARGS
 
 
+def get_default_env(get_user=True):
+    environment =  {
+        "PATH": UBUNTU_PATH,
+        "USER": "",
+        "HOME": "",
+    }
+    if get_user:
+        environment.update({
+            "USER": os.getenv("USER"),
+            "HOME": os.getenv("HOME"),
+            })
+    return environment
+
+
 class RunScriptTests(LandscapeTest):
 
     helpers = [ManagerHelper]
@@ -47,11 +61,7 @@ class RunScriptTests(LandscapeTest):
         Non-shell interpreters don't have their paths set by the shell, so we
         need to check that other interpreters have environment variables set.
         """
-        expected = str({
-            "PATH": UBUNTU_PATH,
-            "USER": "",
-            "HOME": "",
-            }) + "\n"
+        expected = str(get_default_env(get_user=False)) + "\n"
         result = self.plugin.run_script(
             "/usr/bin/python",
             "import os\nprint os.environ")
@@ -361,13 +371,8 @@ class RunScriptTests(LandscapeTest):
         # The contents are written *after* the permissions have been set up!
         script_file.write("#!/bin/sh\ncode")
         script_file.close()
-        env = {
-            "PATH": UBUNTU_PATH,
-            "USER": os.getenv("USER"),
-            "HOME": os.getenv("HOME"),
-            }
         process_factory.spawnProcess(
-            ANY, ANY, uid=uid, gid=gid, path=ANY, env=env)
+            ANY, ANY, uid=uid, gid=gid, path=ANY, env=get_default_env())
         self.mocker.replay()
         # We don't really care about the deferred that's returned, as long as
         # those things happened in the correct order.
@@ -483,14 +488,9 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
             protocol.childDataReceived(1, "hi!\n")
             protocol.processEnded(Failure(ProcessDone(0)))
             self._verify_script(filename, sys.executable, "print 'hi'")
-        env = {
-            "PATH": UBUNTU_PATH,
-            "USER": os.getenv("USER"),
-            "HOME": os.getenv("HOME"),
-            }
         process_factory = self.mocker.mock()
         process_factory.spawnProcess(
-            ANY, ANY, uid=uid, gid=gid, path=ANY, env=env)
+            ANY, ANY, uid=uid, gid=gid, path=ANY, env=get_default_env())
         self.mocker.call(spawn_called)
         self.mocker.replay()
         self.manager.add(ScriptExecution(process_factory=process_factory))
@@ -562,14 +562,9 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
             protocol.childDataReceived(1, "hi!\n")
             protocol.processEnded(Failure(ProcessDone(0)))
             self._verify_script(filename, sys.executable, "print 'hi'")
-        env = {
-            "PATH": UBUNTU_PATH,
-            "USER": os.getenv("USER"),
-            "HOME": os.getenv("HOME"),
-            }
         process_factory = self.mocker.mock()
         process_factory.spawnProcess(
-            ANY, ANY, uid=uid, gid=gid, path=ANY, env=env)
+            ANY, ANY, uid=uid, gid=gid, path=ANY, env=get_default_env())
         self.mocker.call(spawn_called)
 
         self.mocker.replay()
