@@ -169,7 +169,7 @@ class ScriptExecution(ManagerPlugin):
             "PATH": UBUNTU_PATH,
             "USER": user or "",
             "HOME": home or "",
-        }
+            }
         attachment_dir = ""
         old_umask = os.umask(0022)
         try:
