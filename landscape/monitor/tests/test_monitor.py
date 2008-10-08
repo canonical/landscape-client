@@ -6,28 +6,10 @@ from landscape.monitor.monitor import (
 from landscape.lib.persist import Persist
 from landscape.lib.dbus_util import get_object
 from landscape.lib.twisted_util import gather_results
-from landscape.tests.test_plugin import SamplePlugin
+from landscape.tests.test_plugin import SamplePlugin, ExchangePlugin
 from landscape.tests.helpers import (LandscapeTest, LandscapeIsolatedTest,
                                      RemoteBrokerHelper, MonitorHelper)
 from landscape.tests.mocker import ANY
-
-
-class ExchangePlugin(SamplePlugin):
-    """A plugin which records exchange notification events."""
-
-    def __init__(self):
-        super(ExchangePlugin, self).__init__()
-        self.exchanged = 0
-        self.waiter = None
-
-    def wait_for_exchange(self):
-        self.waiter = Deferred()
-        return self.waiter
-
-    def exchange(self):
-        self.exchanged += 1
-        if self.waiter is not None:
-            self.waiter.callback(None)
 
 
 class MonitorTest(LandscapeTest):

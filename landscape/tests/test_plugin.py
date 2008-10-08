@@ -4,7 +4,7 @@ from landscape.tests.helpers import LandscapeTest, LandscapeIsolatedTest
 
 from landscape.plugin import PluginRegistry, BrokerPlugin, HandlerNotFoundError
 from landscape.lib.dbus_util import method
-from landscape.lib.bpickle import loads, dumps
+from landscape.lib.bpickle import dumps
 from landscape.tests.helpers import RemoteBrokerHelper
 
 
@@ -16,6 +16,24 @@ class SamplePlugin(object):
 
     def register(self, monitor):
         self.registered.append(monitor)
+
+
+class ExchangePlugin(SamplePlugin):
+    """A plugin which records exchange notification events."""
+
+    def __init__(self):
+        super(ExchangePlugin, self).__init__()
+        self.exchanged = 0
+        self.waiter = None
+
+    def wait_for_exchange(self):
+        self.waiter = Deferred()
+        return self.waiter
+
+    def exchange(self):
+        self.exchanged += 1
+        if self.waiter is not None:
+            self.waiter.callback(None)
 
 
 class PluginTest(LandscapeTest):
@@ -65,6 +83,38 @@ class PluginTest(LandscapeTest):
         msg = {"type": "foo", "value": "whatever"}
         self.assertRaises(HandlerNotFoundError,
                           self.registry.dispatch_message, msg)
+
+    def test_exchange_calls_exchanges(self):
+        """
+        The L{PluginRegistry.exchange} method calls C{exchange} on all
+        plugins, if available.
+        """
+        plugin1 = SamplePlugin()
+        self.assertFalse(hasattr(plugin1, "exchange"))
+
+        exchange_plugin1 = ExchangePlugin()
+        exchange_plugin2 = ExchangePlugin()
+
+        self.registry.add(plugin1)
+        self.registry.add(exchange_plugin1)
+        self.registry.add(exchange_plugin2)
+        self.registry.add(SamplePlugin())
+
+        self.registry.exchange()
+        self.assertEquals(exchange_plugin1.exchanged, 1)
+        self.assertEquals(exchange_plugin2.exchanged, 1)
+
+    def test_exchange_logs_errors_and_continues(self):
+        self.log_helper.ignore_errors(ZeroDivisionError)
+        plugin1 = SamplePlugin()
+        plugin2 = ExchangePlugin()
+        plugin1.exchange = lambda: 1/0
+        self.registry.add(plugin1)
+        self.registry.add(plugin2)
+
+        self.registry.exchange()
+        self.assertEquals(plugin2.exchanged, 1)
+        self.assertTrue("ZeroDivisionError" in self.logfile.getvalue())
 
 
 def assertReceivesMessages(test_case, broker_plugin, broker_service, remote):
