@@ -86,6 +86,15 @@ class ScriptRunnerMixin(object):
         script_file.write(build_script(shell, code))
         script_file.close()
 
+    def _run_script(self, filename, uid, gid, path, env, time_limit):
+        pp = ProcessAccumulationProtocol(
+            self.registry.reactor, self.size_limit)
+        self.process_factory.spawnProcess(
+            pp, filename, uid=uid, gid=gid, path=path, env=env)
+        if time_limit is not None:
+            pp.schedule_cancel(time_limit)
+        return pp.result_deferred
+
 
 class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
     """A plugin which allows execution of arbitrary shell scripts.
@@ -197,13 +206,8 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
                 os.chmod(attachment_dir, 0700)
                 if uid is not None:
                     os.chown(attachment_dir, uid, gid)
-            pp = ProcessAccumulationProtocol(
-                self.registry.reactor, self.size_limit)
-            self.process_factory.spawnProcess(pp, filename, uid=uid, gid=gid,
-                                              path=path, env=env)
-            if time_limit is not None:
-                pp.schedule_cancel(time_limit)
-            result = pp.result_deferred
+            
+            result = self._run_script(filename, uid, gid, path, env, time_limit)
             return result.addBoth(
                 self._remove_script, filename, attachment_dir, old_umask)
         except:

@@ -7,8 +7,7 @@ from landscape.lib.scriptcontent import generate_script_hash
 from landscape.accumulate import Accumulator
 from landscape.manager.manager import ManagerPlugin
 from landscape.manager.scriptexecution import (
-    ProcessAccumulationProtocol, ProcessFailedError, ScriptRunnerMixin,
-    ProcessTimeLimitReachedError)
+    ProcessFailedError, ScriptRunnerMixin, ProcessTimeLimitReachedError)
 
 
 class StoreProxy(object):
@@ -162,7 +161,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         handle the output.
         """
         self.do_send = True
-        defferred_list = []
+        deferred_list = []
         graphs = list(self.registry.store.get_graphs())
         now = int(self._create_time())
         for graph_id, filename, user in graphs:
@@ -175,16 +174,12 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
                     d = fail(ProcessFailedError(
                         u"Custom graph cannot be run as user %s." % (user,)))
                     d.addErrback(self._handle_error, graph_id)
-                    defferred_list.append(d)
+                    deferred_list.append(d)
                     continue
             uid, gid, path = self.get_pwd_infos(user)
-            pp = ProcessAccumulationProtocol(
-                self.registry.reactor, self.size_limit)
-            self.process_factory.spawnProcess(
-                pp, filename, uid=uid, gid=gid, path=path)
-            pp.schedule_cancel(self.time_limit)
-            result = pp.result_deferred
+            result = self._run_script(
+                filename, uid, gid, path, {}, self.time_limit)
             result.addCallback(self._handle_data, graph_id, now)
             result.addErrback(self._handle_error, graph_id)
-            defferred_list.append(result)
-        return DeferredList(defferred_list)
+            deferred_list.append(result)
+        return DeferredList(deferred_list)
