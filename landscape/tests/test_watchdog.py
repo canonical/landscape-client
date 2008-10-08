@@ -19,7 +19,7 @@ from landscape.tests.helpers import (
 from landscape.watchdog import (
     Daemon, WatchDog, WatchDogService, ExecutableNotFoundError,
     WatchDogConfiguration, bootstrap_list,
-    MAXIMUM_CONSECUTIVE_RESTARTS, RESTART_BURST_DELAY)
+    MAXIMUM_CONSECUTIVE_RESTARTS, RESTART_BURST_DELAY, run)
 import landscape.watchdog
 
 
@@ -956,8 +956,13 @@ class WatchDogServiceTest(LandscapeTest):
         #don't really daemonize or request an exit
         daemonize = self.mocker.replace("landscape.watchdog.daemonize",
                                         passthrough=False)
-        daemonize()
         watchdog = self.mocker.patch(WatchDog)
+
+        watchdog.check_running()
+        self.mocker.result(succeed([]))
+
+        daemonize()
+
         watchdog.request_exit()
         self.mocker.result(succeed(None))
 
@@ -1182,3 +1187,19 @@ stub_broker = StubBroker(SessionBus())
 
 reactor.run()
 """
+
+
+class WatchDogRunTests(LandscapeTest):
+    def setUp(self):
+        super(WatchDogRunTests, self).setUp()
+        self.addCleanup(setattr, WatchDogConfiguration,
+                        "default_config_filenames",
+                        WatchDogConfiguration.default_config_filenames)
+        WatchDogConfiguration.default_config_filenames = []
+
+    def test_non_root(self):
+        self.mocker.replace("os.getuid")()
+        self.mocker.result(1000)
+        self.mocker.replay()
+        sys_exit = self.assertRaises(SystemExit, run, ["--bus", "system"])
+        self.assertIn("landscape-client must be run as root", str(sys_exit))

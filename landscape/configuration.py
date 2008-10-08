@@ -423,6 +423,8 @@ def register(config, reactor=None):
 
 
 def main(args):
+    if os.getuid() != 0:
+        sys.exit("landscape-config must be run as root.")
     config = LandscapeSetupConfiguration()
     config.load(args)
 
