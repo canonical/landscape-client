@@ -1,3 +1,15 @@
+landscape-client (1.0.23-0ubuntu0.8.10) intrepid; urgency=low
+
+  * New upstream release. Changes since 1.0.21.1:
+    - Don't print duplicate warnings when / is nearing capacity in sysinfo
+      (LP: #260230).
+    - Slight change to link text in landscape-sysinfo.
+    - Don't crash badly when programs are run as the incorrect user
+      (LP: #268879).
+  * debian/changelog: New debian-version scheme including Ubuntu version.
+
+ -- Christopher Armstrong <radix@ubuntu.com>  Wed, 08 Oct 2008 17:09:32 -0400
+
 landscape-client (1.0.21.1-0ubuntu2) intrepid; urgency=low
 
   * debian/control: fix bzr url
