@@ -5,8 +5,7 @@ from landscape.monitor.monitor import (
     MonitorPluginRegistry, MonitorDBusObject, MonitorPlugin, DataWatcher)
 from landscape.lib.persist import Persist
 from landscape.lib.dbus_util import get_object
-from landscape.lib.twisted_util import gather_results
-from landscape.tests.test_plugin import SamplePlugin, ExchangePlugin
+from landscape.tests.test_plugin import ExchangePlugin
 from landscape.tests.helpers import (LandscapeTest, LandscapeIsolatedTest,
                                      RemoteBrokerHelper, MonitorHelper)
 from landscape.tests.mocker import ANY
@@ -79,24 +78,6 @@ class MonitorDBusObjectTest(LandscapeIsolatedTest):
         self.service = get_object(self.broker_service.bus,
                                   MonitorDBusObject.bus_name,
                                   MonitorDBusObject.object_path)
-
-    def test_exchange_notification_calls_exchange(self):
-        """
-        When the L{Broker} notifies the L{MonitorDBusObject} that an
-        exchange is about to happen, the plugins' C{exchange} methods
-        gets called.
-        """
-        exchange_plugin1 = ExchangePlugin()
-        exchange_plugin2 = ExchangePlugin()
-        self.monitor.add(exchange_plugin1)
-        self.monitor.add(exchange_plugin2)
-
-        self.broker_service.reactor.fire("impending-exchange")
-
-        d = gather_results([exchange_plugin1.wait_for_exchange(),
-                            exchange_plugin2.wait_for_exchange()])
-        d.addCallback(self.assertEquals, [None, None])
-        return d
 
     def test_ping(self):
         result = self.service.ping()
