@@ -17,9 +17,9 @@ from landscape.manager.manager import ManagerPlugin, SUCCEEDED, FAILED
 
 
 ALL_USERS = object()
-
 TIMEOUT_RESULT = 102
 PROCESS_FAILED_RESULT = 103
+UBUNTU_PATH = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 
 class ProcessTimeLimitReachedError(Exception):
@@ -166,7 +166,7 @@ class ScriptExecution(ManagerPlugin):
         if user:
             home = "/home/%s" % (user,)
         env = {
-            "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+            "PATH": UBUNTU_PATH,
             "USER": user or "",
             "HOME": home or "",
         }
