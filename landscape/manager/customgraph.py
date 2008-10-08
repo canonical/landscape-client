@@ -68,8 +68,6 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         graph = self.registry.store.get_graph(graph_id)
         if graph:
             filename = graph[1]
-            # Make it writable to be sure to be able to delete it
-            os.chmod(filename, 0777)
             os.unlink(filename)
 
         self.registry.store.remove_graph(graph_id)
@@ -88,14 +86,10 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
 
         data_path = self.registry.config.data_path
         scripts_directory = os.path.join(data_path, "custom-graph-scripts")
-        if not os.path.exists(scripts_directory):
-            os.makedirs(scripts_directory)
-            os.chmod(scripts_directory, 0777)
         filename = os.path.join(
             scripts_directory, "graph-%d" % (graph_id,))
 
         if os.path.exists(filename):
-            os.chmod(filename, 0777)
             os.unlink(filename)
 
         script_file = file(filename, "w")

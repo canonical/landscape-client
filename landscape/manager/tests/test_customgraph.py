@@ -23,6 +23,7 @@ class CustomGraphManagerTests(LandscapeTest):
             ["custom-graph"])
         self.data_path = self.make_dir()
         self.manager.config.data_path = self.data_path
+        os.makedirs(os.path.join(self.data_path, "custom-graph-scripts"))
         self.manager.config.script_users = "ALL"
         self.graph_manager = CustomGraphPlugin(
             create_time=range(1500, 0, -300).pop)
@@ -51,7 +52,6 @@ class CustomGraphManagerTests(LandscapeTest):
         mock_chown(ANY, 1234, 5678)
 
         mock_chmod = self.mocker.replace("os.chmod", passthrough=False)
-        mock_chmod(ANY, 0777)
         mock_chmod(ANY, 0700)
 
         mock_getpwnam = self.mocker.replace("pwd.getpwnam", passthrough=False)
