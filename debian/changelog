@@ -1,3 +1,9 @@
+landscape-client (1.0.23-0ubuntu0.6.04) dapper; urgency=low
+
+  * rebuild with new package versioning scheme
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 9 Oct 2008 01:04:38 +0000
+
 landscape-client (1.0.23-hardy1-landscape1) hardy; urgency=low
 
   * don't show unnecessary warnings for / (#260230)
