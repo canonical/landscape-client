@@ -17,9 +17,9 @@ from landscape.manager.manager import ManagerPlugin, SUCCEEDED, FAILED
 
 
 ALL_USERS = object()
-
 TIMEOUT_RESULT = 102
 PROCESS_FAILED_RESULT = 103
+UBUNTU_PATH = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 
 class ProcessTimeLimitReachedError(Exception):
@@ -141,6 +141,7 @@ class ScriptExecution(ManagerPlugin):
         uid = None
         gid = None
         path = None
+        home = None
         if user is not None:
             info = pwd.getpwnam(user)
             uid = info.pw_uid
@@ -162,7 +163,13 @@ class ScriptExecution(ManagerPlugin):
         script_file.write(
             "#!%s\n%s" % (shell.encode("utf-8"), code.encode("utf-8")))
         script_file.close()
-        env = {}
+        if user:
+            home = "/home/%s" % (user,)
+        env = {
+            "PATH": UBUNTU_PATH,
+            "USER": user or "",
+            "HOME": home or "",
+            }
         attachment_dir = ""
         old_umask = os.umask(0022)
         try:

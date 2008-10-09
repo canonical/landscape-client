@@ -10,12 +10,26 @@ from twisted.python.failure import Failure
 
 from landscape.manager.scriptexecution import (
     ScriptExecution, ProcessTimeLimitReachedError, PROCESS_FAILED_RESULT,
-    ProcessFailedError)
+    ProcessFailedError, UBUNTU_PATH)
 from landscape.manager.manager import SUCCEEDED, FAILED
 from landscape.tests.helpers import (
     LandscapeTest, LandscapeIsolatedTest, ManagerHelper,
     StubProcessFactory, DummyProcess)
 from landscape.tests.mocker import ANY, ARGS
+
+
+def get_default_environment(get_user=True):
+    environment =  {
+        "PATH": UBUNTU_PATH,
+        "USER": "",
+        "HOME": "",
+    }
+    if get_user:
+        environment.update({
+            "USER": os.getenv("USER"),
+            "HOME": os.getenv("HOME"),
+            })
+    return environment
 
 
 class RunScriptTests(LandscapeTest):
@@ -40,6 +54,18 @@ class RunScriptTests(LandscapeTest):
         """Non-shell interpreters can be specified."""
         result = self.plugin.run_script("/usr/bin/python", "print 'hi'")
         result.addCallback(self.assertEquals, "hi\n")
+        return result
+
+    def test_other_interpreter_env(self):
+        """
+        Non-shell interpreters don't have their paths set by the shell, so we
+        need to check that other interpreters have environment variables set.
+        """
+        expected = str(get_default_environment(get_user=False)) + "\n"
+        result = self.plugin.run_script(
+            "/usr/bin/python",
+            "import os\nprint os.environ")
+        result.addCallback(self.assertEquals, expected)
         return result
 
     def test_concurrent(self):
@@ -220,7 +246,7 @@ class RunScriptTests(LandscapeTest):
 
         self.assertEquals(len(factory.spawns), 1)
         spawn = factory.spawns[0]
-        self.assertEquals(spawn[3].keys(), ["LANDSCAPE_ATTACHMENTS"])
+        self.assertIn("LANDSCAPE_ATTACHMENTS", spawn[3].keys())
         attachment_dir = spawn[3]["LANDSCAPE_ATTACHMENTS"]
         self.assertEquals(stat.S_IMODE(os.stat(attachment_dir).st_mode), 0700)
         filename = os.path.join(attachment_dir, "file 1")
@@ -345,12 +371,10 @@ class RunScriptTests(LandscapeTest):
         # The contents are written *after* the permissions have been set up!
         script_file.write("#!/bin/sh\ncode")
         script_file.close()
-
         process_factory.spawnProcess(
-            ANY, ANY, uid=uid, gid=gid, path=ANY, env={})
-
+            ANY, ANY, uid=uid, gid=gid, path=ANY,
+            env=get_default_environment())
         self.mocker.replay()
-
         # We don't really care about the deferred that's returned, as long as
         # those things happened in the correct order.
         self.plugin.run_script("/bin/sh", "code",
@@ -401,7 +425,6 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         """
         data = open(executable, "r").read()
         self.assertEquals(data, "#!%s\n%s" % (interp, code))
-
 
     def _send_script(self, interpreter, code, operation_id=123,
                      user=pwd.getpwuid(os.getuid())[0],
@@ -466,16 +489,13 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
             protocol.childDataReceived(1, "hi!\n")
             protocol.processEnded(Failure(ProcessDone(0)))
             self._verify_script(filename, sys.executable, "print 'hi'")
-
         process_factory = self.mocker.mock()
         process_factory.spawnProcess(
-            ANY, ANY, uid=uid, gid=gid, path=ANY, env={})
+            ANY, ANY, uid=uid, gid=gid, path=ANY,
+            env=get_default_environment())
         self.mocker.call(spawn_called)
-
         self.mocker.replay()
-
         self.manager.add(ScriptExecution(process_factory=process_factory))
-
         result = self._send_script(sys.executable, "print 'hi'", user=username)
         return result
 
@@ -544,10 +564,10 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
             protocol.childDataReceived(1, "hi!\n")
             protocol.processEnded(Failure(ProcessDone(0)))
             self._verify_script(filename, sys.executable, "print 'hi'")
-
         process_factory = self.mocker.mock()
         process_factory.spawnProcess(
-            ANY, ANY, uid=uid, gid=gid, path=ANY, env={})
+            ANY, ANY, uid=uid, gid=gid, path=ANY,
+            env=get_default_environment())
         self.mocker.call(spawn_called)
 
         self.mocker.replay()
