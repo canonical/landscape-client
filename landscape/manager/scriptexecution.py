@@ -19,6 +19,8 @@ from landscape.manager.manager import ManagerPlugin, SUCCEEDED, FAILED
 ALL_USERS = object()
 TIMEOUT_RESULT = 102
 PROCESS_FAILED_RESULT = 103
+# The name "UBUNTU" is used in the variable name due to the fact that the path
+# is Ubuntu-specific, taken from /etc/login.defs.
 UBUNTU_PATH = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 
