@@ -18,7 +18,7 @@ case "$1" in
     purge)
         LOG_DIR=/var/log/landscape
         deluser --quiet --system landscape >/dev/null || true
-        rm -f "${LOG_DIR}/sysinfo.log*"
+        rm -f "${LOG_DIR}/sysinfo.log"*
     ;;
 
     remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)

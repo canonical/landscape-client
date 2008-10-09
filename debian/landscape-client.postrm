@@ -23,12 +23,12 @@ case "$1" in
     rm -f "${CONFIG_FILE}"
     rm -f "/etc/default/landscape-client"
 
-    rm -f "${LOG_DIR}/manager.log*"
-    rm -f "${LOG_DIR}/monitor.log*"
-    rm -f "${LOG_DIR}/broker.log*"
-    rm -f "${LOG_DIR}/watchdog.log*"
-    rm -f "${LOG_DIR}/package-reporter.log*"
-    rm -f "${LOG_DIR}/package-changer.log*"
+    rm -f "${LOG_DIR}/manager.log"*
+    rm -f "${LOG_DIR}/monitor.log"*
+    rm -f "${LOG_DIR}/broker.log"*
+    rm -f "${LOG_DIR}/watchdog.log"*
+    rm -f "${LOG_DIR}/package-reporter.log"*
+    rm -f "${LOG_DIR}/package-changer.log"*
 
     rm -rf "${DATA_DIR}/client"
 
