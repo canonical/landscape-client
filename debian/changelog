@@ -1,3 +1,10 @@
+landscape-client (1.0.23-0ubuntu0.6.06) dapper; urgency=low
+
+  * rebuild for dapper with the correct distro number (6.06, and not
+    6.04)
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 9 Oct 2008 17:50:32 +0000
+
 landscape-client (1.0.23-0ubuntu0.8.04) hardy; urgency=low
 
   * rebuild with new package versioning scheme
