@@ -7,8 +7,11 @@ landscape-client (1.0.23-0ubuntu0.8.10) intrepid; urgency=low
     - Don't crash badly when programs are run as the incorrect user
       (LP: #268879).
   * debian/changelog: New debian-version scheme including Ubuntu version.
+  * debian/landscape-client.postrm: Delete log and data files upon purge
+    (LP: #121182).
+  * debian/landscape-common.postrm: Delete the sysinfo logs upon purge.
 
- -- Christopher Armstrong <radix@ubuntu.com>  Wed, 08 Oct 2008 17:09:32 -0400
+ -- Christopher Armstrong <radix@ubuntu.com>  Thu, 09 Oct 2008 11:40:51 -0400
 
 landscape-client (1.0.21.1-0ubuntu2) intrepid; urgency=low
 
