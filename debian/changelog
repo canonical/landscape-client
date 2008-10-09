@@ -1,3 +1,9 @@
+landscape-client (1.0.23-0ubuntu0.8.04) hardy; urgency=low
+
+  * rebuild with new package versioning scheme
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 9 Oct 2008 01:04:50 +0000
+
 landscape-client (1.0.23-0ubuntu0.7.10) gutsy; urgency=low
 
   * rebuild with new package versioning scheme
