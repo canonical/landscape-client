@@ -58,7 +58,7 @@ class RunScriptTests(LandscapeTest):
         need to check that other interpreters have environment variables set.
         """
         result = self.plugin.run_script(
-            "/usr/bin/python",
+            sys.executable,
             "import os\nprint os.environ")
         def check_environment(results):
             for string in get_default_environment().keys():
