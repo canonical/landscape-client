@@ -10,7 +10,7 @@ from twisted.python.failure import Failure
 
 from landscape.manager.scriptexecution import (
     ScriptExecution, ProcessTimeLimitReachedError, PROCESS_FAILED_RESULT,
-    ProcessFailedError, UBUNTU_PATH)
+    ProcessFailedError, UBUNTU_PATH, get_user_info)
 from landscape.manager.manager import SUCCEEDED, FAILED
 from landscape.tests.helpers import (
     LandscapeTest, LandscapeIsolatedTest, ManagerHelper,
@@ -18,18 +18,14 @@ from landscape.tests.helpers import (
 from landscape.tests.mocker import ANY, ARGS
 
 
-def get_default_environment(get_user=True):
-    environment =  {
+def get_default_environment():
+    username = os.getlogin()
+    uid, gid, home = get_user_info(username)
+    return  {
         "PATH": UBUNTU_PATH,
-        "USER": "",
-        "HOME": "",
-    }
-    if get_user:
-        environment.update({
-            "USER": os.getenv("USER"),
-            "HOME": os.getenv("HOME"),
-            })
-    return environment
+        "USER": username,
+        "HOME": home,
+        }
 
 
 class RunScriptTests(LandscapeTest):
@@ -61,11 +57,13 @@ class RunScriptTests(LandscapeTest):
         Non-shell interpreters don't have their paths set by the shell, so we
         need to check that other interpreters have environment variables set.
         """
-        expected = str(get_default_environment(get_user=False)) + "\n"
         result = self.plugin.run_script(
             "/usr/bin/python",
             "import os\nprint os.environ")
-        result.addCallback(self.assertEquals, expected)
+        def check_environment(results):
+            for string in get_default_environment().keys():
+                self.assertIn(string, results)
+        result.addCallback(check_environment)
         return result
 
     def test_concurrent(self):
@@ -350,8 +348,8 @@ class RunScriptTests(LandscapeTest):
         correct permissions. Therefore os.chmod and os.chown must be called
         before data is written.
         """
-        uid = os.getuid()
-        gid = os.getgid()
+        username = os.getlogin()
+        uid, gid, home = get_user_info(username)
 
         mock_chown = self.mocker.replace("os.chown", passthrough=False)
         mock_chmod = self.mocker.replace("os.chmod", passthrough=False)
@@ -477,9 +475,8 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
 
     def test_user(self):
         """A user can be specified in the message."""
-        uid = os.getuid()
-        gid = os.getgid()
-        username = pwd.getpwuid(uid)[0]
+        username = os.getlogin()
+        uid, gid, home = get_user_info(username)
 
         # ignore the call to chown!
         mock_chown = self.mocker.replace("os.chown", passthrough=False)
@@ -552,9 +549,8 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
 
     def test_urgent_response(self):
         """Responses to script execution messages are urgent."""
-        uid = os.getuid()
-        gid = os.getgid()
-        username = pwd.getpwuid(uid)[0]
+        username = os.getlogin()
+        uid, gid, home = get_user_info(username)
 
         # ignore the call to chown!
         mock_chown = self.mocker.replace("os.chown", passthrough=False)

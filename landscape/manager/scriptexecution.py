@@ -24,6 +24,20 @@ PROCESS_FAILED_RESULT = 103
 UBUNTU_PATH = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 
+def get_user_info(username=None):
+    uid = None
+    gid = None
+    path = None
+    if username is not None:
+        info = pwd.getpwnam(username)
+        uid = info.pw_uid
+        gid = info.pw_gid
+        path = info.pw_dir
+        if not os.path.exists(path):
+            path = "/"
+    return (uid, gid, path)
+
+
 class ProcessTimeLimitReachedError(Exception):
     """
     Raised when a process has been running for too long.
@@ -140,18 +154,7 @@ class ScriptExecution(ManagerPlugin):
         if not os.path.exists(shell.split()[0]):
             return fail(
                 ProcessFailedError("Unknown interpreter: '%s'" % shell))
-        uid = None
-        gid = None
-        path = None
-        home = None
-        if user is not None:
-            info = pwd.getpwnam(user)
-            uid = info.pw_uid
-            gid = info.pw_gid
-            path = info.pw_dir
-            if not os.path.exists(path):
-                path = "/"
-
+        uid, gid, path = get_user_info(user)
         fd, filename = tempfile.mkstemp()
         script_file = os.fdopen(fd, "w")
         # Chown and chmod it before we write the data in it - the script may
@@ -165,12 +168,10 @@ class ScriptExecution(ManagerPlugin):
         script_file.write(
             "#!%s\n%s" % (shell.encode("utf-8"), code.encode("utf-8")))
         script_file.close()
-        if user:
-            home = "/home/%s" % (user,)
         env = {
             "PATH": UBUNTU_PATH,
             "USER": user or "",
-            "HOME": home or "",
+            "HOME": path or "",
             }
         attachment_dir = ""
         old_umask = os.umask(0022)
