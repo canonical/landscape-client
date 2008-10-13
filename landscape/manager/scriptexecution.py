@@ -18,9 +18,25 @@ from landscape.manager.manager import ManagerPlugin, SUCCEEDED, FAILED
 
 
 ALL_USERS = object()
-
 TIMEOUT_RESULT = 102
 PROCESS_FAILED_RESULT = 103
+# The name "UBUNTU" is used in the variable name due to the fact that the path
+# is Ubuntu-specific, taken from /etc/login.defs.
+UBUNTU_PATH = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+
+def get_user_info(username=None):
+    uid = None
+    gid = None
+    path = None
+    if username is not None:
+        info = pwd.getpwnam(username)
+        uid = info.pw_uid
+        gid = info.pw_gid
+        path = info.pw_dir
+        if not os.path.exists(path):
+            path = "/"
+    return (uid, gid, path)
 
 
 class ProcessTimeLimitReachedError(Exception):
@@ -60,19 +76,6 @@ class ScriptRunnerMixin(object):
     def is_user_allowed(self, user):
         allowed_users = self.registry.config.get_allowed_script_users()
         return allowed_users == ALL_USERS or user in allowed_users
-
-    def get_pwd_infos(self, user):
-        uid = None
-        gid = None
-        path = None
-        if user is not None:
-            info = pwd.getpwnam(user)
-            uid = info.pw_uid
-            gid = info.pw_gid
-            path = info.pw_dir
-            if not os.path.exists(path):
-                path = "/"
-        return uid, gid, path
 
     def write_script_file(self, script_file, filename, shell, code, uid, gid):
         # Chown and chmod it before we write the data in it - the script may
@@ -180,14 +183,16 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
         if not os.path.exists(shell.split()[0]):
             return fail(
                 ProcessFailedError("Unknown interpreter: '%s'" % shell))
-
-        uid, gid, path = self.get_pwd_infos(user)
-
+        uid, gid, path = get_user_info(user)
         fd, filename = tempfile.mkstemp()
         script_file = os.fdopen(fd, "w")
         self.write_script_file(script_file, filename, shell, code, uid, gid)
 
-        env = {}
+        env = {
+            "PATH": UBUNTU_PATH,
+            "USER": user or "",
+            "HOME": path or "",
+            }
         attachment_dir = ""
         old_umask = os.umask(0022)
         try:

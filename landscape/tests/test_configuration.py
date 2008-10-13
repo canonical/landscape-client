@@ -1,6 +1,8 @@
 import os
 from getpass import getpass
 
+from dbus import DBusException
+
 from twisted.internet.defer import Deferred, succeed, fail
 from twisted.internet import reactor
 
@@ -13,6 +15,17 @@ from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.tests.helpers import (LandscapeTest, LandscapeIsolatedTest,
                                      RemoteBrokerHelper, EnvironSaverHelper)
 from landscape.tests.mocker import ARGS, KWARGS, ANY, MATCH, CONTAINS, expect
+
+def get_config(self, args):
+    if "--config" not in args:
+        filename = self.makeFile("""
+[client]
+url = https://landscape.canonical.com/message-system
+""")
+        args.extend(["--config", filename])
+    config = LandscapeSetupConfiguration()
+    config.load(args)
+    return config
 
 
 class PrintTextTest(LandscapeTest):
@@ -480,10 +493,14 @@ class ConfigurationFunctionsTest(LandscapeTest):
 
     helpers = [EnvironSaverHelper]
 
+    def setUp(self):
+        super(ConfigurationFunctionsTest, self).setUp()
+        self.mocker.replace("os.getuid")()
+        self.mocker.count(0, None)
+        self.mocker.result(0)
+
     def get_config(self, args):
-        config = LandscapeSetupConfiguration()
-        config.load(args)
-        return config
+        return get_config(self, args)
 
     def get_content(self, config):
         """Write C{config} to a file and return it's contents as a string."""
@@ -554,12 +571,7 @@ class ConfigurationFunctionsTest(LandscapeTest):
         sysvconfig_mock.restart_landscape()
         self.mocker.replay()
 
-        filename = self.makeFile("""
-[client]
-url = https://landscape.canonical.com/message-system
-""")
-        config = self.get_config(["--config", filename, "--silent",
-                                  "-a", "account", "-t", "rex"])
+        config = self.get_config(["--silent", "-a", "account", "-t", "rex"])
         setup(config)
         self.assertEquals(self.get_content(config), """\
 [client]
@@ -574,12 +586,7 @@ account_name = account
         sysvconfig_mock.set_start_on_boot(True)
         self.mocker.replay()
 
-        filename = self.makeFile("""
-[client]
-url = https://landscape.canonical.com/message-system
-""")
-        config = self.get_config(["--config", filename, "--silent",
-                                  "-a", "account"])
+        config = self.get_config(["--silent", "-a", "account"])
         self.assertRaises(ConfigurationError, setup, config)
 
     def test_silent_setup_without_account_name(self):
@@ -588,12 +595,7 @@ url = https://landscape.canonical.com/message-system
         sysvconfig_mock.set_start_on_boot(True)
         self.mocker.replay()
 
-        filename = self.makeFile("""
-[client]
-url = https://landscape.canonical.com/message-system
-""")
-        config = self.get_config(["--config", filename, "--silent",
-                                  "-t", "rex"])
+        config = self.get_config(["--silent", "-t", "rex"])
         self.assertRaises(ConfigurationError, setup, config)
 
     def test_silent_script_users_imply_script_execution_plugin(self):
@@ -788,6 +790,50 @@ account_name = account
         self.mocker.replay()
         main(["--config", self.make_working_config()])
 
+    def test_errors_from_restart_landscape(self):
+        """
+        If a ProcessError exception is raised from restart_landscape (because
+        the client failed to be restarted), an informative message is printed
+        and the script exits.
+        """
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        print_text_mock = self.mocker.replace(print_text)
+
+        sysvconfig_mock.set_start_on_boot(True)
+        sysvconfig_mock.restart_landscape()
+        self.mocker.throw(ProcessError)
+        
+        print_text_mock("Couldn't restart the Landscape client.", error=True)
+        print_text_mock(CONTAINS("This machine will be registered"), error=True)
+
+        self.mocker.replay()
+
+        config = self.get_config(["--silent", "-a", "account", "-t", "rex"])
+        system_exit = self.assertRaises(SystemExit, setup, config)
+        self.assertEquals(system_exit.code, 2)
+
+    def test_errors_from_restart_landscape_ok_no_register(self):
+        """
+        Exit code 0 will be returned if the client fails to be restarted and
+        --ok-no-register was passed.
+        """
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        print_text_mock = self.mocker.replace(print_text)
+
+        sysvconfig_mock.set_start_on_boot(True)
+        sysvconfig_mock.restart_landscape()
+        self.mocker.throw(ProcessError)
+        
+        print_text_mock("Couldn't restart the Landscape client.", error=True)
+        print_text_mock(CONTAINS("This machine will be registered"), error=True)
+
+        self.mocker.replay()
+
+        config = self.get_config(["--silent", "-a", "account", "-t", "rex",
+                                  "--ok-no-register"])
+        system_exit = self.assertRaises(SystemExit, setup, config)
+        self.assertEquals(system_exit.code, 0)
+
     def test_main_with_register(self):
         setup_mock = self.mocker.replace(setup)
         setup_mock(ANY)
@@ -861,12 +907,20 @@ account_name = account
 
     def test_stop_client_and_disable_init_scripts(self):
         sysvconfig_mock = self.mocker.patch(SysVConfig)
-        self.mocker.result(True)
         sysvconfig_mock.set_start_on_boot(False)
         sysvconfig_mock.stop_landscape()
         self.mocker.replay()
 
         main(["--disable", "-c", self.make_working_config()])
+
+    def test_non_root(self):
+        self.mocker.reset() # Forget the thing done in setUp
+        self.mocker.replace("os.getuid")()
+        self.mocker.result(1000)
+        self.mocker.replay()
+        sys_exit = self.assertRaises(SystemExit,
+                                      main, ["-c", self.make_working_config()])
+        self.assertIn("landscape-config must be run as root", str(sys_exit))
 
 
 class RegisterFunctionTest(LandscapeIsolatedTest):
@@ -1098,6 +1152,67 @@ class RegisterFunctionTest(LandscapeIsolatedTest):
         register(service.config, reactor_mock)
 
         return result
+
+    def test_register_bus_connection_failure(self):
+        """
+        If the bus can't be connected to, landscape-config will print an
+        explanatory message and exit cleanly.
+        """
+        remote_broker_factory = self.mocker.replace(
+            "landscape.broker.remote.RemoteBroker", passthrough=False)
+        print_text_mock = self.mocker.replace(print_text)
+        install_mock = self.mocker.replace("twisted.internet."
+                                           "glib2reactor.install")
+        time_mock = self.mocker.replace("time")
+
+        install_mock()
+        print_text_mock(ARGS)
+        time_mock.sleep(ANY)
+
+        remote_broker_factory(ARGS, KWARGS)
+        self.mocker.throw(DBusException)
+
+        print_text_mock(
+            CONTAINS("There was an error communicating with the "
+                     "Landscape client"),
+            error=True)
+        print_text_mock(CONTAINS("This machine will be registered"), error=True)
+
+        self.mocker.replay()
+        config = get_config(self, ["-a", "accountname", "--silent"])
+        system_exit = self.assertRaises(SystemExit, register, config)
+        self.assertEquals(system_exit.code, 2)
+
+    def test_register_bus_connection_failure_ok_no_register(self):
+        """
+        Exit code 0 will be returned if we can't contact Landscape via DBus and
+        --ok-no-register was passed.
+        """
+        remote_broker_factory = self.mocker.replace(
+            "landscape.broker.remote.RemoteBroker", passthrough=False)
+        print_text_mock = self.mocker.replace(print_text)
+        install_mock = self.mocker.replace("twisted.internet."
+                                           "glib2reactor.install")
+        time_mock = self.mocker.replace("time")
+
+        install_mock()
+        print_text_mock(ARGS)
+        time_mock.sleep(ANY)
+
+        remote_broker_factory(ARGS, KWARGS)
+        self.mocker.throw(DBusException)
+
+        print_text_mock(
+            CONTAINS("There was an error communicating with the "
+                     "Landscape client"),
+            error=True)
+        print_text_mock(CONTAINS("This machine will be registered"), error=True)
+
+        self.mocker.replay()
+        config = get_config(self, ["-a", "accountname", "--silent",
+                                   "--ok-no-register"])
+        system_exit = self.assertRaises(SystemExit, register, config)
+        self.assertEquals(system_exit.code, 0)
 
 
 class RegisterFunctionNoServiceTest(LandscapeIsolatedTest):

@@ -16,6 +16,7 @@ class LandscapeLinkTest(LandscapeTest):
 
     def test_run_adds_footnote(self):
         self.landscape_link.run()
-        self.assertEquals(self.sysinfo.get_footnotes(),
-                          ["Graph these measurements at "
-                           "https://landscape.canonical.com"])
+        self.assertEquals(
+            self.sysinfo.get_footnotes(),
+            ["Graph this data and manage this system at "
+             "https://landscape.canonical.com/"])

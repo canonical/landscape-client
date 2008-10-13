@@ -7,7 +7,8 @@ from landscape.lib.scriptcontent import generate_script_hash
 from landscape.accumulate import Accumulator
 from landscape.manager.manager import ManagerPlugin
 from landscape.manager.scriptexecution import (
-    ProcessFailedError, ScriptRunnerMixin, ProcessTimeLimitReachedError)
+    ProcessFailedError, ScriptRunnerMixin, ProcessTimeLimitReachedError,
+    get_user_info)
 
 
 class StoreProxy(object):
@@ -92,7 +93,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
             os.unlink(filename)
 
         script_file = file(filename, "w")
-        uid, gid = self.get_pwd_infos(user)[:2]
+        uid, gid = get_user_info(user)[:2]
         self.write_script_file(
             script_file, filename, shell, code, uid, gid)
         self.registry.store.add_graph(graph_id, filename, user)
@@ -187,7 +188,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
                     d.addErrback(self._handle_error, graph_id)
                     deferred_list.append(d)
                     continue
-            uid, gid, path = self.get_pwd_infos(user)
+            uid, gid, path = get_user_info(user)
             result = self._run_script(
                 filename, uid, gid, path, {}, self.time_limit)
             result.addCallback(self._handle_data, graph_id, now)

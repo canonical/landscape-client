@@ -10,12 +10,23 @@ from twisted.python.failure import Failure
 
 from landscape.manager.scriptexecution import (
     ScriptExecutionPlugin, ProcessTimeLimitReachedError, PROCESS_FAILED_RESULT,
-    ProcessFailedError)
+    ScriptExecution, ProcessTimeLimitReachedError, PROCESS_FAILED_RESULT,
+    ProcessFailedError, UBUNTU_PATH, get_user_info)
 from landscape.manager.manager import SUCCEEDED, FAILED
 from landscape.tests.helpers import (
     LandscapeTest, LandscapeIsolatedTest, ManagerHelper,
     StubProcessFactory, DummyProcess)
 from landscape.tests.mocker import ANY, ARGS
+
+
+def get_default_environment():
+    username = os.getlogin()
+    uid, gid, home = get_user_info(username)
+    return  {
+        "PATH": UBUNTU_PATH,
+        "USER": username,
+        "HOME": home,
+        }
 
 
 class RunScriptTests(LandscapeTest):
@@ -40,6 +51,20 @@ class RunScriptTests(LandscapeTest):
         """Non-shell interpreters can be specified."""
         result = self.plugin.run_script("/usr/bin/python", "print 'hi'")
         result.addCallback(self.assertEquals, "hi\n")
+        return result
+
+    def test_other_interpreter_env(self):
+        """
+        Non-shell interpreters don't have their paths set by the shell, so we
+        need to check that other interpreters have environment variables set.
+        """
+        result = self.plugin.run_script(
+            sys.executable,
+            "import os\nprint os.environ")
+        def check_environment(results):
+            for string in get_default_environment().keys():
+                self.assertIn(string, results)
+        result.addCallback(check_environment)
         return result
 
     def test_concurrent(self):
@@ -220,7 +245,7 @@ class RunScriptTests(LandscapeTest):
 
         self.assertEquals(len(factory.spawns), 1)
         spawn = factory.spawns[0]
-        self.assertEquals(spawn[3].keys(), ["LANDSCAPE_ATTACHMENTS"])
+        self.assertIn("LANDSCAPE_ATTACHMENTS", spawn[3].keys())
         attachment_dir = spawn[3]["LANDSCAPE_ATTACHMENTS"]
         self.assertEquals(stat.S_IMODE(os.stat(attachment_dir).st_mode), 0700)
         filename = os.path.join(attachment_dir, "file 1")
@@ -324,8 +349,8 @@ class RunScriptTests(LandscapeTest):
         correct permissions. Therefore os.chmod and os.chown must be called
         before data is written.
         """
-        uid = os.getuid()
-        gid = os.getgid()
+        username = os.getlogin()
+        uid, gid, home = get_user_info(username)
 
         mock_chown = self.mocker.replace("os.chown", passthrough=False)
         mock_chmod = self.mocker.replace("os.chmod", passthrough=False)
@@ -345,12 +370,10 @@ class RunScriptTests(LandscapeTest):
         # The contents are written *after* the permissions have been set up!
         script_file.write("#!/bin/sh\ncode")
         script_file.close()
-
         process_factory.spawnProcess(
-            ANY, ANY, uid=uid, gid=gid, path=ANY, env={})
-
+            ANY, ANY, uid=uid, gid=gid, path=ANY,
+            env=get_default_environment())
         self.mocker.replay()
-
         # We don't really care about the deferred that's returned, as long as
         # those things happened in the correct order.
         self.plugin.run_script("/bin/sh", "code",
@@ -401,7 +424,6 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         """
         data = open(executable, "r").read()
         self.assertEquals(data, "#!%s\n%s" % (interp, code))
-
 
     def _send_script(self, interpreter, code, operation_id=123,
                      user=pwd.getpwuid(os.getuid())[0],
@@ -454,9 +476,8 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
 
     def test_user(self):
         """A user can be specified in the message."""
-        uid = os.getuid()
-        gid = os.getgid()
-        username = pwd.getpwuid(uid)[0]
+        username = os.getlogin()
+        uid, gid, home = get_user_info(username)
 
         # ignore the call to chown!
         mock_chown = self.mocker.replace("os.chown", passthrough=False)
@@ -466,15 +487,15 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
             protocol.childDataReceived(1, "hi!\n")
             protocol.processEnded(Failure(ProcessDone(0)))
             self._verify_script(filename, sys.executable, "print 'hi'")
-
         process_factory = self.mocker.mock()
         process_factory.spawnProcess(
-            ANY, ANY, uid=uid, gid=gid, path=ANY, env={})
+            ANY, ANY, uid=uid, gid=gid, path=ANY,
+            env=get_default_environment())
         self.mocker.call(spawn_called)
-
         self.mocker.replay()
 
-        self.manager.add(ScriptExecutionPlugin(process_factory=process_factory))
+        self.manager.add(
+            ScriptExecutionPlugin(process_factory=process_factory))
 
         result = self._send_script(sys.executable, "print 'hi'", user=username)
         return result
@@ -532,9 +553,8 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
 
     def test_urgent_response(self):
         """Responses to script execution messages are urgent."""
-        uid = os.getuid()
-        gid = os.getgid()
-        username = pwd.getpwuid(uid)[0]
+        username = os.getlogin()
+        uid, gid, home = get_user_info(username)
 
         # ignore the call to chown!
         mock_chown = self.mocker.replace("os.chown", passthrough=False)
@@ -544,10 +564,10 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
             protocol.childDataReceived(1, "hi!\n")
             protocol.processEnded(Failure(ProcessDone(0)))
             self._verify_script(filename, sys.executable, "print 'hi'")
-
         process_factory = self.mocker.mock()
         process_factory.spawnProcess(
-            ANY, ANY, uid=uid, gid=gid, path=ANY, env={})
+            ANY, ANY, uid=uid, gid=gid, path=ANY,
+            env=get_default_environment())
         self.mocker.call(spawn_called)
 
         self.mocker.replay()
