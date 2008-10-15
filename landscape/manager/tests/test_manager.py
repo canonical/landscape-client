@@ -77,7 +77,7 @@ class ManagerDBusObjectTest(LandscapeIsolatedTest):
     def setUp(self):
         super(ManagerDBusObjectTest, self).setUp()
         configuration = ManagerConfiguration()
-        configuration.load(["-d", self.makeFile(), "--bus", "session",
+        configuration.load(["-d", self.make_dir(), "--bus", "session",
                             "--manager-plugins", "ProcessKiller"])
         self.manager_service = ManagerService(configuration)
         self.broker_service.startService()

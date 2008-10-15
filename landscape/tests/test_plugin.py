@@ -4,7 +4,8 @@ from landscape.tests.helpers import LandscapeTest, LandscapeIsolatedTest
 
 from landscape.plugin import PluginRegistry, BrokerPlugin, HandlerNotFoundError
 from landscape.lib.dbus_util import method
-from landscape.lib.bpickle import loads, dumps
+from landscape.lib.twisted_util import gather_results
+from landscape.lib.bpickle import dumps
 from landscape.tests.helpers import RemoteBrokerHelper
 
 
@@ -16,6 +17,24 @@ class SamplePlugin(object):
 
     def register(self, monitor):
         self.registered.append(monitor)
+
+
+class ExchangePlugin(SamplePlugin):
+    """A plugin which records exchange notification events."""
+
+    def __init__(self):
+        super(ExchangePlugin, self).__init__()
+        self.exchanged = 0
+        self.waiter = None
+
+    def wait_for_exchange(self):
+        self.waiter = Deferred()
+        return self.waiter
+
+    def exchange(self):
+        self.exchanged += 1
+        if self.waiter is not None:
+            self.waiter.callback(None)
 
 
 class PluginTest(LandscapeTest):
@@ -66,6 +85,38 @@ class PluginTest(LandscapeTest):
         self.assertRaises(HandlerNotFoundError,
                           self.registry.dispatch_message, msg)
 
+    def test_exchange_calls_exchanges(self):
+        """
+        The L{PluginRegistry.exchange} method calls C{exchange} on all
+        plugins, if available.
+        """
+        plugin1 = SamplePlugin()
+        self.assertFalse(hasattr(plugin1, "exchange"))
+
+        exchange_plugin1 = ExchangePlugin()
+        exchange_plugin2 = ExchangePlugin()
+
+        self.registry.add(plugin1)
+        self.registry.add(exchange_plugin1)
+        self.registry.add(exchange_plugin2)
+        self.registry.add(SamplePlugin())
+
+        self.registry.exchange()
+        self.assertEquals(exchange_plugin1.exchanged, 1)
+        self.assertEquals(exchange_plugin2.exchanged, 1)
+
+    def test_exchange_logs_errors_and_continues(self):
+        self.log_helper.ignore_errors(ZeroDivisionError)
+        plugin1 = SamplePlugin()
+        plugin2 = ExchangePlugin()
+        plugin1.exchange = lambda: 1/0
+        self.registry.add(plugin1)
+        self.registry.add(plugin2)
+
+        self.registry.exchange()
+        self.assertEquals(plugin2.exchanged, 1)
+        self.assertTrue("ZeroDivisionError" in self.logfile.getvalue())
+
 
 def assertReceivesMessages(test_case, broker_plugin, broker_service, remote):
     """
@@ -108,13 +159,16 @@ class BrokerPluginTests(LandscapeIsolatedTest):
 
     helpers = [RemoteBrokerHelper]
 
+    def setUp(self):
+        super(BrokerPluginTests, self).setUp()
+        self.registry = PluginRegistry()
+
     def test_message_receiving(self):
         """
         BrokerPlugins can receive messages via Broker. Really this is a test
         for L{assertReceivesMessages}.
         """
-        registry = PluginRegistry()
-        plugin = MyBrokerPlugin(self.broker_service.bus, registry)
+        plugin = MyBrokerPlugin(self.broker_service.bus, self.registry)
         return assertReceivesMessages(self, plugin, self.broker_service,
                                       self.remote)
 
@@ -124,9 +178,8 @@ class BrokerPluginTests(LandscapeIsolatedTest):
         True.
         """
         l = []
-        registry = PluginRegistry()
-        registry.register_message("foo", l.append)
-        broker_plugin = MyBrokerPlugin(self.broker_service.bus, registry)
+        self.registry.register_message("foo", l.append)
+        broker_plugin = MyBrokerPlugin(self.broker_service.bus, self.registry)
         msg = {"type": "foo", "value": "x"}
         array = map(ord, dumps(msg))
         self.assertEquals(broker_plugin.dispatch_message(array), True)
@@ -137,8 +190,26 @@ class BrokerPluginTests(LandscapeIsolatedTest):
         When a message handler is not found for a type of message, {message}
         returns False.
         """
-        registry = PluginRegistry()
-        broker_plugin = MyBrokerPlugin(self.broker_service.bus, registry)
+        broker_plugin = MyBrokerPlugin(self.broker_service.bus, self.registry)
         msg = {"type": "foo", "value": "x"}
         array = map(ord, dumps(msg))
         self.assertEquals(broker_plugin.dispatch_message(array), False)
+
+    def test_exchange_notification_calls_exchange(self):
+        """
+        When the L{Broker} notifies the L{MonitorDBusObject} that an
+        exchange is about to happen, the plugins' C{exchange} methods
+        gets called.
+        """
+        exchange_plugin1 = ExchangePlugin()
+        exchange_plugin2 = ExchangePlugin()
+        self.registry.add(exchange_plugin1)
+        self.registry.add(exchange_plugin2)
+
+        broker_plugin = MyBrokerPlugin(self.broker_service.bus, self.registry)
+        self.broker_service.reactor.fire("impending-exchange")
+
+        d = gather_results([exchange_plugin1.wait_for_exchange(),
+                            exchange_plugin2.wait_for_exchange()])
+        d.addCallback(self.assertEquals, [None, None])
+        return d

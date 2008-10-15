@@ -13,6 +13,7 @@ from twisted.internet.protocol import ProcessProtocol
 from twisted.internet.defer import Deferred, fail
 from twisted.internet.error import ProcessDone
 
+from landscape.lib.scriptcontent import build_script
 from landscape.manager.manager import ManagerPlugin, SUCCEEDED, FAILED
 
 
@@ -61,13 +62,7 @@ class ProcessFailedError(Exception):
         self.data = data
 
 
-class ScriptExecution(ManagerPlugin):
-    """A plugin which allows execution of arbitrary shell scripts.
-
-    @ivar size_limit: The number of bytes at which to truncate process output.
-    """
-
-    size_limit = 500000
+class ScriptRunnerMixin(object):
 
     def __init__(self, process_factory=None):
         """
@@ -78,9 +73,44 @@ class ScriptExecution(ManagerPlugin):
             from twisted.internet import reactor as process_factory
         self.process_factory = process_factory
 
+    def is_user_allowed(self, user):
+        allowed_users = self.registry.config.get_allowed_script_users()
+        return allowed_users == ALL_USERS or user in allowed_users
+
+    def write_script_file(self, script_file, filename, shell, code, uid, gid):
+        # Chown and chmod it before we write the data in it - the script may
+        # have sensitive content
+        # It would be nice to use fchown(2) and fchmod(2), but they're not
+        # available in python and using it with ctypes is pretty tedious, not
+        # to mention we can't get errno.
+        os.chmod(filename, 0700)
+        if uid is not None:
+            os.chown(filename, uid, gid)
+        script_file.write(build_script(shell, code))
+        script_file.close()
+
+    def _run_script(self, filename, uid, gid, path, env, time_limit):
+        pp = ProcessAccumulationProtocol(
+            self.registry.reactor, self.size_limit)
+        self.process_factory.spawnProcess(
+            pp, filename, uid=uid, gid=gid, path=path, env=env)
+        if time_limit is not None:
+            pp.schedule_cancel(time_limit)
+        return pp.result_deferred
+
+
+class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
+    """A plugin which allows execution of arbitrary shell scripts.
+
+    @ivar size_limit: The number of bytes at which to truncate process output.
+    """
+
+    size_limit = 500000
+
     def register(self, registry):
-        super(ScriptExecution, self).register(registry)
-        registry.register_message("execute-script", self._handle_execute_script)
+        super(ScriptExecutionPlugin, self).register(registry)
+        registry.register_message(
+            "execute-script", self._handle_execute_script)
 
     def _respond(self, status, data, opid, result_code=None):
         message =  {"type": "operation-result",
@@ -95,8 +125,7 @@ class ScriptExecution(ManagerPlugin):
         opid = message["operation-id"]
         try:
             user = message["username"]
-            allowed_users = self.registry.config.get_allowed_script_users()
-            if allowed_users != ALL_USERS and user not in allowed_users:
+            if not self.is_user_allowed(user):
                 return self._respond(
                     FAILED,
                     u"Scripts cannot be run as user %s." % (user,),
@@ -157,17 +186,8 @@ class ScriptExecution(ManagerPlugin):
         uid, gid, path = get_user_info(user)
         fd, filename = tempfile.mkstemp()
         script_file = os.fdopen(fd, "w")
-        # Chown and chmod it before we write the data in it - the script may
-        # have sensitive content
-        # It would be nice to use fchown(2) and fchmod(2), but they're not
-        # available in python and using it with ctypes is pretty tedious, not
-        # to mention we can't get errno.
-        os.chmod(filename, 0700)
-        if uid is not None:
-            os.chown(filename, uid, gid)
-        script_file.write(
-            "#!%s\n%s" % (shell.encode("utf-8"), code.encode("utf-8")))
-        script_file.close()
+        self.write_script_file(script_file, filename, shell, code, uid, gid)
+
         env = {
             "PATH": UBUNTU_PATH,
             "USER": user or "",
@@ -191,15 +211,11 @@ class ScriptExecution(ManagerPlugin):
                 os.chmod(attachment_dir, 0700)
                 if uid is not None:
                     os.chown(attachment_dir, uid, gid)
-            pp = ProcessAccumulationProtocol(
-                self.registry.reactor, self.size_limit)
-            self.process_factory.spawnProcess(pp, filename, uid=uid, gid=gid,
-                                              path=path, env=env)
-            if time_limit is not None:
-                pp.schedule_cancel(time_limit)
-            result = pp.result_deferred
-            return result.addBoth(self._remove_script, filename, attachment_dir,
-                                  old_umask)
+
+            result = self._run_script(
+                filename, uid, gid, path, env, time_limit)
+            return result.addBoth(
+                self._remove_script, filename, attachment_dir, old_umask)
         except:
             os.umask(old_umask)
             raise
@@ -281,3 +297,22 @@ class ProcessAccumulationProtocol(ProcessProtocol):
             self.transport.closeChildFD(i)
         self.transport.signalProcess("KILL")
         self._cancelled = True
+
+
+class ScriptExecution(ManagerPlugin):
+    """
+    Meta-plugin wrapping ScriptExecutionPlugin and CustomGraphPlugin.
+    """
+
+    def __init__(self):
+        from landscape.manager.customgraph import CustomGraphPlugin
+        self._script_execution = ScriptExecutionPlugin()
+        self._custom_graph = CustomGraphPlugin()
+
+    def register(self, registry):
+        super(ScriptExecution, self).register(registry)
+        self._script_execution.register(registry)
+        self._custom_graph.register(registry)
+
+    def exchange(self, urgent=False):
+        self._custom_graph.exchange(urgent)

@@ -1,8 +1,11 @@
+import os
+
 from landscape.tests.helpers import (
     LandscapeTest, LandscapeIsolatedTest, RemoteBrokerHelper)
 from landscape.manager.deployment import ManagerService, ManagerConfiguration
 from landscape.manager.processkiller import ProcessKiller
 from landscape.manager.scriptexecution import ALL_USERS
+from landscape.manager.store import ManagerStore
 from landscape.broker.tests.test_remote import assertTransmitterActive
 from landscape.tests.test_plugin import assertReceivesMessages
 
@@ -12,7 +15,7 @@ class DeploymentTest(LandscapeTest):
     def test_get_plugins(self):
         configuration = ManagerConfiguration()
         configuration.load(["--manager-plugins", "ProcessKiller",
-                            "-d", self.make_path()])
+                            "-d", self.make_dir()])
         manager_service = ManagerService(configuration)
         plugins = manager_service.plugins
         self.assertEquals(len(plugins), 1)
@@ -21,14 +24,14 @@ class DeploymentTest(LandscapeTest):
     def test_get_all_plugins(self):
         configuration = ManagerConfiguration()
         configuration.load(["--manager-plugins", "ALL",
-                            "-d", self.make_path()])
+                            "-d", self.make_dir()])
         manager_service = ManagerService(configuration)
         self.assertEquals(len(manager_service.plugins), 4)
 
     def test_include_script_execution(self):
         configuration = ManagerConfiguration()
         configuration.load(["--include-manager-plugins", "ScriptExecution",
-                            "-d", self.make_path()])
+                            "-d", self.make_dir()])
         manager_service = ManagerService(configuration)
         self.assertEquals(len(manager_service.plugins), 5)
 
@@ -38,7 +41,7 @@ class DeploymentTest(LandscapeTest):
         as.
         """
         configuration = ManagerConfiguration()
-        configuration.load(["-d", self.make_path(),
+        configuration.load(["-d", self.make_dir(),
                             "--script-users", "foo, bar,baz"])
         self.assertEquals(configuration.get_allowed_script_users(),
                           ["foo", "bar", "baz"])
@@ -49,7 +52,7 @@ class DeploymentTest(LandscapeTest):
         L{ALL_USERS}.
         """
         configuration = ManagerConfiguration()
-        configuration.load(["-d", self.make_path(),
+        configuration.load(["-d", self.make_dir(),
                             "--script-users", "\tALL "])
         self.assertEquals(configuration.get_allowed_script_users(), ALL_USERS)
 
@@ -58,10 +61,9 @@ class DeploymentTest(LandscapeTest):
         If no script users are specified, the default is 'nobody'.
         """
         configuration = ManagerConfiguration()
-        configuration.load(["-d", self.make_path()])
+        configuration.load(["-d", self.make_dir()])
         self.assertEquals(configuration.get_allowed_script_users(),
                           ["nobody"])
-
 
 
 class DeploymentBusTests(LandscapeIsolatedTest):
@@ -70,7 +72,7 @@ class DeploymentBusTests(LandscapeIsolatedTest):
 
     def test_dbus_reactor_transmitter_installed(self):
         configuration = ManagerConfiguration()
-        configuration.load(["-d", self.make_path(), "--bus", "session",
+        configuration.load(["-d", self.make_dir(), "--bus", "session",
                             "--manager-plugins", "ProcessKiller"])
         manager_service = ManagerService(configuration)
         manager_service.startService()
@@ -79,9 +81,21 @@ class DeploymentBusTests(LandscapeIsolatedTest):
 
     def test_receives_messages(self):
         configuration = ManagerConfiguration()
-        configuration.load(["-d", self.make_path(), "--bus", "session",
+        configuration.load(["-d", self.make_dir(), "--bus", "session",
                             "--manager-plugins", "ProcessKiller"])
         manager_service = ManagerService(configuration)
         manager_service.startService()
         return assertReceivesMessages(self, manager_service.dbus_service,
                                       self.broker_service, self.remote)
+
+    def test_manager_store(self):
+        configuration = ManagerConfiguration()
+        path = self.make_dir()
+        configuration.load(["-d", path, "--bus", "session",
+                            "--manager-plugins", "ProcessKiller"])
+        manager_service = ManagerService(configuration)
+        manager_service.startService()
+        self.assertNotIdentical(manager_service.registry.store, None)
+        self.assertTrue(
+            isinstance(manager_service.registry.store, ManagerStore))
+        self.assertTrue(os.path.isfile(os.path.join(path, "manager.database")))

@@ -7,6 +7,7 @@ def build_script(interpreter, code):
     return "#!%s\n%s" % ((interpreter or u"").encode("utf-8"),
                          (code or u"").encode("utf-8"))
 
+
 def generate_script_hash(script):
     """
     Return a hash for a given script.
