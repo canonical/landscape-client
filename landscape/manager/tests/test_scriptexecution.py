@@ -10,7 +10,6 @@ from twisted.python.failure import Failure
 
 from landscape.manager.scriptexecution import (
     ScriptExecutionPlugin, ProcessTimeLimitReachedError, PROCESS_FAILED_RESULT,
-    ScriptExecution, ProcessTimeLimitReachedError, PROCESS_FAILED_RESULT,
     ProcessFailedError, UBUNTU_PATH, get_user_info)
 from landscape.manager.manager import SUCCEEDED, FAILED
 from landscape.tests.helpers import (
