@@ -1,3 +1,142 @@
+landscape-client (1.0.23-0ubuntu0.6.06) dapper; urgency=low
+
+  * rebuild for dapper with the correct distro number (6.06, and not
+    6.04)
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 9 Oct 2008 17:50:32 +0000
+
+landscape-client (1.0.23-0ubuntu0.8.04) hardy; urgency=low
+
+  * rebuild with new package versioning scheme
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 9 Oct 2008 01:04:50 +0000
+
+landscape-client (1.0.23-0ubuntu0.7.10) gutsy; urgency=low
+
+  * rebuild with new package versioning scheme
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 9 Oct 2008 01:04:46 +0000
+
+landscape-client (1.0.23-0ubuntu0.7.04) feisty; urgency=low
+
+  * rebuild with new package versioning scheme
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 9 Oct 2008 01:04:43 +0000
+
+landscape-client (1.0.23-0ubuntu0.6.04) dapper; urgency=low
+
+  * rebuild with new package versioning scheme
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 9 Oct 2008 01:04:38 +0000
+
+landscape-client (1.0.23-hardy1-landscape1) hardy; urgency=low
+
+  * don't show unnecessary warnings for / (#260230)
+  * don't crash when run as the incorrect user (#268879)
+  * use lower timeouts for package activities (#268218)
+  * don't crash when restart failed or dbus is not available (#274819)
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 8 Oct 2008 17:55:33 +0000
+
+landscape-client (1.0.23-gutsy1-landscape1) gutsy; urgency=low
+
+  * don't show unnecessary warnings for / (#260230)
+  * don't crash when run as the incorrect user (#268879)
+  * use lower timeouts for package activities (#268218)
+  * don't crash when restart failed or dbus is not available (#274819)
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 8 Oct 2008 17:55:29 +0000
+
+landscape-client (1.0.23-feisty1-landscape1) feisty; urgency=low
+
+  * don't show unnecessary warnings for / (#260230)
+  * don't crash when run as the incorrect user (#268879)
+  * use lower timeouts for package activities (#268218)
+  * don't crash when restart failed or dbus is not available (#274819)
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 8 Oct 2008 17:55:25 +0000
+
+landscape-client (1.0.23-dapper1-landscape1) dapper; urgency=low
+
+  * don't show unnecessary warnings for / (#260230)
+  * don't crash when run as the incorrect user (#268879)
+  * use lower timeouts for package activities (#268218)
+  * don't crash when restart failed or dbus is not available (#274819)
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 8 Oct 2008 17:55:17 +0000
+
+landscape-client (1.0.22-hardy1-landscape1) hardy; urgency=low
+
+  * remove pid file when the daemon exits
+  * landscape-client now returns non-zero when something failed
+  * better fix for not corrupting the pid file when starting up
+  * fixed location of pid file in logrotate script
+  * fixed zombie warning
+  * fixed divide-by-zero error in sysinfo disk plugin
+  * use system wide log and conf files when running as root
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 24 Sep 2008 18:08:35 +0000
+
+landscape-client (1.0.22-gutsy1-landscape1) gutsy; urgency=low
+
+  * remove pid file when the daemon exits
+  * landscape-client now returns non-zero when something failed
+  * better fix for not corrupting the pid file when starting up
+  * fixed location of pid file in logrotate script
+  * fixed zombie warning
+  * fixed divide-by-zero error in sysinfo disk plugin
+  * use system wide log and conf files when running as root
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 24 Sep 2008 18:08:31 +0000
+
+landscape-client (1.0.22-feisty1-landscape1) feisty; urgency=low
+
+  * remove pid file when the daemon exits
+  * landscape-client now returns non-zero when something failed
+  * better fix for not corrupting the pid file when starting up
+  * fixed location of pid file in logrotate script
+  * fixed zombie warning
+  * fixed divide-by-zero error in sysinfo disk plugin
+  * use system wide log and conf files when running as root
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 24 Sep 2008 18:08:27 +0000
+
+landscape-client (1.0.22-dapper1-landscape1) dapper; urgency=low
+
+  * remove pid file when the daemon exits
+  * landscape-client now returns non-zero when something failed
+  * better fix for not corrupting the pid file when starting up
+  * fixed location of pid file in logrotate script
+  * fixed zombie warning
+  * fixed divide-by-zero error in sysinfo disk plugin
+  * use system wide log and conf files when running as root
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 24 Sep 2008 18:08:18 +0000
+
+landscape-client (1.0.20-hardy1-landscape1) hardy; urgency=low
+
+  * reverted pidfile fix as it introduced serious regressions
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 17 Sep 2008 15:42:00 +0000
+
+landscape-client (1.0.20-gutsy1-landscape1) gutsy; urgency=low
+
+  * reverted pidfile fix as it introduced serious regressions
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 17 Sep 2008 15:41:56 +0000
+
+landscape-client (1.0.20-feisty1-landscape1) feisty; urgency=low
+
+  * reverted pidfile fix as it introduced serious regressions
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 17 Sep 2008 15:41:52 +0000
+
+landscape-client (1.0.20-dapper1-landscape1) dapper; urgency=low
+
+  * reverted pidfile fix as it introduced serious regressions
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 17 Sep 2008 15:41:44 +0000
+
 landscape-client (1.0.19-hardy1-landscape2) hardy; urgency=low
 
   * fixed path to the pid file in logrotate
