@@ -153,7 +153,8 @@ class CustomGraphManagerTests(LandscapeTest):
                 self.broker_service.message_store.get_pending_messages(),
                 [{"data":
                       {123: {"error":
-                          u"ValueError: invalid literal for float(): foobar",
+                             u"InvalidFormatError: Failed to convert to "
+                              "number: 'foobar'",
                              "values": [], "script-hash":
                                  "baab6c16d9143523b7865d46896e4596"}},
                   "type": "custom-graph"}])

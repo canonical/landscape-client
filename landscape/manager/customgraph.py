@@ -30,6 +30,15 @@ class StoreProxy(object):
         self.store.set_graph_accumulate(key, value[0], value[1])
 
 
+class InvalidFormatError(Exception):
+    
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return u"Failed to convert to number: '%s'" % self.value
+        
+
 class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
     """
     Manage adding and deleting custom graph scripts, and then run the scripts
@@ -137,7 +146,10 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
     def _handle_data(self, output, graph_id, now):
         if graph_id not in self._data:
             return
-        data = float(output)
+        try:
+            data = float(output)
+        except ValueError, e:
+            raise InvalidFormatError(output)
         step_data = self._accumulate(now, data, graph_id)
         if step_data:
             self._data[graph_id]["values"].append(step_data)
