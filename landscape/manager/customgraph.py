@@ -166,41 +166,42 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         handle the output.
         """
         self.do_send = True
-        deferred_list = []
         graphs = list(self.registry.store.get_graphs())
-        now = int(self._create_time())
 
         if not graphs:
             # Shortcut to prevent useless call to call_if_accepted
             return succeed([])
 
-        def continue_run():
-            for graph_id, filename, user in graphs:
-                if not os.path.isfile(filename):
-                    # The script file has been remove, let's remove the graph
-                    # from the database to get resync by the server
-                    self.registry.store.remove_graph(graph_id)
-                    continue
-                script_hash = self._get_script_hash(filename)
-                if graph_id not in self._data:
-                    self._data[graph_id] = {
-                        "values": [], "error": u"", "script-hash": script_hash}
-                else:
-                    self._data[graph_id]["script-hash"] = script_hash
-                if user is not None:
-                    if not self.is_user_allowed(user):
-                        d = fail(ProcessFailedError(
-                            u"Custom graph cannot be run as user %s." %
-                            (user,)))
-                        d.addErrback(self._handle_error, graph_id)
-                        deferred_list.append(d)
-                        continue
-                uid, gid, path = get_user_info(user)
-                result = self._run_script(
-                    filename, uid, gid, path, {}, self.time_limit)
-                result.addCallback(self._handle_data, graph_id, now)
-                result.addErrback(self._handle_error, graph_id)
-                deferred_list.append(result)
-            return DeferredList(deferred_list)
         return self.registry.broker.call_if_accepted(
-            self.message_type, continue_run)
+            self.message_type, self._continue_run, graphs)
+
+    def _continue_run(self, graphs):
+        deferred_list = []
+        now = int(self._create_time())
+
+        for graph_id, filename, user in graphs:
+            if not os.path.isfile(filename):
+                # The script file has been remove, let's remove the graph from
+                # the database to get resync by the server
+                self.registry.store.remove_graph(graph_id)
+                continue
+            script_hash = self._get_script_hash(filename)
+            if graph_id not in self._data:
+                self._data[graph_id] = {
+                    "values": [], "error": u"", "script-hash": script_hash}
+            else:
+                self._data[graph_id]["script-hash"] = script_hash
+            if user is not None:
+                if not self.is_user_allowed(user):
+                    d = fail(ProcessFailedError(
+                        u"Custom graph cannot be run as user %s." % (user,)))
+                    d.addErrback(self._handle_error, graph_id)
+                    deferred_list.append(d)
+                    continue
+            uid, gid, path = get_user_info(user)
+            result = self._run_script(
+                filename, uid, gid, path, {}, self.time_limit)
+            result.addCallback(self._handle_data, graph_id, now)
+            result.addErrback(self._handle_error, graph_id)
+            deferred_list.append(result)
+        return DeferredList(deferred_list)
