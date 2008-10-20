@@ -6,7 +6,7 @@ ifneq ($(dist_release),dapper)
 endif
 
 package = landscape-client
-root_dir = debian/$(package)
+root_dir = debian/tmp/
 
 build: build-stamp
 build-stamp:
@@ -28,31 +28,32 @@ install: build
 	dh_clean -k
 	dh_installdirs \
 		etc/landscape \
-		etc/dbus-1 \
-		etc/dbus-1/system.d \
 		var/lib/landscape \
 		var/log/landscape \
-		usr/share/lintian/overrides \
+		usr/share/landscape
 
 	python setup.py install --root $(root_dir)
 
-	cp dbus/landscape.conf $(root_dir)/etc/dbus-1/system.d/landscape.conf
+	install -D -o root -g root -m 644 dbus/landscape.conf $(root_dir)/etc/dbus-1/system.d/landscape.conf
+	#install -D -o root -g root -m 755 debian/landscape-sysinfo.wrapper $(root_dir)/usr/share/landscape/landscape-sysinfo.wrapper
+
+
+	dh_installcron
 
 binary-arch:
-# do nothing 
+# do nothing
 #
 binary-indep: build install
 	# That's not present in Ubuntu releases we still support, so
 	# we're just installing the lintian overrides file by hand
 	# for now.
-	#dh_lintian
-	cp debian/$(package).lintian-overrides $(root_dir)/usr/share/lintian/overrides/$(package)
+	dh_lintian
 	dh_testdir
 	dh_testroot
 	dh_installdocs
-	dh_installman man/landscape-client.1 man/landscape-config.1 man/landscape-message.1
+	dh_installman -p landscape-client man/landscape-client.1 man/landscape-config.1 man/landscape-message.1
 	dh_installchangelogs
-	dh_install
+	dh_install --sourcedir debian/tmp/
 	dh_installinit -- start 25 2 3 4 5 . stop 15 1 .
 	dh_installlogrotate
 	dh_installdebconf
