@@ -1,7 +1,7 @@
 import os
 import time
 
-from twisted.internet.defer import fail, DeferredList
+from twisted.internet.defer import fail, DeferredList, succeed
 
 from landscape.lib.scriptcontent import generate_script_hash
 from landscape.accumulate import Accumulator
@@ -166,9 +166,19 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         handle the output.
         """
         self.do_send = True
-        deferred_list = []
         graphs = list(self.registry.store.get_graphs())
+
+        if not graphs:
+            # Shortcut to prevent useless call to call_if_accepted
+            return succeed([])
+
+        return self.registry.broker.call_if_accepted(
+            self.message_type, self._continue_run, graphs)
+
+    def _continue_run(self, graphs):
+        deferred_list = []
         now = int(self._create_time())
+
         for graph_id, filename, user in graphs:
             if not os.path.isfile(filename):
                 # The script file has been remove, let's remove the graph from
