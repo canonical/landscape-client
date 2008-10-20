@@ -146,7 +146,11 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         if graph_id not in self._data:
             return
         if failure.check(ProcessFailedError):
-            self._data[graph_id]["error"] = failure.value.data.decode("utf-8")
+            failure_value = failure.value.data.decode("utf-8")
+            if failure.value.exit_code:
+                failure_value = failure_value + \
+                    u"Process exited with code %d" % failure.value.exit_code
+            self._data[graph_id]["error"] = failure_value
         elif failure.check(ProcessTimeLimitReachedError):
             self._data[graph_id]["error"] = (
                 u"Process exceeded the %d seconds limit" % (self.time_limit,))
@@ -184,7 +188,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
             if user is not None:
                 if not self.is_user_allowed(user):
                     d = fail(ProcessFailedError(
-                        u"Custom graph cannot be run as user %s." % (user,)))
+                       u"Custom graph cannot be run as user %s." % (user,), 0))
                     d.addErrback(self._handle_error, graph_id)
                     deferred_list.append(d)
                     continue

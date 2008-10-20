@@ -58,8 +58,9 @@ class ProcessFailedError(Exception):
         limit.
     """
 
-    def __init__(self, data):
+    def __init__(self, data, exit_code):
         self.data = data
+        self.exit_code = exit_code
 
 
 class ScriptRunnerMixin(object):
@@ -182,7 +183,7 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
         """
         if not os.path.exists(shell.split()[0]):
             return fail(
-                ProcessFailedError("Unknown interpreter: '%s'" % shell))
+                ProcessFailedError("Unknown interpreter: '%s'" % shell), 0)
         uid, gid, path = get_user_info(user)
         fd, filename = tempfile.mkstemp()
         script_file = os.fdopen(fd, "w")
@@ -269,6 +270,7 @@ class ProcessAccumulationProtocol(ProcessProtocol):
         L{ProcessTimeLimitReachedError} will be fired with data accumulated so
         far.
         """
+        exit_code = reason.value.exitCode
         data = "".join(self.data)
         if self._cancelled:
             self.result_deferred.errback(ProcessTimeLimitReachedError(data))
@@ -281,7 +283,7 @@ class ProcessAccumulationProtocol(ProcessProtocol):
             if reason.check(ProcessDone):
                 self.result_deferred.callback(data)
             else:
-                self.result_deferred.errback(ProcessFailedError(data))
+                self.result_deferred.errback(ProcessFailedError(data, exit_code))
 
     def _cancel(self):
         """

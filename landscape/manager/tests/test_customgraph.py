@@ -110,6 +110,26 @@ class CustomGraphManagerTests(LandscapeTest):
                   "type": "custom-graph"}])
         return self.graph_manager.run().addCallback(check)
 
+    def test_run_with_nonzero_exit_code(self):
+        filename = self.makeFile()
+        tempfile = file(filename, "w")
+        tempfile.write("#!/bin/sh\nexit 1")
+        tempfile.close()
+        os.chmod(filename, 0777)
+        self.store.add_graph(123, filename, None)
+        def check(ignore):
+            self.graph_manager.exchange()
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [{"data":
+                      {123: {"error": u"Process exited with code 1",
+                             "values": [],
+                             "script-hash": "eaca3ba1a3bf1948876eba320148c5e9"
+                            }
+                      },
+                  "type": "custom-graph"}])
+        return self.graph_manager.run().addCallback(check)
+
     def test_run_cast_result_error(self):
         filename = self.make_path("some_content")
         self.store.add_graph(123, filename, None)
