@@ -183,7 +183,7 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
         """
         if not os.path.exists(shell.split()[0]):
             return fail(
-                ProcessFailedError("Unknown interpreter: '%s'" % shell), 0)
+                ProcessFailedError("Unknown interpreter: '%s'" % shell, 0))
         uid, gid, path = get_user_info(user)
         fd, filename = tempfile.mkstemp()
         script_file = os.fdopen(fd, "w")
