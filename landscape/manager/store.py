@@ -15,28 +15,28 @@ class ManagerStore(object):
     @with_cursor
     def get_graph(self, cursor, graph_id):
         cursor.execute(
-            "SELECT graph_id, filename, user, error FROM graph "
-            "WHERE graph_id=?", (graph_id,))
+            "SELECT graph_id, filename, user FROM graph WHERE graph_id=?",
+            (graph_id,))
         return cursor.fetchone()
 
     @with_cursor
     def get_graphs(self, cursor):
-        cursor.execute("SELECT graph_id, filename, user, error FROM graph")
+        cursor.execute("SELECT graph_id, filename, user FROM graph")
         return cursor.fetchall()
 
     @with_cursor
-    def add_graph(self, cursor, graph_id, filename, user, error):
+    def add_graph(self, cursor, graph_id, filename, user):
         cursor.execute(
             "SELECT graph_id FROM graph WHERE graph_id=?",
             (graph_id,))
         if cursor.fetchone():
             cursor.execute(
-                "UPDATE graph SET filename=?, user=?, error=? "
-                "WHERE graph_id=?", (filename, user, error, graph_id))
+                "UPDATE graph SET filename=?, user=? WHERE graph_id=?",
+                (filename, user, graph_id))
         else:
             cursor.execute(
-                "INSERT INTO graph (graph_id, filename, user, error) "
-                "VALUES (?, ?, ?, ?)", (graph_id, filename, user, error))
+                "INSERT INTO graph (graph_id, filename, user) VALUES (?, ?, ?)",
+                (graph_id, filename, user))
 
     @with_cursor
     def remove_graph(self, cursor, graph_id):
@@ -71,8 +71,7 @@ def ensure_schema(db):
     try:
         cursor.execute("CREATE TABLE graph"
                        " (graph_id INTEGER PRIMARY KEY,"
-                       " filename TEXT NOT NULL, user TEXT,"
-                       " error TEXT)")
+                       " filename TEXT NOT NULL, user TEXT)")
         cursor.execute("CREATE TABLE graph_accumulate"
                        " (graph_id INTEGER PRIMARY KEY,"
                        " graph_timestamp INTEGER, graph_value FLOAT)")

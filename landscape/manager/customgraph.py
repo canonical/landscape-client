@@ -1,5 +1,6 @@
 import os
 import time
+import logging
 
 from twisted.internet.defer import fail, DeferredList, succeed
 from twisted.python.failure import Failure
@@ -96,15 +97,15 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         script_file = file(filename, "w")
         try:
             uid, gid = get_user_info(user)[:2]
-            self.registry.store.add_graph(graph_id, filename, user, "")
+            self.registry.store.add_graph(graph_id, filename, user)
             self.write_script_file(
                 script_file, filename, shell, code, uid, gid)
 
             if graph_id in self._data:
                 del self._data[graph_id]
         except UnknownUserError, e:
-            self.registry.store.add_graph(graph_id, filename, user,
-                                          self._format_exception(e))
+           logging.error(u"Attempt to add graph with unknown user %s" %
+                         user)
 
     def _format_exception(self, e):
         return u"%s: %s" % (e.__class__.__name__, e)
@@ -118,7 +119,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
             return
         self.do_send = False
         graphs = list(self.registry.store.get_graphs())
-        for graph_id, filename, user, error in graphs:
+        for graph_id, filename, user in graphs:
             if graph_id not in self._data:
                 if not os.path.isfile(filename):
                     # Remove the graph to get resync, and don't add to data
@@ -126,7 +127,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
                 else:
                     script_hash = self._get_script_hash(filename)
                     self._data[graph_id] = {
-                        "values": [], "error": error, "script-hash": script_hash}
+                        "values": [], "error": u"", "script-hash": script_hash}
 
         message = {"type": self.message_type, "data": self._data}
 
@@ -184,7 +185,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         deferred_list = []
         now = int(self._create_time())
 
-        for graph_id, filename, user, error in graphs:
+        for graph_id, filename, user in graphs:
             if not os.path.isfile(filename):
                 # The script file has been remove, let's remove the graph from
                 # the database to get resync by the server
@@ -193,7 +194,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
             script_hash = self._get_script_hash(filename)
             if graph_id not in self._data:
                 self._data[graph_id] = {
-                    "values": [], "error": error, "script-hash": script_hash}
+                    "values": [], "error": u"", "script-hash": script_hash}
             else:
                 self._data[graph_id]["script-hash"] = script_hash
             if user is not None:

@@ -1,5 +1,6 @@
 import os
 import pwd
+import logging
 
 from twisted.internet.error import ProcessDone
 from twisted.python.failure import Failure
@@ -8,6 +9,7 @@ from landscape import API
 
 from landscape.manager.customgraph import CustomGraphPlugin
 from landscape.manager.store import ManagerStore
+from landscape.manager.scriptexecution import UnknownUserError
 
 from landscape.tests.helpers import (
     LandscapeTest, ManagerHelper, StubProcessFactory, DummyProcess)
@@ -47,26 +49,29 @@ class CustomGraphManagerTests(LandscapeTest):
             [(123,
               os.path.join(self.data_path, "custom-graph-scripts",
                            "graph-123"),
-              username, "")])
+              username)])
 
     def test_add_graph_unknown_user(self):
+        """
+        Attempting to add a graph with an unknown user should not result in an
+        error, instead a message should be logged, the error will be picked up
+        when the graph executes.
+        """
         mock_getpwnam = self.mocker.replace("pwd.getpwnam", passthrough=False)
         mock_getpwnam("foo")
         self.mocker.throw(KeyError("foo"))
         self.mocker.replay()
+        error_message = "Attempt to add graph with unknown user foo"
+        self.log_helper.ignore_errors(error_message)
+        logging.getLogger().setLevel(logging.ERROR)
+
         self.manager.dispatch_message(
             {"type": "custom-graph-add",
                      "interpreter": "/bin/sh",
                      "code": "echo hi!",
                      "username": "foo",
                      "graph-id": 123})
-
-        self.assertEquals(
-            self.store.get_graphs(),
-            [(123,
-              os.path.join(self.data_path, "custom-graph-scripts",
-                           "graph-123"),
-              "foo", u"UnknownUserError: Unknown user 'foo'")])
+        self.assertTrue(error_message in self.logfile.getvalue())
 
     def test_add_graph_for_user(self):
         mock_chown = self.mocker.replace("os.chown", passthrough=False)
@@ -93,7 +98,7 @@ class CustomGraphManagerTests(LandscapeTest):
             self.store.get_graphs(),
             [(123, os.path.join(self.data_path, "custom-graph-scripts",
                                 "graph-123"),
-                   "bar", "")])
+                   "bar")])
 
     def test_remove_unknown_graph(self):
         self.manager.dispatch_message(
@@ -105,7 +110,7 @@ class CustomGraphManagerTests(LandscapeTest):
         tempfile = file(filename, "w")
         tempfile.write("foo")
         tempfile.close()
-        self.store.add_graph(123, filename, u"user", "")
+        self.store.add_graph(123, filename, u"user")
         self.manager.dispatch_message(
             {"type": "custom-graph-remove",
                      "graph-id": 123})
@@ -117,7 +122,7 @@ class CustomGraphManagerTests(LandscapeTest):
         tempfile.write("#!/bin/sh\necho 1")
         tempfile.close()
         os.chmod(filename, 0777)
-        self.store.add_graph(123, filename, None, "")
+        self.store.add_graph(123, filename, None)
         def check(ignore):
             self.graph_manager.exchange()
             self.assertMessages(
@@ -133,7 +138,7 @@ class CustomGraphManagerTests(LandscapeTest):
 
     def test_run_cast_result_error(self):
         filename = self.make_path("some_content")
-        self.store.add_graph(123, filename, None, "")
+        self.store.add_graph(123, filename, None)
         factory = StubProcessFactory()
         self.graph_manager.process_factory = factory
         result = self.graph_manager.run()
@@ -162,7 +167,7 @@ class CustomGraphManagerTests(LandscapeTest):
 
     def test_run_user(self):
         filename = self.make_path("some content")
-        self.store.add_graph(123, filename, "bar", "")
+        self.store.add_graph(123, filename, "bar")
         factory = StubProcessFactory()
         self.graph_manager.process_factory = factory
 
@@ -201,7 +206,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.manager.config.script_users = "foo"
 
         filename = self.make_path("some content")
-        self.store.add_graph(123, filename, username, "")
+        self.store.add_graph(123, filename, username)
         factory = StubProcessFactory()
         self.graph_manager.process_factory = factory
         result = self.graph_manager.run()
@@ -231,7 +236,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.manager.config.script_users = "foo"
 
         filename = self.make_path("some content")
-        self.store.add_graph(123, filename, "foo", "")
+        self.store.add_graph(123, filename, "foo")
         factory = StubProcessFactory()
         self.graph_manager.process_factory = factory
         result = self.graph_manager.run()
@@ -252,7 +257,7 @@ class CustomGraphManagerTests(LandscapeTest):
 
     def test_run_timeout(self):
         filename = self.make_path("some content")
-        self.store.add_graph(123, filename, None, "")
+        self.store.add_graph(123, filename, None)
         factory = StubProcessFactory()
         self.graph_manager.process_factory = factory
         result = self.graph_manager.run()
@@ -284,7 +289,7 @@ class CustomGraphManagerTests(LandscapeTest):
         If run is called on a script file that has been removed, it doesn't try
         to run it, and remove the graph from the store.
         """
-        self.store.add_graph(123, "/nonexistent", None, "")
+        self.store.add_graph(123, "/nonexistent", None)
         factory = StubProcessFactory()
         self.graph_manager.process_factory = factory
         result = self.graph_manager.run()
