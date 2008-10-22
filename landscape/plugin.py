@@ -63,6 +63,15 @@ class PluginRegistry(object):
         else:
             raise HandlerNotFoundError(type)
 
+    def exchange(self):
+        """Call C{exchange} on all plugins."""
+        for plugin in self._plugins:
+            if hasattr(plugin, "exchange"):
+                try:
+                    plugin.exchange()
+                except:
+                    exception("Error during plugin exchange")
+
 
 class Plugin(object):
     """A convenience for writing plugins.
@@ -86,7 +95,6 @@ class Plugin(object):
             registry.reactor.call_every(self.run_interval, self.run)
 
 
-
 class BrokerPlugin(Object):
     """
     A DBus object which exposes the 'plugin' interface that the Broker expects
@@ -95,6 +103,11 @@ class BrokerPlugin(Object):
     def __init__(self, bus, registry):
         Object.__init__(self, bus)
         self.registry = registry
+        bus.add_signal_receiver(self.notify_exchange, "impending_exchange")
+
+    def notify_exchange(self):
+        info("Got notification of impending exchange. Notifying all plugins.")
+        self.registry.exchange()
 
     def ping(self):
         return True

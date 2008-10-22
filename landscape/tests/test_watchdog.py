@@ -1104,6 +1104,7 @@ class WatchDogServiceTest(LandscapeTest):
         chown(path(), 1234, 5678)
         chown(path("messages"), 1234, 5678)
         chown(path("package"), 1234, 5678)
+        chown(path("custom-graph-scripts"), 1234, 5678)
         chown(path("package/database"), 1234, 5678)
         chown(log_dir, 1234, 5678)
 
@@ -1114,6 +1115,8 @@ class WatchDogServiceTest(LandscapeTest):
 
         self.assertTrue(os.path.isdir(path()))
         self.assertTrue(os.path.isdir(path("package")))
+        self.assertTrue(os.path.isdir(path("messages")))
+        self.assertTrue(os.path.isdir(path("custom-graph-scripts")))
         self.assertTrue(os.path.isdir(log_dir))
         self.assertTrue(os.path.isfile(path("package/database")))
 
@@ -1123,6 +1126,7 @@ class WatchDogServiceTest(LandscapeTest):
         self.assertEquals(mode(), 0755)
         self.assertEquals(mode("messages"), 0755)
         self.assertEquals(mode("package"), 0755)
+        self.assertEquals(mode("custom-graph-scripts"), 0755)
         self.assertEquals(mode("package/database"), 0644)
 
     def test_log_notification(self):

@@ -5,29 +5,10 @@ from landscape.monitor.monitor import (
     MonitorPluginRegistry, MonitorDBusObject, MonitorPlugin, DataWatcher)
 from landscape.lib.persist import Persist
 from landscape.lib.dbus_util import get_object
-from landscape.lib.twisted_util import gather_results
-from landscape.tests.test_plugin import SamplePlugin
+from landscape.tests.test_plugin import ExchangePlugin
 from landscape.tests.helpers import (LandscapeTest, LandscapeIsolatedTest,
                                      RemoteBrokerHelper, MonitorHelper)
 from landscape.tests.mocker import ANY
-
-
-class ExchangePlugin(SamplePlugin):
-    """A plugin which records exchange notification events."""
-
-    def __init__(self):
-        super(ExchangePlugin, self).__init__()
-        self.exchanged = 0
-        self.waiter = None
-
-    def wait_for_exchange(self):
-        self.waiter = Deferred()
-        return self.waiter
-
-    def exchange(self):
-        self.exchanged += 1
-        if self.waiter is not None:
-            self.waiter.callback(None)
 
 
 class MonitorTest(LandscapeTest):
@@ -46,38 +27,6 @@ class MonitorTest(LandscapeTest):
         persist = Persist()
         persist.load(self.monitor.persist_filename)
         self.assertEquals(persist.get("a"), 1)
-
-    def test_exchange_calls_exchanges(self):
-        """
-        The L{Monitor.exchange} method calls C{exchange} on all
-        plugins, if available.
-        """
-        plugin1 = SamplePlugin()
-        self.assertFalse(hasattr(plugin1, "exchange"))
-
-        exchange_plugin1 = ExchangePlugin()
-        exchange_plugin2 = ExchangePlugin()
-
-        self.monitor.add(plugin1)
-        self.monitor.add(exchange_plugin1)
-        self.monitor.add(exchange_plugin2)
-        self.monitor.add(SamplePlugin())
-
-        self.monitor.exchange()
-        self.assertEquals(exchange_plugin1.exchanged, 1)
-        self.assertEquals(exchange_plugin2.exchanged, 1)
-
-    def test_exchange_logs_errors_and_continues(self):
-        self.log_helper.ignore_errors(ZeroDivisionError)
-        plugin1 = SamplePlugin()
-        plugin2 = ExchangePlugin()
-        plugin1.exchange = lambda: 1/0
-        self.monitor.add(plugin1)
-        self.monitor.add(plugin2)
-
-        self.monitor.exchange()
-        self.assertEquals(plugin2.exchanged, 1)
-        self.assertTrue("ZeroDivisionError" in self.logfile.getvalue())
 
     def test_flush_after_exchange(self):
         """
@@ -129,24 +78,6 @@ class MonitorDBusObjectTest(LandscapeIsolatedTest):
         self.service = get_object(self.broker_service.bus,
                                   MonitorDBusObject.bus_name,
                                   MonitorDBusObject.object_path)
-
-    def test_exchange_notification_calls_exchange(self):
-        """
-        When the L{Broker} notifies the L{MonitorDBusObject} that an
-        exchange is about to happen, the plugins' C{exchange} methods
-        gets called.
-        """
-        exchange_plugin1 = ExchangePlugin()
-        exchange_plugin2 = ExchangePlugin()
-        self.monitor.add(exchange_plugin1)
-        self.monitor.add(exchange_plugin2)
-
-        self.broker_service.reactor.fire("impending-exchange")
-
-        d = gather_results([exchange_plugin1.wait_for_exchange(),
-                            exchange_plugin2.wait_for_exchange()])
-        d.addCallback(self.assertEquals, [None, None])
-        return d
 
     def test_ping(self):
         result = self.service.ping()
