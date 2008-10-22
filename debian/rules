@@ -47,7 +47,7 @@ binary-indep: build install
 	# That's not present in Ubuntu releases we still support, so
 	# we're just installing the lintian overrides file by hand
 	# for now.
-	dh_lintian
+	#dh_lintian
 	dh_testdir
 	dh_testroot
 	dh_installdocs
