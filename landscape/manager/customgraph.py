@@ -94,10 +94,9 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         if os.path.exists(filename):
             os.unlink(filename)
 
-        script_file = file(filename, "w")
         try:
+            script_file = file(filename, "w")
             uid, gid = get_user_info(user)[:2]
-            self.registry.store.add_graph(graph_id, filename, user)
             self.write_script_file(
                 script_file, filename, shell, code, uid, gid)
 
@@ -106,6 +105,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         except UnknownUserError, e:
            logging.error(u"Attempt to add graph with unknown user %s" %
                          user)
+        self.registry.store.add_graph(graph_id, filename, user) 
 
     def _format_exception(self, e):
         return u"%s: %s" % (e.__class__.__name__, e)

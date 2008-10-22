@@ -71,6 +71,9 @@ class CustomGraphManagerTests(LandscapeTest):
                      "code": "echo hi!",
                      "username": "foo",
                      "graph-id": 123})
+        graph = self.store.get_graph(123)
+        self.assertEquals(graph[0], 123)
+        self.assertEquals(graph[2], u"foo")
         self.assertTrue(error_message in self.logfile.getvalue())
 
     def test_add_graph_for_user(self):
