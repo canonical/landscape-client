@@ -31,13 +31,20 @@ class StoreProxy(object):
 
 
 class InvalidFormatError(Exception):
-    
+
     def __init__(self, value):
         self.value = value
+        Exception.__init__(self, self._get_message())
 
-    def __str__(self):
+    def _get_message(self):
         return u"Failed to convert to number: '%s'" % self.value
-        
+
+
+class NoOutputError(Exception):
+
+    def __init__(self):
+        Exception.__init__(self, u"Script did not output any value")
+
 
 class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
     """
@@ -149,7 +156,11 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         try:
             data = float(output)
         except ValueError, e:
-            raise InvalidFormatError(output)
+            if output:
+                raise InvalidFormatError(output)
+            else:
+                raise NoOutputError()
+            
         step_data = self._accumulate(now, data, graph_id)
         if step_data:
             self._data[graph_id]["values"].append(step_data)
@@ -160,8 +171,8 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         if failure.check(ProcessFailedError):
             failure_value = failure.value.data.decode("utf-8")
             if failure.value.exit_code:
-                failure_value = failure_value + \
-                    u"Process exited with code %d" % failure.value.exit_code
+                failure_value = ("%s (process exited with code %d)" %
+                                 (failure_value, failure.value.exit_code))
             self._data[graph_id]["error"] = failure_value
         elif failure.check(ProcessTimeLimitReachedError):
             self._data[graph_id]["error"] = (
