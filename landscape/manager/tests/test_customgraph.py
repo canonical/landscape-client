@@ -9,7 +9,6 @@ from landscape import API
 
 from landscape.manager.customgraph import CustomGraphPlugin
 from landscape.manager.store import ManagerStore
-from landscape.manager.scriptexecution import UnknownUserError
 
 from landscape.tests.helpers import (
     LandscapeTest, ManagerHelper, StubProcessFactory, DummyProcess)

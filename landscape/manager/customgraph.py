@@ -3,7 +3,6 @@ import time
 import logging
 
 from twisted.internet.defer import fail, DeferredList, succeed
-from twisted.python.failure import Failure
 
 from landscape.lib.scriptcontent import generate_script_hash
 from landscape.accumulate import Accumulator
@@ -95,16 +94,16 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
             os.unlink(filename)
 
         try:
-            script_file = file(filename, "w")
             uid, gid = get_user_info(user)[:2]
-            self.write_script_file(
-                script_file, filename, shell, code, uid, gid)
-
-            if graph_id in self._data:
-                del self._data[graph_id]
         except UnknownUserError, e:
            logging.error(u"Attempt to add graph with unknown user %s" %
                          user)
+        else: 
+            script_file = file(filename, "w")
+            self.write_script_file(script_file, filename, shell, code, uid,
+                                   gid)
+            if graph_id in self._data:
+                    del self._data[graph_id]
         self.registry.store.add_graph(graph_id, filename, user) 
 
     def _format_exception(self, e):
@@ -206,13 +205,14 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
                     continue
             try:
                 uid, gid, path = get_user_info(user)
+            except UnknownUserError, e:
+                d = fail(e)
+                d.addErrback(self._handle_error, graph_id)
+                deferred_list.append(d)
+            else: 
                 result = self._run_script(
                 filename, uid, gid, path, {}, self.time_limit)
                 result.addCallback(self._handle_data, graph_id, now)
                 result.addErrback(self._handle_error, graph_id)
                 deferred_list.append(result)
-            except UnknownUserError, e:
-                d = fail(e)
-                d.addErrback(self._handle_error, graph_id)
-                deferred_list.append(d)
-        return DeferredList(deferred_list)
+            return DeferredList(deferred_list)
