@@ -62,7 +62,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.mocker.replay()
         error_message = "Attempt to add graph with unknown user foo"
         self.log_helper.ignore_errors(error_message)
-        logging.getLogger().setLevel(logging.ERROR)
+        self.logger.setLevel(logging.ERROR)
 
         self.manager.dispatch_message(
             {"type": "custom-graph-add",
