@@ -10,6 +10,7 @@ from landscape.monitor.activeprocessinfo import ActiveProcessInfo
 from landscape.tests.helpers import (LandscapeTest, MakePathHelper,
                                      MonitorHelper, ProcessDataBuilder)
 from landscape.tests.mocker import ANY
+from landscape import API
 
 
 class ActiveProcessInfoTest(LandscapeTest):
@@ -462,7 +463,7 @@ class ActiveProcessInfoTest(LandscapeTest):
         messages = self.mstore.get_pending_messages()
         self.assertEquals(len(messages), 2)
         self.assertMessages(messages, [{"timestamp": 0,
-                                        "api": "3.1",
+                                        "api": API,
                                         "type": "active-process-info",
                                         "kill-all-processes": True,
                                         "add-processes": [{"start-time": 110,
@@ -474,7 +475,7 @@ class ActiveProcessInfoTest(LandscapeTest):
                                                             "vm-size": 11676,
                                                             "uid": 0}]},
                                        {"timestamp": 0,
-                                        "api": "3.1",
+                                        "api": API,
                                         "type": "active-process-info",
                                         "update-processes": [{"start-time": 110,
                                                               "name": u"init",
