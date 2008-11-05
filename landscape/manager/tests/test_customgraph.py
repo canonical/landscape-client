@@ -1,8 +1,11 @@
 import os
 import pwd
+import logging
 
 from twisted.internet.error import ProcessDone
 from twisted.python.failure import Failure
+
+from landscape import API
 
 from landscape.manager.customgraph import CustomGraphPlugin
 from landscape.manager.store import ManagerStore
@@ -46,6 +49,31 @@ class CustomGraphManagerTests(LandscapeTest):
               os.path.join(self.data_path, "custom-graph-scripts",
                            "graph-123"),
               username)])
+
+    def test_add_graph_unknown_user(self):
+        """
+        Attempting to add a graph with an unknown user should not result in an
+        error, instead a message should be logged, the error will be picked up
+        when the graph executes.
+        """
+        mock_getpwnam = self.mocker.replace("pwd.getpwnam", passthrough=False)
+        mock_getpwnam("foo")
+        self.mocker.throw(KeyError("foo"))
+        self.mocker.replay()
+        error_message = "Attempt to add graph with unknown user foo"
+        self.log_helper.ignore_errors(error_message)
+        self.logger.setLevel(logging.ERROR)
+
+        self.manager.dispatch_message(
+            {"type": "custom-graph-add",
+                     "interpreter": "/bin/sh",
+                     "code": "echo hi!",
+                     "username": "foo",
+                     "graph-id": 123})
+        graph = self.store.get_graph(123)
+        self.assertEquals(graph[0], 123)
+        self.assertEquals(graph[2], u"foo")
+        self.assertTrue(error_message in self.logfile.getvalue())
 
     def test_add_graph_for_user(self):
         mock_chown = self.mocker.replace("os.chown", passthrough=False)
@@ -201,6 +229,34 @@ class CustomGraphManagerTests(LandscapeTest):
 
         return result.addCallback(check)
 
+    def test_run_unknown_user(self):
+        mock_getpwnam = self.mocker.replace("pwd.getpwnam", passthrough=False)
+        mock_getpwnam("foo")
+        self.mocker.throw(KeyError("foo"))
+        self.mocker.replay()
+
+        self.manager.config.script_users = "foo"
+
+        filename = self.make_path("some content")
+        self.store.add_graph(123, filename, "foo")
+        factory = StubProcessFactory()
+        self.graph_manager.process_factory = factory
+        result = self.graph_manager.run()
+
+        self.assertEquals(len(factory.spawns), 0)
+
+        def check(ignore):
+            self.graph_manager.exchange()
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [{"data": {123:
+                      {"error": u"UnknownUserError: Unknown user 'foo'",
+                       "script-hash": "9893532233caff98cd083a116b013c0b",
+                       "values": []}},
+                  "type": "custom-graph"}])
+
+        return result.addCallback(check)
+
     def test_run_timeout(self):
         filename = self.make_path("some content")
         self.store.add_graph(123, filename, None)
@@ -266,7 +322,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.graph_manager.exchange()
         self.assertMessages(
             self.broker_service.message_store.get_pending_messages(),
-            [{"api": "3.1",
+            [{"api": API,
               "data": {123: {"error": u"",
                              "script-hash": "e00a2f44dbc7b6710ce32af2348aec9b",
                              "values": []}},
@@ -292,7 +348,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.graph_manager.exchange()
         self.assertMessages(
             self.broker_service.message_store.get_pending_messages(),
-            [{"api": "3.1",
+            [{"api": API,
               "data": {},
               "timestamp": 0,
               "type": "custom-graph"}])
@@ -318,13 +374,13 @@ class CustomGraphManagerTests(LandscapeTest):
         self.graph_manager.exchange()
         self.assertMessages(
             self.broker_service.message_store.get_pending_messages(),
-            [{"api": "3.1",
+            [{"api": API,
               "data": {123: {"error": u"",
                              "script-hash": "e00a2f44dbc7b6710ce32af2348aec9b",
                              "values": []}},
               "timestamp": 0,
               "type": "custom-graph"},
-             {"api": "3.1",
+             {"api": API,
               "data": {123: {"error": u"",
                              "script-hash": "e00a2f44dbc7b6710ce32af2348aec9b",
                              "values": []}},
@@ -352,13 +408,13 @@ class CustomGraphManagerTests(LandscapeTest):
         self.graph_manager.exchange()
         self.assertMessages(
             self.broker_service.message_store.get_pending_messages(),
-            [{"api": "3.1",
+            [{"api": API,
               "data": {123: {"error": u"",
                              "script-hash": "e00a2f44dbc7b6710ce32af2348aec9b",
                              "values": []}},
               "timestamp": 0,
               "type": "custom-graph"},
-             {"api": "3.1",
+             {"api": API,
               "data": {123: {"error": u"",
                              "script-hash": "d483816dc0fbb51ede42502a709b0e2a",
                              "values": []}},
@@ -405,7 +461,7 @@ class CustomGraphManagerTests(LandscapeTest):
             self.graph_manager.exchange()
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"api": "3.1",
+                [{"api": API,
                   "data": {123: {"error": u"",
                                  "script-hash": "991e15a81929c79fe1d243b2afd99c62",
                                  "values": []}},
@@ -450,7 +506,7 @@ class CustomGraphManagerTests(LandscapeTest):
             self.graph_manager.exchange()
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"api": "3.1", "data": {}, "timestamp": 0, "type":
+                [{"api": API, "data": {}, "timestamp": 0, "type":
                   "custom-graph"}])
         return result.addCallback(check)
 
