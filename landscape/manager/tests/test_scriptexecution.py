@@ -10,7 +10,7 @@ from twisted.python.failure import Failure
 
 from landscape.manager.scriptexecution import (
     ScriptExecutionPlugin, ProcessTimeLimitReachedError, PROCESS_FAILED_RESULT,
-    ProcessFailedError, UBUNTU_PATH, get_user_info)
+    UBUNTU_PATH, get_user_info, UnknownInterpreterError)
 from landscape.manager.manager import SUCCEEDED, FAILED
 from landscape.tests.helpers import (
     LandscapeTest, LandscapeIsolatedTest, ManagerHelper,
@@ -399,13 +399,12 @@ class RunScriptTests(LandscapeTest):
         d = self.plugin.run_script("/bin/cantpossiblyexist", "stuff")
         def cb(ignore):
             self.fail("Should not be there")
-        def eb(failure):
-            failure.trap(ProcessFailedError)
+        def cb(failure):
+            failure.trap(UnknownInterpreterError)
             self.assertEquals(
-                failure.value.data,
-                "Unknown interpreter: '/bin/cantpossiblyexist'")
-        return d.addCallback(cb).addErrback(eb)
-
+                failure.value.interpreter,
+                "/bin/cantpossiblyexist")
+        return d.addCallback(cb).addErrback(cb)
 
 class ScriptExecutionMessageTests(LandscapeIsolatedTest):
     helpers = [ManagerHelper]
