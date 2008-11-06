@@ -25,12 +25,18 @@ PROCESS_FAILED_RESULT = 103
 UBUNTU_PATH = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 
+class UnknownUserError(Exception):
+    pass
+
 def get_user_info(username=None):
     uid = None
     gid = None
     path = None
     if username is not None:
-        info = pwd.getpwnam(username)
+        try:
+            info = pwd.getpwnam(username)
+        except KeyError, e:
+            raise UnknownUserError(u"Unknown user '%s'" % username)
         uid = info.pw_uid
         gid = info.pw_gid
         path = info.pw_dir
