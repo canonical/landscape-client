@@ -243,8 +243,8 @@ class CustomGraphManagerTests(LandscapeTest):
                 self.broker_service.message_store.get_pending_messages(),
                 [{"data": {123:
                       {"error":
-                          u"Custom graph cannot be run as user %s." %
-                          (username,),
+                       u"ProhibitedUserError: Custom graph cannot be run as "
+                        "user %s" % (username,),
                        "script-hash": "9893532233caff98cd083a116b013c0b",
                        "values": []}},
                   "type": "custom-graph"}])
@@ -503,3 +503,44 @@ class CustomGraphManagerTests(LandscapeTest):
                 [{"api": "3.1", "data": {}, "timestamp": 0, "type":
                   "custom-graph"}])
         return result.addCallback(check)
+
+    def test_run_not_accepted_types(self):
+        """
+        If "custom-graph" is not an accepted message-type anymore,
+        C{CustomGraphPlugin.run} shouldn't even run the graph scripts.
+        """
+        self.broker_service.message_store.set_accepted_types([])
+
+        uid = os.getuid()
+        info = pwd.getpwuid(uid)
+        username = info.pw_name
+        self.manager.dispatch_message(
+            {"type": "custom-graph-add",
+                     "interpreter": "/bin/sh",
+                     "code": "echo 1.0",
+                     "username": username,
+                     "graph-id": 123})
+
+        factory = StubProcessFactory()
+        self.graph_manager.process_factory = factory
+        result = self.graph_manager.run()
+
+        self.assertEquals(len(factory.spawns), 0)
+
+        return result.addCallback(self.assertIdentical, None)
+
+    def test_run_without_graph(self):
+        """
+        If no graph is available, C{CustomGraphPlugin.run} doesn't even call
+        C{call_if_accepted} on the broker and return immediately an empty list
+        of results.
+        """
+        self.graph_manager.registry.broker.call_if_accepted = (
+            lambda *args: 1/0)
+        factory = StubProcessFactory()
+        self.graph_manager.process_factory = factory
+        result = self.graph_manager.run()
+
+        self.assertEquals(len(factory.spawns), 0)
+
+        return result.addCallback(self.assertEquals, [])

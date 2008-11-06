@@ -1,7 +1,7 @@
 import os
 import time
 
-from twisted.internet.defer import fail, DeferredList
+from twisted.internet.defer import fail, DeferredList, succeed
 
 from landscape.lib.scriptcontent import generate_script_hash
 from landscape.accumulate import Accumulator
@@ -44,6 +44,20 @@ class NoOutputError(Exception):
 
     def __init__(self):
         Exception.__init__(self, u"Script did not output any value")
+
+
+class ProhibitedUserError(Exception):
+    """Raised when an attempt to run a script as a user that is not allowed.
+       
+       @ivar username: The username that was used
+    """
+
+    def __init__(self, username):
+        self.username = username
+        Exception.__init__(self, self._get_message())
+
+    def _get_message(self):
+        return (u"Custom graph cannot be run as user %s" % self.username)
 
 
 class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
@@ -193,9 +207,19 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         handle the output.
         """
         self.do_send = True
-        deferred_list = []
         graphs = list(self.registry.store.get_graphs())
+
+        if not graphs:
+            # Shortcut to prevent useless call to call_if_accepted
+            return succeed([])
+
+        return self.registry.broker.call_if_accepted(
+            self.message_type, self._continue_run, graphs)
+
+    def _continue_run(self, graphs):
+        deferred_list = []
         now = int(self._create_time())
+
         for graph_id, filename, user in graphs:
             if not os.path.isfile(filename):
                 # The script file has been remove, let's remove the graph from
@@ -210,8 +234,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
                 self._data[graph_id]["script-hash"] = script_hash
             if user is not None:
                 if not self.is_user_allowed(user):
-                    d = fail(ProcessFailedError(
-                       u"Custom graph cannot be run as user %s." % (user,), 0))
+                    d = fail(ProhibitedUserError(user))
                     d.addErrback(self._handle_error, graph_id)
                     deferred_list.append(d)
                     continue
