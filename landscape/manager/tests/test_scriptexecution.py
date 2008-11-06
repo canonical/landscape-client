@@ -399,12 +399,12 @@ class RunScriptTests(LandscapeTest):
         d = self.plugin.run_script("/bin/cantpossiblyexist", "stuff")
         def cb(ignore):
             self.fail("Should not be there")
-        def cb(failure):
+        def eb(failure):
             failure.trap(UnknownInterpreterError)
             self.assertEquals(
                 failure.value.interpreter,
                 "/bin/cantpossiblyexist")
-        return d.addCallback(cb).addErrback(cb)
+        return d.addCallback(cb).addErrback(eb)
 
 class ScriptExecutionMessageTests(LandscapeIsolatedTest):
     helpers = [ManagerHelper]
