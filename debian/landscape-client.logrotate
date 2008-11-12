@@ -1,4 +1,4 @@
-/var/log/landscape/watchdog.log /var/log/landscape/broker.log /var/log/landscape/monitor.log /var/log/landscape/manager.log /var/log/landscape/package-reporter.log /var/log/landscape/package-changer.log {
+/var/log/landscape/*.log {
     weekly
     rotate 4
     missingok
