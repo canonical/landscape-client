@@ -43,7 +43,6 @@ case "$1" in
         # Create landscape system user
         if ! getent passwd landscape >/dev/null; then
             adduser --quiet --system --disabled-password \
-                --gecos "Landscape Client Daemon" \
                 --home /var/lib/landscape --no-create-home landscape
         fi
 
