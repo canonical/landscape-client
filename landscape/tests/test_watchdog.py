@@ -19,7 +19,8 @@ from landscape.tests.helpers import (
 from landscape.watchdog import (
     Daemon, WatchDog, WatchDogService, ExecutableNotFoundError,
     WatchDogConfiguration, bootstrap_list,
-    MAXIMUM_CONSECUTIVE_RESTARTS, RESTART_BURST_DELAY, run)
+    MAXIMUM_CONSECUTIVE_RESTARTS, RESTART_BURST_DELAY, run,
+    Broker, Monitor, Manager)
 import landscape.watchdog
 
 
@@ -59,6 +60,34 @@ class WatchDogTest(LandscapeTest):
         """The WatchDog sets up some daemons when constructed."""
         self.mocker.replay()
         WatchDog(self.bus)
+
+    def test_limited_daemon_construction(self):
+        config = WatchDogConfiguration()
+        config.load(["--daemons", "broker,monitor"])
+
+        # We don't want to use that stuff in setUp, so reset
+        self.mocker.reset()
+        broker_factory = self.mocker.replace("landscape.watchdog.Broker",
+                                             passthrough=False)
+        monitor_factory = self.mocker.replace("landscape.watchdog.Monitor",
+                                              passthrough=False)
+        manager_factory = self.mocker.replace("landscape.watchdog.Manager",
+                                              passthrough=False)
+        self.expect(broker_factory.__name__).result("Broker")
+        self.mocker.count(0, None)
+        self.expect(monitor_factory.__name__).result("Monitor")
+        self.mocker.count(0, None)
+        self.expect(manager_factory.__name__).result("Manager")
+        self.mocker.count(0, None)
+        broker = broker_factory(self.bus, verbose=False, config=config)
+        monitor = monitor_factory(self.bus, verbose=False, config=config)
+        # The manager should *not* be constructed
+        manager = manager_factory(ARGS, KWARGS)
+        self.mocker.count(0)
+        self.mocker.replay()
+
+        WatchDog(self.bus, config=config)
+
 
     def test_check_running_one(self):
         self.expect(self.broker.is_running()).result(succeed(True))
@@ -863,6 +892,16 @@ class WatchDogOptionsTest(LandscapeTest):
     def test_pid_file_default(self):
         self.config.load([])
         self.assertEquals(self.config.pid_file, None)
+
+    def test_daemons(self):
+        self.config.load(["--daemons", "broker,monitor"])
+        self.assertEquals(self.config.get_enabled_daemons(),
+                          [Broker, Monitor])
+
+    def test_default_daemons(self):
+        self.config.load([])
+        self.assertEquals(self.config.get_enabled_daemons(),
+                          [Broker, Monitor, Manager])
 
 
 class WatchDogServiceTest(LandscapeTest):

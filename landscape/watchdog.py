@@ -289,11 +289,15 @@ class WatchDog(object):
     def __init__(self, bus, reactor=reactor, verbose=False, config=None,
                  broker=None, monitor=None, manager=None):
         self.bus = bus
-        if broker is None:
+        if config is not None:
+            enabled_daemons = config.get_enabled_daemons()
+        else:
+            enabled_daemons = [Broker, Manager, Monitor]
+        if broker is None and Broker in enabled_daemons:
             broker = Broker(self.bus, verbose=verbose, config=config)
-        if monitor is None:
+        if monitor is None and Monitor in enabled_daemons:
             monitor = Monitor(self.bus, verbose=verbose, config=config)
-        if manager is None:
+        if manager is None and Manager in enabled_daemons:
             manager = Manager(self.bus, verbose=verbose, config=config)
 
         self.broker = broker
@@ -397,7 +401,20 @@ class WatchDogConfiguration(Configuration):
                           help="Fork and run in the background.")
         parser.add_option("--pid-file", type="str",
                           help="The file to write the PID to.")
+        parser.add_option("--daemons",
+                          help="The client daemons to enable, possible "
+                          "values being: broker, monitor, and manager. "
+                          "(comma-separated list)",
+                          default="broker,monitor,manager")
         return parser
+
+    def get_enabled_daemons(self):
+        daemons = []
+        enabled_daemon_names = [x.strip() for x in self.daemons.split(",")]
+        for daemon in [Broker, Monitor, Manager]:
+            if daemon.__name__.lower() in enabled_daemon_names:
+                daemons.append(daemon)
+        return daemons
 
 
 def daemonize():
