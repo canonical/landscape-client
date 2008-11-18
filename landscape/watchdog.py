@@ -398,19 +398,16 @@ class WatchDogConfiguration(Configuration):
                           help="Fork and run in the background.")
         parser.add_option("--pid-file", type="str",
                           help="The file to write the PID to.")
-        parser.add_option("--daemons",
-                          help="The client daemons to enable, possible "
-                          "values being: broker, monitor, and manager. "
-                          "(comma-separated list)",
-                          default="broker,monitor,manager")
+        parser.add_option("--monitor-only", action="store_true",
+                          help="Don't enable management features. This is "
+                          "useful if you want to run the client as a non-root "
+                          "user.")
         return parser
 
     def get_enabled_daemons(self):
-        daemons = []
-        enabled_daemon_names = [x.strip() for x in self.daemons.split(",")]
-        for daemon in [Broker, Monitor, Manager]:
-            if daemon.__name__.lower() in enabled_daemon_names:
-                daemons.append(daemon)
+        daemons = [Broker, Monitor]
+        if not self.monitor_only:
+            daemons.append(Manager)
         return daemons
 
 

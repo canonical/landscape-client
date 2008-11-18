@@ -915,8 +915,8 @@ class WatchDogOptionsTest(LandscapeTest):
         self.config.load([])
         self.assertEquals(self.config.pid_file, None)
 
-    def test_daemons(self):
-        self.config.load(["--daemons", "broker,monitor"])
+    def test_monitor_only(self):
+        self.config.load(["--monitor-only"])
         self.assertEquals(self.config.get_enabled_daemons(),
                           [Broker, Monitor])
 
