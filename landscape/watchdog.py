@@ -301,7 +301,7 @@ class WatchDog(object):
         self.broker = broker
         self.monitor = monitor
         self.manager = manager
-        self.daemons = [self.broker, self.monitor, self.manager]
+        self.daemons = filter(None, [self.broker, self.monitor, self.manager])
         self.reactor = reactor
         self._checking = None
         self._stopping = False
@@ -330,9 +330,8 @@ class WatchDog(object):
             started. If a daemon could not be started, the deferred will fail
             with L{DaemonError}.
         """
-        self.broker.start()
-        self.monitor.start()
-        self.manager.start()
+        for daemon in self.daemons:
+            daemon.start()
         self.start_monitoring()
 
     def start_monitoring(self):
@@ -464,11 +463,11 @@ class WatchDogService(Service):
             info("Watchdog watching for daemons on %r bus." % self._config.bus)
             return self.watchdog.start()
         def die(failure):
+            log_failure(failure, "Unknown error occurred!")
             self.exit_code = 2
             reactor.crash()
         result.addCallback(start_if_not_running)
         result.addErrback(die)
-
         return result
 
     def _daemonize(self):
@@ -533,6 +532,5 @@ def run(args=sys.argv):
     # only be called when the reactor is running, but we still get a
     # PotentialZombieWarning.
     reactor.callLater(0, startApplication, application, False)
-
     reactor.run()
     return watchdog_service.exit_code
