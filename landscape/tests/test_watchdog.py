@@ -62,9 +62,6 @@ class WatchDogTest(LandscapeTest):
         WatchDog(self.bus)
 
     def test_limited_daemon_construction(self):
-        config = WatchDogConfiguration()
-        config.load(["--daemons", "broker,monitor"])
-
         # We don't want to use that stuff in setUp, so reset
         self.mocker.reset()
         broker_factory = self.mocker.replace("landscape.watchdog.Broker",
@@ -73,20 +70,14 @@ class WatchDogTest(LandscapeTest):
                                               passthrough=False)
         manager_factory = self.mocker.replace("landscape.watchdog.Manager",
                                               passthrough=False)
-        self.expect(broker_factory.__name__).result("Broker")
-        self.mocker.count(0, None)
-        self.expect(monitor_factory.__name__).result("Monitor")
-        self.mocker.count(0, None)
-        self.expect(manager_factory.__name__).result("Manager")
-        self.mocker.count(0, None)
-        broker = broker_factory(self.bus, verbose=False, config=config)
-        monitor = monitor_factory(self.bus, verbose=False, config=config)
+        broker = broker_factory(self.bus, verbose=False, config=None)
+        monitor = monitor_factory(self.bus, verbose=False, config=None)
         # The manager should *not* be constructed
         manager = manager_factory(ARGS, KWARGS)
         self.mocker.count(0)
         self.mocker.replay()
 
-        WatchDog(self.bus, config=config)
+        WatchDog(self.bus, enabled_daemons=[Broker, Monitor])
 
 
     def test_check_running_one(self):

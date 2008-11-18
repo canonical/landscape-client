@@ -287,12 +287,10 @@ class WatchDog(object):
     """
 
     def __init__(self, bus, reactor=reactor, verbose=False, config=None,
-                 broker=None, monitor=None, manager=None):
+                 broker=None, monitor=None, manager=None, enabled_daemons=None):
         self.bus = bus
-        if config is not None:
-            enabled_daemons = config.get_enabled_daemons()
-        else:
-            enabled_daemons = [Broker, Manager, Monitor]
+        if enabled_daemons is None:
+            enabled_daemons = [Broker, Monitor, Manager]
         if broker is None and Broker in enabled_daemons:
             broker = Broker(self.bus, verbose=verbose, config=config)
         if monitor is None and Monitor in enabled_daemons:
@@ -443,7 +441,8 @@ class WatchDogService(Service):
         self.bus = get_bus(config.bus)
         self.watchdog = WatchDog(self.bus,
                                  verbose=not config.daemon,
-                                 config=config.config)
+                                 config=config.config,
+                                 enabled_daemons=config.get_enabled_daemons())
         self.exit_code = 0
 
     def startService(self):
