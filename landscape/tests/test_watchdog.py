@@ -1014,10 +1014,17 @@ class WatchDogServiceTest(LandscapeTest):
         self.assertFalse(os.path.exists(pid_file))
 
     def test_remove_pid_file(self):
+        """
+        When the service is stopped, the pid file is removed.
+        """
         #don't really daemonize or request an exit
         daemonize = self.mocker.replace("landscape.watchdog.daemonize",
                                         passthrough=False)
-        watchdog = self.mocker.patch(WatchDog)
+        watchdog_factory = self.mocker.replace("landscape.watchdog.WatchDog",
+                                               passthrough=False)
+        watchdog = watchdog_factory(ARGS, KWARGS)
+        watchdog.start()
+        self.mocker.result(succeed(None))
 
         watchdog.check_running()
         self.mocker.result(succeed([]))
