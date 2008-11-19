@@ -1,1 +1,2 @@
-[type: gettext/rfc822deb] templates
+[type: gettext/rfc822deb] landscape-client.templates
+[type: gettext/rfc822deb] landscape-common.templates

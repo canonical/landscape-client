@@ -1,6 +1,21 @@
 #!/bin/sh
 set -e
 
+# summary of how this script can be called:
+#        * <postinst> `configure' <most-recently-configured-version>
+#        * <old-postinst> `abort-upgrade' <new version>
+#        * <conflictor's-postinst> `abort-remove' `in-favour' <package>
+#          <new-version>
+#        * <postinst> `abort-remove'
+#        * <deconfigured's-postinst> `abort-deconfigure' `in-favour'
+#          <failed-install-package> <version> `removing'
+#          <conflicting-package> <version>
+# for details, see http://www.debian.org/doc/debian-policy/ or
+# the debian-policy package
+
+. /usr/share/debconf/confmodule
+trap "db_stop || true" EXIT HUP INT QUIT TERM
+
 PACKAGE=landscape-client
 
 # Use the default installed Python.  Running just "python" might run
@@ -8,95 +23,72 @@ PACKAGE=landscape-client
 # running the landscape client.
 PYTHON=/usr/bin/python
 
-# 0.9.1 introduces non-backwards compatible changes.  This detects
-# whether or not the data is in the current format.  If not, all
-# existing data is removed.
-DATA_DIR=/var/lib/landscape
+case "$1" in
+    configure)
 
-if [ -d $DATA_DIR/data ]; then
-    rm -rf $DATA_DIR/*
-elif [ -f $DATA_DIR/client/data.bpickle ]; then
-    LAST_BYTE=`sed -n '$,$s/.*\(.\)/\1/p' $DATA_DIR/client/data.bpickle`
-    if [ "$LAST_BYTE" = e ]; then
-        rm -rf $DATA_DIR/*
-    fi
-fi
+        # Tell dbus to reload its configuration since we've installed a conf
+        # to its system.d. We must do this before invoking landscape-config.
+        invoke-rc.d dbus reload || true
 
-# Add the 'landscape' system user, if one isn't already present.
-
-test "$1" = "configure" || exit 0
-
-getent passwd landscape >/dev/null || \
-  adduser --system --home /var/lib/landscape --no-create-home landscape
-
-chown -R landscape /var/log/landscape /var/lib/landscape
-
-CONFIG_FILE=/etc/landscape/client.conf
-if [ ! -f $CONFIG_FILE ]; then
-  cat > $CONFIG_FILE <<END
+        CONFIG_FILE=/etc/landscape/client.conf
+        if [ ! -f $CONFIG_FILE ]; then
+            # Create new configuration, with private mode
+            TEMPFILE=$(mktemp -p /etc/landscape)
+            cat > $TEMPFILE <<END
 [client]
 log_level = info
 url = https://landscape.canonical.com/message-system
 ping_url = http://landscape.canonical.com/ping
 data_path = /var/lib/landscape/client
 END
+            chown landscape $TEMPFILE
+            mv $TEMPFILE $CONFIG_FILE
 
-  chown landscape $CONFIG_FILE
+            db_get $PACKAGE/computer_title
+            COMPUTER_TITLE="${RET}"
+            db_get $PACKAGE/account_name
+            ACCOUNT_NAME="${RET}"
+            db_get $PACKAGE/registration_password
+            REGISTRATION_PASSWORD="${RET}"
 
-  # In case the configuration doesn't yet exist, try to run debconf to
-  # get the client registered.
+            # If we got the needed information, actually do the registration.
+            if [ -n "$ACCOUNT_NAME" -a -n "$COMPUTER_TITLE" ]; then
+                landscape-config --silent --ok-no-register -a "$ACCOUNT_NAME" \
+                                          -p "$REGISTRATION_PASSWORD" \
+                                          -t "$COMPUTER_TITLE"
+            fi
+        else
+            # Fix non-private permissions
+            chmod 0600 $CONFIG_FILE
+        fi
 
-  . /usr/share/debconf/confmodule
+        # old monolithic clients have a single persist data file and a single
+        # package hash db.  This data should be migrated to the new format
+        # where each service has a persist and the package data is kept in a
+        # sqlite database.
 
-  # Do debconf configuration
-  db_get $PACKAGE/computer_title
-  COMPUTER_TITLE="${RET}"
-  db_get $PACKAGE/account_name
-  ACCOUNT_NAME="${RET}"
-  db_get $PACKAGE/registration_password
-  REGISTRATION_PASSWORD="${RET}"
+        DATA_BPICKLE=$DATA_DIR/client/data.bpickle
+        BROKER_BPICKLE=$DATA_DIR/client/broker.bpickle
 
-  db_stop
+        if [ -f $DATA_BPICKLE -a ! -f $BROKER_BPICKLE ]; then
+            $PYTHON -c "from landscape.upgraders import legacy; legacy.migrate_data_file('$DATA_DIR/client')"
+            mv $DATA_BPICKLE $DATA_BPICKLE.migrated
+            echo "Old monolithic client data file migrated to new format."
+        fi
 
-  # If we got the needed information, actually do the registration.
-  if [ -n "$ACCOUNT_NAME" ]; then
-    landscape-config --silent -a "$ACCOUNT_NAME" \
-                              -p "$REGISTRATION_PASSWORD" \
-                              -t "$COMPUTER_TITLE"
-  fi
+    ;;
 
-fi
+    abort-upgrade|abort-remove|abort-deconfigure)
+    ;;
 
-# old monolithic clients have a single persist data file and a single
-# package hash db.  This data should be migrated to the new format
-# where each service has a persist and the package data is kept in a
-# sqlite database.
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
 
-DATA_BPICKLE=$DATA_DIR/client/data.bpickle
-BROKER_BPICKLE=$DATA_DIR/client/broker.bpickle
-
-if [ -f $DATA_BPICKLE -a ! -f $BROKER_BPICKLE ]; then
-  $PYTHON -c "from landscape.upgraders import legacy; legacy.migrate_data_file('$DATA_DIR/client')"
-  mv $DATA_BPICKLE $DATA_BPICKLE.migrated
-  echo "Old monolithic client data file migrated to new format."
-fi
-
-# Tell dbus to reload its configuration since we've installed a conf to its
-# system.d
-invoke-rc.d dbus reload
-
-# This is a cleanup of permissions on the smart directory
-find /var/lib/smart -type f -exec chmod 0644 {} \;
-find /var/lib/smart -type d -exec chmod 0755 {} \;
-
-# This is a cleanup of the ownership of the log files.  See bug #215372.
-LOCK_DIR=/var/lib/landscape/client/package
-test -f $LOCK_DIR/reporter.lock && chown landscape:root $LOCK_DIR/reporter.lock
-
-# Update start order if needed.  See bug #227414.
-if ls /etc/rc*.d/S20landscape-client > /dev/null 2>&1; then
-    update-rc.d -f landscape-client remove > /dev/null
-fi
+# dh_installdeb will replace this with shell code automatically
+# generated by other debhelper scripts.
 
 #DEBHELPER#
 
