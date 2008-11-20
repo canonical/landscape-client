@@ -31,7 +31,7 @@ case "$1" in
 	start)
 		log_daemon_msg "Starting the $NAME daemon"
 		FULL_COMMAND="start-stop-daemon --start --quiet --oknodo --startas $DAEMON --pidfile $PIDFILE -- --daemon --pid-file $PIDFILE"
-		if [ x"$DAEMON_USER" = x ]; then
+		if [ x"$DAEMON_USER" != x ]; then
 		    su - $DAEMON_USER -c "$FULL_COMMAND"
 		else
 		    $FULL_COMMAND
