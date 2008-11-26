@@ -15,7 +15,6 @@ LANDSCAPE_DEFAULTS=/etc/default/landscape-client
 NAME=landscape-client
 DAEMON=/usr/bin/$NAME
 PIDFILE=/var/run/$NAME.pid
-PARAMS='--daemon --pid-file $PIDFILE'
 RUN=0 # overridden in /etc/default/landscape-client
 
 [ -f $DAEMON ] || exit 0
@@ -23,24 +22,22 @@ RUN=0 # overridden in /etc/default/landscape-client
 . /lib/lsb/init-functions
 [ -f $LANDSCAPE_DEFAULTS ] && . $LANDSCAPE_DEFAULTS
 
-if test $RUN -eq 0; then
+if [ $RUN -eq 0 ]; then
 	echo "$NAME is not configured, please run landscape-config."
 	exit 0
 fi
 
-
-
 case "$1" in
 	start)
 		log_daemon_msg "Starting the $NAME daemon"
-		start-stop-daemon --start --quiet --oknodo --exec $DAEMON -- --daemon --pid-file $PIDFILE
+		start-stop-daemon --start --quiet --oknodo --startas $DAEMON --pidfile $PIDFILE -- --daemon --pid-file $PIDFILE
 		log_end_msg $?
 		;;
 
 	stop)
 		log_daemon_msg "Stopping $NAME daemon"
-		log_end_msg $?
 		start-stop-daemon --retry 30 --stop --quiet --pidfile $PIDFILE
+		log_end_msg $?
 		;;
 
 	status)
