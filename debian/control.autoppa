@@ -14,7 +14,7 @@ Architecture: all
 Pre-Depends: python, python-gobject
 AUTOPPA_INCLUDE(dapper):Depends: ${python:Depends}, ${misc:Depends}, python2.4-pysqlite2, python-twisted-core, python2.4-dbus, lsb-release, lsb-base, perl-modules,  python-gdbm,  ca-certificates, adduser
 AUTOPPA_INCLUDE(gutsy,hardy,intrepid):Depends: ${python:Depends}, ${misc:Depends}, python-twisted-core, python-dbus, lsb-release, lsb-base, perl-modules,  python-gdbm,  ca-certificates, adduser
-AUTOPPA_INCLUDE(intrepid):XB-Python-Version: ${python:Versions}
+AUTOPPA_INCLUDE(hardy,intrepid):XB-Python-Version: ${python:Versions}
 Replaces: landscape-client (<= 1.0.23-0ubuntu0.8.10)
 Description: The Landscape administration system client
  Landscape is a web-based tool for managing Ubuntu systems. This
@@ -29,7 +29,7 @@ Pre-Depends: python
 AUTOPPA_INCLUDE(dapper):Depends: ${python:Depends}, ${misc:Depends}, libcurl3 (>= 7.15.1-1ubuntu3), python-twisted-web, python2.4-pycurl, hal, smartpm-core (>= 1.1), cron
 AUTOPPA_INCLUDE(gutsy,hardy):Depends: ${python:Depends}, ${misc:Depends}, python-twisted-web, python-pycurl, hal, smartpm-core (>= 1.1), cron
 AUTOPPA_INCLUDE(intrepid):Depends: ${python:Depends}, ${misc:Depends}, landscape-common, hal, python-twisted-web, python-smartpm, python-pycurl, cron
-AUTOPPA_INCLUDE(intrepid):XB-Python-Version: ${python:Versions}
+AUTOPPA_INCLUDE(hardy,intrepid):XB-Python-Version: ${python:Versions}
 Description: The Landscape administration system client
  Landscape is a web-based tool for managing Ubuntu systems. This
  package is necessary if you want your machine to be managed in a
