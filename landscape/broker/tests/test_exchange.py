@@ -695,6 +695,64 @@ class MessageExchangeTest(LandscapeTest):
         types = self.exchanger.get_client_accepted_message_types()
         self.assertEquals(types, ["type-A", "type-B", "type-C"])
 
+    def test_exchange_sends_message_type_when_no_hash(self):
+        self.exchanger.register_client_accepted_message_type("type-A")
+        self.exchanger.register_client_accepted_message_type("type-B")
+        self.exchanger.exchange()
+        self.assertEquals(self.transport.payloads[0]["client-accepted-types"],
+                          ["type-A", "type-B"])
+
+    def test_exchange_does_not_send_message_types_when_hash_matches(self):
+        self.exchanger.register_client_accepted_message_type("type-A")
+        self.exchanger.register_client_accepted_message_type("type-B")
+        accepted_types_digest = md5.new("type-A;type-B").digest()
+        self.transport.extra["client-accepted-types-hash"] = accepted_types_digest
+        self.exchanger.exchange()
+        self.exchanger.exchange()
+        self.assertNotIn("client-accepted-types", self.transport.payloads[1])
+
+    def test_exchange_continues_sending_message_types_on_no_hash(self):
+        """
+        If the server does not respond with a hash of client accepted message
+        types, the client will continue to send the accepted types.
+        """
+        self.exchanger.register_client_accepted_message_type("type-A")
+        self.exchanger.register_client_accepted_message_type("type-B")
+        self.exchanger.exchange()
+        self.exchanger.exchange()
+        self.assertEquals(self.transport.payloads[1]["client-accepted-types"],
+                          ["type-A", "type-B"])
+
+    def test_exchange_sends_new_accepted_types_hash(self):
+        """
+        If the accepted types on the client change between exchanges, the
+        client will send a new list to the server.
+        """
+        self.exchanger.register_client_accepted_message_type("type-A")
+        types_hash = md5.new("type-A").digest()
+        self.transport.extra["client-accepted-types-hash"] = types_hash
+        self.exchanger.exchange()
+        self.exchanger.register_client_accepted_message_type("type-B")
+        self.exchanger.exchange()
+        self.assertEquals(self.transport.payloads[1]["client-accepted-types"],
+                          ["type-A", "type-B"])
+
+    def test_exchange_sends_new_types_when_server_screws_up(self):
+        """
+        If the server suddenly and without warning changes the hash of
+        accepted client types that it sends to the client, the client will
+        send a new list of types.
+        """
+        self.exchanger.register_client_accepted_message_type("type-A")
+        types_hash = md5.new("type-A").digest()
+        self.transport.extra["client-accepted-types-hash"] = types_hash
+        self.exchanger.exchange()
+        self.transport.extra["client-accepted-types-hash"] = "lol"
+        self.exchanger.exchange()
+        self.exchanger.exchange()
+        self.assertEquals(self.transport.payloads[2]["client-accepted-types"],
+                          ["type-A"])
+
 
 class GetAcceptedTypesDiffTest(LandscapeTest):
 
