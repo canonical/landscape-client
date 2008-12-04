@@ -99,6 +99,9 @@ class FakeRemoteBroker(object):
         """Send to the previously given L{MessageExchange} object."""
         return execute(self.exchanger.send, message, urgent=urgent)
 
+    def register_client_accepted_message_type(self, type):
+        return execute(self.exchanger.register_client_accepted_message_type, type)
+
 
 class DBusSignalToReactorTransmitter(object):
     """

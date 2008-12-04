@@ -66,12 +66,12 @@ class PluginTest(LandscapeTest):
         self.assertEquals(self.registry.get_plugin("sample"), plugin)
 
 
-class BrokerClientPluginTest(LandscapeTest):
+class BrokerClientPluginTest(LandscapeIsolatedTest):
+    helpers = [RemoteBrokerHelper]
 
     def setUp(self):
         super(BrokerClientPluginTest, self).setUp()
-        broker = object()
-        self.registry = BrokerClientPluginRegistry(broker)
+        self.registry = BrokerClientPluginRegistry(self.remote)
 
     def test_register_plugin(self):
         sample_plugin = SamplePlugin()
@@ -114,6 +114,19 @@ class BrokerClientPluginTest(LandscapeTest):
         msg = {"type": "foo", "value": "whatever"}
         self.assertRaises(HandlerNotFoundError,
                           self.registry.dispatch_message, msg)
+
+    def test_register_message_registers_message_type_with_broker(self):
+        """
+        When register_plugin is called on a BrokerClientPluginRegistry, the
+        broker is notified that the message type is now accepted.
+        """
+        result1 = self.registry.register_message("foo", lambda m: None)
+        result2 = self.registry.register_message("bar", lambda m: None)
+        def got_result(result):
+            exchanger = self.broker_service.exchanger
+            self.assertEquals(exchanger.get_client_accepted_message_types(),
+                              ["bar", "foo"])
+        return gather_results([result1, result2]).addCallback(got_result)
 
     def test_exchange_calls_exchanges(self):
         """
@@ -191,8 +204,7 @@ class BrokerPluginTests(LandscapeIsolatedTest):
 
     def setUp(self):
         super(BrokerPluginTests, self).setUp()
-        broker = object()
-        self.registry = BrokerClientPluginRegistry(broker)
+        self.registry = BrokerClientPluginRegistry(self.remote)
 
     def test_message_receiving(self):
         """

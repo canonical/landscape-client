@@ -55,6 +55,7 @@ class BrokerClientPluginRegistry(PluginRegistry):
 
     def __init__(self, broker):
         super(BrokerClientPluginRegistry, self).__init__()
+        self.broker = broker
 
     def register_message(self, type, handler):
         """
@@ -62,7 +63,7 @@ class BrokerClientPluginRegistry(PluginRegistry):
         message.
         """
         self._registered_messages[type] = handler
-        # self.broker.register_accepted_message_type(type)
+        return self.broker.register_client_accepted_message_type(type)
 
     def dispatch_message(self, message):
         type = message["type"]
