@@ -68,7 +68,7 @@ class MonitorService(LandscapeService):
 
         # If this raises ServiceUnknownError, we should do something nice.
         self.remote_broker = RemoteBroker(self.bus)
-        self.registry = MonitorPluginRegistry(self.reactor, self.remote_broker,
+        self.registry = MonitorPluginRegistry(self.remote_broker, self.reactor,
                                               self.config, self.bus,
                                               self.persist,
                                               self.persist_filename)

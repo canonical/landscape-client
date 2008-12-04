@@ -9,7 +9,7 @@ from landscape.lib.dbus_util import method
 from landscape.lib.log import log_failure
 
 from landscape.log import format_object
-from landscape.plugin import PluginRegistry, Plugin, BrokerPlugin
+from landscape.plugin import BrokerClientPluginRegistry, Plugin, BrokerPlugin
 
 
 BUS_NAME = "com.canonical.landscape.Monitor"
@@ -28,15 +28,15 @@ class MonitorDBusObject(BrokerPlugin):
     message = method(IFACE_NAME)(BrokerPlugin.message)
 
 
-class MonitorPluginRegistry(PluginRegistry):
+class MonitorPluginRegistry(BrokerClientPluginRegistry):
     """The central point of integration in the Landscape monitor."""
 
-    def __init__(self, reactor, broker, config, bus,
+    def __init__(self, broker, reactor, config, bus,
                  persist, persist_filename=None,
                  step_size=5*60):
-        super(MonitorPluginRegistry, self).__init__()
-        self.reactor = reactor
+        super(MonitorPluginRegistry, self).__init__(broker)
         self.broker = broker
+        self.reactor = reactor
         self.config = config
         self.persist = persist
         self.persist_filename = persist_filename

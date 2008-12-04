@@ -2,7 +2,8 @@ from twisted.internet.defer import Deferred
 
 from landscape.tests.helpers import LandscapeTest, LandscapeIsolatedTest
 
-from landscape.plugin import PluginRegistry, BrokerPlugin, HandlerNotFoundError
+from landscape.plugin import (PluginRegistry, BrokerClientPluginRegistry,
+                              BrokerPlugin, HandlerNotFoundError)
 from landscape.lib.dbus_util import method
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.bpickle import dumps
@@ -42,6 +43,35 @@ class PluginTest(LandscapeTest):
     def setUp(self):
         super(PluginTest, self).setUp()
         self.registry = PluginRegistry()
+
+    def test_register_plugin(self):
+        sample_plugin = SamplePlugin()
+        self.registry.add(sample_plugin)
+        self.assertEquals(sample_plugin.registered, [self.registry])
+
+    def test_get_plugins(self):
+        plugin1 = SamplePlugin()
+        plugin2 = SamplePlugin()
+        self.registry.add(plugin1)
+        self.registry.add(plugin2)
+        self.assertEquals(self.registry.get_plugins()[-2:], [plugin1, plugin2])
+
+    def test_get_named_plugin(self):
+        """
+        If a plugin has a C{plugin_name} attribute, it is possible to look it
+        up by name after adding it to the L{Monitor}.
+        """
+        plugin = SamplePlugin()
+        self.registry.add(plugin)
+        self.assertEquals(self.registry.get_plugin("sample"), plugin)
+
+
+class BrokerClientPluginTest(LandscapeTest):
+
+    def setUp(self):
+        super(BrokerClientPluginTest, self).setUp()
+        broker = object()
+        self.registry = BrokerClientPluginRegistry(broker)
 
     def test_register_plugin(self):
         sample_plugin = SamplePlugin()
@@ -161,7 +191,8 @@ class BrokerPluginTests(LandscapeIsolatedTest):
 
     def setUp(self):
         super(BrokerPluginTests, self).setUp()
-        self.registry = PluginRegistry()
+        broker = object()
+        self.registry = BrokerClientPluginRegistry(broker)
 
     def test_message_receiving(self):
         """
