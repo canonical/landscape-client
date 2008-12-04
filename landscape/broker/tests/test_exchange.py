@@ -687,6 +687,14 @@ class MessageExchangeTest(LandscapeTest):
         self.reactor.advance(1)
         self.assertEquals(len(self.transport.payloads), 2)
 
+    def test_register_accepted_message_type(self):
+        self.exchanger.register_client_accepted_message_type("type-B")
+        self.exchanger.register_client_accepted_message_type("type-A")
+        self.exchanger.register_client_accepted_message_type("type-C")
+        self.exchanger.register_client_accepted_message_type("type-A")
+        types = self.exchanger.get_client_accepted_message_types()
+        self.assertEquals(types, ["type-A", "type-B", "type-C"])
+
 
 class GetAcceptedTypesDiffTest(LandscapeTest):
 
@@ -710,48 +718,3 @@ class GetAcceptedTypesDiffTest(LandscapeTest):
         self.assertEquals(get_accepted_types_diff(["foo", "bar"],
                                                   ["foo", "ooga"]),
                           "+ooga foo -bar")
-
-
-# XXX Let's make it the Exchanger's job to do accepted-types notification.
-
-# class AcceptedTypesTest(LandscapeTest):
-#     def test_set_accepted_types_event(self):
-#         accepted = []
-#         def got_accepted():
-#             accepted.append(True)
-#         self.reactor.call_on(("message-type-accepted", "fiznits"), got_accepted)
-
-#         self.store.set_accepted_types(["fiznits"])
-#         self.assertEquals(accepted, [True])
-
-#     def test_newly_accepted_types_event(self):
-#         """
-#         When an accepted type is set by the server, fire an event that
-#         notifies any listeners.  Existing acceptable types listeners
-#         should not be notified, only newly accepted type listeners.
-#         """
-#         accepted = []
-#         def got_accepted_fiznits():
-#             accepted.append("fiznits")
-#         def got_accepted_blobos():
-#             accepted.append("blobos")
-
-#         self.store.set_accepted_types(["blobos"])
-#         self.reactor.call_on(("message-type-accepted", "fiznits"), got_accepted_fiznits)
-#         self.reactor.call_on(("message-type-accepted", "blobos"), got_accepted_blobos)
-#         self.store.set_accepted_types(["fiznits", "blobos"])
-#         self.assertEquals(accepted, ["fiznits"])
-
-#     def test_type_accepted_before_event(self):
-#         """
-#         When an accepted type is set by the server, fire an event that
-#         notifies any listeners.  The event should be fired after the event
-#         is accepted, not before.
-#         """
-#         accepted = []
-#         def got_accepted():
-#             accepted.append(self.store.get_accepted_types() == ["fiznits"])
-
-#         self.reactor.call_on(("message-type-accepted", "fiznits"), got_accepted)
-#         self.store.set_accepted_types(["fiznits"])
-#         self.assertEquals(accepted, [True])

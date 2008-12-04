@@ -39,6 +39,7 @@ class MessageExchange(object):
         self._exchange_id = None
         self._exchanging = False
         self._urgent_exchange = False
+        self._client_accepted_types = set()
 
         reactor.call_on("message", self._handle_message)
         reactor.call_on("resynchronize-clients", self._resynchronize)
@@ -297,6 +298,12 @@ class MessageExchange(object):
             # what we could.
             if next_expected != old_sequence:
                 self.schedule_exchange(urgent=True)
+
+    def register_client_accepted_message_type(self, type):
+        self._client_accepted_types.add(type)
+
+    def get_client_accepted_message_types(self):
+        return sorted(self._client_accepted_types)
 
 
 def get_accepted_types_diff(old_types, new_types):
