@@ -533,3 +533,14 @@ class BrokerDBusObjectTest(LandscapeIsolatedTest):
 
         deferred.addCallback(got_accepted)
         return deferred
+
+    def test_register_accepted_message_type(self):
+        result1 = self.remote.register_client_accepted_message_type("type1")
+        result2 = self.remote.register_client_accepted_message_type("type2")
+        def got_result(result):
+            exchanger = self.broker_service.exchanger
+            types = exchanger.get_client_accepted_message_types()
+            self.assertEquals(types, ["type1", "type2"])
+        return gather_results([result1, result2]).addCallback(got_result)
+        
+

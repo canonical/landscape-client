@@ -58,6 +58,10 @@ class RemoteBroker(object):
         deferred_types.addCallback(got_accepted_types)
         return deferred_types
 
+    def register_client_accepted_message_type(self, type):
+        return self._perform_call("register_client_accepted_message_type",
+                                  type)
+
     def is_message_pending(self, message_id):
         return self._perform_call("is_message_pending", message_id)
 
