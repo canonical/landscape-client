@@ -41,8 +41,11 @@ class MessageExchange(object):
         self._urgent_exchange = False
         self._client_accepted_types = set()
         self._client_accepted_types_hash = None
+        self._message_handlers = {}
 
-        reactor.call_on("message", self._handle_message)
+        self.register_message("accepted-types", self._handle_accepted_types)
+        self.register_message("resynchronize", self._handle_resynchronize)
+        self.register_message("set-intervals", self._handle_set_intervals)
         reactor.call_on("resynchronize-clients", self._resynchronize)
         reactor.call_on("pre-exit", self.stop)
 
@@ -97,15 +100,6 @@ class MessageExchange(object):
             self._reactor.fire("message-type-acceptance-changed", type, False)
         for type in new_types - old_types:
             self._reactor.fire("message-type-acceptance-changed", type, True)
-
-    def _handle_message(self, message):
-        message_type = message["type"]
-        if message_type == "accepted-types":
-            self._handle_accepted_types(message)
-        elif message_type == "resynchronize":
-            self._handle_resynchronize(message)
-        elif message_type == "set-intervals":
-            self._handle_set_intervals(message)
 
     def _handle_resynchronize(self, message):
         opid = message["operation-id"]
@@ -294,7 +288,7 @@ class MessageExchange(object):
 
         sequence = message_store.get_server_sequence()
         for message in result.get("messages", ()):
-            self._reactor.fire("message", message)
+            self.handle_message(message)
             sequence += 1
             message_store.set_server_sequence(sequence)
             message_store.commit()
@@ -306,6 +300,30 @@ class MessageExchange(object):
             # what we could.
             if next_expected != old_sequence:
                 self.schedule_exchange(urgent=True)
+
+    def register_message(self, type, handler):
+        """
+        Register a handler to be called when a message of the given
+        type has been received from the server.
+
+        Multiple handlers for the same type will be called in the
+        order they were registered.
+        """
+        self._message_handlers.setdefault(type, []).append(handler)
+
+    def handle_message(self, message):
+        """
+        Handle a message received from the server.
+
+        Any message handlers registered with L{register_message} will
+        be called.
+        """
+        self._reactor.fire("message", message)
+        # This has plan interference! but whatever.
+        if message["type"] in self._message_handlers:
+            for handler in self._message_handlers[message["type"]]:
+                handler(message)
+
 
     def register_client_accepted_message_type(self, type):
         self._client_accepted_types.add(type)

@@ -98,8 +98,8 @@ class MessageExchangeTest(LandscapeTest):
         An incoming "accepted-types" message should set the accepted
         types.
         """
-        self.reactor.fire("message",
-                          {"type": "accepted-types", "types": ["foo"]})
+        self.exchanger.handle_message(
+            {"type": "accepted-types", "types": ["foo"]})
         self.assertEquals(self.mstore.get_accepted_types(), ["foo"])
 
     def test_message_type_acceptance_changed_event(self):
@@ -107,10 +107,10 @@ class MessageExchangeTest(LandscapeTest):
         def callback(type, accepted):
             stash.append((type, accepted))
         self.reactor.call_on("message-type-acceptance-changed", callback)
-        self.reactor.fire("message",
-                          {"type": "accepted-types", "types": ["a", "b"]})
-        self.reactor.fire("message",
-                          {"type": "accepted-types", "types": ["b", "c"]})
+        self.exchanger.handle_message(
+            {"type": "accepted-types", "types": ["a", "b"]})
+        self.exchanger.handle_message(
+            {"type": "accepted-types", "types": ["b", "c"]})
         self.assertEquals(stash, [("a", True), ("b", True),
                                   ("a", False), ("c", True)])
 
@@ -119,8 +119,8 @@ class MessageExchangeTest(LandscapeTest):
         Telling the client to set the accepted types with a message
         should affect its future payloads.
         """
-        self.reactor.fire("message",
-                          {"type": "accepted-types", "types": ["ack", "bar"]})
+        self.exchanger.handle_message(
+            {"type": "accepted-types", "types": ["ack", "bar"]})
         payload = self.exchanger.make_payload()
         self.assertTrue("accepted-types" in payload)
         self.assertEquals(payload["accepted-types"],
@@ -133,8 +133,8 @@ class MessageExchangeTest(LandscapeTest):
         """
         self.exchanger.send({"type": "holdme"})
         self.assertEquals(self.mstore.get_pending_messages(), [])
-        self.reactor.fire("message",
-                          {"type": "accepted-types", "types": ["holdme"]})
+        self.exchanger.handle_message(
+            {"type": "accepted-types", "types": ["holdme"]})
         self.wait_for_exchange(urgent=True)
         self.assertEquals(len(self.transport.payloads), 1)
         self.assertMessages(self.transport.payloads[0]["messages"],
@@ -150,23 +150,6 @@ class MessageExchangeTest(LandscapeTest):
         self.reactor.fire("message",
                           {"type": "accepted-types", "types": ["irrelevant"]})
         self.assertEquals(len(self.transport.payloads), 0)
-
-    def test_messages_from_server(self):
-        """
-        The client should process messages in the response from the server. For
-        every message, a reactor event 'message' should be fired with the
-        message passed as an argument.
-        """
-        server_message = [{"type": "foobar", "value": "hi there"}]
-        self.transport.responses.append(server_message)
-
-        responses = []
-        def handler(message):
-            responses.append(message)
-
-        id = self.reactor.call_on("message", handler)
-        self.exchanger.exchange()
-        self.assertEquals(responses, server_message)
 
     def test_sequence_is_committed_immediately(self):
         """
@@ -189,7 +172,7 @@ class MessageExchangeTest(LandscapeTest):
             self.assertEquals(store.get_sequence(), 1)
             handled.append(True)
 
-        self.reactor.call_on("message", handler)
+        self.exchanger.register_message("inbound", handler)
         self.exchanger.exchange()
         self.assertEquals(handled, [True], self.logfile.getvalue())
 
@@ -210,7 +193,7 @@ class MessageExchangeTest(LandscapeTest):
             self.message_counter += 1
             handled.append(True)
 
-        self.reactor.call_on("message", handler)
+        self.exchanger.register_message("inbound", handler)
         self.exchanger.exchange()
         self.assertEquals(handled, [True]*3, self.logfile.getvalue())
 
@@ -226,7 +209,7 @@ class MessageExchangeTest(LandscapeTest):
         def handler(message):
             self.exchanger.send({"type": "empty"}, urgent=True)
 
-        self.reactor.call_on("message", handler)
+        self.exchanger.register_message("foobar", handler)
 
         self.exchanger.exchange()
 
@@ -752,6 +735,41 @@ class MessageExchangeTest(LandscapeTest):
         self.exchanger.exchange()
         self.assertEquals(self.transport.payloads[2]["client-accepted-types"],
                           ["type-A"])
+
+    def test_register_message(self):
+        """
+        The exchanger expsoses a mechanism for subscribing to messages
+        of a particular type.
+        """
+        messages = []
+        self.exchanger.register_message("type-A", messages.append)
+        msg = {"type": "type-A", "whatever": 5678}
+        server_message = [msg]
+        self.transport.responses.append(server_message)
+        self.exchanger.exchange()
+        self.assertEquals(messages, [msg])
+
+    def test_register_multiple_message_handlers(self):
+        """
+        Registering multiple handlers for the same type will cause
+        each handler to be called in the order they were registered.
+        """
+        messages = []
+
+        def handler1(message):
+            messages.append(("one", message))
+        def handler2(message):
+            messages.append(("two", message))
+
+        self.exchanger.register_message("type-A", handler1)
+        self.exchanger.register_message("type-A", handler2)
+
+        msg = {"type": "type-A", "whatever": 5678}
+        server_message = [msg]
+        self.transport.responses.append(server_message)
+        self.exchanger.exchange()
+        self.assertEquals(messages, [("one", msg), ("two", msg)])
+
 
 
 class GetAcceptedTypesDiffTest(LandscapeTest):

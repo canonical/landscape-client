@@ -286,9 +286,9 @@ class BrokerDBusObjectTest(LandscapeIsolatedTest):
         def register_done(deferred_result):
             self.assertEquals(deferred_result.called, False)
 
-            self.broker_service.reactor.fire("message",
-                                     {"type": "set-id", "id": "SECURE",
-                                      "insecure-id": "INSECURE"})
+            self.broker_service.exchanger.handle_message(
+                {"type": "set-id", "id": "SECURE",
+                 "insecure-id": "INSECURE"})
 
             self.assertEquals(deferred_result.called, True)
 
