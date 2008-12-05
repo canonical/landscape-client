@@ -310,6 +310,7 @@ class MessageExchange(object):
         order they were registered.
         """
         self._message_handlers.setdefault(type, []).append(handler)
+        self._client_accepted_types.add(type)
 
     def handle_message(self, message):
         """

@@ -7,7 +7,7 @@ from landscape.plugin import (PluginRegistry, BrokerClientPluginRegistry,
 from landscape.lib.dbus_util import method
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.bpickle import dumps
-from landscape.tests.helpers import RemoteBrokerHelper
+from landscape.tests.helpers import RemoteBrokerHelper, DEFAULT_ACCEPTED_TYPES
 
 
 class SamplePlugin(object):
@@ -125,7 +125,7 @@ class BrokerClientPluginTest(LandscapeIsolatedTest):
         def got_result(result):
             exchanger = self.broker_service.exchanger
             self.assertEquals(exchanger.get_client_accepted_message_types(),
-                              ["bar", "foo"])
+                              sorted(["bar", "foo"] + DEFAULT_ACCEPTED_TYPES))
         return gather_results([result1, result2]).addCallback(got_result)
 
     def test_exchange_calls_exchanges(self):

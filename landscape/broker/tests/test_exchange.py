@@ -6,7 +6,8 @@ from landscape.schema import Message, Int
 from landscape.broker.exchange import get_accepted_types_diff, MessageExchange
 from landscape.broker.transport import FakeTransport
 from landscape.broker.store import MessageStore
-from landscape.tests.helpers import LandscapeTest, ExchangeHelper
+from landscape.tests.helpers import (LandscapeTest, ExchangeHelper,
+                                     DEFAULT_ACCEPTED_TYPES)
 
 
 class MessageExchangeTest(LandscapeTest):
@@ -676,20 +677,24 @@ class MessageExchangeTest(LandscapeTest):
         self.exchanger.register_client_accepted_message_type("type-C")
         self.exchanger.register_client_accepted_message_type("type-A")
         types = self.exchanger.get_client_accepted_message_types()
-        self.assertEquals(types, ["type-A", "type-B", "type-C"])
+        self.assertEquals(types,
+                          sorted(["type-A", "type-B", "type-C"] +
+                                 DEFAULT_ACCEPTED_TYPES))
 
     def test_exchange_sends_message_type_when_no_hash(self):
         self.exchanger.register_client_accepted_message_type("type-A")
         self.exchanger.register_client_accepted_message_type("type-B")
         self.exchanger.exchange()
         self.assertEquals(self.transport.payloads[0]["client-accepted-types"],
-                          ["type-A", "type-B"])
+                          sorted(["type-A", "type-B"] + DEFAULT_ACCEPTED_TYPES))
 
     def test_exchange_does_not_send_message_types_when_hash_matches(self):
         self.exchanger.register_client_accepted_message_type("type-A")
         self.exchanger.register_client_accepted_message_type("type-B")
-        accepted_types_digest = md5.new("type-A;type-B").digest()
-        self.transport.extra["client-accepted-types-hash"] = accepted_types_digest
+        types = sorted(["type-A", "type-B"] + DEFAULT_ACCEPTED_TYPES)
+        accepted_types_digest = md5.new(";".join(types)).digest()
+        self.transport.extra["client-accepted-types-hash"] = \
+            accepted_types_digest
         self.exchanger.exchange()
         self.exchanger.exchange()
         self.assertNotIn("client-accepted-types", self.transport.payloads[1])
@@ -704,7 +709,7 @@ class MessageExchangeTest(LandscapeTest):
         self.exchanger.exchange()
         self.exchanger.exchange()
         self.assertEquals(self.transport.payloads[1]["client-accepted-types"],
-                          ["type-A", "type-B"])
+                          sorted(["type-A", "type-B"] + DEFAULT_ACCEPTED_TYPES))
 
     def test_exchange_sends_new_accepted_types_hash(self):
         """
@@ -718,7 +723,7 @@ class MessageExchangeTest(LandscapeTest):
         self.exchanger.register_client_accepted_message_type("type-B")
         self.exchanger.exchange()
         self.assertEquals(self.transport.payloads[1]["client-accepted-types"],
-                          ["type-A", "type-B"])
+                          sorted(["type-A", "type-B"] + DEFAULT_ACCEPTED_TYPES))
 
     def test_exchange_sends_new_types_when_server_screws_up(self):
         """
@@ -734,7 +739,7 @@ class MessageExchangeTest(LandscapeTest):
         self.exchanger.exchange()
         self.exchanger.exchange()
         self.assertEquals(self.transport.payloads[2]["client-accepted-types"],
-                          ["type-A"])
+                          sorted(["type-A"] + DEFAULT_ACCEPTED_TYPES))
 
     def test_register_message(self):
         """
@@ -769,6 +774,16 @@ class MessageExchangeTest(LandscapeTest):
         self.transport.responses.append(server_message)
         self.exchanger.exchange()
         self.assertEquals(messages, [("one", msg), ("two", msg)])
+
+    def test_register_message_adds_accepted_type(self):
+        """
+        Using the C{register_message} method of the exchanger causes
+        the registered message to be included in the accepted types of
+        the client that are sent to the server.
+        """
+        self.exchanger.register_message("typefoo", lambda m: None)
+        types = self.exchanger.get_client_accepted_message_types()
+        self.assertEquals(types, sorted(["typefoo"] + DEFAULT_ACCEPTED_TYPES))
 
 
 

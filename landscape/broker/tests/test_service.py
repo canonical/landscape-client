@@ -11,6 +11,7 @@ from landscape.lib.dbus_util import (Object, method,
                                      byte_array, array_to_string)
 from landscape.lib.twisted_util import gather_results
 from landscape.manager.manager import FAILED
+from landscape.tests.helpers import DEFAULT_ACCEPTED_TYPES
 
 
 class SampleSignalReceiver(object):
@@ -540,7 +541,9 @@ class BrokerDBusObjectTest(LandscapeIsolatedTest):
         def got_result(result):
             exchanger = self.broker_service.exchanger
             types = exchanger.get_client_accepted_message_types()
-            self.assertEquals(types, ["type1", "type2"])
+            self.assertEquals(
+                types,
+                sorted(["type1", "type2"] + DEFAULT_ACCEPTED_TYPES))
         return gather_results([result1, result2]).addCallback(got_result)
         
 

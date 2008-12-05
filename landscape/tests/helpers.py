@@ -32,6 +32,11 @@ from landscape.manager.manager import ManagerPluginRegistry
 from landscape.manager.deployment import ManagerConfiguration
 
 
+DEFAULT_ACCEPTED_TYPES = [
+    "accepted-types", "registration", "resynchronize", "set-id",
+    "set-intervals", "unknown-id"]
+
+
 class LandscapeTest(MockerTestCase, TestCase):
 
     helpers = []
