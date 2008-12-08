@@ -1,11 +1,8 @@
-from dbus.service import signal
-
 from twisted.internet.defer import Deferred
 
 from landscape.schema import Message
 from landscape.broker.broker import IFACE_NAME
-from landscape.tests.helpers import (
-    LandscapeIsolatedTest, RemoteBrokerHelper, LandscapeTest)
+from landscape.tests.helpers import LandscapeIsolatedTest, RemoteBrokerHelper
 from landscape.lib.bpickle import dumps, loads
 from landscape.lib.dbus_util import (Object, method,
                                      byte_array, array_to_string)
