@@ -325,7 +325,6 @@ class MessageExchange(object):
             for handler in self._message_handlers[message["type"]]:
                 handler(message)
 
-
     def register_client_accepted_message_type(self, type):
         # stringify the type because it's a dbus.String.  It should work
         # anyway, but this is just for sanity and less confusing logs.
