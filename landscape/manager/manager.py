@@ -36,7 +36,6 @@ class ManagerPluginRegistry(BrokerClientPluginRegistry):
     def __init__(self, broker, reactor, config, bus=None, store_filename=None):
         super(ManagerPluginRegistry, self).__init__(broker)
         self.reactor = reactor
-        self.broker = broker
         self.config = config
         self.bus = bus
         if store_filename:

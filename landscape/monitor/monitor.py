@@ -35,7 +35,6 @@ class MonitorPluginRegistry(BrokerClientPluginRegistry):
                  persist, persist_filename=None,
                  step_size=5*60):
         super(MonitorPluginRegistry, self).__init__(broker)
-        self.broker = broker
         self.reactor = reactor
         self.config = config
         self.persist = persist
