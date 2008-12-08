@@ -3,7 +3,7 @@ import sys
 from logging import exception
 
 from landscape.log import format_object
-from landscape.plugin import Plugin, PluginRegistry, BrokerPlugin
+from landscape.plugin import Plugin, BrokerClientPluginRegistry, BrokerPlugin
 from landscape.manager.store import ManagerStore
 from landscape.lib.dbus_util import method
 
@@ -30,13 +30,12 @@ class ManagerDBusObject(BrokerPlugin):
     message = method(IFACE_NAME)(BrokerPlugin.message)
 
 
-class ManagerPluginRegistry(PluginRegistry):
+class ManagerPluginRegistry(BrokerClientPluginRegistry):
     """Central point of integration for the Landscape Manager."""
 
-    def __init__(self, reactor, broker, config, bus=None, store_filename=None):
-        super(ManagerPluginRegistry, self).__init__()
+    def __init__(self, broker, reactor, config, bus=None, store_filename=None):
+        super(ManagerPluginRegistry, self).__init__(broker)
         self.reactor = reactor
-        self.broker = broker
         self.config = config
         self.bus = bus
         if store_filename:

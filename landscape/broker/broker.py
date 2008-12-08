@@ -152,6 +152,10 @@ Please contact the Landscape team for more information.
         pass
 
     @method(IFACE_NAME)
+    def register_client_accepted_message_type(self, type):
+        self.exchange.register_client_accepted_message_type(type)
+
+    @method(IFACE_NAME)
     def register_plugin(self, bus_name, object_path):
         self._registered_plugins.add((bus_name, object_path))
 

@@ -52,7 +52,7 @@ class MonitorTest(LandscapeTest):
         persist.set("a", "Hi there!")
         persist.save(filename)
 
-        manager = MonitorPluginRegistry(self.reactor, self.remote,
+        manager = MonitorPluginRegistry(self.remote, self.reactor,
                                         self.broker_service.config,
                                         None,
                                         persist=Persist(),
@@ -68,8 +68,8 @@ class MonitorDBusObjectTest(LandscapeIsolatedTest):
     def setUp(self):
         super(MonitorDBusObjectTest, self).setUp()
         persist = Persist()
-        self.monitor = MonitorPluginRegistry(self.broker_service.reactor,
-                                             self.remote,
+        self.monitor = MonitorPluginRegistry(self.remote,
+                                             self.broker_service.reactor,
                                              self.broker_service.config,
                                              self.broker_service.bus,
                                              persist)

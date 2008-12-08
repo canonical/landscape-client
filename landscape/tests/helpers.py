@@ -32,6 +32,11 @@ from landscape.manager.manager import ManagerPluginRegistry
 from landscape.manager.deployment import ManagerConfiguration
 
 
+DEFAULT_ACCEPTED_TYPES = [
+    "accepted-types", "registration", "resynchronize", "set-id",
+    "set-intervals", "unknown-id"]
+
+
 class LandscapeTest(MockerTestCase, TestCase):
 
     helpers = []
@@ -342,7 +347,7 @@ class MonitorHelper(ExchangeHelper):
         persist = Persist()
         persist_filename = test_case.make_path()
         test_case.monitor = MonitorPluginRegistry(
-            test_case.broker_service.reactor, test_case.remote,
+            test_case.remote, test_case.broker_service.reactor,
             test_case.broker_service.config,
             # XXX Ugh, the fake broker service doesn't have a bus.
             # We should get rid of the fake broker service.
@@ -361,7 +366,7 @@ class ManagerHelper(FakeRemoteBrokerHelper):
             default_config_filenames = [test_case.config_filename]
         config = MyManagerConfiguration()
         test_case.manager = ManagerPluginRegistry(
-            test_case.broker_service.reactor, test_case.remote,
+            test_case.remote, test_case.broker_service.reactor,
             config)
 
 
