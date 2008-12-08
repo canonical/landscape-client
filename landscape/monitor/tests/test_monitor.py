@@ -68,7 +68,8 @@ class MonitorDBusObjectTest(LandscapeIsolatedTest):
     def setUp(self):
         super(MonitorDBusObjectTest, self).setUp()
         persist = Persist()
-        self.monitor = MonitorPluginRegistry(self.remote, self.broker_service.reactor,
+        self.monitor = MonitorPluginRegistry(self.remote,
+                                             self.broker_service.reactor,
                                              self.broker_service.config,
                                              self.broker_service.bus,
                                              persist)
