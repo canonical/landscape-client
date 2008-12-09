@@ -39,8 +39,13 @@ class MessageExchange(object):
         self._exchange_id = None
         self._exchanging = False
         self._urgent_exchange = False
+        self._client_accepted_types = set()
+        self._client_accepted_types_hash = None
+        self._message_handlers = {}
 
-        reactor.call_on("message", self._handle_message)
+        self.register_message("accepted-types", self._handle_accepted_types)
+        self.register_message("resynchronize", self._handle_resynchronize)
+        self.register_message("set-intervals", self._handle_set_intervals)
         reactor.call_on("resynchronize-clients", self._resynchronize)
         reactor.call_on("pre-exit", self.stop)
 
@@ -95,15 +100,6 @@ class MessageExchange(object):
             self._reactor.fire("message-type-acceptance-changed", type, False)
         for type in new_types - old_types:
             self._reactor.fire("message-type-acceptance-changed", type, True)
-
-    def _handle_message(self, message):
-        message_type = message["type"]
-        if message_type == "accepted-types":
-            self._handle_accepted_types(message)
-        elif message_type == "resynchronize":
-            self._handle_resynchronize(message)
-        elif message_type == "set-intervals":
-            self._handle_set_intervals(message)
 
     def _handle_resynchronize(self, message):
         opid = message["operation-id"]
@@ -223,8 +219,7 @@ class MessageExchange(object):
     def make_payload(self):
         """Return a dict representing the complete payload."""
         store = self._message_store
-        accepted_types_str = ";".join(store.get_accepted_types())
-        accepted_types_digest = md5.new(accepted_types_str).digest()
+        accepted_types_digest = self._hash_types(store.get_accepted_types())
         messages = store.get_pending_messages(self._max_messages)
         total_messages = store.count_pending_messages()
         if messages:
@@ -257,11 +252,19 @@ class MessageExchange(object):
                    "next-expected-sequence": store.get_server_sequence(),
                    "accepted-types": accepted_types_digest,
                   }
+        accepted_client_types = self.get_client_accepted_message_types()
+        accepted_client_types_hash = self._hash_types(accepted_client_types)
+        if accepted_client_types_hash != self._client_accepted_types_hash:
+            payload["client-accepted-types"] = accepted_client_types
         return payload
+
+    def _hash_types(self, types):
+        accepted_types_str = ";".join(types)
+        return md5.new(accepted_types_str).digest()
 
     def _handle_result(self, payload, result):
         message_store = self._message_store
-
+        self._client_accepted_types_hash = result.get("client-accepted-types-hash")
         next_expected = result.get("next-expected-sequence")
         old_sequence = message_store.get_sequence()
         if next_expected is None:
@@ -285,7 +288,7 @@ class MessageExchange(object):
 
         sequence = message_store.get_server_sequence()
         for message in result.get("messages", ()):
-            self._reactor.fire("message", message)
+            self.handle_message(message)
             sequence += 1
             message_store.set_server_sequence(sequence)
             message_store.commit()
@@ -297,6 +300,38 @@ class MessageExchange(object):
             # what we could.
             if next_expected != old_sequence:
                 self.schedule_exchange(urgent=True)
+
+    def register_message(self, type, handler):
+        """
+        Register a handler to be called when a message of the given
+        type has been received from the server.
+
+        Multiple handlers for the same type will be called in the
+        order they were registered.
+        """
+        self._message_handlers.setdefault(type, []).append(handler)
+        self._client_accepted_types.add(type)
+
+    def handle_message(self, message):
+        """
+        Handle a message received from the server.
+
+        Any message handlers registered with L{register_message} will
+        be called.
+        """
+        self._reactor.fire("message", message)
+        # This has plan interference! but whatever.
+        if message["type"] in self._message_handlers:
+            for handler in self._message_handlers[message["type"]]:
+                handler(message)
+
+    def register_client_accepted_message_type(self, type):
+        # stringify the type because it's a dbus.String.  It should work
+        # anyway, but this is just for sanity and less confusing logs.
+        self._client_accepted_types.add(str(type))
+
+    def get_client_accepted_message_types(self):
+        return sorted(self._client_accepted_types)
 
 
 def get_accepted_types_diff(old_types, new_types):

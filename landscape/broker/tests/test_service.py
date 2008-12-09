@@ -1,16 +1,14 @@
-from dbus.service import signal
-
 from twisted.internet.defer import Deferred
 
 from landscape.schema import Message
 from landscape.broker.broker import IFACE_NAME
-from landscape.tests.helpers import (
-    LandscapeIsolatedTest, RemoteBrokerHelper, LandscapeTest)
+from landscape.tests.helpers import LandscapeIsolatedTest, RemoteBrokerHelper
 from landscape.lib.bpickle import dumps, loads
 from landscape.lib.dbus_util import (Object, method,
                                      byte_array, array_to_string)
 from landscape.lib.twisted_util import gather_results
 from landscape.manager.manager import FAILED
+from landscape.tests.helpers import DEFAULT_ACCEPTED_TYPES
 
 
 class SampleSignalReceiver(object):
@@ -286,9 +284,9 @@ class BrokerDBusObjectTest(LandscapeIsolatedTest):
         def register_done(deferred_result):
             self.assertEquals(deferred_result.called, False)
 
-            self.broker_service.reactor.fire("message",
-                                     {"type": "set-id", "id": "SECURE",
-                                      "insecure-id": "INSECURE"})
+            self.broker_service.exchanger.handle_message(
+                {"type": "set-id", "id": "SECURE",
+                 "insecure-id": "INSECURE"})
 
             self.assertEquals(deferred_result.called, True)
 
@@ -533,3 +531,16 @@ class BrokerDBusObjectTest(LandscapeIsolatedTest):
 
         deferred.addCallback(got_accepted)
         return deferred
+
+    def test_register_accepted_message_type(self):
+        result1 = self.remote.register_client_accepted_message_type("type1")
+        result2 = self.remote.register_client_accepted_message_type("type2")
+        def got_result(result):
+            exchanger = self.broker_service.exchanger
+            types = exchanger.get_client_accepted_message_types()
+            self.assertEquals(
+                types,
+                sorted(["type1", "type2"] + DEFAULT_ACCEPTED_TYPES))
+        return gather_results([result1, result2]).addCallback(got_result)
+        
+

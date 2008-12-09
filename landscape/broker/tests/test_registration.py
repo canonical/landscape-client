@@ -65,8 +65,8 @@ class RegistrationTest(LandscapeTest):
         The server must be able to ask a client to change its secure
         and insecure ids even if no requests were sent.
         """
-        self.reactor.fire("message",
-                          {"type": "set-id", "id": "abc", "insecure-id": "def"})
+        self.exchanger.handle_message(
+            {"type": "set-id", "id": "abc", "insecure-id": "def"})
         self.assertEquals(self.identity.secure_id, "abc")
         self.assertEquals(self.identity.insecure_id, "def")
 
@@ -78,14 +78,14 @@ class RegistrationTest(LandscapeTest):
         reactor_mock = self.mocker.patch(self.reactor)
         reactor_mock.fire("registration-done")
         self.mocker.replay()
-        self.reactor.fire("message",
-                          {"type": "set-id", "id": "abc", "insecure-id": "def"})
+        self.exchanger.handle_message(
+            {"type": "set-id", "id": "abc", "insecure-id": "def"})
 
     def test_unknown_id(self):
         self.identity.secure_id = "old_id"
         self.identity.insecure_id = "old_id"
         self.mstore.set_accepted_types(["register"])
-        self.reactor.fire("message", {"type": "unknown-id"})
+        self.exchanger.handle_message({"type": "unknown-id"})
         self.assertEquals(self.identity.secure_id, None)
         self.assertEquals(self.identity.insecure_id, None)
 
@@ -203,8 +203,8 @@ class RegistrationTest(LandscapeTest):
         reactor_mock = self.mocker.patch(self.reactor)
         reactor_mock.fire("registration-failed")
         self.mocker.replay()
-        self.reactor.fire("message",
-                          {"type": "registration", "info": "unknown-account"})
+        self.exchanger.handle_message(
+            {"type": "registration", "info": "unknown-account"})
 
     def test_registration_failed_event_not_fired_when_uncertain(self):
         """
@@ -215,8 +215,8 @@ class RegistrationTest(LandscapeTest):
         reactor_mock.fire("registration-failed")
         self.mocker.count(0)
         self.mocker.replay()
-        self.reactor.fire("message",
-                          {"type": "registration", "info": "blah-blah"})
+        self.exchanger.handle_message(
+            {"type": "registration", "info": "blah-blah"})
 
     def test_register_resets_ids(self):
         self.identity.secure_id = "foo"
@@ -244,14 +244,14 @@ class RegistrationTest(LandscapeTest):
         d.addCallback(add_call)
 
         # This should somehow callback the deferred.
-        self.reactor.fire("message",
-                          {"type": "set-id", "id": "abc", "insecure-id": "def"})
+        self.exchanger.handle_message(
+            {"type": "set-id", "id": "abc", "insecure-id": "def"})
 
         self.assertEquals(calls, [1])
 
         # Doing it again to ensure that the deferred isn't called twice.
-        self.reactor.fire("message",
-                          {"type": "set-id", "id": "abc", "insecure-id": "def"})
+        self.exchanger.handle_message(
+            {"type": "set-id", "id": "abc", "insecure-id": "def"})
 
         self.assertEquals(calls, [1])
 
@@ -267,8 +267,8 @@ class RegistrationTest(LandscapeTest):
         self.handler.register()
 
         # This should somehow callback the deferred.
-        self.reactor.fire("message",
-                          {"type": "set-id", "id": "abc", "insecure-id": "def"})
+        self.exchanger.handle_message(
+            {"type": "set-id", "id": "abc", "insecure-id": "def"})
 
         self.assertEquals(results, [True])
 
@@ -285,14 +285,14 @@ class RegistrationTest(LandscapeTest):
         d.addErrback(add_call)
 
         # This should somehow callback the deferred.
-        self.reactor.fire("message",
-                          {"type": "registration", "info": "unknown-account"})
+        self.exchanger.handle_message(
+            {"type": "registration", "info": "unknown-account"})
 
         self.assertEquals(calls, [1])
 
         # Doing it again to ensure that the deferred isn't called twice.
-        self.reactor.fire("message",
-                          {"type": "registration", "info": "unknown-account"})
+        self.exchanger.handle_message(
+            {"type": "registration", "info": "unknown-account"})
 
         self.assertEquals(calls, [1])
 

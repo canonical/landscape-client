@@ -20,7 +20,7 @@ class UserMonitorTest(LandscapeIsolatedTest):
         super(UserMonitorTest, self).setUp()
         self.persist = Persist()
         self.monitor = MonitorPluginRegistry(
-            self.broker_service.reactor, self.remote,
+            self.remote, self.broker_service.reactor,
             self.broker_service.config, self.broker_service.bus,
             self.persist)
         self.shadow_file = self.make_path("""\

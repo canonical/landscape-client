@@ -44,12 +44,26 @@ class PluginRegistry(object):
         """Get a particular plugin by name."""
         return self._plugin_names[name]
 
+
+class BrokerClientPluginRegistry(PluginRegistry):
+    """Basic plugin registry for clients that have to deal with the broker.
+
+    This knows about the needs of a client when dealing with the Landscape
+    broker, including interest in messages of a particular type delivered
+    by the broker to the client.
+    """
+
+    def __init__(self, broker):
+        super(BrokerClientPluginRegistry, self).__init__()
+        self.broker = broker
+
     def register_message(self, type, handler):
         """
         Register interest in a particular type of Landscape server->client
         message.
         """
         self._registered_messages[type] = handler
+        return self.broker.register_client_accepted_message_type(type)
 
     def dispatch_message(self, message):
         type = message["type"]
