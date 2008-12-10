@@ -144,6 +144,7 @@ class DiskTest(LandscapeTest):
         self.add_mount("/media/cdrom", capacity=1000, unused=0, fs="iso9660")
         self.add_mount("/home/radix/.gvfs", capacity=1000, unused=0,
                        fs="fuse.gvfs-fuse-daemon")
+        self.add_mount("/mnt/livecd", capacity=1000, unused=0, fs="squashfs")
         self.disk.run()
         self.assertEquals(self.sysinfo.get_notes(), [])
 
