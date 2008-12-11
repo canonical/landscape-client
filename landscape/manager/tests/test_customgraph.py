@@ -138,6 +138,38 @@ class CustomGraphManagerTests(LandscapeTest):
                   "type": "custom-graph"}])
         return self.graph_manager.run().addCallback(check)
 
+    def test_run_multiple(self):
+        filename = self.makeFile()
+        tempfile = file(filename, "w")
+        tempfile.write("#!/bin/sh\necho 1")
+        tempfile.close()
+        os.chmod(filename, 0777)
+        self.store.add_graph(123, filename, None)
+
+        filename = self.makeFile()
+        tempfile = file(filename, "w")
+        tempfile.write("#!/bin/sh\necho 2")
+        tempfile.close()
+        os.chmod(filename, 0777)
+        self.store.add_graph(124, filename, None)
+        def check(ignore):
+            self.graph_manager.exchange()
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [{"data":
+                      {123: {"error": u"",
+                             "values": [(300, 1.0)],
+                             "script-hash": "483f2304b49063680c75e3c9e09cf6d0"
+                            },
+                       124: {"error": u"",
+                             "values": [(300, 2.0)],
+                             "script-hash": "73a74b1530b2256db7edacb9b9cc385e"
+                            }
+                      },
+                  "type": "custom-graph"}])
+        return self.graph_manager.run().addCallback(check)
+
+
     def test_run_with_nonzero_exit_code(self):
         filename = self.makeFile()
         tempfile = file(filename, "w")
