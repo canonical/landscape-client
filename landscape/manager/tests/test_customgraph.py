@@ -249,6 +249,89 @@ class CustomGraphManagerTests(LandscapeTest):
                   "type": "custom-graph"}])
         return result.addCallback(check)
 
+    def test_run_no_output_error_with_other_result(self):
+        filename1 = self.make_path("some_content")
+        self.store.add_graph(123, filename1, None)
+        filename2 = self.make_path("some_content")
+        self.store.add_graph(124, filename2, None)
+        factory = StubProcessFactory()
+        self.graph_manager.process_factory = factory
+        result = self.graph_manager.run()
+
+        self.assertEquals(len(factory.spawns), 2)
+        spawn = factory.spawns[0]
+
+        protocol = spawn[0]
+        protocol.childDataReceived(1, "")
+        for fd in (0, 1, 2):
+            protocol.childConnectionLost(fd)
+        protocol.processEnded(Failure(ProcessDone(0)))
+
+        spawn = factory.spawns[1]
+
+        protocol = spawn[0]
+        protocol.childDataReceived(1, "0.5")
+        for fd in (0, 1, 2):
+            protocol.childConnectionLost(fd)
+        protocol.processEnded(Failure(ProcessDone(0)))
+
+        def check(ignore):
+            self.graph_manager.exchange()
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [{"data":
+                      {123: {"error": u"NoOutputError: Script did not output "
+                                       "any value",
+                             "script-hash": "baab6c16d9143523b7865d46896e4596",
+                             "values": []},
+                       124: {"error": u"",
+                             "script-hash": "baab6c16d9143523b7865d46896e4596",
+                             "values": [(300, 0.5)]}},
+                  "type": "custom-graph"}])
+        return result.addCallback(check)
+
+    def test_multiple_errors(self):
+        filename1 = self.make_path("some_content")
+        self.store.add_graph(123, filename1, None)
+        filename2 = self.make_path("some_content")
+        self.store.add_graph(124, filename2, None)
+        factory = StubProcessFactory()
+        self.graph_manager.process_factory = factory
+        result = self.graph_manager.run()
+
+        self.assertEquals(len(factory.spawns), 2)
+        spawn = factory.spawns[0]
+
+        protocol = spawn[0]
+        protocol.childDataReceived(1, "foo")
+        for fd in (0, 1, 2):
+            protocol.childConnectionLost(fd)
+        protocol.processEnded(Failure(ProcessDone(0)))
+
+        spawn = factory.spawns[1]
+
+        protocol = spawn[0]
+        protocol.childDataReceived(1, "")
+        for fd in (0, 1, 2):
+            protocol.childConnectionLost(fd)
+        protocol.processEnded(Failure(ProcessDone(0)))
+
+        def check(ignore):
+            self.graph_manager.exchange()
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [{"data":
+                      {123: {"error": u"InvalidFormatError: Failed to convert "
+                                       "to number: 'foo'",
+                             "script-hash": "baab6c16d9143523b7865d46896e4596",
+                             "values": []},
+                       124: {"error": u"NoOutputError: Script did not output "
+                                       "any value",
+                             "script-hash": "baab6c16d9143523b7865d46896e4596",
+                             "values": []}},
+                  "type": "custom-graph"}])
+        return result.addCallback(check)
+    
     def test_run_user(self):
         filename = self.make_path("some content")
         self.store.add_graph(123, filename, "bar")
