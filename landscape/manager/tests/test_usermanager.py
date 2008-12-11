@@ -4,9 +4,9 @@ from landscape.lib.persist import Persist
 
 from landscape.manager.manager import SUCCEEDED, FAILED
 from landscape.monitor.monitor import MonitorPluginRegistry
+from landscape.manager.manager import ManagerPluginRegistry
 from landscape.monitor.usermonitor import UserMonitor
 from landscape.manager.usermanager import UserManager, UserManagerDBusObject
-from landscape.manager.manager import ManagerPluginRegistry
 from landscape.user.tests.helpers import FakeUserProvider, FakeUserManagement
 from landscape.tests.helpers import LandscapeIsolatedTest
 from landscape.user.provider import UserManagementError
@@ -62,7 +62,7 @@ class UserGroupTestBase(LandscapeIsolatedTest):
         super(UserGroupTestBase, self).setUp()
         self.persist = Persist()
         self.monitor = MonitorPluginRegistry(
-            self.broker_service.reactor, self.remote,
+            self.remote, self.broker_service.reactor,
             self.broker_service.config, self.broker_service.bus,
             self.persist)
 
@@ -74,7 +74,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         accepted_types = ["operation-result", "users"]
         self.broker_service.message_store.set_accepted_types(accepted_types)
         self.manager = ManagerPluginRegistry(
-            self.broker_service.reactor, self.remote,
+            self.remote, self.broker_service.reactor,
             self.broker_service.config, self.broker_service.bus)
 
     def setup_environment(self, users, groups, shadow_file):

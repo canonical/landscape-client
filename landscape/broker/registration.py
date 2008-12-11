@@ -53,7 +53,10 @@ class RegistrationHandler(object):
         self._message_store = message_store
         self._reactor.call_on("pre-exchange", self._handle_pre_exchange)
         self._reactor.call_on("exchange-done", self._handle_exchange_done)
-        self._reactor.call_on("message", self._handle_message)
+        self._exchange.register_message("set-id", self._handle_set_id)
+        self._exchange.register_message("unknown-id", self._handle_unknown_id)
+        self._exchange.register_message("registration",
+                                        self._handle_registration)
         self._should_register = None
 
     def should_register(self):
@@ -76,15 +79,6 @@ class RegistrationHandler(object):
         result = RegistrationResponse(self._reactor).deferred
         self._exchange.exchange()
         return result
-
-    def _handle_message(self, message):
-        message_type = message["type"]
-        if message_type == "set-id":
-            self._handle_set_id(message)
-        elif message_type == "unknown-id":
-            self._handle_unknown_id(message)
-        elif message_type == "registration":
-            self._handle_registration(message)
 
     def _handle_exchange_done(self):
         if self.should_register() and not self._should_register:

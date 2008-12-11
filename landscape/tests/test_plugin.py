@@ -2,11 +2,12 @@ from twisted.internet.defer import Deferred
 
 from landscape.tests.helpers import LandscapeTest, LandscapeIsolatedTest
 
-from landscape.plugin import PluginRegistry, BrokerPlugin, HandlerNotFoundError
+from landscape.plugin import (PluginRegistry, BrokerClientPluginRegistry,
+                              BrokerPlugin, HandlerNotFoundError)
 from landscape.lib.dbus_util import method
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.bpickle import dumps
-from landscape.tests.helpers import RemoteBrokerHelper
+from landscape.tests.helpers import RemoteBrokerHelper, DEFAULT_ACCEPTED_TYPES
 
 
 class SamplePlugin(object):
@@ -64,6 +65,35 @@ class PluginTest(LandscapeTest):
         self.registry.add(plugin)
         self.assertEquals(self.registry.get_plugin("sample"), plugin)
 
+
+class BrokerClientPluginTest(LandscapeIsolatedTest):
+    helpers = [RemoteBrokerHelper]
+
+    def setUp(self):
+        super(BrokerClientPluginTest, self).setUp()
+        self.registry = BrokerClientPluginRegistry(self.remote)
+
+    def test_register_plugin(self):
+        sample_plugin = SamplePlugin()
+        self.registry.add(sample_plugin)
+        self.assertEquals(sample_plugin.registered, [self.registry])
+
+    def test_get_plugins(self):
+        plugin1 = SamplePlugin()
+        plugin2 = SamplePlugin()
+        self.registry.add(plugin1)
+        self.registry.add(plugin2)
+        self.assertEquals(self.registry.get_plugins()[-2:], [plugin1, plugin2])
+
+    def test_get_named_plugin(self):
+        """
+        If a plugin has a C{plugin_name} attribute, it is possible to look it
+        up by name after adding it to the L{Monitor}.
+        """
+        plugin = SamplePlugin()
+        self.registry.add(plugin)
+        self.assertEquals(self.registry.get_plugin("sample"), plugin)
+
     def test_dispatch_message(self):
         """C{dispatch_message} calls a previously-registered message handler.
         """
@@ -84,6 +114,19 @@ class PluginTest(LandscapeTest):
         msg = {"type": "foo", "value": "whatever"}
         self.assertRaises(HandlerNotFoundError,
                           self.registry.dispatch_message, msg)
+
+    def test_register_message_registers_message_type_with_broker(self):
+        """
+        When register_plugin is called on a BrokerClientPluginRegistry, the
+        broker is notified that the message type is now accepted.
+        """
+        result1 = self.registry.register_message("foo", lambda m: None)
+        result2 = self.registry.register_message("bar", lambda m: None)
+        def got_result(result):
+            exchanger = self.broker_service.exchanger
+            self.assertEquals(exchanger.get_client_accepted_message_types(),
+                              sorted(["bar", "foo"] + DEFAULT_ACCEPTED_TYPES))
+        return gather_results([result1, result2]).addCallback(got_result)
 
     def test_exchange_calls_exchanges(self):
         """
@@ -161,7 +204,7 @@ class BrokerPluginTests(LandscapeIsolatedTest):
 
     def setUp(self):
         super(BrokerPluginTests, self).setUp()
-        self.registry = PluginRegistry()
+        self.registry = BrokerClientPluginRegistry(self.remote)
 
     def test_message_receiving(self):
         """

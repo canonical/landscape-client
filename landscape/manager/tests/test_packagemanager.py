@@ -20,8 +20,7 @@ class PackageManagerTest(LandscapeIsolatedTest):
         """Initialize test helpers and create a sample thermal zone."""
         LandscapeIsolatedTest.setUp(self)
 
-        self.manager = ManagerPluginRegistry(self.broker_service.reactor,
-                                             self.remote,
+        self.manager = ManagerPluginRegistry(self.remote, self.broker_service.reactor,
                                              self.broker_service.config)
 
         self.package_store_filename = self.makeFile()

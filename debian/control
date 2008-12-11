@@ -2,16 +2,32 @@ Source: landscape-client
 Section: admin
 Priority: optional
 Maintainer: Landscape Team <landscape-team@canonical.com>
-Build-Depends: debhelper (>= 5), python-dev, python-support, lsb-release, gawk
+Build-Depends: debhelper (>= 6.0.7~), po-debconf
+Build-Depends-Indep: python-dev, python-central, lsb-release, gawk
 Standards-Version: 3.8.0
 XS-Python-Version: >= 2.4
 
+Package: landscape-common
+Architecture: all
+Pre-Depends: python, python-gobject
+Depends: ${python:Depends}, ${misc:Depends}, python-twisted-core, python-dbus, lsb-release, lsb-base, perl-modules,  python-gdbm,  ca-certificates, adduser
+XB-Python-Version: ${python:Versions}
+Replaces: landscape-client (<= 1.0.23-0ubuntu0.8.10)
+Description: The Landscape administration system client
+ Landscape is a web-based tool for managing Ubuntu systems. This
+ package is necessary if you want your machine to be managed in a
+ Landscape account.
+ .
+ This package provides the core libraries.
+
 Package: landscape-client
 Architecture: all
-Pre-Depends: python, ${misc:Depends}
-Depends: ${python:Depends}, libcurl3 (>= 7.15.1-1ubuntu3), python-gobject, python-twisted-core, python-twisted-web, lsb-release, perl-modules, python2.4-pycurl, python2.4-dbus, python2.4-pysqlite2, python-gdbm, hal, smartpm-core (>= 0.52-dapper1-landscape4), ca-certificates
+Pre-Depends: python
+Depends: ${python:Depends}, ${misc:Depends}, landscape-common, hal, python-twisted-web, python-smartpm, python-pycurl, cron
 XB-Python-Version: ${python:Versions}
 Description: The Landscape administration system client
  Landscape is a web-based tool for managing Ubuntu systems. This
  package is necessary if you want your machine to be managed in a
  Landscape account.
+ .
+ This package provides the Landscape client and requires a Landscape account.

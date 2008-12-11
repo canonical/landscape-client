@@ -138,6 +138,26 @@ class CustomGraphManagerTests(LandscapeTest):
                   "type": "custom-graph"}])
         return self.graph_manager.run().addCallback(check)
 
+    def test_run_with_nonzero_exit_code(self):
+        filename = self.makeFile()
+        tempfile = file(filename, "w")
+        tempfile.write("#!/bin/sh\nexit 1")
+        tempfile.close()
+        os.chmod(filename, 0777)
+        self.store.add_graph(123, filename, None)
+        def check(ignore):
+            self.graph_manager.exchange()
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [{"data":
+                      {123: {"error": u" (process exited with code 1)",
+                             "values": [],
+                             "script-hash": "eaca3ba1a3bf1948876eba320148c5e9"
+                            }
+                      },
+                  "type": "custom-graph"}])
+        return self.graph_manager.run().addCallback(check)
+
     def test_run_cast_result_error(self):
         filename = self.make_path("some_content")
         self.store.add_graph(123, filename, None)
@@ -161,7 +181,37 @@ class CustomGraphManagerTests(LandscapeTest):
                 self.broker_service.message_store.get_pending_messages(),
                 [{"data":
                       {123: {"error":
-                          u"ValueError: invalid literal for float(): foobar",
+                             u"InvalidFormatError: Failed to convert to "
+                              "number: 'foobar'",
+                             "values": [], "script-hash":
+                                 "baab6c16d9143523b7865d46896e4596"}},
+                  "type": "custom-graph"}])
+        return result.addCallback(check)
+
+    def test_run_no_output_error(self):
+        filename = self.make_path("some_content")
+        self.store.add_graph(123, filename, None)
+        factory = StubProcessFactory()
+        self.graph_manager.process_factory = factory
+        result = self.graph_manager.run()
+
+        self.assertEquals(len(factory.spawns), 1)
+        spawn = factory.spawns[0]
+        self.assertEquals(spawn[1], filename)
+
+        protocol = spawn[0]
+        protocol.childDataReceived(1, "")
+        for fd in (0, 1, 2):
+            protocol.childConnectionLost(fd)
+        protocol.processEnded(Failure(ProcessDone(0)))
+
+        def check(ignore):
+            self.graph_manager.exchange()
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [{"data":
+                      {123: {"error": u"NoOutputError: Script did not output "
+                                       "any value",
                              "values": [], "script-hash":
                                  "baab6c16d9143523b7865d46896e4596"}},
                   "type": "custom-graph"}])
@@ -221,8 +271,8 @@ class CustomGraphManagerTests(LandscapeTest):
                 self.broker_service.message_store.get_pending_messages(),
                 [{"data": {123:
                       {"error":
-                          u"Custom graph cannot be run as user %s." %
-                          (username,),
+                       u"ProhibitedUserError: Custom graph cannot be run as "
+                        "user %s" % (username,),
                        "script-hash": "9893532233caff98cd083a116b013c0b",
                        "values": []}},
                   "type": "custom-graph"}])

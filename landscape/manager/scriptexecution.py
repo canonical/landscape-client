@@ -28,6 +28,7 @@ UBUNTU_PATH = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 class UnknownUserError(Exception):
     pass
 
+
 def get_user_info(username=None):
     uid = None
     gid = None
@@ -64,8 +65,23 @@ class ProcessFailedError(Exception):
         limit.
     """
 
-    def __init__(self, data):
+    def __init__(self, data, exit_code):
         self.data = data
+        self.exit_code = exit_code
+
+
+class UnknownInterpreterError(Exception):
+    """Raised when the interpreter specified to run a script is invalid.
+           
+       @ivar interpreter: the interpreter specified for the script.
+    """
+
+    def __init__(self, interpreter):
+        self.interpreter = interpreter
+        Exception.__init__(self, self._get_message())
+
+    def _get_message(self):
+        return "Unknown interpreter: '%s'" % self.interpreter
 
 
 class ScriptRunnerMixin(object):
@@ -188,7 +204,7 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
         """
         if not os.path.exists(shell.split()[0]):
             return fail(
-                ProcessFailedError("Unknown interpreter: '%s'" % shell))
+                UnknownInterpreterError(shell))
         uid, gid, path = get_user_info(user)
         fd, filename = tempfile.mkstemp()
         script_file = os.fdopen(fd, "w")
@@ -275,6 +291,7 @@ class ProcessAccumulationProtocol(ProcessProtocol):
         L{ProcessTimeLimitReachedError} will be fired with data accumulated so
         far.
         """
+        exit_code = reason.value.exitCode
         data = "".join(self.data)
         if self._cancelled:
             self.result_deferred.errback(ProcessTimeLimitReachedError(data))
@@ -287,7 +304,7 @@ class ProcessAccumulationProtocol(ProcessProtocol):
             if reason.check(ProcessDone):
                 self.result_deferred.callback(data)
             else:
-                self.result_deferred.errback(ProcessFailedError(data))
+                self.result_deferred.errback(ProcessFailedError(data, exit_code))
 
     def _cancel(self):
         """
