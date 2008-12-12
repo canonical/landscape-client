@@ -307,7 +307,7 @@ class CustomGraphManagerTests(LandscapeTest):
                              "values": []}},
                   "type": "custom-graph"}])
         return result.addCallback(check)
-    
+
     def test_run_user(self):
         filename = self.make_path("some content")
         self.store.add_graph(123, filename, "bar")
