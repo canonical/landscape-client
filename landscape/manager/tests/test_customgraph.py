@@ -32,6 +32,12 @@ class CustomGraphManagerTests(LandscapeTest):
             create_time=range(1500, 0, -300).pop)
         self.manager.add(self.graph_manager)
 
+    def _exit_process_protocol(self, protocol, stdout):
+        protocol.childDataReceived(1, stdout)
+        for fd in (0, 1, 2):
+            protocol.childConnectionLost(fd)
+        protocol.processEnded(Failure(ProcessDone(0)))
+
     def test_add_graph(self):
         uid = os.getuid()
         info = pwd.getpwuid(uid)
@@ -201,11 +207,7 @@ class CustomGraphManagerTests(LandscapeTest):
         spawn = factory.spawns[0]
         self.assertEquals(spawn[1], filename)
 
-        protocol = spawn[0]
-        protocol.childDataReceived(1, "foobar")
-        for fd in (0, 1, 2):
-            protocol.childConnectionLost(fd)
-        protocol.processEnded(Failure(ProcessDone(0)))
+        self._exit_process_protocol(spawn[0], "foobar")
 
         def check(ignore):
             self.graph_manager.exchange()
@@ -231,11 +233,7 @@ class CustomGraphManagerTests(LandscapeTest):
         spawn = factory.spawns[0]
         self.assertEquals(spawn[1], filename)
 
-        protocol = spawn[0]
-        protocol.childDataReceived(1, "")
-        for fd in (0, 1, 2):
-            protocol.childConnectionLost(fd)
-        protocol.processEnded(Failure(ProcessDone(0)))
+        self._exit_process_protocol(spawn[0], "")
 
         def check(ignore):
             self.graph_manager.exchange()
@@ -260,20 +258,9 @@ class CustomGraphManagerTests(LandscapeTest):
 
         self.assertEquals(len(factory.spawns), 2)
         spawn = factory.spawns[0]
-
-        protocol = spawn[0]
-        protocol.childDataReceived(1, "")
-        for fd in (0, 1, 2):
-            protocol.childConnectionLost(fd)
-        protocol.processEnded(Failure(ProcessDone(0)))
-
+        self._exit_process_protocol(spawn[0], "")
         spawn = factory.spawns[1]
-
-        protocol = spawn[0]
-        protocol.childDataReceived(1, "0.5")
-        for fd in (0, 1, 2):
-            protocol.childConnectionLost(fd)
-        protocol.processEnded(Failure(ProcessDone(0)))
+        self._exit_process_protocol(spawn[0], "0.5")
 
         def check(ignore):
             self.graph_manager.exchange()
@@ -301,20 +288,9 @@ class CustomGraphManagerTests(LandscapeTest):
 
         self.assertEquals(len(factory.spawns), 2)
         spawn = factory.spawns[0]
-
-        protocol = spawn[0]
-        protocol.childDataReceived(1, "foo")
-        for fd in (0, 1, 2):
-            protocol.childConnectionLost(fd)
-        protocol.processEnded(Failure(ProcessDone(0)))
-
+        self._exit_process_protocol(spawn[0], "foo")
         spawn = factory.spawns[1]
-
-        protocol = spawn[0]
-        protocol.childDataReceived(1, "")
-        for fd in (0, 1, 2):
-            protocol.childConnectionLost(fd)
-        protocol.processEnded(Failure(ProcessDone(0)))
+        self._exit_process_protocol(spawn[0], "")
 
         def check(ignore):
             self.graph_manager.exchange()
@@ -358,11 +334,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.assertEquals(spawn[5], 1234)
         self.assertEquals(spawn[6], 5678)
 
-        protocol = spawn[0]
-        protocol.childDataReceived(1, "spam")
-        for fd in (0, 1, 2):
-            protocol.childConnectionLost(fd)
-        protocol.processEnded(Failure(ProcessDone(0)))
+        self._exit_process_protocol(spawn[0], "spam")
 
         return result
 
@@ -616,11 +588,7 @@ class CustomGraphManagerTests(LandscapeTest):
                      "username": username,
                      "graph-id": 123})
 
-        protocol = spawn[0]
-        protocol.childDataReceived(1, "1.0")
-        for fd in (0, 1, 2):
-            protocol.childConnectionLost(fd)
-        protocol.processEnded(Failure(ProcessDone(0)))
+        self._exit_process_protocol(spawn[0], "1.0")
 
         def check(ignore):
             self.graph_manager.exchange()
@@ -661,11 +629,7 @@ class CustomGraphManagerTests(LandscapeTest):
             {"type": "custom-graph-remove",
                      "graph-id": 123})
 
-        protocol = spawn[0]
-        protocol.childDataReceived(1, "1.0")
-        for fd in (0, 1, 2):
-            protocol.childConnectionLost(fd)
-        protocol.processEnded(Failure(ProcessDone(0)))
+        self._exit_process_protocol(spawn[0], "1.0")
 
         def check(ignore):
             self.graph_manager.exchange()
