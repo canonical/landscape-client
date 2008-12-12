@@ -32,6 +32,12 @@ class CustomGraphManagerTests(LandscapeTest):
             create_time=range(1500, 0, -300).pop)
         self.manager.add(self.graph_manager)
 
+    def _exit_process_protocol(self, protocol, stdout):
+        protocol.childDataReceived(1, stdout)
+        for fd in (0, 1, 2):
+            protocol.childConnectionLost(fd)
+        protocol.processEnded(Failure(ProcessDone(0)))
+
     def test_add_graph(self):
         uid = os.getuid()
         info = pwd.getpwuid(uid)
@@ -138,6 +144,38 @@ class CustomGraphManagerTests(LandscapeTest):
                   "type": "custom-graph"}])
         return self.graph_manager.run().addCallback(check)
 
+    def test_run_multiple(self):
+        filename = self.makeFile()
+        tempfile = file(filename, "w")
+        tempfile.write("#!/bin/sh\necho 1")
+        tempfile.close()
+        os.chmod(filename, 0777)
+        self.store.add_graph(123, filename, None)
+
+        filename = self.makeFile()
+        tempfile = file(filename, "w")
+        tempfile.write("#!/bin/sh\necho 2")
+        tempfile.close()
+        os.chmod(filename, 0777)
+        self.store.add_graph(124, filename, None)
+        def check(ignore):
+            self.graph_manager.exchange()
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [{"data":
+                      {123: {"error": u"",
+                             "values": [(300, 1.0)],
+                             "script-hash": "483f2304b49063680c75e3c9e09cf6d0"
+                            },
+                       124: {"error": u"",
+                             "values": [(300, 2.0)],
+                             "script-hash": "73a74b1530b2256db7edacb9b9cc385e"
+                            }
+                      },
+                  "type": "custom-graph"}])
+        return self.graph_manager.run().addCallback(check)
+
+
     def test_run_with_nonzero_exit_code(self):
         filename = self.makeFile()
         tempfile = file(filename, "w")
@@ -169,11 +207,7 @@ class CustomGraphManagerTests(LandscapeTest):
         spawn = factory.spawns[0]
         self.assertEquals(spawn[1], filename)
 
-        protocol = spawn[0]
-        protocol.childDataReceived(1, "foobar")
-        for fd in (0, 1, 2):
-            protocol.childConnectionLost(fd)
-        protocol.processEnded(Failure(ProcessDone(0)))
+        self._exit_process_protocol(spawn[0], "foobar")
 
         def check(ignore):
             self.graph_manager.exchange()
@@ -199,11 +233,7 @@ class CustomGraphManagerTests(LandscapeTest):
         spawn = factory.spawns[0]
         self.assertEquals(spawn[1], filename)
 
-        protocol = spawn[0]
-        protocol.childDataReceived(1, "")
-        for fd in (0, 1, 2):
-            protocol.childConnectionLost(fd)
-        protocol.processEnded(Failure(ProcessDone(0)))
+        self._exit_process_protocol(spawn[0], "")
 
         def check(ignore):
             self.graph_manager.exchange()
@@ -214,6 +244,67 @@ class CustomGraphManagerTests(LandscapeTest):
                                        "any value",
                              "values": [], "script-hash":
                                  "baab6c16d9143523b7865d46896e4596"}},
+                  "type": "custom-graph"}])
+        return result.addCallback(check)
+
+    def test_run_no_output_error_with_other_result(self):
+        filename1 = self.make_path("some_content")
+        self.store.add_graph(123, filename1, None)
+        filename2 = self.make_path("some_content")
+        self.store.add_graph(124, filename2, None)
+        factory = StubProcessFactory()
+        self.graph_manager.process_factory = factory
+        result = self.graph_manager.run()
+
+        self.assertEquals(len(factory.spawns), 2)
+        spawn = factory.spawns[0]
+        self._exit_process_protocol(spawn[0], "")
+        spawn = factory.spawns[1]
+        self._exit_process_protocol(spawn[0], "0.5")
+
+        def check(ignore):
+            self.graph_manager.exchange()
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [{"data":
+                      {123: {"error": u"NoOutputError: Script did not output "
+                                       "any value",
+                             "script-hash": "baab6c16d9143523b7865d46896e4596",
+                             "values": []},
+                       124: {"error": u"",
+                             "script-hash": "baab6c16d9143523b7865d46896e4596",
+                             "values": [(300, 0.5)]}},
+                  "type": "custom-graph"}])
+        return result.addCallback(check)
+
+    def test_multiple_errors(self):
+        filename1 = self.make_path("some_content")
+        self.store.add_graph(123, filename1, None)
+        filename2 = self.make_path("some_content")
+        self.store.add_graph(124, filename2, None)
+        factory = StubProcessFactory()
+        self.graph_manager.process_factory = factory
+        result = self.graph_manager.run()
+
+        self.assertEquals(len(factory.spawns), 2)
+        spawn = factory.spawns[0]
+        self._exit_process_protocol(spawn[0], "foo")
+        spawn = factory.spawns[1]
+        self._exit_process_protocol(spawn[0], "")
+
+        def check(ignore):
+            self.graph_manager.exchange()
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [{"data":
+                      {123: {"error": u"InvalidFormatError: Failed to convert "
+                                       "to number: 'foo'",
+                             "script-hash": "baab6c16d9143523b7865d46896e4596",
+                             "values": []},
+                       124: {"error": u"NoOutputError: Script did not output "
+                                       "any value",
+                             "script-hash": "baab6c16d9143523b7865d46896e4596",
+                             "values": []}},
                   "type": "custom-graph"}])
         return result.addCallback(check)
 
@@ -243,11 +334,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.assertEquals(spawn[5], 1234)
         self.assertEquals(spawn[6], 5678)
 
-        protocol = spawn[0]
-        protocol.childDataReceived(1, "spam")
-        for fd in (0, 1, 2):
-            protocol.childConnectionLost(fd)
-        protocol.processEnded(Failure(ProcessDone(0)))
+        self._exit_process_protocol(spawn[0], "spam")
 
         return result
 
@@ -501,11 +588,7 @@ class CustomGraphManagerTests(LandscapeTest):
                      "username": username,
                      "graph-id": 123})
 
-        protocol = spawn[0]
-        protocol.childDataReceived(1, "1.0")
-        for fd in (0, 1, 2):
-            protocol.childConnectionLost(fd)
-        protocol.processEnded(Failure(ProcessDone(0)))
+        self._exit_process_protocol(spawn[0], "1.0")
 
         def check(ignore):
             self.graph_manager.exchange()
@@ -546,11 +629,7 @@ class CustomGraphManagerTests(LandscapeTest):
             {"type": "custom-graph-remove",
                      "graph-id": 123})
 
-        protocol = spawn[0]
-        protocol.childDataReceived(1, "1.0")
-        for fd in (0, 1, 2):
-            protocol.childConnectionLost(fd)
-        protocol.processEnded(Failure(ProcessDone(0)))
+        self._exit_process_protocol(spawn[0], "1.0")
 
         def check(ignore):
             self.graph_manager.exchange()
