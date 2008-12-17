@@ -21,10 +21,10 @@ class PackageMonitorTest(LandscapeIsolatedTest):
     def setUp(self):
         """Initialize test helpers and create a sample thermal zone."""
         super(PackageMonitorTest, self).setUp()
-        self.monitor = MonitorPluginRegistry(self.broker_service.reactor,
-                                            self.remote,
-                                            self.broker_service.config,
-                                            Persist(), self.makeFile())
+        self.monitor = MonitorPluginRegistry(self.remote,
+                                             self.broker_service.reactor,
+                                             self.broker_service.config,
+                                             Persist(), self.makeFile())
 
         self.package_store_filename = self.makeFile()
         self.package_store = PackageStore(self.package_store_filename)
