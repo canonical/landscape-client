@@ -47,7 +47,7 @@ case "$1" in
         fi
 
         # Fix prior ownerships
-        chown -R landscape /var/log/landscape /var/lib/landscape
+        chown -R landscape /var/log/landscape /var/lib/landscape /var/run/landscape
 
     ;;
 

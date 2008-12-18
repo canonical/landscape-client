@@ -14,7 +14,7 @@
 LANDSCAPE_DEFAULTS=/etc/default/landscape-client
 NAME=landscape-client
 DAEMON=/usr/bin/$NAME
-PIDFILE=/var/run/$NAME.pid
+PIDFILE=/var/run/landscape/$NAME.pid
 RUN=0 # overridden in /etc/default/landscape-client
 
 [ -f $DAEMON ] || exit 0
@@ -32,7 +32,7 @@ case "$1" in
 		log_daemon_msg "Starting the $NAME daemon"
 		FULL_COMMAND="start-stop-daemon --start --quiet --oknodo --startas $DAEMON --pidfile $PIDFILE -- --daemon --pid-file $PIDFILE"
 		if [ x"$DAEMON_USER" != x ]; then
-		    su - $DAEMON_USER -c "$FULL_COMMAND"
+		    sudo -u $DAEMON_USER $FULL_COMMAND
 		else
 		    $FULL_COMMAND
 		fi

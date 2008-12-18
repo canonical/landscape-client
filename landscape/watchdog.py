@@ -511,9 +511,9 @@ def run(args=sys.argv):
     config = WatchDogConfiguration()
     config.load(args)
 
-    if config.bus == "system" and os.getuid() != 0:
-        sys.exit("When using the system bus, landscape-client must be run as "
-                 "root.")
+#    if config.bus == "system" and os.getuid() != 0:
+#        sys.exit("When using the system bus, landscape-client must be run as "
+#                 "root.")
 
     init_logging(config, "watchdog")
 
