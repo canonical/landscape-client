@@ -1261,6 +1261,12 @@ reactor.run()
 """
 
 
+class FakeReactor(Clock):
+    running = False
+    def run(self):
+        self.running = True
+
+
 class WatchDogRunTests(LandscapeTest):
     def setUp(self):
         super(WatchDogRunTests, self).setUp()
@@ -1270,8 +1276,26 @@ class WatchDogRunTests(LandscapeTest):
         WatchDogConfiguration.default_config_filenames = []
 
     def test_non_root(self):
+        """
+        The watchdog should print an error message and exit if run by a normal
+        user.
+        """
         self.mocker.replace("os.getuid")()
+        self.mocker.count(1, None)
         self.mocker.result(1000)
         self.mocker.replay()
         sys_exit = self.assertRaises(SystemExit, run, ["--bus", "system"])
         self.assertIn("landscape-client must be run as root", str(sys_exit))
+
+    def test_landscape_user(self):
+        """
+        The watchdog *can* be run as the 'landscape' user.
+        """
+        pwinfo = self.mocker.replace("pwd.getpwnam")("landscape")
+        self.expect(pwinfo.pw_uid).result(os.getuid())
+        self.mocker.replay()
+        reactor = FakeReactor()
+        run(["--bus", "system", "--log-dir", self.make_path()],
+            reactor=reactor)
+        self.assertTrue(reactor.running)
+

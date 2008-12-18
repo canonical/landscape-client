@@ -507,24 +507,23 @@ bootstrap_list = BootstrapList([
     ])
 
 
-def run(args=sys.argv):
+def run(args=sys.argv, reactor=None):
     config = WatchDogConfiguration()
     config.load(args)
 
-#    if config.bus == "system" and os.getuid() != 0:
-#        sys.exit("When using the system bus, landscape-client must be run as "
-#                 "root.")
+    if (config.bus == "system"
+        and not (os.getuid() == 0 or pwd.getpwnam("landscape").pw_uid == os.getuid())):
+        sys.exit("When using the system bus, landscape-client must be run as "
+                 "root.")
 
     init_logging(config, "watchdog")
-
-    if os.getuid() != 0:
-        warning("Daemons will be run as %s" % pwd.getpwuid(os.getuid()).pw_name)
 
     application = Application("landscape-client")
     watchdog_service = WatchDogService(config)
     watchdog_service.setServiceParent(application)
 
-    from twisted.internet import reactor
+    if reactor is None:
+        from twisted.internet import reactor
     # We add a small delay to work around a Twisted bug: this method should
     # only be called when the reactor is running, but we still get a
     # PotentialZombieWarning.
