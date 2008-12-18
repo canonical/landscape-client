@@ -1,4 +1,3 @@
-La la la
 To run the full test suite, you must have a dbus session bus
 running. If you don't have one (for example, if you're running the
 tests in an ssh session), run the following command:
@@ -19,3 +18,9 @@ There's a configuration file 'root-client.conf' which specifies use of the
 system bus.
 
 $ sudo ./scripts/landscape-client -c root-client.conf
+
+
+== Non-root mode ==
+
+- set /etc/default/landscape-client to have RUN=1 and DAEMON_USER=landscape
+- put monitor_only = true in /etc/landscape/client.conf
