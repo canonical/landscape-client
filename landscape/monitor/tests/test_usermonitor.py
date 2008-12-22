@@ -12,6 +12,43 @@ from landscape.tests.helpers import MakePathHelper, RemoteBrokerHelper
 from landscape.tests.mocker import ANY
 
 
+class UserMonitorNoManagerTest(LandscapeIsolatedTest):
+
+    helpers = [MakePathHelper, RemoteBrokerHelper]
+
+    def setUp(self):
+        super(UserMonitorNoManagerTest, self).setUp()
+        self.persist = Persist()
+        self.monitor = MonitorPluginRegistry(
+            self.remote, self.broker_service.reactor,
+            self.broker_service.config, self.broker_service.bus, self.persist)
+
+    def test_fetch_users_without_manager(self):
+        """
+        If the manager isn't running, collection of user data should still work.
+        """
+        def got_result(result):
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [{"create-group-members": {u"webdev":[u"jdoe"]},
+                  "create-groups": [{"gid": 1000, "name": u"webdev"}],
+                  "create-users": [{"enabled": True, "home-phone": None,
+                                    "location": None, "name": u"JD",
+                                    "primary-gid": 1000, "uid": 1000,
+                                    "username": u"jdoe", "work-phone": None}],
+                                    "type": "users"}])
+
+        users = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh")]
+        groups = [("webdev", "x", 1000, ["jdoe"])]
+        provider = FakeUserProvider(users=users, groups=groups)
+        plugin = UserMonitor(provider=provider)
+        self.monitor.add(plugin)
+        self.broker_service.message_store.set_accepted_types(["users"])
+        result = plugin.run()
+        result.addCallback(got_result)
+        return result
+
+
 class UserMonitorTest(LandscapeIsolatedTest):
 
     helpers = [MakePathHelper, RemoteBrokerHelper]
