@@ -24,7 +24,7 @@ class SysVConfig(object):
 
     def is_configured_to_run(self):
         state = self._parse_file()
-        return bool(state.get("RUN", None))
+        return bool(int(state.get("RUN", 0)))
 
     def _parse_file(self):
         values = {}
@@ -32,8 +32,9 @@ class SysVConfig(object):
         if os.path.isfile(self._filename):
             for line in open(self._filename, "r"):
                 line = line.strip()
-                key, value = line.split("=")
-                values[key] = value
+                if "=" in line:
+                    key, value = line.split("=")
+                    values[key.strip()] = value
         return values
 
     def _write_file(self, values):
