@@ -30,11 +30,7 @@ class SysVConfig(object):
         """
         state = self._parse_file()
         run_value = state.get("RUN", "0")
-        if run_value[:1].isspace():
-            return False
-        if run_value == "0":
-            return False
-        return True
+        return (not run_value[:1].isspace()) and run_value != "0"
 
     def _parse_file(self):
         values = {}
