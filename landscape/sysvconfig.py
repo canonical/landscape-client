@@ -23,8 +23,18 @@ class SysVConfig(object):
             raise ProcessError("Could not stop client")
 
     def is_configured_to_run(self):
+        """
+        Return a boolean representing whether the init script will decide to
+        actually start the client when it is run.  This method should match
+        the semantics of the checks in debian/landscape-client.init.
+        """
         state = self._parse_file()
-        return bool(int(state.get("RUN", 0)))
+        run_value = state.get("RUN", "0")
+        if run_value[:1].isspace():
+            return False
+        if run_value == "0":
+            return False
+        return True
 
     def _parse_file(self):
         values = {}
@@ -34,7 +44,7 @@ class SysVConfig(object):
                 line = line.strip()
                 if "=" in line:
                     key, value = line.split("=")
-                    values[key.strip()] = value
+                    values[key] = value
         return values
 
     def _write_file(self, values):

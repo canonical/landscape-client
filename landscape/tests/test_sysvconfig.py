@@ -38,6 +38,21 @@ class SysVConfigTest(LandscapeTest):
     def test_spaces(self):
         filename = self.makeFile(" RUN = 1   \n")
         sysvconfig = SysVConfig(filename)
+        self.assertFalse(sysvconfig.is_configured_to_run())
+
+    def test_leading_and_trailing_spaces(self):
+        filename = self.makeFile(" RUN=1   \n")
+        sysvconfig = SysVConfig(filename)
+        self.assertTrue(sysvconfig.is_configured_to_run())
+
+    def test_spaces_in_value(self):
+        filename = self.makeFile(" RUN= 1   \n")
+        sysvconfig = SysVConfig(filename)
+        self.assertFalse(sysvconfig.is_configured_to_run())
+
+    def test_non_integer_run(self):
+        filename = self.makeFile("RUN=yesplease")
+        sysvconfig = SysVConfig(filename)
         self.assertTrue(sysvconfig.is_configured_to_run())
 
     def test_run_landscape(self):
