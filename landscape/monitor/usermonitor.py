@@ -62,7 +62,7 @@ class UserMonitor(MonitorPlugin):
             C{operation-id} field.
         """
         from landscape.manager.usermanager import UserManagerDBusObject
-        # Specify a 0 timeout because it may be quite normal for this
+        # Specify a low timeout because it may be quite normal for this
         # service to not be provided, if the client is being run in non-root
         # mode.
         remote_service = get_object(
