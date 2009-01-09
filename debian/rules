@@ -30,8 +30,7 @@ install: build
 		etc/landscape \
 		var/lib/landscape \
 		var/log/landscape \
-		usr/share/landscape \
-		var/run/landscape
+		usr/share/landscape
 
 	python setup.py install --root $(root_dir)
 
