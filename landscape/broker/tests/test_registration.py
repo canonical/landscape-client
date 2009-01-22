@@ -326,31 +326,29 @@ class RegistrationTest(LandscapeTest):
 
     def test_cloud_registration(self):
         """
-
         When the 'cloud' configuration variable is set, cloud registration is
         done instead of normal password-based registration. This means:
 
         - "Launch Data" is fetched from the EC2 Launch Data URL. This contains
           a one-time password that is used during registration.
-
         - A different "register-cloud-vm" message is sent to the server instead
           of "register", containing the OTP. This message is handled by
           immediately accepting the computer, instead of going through the
           pending computer stage.
-
         """
-        otp = "abcdef"
-        self.mock_gethostname()
-        self.mocker.replay()
 
+        # A bunch of useful test data
+        otp = "abcdef"
         user_data = dumps({"otp": otp})
         instance_id = "i-3ea74257"
-        instance_id_url = "http://169.254.169.254/2008-12-01/meta-data/instance-id"
-        user_data_url = "http://169.254.169.254/2008-12-01/user-data"
-        hostname_url = "http://169.254.169.254/2008-12-01/meta-data/local-hostname"
+        api_base = "http://169.254.169.254/2008-12-01"
+        instance_id_url = api_base + "/meta-data/instance-id"
+        user_data_url = api_base + "/user-data"
+        hostname_url = api_base + "/meta-data/local-hostname"
         query_results = {instance_id_url: instance_id,
                          user_data_url: user_data,
                          hostname_url: "ooga"}
+        config = self.broker_service.config
 
         def fetch_stub(url):
             return succeed(query_results[url])
@@ -361,7 +359,19 @@ class RegistrationTest(LandscapeTest):
                                       exchanger,
                                       self.broker_service.message_store,
                                       cloud=True,
-                                      async_fetch=fetch_stub)
+                                      fetch_async=fetch_stub)
+
+        # Set things up so that the client thinks it should register
+        mstore = self.broker_service.message_store
+        mstore.set_accepted_types(mstore.get_accepted_types()
+                                  + ("register-cloud-vm",))
+        config.account_name = None
+        config.registration_password = None
+        config.computer_title = None
+        self.broker_service.identity.secure_id = None
+        self.assertTrue(handler.should_register())
+
+        # Okay! Exchange should cause the registration to happen.
         exchanger.exchange()
         # This *should* be asynchronous, but I think a billion tests are
         # written like this

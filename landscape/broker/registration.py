@@ -1,7 +1,14 @@
+
 import logging
 import socket
 
 from twisted.internet.defer import Deferred
+
+from landscape.lib.twisted_util import gather_results
+from landscape.lib.bpickle import loads
+
+
+EC2_API = "http://169.254.169.254/2008-12-01"
 
 
 class InvalidCredentialsError(Exception):
@@ -47,7 +54,7 @@ class RegistrationHandler(object):
     """
 
     def __init__(self, identity, reactor, exchange, message_store, cloud=False,
-                 async_fetch=None):
+                 fetch_async=None):
         self._identity = identity
         self._reactor = reactor
         self._exchange = exchange
@@ -60,11 +67,14 @@ class RegistrationHandler(object):
                                         self._handle_registration)
         self._should_register = None
         self._cloud = cloud
+        self._fetch_async = fetch_async
 
     def should_register(self):
         id = self._identity
+        # boolean logic is hard, I'm gonna use an if
         if self._cloud:
-            return bool(not id.secure_id and self._message_store.accepts("register-cloud-vm"))
+            return bool(not id.secure_id
+                        and self._message_store.accepts("register-cloud-vm"))
         return bool(not id.secure_id and id.computer_title and id.account_name
                     and self._message_store.accepts("register"))
 
@@ -106,23 +116,41 @@ class RegistrationHandler(object):
         self._should_register = self.should_register()
 
         if self._should_register:
-            # XXX - if in_cloud, get OTP from launch data with fetch.
             id = self._identity
 
-            with_word = ["without", "with"][bool(id.registration_password)]
-            logging.info("Queueing message to register with account %r %s "
-                         "a password." % (id.account_name, with_word))
+            if self._cloud:
+                logging.info("Queueing message to register with account %r "
+                             "as an EC2 instance." % (id.account_name,))
+                userdata_deferred = self._fetch_async(EC2_API + "/user-data")
+                instance_id_deferred = self._fetch_async(
+                    EC2_API + "/meta-data/instance-id")
+                hostname_deferred = self._fetch_async(
+                    EC2_API + "/meta-data/local-hostname")
+                registration_data = gather_results([userdata_deferred,
+                                                    instance_id_deferred,
+                                                    hostname_deferred])
+                registration_data.addCallback(
+                    lambda r:
+                    self._exchange.send(
+                        {"type": "register-cloud-vm",
+                         "otp": loads(r[0])["otp"],
+                         "instance-id": r[1],
+                         "hostname": r[2]}))
+            else:
+                with_word = ["without", "with"][bool(id.registration_password)]
+                logging.info("Queueing message to register with account %r %s "
+                             "a password." % (id.account_name, with_word))
 
-            self._message_store.delete_all_messages()
-            # XXX - if in_cloud use a "register-cloud" type with only
-            # OTP & instance_id
-            message = {"type": "register",
-                       "computer_title": id.computer_title,
-                       "account_name": id.account_name,
-                       "registration_password": id.registration_password,
-                       "hostname": socket.gethostname()}
+                self._message_store.delete_all_messages()
+                # XXX - if in_cloud use a "register-cloud" type with only
+                # OTP & instance_id
+                message = {"type": "register",
+                           "computer_title": id.computer_title,
+                           "account_name": id.account_name,
+                           "registration_password": id.registration_password,
+                           "hostname": socket.gethostname()}
 
-            self._exchange.send(message)
+                self._exchange.send(message)
 
     def _handle_set_id(self, message):
         """

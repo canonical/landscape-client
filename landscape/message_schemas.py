@@ -144,6 +144,12 @@ REGISTER = Message(
     # hostname wasn't around in old versions
     optional=["registration_password", "hostname"])
 
+REGISTER_CLOUD_VM = Message(
+    "register-cloud-vm",
+    {"hostname": String(),
+     "otp": String(),
+     "instance-id": String()})
+
 TEMPERATURE = Message("temperature", {
     "thermal-zone": utf8,
     "temperatures": List(Tuple(Int(), Float())),
@@ -313,7 +319,8 @@ for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                OPERATION_RESULT, COMPUTER_INFO, DISTRIBUTION_INFO,
                HARDWARE_INVENTORY, LOAD_AVERAGE, MEMORY_INFO,
                RESYNCHRONIZE, MOUNT_ACTIVITY, MOUNT_INFO, FREE_SPACE,
-               REGISTER, TEMPERATURE, PROCESSOR_INFO, USERS, PACKAGES,
+               REGISTER, REGISTER_CLOUD_VM, TEMPERATURE, PROCESSOR_INFO,
+               USERS, PACKAGES,
                CHANGE_PACKAGES_RESULT, UNKNOWN_PACKAGE_HASHES,
                ADD_PACKAGES, TEXT_MESSAGE, TEST, CUSTOM_GRAPH]:
     message_schemas[schema.type] = schema
