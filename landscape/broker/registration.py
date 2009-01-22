@@ -46,7 +46,8 @@ class RegistrationHandler(object):
     L{register} should be used to initial registration.
     """
 
-    def __init__(self, identity, reactor, exchange, message_store):
+    def __init__(self, identity, reactor, exchange, message_store, cloud=False,
+                 async_fetch=None):
         self._identity = identity
         self._reactor = reactor
         self._exchange = exchange
@@ -58,9 +59,12 @@ class RegistrationHandler(object):
         self._exchange.register_message("registration",
                                         self._handle_registration)
         self._should_register = None
+        self._cloud = cloud
 
     def should_register(self):
         id = self._identity
+        if self._cloud:
+            return bool(not id.secure_id and self._message_store.accepts("register-cloud-vm"))
         return bool(not id.secure_id and id.computer_title and id.account_name
                     and self._message_store.accepts("register"))
 
@@ -102,6 +106,7 @@ class RegistrationHandler(object):
         self._should_register = self.should_register()
 
         if self._should_register:
+            # XXX - if in_cloud, get OTP from launch data with fetch.
             id = self._identity
 
             with_word = ["without", "with"][bool(id.registration_password)]
@@ -109,7 +114,8 @@ class RegistrationHandler(object):
                          "a password." % (id.account_name, with_word))
 
             self._message_store.delete_all_messages()
-
+            # XXX - if in_cloud use a "register-cloud" type with only
+            # OTP & instance_id
             message = {"type": "register",
                        "computer_title": id.computer_title,
                        "account_name": id.account_name,

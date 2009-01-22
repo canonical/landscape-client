@@ -1,9 +1,12 @@
 import logging
 
+from twisted.internet.defer import succeed
+
 from landscape.broker.registration import (
-    RegistrationHandler, Identity, InvalidCredentialsError)
+    InvalidCredentialsError, RegistrationHandler)
 
 from landscape.tests.helpers import LandscapeTest, ExchangeHelper
+from landscape.lib.bpickle import dumps
 
 
 class RegistrationTest(LandscapeTest):
@@ -320,3 +323,110 @@ class RegistrationTest(LandscapeTest):
         self.config.account_name = "account_name"
         self.reactor.fire("pre-exchange")
         self.reactor.fire("exchange-done")
+
+    def test_cloud_registration(self):
+        """
+
+        When the 'cloud' configuration variable is set, cloud registration is
+        done instead of normal password-based registration. This means:
+
+        - "Launch Data" is fetched from the EC2 Launch Data URL. This contains
+          a one-time password that is used during registration.
+
+        - A different "register-cloud-vm" message is sent to the server instead
+          of "register", containing the OTP. This message is handled by
+          immediately accepting the computer, instead of going through the
+          pending computer stage.
+
+        """
+        otp = "abcdef"
+        self.mock_gethostname()
+        self.mocker.replay()
+
+        user_data = dumps({"otp": otp})
+        instance_id = "i-3ea74257"
+        instance_id_url = "http://169.254.169.254/2008-12-01/meta-data/instance-id"
+        user_data_url = "http://169.254.169.254/2008-12-01/user-data"
+        hostname_url = "http://169.254.169.254/2008-12-01/meta-data/local-hostname"
+        query_results = {instance_id_url: instance_id,
+                         user_data_url: user_data,
+                         hostname_url: "ooga"}
+
+        def fetch_stub(url):
+            return succeed(query_results[url])
+
+        exchanger = self.broker_service.exchanger
+        handler = RegistrationHandler(self.broker_service.identity,
+                                      self.broker_service.reactor,
+                                      exchanger,
+                                      self.broker_service.message_store,
+                                      cloud=True,
+                                      async_fetch=fetch_stub)
+        exchanger.exchange()
+        # This *should* be asynchronous, but I think a billion tests are
+        # written like this
+        self.assertEquals(len(self.transport.payloads), 1)
+        self.assertMessages(self.transport.payloads[0]["messages"],
+                            [{"type": "register-cloud-vm",
+                              "otp": otp,
+                              "hostname": "ooga",
+                              "instance-id": instance_id}])
+
+    def test_should_register_in_cloud(self):
+        """
+        The client should register when it's in the cloud even though
+        it doesn't have the normal account details.
+        """
+        config = self.broker_service.config
+        handler = RegistrationHandler(self.broker_service.identity,
+                                      self.broker_service.reactor,
+                                      self.broker_service.exchanger,
+                                      self.broker_service.message_store,
+                                      cloud=True)
+
+        mstore = self.broker_service.message_store
+        mstore.set_accepted_types(mstore.get_accepted_types()
+                                  + ("register-cloud-vm",))
+        config.account_name = None
+        config.registration_password = None
+        config.computer_title = None
+        self.broker_service.identity.secure_id = None
+        self.assertTrue(handler.should_register())
+
+    def test_should_not_register_in_cloud(self):
+        """
+        Having a secure ID means we shouldn't register, even in the cloud.
+        """
+        config = self.broker_service.config
+        handler = RegistrationHandler(self.broker_service.identity,
+                                      self.broker_service.reactor,
+                                      self.broker_service.exchanger,
+                                      self.broker_service.message_store,
+                                      cloud=True)
+        
+        mstore = self.broker_service.message_store
+        mstore.set_accepted_types(mstore.get_accepted_types()
+                                  + ("register-cloud-vm",))
+        config.account_name = None
+        config.registration_password = None
+        config.computer_title = None
+        self.broker_service.identity.secure_id = "hello"
+        self.assertFalse(handler.should_register())
+
+    def test_should_not_register_without_register_cloud_vm(self):
+        """
+        If the server isn't accepting a 'register-cloud-vm' message,
+        we shouldn't register.
+        """
+        config = self.broker_service.config
+        handler = RegistrationHandler(self.broker_service.identity,
+                                      self.broker_service.reactor,
+                                      self.broker_service.exchanger,
+                                      self.broker_service.message_store,
+                                      cloud=True)
+        
+        config.account_name = None
+        config.registration_password = None
+        config.computer_title = None
+        self.broker_service.identity.secure_id = None
+        self.assertFalse(handler.should_register())
