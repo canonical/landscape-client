@@ -118,6 +118,7 @@ class RegistrationHandler(object):
         if self._should_register:
             id = self._identity
 
+            self._message_store.delete_all_messages()
             if self._cloud:
                 logging.info("Queueing message to register with account %r "
                              "as an EC2 instance." % (id.account_name,))
@@ -141,9 +142,6 @@ class RegistrationHandler(object):
                 logging.info("Queueing message to register with account %r %s "
                              "a password." % (id.account_name, with_word))
 
-                self._message_store.delete_all_messages()
-                # XXX - if in_cloud use a "register-cloud" type with only
-                # OTP & instance_id
                 message = {"type": "register",
                            "computer_title": id.computer_title,
                            "account_name": id.account_name,

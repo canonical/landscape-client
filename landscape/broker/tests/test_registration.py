@@ -336,7 +336,6 @@ class RegistrationTest(LandscapeTest):
           immediately accepting the computer, instead of going through the
           pending computer stage.
         """
-
         # A bunch of useful test data
         otp = "abcdef"
         user_data = dumps({"otp": otp})
@@ -382,6 +381,42 @@ class RegistrationTest(LandscapeTest):
                               "hostname": "ooga",
                               "instance-id": instance_id}])
 
+    def test_queueing_cloud_registration_message_resets_message_store(self):
+        """
+        When a registration from a cloud is about to happen, the message store
+        is reset, because all previous messages are now meaningless.
+        """
+        self.mstore.set_accepted_types(["register", "test", "register-cloud-vm"])
+        self.mstore.add({"type": "test"})
+
+        otp = "abcdef"
+        user_data = dumps({"otp": otp})
+        config = self.broker_service.config
+
+        def fetch_stub(url):
+            return succeed(user_data)
+
+        exchanger = self.broker_service.exchanger
+        handler = RegistrationHandler(self.broker_service.identity,
+                                      self.reactor,
+                                      exchanger,
+                                      self.mstore,
+                                      cloud=True,
+                                      fetch_async=fetch_stub)
+
+        # Set things up so that the client thinks it should register
+        config.account_name = None
+        config.registration_password = None
+        config.computer_title = None
+        self.broker_service.identity.secure_id = None
+        self.assertTrue(handler.should_register())
+
+        self.reactor.fire("pre-exchange")
+
+        messages = self.mstore.get_pending_messages()
+        self.assertEquals(len(messages), 1)
+        self.assertEquals(messages[0]["type"], "register-cloud-vm")
+
     def test_should_register_in_cloud(self):
         """
         The client should register when it's in the cloud even though
@@ -413,7 +448,7 @@ class RegistrationTest(LandscapeTest):
                                       self.broker_service.exchanger,
                                       self.broker_service.message_store,
                                       cloud=True)
-        
+
         mstore = self.broker_service.message_store
         mstore.set_accepted_types(mstore.get_accepted_types()
                                   + ("register-cloud-vm",))
@@ -434,7 +469,7 @@ class RegistrationTest(LandscapeTest):
                                       self.broker_service.exchanger,
                                       self.broker_service.message_store,
                                       cloud=True)
-        
+
         config.account_name = None
         config.registration_password = None
         config.computer_title = None
