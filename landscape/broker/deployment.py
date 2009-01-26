@@ -9,6 +9,7 @@ from landscape.broker.transport import HTTPTransport
 from landscape.broker.exchange import MessageExchange
 from landscape.broker.registration import RegistrationHandler, Identity
 from landscape.broker.broker import BrokerDBusObject
+from landscape.lib.fetch import fetch_async
 from landscape.broker.ping import Pinger
 
 
@@ -109,7 +110,8 @@ class BrokerService(LandscapeService):
 
         self.registration = RegistrationHandler(self.identity, self.reactor,
                                                 self.exchanger,
-                                                self.message_store)
+                                                self.message_store,
+                                                config.cloud, fetch_async)
         self.pinger = Pinger(self.reactor, config.ping_url, self.identity,
                              self.exchanger)
 

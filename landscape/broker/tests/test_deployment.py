@@ -6,10 +6,13 @@ from landscape.lib.persist import Persist
 from landscape.tests.mocker import ANY
 
 from landscape.broker.broker import BUS_NAME
-from landscape.broker.deployment import BrokerConfiguration
+from landscape.broker.deployment import BrokerConfiguration, BrokerService
 from landscape.tests.helpers import (
     LandscapeTest, LandscapeIsolatedTest, FakeRemoteBrokerHelper,
     RemoteBrokerHelper, EnvironSaverHelper)
+from landscape.reactor import FakeReactor
+from landscape.broker.transport import FakeTransport
+from landscape.lib.fetch import fetch_async
 
 
 class DBusTestTest(LandscapeIsolatedTest):
@@ -37,8 +40,8 @@ class DeploymentTest(LandscapeIsolatedTest):
 
     def test_pinger(self):
         """
-        The BrokerDBusObject sets up an active pinger which will cause exchanges
-        to occur.
+        The BrokerDBusObject sets up an active pinger which will cause
+        exchanges to occur.
         """
         patched_fetch = self.mocker.replace("landscape.lib.fetch.fetch")
 
@@ -63,6 +66,28 @@ class DeploymentTest(LandscapeIsolatedTest):
         self.mocker.replay()
 
         self.broker_service.reactor.fire("post-exit")
+
+
+    def test_registration_instantiation(self):
+        class MyBrokerConfiguration(BrokerConfiguration):
+            default_config_filenames = [self.config_filename]
+
+        config = MyBrokerConfiguration()
+        config.load(["--bus", "session", "--data-path", self.data_path])
+
+        class FakeBrokerService(BrokerService):
+            """A broker which uses a fake reactor and fake transport."""
+            reactor_factory = FakeReactor
+            transport_factory = FakeTransport
+
+        self.assertFalse(config.cloud)
+        service = FakeBrokerService(config)
+        self.assertFalse(service.registration._cloud)
+        self.assertIdentical(service.registration._fetch_async, fetch_async)
+
+        config.cloud = True
+        service = FakeBrokerService(config)
+        self.assertTrue(service.registration._cloud)
 
 
 class ConfigurationTests(LandscapeTest):
