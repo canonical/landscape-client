@@ -1,6 +1,6 @@
 import logging
 
-from twisted.internet.defer import succeed
+from twisted.internet.defer import succeed, fail
 
 from landscape.broker.registration import (
     InvalidCredentialsError, RegistrationHandler)
@@ -340,7 +340,7 @@ class RegistrationTest(LandscapeTest):
         otp = "abcdef"
         user_data = dumps({"otp": otp})
         instance_id = "i-3ea74257"
-        api_base = "http://169.254.169.254/2008-12-01"
+        api_base = "http://169.254.169.254/latest"
         instance_id_url = api_base + "/meta-data/instance-id"
         user_data_url = api_base + "/user-data"
         hostname_url = api_base + "/meta-data/local-hostname"
@@ -380,6 +380,84 @@ class RegistrationTest(LandscapeTest):
                               "otp": otp,
                               "hostname": "ooga",
                               "instance-id": instance_id}])
+
+    def test_wrong_user_data(self):
+        user_data = "other stuff, not a bpickle"
+        instance_id = "i-3ea74257"
+        api_base = "http://169.254.169.254/latest"
+        instance_id_url = api_base + "/meta-data/instance-id"
+        user_data_url = api_base + "/user-data"
+        hostname_url = api_base + "/meta-data/local-hostname"
+        query_results = {instance_id_url: instance_id,
+                         user_data_url: user_data,
+                         hostname_url: "ooga"}
+        config = self.broker_service.config
+
+        def fetch_stub(url):
+            return succeed(query_results[url])
+
+        exchanger = self.broker_service.exchanger
+        handler = RegistrationHandler(self.broker_service.identity,
+                                      self.broker_service.reactor,
+                                      exchanger,
+                                      self.broker_service.message_store,
+                                      cloud=True,
+                                      fetch_async=fetch_stub)
+
+        mstore = self.broker_service.message_store
+        mstore.set_accepted_types(mstore.get_accepted_types()
+                                  + ("register-cloud-vm",))
+        config.account_name = None
+        config.registration_password = None
+        config.computer_title = None
+        self.broker_service.identity.secure_id = None
+        self.assertTrue(handler.should_register())
+
+        # Mock registration-failed call
+        reactor_mock = self.mocker.patch(self.reactor)
+        reactor_mock.fire("registration-failed")
+        self.mocker.replay()
+
+        exchanger.exchange()
+
+    def test_user_data_bpickle_without_otp(self):
+        user_data = dumps({"foo": "bar"})
+        instance_id = "i-3ea74257"
+        api_base = "http://169.254.169.254/latest"
+        instance_id_url = api_base + "/meta-data/instance-id"
+        user_data_url = api_base + "/user-data"
+        hostname_url = api_base + "/meta-data/local-hostname"
+        query_results = {instance_id_url: instance_id,
+                         user_data_url: user_data,
+                         hostname_url: "ooga"}
+        config = self.broker_service.config
+
+        def fetch_stub(url):
+            return succeed(query_results[url])
+
+        exchanger = self.broker_service.exchanger
+        handler = RegistrationHandler(self.broker_service.identity,
+                                      self.broker_service.reactor,
+                                      exchanger,
+                                      self.broker_service.message_store,
+                                      cloud=True,
+                                      fetch_async=fetch_stub)
+
+        mstore = self.broker_service.message_store
+        mstore.set_accepted_types(mstore.get_accepted_types()
+                                  + ("register-cloud-vm",))
+        config.account_name = None
+        config.registration_password = None
+        config.computer_title = None
+        self.broker_service.identity.secure_id = None
+        self.assertTrue(handler.should_register())
+
+        # Mock registration-failed call
+        reactor_mock = self.mocker.patch(self.reactor)
+        reactor_mock.fire("registration-failed")
+        self.mocker.replay()
+
+        exchanger.exchange()
 
     def test_queueing_cloud_registration_message_resets_message_store(self):
         """

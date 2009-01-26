@@ -8,7 +8,7 @@ from landscape.lib.twisted_util import gather_results
 from landscape.lib.bpickle import loads
 
 
-EC2_API = "http://169.254.169.254/2008-12-01"
+EC2_API = "http://169.254.169.254/latest"
 
 
 class InvalidCredentialsError(Exception):
@@ -130,13 +130,25 @@ class RegistrationHandler(object):
                 registration_data = gather_results([userdata_deferred,
                                                     instance_id_deferred,
                                                     hostname_deferred])
-                registration_data.addCallback(
-                    lambda r:
+                def got_data(results):
+                    try:
+                        user_data = loads(results[0])
+                    except ValueError:
+                        logging.debug(
+                            "Got invalid user-data %r" % (results[0],))
+                        self._reactor.fire("registration-failed")
+                        return
+                    if not "otp" in user_data:
+                        logging.debug(
+                            "OTP not present in user-data %r" % (user_data,))
+                        self._reactor.fire("registration-failed")
+                        return
                     self._exchange.send(
                         {"type": "register-cloud-vm",
-                         "otp": loads(r[0])["otp"],
-                         "instance-id": r[1],
-                         "hostname": r[2]}))
+                         "otp": user_data["otp"],
+                         "instance-id": results[1],
+                         "hostname": results[2]})
+                registration_data.addCallback(got_data)
             else:
                 with_word = ["without", "with"][bool(id.registration_password)]
                 logging.info("Queueing message to register with account %r %s "
