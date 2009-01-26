@@ -1,6 +1,7 @@
 import logging
+import pycurl
 
-from twisted.internet.defer import succeed
+from twisted.internet.defer import succeed, fail
 
 from landscape.broker.registration import (
     InvalidCredentialsError, RegistrationHandler)
@@ -540,6 +541,37 @@ class RegistrationTest(LandscapeTest):
         messages = self.mstore.get_pending_messages()
         self.assertEquals(len(messages), 1)
         self.assertEquals(messages[0]["type"], "register-cloud-vm")
+
+    def test_cloud_registration_fetch_errors(self):
+        config = self.broker_service.config
+
+        def fetch_stub(url):
+            return fail(pycurl.error(7, "couldn't connect to host"))
+
+        exchanger = self.broker_service.exchanger
+        handler = RegistrationHandler(self.broker_service.identity,
+                                      self.broker_service.reactor,
+                                      exchanger,
+                                      self.broker_service.message_store,
+                                      cloud=True,
+                                      fetch_async=fetch_stub)
+
+        mstore = self.broker_service.message_store
+        mstore.set_accepted_types(mstore.get_accepted_types()
+                                  + ("register-cloud-vm",))
+        config.account_name = None
+        config.registration_password = None
+        config.computer_title = None
+        self.broker_service.identity.secure_id = None
+        self.assertTrue(handler.should_register())
+
+        # Mock registration-failed call
+        reactor_mock = self.mocker.patch(self.reactor)
+        reactor_mock.fire("registration-failed")
+        self.mocker.replay()
+
+        self.log_helper.ignore_errors("Got error while fetching meta-data")
+        exchanger.exchange()
 
     def test_should_register_in_cloud(self):
         """

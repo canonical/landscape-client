@@ -129,7 +129,8 @@ class RegistrationHandler(object):
                     EC2_API + "/meta-data/local-hostname")
                 registration_data = gather_results([userdata_deferred,
                                                     instance_id_deferred,
-                                                    hostname_deferred])
+                                                    hostname_deferred],
+                                                    consume_errors=True)
                 def got_data(results):
                     got_otp = True
                     try:
@@ -162,7 +163,13 @@ class RegistrationHandler(object):
                     else:
                         self._reactor.fire("registration-failed")
 
+                def got_error(error):
+                    logging.error(
+                        "Got error while fetching meta-data: %r" % (error.value,))
+                    self._reactor.fire("registration-failed")
+
                 registration_data.addCallback(got_data)
+                registration_data.addErrback(got_error)
             else:
                 with_word = ["without", "with"][bool(id.registration_password)]
                 logging.info("Queueing message to register with account %r %s "
