@@ -56,6 +56,8 @@ class BrokerConfiguration(Configuration):
                           help="The URL of the HTTP proxy, if one is needed.")
         parser.add_option("--https-proxy", metavar="URL",
                           help="The URL of the HTTPS proxy, if one is needed.")
+        parser.add_option("--cloud", action="store_true",
+                          help="Set this if your computer is in an EC2 cloud.")
         return parser
 
     @property

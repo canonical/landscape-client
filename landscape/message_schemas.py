@@ -147,8 +147,10 @@ REGISTER = Message(
 REGISTER_CLOUD_VM = Message(
     "register-cloud-vm",
     {"hostname": String(),
-     "otp": String(),
-     "instance-id": String()})
+     "otp":  Any(String(), Constant(None)),
+     "instance_id": String(),
+     "account_name": Any(utf8, Constant(None)),
+     "registration_password": Any(utf8, Constant(None))})
 
 TEMPERATURE = Message("temperature", {
     "thermal-zone": utf8,

@@ -131,23 +131,37 @@ class RegistrationHandler(object):
                                                     instance_id_deferred,
                                                     hostname_deferred])
                 def got_data(results):
+                    got_otp = True
                     try:
                         user_data = loads(results[0])
                     except ValueError:
                         logging.debug(
                             "Got invalid user-data %r" % (results[0],))
-                        self._reactor.fire("registration-failed")
-                        return
+                        got_otp = False
+                        user_data = {}
                     if not "otp" in user_data:
                         logging.debug(
                             "OTP not present in user-data %r" % (user_data,))
+                        got_otp = False
+                    if got_otp:
+                        self._exchange.send(
+                            {"type": "register-cloud-vm",
+                             "otp": user_data["otp"],
+                             "instance_id": results[1],
+                             "hostname": results[2],
+                             "account_name": None,
+                             "registration_password": None})
+                    elif id.account_name:
+                        self._exchange.send(
+                            {"type": "register-cloud-vm",
+                             "otp": None,
+                             "instance_id": results[1],
+                             "hostname": results[2],
+                             "account_name": id.account_name,
+                             "registration_password": id.registration_password})
+                    else:
                         self._reactor.fire("registration-failed")
-                        return
-                    self._exchange.send(
-                        {"type": "register-cloud-vm",
-                         "otp": user_data["otp"],
-                         "instance-id": results[1],
-                         "hostname": results[2]})
+
                 registration_data.addCallback(got_data)
             else:
                 with_word = ["without", "with"][bool(id.registration_password)]

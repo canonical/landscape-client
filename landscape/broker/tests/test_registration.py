@@ -1,6 +1,6 @@
 import logging
 
-from twisted.internet.defer import succeed, fail
+from twisted.internet.defer import succeed
 
 from landscape.broker.registration import (
     InvalidCredentialsError, RegistrationHandler)
@@ -379,7 +379,9 @@ class RegistrationTest(LandscapeTest):
                             [{"type": "register-cloud-vm",
                               "otp": otp,
                               "hostname": "ooga",
-                              "instance-id": instance_id}])
+                              "instance_id": instance_id,
+                              "account_name": None,
+                              "registration_password": None}])
 
     def test_wrong_user_data(self):
         user_data = "other stuff, not a bpickle"
@@ -459,12 +461,56 @@ class RegistrationTest(LandscapeTest):
 
         exchanger.exchange()
 
+    def test_no_otp_fallback_to_account(self):
+        user_data = "other stuff, not a bpickle"
+        instance_id = "i-3ea74257"
+        api_base = "http://169.254.169.254/latest"
+        instance_id_url = api_base + "/meta-data/instance-id"
+        user_data_url = api_base + "/user-data"
+        hostname_url = api_base + "/meta-data/local-hostname"
+        query_results = {instance_id_url: instance_id,
+                         user_data_url: user_data,
+                         hostname_url: "ooga"}
+        config = self.broker_service.config
+
+        def fetch_stub(url):
+            return succeed(query_results[url])
+
+        exchanger = self.broker_service.exchanger
+        handler = RegistrationHandler(self.broker_service.identity,
+                                      self.broker_service.reactor,
+                                      exchanger,
+                                      self.broker_service.message_store,
+                                      cloud=True,
+                                      fetch_async=fetch_stub)
+
+        mstore = self.broker_service.message_store
+        mstore.set_accepted_types(mstore.get_accepted_types()
+                                  + ("register-cloud-vm",))
+        config.account_name = u"onward"
+        config.registration_password = u"password"
+        config.computer_title = None
+        self.broker_service.identity.secure_id = None
+        self.assertTrue(handler.should_register())
+
+        exchanger.exchange()
+
+        self.assertEquals(len(self.transport.payloads), 1)
+        self.assertMessages(self.transport.payloads[0]["messages"],
+                            [{"type": "register-cloud-vm",
+                              "otp": None,
+                              "hostname": "ooga",
+                              "instance_id": instance_id,
+                              "account_name": u"onward",
+                              "registration_password": u"password"}])
+
     def test_queueing_cloud_registration_message_resets_message_store(self):
         """
         When a registration from a cloud is about to happen, the message store
         is reset, because all previous messages are now meaningless.
         """
-        self.mstore.set_accepted_types(["register", "test", "register-cloud-vm"])
+        self.mstore.set_accepted_types(
+            ["register", "test", "register-cloud-vm"])
         self.mstore.add({"type": "test"})
 
         otp = "abcdef"
