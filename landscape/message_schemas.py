@@ -146,7 +146,7 @@ REGISTER = Message(
 
 REGISTER_CLOUD_VM = Message(
     "register-cloud-vm",
-    {"hostname": String(),
+    {"hostname": utf8,
      "otp":  Any(String(), Constant(None)),
      "instance_id": String(),
      "account_name": Any(utf8, Constant(None)),
