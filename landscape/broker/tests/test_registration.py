@@ -371,6 +371,7 @@ class RegistrationTest(LandscapeTest):
         self.broker_service.identity.secure_id = None
         self.assertTrue(handler.should_register())
 
+        self.reactor.fire("run")
         # Okay! Exchange should cause the registration to happen.
         exchanger.exchange()
         # This *should* be asynchronous, but I think a billion tests are
@@ -421,6 +422,7 @@ class RegistrationTest(LandscapeTest):
         reactor_mock.fire("registration-failed")
         self.mocker.replay()
 
+        self.reactor.fire("run")
         exchanger.exchange()
 
     def test_user_data_bpickle_without_otp(self):
@@ -460,6 +462,7 @@ class RegistrationTest(LandscapeTest):
         reactor_mock.fire("registration-failed")
         self.mocker.replay()
 
+        self.reactor.fire("run")
         exchanger.exchange()
 
     def test_no_otp_fallback_to_account(self):
@@ -494,6 +497,7 @@ class RegistrationTest(LandscapeTest):
         self.broker_service.identity.secure_id = None
         self.assertTrue(handler.should_register())
 
+        self.reactor.fire("run")
         exchanger.exchange()
 
         self.assertEquals(len(self.transport.payloads), 1)
@@ -536,6 +540,7 @@ class RegistrationTest(LandscapeTest):
         self.broker_service.identity.secure_id = None
         self.assertTrue(handler.should_register())
 
+        self.reactor.fire("run")
         self.reactor.fire("pre-exchange")
 
         messages = self.mstore.get_pending_messages()
@@ -571,6 +576,7 @@ class RegistrationTest(LandscapeTest):
         self.mocker.replay()
 
         self.log_helper.ignore_errors("Got error while fetching meta-data")
+        self.reactor.fire("run")
         exchanger.exchange()
 
     def test_should_register_in_cloud(self):

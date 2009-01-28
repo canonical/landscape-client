@@ -39,6 +39,9 @@ class Identity(object):
     computer_title = config_property("computer_title")
     account_name = config_property("account_name")
     registration_password = config_property("registration_password")
+    otp = None
+    instance_id = None
+    hostname = None
 
     def __init__(self, config, persist):
         self._config = config
@@ -59,6 +62,7 @@ class RegistrationHandler(object):
         self._reactor = reactor
         self._exchange = exchange
         self._message_store = message_store
+        self._reactor.call_on("run", self._handle_run)
         self._reactor.call_on("pre-exchange", self._handle_pre_exchange)
         self._reactor.call_on("exchange-done", self._handle_exchange_done)
         self._exchange.register_message("set-id", self._handle_set_id)
@@ -79,7 +83,8 @@ class RegistrationHandler(object):
                     and self._message_store.accepts("register"))
 
     def register(self):
-        """Attempt to register with the Landscape server.
+        """
+        Attempt to register with the Landscape server.
 
         @return: A L{Deferred} which will either be fired with None if
             registration was successful or will fail with an
@@ -87,32 +92,65 @@ class RegistrationHandler(object):
         """
         self._identity.secure_id = None
         self._identity.insecure_id = None
-        # This was the original code, it works as well but it
-        # takes longer due to the urgent exchange interval.
-        #self._exchange.schedule_exchange(urgent=True)
         result = RegistrationResponse(self._reactor).deferred
         self._exchange.exchange()
         return result
 
+    def _handle_run(self):
+        if self.should_register() and self._cloud:
+            # Fetch data from the EC2 API, to be used later in the registration
+            # process
+            userdata_deferred = self._fetch_async(EC2_API + "/user-data")
+            instance_id_deferred = self._fetch_async(
+                EC2_API + "/meta-data/instance-id")
+            hostname_deferred = self._fetch_async(
+                EC2_API + "/meta-data/local-hostname")
+            registration_data = gather_results([userdata_deferred,
+                                                instance_id_deferred,
+                                                hostname_deferred],
+                                                consume_errors=True)
+            def got_data(results):
+                got_otp = True
+                try:
+                    user_data = loads(results[0])
+                except ValueError:
+                    logging.debug("Got invalid user-data %r" % (results[0],))
+                    got_otp = False
+                    user_data = {}
+                if not "otp" in user_data:
+                    logging.debug(
+                        "OTP not present in user-data %r" % (user_data,))
+                    got_otp = False
+                id = self._identity
+                if got_otp:
+                    id.otp = user_data["otp"]
+                id.instance_id = results[1]
+                id.hostname= results[2]
+
+            def got_error(error):
+                logging.error(
+                    "Got error while fetching meta-data: %r" % (error.value,))
+
+            registration_data.addCallback(got_data)
+            registration_data.addErrback(got_error)
+
     def _handle_exchange_done(self):
         if self.should_register() and not self._should_register:
-            # This was the original code, it works as well but it
-            # takes longer due to the urgent exchange interval.
-            #self._exchange.schedule_exchange(urgent=True)
+            # We received accepted-types (first exchange), so we now trigger
+            # the second exchange for registration
             self._exchange.exchange()
 
     def _handle_pre_exchange(self):
         """
-        An exchange is about to happen.  If we don't have a secure id
-        already set, and we have the needed information available,
-        queue a registration message with the server.
+        An exchange is about to happen.  If we don't have a secure id already
+        set, and we have the needed information available, queue a registration
+        message with the server.
         """
-
-        # The point of storing this flag is that if we should *not*
-        # register now, and then after the exchange we *should*, we
-        # schedule an urgent exchange again.  Without this flag we
-        # would just spin trying to connect to the server when
-        # something is clearly preventing the registration.
+        # The point of storing this flag is that if we should *not* register
+        # now, and then after the exchange we *should*, we schedule an urgent
+        # exchange again.  Without this flag we would just spin trying to
+        # connect to the server when something is clearly preventing the
+        # registration.
         self._should_register = self.should_register()
 
         if self._should_register:
@@ -120,56 +158,27 @@ class RegistrationHandler(object):
 
             self._message_store.delete_all_messages()
             if self._cloud:
-                logging.info("Queueing message to register with account %r "
-                             "as an EC2 instance." % (id.account_name,))
-                userdata_deferred = self._fetch_async(EC2_API + "/user-data")
-                instance_id_deferred = self._fetch_async(
-                    EC2_API + "/meta-data/instance-id")
-                hostname_deferred = self._fetch_async(
-                    EC2_API + "/meta-data/local-hostname")
-                registration_data = gather_results([userdata_deferred,
-                                                    instance_id_deferred,
-                                                    hostname_deferred],
-                                                    consume_errors=True)
-                def got_data(results):
-                    got_otp = True
-                    try:
-                        user_data = loads(results[0])
-                    except ValueError:
-                        logging.debug(
-                            "Got invalid user-data %r" % (results[0],))
-                        got_otp = False
-                        user_data = {}
-                    if not "otp" in user_data:
-                        logging.debug(
-                            "OTP not present in user-data %r" % (user_data,))
-                        got_otp = False
-                    if got_otp:
-                        self._exchange.send(
-                            {"type": "register-cloud-vm",
-                             "otp": user_data["otp"],
-                             "instance_id": results[1],
-                             "hostname": results[2],
-                             "account_name": None,
-                             "registration_password": None})
-                    elif id.account_name:
-                        self._exchange.send(
-                            {"type": "register-cloud-vm",
-                             "otp": None,
-                             "instance_id": results[1],
-                             "hostname": results[2],
-                             "account_name": id.account_name,
-                             "registration_password": id.registration_password})
-                    else:
-                        self._reactor.fire("registration-failed")
-
-                def got_error(error):
-                    logging.error(
-                        "Got error while fetching meta-data: %r" % (error.value,))
+                if id.otp:
+                    logging.info("Queueing message to register with OTP")
+                    message = {"type": "register-cloud-vm",
+                               "otp": id.otp,
+                               "instance_id": id.instance_id,
+                               "hostname": id.hostname,
+                               "account_name": None,
+                               "registration_password": None}
+                    self._exchange.send(message)
+                elif id.account_name:
+                    logging.info("Queueing message to register with account %r "
+                                 "as an EC2 instance." % (id.account_name,))
+                    message = {"type": "register-cloud-vm",
+                               "otp": None,
+                               "instance_id": id.instance_id,
+                               "hostname": id.hostname,
+                               "account_name": id.account_name,
+                               "registration_password": id.registration_password}
+                    self._exchange.send(message)
+                else:
                     self._reactor.fire("registration-failed")
-
-                registration_data.addCallback(got_data)
-                registration_data.addErrback(got_error)
             else:
                 with_word = ["without", "with"][bool(id.registration_password)]
                 logging.info("Queueing message to register with account %r %s "
