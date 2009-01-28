@@ -330,10 +330,12 @@ def assert_unowned_bus_name(bus, bus_name):
         sys.exit("error: DBus name %s is owned. "
                  "Is the process already running?" % bus_name)
 
+
 _required_users = {
     "broker": "landscape",
     "monitor": "landscape",
     "manager": "root"}
+
 
 def run_landscape_service(configuration_class, service_class, args, bus_name):
     """Run a Landscape service.
@@ -347,7 +349,6 @@ def run_landscape_service(configuration_class, service_class, args, bus_name):
     """
     from twisted.internet.glib2reactor import install
     install()
-    from twisted.internet import reactor
 
     # Let's consider adding this:
 #     from twisted.python.log import startLoggingWithObserver, PythonLoggingObserver
@@ -368,11 +369,12 @@ def run_landscape_service(configuration_class, service_class, args, bus_name):
     assert_unowned_bus_name(get_bus(configuration.bus), bus_name)
 
     application = Application("landscape-%s" % (service_class.service_name,))
-    service_class(configuration).setServiceParent(application)
+    service = service_class(configuration)
+    service.setServiceParent(application)
 
     startApplication(application, False)
 
     if configuration.ignore_sigint:
         signal.signal(signal.SIGINT, signal.SIG_IGN)
 
-    reactor.run()
+    service.reactor.run()

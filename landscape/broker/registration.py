@@ -97,7 +97,8 @@ class RegistrationHandler(object):
         return result
 
     def _handle_run(self):
-        if self.should_register() and self._cloud:
+        id = self._identity
+        if self._cloud and not id.secure_id:
             # Fetch data from the EC2 API, to be used later in the registration
             # process
             userdata_deferred = self._fetch_async(EC2_API + "/user-data")
@@ -121,7 +122,6 @@ class RegistrationHandler(object):
                     logging.debug(
                         "OTP not present in user-data %r" % (user_data,))
                     got_otp = False
-                id = self._identity
                 if got_otp:
                     id.otp = user_data["otp"]
                 id.instance_id = results[1]
