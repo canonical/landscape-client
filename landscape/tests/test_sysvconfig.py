@@ -20,15 +20,40 @@ class SysVConfigTest(LandscapeTest):
         sysvconfig.set_start_on_boot(False)
         self.assertEquals(file(filename, "r").read(), "RUN=0\n")
 
-    def test_is_landscape_configured_to_run(self):
+    def test_configured_to_run(self):
         filename = self.makeFile("RUN=1\n")
         sysvconfig = SysVConfig(filename)
-        self.assertTrue(sysvconfig.is_configured_to_run(), True)
+        self.assertTrue(sysvconfig.is_configured_to_run())
 
-    def test_is_landscape_configured_to_run(self):
+    def test_not_configured_to_run(self):
         filename = self.makeFile("RUN=0\n")
         sysvconfig = SysVConfig(filename)
-        self.assertTrue(sysvconfig.is_configured_to_run(), False)
+        self.assertFalse(sysvconfig.is_configured_to_run())
+
+    def test_blank_line(self):
+        filename = self.makeFile("RUN=1\n\n")
+        sysvconfig = SysVConfig(filename)
+        self.assertTrue(sysvconfig.is_configured_to_run())
+
+    def test_spaces(self):
+        filename = self.makeFile(" RUN = 1   \n")
+        sysvconfig = SysVConfig(filename)
+        self.assertFalse(sysvconfig.is_configured_to_run())
+
+    def test_leading_and_trailing_spaces(self):
+        filename = self.makeFile(" RUN=1   \n")
+        sysvconfig = SysVConfig(filename)
+        self.assertTrue(sysvconfig.is_configured_to_run())
+
+    def test_spaces_in_value(self):
+        filename = self.makeFile(" RUN= 1   \n")
+        sysvconfig = SysVConfig(filename)
+        self.assertFalse(sysvconfig.is_configured_to_run())
+
+    def test_non_integer_run(self):
+        filename = self.makeFile("RUN=yesplease")
+        sysvconfig = SysVConfig(filename)
+        self.assertTrue(sysvconfig.is_configured_to_run())
 
     def test_run_landscape(self):
         system = self.mocker.replace("os.system")

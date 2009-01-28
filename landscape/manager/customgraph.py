@@ -48,9 +48,10 @@ class NoOutputError(Exception):
 
 
 class ProhibitedUserError(Exception):
-    """Raised when an attempt to run a script as a user that is not allowed.
-       
-       @ivar username: The username that was used
+    """
+    Raised when an attempt to run a script as a user that is not allowed.
+
+    @ivar username: The username that was used
     """
 
     def __init__(self, username):
@@ -128,13 +129,13 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         except UnknownUserError, e:
            logging.error(u"Attempt to add graph with unknown user %s" %
                          user)
-        else: 
+        else:
             script_file = file(filename, "w")
             self.write_script_file(script_file, filename, shell, code, uid,
                                    gid)
             if graph_id in self._data:
                     del self._data[graph_id]
-        self.registry.store.add_graph(graph_id, filename, user) 
+        self.registry.store.add_graph(graph_id, filename, user)
 
     def _format_exception(self, e):
         return u"%s: %s" % (e.__class__.__name__, e)
@@ -179,7 +180,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
                 raise InvalidFormatError(output)
             else:
                 raise NoOutputError()
-            
+
         step_data = self._accumulate(now, data, graph_id)
         if step_data:
             self._data[graph_id]["values"].append(step_data)
@@ -249,10 +250,10 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
                 d = fail(e)
                 d.addErrback(self._handle_error, graph_id)
                 deferred_list.append(d)
-            else: 
+            else:
                 result = self._run_script(
-                filename, uid, gid, path, {}, self.time_limit)
+                    filename, uid, gid, path, {}, self.time_limit)
                 result.addCallback(self._handle_data, graph_id, now)
                 result.addErrback(self._handle_error, graph_id)
                 deferred_list.append(result)
-            return DeferredList(deferred_list)
+        return DeferredList(deferred_list)
