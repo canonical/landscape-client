@@ -106,24 +106,30 @@ class RegistrationHandler(object):
                 EC2_API + "/meta-data/instance-id")
             hostname_deferred = self._fetch_async(
                 EC2_API + "/meta-data/local-hostname")
+            launch_index_deferred = self._fetch_async(
+                EC2_API + "/meta-data/ami-launch-index")
             registration_data = gather_results([userdata_deferred,
                                                 instance_id_deferred,
-                                                hostname_deferred],
+                                                hostname_deferred,
+                                                launch_index_deferred],
                                                 consume_errors=True)
             def got_data(results):
                 got_otp = True
+                launch_index = int(results[3])
                 try:
                     user_data = loads(results[0])
                 except ValueError:
                     logging.debug("Got invalid user-data %r" % (results[0],))
                     got_otp = False
                     user_data = {}
-                if not "otp" in user_data:
+                if (not isinstance(user_data, (tuple, list))
+                    or len(user_data) < launch_index + 1
+                    or not "otp" in user_data[launch_index]):
                     logging.debug(
                         "OTP not present in user-data %r" % (user_data,))
                     got_otp = False
                 if got_otp:
-                    id.otp = user_data["otp"]
+                    id.otp = user_data[launch_index]["otp"]
                 id.instance_id = results[1]
                 id.hostname= results[2]
 
