@@ -1,11 +1,8 @@
 import os
 
 from landscape.lib.bpickle import dumps
-from landscape.lib.fetch import fetch
-from landscape.lib.persist import Persist
 from landscape.tests.mocker import ANY
 
-from landscape.broker.broker import BUS_NAME
 from landscape.broker.deployment import BrokerConfiguration, BrokerService
 from landscape.tests.helpers import (
     LandscapeTest, LandscapeIsolatedTest, FakeRemoteBrokerHelper,
