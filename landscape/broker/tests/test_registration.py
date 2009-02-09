@@ -340,13 +340,13 @@ class RegistrationTest(LandscapeTest):
         # A bunch of useful test data
         otp = "abcdef"
         user_data = dumps([{"otp": otp}])
-        instance_id = "i-3ea74257"
+        instance_key = "i-3ea74257"
         api_base = "http://169.254.169.254/latest"
-        instance_id_url = api_base + "/meta-data/instance-id"
+        instance_key_url = api_base + "/meta-data/instance-id"
         user_data_url = api_base + "/user-data"
         hostname_url = api_base + "/meta-data/local-hostname"
         index_url = api_base + "/meta-data/ami-launch-index"
-        query_results = {instance_id_url: instance_id,
+        query_results = {instance_key_url: instance_key,
                          user_data_url: user_data,
                          hostname_url: "ooga",
                          index_url: "0"}
@@ -383,19 +383,19 @@ class RegistrationTest(LandscapeTest):
                             [{"type": "register-cloud-vm",
                               "otp": otp,
                               "hostname": "ooga",
-                              "instance_id": instance_id,
+                              "instance_key": instance_key,
                               "account_name": None,
                               "registration_password": None}])
 
     def test_wrong_user_data(self):
         user_data = "other stuff, not a bpickle"
-        instance_id = "i-3ea74257"
+        instance_key = "i-3ea74257"
         api_base = "http://169.254.169.254/latest"
-        instance_id_url = api_base + "/meta-data/instance-id"
+        instance_key_url = api_base + "/meta-data/instance-id"
         user_data_url = api_base + "/user-data"
         hostname_url = api_base + "/meta-data/local-hostname"
         index_url = api_base + "/meta-data/ami-launch-index"
-        query_results = {instance_id_url: instance_id,
+        query_results = {instance_key_url: instance_key,
                          user_data_url: user_data,
                          hostname_url: "ooga",
                          index_url: "0"}
@@ -431,13 +431,13 @@ class RegistrationTest(LandscapeTest):
 
     def test_user_data_bpickle_without_otp(self):
         user_data = dumps({"foo": "bar"})
-        instance_id = "i-3ea74257"
+        instance_key = "i-3ea74257"
         api_base = "http://169.254.169.254/latest"
-        instance_id_url = api_base + "/meta-data/instance-id"
+        instance_key_url = api_base + "/meta-data/instance-id"
         user_data_url = api_base + "/user-data"
         hostname_url = api_base + "/meta-data/local-hostname"
         index_url = api_base + "/meta-data/ami-launch-index"
-        query_results = {instance_id_url: instance_id,
+        query_results = {instance_key_url: instance_key,
                          user_data_url: user_data,
                          hostname_url: "ooga",
                          index_url: "0"}
@@ -473,13 +473,13 @@ class RegistrationTest(LandscapeTest):
 
     def test_no_otp_fallback_to_account(self):
         user_data = "other stuff, not a bpickle"
-        instance_id = "i-3ea74257"
+        instance_key = "i-3ea74257"
         api_base = "http://169.254.169.254/latest"
-        instance_id_url = api_base + "/meta-data/instance-id"
+        instance_key_url = api_base + "/meta-data/instance-id"
         user_data_url = api_base + "/user-data"
         hostname_url = api_base + "/meta-data/local-hostname"
         index_url = api_base + "/meta-data/ami-launch-index"
-        query_results = {instance_id_url: instance_id,
+        query_results = {instance_key_url: instance_key,
                          user_data_url: user_data,
                          hostname_url: "ooga",
                          index_url: "0"}
@@ -513,7 +513,7 @@ class RegistrationTest(LandscapeTest):
                             [{"type": "register-cloud-vm",
                               "otp": None,
                               "hostname": "ooga",
-                              "instance_id": instance_id,
+                              "instance_key": instance_key,
                               "account_name": u"onward",
                               "registration_password": u"password"}])
 
@@ -528,13 +528,13 @@ class RegistrationTest(LandscapeTest):
 
         otp = "abcdef"
         user_data = dumps([{"otp": otp}])
-        instance_id = "i-3ea74257"
+        instance_key = "i-3ea74257"
         api_base = "http://169.254.169.254/latest"
-        instance_id_url = api_base + "/meta-data/instance-id"
+        instance_key_url = api_base + "/meta-data/instance-id"
         user_data_url = api_base + "/user-data"
         hostname_url = api_base + "/meta-data/local-hostname"
         index_url = api_base + "/meta-data/ami-launch-index"
-        query_results = {instance_id_url: instance_id,
+        query_results = {instance_key_url: instance_key,
                          user_data_url: user_data,
                          hostname_url: "ooga",
                          index_url: "0"}
@@ -626,13 +626,13 @@ class RegistrationTest(LandscapeTest):
         otp = "abcdef"
         user_data = dumps(
             [{"otp": "wrong index"}, {"otp": otp}, {"otp": "wrong again"}])
-        instance_id = "i-3ea74257"
+        instance_key = "i-3ea74257"
         api_base = "http://169.254.169.254/latest"
-        instance_id_url = api_base + "/meta-data/instance-id"
+        instance_key_url = api_base + "/meta-data/instance-id"
         user_data_url = api_base + "/user-data"
         hostname_url = api_base + "/meta-data/local-hostname"
         index_url = api_base + "/meta-data/ami-launch-index"
-        query_results = {instance_id_url: instance_id,
+        query_results = {instance_key_url: instance_key,
                          user_data_url: user_data,
                          hostname_url: "ooga",
                          index_url: "1"}
@@ -665,7 +665,7 @@ class RegistrationTest(LandscapeTest):
                             [{"type": "register-cloud-vm",
                               "otp": otp,
                               "hostname": "ooga",
-                              "instance_id": instance_id,
+                              "instance_key": instance_key,
                               "account_name": None,
                               "registration_password": None}])
 

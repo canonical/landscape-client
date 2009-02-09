@@ -40,7 +40,7 @@ class Identity(object):
     account_name = config_property("account_name")
     registration_password = config_property("registration_password")
     otp = None
-    instance_id = None
+    instance_key = None
     hostname = None
 
     def __init__(self, config, persist):
@@ -102,14 +102,14 @@ class RegistrationHandler(object):
             # Fetch data from the EC2 API, to be used later in the registration
             # process
             userdata_deferred = self._fetch_async(EC2_API + "/user-data")
-            instance_id_deferred = self._fetch_async(
+            instance_key_deferred = self._fetch_async(
                 EC2_API + "/meta-data/instance-id")
             hostname_deferred = self._fetch_async(
                 EC2_API + "/meta-data/local-hostname")
             launch_index_deferred = self._fetch_async(
                 EC2_API + "/meta-data/ami-launch-index")
             registration_data = gather_results([userdata_deferred,
-                                                instance_id_deferred,
+                                                instance_key_deferred,
                                                 hostname_deferred,
                                                 launch_index_deferred],
                                                 consume_errors=True)
@@ -130,7 +130,7 @@ class RegistrationHandler(object):
                     got_otp = False
                 if got_otp:
                     id.otp = user_data[launch_index]["otp"]
-                id.instance_id = results[1]
+                id.instance_key = results[1]
                 id.hostname= results[2]
 
             def got_error(error):
@@ -168,7 +168,7 @@ class RegistrationHandler(object):
                     logging.info("Queueing message to register with OTP")
                     message = {"type": "register-cloud-vm",
                                "otp": id.otp,
-                               "instance_id": id.instance_id,
+                               "instance_key": id.instance_key,
                                "hostname": id.hostname,
                                "account_name": None,
                                "registration_password": None}
@@ -178,7 +178,7 @@ class RegistrationHandler(object):
                                  "as an EC2 instance." % (id.account_name,))
                     message = {"type": "register-cloud-vm",
                                "otp": None,
-                               "instance_id": id.instance_id,
+                               "instance_key": id.instance_key,
                                "hostname": id.hostname,
                                "account_name": id.account_name,
                                "registration_password": id.registration_password}
