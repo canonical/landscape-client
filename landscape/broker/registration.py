@@ -130,7 +130,7 @@ class RegistrationHandler(object):
                     got_otp = False
                 if got_otp:
                     id.otp = user_data[launch_index]["otp"]
-                id.instance_key = results[1]
+                id.instance_key = unicode(results[1])
                 id.hostname= results[2]
 
             def got_error(error):
@@ -174,14 +174,15 @@ class RegistrationHandler(object):
                                "registration_password": None}
                     self._exchange.send(message)
                 elif id.account_name:
-                    logging.info("Queueing message to register with account %r "
-                                 "as an EC2 instance." % (id.account_name,))
+                    logging.info("Queueing message to register with account "
+                                 "%r as an EC2 instance." % (id.account_name,))
                     message = {"type": "register-cloud-vm",
                                "otp": None,
                                "instance_key": id.instance_key,
                                "hostname": id.hostname,
                                "account_name": id.account_name,
-                               "registration_password": id.registration_password}
+                               "registration_password": \
+                                   id.registration_password}
                     self._exchange.send(message)
                 else:
                     self._reactor.fire("registration-failed")
