@@ -4,6 +4,8 @@ import sys
 
 import pycurl
 
+from twisted.internet.threads import deferToThread
+
 
 def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None):
     """Retrieve a URL and return the content.
@@ -51,6 +53,10 @@ def test(args):
     parser.add_option("--cainfo")
     options, (url,) = parser.parse_args(args)
     print fetch(url, options.method, data=options.data, cainfo=options.cainfo)
+
+
+def fetch_async(*args, **kwargs):
+    return deferToThread(fetch, *args, **kwargs)
 
 
 if __name__ == "__main__":

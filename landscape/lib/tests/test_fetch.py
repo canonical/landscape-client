@@ -1,6 +1,6 @@
 import pycurl
 
-from landscape.lib.fetch import fetch
+from landscape.lib.fetch import fetch, fetch_async
 from landscape.tests.helpers import LandscapeTest
 
 
@@ -113,3 +113,11 @@ class FetchTest(LandscapeTest):
                                pycurl.WRITEFUNCTION: Any()})
         finally:
             pycurl.Curl = Curl
+
+    def test_async_fetch(self):
+        curl = CurlStub("result")
+        d = fetch_async("http://example.com/", curl=curl)
+        def got_result(result):
+            self.assertEquals(result, "result")
+        return d.addCallback(got_result)
+
