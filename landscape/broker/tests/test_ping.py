@@ -127,11 +127,9 @@ class PingerTest(LandscapeTest):
         super(PingerTest, self).setUp()
         self.url = "http://localhost:8081/whatever"
         self.page_getter = FakePageGetter(None)
-        self.ping_client = PingClient(self.broker_service.reactor,
-                                      self.url, self.broker_service.identity,
-                                      get_page=self.page_getter.get_page)
         def factory(reactor, url, insecure_id):
-            return self.ping_client
+            return PingClient(reactor, url, insecure_id,
+                              get_page=self.page_getter.get_page)
         self.pinger = Pinger(self.broker_service.reactor,
                              self.url, self.broker_service.identity,
                              self.broker_service.exchanger,
@@ -200,18 +198,25 @@ class PingerTest(LandscapeTest):
         should be logged.
         """
         self.log_helper.ignore_errors(ZeroDivisionError)
-        self.pinger.start()
         self.broker_service.identity.insecure_id = 42
 
-        def bad_ping():
-            return fail(ZeroDivisionError("Couldn't fetch page"))
-        self.ping_client.ping = bad_ping
+        class BadPingClient(object):
+            def __init__(self, *args, **kwargs):
+                pass
+            def ping(self):
+                return fail(ZeroDivisionError("Couldn't fetch page"))
+        pinger = Pinger(self.broker_service.reactor, "http://foo.com/",
+                        self.broker_service.identity,
+                        self.broker_service.exchanger,
+                        ping_client_factory=BadPingClient)
+        pinger.start()
 
-        self.broker_service.reactor.advance(10)
+        self.broker_service.reactor.advance(30)
 
         log = self.logfile.getvalue()
         self.assertTrue("Error contacting ping server at "
-                        "http://localhost:8081/whatever" in log)
+                        "http://foo.com/" in log,
+                        log)
         self.assertTrue("ZeroDivisionError" in log)
         self.assertTrue("Couldn't fetch page" in log)
 
@@ -234,3 +239,23 @@ class PingerTest(LandscapeTest):
         self.assertEquals(len(self.page_getter.fetches), 0)
         self.broker_service.reactor.advance(1)
         self.assertEquals(len(self.page_getter.fetches), 1)
+
+    def test_get_url(self):
+        self.assertEquals(self.pinger.get_url(),
+                          "http://localhost:8081/whatever")
+
+    def test_set_url(self):
+        url = "http://example.com/mysuperping"
+        self.pinger.set_url(url)
+        self.pinger.start()
+        self.broker_service.identity.insecure_id = 23
+        self.broker_service.reactor.advance(10)
+        self.assertEquals(self.page_getter.fetches[0][0], url)
+
+    def test_set_url_after_start(self):
+        url = "http://example.com/mysuperping"
+        self.pinger.start()
+        self.pinger.set_url(url)
+        self.broker_service.identity.insecure_id = 23
+        self.broker_service.reactor.advance(10)
+        self.assertEquals(self.page_getter.fetches[0][0], url)
