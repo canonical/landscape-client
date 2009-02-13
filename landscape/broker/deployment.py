@@ -110,7 +110,8 @@ class BrokerService(LandscapeService):
 
         self.pinger = Pinger(self.reactor, config.ping_url, self.identity,
                              self.exchanger)
-        self.registration = RegistrationHandler(self.identity, self.reactor,
+        self.registration = RegistrationHandler(config,
+                                                self.identity, self.reactor,
                                                 self.exchanger,
                                                 self.pinger,
                                                 self.message_store,

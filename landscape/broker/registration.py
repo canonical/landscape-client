@@ -57,8 +57,9 @@ class RegistrationHandler(object):
     L{register} should be used to initial registration.
     """
 
-    def __init__(self, identity, reactor, exchange, pinger,
+    def __init__(self, config, identity, reactor, exchange, pinger,
                  message_store, cloud=False, fetch_async=None):
+        self._config = config
         self._identity = identity
         self._reactor = reactor
         self._exchange = exchange
@@ -153,6 +154,8 @@ class RegistrationHandler(object):
                     ping_url = "http" + instance_data["url"][5:] + "ping"
                     self._exchange._transport.set_url(exchange_url)
                     self._pinger._url = ping_url
+                    self._config.url = exchange_url
+                    self._config.ping_url = ping_url
 
             def log_error(error):
                 log_failure(error, msg="Got error while fetching meta-data: %r"

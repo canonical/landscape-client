@@ -356,7 +356,8 @@ class RegistrationTest(LandscapeTest):
             return succeed(query_results[url])
 
         exchanger = self.broker_service.exchanger
-        handler = RegistrationHandler(self.broker_service.identity,
+        handler = RegistrationHandler(self.broker_service.config,
+                                      self.broker_service.identity,
                                       self.broker_service.reactor,
                                       exchanger,
                                       self.broker_service.pinger,
@@ -376,11 +377,16 @@ class RegistrationTest(LandscapeTest):
 
         # metadata is fetched and stored at reactor startup:
         self.reactor.fire("run")
+
+        # And the metadata returned determines the URLs that are used
         self.assertEquals(self.transport.get_url(),
                           "https://example.com/message-system")
         self.assertEquals(self.broker_service.pinger.get_url(),
                           "http://example.com/ping")
-        
+        self.assertEquals(config.url,
+                          self.transport.get_url())
+        self.assertEquals(config.ping_url,
+                          self.broker_service.pinger.get_url())
 
         # Okay! Exchange should cause the registration to happen.
         exchanger.exchange()
@@ -413,7 +419,8 @@ class RegistrationTest(LandscapeTest):
             return succeed(query_results[url])
 
         exchanger = self.broker_service.exchanger
-        handler = RegistrationHandler(self.broker_service.identity,
+        handler = RegistrationHandler(self.broker_service.config,
+                                      self.broker_service.identity,
                                       self.broker_service.reactor,
                                       exchanger,
                                       self.broker_service.pinger,
@@ -460,7 +467,8 @@ class RegistrationTest(LandscapeTest):
             return succeed(query_results[url])
 
         exchanger = self.broker_service.exchanger
-        handler = RegistrationHandler(self.broker_service.identity,
+        handler = RegistrationHandler(self.broker_service.config,
+                                      self.broker_service.identity,
                                       self.broker_service.reactor,
                                       exchanger,
                                       self.broker_service.pinger,
@@ -504,7 +512,8 @@ class RegistrationTest(LandscapeTest):
             return succeed(query_results[url])
 
         exchanger = self.broker_service.exchanger
-        handler = RegistrationHandler(self.broker_service.identity,
+        handler = RegistrationHandler(self.broker_service.config,
+                                      self.broker_service.identity,
                                       self.broker_service.reactor,
                                       exchanger,
                                       self.broker_service.pinger,
@@ -547,7 +556,8 @@ class RegistrationTest(LandscapeTest):
             return succeed(query_results[url])
 
         exchanger = self.broker_service.exchanger
-        handler = RegistrationHandler(self.broker_service.identity,
+        handler = RegistrationHandler(self.broker_service.config,
+                                      self.broker_service.identity,
                                       self.broker_service.reactor,
                                       exchanger,
                                       self.broker_service.pinger,
@@ -603,7 +613,8 @@ class RegistrationTest(LandscapeTest):
             return succeed(query_results[url])
 
         exchanger = self.broker_service.exchanger
-        handler = RegistrationHandler(self.broker_service.identity,
+        handler = RegistrationHandler(self.broker_service.config,
+                                      self.broker_service.identity,
                                       self.reactor,
                                       exchanger,
                                       self.broker_service.pinger,
@@ -632,7 +643,8 @@ class RegistrationTest(LandscapeTest):
             return fail(pycurl.error(7, "couldn't connect to host"))
 
         exchanger = self.broker_service.exchanger
-        handler = RegistrationHandler(self.broker_service.identity,
+        handler = RegistrationHandler(self.broker_service.config,
+                                      self.broker_service.identity,
                                       self.broker_service.reactor,
                                       exchanger,
                                       self.broker_service.pinger,
@@ -664,7 +676,8 @@ class RegistrationTest(LandscapeTest):
         it doesn't have the normal account details.
         """
         config = self.broker_service.config
-        handler = RegistrationHandler(self.broker_service.identity,
+        handler = RegistrationHandler(self.broker_service.config,
+                                      self.broker_service.identity,
                                       self.broker_service.reactor,
                                       self.broker_service.exchanger,
                                       self.broker_service.pinger,
@@ -706,7 +719,8 @@ class RegistrationTest(LandscapeTest):
             return succeed(query_results[url])
 
         exchanger = self.broker_service.exchanger
-        handler = RegistrationHandler(self.broker_service.identity,
+        handler = RegistrationHandler(self.broker_service.config,
+                                      self.broker_service.identity,
                                       self.broker_service.reactor,
                                       exchanger,
                                       self.broker_service.pinger,
@@ -739,7 +753,8 @@ class RegistrationTest(LandscapeTest):
         Having a secure ID means we shouldn't register, even in the cloud.
         """
         config = self.broker_service.config
-        handler = RegistrationHandler(self.broker_service.identity,
+        handler = RegistrationHandler(self.broker_service.config,
+                                      self.broker_service.identity,
                                       self.broker_service.reactor,
                                       self.broker_service.exchanger,
                                       self.broker_service.pinger,
@@ -761,7 +776,8 @@ class RegistrationTest(LandscapeTest):
         we shouldn't register.
         """
         config = self.broker_service.config
-        handler = RegistrationHandler(self.broker_service.identity,
+        handler = RegistrationHandler(self.broker_service.config,
+                                      self.broker_service.identity,
                                       self.broker_service.reactor,
                                       self.broker_service.exchanger,
                                       self.broker_service.pinger,
