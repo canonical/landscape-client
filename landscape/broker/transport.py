@@ -82,9 +82,13 @@ class FakeTransport(object):
         self.computer_id = None
         self.message_api = None
         self.extra = {}
+        self._url = ""
 
     def get_url(self):
-        return ""
+        return self._url
+    
+    def set_url(self, url):
+        self._url = url
 
     def exchange(self, payload, computer_id=None, message_api=API):
         self.payloads.append(payload)

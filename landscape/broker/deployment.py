@@ -108,12 +108,13 @@ class BrokerService(LandscapeService):
                                          config.exchange_interval,
                                          config.urgent_exchange_interval)
 
-        self.registration = RegistrationHandler(self.identity, self.reactor,
-                                                self.exchanger,
-                                                self.message_store,
-                                                config.cloud, fetch_async)
         self.pinger = Pinger(self.reactor, config.ping_url, self.identity,
                              self.exchanger)
+        self.registration = RegistrationHandler(self.identity, self.reactor,
+                                                self.exchanger,
+                                                self.pinger,
+                                                self.message_store,
+                                                config.cloud, fetch_async)
 
         self.reactor.call_on("post-exit", self._exit)
 
