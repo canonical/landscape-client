@@ -6,6 +6,7 @@ from twisted.internet.defer import succeed, fail
 from landscape.broker.registration import (
     InvalidCredentialsError, RegistrationHandler)
 
+from landscape.broker.deployment import BrokerConfiguration
 from landscape.tests.helpers import LandscapeTest, ExchangeHelper
 from landscape.lib.bpickle import dumps
 
@@ -383,10 +384,11 @@ class RegistrationTest(LandscapeTest):
                           "https://example.com/message-system")
         self.assertEquals(self.broker_service.pinger.get_url(),
                           "http://example.com/ping")
-        self.assertEquals(config.url,
-                          self.transport.get_url())
-        self.assertEquals(config.ping_url,
-                          self.broker_service.pinger.get_url())
+        # Let's make sure those values were written back to the config file
+        new_config = BrokerConfiguration()
+        new_config.load_configuration_file(self.config_filename)
+        self.assertEquals(new_config.url, "https://example.com/message-system")
+        self.assertEquals(new_config.ping_url, "http://example.com/ping")
 
         # Okay! Exchange should cause the registration to happen.
         exchanger.exchange()

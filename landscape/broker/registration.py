@@ -156,6 +156,7 @@ class RegistrationHandler(object):
                     self._pinger._url = ping_url
                     self._config.url = exchange_url
                     self._config.ping_url = ping_url
+                    self._config.write()
 
             def log_error(error):
                 log_failure(error, msg="Got error while fetching meta-data: %r"
