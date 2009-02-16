@@ -48,6 +48,13 @@ class RegistrationTest(LandscapeTest):
                           "%r attribute should be %r, not %r" %
                           (attr, value, getattr(self.identity, attr)))
 
+    def get_user_data(self, otps=None,
+                      exchange_url="https://example.com/message-system",
+                      ping_url="http://example.com/ping"):
+        if otps is None:
+            otps = ["otp1"]
+        return {"otps": otps, "exchange-url": exchange_url, "ping-url": ping_url}
+
     def test_secure_id(self):
         self.check_persist_property("secure_id",
                                     "registration.secure-id")
@@ -340,7 +347,7 @@ class RegistrationTest(LandscapeTest):
         """
         # A bunch of useful test data
         otp = "abcdef"
-        user_data = dumps([{"otp": otp, "url": "https://example.com/"}])
+        user_data = dumps(self.get_user_data(otps=["abcdef"]))
         instance_key = "i-3ea74257"
         api_base = "http://169.254.169.254/latest"
         instance_key_url = api_base + "/meta-data/instance-id"
@@ -452,7 +459,7 @@ class RegistrationTest(LandscapeTest):
         If the AMI launch index isn't represented in the list of OTPs in the
         user data then BOOM.
         """
-        user_data = dumps([{"otp": "abc", "url": "http://example.com"}])
+        user_data = dumps(self.get_user_data())
         instance_key = "i-3ea74257"
         api_base = "http://169.254.169.254/latest"
         instance_key_url = api_base + "/meta-data/instance-id"
@@ -597,8 +604,7 @@ class RegistrationTest(LandscapeTest):
             ["register", "test", "register-cloud-vm"])
         self.mstore.add({"type": "test"})
 
-        otp = "abcdef"
-        user_data = dumps([{"otp": otp, "url": "https://example.com/"}])
+        user_data = dumps(self.get_user_data())
         instance_key = "i-3ea74257"
         api_base = "http://169.254.169.254/latest"
         instance_key_url = api_base + "/meta-data/instance-id"
@@ -701,10 +707,9 @@ class RegistrationTest(LandscapeTest):
         appropriate OTP in the user data.
         """
         otp = "abcdef"
-        user_data = dumps(
-            [{"otp": "wrong index", "url": "https://example.com/"},
-             {"otp": otp, "url": "https://example.com/"},
-             {"otp": "wrong again", "url": "https://example.com/"}])
+        user_data = dumps(self.get_user_data(otps=["wrong index",
+                                                   otp,
+                                                   "wrong again"]))
         instance_key = "i-3ea74257"
         api_base = "http://169.254.169.254/latest"
         instance_key_url = api_base + "/meta-data/instance-id"

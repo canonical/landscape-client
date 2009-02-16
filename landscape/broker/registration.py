@@ -113,20 +113,21 @@ class RegistrationHandler(object):
             logging.debug("Got invalid user-data %r" % (raw_user_data,))
             return
 
-        if not isinstance(user_data, (tuple, list)):
-            logging.debug("user-data %r is not a list" % (user_data,))
+        for key in "otps", "exchange-url", "ping-url":
+            if key not in user_data:
+                logging.debug("user-data %r doesn't have key %r."
+                              % (user_data, key))
+                return
+        if not isinstance(user_data, dict):
+            logging.debug("user-data %r is not a dict" % (user_data,))
             return
-        elif len(user_data) <= launch_index:
-            logging.debug("user-data %r doesn't have data for launch index %d"
+        elif len(user_data["otps"]) <= launch_index:
+            logging.debug("user-data %r doesn't have OTP for launch index %d"
                           % (user_data, launch_index))
             return
-        else:
-            for key in "otp", "url":
-                if key not in user_data[launch_index]:
-                    logging.debug("user-data %r doesn't have key %r for launch "
-                                  "index %d" % (user_data, key, launch_index))
-                    return
-        return user_data[launch_index]
+        return {"otp": user_data["otps"][launch_index],
+                "exchange-url": user_data["exchange-url"],
+                "ping-url": user_data["ping-url"]}
 
     def _fetch_ec2_data(self):
         id = self._identity
@@ -150,8 +151,8 @@ class RegistrationHandler(object):
                     raw_user_data, int(launch_index))
                 if instance_data is not None:
                     id.otp = instance_data["otp"]
-                    exchange_url = instance_data["url"] + "message-system"
-                    ping_url = "http" + instance_data["url"][5:] + "ping"
+                    exchange_url = instance_data["exchange-url"]
+                    ping_url = instance_data["ping-url"]
                     self._exchange._transport.set_url(exchange_url)
                     self._pinger._url = ping_url
                     self._config.url = exchange_url
