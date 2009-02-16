@@ -23,6 +23,9 @@ class HTTPTransport(object):
     def get_url(self):
         return self._url
 
+    def set_url(self, url):
+        self._url = url
+
     def _curl(self, payload, computer_id, message_api):
         headers= {"X-Message-API": message_api,
                   "User-Agent": "landscape-client/%s" % VERSION,
