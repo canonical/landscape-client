@@ -154,7 +154,7 @@ class RegistrationHandler(object):
                     exchange_url = instance_data["exchange-url"]
                     ping_url = instance_data["ping-url"]
                     self._exchange._transport.set_url(exchange_url)
-                    self._pinger._url = ping_url
+                    self._pinger.set_url(ping_url)
                     self._config.url = exchange_url
                     self._config.ping_url = ping_url
                     self._config.write()
