@@ -335,21 +335,32 @@ class RegistrationTest(LandscapeTest):
 
     def get_registration_handler_for_cloud(self,
                                            user_data=None,
-                                           instance_key="i-3ea74257",
-                                           hostname="ooga",
-                                           launch_index=0):
+                                           instance_key="key1",
+                                           launch_index=0,
+                                           local_hostname="ooga",
+                                           public_hostname="ooga.amazon.com",
+                                           reservation_key=u"res1",
+                                           ramdisk_key=u"ram1",
+                                           kernel_key=u"kernel1",
+                                           image_key=u"image1",
+                                           ):
         if user_data is None:
             user_data = self.get_user_data()
         user_data = dumps(user_data)
         api_base = "http://169.254.169.254/latest"
-        instance_key_url = api_base + "/meta-data/instance-id"
-        user_data_url = api_base + "/user-data"
-        hostname_url = api_base + "/meta-data/local-hostname"
-        index_url = api_base + "/meta-data/ami-launch-index"
-        query_results = {instance_key_url: instance_key,
-                         user_data_url: user_data,
-                         hostname_url: hostname,
-                         index_url: str(launch_index)}
+        query_results = {}
+        for url_suffix, value in [
+            ("/user-data", user_data),
+            ("/meta-data/instance-id", instance_key),
+            ("/meta-data/reservation-id", reservation_key),
+            ("/meta-data/local-hostname", local_hostname),
+            ("/meta-data/public-hostname", public_hostname),
+            ("/meta-data/ami-launch-index", str(launch_index)),
+            ("/meta-data/kernel-id", kernel_key),
+            ("/meta-data/ramdisk-id", ramdisk_key),
+            ("/meta-data/ami-id", image_key),
+            ]:
+            query_results[api_base + url_suffix] = value
 
         def fetch_stub(url):
             return succeed(query_results[url])
@@ -378,6 +389,27 @@ class RegistrationTest(LandscapeTest):
         self.broker_service.identity.secure_id = None
         self.assertTrue(handler.should_register())
 
+    def get_expected_cloud_message(self, **kwargs):
+        """
+        Return the message which is expected from a similar call to
+        L{get_registration_handler_for_cloud}.
+        """
+        message = dict(type="register-cloud-vm",
+                       otp="otp1",
+                       hostname="ooga",
+                       local_hostname="ooga",
+                       public_hostname="ooga.amazon.com",
+                       instance_key=u"key1",
+                       reservation_key=u"res1",
+                       ramdisk_key=u"ram1",
+                       kernel_key=u"kernel1",
+                       launch_index=0,
+                       image_key=u"image1",
+                       account_name=None,
+                       registration_password=None)
+        message.update(kwargs)
+        return message
+
     def test_cloud_registration(self):
         """
         When the 'cloud' configuration variable is set, cloud registration is
@@ -390,7 +422,7 @@ class RegistrationTest(LandscapeTest):
           immediately accepting the computer, instead of going through the
           pending computer stage.
         """
-        handler = self.get_registration_handler_for_cloud(instance_key="key1")
+        handler = self.get_registration_handler_for_cloud()
 
         config = self.broker_service.config
         self.prepare_cloud_registration(handler)
@@ -415,12 +447,7 @@ class RegistrationTest(LandscapeTest):
         # written like this
         self.assertEquals(len(self.transport.payloads), 1)
         self.assertMessages(self.transport.payloads[0]["messages"],
-                            [{"type": "register-cloud-vm",
-                              "otp": "otp1",
-                              "hostname": "ooga",
-                              "instance_key": u"key1",
-                              "account_name": None,
-                              "registration_password": None}])
+                            [self.get_expected_cloud_message()])
 
     def test_wrong_user_data(self):
         handler = self.get_registration_handler_for_cloud(
@@ -483,12 +510,10 @@ class RegistrationTest(LandscapeTest):
 
         self.assertEquals(len(self.transport.payloads), 1)
         self.assertMessages(self.transport.payloads[0]["messages"],
-                            [{"type": "register-cloud-vm",
-                              "otp": None,
-                              "hostname": "ooga",
-                              "instance_key": u"key1",
-                              "account_name": u"onward",
-                              "registration_password": u"password"}])
+                            [self.get_expected_cloud_message(
+                                otp=None,
+                                account_name=u"onward",
+                                registration_password=u"password")])
 
     def test_queueing_cloud_registration_message_resets_message_store(self):
         """
@@ -580,12 +605,8 @@ class RegistrationTest(LandscapeTest):
         self.broker_service.exchanger.exchange()
         self.assertEquals(len(self.transport.payloads), 1)
         self.assertMessages(self.transport.payloads[0]["messages"],
-                            [{"type": "register-cloud-vm",
-                              "otp": otp,
-                              "hostname": "ooga",
-                              "instance_key": "key1",
-                              "account_name": None,
-                              "registration_password": None}])
+                            [self.get_expected_cloud_message(otp=otp,
+                                                             launch_index=1)])
 
     def test_should_not_register_in_cloud(self):
         """
