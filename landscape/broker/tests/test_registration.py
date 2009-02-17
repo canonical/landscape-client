@@ -1,5 +1,6 @@
 import logging
 import pycurl
+import socket
 
 from twisted.internet.defer import succeed, fail
 
@@ -21,13 +22,9 @@ class RegistrationTest(LandscapeTest):
         self.identity = self.broker_service.identity
         self.handler = self.broker_service.registration
         logging.getLogger().setLevel(logging.INFO)
-
-    def mock_gethostname(self, replay=True):
-        gethostname_mock = self.mocker.replace("socket.gethostname")
-        gethostname_mock()
-        self.mocker.result("ooga")
-        if replay:
-            self.mocker.replay()
+        self.hostname = "ooga"
+        self.addCleanup(setattr, socket, "gethostname", socket.gethostname)
+        socket.gethostname = lambda: self.hostname
 
     def check_persist_property(self, attr, persist_name):
         value = "VALUE"
@@ -134,7 +131,6 @@ class RegistrationTest(LandscapeTest):
         secure_id is set, and an exchange is about to happen,
         queue a registration message.
         """
-        self.mock_gethostname()
         self.mstore.set_accepted_types(["register"])
         self.config.computer_title = "Computer Title"
         self.config.account_name = "account_name"
@@ -152,7 +148,6 @@ class RegistrationTest(LandscapeTest):
 
     def test_queue_message_on_exchange_with_password(self):
         """If a registration password is available, we pass it on!"""
-        self.mock_gethostname()
         self.mstore.set_accepted_types(["register"])
         self.config.computer_title = "Computer Title"
         self.config.account_name = "account_name"
@@ -334,17 +329,25 @@ class RegistrationTest(LandscapeTest):
         self.reactor.fire("pre-exchange")
         self.reactor.fire("exchange-done")
 
-    def get_registration_handler_for_cloud(self,
-                                           user_data=None,
-                                           instance_key="key1",
-                                           launch_index=0,
-                                           local_hostname="ooga",
-                                           public_hostname="ooga.amazon.com",
-                                           reservation_key=u"res1",
-                                           ramdisk_key=u"ram1",
-                                           kernel_key=u"kernel1",
-                                           image_key=u"image1",
-                                           ):
+    def test_default_hostname(self):
+        self.mstore.set_accepted_types(["register"])
+        self.config.computer_title = "Computer Title"
+        self.config.account_name = "account_name"
+        self.config.registration_password = "SEKRET"
+        self.reactor.fire("pre-exchange")
+        self.assertMessages(self.mstore.get_pending_messages(),
+                            [{"type": "register",
+                              "computer_title": "Computer Title",
+                              "account_name": "account_name",
+                              "registration_password": "SEKRET",
+                              "hostname": socket.gethostname()}
+                             ])
+
+    def get_registration_handler_for_cloud(
+        self, user_data=None, instance_key="key1", launch_index=0,
+        local_hostname="ooga.local", public_hostname="ooga.amazon.com",
+        reservation_key=u"res1", ramdisk_key=u"ram1", kernel_key=u"kernel1",
+        image_key=u"image1"):
         if user_data is None:
             user_data = self.get_user_data()
         user_data = dumps(user_data)
@@ -398,7 +401,7 @@ class RegistrationTest(LandscapeTest):
         message = dict(type="register-cloud-vm",
                        otp="otp1",
                        hostname="ooga",
-                       local_hostname="ooga",
+                       local_hostname="ooga.local",
                        public_hostname="ooga.amazon.com",
                        instance_key=u"key1",
                        reservation_key=u"res1",

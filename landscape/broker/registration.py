@@ -211,7 +211,7 @@ class RegistrationHandler(object):
                     logging.info("Queueing message to register with OTP")
                     message = {"type": "register-cloud-vm",
                                "otp": self._otp,
-                               "hostname": self._ec2_data["local_hostname"],
+                               "hostname": socket.gethostname(),
                                "account_name": None,
                                "registration_password": None,
                                }
@@ -222,7 +222,7 @@ class RegistrationHandler(object):
                                  "%r as an EC2 instance." % (id.account_name,))
                     message = {"type": "register-cloud-vm",
                                "otp": None,
-                               "hostname": self._ec2_data["local_hostname"],
+                               "hostname": socket.gethostname(),
                                "account_name": id.account_name,
                                "registration_password": \
                                    id.registration_password}
