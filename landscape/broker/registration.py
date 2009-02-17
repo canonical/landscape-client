@@ -160,7 +160,6 @@ class RegistrationHandler(object):
                     "ramdisk_key": ramdisk_key,
                     "image_key": ami_key}
                 for k, v in self._ec2_data.items():
-                    # XXX get encoding from HTTP!
                     self._ec2_data[k] = v.decode("utf-8")
                 self._ec2_data["launch_index"] = int(
                     self._ec2_data["launch_index"])
