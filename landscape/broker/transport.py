@@ -1,6 +1,4 @@
-"""Low-level server communication.
-"""
-from cStringIO import StringIO
+"""Low-level server communication."""
 import time
 import logging
 import pprint
