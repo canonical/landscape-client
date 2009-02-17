@@ -483,7 +483,6 @@ class RegistrationTest(LandscapeTest):
         self.reactor.fire("run")
         self.broker_service.exchanger.exchange()
 
-
     def test_user_data_bpickle_without_otp(self):
         handler = self.get_registration_handler_for_cloud(
             user_data={"foo": "bar"})

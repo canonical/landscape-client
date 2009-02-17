@@ -1,11 +1,10 @@
 from landscape.tests.helpers import LandscapeTest, FakeRemoteBrokerHelper
 
-from twisted.internet.defer import succeed, fail
+from twisted.internet.defer import fail
 
 from landscape.lib.bpickle import dumps
 from landscape.lib.fetch import fetch
 from landscape.broker.ping import PingClient, Pinger
-from landscape.broker.registration import Identity
 
 
 class FakePageGetter(object):
