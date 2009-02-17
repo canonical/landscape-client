@@ -53,7 +53,8 @@ class RegistrationTest(LandscapeTest):
                       ping_url="http://example.com/ping"):
         if otps is None:
             otps = ["otp1"]
-        return {"otps": otps, "exchange-url": exchange_url, "ping-url": ping_url}
+        return {"otps": otps, "exchange-url": exchange_url,
+                "ping-url": ping_url}
 
     def test_secure_id(self):
         self.check_persist_property("secure_id",
