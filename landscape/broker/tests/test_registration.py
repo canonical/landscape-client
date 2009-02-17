@@ -504,7 +504,7 @@ class RegistrationTest(LandscapeTest):
 
 
     def test_user_data_bpickle_without_otp(self):
-        user_data = dumps([{"foo": "bar"}])
+        user_data = dumps({"foo": "bar"})
         instance_key = "i-3ea74257"
         api_base = "http://169.254.169.254/latest"
         instance_key_url = api_base + "/meta-data/instance-id"
