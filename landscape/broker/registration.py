@@ -111,15 +111,15 @@ class RegistrationHandler(object):
             logging.debug("Got invalid user-data %r" % (raw_user_data,))
             return
 
+        if not isinstance(user_data, dict):
+            logging.debug("user-data %r is not a dict" % (user_data,))
+            return
         for key in "otps", "exchange-url", "ping-url":
             if key not in user_data:
                 logging.debug("user-data %r doesn't have key %r."
                               % (user_data, key))
                 return
-        if not isinstance(user_data, dict):
-            logging.debug("user-data %r is not a dict" % (user_data,))
-            return
-        elif len(user_data["otps"]) <= launch_index:
+        if len(user_data["otps"]) <= launch_index:
             logging.debug("user-data %r doesn't have OTP for launch index %d"
                           % (user_data, launch_index))
             return

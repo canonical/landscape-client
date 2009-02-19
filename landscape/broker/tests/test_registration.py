@@ -470,6 +470,23 @@ class RegistrationTest(LandscapeTest):
         self.reactor.fire("run")
         exchanger.exchange()
 
+    def test_wrong_object_type_in_user_data(self):
+        handler = self.get_registration_handler_for_cloud(
+            user_data=True)
+        config = self.broker_service.config
+
+        exchanger = self.broker_service.exchanger
+
+        self.prepare_cloud_registration(handler)
+
+        # Mock registration-failed call
+        reactor_mock = self.mocker.patch(self.reactor)
+        reactor_mock.fire("registration-failed")
+        self.mocker.replay()
+
+        self.reactor.fire("run")
+        exchanger.exchange()
+
     def test_user_data_with_not_enough_elements(self):
         """
         If the AMI launch index isn't represented in the list of OTPs in the
