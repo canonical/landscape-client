@@ -1,9 +1,13 @@
 import logging
+import pycurl
+
+from twisted.internet.defer import succeed, fail
 
 from landscape.broker.registration import (
-    RegistrationHandler, Identity, InvalidCredentialsError)
+    InvalidCredentialsError, RegistrationHandler)
 
 from landscape.tests.helpers import LandscapeTest, ExchangeHelper
+from landscape.lib.bpickle import dumps
 
 
 class RegistrationTest(LandscapeTest):
@@ -320,3 +324,385 @@ class RegistrationTest(LandscapeTest):
         self.config.account_name = "account_name"
         self.reactor.fire("pre-exchange")
         self.reactor.fire("exchange-done")
+
+    def test_cloud_registration(self):
+        """
+        When the 'cloud' configuration variable is set, cloud registration is
+        done instead of normal password-based registration. This means:
+
+        - "Launch Data" is fetched from the EC2 Launch Data URL. This contains
+          a one-time password that is used during registration.
+        - A different "register-cloud-vm" message is sent to the server instead
+          of "register", containing the OTP. This message is handled by
+          immediately accepting the computer, instead of going through the
+          pending computer stage.
+        """
+        # A bunch of useful test data
+        otp = "abcdef"
+        user_data = dumps([{"otp": otp}])
+        instance_key = "i-3ea74257"
+        api_base = "http://169.254.169.254/latest"
+        instance_key_url = api_base + "/meta-data/instance-id"
+        user_data_url = api_base + "/user-data"
+        hostname_url = api_base + "/meta-data/local-hostname"
+        index_url = api_base + "/meta-data/ami-launch-index"
+        query_results = {instance_key_url: instance_key,
+                         user_data_url: user_data,
+                         hostname_url: "ooga",
+                         index_url: "0"}
+        config = self.broker_service.config
+
+        def fetch_stub(url):
+            return succeed(query_results[url])
+
+        exchanger = self.broker_service.exchanger
+        handler = RegistrationHandler(self.broker_service.identity,
+                                      self.broker_service.reactor,
+                                      exchanger,
+                                      self.broker_service.message_store,
+                                      cloud=True,
+                                      fetch_async=fetch_stub)
+
+        # Set things up so that the client thinks it should register
+        mstore = self.broker_service.message_store
+        mstore.set_accepted_types(mstore.get_accepted_types()
+                                  + ("register-cloud-vm",))
+        config.account_name = None
+        config.registration_password = None
+        config.computer_title = None
+        self.broker_service.identity.secure_id = None
+        self.assertTrue(handler.should_register())
+
+        self.reactor.fire("run")
+        # Okay! Exchange should cause the registration to happen.
+        exchanger.exchange()
+        # This *should* be asynchronous, but I think a billion tests are
+        # written like this
+        self.assertEquals(len(self.transport.payloads), 1)
+        self.assertMessages(self.transport.payloads[0]["messages"],
+                            [{"type": "register-cloud-vm",
+                              "otp": otp,
+                              "hostname": "ooga",
+                              "instance_key": instance_key,
+                              "account_name": None,
+                              "registration_password": None}])
+
+    def test_wrong_user_data(self):
+        user_data = "other stuff, not a bpickle"
+        instance_key = "i-3ea74257"
+        api_base = "http://169.254.169.254/latest"
+        instance_key_url = api_base + "/meta-data/instance-id"
+        user_data_url = api_base + "/user-data"
+        hostname_url = api_base + "/meta-data/local-hostname"
+        index_url = api_base + "/meta-data/ami-launch-index"
+        query_results = {instance_key_url: instance_key,
+                         user_data_url: user_data,
+                         hostname_url: "ooga",
+                         index_url: "0"}
+        config = self.broker_service.config
+
+        def fetch_stub(url):
+            return succeed(query_results[url])
+
+        exchanger = self.broker_service.exchanger
+        handler = RegistrationHandler(self.broker_service.identity,
+                                      self.broker_service.reactor,
+                                      exchanger,
+                                      self.broker_service.message_store,
+                                      cloud=True,
+                                      fetch_async=fetch_stub)
+
+        mstore = self.broker_service.message_store
+        mstore.set_accepted_types(mstore.get_accepted_types()
+                                  + ("register-cloud-vm",))
+        config.account_name = None
+        config.registration_password = None
+        config.computer_title = None
+        self.broker_service.identity.secure_id = None
+        self.assertTrue(handler.should_register())
+
+        # Mock registration-failed call
+        reactor_mock = self.mocker.patch(self.reactor)
+        reactor_mock.fire("registration-failed")
+        self.mocker.replay()
+
+        self.reactor.fire("run")
+        exchanger.exchange()
+
+    def test_user_data_bpickle_without_otp(self):
+        user_data = dumps({"foo": "bar"})
+        instance_key = "i-3ea74257"
+        api_base = "http://169.254.169.254/latest"
+        instance_key_url = api_base + "/meta-data/instance-id"
+        user_data_url = api_base + "/user-data"
+        hostname_url = api_base + "/meta-data/local-hostname"
+        index_url = api_base + "/meta-data/ami-launch-index"
+        query_results = {instance_key_url: instance_key,
+                         user_data_url: user_data,
+                         hostname_url: "ooga",
+                         index_url: "0"}
+        config = self.broker_service.config
+
+        def fetch_stub(url):
+            return succeed(query_results[url])
+
+        exchanger = self.broker_service.exchanger
+        handler = RegistrationHandler(self.broker_service.identity,
+                                      self.broker_service.reactor,
+                                      exchanger,
+                                      self.broker_service.message_store,
+                                      cloud=True,
+                                      fetch_async=fetch_stub)
+
+        mstore = self.broker_service.message_store
+        mstore.set_accepted_types(mstore.get_accepted_types()
+                                  + ("register-cloud-vm",))
+        config.account_name = None
+        config.registration_password = None
+        config.computer_title = None
+        self.broker_service.identity.secure_id = None
+        self.assertTrue(handler.should_register())
+
+        # Mock registration-failed call
+        reactor_mock = self.mocker.patch(self.reactor)
+        reactor_mock.fire("registration-failed")
+        self.mocker.replay()
+
+        self.reactor.fire("run")
+        exchanger.exchange()
+
+    def test_no_otp_fallback_to_account(self):
+        user_data = "other stuff, not a bpickle"
+        instance_key = "i-3ea74257"
+        api_base = "http://169.254.169.254/latest"
+        instance_key_url = api_base + "/meta-data/instance-id"
+        user_data_url = api_base + "/user-data"
+        hostname_url = api_base + "/meta-data/local-hostname"
+        index_url = api_base + "/meta-data/ami-launch-index"
+        query_results = {instance_key_url: instance_key,
+                         user_data_url: user_data,
+                         hostname_url: "ooga",
+                         index_url: "0"}
+        config = self.broker_service.config
+
+        def fetch_stub(url):
+            return succeed(query_results[url])
+
+        exchanger = self.broker_service.exchanger
+        handler = RegistrationHandler(self.broker_service.identity,
+                                      self.broker_service.reactor,
+                                      exchanger,
+                                      self.broker_service.message_store,
+                                      cloud=True,
+                                      fetch_async=fetch_stub)
+
+        mstore = self.broker_service.message_store
+        mstore.set_accepted_types(mstore.get_accepted_types()
+                                  + ("register-cloud-vm",))
+        config.account_name = u"onward"
+        config.registration_password = u"password"
+        config.computer_title = None
+        self.broker_service.identity.secure_id = None
+        self.assertTrue(handler.should_register())
+
+        self.reactor.fire("run")
+        exchanger.exchange()
+
+        self.assertEquals(len(self.transport.payloads), 1)
+        self.assertMessages(self.transport.payloads[0]["messages"],
+                            [{"type": "register-cloud-vm",
+                              "otp": None,
+                              "hostname": "ooga",
+                              "instance_key": instance_key,
+                              "account_name": u"onward",
+                              "registration_password": u"password"}])
+
+    def test_queueing_cloud_registration_message_resets_message_store(self):
+        """
+        When a registration from a cloud is about to happen, the message store
+        is reset, because all previous messages are now meaningless.
+        """
+        self.mstore.set_accepted_types(
+            ["register", "test", "register-cloud-vm"])
+        self.mstore.add({"type": "test"})
+
+        otp = "abcdef"
+        user_data = dumps([{"otp": otp}])
+        instance_key = "i-3ea74257"
+        api_base = "http://169.254.169.254/latest"
+        instance_key_url = api_base + "/meta-data/instance-id"
+        user_data_url = api_base + "/user-data"
+        hostname_url = api_base + "/meta-data/local-hostname"
+        index_url = api_base + "/meta-data/ami-launch-index"
+        query_results = {instance_key_url: instance_key,
+                         user_data_url: user_data,
+                         hostname_url: "ooga",
+                         index_url: "0"}
+        config = self.broker_service.config
+
+        def fetch_stub(url):
+            return succeed(query_results[url])
+
+        exchanger = self.broker_service.exchanger
+        handler = RegistrationHandler(self.broker_service.identity,
+                                      self.reactor,
+                                      exchanger,
+                                      self.mstore,
+                                      cloud=True,
+                                      fetch_async=fetch_stub)
+
+        # Set things up so that the client thinks it should register
+        config.account_name = None
+        config.registration_password = None
+        config.computer_title = None
+        self.broker_service.identity.secure_id = None
+        self.assertTrue(handler.should_register())
+
+        self.reactor.fire("run")
+        self.reactor.fire("pre-exchange")
+
+        messages = self.mstore.get_pending_messages()
+        self.assertEquals(len(messages), 1)
+        self.assertEquals(messages[0]["type"], "register-cloud-vm")
+
+    def test_cloud_registration_fetch_errors(self):
+        config = self.broker_service.config
+
+        def fetch_stub(url):
+            return fail(pycurl.error(7, "couldn't connect to host"))
+
+        exchanger = self.broker_service.exchanger
+        handler = RegistrationHandler(self.broker_service.identity,
+                                      self.broker_service.reactor,
+                                      exchanger,
+                                      self.broker_service.message_store,
+                                      cloud=True,
+                                      fetch_async=fetch_stub)
+
+        mstore = self.broker_service.message_store
+        mstore.set_accepted_types(mstore.get_accepted_types()
+                                  + ("register-cloud-vm",))
+        config.account_name = None
+        config.registration_password = None
+        config.computer_title = None
+        self.broker_service.identity.secure_id = None
+        self.assertTrue(handler.should_register())
+
+        # Mock registration-failed call
+        reactor_mock = self.mocker.patch(self.reactor)
+        reactor_mock.fire("registration-failed")
+        self.mocker.replay()
+
+        self.log_helper.ignore_errors("Got error while fetching meta-data")
+        self.reactor.fire("run")
+        exchanger.exchange()
+
+    def test_should_register_in_cloud(self):
+        """
+        The client should register when it's in the cloud even though
+        it doesn't have the normal account details.
+        """
+        config = self.broker_service.config
+        handler = RegistrationHandler(self.broker_service.identity,
+                                      self.broker_service.reactor,
+                                      self.broker_service.exchanger,
+                                      self.broker_service.message_store,
+                                      cloud=True)
+
+        mstore = self.broker_service.message_store
+        mstore.set_accepted_types(mstore.get_accepted_types()
+                                  + ("register-cloud-vm",))
+        config.account_name = None
+        config.registration_password = None
+        config.computer_title = None
+        self.broker_service.identity.secure_id = None
+        self.assertTrue(handler.should_register())
+
+    def test_launch_index(self):
+        """
+        The client used the value in C{ami-launch-index} to choose the
+        appropriate OTP in the user data.
+        """
+        otp = "abcdef"
+        user_data = dumps(
+            [{"otp": "wrong index"}, {"otp": otp}, {"otp": "wrong again"}])
+        instance_key = "i-3ea74257"
+        api_base = "http://169.254.169.254/latest"
+        instance_key_url = api_base + "/meta-data/instance-id"
+        user_data_url = api_base + "/user-data"
+        hostname_url = api_base + "/meta-data/local-hostname"
+        index_url = api_base + "/meta-data/ami-launch-index"
+        query_results = {instance_key_url: instance_key,
+                         user_data_url: user_data,
+                         hostname_url: "ooga",
+                         index_url: "1"}
+        config = self.broker_service.config
+
+        def fetch_stub(url):
+            return succeed(query_results[url])
+
+        exchanger = self.broker_service.exchanger
+        handler = RegistrationHandler(self.broker_service.identity,
+                                      self.broker_service.reactor,
+                                      exchanger,
+                                      self.broker_service.message_store,
+                                      cloud=True,
+                                      fetch_async=fetch_stub)
+
+        mstore = self.broker_service.message_store
+        mstore.set_accepted_types(mstore.get_accepted_types()
+                                  + ("register-cloud-vm",))
+        config.account_name = None
+        config.registration_password = None
+        config.computer_title = None
+        self.broker_service.identity.secure_id = None
+        self.assertTrue(handler.should_register())
+
+        self.reactor.fire("run")
+        exchanger.exchange()
+        self.assertEquals(len(self.transport.payloads), 1)
+        self.assertMessages(self.transport.payloads[0]["messages"],
+                            [{"type": "register-cloud-vm",
+                              "otp": otp,
+                              "hostname": "ooga",
+                              "instance_key": instance_key,
+                              "account_name": None,
+                              "registration_password": None}])
+
+    def test_should_not_register_in_cloud(self):
+        """
+        Having a secure ID means we shouldn't register, even in the cloud.
+        """
+        config = self.broker_service.config
+        handler = RegistrationHandler(self.broker_service.identity,
+                                      self.broker_service.reactor,
+                                      self.broker_service.exchanger,
+                                      self.broker_service.message_store,
+                                      cloud=True)
+
+        mstore = self.broker_service.message_store
+        mstore.set_accepted_types(mstore.get_accepted_types()
+                                  + ("register-cloud-vm",))
+        config.account_name = None
+        config.registration_password = None
+        config.computer_title = None
+        self.broker_service.identity.secure_id = "hello"
+        self.assertFalse(handler.should_register())
+
+    def test_should_not_register_without_register_cloud_vm(self):
+        """
+        If the server isn't accepting a 'register-cloud-vm' message,
+        we shouldn't register.
+        """
+        config = self.broker_service.config
+        handler = RegistrationHandler(self.broker_service.identity,
+                                      self.broker_service.reactor,
+                                      self.broker_service.exchanger,
+                                      self.broker_service.message_store,
+                                      cloud=True)
+
+        config.account_name = None
+        config.registration_password = None
+        config.computer_title = None
+        self.broker_service.identity.secure_id = None
+        self.assertFalse(handler.should_register())
