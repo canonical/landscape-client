@@ -31,7 +31,6 @@ class PingClient(object):
         self.get_page = get_page
         self.url = url
 
-
     def ping(self):
         """Ask the question.
 
@@ -87,8 +86,17 @@ class Pinger(object):
         self._reactor = reactor
         self._exchanger = exchanger
         self._call_id = None
+        self._ping_client = None
         self.ping_client_factory = ping_client_factory
         reactor.call_on("message", self._handle_set_intervals)
+
+    def get_url(self):
+        return self._url
+
+    def set_url(self, url):
+        self._url = url
+        if self._ping_client is not None:
+            self._ping_client.url = url
 
     def get_interval(self):
         return self._interval
