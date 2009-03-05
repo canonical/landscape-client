@@ -1,7 +1,15 @@
+
 import logging
 import socket
 
 from twisted.internet.defer import Deferred
+
+from landscape.lib.twisted_util import gather_results
+from landscape.lib.bpickle import loads
+from landscape.lib.log import log_failure
+
+
+EC2_API = "http://169.254.169.254/latest"
 
 
 class InvalidCredentialsError(Exception):
@@ -32,6 +40,9 @@ class Identity(object):
     computer_title = config_property("computer_title")
     account_name = config_property("account_name")
     registration_password = config_property("registration_password")
+    otp = None
+    instance_key = None
+    hostname = None
 
     def __init__(self, config, persist):
         self._config = config
@@ -46,11 +57,15 @@ class RegistrationHandler(object):
     L{register} should be used to initial registration.
     """
 
-    def __init__(self, identity, reactor, exchange, message_store):
+    def __init__(self, config, identity, reactor, exchange, pinger,
+                 message_store, cloud=False, fetch_async=None):
+        self._config = config
         self._identity = identity
         self._reactor = reactor
         self._exchange = exchange
+        self._pinger = pinger
         self._message_store = message_store
+        self._reactor.call_on("run", self._fetch_ec2_data)
         self._reactor.call_on("pre-exchange", self._handle_pre_exchange)
         self._reactor.call_on("exchange-done", self._handle_exchange_done)
         self._exchange.register_message("set-id", self._handle_set_id)
@@ -58,14 +73,21 @@ class RegistrationHandler(object):
         self._exchange.register_message("registration",
                                         self._handle_registration)
         self._should_register = None
+        self._cloud = cloud
+        self._fetch_async = fetch_async
 
     def should_register(self):
         id = self._identity
+        # boolean logic is hard, I'm gonna use an if
+        if self._cloud:
+            return bool(not id.secure_id
+                        and self._message_store.accepts("register-cloud-vm"))
         return bool(not id.secure_id and id.computer_title and id.account_name
                     and self._message_store.accepts("register"))
 
     def register(self):
-        """Attempt to register with the Landscape server.
+        """
+        Attempt to register with the Landscape server.
 
         @return: A L{Deferred} which will either be fired with None if
             registration was successful or will fail with an
@@ -73,50 +95,135 @@ class RegistrationHandler(object):
         """
         self._identity.secure_id = None
         self._identity.insecure_id = None
-        # This was the original code, it works as well but it
-        # takes longer due to the urgent exchange interval.
-        #self._exchange.schedule_exchange(urgent=True)
         result = RegistrationResponse(self._reactor).deferred
         self._exchange.exchange()
         return result
 
+    def _extract_ec2_instance_data(self, raw_user_data, launch_index):
+        """
+        Given the raw string of EC2 User Data, parse it and return the dict of
+        instance data for this particular instance.
+
+        If the data can't be parsed, a debug message will be logged and None
+        will be returned.
+        """
+        try:
+            user_data = loads(raw_user_data)
+        except ValueError:
+            logging.debug("Got invalid user-data %r" % (raw_user_data,))
+            return
+
+        for key in "otps", "exchange-url", "ping-url":
+            if key not in user_data:
+                logging.debug("user-data %r doesn't have key %r."
+                              % (user_data, key))
+                return
+        if not isinstance(user_data, dict):
+            logging.debug("user-data %r is not a dict" % (user_data,))
+            return
+        elif len(user_data["otps"]) <= launch_index:
+            logging.debug("user-data %r doesn't have OTP for launch index %d"
+                          % (user_data, launch_index))
+            return
+        return {"otp": user_data["otps"][launch_index],
+                "exchange-url": user_data["exchange-url"],
+                "ping-url": user_data["ping-url"]}
+
+    def _fetch_ec2_data(self):
+        id = self._identity
+        if self._cloud and not id.secure_id:
+            # Fetch data from the EC2 API, to be used later in the registration
+            # process
+            registration_data = gather_results([
+                self._fetch_async(EC2_API + "/user-data"),
+                self._fetch_async(EC2_API + "/meta-data/instance-id"),
+                self._fetch_async(EC2_API + "/meta-data/local-hostname"),
+                self._fetch_async(EC2_API + "/meta-data/ami-launch-index")],
+                consume_errors=True)
+
+            def record_data((raw_user_data, instance_key,
+                             hostname, launch_index)):
+                """Record the instance data returned by the EC2 API."""
+                id.instance_key = instance_key.decode("utf-8")
+                id.hostname = hostname
+
+                instance_data = self._extract_ec2_instance_data(
+                    raw_user_data, int(launch_index))
+                if instance_data is not None:
+                    id.otp = instance_data["otp"]
+                    exchange_url = instance_data["exchange-url"]
+                    ping_url = instance_data["ping-url"]
+                    self._exchange._transport.set_url(exchange_url)
+                    self._pinger.set_url(ping_url)
+                    self._config.url = exchange_url
+                    self._config.ping_url = ping_url
+                    self._config.write()
+
+            def log_error(error):
+                log_failure(error, msg="Got error while fetching meta-data: %r"
+                            % (error.value,))
+
+            registration_data.addCallback(record_data)
+            registration_data.addErrback(log_error)
+
     def _handle_exchange_done(self):
         if self.should_register() and not self._should_register:
-            # This was the original code, it works as well but it
-            # takes longer due to the urgent exchange interval.
-            #self._exchange.schedule_exchange(urgent=True)
+            # We received accepted-types (first exchange), so we now trigger
+            # the second exchange for registration
             self._exchange.exchange()
 
     def _handle_pre_exchange(self):
         """
-        An exchange is about to happen.  If we don't have a secure id
-        already set, and we have the needed information available,
-        queue a registration message with the server.
+        An exchange is about to happen.  If we don't have a secure id already
+        set, and we have the needed information available, queue a registration
+        message with the server.
         """
-
-        # The point of storing this flag is that if we should *not*
-        # register now, and then after the exchange we *should*, we
-        # schedule an urgent exchange again.  Without this flag we
-        # would just spin trying to connect to the server when
-        # something is clearly preventing the registration.
+        # The point of storing this flag is that if we should *not* register
+        # now, and then after the exchange we *should*, we schedule an urgent
+        # exchange again.  Without this flag we would just spin trying to
+        # connect to the server when something is clearly preventing the
+        # registration.
         self._should_register = self.should_register()
 
         if self._should_register:
             id = self._identity
 
-            with_word = ["without", "with"][bool(id.registration_password)]
-            logging.info("Queueing message to register with account %r %s "
-                         "a password." % (id.account_name, with_word))
-
             self._message_store.delete_all_messages()
+            if self._cloud:
+                if id.otp:
+                    logging.info("Queueing message to register with OTP")
+                    message = {"type": "register-cloud-vm",
+                               "otp": id.otp,
+                               "instance_key": id.instance_key,
+                               "hostname": id.hostname,
+                               "account_name": None,
+                               "registration_password": None}
+                    self._exchange.send(message)
+                elif id.account_name:
+                    logging.info("Queueing message to register with account "
+                                 "%r as an EC2 instance." % (id.account_name,))
+                    message = {"type": "register-cloud-vm",
+                               "otp": None,
+                               "instance_key": id.instance_key,
+                               "hostname": id.hostname,
+                               "account_name": id.account_name,
+                               "registration_password": \
+                                   id.registration_password}
+                    self._exchange.send(message)
+                else:
+                    self._reactor.fire("registration-failed")
+            else:
+                with_word = ["without", "with"][bool(id.registration_password)]
+                logging.info("Queueing message to register with account %r %s "
+                             "a password." % (id.account_name, with_word))
 
-            message = {"type": "register",
-                       "computer_title": id.computer_title,
-                       "account_name": id.account_name,
-                       "registration_password": id.registration_password,
-                       "hostname": socket.gethostname()}
+                message = {"type": "register",
+                           "computer_title": id.computer_title,
+                           "account_name": id.account_name,
+                           "registration_password": id.registration_password,
+                           "hostname": socket.gethostname()}
 
-            self._exchange.send(message)
+                self._exchange.send(message)
 
     def _handle_set_id(self, message):
         """

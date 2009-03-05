@@ -1,11 +1,10 @@
 from landscape.tests.helpers import LandscapeTest, FakeRemoteBrokerHelper
 
-from twisted.internet.defer import succeed, fail
+from twisted.internet.defer import fail
 
 from landscape.lib.bpickle import dumps
 from landscape.lib.fetch import fetch
 from landscape.broker.ping import PingClient, Pinger
-from landscape.broker.registration import Identity
 
 
 class FakePageGetter(object):
@@ -114,17 +113,6 @@ class PingClientTest(LandscapeTest):
         self.assertEquals(failures[0].type, AssertionError)
 
 
-class FakePingClient(object):
-
-    def __init__(self):
-        self.response = False
-        self.pings = 0
-
-    def ping(self):
-        self.pings += 1
-        return succeed(self.response)
-
-
 class PingerTest(LandscapeTest):
 
     helpers = [FakeRemoteBrokerHelper]
@@ -137,11 +125,10 @@ class PingerTest(LandscapeTest):
     def setUp(self):
         super(PingerTest, self).setUp()
         self.url = "http://localhost:8081/whatever"
-        self.ping_client = FakePingClient()
+        self.page_getter = FakePageGetter(None)
         def factory(reactor, url, insecure_id):
-            self.ping_client.url = url
-            self.ping_client.insecure_id = insecure_id
-            return self.ping_client
+            return PingClient(reactor, url, insecure_id,
+                              get_page=self.page_getter.get_page)
         self.pinger = Pinger(self.broker_service.reactor,
                              self.url, self.broker_service.identity,
                              self.broker_service.exchanger,
@@ -165,20 +152,9 @@ class PingerTest(LandscapeTest):
         self.pinger.start()
         self.broker_service.identity.insecure_id = 23
         self.broker_service.reactor.advance(9)
-        self.assertEquals(self.ping_client.pings, 0)
+        self.assertEquals(len(self.page_getter.fetches), 0)
         self.broker_service.reactor.advance(1)
-        self.assertEquals(self.ping_client.pings, 1)
-
-    def test_set_insecure_id_message(self):
-        """
-        L{Pinger} should register a handler for the 'set-id' message
-        so that it can start pinging when an insecure-id has been
-        received.
-        """
-        self.pinger.start()
-        self.broker_service.identity.insecure_id = 42
-        self.broker_service.reactor.advance(10)
-        self.assertEquals(self.ping_client.pings, 1)
+        self.assertEquals(len(self.page_getter.fetches), 1)
 
     def test_load_insecure_id(self):
         """
@@ -188,7 +164,7 @@ class PingerTest(LandscapeTest):
         self.broker_service.identity.insecure_id = 42
         self.pinger.start()
         self.broker_service.reactor.advance(10)
-        self.assertEqual(self.ping_client.pings, 1)
+        self.assertEqual(len(self.page_getter.fetches), 1)
 
     def test_response(self):
         """
@@ -197,7 +173,7 @@ class PingerTest(LandscapeTest):
         self.pinger.start()
         self.broker_service.identity.insecure_id = 42
         exchanged = []
-        self.ping_client.response = True
+        self.page_getter.response = {"messages": True}
 
         # 70 = ping delay + urgent exchange delay
         self.broker_service.reactor.advance(70)
@@ -211,7 +187,7 @@ class PingerTest(LandscapeTest):
         self.pinger.start()
         self.broker_service.identity.insecure_id = 42
         exchanged = []
-        self.ping_client.response = False
+        self.page_getter.response = {"messages": False}
         self.broker_service.reactor.advance(10)
         self.assertEquals(len(self.broker_service.transport.payloads), 0)
 
@@ -221,18 +197,25 @@ class PingerTest(LandscapeTest):
         should be logged.
         """
         self.log_helper.ignore_errors(ZeroDivisionError)
-        self.pinger.start()
         self.broker_service.identity.insecure_id = 42
 
-        def bad_ping():
-            return fail(ZeroDivisionError("Couldn't fetch page"))
-        self.ping_client.ping = bad_ping
+        class BadPingClient(object):
+            def __init__(self, *args, **kwargs):
+                pass
+            def ping(self):
+                return fail(ZeroDivisionError("Couldn't fetch page"))
+        pinger = Pinger(self.broker_service.reactor, "http://foo.com/",
+                        self.broker_service.identity,
+                        self.broker_service.exchanger,
+                        ping_client_factory=BadPingClient)
+        pinger.start()
 
-        self.broker_service.reactor.advance(10)
+        self.broker_service.reactor.advance(30)
 
         log = self.logfile.getvalue()
         self.assertTrue("Error contacting ping server at "
-                        "http://localhost:8081/whatever" in log)
+                        "http://foo.com/" in log,
+                        log)
         self.assertTrue("ZeroDivisionError" in log)
         self.assertTrue("Couldn't fetch page" in log)
 
@@ -252,6 +235,26 @@ class PingerTest(LandscapeTest):
 
         self.broker_service.identity.insecure_id = 23
         self.broker_service.reactor.advance(72)
-        self.assertEquals(self.ping_client.pings, 0)
+        self.assertEquals(len(self.page_getter.fetches), 0)
         self.broker_service.reactor.advance(1)
-        self.assertEquals(self.ping_client.pings, 1)
+        self.assertEquals(len(self.page_getter.fetches), 1)
+
+    def test_get_url(self):
+        self.assertEquals(self.pinger.get_url(),
+                          "http://localhost:8081/whatever")
+
+    def test_set_url(self):
+        url = "http://example.com/mysuperping"
+        self.pinger.set_url(url)
+        self.pinger.start()
+        self.broker_service.identity.insecure_id = 23
+        self.broker_service.reactor.advance(10)
+        self.assertEquals(self.page_getter.fetches[0][0], url)
+
+    def test_set_url_after_start(self):
+        url = "http://example.com/mysuperping"
+        self.pinger.start()
+        self.pinger.set_url(url)
+        self.broker_service.identity.insecure_id = 23
+        self.broker_service.reactor.advance(10)
+        self.assertEquals(self.page_getter.fetches[0][0], url)
