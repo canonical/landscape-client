@@ -1,3 +1,5 @@
+from twisted.internet.defer import maybeDeferred
+
 from landscape.lib.log import log_failure
 
 from landscape.lib.dbus_util import method, get_object, Object
@@ -62,17 +64,22 @@ class UserMonitor(MonitorPlugin):
             C{operation-id} field.
         """
         from landscape.manager.usermanager import UserManagerDBusObject
-        # Specify a low timeout because it may be quite normal for this
-        # service to not be provided, if the client is being run in non-root
-        # mode.
-        remote_service = get_object(
-            self.registry.bus,
-            UserManagerDBusObject.bus_name, UserManagerDBusObject.object_path,
-            retry_timeout=2)
+        from landscape.watchdog import WatchDogConfiguration
+        # We'll skip checking the locked users if we're in monitor-only mode.
+        # Unfortunately, in order to check that, we need to instantiate a
+        # WatchDogConfiguration since it's the only configuration which knows
+        # about the monitor_only option.
+        if getattr(self.registry.config, "monitor_only", False):
+            result = maybeDeferred(self._detect_changes,
+                                   [], operation_id)
+        else:
+            remote_service = get_object(self.registry.bus,
+                                        UserManagerDBusObject.bus_name,
+                                        UserManagerDBusObject.object_path)
 
-        result = remote_service.get_locked_usernames()
-        result.addCallback(self._detect_changes, operation_id)
-        result.addErrback(lambda f: self._detect_changes([], operation_id))
+            result = remote_service.get_locked_usernames()
+            result.addCallback(self._detect_changes, operation_id)
+            result.addErrback(lambda f: self._detect_changes([], operation_id))
         return result
 
     def _detect_changes(self, locked_users, operation_id=None):

@@ -23,10 +23,12 @@ class UserMonitorNoManagerTest(LandscapeIsolatedTest):
             self.remote, self.broker_service.reactor,
             self.broker_service.config, self.broker_service.bus, self.persist)
 
-    def test_fetch_users_without_manager(self):
+    def test_no_fetch_users_in_monitor_only_mode(self):
         """
-        If the manager isn't running, collection of user data should still work.
+        If we're in monitor_only mode, then all users are assumed to be
+        unlocked.
         """
+        self.broker_service.config.monitor_only = True
         def got_result(result):
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
