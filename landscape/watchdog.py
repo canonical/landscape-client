@@ -512,7 +512,8 @@ def run(args=sys.argv, reactor=None):
     config.load(args)
 
     if (config.bus == "system"
-        and not (os.getuid() == 0 or pwd.getpwnam("landscape").pw_uid == os.getuid())):
+        and not (os.getuid() == 0
+                 or pwd.getpwnam("landscape").pw_uid == os.getuid())):
         sys.exit("When using the system bus, landscape-client must be run as "
                  "root.")
 
