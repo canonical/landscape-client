@@ -64,11 +64,7 @@ class UserMonitor(MonitorPlugin):
             C{operation-id} field.
         """
         from landscape.manager.usermanager import UserManagerDBusObject
-        from landscape.watchdog import WatchDogConfiguration
         # We'll skip checking the locked users if we're in monitor-only mode.
-        # Unfortunately, in order to check that, we need to instantiate a
-        # WatchDogConfiguration since it's the only configuration which knows
-        # about the monitor_only option.
         if getattr(self.registry.config, "monitor_only", False):
             result = maybeDeferred(self._detect_changes,
                                    [], operation_id)
