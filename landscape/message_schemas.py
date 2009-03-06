@@ -150,7 +150,15 @@ REGISTER_CLOUD_VM = Message(
      "otp":  Any(String(), Constant(None)),
      "instance_key": Unicode(),
      "account_name": Any(utf8, Constant(None)),
-     "registration_password": Any(utf8, Constant(None))})
+     "registration_password": Any(utf8, Constant(None)),
+     "reservation_key": Unicode(),
+     "public_hostname": Unicode(),
+     "local_hostname": Unicode(),
+     "kernel_key": Unicode(),
+     "ramdisk_key": Unicode(),
+     "launch_index": Int(),
+     "image_key": Unicode(),
+     })
 
 TEMPERATURE = Message("temperature", {
     "thermal-zone": utf8,

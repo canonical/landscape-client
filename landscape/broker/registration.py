@@ -40,9 +40,6 @@ class Identity(object):
     computer_title = config_property("computer_title")
     account_name = config_property("account_name")
     registration_password = config_property("registration_password")
-    otp = None
-    instance_key = None
-    hostname = None
 
     def __init__(self, config, persist):
         self._config = config
@@ -75,6 +72,7 @@ class RegistrationHandler(object):
         self._should_register = None
         self._cloud = cloud
         self._fetch_async = fetch_async
+        self._otp = None
 
     def should_register(self):
         id = self._identity
@@ -113,15 +111,15 @@ class RegistrationHandler(object):
             logging.debug("Got invalid user-data %r" % (raw_user_data,))
             return
 
+        if not isinstance(user_data, dict):
+            logging.debug("user-data %r is not a dict" % (user_data,))
+            return
         for key in "otps", "exchange-url", "ping-url":
             if key not in user_data:
                 logging.debug("user-data %r doesn't have key %r."
                               % (user_data, key))
                 return
-        if not isinstance(user_data, dict):
-            logging.debug("user-data %r is not a dict" % (user_data,))
-            return
-        elif len(user_data["otps"]) <= launch_index:
+        if len(user_data["otps"]) <= launch_index:
             logging.debug("user-data %r doesn't have OTP for launch index %d"
                           % (user_data, launch_index))
             return
@@ -137,20 +135,39 @@ class RegistrationHandler(object):
             registration_data = gather_results([
                 self._fetch_async(EC2_API + "/user-data"),
                 self._fetch_async(EC2_API + "/meta-data/instance-id"),
+                self._fetch_async(EC2_API + "/meta-data/reservation-id"),
                 self._fetch_async(EC2_API + "/meta-data/local-hostname"),
-                self._fetch_async(EC2_API + "/meta-data/ami-launch-index")],
+                self._fetch_async(EC2_API + "/meta-data/public-hostname"),
+                self._fetch_async(EC2_API + "/meta-data/ami-launch-index"),
+                self._fetch_async(EC2_API + "/meta-data/kernel-id"),
+                self._fetch_async(EC2_API + "/meta-data/ramdisk-id"),
+                self._fetch_async(EC2_API + "/meta-data/ami-id"),
+                ],
                 consume_errors=True)
 
-            def record_data((raw_user_data, instance_key,
-                             hostname, launch_index)):
+            def record_data(ec2_data):
                 """Record the instance data returned by the EC2 API."""
-                id.instance_key = instance_key.decode("utf-8")
-                id.hostname = hostname
+                (raw_user_data, instance_key, reservation_key,
+                 local_hostname, public_hostname, launch_index,
+                 kernel_key, ramdisk_key, ami_key) = ec2_data
+                self._ec2_data = {
+                    "instance_key": instance_key,
+                    "reservation_key": reservation_key,
+                    "local_hostname": local_hostname,
+                    "public_hostname": public_hostname,
+                    "launch_index": launch_index,
+                    "kernel_key": kernel_key,
+                    "ramdisk_key": ramdisk_key,
+                    "image_key": ami_key}
+                for k, v in self._ec2_data.items():
+                    self._ec2_data[k] = v.decode("utf-8")
+                self._ec2_data["launch_index"] = int(
+                    self._ec2_data["launch_index"])
 
                 instance_data = self._extract_ec2_instance_data(
                     raw_user_data, int(launch_index))
                 if instance_data is not None:
-                    id.otp = instance_data["otp"]
+                    self._otp = instance_data["otp"]
                     exchange_url = instance_data["exchange-url"]
                     ping_url = instance_data["ping-url"]
                     self._exchange._transport.set_url(exchange_url)
@@ -190,25 +207,26 @@ class RegistrationHandler(object):
 
             self._message_store.delete_all_messages()
             if self._cloud:
-                if id.otp:
+                if self._otp:
                     logging.info("Queueing message to register with OTP")
                     message = {"type": "register-cloud-vm",
-                               "otp": id.otp,
-                               "instance_key": id.instance_key,
-                               "hostname": id.hostname,
+                               "otp": self._otp,
+                               "hostname": socket.gethostname(),
                                "account_name": None,
-                               "registration_password": None}
+                               "registration_password": None,
+                               }
+                    message.update(self._ec2_data)
                     self._exchange.send(message)
                 elif id.account_name:
                     logging.info("Queueing message to register with account "
                                  "%r as an EC2 instance." % (id.account_name,))
                     message = {"type": "register-cloud-vm",
                                "otp": None,
-                               "instance_key": id.instance_key,
-                               "hostname": id.hostname,
+                               "hostname": socket.gethostname(),
                                "account_name": id.account_name,
                                "registration_password": \
                                    id.registration_password}
+                    message.update(self._ec2_data)
                     self._exchange.send(message)
                 else:
                     self._reactor.fire("registration-failed")
