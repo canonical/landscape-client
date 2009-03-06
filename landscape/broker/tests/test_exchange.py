@@ -793,29 +793,33 @@ class MessageExchangeTest(LandscapeTest):
         event.
         """
         called = []
-        def server_uuid_changed():
-            called.append(True)
+        def server_uuid_changed(old_uuid, new_uuid):
+            called.append((old_uuid, new_uuid))
         self.reactor.call_on("server-uuid-changed", server_uuid_changed)
 
-        # Set it for the first time:
+        # Set it for the first time, and it should emit the event
+        # letting the system know about the change.
         self.transport.extra["server-uuid"] = "first-uuid"
         self.exchanger.exchange()
-        self.assertEquals(len(called), 0)
+        self.assertEquals(len(called), 1)
+        self.assertEquals(called[-1], (None, "first-uuid"))
 
-        # Use the same one again, nothing should happen:
+        # using the same one again, nothing should happen:
         self.transport.extra["server-uuid"] = "first-uuid"
-        self.exchanger.exchange()
-        self.assertEquals(len(called), 0)
-
-        # Changing it, we should get an event:
-        self.transport.extra["server-uuid"] = "second-uuid"
         self.exchanger.exchange()
         self.assertEquals(len(called), 1)
 
-        # And then, it shouldn't do anything again:
+        # Changing it, we should get an event again:
         self.transport.extra["server-uuid"] = "second-uuid"
         self.exchanger.exchange()
-        self.assertEquals(len(called), 1)
+        self.assertEquals(len(called), 2)
+        self.assertEquals(called[-1], ("first-uuid", "second-uuid"))
+
+        # And then, it shouldn't emit it once more, since it continues
+        # to be the same.
+        self.transport.extra["server-uuid"] = "second-uuid"
+        self.exchanger.exchange()
+        self.assertEquals(len(called), 2)
 
 
 class GetAcceptedTypesDiffTest(LandscapeTest):

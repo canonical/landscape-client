@@ -286,11 +286,11 @@ class MessageExchange(object):
             message_store.add({"type": "resynchronize"})
             self._reactor.fire("resynchronize-clients")
 
-        new_server_uuid = result.get("server-uuid")
-        if new_server_uuid != self._server_uuid:
-            if self._server_uuid is not None:
-                self._reactor.fire("server-uuid-changed")
-            self._server_uuid = new_server_uuid
+        old_uuid = self._server_uuid
+        new_uuid = result.get("server-uuid")
+        if new_uuid != old_uuid:
+            self._reactor.fire("server-uuid-changed", old_uuid, new_uuid)
+            self._server_uuid = new_uuid
 
         sequence = message_store.get_server_sequence()
         for message in result.get("messages", ()):
