@@ -42,6 +42,7 @@ class MessageExchange(object):
         self._client_accepted_types = set()
         self._client_accepted_types_hash = None
         self._message_handlers = {}
+        self._server_uuid = None
 
         self.register_message("accepted-types", self._handle_accepted_types)
         self.register_message("resynchronize", self._handle_resynchronize)
@@ -285,6 +286,11 @@ class MessageExchange(object):
             message_store.add({"type": "resynchronize"})
             self._reactor.fire("resynchronize-clients")
 
+        new_server_uuid = result.get("server-uuid")
+        if new_server_uuid != self._server_uuid:
+            if self._server_uuid is not None:
+                self._reactor.fire("server-uuid-changed")
+            self._server_uuid = new_server_uuid
 
         sequence = message_store.get_server_sequence()
         for message in result.get("messages", ()):

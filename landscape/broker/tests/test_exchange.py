@@ -785,6 +785,37 @@ class MessageExchangeTest(LandscapeTest):
         types = self.exchanger.get_client_accepted_message_types()
         self.assertEquals(types, sorted(["typefoo"] + DEFAULT_ACCEPTED_TYPES))
 
+    def test_server_uuid_change_cause_event(self):
+        """
+        If a message of type 'resynchronize' is received from the
+        server, the exchanger should *first* send a 'resynchronize'
+        message back to the server and *then* fire a 'resynchronize-clients'
+        event.
+        """
+        called = []
+        def server_uuid_changed():
+            called.append(True)
+        self.reactor.call_on("server-uuid-changed", server_uuid_changed)
+
+        # Set it for the first time:
+        self.transport.extra["server-uuid"] = "first-uuid"
+        self.exchanger.exchange()
+        self.assertEquals(len(called), 0)
+
+        # Use the same one again, nothing should happen:
+        self.transport.extra["server-uuid"] = "first-uuid"
+        self.exchanger.exchange()
+        self.assertEquals(len(called), 0)
+
+        # Changing it, we should get an event:
+        self.transport.extra["server-uuid"] = "second-uuid"
+        self.exchanger.exchange()
+        self.assertEquals(len(called), 1)
+
+        # And then, it shouldn't do anything again:
+        self.transport.extra["server-uuid"] = "second-uuid"
+        self.exchanger.exchange()
+        self.assertEquals(len(called), 1)
 
 
 class GetAcceptedTypesDiffTest(LandscapeTest):
