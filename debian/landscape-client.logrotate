@@ -6,6 +6,6 @@
     compress
     nocreate
     postrotate
-        [ -f /var/run/landscape-client.pid ] && kill -s USR1 `cat /var/run/landscape-client.pid` > /dev/null 2>&1 || :
+        [ -f /var/run/landscape/landscape-client.pid ] && kill -s USR1 `cat /var/run/landscape/landscape-client.pid` > /dev/null 2>&1 || :
     endscript
 }
