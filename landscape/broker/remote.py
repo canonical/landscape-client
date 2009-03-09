@@ -74,6 +74,14 @@ class RemoteBroker(object):
         result = self._perform_call("get_registered_plugins")
         return result.addCallback(convert)
 
+    def get_server_uuid(self):
+        # DBus doesn't like Nones, so we transfer them as empty strings.
+        def empty_string_to_none(uuid):
+            return uuid or None
+        result = self._perform_call("get_server_uuid")
+        result.addCallback(empty_string_to_none)
+        return result
+
     def exit(self):
         return self._perform_call("exit")
 
