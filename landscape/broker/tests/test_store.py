@@ -17,26 +17,48 @@ class MessageStoreTest(LandscapeTest):
         super(MessageStoreTest, self).setUp()
         self.time = 0
         self.temp_dir = tempfile.mkdtemp()
-        self.persist = Persist()
-        self.store = MessageStore(self.persist,
-                                  self.temp_dir, 20, get_time=self.get_time)
-        self.store.set_accepted_types(["empty", "data"])
-        self.store.add_schema(Message("empty", {}))
-        self.store.add_schema(Message("empty2", {}))
-        self.store.add_schema(Message("data", {"data": String()}))
-        self.store.add_schema(Message("unaccepted", {"data": String()}))
+        self.persist_filename = tempfile.mktemp()
+        self.persist = Persist(filename=self.persist_filename)
+        self.store = self.create_store()
+
+    def create_store(self):
+        persist = Persist(filename=self.persist_filename)
+        store = MessageStore(persist, self.temp_dir, 20, get_time=self.get_time)
+        store.set_accepted_types(["empty", "data"])
+        store.add_schema(Message("empty", {}))
+        store.add_schema(Message("empty2", {}))
+        store.add_schema(Message("data", {"data": String()}))
+        store.add_schema(Message("unaccepted", {"data": String()}))
+        return store
 
     def tearDown(self):
         super(MessageStoreTest, self).tearDown()
         shutil.rmtree(self.temp_dir)
+        if os.path.isfile(self.persist_filename):
+            os.unlink(self.persist_filename)
 
     def get_time(self):
         return self.time
 
-    def test_get_sequence(self):
+    def test_get_set_sequence(self):
         self.assertEquals(self.store.get_sequence(), 0)
         self.store.set_sequence(3)
         self.assertEquals(self.store.get_sequence(), 3)
+
+        # Ensure it's actually saved.
+        self.store.commit()
+        store = self.create_store()
+        self.assertEquals(store.get_sequence(), 3)
+
+    def test_get_set_server_sequence(self):
+        self.assertEquals(self.store.get_server_sequence(), 0)
+        self.store.set_server_sequence(3)
+        self.assertEquals(self.store.get_server_sequence(), 3)
+
+        # Ensure it's actually saved.
+        self.store.commit()
+        store = self.create_store()
+        self.assertEquals(store.get_server_sequence(), 3)
 
     def test_get_pending_offset(self):
         self.assertEquals(self.store.get_pending_offset(), 0)
@@ -242,10 +264,8 @@ class MessageStoreTest(LandscapeTest):
         If the server gets unplugged halfway through writing a file,
         the message should not be half-written.
         """
-        store = MessageStore(self.persist, self.temp_dir,
-                             get_time=self.get_time)
-        store.add_schema(Message("data", {"data": Int()}))
-        store.add({"type": "data", "data": 1})
+        self.store.add_schema(Message("data", {"data": Int()}))
+        self.store.add({"type": "data", "data": 1})
         # We simulate it by creating a fake file which raises halfway through
         # writing a file.
         replaced_file_factory = self.mocker.replace("__builtin__.open",
@@ -257,12 +277,11 @@ class MessageStoreTest(LandscapeTest):
         # This kind of ensures that raising an exception is somewhat
         # similar to unplugging the power -- i.e., we're not relying
         # on special exception-handling in the file-writing code.
-        self.assertRaises(IOError, store.add, {"type": "data", "data": 2})
+        self.assertRaises(IOError, self.store.add, {"type": "data", "data": 2})
         self.mocker.verify()
         self.mocker.reset()
-        self.assertEquals(store.get_pending_messages(),
-                          [{"type": "data", "data": 1,
-                            "api": API}])
+        self.assertEquals(self.store.get_pending_messages(),
+                         [{"type": "data", "data": 1, "api": API}])
 
     def test_api_attribute(self):
         self.assertEquals(self.store.api, API)
