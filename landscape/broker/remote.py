@@ -118,6 +118,8 @@ class DBusSignalToReactorTransmitter(object):
         bus.add_signal_receiver(self._broadcast_resynchronize, "resynchronize")
         bus.add_signal_receiver(self._broadcast_message_type_acceptance_changed,
                                 "message_type_acceptance_changed")
+        bus.add_signal_receiver(self._broadcast_server_uuid_changed,
+                                "server_uuid_changed")
 
 
     def _broadcast_resynchronize(self):
@@ -129,3 +131,12 @@ class DBusSignalToReactorTransmitter(object):
 
     def _broadcast_message_type_acceptance_changed(self, type, acceptance):
         self.reactor.fire(("message-type-acceptance-changed", type), acceptance)
+
+    def _broadcast_server_uuid_changed(self, old_uuid, new_uuid):
+        # DBus doesn't work well with Nones, so the signal emitter converts
+        # them to empty strings when sending the signal.  The remote should
+        # then convert them back to Nones so that we have the same API on
+        # both sides.
+        self.reactor.fire("server-uuid-changed",
+                          old_uuid or None, new_uuid or None)
+
