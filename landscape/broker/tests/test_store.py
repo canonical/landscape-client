@@ -60,6 +60,16 @@ class MessageStoreTest(LandscapeTest):
         store = self.create_store()
         self.assertEquals(store.get_server_sequence(), 3)
 
+    def test_get_set_server_uuid(self):
+        self.assertEquals(self.store.get_server_uuid(), None)
+        self.store.set_server_uuid("abcd-efgh")
+        self.assertEquals(self.store.get_server_uuid(), "abcd-efgh")
+
+        # Ensure it's actually saved.
+        self.store.commit()
+        store = self.create_store()
+        self.assertEquals(store.get_server_uuid(), "abcd-efgh")
+
     def test_get_pending_offset(self):
         self.assertEquals(self.store.get_pending_offset(), 0)
         self.store.set_pending_offset(3)
