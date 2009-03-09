@@ -1283,6 +1283,9 @@ class WatchDogRunTests(LandscapeTest):
         self.mocker.replace("os.getuid")()
         self.mocker.count(1, None)
         self.mocker.result(1000)
+        getpwnam = mock = self.mocker.replace("pwd.getpwnam")
+        getpwnam("landscape").pw_uid
+        self.mocker.result(1001)
         self.mocker.replay()
         sys_exit = self.assertRaises(SystemExit, run, ["--bus", "system"])
         self.assertIn("landscape-client must be run as root", str(sys_exit))
@@ -1291,8 +1294,9 @@ class WatchDogRunTests(LandscapeTest):
         """
         The watchdog *can* be run as the 'landscape' user.
         """
-        pwinfo = self.mocker.replace("pwd.getpwnam")("landscape")
-        self.expect(pwinfo.pw_uid).result(os.getuid())
+        getpwnam = self.mocker.replace("pwd.getpwnam")
+        getpwnam("landscape").pw_uid
+        self.mocker.result(os.getuid())
         self.mocker.replay()
         reactor = FakeReactor()
         run(["--bus", "system", "--log-dir", self.make_path()],
