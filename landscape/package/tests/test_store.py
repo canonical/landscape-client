@@ -38,6 +38,12 @@ class PackageStoreTest(LandscapeTest):
         self.assertEquals(self.store2.get_id_hash(123), "hash1")
         self.assertEquals(self.store2.get_id_hash(456), "hash2")
 
+    def test_clear_hash_ids(self):
+        self.store1.set_hash_ids({"ha\x00sh1": 123, "ha\x00sh2": 456})
+        self.store1.clear_hash_ids()
+        self.assertEquals(self.store2.get_hash_id("ha\x00sh1"), None)
+        self.assertEquals(self.store2.get_hash_id("ha\x00sh2"), None)
+
     def test_get_unexistent_hash(self):
         self.assertEquals(self.store1.get_hash_id("hash1"), None)
 
