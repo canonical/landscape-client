@@ -785,6 +785,14 @@ class MessageExchangeTest(LandscapeTest):
         types = self.exchanger.get_client_accepted_message_types()
         self.assertEquals(types, sorted(["typefoo"] + DEFAULT_ACCEPTED_TYPES))
 
+    def test_server_uuid_is_stored_on_message_store(self):
+        self.transport.extra["server-uuid"] = "first-uuid"
+        self.exchanger.exchange()
+        self.assertEquals(self.mstore.get_server_uuid(), "first-uuid")
+        self.transport.extra["server-uuid"] = "second-uuid"
+        self.exchanger.exchange()
+        self.assertEquals(self.mstore.get_server_uuid(), "second-uuid")
+
     def test_server_uuid_change_cause_event(self):
         """
         If a message of type 'resynchronize' is received from the
@@ -820,6 +828,21 @@ class MessageExchangeTest(LandscapeTest):
         self.transport.extra["server-uuid"] = "second-uuid"
         self.exchanger.exchange()
         self.assertEquals(len(called), 2)
+
+    def test_server_uuid_event_not_emitted_with_matching_stored_uuid(self):
+        """
+        If the UUID in the message store is the same as the current UUID,
+        the event is not emitted.
+        """
+        called = []
+        def server_uuid_changed(old_uuid, new_uuid):
+            called.append((old_uuid, new_uuid))
+        self.reactor.call_on("server-uuid-changed", server_uuid_changed)
+
+        self.mstore.set_server_uuid("the-uuid")
+        self.transport.extra["server-uuid"] = "the-uuid"
+        self.exchanger.exchange()
+        self.assertEquals(called, [])
 
 
 class GetAcceptedTypesDiffTest(LandscapeTest):
