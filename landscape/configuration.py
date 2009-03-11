@@ -9,6 +9,9 @@ import sys
 import os
 import getpass
 from ConfigParser import ConfigParser
+from StringIO import StringIO
+
+import pycurl
 
 from dbus.exceptions import DBusException
 
@@ -16,6 +19,7 @@ from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.lib.dbus_util import (
     get_bus, NoReplyError, ServiceUnknownError, SecurityError)
 from landscape.lib.twisted_util import gather_results
+from landscape.lib.fetch import fetch, HTTPCodeError
 
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.broker.deployment import BrokerConfiguration
@@ -35,6 +39,10 @@ def print_text(text, end="\n", error=False):
     stream.flush()
 
 
+class ImportOptionError(Exception):
+    """Raised when there are issues with handling the --import option."""
+
+
 class LandscapeSetupConfiguration(BrokerConfiguration):
 
     unsaved_options = ("no_start", "disable", "silent", "ok_no_register",
@@ -42,11 +50,27 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
 
     def _load_external_options(self):
         if self.import_from:
+            parser = ConfigParser()
+
             # Imported options behave as if they were passed in the
             # command line, with precedence being given to real command
             # line options.
-            parser = ConfigParser()
-            parser.read(self.import_from)
+            if "://" in self.import_from:
+                # If it's from a URL, download it now.
+                error_message = None
+                try:
+                    content = fetch(self.import_from)
+                except pycurl.error, error:
+                    error_message = error.args[1]
+                except HTTPCodeError, error:
+                    error_message = str(error)
+                if error_message is not None:
+                    raise ImportOptionError(
+                        "Couldn't download configuration from %s: %s" %
+                        (self.import_from, error_message))
+                parser.readfp(StringIO(content))
+            else:
+                parser.read(self.import_from)
 
             # But real command line options have precedence.
             options = dict(parser.items(self.config_section))
@@ -443,12 +467,13 @@ def register(config, reactor=None):
 def main(args):
     if os.getuid() != 0:
         sys.exit("landscape-config must be run as root.")
-    config = LandscapeSetupConfiguration()
-    config.load(args)
 
-    # XXX Import public key here.
-    #from landscape.lib.fetch import fetch
-    #value = fetch("https://landscape.canonical.com/foo")
+    config = LandscapeSetupConfiguration()
+    try:
+        config.load(args)
+    except ImportOptionError, error:
+        print_text(str(error), error=True)
+        sys.exit(1)
 
     # Disable startup on boot and stop the client, if one is running.
     if config.disable:

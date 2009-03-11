@@ -4,13 +4,16 @@ from ConfigParser import ConfigParser
 
 from dbus import DBusException
 
+import pycurl
+
 from twisted.internet.defer import Deferred, succeed, fail
 from twisted.internet import reactor
 
+from landscape.lib.fetch import HTTPCodeError
 from landscape.configuration import (
     print_text, LandscapeSetupScript, LandscapeSetupConfiguration,
     register, setup, main, setup_init_script_and_start_client,
-    stop_client_and_disable_init_script, ConfigurationError)
+    stop_client_and_disable_init_script, ConfigurationError, ImportOptionError)
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.tests.helpers import (LandscapeTest, LandscapeIsolatedTest,
@@ -1000,6 +1003,97 @@ account_name = account
                            "http_proxy": "http://old.proxy",
                            "https_proxy": "https://old.proxy",
                            "url": "http://new.url"})
+
+    def test_import_from_url(self):
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        sysvconfig_mock.set_start_on_boot(True)
+        sysvconfig_mock.restart_landscape()
+        self.mocker.result(True)
+
+        configuration = (
+            "[client]\n"
+            "computer_title = New Title\n"
+            "account_name = New Name\n"
+            "registration_password = New Password\n"
+            "http_proxy = http://new.proxy\n"
+            "https_proxy = https://new.proxy\n"
+            "url = http://new.url\n")
+
+        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
+        fetch_mock("https://example.com/config")
+        self.mocker.result(configuration)
+
+        self.mocker.replay()
+
+        config_filename = self.makeFile("", basename="final_config")
+
+        config = self.get_config(["--config", config_filename, "--silent",
+                                  "--import", "https://example.com/config"])
+        setup(config)
+
+        options = ConfigParser()
+        options.read(config_filename)
+
+        self.assertEquals(dict(options.items("client")),
+                          {"computer_title": "New Title",
+                           "account_name": "New Name",
+                           "registration_password": "New Password",
+                           "http_proxy": "http://new.proxy",
+                           "https_proxy": "https://new.proxy",
+                           "url": "http://new.url"})
+
+    def test_import_from_url_with_http_code_fetch_error(self):
+        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
+        fetch_mock("https://example.com/config")
+        self.mocker.throw(HTTPCodeError(501, ""))
+
+        self.mocker.replay()
+
+        config_filename = self.makeFile("", basename="final_config")
+
+        try:
+            self.get_config(["--config", config_filename, "--silent",
+                             "--import", "https://example.com/config"])
+        except ImportOptionError, error:
+            self.assertEquals(str(error), 
+                              "Couldn't download configuration from "
+                              "https://example.com/config: Server "
+                              "returned HTTP code 501")
+        else:
+            self.fail("ImportOptionError not raised")
+
+    def test_import_from_url_with_pycurl_error(self):
+        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
+        fetch_mock("https://example.com/config")
+        self.mocker.throw(pycurl.error(60, "pycurl message"))
+
+        self.mocker.replay()
+
+        config_filename = self.makeFile("", basename="final_config")
+
+        try:
+            self.get_config(["--config", config_filename, "--silent",
+                             "--import", "https://example.com/config"])
+        except ImportOptionError, error:
+            self.assertEquals(str(error), 
+                              "Couldn't download configuration from "
+                              "https://example.com/config: pycurl message")
+        else:
+            self.fail("ImportOptionError not raised")
+
+    def test_import_error_is_handled_nicely_by_main(self):
+        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
+        fetch_mock("https://example.com/config")
+        self.mocker.throw(HTTPCodeError(404, ""))
+
+        print_text_mock = self.mocker.replace(print_text)
+        print_text_mock(CONTAINS("Server returned HTTP code 404"), error=True)
+
+        self.mocker.replay()
+
+        system_exit = self.assertRaises(
+            SystemExit, main, ["--import", "https://example.com/config"])
+        self.assertEquals(system_exit.code, 1)
 
 
 class RegisterFunctionTest(LandscapeIsolatedTest):

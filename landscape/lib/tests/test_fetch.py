@@ -110,9 +110,14 @@ class FetchTest(LandscapeTest):
         else:
             self.fail("HTTPCodeError not raised")
 
+    def test_error_str(self):
+        self.assertEquals(str(HTTPCodeError(501, "")),
+                          "Server returned HTTP code 501")
+
     def test_error_repr(self):
         self.assertEquals(repr(HTTPCodeError(501, "")),
-                          "Server returned HTTP code 501")
+                          "<HTTPCodeError http_code=501>")
+
 
     def test_create_curl(self):
         curls = []

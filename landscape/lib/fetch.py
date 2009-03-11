@@ -13,8 +13,11 @@ class HTTPCodeError(Exception):
         self.http_code = http_code
         self.body = body
 
-    def __repr__(self):
+    def __str__(self):
         return "Server returned HTTP code %d" % self.http_code
+
+    def __repr__(self):
+        return "<HTTPCodeError http_code=%d>" % self.http_code
 
 
 def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None):
