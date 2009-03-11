@@ -200,8 +200,7 @@ class BaseConfiguration(object):
         3. The first filename in self.default_config_filenames
         """
         # The filename we'll write to
-        filename = (self.config or self._config_filename or
-                    self.default_config_filenames[0])
+        filename = self.get_config_filename()
 
         config_parser = ConfigParser()
         # Make sure we read the old values from the config file so that we
@@ -238,7 +237,16 @@ class BaseConfiguration(object):
         return parser
 
     def get_config_filename(self):
-        return self._config_filename
+        if self.config:
+            return self.config
+        if self._config_filename:
+            return self._config_filename
+        if self.default_config_filenames:
+            for potential_config_file in self.default_config_filenames:
+                if os.access(potential_config_file, os.R_OK):
+                    return potential_config_file
+            return self.default_config_filenames[0]
+        return None
 
     def get_command_line_options(self):
         return self._command_line_options

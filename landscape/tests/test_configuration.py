@@ -23,7 +23,7 @@ from landscape.tests.mocker import ARGS, KWARGS, ANY, MATCH, CONTAINS, expect
 
 
 def get_config(self, args):
-    if "--config" not in args:
+    if "--config" not in args and "-c" not in args:
         filename = self.makeFile("""
 [client]
 url = https://landscape.canonical.com/message-system
@@ -1171,6 +1171,51 @@ account_name = account
         system_exit = self.assertRaises(
             SystemExit, main, ["--import", "https://config.url"])
         self.assertEquals(system_exit.code, 1)
+
+    def test_base64_ssl_public_key_is_exported_to_file(self):
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        sysvconfig_mock.set_start_on_boot(True)
+        sysvconfig_mock.restart_landscape()
+        self.mocker.result(True)
+        self.mocker.replay()
+
+        config_filename = self.makeFile("")
+
+        config = self.get_config(["--silent", "-c", config_filename,
+                                  "-u", "url", "-a", "account", "-t", "title",
+                                  "--ssl-public-key", "base64:SGkgdGhlcmUh"])
+        setup(config)
+
+        key_filename = config_filename + ".ssl_public_key"
+        self.assertTrue(os.path.isfile(key_filename))
+        self.assertEquals(open(key_filename).read(), "Hi there!")
+
+        options = ConfigParser()
+        options.read(config_filename)
+        self.assertEquals(options.get("client", "ssl_public_key"),
+                          key_filename)
+
+    def test_normal_ssl_public_key_is_not_exported_to_file(self):
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        sysvconfig_mock.set_start_on_boot(True)
+        sysvconfig_mock.restart_landscape()
+        self.mocker.result(True)
+        self.mocker.replay()
+
+        config_filename = self.makeFile("")
+
+        config = self.get_config(["--silent", "-c", config_filename,
+                                  "-u", "url", "-a", "account", "-t", "title",
+                                  "--ssl-public-key", "/some/filename"])
+        setup(config)
+
+        key_filename = config_filename + ".ssl_public_key"
+        self.assertFalse(os.path.isfile(key_filename))
+
+        options = ConfigParser()
+        options.read(config_filename)
+        self.assertEquals(options.get("client", "ssl_public_key"),
+                          "/some/filename")
 
 
 class RegisterFunctionTest(LandscapeIsolatedTest):

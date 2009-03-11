@@ -4,6 +4,7 @@ This module, and specifically L{LandscapeSetupScript}, implements the support
 for the C{landscape-config} script.
 """
 
+import base64
 import time
 import sys
 import os
@@ -363,6 +364,15 @@ def setup(config):
     else:
         script = LandscapeSetupScript(config)
         script.run()
+
+    
+    if config.ssl_public_key and config.ssl_public_key[:7] == "base64:":
+        key_filename = config.get_config_filename() + ".ssl_public_key"
+        decoded_key = base64.decodestring(config.ssl_public_key[7:])
+        key_file = open(key_filename, "w")
+        key_file.write(decoded_key)
+        key_file.close()
+        config.ssl_public_key = key_filename
 
     config.write()
     # Restart the client to ensure that it's using the new configuration.
