@@ -13,12 +13,14 @@ from landscape.lib.fetch import HTTPCodeError
 from landscape.configuration import (
     print_text, LandscapeSetupScript, LandscapeSetupConfiguration,
     register, setup, main, setup_init_script_and_start_client,
-    stop_client_and_disable_init_script, ConfigurationError, ImportOptionError)
+    stop_client_and_disable_init_script, ConfigurationError,
+    fetch_import_url, FetchImportURLError)
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.tests.helpers import (LandscapeTest, LandscapeIsolatedTest,
                                      RemoteBrokerHelper, EnvironSaverHelper)
 from landscape.tests.mocker import ARGS, KWARGS, ANY, MATCH, CONTAINS, expect
+
 
 def get_config(self, args):
     if "--config" not in args:
@@ -27,7 +29,7 @@ def get_config(self, args):
 url = https://landscape.canonical.com/message-system
 """)
         args.extend(["--config", filename])
-    config = LandscapeSetupConfiguration()
+    config = LandscapeSetupConfiguration(fetch_import_url)
     config.load(args)
     return config
 
@@ -1020,15 +1022,18 @@ account_name = account
             "url = http://new.url\n")
 
         fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
-        fetch_mock("https://example.com/config")
+        fetch_mock("https://config.url")
         self.mocker.result(configuration)
+
+        print_text_mock = self.mocker.replace(print_text)
+        print_text_mock("Fetching configuration from https://config.url...")
 
         self.mocker.replay()
 
         config_filename = self.makeFile("", basename="final_config")
 
         config = self.get_config(["--config", config_filename, "--silent",
-                                  "--import", "https://example.com/config"])
+                                  "--import", "https://config.url"])
         setup(config)
 
         options = ConfigParser()
@@ -1044,8 +1049,11 @@ account_name = account
 
     def test_import_from_url_with_http_code_fetch_error(self):
         fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
-        fetch_mock("https://example.com/config")
+        fetch_mock("https://config.url")
         self.mocker.throw(HTTPCodeError(501, ""))
+
+        print_text_mock = self.mocker.replace(print_text)
+        print_text_mock("Fetching configuration from https://config.url...")
 
         self.mocker.replay()
 
@@ -1053,19 +1061,22 @@ account_name = account
 
         try:
             self.get_config(["--config", config_filename, "--silent",
-                             "--import", "https://example.com/config"])
-        except ImportOptionError, error:
+                             "--import", "https://config.url"])
+        except FetchImportURLError, error:
             self.assertEquals(str(error), 
                               "Couldn't download configuration from "
-                              "https://example.com/config: Server "
+                              "https://config.url: Server "
                               "returned HTTP code 501")
         else:
-            self.fail("ImportOptionError not raised")
+            self.fail("FetchImportURLError not raised")
 
     def test_import_from_url_with_pycurl_error(self):
         fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
-        fetch_mock("https://example.com/config")
+        fetch_mock("https://config.url")
         self.mocker.throw(pycurl.error(60, "pycurl message"))
+
+        print_text_mock = self.mocker.replace(print_text)
+        print_text_mock("Fetching configuration from https://config.url...")
 
         self.mocker.replay()
 
@@ -1073,26 +1084,27 @@ account_name = account
 
         try:
             self.get_config(["--config", config_filename, "--silent",
-                             "--import", "https://example.com/config"])
-        except ImportOptionError, error:
+                             "--import", "https://config.url"])
+        except FetchImportURLError, error:
             self.assertEquals(str(error), 
                               "Couldn't download configuration from "
-                              "https://example.com/config: pycurl message")
+                              "https://config.url: pycurl message")
         else:
-            self.fail("ImportOptionError not raised")
+            self.fail("FetchImportURLError not raised")
 
     def test_import_error_is_handled_nicely_by_main(self):
         fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
-        fetch_mock("https://example.com/config")
+        fetch_mock("https://config.url")
         self.mocker.throw(HTTPCodeError(404, ""))
 
         print_text_mock = self.mocker.replace(print_text)
+        print_text_mock("Fetching configuration from https://config.url...")
         print_text_mock(CONTAINS("Server returned HTTP code 404"), error=True)
 
         self.mocker.replay()
 
         system_exit = self.assertRaises(
-            SystemExit, main, ["--import", "https://example.com/config"])
+            SystemExit, main, ["--import", "https://config.url"])
         self.assertEquals(system_exit.code, 1)
 
 

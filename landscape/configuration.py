@@ -39,14 +39,20 @@ def print_text(text, end="\n", error=False):
     stream.flush()
 
 
-class ImportOptionError(Exception):
-    """Raised when there are issues with handling the --import option."""
-
-
 class LandscapeSetupConfiguration(BrokerConfiguration):
 
     unsaved_options = ("no_start", "disable", "silent", "ok_no_register",
                        "import_from")
+
+    def __init__(self, fetch_import_url=None):
+        super(LandscapeSetupConfiguration, self).__init__()
+        if fetch_import_url is None:
+            self._fetch_import_url = self._undefined_fetch_import_url
+        else:
+            self._fetch_import_url = fetch_import_url
+
+    def _undefined_fetch_import_url(self, url):
+        raise RuntimeError("fetch_import_url not defined")
 
     def _load_external_options(self):
         if self.import_from:
@@ -57,17 +63,7 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
             # line options.
             if "://" in self.import_from:
                 # If it's from a URL, download it now.
-                error_message = None
-                try:
-                    content = fetch(self.import_from)
-                except pycurl.error, error:
-                    error_message = error.args[1]
-                except HTTPCodeError, error:
-                    error_message = str(error)
-                if error_message is not None:
-                    raise ImportOptionError(
-                        "Couldn't download configuration from %s: %s" %
-                        (self.import_from, error_message))
+                content = self._fetch_import_url(self.import_from)
                 parser.readfp(StringIO(content))
             else:
                 parser.read(self.import_from)
@@ -464,14 +460,40 @@ def register(config, reactor=None):
     reactor.run()
 
 
+class FetchImportURLError(Exception):
+    """Raised when there are issues with handling the --import option."""
+
+
+def fetch_import_url(url):
+    """Handle fetching of URLs passed to --url.
+
+    This is done out of LandscapeSetupConfiguration since it has to deal
+    with interaction with the user and downloading of files.
+    """
+
+    print_text("Fetching configuration from %s..." % url)
+    error_message = None
+    try:
+        content = fetch(url)
+    except pycurl.error, error:
+        error_message = error.args[1]
+    except HTTPCodeError, error:
+        error_message = str(error)
+    if error_message is not None:
+        raise FetchImportURLError(
+            "Couldn't download configuration from %s: %s" %
+            (url, error_message))
+    return content
+
+
 def main(args):
     if os.getuid() != 0:
         sys.exit("landscape-config must be run as root.")
 
-    config = LandscapeSetupConfiguration()
+    config = LandscapeSetupConfiguration(fetch_import_url)
     try:
         config.load(args)
-    except ImportOptionError, error:
+    except FetchImportURLError, error:
         print_text(str(error), error=True)
         sys.exit(1)
 
