@@ -29,6 +29,9 @@ from landscape.broker.remote import RemoteBroker
 class ConfigurationError(Exception):
     """Raised when required configuration values are missing."""
 
+class ImportOptionError(ConfigurationError):
+    """Raised when there are issues with handling the --import option."""
+
 
 def print_text(text, end="\n", error=False):
     if error:
@@ -69,7 +72,12 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
                 parser.read(self.import_from)
 
             # But real command line options have precedence.
-            options = dict(parser.items(self.config_section))
+            options = None
+            if parser.has_section(self.config_section):
+                options = dict(parser.items(self.config_section))
+            if not options:
+                raise ImportOptionError("Nothing to import at %s." %
+                                        self.import_from)
             options.update(self._command_line_options)
             self._command_line_options = options
 
@@ -460,10 +468,6 @@ def register(config, reactor=None):
     reactor.run()
 
 
-class FetchImportURLError(Exception):
-    """Raised when there are issues with handling the --import option."""
-
-
 def fetch_import_url(url):
     """Handle fetching of URLs passed to --url.
 
@@ -480,7 +484,7 @@ def fetch_import_url(url):
     except HTTPCodeError, error:
         error_message = str(error)
     if error_message is not None:
-        raise FetchImportURLError(
+        raise ImportOptionError(
             "Couldn't download configuration from %s: %s" %
             (url, error_message))
     return content
@@ -493,7 +497,7 @@ def main(args):
     config = LandscapeSetupConfiguration(fetch_import_url)
     try:
         config.load(args)
-    except FetchImportURLError, error:
+    except ImportOptionError, error:
         print_text(str(error), error=True)
         sys.exit(1)
 

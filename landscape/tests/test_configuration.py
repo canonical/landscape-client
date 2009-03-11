@@ -14,7 +14,7 @@ from landscape.configuration import (
     print_text, LandscapeSetupScript, LandscapeSetupConfiguration,
     register, setup, main, setup_init_script_and_start_client,
     stop_client_and_disable_init_script, ConfigurationError,
-    fetch_import_url, FetchImportURLError)
+    fetch_import_url, ImportOptionError)
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.tests.helpers import (LandscapeTest, LandscapeIsolatedTest,
@@ -962,6 +962,52 @@ account_name = account
                            "https_proxy": "https://new.proxy",
                            "url": "http://new.url"})
 
+    def test_import_from_empty_file(self):
+        self.mocker.replay()
+
+        old_configuration = (
+            "[client]\n"
+            "computer_title = Old Title\n"
+            "account_name = Old Name\n"
+            "registration_password = Old Password\n"
+            "http_proxy = http://old.proxy\n"
+            "https_proxy = https://old.proxy\n"
+            "url = http://old.url\n")
+
+        config_filename = self.makeFile(old_configuration,
+                                        basename="final_config")
+        import_filename = self.makeFile("", basename="import_config")
+
+        # Use a command line option as well to test the precedence.
+        try:
+            self.get_config(["--config", config_filename, "--silent",
+                             "--import", import_filename])
+        except ImportOptionError, error:
+            self.assertEquals(str(error), 
+                              "Nothing to import at %s." % import_filename)
+        else:
+            self.fail("ImportOptionError not raised")
+
+    def test_import_from_file_with_empty_client_section(self):
+        self.mocker.replay()
+
+        old_configuration = "[client]\n"
+
+        config_filename = self.makeFile(old_configuration,
+                                        basename="final_config")
+        import_filename = self.makeFile("", basename="import_config")
+
+        # Use a command line option as well to test the precedence.
+        try:
+            self.get_config(["--config", config_filename, "--silent",
+                             "--import", import_filename])
+        except ImportOptionError, error:
+            self.assertEquals(str(error), 
+                              "Nothing to import at %s." % import_filename)
+        else:
+            self.fail("ImportOptionError not raised")
+
+
     def test_import_from_file_preserves_old_options(self):
         sysvconfig_mock = self.mocker.patch(SysVConfig)
         sysvconfig_mock.set_start_on_boot(True)
@@ -1062,13 +1108,13 @@ account_name = account
         try:
             self.get_config(["--config", config_filename, "--silent",
                              "--import", "https://config.url"])
-        except FetchImportURLError, error:
+        except ImportOptionError, error:
             self.assertEquals(str(error), 
                               "Couldn't download configuration from "
                               "https://config.url: Server "
                               "returned HTTP code 501")
         else:
-            self.fail("FetchImportURLError not raised")
+            self.fail("ImportOptionError not raised")
 
     def test_import_from_url_with_pycurl_error(self):
         fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
@@ -1085,12 +1131,31 @@ account_name = account
         try:
             self.get_config(["--config", config_filename, "--silent",
                              "--import", "https://config.url"])
-        except FetchImportURLError, error:
+        except ImportOptionError, error:
             self.assertEquals(str(error), 
                               "Couldn't download configuration from "
                               "https://config.url: pycurl message")
         else:
-            self.fail("FetchImportURLError not raised")
+            self.fail("ImportOptionError not raised")
+
+    def test_import_from_url_with_empty_content(self):
+        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
+        fetch_mock("https://config.url")
+        self.mocker.result("")
+
+        print_text_mock = self.mocker.replace(print_text)
+        print_text_mock("Fetching configuration from https://config.url...")
+
+        self.mocker.replay()
+
+        # Use a command line option as well to test the precedence.
+        try:
+            self.get_config(["--silent", "--import", "https://config.url"])
+        except ImportOptionError, error:
+            self.assertEquals(str(error), 
+                              "Nothing to import at https://config.url.")
+        else:
+            self.fail("ImportOptionError not raised")
 
     def test_import_error_is_handled_nicely_by_main(self):
         fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
