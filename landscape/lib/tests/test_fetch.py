@@ -141,3 +141,13 @@ class FetchTest(LandscapeTest):
             self.assertEquals(result, "result")
         return d.addCallback(got_result)
 
+    def test_async_fetch_with_error(self):
+        curl = CurlStub("result", http_code=501)
+        d = fetch_async("http://example.com/", curl=curl)
+        def got_error(failure):
+            self.assertEquals(failure.value.http_code, 501)
+            self.assertEquals(failure.value.body, "result")
+            return failure
+        d.addErrback(got_error)
+        self.assertFailure(d, HTTPCodeError)
+        return d
