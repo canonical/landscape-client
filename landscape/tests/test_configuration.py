@@ -1,5 +1,6 @@
 import os
 from getpass import getpass
+from ConfigParser import ConfigParser
 
 from dbus import DBusException
 
@@ -919,8 +920,42 @@ account_name = account
         self.mocker.result(1000)
         self.mocker.replay()
         sys_exit = self.assertRaises(SystemExit,
-                                      main, ["-c", self.make_working_config()])
+                                     main, ["-c", self.make_working_config()])
         self.assertIn("landscape-config must be run as root", str(sys_exit))
+
+    def test_import_from_file(self):
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        sysvconfig_mock.set_start_on_boot(True)
+        sysvconfig_mock.restart_landscape()
+        self.mocker.result(True)
+        self.mocker.replay()
+
+        configuration = (
+            "[client]\n"
+            "computer_title = New Title\n"
+            "account_name = New Name\n"
+            "registration_password = New Password\n"
+            "http_proxy = http://new.proxy\n"
+            "https_proxy = https://new.proxy\n"
+            "url = http://new.url\n")
+
+        import_filename = self.makeFile(configuration, basename="import_config")
+        config_filename = self.makeFile("", basename="final_config")
+
+        config = self.get_config(["--config", config_filename, "--silent",
+                                  "--import", import_filename])
+        setup(config)
+
+        options = ConfigParser()
+        options.read(import_filename)
+
+        self.assertEquals(dict(options.items("client")),
+                          {"computer_title": "New Title",
+                           "account_name": "New Name",
+                           "registration_password": "New Password",
+                           "http_proxy": "http://new.proxy",
+                           "https_proxy": "https://new.proxy",
+                           "url": "http://new.url"})
 
 
 class RegisterFunctionTest(LandscapeIsolatedTest):

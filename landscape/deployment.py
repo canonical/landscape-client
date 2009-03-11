@@ -126,19 +126,29 @@ class BaseConfiguration(object):
     def reload(self):
         self.load(self._command_line_args)
 
-    def load(self, args, accept_unexistent_config=False):
+    def load(self, args, accept_nonexistent_config=False):
         """
         Load configuration data from command line arguments and a config file.
 
         @raise: A SystemExit if the arguments are bad.
         """
         self.load_command_line(args)
+        self._process_configuration(accept_nonexistent_config)
+
+    def _process_configuration(self, accept_nonexistent_config):
+        """Process configuration.
+
+        This is split off from the L{load()} method so that subclasses have
+        the chance to process command line options by themselves and introduce
+        other options from alternative places, thus also preventing errors due
+        to missing required options (that's done by --import, as an example).
+        """
 
         # Parse configuration file, if found.
         if self.config:
             if os.path.isfile(self.config):
                 self.load_configuration_file(self.config)
-            elif not accept_unexistent_config:
+            elif not accept_nonexistent_config:
                 sys.exit("error: file not found: %s" % self.config)
         else:
             for potential_config_file in self.default_config_filenames:

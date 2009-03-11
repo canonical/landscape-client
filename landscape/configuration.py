@@ -36,7 +36,16 @@ def print_text(text, end="\n", error=False):
 
 class LandscapeSetupConfiguration(BrokerConfiguration):
 
+    # FIXME: Include "import" here:
     unsaved_options = ("no_start", "disable", "silent", "ok_no_register")
+
+    def _process_configuration(self, accept_nonexisting_config):
+        if self.import_from:
+            # FIXME: This will change the tracked configuration filename,
+            #        and may introduce undesired side-effects.
+            self.load_configuration_file(self.import_from)
+        super(LandscapeSetupConfiguration, self)._process_configuration(
+            accept_nonexisting_config)
 
     def make_parser(self):
         """
@@ -44,6 +53,9 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
         """
         parser = super(LandscapeSetupConfiguration, self).make_parser()
 
+        parser.add_option("--import", dest="import_from",
+                          metavar="FILENAME_OR_URL",
+                          help="Filename or URL to import configuration from.")
         parser.add_option("--script-users", metavar="USERS",
                           help="A comma-separated list of users to allow "
                                "scripts to run.  To allow scripts to be run "
