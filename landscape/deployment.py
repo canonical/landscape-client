@@ -133,16 +133,6 @@ class BaseConfiguration(object):
         @raise: A SystemExit if the arguments are bad.
         """
         self.load_command_line(args)
-        self._process_configuration(accept_nonexistent_config)
-
-    def _process_configuration(self, accept_nonexistent_config):
-        """Process configuration.
-
-        This is split off from the L{load()} method so that subclasses have
-        the chance to process command line options by themselves and introduce
-        other options from alternative places, thus also preventing errors due
-        to missing required options (that's done by --import, as an example).
-        """
 
         # Parse configuration file, if found.
         if self.config:
@@ -156,6 +146,8 @@ class BaseConfiguration(object):
                     self.load_configuration_file(potential_config_file)
                     break
 
+        self._load_external_options()
+
         # Check that all needed options were given.
         for option in self.required_options:
             if not getattr(self, option):
@@ -165,6 +157,9 @@ class BaseConfiguration(object):
 
         if self.bus not in ("session", "system"):
             sys.exit("error: bus must be one of 'session' or 'system'")
+
+    def _load_external_options(self):
+        """Hook for loading options from elsewhere (e.g. for --import)."""
 
     def load_command_line(self, args):
         """Load configuration data from the given command line."""

@@ -8,6 +8,7 @@ import time
 import sys
 import os
 import getpass
+from ConfigParser import ConfigParser
 
 from dbus.exceptions import DBusException
 
@@ -36,16 +37,21 @@ def print_text(text, end="\n", error=False):
 
 class LandscapeSetupConfiguration(BrokerConfiguration):
 
-    # FIXME: Include "import" here:
-    unsaved_options = ("no_start", "disable", "silent", "ok_no_register")
+    unsaved_options = ("no_start", "disable", "silent", "ok_no_register",
+                       "import_from")
 
-    def _process_configuration(self, accept_nonexisting_config):
+    def _load_external_options(self):
         if self.import_from:
-            # FIXME: This will change the tracked configuration filename,
-            #        and may introduce undesired side-effects.
-            self.load_configuration_file(self.import_from)
-        super(LandscapeSetupConfiguration, self)._process_configuration(
-            accept_nonexisting_config)
+            # Imported options behave as if they were passed in the
+            # command line, with precedence being given to real command
+            # line options.
+            parser = ConfigParser()
+            parser.read(self.import_from)
+
+            # But real command line options have precedence.
+            options = dict(parser.items(self.config_section))
+            options.update(self._command_line_options)
+            self._command_line_options = options
 
     def make_parser(self):
         """
@@ -439,6 +445,10 @@ def main(args):
         sys.exit("landscape-config must be run as root.")
     config = LandscapeSetupConfiguration()
     config.load(args)
+
+    # XXX Import public key here.
+    #from landscape.lib.fetch import fetch
+    #value = fetch("https://landscape.canonical.com/foo")
 
     # Disable startup on boot and stop the client, if one is running.
     if config.disable:

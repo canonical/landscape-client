@@ -947,7 +947,7 @@ account_name = account
         setup(config)
 
         options = ConfigParser()
-        options.read(import_filename)
+        options.read(config_filename)
 
         self.assertEquals(dict(options.items("client")),
                           {"computer_title": "New Title",
@@ -955,6 +955,50 @@ account_name = account
                            "registration_password": "New Password",
                            "http_proxy": "http://new.proxy",
                            "https_proxy": "https://new.proxy",
+                           "url": "http://new.url"})
+
+    def test_import_from_file_preserves_old_options(self):
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        sysvconfig_mock.set_start_on_boot(True)
+        sysvconfig_mock.restart_landscape()
+        self.mocker.result(True)
+        self.mocker.replay()
+
+        old_configuration = (
+            "[client]\n"
+            "computer_title = Old Title\n"
+            "account_name = Old Name\n"
+            "registration_password = Old Password\n"
+            "http_proxy = http://old.proxy\n"
+            "https_proxy = https://old.proxy\n"
+            "url = http://old.url\n")
+
+        new_configuration = (
+            "[client]\n"
+            "account_name = New Name\n"
+            "registration_password = New Password\n"
+            "url = http://new.url\n")
+
+        config_filename = self.makeFile(old_configuration,
+                                        basename="final_config")
+        import_filename = self.makeFile(new_configuration,
+                                        basename="import_config")
+
+        # Use a command line option as well to test the precedence.
+        config = self.get_config(["--config", config_filename, "--silent",
+                                  "--import", import_filename,
+                                  "-p", "Command Line Password"])
+        setup(config)
+
+        options = ConfigParser()
+        options.read(config_filename)
+
+        self.assertEquals(dict(options.items("client")),
+                          {"computer_title": "Old Title",
+                           "account_name": "New Name",
+                           "registration_password": "Command Line Password",
+                           "http_proxy": "http://old.proxy",
+                           "https_proxy": "https://old.proxy",
                            "url": "http://new.url"})
 
 

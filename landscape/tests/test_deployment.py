@@ -218,7 +218,7 @@ class ConfigurationTest(LandscapeTest):
     def test_write_to_given_config_file(self):
         filename = self.makeFile()
         self.config.load(["--log-level", "warning", "--config", filename],
-                         accept_unexistent_config=True)
+                         accept_nonexistent_config=True)
         self.config.log_level = "error"
         self.config.write()
         data = open(filename).read()
