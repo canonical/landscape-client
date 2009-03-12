@@ -1285,6 +1285,41 @@ account_name = account
         self.assertEquals(options.get("client", "ssl_public_key"),
                           "/some/filename")
 
+    # We test them individually since they must work individually.
+    def test_import_from_url_honors_http_proxy(self):
+        self.ensure_import_from_url_honors_proxy_options("http_proxy")
+
+    def test_import_from_url_honors_https_proxy(self):
+        self.ensure_import_from_url_honors_proxy_options("https_proxy")
+
+    def ensure_import_from_url_honors_proxy_options(self, proxy_option):
+        def check_proxy(url):
+            self.assertEquals(os.environ.get(proxy_option), "http://proxy")
+
+        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
+        fetch_mock("https://config.url")
+        self.mocker.call(check_proxy)
+
+        # Doesn't matter.  We just want to check the context around it.
+        self.mocker.result("")
+
+        print_text_mock = self.mocker.replace(print_text)
+        print_text_mock("Fetching configuration from https://config.url...")
+
+        self.mocker.replay()
+
+        config_filename = self.makeFile("", basename="final_config")
+
+        try:
+            self.get_config(["--config", config_filename, "--silent",
+                             "--" + proxy_option.replace("_", "-"),
+                             "http://proxy",
+                             "--import", "https://config.url"])
+        except ImportOptionError:
+            pass # The returned content is empty.  We don't really
+                 # care for this test.  Mocker will ensure the tests
+                 # we care about are done.
+
 
 class RegisterFunctionTest(LandscapeIsolatedTest):
 

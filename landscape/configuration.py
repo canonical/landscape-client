@@ -65,6 +65,10 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
             try:
                 if "://" in self.import_from:
                     # If it's from a URL, download it now.
+                    if self.http_proxy:
+                        os.environ["http_proxy"] = self.http_proxy
+                    if self.https_proxy:
+                        os.environ["https_proxy"] = self.https_proxy
                     content = self._fetch_import_url(self.import_from)
                     parser.readfp(StringIO(content))
                 else:
