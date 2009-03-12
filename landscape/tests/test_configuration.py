@@ -1177,16 +1177,20 @@ account_name = account
         sysvconfig_mock.set_start_on_boot(True)
         sysvconfig_mock.restart_landscape()
         self.mocker.result(True)
-        self.mocker.replay()
 
         config_filename = self.makeFile("")
+        key_filename = config_filename + ".ssl_public_key"
+
+        print_text_mock = self.mocker.replace(print_text)
+        print_text_mock("Writing SSL public key to %s..." % key_filename)
+
+        self.mocker.replay()
 
         config = self.get_config(["--silent", "-c", config_filename,
                                   "-u", "url", "-a", "account", "-t", "title",
                                   "--ssl-public-key", "base64:SGkgdGhlcmUh"])
         setup(config)
 
-        key_filename = config_filename + ".ssl_public_key"
         self.assertTrue(os.path.isfile(key_filename))
         self.assertEquals(open(key_filename).read(), "Hi there!")
 

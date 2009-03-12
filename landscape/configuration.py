@@ -364,10 +364,10 @@ def setup(config):
     else:
         script = LandscapeSetupScript(config)
         script.run()
-
     
     if config.ssl_public_key and config.ssl_public_key[:7] == "base64:":
         key_filename = config.get_config_filename() + ".ssl_public_key"
+        print_text("Writing SSL public key to %s..." % key_filename)
         decoded_key = base64.decodestring(config.ssl_public_key[7:])
         key_file = open(key_filename, "w")
         key_file.write(decoded_key)
