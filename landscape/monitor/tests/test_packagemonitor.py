@@ -220,7 +220,7 @@ class PackageMonitorTest(LandscapeIsolatedTest):
         cwd = os.getcwd()
         os.chdir(dir)
         os.chmod(dir, 0)
-        
+ 
         find_command_mock = self.mocker.replace(find_reporter_command)
         find_command_mock()
         self.mocker.result(command)

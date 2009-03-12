@@ -794,12 +794,6 @@ class MessageExchangeTest(LandscapeTest):
         self.assertEquals(self.mstore.get_server_uuid(), "second-uuid")
 
     def test_server_uuid_change_cause_event(self):
-        """
-        If a message of type 'resynchronize' is received from the
-        server, the exchanger should *first* send a 'resynchronize'
-        message back to the server and *then* fire a 'resynchronize-clients'
-        event.
-        """
         called = []
         def server_uuid_changed(old_uuid, new_uuid):
             called.append((old_uuid, new_uuid))
