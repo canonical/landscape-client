@@ -288,6 +288,8 @@ class MessageExchange(object):
         old_uuid = message_store.get_server_uuid()
         new_uuid = result.get("server-uuid")
         if new_uuid != old_uuid:
+            logging.info("Server UUID changed (old=%s, new=%s)."
+                         % (old_uuid, new_uuid))
             self._reactor.fire("server-uuid-changed", old_uuid, new_uuid)
             message_store.set_server_uuid(new_uuid)
 

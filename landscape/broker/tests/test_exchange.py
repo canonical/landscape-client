@@ -806,7 +806,7 @@ class MessageExchangeTest(LandscapeTest):
         self.assertEquals(len(called), 1)
         self.assertEquals(called[-1], (None, "first-uuid"))
 
-        # using the same one again, nothing should happen:
+        # Using the same one again, nothing should happen:
         self.transport.extra["server-uuid"] = "first-uuid"
         self.exchanger.exchange()
         self.assertEquals(len(called), 1)
@@ -837,6 +837,20 @@ class MessageExchangeTest(LandscapeTest):
         self.transport.extra["server-uuid"] = "the-uuid"
         self.exchanger.exchange()
         self.assertEquals(called, [])
+
+    def test_server_uuid_change_is_logged(self):
+        self.transport.extra["server-uuid"] = "the-uuid"
+        self.exchanger.exchange()
+
+        self.assertIn("INFO: Server UUID changed (old=None, new=the-uuid).",
+                      self.logfile.getvalue())
+
+        # An exchange with the same UUID shouldn't be logged.
+        self.logfile.truncate(0)
+        self.transport.extra["server-uuid"] = "the-uuid"
+        self.exchanger.exchange()
+
+        self.assertNotIn("INFO: Server UUID changed", self.logfile.getvalue())
 
 
 class GetAcceptedTypesDiffTest(LandscapeTest):
