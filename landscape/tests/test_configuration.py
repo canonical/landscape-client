@@ -978,6 +978,22 @@ account_name = account
         else:
             self.fail("ImportOptionError not raised")
 
+    def test_import_from_non_existent_file(self):
+        self.mocker.replay()
+
+        config_filename = self.makeFile("", basename="final_config")
+        import_filename = self.makeFile(basename="import_config")
+
+        # Use a command line option as well to test the precedence.
+        try:
+            self.get_config(["--config", config_filename, "--silent",
+                             "--import", import_filename])
+        except ImportOptionError, error:
+            self.assertEquals(str(error), 
+                              "File %s doesn't exist." % import_filename)
+        else:
+            self.fail("ImportOptionError not raised")
+
     def test_import_from_file_with_empty_client_section(self):
         self.mocker.replay()
 

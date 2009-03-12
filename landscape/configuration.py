@@ -71,6 +71,9 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
                         os.environ["https_proxy"] = self.https_proxy
                     content = self._fetch_import_url(self.import_from)
                     parser.readfp(StringIO(content))
+                elif not os.path.isfile(self.import_from):
+                    raise ImportOptionError("File %s doesn't exist." %
+                                            self.import_from)
                 else:
                     parser.read(self.import_from)
             except ConfigParserError, error:
