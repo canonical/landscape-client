@@ -9,7 +9,7 @@ import time
 import sys
 import os
 import getpass
-from ConfigParser import ConfigParser
+from ConfigParser import ConfigParser, Error as ConfigParserError
 from StringIO import StringIO
 
 import pycurl
@@ -48,29 +48,29 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
     unsaved_options = ("no_start", "disable", "silent", "ok_no_register",
                        "import_from")
 
-    def __init__(self, fetch_import_url=None):
+    def __init__(self, fetch_import_url):
         super(LandscapeSetupConfiguration, self).__init__()
-        if fetch_import_url is None:
-            self._fetch_import_url = self._undefined_fetch_import_url
-        else:
-            self._fetch_import_url = fetch_import_url
-
-    def _undefined_fetch_import_url(self, url):
-        raise RuntimeError("fetch_import_url not defined")
+        self._fetch_import_url = fetch_import_url
 
     def _load_external_options(self):
+        """Handle the --import parameter.
+
+        Imported options behave as if they were passed in the
+        command line, with precedence being given to real command
+        line options.
+        """
         if self.import_from:
             parser = ConfigParser()
 
-            # Imported options behave as if they were passed in the
-            # command line, with precedence being given to real command
-            # line options.
-            if "://" in self.import_from:
-                # If it's from a URL, download it now.
-                content = self._fetch_import_url(self.import_from)
-                parser.readfp(StringIO(content))
-            else:
-                parser.read(self.import_from)
+            try:
+                if "://" in self.import_from:
+                    # If it's from a URL, download it now.
+                    content = self._fetch_import_url(self.import_from)
+                    parser.readfp(StringIO(content))
+                else:
+                    parser.read(self.import_from)
+            except ConfigParserError, error:
+                raise ImportOptionError(str(error))
 
             # But real command line options have precedence.
             options = None
@@ -90,7 +90,10 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
 
         parser.add_option("--import", dest="import_from",
                           metavar="FILENAME_OR_URL",
-                          help="Filename or URL to import configuration from.")
+                          help="Filename or URL to import configuration from. "
+                               "Imported options behave as if they were passed "
+                               "in the command line, with precedence being "
+                               "given to real command line options.")
         parser.add_option("--script-users", metavar="USERS",
                           help="A comma-separated list of users to allow "
                                "scripts to run.  To allow scripts to be run "
@@ -365,7 +368,7 @@ def setup(config):
         script = LandscapeSetupScript(config)
         script.run()
     
-    if config.ssl_public_key and config.ssl_public_key[:7] == "base64:":
+    if config.ssl_public_key and config.ssl_public_key.startswith("base64:"):
         key_filename = config.get_config_filename() + ".ssl_public_key"
         print_text("Writing SSL public key to %s..." % key_filename)
         decoded_key = base64.decodestring(config.ssl_public_key[7:])

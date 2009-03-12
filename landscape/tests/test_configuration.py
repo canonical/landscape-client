@@ -92,7 +92,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.config_filename = self.makeFile()
         class MyLandscapeSetupConfiguration(LandscapeSetupConfiguration):
             default_config_filenames = [self.config_filename]
-        self.config = MyLandscapeSetupConfiguration()
+        self.config = MyLandscapeSetupConfiguration(None)
         self.script = LandscapeSetupScript(self.config)
 
     def test_show_help(self):
@@ -965,17 +965,7 @@ account_name = account
     def test_import_from_empty_file(self):
         self.mocker.replay()
 
-        old_configuration = (
-            "[client]\n"
-            "computer_title = Old Title\n"
-            "account_name = Old Name\n"
-            "registration_password = Old Password\n"
-            "http_proxy = http://old.proxy\n"
-            "https_proxy = https://old.proxy\n"
-            "url = http://old.url\n")
-
-        config_filename = self.makeFile(old_configuration,
-                                        basename="final_config")
+        config_filename = self.makeFile("", basename="final_config")
         import_filename = self.makeFile("", basename="import_config")
 
         # Use a command line option as well to test the precedence.
@@ -993,7 +983,7 @@ account_name = account
 
         old_configuration = "[client]\n"
 
-        config_filename = self.makeFile(old_configuration,
+        config_filename = self.makeFile("", old_configuration,
                                         basename="final_config")
         import_filename = self.makeFile("", basename="import_config")
 
@@ -1007,6 +997,21 @@ account_name = account
         else:
             self.fail("ImportOptionError not raised")
 
+    def test_import_from_bogus_file(self):
+        self.mocker.replay()
+
+        config_filename = self.makeFile("", basename="final_config")
+        import_filename = self.makeFile("<strong>BOGUS!</strong>",
+                                        basename="import_config")
+
+        # Use a command line option as well to test the precedence.
+        try:
+            self.get_config(["--config", config_filename, "--silent",
+                             "--import", import_filename])
+        except ImportOptionError, error:
+            self.assertIn("File contains no section headers.", str(error))
+        else:
+            self.fail("ImportOptionError not raised")
 
     def test_import_from_file_preserves_old_options(self):
         sysvconfig_mock = self.mocker.patch(SysVConfig)
@@ -1051,6 +1056,47 @@ account_name = account
                            "http_proxy": "http://old.proxy",
                            "https_proxy": "https://old.proxy",
                            "url": "http://new.url"})
+
+    def test_import_from_file_may_reset_old_options(self):
+        """
+        This test ensures that setting an empty option in an imported
+        configuration file will actually set the local value to empty
+        too, rather than being ignored.
+        """
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        sysvconfig_mock.set_start_on_boot(True)
+        sysvconfig_mock.restart_landscape()
+        self.mocker.result(True)
+        self.mocker.replay()
+
+        old_configuration = (
+            "[client]\n"
+            "computer_title = Old Title\n"
+            "account_name = Old Name\n"
+            "registration_password = Old Password\n"
+            "url = http://old.url\n")
+
+        new_configuration = (
+            "[client]\n"
+            "registration_password =\n")
+
+        config_filename = self.makeFile(old_configuration,
+                                        basename="final_config")
+        import_filename = self.makeFile(new_configuration,
+                                        basename="import_config")
+
+        config = self.get_config(["--config", config_filename, "--silent",
+                                  "--import", import_filename])
+        setup(config)
+
+        options = ConfigParser()
+        options.read(config_filename)
+
+        self.assertEquals(dict(options.items("client")),
+                          {"computer_title": "Old Title",
+                           "account_name": "Old Name",
+                           "registration_password": "", # <==
+                           "url": "http://old.url"})
 
     def test_import_from_url(self):
         sysvconfig_mock = self.mocker.patch(SysVConfig)
@@ -1154,6 +1200,24 @@ account_name = account
         except ImportOptionError, error:
             self.assertEquals(str(error), 
                               "Nothing to import at https://config.url.")
+        else:
+            self.fail("ImportOptionError not raised")
+
+    def test_import_from_url_with_bogus_content(self):
+        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
+        fetch_mock("https://config.url")
+        self.mocker.result("<strong>BOGUS!</strong>")
+
+        print_text_mock = self.mocker.replace(print_text)
+        print_text_mock("Fetching configuration from https://config.url...")
+
+        self.mocker.replay()
+
+        # Use a command line option as well to test the precedence.
+        try:
+            self.get_config(["--silent", "--import", "https://config.url"])
+        except ImportOptionError, error:
+            self.assertIn("File contains no section headers.", str(error))
         else:
             self.fail("ImportOptionError not raised")
 
@@ -1518,7 +1582,7 @@ class RegisterFunctionNoServiceTest(LandscapeIsolatedTest):
 
     def setUp(self):
         super(RegisterFunctionNoServiceTest, self).setUp()
-        self.configuration = LandscapeSetupConfiguration()
+        self.configuration = LandscapeSetupConfiguration(None)
         # Let's not mess about with the system bus
         self.configuration.load_command_line(["--bus", "session"])
 
