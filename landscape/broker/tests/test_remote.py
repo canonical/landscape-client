@@ -154,10 +154,19 @@ def assertTransmitterActive(test_case, deployment_broker, target_reactor):
     return result
 
 
+def set_timeout(timeout):
+    """Decorator to set the method timeout."""
+    def decorate(method):
+        method.timeout = timeout
+        return method
+    return decorate
+
+
 class MessageDBusSignalToReactorTransmitterTests(LandscapeIsolatedTest):
 
     helpers = [RemoteBrokerHelper]
 
+    @set_timeout(4)
     def test_resynchronize(self):
         """
         A 'resynchronize' DBUS signal should be translated to a 'resynchronize'
@@ -169,8 +178,8 @@ class MessageDBusSignalToReactorTransmitterTests(LandscapeIsolatedTest):
         reactor.call_on("resynchronize", lambda: result.callback(None))
         self.broker_service.reactor.fire("resynchronize-clients")
         return result
-    test_resynchronize.timeout = 4
 
+    @set_timeout(4)
     def test_message_type_acceptance_changed(self):
         """
         A 'message-type-acceptance-changed' DBUS signal should be
@@ -186,8 +195,8 @@ class MessageDBusSignalToReactorTransmitterTests(LandscapeIsolatedTest):
         self.broker_service.reactor.fire("message-type-acceptance-changed",
                                          "some-type", True)
         return result
-    test_message_type_acceptance_changed.timeout = 4
 
+    @set_timeout(4)
     def test_message_type_acceptance_changed_to_false(self):
         """
         A 'message-type-acceptance-changed' DBUS signal should be
@@ -203,5 +212,43 @@ class MessageDBusSignalToReactorTransmitterTests(LandscapeIsolatedTest):
         self.broker_service.reactor.fire("message-type-acceptance-changed",
                                          "some-type", False)
         return result
-    test_message_type_acceptance_changed.timeout = 4
 
+    @set_timeout(4)
+    def test_server_uuid_changed(self):
+        """
+        A 'server-uuid-changed' DBUS signal should be translated to a
+        'server-uuid-changed' reactor event.
+        """
+        reactor = FakeReactor()
+        DBusSignalToReactorTransmitter(self.broker_service.bus, reactor)
+        waiter = Deferred()
+        def got_result((old_uuid, new_uuid)):
+            self.assertEquals(old_uuid, "old-uuid")
+            self.assertEquals(new_uuid, "new-uuid")
+        waiter.addCallback(got_result)
+        def server_uuid_changed(old_uuid, new_uuid):
+            waiter.callback((old_uuid, new_uuid))
+        reactor.call_on("server-uuid-changed", server_uuid_changed)
+        self.broker_service.reactor.fire("server-uuid-changed",
+                                         "old-uuid", "new-uuid")
+        return waiter
+
+    @set_timeout(4)
+    def test_server_uuid_changed_converts_empty_strings_back_to_nones(self):
+        """
+        DBus doesn't work well with Nones, so we convert them to empty
+        strings when sending the signal.  The remote should then convert
+        them back to Nones so that we have the same API on both sides.
+        """
+        reactor = FakeReactor()
+        DBusSignalToReactorTransmitter(self.broker_service.bus, reactor)
+        waiter = Deferred()
+        def got_result((old_uuid, new_uuid)):
+            self.assertEquals(old_uuid, None)
+            self.assertEquals(new_uuid, None)
+        waiter.addCallback(got_result)
+        def server_uuid_changed(old_uuid, new_uuid):
+            waiter.callback((old_uuid, new_uuid))
+        reactor.call_on("server-uuid-changed", server_uuid_changed)
+        self.broker_service.reactor.fire("server-uuid-changed", None, None)
+        return waiter

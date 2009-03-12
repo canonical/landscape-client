@@ -33,6 +33,8 @@ class PackageMonitor(MonitorPlugin):
         registry.register_message("package-ids",
                                   self._enqueue_message_as_reporter_task)
         registry.reactor.call_on("resynchronize", self._resynchronize)
+        registry.reactor.call_on("server-uuid-changed",
+                                 self._server_uuid_changed)
         self.call_on_accepted("packages", self.spawn_reporter)
         self.run()
 
@@ -82,4 +84,15 @@ class PackageMonitor(MonitorPlugin):
         task = self._package_store.add_task("reporter",
                                             {"type" : "resynchronize"})
         self._package_store.clear_tasks(except_tasks=(task,))
-        
+
+    def _server_uuid_changed(self, old_uuid, new_uuid):
+        """Called when the broker sends a server-uuid-changed event.
+
+        The package hash=>id map is server-specific, so when we change
+        servers, we should reset this map.
+        """
+        # If the old_uuid is None, it means we're just starting to
+        # communicate with a server that knows how to report its UUID,
+        # so we don't clear our knowledge.
+        if old_uuid is not None:
+            self._package_store.clear_hash_ids()

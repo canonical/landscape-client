@@ -100,6 +100,14 @@ class MessageStore(object):
         """
         self._persist.set("server_sequence", number)
 
+    def get_server_uuid(self):
+        """Return the currently set server UUID."""
+        return self._persist.get("server_uuid")
+
+    def set_server_uuid(self, uuid):
+        """Change the known UUID from the server we're communicating to."""
+        self._persist.set("server_uuid", uuid)
+
     def get_pending_offset(self):
         return self._persist.get("pending_offset", 0)
 

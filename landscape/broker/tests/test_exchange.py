@@ -785,6 +785,72 @@ class MessageExchangeTest(LandscapeTest):
         types = self.exchanger.get_client_accepted_message_types()
         self.assertEquals(types, sorted(["typefoo"] + DEFAULT_ACCEPTED_TYPES))
 
+    def test_server_uuid_is_stored_on_message_store(self):
+        self.transport.extra["server-uuid"] = "first-uuid"
+        self.exchanger.exchange()
+        self.assertEquals(self.mstore.get_server_uuid(), "first-uuid")
+        self.transport.extra["server-uuid"] = "second-uuid"
+        self.exchanger.exchange()
+        self.assertEquals(self.mstore.get_server_uuid(), "second-uuid")
+
+    def test_server_uuid_change_cause_event(self):
+        called = []
+        def server_uuid_changed(old_uuid, new_uuid):
+            called.append((old_uuid, new_uuid))
+        self.reactor.call_on("server-uuid-changed", server_uuid_changed)
+
+        # Set it for the first time, and it should emit the event
+        # letting the system know about the change.
+        self.transport.extra["server-uuid"] = "first-uuid"
+        self.exchanger.exchange()
+        self.assertEquals(len(called), 1)
+        self.assertEquals(called[-1], (None, "first-uuid"))
+
+        # Using the same one again, nothing should happen:
+        self.transport.extra["server-uuid"] = "first-uuid"
+        self.exchanger.exchange()
+        self.assertEquals(len(called), 1)
+
+        # Changing it, we should get an event again:
+        self.transport.extra["server-uuid"] = "second-uuid"
+        self.exchanger.exchange()
+        self.assertEquals(len(called), 2)
+        self.assertEquals(called[-1], ("first-uuid", "second-uuid"))
+
+        # And then, it shouldn't emit it once more, since it continues
+        # to be the same.
+        self.transport.extra["server-uuid"] = "second-uuid"
+        self.exchanger.exchange()
+        self.assertEquals(len(called), 2)
+
+    def test_server_uuid_event_not_emitted_with_matching_stored_uuid(self):
+        """
+        If the UUID in the message store is the same as the current UUID,
+        the event is not emitted.
+        """
+        called = []
+        def server_uuid_changed(old_uuid, new_uuid):
+            called.append((old_uuid, new_uuid))
+        self.reactor.call_on("server-uuid-changed", server_uuid_changed)
+
+        self.mstore.set_server_uuid("the-uuid")
+        self.transport.extra["server-uuid"] = "the-uuid"
+        self.exchanger.exchange()
+        self.assertEquals(called, [])
+
+    def test_server_uuid_change_is_logged(self):
+        self.transport.extra["server-uuid"] = "the-uuid"
+        self.exchanger.exchange()
+
+        self.assertIn("INFO: Server UUID changed (old=None, new=the-uuid).",
+                      self.logfile.getvalue())
+
+        # An exchange with the same UUID shouldn't be logged.
+        self.logfile.truncate(0)
+        self.transport.extra["server-uuid"] = "the-uuid"
+        self.exchanger.exchange()
+
+        self.assertNotIn("INFO: Server UUID changed", self.logfile.getvalue())
 
 
 class GetAcceptedTypesDiffTest(LandscapeTest):
