@@ -19,6 +19,7 @@ class PackageTaskHandler(object):
         self._facade = package_facade
         self._broker = remote_broker
         self._channels_reloaded = False
+        self._data_path = os.path.join(config.data_path, "package")
 
     def ensure_channels_reloaded(self):
         if not self._channels_reloaded:
@@ -53,6 +54,27 @@ class PackageTaskHandler(object):
     def handle_task(self, task):
         return succeed(None)
 
+    def use_lookaside_db(self, codename=None, arch=None):
+        result = self._broker.get_server_uuid()
+
+        if not codename:
+            pipe = os.popen("lsb_release -cs")
+            codename = pipe.readline().strip()
+
+        if not arch:
+            pipe = os.popen("dpkg --print-architecture")
+            arch = pipe.readline().strip()
+
+        def got_server_uuid(server_uuid):
+
+            basename = "%s_%s_%s" % (server_uuid, codename, arch)
+            filename = os.path.join(self._data_path, "lookaside", basename)
+
+            if os.path.exists(filename):
+                self._store.add_lookaside_db(filename)
+
+        result.addCallback(got_server_uuid)
+        return result
 
 def run_task_handler(cls, args, reactor=None):
     from twisted.internet.glib2reactor import install

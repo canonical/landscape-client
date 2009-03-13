@@ -33,6 +33,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         super(PackageTaskHandlerTest, self).setUp()
 
         self.config = Configuration()
+        self.config.data_path = self.makeDir()
         self.store = PackageStore(self.makeFile())
 
         self.handler = PackageTaskHandler(self.store, self.facade, self.remote, self.config)
@@ -46,6 +47,27 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         self.facade.get_packages_by_name("name1")[0].installed = True
         self.handler.ensure_channels_reloaded()
         self.assertTrue(self.facade.get_packages_by_name("name1")[0].installed)
+
+    def test_use_lookaside_db(self):
+        deferred = Deferred()
+
+        os.makedirs(os.path.join(self.config.data_path, 'package/lookaside'))
+
+        lookaside_filename = os.path.join(
+                self.config.data_path, 'package/lookaside/fake-uuid_hardy_i386')
+        lookaside_store = PackageStore(lookaside_filename)
+        lookaside_store.set_hash_ids({"hash": 123})
+
+        remote_mock = self.mocker.patch(RemoteBroker)
+        remote_mock.get_server_uuid()
+        self.mocker.result(deferred)
+        self.mocker.replay()
+
+        self.handler.use_lookaside_db(codename="hardy", arch="i386")
+
+        deferred.callback("fake-uuid")
+
+        self.assertEquals(self.store.get_hash_id("hash"), 123)
 
     def test_run(self):
         handler_mock = self.mocker.patch(self.handler)
