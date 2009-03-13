@@ -43,17 +43,55 @@ class PackageStore(object):
         self._db = sqlite3.connect(filename)
         ensure_schema(self._db)
 
+        self._lookaside_dbs = []
+
+    def add_lookaside_db(self, filename):
+        """
+        @param filenames: a secondary SQLite databases to look for pre-canned
+            hash=>id mappings.
+
+            This method can be called more than once to attach several
+            lookaside databases, which will be queried *before* the main
+            database, in the same the order they were added.
+
+            The lookaside database must have a table called "hash" with a
+            compatbile schema (see the ensure_schema() function).
+        """
+        self._lookaside_dbs.append(sqlite3.connect(filename))
+
     @with_cursor
     def set_hash_ids(self, cursor, hash_ids):
         for hash, id in hash_ids.iteritems():
             cursor.execute("REPLACE INTO hash VALUES (?, ?)",
                            (id, buffer(hash)))
 
-    @with_cursor
-    def get_hash_id(self, cursor, hash):
+    def get_hash_id(self, hash):
         assert isinstance(hash, basestring)
+
+        # Check if we can find the hash=>id mapping in the lookaside dbs
+        for db in self._lookaside_dbs:
+            id = self._get_hash_id_from_lookaside_db(db, hash)
+            if id:
+                return id
+
+        # Fall back to the locally-populated db
+        return self._get_hash_id_from_main_db(hash)
+
+    @with_cursor
+    def _get_hash_id_from_main_db(self, cursor, hash):
         cursor.execute("SELECT id FROM hash WHERE hash=?", (buffer(hash),))
         value = cursor.fetchone()
+        if value:
+            return value[0]
+        return None
+
+    def _get_hash_id_from_lookaside_db(self, db, hash):
+        cursor = db.cursor()
+        try:
+            cursor.execute("SELECT id FROM hash WHERE hash=?", (buffer(hash),))
+        finally:
+            value = cursor.fetchone()
+        cursor.close()
         if value:
             return value[0]
         return None
