@@ -38,6 +38,21 @@ class PackageStoreTest(LandscapeTest):
         self.assertEquals(self.store2.get_id_hash(123), "hash1")
         self.assertEquals(self.store2.get_id_hash(456), "hash2")
 
+    def test_get_hash_id_using_lookaside_databases(self):
+        lookaside_filename1 = self.makeFile()
+        lookaside_store1 = PackageStore(lookaside_filename1)
+        lookaside_store1.set_hash_ids({"hash1": 123})
+
+        lookaside_filename2 = self.makeFile()
+        lookaside_store2 = PackageStore(lookaside_filename2)
+        lookaside_store2.set_hash_ids({"hash2": 456})
+
+        self.store1.add_lookaside_db(lookaside_filename1)
+        self.store1.add_lookaside_db(lookaside_filename2)
+
+        self.assertEquals(self.store1.get_hash_id("hash1"), 123)
+        self.assertEquals(self.store1.get_hash_id("hash2"), 456)
+
     def test_clear_hash_ids(self):
         self.store1.set_hash_ids({"ha\x00sh1": 123, "ha\x00sh2": 456})
         self.store1.clear_hash_ids()
