@@ -60,6 +60,12 @@ class PackageTaskHandler(object):
         return succeed(None)
 
     def use_lookaside_db(self, codename=None, arch=None, fetch=None):
+        """
+        Tries to attach a pre-canned lookaside database to our store.
+
+        @param fetch: a function used to retrieve the appropriate lookaside
+            database from the Landscape server
+        """
         result = self._broker.get_server_uuid()
 
         if not codename:
