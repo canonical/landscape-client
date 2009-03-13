@@ -7,6 +7,7 @@ from twisted.internet.defer import Deferred, succeed
 
 from landscape.lib.sequenceranges import sequence_to_ranges
 from landscape.lib.twisted_util import gather_results
+from landscape.lib.fetch import fetch
 
 from landscape.package.taskhandler import PackageTaskHandler, run_task_handler
 from landscape.package.store import UnknownHashIDRequest
@@ -23,7 +24,10 @@ class PackageReporter(PackageTaskHandler):
     def run(self):
         result = Deferred()
 
-        # First, handle any queued tasks.
+        # First, use a lookaside database if available
+        result.addCallback(lambda x: self.use_lookaside_db(fetch=fetch))
+
+        # Now, handle any queued tasks.
         result.addCallback(lambda x: self.handle_tasks())
 
         # Then, remove any expired hash=>id translation requests.

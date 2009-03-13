@@ -5,6 +5,7 @@ import os
 from twisted.internet.defer import Deferred
 
 from landscape.lib.lock import lock_path
+from landscape.lib.fetch import fetch
 
 from landscape.package.store import PackageStore, UnknownHashIDRequest
 from landscape.package.reporter import (
@@ -571,19 +572,22 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         self.mocker.order()
 
-        results = [Deferred() for i in range(4)]
+        results = [Deferred() for i in range(5)]
 
-        reporter_mock.handle_tasks()
+        reporter_mock.use_lookaside_db(fetch=fetch)
         self.mocker.result(results[0])
 
-        reporter_mock.remove_expired_hash_id_requests()
+        reporter_mock.handle_tasks()
         self.mocker.result(results[1])
 
-        reporter_mock.request_unknown_hashes()
+        reporter_mock.remove_expired_hash_id_requests()
         self.mocker.result(results[2])
 
-        reporter_mock.detect_changes()
+        reporter_mock.request_unknown_hashes()
         self.mocker.result(results[3])
+
+        reporter_mock.detect_changes()
+        self.mocker.result(results[4])
 
         self.mocker.replay()
 
