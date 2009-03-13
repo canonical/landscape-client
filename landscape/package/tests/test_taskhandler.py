@@ -1,5 +1,6 @@
 import os
 import sys
+import shutil
 
 from cStringIO import StringIO
 
@@ -14,6 +15,7 @@ from landscape.broker.remote import RemoteBroker
 from landscape.package.taskhandler import PackageTaskHandler, run_task_handler
 from landscape.package.facade import SmartFacade
 from landscape.package.store import PackageStore
+from landscape.lib.fetch import fetch, HTTPCodeError
 from landscape.package.tests.helpers import SmartFacadeHelper
 
 from landscape.tests.helpers import (
@@ -34,6 +36,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
 
         self.config = Configuration()
         self.config.data_path = self.makeDir()
+        self.config.lookaside_url = "https://example.com/lookaside-databases/"
         self.store = PackageStore(self.makeFile())
 
         self.handler = PackageTaskHandler(self.store, self.facade, self.remote, self.config)
@@ -48,15 +51,26 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         self.handler.ensure_channels_reloaded()
         self.assertTrue(self.facade.get_packages_by_name("name1")[0].installed)
 
+
+    def makeLookaside(self, hash_ids):
+        filename = self.makeFile()
+        store = PackageStore(filename)
+        store.set_hash_ids(hash_ids)
+        return filename
+
     def test_use_lookaside_db(self):
         deferred = Deferred()
 
-        os.makedirs(os.path.join(self.config.data_path, 'package/lookaside'))
+        lookaside_directory = os.path.join(self.config.data_path,
+                                           'package/lookaside')
+        os.makedirs(lookaside_directory)
 
-        lookaside_filename = os.path.join(
-                self.config.data_path, 'package/lookaside/fake-uuid_hardy_i386')
-        lookaside_store = PackageStore(lookaside_filename)
-        lookaside_store.set_hash_ids({"hash": 123})
+        lookaside_basename = 'fake-uuid_hardy_i386'
+        lookaside_filename = os.path.join(lookaside_directory,
+                                          lookaside_basename)
+
+
+        shutil.copyfile(self.makeLookaside({"hash": 123}), lookaside_filename)
 
         remote_mock = self.mocker.patch(RemoteBroker)
         remote_mock.get_server_uuid()
@@ -68,6 +82,47 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         deferred.callback("fake-uuid")
 
         self.assertEquals(self.store.get_hash_id("hash"), 123)
+
+    def test_use_lookaside_db_with_successful_fetch(self):
+        deferred = Deferred()
+
+        remote_lookaside = self.makeLookaside({"hash": 123})
+
+        remote_mock = self.mocker.patch(RemoteBroker)
+        remote_mock.get_server_uuid()
+        self.mocker.result(deferred)
+ 
+        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
+        fetch_mock(self.config.lookaside_url + "fake-uuid_hardy_i386")
+        remote_data = open(remote_lookaside).read()
+        self.mocker.result(remote_data)
+
+        self.mocker.replay()
+
+        self.handler.use_lookaside_db(codename="hardy", arch="i386", fetch=fetch)
+
+        deferred.callback("fake-uuid")
+
+        self.assertEquals(self.store.get_hash_id("hash"), 123)
+
+    def test_use_lookaside_db_with_failing_fetch(self):
+        deferred = Deferred()
+
+        remote_mock = self.mocker.patch(RemoteBroker)
+        remote_mock.get_server_uuid()
+        self.mocker.result(deferred)
+ 
+        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
+        fetch_mock(self.config.lookaside_url + "fake-uuid_hardy_i386")
+        self.mocker.throw(HTTPCodeError(501, ""))
+
+        self.mocker.replay()
+
+        self.handler.use_lookaside_db(codename="hardy", arch="i386", fetch=fetch)
+
+        deferred.callback("fake-uuid")
+
+        self.assertEquals(self.store.get_hash_id("hash"), None)
 
     def test_run(self):
         handler_mock = self.mocker.patch(self.handler)

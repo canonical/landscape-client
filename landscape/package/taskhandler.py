@@ -1,4 +1,7 @@
 import os
+import logging
+
+import pycurl
 
 from twisted.internet.defer import Deferred, succeed
 
@@ -8,6 +11,7 @@ from landscape.lib.log import log_failure
 from landscape.deployment import Configuration, init_logging
 from landscape.package.store import PackageStore
 from landscape.broker.remote import RemoteBroker
+from landscape.lib.fetch import HTTPCodeError
 
 
 class PackageTaskHandler(object):
@@ -20,6 +24,7 @@ class PackageTaskHandler(object):
         self._broker = remote_broker
         self._channels_reloaded = False
         self._data_path = os.path.join(config.data_path, "package")
+        self._lookaside_url = config.get("lookaside_url", None)
 
     def ensure_channels_reloaded(self):
         if not self._channels_reloaded:
@@ -54,7 +59,7 @@ class PackageTaskHandler(object):
     def handle_task(self, task):
         return succeed(None)
 
-    def use_lookaside_db(self, codename=None, arch=None):
+    def use_lookaside_db(self, codename=None, arch=None, fetch=None):
         result = self._broker.get_server_uuid()
 
         if not codename:
@@ -68,7 +73,27 @@ class PackageTaskHandler(object):
         def got_server_uuid(server_uuid):
 
             basename = "%s_%s_%s" % (server_uuid, codename, arch)
-            filename = os.path.join(self._data_path, "lookaside", basename)
+            directory = os.path.join(self._data_path, "lookaside")
+            filename = os.path.join(directory, basename)
+
+            if not os.path.exists(filename) and self._lookaside_url and fetch:
+                url = str(self._lookaside_url.rstrip("/") + "/" + basename)
+                error_message = None
+                logging.info("Downloading lookaside database from %s" % url)
+                try:
+                    data = fetch(url)
+                except pycurl.error, error:
+                    error_message = error.args[1]
+                except HTTPCodeError, error:
+                    error_message = str(error)
+                if error_message is not None:
+                    logging.warning(
+                        "Couldn't download lookaside database from %s: %s" %
+                        (url, error_message))
+                else:
+                    if not os.path.isdir(directory):
+                        os.makedirs(directory)
+                    open(filename, "w").write(data)
 
             if os.path.exists(filename):
                 self._store.add_lookaside_db(filename)
