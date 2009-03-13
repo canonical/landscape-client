@@ -41,7 +41,10 @@ class PackageChanger(PackageTaskHandler):
 
     def run(self):
         task1 = self._store.get_next_task(self.queue_name)
-        result = super(PackageChanger, self).run()
+
+        result = self.use_lookaside_db()
+        result.addCallback(lambda x: self.handle_tasks())
+
         def finished(result):
             task2 = self._store.get_next_task(self.queue_name)
             if task1 and task1.id != (task2 and task2.id):
