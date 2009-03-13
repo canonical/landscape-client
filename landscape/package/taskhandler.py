@@ -61,7 +61,7 @@ class PackageTaskHandler(object):
 
     def use_lookaside_db(self, codename=None, arch=None, fetch=None):
         """
-        Tries to attach a pre-canned lookaside database to our store.
+        Try to attach a pre-canned lookaside database to our store.
 
         @param fetch: a function used to retrieve the appropriate lookaside
             database from the Landscape server
