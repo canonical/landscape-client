@@ -12,6 +12,7 @@ from landscape.package.reporter import (
 from landscape.package import reporter
 from landscape.package.facade import SmartFacade
 
+from landscape.deployment import Configuration
 from landscape.broker.remote import RemoteBroker
 
 from landscape.package.tests.helpers import (
@@ -30,7 +31,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
         super(PackageReporterTest, self).setUp()
 
         self.store = PackageStore(self.makeFile())
-        self.reporter = PackageReporter(self.store, self.facade, self.remote)
+        self.config = Configuration()
+        self.reporter = PackageReporter(self.store, self.facade, self.remote, self.config)
 
     def set_pkg2_upgrades_pkg1(self):
         previous = self.Facade.channels_reloaded

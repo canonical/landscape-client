@@ -14,7 +14,7 @@ class PackageTaskHandler(object):
 
     queue_name = "default"
 
-    def __init__(self, package_store, package_facade, remote_broker):
+    def __init__(self, package_store, package_facade, remote_broker, config):
         self._store = package_store
         self._facade = package_facade
         self._broker = remote_broker
@@ -98,7 +98,7 @@ def run_task_handler(cls, args, reactor=None):
     package_facade = SmartFacade()
     remote = RemoteBroker(get_bus(config.bus))
 
-    handler = cls(package_store, package_facade, remote)
+    handler = cls(package_store, package_facade, remote, config)
 
     def got_err(failure):
         log_failure(failure)

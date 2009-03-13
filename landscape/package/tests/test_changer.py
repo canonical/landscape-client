@@ -14,6 +14,7 @@ from landscape.package.changer import (
 from landscape.package.store import PackageStore
 from landscape.package.facade import (
     SmartFacade, DependencyError, TransactionError, SmartError)
+from landscape.deployment import Configuration
 from landscape.broker.remote import RemoteBroker
 
 from landscape.tests.mocker import ANY
@@ -31,7 +32,8 @@ class PackageChangerTest(LandscapeIsolatedTest):
         super(PackageChangerTest, self).setUp()
 
         self.store = PackageStore(self.makeFile())
-        self.changer = PackageChanger(self.store, self.facade, self.remote)
+        self.config = Configuration()
+        self.changer = PackageChanger(self.store, self.facade, self.remote, self.config)
 
         service = self.broker_service
         service.message_store.set_accepted_types(["change-packages-result"])

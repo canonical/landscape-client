@@ -32,9 +32,10 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
     def setUp(self):
         super(PackageTaskHandlerTest, self).setUp()
 
+        self.config = Configuration()
         self.store = PackageStore(self.makeFile())
 
-        self.handler = PackageTaskHandler(self.store, self.facade, self.remote)
+        self.handler = PackageTaskHandler(self.store, self.facade, self.remote, self.config)
 
     def test_ensure_channels_reloaded(self):
         self.assertEquals(len(self.facade.get_packages()), 0)
@@ -166,7 +167,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         # passed in as a parameter.  We'll keep track of the arguments
         # given and verify them later.
         handler_args = []
-        handler_mock = HandlerMock(ANY, ANY, ANY)
+        handler_mock = HandlerMock(ANY, ANY, ANY, ANY)
         self.mocker.passthrough() # Let the real constructor run for testing.
         self.mocker.call(lambda *args: handler_args.extend(args))
 
@@ -215,12 +216,13 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
             # Put reactor back in place before returning.
             self.mocker.reset()
 
-        store, facade, broker = handler_args
+        store, facade, broker, config = handler_args
 
         # Verify if the arguments to the reporter constructor were correct.
         self.assertEquals(type(store), PackageStore)
         self.assertEquals(type(facade), SmartFacade)
         self.assertEquals(type(broker), RemoteBroker)
+        self.assertEquals(type(config), Configuration)
 
         # Let's see if the store path is where it should be.
         filename = os.path.join(data_path, "package/database")
