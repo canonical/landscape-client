@@ -4,7 +4,7 @@ import sys
 import os
 import pwd
 
-from twisted.internet.defer import succeed, fail
+from twisted.internet.defer import Deferred, succeed, fail
 
 from landscape.package.reporter import find_reporter_command
 from landscape.package.taskhandler import PackageTaskHandler, run_task_handler
@@ -42,16 +42,20 @@ class PackageChanger(PackageTaskHandler):
     def run(self):
         task1 = self._store.get_next_task(self.queue_name)
 
-        result = self.use_lookaside_db()
-        result.addCallback(lambda x: self.handle_tasks())
-
         def finished(result):
             task2 = self._store.get_next_task(self.queue_name)
             if task1 and task1.id != (task2 and task2.id):
                 if os.getuid() == 0:
                     os.setuid(pwd.getpwnam("landscape").pw_uid)
                 os.system(find_reporter_command())
-        return result.addCallback(finished)
+
+        result = Deferred()
+        result.addCallback(lambda x: self.use_lookaside_db())
+        result.addCallback(lambda x: self.handle_tasks())
+        result.addCallback(finished)
+        result.callback(None)
+
+        return result
 
     def handle_tasks(self):
         result = super(PackageChanger, self).handle_tasks()
