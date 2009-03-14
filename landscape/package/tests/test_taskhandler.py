@@ -59,55 +59,81 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         return filename
 
     def test_use_lookaside_db(self):
-        deferred = Deferred()
 
         lookaside_directory = os.path.join(self.config.data_path,
-                                           'package/lookaside')
+                                           "package/lookaside")
         os.makedirs(lookaside_directory)
-
-        lookaside_basename = 'fake-uuid_hardy_i386'
+        lookaside_basename = "fake-uuid_hardy_i386"
         lookaside_filename = os.path.join(lookaside_directory,
                                           lookaside_basename)
-
-
         shutil.copyfile(self.makeLookaside({"hash": 123}), lookaside_filename)
 
+        codename_mock = self.mocker.replace("landscape.package."
+                                            "taskhandler.get_host_codename")
+        codename_mock()
+        self.mocker.call(lambda: "hardy")
+
+        arch_mock = self.mocker.replace("landscape.package."
+                                        "taskhandler.get_host_arch")
+        arch_mock()
+        self.mocker.call(lambda: "i386")
+
+        deferred = Deferred()
         remote_mock = self.mocker.patch(RemoteBroker)
         remote_mock.get_server_uuid()
         self.mocker.result(deferred)
+
         self.mocker.replay()
 
-        self.handler.use_lookaside_db(codename="hardy", arch="i386")
+        self.handler.use_lookaside_db()
 
         deferred.callback("fake-uuid")
 
         self.assertEquals(self.store.get_hash_id("hash"), 123)
 
     def test_use_lookaside_db_with_successful_fetch(self):
+
+        codename_mock = self.mocker.replace("landscape.package."
+                                            "taskhandler.get_host_codename")
+        codename_mock()
+        self.mocker.call(lambda: "hardy")
+
+        arch_mock = self.mocker.replace("landscape.package."
+                                        "taskhandler.get_host_arch")
+        arch_mock()
+        self.mocker.call(lambda: "i386")
+
         deferred = Deferred()
-
-        remote_lookaside = self.makeLookaside({"hash": 123})
-
         remote_mock = self.mocker.patch(RemoteBroker)
         remote_mock.get_server_uuid()
         self.mocker.result(deferred)
  
+        fetch_mock_data = open(self.makeLookaside({"hash": 123})).read()
         fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
         fetch_mock(self.config.lookaside_url + "fake-uuid_hardy_i386")
-        remote_data = open(remote_lookaside).read()
-        self.mocker.result(remote_data)
+        self.mocker.result(fetch_mock_data)
 
         self.mocker.replay()
 
-        self.handler.use_lookaside_db(codename="hardy", arch="i386", fetch=fetch)
+        self.handler.use_lookaside_db(fetch=fetch)
 
         deferred.callback("fake-uuid")
 
         self.assertEquals(self.store.get_hash_id("hash"), 123)
 
     def test_use_lookaside_db_with_failing_fetch(self):
-        deferred = Deferred()
 
+        codename_mock = self.mocker.replace("landscape.package."
+                                            "taskhandler.get_host_codename")
+        codename_mock()
+        self.mocker.call(lambda: "hardy")
+
+        arch_mock = self.mocker.replace("landscape.package."
+                                        "taskhandler.get_host_arch")
+        arch_mock()
+        self.mocker.call(lambda: "i386")
+
+        deferred = Deferred()
         remote_mock = self.mocker.patch(RemoteBroker)
         remote_mock.get_server_uuid()
         self.mocker.result(deferred)
@@ -118,7 +144,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
 
         self.mocker.replay()
 
-        self.handler.use_lookaside_db(codename="hardy", arch="i386", fetch=fetch)
+        self.handler.use_lookaside_db(fetch=fetch)
 
         deferred.callback("fake-uuid")
 
