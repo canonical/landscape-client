@@ -66,8 +66,6 @@ class PackageTaskHandler(object):
         @param fetch: a function used to retrieve the appropriate lookaside
             database from the Landscape server
         """
-        result = self._broker.get_server_uuid()
-
         if not codename:
             pipe = os.popen("lsb_release -cs")
             codename = pipe.readline().strip()
@@ -78,15 +76,22 @@ class PackageTaskHandler(object):
 
         def got_server_uuid(server_uuid):
 
-            basename = "%s_%s_%s" % (server_uuid, codename, arch)
-            directory = os.path.join(self._data_path, "lookaside")
-            filename = os.path.join(directory, basename)
+            lookaside_basename = "%s_%s_%s" % (server_uuid, codename, arch)
+            lookaside_directory = os.path.join(self._data_path, "lookaside")
+            lookaside_filename = os.path.join(lookaside_directory,
+                                              lookaside_basename)
 
-            if not os.path.exists(filename) and self._lookaside_url and fetch:
-                url = str(self._lookaside_url.rstrip("/") + "/" + basename)
+            if not os.path.exists(lookaside_filename) \
+                    and self._lookaside_url and fetch:
+
+                # Cast to str as pycurl doesn't like unicode
+                url = str(self._lookaside_url.rstrip("/") + "/"
+                          + lookaside_basename)
+
                 error_message = None
                 logging.info("Downloading lookaside database from %s" % url)
                 try:
+                    # XXX maybe we should add a timeout here
                     data = fetch(url)
                 except pycurl.error, error:
                     error_message = error.args[1]
@@ -97,13 +102,14 @@ class PackageTaskHandler(object):
                         "Couldn't download lookaside database from %s: %s" %
                         (url, error_message))
                 else:
-                    if not os.path.isdir(directory):
-                        os.makedirs(directory)
-                    open(filename, "w").write(data)
+                    if not os.path.isdir(lookaside_directory):
+                        os.makedirs(lookaside_directory)
+                    open(lookaside_filename, "w").write(data)
 
-            if os.path.exists(filename):
-                self._store.add_lookaside_db(filename)
+            if os.path.exists(lookaside_filename):
+                self._store.add_lookaside_db(lookaside_filename)
 
+        result = self._broker.get_server_uuid()
         result.addCallback(got_server_uuid)
         return result
 
