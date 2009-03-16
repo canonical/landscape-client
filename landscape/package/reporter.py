@@ -1,3 +1,4 @@
+import urlparse
 import logging
 import time
 import sys
@@ -60,11 +61,16 @@ class PackageReporter(PackageTaskHandler):
 
             if os.path.exists(hash_id_db_filename):
                 return
-            if not self._config.package_hash_id_url:
-                return
+
+            base_url = self._config.package_hash_id_url
+            if not base_url:
+                # If config.url is http://host:123/path/to/message-system
+                # then we'll use http://host:123/path/to/hash-id-databases
+                base_url = urlparse.urljoin(self._config.url.replace,
+                                            "hash-id-databases")
 
             # Cast to str as pycurl doesn't like unicode
-            url = str(self._config.package_hash_id_url.rstrip("/") + "/" +
+            url = str(base_url.rstrip("/") + "/" +
                       os.path.basename(hash_id_db_filename))
 
             error_message = None
