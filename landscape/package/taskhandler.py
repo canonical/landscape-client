@@ -61,13 +61,13 @@ class PackageTaskHandler(object):
         """
         Try to attach a pre-canned hash=>id database to our store.
         """
-        def server_uuid_loaded():
+        def server_uuid_loaded(ignored):
             hash_id_db_filename = self._get_hash_id_db_filename()
             if os.path.exists(hash_id_db_filename):
                 self._store.add_hash_id_db(hash_id_db_filename)
 
         result = self._load_server_uuid()
-        result.addCallback(lambda x: server_uuid_loaded())
+        result.addCallback(server_uuid_loaded)
         return result
 
     def _load_server_uuid(self):
