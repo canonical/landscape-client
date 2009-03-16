@@ -12,7 +12,12 @@ class CommandTest(LandscapeTest):
         self.assertEquals(run_command("echo test"), "test")
 
     def test_non_0_exit_status(self):
-        self.assertRaises(CommandError, run_command, "false")
+        try:
+            run_command("false")
+        except CommandError, error:
+            self.assertEquals(error.exit_status, 1)
+        else:
+            self.fail("CommandError not raised")
 
     def test_error_str(self):
         self.assertEquals(str(CommandError(1)),
