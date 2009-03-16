@@ -7,11 +7,14 @@ from twisted.internet.defer import Deferred, succeed
 from landscape.lib.dbus_util import get_bus
 from landscape.lib.lock import lock_path, LockError
 from landscape.lib.log import log_failure
-from landscape.lib.command import run_command
+from landscape.lib.command import run_command, CommandError
 from landscape.deployment import Configuration, init_logging
 from landscape.package.store import PackageStore
 from landscape.broker.remote import RemoteBroker
 
+
+class HashIdDbError(Exception):
+    pass
 
 class PackageTaskHandler(object):
 
@@ -90,10 +93,18 @@ class PackageTaskHandler(object):
         return os.path.join(self._get_package_directory(), "hash-id")
 
     def _get_hash_id_db_filename(self):
+        try:
+            codename = get_host_codename()
+        except CommandError:
+            raise HashIdDbError("couldn't determine Ubuntu release codename")
+        try:
+            arch = get_host_arch()
+        except CommandError:
+            raise HashIdDbError("couldn't determine dpkg architecture")
         return os.path.join(self._get_hash_id_db_directory(),
                             "%s_%s_%s" % (self._server_uuid,
-                                          get_host_codename(),
-                                          get_host_arch()))
+                                          codename,
+                                          arch))
 
 # XXX this function should be added to the Smart facade
 def get_host_codename():

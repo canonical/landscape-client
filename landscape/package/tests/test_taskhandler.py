@@ -15,7 +15,7 @@ from landscape.broker.remote import RemoteBroker
 
 from landscape.package.taskhandler import (
     PackageTaskHandler, run_task_handler, get_host_codename,
-    get_host_arch)
+    get_host_arch, HashIdDbError)
 from landscape.package.facade import SmartFacade
 from landscape.package.store import PackageStore
 from landscape.package.tests.helpers import SmartFacadeHelper
@@ -82,6 +82,67 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         deferred.callback("fake-uuid")
 
         self.assertEquals(self.store.get_hash_id("hash"), 123)
+
+    def test_use_hash_id_db_cannot_get_codename(self):
+
+        codename_mock = self.mocker.replace("landscape.package."
+                                            "taskhandler.get_host_codename")
+        codename_mock()
+        self.mocker.throw(CommandError(1))
+
+        uuid_result = Deferred()
+        remote_mock = self.mocker.patch(RemoteBroker)
+        remote_mock.get_server_uuid()
+        self.mocker.result(uuid_result)
+
+        self.mocker.replay()
+
+        calls = [0]
+        result = self.handler.use_hash_id_db()
+        def errback(failure):
+            exception = failure.value
+            self.assertTrue(isinstance(exception, HashIdDbError))
+            self.assertEquals(str(exception), "couldn't determine Ubuntu release codename")
+            calls[0] += 1
+
+        result.addErrback(errback)
+
+        uuid_result.callback("fake-uuid")
+
+        self.assertEquals(calls, [1])
+
+    def test_use_hash_id_db_cannot_get_arch(self):
+
+        codename_mock = self.mocker.replace("landscape.package."
+                                            "taskhandler.get_host_codename")
+        codename_mock()
+        self.mocker.call(lambda: "hardy")
+
+        arch_mock = self.mocker.replace("landscape.package."
+                                        "taskhandler.get_host_arch")
+        arch_mock()
+        self.mocker.throw(CommandError(1))
+
+        uuid_result = Deferred()
+        remote_mock = self.mocker.patch(RemoteBroker)
+        remote_mock.get_server_uuid()
+        self.mocker.result(uuid_result)
+
+        self.mocker.replay()
+
+        calls = [0]
+        result = self.handler.use_hash_id_db()
+        def errback(failure):
+            exception = failure.value
+            self.assertTrue(isinstance(exception, HashIdDbError))
+            self.assertEquals(str(exception), "couldn't determine dpkg architecture")
+            calls[0] += 1
+
+        result.addErrback(errback)
+
+        uuid_result.callback("fake-uuid")
+
+        self.assertEquals(calls, [1])
 
     def test_run(self):
         handler_mock = self.mocker.patch(self.handler)
