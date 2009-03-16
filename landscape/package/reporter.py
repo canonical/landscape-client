@@ -26,11 +26,11 @@ class PackageReporter(PackageTaskHandler):
     def run(self):
         result = Deferred()
 
-        # If the appropriate lookaside db is not there, fetch it
-        result.addCallback(lambda x: self.fetch_lookaside_db())
+        # If the appropriate hash=>id db is not there, fetch it
+        result.addCallback(lambda x: self.fetch_hash_id_db())
 
-        # Attach the lookaside database if available
-        result.addCallback(lambda x: self.use_lookaside_db())
+        # Attach the hash=>id database if available
+        result.addCallback(lambda x: self.use_hash_id_db())
 
         # Now, handle any queued tasks.
         result.addCallback(lambda x: self.handle_tasks())
@@ -47,23 +47,28 @@ class PackageReporter(PackageTaskHandler):
         result.callback(None)
         return result
 
-    def fetch_lookaside_db(self):
+    def fetch_hash_id_db(self):
+        """
+        Fetch the appropriate pre-canned database of hash=>id mappings
+        from the server. If the database has already been downloaded
+        it won't be fetched again.
+        """
 
         def server_uuid_loaded():
 
-            lookaside_filename = self._get_lookaside_filename()
+            hash_id_db_filename = self._get_hash_id_db_filename()
 
-            if os.path.exists(lookaside_filename):
+            if os.path.exists(hash_id_db_filename):
                 return
-            if not self._config.lookaside_url:
+            if not self._config.package_hash_id_url:
                 return
 
             # Cast to str as pycurl doesn't like unicode
-            url = str(self._config.lookaside_url.rstrip("/") + "/" +
-                      os.path.basename(lookaside_filename))
+            url = str(self._config.package_hash_id_url.rstrip("/") + "/" +
+                      os.path.basename(hash_id_db_filename))
 
             error_message = None
-            logging.info("Downloading lookaside database from %s" % url)
+            logging.info("Downloading hash=>id database from %s" % url)
             try:
                 # XXX maybe we should add a timeout here
                 data = fetch(url)
@@ -72,15 +77,15 @@ class PackageReporter(PackageTaskHandler):
             except HTTPCodeError, error:
                 error_message = str(error)
             if error_message is not None:
-                logging.warning("Couldn't download lookaside"
+                logging.warning("Couldn't download hash=>id"
                                 "database from %s: %s" %
                                 (url, error_message))
                 return
 
-            if not os.path.isdir(os.path.dirname(lookaside_filename)):
-                os.makedirs(os.path.dirname(lookaside_filename))
+            if not os.path.isdir(os.path.dirname(hash_id_db_filename)):
+                os.makedirs(os.path.dirname(hash_id_db_filename))
 
-            open(lookaside_filename, "w").write(data)
+            open(hash_id_db_filename, "w").write(data)
 
         result = self._load_server_uuid()
         result.addCallback(lambda x: server_uuid_loaded())

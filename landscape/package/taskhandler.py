@@ -57,14 +57,14 @@ class PackageTaskHandler(object):
     def handle_task(self, task):
         return succeed(None)
 
-    def use_lookaside_db(self):
+    def use_hash_id_db(self):
         """
-        Try to attach a pre-canned lookaside database to our store.
+        Try to attach a pre-canned hash=>id database to our store.
         """
         def server_uuid_loaded():
-            lookaside_filename = self._get_lookaside_filename()
-            if os.path.exists(lookaside_filename):
-                self._store.add_lookaside_db(lookaside_filename)
+            hash_id_db_filename = self._get_hash_id_db_filename()
+            if os.path.exists(hash_id_db_filename):
+                self._store.add_hash_id_db(hash_id_db_filename)
 
         result = self._load_server_uuid()
         result.addCallback(lambda x: server_uuid_loaded())
@@ -85,11 +85,11 @@ class PackageTaskHandler(object):
     def _get_package_directory(self):
         return os.path.join(self._config.data_path, "package")
 
-    def _get_lookaside_directory(self):
-        return os.path.join(self._get_package_directory(), "lookaside")
+    def _get_hash_id_db_directory(self):
+        return os.path.join(self._get_package_directory(), "hash-id")
 
-    def _get_lookaside_filename(self):
-        return os.path.join(self._get_lookaside_directory(),
+    def _get_hash_id_db_filename(self):
+        return os.path.join(self._get_hash_id_db_directory(),
                             "%s_%s_%s" % (self._server_uuid,
                                           get_host_codename(),
                                           get_host_arch()))

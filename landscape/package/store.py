@@ -43,23 +43,23 @@ class PackageStore(object):
         self._db = sqlite3.connect(filename)
         ensure_schema(self._db)
 
-        self._lookaside_dbs = []
+        self._hash_id_dbs = []
 
-    def add_lookaside_db(self, filename):
+    def add_hash_id_db(self, filename):
         """
         @param filenames: a secondary SQLite databases to look for pre-canned
             hash=>id mappings.
 
             This method can be called more than once to attach several
-            lookaside databases, which will be queried *before* the main
+            hash=>id databases, which will be queried *before* the main
             database, in the same the order they were added.
 
-            The lookaside database must have a table called "hash" with a
+            The hash=>id database must have a table called "hash" with a
             compatbile schema (see the ensure_schema() function).
         """
         # XXX possibly add some validation code here, to check that filename
         # is actually a SQLite database with the appropriate schema
-        self._lookaside_dbs.append(sqlite3.connect(filename))
+        self._hash_id_dbs.append(sqlite3.connect(filename))
 
     @with_cursor
     def set_hash_ids(self, cursor, hash_ids):
@@ -70,9 +70,9 @@ class PackageStore(object):
     def get_hash_id(self, hash):
         assert isinstance(hash, basestring)
 
-        # Check if we can find the hash=>id mapping in the lookaside dbs
-        for db in self._lookaside_dbs:
-            id = self._get_hash_id_from_lookaside_db(db, hash)
+        # Check if we can find the hash=>id mapping in the hash_id dbs
+        for db in self._hash_id_dbs:
+            id = self._get_hash_id_from_hash_id_db(db, hash)
             if id:
                 return id
 
@@ -87,7 +87,7 @@ class PackageStore(object):
             return value[0]
         return None
 
-    def _get_hash_id_from_lookaside_db(self, db, hash):
+    def _get_hash_id_from_hash_id_db(self, db, hash):
         cursor = db.cursor()
         try:
             cursor.execute("SELECT id FROM hash WHERE hash=?", (buffer(hash),))

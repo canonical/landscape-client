@@ -49,14 +49,14 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         self.handler.ensure_channels_reloaded()
         self.assertTrue(self.facade.get_packages_by_name("name1")[0].installed)
 
-    def test_use_lookaside_db(self):
+    def test_use_hash_id_db(self):
 
-        lookaside_directory = os.path.join(self.config.data_path,
-                                           "package/lookaside")
-        os.makedirs(lookaside_directory)
-        lookaside_filename = os.path.join(lookaside_directory,
+        hash_id_db_directory = os.path.join(self.config.data_path,
+                                           "package/hash-id")
+        os.makedirs(hash_id_db_directory)
+        hash_id_db_filename = os.path.join(hash_id_db_directory,
                                           "fake-uuid_hardy_i386")
-        PackageStore(lookaside_filename).set_hash_ids({"hash": 123})
+        PackageStore(hash_id_db_filename).set_hash_ids({"hash": 123})
         codename_mock = self.mocker.replace("landscape.package."
                                             "taskhandler.get_host_codename")
         codename_mock()
@@ -74,7 +74,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
 
         self.mocker.replay()
 
-        self.handler.use_lookaside_db()
+        self.handler.use_hash_id_db()
 
         deferred.callback("fake-uuid")
 

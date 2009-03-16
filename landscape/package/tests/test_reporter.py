@@ -34,7 +34,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         self.store = PackageStore(self.makeFile())
         self.config = Configuration()
         self.config.data_path = self.makeDir()
-        self.config.lookaside_url = "http://example.com/lookaside-databases/"
+        self.config.package_hash_id_url = "http://example.com/hash-id-databases/"
         self.reporter = PackageReporter(self.store, self.facade, self.remote, self.config)
 
     def set_pkg2_upgrades_pkg1(self):
@@ -224,7 +224,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         deferred = self.reporter.handle_tasks()
         return deferred.addCallback(got_result)
 
-    def test_fetch_lookaside_db(self):
+    def test_fetch_hash_id_db(self):
 
         codename_mock = self.mocker.replace("landscape.package."
                                             "taskhandler.get_host_codename")
@@ -242,23 +242,23 @@ class PackageReporterTest(LandscapeIsolatedTest):
         self.mocker.result(deferred)
  
         fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
-        fetch_mock(self.config.lookaside_url + "fake-uuid_hardy_i386")
+        fetch_mock(self.config.package_hash_id_url + "fake-uuid_hardy_i386")
         self.mocker.result("hash-ids")
 
         self.mocker.replay()
 
-        self.reporter.fetch_lookaside_db()
+        self.reporter.fetch_hash_id_db()
 
         deferred.callback("fake-uuid")
 
-        lookaside_filename = os.path.join(self.config.data_path,
-                                          "package/lookaside",
+        hash_id_db_filename = os.path.join(self.config.data_path,
+                                          "package/hash-id",
                                           "fake-uuid_hardy_i386")
 
-        self.assertEquals(os.path.exists(lookaside_filename), True)
-        self.assertEquals(open(lookaside_filename).read(), "hash-ids")
+        self.assertEquals(os.path.exists(hash_id_db_filename), True)
+        self.assertEquals(open(hash_id_db_filename).read(), "hash-ids")
 
-    def test_fetch_lookaside_db_with_http_error(self):
+    def test_fetch_hash_id_db_with_http_error(self):
 
         codename_mock = self.mocker.replace("landscape.package."
                                             "taskhandler.get_host_codename")
@@ -276,19 +276,19 @@ class PackageReporterTest(LandscapeIsolatedTest):
         self.mocker.result(deferred)
  
         fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
-        fetch_mock(self.config.lookaside_url + "fake-uuid_hardy_i386")
+        fetch_mock(self.config.package_hash_id_url + "fake-uuid_hardy_i386")
         self.mocker.throw(HTTPCodeError(501, ""))
 
         self.mocker.replay()
 
-        self.reporter.fetch_lookaside_db()
+        self.reporter.fetch_hash_id_db()
 
         deferred.callback("fake-uuid")
 
-        lookaside_filename = os.path.join(self.config.data_path,
-                                          "package/lookaside",
+        hash_id_db_filename = os.path.join(self.config.data_path,
+                                          "package/hash-id",
                                           "fake-uuid_hardy_i386")
-        self.assertEquals(os.path.exists(lookaside_filename), False)
+        self.assertEquals(os.path.exists(hash_id_db_filename), False)
 
     def test_remove_expired_hash_id_request(self):
         request = self.store.add_hash_id_request(["hash1"])
@@ -642,10 +642,10 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         results = [Deferred() for i in range(6)]
 
-        reporter_mock.fetch_lookaside_db()
+        reporter_mock.fetch_hash_id_db()
         self.mocker.result(results[0])
 
-        reporter_mock.use_lookaside_db()
+        reporter_mock.use_hash_id_db()
         self.mocker.result(results[1])
 
         reporter_mock.handle_tasks()
