@@ -258,6 +258,39 @@ class PackageReporterTest(LandscapeIsolatedTest):
         self.assertEquals(os.path.exists(hash_id_db_filename), True)
         self.assertEquals(open(hash_id_db_filename).read(), "hash-ids")
 
+    def test_fetch_hash_id_db_does_not_download_twice(self):
+
+        hash_id_db_directory = os.path.join(self.config.data_path,
+                                           "package/hash-id")
+        os.makedirs(hash_id_db_directory)
+        hash_id_db_filename = os.path.join(hash_id_db_directory,
+                                          "fake-uuid_hardy_i386")
+
+        open(hash_id_db_filename, "w").write("test")
+
+        codename_mock = self.mocker.replace("landscape.package."
+                                            "taskhandler.get_host_codename")
+        codename_mock()
+        self.mocker.call(lambda: "hardy")
+
+        arch_mock = self.mocker.replace("landscape.package."
+                                        "taskhandler.get_host_arch")
+        arch_mock()
+        self.mocker.call(lambda: "i386")
+
+        deferred = Deferred()
+        remote_mock = self.mocker.patch(RemoteBroker)
+        remote_mock.get_server_uuid()
+        self.mocker.result(deferred)
+ 
+        self.mocker.replay()
+
+        self.reporter.fetch_hash_id_db()
+
+        deferred.callback("fake-uuid")
+
+        self.assertEquals(open(hash_id_db_filename).read(), "test")
+
     def test_fetch_hash_id_db_with_http_error(self):
 
         codename_mock = self.mocker.replace("landscape.package."
