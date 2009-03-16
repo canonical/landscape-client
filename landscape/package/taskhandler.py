@@ -1,8 +1,6 @@
 import os
 import logging
 
-import pycurl
-
 from twisted.internet.defer import Deferred, succeed
 
 from landscape.lib.dbus_util import get_bus
@@ -11,7 +9,6 @@ from landscape.lib.log import log_failure
 from landscape.deployment import Configuration, init_logging
 from landscape.package.store import PackageStore
 from landscape.broker.remote import RemoteBroker
-from landscape.lib.fetch import HTTPCodeError
 
 
 class PackageTaskHandler(object):
@@ -22,9 +19,9 @@ class PackageTaskHandler(object):
         self._store = package_store
         self._facade = package_facade
         self._broker = remote_broker
+        self._config = config
         self._channels_reloaded = False
-        self._data_path = os.path.join(config.data_path, "package")
-        self._lookaside_url = config.get("lookaside_url")
+        self._server_uuid = None
 
     def ensure_channels_reloaded(self):
         if not self._channels_reloaded:
@@ -59,53 +56,42 @@ class PackageTaskHandler(object):
     def handle_task(self, task):
         return succeed(None)
 
-    def use_lookaside_db(self, fetch=None):
+    def use_lookaside_db(self):
         """
         Try to attach a pre-canned lookaside database to our store.
-
-        @param fetch: a function used to retrieve the appropriate lookaside
-            database from the Landscape server
         """
-        def got_server_uuid(server_uuid):
-
-            lookaside_basename = "%s_%s_%s" % (server_uuid,
-                                               get_host_codename(),
-                                               get_host_arch())
-            lookaside_directory = os.path.join(self._data_path, "lookaside")
-            lookaside_filename = os.path.join(lookaside_directory,
-                                              lookaside_basename)
-
-            if not os.path.exists(lookaside_filename) \
-                    and self._lookaside_url and fetch:
-
-                # Cast to str as pycurl doesn't like unicode
-                url = str(self._lookaside_url.rstrip("/") + "/"
-                          + lookaside_basename)
-
-                error_message = None
-                logging.info("Downloading lookaside database from %s" % url)
-                try:
-                    # XXX maybe we should add a timeout here
-                    data = fetch(url)
-                except pycurl.error, error:
-                    error_message = error.args[1]
-                except HTTPCodeError, error:
-                    error_message = str(error)
-                if error_message is not None:
-                    logging.warning(
-                        "Couldn't download lookaside database from %s: %s" %
-                        (url, error_message))
-                else:
-                    if not os.path.isdir(lookaside_directory):
-                        os.makedirs(lookaside_directory)
-                    open(lookaside_filename, "w").write(data)
-
+        def server_uuid_loaded():
+            lookaside_filename = self._get_lookaside_filename()
             if os.path.exists(lookaside_filename):
                 self._store.add_lookaside_db(lookaside_filename)
 
-        result = self._broker.get_server_uuid()
-        result.addCallback(got_server_uuid)
+        result = self._load_server_uuid()
+        result.addCallback(lambda x: server_uuid_loaded())
         return result
+
+    def _load_server_uuid(self):
+        if self._server_uuid:
+            return succeed(self._server_uuid)
+
+        def set_server_uuid(server_uuid):
+            self._server_uuid = server_uuid
+            return server_uuid
+
+        result = self._broker.get_server_uuid()
+        result.addCallback(set_server_uuid)
+        return result
+
+    def _get_package_directory(self):
+        return os.path.join(self._config.data_path, "package")
+
+    def _get_lookaside_directory(self):
+        return os.path.join(self._get_package_directory(), "lookaside")
+
+    def _get_lookaside_filename(self):
+        return os.path.join(self._get_lookaside_directory(),
+                            "%s_%s_%s" % (self._server_uuid,
+                                          get_host_codename(),
+                                          get_host_arch()))
 
 # XXX this function should be added to the Smart facade
 def get_host_codename():

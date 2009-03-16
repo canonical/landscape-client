@@ -3,11 +3,13 @@ import time
 import sys
 import os
 
+import pycurl
+
 from twisted.internet.defer import Deferred, succeed
 
 from landscape.lib.sequenceranges import sequence_to_ranges
 from landscape.lib.twisted_util import gather_results
-from landscape.lib.fetch import fetch
+from landscape.lib.fetch import fetch, HTTPCodeError
 
 from landscape.package.taskhandler import PackageTaskHandler, run_task_handler
 from landscape.package.store import UnknownHashIDRequest
@@ -24,8 +26,11 @@ class PackageReporter(PackageTaskHandler):
     def run(self):
         result = Deferred()
 
-        # First, use a lookaside database if available
-        result.addCallback(lambda x: self.use_lookaside_db(fetch=fetch))
+        # If the appropriate lookaside db is not there, fetch it
+        result.addCallback(lambda x: self.fetch_lookaside_db())
+
+        # Attach the lookaside database if available
+        result.addCallback(lambda x: self.use_lookaside_db())
 
         # Now, handle any queued tasks.
         result.addCallback(lambda x: self.handle_tasks())
@@ -40,6 +45,45 @@ class PackageReporter(PackageTaskHandler):
         result.addCallback(lambda x: self.detect_changes())
 
         result.callback(None)
+        return result
+
+    def fetch_lookaside_db(self):
+
+        def server_uuid_loaded():
+
+            lookaside_filename = self._get_lookaside_filename()
+
+            if os.path.exists(lookaside_filename):
+                return
+            if not self._config.lookaside_url:
+                return
+
+            # Cast to str as pycurl doesn't like unicode
+            url = str(self._config.lookaside_url.rstrip("/") + "/" +
+                      os.path.basename(lookaside_filename))
+
+            error_message = None
+            logging.info("Downloading lookaside database from %s" % url)
+            try:
+                # XXX maybe we should add a timeout here
+                data = fetch(url)
+            except pycurl.error, error:
+                error_message = error.args[1]
+            except HTTPCodeError, error:
+                error_message = str(error)
+            if error_message is not None:
+                logging.warning("Couldn't download lookaside"
+                                "database from %s: %s" %
+                                (url, error_message))
+                return
+
+            if not os.path.isdir(os.path.dirname(lookaside_filename)):
+                os.makedirs(os.path.dirname(lookaside_filename))
+
+            open(lookaside_filename, "w").write(data)
+
+        result = self._load_server_uuid()
+        result.addCallback(lambda x: server_uuid_loaded())
         return result
 
     def handle_task(self, task):

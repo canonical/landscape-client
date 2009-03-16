@@ -5,7 +5,7 @@ import os
 from twisted.internet.defer import Deferred
 
 from landscape.lib.lock import lock_path
-from landscape.lib.fetch import fetch
+from landscape.lib.fetch import HTTPCodeError
 
 from landscape.package.store import PackageStore, UnknownHashIDRequest
 from landscape.package.reporter import (
@@ -33,6 +33,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         self.store = PackageStore(self.makeFile())
         self.config = Configuration()
+        self.config.data_path = self.makeDir()
+        self.config.lookaside_url = "http://example.com/lookaside-databases/"
         self.reporter = PackageReporter(self.store, self.facade, self.remote, self.config)
 
     def set_pkg2_upgrades_pkg1(self):
@@ -221,6 +223,72 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         deferred = self.reporter.handle_tasks()
         return deferred.addCallback(got_result)
+
+    def test_fetch_lookaside_db(self):
+
+        codename_mock = self.mocker.replace("landscape.package."
+                                            "taskhandler.get_host_codename")
+        codename_mock()
+        self.mocker.call(lambda: "hardy")
+
+        arch_mock = self.mocker.replace("landscape.package."
+                                        "taskhandler.get_host_arch")
+        arch_mock()
+        self.mocker.call(lambda: "i386")
+
+        deferred = Deferred()
+        remote_mock = self.mocker.patch(RemoteBroker)
+        remote_mock.get_server_uuid()
+        self.mocker.result(deferred)
+ 
+        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
+        fetch_mock(self.config.lookaside_url + "fake-uuid_hardy_i386")
+        self.mocker.result("hash-ids")
+
+        self.mocker.replay()
+
+        self.reporter.fetch_lookaside_db()
+
+        deferred.callback("fake-uuid")
+
+        lookaside_filename = os.path.join(self.config.data_path,
+                                          "package/lookaside",
+                                          "fake-uuid_hardy_i386")
+
+        self.assertEquals(os.path.exists(lookaside_filename), True)
+        self.assertEquals(open(lookaside_filename).read(), "hash-ids")
+
+    def test_fetch_lookaside_db_with_http_error(self):
+
+        codename_mock = self.mocker.replace("landscape.package."
+                                            "taskhandler.get_host_codename")
+        codename_mock()
+        self.mocker.call(lambda: "hardy")
+
+        arch_mock = self.mocker.replace("landscape.package."
+                                        "taskhandler.get_host_arch")
+        arch_mock()
+        self.mocker.call(lambda: "i386")
+
+        deferred = Deferred()
+        remote_mock = self.mocker.patch(RemoteBroker)
+        remote_mock.get_server_uuid()
+        self.mocker.result(deferred)
+ 
+        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
+        fetch_mock(self.config.lookaside_url + "fake-uuid_hardy_i386")
+        self.mocker.throw(HTTPCodeError(501, ""))
+
+        self.mocker.replay()
+
+        self.reporter.fetch_lookaside_db()
+
+        deferred.callback("fake-uuid")
+
+        lookaside_filename = os.path.join(self.config.data_path,
+                                          "package/lookaside",
+                                          "fake-uuid_hardy_i386")
+        self.assertEquals(os.path.exists(lookaside_filename), False)
 
     def test_remove_expired_hash_id_request(self):
         request = self.store.add_hash_id_request(["hash1"])
@@ -572,22 +640,25 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         self.mocker.order()
 
-        results = [Deferred() for i in range(5)]
+        results = [Deferred() for i in range(6)]
 
-        reporter_mock.use_lookaside_db(fetch=fetch)
+        reporter_mock.fetch_lookaside_db()
         self.mocker.result(results[0])
 
-        reporter_mock.handle_tasks()
+        reporter_mock.use_lookaside_db()
         self.mocker.result(results[1])
 
-        reporter_mock.remove_expired_hash_id_requests()
+        reporter_mock.handle_tasks()
         self.mocker.result(results[2])
 
-        reporter_mock.request_unknown_hashes()
+        reporter_mock.remove_expired_hash_id_requests()
         self.mocker.result(results[3])
 
-        reporter_mock.detect_changes()
+        reporter_mock.request_unknown_hashes()
         self.mocker.result(results[4])
+
+        reporter_mock.detect_changes()
+        self.mocker.result(results[5])
 
         self.mocker.replay()
 
