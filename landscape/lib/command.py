@@ -17,6 +17,8 @@ def run_command(command):
     command's exit status is not 0 a CommandError exception is raised.
     """
     exit_status, output = commands.getstatusoutput(command)
+    # shift down 8 bits to get shell-like exit codes
+    exit_status = exit_status >> 8
     if exit_status != 0:
         raise CommandError(exit_status)
     return output
