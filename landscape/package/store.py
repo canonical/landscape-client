@@ -91,9 +91,9 @@ class PackageStore(object):
         cursor = db.cursor()
         try:
             cursor.execute("SELECT id FROM hash WHERE hash=?", (buffer(hash),))
-        finally:
             value = cursor.fetchone()
-        cursor.close()
+        finally:
+            cursor.close()
         if value:
             return value[0]
         return None
