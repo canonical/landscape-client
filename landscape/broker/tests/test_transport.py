@@ -1,9 +1,8 @@
 import os
 
-from pycurl import error as PyCurlError
-
 from landscape import VERSION
 from landscape.broker.transport import HTTPTransport
+from landscape.lib.fetch import PyCurlError
 from landscape.lib import bpickle
 
 from landscape.tests.helpers import LandscapeTest, LogKeeperHelper

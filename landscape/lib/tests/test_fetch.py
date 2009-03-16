@@ -1,6 +1,6 @@
 import pycurl
 
-from landscape.lib.fetch import fetch, fetch_async, HTTPCodeError
+from landscape.lib.fetch import fetch, fetch_async, HTTPCodeError, PyCurlError
 from landscape.tests.helpers import LandscapeTest
 
 
@@ -110,14 +110,21 @@ class FetchTest(LandscapeTest):
         else:
             self.fail("HTTPCodeError not raised")
 
-    def test_error_str(self):
+    def test_http_error_str(self):
         self.assertEquals(str(HTTPCodeError(501, "")),
                           "Server returned HTTP code 501")
 
-    def test_error_repr(self):
+    def test_http_error_repr(self):
         self.assertEquals(repr(HTTPCodeError(501, "")),
                           "<HTTPCodeError http_code=501>")
 
+    def test_pycurl_error_str(self):
+        self.assertEquals(str(PyCurlError(60, "pycurl error")),
+                          "Error 60: pycurl error")
+
+    def test_pycurl_error_repr(self):
+        self.assertEquals(repr(PyCurlError(60, "pycurl error")),
+                          "<PyCurlError args=(60, 'pycurl error')>")
 
     def test_create_curl(self):
         curls = []
