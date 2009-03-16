@@ -97,14 +97,14 @@ class PackageTaskHandler(object):
 # XXX this function should be added to the Smart facade
 def get_host_codename():
     status, output = commands.getstatusoutput("lsb_release -cs")
-    if status is not 0:
+    if status != 0:
         return None
     return output
 
 # XXX ths function should be added to the Smart facade
 def get_host_arch():
     status, output = commands.getstatusoutput("dpkg --print-architecture")
-    if status is not 0:
+    if status != 0:
         return None
     return output
 
