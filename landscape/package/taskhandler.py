@@ -1,5 +1,6 @@
 import os
 import logging
+import commands
 
 from twisted.internet.defer import Deferred, succeed
 
@@ -95,13 +96,17 @@ class PackageTaskHandler(object):
 
 # XXX this function should be added to the Smart facade
 def get_host_codename():
-    pipe = os.popen("lsb_release -cs")
-    return pipe.readline().strip()
+    status, output = commands.getstatusoutput("lsb_release -cs")
+    if status is not 0:
+        return None
+    return output
 
 # XXX ths function should be added to the Smart facade
 def get_host_arch():
-    pipe = os.popen("dpkg --print-architecture")
-    return pipe.readline().strip()
+    status, output = commands.getstatusoutput("dpkg --print-architecture")
+    if status is not 0:
+        return None
+    return output
 
 def run_task_handler(cls, args, reactor=None):
     from twisted.internet.glib2reactor import install
