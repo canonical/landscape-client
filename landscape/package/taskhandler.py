@@ -7,6 +7,7 @@ from twisted.internet.defer import Deferred, succeed
 from landscape.lib.dbus_util import get_bus
 from landscape.lib.lock import lock_path, LockError
 from landscape.lib.log import log_failure
+from landscape.lib.command import run_command
 from landscape.deployment import Configuration, init_logging
 from landscape.package.store import PackageStore
 from landscape.broker.remote import RemoteBroker
@@ -96,17 +97,19 @@ class PackageTaskHandler(object):
 
 # XXX this function should be added to the Smart facade
 def get_host_codename():
-    status, output = commands.getstatusoutput("lsb_release -cs")
-    if status != 0:
-        return None
-    return output
+    """
+    Return the Ubuntu release codename of the host system, raise
+    CommandError in case of failure
+    """
+    return run_command("lsb_release -cs")
 
 # XXX ths function should be added to the Smart facade
 def get_host_arch():
-    status, output = commands.getstatusoutput("dpkg --print-architecture")
-    if status != 0:
-        return None
-    return output
+    """
+    Return the dpkg architecture of the host system, raise CommandError
+    in case of failure
+    """
+    return run_command("dpkg --print-architecture")
 
 def run_task_handler(cls, args, reactor=None):
     from twisted.internet.glib2reactor import install

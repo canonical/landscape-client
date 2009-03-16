@@ -8,11 +8,14 @@ from twisted.internet import reactor
 from twisted.internet.defer import Deferred, fail
 
 from landscape.lib.lock import lock_path
+from landscape.lib.command import CommandError
 
 from landscape.deployment import Configuration
 from landscape.broker.remote import RemoteBroker
 
-from landscape.package.taskhandler import PackageTaskHandler, run_task_handler
+from landscape.package.taskhandler import (
+    PackageTaskHandler, run_task_handler, get_host_codename,
+    get_host_arch)
 from landscape.package.facade import SmartFacade
 from landscape.package.store import PackageStore
 from landscape.package.tests.helpers import SmartFacadeHelper
@@ -159,6 +162,22 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         result = self.handler.handle_task(None)
         self.assertTrue(isinstance(result, Deferred))
         self.assertTrue(result.called)
+
+    def test_get_host_codename_fails(self):
+        run_command_mock = self.mocker.replace("landscape.lib.command.run_command")
+        run_command_mock("lsb_release -cs")
+        self.mocker.throw(CommandError(1))
+        self.mocker.replay()
+
+        self.assertRaises(CommandError, get_host_codename)
+
+    def test_get_host_arch_fails(self):
+        run_command_mock = self.mocker.replace("landscape.lib.command.run_command")
+        run_command_mock("dpkg --print-architecture")
+        self.mocker.throw(CommandError(1))
+        self.mocker.replay()
+
+        self.assertRaises(CommandError, get_host_arch)
 
     def test_run_task_handler(self):
 
