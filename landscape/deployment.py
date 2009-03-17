@@ -126,7 +126,7 @@ class BaseConfiguration(object):
     def reload(self):
         self.load(self._command_line_args)
 
-    def load(self, args, accept_unexistent_config=False):
+    def load(self, args, accept_nonexistent_config=False):
         """
         Load configuration data from command line arguments and a config file.
 
@@ -138,13 +138,15 @@ class BaseConfiguration(object):
         if self.config:
             if os.path.isfile(self.config):
                 self.load_configuration_file(self.config)
-            elif not accept_unexistent_config:
+            elif not accept_nonexistent_config:
                 sys.exit("error: file not found: %s" % self.config)
         else:
             for potential_config_file in self.default_config_filenames:
                 if os.access(potential_config_file, os.R_OK):
                     self.load_configuration_file(potential_config_file)
                     break
+
+        self._load_external_options()
 
         # Check that all needed options were given.
         for option in self.required_options:
@@ -155,6 +157,9 @@ class BaseConfiguration(object):
 
         if self.bus not in ("session", "system"):
             sys.exit("error: bus must be one of 'session' or 'system'")
+
+    def _load_external_options(self):
+        """Hook for loading options from elsewhere (e.g. for --import)."""
 
     def load_command_line(self, args):
         """Load configuration data from the given command line."""
@@ -195,8 +200,7 @@ class BaseConfiguration(object):
         3. The first filename in self.default_config_filenames
         """
         # The filename we'll write to
-        filename = (self.config or self._config_filename or
-                    self.default_config_filenames[0])
+        filename = self.get_config_filename()
 
         config_parser = ConfigParser()
         # Make sure we read the old values from the config file so that we
@@ -233,7 +237,16 @@ class BaseConfiguration(object):
         return parser
 
     def get_config_filename(self):
-        return self._config_filename
+        if self.config:
+            return self.config
+        if self._config_filename:
+            return self._config_filename
+        if self.default_config_filenames:
+            for potential_config_file in self.default_config_filenames:
+                if os.access(potential_config_file, os.R_OK):
+                    return potential_config_file
+            return self.default_config_filenames[0]
+        return None
 
     def get_command_line_options(self):
         return self._command_line_options

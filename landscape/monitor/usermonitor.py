@@ -1,4 +1,4 @@
-import logging
+from twisted.internet.defer import maybeDeferred
 
 from landscape.lib.log import log_failure
 
@@ -64,14 +64,21 @@ class UserMonitor(MonitorPlugin):
             C{operation-id} field.
         """
         from landscape.manager.usermanager import UserManagerDBusObject
-        remote_service = get_object(self.registry.bus,
-            UserManagerDBusObject.bus_name, UserManagerDBusObject.object_path)
+        # We'll skip checking the locked users if we're in monitor-only mode.
+        if getattr(self.registry.config, "monitor_only", False):
+            result = maybeDeferred(self._detect_changes,
+                                   [], operation_id)
+        else:
+            remote_service = get_object(self.registry.bus,
+                                        UserManagerDBusObject.bus_name,
+                                        UserManagerDBusObject.object_path)
 
-        result = remote_service.get_locked_usernames()
-        result.addCallback(self._detect_changes, operation_id)
+            result = remote_service.get_locked_usernames()
+            result.addCallback(self._detect_changes, operation_id)
+            result.addErrback(lambda f: self._detect_changes([], operation_id))
         return result
 
-    def _detect_changes(self, result, operation_id=None):
+    def _detect_changes(self, locked_users, operation_id=None):
         def update_snapshot(result):
             changes.snapshot()
             return result
@@ -80,7 +87,7 @@ class UserMonitor(MonitorPlugin):
             log_failure(result, "Error occured calling send_message in "
                         "_detect_changes")
 
-        self._provider.locked_users = result
+        self._provider.locked_users = locked_users
         changes = UserChanges(self._persist, self._provider)
         message = changes.create_diff()
         if message:

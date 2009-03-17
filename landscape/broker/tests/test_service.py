@@ -378,6 +378,47 @@ class BrokerDBusObjectTest(LandscapeIsolatedTest):
                                          "some-type", True)
         return waiter
 
+    def test_server_uuid_changed_event_becomes_signal(self):
+        waiter = Deferred()
+        def got_signal(old_uuid, new_uuid):
+            waiter.callback("We got it!")
+            self.assertEquals(old_uuid, "old-uuid")
+            self.assertEquals(new_uuid, "new-uuid")
+
+        self.broker_service.bus.add_signal_receiver(got_signal,
+                                                    "server_uuid_changed")
+        self.broker_service.reactor.fire("server-uuid-changed",
+                                         "old-uuid", "new-uuid")
+        return waiter
+
+    def test_server_uuid_changed_signal_replaces_nones_by_empty_strings(self):
+        """
+        DBus doesn't like Nones. :-(
+        """
+        waiter = Deferred()
+        def got_signal(old_uuid, new_uuid):
+            waiter.callback("We got it!")
+            self.assertEquals(old_uuid, "")
+            self.assertEquals(new_uuid, "")
+
+        self.broker_service.bus.add_signal_receiver(got_signal,
+                                                    "server_uuid_changed")
+        self.broker_service.reactor.fire("server-uuid-changed", None, None)
+        return waiter
+
+    def test_get_server_uuid(self):
+        self.broker_service.message_store.set_server_uuid("the-uuid")
+        result = self.remote.get_server_uuid()
+        result.addCallback(self.assertEquals, "the-uuid")
+        return result
+    test_get_server_uuid.timeout = 4
+
+    def test_get_server_uuid_with_unset_uuid(self):
+        result = self.remote.get_server_uuid()
+        result.addCallback(self.assertEquals, None)
+        return result
+    test_get_server_uuid_with_unset_uuid.timeout = 4
+
     def test_register_and_get_plugins(self):
         result = self.remote.register_plugin("service.name", "/Path")
         def got_result(result):

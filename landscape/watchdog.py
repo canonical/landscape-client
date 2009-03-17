@@ -287,19 +287,21 @@ class WatchDog(object):
     """
 
     def __init__(self, bus, reactor=reactor, verbose=False, config=None,
-                 broker=None, monitor=None, manager=None):
+                 broker=None, monitor=None, manager=None, enabled_daemons=None):
         self.bus = bus
-        if broker is None:
+        if enabled_daemons is None:
+            enabled_daemons = [Broker, Monitor, Manager]
+        if broker is None and Broker in enabled_daemons:
             broker = Broker(self.bus, verbose=verbose, config=config)
-        if monitor is None:
+        if monitor is None and Monitor in enabled_daemons:
             monitor = Monitor(self.bus, verbose=verbose, config=config)
-        if manager is None:
+        if manager is None and Manager in enabled_daemons:
             manager = Manager(self.bus, verbose=verbose, config=config)
 
         self.broker = broker
         self.monitor = monitor
         self.manager = manager
-        self.daemons = [self.broker, self.monitor, self.manager]
+        self.daemons = filter(None, [self.broker, self.monitor, self.manager])
         self.reactor = reactor
         self._checking = None
         self._stopping = False
@@ -328,9 +330,8 @@ class WatchDog(object):
             started. If a daemon could not be started, the deferred will fail
             with L{DaemonError}.
         """
-        self.broker.start()
-        self.monitor.start()
-        self.manager.start()
+        for daemon in self.daemons:
+            daemon.start()
         self.start_monitoring()
 
     def start_monitoring(self):
@@ -397,7 +398,17 @@ class WatchDogConfiguration(Configuration):
                           help="Fork and run in the background.")
         parser.add_option("--pid-file", type="str",
                           help="The file to write the PID to.")
+        parser.add_option("--monitor-only", action="store_true",
+                          help="Don't enable management features. This is "
+                          "useful if you want to run the client as a non-root "
+                          "user.")
         return parser
+
+    def get_enabled_daemons(self):
+        daemons = [Broker, Monitor]
+        if not self.monitor_only:
+            daemons.append(Manager)
+        return daemons
 
 
 def daemonize():
@@ -426,7 +437,8 @@ class WatchDogService(Service):
         self.bus = get_bus(config.bus)
         self.watchdog = WatchDog(self.bus,
                                  verbose=not config.daemon,
-                                 config=config.config)
+                                 config=config.config,
+                                 enabled_daemons=config.get_enabled_daemons())
         self.exit_code = 0
 
     def startService(self):
@@ -448,11 +460,11 @@ class WatchDogService(Service):
             info("Watchdog watching for daemons on %r bus." % self._config.bus)
             return self.watchdog.start()
         def die(failure):
+            log_failure(failure, "Unknown error occurred!")
             self.exit_code = 2
             reactor.crash()
         result.addCallback(start_if_not_running)
         result.addErrback(die)
-
         return result
 
     def _daemonize(self):
@@ -495,28 +507,27 @@ bootstrap_list = BootstrapList([
     ])
 
 
-def run(args=sys.argv):
+def run(args=sys.argv, reactor=None):
     config = WatchDogConfiguration()
     config.load(args)
 
-    if config.bus == "system" and os.getuid() != 0:
+    if (config.bus == "system"
+        and not (os.getuid() == 0
+                 or pwd.getpwnam("landscape").pw_uid == os.getuid())):
         sys.exit("When using the system bus, landscape-client must be run as "
                  "root.")
 
     init_logging(config, "watchdog")
 
-    if os.getuid() != 0:
-        warning("Daemons will be run as %s" % pwd.getpwuid(os.getuid()).pw_name)
-
     application = Application("landscape-client")
     watchdog_service = WatchDogService(config)
     watchdog_service.setServiceParent(application)
 
-    from twisted.internet import reactor
+    if reactor is None:
+        from twisted.internet import reactor
     # We add a small delay to work around a Twisted bug: this method should
     # only be called when the reactor is running, but we still get a
     # PotentialZombieWarning.
     reactor.callLater(0, startApplication, application, False)
-
     reactor.run()
     return watchdog_service.exit_code

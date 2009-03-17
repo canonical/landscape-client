@@ -7,6 +7,19 @@ import pycurl
 from twisted.internet.threads import deferToThread
 
 
+class HTTPCodeError(Exception):
+
+    def __init__(self, http_code, body):
+        self.http_code = http_code
+        self.body = body
+
+    def __str__(self):
+        return "Server returned HTTP code %d" % self.http_code
+
+    def __repr__(self):
+        return "<HTTPCodeError http_code=%d>" % self.http_code
+
+
 def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None):
     """Retrieve a URL and return the content.
 
@@ -41,18 +54,26 @@ def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None):
     curl.setopt(pycurl.FOLLOWLOCATION, True)
     curl.setopt(pycurl.MAXREDIRS, 5)
     curl.setopt(pycurl.WRITEFUNCTION, input.write)
+
     curl.perform()
 
-    return input.getvalue()
+    body = input.getvalue()
+
+    http_code = curl.getinfo(pycurl.HTTP_CODE)
+    if http_code != 200:
+        raise HTTPCodeError(http_code, body)
+
+    return body
 
 
 def test(args):
     parser = OptionParser()
-    parser.add_option("--method", default="GET")
+    parser.add_option("--post", action="store_true")
     parser.add_option("--data", default="")
     parser.add_option("--cainfo")
     options, (url,) = parser.parse_args(args)
-    print fetch(url, options.method, data=options.data, cainfo=options.cainfo)
+    print fetch(url, post=options.post, data=options.data,
+                cainfo=options.cainfo)
 
 
 def fetch_async(*args, **kwargs):

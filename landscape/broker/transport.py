@@ -1,6 +1,4 @@
-"""Low-level server communication.
-"""
-from cStringIO import StringIO
+"""Low-level server communication."""
 import time
 import logging
 import pprint
@@ -22,6 +20,9 @@ class HTTPTransport(object):
 
     def get_url(self):
         return self._url
+
+    def set_url(self, url):
+        self._url = url
 
     def _curl(self, payload, computer_id, message_api):
         headers= {"X-Message-API": message_api,
@@ -73,7 +74,6 @@ class FakeTransport(object):
     """Fake transport for testing purposes."""
 
     def __init__(self, url=None, pubkey=None):
-        self.url = url
         self.pubkey = pubkey
         self.payloads = []
         self.responses = []
@@ -82,9 +82,13 @@ class FakeTransport(object):
         self.computer_id = None
         self.message_api = None
         self.extra = {}
+        self._url = url
 
     def get_url(self):
-        return ""
+        return self._url
+    
+    def set_url(self, url):
+        self._url = url
 
     def exchange(self, payload, computer_id=None, message_api=API):
         self.payloads.append(payload)

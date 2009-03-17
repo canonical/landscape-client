@@ -53,6 +53,11 @@ class HTTPTransportTest(LandscapeTest):
         transport = HTTPTransport(url)
         self.assertEquals(transport.get_url(), url)
 
+    def test_set_url(self):
+        transport = HTTPTransport("http://example/ooga")
+        transport.set_url("http://example/message-system")
+        self.assertEquals(transport.get_url(), "http://example/message-system")
+
     def test_request_data(self):
         """
         When a request is sent with HTTPTransport.exchange, it should

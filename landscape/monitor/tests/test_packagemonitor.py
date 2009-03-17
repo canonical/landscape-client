@@ -220,7 +220,7 @@ class PackageMonitorTest(LandscapeIsolatedTest):
         cwd = os.getcwd()
         os.chdir(dir)
         os.chmod(dir, 0)
-        
+ 
         find_command_mock = self.mocker.replace(find_reporter_command)
         find_command_mock()
         self.mocker.result(command)
@@ -238,3 +238,30 @@ class PackageMonitorTest(LandscapeIsolatedTest):
             os.chmod(dir, 0766)
 
         return result.addCallback(got_result)
+
+    def test_changing_server_uuid_clears_hash_ids(self):
+        """
+        The package hash=>id map is server-specific, so when we change
+        servers, we should reset this map.
+        """
+        self.package_store.set_hash_ids({"hash1": 1, "hash2": 2})
+        self.monitor.add(self.package_monitor)
+        self.broker_service.reactor.fire("server-uuid-changed",
+                                         "old-uuid", "new-uuid")
+
+        self.assertEquals(self.package_store.get_hash_id("hash1"), None)
+        self.assertEquals(self.package_store.get_hash_id("hash2"), None)
+
+    def test_changing_server_uuid_wont_clear_hash_ids_with_old_uuid_none(self):
+        """
+        If the old UUID is unknown, that means the client just started
+        talking to a server that knows how to communicate its UUID, so we
+        don't want to clear the old hashes in this case.
+        """
+        self.package_store.set_hash_ids({"hash1": 1, "hash2": 2})
+        self.monitor.add(self.package_monitor)
+        self.broker_service.reactor.fire("server-uuid-changed",
+                                         None, "new-uuid")
+
+        self.assertEquals(self.package_store.get_hash_id("hash1"), 1)
+        self.assertEquals(self.package_store.get_hash_id("hash2"), 2)
