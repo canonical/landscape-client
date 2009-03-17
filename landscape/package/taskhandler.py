@@ -1,6 +1,5 @@
 import os
 import logging
-import commands
 
 from twisted.internet.defer import Deferred, succeed
 

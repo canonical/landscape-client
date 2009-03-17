@@ -4,7 +4,7 @@ import sys
 import os
 import pwd
 
-from twisted.internet.defer import Deferred, succeed, fail
+from twisted.internet.defer import Deferred, fail
 
 from landscape.package.reporter import find_reporter_command
 from landscape.package.taskhandler import PackageTaskHandler, run_task_handler

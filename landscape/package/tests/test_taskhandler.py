@@ -384,7 +384,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         other_store = PackageStore(filename)
         self.assertEquals(other_store.get_available(), [1, 2, 3])
 
-        # Chech the hash=>id database directory as well
+        # Check the hash=>id database directory as well
         self.assertTrue(os.path.exists(os.path.join(data_path,
                                                     "package/hash-id")))
 

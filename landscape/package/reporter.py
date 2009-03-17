@@ -65,7 +65,7 @@ class PackageReporter(PackageTaskHandler):
         def server_uuid_loaded(ignored):
             hash_id_db_filename = self._get_hash_id_db_filename()
 
-            # Can't determine codename or arch
+            # Can't determine which hash=>id database to use
             if not hash_id_db_filename:
                 return
 
