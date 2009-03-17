@@ -563,6 +563,10 @@ class RegistrationTest(LandscapeTest):
         self.assertEquals(messages[0]["type"], "register-cloud-vm")
 
     def test_cloud_registration_fetch_errors(self):
+        """
+        If fetching metadata fails, and we have no account details to fall
+        back to, we fire 'registration-failed'.
+        """
         self.log_helper.ignore_errors(pycurl.error)
         config = self.broker_service.config
 
@@ -581,7 +585,7 @@ class RegistrationTest(LandscapeTest):
 
         self.prepare_cloud_registration(handler)
 
-        # Mock registration-failed call
+        # Mock registration-failed call. why? I don't know.
         reactor_mock = self.mocker.patch(self.reactor)
         reactor_mock.fire("registration-failed")
         self.mocker.replay()
@@ -610,6 +614,29 @@ class RegistrationTest(LandscapeTest):
                                 otp=None,
                                 account_name=u"onward",
                                 registration_password=u"password")])
+
+    def test_fall_back_to_normal_registration_when_metadata_fetch_fails(self):
+        """
+        If fetching metadata fails, but we do have an account name, then we
+        fall back to normal 'register' registration.
+        """
+        self.mstore.set_accepted_types(["register"])
+        self.log_helper.ignore_errors(HTTPCodeError)
+        handler = self.get_registration_handler_for_cloud(
+            public_hostname=HTTPCodeError(404, "ohnoes"))
+        self.prepare_cloud_registration(handler,
+                                        account_name="onward",
+                                        registration_password="password")
+        self.broker_service.config.computer_title = "whatever"
+        self.reactor.fire("run")
+        self.broker_service.exchanger.exchange()
+        self.assertEquals(len(self.transport.payloads), 1)
+        self.assertMessages(self.transport.payloads[0]["messages"],
+                            [{"type": "register",
+                              "computer_title": u"whatever",
+                              "account_name": u"onward",
+                              "registration_password": u"password",
+                              "hostname": socket.gethostname()}])
 
     def test_should_register_in_cloud(self):
         """
