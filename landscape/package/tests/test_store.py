@@ -40,22 +40,28 @@ class PackageStoreTest(LandscapeTest):
 
     def test_get_hash_id_using_hash_id_dbs(self):
 
-        # Without hash_id dbs
+        # Without hash=>id dbs
         self.assertEquals(self.store1.get_hash_id("hash1"), None)
         self.assertEquals(self.store1.get_hash_id("hash2"), None)
 
+        # This hash=>id will be overriden
+        self.store1.set_hash_ids({"hash1": 1})
+
+        # Add a couple of hash=>id dbs
         def hash_id_db_factory(hash_ids):
             filename = self.makeFile()
             store = PackageStore(filename)
             store.set_hash_ids(hash_ids)
             return filename
+        self.store1.add_hash_id_db(hash_id_db_factory({"hash1": 2,
+                                                       "hash2": 3}))
+        self.store1.add_hash_id_db(hash_id_db_factory({"hash2": 4,
+                                                       "ha\x00sh1": 5}))
 
-        self.store1.add_hash_id_db(hash_id_db_factory({"hash1": 123}))
-        self.store1.add_hash_id_db(hash_id_db_factory({"hash2": 456}))
-
-        # With hash_id dbs
-        self.assertEquals(self.store1.get_hash_id("hash1"), 123)
-        self.assertEquals(self.store1.get_hash_id("hash2"), 456)
+        # Check look-up priorities and binary hashes
+        self.assertEquals(self.store1.get_hash_id("hash1"), 2)
+        self.assertEquals(self.store1.get_hash_id("hash2"), 3)
+        self.assertEquals(self.store1.get_hash_id("ha\x00sh1"), 5)
 
     def test_clear_hash_ids(self):
         self.store1.set_hash_ids({"ha\x00sh1": 123, "ha\x00sh2": 456})
