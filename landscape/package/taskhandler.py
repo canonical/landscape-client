@@ -13,9 +13,6 @@ from landscape.package.store import PackageStore
 from landscape.broker.remote import RemoteBroker
 
 
-class HashIdDbError(Exception):
-    pass
-
 class PackageTaskHandler(object):
 
     queue_name = "default"
@@ -63,12 +60,21 @@ class PackageTaskHandler(object):
 
     def use_hash_id_db(self):
         """
-        Try to attach a pre-canned hash=>id database to our store.
+        Attach the appropriate pre-canned hash=>id database to our store.
         """
         def server_uuid_loaded(ignored):
             hash_id_db_filename = self._get_hash_id_db_filename()
-            if os.path.exists(hash_id_db_filename):
-                self._store.add_hash_id_db(hash_id_db_filename)
+
+            # Couldn't determine which hash=>id database to use
+            if not hash_id_db_filename:
+                return
+
+            if not os.path.exists(hash_id_db_filename):
+                logging.warning("Couldn't find hash=>id database %s" %
+                                hash_id_db_filename)
+                return
+
+            self._store.add_hash_id_db(hash_id_db_filename)
 
         result = self._load_server_uuid()
         result.addCallback(server_uuid_loaded)
@@ -95,12 +101,11 @@ class PackageTaskHandler(object):
     def _get_hash_id_db_filename(self):
         try:
             codename = get_host_codename()
-        except CommandError:
-            raise HashIdDbError("couldn't determine Ubuntu release codename")
-        try:
             arch = get_host_arch()
         except CommandError:
-            raise HashIdDbError("couldn't determine dpkg architecture")
+            logging.warning("Couldn't determine which hash=>id database to use")
+            return None
+
         return os.path.join(self._get_hash_id_db_directory(),
                             "%s_%s_%s" % (self._server_uuid,
                                           codename,
@@ -137,8 +142,10 @@ def run_task_handler(cls, args, reactor=None):
     config.load(args)
 
     package_directory = os.path.join(config.data_path, "package")
-    if not os.path.isdir(package_directory):
-        os.mkdir(package_directory)
+    hash_id_directory = os.path.join(package_directory, "hash-id")
+    for directory in [package_directory, hash_id_directory]:
+        if not os.path.isdir(directory):
+            os.mkdir(directory)
 
     lock_filename = os.path.join(package_directory, program_name + ".lock")
     try:

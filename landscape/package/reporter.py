@@ -10,7 +10,7 @@ from twisted.internet.defer import Deferred, succeed
 
 from landscape.lib.sequenceranges import sequence_to_ranges
 from landscape.lib.twisted_util import gather_results
-from landscape.lib.fetch import fetch, HTTPCodeError
+from landscape.lib.fetch import fetch_async, FetchError
 
 from landscape.package.taskhandler import PackageTaskHandler, run_task_handler
 from landscape.package.store import UnknownHashIDRequest
@@ -51,51 +51,71 @@ class PackageReporter(PackageTaskHandler):
     def fetch_hash_id_db(self):
         """
         Fetch the appropriate pre-canned database of hash=>id mappings
-        from the server. If the database has already been downloaded
-        it won't be fetched again.
+        from the server. If the database is already present, it won't
+        be downloaded twice.
+
+        The format of the database filename is <uuid>_<codename>_<arch>,
+        and it will be downloaded from the HTTP directory set in
+        config.package_hash_id_url, or config.url/hash-id-databases if
+        the former is not set.
+
+        Fetch failures are handled gracefully and logged as appropriate.
         """
 
-        def server_uuid_loaded():
-
+        def server_uuid_loaded(ignored):
             hash_id_db_filename = self._get_hash_id_db_filename()
 
+            # Can't determine codename or arch
+            if not hash_id_db_filename:
+                return
+
+            # We don't download twice
             if os.path.exists(hash_id_db_filename):
                 return
 
-            base_url = self._config.package_hash_id_url
+            base_url = self._get_hash_id_db_base_url()
             if not base_url:
-                # If config.url is http://host:123/path/to/message-system
-                # then we'll use http://host:123/path/to/hash-id-databases
-                base_url = urlparse.urljoin(self._config.url.replace,
-                                            "hash-id-databases")
-
-            # Cast to str as pycurl doesn't like unicode
-            url = str(base_url.rstrip("/") + "/" +
-                      os.path.basename(hash_id_db_filename))
-
-            error_message = None
-            logging.info("Downloading hash=>id database from %s" % url)
-            try:
-                # XXX maybe we should add a timeout here
-                data = fetch(url)
-            except pycurl.error, error:
-                error_message = error.args[1]
-            except HTTPCodeError, error:
-                error_message = str(error)
-            if error_message is not None:
-                logging.warning("Couldn't download hash=>id"
-                                "database from %s: %s" %
-                                (url, error_message))
+                logging.warning("Can't determine the hadh=>id database url")
                 return
 
-            if not os.path.isdir(os.path.dirname(hash_id_db_filename)):
-                os.makedirs(os.path.dirname(hash_id_db_filename))
+            # Cast to str as pycurl doesn't like unicode
+            url = str(base_url + os.path.basename(hash_id_db_filename))
 
-            open(hash_id_db_filename, "w").write(data)
+            def fetch_ok(data):
+                logging.info("Downloaded hash=>id database from %s" % url)
+                open(hash_id_db_filename, "w").write(data)
+
+            def fetch_ko(failure):
+                exception = failure.value
+                logging.warning("Couldn't download hash=>id database: %s" %
+                                str(exception))
+
+            result = fetch_async(url)
+            result.addCallback(fetch_ok)
+            result.addErrback(fetch_ko)
+
+            return result
 
         result = self._load_server_uuid()
-        result.addCallback(lambda x: server_uuid_loaded())
+        result.addCallback(server_uuid_loaded)
         return result
+
+    def _get_hash_id_db_base_url(self):
+
+        base_url = self._config.get("package_hash_id_url")
+
+        if not base_url:
+
+            # We really have no idea where to download from
+            if not self._config.get("url"):
+                return None
+
+            # If config.url is http://host:123/path/to/message-system
+            # then we'll use http://host:123/path/to/hash-id-databases
+            base_url = urlparse.urljoin(self._config.url.rstrip("/"),
+                                        "hash-id-databases")
+
+        return base_url.rstrip("/") + "/"
 
     def handle_task(self, task):
         message = task.data

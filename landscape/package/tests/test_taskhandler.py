@@ -14,8 +14,7 @@ from landscape.deployment import Configuration
 from landscape.broker.remote import RemoteBroker
 
 from landscape.package.taskhandler import (
-    PackageTaskHandler, run_task_handler, get_host_codename,
-    get_host_arch, HashIdDbError)
+    PackageTaskHandler, run_task_handler, get_host_codename, get_host_arch)
 from landscape.package.facade import SmartFacade
 from landscape.package.store import PackageStore
 from landscape.package.tests.helpers import SmartFacadeHelper
@@ -37,7 +36,6 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         super(PackageTaskHandlerTest, self).setUp()
 
         self.config = Configuration()
-        self.config.data_path = self.makeDir()
         self.store = PackageStore(self.makeFile())
 
         self.handler = PackageTaskHandler(self.store, self.facade, self.remote, self.config)
@@ -54,95 +52,138 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
 
     def test_use_hash_id_db(self):
 
-        hash_id_db_directory = os.path.join(self.config.data_path,
-                                           "package/hash-id")
-        os.makedirs(hash_id_db_directory)
-        hash_id_db_filename = os.path.join(hash_id_db_directory,
-                                          "fake-uuid_hardy_i386")
+        # We don't have this hash=>id mapping
+        self.assertEquals(self.store.get_hash_id("hash"), None)
+
+        # A hash=>id database is available
+        self.config.data_path = self.makeDir()
+        os.makedirs(os.path.join(self.config.data_path, "package/hash-id"))
+        hash_id_db_filename = os.path.join(self.config.data_path,
+                                          "package/hash-id",
+                                          "uuid_codename_arch")
         PackageStore(hash_id_db_filename).set_hash_ids({"hash": 123})
+
+        # Fake uuid, codename and arch
+        remote_mock = self.mocker.patch(RemoteBroker)
+        remote_mock.get_server_uuid()
+        uuid_result = Deferred()
+        uuid_result.callback("uuid")
+        self.mocker.result(uuid_result)
+ 
         codename_mock = self.mocker.replace("landscape.package."
                                             "taskhandler.get_host_codename")
         codename_mock()
-        self.mocker.call(lambda: "hardy")
+        self.mocker.call(lambda: "codename")
 
         arch_mock = self.mocker.replace("landscape.package."
                                         "taskhandler.get_host_arch")
         arch_mock()
-        self.mocker.call(lambda: "i386")
+        self.mocker.call(lambda: "arch")
 
-        deferred = Deferred()
-        remote_mock = self.mocker.patch(RemoteBroker)
-        remote_mock.get_server_uuid()
-        self.mocker.result(deferred)
-
+        # Go!
         self.mocker.replay()
+        result = self.handler.use_hash_id_db()
 
-        self.handler.use_hash_id_db()
-
-        deferred.callback("fake-uuid")
-
+        # Now we do have the hash=>id mapping
         self.assertEquals(self.store.get_hash_id("hash"), 123)
 
-    def test_use_hash_id_db_cannot_get_codename(self):
+    def test_use_hash_id_db_undetermined_codename(self):
 
+        # Fake uuid
+        remote_mock = self.mocker.patch(RemoteBroker)
+        remote_mock.get_server_uuid()
+        uuid_result = Deferred()
+        uuid_result.callback("uuid")
+        self.mocker.result(uuid_result)
+
+        # Undetermined codename
         codename_mock = self.mocker.replace("landscape.package."
                                             "taskhandler.get_host_codename")
         codename_mock()
         self.mocker.throw(CommandError(1))
 
-        uuid_result = Deferred()
+        # The failure should be properly logged
+        logging_mock = self.mocker.replace("logging.warning")
+        logging_mock("Couldn't determine which hash=>id database to use")
+        self.mocker.result(None)
+
+        # Go!
+        self.mocker.replay()
+        result = self.handler.use_hash_id_db()
+
+        return result
+
+    def test_use_hash_id_db_undetermined_arch(self):
+
+        # Fake uuid and codename
         remote_mock = self.mocker.patch(RemoteBroker)
         remote_mock.get_server_uuid()
+        uuid_result = Deferred()
+        uuid_result.callback("uuid")
         self.mocker.result(uuid_result)
-
-        self.mocker.replay()
-
-        calls = [0]
-        result = self.handler.use_hash_id_db()
-        def errback(failure):
-            exception = failure.value
-            self.assertTrue(isinstance(exception, HashIdDbError))
-            self.assertEquals(str(exception), "couldn't determine Ubuntu release codename")
-            calls[0] += 1
-
-        result.addErrback(errback)
-
-        uuid_result.callback("fake-uuid")
-
-        self.assertEquals(calls, [1])
-
-    def test_use_hash_id_db_cannot_get_arch(self):
 
         codename_mock = self.mocker.replace("landscape.package."
                                             "taskhandler.get_host_codename")
         codename_mock()
-        self.mocker.call(lambda: "hardy")
+        self.mocker.call(lambda: "codename")
+
+        # Undetermined arch
+        arch_mock = self.mocker.replace("landscape.package."
+                                            "taskhandler.get_host_arch")
+        arch_mock()
+        self.mocker.throw(CommandError(1))
+
+        # The failure should be properly logged
+        logging_mock = self.mocker.replace("logging.warning")
+        logging_mock("Couldn't determine which hash=>id database to use")
+        self.mocker.result(None)
+
+        # Go!
+        self.mocker.replay()
+        result = self.handler.use_hash_id_db()
+
+        return result
+
+    def test_use_hash_id_db_database_not_found(self):
+
+        # We don't have this hash=>id mapping
+        self.assertEquals(self.store.get_hash_id("hash"), None)
+
+        # A hash=>id database is available
+        self.config.data_path = self.makeDir()
+
+        # Fake uuid, codename and arch
+        remote_mock = self.mocker.patch(RemoteBroker)
+        remote_mock.get_server_uuid()
+        uuid_result = Deferred()
+        uuid_result.callback("uuid")
+        self.mocker.result(uuid_result)
+ 
+        codename_mock = self.mocker.replace("landscape.package."
+                                            "taskhandler.get_host_codename")
+        codename_mock()
+        self.mocker.call(lambda: "codename")
 
         arch_mock = self.mocker.replace("landscape.package."
                                         "taskhandler.get_host_arch")
         arch_mock()
-        self.mocker.throw(CommandError(1))
+        self.mocker.call(lambda: "arch")
 
-        uuid_result = Deferred()
-        remote_mock = self.mocker.patch(RemoteBroker)
-        remote_mock.get_server_uuid()
-        self.mocker.result(uuid_result)
+        hash_id_db_filename = os.path.join(self.config.data_path,
+                                          "package/hash-id",
+                                          "uuid_codename_arch")
 
+        # The failure should be properly logged
+        logging_mock = self.mocker.replace("logging.warning")
+        logging_mock("Couldn't find hash=>id database %s" %
+                     hash_id_db_filename)
+        self.mocker.result(None)
+
+        # Go!
         self.mocker.replay()
-
-        calls = [0]
         result = self.handler.use_hash_id_db()
-        def errback(failure):
-            exception = failure.value
-            self.assertTrue(isinstance(exception, HashIdDbError))
-            self.assertEquals(str(exception), "couldn't determine dpkg architecture")
-            calls[0] += 1
 
-        result.addErrback(errback)
-
-        uuid_result.callback("fake-uuid")
-
-        self.assertEquals(calls, [1])
+        return result
 
     def test_run(self):
         handler_mock = self.mocker.patch(self.handler)
@@ -342,6 +383,10 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         store.add_available([1, 2, 3])
         other_store = PackageStore(filename)
         self.assertEquals(other_store.get_available(), [1, 2, 3])
+
+        # Chech the hash=>id database directory as well
+        self.assertTrue(os.path.exists(os.path.join(data_path,
+                                                    "package/hash-id")))
 
     def test_run_task_handler_when_already_locked(self):
         data_path = self.makeDir()
