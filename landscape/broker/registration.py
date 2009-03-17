@@ -127,13 +127,20 @@ class RegistrationHandler(object):
                 "exchange-url": user_data["exchange-url"],
                 "ping-url": user_data["ping-url"]}
 
+    def _safe_fetch(self, url):
+        """Perform a fetch and ignore (and log) any failures that occur.
+
+        If an error occurs, the returned Deferred will fire with None.
+        """
+        return self._fetch_async(url).addErrback(log_failure)
+
     def _fetch_ec2_data(self):
         id = self._identity
         if self._cloud and not id.secure_id:
             # Fetch data from the EC2 API, to be used later in the registration
             # process
             registration_data = gather_results([
-                self._fetch_async(EC2_API + "/user-data"),
+                self._safe_fetch(EC2_API + "/user-data"),
                 self._fetch_async(EC2_API + "/meta-data/instance-id"),
                 self._fetch_async(EC2_API + "/meta-data/reservation-id"),
                 self._fetch_async(EC2_API + "/meta-data/local-hostname"),
@@ -180,6 +187,7 @@ class RegistrationHandler(object):
                 log_failure(error, msg="Got error while fetching meta-data: %r"
                             % (error.value,))
 
+            # It sucks that this deferred is never returned
             registration_data.addCallback(record_data)
             registration_data.addErrback(log_error)
 
