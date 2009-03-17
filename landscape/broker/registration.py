@@ -128,20 +128,18 @@ class RegistrationHandler(object):
                 "exchange-url": user_data["exchange-url"],
                 "ping-url": user_data["ping-url"]}
 
-    def _safe_fetch(self, url):
-        """Perform a fetch and ignore (and log) any failures that occur.
-
-        If an error occurs, the returned Deferred will fire with None.
-        """
-        return self._fetch_async(url).addErrback(log_failure)
-
     def _fetch_ec2_data(self):
         id = self._identity
         if self._cloud and not id.secure_id:
             # Fetch data from the EC2 API, to be used later in the registration
             # process
             registration_data = gather_results([
-                self._safe_fetch(EC2_API + "/user-data"),
+                # We ignore errors from user-data because it's common for the
+                # URL to return a 404 when the data is unavailable.
+                self._fetch_async(EC2_API + "/user-data")
+                    .addErrback(log_failure),
+                # The rest of the fetches don't get protected because we just
+                # fall back to regular registration if any of them don't work.
                 self._fetch_async(EC2_API + "/meta-data/instance-id"),
                 self._fetch_async(EC2_API + "/meta-data/reservation-id"),
                 self._fetch_async(EC2_API + "/meta-data/local-hostname"),
