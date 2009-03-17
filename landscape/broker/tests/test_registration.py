@@ -593,6 +593,8 @@ class RegistrationTest(LandscapeTest):
         self.log_helper.ignore_errors("Got error while fetching meta-data")
         self.reactor.fire("run")
         exchanger.exchange()
+        self.assertIn('error: (7, "couldn\'t connect to host")',
+                      self.logfile.getvalue())
 
     def test_cloud_registration_continues_without_user_data(self):
         """
@@ -608,6 +610,8 @@ class RegistrationTest(LandscapeTest):
 
         self.reactor.fire("run")
         self.broker_service.exchanger.exchange()
+        self.assertIn("HTTPCodeError: Server returned HTTP code 404",
+                      self.logfile.getvalue())
         self.assertEquals(len(self.transport.payloads), 1)
         self.assertMessages(self.transport.payloads[0]["messages"],
                             [self.get_expected_cloud_message(
@@ -630,6 +634,8 @@ class RegistrationTest(LandscapeTest):
         self.broker_service.config.computer_title = "whatever"
         self.reactor.fire("run")
         self.broker_service.exchanger.exchange()
+        self.assertIn("HTTPCodeError: Server returned HTTP code 404",
+                      self.logfile.getvalue())
         self.assertEquals(len(self.transport.payloads), 1)
         self.assertMessages(self.transport.payloads[0]["messages"],
                             [{"type": "register",
