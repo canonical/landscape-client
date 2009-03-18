@@ -64,13 +64,14 @@ class PackageTaskHandler(object):
         def server_uuid_loaded(ignored):
             hash_id_db_filename = self._get_hash_id_db_filename()
 
-            # Couldn't determine which hash=>id database to use
             if not hash_id_db_filename:
+                # Couldn't determine which hash=>id database to use,
+                # just ignore the failure and go on
                 return
 
             if not os.path.exists(hash_id_db_filename):
-                logging.warning("Couldn't find hash=>id database %s" %
-                                hash_id_db_filename)
+                # The appropriate database isn't ther, but nevermind
+                # and just go on
                 return
 
             self._store.add_hash_id_db(hash_id_db_filename)

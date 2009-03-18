@@ -173,12 +173,6 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
                                           "package/hash-id",
                                           "uuid_codename_arch")
 
-        # The failure should be properly logged
-        logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("Couldn't find hash=>id database %s" %
-                     hash_id_db_filename)
-        self.mocker.result(None)
-
         # Go!
         self.mocker.replay()
         result = self.handler.use_hash_id_db()
