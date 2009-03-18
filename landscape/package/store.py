@@ -55,7 +55,7 @@ class PackageStore(object):
             database, in the same the order they were added.
 
             The hash=>id database must have a table called "hash" with a
-            compatbile schema (see the ensure_schema() function).
+            compatible schema (see the ensure_schema() function).
         """
         # XXX possibly add some validation code here, to check that filename
         # is actually a SQLite database with the appropriate schema

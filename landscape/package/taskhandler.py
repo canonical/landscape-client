@@ -69,7 +69,7 @@ class PackageTaskHandler(object):
                 return
 
             if not os.path.exists(hash_id_db_filename):
-                # The appropriate database isn't ther, but nevermind
+                # The appropriate database isn't there, but nevermind
                 # and just go on
                 return
 

@@ -408,7 +408,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         # The failure should be properly logged
         logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("Can't determine the hadh=>id database url")
+        logging_mock("Can't determine the hash=>id database url")
         self.mocker.result(None)
 
         # Now go!
@@ -480,7 +480,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
  
         # The failure should be properly logged
         logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("Can't determine the hadh=>id database url")
+        logging_mock("Can't determine the hash=>id database url")
         self.mocker.result(None)
 
         # Let's go

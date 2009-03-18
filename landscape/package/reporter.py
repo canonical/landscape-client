@@ -75,7 +75,7 @@ class PackageReporter(PackageTaskHandler):
 
             base_url = self._get_hash_id_db_base_url()
             if not base_url:
-                logging.warning("Can't determine the hadh=>id database url")
+                logging.warning("Can't determine the hash=>id database url")
                 return
 
             # Cast to str as pycurl doesn't like unicode
@@ -85,14 +85,14 @@ class PackageReporter(PackageTaskHandler):
                 logging.info("Downloaded hash=>id database from %s" % url)
                 open(hash_id_db_filename, "w").write(data)
 
-            def fetch_ko(failure):
+            def fetch_error(failure):
                 exception = failure.value
                 logging.warning("Couldn't download hash=>id database: %s" %
                                 str(exception))
 
             result = fetch_async(url)
             result.addCallback(fetch_ok)
-            result.addErrback(fetch_ko)
+            result.addErrback(fetch_error)
 
             return result
 
@@ -106,8 +106,8 @@ class PackageReporter(PackageTaskHandler):
 
         if not base_url:
 
-            # We really have no idea where to download from
             if not self._config.get("url"):
+                # We really have no idea where to download from
                 return None
 
             # If config.url is http://host:123/path/to/message-system
