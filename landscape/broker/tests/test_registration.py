@@ -585,14 +585,13 @@ class RegistrationTest(LandscapeTest):
 
         self.prepare_cloud_registration(handler)
 
-        # Mock registration-failed call. why? I don't know.
-        reactor_mock = self.mocker.patch(self.reactor)
-        reactor_mock.fire("registration-failed")
-        self.mocker.replay()
+        failed = []
+        self.reactor.call_on("registration-failed", lambda: failed.append(True))
 
         self.log_helper.ignore_errors("Got error while fetching meta-data")
         self.reactor.fire("run")
         exchanger.exchange()
+        self.assertEquals(failed, [True])
         self.assertIn('error: (7, "couldn\'t connect to host")',
                       self.logfile.getvalue())
 
