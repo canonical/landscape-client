@@ -61,6 +61,9 @@ class PackageStore(object):
         # is actually a SQLite database with the appropriate schema
         self._hash_id_dbs.append(sqlite3.connect(filename))
 
+    def has_hash_id_db(self):
+        return len(self._hash_id_dbs) > 0
+
     @with_cursor
     def set_hash_ids(self, cursor, hash_ids):
         for hash, id in hash_ids.iteritems():

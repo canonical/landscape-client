@@ -38,6 +38,16 @@ class PackageStoreTest(LandscapeTest):
         self.assertEquals(self.store2.get_id_hash(123), "hash1")
         self.assertEquals(self.store2.get_id_hash(456), "hash2")
 
+    def test_has_hash_id_db(self):
+
+        self.assertFalse(self.store1.has_hash_id_db())
+
+        hash_id_db_filename = self.makeFile()
+        PackageStore(hash_id_db_filename)
+        self.store1.add_hash_id_db(hash_id_db_filename)
+
+        self.assertTrue(self.store1.has_hash_id_db())
+
     def test_get_hash_id_using_hash_id_dbs(self):
 
         # Without hash=>id dbs
