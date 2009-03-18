@@ -56,10 +56,9 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
 
         # An appropriate hash=>id database is available
         self.config.data_path = self.makeDir()
-        os.makedirs(os.path.join(self.config.data_path, "package/hash-id"))
-        hash_id_db_filename = os.path.join(self.config.data_path,
-                                          "package/hash-id",
-                                          "uuid_codename_arch")
+        os.makedirs(os.path.join(self.config.data_path, "package", "hash-id"))
+        hash_id_db_filename = os.path.join(self.config.data_path, "package",
+                                           "hash-id", "uuid_codename_arch")
         PackageStore(hash_id_db_filename).set_hash_ids({"hash": 123})
 
         # Fake uuid, codename and arch
@@ -266,7 +265,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         # Then, we must acquire a lock as the same task handler should
         # never have two instances running in parallel.  The 'default'
         # below comes from the queue_name attribute.
-        lock_path_mock(os.path.join(data_path, "package/default.lock"))
+        lock_path_mock(os.path.join(data_path, "package", "default.lock"))
 
         # Once locking is done, it's safe to start logging without
         # corrupting the file.  We don't want any output unless it's
@@ -335,14 +334,14 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         self.assertEquals(type(config), Configuration)
 
         # Let's see if the store path is where it should be.
-        filename = os.path.join(data_path, "package/database")
+        filename = os.path.join(data_path, "package", "database")
         store.add_available([1, 2, 3])
         other_store = PackageStore(filename)
         self.assertEquals(other_store.get_available(), [1, 2, 3])
 
         # Check the hash=>id database directory as well
         self.assertTrue(os.path.exists(os.path.join(data_path,
-                                                    "package/hash-id")))
+                                                    "package", "hash-id")))
 
     def test_run_task_handler_when_already_locked(self):
         data_path = self.makeDir()
@@ -354,7 +353,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         self.mocker.replay()
 
         os.mkdir(os.path.join(data_path, "package"))
-        lock_path(os.path.join(data_path, "package/default.lock"))
+        lock_path(os.path.join(data_path, "package", "default.lock"))
 
         try:
             run_task_handler(PackageTaskHandler, ["--data-path", data_path])
@@ -373,7 +372,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         self.mocker.replay()
 
         os.mkdir(os.path.join(data_path, "package"))
-        lock_path(os.path.join(data_path, "package/default.lock"))
+        lock_path(os.path.join(data_path, "package", "default.lock"))
 
         try:
             run_task_handler(PackageTaskHandler,

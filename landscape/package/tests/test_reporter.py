@@ -228,10 +228,9 @@ class PackageReporterTest(LandscapeIsolatedTest):
         # Assume package_hash_id_url is set
         self.config.data_path = self.makeDir()
         self.config.package_hash_id_url = "http://fake.url/path/"
-        os.makedirs(os.path.join(self.config.data_path, "package/hash-id"))
-        hash_id_db_filename = os.path.join(self.config.data_path,
-                                          "package/hash-id",
-                                          "uuid_codename_arch")
+        os.makedirs(os.path.join(self.config.data_path, "package", "hash-id"))
+        hash_id_db_filename = os.path.join(self.config.data_path, "package",
+                                           "hash-id", "uuid_codename_arch")
 
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
@@ -274,10 +273,9 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         # Let's say that the hash=>id database is already there
         self.config.data_path = self.makeDir()
-        os.makedirs(os.path.join(self.config.data_path, "package/hash-id"))
-        hash_id_db_filename = os.path.join(self.config.data_path,
-                                          "package/hash-id",
-                                          "uuid_codename_arch")
+        os.makedirs(os.path.join(self.config.data_path, "package", "hash-id"))
+        hash_id_db_filename = os.path.join(self.config.data_path, "package",
+                                           "hash-id", "uuid_codename_arch")
         open(hash_id_db_filename, "w").write("test")
 
         # Fake uuid, codename and arch
@@ -356,10 +354,9 @@ class PackageReporterTest(LandscapeIsolatedTest):
         self.config.data_path = self.makeDir()
         self.config.package_hash_id_url = None
         self.config.url = "http://fake.url/path/message-system/"
-        os.makedirs(os.path.join(self.config.data_path, "package/hash-id"))
-        hash_id_db_filename = os.path.join(self.config.data_path,
-                                          "package/hash-id",
-                                          "uuid_codename_arch")
+        os.makedirs(os.path.join(self.config.data_path, "package", "hash-id"))
+        hash_id_db_filename = os.path.join(self.config.data_path, "package",
+                                           "hash-id", "uuid_codename_arch")
 
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
@@ -424,9 +421,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         # We shouldn't have any hash=>id database
         def callback(ignored):
-            hash_id_db_filename = os.path.join(self.config.data_path,
-                                               "package/hash-id",
-                                               "uuid_codename_arch")
+            hash_id_db_filename = os.path.join(self.config.data_path, "package",
+                                               "hash-id", "uuid_codename_arch")
             self.assertEquals(os.path.exists(hash_id_db_filename), False)
         result.addCallback(callback)
 
@@ -459,9 +455,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
  
         # We shouldn't have any hash=>id database
         def callback(ignored):
-            hash_id_db_filename = os.path.join(self.config.data_path,
-                                               "package/hash-id",
-                                               "uuid_codename_arch")
+            hash_id_db_filename = os.path.join(self.config.data_path, "package",
+                                               "hash-id", "uuid_codename_arch")
             self.assertEquals(os.path.exists(hash_id_db_filename), False)
         result.addCallback(callback)
 
