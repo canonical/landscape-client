@@ -8,7 +8,7 @@ class CommandError(Exception):
         self.output = output
 
     def __str__(self):
-        return "Command '%s' exited with status %d (%s)" % (
+        return "'%s' exited with status %d (%s)" % (
             self.command, self.exit_status, self.output)
 
     def __repr__(self):

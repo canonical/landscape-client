@@ -23,7 +23,7 @@ class CommandTest(LandscapeTest):
 
     def test_error_str(self):
         self.assertEquals(str(CommandError("test_command", 1, "test output")),
-                          "Command 'test_command' exited with status 1 "
+                          "'test_command' exited with status 1 "
                           "(test output)")
 
     def test_error_repr(self):
