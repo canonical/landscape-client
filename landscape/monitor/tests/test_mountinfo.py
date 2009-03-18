@@ -1,5 +1,7 @@
 import tempfile
 
+from twisted.internet.defer import succeed
+
 from landscape.monitor.mountinfo import MountInfo
 from landscape.tests.test_hal import MockHALManager, MockRealHALDevice
 from landscape.tests.helpers import (LandscapeTest, MakePathHelper,
@@ -38,7 +40,7 @@ class MountInfoTest(LandscapeTest):
         """
         plugin = self.get_mount_info(create_time=self.reactor.time)
         self.monitor.add(plugin)
-        
+
         self.reactor.advance(self.monitor.step_size)
 
         message = plugin.create_mount_info_message()
@@ -675,8 +677,49 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
 
         remote_broker_mock = self.mocker.replace(self.remote)
         remote_broker_mock.send_message(ANY, urgent=True)
+        self.mocker.result(succeed(None))
         self.mocker.count(3)
         self.mocker.replay()
 
         self.reactor.fire(("message-type-acceptance-changed", "mount-info"),
                           True)
+
+    def test_persist_timing(self):
+        """Mount info are only persisted when exchange happens.
+
+        Previously mount info were persisted was soon as they were gathered: if
+        an event happened between the persist and the exchange, the server
+        didn't get the mount info at all. This test ensures that mount info are
+        only saved when exchange happens.
+        """
+        def statvfs(path):
+            return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
+
+        filename = self.make_path("""\
+/dev/hda1 / ext3 rw 0 0
+""")
+        plugin = MountInfo(mounts_file=filename, create_time=self.reactor.time,
+                           statvfs=statvfs, mtab_file=filename)
+        self.monitor.add(plugin)
+        plugin.run()
+        message1 = plugin.create_mount_info_message()
+        self.assertEquals(
+            message1.get("mount-info"),
+            [(0, {"device": "/dev/hda1",
+                  "filesystem": "ext3",
+                  "mount-point": "/",
+                  "total-space": 4096000L})])
+        plugin.run()
+        message2 = plugin.create_mount_info_message()
+        self.assertEquals(
+            message2.get("mount-info"),
+            [(0, {"device": "/dev/hda1",
+                  "filesystem": "ext3",
+                  "mount-point": "/",
+                  "total-space": 4096000L})])
+        # Run again, calling create_mount_info_message purge the information
+        plugin.run()
+        plugin.exchange()
+        plugin.run()
+        message3 = plugin.create_mount_info_message()
+        self.assertIdentical(message3, None)
