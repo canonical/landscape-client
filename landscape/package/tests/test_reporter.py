@@ -300,7 +300,6 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         return result
 
-
     def test_fetch_hash_id_db_undetermined_codename(self):
 
         # Fake uuid

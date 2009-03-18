@@ -69,7 +69,7 @@ class PackageReporter(PackageTaskHandler):
                 # just ignore the failure and go on
                 return
 
-            if os.path.exists(hash_id_db_filename): 
+            if os.path.exists(hash_id_db_filename):
                 # We don't download twice
                 return
 
