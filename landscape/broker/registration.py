@@ -51,7 +51,7 @@ class RegistrationHandler(object):
     An object from which registration can be requested of the server,
     and which will handle forced ID changes from the server.
 
-    L{register} should be used to initial registration.
+    L{register} should be used to perform initial registration.
     """
 
     def __init__(self, config, identity, reactor, exchange, pinger,
@@ -73,6 +73,7 @@ class RegistrationHandler(object):
         self._cloud = cloud
         self._fetch_async = fetch_async
         self._otp = None
+        self._ec2_data = None
 
     def should_register(self):
         id = self._identity
@@ -133,7 +134,12 @@ class RegistrationHandler(object):
             # Fetch data from the EC2 API, to be used later in the registration
             # process
             registration_data = gather_results([
-                self._fetch_async(EC2_API + "/user-data"),
+                # We ignore errors from user-data because it's common for the
+                # URL to return a 404 when the data is unavailable.
+                self._fetch_async(EC2_API + "/user-data")
+                    .addErrback(log_failure),
+                # The rest of the fetches don't get protected because we just
+                # fall back to regular registration if any of them don't work.
                 self._fetch_async(EC2_API + "/meta-data/instance-id"),
                 self._fetch_async(EC2_API + "/meta-data/reservation-id"),
                 self._fetch_async(EC2_API + "/meta-data/local-hostname"),
@@ -180,6 +186,7 @@ class RegistrationHandler(object):
                 log_failure(error, msg="Got error while fetching meta-data: %r"
                             % (error.value,))
 
+            # It sucks that this deferred is never returned
             registration_data.addCallback(record_data)
             registration_data.addErrback(log_error)
 
@@ -206,7 +213,7 @@ class RegistrationHandler(object):
             id = self._identity
 
             self._message_store.delete_all_messages()
-            if self._cloud:
+            if self._cloud and self._ec2_data is not None:
                 if self._otp:
                     logging.info("Queueing message to register with OTP")
                     message = {"type": "register-cloud-vm",
@@ -230,7 +237,7 @@ class RegistrationHandler(object):
                     self._exchange.send(message)
                 else:
                     self._reactor.fire("registration-failed")
-            else:
+            elif id.account_name:
                 with_word = ["without", "with"][bool(id.registration_password)]
                 logging.info("Queueing message to register with account %r %s "
                              "a password." % (id.account_name, with_word))
@@ -240,8 +247,9 @@ class RegistrationHandler(object):
                            "account_name": id.account_name,
                            "registration_password": id.registration_password,
                            "hostname": socket.gethostname()}
-
                 self._exchange.send(message)
+            else:
+                self._reactor.fire("registration-failed")
 
     def _handle_set_id(self, message):
         """

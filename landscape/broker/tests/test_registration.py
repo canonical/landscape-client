@@ -10,6 +10,7 @@ from landscape.broker.registration import (
 from landscape.broker.deployment import BrokerConfiguration
 from landscape.tests.helpers import LandscapeTest, ExchangeHelper
 from landscape.lib.bpickle import dumps
+from landscape.lib.fetch import HTTPCodeError
 
 
 class RegistrationTest(LandscapeTest):
@@ -350,7 +351,8 @@ class RegistrationTest(LandscapeTest):
         image_key=u"image1"):
         if user_data is None:
             user_data = self.get_user_data()
-        user_data = dumps(user_data)
+        if not isinstance(user_data, Exception):
+            user_data = dumps(user_data)
         api_base = "http://169.254.169.254/latest"
         query_results = {}
         for url_suffix, value in [
@@ -367,7 +369,11 @@ class RegistrationTest(LandscapeTest):
             query_results[api_base + url_suffix] = value
 
         def fetch_stub(url):
-            return succeed(query_results[url])
+            value = query_results[url]
+            if isinstance(value, Exception):
+                return fail(value)
+            else:
+                return succeed(value)
 
         exchanger = self.broker_service.exchanger
         handler = RegistrationHandler(self.broker_service.config,
@@ -557,6 +563,11 @@ class RegistrationTest(LandscapeTest):
         self.assertEquals(messages[0]["type"], "register-cloud-vm")
 
     def test_cloud_registration_fetch_errors(self):
+        """
+        If fetching metadata fails, and we have no account details to fall
+        back to, we fire 'registration-failed'.
+        """
+        self.log_helper.ignore_errors(pycurl.error)
         config = self.broker_service.config
 
         def fetch_stub(url):
@@ -574,14 +585,63 @@ class RegistrationTest(LandscapeTest):
 
         self.prepare_cloud_registration(handler)
 
-        # Mock registration-failed call
-        reactor_mock = self.mocker.patch(self.reactor)
-        reactor_mock.fire("registration-failed")
-        self.mocker.replay()
+        failed = []
+        self.reactor.call_on("registration-failed", lambda: failed.append(True))
 
         self.log_helper.ignore_errors("Got error while fetching meta-data")
         self.reactor.fire("run")
         exchanger.exchange()
+        self.assertEquals(failed, [True])
+        self.assertIn('error: (7, "couldn\'t connect to host")',
+                      self.logfile.getvalue())
+
+    def test_cloud_registration_continues_without_user_data(self):
+        """
+        If no user-data exists (i.e., the user-data URL returns a 404), then
+        register-cloud-vm still occurs.
+        """
+        self.log_helper.ignore_errors(HTTPCodeError)
+        handler = self.get_registration_handler_for_cloud(
+            user_data=HTTPCodeError(404, "ohno"))
+        self.prepare_cloud_registration(handler,
+                                        account_name="onward",
+                                        registration_password="password")
+
+        self.reactor.fire("run")
+        self.broker_service.exchanger.exchange()
+        self.assertIn("HTTPCodeError: Server returned HTTP code 404",
+                      self.logfile.getvalue())
+        self.assertEquals(len(self.transport.payloads), 1)
+        self.assertMessages(self.transport.payloads[0]["messages"],
+                            [self.get_expected_cloud_message(
+                                otp=None,
+                                account_name=u"onward",
+                                registration_password=u"password")])
+
+    def test_fall_back_to_normal_registration_when_metadata_fetch_fails(self):
+        """
+        If fetching metadata fails, but we do have an account name, then we
+        fall back to normal 'register' registration.
+        """
+        self.mstore.set_accepted_types(["register"])
+        self.log_helper.ignore_errors(HTTPCodeError)
+        handler = self.get_registration_handler_for_cloud(
+            public_hostname=HTTPCodeError(404, "ohnoes"))
+        self.prepare_cloud_registration(handler,
+                                        account_name="onward",
+                                        registration_password="password")
+        self.broker_service.config.computer_title = "whatever"
+        self.reactor.fire("run")
+        self.broker_service.exchanger.exchange()
+        self.assertIn("HTTPCodeError: Server returned HTTP code 404",
+                      self.logfile.getvalue())
+        self.assertEquals(len(self.transport.payloads), 1)
+        self.assertMessages(self.transport.payloads[0]["messages"],
+                            [{"type": "register",
+                              "computer_title": u"whatever",
+                              "account_name": u"onward",
+                              "registration_password": u"password",
+                              "hostname": socket.gethostname()}])
 
     def test_should_register_in_cloud(self):
         """
