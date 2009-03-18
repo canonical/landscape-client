@@ -390,33 +390,6 @@ class PackageReporterTest(LandscapeIsolatedTest):
         result.addCallback(callback)
         return result
 
-    def test_fetch_hash_id_db_with_undetermined_url(self):
-
-        # We have no way to guess the url
-        self.config.data_path = self.makeDir()
-        self.config.package_hash_id_url = None
-        self.config.url = None
-
-        # Fake uuid, codename and arch
-        message_store = self.broker_service.message_store
-        message_store.set_server_uuid("uuid")
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        self.mocker.result("codename")
-        command_mock("dpkg --print-architecture")
-        self.mocker.result("arch")
-
-        # The failure should be properly logged
-        logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("Can't determine the hash=>id database url")
-        self.mocker.result(None)
-
-        # Now go!
-        self.mocker.replay()
-        result = self.reporter.fetch_hash_id_db()
-
-        return result
-
     def test_fetch_hash_id_db_with_download_error(self):
 
         # Assume package_hash_id_url is set
@@ -466,12 +439,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
         self.config.package_hash_id_url = None
 
         # Fake uuid, codename and arch
-        remote_mock = self.mocker.patch(RemoteBroker)
-        remote_mock.get_server_uuid()
-        uuid_result = Deferred()
-        uuid_result.callback("uuid")
-        self.mocker.result(uuid_result)
-
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid")
         command_mock = self.mocker.replace("landscape.lib.command.run_command")
         command_mock("lsb_release -cs")
         self.mocker.result("codename")
