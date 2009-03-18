@@ -13,8 +13,7 @@ from landscape.lib.command import CommandError
 from landscape.deployment import Configuration
 from landscape.broker.remote import RemoteBroker
 
-from landscape.package.taskhandler import (
-    PackageTaskHandler, run_task_handler, get_host_codename, get_host_arch)
+from landscape.package.taskhandler import PackageTaskHandler, run_task_handler
 from landscape.package.facade import SmartFacade
 from landscape.package.store import PackageStore
 from landscape.package.tests.helpers import SmartFacadeHelper
@@ -70,15 +69,11 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         uuid_result.callback("uuid")
         self.mocker.result(uuid_result)
  
-        codename_mock = self.mocker.replace("landscape.package."
-                                            "taskhandler.get_host_codename")
-        codename_mock()
-        self.mocker.call(lambda: "codename")
-
-        arch_mock = self.mocker.replace("landscape.package."
-                                        "taskhandler.get_host_arch")
-        arch_mock()
-        self.mocker.call(lambda: "arch")
+        command_mock = self.mocker.replace("landscape.lib.command.run_command")
+        command_mock("lsb_release -cs")
+        self.mocker.result("codename")
+        command_mock("dpkg --print-architecture")
+        self.mocker.result("arch")
 
         # Go!
         self.mocker.replay()
@@ -97,14 +92,15 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         self.mocker.result(uuid_result)
 
         # Undetermined codename
-        codename_mock = self.mocker.replace("landscape.package."
-                                            "taskhandler.get_host_codename")
-        codename_mock()
-        self.mocker.throw(CommandError(1))
+        command_mock = self.mocker.replace("landscape.lib.command.run_command")
+        command_mock("lsb_release -cs")
+        command_error = CommandError("lsb_release -cs", 1, "error")
+        self.mocker.throw(command_error)
 
         # The failure should be properly logged
         logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("Couldn't determine which hash=>id database to use")
+        logging_mock("Couldn't determine which hash=>id database to use: %s" %
+                     str(command_error))
         self.mocker.result(None)
 
         # Go!
@@ -122,20 +118,19 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         uuid_result.callback("uuid")
         self.mocker.result(uuid_result)
 
-        codename_mock = self.mocker.replace("landscape.package."
-                                            "taskhandler.get_host_codename")
-        codename_mock()
-        self.mocker.call(lambda: "codename")
+        command_mock = self.mocker.replace("landscape.lib.command.run_command")
+        command_mock("lsb_release -cs")
+        self.mocker.result("codename")
 
         # Undetermined arch
-        arch_mock = self.mocker.replace("landscape.package."
-                                            "taskhandler.get_host_arch")
-        arch_mock()
-        self.mocker.throw(CommandError(1))
+        command_mock("dpkg --print-architecture")
+        command_error = CommandError("dpkg --print-architecture", 1, "error")
+        self.mocker.throw(command_error)
 
         # The failure should be properly logged
         logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("Couldn't determine which hash=>id database to use")
+        logging_mock("Couldn't determine which hash=>id database to use: %s" %
+                     str(command_error))
         self.mocker.result(None)
 
         # Go!
@@ -159,19 +154,11 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         uuid_result.callback("uuid")
         self.mocker.result(uuid_result)
  
-        codename_mock = self.mocker.replace("landscape.package."
-                                            "taskhandler.get_host_codename")
-        codename_mock()
-        self.mocker.call(lambda: "codename")
-
-        arch_mock = self.mocker.replace("landscape.package."
-                                        "taskhandler.get_host_arch")
-        arch_mock()
-        self.mocker.call(lambda: "arch")
-
-        hash_id_db_filename = os.path.join(self.config.data_path,
-                                          "package/hash-id",
-                                          "uuid_codename_arch")
+        command_mock = self.mocker.replace("landscape.lib.command.run_command")
+        command_mock("lsb_release -cs")
+        self.mocker.result("codename")
+        command_mock("dpkg --print-architecture")
+        self.mocker.result("arch")
 
         # Go!
         self.mocker.replay()
@@ -258,22 +245,6 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         result = self.handler.handle_task(None)
         self.assertTrue(isinstance(result, Deferred))
         self.assertTrue(result.called)
-
-    def test_get_host_codename_fails(self):
-        run_command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        run_command_mock("lsb_release -cs")
-        self.mocker.throw(CommandError(1))
-        self.mocker.replay()
-
-        self.assertRaises(CommandError, get_host_codename)
-
-    def test_get_host_arch_fails(self):
-        run_command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        run_command_mock("dpkg --print-architecture")
-        self.mocker.throw(CommandError(1))
-        self.mocker.replay()
-
-        self.assertRaises(CommandError, get_host_arch)
 
     def test_run_task_handler(self):
 

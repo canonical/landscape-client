@@ -100,32 +100,18 @@ class PackageTaskHandler(object):
 
     def _get_hash_id_db_filename(self):
         try:
-            codename = get_host_codename()
-            arch = get_host_arch()
-        except CommandError:
-            logging.warning("Couldn't determine which hash=>id database to use")
+            # XXX we should add some methods to the Smart facade to get these
+            codename = run_command("lsb_release -cs")
+            arch = run_command("dpkg --print-architecture")
+        except CommandError, error:
+            logging.warning("Couldn't determine which hash=>id database "
+                            "to use: %s" % str(error))
             return None
 
         return os.path.join(self._get_hash_id_db_directory(),
                             "%s_%s_%s" % (self._server_uuid,
                                           codename,
                                           arch))
-
-# XXX this function should be added to the Smart facade
-def get_host_codename():
-    """
-    Return the Ubuntu release codename of the host system, raise
-    CommandError in case of failure
-    """
-    return run_command("lsb_release -cs")
-
-# XXX ths function should be added to the Smart facade
-def get_host_arch():
-    """
-    Return the dpkg architecture of the host system, raise CommandError
-    in case of failure
-    """
-    return run_command("dpkg --print-architecture")
 
 def run_task_handler(cls, args, reactor=None):
     from twisted.internet.glib2reactor import install

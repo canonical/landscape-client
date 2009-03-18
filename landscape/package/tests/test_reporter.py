@@ -240,15 +240,11 @@ class PackageReporterTest(LandscapeIsolatedTest):
         uuid_result.callback("uuid")
         self.mocker.result(uuid_result)
  
-        codename_mock = self.mocker.replace("landscape.package."
-                                            "taskhandler.get_host_codename")
-        codename_mock()
-        self.mocker.call(lambda: "codename")
-
-        arch_mock = self.mocker.replace("landscape.package."
-                                        "taskhandler.get_host_arch")
-        arch_mock()
-        self.mocker.call(lambda: "arch")
+        command_mock = self.mocker.replace("landscape.lib.command.run_command")
+        command_mock("lsb_release -cs")
+        self.mocker.result("codename")
+        command_mock("dpkg --print-architecture")
+        self.mocker.result("arch")
 
         # Let's say fetch_async is successful
         hash_id_db_url = self.config.package_hash_id_url + "uuid_codename_arch"
@@ -278,7 +274,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
     def test_fetch_hash_id_db_does_not_download_twice(self):
 
-        # Let's sayt that the hash=>id database is already there
+        # Let's say that the hash=>id database is already there
         self.config.data_path = self.makeDir()
         os.makedirs(os.path.join(self.config.data_path, "package/hash-id"))
         hash_id_db_filename = os.path.join(self.config.data_path,
@@ -293,15 +289,11 @@ class PackageReporterTest(LandscapeIsolatedTest):
         uuid_result.callback("uuid")
         self.mocker.result(uuid_result)
  
-        codename_mock = self.mocker.replace("landscape.package."
-                                            "taskhandler.get_host_codename")
-        codename_mock()
-        self.mocker.call(lambda: "codename")
-
-        arch_mock = self.mocker.replace("landscape.package."
-                                        "taskhandler.get_host_arch")
-        arch_mock()
-        self.mocker.call(lambda: "arch")
+        command_mock = self.mocker.replace("landscape.lib.command.run_command")
+        command_mock("lsb_release -cs")
+        self.mocker.result("codename")
+        command_mock("dpkg --print-architecture")
+        self.mocker.result("arch")
 
         # Go!
         self.mocker.replay()
@@ -323,14 +315,15 @@ class PackageReporterTest(LandscapeIsolatedTest):
         self.mocker.result(uuid_result)
 
         # Undetermined codename
-        codename_mock = self.mocker.replace("landscape.package."
-                                            "taskhandler.get_host_codename")
-        codename_mock()
-        self.mocker.throw(CommandError(1))
+        command_mock = self.mocker.replace("landscape.lib.command.run_command")
+        command_mock("lsb_release -cs")
+        command_error = CommandError("lsb_release -cs", 1, "error")
+        self.mocker.throw(command_error)
 
         # The failure should be properly logged
         logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("Couldn't determine which hash=>id database to use")
+        logging_mock("Couldn't determine which hash=>id database to use: %s" %
+                     str(command_error))
         self.mocker.result(None)
 
         # Go!
@@ -348,20 +341,19 @@ class PackageReporterTest(LandscapeIsolatedTest):
         uuid_result.callback("uuid")
         self.mocker.result(uuid_result)
 
-        codename_mock = self.mocker.replace("landscape.package."
-                                            "taskhandler.get_host_codename")
-        codename_mock()
-        self.mocker.call(lambda: "codename")
+        command_mock = self.mocker.replace("landscape.lib.command.run_command")
+        command_mock("lsb_release -cs")
+        self.mocker.result("codename")
 
         # Undetermined arch
-        arch_mock = self.mocker.replace("landscape.package."
-                                            "taskhandler.get_host_arch")
-        arch_mock()
-        self.mocker.throw(CommandError(1))
+        command_mock("dpkg --print-architecture")
+        command_error = CommandError("dpkg --print-architecture", 1, "error")
+        self.mocker.throw(command_error)
 
         # The failure should be properly logged
         logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("Couldn't determine which hash=>id database to use")
+        logging_mock("Couldn't determine which hash=>id database to use: %s" %
+                     str(command_error))
         self.mocker.result(None)
 
         # Go!
@@ -388,15 +380,11 @@ class PackageReporterTest(LandscapeIsolatedTest):
         uuid_result.callback("uuid")
         self.mocker.result(uuid_result)
  
-        codename_mock = self.mocker.replace("landscape.package."
-                                            "taskhandler.get_host_codename")
-        codename_mock()
-        self.mocker.call(lambda: "codename")
-
-        arch_mock = self.mocker.replace("landscape.package."
-                                        "taskhandler.get_host_arch")
-        arch_mock()
-        self.mocker.call(lambda: "arch")
+        command_mock = self.mocker.replace("landscape.lib.command.run_command")
+        command_mock("lsb_release -cs")
+        self.mocker.result("codename")
+        command_mock("dpkg --print-architecture")
+        self.mocker.result("arch")
 
         # Check fetch_async is called with the default url
         hash_id_db_url = "http://fake.url/path/hash-id-databases/" \
@@ -431,15 +419,11 @@ class PackageReporterTest(LandscapeIsolatedTest):
         uuid_result.callback("uuid")
         self.mocker.result(uuid_result)
  
-        codename_mock = self.mocker.replace("landscape.package."
-                                            "taskhandler.get_host_codename")
-        codename_mock()
-        self.mocker.call(lambda: "codename")
-
-        arch_mock = self.mocker.replace("landscape.package."
-                                        "taskhandler.get_host_arch")
-        arch_mock()
-        self.mocker.call(lambda: "arch")
+        command_mock = self.mocker.replace("landscape.lib.command.run_command")
+        command_mock("lsb_release -cs")
+        self.mocker.result("codename")
+        command_mock("dpkg --print-architecture")
+        self.mocker.result("arch")
 
         # The failure should be properly logged
         logging_mock = self.mocker.replace("logging.warning")
@@ -469,15 +453,11 @@ class PackageReporterTest(LandscapeIsolatedTest):
         uuid_result.callback("uuid")
         self.mocker.result(uuid_result)
  
-        codename_mock = self.mocker.replace("landscape.package."
-                                            "taskhandler.get_host_codename")
-        codename_mock()
-        self.mocker.call(lambda: "codename")
-
-        arch_mock = self.mocker.replace("landscape.package."
-                                        "taskhandler.get_host_arch")
-        arch_mock()
-        self.mocker.call(lambda: "arch")
+        command_mock = self.mocker.replace("landscape.lib.command.run_command")
+        command_mock("lsb_release -cs")
+        self.mocker.result("codename")
+        command_mock("dpkg --print-architecture")
+        self.mocker.result("arch")
 
         # Let's say fetch_async fails
         hash_id_db_url = self.config.package_hash_id_url + "uuid_codename_arch"
@@ -517,15 +497,11 @@ class PackageReporterTest(LandscapeIsolatedTest):
         uuid_result.callback("uuid")
         self.mocker.result(uuid_result)
 
-        codename_mock = self.mocker.replace("landscape.package."
-                                            "taskhandler.get_host_codename")
-        codename_mock()
-        self.mocker.call(lambda: "codename")
-
-        arch_mock = self.mocker.replace("landscape.package."
-                                        "taskhandler.get_host_arch")
-        arch_mock()
-        self.mocker.call(lambda: "arch")
+        command_mock = self.mocker.replace("landscape.lib.command.run_command")
+        command_mock("lsb_release -cs")
+        self.mocker.result("codename")
+        command_mock("dpkg --print-architecture")
+        self.mocker.result("arch")
  
         # The failure should be properly logged
         logging_mock = self.mocker.replace("logging.warning")
