@@ -49,6 +49,28 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         self.handler.ensure_channels_reloaded()
         self.assertTrue(self.facade.get_packages_by_name("name1")[0].installed)
 
+    def test_wb_server_uuid_is_asked_once(self):
+
+        # We don't have the server uuid yet
+        self.assertEquals(self.handler._server_uuid, None)
+
+        # Mock a single call to the broker
+        remote_mock = self.mocker.patch(RemoteBroker)
+        remote_mock.get_server_uuid()
+        uuid_result = Deferred()
+        uuid_result.callback("uuid")
+        self.mocker.result(uuid_result)
+
+        self.mocker.replay()
+
+        # Ask the broker
+        self.handler._load_server_uuid()
+        self.assertEquals(self.handler._server_uuid, "uuid")
+
+        # Don't ask again
+        self.handler._load_server_uuid()
+        self.assertEquals(self.handler._server_uuid, "uuid")
+
     def test_use_hash_id_db(self):
 
         # We don't have this hash=>id mapping
