@@ -62,15 +62,15 @@ class PackageReporter(PackageTaskHandler):
         Fetch failures are handled gracefully and logged as appropriate.
         """
 
-        def server_uuid_loaded(ignored):
-            hash_id_db_filename = self._get_hash_id_db_filename()
+        def fetch_it(hash_id_db_filename):
 
-            # Can't determine which hash=>id database to use
             if not hash_id_db_filename:
+                # Couldn't determine which hash=>id database to fetch,
+                # just ignore the failure and go on
                 return
 
-            # We don't download twice
-            if os.path.exists(hash_id_db_filename):
+            if os.path.exists(hash_id_db_filename): 
+                # We don't download twice
                 return
 
             base_url = self._get_hash_id_db_base_url()
@@ -96,8 +96,8 @@ class PackageReporter(PackageTaskHandler):
 
             return result
 
-        result = self._load_server_uuid()
-        result.addCallback(server_uuid_loaded)
+        result = self._determine_hash_id_db_filename()
+        result.addCallback(fetch_it)
         return result
 
     def _get_hash_id_db_base_url(self):

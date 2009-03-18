@@ -61,8 +61,7 @@ class PackageTaskHandler(object):
         """
         Attach the appropriate pre-canned hash=>id database to our store.
         """
-        def server_uuid_loaded(ignored):
-            hash_id_db_filename = self._get_hash_id_db_filename()
+        def use_it(hash_id_db_filename):
 
             if not hash_id_db_filename:
                 # Couldn't determine which hash=>id database to use,
@@ -76,42 +75,33 @@ class PackageTaskHandler(object):
 
             self._store.add_hash_id_db(hash_id_db_filename)
 
-        result = self._load_server_uuid()
-        result.addCallback(server_uuid_loaded)
+        result = self._determine_hash_id_db_filename()
+        result.addCallback(use_it)
         return result
 
-    def _load_server_uuid(self):
-        if self._server_uuid:
-            return succeed(self._server_uuid)
+    def _determine_hash_id_db_filename(self):
 
-        def set_server_uuid(server_uuid):
-            self._server_uuid = server_uuid
-            return server_uuid
+        def got_server_uuid(server_uuid):
+            try:
+                # XXX we should add some methods to the Smart facade to get these
+                codename = run_command("lsb_release -cs")
+                arch = run_command("dpkg --print-architecture")
+            except CommandError, error:
+                logging.warning("Couldn't determine which hash=>id database "
+                                "to use: %s" % str(error))
+                return None
+
+            package_directory = os.path.join(self._config.data_path, "package")
+            hash_id_db_directory = os.path.join(package_directory, "hash-id")
+
+            return os.path.join(hash_id_db_directory,
+                                "%s_%s_%s" % (server_uuid,
+                                              codename,
+                                              arch))
 
         result = self._broker.get_server_uuid()
-        result.addCallback(set_server_uuid)
+        result.addCallback(got_server_uuid)
         return result
-
-    def _get_package_directory(self):
-        return os.path.join(self._config.data_path, "package")
-
-    def _get_hash_id_db_directory(self):
-        return os.path.join(self._get_package_directory(), "hash-id")
-
-    def _get_hash_id_db_filename(self):
-        try:
-            # XXX we should add some methods to the Smart facade to get these
-            codename = run_command("lsb_release -cs")
-            arch = run_command("dpkg --print-architecture")
-        except CommandError, error:
-            logging.warning("Couldn't determine which hash=>id database "
-                            "to use: %s" % str(error))
-            return None
-
-        return os.path.join(self._get_hash_id_db_directory(),
-                            "%s_%s_%s" % (self._server_uuid,
-                                          codename,
-                                          arch))
 
 def run_task_handler(cls, args, reactor=None):
     from twisted.internet.glib2reactor import install

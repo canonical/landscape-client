@@ -49,32 +49,6 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         self.handler.ensure_channels_reloaded()
         self.assertTrue(self.facade.get_packages_by_name("name1")[0].installed)
 
-    def test_wb_server_uuid_is_asked_once(self):
-
-        # We don't have the server uuid yet
-        self.assertEquals(self.handler._server_uuid, None)
-
-        # The first time ask to the broker
-        message_store = self.broker_service.message_store
-        message_store.set_server_uuid("uuid1")
-        result1 = self.handler._load_server_uuid()
-        def callback1(ignored):
-            self.assertEquals(self.handler._server_uuid, "uuid1")
-
-            # Don't ask again
-            message_store = self.broker_service.message_store
-            message_store.set_server_uuid("uuid2")
-            result2 = self.handler._load_server_uuid()
-            def callback2(ignored):
-                self.assertEquals(self.handler._server_uuid, "uuid1")
-            result2.addCallback(callback2)
-
-            return result2
-
-        result1.addCallback(callback1)
-
-        return result1
-
     def test_use_hash_id_db(self):
 
         # We don't have this hash=>id mapping
