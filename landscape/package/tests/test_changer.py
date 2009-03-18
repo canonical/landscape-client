@@ -459,6 +459,29 @@ class PackageChangerTest(LandscapeIsolatedTest):
         return self.changer.run()
 
 
+    def test_run(self):
+        changer_mock = self.mocker.patch(self.changer)
+
+        self.mocker.order()
+
+        results = [Deferred() for i in range(2)]
+
+        changer_mock.use_hash_id_db()
+        self.mocker.result(results[0])
+
+        changer_mock.handle_tasks()
+        self.mocker.result(results[1])
+
+        self.mocker.replay()
+
+        self.changer.run()
+
+        # It must raise an error because deferreds weren't yet fired.
+        self.assertRaises(AssertionError, self.mocker.verify)
+
+        for deferred in reversed(results):
+            deferred.callback(None)
+
     def test_dont_spawn_reporter_after_running_if_nothing_done(self):
         output_filename = self.makeFile("REPORTER NOT RUN")
         reporter_filename = self.makeFile("#!/bin/sh\necho REPORTER RUN > %s" %
