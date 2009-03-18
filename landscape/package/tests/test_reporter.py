@@ -234,12 +234,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
                                           "uuid_codename_arch")
 
         # Fake uuid, codename and arch
-        remote_mock = self.mocker.patch(RemoteBroker)
-        remote_mock.get_server_uuid()
-        uuid_result = Deferred()
-        uuid_result.callback("uuid")
-        self.mocker.result(uuid_result)
- 
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid")
         command_mock = self.mocker.replace("landscape.lib.command.run_command")
         command_mock("lsb_release -cs")
         self.mocker.result("codename")
@@ -267,8 +263,10 @@ class PackageReporterTest(LandscapeIsolatedTest):
         result = self.reporter.fetch_hash_id_db()
 
         # Check the database
-        self.assertTrue(os.path.exists(hash_id_db_filename))
-        self.assertEquals(open(hash_id_db_filename).read(), "hash-ids")
+        def callback(ignored):
+            self.assertTrue(os.path.exists(hash_id_db_filename))
+            self.assertEquals(open(hash_id_db_filename).read(), "hash-ids")
+        result.addCallback(callback)
 
         return result
 
@@ -283,12 +281,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
         open(hash_id_db_filename, "w").write("test")
 
         # Fake uuid, codename and arch
-        remote_mock = self.mocker.patch(RemoteBroker)
-        remote_mock.get_server_uuid()
-        uuid_result = Deferred()
-        uuid_result.callback("uuid")
-        self.mocker.result(uuid_result)
- 
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid")
         command_mock = self.mocker.replace("landscape.lib.command.run_command")
         command_mock("lsb_release -cs")
         self.mocker.result("codename")
@@ -300,7 +294,9 @@ class PackageReporterTest(LandscapeIsolatedTest):
         result = self.reporter.fetch_hash_id_db()
 
         # Same database still there
-        self.assertEquals(open(hash_id_db_filename).read(), "test")
+        def callback(ignored):
+            self.assertEquals(open(hash_id_db_filename).read(), "test")
+        result.addCallback(callback)
 
         return result
 
@@ -308,11 +304,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
     def test_fetch_hash_id_db_undetermined_codename(self):
 
         # Fake uuid
-        remote_mock = self.mocker.patch(RemoteBroker)
-        remote_mock.get_server_uuid()
-        uuid_result = Deferred()
-        uuid_result.callback("uuid")
-        self.mocker.result(uuid_result)
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid")
 
         # Undetermined codename
         command_mock = self.mocker.replace("landscape.lib.command.run_command")
@@ -335,12 +328,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
     def test_fetch_hash_id_db_undetermined_arch(self):
 
         # Fake uuid and codename
-        remote_mock = self.mocker.patch(RemoteBroker)
-        remote_mock.get_server_uuid()
-        uuid_result = Deferred()
-        uuid_result.callback("uuid")
-        self.mocker.result(uuid_result)
-
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid")
         command_mock = self.mocker.replace("landscape.lib.command.run_command")
         command_mock("lsb_release -cs")
         self.mocker.result("codename")
@@ -374,12 +363,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
                                           "uuid_codename_arch")
 
         # Fake uuid, codename and arch
-        remote_mock = self.mocker.patch(RemoteBroker)
-        remote_mock.get_server_uuid()
-        uuid_result = Deferred()
-        uuid_result.callback("uuid")
-        self.mocker.result(uuid_result)
- 
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid")
         command_mock = self.mocker.replace("landscape.lib.command.run_command")
         command_mock("lsb_release -cs")
         self.mocker.result("codename")
@@ -400,9 +385,10 @@ class PackageReporterTest(LandscapeIsolatedTest):
         result = self.reporter.fetch_hash_id_db()
 
         # Check the database
-        self.assertTrue(os.path.exists(hash_id_db_filename))
-        self.assertEquals(open(hash_id_db_filename).read(), "hash-ids")
-
+        def callback(ignored):
+            self.assertTrue(os.path.exists(hash_id_db_filename))
+            self.assertEquals(open(hash_id_db_filename).read(), "hash-ids")
+        result.addCallback(callback)
         return result
 
     def test_fetch_hash_id_db_with_undetermined_url(self):
@@ -413,12 +399,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
         self.config.url = None
 
         # Fake uuid, codename and arch
-        remote_mock = self.mocker.patch(RemoteBroker)
-        remote_mock.get_server_uuid()
-        uuid_result = Deferred()
-        uuid_result.callback("uuid")
-        self.mocker.result(uuid_result)
- 
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid")
         command_mock = self.mocker.replace("landscape.lib.command.run_command")
         command_mock("lsb_release -cs")
         self.mocker.result("codename")
@@ -441,18 +423,10 @@ class PackageReporterTest(LandscapeIsolatedTest):
         # Assume package_hash_id_url is set
         self.config.data_path = self.makeDir()
         self.config.package_hash_id_url = "http://fake.url/path/"
-        os.makedirs(os.path.join(self.config.data_path, "package/hash-id"))
-        hash_id_db_filename = os.path.join(self.config.data_path,
-                                          "package/hash-id",
-                                          "uuid_codename_arch")
 
         # Fake uuid, codename and arch
-        remote_mock = self.mocker.patch(RemoteBroker)
-        remote_mock.get_server_uuid()
-        uuid_result = Deferred()
-        uuid_result.callback("uuid")
-        self.mocker.result(uuid_result)
- 
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid")
         command_mock = self.mocker.replace("landscape.lib.command.run_command")
         command_mock("lsb_release -cs")
         self.mocker.result("codename")
@@ -477,10 +451,12 @@ class PackageReporterTest(LandscapeIsolatedTest):
         result = self.reporter.fetch_hash_id_db()
 
         # We shouldn't have any hash=>id database
-        hash_id_db_filename = os.path.join(self.config.data_path,
-                                          "package/hash-id",
-                                          "uuid_codenmae_arch")
-        self.assertEquals(os.path.exists(hash_id_db_filename), False)
+        def callback(ignored):
+            hash_id_db_filename = os.path.join(self.config.data_path,
+                                               "package/hash-id",
+                                               "uuid_codename_arch")
+            self.assertEquals(os.path.exists(hash_id_db_filename), False)
+        result.addCallback(callback)
 
         return result
 
@@ -510,13 +486,18 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         # Let's go
         self.mocker.replay()
-        self.reporter.fetch_hash_id_db()
+
+        result = self.reporter.fetch_hash_id_db()
  
         # We shouldn't have any hash=>id database
-        hash_id_db_filename = os.path.join(self.config.data_path,
-                                          "package/hash-id",
-                                          "uuid_codenmae_arch")
-        self.assertEquals(os.path.exists(hash_id_db_filename), False)
+        def callback(ignored):
+            hash_id_db_filename = os.path.join(self.config.data_path,
+                                               "package/hash-id",
+                                               "uuid_codename_arch")
+            self.assertEquals(os.path.exists(hash_id_db_filename), False)
+        result.addCallback(callback)
+
+        return result
 
     def test_remove_expired_hash_id_request(self):
         request = self.store.add_hash_id_request(["hash1"])

@@ -54,29 +54,33 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         # We don't have the server uuid yet
         self.assertEquals(self.handler._server_uuid, None)
 
-        # Mock a single call to the broker
-        remote_mock = self.mocker.patch(RemoteBroker)
-        remote_mock.get_server_uuid()
-        uuid_result = Deferred()
-        uuid_result.callback("uuid")
-        self.mocker.result(uuid_result)
+        # The first time ask to the broker
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid1")
+        result1 = self.handler._load_server_uuid()
+        def callback1(ignored):
+            self.assertEquals(self.handler._server_uuid, "uuid1")
 
-        self.mocker.replay()
+            # Don't ask again
+            message_store = self.broker_service.message_store
+            message_store.set_server_uuid("uuid2")
+            result2 = self.handler._load_server_uuid()
+            def callback2(ignored):
+                self.assertEquals(self.handler._server_uuid, "uuid1")
+            result2.addCallback(callback2)
 
-        # Ask the broker
-        self.handler._load_server_uuid()
-        self.assertEquals(self.handler._server_uuid, "uuid")
+            return result2
 
-        # Don't ask again
-        self.handler._load_server_uuid()
-        self.assertEquals(self.handler._server_uuid, "uuid")
+        result1.addCallback(callback1)
+
+        return result1
 
     def test_use_hash_id_db(self):
 
         # We don't have this hash=>id mapping
         self.assertEquals(self.store.get_hash_id("hash"), None)
 
-        # A hash=>id database is available
+        # An appropriate hash=>id database is available
         self.config.data_path = self.makeDir()
         os.makedirs(os.path.join(self.config.data_path, "package/hash-id"))
         hash_id_db_filename = os.path.join(self.config.data_path,
@@ -85,33 +89,30 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         PackageStore(hash_id_db_filename).set_hash_ids({"hash": 123})
 
         # Fake uuid, codename and arch
-        remote_mock = self.mocker.patch(RemoteBroker)
-        remote_mock.get_server_uuid()
-        uuid_result = Deferred()
-        uuid_result.callback("uuid")
-        self.mocker.result(uuid_result)
- 
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid")
         command_mock = self.mocker.replace("landscape.lib.command.run_command")
         command_mock("lsb_release -cs")
         self.mocker.result("codename")
         command_mock("dpkg --print-architecture")
         self.mocker.result("arch")
 
-        # Go!
+        # Attach the hash=>id database to our store
         self.mocker.replay()
         result = self.handler.use_hash_id_db()
 
         # Now we do have the hash=>id mapping
-        self.assertEquals(self.store.get_hash_id("hash"), 123)
+        def callback(ignored):
+            self.assertEquals(self.store.get_hash_id("hash"), 123)
+        result.addCallback(callback)
+
+        return result
 
     def test_use_hash_id_db_undetermined_codename(self):
 
         # Fake uuid
-        remote_mock = self.mocker.patch(RemoteBroker)
-        remote_mock.get_server_uuid()
-        uuid_result = Deferred()
-        uuid_result.callback("uuid")
-        self.mocker.result(uuid_result)
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid")
 
         # Undetermined codename
         command_mock = self.mocker.replace("landscape.lib.command.run_command")
@@ -134,12 +135,8 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
     def test_use_hash_id_db_undetermined_arch(self):
 
         # Fake uuid and codename
-        remote_mock = self.mocker.patch(RemoteBroker)
-        remote_mock.get_server_uuid()
-        uuid_result = Deferred()
-        uuid_result.callback("uuid")
-        self.mocker.result(uuid_result)
-
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid")
         command_mock = self.mocker.replace("landscape.lib.command.run_command")
         command_mock("lsb_release -cs")
         self.mocker.result("codename")
@@ -163,28 +160,26 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
 
     def test_use_hash_id_db_database_not_found(self):
 
-        # We don't have this hash=>id mapping
-        self.assertEquals(self.store.get_hash_id("hash"), None)
-
-        # A hash=>id database is available
+        # Clean path, we don't have an appropriate hash=>id database
         self.config.data_path = self.makeDir()
 
         # Fake uuid, codename and arch
-        remote_mock = self.mocker.patch(RemoteBroker)
-        remote_mock.get_server_uuid()
-        uuid_result = Deferred()
-        uuid_result.callback("uuid")
-        self.mocker.result(uuid_result)
- 
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid")
         command_mock = self.mocker.replace("landscape.lib.command.run_command")
         command_mock("lsb_release -cs")
         self.mocker.result("codename")
         command_mock("dpkg --print-architecture")
         self.mocker.result("arch")
 
-        # Go!
+        # Let's try
         self.mocker.replay()
         result = self.handler.use_hash_id_db()
+
+        # We go on without the hash=>id database
+        def callback(ignored):
+            self.assertFalse(self.store.has_hash_id_db())
+        result.addCallback(callback)
 
         return result
 
