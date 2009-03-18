@@ -2,14 +2,18 @@ import commands
 
 class CommandError(Exception):
 
-    def __init__(self, exit_status):
+    def __init__(self, command, exit_status, output):
+        self.command = command
         self.exit_status = exit_status
+        self.output = output
 
     def __str__(self):
-        return "Command exited with status %d" % self.exit_status
+        return "Command '%s' exited with status %d (%s)" % (
+            self.command, self.exit_status, self.output)
 
     def __repr__(self):
-        return "<CommandError exit_status=%d>" % self.exit_status
+        return "<CommandError command=<%s> exit_status=%d output=<%s>>" % (
+            self.command, self.exit_status, self.output)
 
 def run_command(command):
     """
@@ -20,5 +24,5 @@ def run_command(command):
     # shift down 8 bits to get shell-like exit codes
     exit_status = exit_status >> 8
     if exit_status != 0:
-        raise CommandError(exit_status)
+        raise CommandError(command, exit_status, output)
     return output
