@@ -39,7 +39,6 @@ case "$1" in
 log_level = info
 url = https://landscape.canonical.com/message-system
 ping_url = http://landscape.canonical.com/ping
-package_hash_id_url = https://landscape.canonical.com/hash-id-databases
 data_path = /var/lib/landscape/client
 END
             chown landscape $TEMPFILE
