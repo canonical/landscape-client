@@ -156,6 +156,35 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
 
         return result
 
+    def test_use_hash_id_with_invalid_database(self):
+
+        # Let's say the appropriate database is actually garbage
+        self.config.data_path = self.makeDir()
+        os.makedirs(os.path.join(self.config.data_path, "package", "hash-id"))
+        hash_id_db_filename = os.path.join(self.config.data_path, "package",
+                                           "hash-id", "uuid_codename_arch")
+        open(hash_id_db_filename, "w").write("junk")
+
+        # Fake uuid, codename and arch
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid")
+        command_mock = self.mocker.replace("landscape.lib.command.run_command")
+        command_mock("lsb_release -cs")
+        self.mocker.result("codename")
+        command_mock("dpkg --print-architecture")
+        self.mocker.result("arch")
+
+        # Try to attach it
+        self.mocker.replay()
+        result = self.handler.use_hash_id_db()
+
+        # We go on without the hash=>id database
+        def callback(ignored):
+            self.assertFalse(self.store.has_hash_id_db())
+        result.addCallback(callback)
+
+        return result
+
     def test_run(self):
         handler_mock = self.mocker.patch(self.handler)
         handler_mock.handle_tasks()

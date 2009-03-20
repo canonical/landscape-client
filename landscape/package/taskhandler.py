@@ -8,7 +8,7 @@ from landscape.lib.lock import lock_path, LockError
 from landscape.lib.log import log_failure
 from landscape.lib.command import run_command, CommandError
 from landscape.deployment import Configuration, init_logging
-from landscape.package.store import PackageStore
+from landscape.package.store import PackageStore, InvalidHashIdDb
 from landscape.broker.remote import RemoteBroker
 
 
@@ -73,7 +73,12 @@ class PackageTaskHandler(object):
                 # and just go on
                 return
 
-            self._store.add_hash_id_db(hash_id_db_filename)
+            try:
+                self._store.add_hash_id_db(hash_id_db_filename)
+            except InvalidHashIdDb:
+                # The appropriate database is there but broken,
+                # just go on
+                return
 
         result = self._determine_hash_id_db_filename()
         result.addCallback(use_it)
