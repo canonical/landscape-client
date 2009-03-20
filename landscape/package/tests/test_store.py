@@ -2,10 +2,15 @@ import threading
 import time
 import os
 
+try:
+    import sqlite3
+except ImportError:
+    from pysqlite2 import dbapi2 as sqlite3
+
 from landscape.tests.helpers import LandscapeTest
 
-from landscape.package.store import PackageStore, UnknownHashIDRequest
-
+from landscape.package.store import (PackageStore, UnknownHashIDRequest,
+                                     InvalidHashIdDb)
 
 class PackageStoreTest(LandscapeTest):
 
@@ -48,8 +53,34 @@ class PackageStoreTest(LandscapeTest):
 
         self.assertTrue(self.store1.has_hash_id_db())
 
-    def test_get_hash_id_using_hash_id_dbs(self):
+    def test_add_hash_id_db_with_non_sqlite_file(self):
 
+        def junk_db_factory():
+            filename = self.makeFile()
+            open(filename, "w").write("junk")
+            return filename
+
+        self.assertRaises(InvalidHashIdDb, self.store1.add_hash_id_db,
+                          junk_db_factory())
+        self.assertFalse(self.store1.has_hash_id_db())
+
+    def test_add_hash_id_db_with_wrong_schema(self):
+
+        def non_compliant_db_factory():
+            filename = self.makeFile()
+            db = sqlite3.connect(filename)
+            cursor = db.cursor()
+            cursor.execute("CREATE TABLE hash"
+                           " (junk INTEGER PRIMARY KEY, hash BLOB UNIQUE)")
+            cursor.close()
+            db.commit()
+            return filename
+
+        self.assertRaises(InvalidHashIdDb, self.store1.add_hash_id_db,
+                          non_compliant_db_factory())
+        self.assertFalse(self.store1.has_hash_id_db())
+
+    def test_get_hash_id_using_hash_id_dbs(self):
         # Without hash=>id dbs
         self.assertEquals(self.store1.get_hash_id("hash1"), None)
         self.assertEquals(self.store1.get_hash_id("hash2"), None)
