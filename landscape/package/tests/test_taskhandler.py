@@ -174,6 +174,11 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         command_mock("dpkg --print-architecture")
         self.mocker.result("arch")
 
+        # The failure should be properly logged
+        logging_mock = self.mocker.replace("logging.warning")
+        logging_mock("Invalid hash=>id database %s" % hash_id_db_filename)
+        self.mocker.result(None)
+
         # Try to attach it
         self.mocker.replay()
         result = self.handler.use_hash_id_db()
