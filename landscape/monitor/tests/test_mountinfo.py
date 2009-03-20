@@ -687,7 +687,7 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
     def test_persist_timing(self):
         """Mount info are only persisted when exchange happens.
 
-        Previously mount info were persisted was soon as they were gathered: if
+        Previously mount info were persisted as soon as they were gathered: if
         an event happened between the persist and the exchange, the server
         didn't get the mount info at all. This test ensures that mount info are
         only saved when exchange happens.
