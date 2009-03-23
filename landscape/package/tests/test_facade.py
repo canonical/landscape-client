@@ -4,6 +4,7 @@ import os
 
 from smart.control import Control
 from smart.cache import Provides
+from smart.const import NEVER
 
 import smart
 
@@ -386,6 +387,7 @@ class SmartFacadeTest(LandscapeTest):
 
     def test_add_channel(self):
 
+        # Add a couple of channels
         channels = {
             'channel0': {
                 'baseurl': 'http://an.apt.server/base',
@@ -410,6 +412,13 @@ class SmartFacadeTest(LandscapeTest):
         self.facade.add_channel(channels["channel1"]["baseurl"],
                                 channels["channel1"]["distribution"],
                                 channels["channel1"]["components"])
+
+        # In order to download the APT package lists Smart caching must
+        # be set to NEVER
+        ctrl_mock = self.mocker.patch(Control)
+        ctrl_mock.reloadChannels(caching = NEVER)
+        self.mocker.replay()
+
         self.facade.reload_channels()
 
         self.assertEquals(smart.sysconf.get("channels"), channels)

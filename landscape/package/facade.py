@@ -1,5 +1,5 @@
 from smart.transaction import Transaction, PolicyInstall, PolicyUpgrade, Failed
-from smart.const import INSTALL, REMOVE, UPGRADE
+from smart.const import INSTALL, REMOVE, UPGRADE, ALWAYS, NEVER
 
 import smart
 
@@ -48,6 +48,7 @@ class SmartFacade(object):
 
         self._arch = None
         self._channels = {}
+        self._caching = ALWAYS
 
     def deinit(self):
         """Deinitialize the Facade and the Smart library."""
@@ -86,7 +87,7 @@ class SmartFacade(object):
         """Reload Smart channels, getting all the cache (packages) in memory.
         """
         ctrl = self._get_ctrl()
-        ctrl.reloadChannels()
+        ctrl.reloadChannels(caching = self._caching)
 
         self._hash2pkg.clear()
         self._pkg2hash.clear()
@@ -206,6 +207,7 @@ class SmartFacade(object):
         To take effect it must be called before L{reaload_channels}.
         """
         name = "channel%d" % len(self._channels)
+
         self._channels[name] = {
             "baseurl" : baseurl,
             "distribution" : distribution,
@@ -215,3 +217,6 @@ class SmartFacade(object):
             'manual': False,
             'removable': False,
             'type': 'apt-deb'}
+
+        # This tells smart to download the APT package lists
+        self._caching = NEVER
