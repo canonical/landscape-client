@@ -376,3 +376,10 @@ class SmartFacadeTest(LandscapeTest):
 
         self.facade.reload_channels()
         self.assertEquals(self.facade.get_package_hash(pkg), None)
+
+    def test_set_arch(self):
+
+        self.facade.set_arch("i386")
+        self.facade.reload_channels()
+
+        self.assertEquals(smart.sysconf.get("deb-arch"), "i386")

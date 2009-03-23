@@ -46,6 +46,8 @@ class SmartFacade(object):
 
         self._marks = {}
 
+        self._arch = None
+
     def deinit(self):
         """Deinitialize the Facade and the Smart library."""
         if self._ctrl:
@@ -66,6 +68,9 @@ class SmartFacade(object):
             # on initialization (yeah, sucky).
             from smart.backends.deb.base import DebPackage
             self._deb_package_type = DebPackage
+
+            if self._arch is not None:
+                smart.sysconf.set("deb-arch", self._arch)
 
             self.smart_initialized()
         return self._ctrl
@@ -178,3 +183,13 @@ class SmartFacade(object):
         cache = self._get_ctrl().getCache()
         cache.reset()
         cache.load()
+
+    def set_arch(self, arch):
+        """
+        Set the host architecture.
+
+        To take effect it must be called before L{reaload_channels}.
+
+        @param arch: the dpkg architecture to use (e.g. C{"i386"})
+        """
+        self._arch = arch
