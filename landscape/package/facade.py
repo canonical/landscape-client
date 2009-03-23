@@ -47,6 +47,7 @@ class SmartFacade(object):
         self._marks = {}
 
         self._arch = None
+        self._channels = {}
 
     def deinit(self):
         """Deinitialize the Facade and the Smart library."""
@@ -71,6 +72,9 @@ class SmartFacade(object):
 
             if self._arch is not None:
                 smart.sysconf.set("deb-arch", self._arch)
+
+            if self._channels:
+                smart.sysconf.set("channels", self._channels)
 
             self.smart_initialized()
         return self._ctrl
@@ -193,3 +197,21 @@ class SmartFacade(object):
         @param arch: the dpkg architecture to use (e.g. C{"i386"})
         """
         self._arch = arch
+
+    def add_channel(self, baseurl, distribution, components):
+        """
+        Add an APT channel.
+
+        This method can be called more than once to set multiple APT channels.
+        To take effect it must be called before L{reaload_channels}.
+        """
+        name = "channel%d" % len(self._channels)
+        self._channels[name] = {
+            "baseurl" : baseurl,
+            "distribution" : distribution,
+            "components" : components,
+            'disabled': False,
+            'disabled': False,
+            'manual': False,
+            'removable': False,
+            'type': 'apt-deb'}

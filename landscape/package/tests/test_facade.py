@@ -383,3 +383,33 @@ class SmartFacadeTest(LandscapeTest):
         self.facade.reload_channels()
 
         self.assertEquals(smart.sysconf.get("deb-arch"), "i386")
+
+    def test_add_channel(self):
+
+        channels = {
+            'channel0': {
+                'baseurl': 'http://an.apt.server/base',
+                'distribution': 'hardy',
+                'components': 'main',
+                'manual': False,
+                'disabled': False,
+                'removable': False,
+                'type': 'apt-deb'},
+            'channel1': {
+                'baseurl': 'http://another.apt.server/base',
+                'distribution': 'hardy-updates',
+                'components': 'main universe',
+                'manual': False,
+                'disabled': False,
+                'removable': False,
+                'type': 'apt-deb'} }
+
+        self.facade.add_channel(channels["channel0"]["baseurl"],
+                                channels["channel0"]["distribution"],
+                                channels["channel0"]["components"])
+        self.facade.add_channel(channels["channel1"]["baseurl"],
+                                channels["channel1"]["distribution"],
+                                channels["channel1"]["components"])
+        self.facade.reload_channels()
+
+        self.assertEquals(smart.sysconf.get("channels"), channels)
