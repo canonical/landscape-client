@@ -9,8 +9,21 @@ except ImportError:
 
 from landscape.tests.helpers import LandscapeTest
 
-from landscape.package.store import (PackageStore, UnknownHashIDRequest,
-                                     InvalidHashIdDb)
+from landscape.package.store import (HashIdStore, PackageStore,
+                                     UnknownHashIDRequest, InvalidHashIdDb)
+
+class HashIdStoreTest(LandscapeTest):
+
+    def setUp(self):
+        super(HashIdStoreTest, self).setUp()
+
+        self.filename = self.makeFile()
+        self.store = HashIdStore(self.filename)
+
+    def test_set_and_get_hash_id(self):
+        self.store.set_hash_ids({"ha\x00sh1": 123, "ha\x00sh2": 456})
+        self.assertEquals(self.store.get_hash_id("ha\x00sh1"), 123)
+        self.assertEquals(self.store.get_hash_id("ha\x00sh2"), 456)
 
 class PackageStoreTest(LandscapeTest):
 
@@ -48,7 +61,7 @@ class PackageStoreTest(LandscapeTest):
         self.assertFalse(self.store1.has_hash_id_db())
 
         hash_id_db_filename = self.makeFile()
-        PackageStore(hash_id_db_filename)
+        HashIdStore(hash_id_db_filename)
         self.store1.add_hash_id_db(hash_id_db_filename)
 
         self.assertTrue(self.store1.has_hash_id_db())
@@ -91,7 +104,7 @@ class PackageStoreTest(LandscapeTest):
         # Add a couple of hash=>id dbs
         def hash_id_db_factory(hash_ids):
             filename = self.makeFile()
-            store = PackageStore(filename)
+            store = HashIdStore(filename)
             store.set_hash_ids(hash_ids)
             return filename
         self.store1.add_hash_id_db(hash_id_db_factory({"hash1": 2,

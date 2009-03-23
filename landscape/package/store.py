@@ -39,7 +39,26 @@ def with_cursor(method):
     return inner
 
 
-class PackageStore(object):
+class HashIdStore(object):
+    def __init__(self, filename):
+        self._db = sqlite3.connect(filename)
+        ensure_schema(self._db, tables=["hash"])
+
+    @with_cursor
+    def set_hash_ids(self, cursor, hash_ids):
+        for hash, id in hash_ids.iteritems():
+            cursor.execute("REPLACE INTO hash VALUES (?, ?)",
+                           (id, buffer(hash)))
+
+    @with_cursor
+    def get_hash_id(self, cursor, hash):
+        cursor.execute("SELECT id FROM hash WHERE hash=?", (buffer(hash),))
+        value = cursor.fetchone()
+        if value:
+            return value[0]
+        return None
+
+class PackageStore(HashIdStore):
 
     def __init__(self, filename):
         self._db = sqlite3.connect(filename)
@@ -76,12 +95,6 @@ class PackageStore(object):
     def has_hash_id_db(self):
         return len(self._hash_id_dbs) > 0
 
-    @with_cursor
-    def set_hash_ids(self, cursor, hash_ids):
-        for hash, id in hash_ids.iteritems():
-            cursor.execute("REPLACE INTO hash VALUES (?, ?)",
-                           (id, buffer(hash)))
-
     def get_hash_id(self, hash):
         assert isinstance(hash, basestring)
 
@@ -94,13 +107,8 @@ class PackageStore(object):
         # Fall back to the locally-populated db
         return self._get_hash_id_from_main_db(hash)
 
-    @with_cursor
-    def _get_hash_id_from_main_db(self, cursor, hash):
-        cursor.execute("SELECT id FROM hash WHERE hash=?", (buffer(hash),))
-        value = cursor.fetchone()
-        if value:
-            return value[0]
-        return None
+    def _get_hash_id_from_main_db(self, hash):
+        return HashIdStore.get_hash_id(self, hash)
 
     def _get_hash_id_from_hash_id_db(self, db, hash):
         cursor = db.cursor()
@@ -299,27 +307,30 @@ class PackageTask(object):
         cursor.execute("DELETE FROM task WHERE id=?", (self.id,))
 
 
-def ensure_schema(db):
+def ensure_schema(db, tables=None):
     # FIXME This needs a "patch" table with a "version" column which will
     #       help with upgrades.  It should also be used to decide when to
     #       create the schema from the ground up, rather than that using
     #       try block.
     cursor = db.cursor()
+
+    schema = {
+        "hash" : "id INTEGER PRIMARY KEY, hash BLOB UNIQUE",
+        "available" : "id INTEGER PRIMARY KEY",
+        "available_upgrade" : "id INTEGER PRIMARY KEY",
+        "installed" : "id INTEGER PRIMARY KEY",
+        "hash_id_request" : "id INTEGER PRIMARY KEY, timestamp TIMESTAMP,"
+                 " message_id INTEGER, hashes BLOB",
+        "task" : "id INTEGER PRIMARY KEY, queue TEXT,"
+                 " timestamp TIMESTAMP, data BLOB"}
+
+    if not tables:
+        # Create all tables
+        tables = schema.keys()
+
     try:
-        cursor.execute("CREATE TABLE hash"
-                       " (id INTEGER PRIMARY KEY, hash BLOB UNIQUE)")
-        cursor.execute("CREATE TABLE available"
-                       " (id INTEGER PRIMARY KEY)")
-        cursor.execute("CREATE TABLE available_upgrade"
-                       " (id INTEGER PRIMARY KEY)")
-        cursor.execute("CREATE TABLE installed"
-                       " (id INTEGER PRIMARY KEY)")
-        cursor.execute("CREATE TABLE hash_id_request"
-                       " (id INTEGER PRIMARY KEY, timestamp TIMESTAMP,"
-                       " message_id INTEGER, hashes BLOB)")
-        cursor.execute("CREATE TABLE task"
-                       " (id INTEGER PRIMARY KEY, queue TEXT,"
-                       " timestamp TIMESTAMP, data BLOB)")
+        for table in tables:
+            cursor.execute("CREATE TABLE %s (%s)" % (table, schema[table]))
     except sqlite3.OperationalError:
         cursor.close()
         db.rollback()

@@ -15,7 +15,7 @@ from landscape.broker.remote import RemoteBroker
 
 from landscape.package.taskhandler import PackageTaskHandler, run_task_handler
 from landscape.package.facade import SmartFacade
-from landscape.package.store import PackageStore
+from landscape.package.store import HashIdStore, PackageStore
 from landscape.package.tests.helpers import SmartFacadeHelper
 
 from landscape.tests.helpers import (
@@ -59,7 +59,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         os.makedirs(os.path.join(self.config.data_path, "package", "hash-id"))
         hash_id_db_filename = os.path.join(self.config.data_path, "package",
                                            "hash-id", "uuid_codename_arch")
-        PackageStore(hash_id_db_filename).set_hash_ids({"hash": 123})
+        HashIdStore(hash_id_db_filename).set_hash_ids({"hash": 123})
 
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
