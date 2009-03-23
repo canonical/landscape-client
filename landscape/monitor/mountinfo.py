@@ -26,6 +26,7 @@ class MountInfo(MonitorPlugin):
         self._create_time = create_time
         self._free_space = []
         self._mount_info = []
+        self._mount_info_to_persist = None
         self._mount_activity = []
         self._prev_mount_activity = {}
         self._hal_manager = hal_manager or HALManager()
@@ -61,6 +62,7 @@ class MountInfo(MonitorPlugin):
     def create_mount_info_message(self):
         if self._mount_info:
             message = {"type": "mount-info", "mount-info": self._mount_info}
+            self._mount_info_to_persist = self._mount_info[:]
             self._mount_info = []
             return message
         return None
@@ -74,11 +76,19 @@ class MountInfo(MonitorPlugin):
 
     def send_messages(self, urgent=False):
         for message in self.create_messages():
-            self.registry.broker.send_message(message, urgent=urgent)
+            d = self.registry.broker.send_message(message, urgent=urgent)
+            if message["type"] == "mount-info":
+                d.addCallback(lambda x: self.persist_mount_info())
 
     def exchange(self):
         self.registry.broker.call_if_accepted("mount-info",
                                               self.send_messages)
+
+    def persist_mount_info(self):
+        for timestamp, mount_info in self._mount_info_to_persist:
+            mount_point = mount_info["mount-point"]
+            self._persist.set(("mount-info", mount_point), mount_info)
+        self._mount_info_to_persist = None
 
     def run(self):
         self._monitor.ping()
@@ -97,8 +107,8 @@ class MountInfo(MonitorPlugin):
 
             prev_mount_info = self._persist.get(("mount-info", mount_point))
             if not prev_mount_info or prev_mount_info != mount_info:
-                self._persist.set(("mount-info", mount_point), mount_info)
-                self._mount_info.append((now, mount_info))
+                if mount_info not in [m for t, m in self._mount_info]:
+                    self._mount_info.append((now, mount_info))
 
             if not self._prev_mount_activity.get(mount_point, False):
                 self._mount_activity.append((now, mount_point, True))
