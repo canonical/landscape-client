@@ -97,7 +97,12 @@ class SmartFacade(object):
         @raise: L{ChannelError} if Smart fails to reload the channels.
         """
         ctrl = self._get_ctrl()
-        if not ctrl.reloadChannels(caching = self._caching):
+
+        reload_result = ctrl.reloadChannels(caching = self._caching)
+
+        if reload_result == False and self._caching == NEVER:
+            # Raise an error only if we are using some custom channels
+            # set with add_channel()
             raise ChannelError()
 
         self._hash2pkg.clear()
