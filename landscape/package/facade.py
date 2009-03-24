@@ -241,7 +241,7 @@ class SmartFacade(object):
         self._channels[name] = {
             "baseurl" : baseurl,
             "distribution" : distribution,
-            "components" : components,
+            "components" : " ".join(components),
             'disabled': False,
             'disabled': False,
             'manual': False,
