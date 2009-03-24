@@ -9,7 +9,7 @@ from smart.const import NEVER
 import smart
 
 from landscape.package.facade import (
-    SmartFacade, TransactionError, DependencyError, SmartError)
+    SmartFacade, TransactionError, DependencyError, ChannelError, SmartError)
 
 from landscape.tests.helpers import LandscapeTest
 from landscape.package.tests.helpers import (
@@ -417,8 +417,20 @@ class SmartFacadeTest(LandscapeTest):
         # be set to NEVER
         ctrl_mock = self.mocker.patch(Control)
         ctrl_mock.reloadChannels(caching = NEVER)
+        self.mocker.result(True)
         self.mocker.replay()
 
         self.facade.reload_channels()
 
         self.assertEquals(smart.sysconf.get("channels"), channels)
+
+    def test_add_channel_with_reload_error(self):
+        self.facade.add_channel("http://not.existing.url", "hardy", "main")
+
+        ctrl_mock = self.mocker.patch(Control)
+        ctrl_mock.reloadChannels(caching = NEVER)
+        self.mocker.result(False)
+        self.mocker.replay()
+
+        self.assertRaises(ChannelError, self.facade.reload_channels)
+        self.facade._channels = {}

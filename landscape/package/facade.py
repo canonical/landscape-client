@@ -22,6 +22,9 @@ class DependencyError(Exception):
 class SmartError(Exception):
     """Raised when Smart fails in an undefined way."""
 
+class ChannelError(Exception):
+    """Raised when channels fail to load."""
+
 
 class SmartFacade(object):
     """Wrapper for tasks using Smart.
@@ -87,7 +90,8 @@ class SmartFacade(object):
         """Reload Smart channels, getting all the cache (packages) in memory.
         """
         ctrl = self._get_ctrl()
-        ctrl.reloadChannels(caching = self._caching)
+        if not ctrl.reloadChannels(caching = self._caching):
+            raise ChannelError()
 
         self._hash2pkg.clear()
         self._pkg2hash.clear()
