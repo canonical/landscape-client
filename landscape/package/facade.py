@@ -36,6 +36,10 @@ class SmartFacade(object):
     _deb_package_type = None
 
     def __init__(self, smart_init_kwargs={}):
+        """
+        @param smart_init_kwargs: A dictionary that can be used to pass
+            specific keyword parameters to to L{smart.init}.
+        """
         self._smart_init_kwargs = smart_init_kwargs.copy()
         self._smart_init_kwargs.setdefault("interface", "landscape")
         self._reset()
@@ -87,7 +91,10 @@ class SmartFacade(object):
         """Hook called when the Smart library is initialized."""
 
     def reload_channels(self):
-        """Reload Smart channels, getting all the cache (packages) in memory.
+        """
+        Reload Smart channels, getting all the cache (packages) in memory.
+
+        @raise: L{ChannelError} if Smart fails to reload the channels.
         """
         ctrl = self._get_ctrl()
         if not ctrl.reloadChannels(caching = self._caching):
@@ -115,23 +122,42 @@ class SmartFacade(object):
         @param with_info: If True, the skeleton will include information
             useful for sending data to the server.  Such information isn't
             necessary if the skeleton will be used to build a hash.
+
+        @return: a L{PackageSkeleton} object.
         """
         return build_skeleton(pkg, with_info)
 
     def get_package_hash(self, pkg):
-        """Return a hash from the given package."""
+        """Return a hash from the given package.
+
+        @param pkg: a L{smart.backends.deb.base.DebPackage} objects
+        """
         return self._pkg2hash.get(pkg)
 
     def get_packages(self):
+        """
+        Get all packages available in the channels.
+
+        @return: a C{list} of L{smart.backends.deb.base.DebPackage} objects
+        """
         return [pkg for pkg in self._get_ctrl().getCache().getPackages()
                 if isinstance(pkg, self._deb_package_type)]
 
     def get_packages_by_name(self, name):
-        """Return a list with all known (available) packages."""
+        """
+        Get all available packages matching the provided name.
+
+        @return: a C{list} of L{smart.backends.deb.base.DebPackage} objects
+        """
         return [pkg for pkg in self._get_ctrl().getCache().getPackages(name)
                 if isinstance(pkg, self._deb_package_type)]
 
     def get_package_by_hash(self, hash):
+        """
+        Get all available packages matching the provided hash.
+
+        @return: a C{list} of L{smart.backends.deb.base.DebPackage} objects
+        """
         return self._hash2pkg.get(hash)
 
     def mark_install(self, pkg):
@@ -203,7 +229,7 @@ class SmartFacade(object):
         """
         self._arch = arch
 
-    def add_channel(self, baseurl, distribution, components):
+    def add_channel(self, baseurl, distribution, components = ["main"]):
         """
         Add an APT channel.
 
