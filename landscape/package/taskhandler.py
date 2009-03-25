@@ -77,9 +77,10 @@ class PackageTaskHandler(object):
                 self._store.add_hash_id_db(hash_id_db_filename)
             except InvalidHashIdDb:
                 # The appropriate database is there but broken,
-                # just go on
+                # let's remove it and go on
                 logging.warning("Invalid hash=>id database %s" %
                                 hash_id_db_filename)
+                os.remove(hash_id_db_filename)
                 return
 
         result = self._determine_hash_id_db_filename()
