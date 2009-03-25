@@ -4,10 +4,15 @@ This module, and specifically L{LandscapeSetupScript}, implements the support
 for the C{landscape-config} script.
 """
 
+import base64
 import time
 import sys
 import os
 import getpass
+from ConfigParser import ConfigParser, Error as ConfigParserError
+from StringIO import StringIO
+
+import pycurl
 
 from dbus.exceptions import DBusException
 
@@ -15,6 +20,7 @@ from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.lib.dbus_util import (
     get_bus, NoReplyError, ServiceUnknownError, SecurityError)
 from landscape.lib.twisted_util import gather_results
+from landscape.lib.fetch import fetch, HTTPCodeError
 
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.broker.deployment import BrokerConfiguration
@@ -23,6 +29,9 @@ from landscape.broker.remote import RemoteBroker
 
 class ConfigurationError(Exception):
     """Raised when required configuration values are missing."""
+
+class ImportOptionError(ConfigurationError):
+    """Raised when there are issues with handling the --import option."""
 
 
 def print_text(text, end="\n", error=False):
@@ -36,7 +45,49 @@ def print_text(text, end="\n", error=False):
 
 class LandscapeSetupConfiguration(BrokerConfiguration):
 
-    unsaved_options = ("no_start", "disable", "silent", "ok_no_register")
+    unsaved_options = ("no_start", "disable", "silent", "ok_no_register",
+                       "import_from")
+
+    def __init__(self, fetch_import_url):
+        super(LandscapeSetupConfiguration, self).__init__()
+        self._fetch_import_url = fetch_import_url
+
+    def _load_external_options(self):
+        """Handle the --import parameter.
+
+        Imported options behave as if they were passed in the
+        command line, with precedence being given to real command
+        line options.
+        """
+        if self.import_from:
+            parser = ConfigParser()
+
+            try:
+                if "://" in self.import_from:
+                    # If it's from a URL, download it now.
+                    if self.http_proxy:
+                        os.environ["http_proxy"] = self.http_proxy
+                    if self.https_proxy:
+                        os.environ["https_proxy"] = self.https_proxy
+                    content = self._fetch_import_url(self.import_from)
+                    parser.readfp(StringIO(content))
+                elif not os.path.isfile(self.import_from):
+                    raise ImportOptionError("File %s doesn't exist." %
+                                            self.import_from)
+                else:
+                    parser.read(self.import_from)
+            except ConfigParserError, error:
+                raise ImportOptionError(str(error))
+
+            # But real command line options have precedence.
+            options = None
+            if parser.has_section(self.config_section):
+                options = dict(parser.items(self.config_section))
+            if not options:
+                raise ImportOptionError("Nothing to import at %s." %
+                                        self.import_from)
+            options.update(self._command_line_options)
+            self._command_line_options = options
 
     def make_parser(self):
         """
@@ -44,6 +95,12 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
         """
         parser = super(LandscapeSetupConfiguration, self).make_parser()
 
+        parser.add_option("--import", dest="import_from",
+                          metavar="FILENAME_OR_URL",
+                          help="Filename or URL to import configuration from. "
+                               "Imported options behave as if they were passed "
+                               "in the command line, with precedence being "
+                               "given to real command line options.")
         parser.add_option("--script-users", metavar="USERS",
                           help="A comma-separated list of users to allow "
                                "scripts to run.  To allow scripts to be run "
@@ -317,6 +374,15 @@ def setup(config):
     else:
         script = LandscapeSetupScript(config)
         script.run()
+    
+    if config.ssl_public_key and config.ssl_public_key.startswith("base64:"):
+        key_filename = config.get_config_filename() + ".ssl_public_key"
+        print_text("Writing SSL public key to %s..." % key_filename)
+        decoded_key = base64.decodestring(config.ssl_public_key[7:])
+        key_file = open(key_filename, "w")
+        key_file.write(decoded_key)
+        key_file.close()
+        config.ssl_public_key = key_filename
 
     config.write()
     # Restart the client to ensure that it's using the new configuration.
@@ -422,11 +488,38 @@ def register(config, reactor=None):
     reactor.run()
 
 
+def fetch_import_url(url):
+    """Handle fetching of URLs passed to --url.
+
+    This is done out of LandscapeSetupConfiguration since it has to deal
+    with interaction with the user and downloading of files.
+    """
+
+    print_text("Fetching configuration from %s..." % url)
+    error_message = None
+    try:
+        content = fetch(url)
+    except pycurl.error, error:
+        error_message = error.args[1]
+    except HTTPCodeError, error:
+        error_message = str(error)
+    if error_message is not None:
+        raise ImportOptionError(
+            "Couldn't download configuration from %s: %s" %
+            (url, error_message))
+    return content
+
+
 def main(args):
     if os.getuid() != 0:
         sys.exit("landscape-config must be run as root.")
-    config = LandscapeSetupConfiguration()
-    config.load(args)
+
+    config = LandscapeSetupConfiguration(fetch_import_url)
+    try:
+        config.load(args)
+    except ImportOptionError, error:
+        print_text(str(error), error=True)
+        sys.exit(1)
 
     # Disable startup on boot and stop the client, if one is running.
     if config.disable:

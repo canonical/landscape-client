@@ -65,14 +65,14 @@ class BrokerConfiguration(Configuration):
     def message_store_path(self):
         return os.path.join(self.data_path, "messages")
 
-    def load(self, args, accept_unexistent_config=False):
+    def load(self, args, accept_nonexistent_config=False):
         """
         Load the configuration with L{Configuration.load}, and then set
         http_proxy and https_proxy environment variables based on that config
         data.
         """
         super(BrokerConfiguration, self).load(
-            args, accept_unexistent_config=accept_unexistent_config)
+            args, accept_nonexistent_config=accept_nonexistent_config)
         if self.http_proxy:
             os.environ["http_proxy"] = self.http_proxy
         elif self._original_http_proxy:
@@ -108,12 +108,14 @@ class BrokerService(LandscapeService):
                                          config.exchange_interval,
                                          config.urgent_exchange_interval)
 
-        self.registration = RegistrationHandler(self.identity, self.reactor,
-                                                self.exchanger,
-                                                self.message_store,
-                                                config.cloud, fetch_async)
         self.pinger = Pinger(self.reactor, config.ping_url, self.identity,
                              self.exchanger)
+        self.registration = RegistrationHandler(config,
+                                                self.identity, self.reactor,
+                                                self.exchanger,
+                                                self.pinger,
+                                                self.message_store,
+                                                config.cloud, fetch_async)
 
         self.reactor.call_on("post-exit", self._exit)
 

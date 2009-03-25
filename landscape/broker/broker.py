@@ -47,6 +47,11 @@ class BrokerDBusObject(Object):
         reactor.call_on("registration-failed", self.registration_failed)
         reactor.call_on("message-type-acceptance-changed",
                         self.message_type_acceptance_changed)
+        def server_uuid_changed(old_uuid, new_uuid):
+            # Convert Nones to empty strings.  The Remote will
+            # convert them back to Nones.
+            self.server_uuid_changed(old_uuid or "", new_uuid or "")
+        reactor.call_on("server-uuid-changed", server_uuid_changed)
         reactor.call_on("resynchronize-clients", self.resynchronize)
 
     @signal(IFACE_NAME)
@@ -149,6 +154,16 @@ Please contact the Landscape team for more information.
 
     @signal(IFACE_NAME)
     def message_type_acceptance_changed(self, type, accepted):
+        pass
+
+    @method(IFACE_NAME, out_signature="s")
+    def get_server_uuid(self):
+        # Convert Nones to empty strings.  The Remote will
+        # convert them back to Nones.
+        return self.message_store.get_server_uuid() or ""
+
+    @signal(IFACE_NAME)
+    def server_uuid_changed(self, old_uuid, new_uuid):
         pass
 
     @method(IFACE_NAME)

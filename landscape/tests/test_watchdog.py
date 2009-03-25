@@ -19,7 +19,8 @@ from landscape.tests.helpers import (
 from landscape.watchdog import (
     Daemon, WatchDog, WatchDogService, ExecutableNotFoundError,
     WatchDogConfiguration, bootstrap_list,
-    MAXIMUM_CONSECUTIVE_RESTARTS, RESTART_BURST_DELAY, run)
+    MAXIMUM_CONSECUTIVE_RESTARTS, RESTART_BURST_DELAY, run,
+    Broker, Monitor, Manager)
 import landscape.watchdog
 
 
@@ -41,6 +42,8 @@ class WatchDogTest(LandscapeTest):
                                                    passthrough=False)
         self.manager_factory = self.mocker.replace("landscape.watchdog.Manager",
                                                    passthrough=False)
+
+    def start_all_daemons(self):
         self.broker = self.broker_factory(self.bus, verbose=False,
                                           config=None)
         self.monitor = self.monitor_factory(self.bus, verbose=False,
@@ -57,10 +60,23 @@ class WatchDogTest(LandscapeTest):
 
     def test_daemon_construction(self):
         """The WatchDog sets up some daemons when constructed."""
+        self.start_all_daemons()
         self.mocker.replay()
         WatchDog(self.bus)
 
+    def test_limited_daemon_construction(self):
+        broker = self.broker_factory(self.bus, verbose=False, config=None)
+        monitor = self.monitor_factory(self.bus, verbose=False, config=None)
+        # The manager should *not* be constructed
+        manager = self.manager_factory(ARGS, KWARGS)
+        self.mocker.count(0)
+        self.mocker.replay()
+
+        WatchDog(self.bus, enabled_daemons=[Broker, Monitor])
+
+
     def test_check_running_one(self):
+        self.start_all_daemons()
         self.expect(self.broker.is_running()).result(succeed(True))
         self.expect(self.monitor.is_running()).result(succeed(False))
         self.expect(self.manager.is_running()).result(succeed(False))
@@ -72,6 +88,7 @@ class WatchDogTest(LandscapeTest):
         return result.addCallback(got_result)
 
     def test_check_running_many(self):
+        self.start_all_daemons()
         self.expect(self.broker.is_running()).result(succeed(True))
         self.expect(self.monitor.is_running()).result(succeed(True))
         self.expect(self.manager.is_running()).result(succeed(True))
@@ -83,15 +100,31 @@ class WatchDogTest(LandscapeTest):
                                "landscape-manager"])
         return result.addCallback(got_result)
 
+    def test_check_running_limited_daemons(self):
+        """
+        When the user has explicitly asked not to run some daemons, those
+        daemons which are not being run should not checked.
+        """
+        self.broker = self.broker_factory(self.bus, verbose=False,
+                                          config=None)
+        self.expect(self.broker.program).result("landscape-broker")
+        self.expect(self.broker.is_running()).result(succeed(True))
+        self.mocker.replay()
+        result = WatchDog(self.bus, enabled_daemons=[Broker]).check_running()
+        def got_result(r):
+            self.assertEquals(len(r), 1)
+            self.assertEquals(r[0].program, "landscape-broker")
+        return result.addCallback(got_result)
+
     def expect_request_exit(self):
         self.expect(self.broker.request_exit()).result(succeed(False))
         self.expect(self.broker.wait_or_die()).result(succeed(None))
         self.expect(self.monitor.wait_or_die()).result(succeed(None))
         self.expect(self.manager.wait_or_die()).result(succeed(None))
 
-
     def test_start_and_stop_daemons(self):
         """The WatchDog will start all daemons, starting with the broker."""
+        self.start_all_daemons()
         self.mocker.order()
 
         self.broker.start()
@@ -108,6 +141,22 @@ class WatchDogTest(LandscapeTest):
         clock.advance(0)
         return dog.request_exit()
 
+    def test_start_limited_daemons(self):
+        """
+        start only starts the daemons which are actually enabled.
+        """
+        self.broker = self.broker_factory(self.bus, verbose=False,
+                                          config=None)
+        self.expect(self.broker.program).result("landscape-broker")
+        self.mocker.count(0, None)
+        self.broker.start()
+
+        self.mocker.replay()
+
+        clock = Clock()
+        dog = WatchDog(self.bus, clock, enabled_daemons=[Broker])
+        dog.start()
+
     def test_request_exit(self):
         """request_exit() asks the broker to exit.
 
@@ -116,6 +165,7 @@ class WatchDogTest(LandscapeTest):
         When the deferred returned from request_exit fires, the process should
         definitely be gone.
         """
+        self.start_all_daemons()
         self.expect_request_exit()
         self.mocker.replay()
         return WatchDog(self.bus).request_exit()
@@ -125,6 +175,7 @@ class WatchDogTest(LandscapeTest):
         When request_exit occurs between a ping request and response, a failing
         ping response should not cause the process to be restarted.
         """
+        self.start_all_daemons()
         self.mocker.order()
 
         self.broker.start()
@@ -864,6 +915,16 @@ class WatchDogOptionsTest(LandscapeTest):
         self.config.load([])
         self.assertEquals(self.config.pid_file, None)
 
+    def test_monitor_only(self):
+        self.config.load(["--monitor-only"])
+        self.assertEquals(self.config.get_enabled_daemons(),
+                          [Broker, Monitor])
+
+    def test_default_daemons(self):
+        self.config.load([])
+        self.assertEquals(self.config.get_enabled_daemons(),
+                          [Broker, Monitor, Manager])
+
 
 class WatchDogServiceTest(LandscapeTest):
 
@@ -953,10 +1014,17 @@ class WatchDogServiceTest(LandscapeTest):
         self.assertFalse(os.path.exists(pid_file))
 
     def test_remove_pid_file(self):
+        """
+        When the service is stopped, the pid file is removed.
+        """
         #don't really daemonize or request an exit
         daemonize = self.mocker.replace("landscape.watchdog.daemonize",
                                         passthrough=False)
-        watchdog = self.mocker.patch(WatchDog)
+        watchdog_factory = self.mocker.replace("landscape.watchdog.WatchDog",
+                                               passthrough=False)
+        watchdog = watchdog_factory(ARGS, KWARGS)
+        watchdog.start()
+        self.mocker.result(succeed(None))
 
         watchdog.check_running()
         self.mocker.result(succeed([]))
@@ -1193,6 +1261,12 @@ reactor.run()
 """
 
 
+class FakeReactor(Clock):
+    running = False
+    def run(self):
+        self.running = True
+
+
 class WatchDogRunTests(LandscapeTest):
     def setUp(self):
         super(WatchDogRunTests, self).setUp()
@@ -1202,8 +1276,30 @@ class WatchDogRunTests(LandscapeTest):
         WatchDogConfiguration.default_config_filenames = []
 
     def test_non_root(self):
+        """
+        The watchdog should print an error message and exit if run by a normal
+        user.
+        """
         self.mocker.replace("os.getuid")()
+        self.mocker.count(1, None)
         self.mocker.result(1000)
+        getpwnam = mock = self.mocker.replace("pwd.getpwnam")
+        getpwnam("landscape").pw_uid
+        self.mocker.result(1001)
         self.mocker.replay()
         sys_exit = self.assertRaises(SystemExit, run, ["--bus", "system"])
         self.assertIn("landscape-client must be run as root", str(sys_exit))
+
+    def test_landscape_user(self):
+        """
+        The watchdog *can* be run as the 'landscape' user.
+        """
+        getpwnam = self.mocker.replace("pwd.getpwnam")
+        getpwnam("landscape").pw_uid
+        self.mocker.result(os.getuid())
+        self.mocker.replay()
+        reactor = FakeReactor()
+        run(["--bus", "system", "--log-dir", self.make_path()],
+            reactor=reactor)
+        self.assertTrue(reactor.running)
+

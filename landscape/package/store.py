@@ -68,6 +68,10 @@ class PackageStore(object):
         return None
 
     @with_cursor
+    def clear_hash_ids(self, cursor):
+        cursor.execute("DELETE FROM hash")
+
+    @with_cursor
     def add_available(self, cursor, ids):
         for id in ids:
             cursor.execute("REPLACE INTO available VALUES (?)", (id,))

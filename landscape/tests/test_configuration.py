@@ -1,29 +1,35 @@
 import os
 from getpass import getpass
+from ConfigParser import ConfigParser
 
 from dbus import DBusException
+
+import pycurl
 
 from twisted.internet.defer import Deferred, succeed, fail
 from twisted.internet import reactor
 
+from landscape.lib.fetch import HTTPCodeError
 from landscape.configuration import (
     print_text, LandscapeSetupScript, LandscapeSetupConfiguration,
     register, setup, main, setup_init_script_and_start_client,
-    stop_client_and_disable_init_script, ConfigurationError)
+    stop_client_and_disable_init_script, ConfigurationError,
+    fetch_import_url, ImportOptionError)
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.tests.helpers import (LandscapeTest, LandscapeIsolatedTest,
                                      RemoteBrokerHelper, EnvironSaverHelper)
 from landscape.tests.mocker import ARGS, KWARGS, ANY, MATCH, CONTAINS, expect
 
+
 def get_config(self, args):
-    if "--config" not in args:
+    if "--config" not in args and "-c" not in args:
         filename = self.makeFile("""
 [client]
 url = https://landscape.canonical.com/message-system
 """)
         args.extend(["--config", filename])
-    config = LandscapeSetupConfiguration()
+    config = LandscapeSetupConfiguration(fetch_import_url)
     config.load(args)
     return config
 
@@ -86,7 +92,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.config_filename = self.makeFile()
         class MyLandscapeSetupConfiguration(LandscapeSetupConfiguration):
             default_config_filenames = [self.config_filename]
-        self.config = MyLandscapeSetupConfiguration()
+        self.config = MyLandscapeSetupConfiguration(None)
         self.script = LandscapeSetupScript(self.config)
 
     def test_show_help(self):
@@ -919,8 +925,416 @@ account_name = account
         self.mocker.result(1000)
         self.mocker.replay()
         sys_exit = self.assertRaises(SystemExit,
-                                      main, ["-c", self.make_working_config()])
+                                     main, ["-c", self.make_working_config()])
         self.assertIn("landscape-config must be run as root", str(sys_exit))
+
+    def test_import_from_file(self):
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        sysvconfig_mock.set_start_on_boot(True)
+        sysvconfig_mock.restart_landscape()
+        self.mocker.result(True)
+        self.mocker.replay()
+
+        configuration = (
+            "[client]\n"
+            "computer_title = New Title\n"
+            "account_name = New Name\n"
+            "registration_password = New Password\n"
+            "http_proxy = http://new.proxy\n"
+            "https_proxy = https://new.proxy\n"
+            "url = http://new.url\n")
+
+        import_filename = self.makeFile(configuration, basename="import_config")
+        config_filename = self.makeFile("", basename="final_config")
+
+        config = self.get_config(["--config", config_filename, "--silent",
+                                  "--import", import_filename])
+        setup(config)
+
+        options = ConfigParser()
+        options.read(config_filename)
+
+        self.assertEquals(dict(options.items("client")),
+                          {"computer_title": "New Title",
+                           "account_name": "New Name",
+                           "registration_password": "New Password",
+                           "http_proxy": "http://new.proxy",
+                           "https_proxy": "https://new.proxy",
+                           "url": "http://new.url"})
+
+    def test_import_from_empty_file(self):
+        self.mocker.replay()
+
+        config_filename = self.makeFile("", basename="final_config")
+        import_filename = self.makeFile("", basename="import_config")
+
+        # Use a command line option as well to test the precedence.
+        try:
+            self.get_config(["--config", config_filename, "--silent",
+                             "--import", import_filename])
+        except ImportOptionError, error:
+            self.assertEquals(str(error), 
+                              "Nothing to import at %s." % import_filename)
+        else:
+            self.fail("ImportOptionError not raised")
+
+    def test_import_from_non_existent_file(self):
+        self.mocker.replay()
+
+        config_filename = self.makeFile("", basename="final_config")
+        import_filename = self.makeFile(basename="import_config")
+
+        # Use a command line option as well to test the precedence.
+        try:
+            self.get_config(["--config", config_filename, "--silent",
+                             "--import", import_filename])
+        except ImportOptionError, error:
+            self.assertEquals(str(error), 
+                              "File %s doesn't exist." % import_filename)
+        else:
+            self.fail("ImportOptionError not raised")
+
+    def test_import_from_file_with_empty_client_section(self):
+        self.mocker.replay()
+
+        old_configuration = "[client]\n"
+
+        config_filename = self.makeFile("", old_configuration,
+                                        basename="final_config")
+        import_filename = self.makeFile("", basename="import_config")
+
+        # Use a command line option as well to test the precedence.
+        try:
+            self.get_config(["--config", config_filename, "--silent",
+                             "--import", import_filename])
+        except ImportOptionError, error:
+            self.assertEquals(str(error), 
+                              "Nothing to import at %s." % import_filename)
+        else:
+            self.fail("ImportOptionError not raised")
+
+    def test_import_from_bogus_file(self):
+        self.mocker.replay()
+
+        config_filename = self.makeFile("", basename="final_config")
+        import_filename = self.makeFile("<strong>BOGUS!</strong>",
+                                        basename="import_config")
+
+        # Use a command line option as well to test the precedence.
+        try:
+            self.get_config(["--config", config_filename, "--silent",
+                             "--import", import_filename])
+        except ImportOptionError, error:
+            self.assertIn("File contains no section headers.", str(error))
+        else:
+            self.fail("ImportOptionError not raised")
+
+    def test_import_from_file_preserves_old_options(self):
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        sysvconfig_mock.set_start_on_boot(True)
+        sysvconfig_mock.restart_landscape()
+        self.mocker.result(True)
+        self.mocker.replay()
+
+        old_configuration = (
+            "[client]\n"
+            "computer_title = Old Title\n"
+            "account_name = Old Name\n"
+            "registration_password = Old Password\n"
+            "http_proxy = http://old.proxy\n"
+            "https_proxy = https://old.proxy\n"
+            "url = http://old.url\n")
+
+        new_configuration = (
+            "[client]\n"
+            "account_name = New Name\n"
+            "registration_password = New Password\n"
+            "url = http://new.url\n")
+
+        config_filename = self.makeFile(old_configuration,
+                                        basename="final_config")
+        import_filename = self.makeFile(new_configuration,
+                                        basename="import_config")
+
+        # Use a command line option as well to test the precedence.
+        config = self.get_config(["--config", config_filename, "--silent",
+                                  "--import", import_filename,
+                                  "-p", "Command Line Password"])
+        setup(config)
+
+        options = ConfigParser()
+        options.read(config_filename)
+
+        self.assertEquals(dict(options.items("client")),
+                          {"computer_title": "Old Title",
+                           "account_name": "New Name",
+                           "registration_password": "Command Line Password",
+                           "http_proxy": "http://old.proxy",
+                           "https_proxy": "https://old.proxy",
+                           "url": "http://new.url"})
+
+    def test_import_from_file_may_reset_old_options(self):
+        """
+        This test ensures that setting an empty option in an imported
+        configuration file will actually set the local value to empty
+        too, rather than being ignored.
+        """
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        sysvconfig_mock.set_start_on_boot(True)
+        sysvconfig_mock.restart_landscape()
+        self.mocker.result(True)
+        self.mocker.replay()
+
+        old_configuration = (
+            "[client]\n"
+            "computer_title = Old Title\n"
+            "account_name = Old Name\n"
+            "registration_password = Old Password\n"
+            "url = http://old.url\n")
+
+        new_configuration = (
+            "[client]\n"
+            "registration_password =\n")
+
+        config_filename = self.makeFile(old_configuration,
+                                        basename="final_config")
+        import_filename = self.makeFile(new_configuration,
+                                        basename="import_config")
+
+        config = self.get_config(["--config", config_filename, "--silent",
+                                  "--import", import_filename])
+        setup(config)
+
+        options = ConfigParser()
+        options.read(config_filename)
+
+        self.assertEquals(dict(options.items("client")),
+                          {"computer_title": "Old Title",
+                           "account_name": "Old Name",
+                           "registration_password": "", # <==
+                           "url": "http://old.url"})
+
+    def test_import_from_url(self):
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        sysvconfig_mock.set_start_on_boot(True)
+        sysvconfig_mock.restart_landscape()
+        self.mocker.result(True)
+
+        configuration = (
+            "[client]\n"
+            "computer_title = New Title\n"
+            "account_name = New Name\n"
+            "registration_password = New Password\n"
+            "http_proxy = http://new.proxy\n"
+            "https_proxy = https://new.proxy\n"
+            "url = http://new.url\n")
+
+        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
+        fetch_mock("https://config.url")
+        self.mocker.result(configuration)
+
+        print_text_mock = self.mocker.replace(print_text)
+        print_text_mock("Fetching configuration from https://config.url...")
+
+        self.mocker.replay()
+
+        config_filename = self.makeFile("", basename="final_config")
+
+        config = self.get_config(["--config", config_filename, "--silent",
+                                  "--import", "https://config.url"])
+        setup(config)
+
+        options = ConfigParser()
+        options.read(config_filename)
+
+        self.assertEquals(dict(options.items("client")),
+                          {"computer_title": "New Title",
+                           "account_name": "New Name",
+                           "registration_password": "New Password",
+                           "http_proxy": "http://new.proxy",
+                           "https_proxy": "https://new.proxy",
+                           "url": "http://new.url"})
+
+    def test_import_from_url_with_http_code_fetch_error(self):
+        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
+        fetch_mock("https://config.url")
+        self.mocker.throw(HTTPCodeError(501, ""))
+
+        print_text_mock = self.mocker.replace(print_text)
+        print_text_mock("Fetching configuration from https://config.url...")
+
+        self.mocker.replay()
+
+        config_filename = self.makeFile("", basename="final_config")
+
+        try:
+            self.get_config(["--config", config_filename, "--silent",
+                             "--import", "https://config.url"])
+        except ImportOptionError, error:
+            self.assertEquals(str(error), 
+                              "Couldn't download configuration from "
+                              "https://config.url: Server "
+                              "returned HTTP code 501")
+        else:
+            self.fail("ImportOptionError not raised")
+
+    def test_import_from_url_with_pycurl_error(self):
+        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
+        fetch_mock("https://config.url")
+        self.mocker.throw(pycurl.error(60, "pycurl message"))
+
+        print_text_mock = self.mocker.replace(print_text)
+        print_text_mock("Fetching configuration from https://config.url...")
+
+        self.mocker.replay()
+
+        config_filename = self.makeFile("", basename="final_config")
+
+        try:
+            self.get_config(["--config", config_filename, "--silent",
+                             "--import", "https://config.url"])
+        except ImportOptionError, error:
+            self.assertEquals(str(error), 
+                              "Couldn't download configuration from "
+                              "https://config.url: pycurl message")
+        else:
+            self.fail("ImportOptionError not raised")
+
+    def test_import_from_url_with_empty_content(self):
+        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
+        fetch_mock("https://config.url")
+        self.mocker.result("")
+
+        print_text_mock = self.mocker.replace(print_text)
+        print_text_mock("Fetching configuration from https://config.url...")
+
+        self.mocker.replay()
+
+        # Use a command line option as well to test the precedence.
+        try:
+            self.get_config(["--silent", "--import", "https://config.url"])
+        except ImportOptionError, error:
+            self.assertEquals(str(error), 
+                              "Nothing to import at https://config.url.")
+        else:
+            self.fail("ImportOptionError not raised")
+
+    def test_import_from_url_with_bogus_content(self):
+        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
+        fetch_mock("https://config.url")
+        self.mocker.result("<strong>BOGUS!</strong>")
+
+        print_text_mock = self.mocker.replace(print_text)
+        print_text_mock("Fetching configuration from https://config.url...")
+
+        self.mocker.replay()
+
+        # Use a command line option as well to test the precedence.
+        try:
+            self.get_config(["--silent", "--import", "https://config.url"])
+        except ImportOptionError, error:
+            self.assertIn("File contains no section headers.", str(error))
+        else:
+            self.fail("ImportOptionError not raised")
+
+    def test_import_error_is_handled_nicely_by_main(self):
+        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
+        fetch_mock("https://config.url")
+        self.mocker.throw(HTTPCodeError(404, ""))
+
+        print_text_mock = self.mocker.replace(print_text)
+        print_text_mock("Fetching configuration from https://config.url...")
+        print_text_mock(CONTAINS("Server returned HTTP code 404"), error=True)
+
+        self.mocker.replay()
+
+        system_exit = self.assertRaises(
+            SystemExit, main, ["--import", "https://config.url"])
+        self.assertEquals(system_exit.code, 1)
+
+    def test_base64_ssl_public_key_is_exported_to_file(self):
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        sysvconfig_mock.set_start_on_boot(True)
+        sysvconfig_mock.restart_landscape()
+        self.mocker.result(True)
+
+        config_filename = self.makeFile("")
+        key_filename = config_filename + ".ssl_public_key"
+
+        print_text_mock = self.mocker.replace(print_text)
+        print_text_mock("Writing SSL public key to %s..." % key_filename)
+
+        self.mocker.replay()
+
+        config = self.get_config(["--silent", "-c", config_filename,
+                                  "-u", "url", "-a", "account", "-t", "title",
+                                  "--ssl-public-key", "base64:SGkgdGhlcmUh"])
+        setup(config)
+
+        self.assertTrue(os.path.isfile(key_filename))
+        self.assertEquals(open(key_filename).read(), "Hi there!")
+
+        options = ConfigParser()
+        options.read(config_filename)
+        self.assertEquals(options.get("client", "ssl_public_key"),
+                          key_filename)
+
+    def test_normal_ssl_public_key_is_not_exported_to_file(self):
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        sysvconfig_mock.set_start_on_boot(True)
+        sysvconfig_mock.restart_landscape()
+        self.mocker.result(True)
+        self.mocker.replay()
+
+        config_filename = self.makeFile("")
+
+        config = self.get_config(["--silent", "-c", config_filename,
+                                  "-u", "url", "-a", "account", "-t", "title",
+                                  "--ssl-public-key", "/some/filename"])
+        setup(config)
+
+        key_filename = config_filename + ".ssl_public_key"
+        self.assertFalse(os.path.isfile(key_filename))
+
+        options = ConfigParser()
+        options.read(config_filename)
+        self.assertEquals(options.get("client", "ssl_public_key"),
+                          "/some/filename")
+
+    # We test them individually since they must work individually.
+    def test_import_from_url_honors_http_proxy(self):
+        self.ensure_import_from_url_honors_proxy_options("http_proxy")
+
+    def test_import_from_url_honors_https_proxy(self):
+        self.ensure_import_from_url_honors_proxy_options("https_proxy")
+
+    def ensure_import_from_url_honors_proxy_options(self, proxy_option):
+        def check_proxy(url):
+            self.assertEquals(os.environ.get(proxy_option), "http://proxy")
+
+        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
+        fetch_mock("https://config.url")
+        self.mocker.call(check_proxy)
+
+        # Doesn't matter.  We just want to check the context around it.
+        self.mocker.result("")
+
+        print_text_mock = self.mocker.replace(print_text)
+        print_text_mock("Fetching configuration from https://config.url...")
+
+        self.mocker.replay()
+
+        config_filename = self.makeFile("", basename="final_config")
+
+        try:
+            self.get_config(["--config", config_filename, "--silent",
+                             "--" + proxy_option.replace("_", "-"),
+                             "http://proxy",
+                             "--import", "https://config.url"])
+        except ImportOptionError:
+            pass # The returned content is empty.  We don't really
+                 # care for this test.  Mocker will ensure the tests
+                 # we care about are done.
 
 
 class RegisterFunctionTest(LandscapeIsolatedTest):
@@ -1219,7 +1633,7 @@ class RegisterFunctionNoServiceTest(LandscapeIsolatedTest):
 
     def setUp(self):
         super(RegisterFunctionNoServiceTest, self).setUp()
-        self.configuration = LandscapeSetupConfiguration()
+        self.configuration = LandscapeSetupConfiguration(None)
         # Let's not mess about with the system bus
         self.configuration.load_command_line(["--bus", "session"])
 

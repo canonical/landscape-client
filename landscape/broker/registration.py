@@ -6,6 +6,7 @@ from twisted.internet.defer import Deferred
 
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.bpickle import loads
+from landscape.lib.log import log_failure
 
 
 EC2_API = "http://169.254.169.254/latest"
@@ -39,9 +40,6 @@ class Identity(object):
     computer_title = config_property("computer_title")
     account_name = config_property("account_name")
     registration_password = config_property("registration_password")
-    otp = None
-    instance_key = None
-    hostname = None
 
     def __init__(self, config, persist):
         self._config = config
@@ -56,13 +54,15 @@ class RegistrationHandler(object):
     L{register} should be used to initial registration.
     """
 
-    def __init__(self, identity, reactor, exchange, message_store, cloud=False,
-                 fetch_async=None):
+    def __init__(self, config, identity, reactor, exchange, pinger,
+                 message_store, cloud=False, fetch_async=None):
+        self._config = config
         self._identity = identity
         self._reactor = reactor
         self._exchange = exchange
+        self._pinger = pinger
         self._message_store = message_store
-        self._reactor.call_on("run", self._handle_run)
+        self._reactor.call_on("run", self._fetch_ec2_data)
         self._reactor.call_on("pre-exchange", self._handle_pre_exchange)
         self._reactor.call_on("exchange-done", self._handle_exchange_done)
         self._exchange.register_message("set-id", self._handle_set_id)
@@ -72,6 +72,7 @@ class RegistrationHandler(object):
         self._should_register = None
         self._cloud = cloud
         self._fetch_async = fetch_async
+        self._otp = None
 
     def should_register(self):
         id = self._identity
@@ -96,49 +97,91 @@ class RegistrationHandler(object):
         self._exchange.exchange()
         return result
 
-    def _handle_run(self):
+    def _extract_ec2_instance_data(self, raw_user_data, launch_index):
+        """
+        Given the raw string of EC2 User Data, parse it and return the dict of
+        instance data for this particular instance.
+
+        If the data can't be parsed, a debug message will be logged and None
+        will be returned.
+        """
+        try:
+            user_data = loads(raw_user_data)
+        except ValueError:
+            logging.debug("Got invalid user-data %r" % (raw_user_data,))
+            return
+
+        if not isinstance(user_data, dict):
+            logging.debug("user-data %r is not a dict" % (user_data,))
+            return
+        for key in "otps", "exchange-url", "ping-url":
+            if key not in user_data:
+                logging.debug("user-data %r doesn't have key %r."
+                              % (user_data, key))
+                return
+        if len(user_data["otps"]) <= launch_index:
+            logging.debug("user-data %r doesn't have OTP for launch index %d"
+                          % (user_data, launch_index))
+            return
+        return {"otp": user_data["otps"][launch_index],
+                "exchange-url": user_data["exchange-url"],
+                "ping-url": user_data["ping-url"]}
+
+    def _fetch_ec2_data(self):
         id = self._identity
         if self._cloud and not id.secure_id:
             # Fetch data from the EC2 API, to be used later in the registration
             # process
-            userdata_deferred = self._fetch_async(EC2_API + "/user-data")
-            instance_key_deferred = self._fetch_async(
-                EC2_API + "/meta-data/instance-id")
-            hostname_deferred = self._fetch_async(
-                EC2_API + "/meta-data/local-hostname")
-            launch_index_deferred = self._fetch_async(
-                EC2_API + "/meta-data/ami-launch-index")
-            registration_data = gather_results([userdata_deferred,
-                                                instance_key_deferred,
-                                                hostname_deferred,
-                                                launch_index_deferred],
-                                                consume_errors=True)
-            def got_data(results):
-                got_otp = True
-                launch_index = int(results[3])
-                try:
-                    user_data = loads(results[0])
-                except ValueError:
-                    logging.debug("Got invalid user-data %r" % (results[0],))
-                    got_otp = False
-                    user_data = {}
-                if (not isinstance(user_data, (tuple, list))
-                    or len(user_data) < launch_index + 1
-                    or not "otp" in user_data[launch_index]):
-                    logging.debug(
-                        "OTP not present in user-data %r" % (user_data,))
-                    got_otp = False
-                if got_otp:
-                    id.otp = user_data[launch_index]["otp"]
-                id.instance_key = unicode(results[1])
-                id.hostname= results[2]
+            registration_data = gather_results([
+                self._fetch_async(EC2_API + "/user-data"),
+                self._fetch_async(EC2_API + "/meta-data/instance-id"),
+                self._fetch_async(EC2_API + "/meta-data/reservation-id"),
+                self._fetch_async(EC2_API + "/meta-data/local-hostname"),
+                self._fetch_async(EC2_API + "/meta-data/public-hostname"),
+                self._fetch_async(EC2_API + "/meta-data/ami-launch-index"),
+                self._fetch_async(EC2_API + "/meta-data/kernel-id"),
+                self._fetch_async(EC2_API + "/meta-data/ramdisk-id"),
+                self._fetch_async(EC2_API + "/meta-data/ami-id"),
+                ],
+                consume_errors=True)
 
-            def got_error(error):
-                logging.error(
-                    "Got error while fetching meta-data: %r" % (error.value,))
+            def record_data(ec2_data):
+                """Record the instance data returned by the EC2 API."""
+                (raw_user_data, instance_key, reservation_key,
+                 local_hostname, public_hostname, launch_index,
+                 kernel_key, ramdisk_key, ami_key) = ec2_data
+                self._ec2_data = {
+                    "instance_key": instance_key,
+                    "reservation_key": reservation_key,
+                    "local_hostname": local_hostname,
+                    "public_hostname": public_hostname,
+                    "launch_index": launch_index,
+                    "kernel_key": kernel_key,
+                    "ramdisk_key": ramdisk_key,
+                    "image_key": ami_key}
+                for k, v in self._ec2_data.items():
+                    self._ec2_data[k] = v.decode("utf-8")
+                self._ec2_data["launch_index"] = int(
+                    self._ec2_data["launch_index"])
 
-            registration_data.addCallback(got_data)
-            registration_data.addErrback(got_error)
+                instance_data = self._extract_ec2_instance_data(
+                    raw_user_data, int(launch_index))
+                if instance_data is not None:
+                    self._otp = instance_data["otp"]
+                    exchange_url = instance_data["exchange-url"]
+                    ping_url = instance_data["ping-url"]
+                    self._exchange._transport.set_url(exchange_url)
+                    self._pinger.set_url(ping_url)
+                    self._config.url = exchange_url
+                    self._config.ping_url = ping_url
+                    self._config.write()
+
+            def log_error(error):
+                log_failure(error, msg="Got error while fetching meta-data: %r"
+                            % (error.value,))
+
+            registration_data.addCallback(record_data)
+            registration_data.addErrback(log_error)
 
     def _handle_exchange_done(self):
         if self.should_register() and not self._should_register:
@@ -164,25 +207,26 @@ class RegistrationHandler(object):
 
             self._message_store.delete_all_messages()
             if self._cloud:
-                if id.otp:
+                if self._otp:
                     logging.info("Queueing message to register with OTP")
                     message = {"type": "register-cloud-vm",
-                               "otp": id.otp,
-                               "instance_key": id.instance_key,
-                               "hostname": id.hostname,
+                               "otp": self._otp,
+                               "hostname": socket.gethostname(),
                                "account_name": None,
-                               "registration_password": None}
+                               "registration_password": None,
+                               }
+                    message.update(self._ec2_data)
                     self._exchange.send(message)
                 elif id.account_name:
                     logging.info("Queueing message to register with account "
                                  "%r as an EC2 instance." % (id.account_name,))
                     message = {"type": "register-cloud-vm",
                                "otp": None,
-                               "instance_key": id.instance_key,
-                               "hostname": id.hostname,
+                               "hostname": socket.gethostname(),
                                "account_name": id.account_name,
                                "registration_password": \
                                    id.registration_password}
+                    message.update(self._ec2_data)
                     self._exchange.send(message)
                 else:
                     self._reactor.fire("registration-failed")

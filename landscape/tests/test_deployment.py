@@ -1,4 +1,5 @@
 import sys
+import os
 from optparse import OptionParser
 import logging
 import signal
@@ -218,7 +219,7 @@ class ConfigurationTest(LandscapeTest):
     def test_write_to_given_config_file(self):
         filename = self.makeFile()
         self.config.load(["--log-level", "warning", "--config", filename],
-                         accept_unexistent_config=True)
+                         accept_nonexistent_config=True)
         self.config.log_level = "error"
         self.config.write()
         data = open(filename).read()
@@ -305,6 +306,39 @@ class ConfigurationTest(LandscapeTest):
     def test_ignore_sigint_default(self):
         opts = self.parser.parse_args([])[0]
         self.assertEquals(opts.ignore_sigint, False)
+
+    def test_get_config_filename_precedence(self):
+        default_filename1 = self.makeFile("")
+        default_filename2 = self.makeFile("")
+        explicit_filename = self.makeFile("")
+        loaded_filename = self.makeFile("")
+        self.config.default_config_filenames[:] = [default_filename1,
+                                                   default_filename2]
+
+        # If nothing else is set, and the first configuration file
+        # isn't readable, return the second default file.
+        os.chmod(default_filename1, 0)
+        self.assertEquals(self.config.get_config_filename(),
+                          default_filename2)
+        
+        # If is is readable, than return the first default configuration file.
+        os.chmod(default_filename1, 0644)
+        self.assertEquals(self.config.get_config_filename(),
+                          default_filename1)
+
+        # Unless another file was explicitly loaded before, in which
+        # case return the loaded filename.
+        self.config.load_configuration_file(loaded_filename)
+        self.assertEquals(self.config.get_config_filename(),
+                          loaded_filename)
+
+        # Except in the case where a configuration file was explicitly
+        # requested through the command line or something.  In this case,
+        # this is the highest precedence.
+        self.config.config = explicit_filename
+        self.assertEquals(self.config.get_config_filename(),
+                          explicit_filename)
+
 
 
 class GetVersionedPersistTest(LandscapeTest):
