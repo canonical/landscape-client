@@ -385,33 +385,23 @@ class SmartFacadeTest(LandscapeTest):
 
         self.assertEquals(smart.sysconf.get("deb-arch"), "i386")
 
-    def test_add_channel(self):
+    def test_add_apt_deb_channel(self):
 
         # Add a couple of channels
-        channels = {
-            "channel0": {
-                "baseurl": "http://an.apt.server/base",
-                "distribution": "hardy",
-                "components": "main",
-                "manual": False,
-                "disabled": False,
-                "removable": False,
-                "type": "apt-deb"},
-            "channel1": {
-                "baseurl": "http://another.apt.server/base",
-                "distribution": "hardy-updates",
-                "components": "main universe",
-                "manual": False,
-                "disabled": False,
-                "removable": False,
-                "type": "apt-deb"} }
+        url = ("http://some.url/base", "http://other.url/path")
+        distribution = ("hardy", "hardy-updates")
+        components = (["main"], ["main", "universe"])
 
-        self.facade.add_channel(channels["channel0"]["baseurl"],
-                                channels["channel0"]["distribution"],
-                                channels["channel0"]["components"].split())
-        self.facade.add_channel(channels["channel1"]["baseurl"],
-                                channels["channel1"]["distribution"],
-                                channels["channel1"]["components"].split())
+        channels = {}
+        for i in range(2):
+            channels.update( {
+                    "alias%d" % i: {
+                        "baseurl": url[i],
+                        "distribution": distribution[i],
+                        "components": " ".join(components[i]),
+                        "type": "apt-deb"} } )
+                    
+            self.facade.add_apt_deb_channel(url[i], distribution[i], components[i])
 
         # In order to download the APT package lists Smart caching must
         # be set to NEVER
@@ -425,7 +415,7 @@ class SmartFacadeTest(LandscapeTest):
         self.assertEquals(smart.sysconf.get("channels"), channels)
 
     def test_add_channel_with_reload_error(self):
-        self.facade.add_channel("http://not.existing.url", "hardy", "main")
+        self.facade.add_apt_deb_channel("http://not.existing.url", "hardy", "main")
 
         ctrl_mock = self.mocker.patch(Control)
         ctrl_mock.reloadChannels(caching = NEVER)
