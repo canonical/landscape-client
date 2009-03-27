@@ -215,7 +215,7 @@ class MessageExchange(object):
             # while there's a background thread doing the exchange itself.
             return
 
-        if self._exchange_id and not (force or urgent):
+        if (self._exchange_id is not None) and not (force or urgent):
             # An exchange is already scheduled and neither force or urgent
             # is True
             return
