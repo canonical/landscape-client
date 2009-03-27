@@ -14,7 +14,10 @@ from landscape.broker.ping import Pinger
 
 
 class BrokerConfiguration(Configuration):
-    """Specialized configuration for the Landscape Broker."""
+    """Specialized configuration for the Landscape Broker.
+
+    @cvar required_options: C{["url"]}
+    """
 
     required_options = ["url"]
 
@@ -24,9 +27,21 @@ class BrokerConfiguration(Configuration):
         self._original_https_proxy = os.environ.get("https_proxy")
 
     def make_parser(self):
-        """
-        Specialize L{Configuration.make_parser}, adding many
-        broker-specific options.
+        """Parser factory for broker-specific options.
+
+        @return: An L{OptionParser} preset for all the options
+            from L{Configuration.make_parser} plus:
+              - C{account_name}
+              - C{registration_password}
+              - C{computer_title}
+              - C{url}
+              - C{ssl_public_key}
+              - C{exchange_interval} (C{15*60})
+              - C{urgent_exchange_interval} (C{1*60})
+              - C{ping_url}
+              - C{http_proxy}
+              - C{https_proxy}
+              - C{cloud}
         """
         parser = super(BrokerConfiguration, self).make_parser()
 
@@ -63,13 +78,16 @@ class BrokerConfiguration(Configuration):
 
     @property
     def message_store_path(self):
+        """Get the path to the message store"""
         return os.path.join(self.data_path, "messages")
 
     def load(self, args, accept_nonexistent_config=False):
         """
+        Load options from command line arguments and a config file.
+
         Load the configuration with L{Configuration.load}, and then set
-        http_proxy and https_proxy environment variables based on that config
-        data.
+        C{http_proxy} and C{https_proxy} environment variables based on
+        that config data.
         """
         super(BrokerConfiguration, self).load(
             args, accept_nonexistent_config=accept_nonexistent_config)
@@ -86,14 +104,34 @@ class BrokerConfiguration(Configuration):
 
 class BrokerService(LandscapeService):
     """
-    The core Twisted Service which creates and runs all necessary
-    components when started.
+    The core C{Service} of the Landscape Broker C{Application}.
+
+    The Landscape broker service handles all the communication between the
+    client and server. When started it creates and run all necessary components
+    to exchange messages with the Landscape server.
+
+    @ivar persist_filename: Path to broker-specific persisted data.
+    @ivar persist: A L{Persist} object saving and loading from
+                   C{self.persist_filename}.
+    @ivar message_store: A L{MessageStore} used by the C{exchanger} to
+                         queue outgoing messages.
+    @ivar transport: A L{HTTPTransport} used by the C{exchanger} to deliver messages.
+    @ivar identity: The L{Identity} of the Landscape client the broker runs on.
+    @ivar exchanger: The L{MessageExchange} exchanges messages with the server.
+    @ivar pinger: The L{Pinger} checks if the server has new messages for us.
+    @ivar registration: The L{RegistrationHandler} performs the initial
+                        registration.
+
+    @cvar service_name: C{"broker"}
     """
 
     transport_factory = HTTPTransport
     service_name = "broker"
 
     def __init__(self, config):
+        """
+        @param config: a L{BrokerConfiguration}.
+        """
         self.persist_filename = os.path.join(
             config.data_path, "%s.bpickle" % (self.service_name,))
         super(BrokerService, self).__init__(config)
@@ -128,9 +166,10 @@ class BrokerService(LandscapeService):
         reactor.stop()
 
     def startService(self):
-        """
-        Set up the persist, message store, transport, reactor, and
-        dbus message exchange service.
+        """Start the broker.
+
+        Create the DBus-published L{BrokerDBusObject}, and start
+        the L{MessageExchange} and L{Pinger} services.
 
         If the configuration specifies the bus as 'session', the DBUS
         message exchange service will use the DBUS Session Bus.

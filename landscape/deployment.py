@@ -44,12 +44,12 @@ def init_logging(configuration, program_name):
 class BaseConfiguration(object):
     """Base class for configuration implementations.
 
-    @var required_options: Optionally, a sequence of key names to require when
+    @cvar required_options: Optionally, a sequence of key names to require when
         reading or writing a configuration.
-    @var unsaved_options: Optionally, a sequence of key names to never write
+    @cvar unsaved_options: Optionally, a sequence of key names to never write
         to the configuration file.  This is useful when you want to provide
         command-line options that should never end up in a configuration file.
-    @var default_config_filenames: A sequence of filenames to check when
+    @cvar default_config_filenames: A sequence of filenames to check when
         reading or writing a configuration.
     """
 
@@ -63,6 +63,11 @@ class BaseConfiguration(object):
     config_section = "client"
 
     def __init__(self):
+        """
+        Default configuration.
+
+        Default values for supported options are set as in L{make_parser}.
+        """
         self._set_options = {}
         self._command_line_args = []
         self._command_line_options = {}
@@ -78,10 +83,10 @@ class BaseConfiguration(object):
         """Find and return the value of the given configuration parameter.
 
         The following sources will be searched:
-          * The attributes that were explicitly set on this object,
-          * The parameters specified on the command line,
-          * The parameters specified in the configuration file, and
-          * The defaults.
+          - The attributes that were explicitly set on this object,
+          - The parameters specified on the command line,
+          - The parameters specified in the configuration file, and
+          - The defaults.
 
         If no values are found and the parameter does exist as a possible
         parameter, C{None} is returned.
@@ -107,6 +112,7 @@ class BaseConfiguration(object):
         return value
 
     def get(self, name, default=None):
+        """Return the value of the C{name} option or C{default}."""
         try:
             return self.__getattr__(name)
         except AttributeError:
@@ -124,6 +130,10 @@ class BaseConfiguration(object):
             self._set_options[name] = value
 
     def reload(self):
+        """Reload options using the configured command line arguments.
+
+        @see: L{load_command_line}
+        """
         self.load(self._command_line_args)
 
     def load(self, args, accept_nonexistent_config=False):
@@ -189,15 +199,12 @@ class BaseConfiguration(object):
 
         Options are considered in the following precedence:
 
-        1. Manually set options (config.option = value)
-        2. Options passed in the command line
-        3. Previously existent options in the configuration file
+          1. Manually set options (C{config.option = value})
+          2. Options passed in the command line
+          3. Previously existent options in the configuration file
 
-        The filename picked for saving configuration options is:
-
-        1. self.config, if defined
-        2. The last loaded configuration file, if any
-        3. The first filename in self.default_config_filenames
+        The filename picked for saving configuration options is the one
+        returned by L{get_config_filename}.
         """
         # The filename we'll write to
         filename = self.get_config_filename()
@@ -223,9 +230,12 @@ class BaseConfiguration(object):
         config_file.close()
 
     def make_parser(self):
-        """
-        Return an L{OptionParser} preset with options that all
-        landscape-related programs accept.
+        """Parser factory for supported options
+
+        @return: An L{OptionParser} preset with options that all
+            landscape-related programs accept. These include
+              - C{config} (C{None})
+              - C{bus} (C{system})
         """
         parser = OptionParser(version=VERSION)
         parser.add_option("-c", "--config", metavar="FILE",
@@ -237,6 +247,13 @@ class BaseConfiguration(object):
         return parser
 
     def get_config_filename(self):
+        """Pick the proper configuration file
+
+        The picked filename is:
+          1. C{self.config}, if defined
+          2. The last loaded configuration file, if any
+          3. The first filename in C{self.default_config_filenames}
+        """
         if self.config:
             return self.config
         if self._config_filename:
@@ -249,6 +266,10 @@ class BaseConfiguration(object):
         return None
 
     def get_command_line_options(self):
+        """Get currently loaded command line options
+
+        @see: L{load_command_line}
+        """
         return self._command_line_options
 
 
@@ -263,9 +284,15 @@ class Configuration(BaseConfiguration):
         return os.path.join(self.data_path, "hash.db")
 
     def make_parser(self):
-        """
-        Return an L{OptionParser} preset with options that all
-        landscape-related programs accept.
+        """Parser factory for supported options
+
+        @return: An L{OptionParser} preset for all options
+            from L{BaseConfiguration.make_parser} plus:
+              - C{data_path} (C{"/var/lib/landscape/client/"})
+              - C{quiet} (C{False})
+              - C{log_dir} (C{"/var/log/landscape"})
+              - C{log_level} (C{"info"})
+              - C{ignore_sigint} (C{False})
         """
         parser = super(Configuration, self).make_parser()
         parser.add_option("-d", "--data-path", metavar="PATH",
@@ -286,9 +313,10 @@ class Configuration(BaseConfiguration):
 
 
 def get_versioned_persist(service):
-    """
-    Load a Persist database for the given service and upgrade or mark
-    as current, as necessary.
+    """Get a L{Persist} database with upgrade rules applied
+
+    Load a L{Persist} database for the given C{service} and upgrade or
+    mark as current, as necessary.
     """
     persist = Persist(filename=service.persist_filename)
     upgrade_manager = UPGRADE_MANAGERS[service.service_name]
@@ -301,12 +329,12 @@ def get_versioned_persist(service):
 
 
 class LandscapeService(Service, object):
-    """
-    A utility superclass for defining Landscape services.
+    """Utility superclass for defining Landscape services.
 
     This sets up the reactor, bpickle/dbus integration, a Persist object, and
     connects to the bus when started.
 
+    @ivar reactor: a L{TwistedReactor} object.
     @cvar service_name: The lower-case name of the service. This is used to
         generate the bpickle filename.
     """
@@ -322,6 +350,12 @@ class LandscapeService(Service, object):
         signal.signal(signal.SIGUSR1, lambda signal, frame: rotate_logs())
 
     def startService(self):
+        """
+        Extend L{twisted.application.service.IService.startService}.
+
+        Craete a a new DBus connection (normally a C{SystemBus}) and
+        save it in the public L{self.bus} instance variable.
+        """
         Service.startService(self)
         self.bus = get_bus(self.config.bus)
         info("%s started on '%s' bus with config %s" % (
@@ -351,11 +385,18 @@ _required_users = {
 
 
 def run_landscape_service(configuration_class, service_class, args, bus_name):
-    """Run a Landscape service.
+    """
+    Run a Landscape service.
 
-    @param configuration_class: A subclass of L{Configuration} for processing
-        the C{args} and config file.
-    @param service_class: A subclass of L{LandscapeService} to create and start.
+    The function will instantiate the given L{LandscapeService} subclass
+    and attach the resulting service object to a Twisted C{Application}.
+
+    After that it will start the Twisted L{Application} and call the
+    L{TwistedReactor.run} method of the L{LandscapeService}'s reactor.
+
+    @param configuration_class: The service-specific subclass of L{Configuration} used
+        to parse C{args} and build the C{service_class} object.
+    @param service_class: The L{LandscapeService} subclass to create and start.
     @param args: Command line arguments.
     @param bus_name: A bus name used to verify if the service is already
         running.

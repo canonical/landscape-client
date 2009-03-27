@@ -6,6 +6,7 @@ import logging
 import os
 
 from landscape.lib import bpickle
+from landscape.lib.persist import Persist
 from landscape.lib.monitor import Monitor
 from landscape import API
 
@@ -22,7 +23,7 @@ class MessageStore(object):
     that reason, let's review the terminology here.
 
     Assume we have 10 messages in the store, which we label by
-    the following uppercase letters:
+    the following uppercase letters::
 
         A, B, C, D, E, F, G, H, I, J
                  ^
@@ -41,6 +42,11 @@ class MessageStore(object):
 
     def __init__(self, persist, directory, directory_size=1000,
                  monitor_interval=60*60, get_time=time.time):
+        """
+        @param persist: a L{Persist} used to save state parameters like
+            the accepted message types, sequence, server uuid etc.
+        @param directory: base of the file system hierarchy
+        """
         self._get_time = get_time
         self._directory = directory
         self._directory_size = directory_size
@@ -52,7 +58,7 @@ class MessageStore(object):
             os.makedirs(message_dir)
 
     def commit(self):
-        """Save metadata to disk."""
+        """Persist metadata to disk."""
         self._original_persist.save()
 
     def set_accepted_types(self, types):
@@ -67,20 +73,26 @@ class MessageStore(object):
         self._reprocess_holding()
 
     def get_accepted_types(self):
+        """Get a list of all accepted message types."""
         return self._persist.get("accepted-types", ())
 
     def accepts(self, type):
+        """Return bool indicating if C{type} is an accepted message type."""
         return type in self.get_accepted_types()
 
     def get_sequence(self):
         """
-        Get the sequence number of the message that the server expects us to
-        send on the next exchange.
+        Get the current sequence.
+
+        @return: The sequence number of the message that the server expects us to
+           send on the next exchange.
         """
         return self._persist.get("sequence", 0)
 
     def set_sequence(self, number):
         """
+        Set the current sequence.
+
         Set the sequence number of the message that the server expects us to
         send on the next exchange.
         """
@@ -88,13 +100,17 @@ class MessageStore(object):
 
     def get_server_sequence(self):
         """
-        Get the sequence number of the message that we will ask the server to
-        send to us on the next exchange.
+        Get the current server sequence.
+
+        @return: the sequence number of the message that we will ask the server to
+            send to us on the next exchange.
         """
         return self._persist.get("server_sequence", 0)
 
     def set_server_sequence(self, number):
         """
+        Set the current server sequence.
+
         Set the sequence number of the message that we will ask the server to
         send to us on the next exchange.
         """
@@ -109,16 +125,20 @@ class MessageStore(object):
         self._persist.set("server_uuid", uuid)
 
     def get_pending_offset(self):
+        """Get the current pending offset."""
         return self._persist.get("pending_offset", 0)
 
     def set_pending_offset(self, val):
         """
+        Set the current pending offset.
+
         Set the offset into the message pool to consider assigned to the
         current sequence number as returned by l{get_sequence}.
         """
         self._persist.set("pending_offset", val)
 
     def add_pending_offset(self, val):
+        """Increment the current pending offset by C{val}."""
         self.set_pending_offset(self.get_pending_offset() + val)
 
     def count_pending_messages(self):
@@ -186,7 +206,9 @@ class MessageStore(object):
 
     def add(self, message):
         """Queue a message for delivery.
-        
+
+        @param message: a C{dict} with a C{type} key and other keys conforming
+            to the L{Message} schema for that specifc message type.
         @return: message_id, which is an identifier for the added message.
         """
         assert "type" in message

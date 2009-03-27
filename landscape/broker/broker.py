@@ -19,7 +19,18 @@ IFACE_NAME = BUS_NAME
 
 
 class BrokerDBusObject(Object):
-    """A DBus-published object which allows adding messages to the queue."""
+    """
+    A DBus-published object exposing broker's services and emitting signals.
+
+    Each public method decorated with C{@method(IFACE_NAME)} exposes a
+    broker's service to the other Landscape client processes, which can
+    remote call it through the D-Bus interface.
+    
+    Each public method decorated with C{@signal(IFACE_NAME)} turns the
+    corresponding broker's L{TwistedReactor} event into a a D-Bus signal,
+    whigh get broadcasted over the bus and eventually received by the
+    other Landscape client processes .
+    """
 
     bus_name = BUS_NAME
     object_path = OBJECT_PATH
@@ -27,9 +38,11 @@ class BrokerDBusObject(Object):
     def __init__(self, config, reactor, exchange, registration,
                  message_store, bus):
         """
-        @param exchange: The
-            L{MessageExchange<landscape.exchange.MessageExchange>} to send
-            messages with.
+        @param config: The L{BrokerConfiguration} used by the broker.
+        @param reactor: The L{TwistedReactor} driving the broker's events.
+        @param exchange: The L{MessageExchange} to send messages with.
+        @param registration: The {RegistrationHandler}.
+        @param message_store: The broker's L{MessageStore}.
         @param bus: The L{Bus} that represents where we're listening.
         """
         super(BrokerDBusObject, self).__init__(bus)
@@ -67,6 +80,11 @@ class BrokerDBusObject(Object):
         pass
 
     def _broadcast_message(self, message):
+        """
+        Call the C{message} method of all the registered plugins.
+
+        @see: L{register_plugin}.
+        """
         blob = byte_array(dumps(message))
         results = []
         for plugin in self.get_plugin_objects():
@@ -172,6 +190,12 @@ Please contact the Landscape team for more information.
 
     @method(IFACE_NAME)
     def register_plugin(self, bus_name, object_path):
+        """
+        Register a new plugin.
+
+        Plugins are DBus-published objects identified by C{bus_name}
+        and C{object_path}.
+        """
         self._registered_plugins.add((bus_name, object_path))
 
     @method(IFACE_NAME)

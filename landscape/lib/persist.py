@@ -40,21 +40,23 @@ class PersistReadOnlyError(PersistError):
 
 
 class Persist(object):
-    """Persistence handler.
+
+    """
+    Persist a hierarchical database of key=>value pairs.
 
     There are three different kinds of opition maps, regarding the
     persistence and priority that maps are queried.
 
-    hard - Options are persistent.
-    soft - Options are not persistent, and have a higher priority
+      - hard - Options are persistent.
+      - soft - Options are not persistent, and have a higher priority
            than persistent options.
-    weak - Options are not persistent, and have a lower priority
+      - weak - Options are not persistent, and have a lower priority
            than persistent options.
 
     @ivar filename: The name of the file where persist data is saved
-        or None if not filename is available.
-    """
+        or None if no filename is available.
 
+    """
 
     def __init__(self, backend=None, filename=None):
         """
@@ -91,13 +93,19 @@ class Persist(object):
     modified = property(_get_modified)
 
     def reset_modified(self):
+        """Set the database status as non-modified."""
         self._modified = False
 
     def assert_writable(self):
+        """Assert if the object is writable
+
+        @raise: L{PersistReadOnlyError}
+        """
         if self._readonly:
             raise PersistReadOnlyError("Configuration is in readonly mode.")
 
     def load(self, filepath):
+        """Load a persisted database."""
         filepath = os.path.expanduser(filepath)
         if not os.path.isfile(filepath):
             raise PersistError("File not found: %s" % filepath)
@@ -313,12 +321,33 @@ class Persist(object):
         return result
 
     def root_at(self, path):
+        """
+        Rebase the database hierarchy.
+
+        @return: A L{RootedPersist} using this L{Persist} as parent.
+        """
         return RootedPersist(self, path)
 
 
 class RootedPersist(object):
 
+    """
+    Root a L{Persist}'s tree at a particular branch.
+
+    This class shares the same interface of L{Persist} and provides a shortcut
+    to access the nodes of a particular branch in a L{Persist}'s tree.
+
+    The choosen branch will be viewed as the root of the tree of the
+    L{RootedPersist} and all operations will be forwarded to the parent
+    L{Persist} as appropriate.
+    """
+
     def __init__(self, parent, root):
+        """
+        @param parent: the parent L{Persist}.
+        @param root: a branch of the parent L{Persist}'s tree, that
+            will be used as root of this L{RootedPersist}.
+        """
         self.parent = parent
         if type(root) is str:
             self.root = path_string_to_tuple(root)
