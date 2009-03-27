@@ -28,8 +28,8 @@ class BrokerDBusObject(Object):
     
     Each public method decorated with C{@signal(IFACE_NAME)} turns the
     corresponding broker's L{TwistedReactor} event into a a D-Bus signal,
-    whigh get broadcasted over the bus and eventually received by the
-    other Landscape client processes .
+    which get broadcasted over the bus and eventually received by the
+    other Landscape client processes.
     """
 
     bus_name = BUS_NAME

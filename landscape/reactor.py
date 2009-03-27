@@ -47,7 +47,7 @@ class EventHandlingReactorMixin(object):
         Register an event handler.
 
         @param event_type: The name of the event type to handle.
-        @param handler: The function handling the given evet type.
+        @param handler: The function handling the given event type.
         @param priority: The priority of the given handler function.
 
         @return: The L{EventID} of the registered handler.
@@ -123,7 +123,7 @@ class ThreadedCallsReactorMixin(object):
         @param callback: A function to call in case C{f} was successful, it
             will be passed the return value of C{f}.
         @param errback: A function to call in case C{f} raised an exception,
-            it will be pass a C{(type, value, traceback)} tuple givig
+            it will be pass a C{(type, value, traceback)} tuple giving
             information about the raised exception (see L{sys.exc_info}).
 
         @note: Both C{callback} and C{errback} will be executed in the
@@ -397,9 +397,9 @@ class TwistedReactor(EventHandlingReactorMixin,
         """
         Cause a function to be executed by the reactor thread.
 
-        @param f: the callable object to execute
-        @param args: the arguments to call it with
-        @param kwargs: the keyword arguments to call it with3C
+        @param f: The callable object to execute.
+        @param args: The arguments to call it with.
+        @param kwargs: The keyword arguments to call it with.
 
         @see: L{twisted.internet.interfaces.IReactorThreads.callFromThread}
         """

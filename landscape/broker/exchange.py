@@ -32,8 +32,8 @@ class MessageExchange(object):
                         to messages received by the server.
         @param store: A L{MessageStore} used to queue outgoing messages.
         @param transport: A L{HTTPTransport} used to deliver messages.
-        @param exachange_interval: time interval between subsequent
-                                   exchanges of non-urgent messages.
+        @param exchange_interval: time interval between subsequent
+                                  exchanges of non-urgent messages.
         @param urgent_exachange_interval: time interval between subsequent
                                           exchanges of urgent messages.
         """
@@ -98,7 +98,7 @@ class MessageExchange(object):
         If this makes existing held messages available for sending,
         urgently exchange messages.
 
-        If new types are made available or old are types dropped a
+        If new types are made available or old types are dropped a
         C{("message-type-acceptance-changed", type, bool)} reactor
         event will be fired.
         """
