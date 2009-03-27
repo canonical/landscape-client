@@ -49,11 +49,9 @@ class PackageChanger(PackageTaskHandler):
                     os.setuid(pwd.getpwnam("landscape").pw_uid)
                 os.system(find_reporter_command())
 
-        result = Deferred()
-        result.addCallback(lambda x: self.use_hash_id_db())
+        result = self.use_hash_id_db()
         result.addCallback(lambda x: self.handle_tasks())
         result.addCallback(finished)
-        result.callback(None)
 
         return result
 
