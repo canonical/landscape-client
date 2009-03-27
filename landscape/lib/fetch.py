@@ -54,7 +54,7 @@ def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None):
     curl.setopt(pycurl.FOLLOWLOCATION, True)
     curl.setopt(pycurl.MAXREDIRS, 5)
     curl.setopt(pycurl.CONNECTTIMEOUT, 30)
-    curl.setopt(pycurl.TIMEOUT, 300)
+    curl.setopt(pycurl.TIMEOUT, 600)
     curl.setopt(pycurl.WRITEFUNCTION, input.write)
 
     curl.perform()
