@@ -15,7 +15,8 @@ from landscape.broker.broker import BUS_NAME, OBJECT_PATH, IFACE_NAME
 from landscape.tests.mocker import ARGS, KWARGS
 from landscape.tests.clock import Clock
 from landscape.tests.helpers import (
-    LandscapeIsolatedTest, LandscapeTest, DBusHelper, RemoteBrokerHelper)
+    LandscapeIsolatedTest, LandscapeTest, DBusHelper, RemoteBrokerHelper,
+    EnvironSaverHelper)
 from landscape.watchdog import (
     Daemon, WatchDog, WatchDogService, ExecutableNotFoundError,
     WatchDogConfiguration, bootstrap_list,
@@ -1268,6 +1269,8 @@ class FakeReactor(Clock):
 
 
 class WatchDogRunTests(LandscapeTest):
+    helpers = [EnvironSaverHelper]
+
     def setUp(self):
         super(WatchDogRunTests, self).setUp()
         self.addCleanup(setattr, WatchDogConfiguration,
@@ -1303,3 +1306,14 @@ class WatchDogRunTests(LandscapeTest):
             reactor=reactor)
         self.assertTrue(reactor.running)
 
+    def test_clean_environment(self):
+        os.environ["DEBIAN_YO"] = "yo"
+        os.environ["DEBCONF_YO"] = "yo"
+        os.environ["UNRELATED"] = "unrelated"
+
+        reactor = FakeReactor()
+        run(["--bus", "session", "--log-dir", self.make_path()],
+            reactor=reactor)
+        self.assertNotIn("DEBIAN_YO", os.environ)
+        self.assertNotIn("DEBCONF_YO", os.environ)
+        self.assertEquals(os.environ["UNRELATED"], "unrelated")
