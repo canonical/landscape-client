@@ -81,7 +81,9 @@ class PackageReporter(PackageTaskHandler):
 
             def fetch_ok(data):
                 logging.info("Downloaded hash=>id database from %s" % url)
-                open(hash_id_db_filename, "w").write(data)
+                hash_id_db_fd = open(hash_id_db_filename, "w")
+                hash_id_db_fd.write(data)
+                hash_id_db.fd.close()
 
             def fetch_error(failure):
                 exception = failure.value
