@@ -4,7 +4,6 @@ import os
 
 from twisted.internet.defer import Deferred
 
-from landscape.lib.lock import lock_path
 from landscape.lib.fetch import FetchError
 from landscape.lib.command import CommandError
 

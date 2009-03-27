@@ -1,6 +1,5 @@
 import threading
 import time
-import os
 
 try:
     import sqlite3

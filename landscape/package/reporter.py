@@ -4,13 +4,11 @@ import time
 import sys
 import os
 
-import pycurl
-
 from twisted.internet.defer import Deferred, succeed
 
 from landscape.lib.sequenceranges import sequence_to_ranges
 from landscape.lib.twisted_util import gather_results
-from landscape.lib.fetch import fetch_async, FetchError
+from landscape.lib.fetch import fetch_async
 
 from landscape.package.taskhandler import PackageTaskHandler, run_task_handler
 from landscape.package.store import UnknownHashIDRequest

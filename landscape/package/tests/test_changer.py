@@ -7,15 +7,12 @@ from twisted.internet.defer import Deferred
 
 from smart.cache import Provides
 
-from landscape.lib.lock import lock_path
-
 from landscape.package.changer import (
     PackageChanger, main, find_changer_command, UNKNOWN_PACKAGE_DATA_TIMEOUT)
 from landscape.package.store import PackageStore
 from landscape.package.facade import (
-    SmartFacade, DependencyError, TransactionError, SmartError)
+    DependencyError, TransactionError, SmartError)
 from landscape.deployment import Configuration
-from landscape.broker.remote import RemoteBroker
 
 from landscape.tests.mocker import ANY
 from landscape.tests.helpers import (

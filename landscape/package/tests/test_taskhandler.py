@@ -1,8 +1,4 @@
 import os
-import sys
-import shutil
-
-from cStringIO import StringIO
 
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, fail
@@ -19,7 +15,7 @@ from landscape.package.store import PackageStore
 from landscape.package.tests.helpers import SmartFacadeHelper
 
 from landscape.tests.helpers import (
-    LandscapeIsolatedTest, LandscapeTest, RemoteBrokerHelper)
+    LandscapeIsolatedTest, RemoteBrokerHelper)
 from landscape.tests.mocker import ANY, ARGS, MATCH
 
 
