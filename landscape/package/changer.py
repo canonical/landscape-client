@@ -36,6 +36,7 @@ class UnknownPackageData(Exception):
 
 
 class PackageChanger(PackageTaskHandler):
+    """Install, remove and upgrade packages."""
 
     queue_name = "changer"
 
@@ -55,6 +56,10 @@ class PackageChanger(PackageTaskHandler):
         return result.addErrback(self._warn_about_unknown_data)
 
     def handle_task(self, task):
+        """
+        @param task: A L{PackageTask} carrying a message of
+                     type C{"change-packages"}.
+        """
         message = task.data
         if message["type"] == "change-packages":
             result = self._handle_change_packages(message)
