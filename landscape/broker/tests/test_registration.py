@@ -1,3 +1,4 @@
+import unittest
 import logging
 import pycurl
 import socket
@@ -5,7 +6,7 @@ import socket
 from twisted.internet.defer import succeed, fail
 
 from landscape.broker.registration import (
-    InvalidCredentialsError, RegistrationHandler)
+    InvalidCredentialsError, RegistrationHandler, is_cloud_managed, EC2_API)
 
 from landscape.broker.deployment import BrokerConfiguration
 from landscape.tests.helpers import LandscapeTest, ExchangeHelper
@@ -729,3 +730,63 @@ class RegistrationTest(LandscapeTest):
         config.computer_title = None
         self.broker_service.identity.secure_id = None
         self.assertFalse(handler.should_register())
+
+
+class IsCloudManagedTests(unittest.TestCase):
+
+    def setUp(self):
+        self.urls = []
+        self.responses = []
+
+    def fake_fetch(self, url):
+        self.urls.append(url)
+        return self.responses.pop(0)
+
+    def test_is_managed(self):
+        user_data = {"otps": ["otp1"], "exchange-url": "http://exchange",
+                     "ping-url": "http://ping"}
+        self.responses = [dumps(user_data), "0"]
+        self.assertTrue(is_cloud_managed(self.fake_fetch))
+        self.assertEquals(
+            self.urls,
+            [EC2_API + "/user-data", EC2_API + "/meta-data/ami-launch-index"])
+
+    def test_is_managed_index(self):
+        user_data = {"otps": ["otp1", "otp2"], "exchange-url": "http://exchange",
+                     "ping-url": "http://ping"}
+        self.responses = [dumps(user_data), "1"]
+        self.assertTrue(is_cloud_managed(self.fake_fetch))
+
+    def test_is_managed_wrong_index(self):
+        user_data = {"otps": ["otp1"], "exchange-url": "http://exchange",
+                     "ping-url": "http://ping"}
+        self.responses = [dumps(user_data), "1"]
+        self.assertFalse(is_cloud_managed(self.fake_fetch))
+
+    def test_is_managed_exchange_url(self):
+        user_data = {"otps": ["otp1"], "ping-url": "http://ping"}
+        self.responses = [dumps(user_data), "0"]
+        self.assertFalse(is_cloud_managed(self.fake_fetch))
+
+    def test_is_managed_ping_url(self):
+        user_data = {"otps": ["otp1"], "exchange-url": "http://exchange"}
+        self.responses = [dumps(user_data), "0"]
+        self.assertFalse(is_cloud_managed(self.fake_fetch))
+
+    def test_is_managed_bpickle(self):
+        self.responses = ["some other user data", "0"]
+        self.assertFalse(is_cloud_managed(self.fake_fetch))
+
+    def test_is_managed_no_data(self):
+        self.responses = ["", "0"]
+        self.assertFalse(is_cloud_managed(self.fake_fetch))
+
+    def test_is_managed_fetch_not_found(self):
+        def fake_fetch(url):
+            raise HTTPCodeError(404, "ohnoes")
+        self.assertFalse(is_cloud_managed(fake_fetch))
+
+    def test_is_managed_fetch_error(self):
+        def fake_fetch(url):
+            raise pycurl.error(7, "couldn't connect to host")
+        self.assertFalse(is_cloud_managed(fake_fetch))

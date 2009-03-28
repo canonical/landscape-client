@@ -1,12 +1,14 @@
 
 import logging
 import socket
+import pycurl
 
 from twisted.internet.defer import Deferred
 
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.bpickle import loads
 from landscape.lib.log import log_failure
+from landscape.lib.fetch import fetch, HTTPCodeError
 
 
 EC2_API = "http://169.254.169.254/latest"
@@ -98,7 +100,8 @@ class RegistrationHandler(object):
         self._exchange.exchange()
         return result
 
-    def _extract_ec2_instance_data(self, raw_user_data, launch_index):
+    @classmethod
+    def _extract_ec2_instance_data(cls, raw_user_data, launch_index):
         """
         Given the raw string of EC2 User Data, parse it and return the dict of
         instance data for this particular instance.
@@ -301,3 +304,18 @@ class RegistrationResponse(object):
     def _failed(self):
         self.deferred.errback(InvalidCredentialsError())
         self._cancel_calls()
+
+
+def is_cloud_managed(fetch=fetch):
+    """
+    Return C{True} if the machine has been started by Landscape, i.e. if we can
+    find the expected data inside the EC2 user-data field.
+    """
+    try:
+        raw_user_data = fetch(EC2_API + "/user-data")
+        launch_index = fetch(EC2_API + "/meta-data/ami-launch-index")
+    except (pycurl.error, HTTPCodeError):
+        return False
+    instance_data = RegistrationHandler._extract_ec2_instance_data(
+        raw_user_data, int(launch_index))
+    return instance_data is not None
