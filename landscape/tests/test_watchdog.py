@@ -1309,6 +1309,7 @@ class WatchDogRunTests(LandscapeTest):
     def test_clean_environment(self):
         os.environ["DEBIAN_YO"] = "yo"
         os.environ["DEBCONF_YO"] = "yo"
+        os.environ["LANDSCAPE_ATTACHMENTS"] = "some attachments"
         os.environ["UNRELATED"] = "unrelated"
 
         reactor = FakeReactor()
@@ -1316,4 +1317,5 @@ class WatchDogRunTests(LandscapeTest):
             reactor=reactor)
         self.assertNotIn("DEBIAN_YO", os.environ)
         self.assertNotIn("DEBCONF_YO", os.environ)
+        self.assertNotIn("LANDSCAPE_ATTACHMENTS", os.environ)
         self.assertEquals(os.environ["UNRELATED"], "unrelated")

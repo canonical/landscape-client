@@ -515,7 +515,9 @@ def clean_environment():
     *other* maintainer scripts which landscape-client invokes (via smart).
     """
     for key in os.environ.keys():
-        if key.startswith("DEBIAN_") or key.startswith("DEBCONF_"):
+        if (key.startswith("DEBIAN_")
+            or key.startswith("DEBCONF_")
+            or key == "LANDSCAPE_ATTACHMENTS"):
             del os.environ[key]
 
 
