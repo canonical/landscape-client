@@ -55,7 +55,6 @@ class SmartFacade(object):
 
         self._arch = None
         self._channels = {}
-        self._caching = ALWAYS
 
     def deinit(self):
         """Deinitialize the Facade and the Smart library."""
@@ -98,9 +97,14 @@ class SmartFacade(object):
         """
         ctrl = self._get_ctrl()
 
-        reload_result = ctrl.reloadChannels(caching=self._caching)
+        if self._channels:
+            # This tells smart to download the APT package lists
+            caching = NEVER
+        else:
+            caching = ALWAYS
+        reload_result = ctrl.reloadChannels(caching=caching)
 
-        if reload_result == False and self._caching == NEVER:
+        if reload_result == False and caching == NEVER:
             # Raise an error only if we are using some custom channels
             # set with add_channel()
             raise ChannelError("Smart failed to reload channels (%s)"
@@ -256,6 +260,3 @@ class SmartFacade(object):
         @param channel: A C{dict} meeting the format defined by the Smart API.
         """
         self._channels.update({alias : channel})
-
-        # This tells smart to download the APT package lists
-        self._caching = NEVER
