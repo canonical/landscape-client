@@ -97,7 +97,7 @@ class SmartFacade(object):
         """
         ctrl = self._get_ctrl()
 
-        if self._channels:
+        if self.get_channels():
             # This tells smart to download the APT package lists
             caching = NEVER
         else:
@@ -260,3 +260,10 @@ class SmartFacade(object):
         @param channel: A C{dict} meeting the format defined by the Smart API.
         """
         self._channels.update({alias : channel})
+
+    def get_channels(self):
+        """
+        @type: C{dict}
+        @return: The alias/channel associations set with L{add_channel}.
+        """
+        return self._channels
