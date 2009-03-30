@@ -239,15 +239,20 @@ class SmartFacade(object):
         """
         self._arch = arch
 
-    def add_apt_deb_channel(self, baseurl, distribution, components):
-        """Build a Smart C{apt-deb} channel and pass it to L{add_channel}."""
+    def get_apt_deb_channel(self, baseurl, distribution, components):
+        """
+        Build a Smart C{apt-deb} channel.
+
+        @return: A binary tuple with a not-yet-used channel alias and a
+            Smart channel of type C{apt-deb}.
+        """
 
         alias = "alias%d" % len(self._channels)
         channel = {"baseurl": baseurl,
                    "distribution": distribution,
                    "components": " ".join(components),
-                   'type': 'apt-deb'}
-        self.add_channel(alias, channel)
+                   "type": "apt-deb"}
+        return alias, channel
 
     def add_channel(self, alias, channel):
         """

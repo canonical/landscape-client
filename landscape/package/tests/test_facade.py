@@ -385,24 +385,38 @@ class SmartFacadeTest(LandscapeTest):
 
         self.assertEquals(smart.sysconf.get("deb-arch"), "i386")
 
-    def test_add_apt_deb_channel(self):
+    def test_get_apt_deb_channel(self):
+
+        url = "http://some.url/base"
+        distribution = "hardy-updates"
+        components = ["main", "universe"]
+
+        expected_channel = ("alias0",
+                            {"baseurl": url,
+                             "distribution": distribution,
+                             "components": " ".join(components),
+                             "type": "apt-deb"})
+
+        result_channel = self.facade.get_apt_deb_channel(url, distribution,
+                                                         components)
+        self.assertEquals(result_channel, expected_channel)
+
+    def test_add_channel(self):
 
         # Add a couple of channels
         url = ("http://some.url/base", "http://other.url/path")
         distribution = ("hardy", "hardy-updates")
         components = (["main"], ["main", "universe"])
 
-        channels = {}
+        channels = []
         for i in range(2):
-            channels.update( {
-                    "alias%d" % i: {
-                        "baseurl": url[i],
-                        "distribution": distribution[i],
-                        "components": " ".join(components[i]),
-                        "type": "apt-deb"} } )
-                    
-            self.facade.add_apt_deb_channel(url[i], distribution[i],
-                                            components[i])
+            channel = self.facade.get_apt_deb_channel(url[i],
+                                                       distribution[i],
+                                                       " ".join(components[i]))
+            channels.append(channel)
+
+        self.facade.add_channel(*channels[0])
+        self.facade.add_channel(*channels[1])
 
         # In order to download the APT package lists Smart caching must
         # be set to NEVER
@@ -413,7 +427,8 @@ class SmartFacadeTest(LandscapeTest):
 
         self.facade.reload_channels()
 
-        self.assertEquals(smart.sysconf.get("channels"), channels)
+        self.assertEquals(smart.sysconf.get("channels"),
+                          dict(channels))
 
     def test_add_channel_with_reload_error(self):
 
