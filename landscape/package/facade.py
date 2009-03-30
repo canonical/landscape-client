@@ -53,8 +53,7 @@ class SmartFacade(object):
 
         self._marks = {}
 
-        self._arch = None
-        self._channels = {}
+        self._caching = ALWAYS
 
     def deinit(self):
         """Deinitialize the Facade and the Smart library."""
@@ -77,12 +76,6 @@ class SmartFacade(object):
             from smart.backends.deb.base import DebPackage
             self._deb_package_type = DebPackage
 
-            if self._arch is not None:
-                smart.sysconf.set("deb-arch", self._arch)
-
-            if self._channels:
-                smart.sysconf.set("channels", self._channels)
-
             self.smart_initialized()
         return self._ctrl
 
@@ -97,16 +90,9 @@ class SmartFacade(object):
         """
         ctrl = self._get_ctrl()
 
-        if self.get_channels():
-            # This tells smart to download the APT package lists
-            caching = NEVER
-        else:
-            caching = ALWAYS
-        reload_result = ctrl.reloadChannels(caching=caching)
-
-        if reload_result == False and caching == NEVER:
-            # Raise an error only if we are using some custom channels
-            # set with add_channel()
+        reload_result = ctrl.reloadChannels(caching=self._caching)
+        if reload_result == False and self._caching == NEVER:
+            # Raise an error only if we are trying to download remote lists
             raise ChannelError("Smart failed to reload channels (%s)"
                                % smart.sysconf.get("channels"))
 
@@ -237,22 +223,26 @@ class SmartFacade(object):
 
         @param arch: the dpkg architecture to use (e.g. C{"i386"})
         """
-        self._arch = arch
+        self._get_ctrl()
+        smart.sysconf.set("deb-arch", arch)
 
-    def get_apt_deb_channel(self, baseurl, distribution, components):
+        # XXX workaround Smart setting DEBARCH statically in the
+        # smart.backends.deb.base module
+        import smart.backends.deb.loader as loader
+        loader.DEBARCH = arch
+
+    def set_caching(self, mode):
         """
-        Build a Smart C{apt-deb} channel.
+        Set Smart's caching mode.
 
-        @return: A binary tuple with a not-yet-used channel alias and a
-            Smart channel of type C{apt-deb}.
+        @param mode: It be smart.const.NEVER or smart.const.ALWAYS.
         """
+        self._caching = mode
 
-        alias = "alias%d" % len(self._channels)
-        channel = {"baseurl": baseurl,
-                   "distribution": distribution,
-                   "components": " ".join(components),
-                   "type": "apt-deb"}
-        return alias, channel
+    def reset_channels(self):
+        """Remove all configured Smart channels."""
+        self._get_ctrl()
+        smart.sysconf.set("channels", {}, soft=True)
 
     def add_channel(self, alias, channel):
         """
@@ -264,11 +254,13 @@ class SmartFacade(object):
         @param alias: A string indentifying the channel to be added.
         @param channel: A C{dict} meeting the format defined by the Smart API.
         """
-        self._channels.update({alias : channel})
+        channels = self.get_channels()
+        channels.update({alias : channel})
+        smart.sysconf.set("channels", channels, soft=True)
 
     def get_channels(self):
         """
-        @type: C{dict}
-        @return: The alias/channel associations set with L{add_channel}.
+        @return: A C{dict} of all configured channels.
         """
-        return self._channels
+        self._get_ctrl()
+        return smart.sysconf.get("channels")

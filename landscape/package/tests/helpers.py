@@ -27,14 +27,9 @@ class SmartFacadeHelper(SmartHelper):
             repository_dir = test_case.repository_dir
 
             def smart_initialized(self):
-                if  self._channels:
-                    # Some channels were already set by the test case, don't
-                    # override them
-                    return
-
-                smart.sysconf.set("channels",
-                                  {"alias": {"type": "deb-dir",
-                                             "path": test_case.repository_dir}})
+                self.reset_channels()
+                self.add_channel("alias", {"type": "deb-dir",
+                                           "path": test_case.repository_dir})
 
         test_case.Facade = Facade
         test_case.facade = Facade({"datadir": test_case.smart_dir})

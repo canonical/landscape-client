@@ -1,6 +1,7 @@
 import gdbm
 import time
 import os
+import re
 
 from smart.control import Control
 from smart.cache import Provides
@@ -378,70 +379,60 @@ class SmartFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         self.assertEquals(self.facade.get_package_hash(pkg), None)
 
-    def test_set_arch(self):
+    def test_reset_add_get_channels(self):
 
-        self.facade.set_arch("i386")
-        self.facade.reload_channels()
+        channels = [("alias0", {"type": "test"}),
+                    ("alias1", {"type": "test"})]
 
-        self.assertEquals(smart.sysconf.get("deb-arch"), "i386")
-
-    def test_get_apt_deb_channel(self):
-
-        url = "http://some.url/base"
-        distribution = "hardy-updates"
-        components = ["main", "universe"]
-
-        expected_channel = ("alias0",
-                            {"baseurl": url,
-                             "distribution": distribution,
-                             "components": " ".join(components),
-                             "type": "apt-deb"})
-
-        result_channel = self.facade.get_apt_deb_channel(url, distribution,
-                                                         components)
-        self.assertEquals(result_channel, expected_channel)
-
-    def test_add_channel(self):
-
-        # Add a couple of channels
-        url = ("http://some.url/base", "http://other.url/path")
-        distribution = ("hardy", "hardy-updates")
-        components = (["main"], ["main", "universe"])
-
-        channels = []
-        for i in range(2):
-            channel = self.facade.get_apt_deb_channel(url[i],
-                                                       distribution[i],
-                                                       " ".join(components[i]))
-            channels.append(channel)
-
+        self.facade.reset_channels()
         self.facade.add_channel(*channels[0])
         self.facade.add_channel(*channels[1])
 
-        # In order to download the APT package lists Smart caching must
-        # be set to NEVER
-        ctrl_mock = self.mocker.patch(Control)
-        ctrl_mock.reloadChannels(caching=NEVER)
-        self.mocker.result(True)
-        self.mocker.replay()
+        self.assertEquals(self.facade.get_channels(), dict(channels))
 
+    def test_set_arch_multiple_times(self):
+
+        repository_dir = os.path.join(os.path.dirname(__file__), "repository")
+
+        alias = "alias"
+        channel = {"baseurl": "file://%s" % repository_dir,
+                   "distribution": "hardy",
+                   "components": "main",
+                   "type": "apt-deb"}
+
+        self.facade.set_arch("i386")
+        self.facade.reset_channels()
+        self.facade.add_channel(alias, channel)
         self.facade.reload_channels()
 
-        self.assertEquals(smart.sysconf.get("channels"),
-                          dict(channels))
+        pkgs = self.facade.get_packages()
+        self.assertEquals(len(pkgs), 1)
+        self.assertEquals(pkgs[0].name, "syslinux")
 
-    def test_add_channel_with_reload_error(self):
+        self.facade.deinit()
+        self.facade.set_arch("amd64")
+        self.facade.reset_channels()
+        self.facade.add_channel(alias, channel)
+        self.facade.reload_channels()
+
+        pkgs = self.facade.get_packages()
+        self.assertEquals(len(pkgs), 1)
+        self.assertEquals(pkgs[0].name, "libclthreads2")
+
+    def test_set_caching_with_reload_error(self):
 
         alias = "alias"
         channel = {"type": "deb-dir",
                    "path": "/does/not/exist"}
 
+        self.facade.reset_channels()
         self.facade.add_channel(alias, channel)
-
-        ctrl_mock = self.mocker.patch(Control)
-        ctrl_mock.reloadChannels(caching=NEVER)
-        self.mocker.result(False)
-        self.mocker.replay()
+        self.facade.set_caching(NEVER)
 
         self.assertRaises(ChannelError, self.facade.reload_channels)
         self.facade._channels = {}
+
+        ignore_re = re.compile("\[Smart\] Channel 'alias' has invalid "
+                               "directory: /does/not/exist")
+
+        self.log_helper.ignored_exception_regexes = [ignore_re]
