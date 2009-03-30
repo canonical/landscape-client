@@ -4,7 +4,7 @@ import os
 
 from twisted.internet.defer import Deferred
 
-from landscape.lib.fetch import FetchError
+from landscape.lib.fetch import fetch_async, FetchError
 from landscape.lib.command import CommandError
 
 from landscape.package.store import PackageStore, UnknownHashIDRequest
@@ -271,6 +271,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
     def test_fetch_hash_id_db_does_not_download_twice(self):
 
         # Let's say that the hash=>id database is already there
+        self.config.package_hash_id_url = "http://fake.url/path/"
         self.config.data_path = self.makeDir()
         os.makedirs(os.path.join(self.config.data_path, "package", "hash-id"))
         hash_id_db_filename = os.path.join(self.config.data_path, "package",
@@ -286,13 +287,22 @@ class PackageReporterTest(LandscapeIsolatedTest):
         command_mock("dpkg --print-architecture")
         self.mocker.result("arch")
 
+        # Intercept any call to fetch_async
+        fetch_async_mock = self.mocker.replace("landscape.lib.fetch.fetch_async")
+        fetch_async_mock(ANY)
+
         # Go!
         self.mocker.replay()
         result = self.reporter.fetch_hash_id_db()
 
-        # Same database still there
         def callback(ignored):
+            # Check that fetch_async hasn't been called
+            self.assertRaises(AssertionError, self.mocker.verify)
+            fetch_async(None)
+
+            # The hash=>id database is still there
             self.assertEquals(open(hash_id_db_filename).read(), "test")
+
         result.addCallback(callback)
 
         return result
