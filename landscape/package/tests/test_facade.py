@@ -406,7 +406,7 @@ class SmartFacadeTest(LandscapeTest):
         # In order to download the APT package lists Smart caching must
         # be set to NEVER
         ctrl_mock = self.mocker.patch(Control)
-        ctrl_mock.reloadChannels(caching = NEVER)
+        ctrl_mock.reloadChannels(caching=NEVER)
         self.mocker.result(True)
         self.mocker.replay()
 
@@ -418,7 +418,7 @@ class SmartFacadeTest(LandscapeTest):
         self.facade.add_apt_deb_channel("http://not.existing.url", "hardy", "main")
 
         ctrl_mock = self.mocker.patch(Control)
-        ctrl_mock.reloadChannels(caching = NEVER)
+        ctrl_mock.reloadChannels(caching=NEVER)
         self.mocker.result(False)
         self.mocker.replay()
 
