@@ -59,8 +59,17 @@ class PackageStoreTest(LandscapeTest):
             open(filename, "w").write("junk")
             return filename
 
-        self.assertRaises(InvalidHashIdDb, self.store1.add_hash_id_db,
-                          junk_db_factory())
+        def raiseme():
+            store_filename = junk_db_factory()
+            try:
+                self.store1.add_hash_id_db(store_filename)
+            except InvalidHashIdDb, e:
+                self.assertEqual(str(e), "%s (file is encrypted or is not "
+                                         "a database)" % store_filename)
+            else:
+                self.fail()
+
+        raiseme()
         self.assertFalse(self.store1.has_hash_id_db())
 
     def test_add_hash_id_db_with_wrong_schema(self):

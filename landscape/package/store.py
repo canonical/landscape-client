@@ -66,8 +66,8 @@ class PackageStore(object):
         cursor = db.cursor()
         try:
             cursor.execute("SELECT id FROM hash WHERE hash=?", ("",))
-        except sqlite3.DatabaseError:
-            raise InvalidHashIdDb(filename)
+        except sqlite3.DatabaseError, e:
+            raise InvalidHashIdDb("%s (%s)" % (filename, str(e)))
         finally:
             cursor.close()
 
