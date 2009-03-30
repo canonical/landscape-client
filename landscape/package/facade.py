@@ -103,7 +103,8 @@ class SmartFacade(object):
         if reload_result == False and self._caching == NEVER:
             # Raise an error only if we are using some custom channels
             # set with add_channel()
-            raise ChannelError()
+            raise ChannelError("Smart failed to reload channels (%s)"
+                               % smart.sysconf.get("channels"))
 
         self._hash2pkg.clear()
         self._pkg2hash.clear()
