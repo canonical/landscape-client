@@ -80,6 +80,11 @@ class SmartFacadeTest(LandscapeTest):
         pkg = self.facade.get_packages_by_name("name2")[0]
         self.assertEquals(self.facade.get_package_hash(pkg), HASH2)
 
+    def test_get_package_hashes(self):
+        self.facade.reload_channels()
+        hashes = self.facade.get_package_hashes()
+        self.assertEquals(sorted(hashes), sorted([HASH1, HASH2, HASH3]))
+
     def test_get_package_by_hash(self):
         self.facade.reload_channels()
         pkg = self.facade.get_package_by_hash(HASH1)

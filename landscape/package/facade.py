@@ -130,9 +130,13 @@ class SmartFacade(object):
         """
         return self._pkg2hash.get(pkg)
 
+    def get_package_hashes(self):
+        """Get the hases of the package available in the channels."""
+        return self._pkg2hash.values()
+
     def get_packages(self):
         """
-        Get all packages available in the channels.
+        Get all the packages available in the channels.
 
         @return: a C{list} of L{smart.backends.deb.base.DebPackage} objects
         """
