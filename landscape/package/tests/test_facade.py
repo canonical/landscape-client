@@ -415,7 +415,12 @@ class SmartFacadeTest(LandscapeTest):
         self.assertEquals(smart.sysconf.get("channels"), channels)
 
     def test_add_channel_with_reload_error(self):
-        self.facade.add_apt_deb_channel("http://not.existing.url", "hardy", "main")
+
+        alias = "alias"
+        channel = {"type": "deb-dir",
+                   "path": "/does/not/exist"}
+
+        self.facade.add_channel(alias, channel)
 
         ctrl_mock = self.mocker.patch(Control)
         ctrl_mock.reloadChannels(caching=NEVER)

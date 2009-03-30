@@ -239,24 +239,23 @@ class SmartFacade(object):
         """Build a Smart C{apt-deb} channel and pass it to L{add_channel}."""
 
         alias = "alias%d" % len(self._channels)
-        channel = {
-            alias : {
-                "baseurl" : baseurl,
-                "distribution" : distribution,
-                "components" : " ".join(components),
-                'type': 'apt-deb' } }
-        self.add_channel(channel)
+        channel = {"baseurl": baseurl,
+                   "distribution": distribution,
+                   "components": " ".join(components),
+                   'type': 'apt-deb'}
+        self.add_channel(alias, channel)
 
-    def add_channel(self, channel):
+    def add_channel(self, alias, channel):
         """
         Add a Smart channel.
 
         This method can be called more than once to set multiple channels.
         To take effect it must be called before L{reaload_channels}.
 
-        @param channel: a C{dict} meeting the format defined by the Smart API.
+        @param alias: A string indentifying the channel to be added.
+        @param channel: A C{dict} meeting the format defined by the Smart API.
         """
-        self._channels.update(channel)
+        self._channels.update({alias : channel})
 
         # This tells smart to download the APT package lists
         self._caching = NEVER
