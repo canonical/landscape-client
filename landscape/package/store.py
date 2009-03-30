@@ -42,7 +42,10 @@ def with_cursor(method):
 class HashIdStore(object):
     def __init__(self, filename):
         self._db = sqlite3.connect(filename)
-        ensure_schema(self._db, tables=["hash"])
+        self._ensure_schema()
+
+    def _ensure_schema(self):
+        ensure_hash_id_schema(self._db)
 
     @with_cursor
     def set_hash_ids(self, cursor, hash_ids):
@@ -61,10 +64,11 @@ class HashIdStore(object):
 class PackageStore(HashIdStore):
 
     def __init__(self, filename):
-        self._db = sqlite3.connect(filename)
-        ensure_schema(self._db)
-
+        super(PackageStore, self).__init__(filename)
         self._hash_id_dbs = []
+
+    def _ensure_schema(self):
+        ensure_schema(self._db)
 
     def add_hash_id_db(self, filename):
         """
@@ -308,30 +312,39 @@ class PackageTask(object):
         cursor.execute("DELETE FROM task WHERE id=?", (self.id,))
 
 
-def ensure_schema(db, tables=None):
+def ensure_schema(db):
     # FIXME This needs a "patch" table with a "version" column which will
     #       help with upgrades.  It should also be used to decide when to
     #       create the schema from the ground up, rather than that using
     #       try block.
     cursor = db.cursor()
-
-    schema = {
-        "hash" : "id INTEGER PRIMARY KEY, hash BLOB UNIQUE",
-        "available" : "id INTEGER PRIMARY KEY",
-        "available_upgrade" : "id INTEGER PRIMARY KEY",
-        "installed" : "id INTEGER PRIMARY KEY",
-        "hash_id_request" : "id INTEGER PRIMARY KEY, timestamp TIMESTAMP,"
-                 " message_id INTEGER, hashes BLOB",
-        "task" : "id INTEGER PRIMARY KEY, queue TEXT,"
-                 " timestamp TIMESTAMP, data BLOB"}
-
-    if not tables:
-        # Create all tables
-        tables = schema.keys()
-
     try:
-        for table in tables:
-            cursor.execute("CREATE TABLE %s (%s)" % (table, schema[table]))
+        cursor.execute("CREATE TABLE hash"
+                       " (id INTEGER PRIMARY KEY, hash BLOB UNIQUE)")
+        cursor.execute("CREATE TABLE available"
+                       " (id INTEGER PRIMARY KEY)")
+        cursor.execute("CREATE TABLE available_upgrade"
+                       " (id INTEGER PRIMARY KEY)")
+        cursor.execute("CREATE TABLE installed"
+                       " (id INTEGER PRIMARY KEY)")
+        cursor.execute("CREATE TABLE hash_id_request"
+                       " (id INTEGER PRIMARY KEY, timestamp TIMESTAMP,"
+                       " message_id INTEGER, hashes BLOB)")
+        cursor.execute("CREATE TABLE task"
+                       " (id INTEGER PRIMARY KEY, queue TEXT,"
+                       " timestamp TIMESTAMP, data BLOB)")
+    except sqlite3.OperationalError:
+        cursor.close()
+        db.rollback()
+    else:
+        cursor.close()
+        db.commit()
+
+def ensure_hash_id_schema(db):
+    cursor = db.cursor()
+    try:
+        cursor.execute("CREATE TABLE hash"
+                       " (id INTEGER PRIMARY KEY, hash BLOB UNIQUE)")
     except sqlite3.OperationalError:
         cursor.close()
         db.rollback()
