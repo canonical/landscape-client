@@ -401,7 +401,8 @@ class SmartFacadeTest(LandscapeTest):
                         "components": " ".join(components[i]),
                         "type": "apt-deb"} } )
                     
-            self.facade.add_apt_deb_channel(url[i], distribution[i], components[i])
+            self.facade.add_apt_deb_channel(url[i], distribution[i],
+                                            components[i])
 
         # In order to download the APT package lists Smart caching must
         # be set to NEVER
