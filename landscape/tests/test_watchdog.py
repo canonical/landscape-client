@@ -1172,6 +1172,7 @@ class WatchDogServiceTest(LandscapeTest):
         chown(path(), 1234, 5678)
         chown(path("messages"), 1234, 5678)
         chown(path("package"), 1234, 5678)
+        chown(path("package/hash-id"), 1234, 5678)
         chown(path("custom-graph-scripts"), 1234, 5678)
         chown(path("package/database"), 1234, 5678)
         chown(log_dir, 1234, 5678)
