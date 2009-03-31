@@ -1,16 +1,17 @@
 import pycurl
 
-from landscape.lib.fetch import fetch, fetch_async, HTTPCodeError
+from landscape.lib.fetch import fetch, fetch_async, HTTPCodeError, PyCurlError
 from landscape.tests.helpers import LandscapeTest
 
 
 class CurlStub(object):
 
-    def __init__(self, result=None, http_code=200):
+    def __init__(self, result=None, http_code=200, error=None):
         self.result = result
         self._http_code = http_code
         self.options = {}
         self.performed = False
+        self.error = error
 
     def getinfo(self, what):
         if what == pycurl.HTTP_CODE:
@@ -23,6 +24,8 @@ class CurlStub(object):
         self.options[option] = value
 
     def perform(self):
+        if self.error:
+            raise self.error
         if self.performed:
             raise AssertionError("Can't perform twice")
         self.options[pycurl.WRITEFUNCTION](self.result)
@@ -120,14 +123,32 @@ class FetchTest(LandscapeTest):
         else:
             self.fail("HTTPCodeError not raised")
 
-    def test_error_str(self):
+    def test_http_error_str(self):
         self.assertEquals(str(HTTPCodeError(501, "")),
                           "Server returned HTTP code 501")
 
-    def test_error_repr(self):
+    def test_http_error_repr(self):
         self.assertEquals(repr(HTTPCodeError(501, "")),
                           "<HTTPCodeError http_code=501>")
 
+    def test_pycurl_error(self):
+        curl = CurlStub(result=None, http_code=None,
+                        error=pycurl.error(60, "pycurl error"))
+        try:
+            fetch("http://example.com", curl=curl)
+        except PyCurlError, error:
+            self.assertEquals(error.error_code, 60)
+            self.assertEquals(error.message, "pycurl error")
+        else:
+            self.fail("PyCurlError not raised")
+
+    def test_pycurl_error_str(self):
+        self.assertEquals(str(PyCurlError(60, "pycurl error")),
+                          "Error 60: pycurl error")
+
+    def test_pycurl_error_repr(self):
+        self.assertEquals(repr(PyCurlError(60, "pycurl error")),
+                          "<PyCurlError args=(60, 'pycurl error')>")
 
     def test_create_curl(self):
         curls = []

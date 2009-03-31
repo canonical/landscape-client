@@ -1,12 +1,10 @@
 import os
-import sys
-
-from cStringIO import StringIO
 
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, fail
 
 from landscape.lib.lock import lock_path
+from landscape.lib.command import CommandError
 
 from landscape.deployment import Configuration
 from landscape.broker.remote import RemoteBroker
@@ -17,7 +15,7 @@ from landscape.package.store import PackageStore
 from landscape.package.tests.helpers import SmartFacadeHelper
 
 from landscape.tests.helpers import (
-    LandscapeIsolatedTest, LandscapeTest, RemoteBrokerHelper)
+    LandscapeIsolatedTest, RemoteBrokerHelper)
 from landscape.tests.mocker import ANY, ARGS, MATCH
 
 
@@ -32,9 +30,10 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
     def setUp(self):
         super(PackageTaskHandlerTest, self).setUp()
 
+        self.config = Configuration()
         self.store = PackageStore(self.makeFile())
 
-        self.handler = PackageTaskHandler(self.store, self.facade, self.remote)
+        self.handler = PackageTaskHandler(self.store, self.facade, self.remote, self.config)
 
     def test_ensure_channels_reloaded(self):
         self.assertEquals(len(self.facade.get_packages()), 0)
@@ -45,6 +44,148 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         self.facade.get_packages_by_name("name1")[0].installed = True
         self.handler.ensure_channels_reloaded()
         self.assertTrue(self.facade.get_packages_by_name("name1")[0].installed)
+
+    def test_use_hash_id_db(self):
+
+        # We don't have this hash=>id mapping
+        self.assertEquals(self.store.get_hash_id("hash"), None)
+
+        # An appropriate hash=>id database is available
+        self.config.data_path = self.makeDir()
+        os.makedirs(os.path.join(self.config.data_path, "package", "hash-id"))
+        hash_id_db_filename = os.path.join(self.config.data_path, "package",
+                                           "hash-id", "uuid_codename_arch")
+        PackageStore(hash_id_db_filename).set_hash_ids({"hash": 123})
+
+        # Fake uuid, codename and arch
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid")
+        command_mock = self.mocker.replace("landscape.lib.command.run_command")
+        command_mock("lsb_release -cs")
+        self.mocker.result("codename")
+        command_mock("dpkg --print-architecture")
+        self.mocker.result("arch")
+
+        # Attach the hash=>id database to our store
+        self.mocker.replay()
+        result = self.handler.use_hash_id_db()
+
+        # Now we do have the hash=>id mapping
+        def callback(ignored):
+            self.assertEquals(self.store.get_hash_id("hash"), 123)
+        result.addCallback(callback)
+
+        return result
+
+    def test_use_hash_id_db_undetermined_codename(self):
+
+        # Fake uuid
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid")
+
+        # Undetermined codename
+        command_mock = self.mocker.replace("landscape.lib.command.run_command")
+        command_mock("lsb_release -cs")
+        command_error = CommandError("lsb_release -cs", 1, "error")
+        self.mocker.throw(command_error)
+
+        # The failure should be properly logged
+        logging_mock = self.mocker.replace("logging.warning")
+        logging_mock("Couldn't determine which hash=>id database to use: %s" %
+                     str(command_error))
+        self.mocker.result(None)
+
+        # Go!
+        self.mocker.replay()
+        result = self.handler.use_hash_id_db()
+
+        return result
+
+    def test_use_hash_id_db_undetermined_arch(self):
+
+        # Fake uuid and codename
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid")
+        command_mock = self.mocker.replace("landscape.lib.command.run_command")
+        command_mock("lsb_release -cs")
+        self.mocker.result("codename")
+
+        # Undetermined arch
+        command_mock("dpkg --print-architecture")
+        command_error = CommandError("dpkg --print-architecture", 1, "error")
+        self.mocker.throw(command_error)
+
+        # The failure should be properly logged
+        logging_mock = self.mocker.replace("logging.warning")
+        logging_mock("Couldn't determine which hash=>id database to use: %s" %
+                     str(command_error))
+        self.mocker.result(None)
+
+        # Go!
+        self.mocker.replay()
+        result = self.handler.use_hash_id_db()
+
+        return result
+
+    def test_use_hash_id_db_database_not_found(self):
+
+        # Clean path, we don't have an appropriate hash=>id database
+        self.config.data_path = self.makeDir()
+
+        # Fake uuid, codename and arch
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid")
+        command_mock = self.mocker.replace("landscape.lib.command.run_command")
+        command_mock("lsb_release -cs")
+        self.mocker.result("codename")
+        command_mock("dpkg --print-architecture")
+        self.mocker.result("arch")
+
+        # Let's try
+        self.mocker.replay()
+        result = self.handler.use_hash_id_db()
+
+        # We go on without the hash=>id database
+        def callback(ignored):
+            self.assertFalse(self.store.has_hash_id_db())
+        result.addCallback(callback)
+
+        return result
+
+    def test_use_hash_id_with_invalid_database(self):
+
+        # Let's say the appropriate database is actually garbage
+        self.config.data_path = self.makeDir()
+        os.makedirs(os.path.join(self.config.data_path, "package", "hash-id"))
+        hash_id_db_filename = os.path.join(self.config.data_path, "package",
+                                           "hash-id", "uuid_codename_arch")
+        open(hash_id_db_filename, "w").write("junk")
+
+        # Fake uuid, codename and arch
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid")
+        command_mock = self.mocker.replace("landscape.lib.command.run_command")
+        command_mock("lsb_release -cs")
+        self.mocker.result("codename")
+        command_mock("dpkg --print-architecture")
+        self.mocker.result("arch")
+
+        # The failure should be properly logged
+        logging_mock = self.mocker.replace("logging.warning")
+        logging_mock("Invalid hash=>id database %s" % hash_id_db_filename)
+        self.mocker.result(None)
+
+        # Try to attach it
+        self.mocker.replay()
+        result = self.handler.use_hash_id_db()
+
+        # We remove the broken hash=>id database and go on without it
+        def callback(ignored):
+            self.assertFalse(os.path.exists(hash_id_db_filename))
+            self.assertFalse(self.store.has_hash_id_db())
+        result.addCallback(callback)
+
+        return result
 
     def test_run(self):
         handler_mock = self.mocker.patch(self.handler)
@@ -155,7 +296,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         # Then, we must acquire a lock as the same task handler should
         # never have two instances running in parallel.  The 'default'
         # below comes from the queue_name attribute.
-        lock_path_mock(os.path.join(data_path, "package/default.lock"))
+        lock_path_mock(os.path.join(data_path, "package", "default.lock"))
 
         # Once locking is done, it's safe to start logging without
         # corrupting the file.  We don't want any output unless it's
@@ -166,7 +307,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         # passed in as a parameter.  We'll keep track of the arguments
         # given and verify them later.
         handler_args = []
-        handler_mock = HandlerMock(ANY, ANY, ANY)
+        handler_mock = HandlerMock(ANY, ANY, ANY, ANY)
         self.mocker.passthrough() # Let the real constructor run for testing.
         self.mocker.call(lambda *args: handler_args.extend(args))
 
@@ -215,18 +356,23 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
             # Put reactor back in place before returning.
             self.mocker.reset()
 
-        store, facade, broker = handler_args
+        store, facade, broker, config = handler_args
 
         # Verify if the arguments to the reporter constructor were correct.
         self.assertEquals(type(store), PackageStore)
         self.assertEquals(type(facade), SmartFacade)
         self.assertEquals(type(broker), RemoteBroker)
+        self.assertEquals(type(config), Configuration)
 
         # Let's see if the store path is where it should be.
-        filename = os.path.join(data_path, "package/database")
+        filename = os.path.join(data_path, "package", "database")
         store.add_available([1, 2, 3])
         other_store = PackageStore(filename)
         self.assertEquals(other_store.get_available(), [1, 2, 3])
+
+        # Check the hash=>id database directory as well
+        self.assertTrue(os.path.exists(os.path.join(data_path,
+                                                    "package", "hash-id")))
 
     def test_run_task_handler_when_already_locked(self):
         data_path = self.makeDir()
@@ -238,7 +384,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         self.mocker.replay()
 
         os.mkdir(os.path.join(data_path, "package"))
-        lock_path(os.path.join(data_path, "package/default.lock"))
+        lock_path(os.path.join(data_path, "package", "default.lock"))
 
         try:
             run_task_handler(PackageTaskHandler, ["--data-path", data_path])
@@ -257,7 +403,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         self.mocker.replay()
 
         os.mkdir(os.path.join(data_path, "package"))
-        lock_path(os.path.join(data_path, "package/default.lock"))
+        lock_path(os.path.join(data_path, "package", "default.lock"))
 
         try:
             run_task_handler(PackageTaskHandler,

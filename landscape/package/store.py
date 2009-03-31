@@ -1,5 +1,4 @@
 import time
-import os
 
 try:
     import sqlite3
@@ -12,6 +11,8 @@ from landscape.lib import bpickle
 class UnknownHashIDRequest(Exception):
     """Raised for unknown hash id requests."""
 
+class InvalidHashIdDb(Exception):
+    """Raised when trying to add an invalid hash=>id lookaside database."""
 
 def with_cursor(method):
     """Decorator that encloses the method in a database transaction.
@@ -43,17 +44,72 @@ class PackageStore(object):
         self._db = sqlite3.connect(filename)
         ensure_schema(self._db)
 
+        self._hash_id_dbs = []
+
+    def add_hash_id_db(self, filename):
+        """
+        Attach a lookaside hash-id database to the store.
+
+        This method can be called more than once to attach several
+        hash=>id databases, which will be queried *before* the main
+        database, in the same the order they were added.
+
+        If C{filename} is not a SQLite database or does not have a
+        table called "hash" with a compatible schema, L{InvalidHashIdDb}
+        is raised.
+
+        @param filename: a secondary SQLite databases to look for pre-canned
+                         hash=>id mappings.
+        """
+        # Sanity checks
+        db = sqlite3.connect(filename)
+        cursor = db.cursor()
+        try:
+            cursor.execute("SELECT id FROM hash WHERE hash=?", ("",))
+        except sqlite3.DatabaseError, e:
+            raise InvalidHashIdDb("%s (%s)" % (filename, str(e)))
+        finally:
+            cursor.close()
+
+        # Checks passed
+        self._hash_id_dbs.append(db)
+
+    def has_hash_id_db(self):
+        return len(self._hash_id_dbs) > 0
+
     @with_cursor
     def set_hash_ids(self, cursor, hash_ids):
         for hash, id in hash_ids.iteritems():
             cursor.execute("REPLACE INTO hash VALUES (?, ?)",
                            (id, buffer(hash)))
 
-    @with_cursor
-    def get_hash_id(self, cursor, hash):
+    def get_hash_id(self, hash):
         assert isinstance(hash, basestring)
+
+        # Check if we can find the hash=>id mapping in the hash_id dbs
+        for db in self._hash_id_dbs:
+            id = self._get_hash_id_from_hash_id_db(db, hash)
+            if id:
+                return id
+
+        # Fall back to the locally-populated db
+        return self._get_hash_id_from_main_db(hash)
+
+    @with_cursor
+    def _get_hash_id_from_main_db(self, cursor, hash):
         cursor.execute("SELECT id FROM hash WHERE hash=?", (buffer(hash),))
         value = cursor.fetchone()
+        if value:
+            return value[0]
+        return None
+
+    def _get_hash_id_from_hash_id_db(self, db, hash):
+        cursor = db.cursor()
+        try:
+            cursor.execute("SELECT id FROM hash WHERE hash=?", (buffer(hash),))
+            value = cursor.fetchone()
+        finally:
+            cursor.close()
         if value:
             return value[0]
         return None

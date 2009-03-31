@@ -4,7 +4,8 @@ import os
 
 from twisted.internet.defer import Deferred
 
-from landscape.lib.lock import lock_path
+from landscape.lib.fetch import fetch_async, FetchError
+from landscape.lib.command import CommandError
 
 from landscape.package.store import PackageStore, UnknownHashIDRequest
 from landscape.package.reporter import (
@@ -12,6 +13,7 @@ from landscape.package.reporter import (
 from landscape.package import reporter
 from landscape.package.facade import SmartFacade
 
+from landscape.deployment import Configuration
 from landscape.broker.remote import RemoteBroker
 
 from landscape.package.tests.helpers import (
@@ -30,7 +32,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
         super(PackageReporterTest, self).setUp()
 
         self.store = PackageStore(self.makeFile())
-        self.reporter = PackageReporter(self.store, self.facade, self.remote)
+        self.config = Configuration()
+        self.reporter = PackageReporter(self.store, self.facade, self.remote, self.config)
 
     def set_pkg2_upgrades_pkg1(self):
         previous = self.Facade.channels_reloaded
@@ -218,6 +221,255 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         deferred = self.reporter.handle_tasks()
         return deferred.addCallback(got_result)
+
+    def test_fetch_hash_id_db(self):
+
+        # Assume package_hash_id_url is set
+        self.config.data_path = self.makeDir()
+        self.config.package_hash_id_url = "http://fake.url/path/"
+        os.makedirs(os.path.join(self.config.data_path, "package", "hash-id"))
+        hash_id_db_filename = os.path.join(self.config.data_path, "package",
+                                           "hash-id", "uuid_codename_arch")
+
+        # Fake uuid, codename and arch
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid")
+        command_mock = self.mocker.replace("landscape.lib.command.run_command")
+        command_mock("lsb_release -cs")
+        self.mocker.result("codename")
+        command_mock("dpkg --print-architecture")
+        self.mocker.result("arch")
+
+        # Let's say fetch_async is successful
+        hash_id_db_url = self.config.package_hash_id_url + "uuid_codename_arch"
+        fetch_async_mock = self.mocker.replace("landscape.lib.fetch.fetch_async")
+        fetch_async_mock(hash_id_db_url)
+        fetch_async_result = Deferred()
+        fetch_async_result.callback("hash-ids")
+        self.mocker.result(fetch_async_result)
+
+        # The download should be properly logged
+        logging_mock = self.mocker.replace("logging.info")
+        logging_mock("Downloaded hash=>id database from %s" % hash_id_db_url)
+        self.mocker.result(None)
+
+        # We don't have our hash=>id database yet
+        self.assertFalse(os.path.exists(hash_id_db_filename))
+
+        # Now go!
+        self.mocker.replay()
+        result = self.reporter.fetch_hash_id_db()
+
+        # Check the database
+        def callback(ignored):
+            self.assertTrue(os.path.exists(hash_id_db_filename))
+            self.assertEquals(open(hash_id_db_filename).read(), "hash-ids")
+        result.addCallback(callback)
+
+        return result
+
+    def test_fetch_hash_id_db_does_not_download_twice(self):
+
+        # Let's say that the hash=>id database is already there
+        self.config.package_hash_id_url = "http://fake.url/path/"
+        self.config.data_path = self.makeDir()
+        os.makedirs(os.path.join(self.config.data_path, "package", "hash-id"))
+        hash_id_db_filename = os.path.join(self.config.data_path, "package",
+                                           "hash-id", "uuid_codename_arch")
+        open(hash_id_db_filename, "w").write("test")
+
+        # Fake uuid, codename and arch
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid")
+        command_mock = self.mocker.replace("landscape.lib.command.run_command")
+        command_mock("lsb_release -cs")
+        self.mocker.result("codename")
+        command_mock("dpkg --print-architecture")
+        self.mocker.result("arch")
+
+        # Intercept any call to fetch_async
+        fetch_async_mock = self.mocker.replace("landscape.lib.fetch.fetch_async")
+        fetch_async_mock(ANY)
+
+        # Go!
+        self.mocker.replay()
+        result = self.reporter.fetch_hash_id_db()
+
+        def callback(ignored):
+            # Check that fetch_async hasn't been called
+            self.assertRaises(AssertionError, self.mocker.verify)
+            fetch_async(None)
+
+            # The hash=>id database is still there
+            self.assertEquals(open(hash_id_db_filename).read(), "test")
+
+        result.addCallback(callback)
+
+        return result
+
+    def test_fetch_hash_id_db_undetermined_codename(self):
+
+        # Fake uuid
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid")
+
+        # Undetermined codename
+        command_mock = self.mocker.replace("landscape.lib.command.run_command")
+        command_mock("lsb_release -cs")
+        command_error = CommandError("lsb_release -cs", 1, "error")
+        self.mocker.throw(command_error)
+
+        # The failure should be properly logged
+        logging_mock = self.mocker.replace("logging.warning")
+        logging_mock("Couldn't determine which hash=>id database to use: %s" %
+                     str(command_error))
+        self.mocker.result(None)
+
+        # Go!
+        self.mocker.replay()
+        result = self.reporter.fetch_hash_id_db()
+
+        return result
+
+    def test_fetch_hash_id_db_undetermined_arch(self):
+
+        # Fake uuid and codename
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid")
+        command_mock = self.mocker.replace("landscape.lib.command.run_command")
+        command_mock("lsb_release -cs")
+        self.mocker.result("codename")
+
+        # Undetermined arch
+        command_mock("dpkg --print-architecture")
+        command_error = CommandError("dpkg --print-architecture", 1, "error")
+        self.mocker.throw(command_error)
+
+        # The failure should be properly logged
+        logging_mock = self.mocker.replace("logging.warning")
+        logging_mock("Couldn't determine which hash=>id database to use: %s" %
+                     str(command_error))
+        self.mocker.result(None)
+
+        # Go!
+        self.mocker.replay()
+        result = self.reporter.fetch_hash_id_db()
+
+        return result
+
+    def test_fetch_hash_id_db_with_default_url(self):
+
+        # Let's say package_hash_id_url is not set but url is
+        self.config.data_path = self.makeDir()
+        self.config.package_hash_id_url = None
+        self.config.url = "http://fake.url/path/message-system/"
+        os.makedirs(os.path.join(self.config.data_path, "package", "hash-id"))
+        hash_id_db_filename = os.path.join(self.config.data_path, "package",
+                                           "hash-id", "uuid_codename_arch")
+
+        # Fake uuid, codename and arch
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid")
+        command_mock = self.mocker.replace("landscape.lib.command.run_command")
+        command_mock("lsb_release -cs")
+        self.mocker.result("codename")
+        command_mock("dpkg --print-architecture")
+        self.mocker.result("arch")
+
+        # Check fetch_async is called with the default url
+        hash_id_db_url = "http://fake.url/path/hash-id-databases/" \
+                         "uuid_codename_arch"
+        fetch_async_mock = self.mocker.replace("landscape.lib.fetch.fetch_async")
+        fetch_async_mock(hash_id_db_url)
+        fetch_async_result = Deferred()
+        fetch_async_result.callback("hash-ids")
+        self.mocker.result(fetch_async_result)
+
+        # Now go!
+        self.mocker.replay()
+        result = self.reporter.fetch_hash_id_db()
+
+        # Check the database
+        def callback(ignored):
+            self.assertTrue(os.path.exists(hash_id_db_filename))
+            self.assertEquals(open(hash_id_db_filename).read(), "hash-ids")
+        result.addCallback(callback)
+        return result
+
+    def test_fetch_hash_id_db_with_download_error(self):
+
+        # Assume package_hash_id_url is set
+        self.config.data_path = self.makeDir()
+        self.config.package_hash_id_url = "http://fake.url/path/"
+
+        # Fake uuid, codename and arch
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid")
+        command_mock = self.mocker.replace("landscape.lib.command.run_command")
+        command_mock("lsb_release -cs")
+        self.mocker.result("codename")
+        command_mock("dpkg --print-architecture")
+        self.mocker.result("arch")
+
+        # Let's say fetch_async fails
+        hash_id_db_url = self.config.package_hash_id_url + "uuid_codename_arch"
+        fetch_async_mock = self.mocker.replace("landscape.lib.fetch.fetch_async")
+        fetch_async_mock(hash_id_db_url)
+        fetch_async_result = Deferred()
+        fetch_async_result.errback(FetchError("fetch error"))
+        self.mocker.result(fetch_async_result)
+
+        # The failure should be properly logged
+        logging_mock = self.mocker.replace("logging.warning")
+        logging_mock("Couldn't download hash=>id database: fetch error")
+        self.mocker.result(None)
+
+        # Now go!
+        self.mocker.replay()
+        result = self.reporter.fetch_hash_id_db()
+
+        # We shouldn't have any hash=>id database
+        def callback(ignored):
+            hash_id_db_filename = os.path.join(self.config.data_path, "package",
+                                               "hash-id", "uuid_codename_arch")
+            self.assertEquals(os.path.exists(hash_id_db_filename), False)
+        result.addCallback(callback)
+
+        return result
+
+    def test_fetch_hash_id_db_with_undetermined_url(self):
+
+        # We don't know where to fetch the hash=>id database from
+        self.config.url = None
+        self.config.package_hash_id_url = None
+
+        # Fake uuid, codename and arch
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid")
+        command_mock = self.mocker.replace("landscape.lib.command.run_command")
+        command_mock("lsb_release -cs")
+        self.mocker.result("codename")
+        command_mock("dpkg --print-architecture")
+        self.mocker.result("arch")
+ 
+        # The failure should be properly logged
+        logging_mock = self.mocker.replace("logging.warning")
+        logging_mock("Can't determine the hash=>id database url")
+        self.mocker.result(None)
+
+        # Let's go
+        self.mocker.replay()
+
+        result = self.reporter.fetch_hash_id_db()
+ 
+        # We shouldn't have any hash=>id database
+        def callback(ignored):
+            hash_id_db_filename = os.path.join(self.config.data_path, "package",
+                                               "hash-id", "uuid_codename_arch")
+            self.assertEquals(os.path.exists(hash_id_db_filename), False)
+        result.addCallback(callback)
+
+        return result
 
     def test_remove_expired_hash_id_request(self):
         request = self.store.add_hash_id_request(["hash1"])
@@ -569,19 +821,25 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         self.mocker.order()
 
-        results = [Deferred() for i in range(4)]
+        results = [Deferred() for i in range(6)]
 
-        reporter_mock.handle_tasks()
+        reporter_mock.fetch_hash_id_db()
         self.mocker.result(results[0])
 
-        reporter_mock.remove_expired_hash_id_requests()
+        reporter_mock.use_hash_id_db()
         self.mocker.result(results[1])
 
-        reporter_mock.request_unknown_hashes()
+        reporter_mock.handle_tasks()
         self.mocker.result(results[2])
 
-        reporter_mock.detect_changes()
+        reporter_mock.remove_expired_hash_id_requests()
         self.mocker.result(results[3])
+
+        reporter_mock.request_unknown_hashes()
+        self.mocker.result(results[4])
+
+        reporter_mock.detect_changes()
+        self.mocker.result(results[5])
 
         self.mocker.replay()
 
