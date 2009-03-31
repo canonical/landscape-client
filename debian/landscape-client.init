@@ -27,22 +27,22 @@ CLOUD=0 # overridden in /etc/default/landscape-client
 # This $RUN check should match the semantics of
 # l.sysvconfig.SysVConfig.is_configured_to_run.
 if [ $RUN -eq 0 ]; then
-    if [ $CLOUD -eq 1 ]; then
-        landscape-is-cloud-managed
-        if [ "$?" = "0" ]; then
-            # Install the cloud default configuration file
-            cp /usr/share/landscape/cloud-default.conf /etc/landscape/client.conf
-            # Override default file for not going in this conditional again at
-            # next startup
-            echo "RUN=1" > $LANDSCAPE_DEFAULTS
-        else
-            echo "$NAME is not configured, please run landscape-config."
-            exit 0
-        fi
-    else
-        echo "$NAME is not configured, please run landscape-config."
-        exit 0
-    fi
+	if [ $CLOUD -eq 1 ]; then
+		landscape-is-cloud-managed
+		if [ "$?" = "0" ]; then
+			# Install the cloud default configuration file
+			cp /usr/share/landscape/cloud-default.conf /etc/landscape/client.conf
+			# Override default file for not going in this conditional again at
+			# next startup
+			echo "RUN=1" > $LANDSCAPE_DEFAULTS
+		else
+			echo "$NAME is not configured, please run landscape-config."
+			exit 0
+		fi
+	else
+		echo "$NAME is not configured, please run landscape-config."
+		exit 0
+	fi
 fi
 
 case "$1" in
@@ -54,9 +54,9 @@ case "$1" in
 		fi
 		FULL_COMMAND="start-stop-daemon --start --quiet --oknodo --startas $DAEMON --pidfile $PIDFILE -- --daemon --pid-file $PIDFILE"
 		if [ x"$DAEMON_USER" != x ]; then
-		    sudo -u $DAEMON_USER $FULL_COMMAND
+			sudo -u $DAEMON_USER $FULL_COMMAND
 		else
-		    $FULL_COMMAND
+			$FULL_COMMAND
 		fi
 		log_end_msg $?
 		;;
