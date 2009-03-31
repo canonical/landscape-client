@@ -412,7 +412,7 @@ class WatchDogConfiguration(Configuration):
 
 
 def daemonize():
-    # See http://web.archive.org/web/20070410070022/www.erlenstar.demon.co.uk/unix/faq_2.html#SEC13
+    # See http://www.steve.org.uk/Reference/Unix/faq_2.html#SEC16
     if os.fork():   # launch child and...
         os._exit(0) # kill off parent
     os.setsid()
