@@ -7,6 +7,7 @@ from twisted.internet.defer import Deferred
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.bpickle import loads
 from landscape.lib.log import log_failure
+from landscape.lib.fetch import fetch, FetchError
 
 
 EC2_API = "http://169.254.169.254/latest"
@@ -98,36 +99,6 @@ class RegistrationHandler(object):
         self._exchange.exchange()
         return result
 
-    def _extract_ec2_instance_data(self, raw_user_data, launch_index):
-        """
-        Given the raw string of EC2 User Data, parse it and return the dict of
-        instance data for this particular instance.
-
-        If the data can't be parsed, a debug message will be logged and None
-        will be returned.
-        """
-        try:
-            user_data = loads(raw_user_data)
-        except ValueError:
-            logging.debug("Got invalid user-data %r" % (raw_user_data,))
-            return
-
-        if not isinstance(user_data, dict):
-            logging.debug("user-data %r is not a dict" % (user_data,))
-            return
-        for key in "otps", "exchange-url", "ping-url":
-            if key not in user_data:
-                logging.debug("user-data %r doesn't have key %r."
-                              % (user_data, key))
-                return
-        if len(user_data["otps"]) <= launch_index:
-            logging.debug("user-data %r doesn't have OTP for launch index %d"
-                          % (user_data, launch_index))
-            return
-        return {"otp": user_data["otps"][launch_index],
-                "exchange-url": user_data["exchange-url"],
-                "ping-url": user_data["ping-url"]}
-
     def _fetch_ec2_data(self):
         id = self._identity
         if self._cloud and not id.secure_id:
@@ -170,7 +141,7 @@ class RegistrationHandler(object):
                 self._ec2_data["launch_index"] = int(
                     self._ec2_data["launch_index"])
 
-                instance_data = self._extract_ec2_instance_data(
+                instance_data = _extract_ec2_instance_data(
                     raw_user_data, int(launch_index))
                 if instance_data is not None:
                     self._otp = instance_data["otp"]
@@ -301,3 +272,48 @@ class RegistrationResponse(object):
     def _failed(self):
         self.deferred.errback(InvalidCredentialsError())
         self._cancel_calls()
+
+
+def _extract_ec2_instance_data(raw_user_data, launch_index):
+    """
+    Given the raw string of EC2 User Data, parse it and return the dict of
+    instance data for this particular instance.
+
+    If the data can't be parsed, a debug message will be logged and None
+    will be returned.
+    """
+    try:
+        user_data = loads(raw_user_data)
+    except ValueError:
+        logging.debug("Got invalid user-data %r" % (raw_user_data,))
+        return
+
+    if not isinstance(user_data, dict):
+        logging.debug("user-data %r is not a dict" % (user_data,))
+        return
+    for key in "otps", "exchange-url", "ping-url":
+        if key not in user_data:
+            logging.debug("user-data %r doesn't have key %r."
+                          % (user_data, key))
+            return
+    if len(user_data["otps"]) <= launch_index:
+        logging.debug("user-data %r doesn't have OTP for launch index %d"
+                      % (user_data, launch_index))
+        return
+    return {"otp": user_data["otps"][launch_index],
+            "exchange-url": user_data["exchange-url"],
+            "ping-url": user_data["ping-url"]}
+
+
+def is_cloud_managed(fetch=fetch):
+    """
+    Return C{True} if the machine has been started by Landscape, i.e. if we can
+    find the expected data inside the EC2 user-data field.
+    """
+    try:
+        raw_user_data = fetch(EC2_API + "/user-data")
+        launch_index = fetch(EC2_API + "/meta-data/ami-launch-index")
+    except FetchError:
+        return False
+    instance_data = _extract_ec2_instance_data(raw_user_data, int(launch_index))
+    return instance_data is not None

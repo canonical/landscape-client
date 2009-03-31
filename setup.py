@@ -25,5 +25,6 @@ setup(name="Landscape Client",
                "scripts/landscape-monitor",
                "scripts/landscape-package-changer",
                "scripts/landscape-package-reporter",
-               "scripts/landscape-sysinfo"],
+               "scripts/landscape-sysinfo",
+               "scripts/landscape-is-cloud-managed"],
      )
