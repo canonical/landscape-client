@@ -1,14 +1,13 @@
 
 import logging
 import socket
-import pycurl
 
 from twisted.internet.defer import Deferred
 
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.bpickle import loads
 from landscape.lib.log import log_failure
-from landscape.lib.fetch import fetch, HTTPCodeError
+from landscape.lib.fetch import fetch, FetchError
 
 
 EC2_API = "http://169.254.169.254/latest"
@@ -314,7 +313,7 @@ def is_cloud_managed(fetch=fetch):
     try:
         raw_user_data = fetch(EC2_API + "/user-data")
         launch_index = fetch(EC2_API + "/meta-data/ami-launch-index")
-    except (pycurl.error, HTTPCodeError):
+    except FetchError:
         return False
     instance_data = _extract_ec2_instance_data(raw_user_data, int(launch_index))
     return instance_data is not None

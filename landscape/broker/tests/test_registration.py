@@ -11,7 +11,7 @@ from landscape.broker.registration import (
 from landscape.broker.deployment import BrokerConfiguration
 from landscape.tests.helpers import LandscapeTest, ExchangeHelper
 from landscape.lib.bpickle import dumps
-from landscape.lib.fetch import HTTPCodeError
+from landscape.lib.fetch import HTTPCodeError, FetchError
 
 
 class RegistrationTest(LandscapeTest):
@@ -788,5 +788,5 @@ class IsCloudManagedTests(unittest.TestCase):
 
     def test_is_managed_fetch_error(self):
         def fake_fetch(url):
-            raise pycurl.error(7, "couldn't connect to host")
+            raise FetchError(7, "couldn't connect to host")
         self.assertFalse(is_cloud_managed(fake_fetch))
