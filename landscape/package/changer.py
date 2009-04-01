@@ -58,7 +58,7 @@ class PackageChanger(PackageTaskHandler):
     def handle_task(self, task):
         """
         @param task: A L{PackageTask} carrying a message of
-                     type C{"change-packages"}.
+            type C{"change-packages"}.
         """
         message = task.data
         if message["type"] == "change-packages":
