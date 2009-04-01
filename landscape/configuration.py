@@ -12,15 +12,13 @@ import getpass
 from ConfigParser import ConfigParser, Error as ConfigParserError
 from StringIO import StringIO
 
-import pycurl
-
 from dbus.exceptions import DBusException
 
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.lib.dbus_util import (
     get_bus, NoReplyError, ServiceUnknownError, SecurityError)
 from landscape.lib.twisted_util import gather_results
-from landscape.lib.fetch import fetch, HTTPCodeError
+from landscape.lib.fetch import fetch, FetchError
 
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.broker.deployment import BrokerConfiguration
@@ -499,9 +497,7 @@ def fetch_import_url(url):
     error_message = None
     try:
         content = fetch(url)
-    except pycurl.error, error:
-        error_message = error.args[1]
-    except HTTPCodeError, error:
+    except FetchError, error:
         error_message = str(error)
     if error_message is not None:
         raise ImportOptionError(

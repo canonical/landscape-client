@@ -6,8 +6,10 @@ import pycurl
 
 from twisted.internet.threads import deferToThread
 
+class FetchError(Exception):
+    pass
 
-class HTTPCodeError(Exception):
+class HTTPCodeError(FetchError):
 
     def __init__(self, http_code, body):
         self.http_code = http_code
@@ -19,6 +21,18 @@ class HTTPCodeError(Exception):
     def __repr__(self):
         return "<HTTPCodeError http_code=%d>" % self.http_code
 
+
+class PyCurlError(FetchError):
+    def __init__(self, error_code, message):
+        self.error_code = error_code
+        self.message = message
+
+    def __str__(self):
+        return "Error %d: %s" % (self.error_code, self.message)
+
+    def __repr__(self):
+        return "<PyCurlError args=(%d, '%s')>" % (self.error_code,
+                                                  self.message)
 
 def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None):
     """Retrieve a URL and return the content.
@@ -53,9 +67,14 @@ def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None):
     curl.setopt(pycurl.URL, url)
     curl.setopt(pycurl.FOLLOWLOCATION, True)
     curl.setopt(pycurl.MAXREDIRS, 5)
+    curl.setopt(pycurl.CONNECTTIMEOUT, 30)
+    curl.setopt(pycurl.TIMEOUT, 600)
     curl.setopt(pycurl.WRITEFUNCTION, input.write)
 
-    curl.perform()
+    try:
+        curl.perform()
+    except pycurl.error, e:
+        raise PyCurlError(e.args[0], e.args[1])
 
     body = input.getvalue()
 

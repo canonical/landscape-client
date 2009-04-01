@@ -1,11 +1,15 @@
 import threading
 import time
-import os
+
+try:
+    import sqlite3
+except ImportError:
+    from pysqlite2 import dbapi2 as sqlite3
 
 from landscape.tests.helpers import LandscapeTest
 
-from landscape.package.store import PackageStore, UnknownHashIDRequest
-
+from landscape.package.store import (PackageStore, UnknownHashIDRequest,
+                                     InvalidHashIdDb)
 
 class PackageStoreTest(LandscapeTest):
 
@@ -37,6 +41,76 @@ class PackageStoreTest(LandscapeTest):
         self.store1.set_hash_ids({"hash1": 123, "hash2": 456})
         self.assertEquals(self.store2.get_id_hash(123), "hash1")
         self.assertEquals(self.store2.get_id_hash(456), "hash2")
+
+    def test_has_hash_id_db(self):
+
+        self.assertFalse(self.store1.has_hash_id_db())
+
+        hash_id_db_filename = self.makeFile()
+        PackageStore(hash_id_db_filename)
+        self.store1.add_hash_id_db(hash_id_db_filename)
+
+        self.assertTrue(self.store1.has_hash_id_db())
+
+    def test_add_hash_id_db_with_non_sqlite_file(self):
+
+        def junk_db_factory():
+            filename = self.makeFile()
+            open(filename, "w").write("junk")
+            return filename
+
+        def raiseme():
+            store_filename = junk_db_factory()
+            try:
+                self.store1.add_hash_id_db(store_filename)
+            except InvalidHashIdDb, e:
+                self.assertEqual(str(e), "%s (file is encrypted or is not "
+                                         "a database)" % store_filename)
+            else:
+                self.fail()
+
+        raiseme()
+        self.assertFalse(self.store1.has_hash_id_db())
+
+    def test_add_hash_id_db_with_wrong_schema(self):
+
+        def non_compliant_db_factory():
+            filename = self.makeFile()
+            db = sqlite3.connect(filename)
+            cursor = db.cursor()
+            cursor.execute("CREATE TABLE hash"
+                           " (junk INTEGER PRIMARY KEY, hash BLOB UNIQUE)")
+            cursor.close()
+            db.commit()
+            return filename
+
+        self.assertRaises(InvalidHashIdDb, self.store1.add_hash_id_db,
+                          non_compliant_db_factory())
+        self.assertFalse(self.store1.has_hash_id_db())
+
+    def test_get_hash_id_using_hash_id_dbs(self):
+        # Without hash=>id dbs
+        self.assertEquals(self.store1.get_hash_id("hash1"), None)
+        self.assertEquals(self.store1.get_hash_id("hash2"), None)
+
+        # This hash=>id will be overriden
+        self.store1.set_hash_ids({"hash1": 1})
+
+        # Add a couple of hash=>id dbs
+        def hash_id_db_factory(hash_ids):
+            filename = self.makeFile()
+            store = PackageStore(filename)
+            store.set_hash_ids(hash_ids)
+            return filename
+        self.store1.add_hash_id_db(hash_id_db_factory({"hash1": 2,
+                                                       "hash2": 3}))
+        self.store1.add_hash_id_db(hash_id_db_factory({"hash2": 4,
+                                                       "ha\x00sh1": 5}))
+
+        # Check look-up priorities and binary hashes
+        self.assertEquals(self.store1.get_hash_id("hash1"), 2)
+        self.assertEquals(self.store1.get_hash_id("hash2"), 3)
+        self.assertEquals(self.store1.get_hash_id("ha\x00sh1"), 5)
 
     def test_clear_hash_ids(self):
         self.store1.set_hash_ids({"ha\x00sh1": 123, "ha\x00sh2": 456})
