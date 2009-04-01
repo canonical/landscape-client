@@ -21,15 +21,15 @@ class SmartFacadeHelper(SmartHelper):
     def set_up(self, test_case):
         super(SmartFacadeHelper, self).set_up(test_case)
 
-        from landscape.package.facade import SmartFacade
+        from landscape.package.facade import SmartFacade, DebDirChannel
 
         class Facade(SmartFacade):
             repository_dir = test_case.repository_dir
 
             def smart_initialized(self):
                 self.reset_channels()
-                self.add_channel("alias", {"type": "deb-dir",
-                                           "path": test_case.repository_dir})
+                self.add_channel("alias",
+                                 DebDirChannel(test_case.repository_dir))
 
         test_case.Facade = Facade
         test_case.facade = Facade({"datadir": test_case.smart_dir})

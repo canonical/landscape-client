@@ -26,6 +26,31 @@ class ChannelError(Exception):
     """Raised when channels fail to load."""
 
 
+class SmartChannel(object):
+    """Base class for Smart channels abstractions."""
+
+class AptDebChannel(SmartChannel):
+    """Convenience class for Smart channels of type C{"apt-deb"}."""
+    def __init__(self, baseurl, distribution, components):
+        self._channel = {"baseurl": baseurl,
+                         "distribution": distribution,
+                         "components": components,
+                         "type": "apt-deb"}
+
+    def get(self):
+        return self._channel
+
+
+class DebDirChannel(SmartChannel):
+    """Convenience class for Smart channels of type C{"deb-dir"}."""
+    def __init__(self, path):
+        self._channel = {"path": path,
+                         "type": "deb-dir"}
+
+    def get(self):
+        return self._channel
+
+
 class SmartFacade(object):
     """Wrapper for tasks using Smart.
 
@@ -256,10 +281,14 @@ class SmartFacade(object):
         To take effect it must be called before L{reaload_channels}.
 
         @param alias: A string indentifying the channel to be added.
-        @param channel: A C{dict} meeting the format defined by the Smart API.
+        @param channel: A C{dict} meeting the format defined by the Smart API,
+            or a L{SmartChannel} object.
         """
         channels = self.get_channels()
-        channels.update({alias : channel})
+        if isinstance(channel, SmartChannel):
+            channels.update({alias : channel.get()})
+        else:
+            channels.update({alias : channel})
         smart.sysconf.set("channels", channels, soft=True)
 
     def get_channels(self):
