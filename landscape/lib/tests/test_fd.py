@@ -6,6 +6,7 @@ from landscape.tests.mocker import ANY
 from landscape.lib.fd import clean_fds
 from landscape.tests.helpers import LandscapeTest
 
+
 class CleanFDsTests(LandscapeTest):
     """Tests for L{clean_fds}."""
     
@@ -26,7 +27,6 @@ class CleanFDsTests(LandscapeTest):
             close_mock(i)
         self.mocker.replay()
         clean_fds()
-
 
     def test_clean_fds_sanity(self):
         """

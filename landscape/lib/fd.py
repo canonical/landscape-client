@@ -16,8 +16,8 @@ def clean_fds():
     unwanted file descriptors from the invoking process.  Unfortunately, this
     is really common in unix!
     """
-    for fd in range(3,
-                    min(4096, resource.getrlimit(resource.RLIMIT_NOFILE)[1])):
+    total_descriptors = min(4096, resource.getrlimit(resource.RLIMIT_NOFILE)[1])
+    for fd in range(3, total_descriptors):
         try:
             os.close(fd)
         except OSError, e:
