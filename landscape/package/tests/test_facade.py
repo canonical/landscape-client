@@ -11,7 +11,7 @@ import smart
 
 from landscape.package.facade import (
     SmartFacade, TransactionError, DependencyError, ChannelError, SmartError,
-    AptDebChannel, DebDirChannel)
+    make_apt_deb_channel, make_deb_dir_channel)
 
 from landscape.tests.helpers import LandscapeTest
 from landscape.package.tests.helpers import (
@@ -399,25 +399,18 @@ class SmartFacadeTest(LandscapeTest):
 
         self.assertEquals(self.facade.get_channels(), dict(channels))
 
-    def test_add_channel_with_convenience(self):
+    def test_make_channels(self):
 
-        channel0 = AptDebChannel("http://my.url/dir", "hardy", "main")
-        channel1 = DebDirChannel("/my/repo")
+        channel0 = make_apt_deb_channel("http://my.url/dir", "hardy", "main")
+        channel1 = make_deb_dir_channel("/my/repo")
 
-        self.facade.reset_channels()
-        self.facade.add_channel("alias0", channel0)
-        self.facade.add_channel("alias1", channel1)
-
-        expected_channels = {"alias0":
-                                 {"baseurl": "http://my.url/dir",
-                                  "distribution": "hardy",
-                                  "components": "main",
-                                  "type": "apt-deb"},
-                             "alias1":
-                                 {"path": "/my/repo",
-                                  "type": "deb-dir"}}
-
-        self.assertEquals(self.facade.get_channels(), expected_channels)
+        self.assertEquals(channel0, {"baseurl": "http://my.url/dir",
+                                     "distribution": "hardy",
+                                     "components": "main",
+                                     "type": "apt-deb"})
+                     
+        self.assertEquals(channel1, {"path": "/my/repo",
+                                     "type": "deb-dir"})
 
     def test_set_arch_multiple_times(self):
 

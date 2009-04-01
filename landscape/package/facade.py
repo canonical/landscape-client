@@ -26,31 +26,6 @@ class ChannelError(Exception):
     """Raised when channels fail to load."""
 
 
-class SmartChannel(object):
-    """Base class for Smart channels abstractions."""
-
-class AptDebChannel(SmartChannel):
-    """Convenience class for Smart channels of type C{"apt-deb"}."""
-    def __init__(self, baseurl, distribution, components):
-        self._channel = {"baseurl": baseurl,
-                         "distribution": distribution,
-                         "components": components,
-                         "type": "apt-deb"}
-
-    def get(self):
-        return self._channel
-
-
-class DebDirChannel(SmartChannel):
-    """Convenience class for Smart channels of type C{"deb-dir"}."""
-    def __init__(self, path):
-        self._channel = {"path": path,
-                         "type": "deb-dir"}
-
-    def get(self):
-        return self._channel
-
-
 class SmartFacade(object):
     """Wrapper for tasks using Smart.
 
@@ -285,10 +260,7 @@ class SmartFacade(object):
             or a L{SmartChannel} object.
         """
         channels = self.get_channels()
-        if isinstance(channel, SmartChannel):
-            channels.update({alias : channel.get()})
-        else:
-            channels.update({alias : channel})
+        channels.update({alias : channel})
         smart.sysconf.set("channels", channels, soft=True)
 
     def get_channels(self):
@@ -297,3 +269,16 @@ class SmartFacade(object):
         """
         self._get_ctrl()
         return smart.sysconf.get("channels")
+
+
+def make_apt_deb_channel(baseurl, distribution, components):
+    """Convenience to create Smart channels of type C{"apt-deb"}."""
+    return {"baseurl": baseurl,
+            "distribution": distribution,
+            "components": components,
+            "type": "apt-deb"}
+
+def make_deb_dir_channel(path):
+    """Convenience to create Smart channels of type C{"deb-dir"}."""
+    return {"path": path,
+            "type": "deb-dir"}
