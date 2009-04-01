@@ -3,6 +3,12 @@ import sys, os
 if os.path.dirname(os.path.abspath(sys.argv[0])) == os.path.abspath("scripts"):
     sys.path.insert(0, "./")
 
+from landscape.lib.fd import clean_fds
+
+# close stray file descriptors now, before we give any other code the chance to
+# create a critical FD. Even before the reactor is installed!
+clean_fds()
+
 # This is needed for DBUS listeners to work.
 from twisted.internet.glib2reactor import install
 install()
