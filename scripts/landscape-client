@@ -4,19 +4,11 @@ import sys, os
 if os.path.dirname(os.path.abspath(sys.argv[0])) == os.path.abspath("scripts"):
     sys.path.insert(0, "./")
 
-# Close any file descriptors (other than standard IO) that we may have
-# inherited from the invoking process.
-#
-# It's hard to put this code anywhere else, because apparently there's a
-# critical file descriptor created every time you sneeze in the landscape-
-# client startup code.  For example, installing the reactor may create waker
-# FDs.
-import resource
-for fd in range(3, min(4098, resource.getrlimit(resource.RLIMIT_NOFILE)[1])):
-    try:
-        os.close(fd)
-    except OSError, e:
-        pass
+from landscape.lib.fd import clean_fds
+
+# close stray file descriptors now, before we give any other code the chance to
+# create a critical FD. Even before the reactor is installed!
+clean_fds()
 
 # This is needed for DBUS listeners to work.
 from twisted.internet.glib2reactor import install
