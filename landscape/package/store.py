@@ -61,6 +61,12 @@ class HashIdStore(object):
             return value[0]
         return None
 
+    @with_cursor
+    def get_hash_ids(self, cursor):
+        print "ok"
+        cursor.execute("SELECT hash, id FROM hash")
+        return dict([(str(row[0]), row[1]) for row in cursor.fetchall()])
+
 class PackageStore(HashIdStore):
 
     def __init__(self, filename):

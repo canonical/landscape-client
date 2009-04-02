@@ -25,6 +25,11 @@ class HashIdStoreTest(LandscapeTest):
         self.assertEquals(self.store.get_hash_id("ha\x00sh1"), 123)
         self.assertEquals(self.store.get_hash_id("ha\x00sh2"), 456)
 
+    def test_get_hash_ids(self):
+        hash_ids = {"hash1": 123, "hash2": 456}
+        self.store.set_hash_ids(hash_ids)
+        self.assertEquals(self.store.get_hash_ids(), hash_ids)
+
 class PackageStoreTest(LandscapeTest):
 
     def setUp(self):
@@ -45,11 +50,6 @@ class PackageStoreTest(LandscapeTest):
         mock_db.rollback()
         self.mocker.replay()
         self.assertRaises(Exception, self.store1.set_hash_ids, None)
-
-    def test_set_and_get_hash_id(self):
-        self.store1.set_hash_ids({"ha\x00sh1": 123, "ha\x00sh2": 456})
-        self.assertEquals(self.store2.get_hash_id("ha\x00sh1"), 123)
-        self.assertEquals(self.store2.get_hash_id("ha\x00sh2"), 456)
 
     def test_get_id_hash(self):
         self.store1.set_hash_ids({"hash1": 123, "hash2": 456})
