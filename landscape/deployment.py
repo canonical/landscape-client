@@ -63,8 +63,7 @@ class BaseConfiguration(object):
     config_section = "client"
 
     def __init__(self):
-        """
-        Default configuration.
+        """Default configuration.
 
         Default values for supported options are set as in L{make_parser}.
         """
@@ -247,7 +246,7 @@ class BaseConfiguration(object):
         return parser
 
     def get_config_filename(self):
-        """Pick the proper configuration file
+        """Pick the proper configuration file.
 
         The picked filename is:
           1. C{self.config}, if defined
@@ -266,7 +265,7 @@ class BaseConfiguration(object):
         return None
 
     def get_command_line_options(self):
-        """Get currently loaded command line options
+        """Get currently loaded command line options.
 
         @see: L{load_command_line}
         """
@@ -284,7 +283,7 @@ class Configuration(BaseConfiguration):
         return os.path.join(self.data_path, "hash.db")
 
     def make_parser(self):
-        """Parser factory for supported options
+        """Parser factory for supported options.
 
         @return: An L{OptionParser} preset for all options
             from L{BaseConfiguration.make_parser} plus:
@@ -313,7 +312,7 @@ class Configuration(BaseConfiguration):
 
 
 def get_versioned_persist(service):
-    """Get a L{Persist} database with upgrade rules applied
+    """Get a L{Persist} database with upgrade rules applied.
 
     Load a L{Persist} database for the given C{service} and upgrade or
     mark as current, as necessary.
@@ -350,10 +349,9 @@ class LandscapeService(Service, object):
         signal.signal(signal.SIGUSR1, lambda signal, frame: rotate_logs())
 
     def startService(self):
-        """
-        Extend L{twisted.application.service.IService.startService}.
+        """Extend L{twisted.application.service.IService.startService}.
 
-        Craete a a new DBus connection (normally a C{SystemBus}) and
+        Create a a new DBus connection (normally using a C{SystemBus}) and
         save it in the public L{self.bus} instance variable.
         """
         Service.startService(self)
@@ -385,8 +383,7 @@ _required_users = {
 
 
 def run_landscape_service(configuration_class, service_class, args, bus_name):
-    """
-    Run a Landscape service.
+    """Run a Landscape service.
 
     The function will instantiate the given L{LandscapeService} subclass
     and attach the resulting service object to a Twisted C{Application}.

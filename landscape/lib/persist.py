@@ -41,8 +41,7 @@ class PersistReadOnlyError(PersistError):
 
 class Persist(object):
 
-    """
-    Persist a hierarchical database of key=>value pairs.
+    """Persist a hierarchical database of key=>value pairs.
 
     There are three different kinds of opition maps, regarding the
     persistence and priority that maps are queried.
@@ -330,14 +329,12 @@ class Persist(object):
 
 
 class RootedPersist(object):
-
-    """
-    Root a L{Persist}'s tree at a particular branch.
+    """Root a L{Persist}'s tree at a particular branch.
 
     This class shares the same interface of L{Persist} and provides a shortcut
     to access the nodes of a particular branch in a L{Persist}'s tree.
 
-    The choosen branch will be viewed as the root of the tree of the
+    The chosen branch will be viewed as the root of the tree of the
     L{RootedPersist} and all operations will be forwarded to the parent
     L{Persist} as appropriate.
     """

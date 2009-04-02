@@ -19,15 +19,14 @@ IFACE_NAME = BUS_NAME
 
 
 class BrokerDBusObject(Object):
-    """
-    A DBus-published object exposing broker's services and emitting signals.
+    """A DBus-published object exposing broker's services and emitting signals.
 
     Each public method decorated with C{@method(IFACE_NAME)} exposes a
     broker's service to the other Landscape client processes, which can
     remote call it through the D-Bus interface.
     
     Each public method decorated with C{@signal(IFACE_NAME)} turns the
-    corresponding broker's L{TwistedReactor} event into a a D-Bus signal,
+    corresponding broker's L{TwistedReactor} event into a D-Bus signal,
     which get broadcasted over the bus and eventually received by the
     other Landscape client processes.
     """
@@ -80,8 +79,7 @@ class BrokerDBusObject(Object):
         pass
 
     def _broadcast_message(self, message):
-        """
-        Call the C{message} method of all the registered plugins.
+        """Call the C{message} method of all the registered plugins.
 
         @see: L{register_plugin}.
         """
@@ -190,8 +188,7 @@ Please contact the Landscape team for more information.
 
     @method(IFACE_NAME)
     def register_plugin(self, bus_name, object_path):
-        """
-        Register a new plugin.
+        """Register a new plugin.
 
         Plugins are DBus-published objects identified by C{bus_name}
         and C{object_path}.

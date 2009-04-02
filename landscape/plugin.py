@@ -66,7 +66,7 @@ class BrokerClientPluginRegistry(PluginRegistry):
         return self.broker.register_client_accepted_message_type(type)
 
     def dispatch_message(self, message):
-        """Run the handler registered for the type of the given message"""
+        """Run the handler registered for the type of the given message."""
         type = message["type"]
         handler = self._registered_messages.get(type)
         if handler is not None:

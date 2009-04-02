@@ -37,7 +37,7 @@ class Identity(object):
 
     @ivar secure_id: A server-provided ID for secure message exchange.
     @ivar insecure_id: Non-secure server-provided ID, mainly used with
-                       the ping server.
+        the ping server.
     @ivar computer_title: See L{BrokerConfiguration}.
     @ivar account_name: See L{BrokerConfiguration}.
     @ivar registration_password: See L{BrokerConfiguration}.
@@ -52,8 +52,8 @@ class Identity(object):
     def __init__(self, config, persist):
         """
         @param config: A L{BrokerConfiguration} object, used to set the
-                       C{computer_title}, C{account_name} and
-                       C{registration_password} instance variables.
+            C{computer_title}, C{account_name} and C{registration_password}
+            instance variables.
         """
         self._config = config
         self._persist = persist.root_at("registration")
@@ -272,8 +272,7 @@ class RegistrationHandler(object):
                 self._reactor.fire("registration-failed")
 
     def _handle_set_id(self, message):
-        """
-        Registered handler for the C{"set-id"} event.
+        """Registered handler for the C{"set-id"} event.
         
         Record and start using the secure and insecure IDs from the given
         message.

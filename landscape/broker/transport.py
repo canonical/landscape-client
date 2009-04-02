@@ -45,11 +45,11 @@ class HTTPTransport(object):
 
         @param payload: The object to send, it must be L{bpickle}-compatible.
         @param computer_id: The computer ID to send the message as (see
-                            also L{Identity}).
+            also L{Identity}).
 
         @type: C{dict}
         @return: The server's response to sent message or C{None} in case
-                 of error.
+            of error.
 
         @note: This code is thread safe (HOPEFULLY).
 

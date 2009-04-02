@@ -43,8 +43,7 @@ class EventHandlingReactorMixin(object):
         self._event_handlers = {}
 
     def call_on(self, event_type, handler, priority=0):
-        """
-        Register an event handler.
+        """Register an event handler.
 
         @param event_type: The name of the event type to handle.
         @param handler: The function handling the given event type.
@@ -61,8 +60,7 @@ class EventHandlingReactorMixin(object):
         return EventID(event_type, pair)
 
     def fire(self, event_type, *args, **kwargs):
-        """
-        Fire an event of a given type.
+        """Fire an event of a given type.
 
         Call all handlers registered for the given C{event_type}, in order
         of priority.
@@ -94,8 +92,7 @@ class EventHandlingReactorMixin(object):
         return results
 
     def cancel_call(self, id):
-        """
-        Unregister an event handler.
+        """Unregister an event handler.
 
         @param id: the L{EventID} of the handler to unregister.
         """
@@ -355,8 +352,7 @@ class TwistedReactor(EventHandlingReactorMixin,
                 call.cancel()
 
     def call_later(self, *args, **kwargs):
-        """
-        Call a function later.
+        """Call a function later.
 
         Simply call C{callLater(*args, **kwargs)} and return its result.
 
@@ -366,8 +362,7 @@ class TwistedReactor(EventHandlingReactorMixin,
         return self._reactor.callLater(*args, **kwargs)
 
     def call_every(self, seconds, f, *args, **kwargs):
-        """
-        Call a function repeatedly.
+        """Call a function repeatedly.
 
         Create a new L{twisted.internet.task.LoopingCall} object and
         start it.
@@ -379,8 +374,7 @@ class TwistedReactor(EventHandlingReactorMixin,
         return lc
 
     def cancel_call(self, id):
-        """
-        Cancel a scheduled function or event handler.
+        """Cancel a scheduled function or event handler.
 
         @param id: The function call or handler to remove. It can be an
             L{EventID}, a L{LoopingCall} or a C{IDelayedCall}, as returned
@@ -394,8 +388,7 @@ class TwistedReactor(EventHandlingReactorMixin,
             id.cancel()
 
     def call_in_main(self, f, *args, **kwargs):
-        """
-        Cause a function to be executed by the reactor thread.
+        """Cause a function to be executed by the reactor thread.
 
         @param f: The callable object to execute.
         @param args: The arguments to call it with.
@@ -419,8 +412,7 @@ class TwistedReactor(EventHandlingReactorMixin,
         self._cleanup()
 
     def time(self):
-        """
-        Get current time.
+        """Get current time.
 
         @see L{time.time}
         """
@@ -428,16 +420,14 @@ class TwistedReactor(EventHandlingReactorMixin,
 
 
     def listen_udp(self, port, protocol):
-        """
-        Connect the given protocol with a UDP transport.
+        """Connect the given protocol with a UDP transport.
 
         @see L{twisted.internet.interfaces.IReactorUDP.listenUDP}.
         """
         return self._reactor.listenUDP(port, protocol)
 
     def resolve(self, host):
-        """
-        Look up the IP of the given host.
+        """Look up the IP of the given host.
 
         @return: A L{Deferred} resulting in the hostname.
 

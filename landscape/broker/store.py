@@ -81,8 +81,7 @@ class MessageStore(object):
         return type in self.get_accepted_types()
 
     def get_sequence(self):
-        """
-        Get the current sequence.
+        """Get the current sequence.
 
         @return: The sequence number of the message that the server expects us to
            send on the next exchange.
@@ -90,8 +89,7 @@ class MessageStore(object):
         return self._persist.get("sequence", 0)
 
     def set_sequence(self, number):
-        """
-        Set the current sequence.
+        """Set the current sequence.
 
         Set the sequence number of the message that the server expects us to
         send on the next exchange.
@@ -99,8 +97,7 @@ class MessageStore(object):
         self._persist.set("sequence", number)
 
     def get_server_sequence(self):
-        """
-        Get the current server sequence.
+        """Get the current server sequence.
 
         @return: the sequence number of the message that we will ask the server to
             send to us on the next exchange.
@@ -108,8 +105,7 @@ class MessageStore(object):
         return self._persist.get("server_sequence", 0)
 
     def set_server_sequence(self, number):
-        """
-        Set the current server sequence.
+        """Set the current server sequence.
 
         Set the sequence number of the message that we will ask the server to
         send to us on the next exchange.
@@ -129,8 +125,7 @@ class MessageStore(object):
         return self._persist.get("pending_offset", 0)
 
     def set_pending_offset(self, val):
-        """
-        Set the current pending offset.
+        """Set the current pending offset.
 
         Set the offset into the message pool to consider assigned to the
         current sequence number as returned by l{get_sequence}.

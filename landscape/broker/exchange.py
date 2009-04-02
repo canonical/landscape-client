@@ -29,13 +29,13 @@ class MessageExchange(object):
                  create_time=time.time):
         """
         @param reactor: A L{TwistedReactor} used to fire events in response
-                        to messages received by the server.
+            to messages received by the server.
         @param store: A L{MessageStore} used to queue outgoing messages.
         @param transport: A L{HTTPTransport} used to deliver messages.
         @param exchange_interval: time interval between subsequent
-                                  exchanges of non-urgent messages.
+            exchanges of non-urgent messages.
         @param urgent_exachange_interval: time interval between subsequent
-                                          exchanges of urgent messages.
+            exchanges of urgent messages.
         """
         self._reactor = reactor
         self._message_store = store
@@ -134,8 +134,7 @@ class MessageExchange(object):
                          self._urgent_exchange_interval)
 
     def exchange(self):
-        """
-        Send pending messages to the server and process responses.
+        """Send pending messages to the server and process responses.
 
         An C{pre-exchange} reactor event will be emitted just before the
         actual exchange takes place.
@@ -195,63 +194,48 @@ class MessageExchange(object):
         return self._urgent_exchange
 
     def schedule_exchange(self, urgent=False, force=False):
-        """
-        Schedule an exchange to happen.
+        """Schedule an exchange to happen.
 
         The exchange will occur after some time based on whether C{urgent} is
         True. An C{impending-exchange} reactor event will be emitted
         approximately 10 seconds before the exchange is started.
 
         @param urgent: If true, ensure an exchange happens within the
-                       urgent interval.  This will reschedule the exchange
-                       if necessary.  If another urgent exchange is already
-                       scheduled, nothing happens.
+            urgent interval.  This will reschedule the exchange if necessary.
+            If another urgent exchange is already scheduled, nothing happens.
         @param force: If true, an exchange will necessarily be scheduled,
-                      even if it was already scheduled before.
+            even if it was already scheduled before.
         """
-        if self._exchanging:
-            # This if branch is currently untested.
-            # It's a bit tricky to test as it is preventing rehooking 'exchange'
-            # while there's a background thread doing the exchange itself.
-            return
+        # The 'not self._exchanging' check below is currently untested.
+        # It's a bit tricky to test as it is preventing rehooking 'exchange'
+        # while there's a background thread doing the exchange itself.
+        if (not self._exchanging and
+            (force or self._exchange_id is None or
+             urgent and not self._urgent_exchange)):
+            if urgent:
+                self._urgent_exchange = True
+            if self._exchange_id:
+                self._reactor.cancel_call(self._exchange_id)
 
-        if (self._exchange_id is not None) and not (force or urgent):
-            # An exchange is already scheduled and neither force or urgent
-            # is True
-            return
+            if self._urgent_exchange:
+                interval = self._urgent_exchange_interval
+            else:
+                interval = self._exchange_interval
 
-        if urgent and self._urgent_exchange:
-            # Another urgent exchange is already scheduled
-            return
+            if self._notification_id is not None:
+                self._reactor.cancel_call(self._notification_id)
+            notification_interval = interval - 10
+            self._notification_id = self._reactor.call_later(
+                notification_interval, self._notify_impending_exchange)
 
-        if urgent:
-            self._urgent_exchange = True
-
-        if self._urgent_exchange:
-            interval = self._urgent_exchange_interval
-        else:
-            interval = self._exchange_interval
-
-        notification_interval = interval - 10
-
-        if self._notification_id is not None:
-            self._reactor.cancel_call(self._notification_id)
-
-        self._notification_id = self._reactor.call_later(
-            notification_interval, self._notify_impending_exchange)
-
-        if self._exchange_id:
-            self._reactor.cancel_call(self._exchange_id)
-
-        self._exchange_id = self._reactor.call_later(interval,
-                                                     self.exchange)
+            self._exchange_id = self._reactor.call_later(interval,
+                                                         self.exchange)
 
     def _notify_impending_exchange(self):
         self._reactor.fire("impending-exchange")
 
     def make_payload(self):
-        """
-        Return a dict representing the complete exchange payload.
+        """Return a dict representing the complete exchange payload.
 
         The payload will contain all pending messages eligible for
         delivery, up to a maximum of C{max_messages} as passed to
@@ -302,8 +286,7 @@ class MessageExchange(object):
         return md5.new(accepted_types_str).digest()
 
     def _handle_result(self, payload, result):
-        """
-        Handle a response from the server.
+        """Handle a response from the server.
 
         Called by L{exchange} after a batch of messages has been
         successfully delivered to the server.
@@ -362,8 +345,7 @@ class MessageExchange(object):
                 self.schedule_exchange(urgent=True)
 
     def register_message(self, type, handler):
-        """
-        Register a handler for the give message type.
+        """Register a handler for the given message type.
 
         The C{handler} callable will to be executed when a message of
         type C{type} has been received from the server.
