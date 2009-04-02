@@ -1,6 +1,7 @@
 from landscape.plugin import PluginConfigError
 from landscape.monitor.processorinfo import ProcessorInfo
-from landscape.tests.helpers import LandscapeTest, MakePathHelper, MonitorHelper
+from landscape.tests.helpers import (
+    LandscapeTest, MakePathHelper, MonitorHelper)
 from landscape.tests.mocker import ANY
 
 
@@ -56,7 +57,6 @@ class ResynchTest(LandscapeTest):
         plugin.run()
         messages = self.mstore.get_pending_messages()
         self.assertEquals(len(messages), 2)
-
 
 
 class PowerPCMessageTest(LandscapeTest):

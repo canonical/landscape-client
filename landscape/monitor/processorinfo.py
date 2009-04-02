@@ -147,6 +147,7 @@ class PowerPCMessageFactory:
 
         return processors
 
+
 class ARMMessageFactory:
     """Factory for arm-based processors provides processor information."""
 
