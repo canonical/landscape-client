@@ -204,8 +204,7 @@ class RegistrationHandler(object):
             registration_data.addErrback(log_error)
 
     def _handle_exchange_done(self):
-        """
-        Registered handler for the C{"exchange-done"} event.
+        """Registered handler for the C{"exchange-done"} event.
 
         If we are not registered yet, schedule another message exchange.
 
