@@ -63,7 +63,6 @@ class HashIdStore(object):
 
     @with_cursor
     def get_hash_ids(self, cursor):
-        print "ok"
         cursor.execute("SELECT hash, id FROM hash")
         return dict([(str(row[0]), row[1]) for row in cursor.fetchall()])
 
