@@ -19,7 +19,6 @@ class PluginRegistry(object):
     def __init__(self):
         self._plugins = []
         self._plugin_names = {}
-        self._registered_messages = {}
 
     def add(self, plugin):
         """Register a plugin.
@@ -55,6 +54,7 @@ class BrokerClientPluginRegistry(PluginRegistry):
 
     def __init__(self, broker):
         super(BrokerClientPluginRegistry, self).__init__()
+        self._registered_messages = {}
         self.broker = broker
 
     def register_message(self, type, handler):
@@ -66,6 +66,7 @@ class BrokerClientPluginRegistry(PluginRegistry):
         return self.broker.register_client_accepted_message_type(type)
 
     def dispatch_message(self, message):
+        """Run the handler registered for the type of the given message."""
         type = message["type"]
         handler = self._registered_messages.get(type)
         if handler is not None:
@@ -115,6 +116,10 @@ class BrokerPlugin(Object):
     of its clients.
     """
     def __init__(self, bus, registry):
+        """
+        @param bus: a DBus connection, typically a C{dbus.SystemBus} object.
+        @param registry: an instance of L{PluginRegistry} or of a subclass of it.
+        """
         Object.__init__(self, bus)
         self.registry = registry
         bus.add_signal_receiver(self.notify_exchange, "impending_exchange")

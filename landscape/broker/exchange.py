@@ -27,6 +27,16 @@ class MessageExchange(object):
                  monitor_interval=None,
                  max_messages=100,
                  create_time=time.time):
+        """
+        @param reactor: A L{TwistedReactor} used to fire events in response
+            to messages received by the server.
+        @param store: A L{MessageStore} used to queue outgoing messages.
+        @param transport: A L{HTTPTransport} used to deliver messages.
+        @param exchange_interval: time interval between subsequent
+            exchanges of non-urgent messages.
+        @param urgent_exachange_interval: time interval between subsequent
+            exchanges of urgent messages.
+        """
         self._reactor = reactor
         self._message_store = store
         self._create_time = create_time
@@ -50,6 +60,7 @@ class MessageExchange(object):
         reactor.call_on("pre-exit", self.stop)
 
     def get_exchange_intervals(self):
+        """Return a binary tuple with urgent and normal exchange intervals."""
         return (self._urgent_exchange_interval, self._exchange_interval)
 
     def send(self, message, urgent=False):
@@ -57,6 +68,8 @@ class MessageExchange(object):
 
         If urgent is True, an exchange with the server will be
         scheduled urgently.
+
+        @param message: Same as in L{MessageStore.add}.
         """
         if "timestamp" not in message:
             message["timestamp"] = int(self._reactor.time())
@@ -85,9 +98,9 @@ class MessageExchange(object):
         If this makes existing held messages available for sending,
         urgently exchange messages.
 
-        If new types are made available, a
-        C{("message-type-accepted", type_name)} reactor event will
-        be fired.
+        If new types are made available or old types are dropped a
+        C{("message-type-acceptance-changed", type, bool)} reactor
+        event will be fired.
         """
         old_types = set(self._message_store.get_accepted_types())
         new_types = set(message["types"])
@@ -123,7 +136,13 @@ class MessageExchange(object):
     def exchange(self):
         """Send pending messages to the server and process responses.
 
-        @return: A deferred that is fired when exchange has completed.
+        An C{pre-exchange} reactor event will be emitted just before the
+        actual exchange takes place.
+
+        An C{exchange-done} or C{exchange-failed} reactor event will be
+        emitted after a successful or failed exchange.
+
+        @return: A L{Deferred} that is fired when exchange has completed.
 
         XXX Actually that is a lie right now. It returns before exchange is
         actually complete.
@@ -182,11 +201,10 @@ class MessageExchange(object):
         approximately 10 seconds before the exchange is started.
 
         @param urgent: If true, ensure an exchange happens within the
-                       urgent interval.  This will reschedule the exchange
-                       if necessary.  If another urgent exchange is already
-                       scheduled, nothing happens.
+            urgent interval.  This will reschedule the exchange if necessary.
+            If another urgent exchange is already scheduled, nothing happens.
         @param force: If true, an exchange will necessarily be scheduled,
-                      even if it was already scheduled before.
+            even if it was already scheduled before.
         """
         # The 'not self._exchanging' check below is currently untested.
         # It's a bit tricky to test as it is preventing rehooking 'exchange'
@@ -217,7 +235,12 @@ class MessageExchange(object):
         self._reactor.fire("impending-exchange")
 
     def make_payload(self):
-        """Return a dict representing the complete payload."""
+        """Return a dict representing the complete exchange payload.
+
+        The payload will contain all pending messages eligible for
+        delivery, up to a maximum of C{max_messages} as passed to
+        the L{__init__} method.
+        """
         store = self._message_store
         accepted_types_digest = self._hash_types(store.get_accepted_types())
         messages = store.get_pending_messages(self._max_messages)
@@ -263,6 +286,19 @@ class MessageExchange(object):
         return md5.new(accepted_types_str).digest()
 
     def _handle_result(self, payload, result):
+        """Handle a response from the server.
+
+        Called by L{exchange} after a batch of messages has been
+        successfully delivered to the server.
+
+        If the C{server_uuid} changed, a C{"server-uuid-changed"} event
+        will be fired.
+
+        Call L{handle_message} for each message in C{result}.
+
+        @param payload: The payload that was sent to the server.
+        @param result: The response got in reply to the C{payload}.
+        """
         message_store = self._message_store
         self._client_accepted_types_hash = result.get("client-accepted-types-hash")
         next_expected = result.get("next-expected-sequence")
@@ -309,9 +345,10 @@ class MessageExchange(object):
                 self.schedule_exchange(urgent=True)
 
     def register_message(self, type, handler):
-        """
-        Register a handler to be called when a message of the given
-        type has been received from the server.
+        """Register a handler for the given message type.
+
+        The C{handler} callable will to be executed when a message of
+        type C{type} has been received from the server.
 
         Multiple handlers for the same type will be called in the
         order they were registered.

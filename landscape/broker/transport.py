@@ -15,13 +15,19 @@ class HTTPTransport(object):
     """Transport makes a request to exchange message data over HTTP."""
 
     def __init__(self, url, pubkey=None):
+        """
+        @param url: URL of the remote Landscape server message system.
+        @param pubkey: SSH pubblic key used for secure communication.
+        """
         self._url = url
         self._pubkey = pubkey
 
     def get_url(self):
+        """Get the URL of the remote message system."""
         return self._url
 
     def set_url(self, url):
+        """Set the URL of the remote message system."""
         self._url = url
 
     def _curl(self, payload, computer_id, message_api):
@@ -37,7 +43,16 @@ class HTTPTransport(object):
     def exchange(self, payload, computer_id=None, message_api=API):
         """Exchange message data with the server.
 
-        THREAD SAFE (HOPEFULLY)
+        @param payload: The object to send, it must be L{bpickle}-compatible.
+        @param computer_id: The computer ID to send the message as (see
+            also L{Identity}).
+
+        @type: C{dict}
+        @return: The server's response to sent message or C{None} in case
+            of error.
+
+        @note: This code is thread safe (HOPEFULLY).
+
         """
         spayload = bpickle.dumps(payload)
         try:

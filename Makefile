@@ -15,8 +15,13 @@ clean:
 	-rm docs/api -rf;
 	-rm man/\*.1 -rf
 
-doc:
-	${PYDOCTOR} --make-html --html-output docs/api --add-package landscape
+doc: docs/api/twisted/pickle
+	mkdir -p docs/api
+	${PYDOCTOR} --make-html --html-output docs/api --add-package landscape --extra-system=docs/api/twisted/pickle:twisted/
+
+docs/api/twisted/pickle:
+	mkdir -p docs/api/twisted
+	-${PYDOCTOR} --make-html --html-output docs/api/twisted --add-package /usr/share/pyshared/twisted -o docs/api/twisted/pickle
 
 manpages:
 	${TXT2MAN} -P Landscape -t landscape-client < man/landscape-client.txt > man/landscape-client.1
