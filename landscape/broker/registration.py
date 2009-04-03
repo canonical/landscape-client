@@ -311,8 +311,10 @@ def is_cloud_managed(fetch=fetch):
     find the expected data inside the EC2 user-data field.
     """
     try:
-        raw_user_data = fetch(EC2_API + "/user-data")
-        launch_index = fetch(EC2_API + "/meta-data/ami-launch-index")
+        raw_user_data = fetch(EC2_API + "/user-data",
+                              connect_timeout=5)
+        launch_index = fetch(EC2_API + "/meta-data/ami-launch-index",
+                             connect_timeout=5)
     except FetchError:
         return False
     instance_data = _extract_ec2_instance_data(raw_user_data, int(launch_index))
