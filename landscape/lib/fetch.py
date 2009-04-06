@@ -34,7 +34,8 @@ class PyCurlError(FetchError):
         return "<PyCurlError args=(%d, '%s')>" % (self.error_code,
                                                   self.message)
 
-def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None):
+def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None,
+          connect_timeout=30, total_timeout=600):
     """Retrieve a URL and return the content.
 
     @param url: The url to be fetched.
@@ -67,8 +68,8 @@ def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None):
     curl.setopt(pycurl.URL, url)
     curl.setopt(pycurl.FOLLOWLOCATION, True)
     curl.setopt(pycurl.MAXREDIRS, 5)
-    curl.setopt(pycurl.CONNECTTIMEOUT, 30)
-    curl.setopt(pycurl.TIMEOUT, 600)
+    curl.setopt(pycurl.CONNECTTIMEOUT, connect_timeout)
+    curl.setopt(pycurl.TIMEOUT, total_timeout)
     curl.setopt(pycurl.WRITEFUNCTION, input.write)
 
     try:

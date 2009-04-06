@@ -738,21 +738,27 @@ class IsCloudManagedTests(unittest.TestCase):
         self.urls = []
         self.responses = []
 
-    def fake_fetch(self, url):
-        self.urls.append(url)
+    def fake_fetch(self, url, connect_timeout=None):
+        self.urls.append((url, connect_timeout))
         return self.responses.pop(0)
 
     def test_is_managed(self):
+        """
+        L{is_cloud_managed} returns True if the EC2 user-data contains Landscape
+        instance information.  It fetches the EC2 data with low timeouts.
+        """
         user_data = {"otps": ["otp1"], "exchange-url": "http://exchange",
                      "ping-url": "http://ping"}
         self.responses = [dumps(user_data), "0"]
         self.assertTrue(is_cloud_managed(self.fake_fetch))
         self.assertEquals(
             self.urls,
-            [EC2_API + "/user-data", EC2_API + "/meta-data/ami-launch-index"])
+            [(EC2_API + "/user-data", 5),
+             (EC2_API + "/meta-data/ami-launch-index", 5)])
 
     def test_is_managed_index(self):
-        user_data = {"otps": ["otp1", "otp2"], "exchange-url": "http://exchange",
+        user_data = {"otps": ["otp1", "otp2"],
+                     "exchange-url": "http://exchange",
                      "ping-url": "http://ping"}
         self.responses = [dumps(user_data), "1"]
         self.assertTrue(is_cloud_managed(self.fake_fetch))
@@ -782,11 +788,11 @@ class IsCloudManagedTests(unittest.TestCase):
         self.assertFalse(is_cloud_managed(self.fake_fetch))
 
     def test_is_managed_fetch_not_found(self):
-        def fake_fetch(url):
+        def fake_fetch(url, connect_timeout=None):
             raise HTTPCodeError(404, "ohnoes")
         self.assertFalse(is_cloud_managed(fake_fetch))
 
     def test_is_managed_fetch_error(self):
-        def fake_fetch(url):
+        def fake_fetch(url, connect_timeout=None):
             raise FetchError(7, "couldn't connect to host")
         self.assertFalse(is_cloud_managed(fake_fetch))
