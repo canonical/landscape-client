@@ -41,10 +41,8 @@ def with_cursor(method):
 
 class HashIdStore(object):
     def __init__(self, filename):
-        self._db = sqlite3.connect(filename)
-        self._ensure_schema()
-
-    def _ensure_schema(self):
+        self._filename = filename
+        self._db = sqlite3.connect(self._filename)
         ensure_hash_id_schema(self._db)
 
     @with_cursor
@@ -66,14 +64,39 @@ class HashIdStore(object):
         cursor.execute("SELECT hash, id FROM hash")
         return dict([(str(row[0]), row[1]) for row in cursor.fetchall()])
 
+    @with_cursor
+    def get_id_hash(self, cursor, id):
+        assert isinstance(id, (int, long))
+        cursor.execute("SELECT hash FROM hash WHERE id=?", (id,))
+        value = cursor.fetchone()
+        if value:
+            return str(value[0])
+        return None
+
+    @with_cursor
+    def clear_hash_ids(self, cursor):
+        cursor.execute("DELETE FROM hash")
+
+    @with_cursor
+    def check_sanity(self, cursor):
+        """Check database integrity.
+
+        @raise: L{InvalidHashIdDb} if the filenme passed to the constructor is
+            not a SQLite database or does not have a table called "hash" with
+            a compatible schema.
+        """
+        try:
+            cursor.execute("SELECT id FROM hash WHERE hash=?", ("",))
+        except sqlite3.DatabaseError:
+            raise InvalidHashIdDb(self._filename)
+
+
 class PackageStore(HashIdStore):
 
     def __init__(self, filename):
         super(PackageStore, self).__init__(filename)
-        self._hash_id_dbs = []
-
-    def _ensure_schema(self):
-        ensure_schema(self._db)
+        self._hash_id_stores = []
+        ensure_package_schema(self._db)
 
     def add_hash_id_db(self, filename):
         """
@@ -88,61 +111,30 @@ class PackageStore(HashIdStore):
             table called "hash" with a compatible schema, L{InvalidHashIdDb}
             is raised.
         """
-        # Sanity checks
-        db = sqlite3.connect(filename)
-        cursor = db.cursor()
-        try:
-            try:
-                cursor.execute("SELECT id FROM hash WHERE hash=?", ("",))
-            except sqlite3.DatabaseError:
-                raise InvalidHashIdDb(filename)
-        finally:
-            cursor.close()
+        hash_id_store = HashIdStore(filename)
 
-        # Checks passed
-        self._hash_id_dbs.append(db)
+        try:
+            hash_id_store.check_sanity()
+        except InvalidHashIdDb, e:
+            # propagate the error
+            raise e
+
+        self._hash_id_stores.append(hash_id_store)
 
     def has_hash_id_db(self):
-        return len(self._hash_id_dbs) > 0
+        return len(self._hash_id_stores) > 0
 
     def get_hash_id(self, hash):
         assert isinstance(hash, basestring)
 
-        # Check if we can find the hash=>id mapping in the hash_id dbs
-        for db in self._hash_id_dbs:
-            id = self._get_hash_id_from_hash_id_db(db, hash)
+        # Check if we can find the hash=>id mapping in the lookaside stores
+        for store in self._hash_id_stores:
+            id = store.get_hash_id(hash)
             if id:
                 return id
 
         # Fall back to the locally-populated db
-        return self._get_hash_id_from_main_db(hash)
-
-    def _get_hash_id_from_main_db(self, hash):
         return HashIdStore.get_hash_id(self, hash)
-
-    def _get_hash_id_from_hash_id_db(self, db, hash):
-        cursor = db.cursor()
-        try:
-            cursor.execute("SELECT id FROM hash WHERE hash=?", (buffer(hash),))
-            value = cursor.fetchone()
-        finally:
-            cursor.close()
-        if value:
-            return value[0]
-        return None
-
-    @with_cursor
-    def get_id_hash(self, cursor, id):
-        assert isinstance(id, (int, long))
-        cursor.execute("SELECT hash FROM hash WHERE id=?", (id,))
-        value = cursor.fetchone()
-        if value:
-            return str(value[0])
-        return None
-
-    @with_cursor
-    def clear_hash_ids(self, cursor):
-        cursor.execute("DELETE FROM hash")
 
     @with_cursor
     def add_available(self, cursor, ids):
@@ -317,15 +309,26 @@ class PackageTask(object):
         cursor.execute("DELETE FROM task WHERE id=?", (self.id,))
 
 
-def ensure_schema(db):
+def ensure_hash_id_schema(db):
+    cursor = db.cursor()
+    try:
+        cursor.execute("CREATE TABLE hash"
+                       " (id INTEGER PRIMARY KEY, hash BLOB UNIQUE)")
+    except (sqlite3.OperationalError, sqlite3.DatabaseError):
+        cursor.close()
+        db.rollback()
+    else:
+        cursor.close()
+        db.commit()
+
+
+def ensure_package_schema(db):
     # FIXME This needs a "patch" table with a "version" column which will
     #       help with upgrades.  It should also be used to decide when to
     #       create the schema from the ground up, rather than that using
     #       try block.
     cursor = db.cursor()
     try:
-        cursor.execute("CREATE TABLE hash"
-                       " (id INTEGER PRIMARY KEY, hash BLOB UNIQUE)")
         cursor.execute("CREATE TABLE available"
                        " (id INTEGER PRIMARY KEY)")
         cursor.execute("CREATE TABLE available_upgrade"
@@ -338,18 +341,6 @@ def ensure_schema(db):
         cursor.execute("CREATE TABLE task"
                        " (id INTEGER PRIMARY KEY, queue TEXT,"
                        " timestamp TIMESTAMP, data BLOB)")
-    except sqlite3.OperationalError:
-        cursor.close()
-        db.rollback()
-    else:
-        cursor.close()
-        db.commit()
-
-def ensure_hash_id_schema(db):
-    cursor = db.cursor()
-    try:
-        cursor.execute("CREATE TABLE hash"
-                       " (id INTEGER PRIMARY KEY, hash BLOB UNIQUE)")
     except sqlite3.OperationalError:
         cursor.close()
         db.rollback()

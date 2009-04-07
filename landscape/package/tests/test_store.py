@@ -12,32 +12,25 @@ from landscape.tests.helpers import LandscapeTest
 from landscape.package.store import (HashIdStore, PackageStore,
                                      UnknownHashIDRequest, InvalidHashIdDb)
 
+
 class HashIdStoreTest(LandscapeTest):
 
     def setUp(self):
         super(HashIdStoreTest, self).setUp()
 
         self.filename = self.makeFile()
-        self.store = HashIdStore(self.filename)
+        self.store1 = HashIdStore(self.filename)
+        self.store2 = HashIdStore(self.filename)
 
     def test_set_and_get_hash_id(self):
-        self.store.set_hash_ids({"ha\x00sh1": 123, "ha\x00sh2": 456})
-        self.assertEquals(self.store.get_hash_id("ha\x00sh1"), 123)
-        self.assertEquals(self.store.get_hash_id("ha\x00sh2"), 456)
+        self.store1.set_hash_ids({"ha\x00sh1": 123, "ha\x00sh2": 456})
+        self.assertEquals(self.store1.get_hash_id("ha\x00sh1"), 123)
+        self.assertEquals(self.store1.get_hash_id("ha\x00sh2"), 456)
 
     def test_get_hash_ids(self):
         hash_ids = {"hash1": 123, "hash2": 456}
-        self.store.set_hash_ids(hash_ids)
-        self.assertEquals(self.store.get_hash_ids(), hash_ids)
-
-class PackageStoreTest(LandscapeTest):
-
-    def setUp(self):
-        super(PackageStoreTest, self).setUp()
-
-        self.filename = self.makeFile()
-        self.store1 = PackageStore(self.filename)
-        self.store2 = PackageStore(self.filename)
+        self.store1.set_hash_ids(hash_ids)
+        self.assertEquals(self.store1.get_hash_ids(), hash_ids)
 
     def test_wb_transactional_commits(self):
         mock_db = self.mocker.replace(self.store1._db)
@@ -55,6 +48,61 @@ class PackageStoreTest(LandscapeTest):
         self.store1.set_hash_ids({"hash1": 123, "hash2": 456})
         self.assertEquals(self.store2.get_id_hash(123), "hash1")
         self.assertEquals(self.store2.get_id_hash(456), "hash2")
+
+    def test_clear_hash_ids(self):
+        self.store1.set_hash_ids({"ha\x00sh1": 123, "ha\x00sh2": 456})
+        self.store1.clear_hash_ids()
+        self.assertEquals(self.store2.get_hash_id("ha\x00sh1"), None)
+        self.assertEquals(self.store2.get_hash_id("ha\x00sh2"), None)
+
+    def test_get_unexistent_hash(self):
+        self.assertEquals(self.store1.get_hash_id("hash1"), None)
+
+    def test_get_unexistent_id(self):
+        self.assertEquals(self.store1.get_id_hash(123), None)
+
+    def test_overwrite_id_hash(self):
+        self.store1.set_hash_ids({"hash1": 123})
+        self.store2.set_hash_ids({"hash2": 123})
+        self.assertEquals(self.store1.get_hash_id("hash1"), None)
+        self.assertEquals(self.store1.get_hash_id("hash2"), 123)
+
+    def test_overwrite_hash_id(self):
+        self.store1.set_hash_ids({"hash1": 123})
+        self.store2.set_hash_ids({"hash1": 456})
+        self.assertEquals(self.store1.get_id_hash(123), None)
+        self.assertEquals(self.store1.get_id_hash(456), "hash1")
+
+    def test_set_hash_ids_timing(self):
+        """Setting 20k hashes must take less than 5 seconds."""
+        hashes = dict((str(i), i) for i in range(20000))
+        started = time.time()
+        self.store1.set_hash_ids(hashes)
+        self.assertTrue(time.time()-started < 5,
+                        "Setting 20k hashes took more than 5 seconds.")
+
+    def test_check_sanity(self):
+
+        store_filename = self.makeFile()
+        db = sqlite3.connect(store_filename)
+        cursor = db.cursor()
+        cursor.execute("CREATE TABLE hash"
+                       " (junk INTEGER PRIMARY KEY, hash BLOB UNIQUE)")
+        cursor.close()
+        db.commit()
+
+        store = HashIdStore(store_filename)
+        self.assertRaises(InvalidHashIdDb, store.check_sanity)
+
+
+class PackageStoreTest(LandscapeTest):
+
+    def setUp(self):
+        super(PackageStoreTest, self).setUp()
+
+        self.filename = self.makeFile()
+        self.store1 = PackageStore(self.filename)
+        self.store2 = PackageStore(self.filename)
 
     def test_has_hash_id_db(self):
 
@@ -116,38 +164,6 @@ class PackageStoreTest(LandscapeTest):
         self.assertEquals(self.store1.get_hash_id("hash1"), 2)
         self.assertEquals(self.store1.get_hash_id("hash2"), 3)
         self.assertEquals(self.store1.get_hash_id("ha\x00sh1"), 5)
-
-    def test_clear_hash_ids(self):
-        self.store1.set_hash_ids({"ha\x00sh1": 123, "ha\x00sh2": 456})
-        self.store1.clear_hash_ids()
-        self.assertEquals(self.store2.get_hash_id("ha\x00sh1"), None)
-        self.assertEquals(self.store2.get_hash_id("ha\x00sh2"), None)
-
-    def test_get_unexistent_hash(self):
-        self.assertEquals(self.store1.get_hash_id("hash1"), None)
-
-    def test_get_unexistent_id(self):
-        self.assertEquals(self.store1.get_id_hash(123), None)
-
-    def test_overwrite_id_hash(self):
-        self.store1.set_hash_ids({"hash1": 123})
-        self.store2.set_hash_ids({"hash2": 123})
-        self.assertEquals(self.store1.get_hash_id("hash1"), None)
-        self.assertEquals(self.store1.get_hash_id("hash2"), 123)
-
-    def test_overwrite_hash_id(self):
-        self.store1.set_hash_ids({"hash1": 123})
-        self.store2.set_hash_ids({"hash1": 456})
-        self.assertEquals(self.store1.get_id_hash(123), None)
-        self.assertEquals(self.store1.get_id_hash(456), "hash1")
-
-    def test_set_hash_ids_timing(self):
-        """Setting 20k hashes must take less than 5 seconds."""
-        hashes = dict((str(i), i) for i in range(20000))
-        started = time.time()
-        self.store1.set_hash_ids(hashes)
-        self.assertTrue(time.time()-started < 5,
-                        "Setting 20k hashes took more than 5 seconds.")
 
     def test_add_and_get_available_packages(self):
         self.store1.add_available([1, 2])
