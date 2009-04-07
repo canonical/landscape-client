@@ -142,6 +142,13 @@ class PackageStoreTest(LandscapeTest):
         self.assertFalse(self.store1.has_hash_id_db())
 
     def test_get_hash_id_using_hash_id_dbs(self):
+
+        def hash_id_db_factory(hash_ids):
+            filename = self.makeFile()
+            store = HashIdStore(filename)
+            store.set_hash_ids(hash_ids)
+            return filename
+
         # Without hash=>id dbs
         self.assertEquals(self.store1.get_hash_id("hash1"), None)
         self.assertEquals(self.store1.get_hash_id("hash2"), None)
@@ -150,11 +157,6 @@ class PackageStoreTest(LandscapeTest):
         self.store1.set_hash_ids({"hash1": 1})
 
         # Add a couple of hash=>id dbs
-        def hash_id_db_factory(hash_ids):
-            filename = self.makeFile()
-            store = HashIdStore(filename)
-            store.set_hash_ids(hash_ids)
-            return filename
         self.store1.add_hash_id_db(hash_id_db_factory({"hash1": 2,
                                                        "hash2": 3}))
         self.store1.add_hash_id_db(hash_id_db_factory({"hash2": 4,
@@ -421,7 +423,7 @@ class PackageStoreTest(LandscapeTest):
                           self.store1.get_hash_id_request, request1.id)
         self.assertRaises(UnknownHashIDRequest,
                           self.store1.get_hash_id_request, request2.id)
-    
+
     def test_clear_tasks(self):
         data = {"answer": 42}
         task = self.store1.add_task("reporter", data)
@@ -483,4 +485,3 @@ class PackageStoreTest(LandscapeTest):
             thread.join()
 
         self.assertEquals(error, [])
-

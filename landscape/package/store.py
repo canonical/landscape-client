@@ -11,8 +11,10 @@ from landscape.lib import bpickle
 class UnknownHashIDRequest(Exception):
     """Raised for unknown hash id requests."""
 
+
 class InvalidHashIdDb(Exception):
     """Raised when trying to add an invalid hash=>id lookaside database."""
+
 
 def with_cursor(method):
     """Decorator that encloses the method in a database transaction.
@@ -23,6 +25,7 @@ def with_cursor(method):
     the autocommit mode, we explicitly terminate transactions and enforce
     cursor closing with this decorator.
     """
+
     def inner(self, *args, **kwargs):
         try:
             cursor = self._db.cursor()
@@ -39,6 +42,7 @@ def with_cursor(method):
 
 
 class HashIdStore(object):
+
     def __init__(self, filename):
         self._filename = filename
         self._db = sqlite3.connect(self._filename)
