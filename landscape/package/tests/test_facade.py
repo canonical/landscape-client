@@ -453,7 +453,6 @@ class SmartFacadeTest(LandscapeTest):
         self.assertRaises(ChannelError, self.facade.reload_channels)
         self.facade._channels = {}
 
-        ignore_re = re.compile("\[Smart\] Channel 'alias' has invalid "
-                               "directory: /does/not/exist")
+        ignore_re = re.compile("\[Smart\].*'alias'.*/does/not/exist")
 
         self.log_helper.ignored_exception_regexes = [ignore_re]
