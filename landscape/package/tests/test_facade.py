@@ -1,4 +1,3 @@
-import gdbm
 import time
 import os
 import re
@@ -10,7 +9,7 @@ from smart.const import NEVER
 import smart
 
 from landscape.package.facade import (
-    SmartFacade, TransactionError, DependencyError, ChannelError, SmartError,
+    TransactionError, DependencyError, ChannelError, SmartError,
     make_apt_deb_channel, make_deb_dir_channel)
 
 from landscape.tests.helpers import LandscapeTest

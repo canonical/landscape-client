@@ -22,6 +22,7 @@ class DependencyError(Exception):
 class SmartError(Exception):
     """Raised when Smart fails in an undefined way."""
 
+
 class ChannelError(Exception):
     """Raised when channels fail to load."""
 
@@ -91,7 +92,7 @@ class SmartFacade(object):
         ctrl = self._get_ctrl()
 
         reload_result = ctrl.reloadChannels(caching=self._caching)
-        if reload_result == False and self._caching == NEVER:
+        if not reload_result and self._caching == NEVER:
             # Raise an error only if we are trying to download remote lists
             raise ChannelError("Smart failed to reload channels (%s)"
                                % smart.sysconf.get("channels"))
@@ -223,7 +224,7 @@ class SmartFacade(object):
         """
         Set the host architecture.
 
-        To take effect it must be called before L{reaload_channels}.
+        To take effect it must be called before L{reload_channels}.
 
         @param arch: the dpkg architecture to use (e.g. C{"i386"})
         """
@@ -239,7 +240,9 @@ class SmartFacade(object):
         """
         Set Smart's caching mode.
 
-        @param mode: It be smart.const.NEVER or smart.const.ALWAYS.
+        @param mode: The caching mode to pass to Smart's C{reloadChannels}
+            when calling L{reload_channels} (e.g C{smart.const.NEVER} or
+            C{smart.const.ALWAYS}).
         """
         self._caching = mode
 
@@ -255,9 +258,9 @@ class SmartFacade(object):
         This method can be called more than once to set multiple channels.
         To take effect it must be called before L{reaload_channels}.
 
-        @param alias: A string indentifying the channel to be added.
-        @param channel: A C{dict} meeting the format defined by the Smart API,
-            or a L{SmartChannel} object.
+        @param alias: A string identifying the channel to be added.
+        @param channel: A C{dict} holding information about the channel to
+            add (see the Smart API for details about valid keys and values).
         """
         channels = self.get_channels()
         channels.update({alias : channel})
