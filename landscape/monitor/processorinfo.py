@@ -148,6 +148,43 @@ class PowerPCMessageFactory:
         return processors
 
 
+class ARMMessageFactory:
+    """Factory for arm-based processors provides processor information."""
+
+    def __init__(self, source_filename):
+        """Initialize reader with filename of data source."""
+        self._source_filename = source_filename
+
+    def create_message(self):
+        """Returns a list containing information about each processor."""
+        processors = []
+        file = open(self._source_filename)
+
+        try:
+            regexp = re.compile("(?P<key>.*?)\s*:\s*(?P<value>.*)")
+            current = {}
+
+            for line in file:
+                match = regexp.match(line.strip())
+                if match:
+                    key = match.group("key")
+                    value = match.group("value")
+
+                    if key == "Processor":
+                        # ARM doesn't support SMP, thus no processor-id in
+                        # the cpuinfo
+                        current["processor-id"] = 0
+                        current["model"] =  value
+                    elif key == "Cache size":
+                        current["cache-size"] = int(value)
+
+            if current:
+                processors.append(current)
+        finally:
+            file.close()
+
+        return processors
+
 class SparcMessageFactory:
     """Factory for sparc-based processors provides processor information."""
 
@@ -216,6 +253,7 @@ class X86MessageFactory:
         return processors
 
 
-message_factories = [("ppc(64)?", PowerPCMessageFactory),
+message_factories = [("arm*", ARMMessageFactory),
+                     ("ppc(64)?", PowerPCMessageFactory),
                      ("sparc[64]", SparcMessageFactory),
                      ("i[3-7]86|x86_64", X86MessageFactory)]

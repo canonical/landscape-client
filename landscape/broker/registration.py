@@ -7,6 +7,7 @@ from twisted.internet.defer import Deferred
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.bpickle import loads
 from landscape.lib.log import log_failure
+from landscape.lib.fetch import fetch, FetchError
 
 
 EC2_API = "http://169.254.169.254/latest"
@@ -33,7 +34,15 @@ def config_property(name):
 
 
 class Identity(object):
-    """Maintains details about the identity of this Landscape client."""
+    """Maintains details about the identity of this Landscape client.
+
+    @ivar secure_id: A server-provided ID for secure message exchange.
+    @ivar insecure_id: Non-secure server-provided ID, mainly used with
+        the ping server.
+    @ivar computer_title: See L{BrokerConfiguration}.
+    @ivar account_name: See L{BrokerConfiguration}.
+    @ivar registration_password: See L{BrokerConfiguration}.
+    """
 
     secure_id = persist_property("secure-id")
     insecure_id = persist_property("insecure-id")
@@ -42,6 +51,11 @@ class Identity(object):
     registration_password = config_property("registration_password")
 
     def __init__(self, config, persist):
+        """
+        @param config: A L{BrokerConfiguration} object, used to set the
+            C{computer_title}, C{account_name} and C{registration_password}
+            instance variables.
+        """
         self._config = config
         self._persist = persist.root_at("registration")
 
@@ -51,7 +65,7 @@ class RegistrationHandler(object):
     An object from which registration can be requested of the server,
     and which will handle forced ID changes from the server.
 
-    L{register} should be used to initial registration.
+    L{register} should be used to perform initial registration.
     """
 
     def __init__(self, config, identity, reactor, exchange, pinger,
@@ -73,6 +87,7 @@ class RegistrationHandler(object):
         self._cloud = cloud
         self._fetch_async = fetch_async
         self._otp = None
+        self._ec2_data = None
 
     def should_register(self):
         id = self._identity
@@ -97,43 +112,18 @@ class RegistrationHandler(object):
         self._exchange.exchange()
         return result
 
-    def _extract_ec2_instance_data(self, raw_user_data, launch_index):
-        """
-        Given the raw string of EC2 User Data, parse it and return the dict of
-        instance data for this particular instance.
-
-        If the data can't be parsed, a debug message will be logged and None
-        will be returned.
-        """
-        try:
-            user_data = loads(raw_user_data)
-        except ValueError:
-            logging.debug("Got invalid user-data %r" % (raw_user_data,))
-            return
-
-        if not isinstance(user_data, dict):
-            logging.debug("user-data %r is not a dict" % (user_data,))
-            return
-        for key in "otps", "exchange-url", "ping-url":
-            if key not in user_data:
-                logging.debug("user-data %r doesn't have key %r."
-                              % (user_data, key))
-                return
-        if len(user_data["otps"]) <= launch_index:
-            logging.debug("user-data %r doesn't have OTP for launch index %d"
-                          % (user_data, launch_index))
-            return
-        return {"otp": user_data["otps"][launch_index],
-                "exchange-url": user_data["exchange-url"],
-                "ping-url": user_data["ping-url"]}
-
     def _fetch_ec2_data(self):
         id = self._identity
         if self._cloud and not id.secure_id:
             # Fetch data from the EC2 API, to be used later in the registration
             # process
             registration_data = gather_results([
-                self._fetch_async(EC2_API + "/user-data"),
+                # We ignore errors from user-data because it's common for the
+                # URL to return a 404 when the data is unavailable.
+                self._fetch_async(EC2_API + "/user-data")
+                    .addErrback(log_failure),
+                # The rest of the fetches don't get protected because we just
+                # fall back to regular registration if any of them don't work.
                 self._fetch_async(EC2_API + "/meta-data/instance-id"),
                 self._fetch_async(EC2_API + "/meta-data/reservation-id"),
                 self._fetch_async(EC2_API + "/meta-data/local-hostname"),
@@ -164,7 +154,7 @@ class RegistrationHandler(object):
                 self._ec2_data["launch_index"] = int(
                     self._ec2_data["launch_index"])
 
-                instance_data = self._extract_ec2_instance_data(
+                instance_data = _extract_ec2_instance_data(
                     raw_user_data, int(launch_index))
                 if instance_data is not None:
                     self._otp = instance_data["otp"]
@@ -180,13 +170,20 @@ class RegistrationHandler(object):
                 log_failure(error, msg="Got error while fetching meta-data: %r"
                             % (error.value,))
 
+            # It sucks that this deferred is never returned
             registration_data.addCallback(record_data)
             registration_data.addErrback(log_error)
 
     def _handle_exchange_done(self):
+        """Registered handler for the C{"exchange-done"} event.
+
+        If we are not registered yet, schedule another message exchange.
+
+        The first exchange made us accept the message type "register", so
+        the next "pre-exchange" event will make L{_handle_pre_exchange}
+        queue a registration message for delivery.
+        """
         if self.should_register() and not self._should_register:
-            # We received accepted-types (first exchange), so we now trigger
-            # the second exchange for registration
             self._exchange.exchange()
 
     def _handle_pre_exchange(self):
@@ -206,7 +203,7 @@ class RegistrationHandler(object):
             id = self._identity
 
             self._message_store.delete_all_messages()
-            if self._cloud:
+            if self._cloud and self._ec2_data is not None:
                 if self._otp:
                     logging.info("Queueing message to register with OTP")
                     message = {"type": "register-cloud-vm",
@@ -230,7 +227,7 @@ class RegistrationHandler(object):
                     self._exchange.send(message)
                 else:
                     self._reactor.fire("registration-failed")
-            else:
+            elif id.account_name:
                 with_word = ["without", "with"][bool(id.registration_password)]
                 logging.info("Queueing message to register with account %r %s "
                              "a password." % (id.account_name, with_word))
@@ -240,13 +237,17 @@ class RegistrationHandler(object):
                            "account_name": id.account_name,
                            "registration_password": id.registration_password,
                            "hostname": socket.gethostname()}
-
                 self._exchange.send(message)
+            else:
+                self._reactor.fire("registration-failed")
 
     def _handle_set_id(self, message):
-        """
+        """Registered handler for the C{"set-id"} event.
+        
         Record and start using the secure and insecure IDs from the given
         message.
+
+        Fire C{"registration-done"} and C{"resynchronize-clients"}.
         """
         id = self._identity
         id.secure_id = message.get("id")
@@ -293,3 +294,50 @@ class RegistrationResponse(object):
     def _failed(self):
         self.deferred.errback(InvalidCredentialsError())
         self._cancel_calls()
+
+
+def _extract_ec2_instance_data(raw_user_data, launch_index):
+    """
+    Given the raw string of EC2 User Data, parse it and return the dict of
+    instance data for this particular instance.
+
+    If the data can't be parsed, a debug message will be logged and None
+    will be returned.
+    """
+    try:
+        user_data = loads(raw_user_data)
+    except ValueError:
+        logging.debug("Got invalid user-data %r" % (raw_user_data,))
+        return
+
+    if not isinstance(user_data, dict):
+        logging.debug("user-data %r is not a dict" % (user_data,))
+        return
+    for key in "otps", "exchange-url", "ping-url":
+        if key not in user_data:
+            logging.debug("user-data %r doesn't have key %r."
+                          % (user_data, key))
+            return
+    if len(user_data["otps"]) <= launch_index:
+        logging.debug("user-data %r doesn't have OTP for launch index %d"
+                      % (user_data, launch_index))
+        return
+    return {"otp": user_data["otps"][launch_index],
+            "exchange-url": user_data["exchange-url"],
+            "ping-url": user_data["ping-url"]}
+
+
+def is_cloud_managed(fetch=fetch):
+    """
+    Return C{True} if the machine has been started by Landscape, i.e. if we can
+    find the expected data inside the EC2 user-data field.
+    """
+    try:
+        raw_user_data = fetch(EC2_API + "/user-data",
+                              connect_timeout=5)
+        launch_index = fetch(EC2_API + "/meta-data/ami-launch-index",
+                             connect_timeout=5)
+    except FetchError:
+        return False
+    instance_data = _extract_ec2_instance_data(raw_user_data, int(launch_index))
+    return instance_data is not None

@@ -1,8 +1,4 @@
 import os
-import sys
-import shutil
-
-from cStringIO import StringIO
 
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, fail
@@ -19,7 +15,7 @@ from landscape.package.store import HashIdStore, PackageStore
 from landscape.package.tests.helpers import SmartFacadeHelper
 
 from landscape.tests.helpers import (
-    LandscapeIsolatedTest, LandscapeTest, RemoteBrokerHelper)
+    LandscapeIsolatedTest, RemoteBrokerHelper)
 from landscape.tests.mocker import ANY, ARGS, MATCH
 
 
@@ -183,8 +179,9 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         self.mocker.replay()
         result = self.handler.use_hash_id_db()
 
-        # We go on without the hash=>id database
+        # We remove the broken hash=>id database and go on without it
         def callback(ignored):
+            self.assertFalse(os.path.exists(hash_id_db_filename))
             self.assertFalse(self.store.has_hash_id_db())
         result.addCallback(callback)
 

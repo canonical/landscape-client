@@ -203,7 +203,7 @@ class Dict(object):
 
 class Message(KeyDict):
     """
-    Like {KeyDict}, but with three predefined keys: C{type}, C{api},
+    Like L{KeyDict}, but with three predefined keys: C{type}, C{api},
     and C{timestamp}. Of these, C{api} and C{timestamp} are optional.
 
 

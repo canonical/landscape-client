@@ -36,6 +36,7 @@ class UnknownPackageData(Exception):
 
 
 class PackageChanger(PackageTaskHandler):
+    """Install, remove and upgrade packages."""
 
     queue_name = "changer"
 
@@ -49,11 +50,9 @@ class PackageChanger(PackageTaskHandler):
                     os.setuid(pwd.getpwnam("landscape").pw_uid)
                 os.system(find_reporter_command())
 
-        result = Deferred()
-        result.addCallback(lambda x: self.use_hash_id_db())
+        result = self.use_hash_id_db()
         result.addCallback(lambda x: self.handle_tasks())
         result.addCallback(finished)
-        result.callback(None)
 
         return result
 
@@ -62,6 +61,10 @@ class PackageChanger(PackageTaskHandler):
         return result.addErrback(self._warn_about_unknown_data)
 
     def handle_task(self, task):
+        """
+        @param task: A L{PackageTask} carrying a message of
+            type C{"change-packages"}.
+        """
         message = task.data
         if message["type"] == "change-packages":
             result = self._handle_change_packages(message)

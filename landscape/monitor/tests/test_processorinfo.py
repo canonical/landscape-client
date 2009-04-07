@@ -1,6 +1,7 @@
 from landscape.plugin import PluginConfigError
 from landscape.monitor.processorinfo import ProcessorInfo
-from landscape.tests.helpers import LandscapeTest, MakePathHelper, MonitorHelper
+from landscape.tests.helpers import (
+    LandscapeTest, MakePathHelper, MonitorHelper)
 from landscape.tests.mocker import ANY
 
 
@@ -56,7 +57,6 @@ class ResynchTest(LandscapeTest):
         plugin.run()
         messages = self.mstore.get_pending_messages()
         self.assertEquals(len(messages), 2)
-
 
 
 class PowerPCMessageTest(LandscapeTest):
@@ -166,6 +166,131 @@ pmac-generation : NewWorld
         self.assertEquals(processor["processor-id"], 0)
         self.assertEquals(processor["model"], "7447A, altivec supported")
 
+
+class ARMMessageTest(LandscapeTest):
+    """Tests for ARM-specific message builder."""
+
+    helpers = [MonitorHelper, MakePathHelper]
+
+    ARM_NOKIA = """
+Processor       : ARMv6-compatible processor rev 2 (v6l)
+BogoMIPS        : 164.36
+Features        : swp half thumb fastmult vfp edsp java
+CPU implementer : 0x41
+CPU architecture: 6TEJ
+CPU variant     : 0x0
+CPU part        : 0xb36
+CPU revision    : 2
+Cache type      : write-back
+Cache clean     : cp15 c7 ops
+Cache lockdown  : format C
+Cache format    : Harvard
+I size          : 32768
+I assoc         : 4
+I line length   : 32
+I sets          : 256
+D size          : 32768
+D assoc         : 4
+D line length   : 32
+D sets          : 256
+
+Hardware        : Nokia RX-44
+Revision        : 24202524
+Serial          : 0000000000000000
+"""
+
+    ARMv7 = """
+Processor       : ARMv7 Processor rev 1 (v7l)
+BogoMIPS        : 663.55
+Features        : swp half thumb fastmult vfp edsp
+CPU implementer : 0x41
+CPU architecture: 7
+CPU variant     : 0x2
+CPU part        : 0xc08
+CPU revision    : 1
+Cache type      : write-back
+Cache clean     : read-block
+Cache lockdown  : not supported
+Cache format    : Unified
+Cache size              : 768
+Cache assoc             : 1
+Cache line length       : 8
+Cache sets              : 64
+
+Hardware        : Sample Board
+Revision        : 81029
+Serial          : 0000000000000000
+"""
+
+    ARMv7_reverse = """
+Serial          : 0000000000000000
+Revision        : 81029
+Hardware        : Sample Board
+
+Cache sets              : 64
+Cache line length       : 8
+Cache assoc             : 1
+Cache size              : 768
+Cache format    : Unified
+Cache lockdown  : not supported
+Cache clean     : read-block
+Cache type      : write-back
+CPU revision    : 1
+CPU part        : 0xc08
+CPU variant     : 0x2
+CPU architecture: 7
+CPU implementer : 0x41
+Features        : swp half thumb fastmult vfp edsp
+BogoMIPS        : 663.55
+Processor       : ARMv7 Processor rev 1 (v7l)
+"""
+
+    def test_read_sample_nokia_data(self):
+        """Ensure the plugin can parse /proc/cpuinfo from a Nokia N810."""
+        filename = self.make_path(self.ARM_NOKIA)
+        plugin = ProcessorInfo(machine_name="armv6l",
+                               source_filename=filename)
+        message = plugin.create_message()
+        self.assertEquals(message["type"], "processor-info")
+        self.assertTrue(len(message["processors"]) == 1)
+
+        processor_0 = message["processors"][0]
+        self.assertEquals(len(processor_0), 2)
+        self.assertEquals(processor_0["model"],
+                          "ARMv6-compatible processor rev 2 (v6l)")
+        self.assertEquals(processor_0["processor-id"], 0)
+
+    def test_read_sample_armv7_data(self):
+        """Ensure the plugin can parse /proc/cpuinfo from a sample ARMv7."""
+        filename = self.make_path(self.ARMv7)
+        plugin = ProcessorInfo(machine_name="armv7l",
+                               source_filename=filename)
+        message = plugin.create_message()
+        self.assertEquals(message["type"], "processor-info")
+        self.assertTrue(len(message["processors"]) == 1)
+
+        processor_0 = message["processors"][0]
+        self.assertEquals(len(processor_0), 3)
+        self.assertEquals(processor_0["model"],
+                          "ARMv7 Processor rev 1 (v7l)")
+        self.assertEquals(processor_0["processor-id"], 0)
+        self.assertEquals(processor_0["cache-size"], 768)
+
+    def test_read_sample_armv7_reverse_data(self):
+        """Ensure the plugin can parse a reversed sample ARMv7 /proc/cpuinfo"""
+        filename = self.make_path(self.ARMv7_reverse)
+        plugin = ProcessorInfo(machine_name="armv7l",
+                               source_filename=filename)
+        message = plugin.create_message()
+        self.assertEquals(message["type"], "processor-info")
+        self.assertTrue(len(message["processors"]) == 1)
+
+        processor_0 = message["processors"][0]
+        self.assertEquals(len(processor_0), 3)
+        self.assertEquals(processor_0["model"],
+                          "ARMv7 Processor rev 1 (v7l)")
+        self.assertEquals(processor_0["processor-id"], 0)
+        self.assertEquals(processor_0["cache-size"], 768)
 
 class SparcMessageTest(LandscapeTest):
     """Tests for sparc-specific message builder."""
@@ -407,4 +532,3 @@ bogomips        : 1198.25
 
         self.mstore.set_accepted_types(["processor-info"])
         self.assertMessages(list(self.mstore.get_pending_messages()), [])
-

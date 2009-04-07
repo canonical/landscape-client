@@ -90,7 +90,7 @@ class HashIdStore(object):
         """
         try:
             cursor.execute("SELECT id FROM hash WHERE hash=?", ("",))
-        except sqlite3.DatabaseError:
+        except sqlite3.DatabaseError, e:
             raise InvalidHashIdDb(self._filename)
 
 
@@ -103,16 +103,18 @@ class PackageStore(HashIdStore):
 
     def add_hash_id_db(self, filename):
         """
+        Attach a lookaside hash-id database to the store.
+
+        This method can be called more than once to attach several
+        hash=>id databases, which will be queried *before* the main
+        database, in the same the order they were added.
+
+        If C{filename} is not a SQLite database or does not have a
+        table called "hash" with a compatible schema, L{InvalidHashIdDb}
+        is raised.
+
         @param filename: a secondary SQLite databases to look for pre-canned
-            hash=>id mappings.
-
-            This method can be called more than once to attach several
-            hash=>id databases, which will be queried *before* the main
-            database, in the same the order they were added.
-
-            If C{filename} is not a SQLite database or does not have a
-            table called "hash" with a compatible schema, L{InvalidHashIdDb}
-            is raised.
+                         hash=>id mappings.
         """
         hash_id_store = HashIdStore(filename)
 

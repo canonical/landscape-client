@@ -4,13 +4,11 @@ import time
 import sys
 import os
 
-import pycurl
-
 from twisted.internet.defer import Deferred, succeed
 
 from landscape.lib.sequenceranges import sequence_to_ranges
 from landscape.lib.twisted_util import gather_results
-from landscape.lib.fetch import fetch_async, FetchError
+from landscape.lib.fetch import fetch_async
 
 from landscape.package.taskhandler import PackageTaskHandler, run_task_handler
 from landscape.package.store import UnknownHashIDRequest
@@ -83,7 +81,9 @@ class PackageReporter(PackageTaskHandler):
 
             def fetch_ok(data):
                 logging.info("Downloaded hash=>id database from %s" % url)
-                open(hash_id_db_filename, "w").write(data)
+                hash_id_db_fd = open(hash_id_db_filename, "w")
+                hash_id_db_fd.write(data)
+                hash_id_db.fd.close()
 
             def fetch_error(failure):
                 exception = failure.value

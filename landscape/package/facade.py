@@ -163,7 +163,10 @@ class SmartFacade(object):
         if missing:
             raise DependencyError(missing)
 
-        self._ctrl.commitChangeSet(changeset)
+        try:
+            self._ctrl.commitChangeSet(changeset)
+        except smart.Error, e:
+            raise TransactionError(e.args[0])
 
         output = smart.iface.get_output_for_landscape()
         failed = smart.iface.has_failed_for_landscape()

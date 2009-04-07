@@ -10,6 +10,7 @@ import smart
 from landscape.package.facade import (
     SmartFacade, TransactionError, DependencyError, SmartError)
 
+from landscape.tests.mocker import ANY
 from landscape.tests.helpers import LandscapeTest
 from landscape.package.tests.helpers import (
     SmartFacadeHelper, HASH1, HASH2, HASH3, PKGNAME1)
@@ -346,6 +347,22 @@ class SmartFacadeTest(LandscapeTest):
 
         self.assertEquals(environ, ["noninteractive", "none",
                                     "noninteractive", "none"])
+
+    def test_perform_changes_with_commit_change_set_errors(self):
+
+        self.facade.reload_channels()
+
+        pkg = self.facade.get_packages_by_name("name1")[0]
+        pkg.requires = ()
+
+        self.facade.mark_install(pkg)
+
+        ctrl_mock = self.mocker.patch(Control)
+        ctrl_mock.commitChangeSet(ANY)
+        self.mocker.throw(smart.Error("commit error"))
+        self.mocker.replay()
+
+        self.assertRaises(TransactionError, self.facade.perform_changes)
 
     def test_deinit_cleans_the_state(self):
         self.facade.reload_channels()
