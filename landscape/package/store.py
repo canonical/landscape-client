@@ -1,3 +1,4 @@
+"""Provide access to the persistent data used by L{PackageTaskHandler}s."""
 import time
 
 try:
@@ -11,8 +12,10 @@ from landscape.lib import bpickle
 class UnknownHashIDRequest(Exception):
     """Raised for unknown hash id requests."""
 
+
 class InvalidHashIdDb(Exception):
     """Raised when trying to add an invalid hash=>id lookaside database."""
+
 
 def with_cursor(method):
     """Decorator that encloses the method in a database transaction.
@@ -23,6 +26,7 @@ def with_cursor(method):
     the autocommit mode, we explicitly terminate transactions and enforce
     cursor closing with this decorator.
     """
+
     def inner(self, *args, **kwargs):
         try:
             cursor = self._db.cursor()
@@ -38,17 +42,96 @@ def with_cursor(method):
     return inner
 
 
-class PackageStore(object):
+class HashIdStore(object):
+    """Persist package hash=>id mappings in a file.
+
+    The implementation uses a SQLite database as backend, with a single
+    table called "hash", whose schema is defined in L{ensure_hash_id_schema}.
+    """
 
     def __init__(self, filename):
-        self._db = sqlite3.connect(filename)
-        ensure_schema(self._db)
+        """
+        @param filename: The file where the mappings are persisted to.
+        """
+        self._filename = filename
+        self._db = sqlite3.connect(self._filename)
+        ensure_hash_id_schema(self._db)
 
-        self._hash_id_dbs = []
+    @with_cursor
+    def set_hash_ids(self, cursor, hash_ids):
+        """Set the ids of a set of hashes.
+
+        @param hash_ids: a C{dict} of hash=>id mappings.
+        """
+        for hash, id in hash_ids.iteritems():
+            cursor.execute("REPLACE INTO hash VALUES (?, ?)",
+                           (id, buffer(hash)))
+
+    @with_cursor
+    def get_hash_id(self, cursor, hash):
+        """Return the id associated to C{hash}, or C{None} if not available."""
+        cursor.execute("SELECT id FROM hash WHERE hash=?", (buffer(hash),))
+        value = cursor.fetchone()
+        if value:
+            return value[0]
+        return None
+
+    @with_cursor
+    def get_hash_ids(self, cursor):
+        """Return a C{dict} holding all the available hash=>id mappings."""
+        cursor.execute("SELECT hash, id FROM hash")
+        return dict([(str(row[0]), row[1]) for row in cursor.fetchall()])
+
+    @with_cursor
+    def get_id_hash(self, cursor, id):
+        """Return the hash associated to C{id}, or C{None} if not available."""
+        assert isinstance(id, (int, long))
+        cursor.execute("SELECT hash FROM hash WHERE id=?", (id,))
+        value = cursor.fetchone()
+        if value:
+            return str(value[0])
+        return None
+
+    @with_cursor
+    def clear_hash_ids(self, cursor):
+        """Delete all hash=>id mappings."""
+        cursor.execute("DELETE FROM hash")
+
+    @with_cursor
+    def check_sanity(self, cursor):
+        """Check database integrity.
+
+        @raise: L{InvalidHashIdDb} if the filenme passed to the constructor is
+            not a SQLite database or does not have a table called "hash" with
+            a compatible schema.
+        """
+        try:
+            cursor.execute("SELECT id FROM hash WHERE hash=?", ("",))
+        except sqlite3.DatabaseError, e:
+            raise InvalidHashIdDb(self._filename)
+
+
+class PackageStore(HashIdStore):
+    """Persist data about system packages and L{PackageTaskHandler}'s tasks.
+
+    This class extends L{HashIdStore} by adding tables to the SQLite database
+    backend for storing information about the status of the system packages and
+    about the tasks to be performed by L{PackageTaskHandler}s.
+
+    The additional tables and schemas are defined in L{ensure_package_schema}.
+    """
+
+    def __init__(self, filename):
+        """
+        @param filename: The file where data is persisted to.
+        """
+        super(PackageStore, self).__init__(filename)
+        self._hash_id_stores = []
+        ensure_package_schema(self._db)
 
     def add_hash_id_db(self, filename):
         """
-        Attach a lookaside hash-id database to the store.
+        Attach an additional "lookaside" hash=>id database.
 
         This method can be called more than once to attach several
         hash=>id databases, which will be queried *before* the main
@@ -61,71 +144,37 @@ class PackageStore(object):
         @param filename: a secondary SQLite databases to look for pre-canned
                          hash=>id mappings.
         """
-        # Sanity checks
-        db = sqlite3.connect(filename)
-        cursor = db.cursor()
-        try:
-            cursor.execute("SELECT id FROM hash WHERE hash=?", ("",))
-        except sqlite3.DatabaseError, e:
-            raise InvalidHashIdDb("%s (%s)" % (filename, str(e)))
-        finally:
-            cursor.close()
+        hash_id_store = HashIdStore(filename)
 
-        # Checks passed
-        self._hash_id_dbs.append(db)
+        try:
+            hash_id_store.check_sanity()
+        except InvalidHashIdDb, e:
+            # propagate the error
+            raise e
+
+        self._hash_id_stores.append(hash_id_store)
 
     def has_hash_id_db(self):
-        return len(self._hash_id_dbs) > 0
-
-    @with_cursor
-    def set_hash_ids(self, cursor, hash_ids):
-        for hash, id in hash_ids.iteritems():
-            cursor.execute("REPLACE INTO hash VALUES (?, ?)",
-                           (id, buffer(hash)))
+        """Return C{True} if one or more lookaside databases are attached."""
+        return len(self._hash_id_stores) > 0
 
     def get_hash_id(self, hash):
+        """Return the id associated to C{hash}, or C{None} if not available.
+
+        This method composes the L{HashIdStore.get_hash_id} methods of all
+        the attached lookaside databases, falling back to the main one, as
+        described in L{add_hash_id_db}.
+        """
         assert isinstance(hash, basestring)
 
-        # Check if we can find the hash=>id mapping in the hash_id dbs
-        for db in self._hash_id_dbs:
-            id = self._get_hash_id_from_hash_id_db(db, hash)
+        # Check if we can find the hash=>id mapping in the lookaside stores
+        for store in self._hash_id_stores:
+            id = store.get_hash_id(hash)
             if id:
                 return id
 
         # Fall back to the locally-populated db
-        return self._get_hash_id_from_main_db(hash)
-
-    @with_cursor
-    def _get_hash_id_from_main_db(self, cursor, hash):
-        cursor.execute("SELECT id FROM hash WHERE hash=?", (buffer(hash),))
-        value = cursor.fetchone()
-        if value:
-            return value[0]
-        return None
-
-    def _get_hash_id_from_hash_id_db(self, db, hash):
-        cursor = db.cursor()
-        try:
-            cursor.execute("SELECT id FROM hash WHERE hash=?", (buffer(hash),))
-            value = cursor.fetchone()
-        finally:
-            cursor.close()
-        if value:
-            return value[0]
-        return None
-
-    @with_cursor
-    def get_id_hash(self, cursor, id):
-        assert isinstance(id, (int, long))
-        cursor.execute("SELECT hash FROM hash WHERE id=?", (id,))
-        value = cursor.fetchone()
-        if value:
-            return str(value[0])
-        return None
-
-    @with_cursor
-    def clear_hash_ids(self, cursor):
-        cursor.execute("DELETE FROM hash")
+        return HashIdStore.get_hash_id(self, hash)
 
     @with_cursor
     def add_available(self, cursor, ids):
@@ -300,15 +349,34 @@ class PackageTask(object):
         cursor.execute("DELETE FROM task WHERE id=?", (self.id,))
 
 
-def ensure_schema(db):
+def ensure_hash_id_schema(db):
+    """Create all tables needed by a L{HashIdStore}.
+
+    @param db: A connection to a SQLite database.
+    """
+    cursor = db.cursor()
+    try:
+        cursor.execute("CREATE TABLE hash"
+                       " (id INTEGER PRIMARY KEY, hash BLOB UNIQUE)")
+    except (sqlite3.OperationalError, sqlite3.DatabaseError):
+        cursor.close()
+        db.rollback()
+    else:
+        cursor.close()
+        db.commit()
+
+
+def ensure_package_schema(db):
+    """Create all tables needed by a L{PackageStore}.
+
+    @param db: A connection to a SQLite database.
+    """
     # FIXME This needs a "patch" table with a "version" column which will
     #       help with upgrades.  It should also be used to decide when to
     #       create the schema from the ground up, rather than that using
     #       try block.
     cursor = db.cursor()
     try:
-        cursor.execute("CREATE TABLE hash"
-                       " (id INTEGER PRIMARY KEY, hash BLOB UNIQUE)")
         cursor.execute("CREATE TABLE available"
                        " (id INTEGER PRIMARY KEY)")
         cursor.execute("CREATE TABLE available_upgrade"
