@@ -334,11 +334,9 @@ class RunScriptTests(LandscapeTest):
         protocol.childDataReceived(1, "hi")
         protocol.processEnded(Failure(ProcessDone(0)))
         self.manager.reactor.advance(501)
-        def got_error(f):
-            print f
-            self.assertTrue(f.check(ProcessTimeLimitReachedError))
-            self.assertEquals(f.value.data, "hi\n")
-        result.addErrback(got_error)
+        def got_result(output):
+            self.assertEquals(output, "hi")
+        result.addCallback(got_result)
         return result
 
     def test_script_is_owned_by_user(self):
@@ -580,6 +578,43 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
                   "operation-id": 123,
                   "result-text": u"hi!\n",
                   "status": SUCCEEDED}])
+
+        result = self._send_script(sys.executable, "print 'hi'")
+        result.addCallback(got_result)
+        return result
+
+    def test_binary_output(self):
+        """
+        If a script outputs non-printable characters not handled by utf-8, they
+        are replaced during the encoding phase but the script succeeds.
+        """
+        username = os.getlogin()
+        uid, gid, home = get_user_info(username)
+
+        mock_chown = self.mocker.replace("os.chown", passthrough=False)
+        mock_chown(ARGS)
+
+        def spawn_called(protocol, filename, uid, gid, path, env):
+            protocol.childDataReceived(1,
+            "\x7fELF\x01\x01\x01\x00\x00\x00\x95\x01")
+            protocol.processEnded(Failure(ProcessDone(0)))
+            self._verify_script(filename, sys.executable, "print 'hi'")
+        process_factory = self.mocker.mock()
+        process_factory.spawnProcess(
+            ANY, ANY, uid=uid, gid=gid, path=ANY,
+            env=get_default_environment())
+        self.mocker.call(spawn_called)
+
+        self.mocker.replay()
+
+        self.manager.add(ScriptExecutionPlugin(process_factory=process_factory))
+
+        def got_result(r):
+            self.assertTrue(self.broker_service.exchanger.is_urgent())
+            [message]  = self.broker_service.message_store.get_pending_messages()
+            self.assertEquals(
+                message["result-text"],
+                 u"\x7fELF\x01\x01\x01\x00\x00\x00\ufffd\x01")
 
         result = self._send_script(sys.executable, "print 'hi'")
         result.addCallback(got_result)

@@ -137,7 +137,9 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
     def _respond(self, status, data, opid, result_code=None):
         message =  {"type": "operation-result",
                     "status": status,
-                    "result-text": data,
+                    # Let's decode result-text, replacing non-printable
+                    # characters
+                    "result-text": data.decode("utf-8", "replace"),
                     "operation-id": opid}
         if result_code:
             message["result-code"] = result_code
