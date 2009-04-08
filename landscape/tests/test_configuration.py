@@ -4,12 +4,10 @@ from ConfigParser import ConfigParser
 
 from dbus import DBusException
 
-import pycurl
-
 from twisted.internet.defer import Deferred, succeed, fail
 from twisted.internet import reactor
 
-from landscape.lib.fetch import HTTPCodeError
+from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.configuration import (
     print_text, LandscapeSetupScript, LandscapeSetupConfiguration,
     register, setup, main, setup_init_script_and_start_client,
@@ -1181,7 +1179,7 @@ account_name = account
     def test_import_from_url_with_pycurl_error(self):
         fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
         fetch_mock("https://config.url")
-        self.mocker.throw(pycurl.error(60, "pycurl message"))
+        self.mocker.throw(PyCurlError(60, "pycurl message"))
 
         print_text_mock = self.mocker.replace(print_text)
         print_text_mock("Fetching configuration from https://config.url...")
@@ -1196,7 +1194,7 @@ account_name = account
         except ImportOptionError, error:
             self.assertEquals(str(error), 
                               "Couldn't download configuration from "
-                              "https://config.url: pycurl message")
+                              "https://config.url: Error 60: pycurl message")
         else:
             self.fail("ImportOptionError not raised")
 

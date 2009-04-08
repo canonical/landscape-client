@@ -499,6 +499,7 @@ class WatchDogService(Service):
 bootstrap_list = BootstrapList([
     BootstrapDirectory("$data_path", "landscape", "root", 0755),
     BootstrapDirectory("$data_path/package", "landscape", "root", 0755),
+    BootstrapDirectory("$data_path/package/hash-id", "landscape", "root", 0755),
     BootstrapDirectory("$data_path/messages", "landscape", "root", 0755),
     BootstrapDirectory(
         "$data_path/custom-graph-scripts", "landscape", "root", 0755),
@@ -507,7 +508,36 @@ bootstrap_list = BootstrapList([
     ])
 
 
+def clean_environment():
+    """Unset any environment variables that begin with DEBIAN_ or DEBCONF_.
+
+    We do this to avoid any problems when landscape-client is invoked from its
+    postinst script.  Some environment variables may be set which would affect
+    *other* maintainer scripts which landscape-client invokes (via smart).
+    """
+    for key in os.environ.keys():
+        if (key.startswith("DEBIAN_")
+            or key.startswith("DEBCONF_")
+            or key == "LANDSCAPE_ATTACHMENTS"):
+            del os.environ[key]
+
+
 def run(args=sys.argv, reactor=None):
+    """Start the watchdog.
+
+    This is the topmost function that kicks off the Landscape client.  It cleans
+    up the environment, loads the configuration, and starts the reactor.
+
+    @param args: Command line arguments, including the program name as the
+        first element.
+    @param reactor: The reactor to use.  If none is specified, the global
+        reactor is used.
+    @raise SystemExit: if command line arguments are bad, or when landscape-
+        client is running as non-root and the configuration indicates use of
+        the system bus.
+    """
+    clean_environment()
+
     config = WatchDogConfiguration()
     config.load(args)
 

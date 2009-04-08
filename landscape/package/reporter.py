@@ -1,3 +1,4 @@
+import urlparse
 import logging
 import time
 import sys
@@ -7,6 +8,7 @@ from twisted.internet.defer import Deferred, succeed
 
 from landscape.lib.sequenceranges import sequence_to_ranges
 from landscape.lib.twisted_util import gather_results
+from landscape.lib.fetch import fetch_async
 
 from landscape.package.taskhandler import PackageTaskHandler, run_task_handler
 from landscape.package.store import UnknownHashIDRequest
@@ -23,7 +25,13 @@ class PackageReporter(PackageTaskHandler):
     def run(self):
         result = Deferred()
 
-        # First, handle any queued tasks.
+        # If the appropriate hash=>id db is not there, fetch it
+        result.addCallback(lambda x: self.fetch_hash_id_db())
+
+        # Attach the hash=>id database if available
+        result.addCallback(lambda x: self.use_hash_id_db())
+
+        # Now, handle any queued tasks.
         result.addCallback(lambda x: self.handle_tasks())
 
         # Then, remove any expired hash=>id translation requests.
@@ -37,6 +45,77 @@ class PackageReporter(PackageTaskHandler):
 
         result.callback(None)
         return result
+
+    def fetch_hash_id_db(self):
+        """
+        Fetch the appropriate pre-canned database of hash=>id mappings
+        from the server. If the database is already present, it won't
+        be downloaded twice.
+
+        The format of the database filename is <uuid>_<codename>_<arch>,
+        and it will be downloaded from the HTTP directory set in
+        config.package_hash_id_url, or config.url/hash-id-databases if
+        the former is not set.
+
+        Fetch failures are handled gracefully and logged as appropriate.
+        """
+
+        def fetch_it(hash_id_db_filename):
+
+            if not hash_id_db_filename:
+                # Couldn't determine which hash=>id database to fetch,
+                # just ignore the failure and go on
+                return
+
+            if os.path.exists(hash_id_db_filename):
+                # We don't download twice
+                return
+
+            base_url = self._get_hash_id_db_base_url()
+            if not base_url:
+                logging.warning("Can't determine the hash=>id database url")
+                return
+
+            # Cast to str as pycurl doesn't like unicode
+            url = str(base_url + os.path.basename(hash_id_db_filename))
+
+            def fetch_ok(data):
+                logging.info("Downloaded hash=>id database from %s" % url)
+                hash_id_db_fd = open(hash_id_db_filename, "w")
+                hash_id_db_fd.write(data)
+                hash_id_db.fd.close()
+
+            def fetch_error(failure):
+                exception = failure.value
+                logging.warning("Couldn't download hash=>id database: %s" %
+                                str(exception))
+
+            result = fetch_async(url)
+            result.addCallback(fetch_ok)
+            result.addErrback(fetch_error)
+
+            return result
+
+        result = self._determine_hash_id_db_filename()
+        result.addCallback(fetch_it)
+        return result
+
+    def _get_hash_id_db_base_url(self):
+
+        base_url = self._config.get("package_hash_id_url")
+
+        if not base_url:
+
+            if not self._config.get("url"):
+                # We really have no idea where to download from
+                return None
+
+            # If config.url is http://host:123/path/to/message-system
+            # then we'll use http://host:123/path/to/hash-id-databases
+            base_url = urlparse.urljoin(self._config.url.rstrip("/"),
+                                        "hash-id-databases")
+
+        return base_url.rstrip("/") + "/"
 
     def handle_task(self, task):
         message = task.data

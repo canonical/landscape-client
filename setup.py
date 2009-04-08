@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name="Landscape Client",
-      version="AUTOPPA_VERSION(1.0.26-0ubuntu0.8.10)"[len("AUTOPPA_VERSION("):-1],
+      version="AUTOPPA_VERSION(1.0.28)"[len("AUTOPPA_VERSION("):-1],
       description="Landscape Client",
       author="Landscape Team",
       author_email="landscape-team@canonical.com",
@@ -25,5 +25,6 @@ setup(name="Landscape Client",
                "scripts/landscape-monitor",
                "scripts/landscape-package-changer",
                "scripts/landscape-package-reporter",
-               "scripts/landscape-sysinfo"],
+               "scripts/landscape-sysinfo",
+               "scripts/landscape-is-cloud-managed"],
      )

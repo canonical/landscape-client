@@ -1,12 +1,14 @@
 import os
+import logging
 
 from twisted.internet.defer import Deferred, succeed
 
 from landscape.lib.dbus_util import get_bus
 from landscape.lib.lock import lock_path, LockError
 from landscape.lib.log import log_failure
+from landscape.lib.command import run_command, CommandError
 from landscape.deployment import Configuration, init_logging
-from landscape.package.store import PackageStore
+from landscape.package.store import PackageStore, InvalidHashIdDb
 from landscape.broker.remote import RemoteBroker
 
 
@@ -14,11 +16,13 @@ class PackageTaskHandler(object):
 
     queue_name = "default"
 
-    def __init__(self, package_store, package_facade, remote_broker):
+    def __init__(self, package_store, package_facade, remote_broker, config):
         self._store = package_store
         self._facade = package_facade
         self._broker = remote_broker
+        self._config = config
         self._channels_reloaded = False
+        self._server_uuid = None
 
     def ensure_channels_reloaded(self):
         if not self._channels_reloaded:
@@ -53,6 +57,59 @@ class PackageTaskHandler(object):
     def handle_task(self, task):
         return succeed(None)
 
+    def use_hash_id_db(self):
+        """
+        Attach the appropriate pre-canned hash=>id database to our store.
+        """
+        def use_it(hash_id_db_filename):
+
+            if not hash_id_db_filename:
+                # Couldn't determine which hash=>id database to use,
+                # just ignore the failure and go on
+                return
+
+            if not os.path.exists(hash_id_db_filename):
+                # The appropriate database isn't there, but nevermind
+                # and just go on
+                return
+
+            try:
+                self._store.add_hash_id_db(hash_id_db_filename)
+            except InvalidHashIdDb:
+                # The appropriate database is there but broken,
+                # let's remove it and go on
+                logging.warning("Invalid hash=>id database %s" %
+                                hash_id_db_filename)
+                os.remove(hash_id_db_filename)
+                return
+
+        result = self._determine_hash_id_db_filename()
+        result.addCallback(use_it)
+        return result
+
+    def _determine_hash_id_db_filename(self):
+
+        def got_server_uuid(server_uuid):
+            try:
+                # XXX we should add some methods to the Smart facade to get these
+                codename = run_command("lsb_release -cs")
+                arch = run_command("dpkg --print-architecture")
+            except CommandError, error:
+                logging.warning("Couldn't determine which hash=>id database "
+                                "to use: %s" % str(error))
+                return None
+
+            package_directory = os.path.join(self._config.data_path, "package")
+            hash_id_db_directory = os.path.join(package_directory, "hash-id")
+
+            return os.path.join(hash_id_db_directory,
+                                "%s_%s_%s" % (server_uuid,
+                                              codename,
+                                              arch))
+
+        result = self._broker.get_server_uuid()
+        result.addCallback(got_server_uuid)
+        return result
 
 def run_task_handler(cls, args, reactor=None):
     from twisted.internet.glib2reactor import install
@@ -69,8 +126,10 @@ def run_task_handler(cls, args, reactor=None):
     config.load(args)
 
     package_directory = os.path.join(config.data_path, "package")
-    if not os.path.isdir(package_directory):
-        os.mkdir(package_directory)
+    hash_id_directory = os.path.join(package_directory, "hash-id")
+    for directory in [package_directory, hash_id_directory]:
+        if not os.path.isdir(directory):
+            os.mkdir(directory)
 
     lock_filename = os.path.join(package_directory, program_name + ".lock")
     try:
@@ -98,7 +157,7 @@ def run_task_handler(cls, args, reactor=None):
     package_facade = SmartFacade()
     remote = RemoteBroker(get_bus(config.bus))
 
-    handler = cls(package_store, package_facade, remote)
+    handler = cls(package_store, package_facade, remote, config)
 
     def got_err(failure):
         log_failure(failure)

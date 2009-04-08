@@ -7,14 +7,12 @@ from twisted.internet.defer import Deferred
 
 from smart.cache import Provides
 
-from landscape.lib.lock import lock_path
-
 from landscape.package.changer import (
     PackageChanger, main, find_changer_command, UNKNOWN_PACKAGE_DATA_TIMEOUT)
 from landscape.package.store import PackageStore
 from landscape.package.facade import (
-    SmartFacade, DependencyError, TransactionError, SmartError)
-from landscape.broker.remote import RemoteBroker
+    DependencyError, TransactionError, SmartError)
+from landscape.deployment import Configuration
 
 from landscape.tests.mocker import ANY
 from landscape.tests.helpers import (
@@ -31,7 +29,8 @@ class PackageChangerTest(LandscapeIsolatedTest):
         super(PackageChangerTest, self).setUp()
 
         self.store = PackageStore(self.makeFile())
-        self.changer = PackageChanger(self.store, self.facade, self.remote)
+        self.config = Configuration()
+        self.changer = PackageChanger(self.store, self.facade, self.remote, self.config)
 
         service = self.broker_service
         service.message_store.set_accepted_types(["change-packages-result"])
@@ -456,6 +455,29 @@ class PackageChangerTest(LandscapeIsolatedTest):
                                         "operation-id": 123})
         return self.changer.run()
 
+
+    def test_run(self):
+        changer_mock = self.mocker.patch(self.changer)
+
+        self.mocker.order()
+
+        results = [Deferred() for i in range(2)]
+
+        changer_mock.use_hash_id_db()
+        self.mocker.result(results[0])
+
+        changer_mock.handle_tasks()
+        self.mocker.result(results[1])
+
+        self.mocker.replay()
+
+        self.changer.run()
+
+        # It must raise an error because deferreds weren't yet fired.
+        self.assertRaises(AssertionError, self.mocker.verify)
+
+        for deferred in reversed(results):
+            deferred.callback(None)
 
     def test_dont_spawn_reporter_after_running_if_nothing_done(self):
         output_filename = self.makeFile("REPORTER NOT RUN")
