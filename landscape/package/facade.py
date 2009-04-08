@@ -1,5 +1,5 @@
 from smart.transaction import Transaction, PolicyInstall, PolicyUpgrade, Failed
-from smart.const import INSTALL, REMOVE, UPGRADE
+from smart.const import INSTALL, REMOVE, UPGRADE, ALWAYS, NEVER
 
 import smart
 
@@ -23,6 +23,10 @@ class SmartError(Exception):
     """Raised when Smart fails in an undefined way."""
 
 
+class ChannelError(Exception):
+    """Raised when channels fail to load."""
+
+
 class SmartFacade(object):
     """Wrapper for tasks using Smart.
 
@@ -33,6 +37,10 @@ class SmartFacade(object):
     _deb_package_type = None
 
     def __init__(self, smart_init_kwargs={}):
+        """
+        @param smart_init_kwargs: A dictionary that can be used to pass
+            specific keyword parameters to to L{smart.init}.
+        """
         self._smart_init_kwargs = smart_init_kwargs.copy()
         self._smart_init_kwargs.setdefault("interface", "landscape")
         self._reset()
@@ -45,6 +53,8 @@ class SmartFacade(object):
         self._hash2pkg = {}
 
         self._marks = {}
+
+        self._caching = ALWAYS
 
     def deinit(self):
         """Deinitialize the Facade and the Smart library."""
@@ -74,10 +84,18 @@ class SmartFacade(object):
         """Hook called when the Smart library is initialized."""
 
     def reload_channels(self):
-        """Reload Smart channels, getting all the cache (packages) in memory.
+        """
+        Reload Smart channels, getting all the cache (packages) in memory.
+
+        @raise: L{ChannelError} if Smart fails to reload the channels.
         """
         ctrl = self._get_ctrl()
-        ctrl.reloadChannels()
+
+        reload_result = ctrl.reloadChannels(caching=self._caching)
+        if not reload_result and self._caching == NEVER:
+            # Raise an error only if we are trying to download remote lists
+            raise ChannelError("Smart failed to reload channels (%s)"
+                               % smart.sysconf.get("channels"))
 
         self._hash2pkg.clear()
         self._pkg2hash.clear()
@@ -101,23 +119,46 @@ class SmartFacade(object):
         @param with_info: If True, the skeleton will include information
             useful for sending data to the server.  Such information isn't
             necessary if the skeleton will be used to build a hash.
+
+        @return: a L{PackageSkeleton} object.
         """
         return build_skeleton(pkg, with_info)
 
     def get_package_hash(self, pkg):
-        """Return a hash from the given package."""
+        """Return a hash from the given package.
+
+        @param pkg: a L{smart.backends.deb.base.DebPackage} objects
+        """
         return self._pkg2hash.get(pkg)
 
+    def get_package_hashes(self):
+        """Get the hashes of all the packages available in the channels."""
+        return self._pkg2hash.values()
+
     def get_packages(self):
+        """
+        Get all the packages available in the channels.
+
+        @return: a C{list} of L{smart.backends.deb.base.DebPackage} objects
+        """
         return [pkg for pkg in self._get_ctrl().getCache().getPackages()
                 if isinstance(pkg, self._deb_package_type)]
 
     def get_packages_by_name(self, name):
-        """Return a list with all known (available) packages."""
+        """
+        Get all available packages matching the provided name.
+
+        @return: a C{list} of L{smart.backends.deb.base.DebPackage} objects
+        """
         return [pkg for pkg in self._get_ctrl().getCache().getPackages(name)
                 if isinstance(pkg, self._deb_package_type)]
 
     def get_package_by_hash(self, hash):
+        """
+        Get all available packages matching the provided hash.
+
+        @return: a C{list} of L{smart.backends.deb.base.DebPackage} objects
+        """
         return self._hash2pkg.get(hash)
 
     def mark_install(self, pkg):
@@ -181,3 +222,69 @@ class SmartFacade(object):
         cache = self._get_ctrl().getCache()
         cache.reset()
         cache.load()
+
+    def set_arch(self, arch):
+        """
+        Set the host architecture.
+
+        To take effect it must be called before L{reload_channels}.
+
+        @param arch: the dpkg architecture to use (e.g. C{"i386"})
+        """
+        self._get_ctrl()
+        smart.sysconf.set("deb-arch", arch)
+
+        # XXX workaround Smart setting DEBARCH statically in the
+        # smart.backends.deb.base module
+        import smart.backends.deb.loader as loader
+        loader.DEBARCH = arch
+
+    def set_caching(self, mode):
+        """
+        Set Smart's caching mode.
+
+        @param mode: The caching mode to pass to Smart's C{reloadChannels}
+            when calling L{reload_channels} (e.g C{smart.const.NEVER} or
+            C{smart.const.ALWAYS}).
+        """
+        self._caching = mode
+
+    def reset_channels(self):
+        """Remove all configured Smart channels."""
+        self._get_ctrl()
+        smart.sysconf.set("channels", {}, soft=True)
+
+    def add_channel(self, alias, channel):
+        """
+        Add a Smart channel.
+
+        This method can be called more than once to set multiple channels.
+        To take effect it must be called before L{reload_channels}.
+
+        @param alias: A string identifying the channel to be added.
+        @param channel: A C{dict} holding information about the channel to
+            add (see the Smart API for details about valid keys and values).
+        """
+        channels = self.get_channels()
+        channels.update({alias : channel})
+        smart.sysconf.set("channels", channels, soft=True)
+
+    def get_channels(self):
+        """
+        @return: A C{dict} of all configured channels.
+        """
+        self._get_ctrl()
+        return smart.sysconf.get("channels")
+
+
+def make_apt_deb_channel(baseurl, distribution, components):
+    """Convenience to create Smart channels of type C{"apt-deb"}."""
+    return {"baseurl": baseurl,
+            "distribution": distribution,
+            "components": components,
+            "type": "apt-deb"}
+
+def make_deb_dir_channel(path):
+    """Convenience to create Smart channels of type C{"deb-dir"}."""
+    return {"path": path,
+            "type": "deb-dir"}

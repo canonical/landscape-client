@@ -45,7 +45,7 @@ class PackageSkeleton(object):
         return digest.digest()
 
 
-def build_skeleton(pkg, with_info=False):
+def build_skeleton(pkg, with_info=False, with_unicode=False):
     if not build_skeleton.inited:
         build_skeleton.inited = True
         global DebPackage, DebNameProvides, DebOrDepends
@@ -57,7 +57,11 @@ def build_skeleton(pkg, with_info=False):
     if not isinstance(pkg, DebPackage):
         raise PackageTypeError()
 
-    skeleton = PackageSkeleton(DEB_PACKAGE, pkg.name, pkg.version)
+    if with_unicode:
+        skeleton = PackageSkeleton(DEB_PACKAGE, unicode(pkg.name),
+                                   unicode(pkg.version))
+    else:
+        skeleton = PackageSkeleton(DEB_PACKAGE, pkg.name, pkg.version)
     relations = set()
     for relation in pkg.provides:
         if isinstance(relation, DebNameProvides):
