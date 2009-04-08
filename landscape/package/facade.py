@@ -132,7 +132,7 @@ class SmartFacade(object):
         return self._pkg2hash.get(pkg)
 
     def get_package_hashes(self):
-        """Get the hases of the package available in the channels."""
+        """Get the hashes of all the packages available in the channels."""
         return self._pkg2hash.values()
 
     def get_packages(self):
@@ -256,7 +256,7 @@ class SmartFacade(object):
         Add a Smart channel.
 
         This method can be called more than once to set multiple channels.
-        To take effect it must be called before L{reaload_channels}.
+        To take effect it must be called before L{reload_channels}.
 
         @param alias: A string identifying the channel to be added.
         @param channel: A C{dict} holding information about the channel to
