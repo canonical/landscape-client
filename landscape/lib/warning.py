@@ -10,5 +10,5 @@ def hide_warnings():
     production environment: warnings that aren't UserWarnings are meant for
     developers.
     """
-    warnings.filterwarnings("ignore")
-    warnings.filterwarnings("default", category=UserWarning)
+    warnings.simplefilter("ignore")
+    warnings.simplefilter("default", UserWarning)
