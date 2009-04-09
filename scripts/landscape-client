@@ -2,6 +2,9 @@
 import sys, os
 if os.path.dirname(os.path.abspath(sys.argv[0])) == os.path.abspath("scripts"):
     sys.path.insert(0, "./")
+else:
+    from landscape.lib.warning import hide_warnings
+    hide_warnings()
 
 from landscape.lib.fd import clean_fds
 
