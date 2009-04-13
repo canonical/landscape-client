@@ -70,6 +70,7 @@ def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None,
     curl.setopt(pycurl.MAXREDIRS, 5)
     curl.setopt(pycurl.CONNECTTIMEOUT, connect_timeout)
     curl.setopt(pycurl.TIMEOUT, total_timeout)
+    curl.setopt(pycurl.NOSIGNAL, 1)
     curl.setopt(pycurl.WRITEFUNCTION, input.write)
 
     try:
