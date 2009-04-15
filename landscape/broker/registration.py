@@ -34,7 +34,15 @@ def config_property(name):
 
 
 class Identity(object):
-    """Maintains details about the identity of this Landscape client."""
+    """Maintains details about the identity of this Landscape client.
+
+    @ivar secure_id: A server-provided ID for secure message exchange.
+    @ivar insecure_id: Non-secure server-provided ID, mainly used with
+        the ping server.
+    @ivar computer_title: See L{BrokerConfiguration}.
+    @ivar account_name: See L{BrokerConfiguration}.
+    @ivar registration_password: See L{BrokerConfiguration}.
+    """
 
     secure_id = persist_property("secure-id")
     insecure_id = persist_property("insecure-id")
@@ -43,6 +51,11 @@ class Identity(object):
     registration_password = config_property("registration_password")
 
     def __init__(self, config, persist):
+        """
+        @param config: A L{BrokerConfiguration} object, used to set the
+            C{computer_title}, C{account_name} and C{registration_password}
+            instance variables.
+        """
         self._config = config
         self._persist = persist.root_at("registration")
 
@@ -162,9 +175,15 @@ class RegistrationHandler(object):
             registration_data.addErrback(log_error)
 
     def _handle_exchange_done(self):
+        """Registered handler for the C{"exchange-done"} event.
+
+        If we are not registered yet, schedule another message exchange.
+
+        The first exchange made us accept the message type "register", so
+        the next "pre-exchange" event will make L{_handle_pre_exchange}
+        queue a registration message for delivery.
+        """
         if self.should_register() and not self._should_register:
-            # We received accepted-types (first exchange), so we now trigger
-            # the second exchange for registration
             self._exchange.exchange()
 
     def _handle_pre_exchange(self):
@@ -223,9 +242,12 @@ class RegistrationHandler(object):
                 self._reactor.fire("registration-failed")
 
     def _handle_set_id(self, message):
-        """
+        """Registered handler for the C{"set-id"} event.
+        
         Record and start using the secure and insecure IDs from the given
         message.
+
+        Fire C{"registration-done"} and C{"resynchronize-clients"}.
         """
         id = self._identity
         id.secure_id = message.get("id")
@@ -311,8 +333,10 @@ def is_cloud_managed(fetch=fetch):
     find the expected data inside the EC2 user-data field.
     """
     try:
-        raw_user_data = fetch(EC2_API + "/user-data")
-        launch_index = fetch(EC2_API + "/meta-data/ami-launch-index")
+        raw_user_data = fetch(EC2_API + "/user-data",
+                              connect_timeout=5)
+        launch_index = fetch(EC2_API + "/meta-data/ami-launch-index",
+                             connect_timeout=5)
     except FetchError:
         return False
     instance_data = _extract_ec2_instance_data(raw_user_data, int(launch_index))

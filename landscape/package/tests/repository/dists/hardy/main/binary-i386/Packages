@@ -1,0 +1,20 @@
+Package: syslinux
+Version: 2:3.73+dfsg-2
+Architecture: i386
+Maintainer: Daniel Baumann <daniel@debian.org>
+Installed-Size: 140
+Depends: libc6 (>= 2.7-1), syslinux-common (= 2:3.73+dfsg-2), dosfstools, mtools
+Homepage: http://syslinux.zytor.com/
+Priority: optional
+Section: utils
+Filename: pool/main/s/syslinux/syslinux_3.73+dfsg-2_i386.deb
+Size: 70384
+SHA1: 6edf6a7e81a5e9759270872e45c782394dfa85e5
+MD5sum: ae8baa9f6c6a172a3b127af1e6675046
+Description: utilities for the syslinux bootloaders
+ SYSLINUX is a suite of lightweight bootloaders, currently supporting DOS FAT
+ filesystems (SYSLINUX), Linux ext2/ext3 filesystems (EXTLINUX), PXE network
+ booting (PXELINUX), or bootable "El Torito" ISO 9660 CD-ROMs (ISOLINUX). It
+ also includes a tool, MEMDISK, which loads legacy operating systems (such as
+ DOS) from these media.
+
