@@ -35,6 +35,7 @@ if [ $RUN -eq 0 ]; then
 			# Override default file for not going in this conditional again at
 			# next startup
 			echo "RUN=1" > $LANDSCAPE_DEFAULTS
+			/usr/share/smart/smart update > /dev/null 2>&1
 		else
 			echo "$NAME is not configured, please run landscape-config."
 			exit 0
