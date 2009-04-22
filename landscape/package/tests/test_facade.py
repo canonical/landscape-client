@@ -1,15 +1,18 @@
-import gdbm
 import time
 import os
+import re
 
 from smart.control import Control
 from smart.cache import Provides
+from smart.const import NEVER
 
 import smart
 
 from landscape.package.facade import (
-    SmartFacade, TransactionError, DependencyError, SmartError)
+    TransactionError, DependencyError, ChannelError, SmartError,
+    make_apt_deb_channel, make_deb_dir_channel)
 
+from landscape.tests.mocker import ANY
 from landscape.tests.helpers import LandscapeTest
 from landscape.package.tests.helpers import (
     SmartFacadeHelper, HASH1, HASH2, HASH3, PKGNAME1)
@@ -77,6 +80,11 @@ class SmartFacadeTest(LandscapeTest):
         self.assertEquals(self.facade.get_package_hash(pkg), HASH1)
         pkg = self.facade.get_packages_by_name("name2")[0]
         self.assertEquals(self.facade.get_package_hash(pkg), HASH2)
+
+    def test_get_package_hashes(self):
+        self.facade.reload_channels()
+        hashes = self.facade.get_package_hashes()
+        self.assertEquals(sorted(hashes), sorted([HASH1, HASH2, HASH3]))
 
     def test_get_package_by_hash(self):
         self.facade.reload_channels()
@@ -347,6 +355,22 @@ class SmartFacadeTest(LandscapeTest):
         self.assertEquals(environ, ["noninteractive", "none",
                                     "noninteractive", "none"])
 
+    def test_perform_changes_with_commit_change_set_errors(self):
+
+        self.facade.reload_channels()
+
+        pkg = self.facade.get_packages_by_name("name1")[0]
+        pkg.requires = ()
+
+        self.facade.mark_install(pkg)
+
+        ctrl_mock = self.mocker.patch(Control)
+        ctrl_mock.commitChangeSet(ANY)
+        self.mocker.throw(smart.Error("commit error"))
+        self.mocker.replay()
+
+        self.assertRaises(TransactionError, self.facade.perform_changes)
+
     def test_deinit_cleans_the_state(self):
         self.facade.reload_channels()
         self.assertTrue(self.facade.get_package_by_hash(HASH1))
@@ -376,3 +400,76 @@ class SmartFacadeTest(LandscapeTest):
 
         self.facade.reload_channels()
         self.assertEquals(self.facade.get_package_hash(pkg), None)
+
+    def test_reset_add_get_channels(self):
+
+        channels = [("alias0", {"type": "test"}),
+                    ("alias1", {"type": "test"})]
+
+        self.facade.reset_channels()
+
+        self.assertEquals(self.facade.get_channels(), {})
+
+        self.facade.add_channel(*channels[0])
+        self.facade.add_channel(*channels[1])
+
+        self.assertEquals(self.facade.get_channels(), dict(channels))
+
+    def test_make_channels(self):
+
+        channel0 = make_apt_deb_channel("http://my.url/dir", "hardy", "main")
+        channel1 = make_deb_dir_channel("/my/repo")
+
+        self.assertEquals(channel0, {"baseurl": "http://my.url/dir",
+                                     "distribution": "hardy",
+                                     "components": "main",
+                                     "type": "apt-deb"})
+                     
+        self.assertEquals(channel1, {"path": "/my/repo",
+                                     "type": "deb-dir"})
+
+    def test_set_arch_multiple_times(self):
+
+        repository_dir = os.path.join(os.path.dirname(__file__), "repository")
+
+        alias = "alias"
+        channel = {"baseurl": "file://%s" % repository_dir,
+                   "distribution": "hardy",
+                   "components": "main",
+                   "type": "apt-deb"}
+
+        self.facade.set_arch("i386")
+        self.facade.reset_channels()
+        self.facade.add_channel(alias, channel)
+        self.facade.reload_channels()
+
+        pkgs = self.facade.get_packages()
+        self.assertEquals(len(pkgs), 1)
+        self.assertEquals(pkgs[0].name, "syslinux")
+
+        self.facade.deinit()
+        self.facade.set_arch("amd64")
+        self.facade.reset_channels()
+        self.facade.add_channel(alias, channel)
+        self.facade.reload_channels()
+
+        pkgs = self.facade.get_packages()
+        self.assertEquals(len(pkgs), 1)
+        self.assertEquals(pkgs[0].name, "libclthreads2")
+
+    def test_set_caching_with_reload_error(self):
+
+        alias = "alias"
+        channel = {"type": "deb-dir",
+                   "path": "/does/not/exist"}
+
+        self.facade.reset_channels()
+        self.facade.add_channel(alias, channel)
+        self.facade.set_caching(NEVER)
+
+        self.assertRaises(ChannelError, self.facade.reload_channels)
+        self.facade._channels = {}
+
+        ignore_re = re.compile("\[Smart\].*'alias'.*/does/not/exist")
+
+        self.log_helper.ignored_exception_regexes = [ignore_re]

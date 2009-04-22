@@ -49,6 +49,7 @@ class FetchTest(LandscapeTest):
                            pycurl.MAXREDIRS: 5,
                            pycurl.CONNECTTIMEOUT: 30,
                            pycurl.TIMEOUT: 600,
+                           pycurl.NOSIGNAL: 1,
                            pycurl.WRITEFUNCTION: Any()})
 
     def test_post(self):
@@ -61,6 +62,7 @@ class FetchTest(LandscapeTest):
                            pycurl.MAXREDIRS: 5,
                            pycurl.CONNECTTIMEOUT: 30,
                            pycurl.TIMEOUT: 600,
+                           pycurl.NOSIGNAL: 1,
                            pycurl.WRITEFUNCTION: Any(),
                            pycurl.POST: True})
 
@@ -75,6 +77,7 @@ class FetchTest(LandscapeTest):
                            pycurl.MAXREDIRS: 5,
                            pycurl.CONNECTTIMEOUT: 30,
                            pycurl.TIMEOUT: 600,
+                           pycurl.NOSIGNAL: 1,
                            pycurl.WRITEFUNCTION: Any(),
                            pycurl.POST: True,
                            pycurl.POSTFIELDSIZE: 4,
@@ -90,6 +93,7 @@ class FetchTest(LandscapeTest):
                            pycurl.MAXREDIRS: 5,
                            pycurl.CONNECTTIMEOUT: 30,
                            pycurl.TIMEOUT: 600,
+                           pycurl.NOSIGNAL: 1,
                            pycurl.WRITEFUNCTION: Any(),
                            pycurl.CAINFO: "cainfo"})
 
@@ -110,8 +114,23 @@ class FetchTest(LandscapeTest):
                            pycurl.MAXREDIRS: 5,
                            pycurl.CONNECTTIMEOUT: 30,
                            pycurl.TIMEOUT: 600,
+                           pycurl.NOSIGNAL: 1,
                            pycurl.WRITEFUNCTION: Any(),
                            pycurl.HTTPHEADER: ["a: 1", "b: 2"]})
+
+    def test_timeouts(self):
+        curl = CurlStub("result")
+        result = fetch("http://example.com", connect_timeout=5, total_timeout=30,
+                       curl=curl)
+        self.assertEquals(result, "result")
+        self.assertEquals(curl.options,
+                          {pycurl.URL: "http://example.com",
+                           pycurl.FOLLOWLOCATION: True,
+                           pycurl.MAXREDIRS: 5,
+                           pycurl.CONNECTTIMEOUT: 5,
+                           pycurl.TIMEOUT: 30,
+                           pycurl.NOSIGNAL: 1,
+                           pycurl.WRITEFUNCTION: Any()})
 
     def test_non_200_result(self):
         curl = CurlStub("result", http_code=404)
@@ -168,6 +187,7 @@ class FetchTest(LandscapeTest):
                                pycurl.MAXREDIRS: 5,
                                pycurl.CONNECTTIMEOUT: 30,
                                pycurl.TIMEOUT: 600,
+                               pycurl.NOSIGNAL: 1,
                                pycurl.WRITEFUNCTION: Any()})
         finally:
             pycurl.Curl = Curl
