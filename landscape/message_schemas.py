@@ -272,9 +272,11 @@ PACKAGES = Message(
      "available-upgrades": package_ids_or_ranges,
      "not-installed": package_ids_or_ranges,
      "not-available": package_ids_or_ranges,
-     "not-available-upgrades": package_ids_or_ranges},
+     "not-available-upgrades": package_ids_or_ranges,
+     "reboot-required": Bool()},
     optional=["installed", "available", "available-upgrades",
-              "not-available", "not-installed", "not-available-upgrades"])
+              "not-available", "not-installed", "not-available-upgrades",
+              "reboot-required"])
 
 CHANGE_PACKAGES_RESULT = Message(
     "change-packages-result",

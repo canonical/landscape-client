@@ -21,6 +21,7 @@ MAX_UNKNOWN_HASHES_PER_REQUEST = 500
 class PackageReporter(PackageTaskHandler):
 
     queue_name = "reporter"
+    reboot_required_filename = "/var/run/reboot-required"
 
     def run(self):
         result = Deferred()
@@ -288,6 +289,9 @@ class PackageReporter(PackageTaskHandler):
         - were previously available but are not anymore;
         - were previously installed but are not anymore;
 
+        It will also detect if a system reboot is required, due to newly
+        installed, removed or updated packages.
+
         In all cases, the server is notified of the new situation
         with a "packages" message.
         """
@@ -296,10 +300,12 @@ class PackageReporter(PackageTaskHandler):
         old_installed = set(self._store.get_installed())
         old_available = set(self._store.get_available())
         old_upgrades = set(self._store.get_available_upgrades())
+        old_reboot_required = self._store.get_flag("reboot-required")
 
         current_installed = set()
         current_available = set()
         current_upgrades = set()
+        current_reboot_required = os.path.exists(self.reboot_required_filename)
 
         for package in self._facade.get_packages():
             hash = self._facade.get_package_hash(package)
@@ -338,6 +344,8 @@ class PackageReporter(PackageTaskHandler):
         not_available = old_available - current_available
         not_upgrades = old_upgrades - current_upgrades
 
+        notify_reboot_required = old_reboot_required != current_reboot_required
+
         message = {}
         if new_installed:
             message["installed"] = \
@@ -358,6 +366,8 @@ class PackageReporter(PackageTaskHandler):
         if not_upgrades:
             message["not-available-upgrades"] = \
                 list(sequence_to_ranges(sorted(not_upgrades)))
+        if notify_reboot_required:
+            message["reboot-required"] = current_reboot_required
 
         if not message:
             result = succeed(None)
@@ -387,6 +397,8 @@ class PackageReporter(PackageTaskHandler):
                 self._store.add_available_upgrades(new_upgrades)
             if not_upgrades:
                 self._store.remove_available_upgrades(not_upgrades)
+            if notify_reboot_required:
+                self._store.set_flag("reboot-required", current_reboot_required)
 
         result.addCallback(update_currently_known)
 
