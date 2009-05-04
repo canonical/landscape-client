@@ -470,6 +470,12 @@ class PackageStoreTest(LandscapeTest):
         task = self.store2.get_next_task("reporter")
         self.assertEquals(task, None)
 
+    def test_get_set_flag(self):
+        """Test getting and setting a flag"""
+        self.assertEquals(self.store1.get_flag("reboot-required"), False)
+        self.store1.set_flag("reboot-required", True)
+        self.assertEquals(self.store1.get_flag("reboot-required"), True)
+
     def test_parallel_database_access(self):
         error = []
 

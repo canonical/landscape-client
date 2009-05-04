@@ -281,6 +281,23 @@ class PackageStore(HashIdStore):
         cursor.execute("DELETE FROM task WHERE id NOT IN (%s)" %
                        ",".join([str(task.id) for task in except_tasks]))
 
+    @with_cursor
+    def get_flag(self, cursor, name):
+        """Return the value of the boolean flag labelled as C{name}.
+
+        @note: If the flag does not exist, C{False} is returned.
+        """
+        cursor.execute("SELECT value FROM flag WHERE name=?", (name,))
+        value = cursor.fetchone()
+        if value:
+            return value[0]
+        return False
+
+    @with_cursor
+    def set_flag(self, cursor, name, value):
+        """Set the boolean flag labelled as C{name} to C{value}."""
+        cursor.execute("REPLACE INTO flag VALUES (?, ?)", (name, value))
+
 
 class HashIDRequest(object):
 
@@ -389,6 +406,9 @@ def ensure_package_schema(db):
         cursor.execute("CREATE TABLE task"
                        " (id INTEGER PRIMARY KEY, queue TEXT,"
                        " timestamp TIMESTAMP, data BLOB)")
+        cursor.execute("CREATE TABLE flag"
+                       " (name TEXT PRIMARY KEY,"
+                       " value BOOLEAN)")
     except sqlite3.OperationalError:
         cursor.close()
         db.rollback()
