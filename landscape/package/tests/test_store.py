@@ -472,9 +472,9 @@ class PackageStoreTest(LandscapeTest):
 
     def test_get_set_flag(self):
         """Test getting and setting a flag"""
-        self.assertEquals(self.store1.get_flag("reboot-required"), False)
-        self.store1.set_flag("reboot-required", True)
-        self.assertEquals(self.store1.get_flag("reboot-required"), True)
+        self.assertEquals(self.store1.get_flag("some-flag"), False)
+        self.store1.set_flag("some-flag", True)
+        self.assertEquals(self.store1.get_flag("some-flag"), True)
 
     def test_parallel_database_access(self):
         error = []

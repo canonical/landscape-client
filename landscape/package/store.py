@@ -394,6 +394,9 @@ def ensure_package_schema(db):
     #       try block.
     cursor = db.cursor()
     try:
+        cursor.execute("CREATE TABLE flag"
+                       " (name TEXT PRIMARY KEY,"
+                       " value BOOLEAN)")
         cursor.execute("CREATE TABLE available"
                        " (id INTEGER PRIMARY KEY)")
         cursor.execute("CREATE TABLE available_upgrade"
@@ -406,9 +409,6 @@ def ensure_package_schema(db):
         cursor.execute("CREATE TABLE task"
                        " (id INTEGER PRIMARY KEY, queue TEXT,"
                        " timestamp TIMESTAMP, data BLOB)")
-        cursor.execute("CREATE TABLE flag"
-                       " (name TEXT PRIMARY KEY,"
-                       " value BOOLEAN)")
     except sqlite3.OperationalError:
         cursor.close()
         db.rollback()
