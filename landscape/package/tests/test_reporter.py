@@ -451,7 +451,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         self.mocker.result("codename")
         command_mock("dpkg --print-architecture")
         self.mocker.result("arch")
- 
+
         # The failure should be properly logged
         logging_mock = self.mocker.replace("logging.warning")
         logging_mock("Can't determine the hash=>id database url")
@@ -461,7 +461,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         self.mocker.replay()
 
         result = self.reporter.fetch_hash_id_db()
- 
+
         # We shouldn't have any hash=>id database
         def callback(ignored):
             hash_id_db_filename = os.path.join(self.config.data_path, "package",
@@ -469,6 +469,41 @@ class PackageReporterTest(LandscapeIsolatedTest):
             self.assertEquals(os.path.exists(hash_id_db_filename), False)
         result.addCallback(callback)
 
+        return result
+
+    def test_run_smart_update(self):
+        """
+        The L{PackageReporter.run_smart_update} method should run smart-update
+        with the proper arguments.
+        """
+        interval = self.reporter.smart_update_interval
+        smart_update_command = "smart-update --after %d" % interval
+        command_mock = self.mocker.replace("landscape.lib.command.run_command")
+        command_mock(smart_update_command)
+        self.mocker.result("smart output")
+        self.mocker.replay()
+        result = self.reporter.run_smart_update()
+        return result
+
+    def test_run_smart_update_warns_about_failures(self):
+        """
+        The L{PackageReporter.run_smart_update} method should log a warning
+        in case smart-update terminates with a non-zero exit code.
+        """
+        interval = self.reporter.smart_update_interval
+        smart_update_command = "smart-update --after %d" % interval
+        command_mock = self.mocker.replace("landscape.lib.command.run_command")
+        command_mock(smart_update_command)
+        command_error = CommandError(smart_update_command, 1, "error")
+        self.mocker.throw(command_error)
+
+        logging_mock = self.mocker.replace("logging.warning")
+        logging_mock("'%s' exited with status 1"
+                     " (error)" % smart_update_command)
+
+        self.mocker.replay()
+
+        result = self.reporter.run_smart_update()
         return result
 
     def test_remove_expired_hash_id_request(self):
@@ -821,7 +856,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         self.mocker.order()
 
-        results = [Deferred() for i in range(6)]
+        results = [Deferred() for i in range(7)]
 
         reporter_mock.fetch_hash_id_db()
         self.mocker.result(results[0])
@@ -829,17 +864,20 @@ class PackageReporterTest(LandscapeIsolatedTest):
         reporter_mock.use_hash_id_db()
         self.mocker.result(results[1])
 
-        reporter_mock.handle_tasks()
+        reporter_mock.run_smart_update()
         self.mocker.result(results[2])
 
-        reporter_mock.remove_expired_hash_id_requests()
+        reporter_mock.handle_tasks()
         self.mocker.result(results[3])
 
-        reporter_mock.request_unknown_hashes()
+        reporter_mock.remove_expired_hash_id_requests()
         self.mocker.result(results[4])
 
-        reporter_mock.detect_changes()
+        reporter_mock.request_unknown_hashes()
         self.mocker.result(results[5])
+
+        reporter_mock.detect_changes()
+        self.mocker.result(results[6])
 
         self.mocker.replay()
 

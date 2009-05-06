@@ -8,6 +8,7 @@ from twisted.internet.defer import Deferred, succeed
 
 from landscape.lib.sequenceranges import sequence_to_ranges
 from landscape.lib.twisted_util import gather_results
+from landscape.lib.command import run_command, CommandError
 from landscape.lib.fetch import fetch_async
 
 from landscape.package.taskhandler import PackageTaskHandler, run_task_handler
@@ -19,8 +20,14 @@ MAX_UNKNOWN_HASHES_PER_REQUEST = 500
 
 
 class PackageReporter(PackageTaskHandler):
+    """Report information about the system packages.
 
+    @cvar queue_name: Name of the task queue to pick tasks from.
+    @cvar smart_update_interval: Time interval in minutes to pass to
+        the C{--after} command line option of C{smart-update}.
+    """
     queue_name = "reporter"
+    smart_update_interval = 60
 
     def run(self):
         result = Deferred()
@@ -30,6 +37,9 @@ class PackageReporter(PackageTaskHandler):
 
         # Attach the hash=>id database if available
         result.addCallback(lambda x: self.use_hash_id_db())
+
+        # Run smart-update
+        result.addCallback(lambda x: self.run_smart_update())
 
         # Now, handle any queued tasks.
         result.addCallback(lambda x: self.handle_tasks())
@@ -116,6 +126,14 @@ class PackageReporter(PackageTaskHandler):
                                         "hash-id-databases")
 
         return base_url.rstrip("/") + "/"
+
+    def run_smart_update(self):
+        """Run smart-update and log a warning in case of non-zero exit code."""
+        try:
+            run_command("smart-update --after %d" % self.smart_update_interval)
+        except CommandError, error:
+            logging.warning(str(error))
+        return succeed(None)
 
     def handle_task(self, task):
         message = task.data
