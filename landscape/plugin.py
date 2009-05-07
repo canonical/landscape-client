@@ -48,8 +48,8 @@ class BrokerClientPluginRegistry(PluginRegistry):
     """Basic plugin registry for clients that have to deal with the broker.
 
     This knows about the needs of a client when dealing with the Landscape
-    broker, including interest in messages of a particular message type
-    delivered by the broker to the client.
+    broker, including interest in messages of a particular type delivered
+    by the broker to the client.
     """
 
     def __init__(self, broker):
