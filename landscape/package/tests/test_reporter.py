@@ -816,61 +816,6 @@ class PackageReporterTest(LandscapeIsolatedTest):
         result = self.reporter.detect_changes()
         return result.addCallback(got_result)
 
-    def test_detect_changes_notifies_reboot_required(self):
-        """
-        In case a system reboot is required and the server hasn't been
-        notfied about that yet, an appropriate message is sent.
-        """
-        message_store = self.broker_service.message_store
-        message_store.set_accepted_types(["packages"])
-
-        self.assertEquals(self.store.get_flag("reboot-required"), False)
-        self.reporter.reboot_required_filename = self.makeFile(content="")
-
-        def got_result(result):
-            self.assertMessages(message_store.get_pending_messages(),
-                                [{"type": "packages", "reboot-required": True}])
-            self.assertEquals(self.store.get_flag("reboot-required"), True)
-
-        result = self.reporter.detect_changes()
-        return result.addCallback(got_result)
-
-    def test_detect_changes_notifies_reboot_not_required_anymore(self):
-        """
-        Once a system has been restarted and does not require a reboot
-        anymore, the server gets notified about it, if it didn't already.
-        """
-        message_store = self.broker_service.message_store
-        message_store.set_accepted_types(["packages"])
-
-        self.store.set_flag("reboot-required", True)
-        self.reporter.reboot_required_filename = "/does/not/exist"
-
-        def got_result(result):
-            self.assertMessages(message_store.get_pending_messages(),
-                                [{"type": "packages", "reboot-required": False}])
-            self.assertEquals(self.store.get_flag("reboot-required"), False)
-
-        result = self.reporter.detect_changes()
-        return result.addCallback(got_result)
-
-    def test_detect_changes_does_not_notify_reboot_required_if_not_needed(self):
-        """
-        No message is sent if the reboot-required status hasn't changed.
-        """
-        message_store = self.broker_service.message_store
-        message_store.set_accepted_types(["packages"])
-
-        self.store.set_flag("reboot-required", True)
-        self.reporter.reboot_required_filename = self.makeFile(content="")
-
-        def got_result(result):
-            self.assertMessages(message_store.get_pending_messages(), [])
-            self.assertEquals(self.store.get_flag("reboot-required"), True)
-
-        result = self.reporter.detect_changes()
-        return result.addCallback(got_result)
-
     def test_run(self):
         reporter_mock = self.mocker.patch(self.reporter)
 
