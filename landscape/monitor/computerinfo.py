@@ -99,6 +99,7 @@ class ComputerInfo(MonitorPlugin):
                         "DISTRIB_CODENAME": "code-name"}
 
     def _check_reboot_required(self):
+        """Return a boolean indicating whether the computer needs a reboot."""
         return os.path.exists(self._reboot_required_filename)
 
     def _get_distribution_info(self):
