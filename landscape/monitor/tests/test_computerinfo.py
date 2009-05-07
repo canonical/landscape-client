@@ -1,4 +1,5 @@
 import re
+import os
 
 from landscape.monitor.computerinfo import ComputerInfo
 from landscape.tests.helpers import LandscapeTest, MakePathHelper, MonitorHelper
@@ -47,6 +48,7 @@ DISTRIB_RELEASE=6.06
 DISTRIB_CODENAME=dapper
 DISTRIB_DESCRIPTION="Ubuntu 6.06.1 LTS"
 """)
+        self.reboot_required_filename = self.make_path("")
 
     def test_get_hostname(self):
         self.mstore.set_accepted_types(["computer-info"])
@@ -82,6 +84,7 @@ DISTRIB_DESCRIPTION="Ubuntu 6.06.1 LTS"
         self.assertEquals(len(messages), 1)
 
     def test_report_changed_hostnames(self):
+
         def hostname_factory(hostnames=["ooga", "wubble", "wubble"]):
             i = 0
             while i < len(hostnames):
@@ -158,6 +161,47 @@ DISTRIB_DESCRIPTION="Ubuntu 6.06.1 LTS"
         message = self.mstore.get_pending_messages()[1]
         self.assertEquals(message["total-swap"], 2048)
         self.assertTrue("total-memory" not in message)
+
+    def test_report_reboot_required(self):
+        """
+        A message with the "reboot-required" field set to C{True} or C{False}
+        should be send, depending whether the computer requires are reboot
+        or not.
+        """
+        self.mstore.set_accepted_types(["computer-info"])
+        plugin = ComputerInfo(reboot_required_filename=
+                              self.reboot_required_filename)
+        self.monitor.add(plugin)
+
+        plugin.exchange()
+        messages = self.mstore.get_pending_messages()
+        self.assertEquals(len(messages), 1)
+        self.assertEquals(messages[0]["type"], "computer-info")
+        self.assertEquals(messages[0]["reboot-required"], True)
+
+        os.remove(self.reboot_required_filename)
+
+        plugin.exchange()
+        messages = self.mstore.get_pending_messages()
+        self.assertEquals(len(messages), 2)
+        self.assertEquals(messages[1]["type"], "computer-info")
+        self.assertEquals(messages[1]["reboot-required"], False)
+
+    def test_only_report_changed_reboot_required(self):
+        """
+        The reboot-required flag shouldn't be reported unless it's changed
+        since the last time it was reported.
+        """
+        self.mstore.set_accepted_types(["computer-info"])
+        plugin = ComputerInfo(reboot_required_filename=
+                              self.reboot_required_filename)
+        self.monitor.add(plugin)
+        plugin.exchange()
+        messages = self.mstore.get_pending_messages()
+        self.assertEquals(len(messages), 1)
+        plugin.exchange()
+        messages = self.mstore.get_pending_messages()
+        self.assertEquals(len(messages), 1)
 
     def test_get_distribution(self):
         """
