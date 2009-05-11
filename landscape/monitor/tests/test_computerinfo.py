@@ -323,7 +323,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         plugin.exchange()
         computer_info = {"type": "computer-info", "hostname": "ooga",
                          "timestamp": 0, "total-memory": 1510,
-                         "total-swap": 1584}
+                         "total-swap": 1584, "reboot-required": False}
         dist_info = {"type": "distribution-info",
                      "code-name": "dapper", "description": "Ubuntu 6.06.1 LTS",
                      "distributor-id": "Ubuntu", "release": "6.06"}
