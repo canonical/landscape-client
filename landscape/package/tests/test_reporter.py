@@ -3,6 +3,7 @@ import sys
 import os
 
 from twisted.internet.defer import Deferred
+from twisted.internet import reactor
 
 from landscape.lib.fetch import fetch_async, FetchError
 from landscape.lib.command import CommandError
@@ -476,35 +477,50 @@ class PackageReporterTest(LandscapeIsolatedTest):
         The L{PackageReporter.run_smart_update} method should run smart-update
         with the proper arguments.
         """
-        interval = self.reporter.smart_update_interval
-        smart_update_command = "smart-update --after %d" % interval
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock(smart_update_command)
-        self.mocker.result("smart output")
-        self.mocker.replay()
-        result = self.reporter.run_smart_update()
-        return result
+        self.reporter.smart_update_filename = self.makeFile(
+            "#!/bin/sh\necho -n $@")
+        os.chmod(self.reporter.smart_update_filename, 0755)
+        deferred = Deferred()
+
+        def do_test():
+            result = self.reporter.run_smart_update()
+            def callback((out, err, code)):
+                interval = self.reporter.smart_update_interval
+                self.assertEquals(out, "--after %d" % interval)
+                self.assertEquals(err, "")
+                self.assertEquals(code, 0)
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
 
     def test_run_smart_update_warns_about_failures(self):
         """
         The L{PackageReporter.run_smart_update} method should log a warning
         in case smart-update terminates with a non-zero exit code.
         """
-        interval = self.reporter.smart_update_interval
-        smart_update_command = "smart-update --after %d" % interval
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock(smart_update_command)
-        command_error = CommandError(smart_update_command, 1, "error")
-        self.mocker.throw(command_error)
-
+        self.reporter.smart_update_filename = self.makeFile(
+            "#!/bin/sh\necho -n error\nexit 1")
+        os.chmod(self.reporter.smart_update_filename, 0755)
         logging_mock = self.mocker.replace("logging.warning")
         logging_mock("'%s' exited with status 1"
-                     " (error)" % smart_update_command)
-
+                     " (error)" % self.reporter.smart_update_filename)
         self.mocker.replay()
+        deferred = Deferred()
 
-        result = self.reporter.run_smart_update()
-        return result
+        def do_test():
+            result = self.reporter.run_smart_update()
+            def callback((out, err, code)):
+                interval = self.reporter.smart_update_interval
+                self.assertEquals(out, "error")
+                self.assertEquals(err, "")
+                self.assertEquals(code, 1)
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
 
     def test_remove_expired_hash_id_request(self):
         request = self.store.add_hash_id_request(["hash1"])

@@ -5,6 +5,7 @@ import sys
 import os
 
 from twisted.internet.defer import Deferred, succeed
+from twisted.internet.utils import getProcessOutputAndValue
 
 from landscape.lib.sequenceranges import sequence_to_ranges
 from landscape.lib.twisted_util import gather_results
@@ -28,6 +29,7 @@ class PackageReporter(PackageTaskHandler):
     """
     queue_name = "reporter"
     smart_update_interval = 60
+    smart_update_filename = "/usr/lib/smart/smart-update"
 
     def run(self):
         result = Deferred()
@@ -128,12 +130,22 @@ class PackageReporter(PackageTaskHandler):
         return base_url.rstrip("/") + "/"
 
     def run_smart_update(self):
-        """Run smart-update and log a warning in case of non-zero exit code."""
-        try:
-            run_command("smart-update --after %d" % self.smart_update_interval)
-        except CommandError, error:
-            logging.warning(str(error))
-        return succeed(None)
+        """Run smart-update and log a warning in case of non-zero exit code.
+
+        @return: a deferred returning (out, err, code)
+        """
+        result = getProcessOutputAndValue(self.smart_update_filename,
+                                          args=("--after", "%d" %
+                                                self.smart_update_interval))
+
+        def callback((out, err, code)):
+            if code != 0:
+                logging.warning("'%s' exited with status %d (%s)" % (
+                    self.smart_update_filename, code, out))
+            return (out, err, code)
+
+        result.addCallback(callback)
+        return result
 
     def handle_task(self, task):
         message = task.data
