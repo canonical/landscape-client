@@ -9,7 +9,6 @@ from twisted.internet.utils import getProcessOutputAndValue
 
 from landscape.lib.sequenceranges import sequence_to_ranges
 from landscape.lib.twisted_util import gather_results
-from landscape.lib.command import run_command, CommandError
 from landscape.lib.fetch import fetch_async
 
 from landscape.package.taskhandler import PackageTaskHandler, run_task_handler
@@ -95,7 +94,7 @@ class PackageReporter(PackageTaskHandler):
                 logging.info("Downloaded hash=>id database from %s" % url)
                 hash_id_db_fd = open(hash_id_db_filename, "w")
                 hash_id_db_fd.write(data)
-                hash_id_db.fd.close()
+                hash_id_db_fd.close()
 
             def fetch_error(failure):
                 exception = failure.value
