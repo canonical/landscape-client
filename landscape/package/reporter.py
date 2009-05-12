@@ -91,10 +91,10 @@ class PackageReporter(PackageTaskHandler):
             url = str(base_url + os.path.basename(hash_id_db_filename))
 
             def fetch_ok(data):
-                logging.info("Downloaded hash=>id database from %s" % url)
                 hash_id_db_fd = open(hash_id_db_filename, "w")
                 hash_id_db_fd.write(data)
                 hash_id_db_fd.close()
+                logging.info("Downloaded hash=>id database from %s" % url)
 
             def fetch_error(failure):
                 exception = failure.value
