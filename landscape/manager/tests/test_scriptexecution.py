@@ -18,8 +18,18 @@ from landscape.tests.helpers import (
 from landscape.tests.mocker import ANY, ARGS
 
 
+def get_username():
+    try:
+        username = os.getlogin()
+    except OSError:
+        # Some xterminals do not register themselves with utmp, which
+        # this function uses. If so, fall back to the USER env variable.
+        username = os.getenv("USER")
+    return username
+
+
 def get_default_environment():
-    username = os.getlogin()
+    username = get_username()
     uid, gid, home = get_user_info(username)
     return  {
         "PATH": UBUNTU_PATH,
@@ -346,7 +356,7 @@ class RunScriptTests(LandscapeTest):
         correct permissions. Therefore os.chmod and os.chown must be called
         before data is written.
         """
-        username = os.getlogin()
+        username = get_username()
         uid, gid, home = get_user_info(username)
 
         mock_chown = self.mocker.replace("os.chown", passthrough=False)
@@ -472,7 +482,7 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
 
     def test_user(self):
         """A user can be specified in the message."""
-        username = os.getlogin()
+        username = get_username()
         uid, gid, home = get_user_info(username)
 
         # ignore the call to chown!
@@ -549,7 +559,7 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
 
     def test_urgent_response(self):
         """Responses to script execution messages are urgent."""
-        username = os.getlogin()
+        username = get_username()
         uid, gid, home = get_user_info(username)
 
         # ignore the call to chown!
