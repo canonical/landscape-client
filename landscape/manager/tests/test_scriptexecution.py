@@ -598,7 +598,7 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         If a script outputs non-printable characters not handled by utf-8, they
         are replaced during the encoding phase but the script succeeds.
         """
-        username = os.getlogin()
+        username = get_username()
         uid, gid, home = get_user_info(username)
 
         mock_chown = self.mocker.replace("os.chown", passthrough=False)
@@ -641,12 +641,21 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         self.manager.dispatch_message(
             {"type": "execute-script", "operation-id": 444})
 
+        python_version = sys.version.split()[0].split(".")[0:2]
+        if map(int, python_version) < [2, 6]:
+            expected_message = [{"type": "operation-result",
+                                 "operation-id": 444,
+                                 "result-text": u"KeyError: 'username'",
+                                 "status": FAILED}]
+        else:
+            expected_message = [{"type": "operation-result",
+                                 "operation-id": 444,
+                                 "result-text": u"KeyError: username",
+                                 "status": FAILED}]
+
         self.assertMessages(
             self.broker_service.message_store.get_pending_messages(),
-            [{"type": "operation-result",
-              "operation-id": 444,
-              "result-text": u"KeyError: 'username'",
-              "status": FAILED}])
+            expected_message)
 
         self.assertTrue("KeyError: 'username'" in self.logfile.getvalue())
 
