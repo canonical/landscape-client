@@ -32,7 +32,7 @@
 
 int main(int argc, char *argv[], char *envp[])
 {
-    char *smart_argv[] = {"/usr/bin/smart", "update", NULL, NULL};
+    char *smart_argv[] = {"/usr/share/smart/smart", "update", NULL, NULL};
     char *smart_envp[] = {"PATH=/bin:/usr/bin", "HOME=", NULL};
     struct passwd *pwd = getpwuid(geteuid());
     if (!pwd) {
