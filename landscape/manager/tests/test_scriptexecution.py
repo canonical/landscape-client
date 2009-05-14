@@ -641,8 +641,7 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         self.manager.dispatch_message(
             {"type": "execute-script", "operation-id": 444})
 
-        python_version = sys.version.split()[0].split(".")[0:2]
-        if map(int, python_version) < [2, 6]:
+        if sys.version_info[:2] < (2, 6):
             expected_message = [{"type": "operation-result",
                                  "operation-id": 444,
                                  "result-text": u"KeyError: 'username'",
