@@ -174,6 +174,20 @@ class PackageStoreTest(LandscapeTest):
         self.assertEquals(self.store1.get_hash_id("hash2"), 3)
         self.assertEquals(self.store1.get_hash_id("ha\x00sh1"), 5)
 
+    def test_get_id_hash_using_hash_id_db(self):
+        """
+        When a lookaside hash->id db is used, L{get_id_hash} has
+        to query it first, falling back to the regular db in case
+        the desidered mapping is not found.
+        """
+        hash_id_store_filename = self.makeFile()
+        hash_id_store = HashIdStore(hash_id_store_filename)
+        hash_id_store.set_hash_ids({"hash1": 123})
+        self.store1.add_hash_id_db(hash_id_store_filename)
+        self.store1.set_hash_ids({"hash2": 456})
+        self.assertEquals(self.store1.get_id_hash(123), "hash1")
+        self.assertEquals(self.store1.get_id_hash(456), "hash2")
+
     def test_add_and_get_available_packages(self):
         self.store1.add_available([1, 2])
         self.assertEquals(self.store2.get_available(), [1, 2])
