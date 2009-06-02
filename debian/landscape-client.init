@@ -28,13 +28,13 @@ CLOUD=0 # overridden in /etc/default/landscape-client
 # l.sysvconfig.SysVConfig.is_configured_to_run.
 if [ $RUN -eq 0 ]; then
 	if [ $CLOUD -eq 1 ]; then
-		landscape-is-cloud-managed
-		if [ "$?" = "0" ]; then
+		if landscape-is-cloud-managed; then
 			# Install the cloud default configuration file
 			cp /usr/share/landscape/cloud-default.conf /etc/landscape/client.conf
 			# Override default file for not going in this conditional again at
 			# next startup
 			echo "RUN=1" > $LANDSCAPE_DEFAULTS
+			/usr/share/smart/smart update > /dev/null 2>&1 &
 		else
 			echo "$NAME is not configured, please run landscape-config."
 			exit 0
