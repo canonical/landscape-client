@@ -117,7 +117,7 @@ class DeploymentBusTests(LandscapeIsolatedTest):
     def test_register_message_on_broker_started(self):
         """
         When the broker is restarted, it fires a "broker-started" signal which
-        makes the Manager plugin register all registered message again.
+        makes the Manager plugin register all registered messages again.
         """
         self.manager_service.registry.register_message("foo", lambda x: None)
         d = Deferred()

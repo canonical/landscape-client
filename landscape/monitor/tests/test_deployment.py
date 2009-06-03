@@ -81,7 +81,7 @@ class DeploymentBusTest(MonitorServiceTest):
     def test_register_message_on_broker_started(self):
         """
         When the broker is restarted, it fires a "broker-started" signal which
-        makes the Monitor plugin register all registered message again.
+        makes the Monitor plugin register all registered messages again.
         """
         self.monitor.registry.register_message("foo", lambda x: None)
         d = Deferred()
