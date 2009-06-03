@@ -178,7 +178,7 @@ class PackageStoreTest(LandscapeTest):
         """
         When a lookaside hash->id db is used, L{get_id_hash} has
         to query it first, falling back to the regular db in case
-        the desidered mapping is not found.
+        the desired mapping is not found.
         """
         hash_id_store_filename = self.makeFile()
         hash_id_store = HashIdStore(hash_id_store_filename)
