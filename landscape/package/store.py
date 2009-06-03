@@ -185,7 +185,7 @@ class PackageStore(HashIdStore):
         """
         for store in self._hash_id_stores:
             hash = store.get_id_hash(id)
-            if hash:
+            if hash is not None:
                 return hash
         return HashIdStore.get_id_hash(self, id)
 
