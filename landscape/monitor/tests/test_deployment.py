@@ -8,6 +8,8 @@ from landscape.tests.helpers import (
 from landscape.broker.tests.test_remote import assertTransmitterActive
 from landscape.tests.test_plugin import assertReceivesMessages
 
+from twisted.internet.defer import Deferred
+
 
 class DeploymentTest(LandscapeTest):
 
@@ -57,6 +59,43 @@ class DeploymentBusTest(MonitorServiceTest):
     def test_receives_messages(self):
         return assertReceivesMessages(self, self.monitor.dbus_service,
                                       self.broker_service, self.remote)
+
+    def test_register_plugin_on_broker_started(self):
+        """
+        When the broker is restarted, it fires a "broker-started" signal which
+        makes the Monitor plugin register itself again.
+        """
+        d = Deferred()
+        def register_plugin(bus_name, object_path):
+            d.callback((bus_name, object_path))
+        def patch(ignore):
+            self.monitor.remote_broker.register_plugin = register_plugin
+            self.broker_service.dbus_object.broker_started()
+            return d
+        return self.remote.get_registered_plugins(
+            ).addCallback(patch
+            ).addCallback(self.assertEquals,
+                ("com.canonical.landscape.Monitor",
+                 "/com/canonical/landscape/Monitor"))
+
+    def test_register_message_on_broker_started(self):
+        """
+        When the broker is restarted, it fires a "broker-started" signal which
+        makes the Monitor plugin register all registered messages again.
+        """
+        self.monitor.registry.register_message("foo", lambda x: None)
+        d = Deferred()
+        def register_client_accepted_message_type(type):
+            if type == "foo":
+                d.callback(type)
+        def patch(ignore):
+            self.monitor.remote_broker.register_client_accepted_message_type = \
+                register_client_accepted_message_type
+            self.broker_service.dbus_object.broker_started()
+            return d
+        return self.remote.get_registered_plugins(
+            ).addCallback(patch
+            ).addCallback(self.assertEquals, "foo")
 
 
 class MonitorTest(MonitorServiceTest):

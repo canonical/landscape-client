@@ -65,6 +65,14 @@ class BrokerClientPluginRegistry(PluginRegistry):
         self._registered_messages[type] = handler
         return self.broker.register_client_accepted_message_type(type)
 
+    def broker_started(self):
+        """
+        Re-register any previously registered message types when the broker
+        restarts.
+        """
+        for type in self._registered_messages:
+            self.broker.register_client_accepted_message_type(type)
+
     def dispatch_message(self, message):
         """Run the handler registered for the type of the given message."""
         type = message["type"]
