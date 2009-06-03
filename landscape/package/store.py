@@ -176,6 +176,19 @@ class PackageStore(HashIdStore):
         # Fall back to the locally-populated db
         return HashIdStore.get_hash_id(self, hash)
 
+    def get_id_hash(self, id):
+        """Return the hash associated to C{id}, or C{None} if not available.
+
+        This method composes the L{HashIdStore.get_id_hash} methods of all
+        the attached lookaside databases, falling back to the main one in
+        case the hash associated to C{id} is not found in any of them.
+        """
+        for store in self._hash_id_stores:
+            hash = store.get_id_hash(id)
+            if hash is not None:
+                return hash
+        return HashIdStore.get_id_hash(self, id)
+
     @with_cursor
     def add_available(self, cursor, ids):
         for id in ids:
