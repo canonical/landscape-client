@@ -160,6 +160,27 @@ class BrokerClientPluginTest(LandscapeIsolatedTest):
         self.assertEquals(plugin2.exchanged, 1)
         self.assertTrue("ZeroDivisionError" in self.logfile.getvalue())
 
+    def test_broker_restart(self):
+        """
+        When L{BrokerClientPluginRegistry.broker_started} is called, any
+        message types previously registered with the broker are registered
+        again.
+        """
+        result1 = self.registry.register_message("foo", lambda m: None)
+        result2 = self.registry.register_message("bar", lambda m: None)
+        types = []
+        d = Deferred()
+        def register_client_accepted_message_type(type):
+            types.append(type)
+            if len(types) == 2:
+                d.callback(types)
+        def got_result(result):
+            self.registry.broker.register_client_accepted_message_type = \
+                 register_client_accepted_message_type
+            self.registry.broker_started()
+            return d.addCallback(self.assertEquals, ["foo", "bar"])
+        return gather_results([result1, result2]).addCallback(got_result)
+
 
 def assertReceivesMessages(test_case, broker_plugin, broker_service, remote):
     """
