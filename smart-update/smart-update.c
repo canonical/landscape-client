@@ -23,6 +23,7 @@
 */
 #define _GNU_SOURCE
 #include <sys/types.h>
+#include <grp.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -33,25 +34,50 @@
 int main(int argc, char *argv[], char *envp[])
 {
     char *smart_argv[] = {"/usr/share/smart/smart", "update", NULL, NULL};
-    char *smart_envp[] = {"PATH=/bin:/usr/bin", "HOME=", NULL};
+    char *smart_envp[] = {"PATH=/bin:/usr/bin", NULL, NULL};
     struct passwd *pwd = getpwuid(geteuid());
     if (!pwd) {
-        fprintf(stderr, "error: Unable to find passwd entry for uid %d\n",
-                geteuid());
+        fprintf(stderr, "error: Unable to find passwd entry for uid %d (%s)\n",
+                geteuid(), strerror(errno));
         exit(1);
     }
     if (asprintf(&smart_envp[1], "HOME=%s", pwd->pw_dir) == -1) {
-        fprintf(stderr, "error: Unable to create HOME environment variable\n");
+        fprintf(stderr, "error: Unable to create HOME environment variable (%s)\n",
+                strerror(errno));
         exit(1);
     }
-    if (argc == 3 && strcmp(argv[1], "--after") == 0) {
-        if (asprintf(&smart_argv[2], "--after=%d", atoi(argv[2])) == -1) {
-            fprintf(stderr, "error: Unable to create argument variable\n");
-            exit(1);
+    if (argc != 1) {
+        if (argc != 3 || strcmp(argv[1], "--after") != 0) {
+          fprintf(stderr, "error: Unsupported command line option\n");
+          exit(1);
+        }
+        char *end;
+        long interval = strtol(argv[2], &end, 10);
+        if (interval == 0) {
+          fprintf(stderr, "error: Wrong interval value '%s'\n", argv[2]);
+          exit(1);
+        }
+        if (asprintf(&smart_argv[2], "--after=%ld", interval) == -1) {
+          fprintf(stderr, "error: Unable to create argument variable (%s)\n",
+                  strerror(errno));
+          exit(1);
         }
     }
-    setreuid(pwd->pw_uid, pwd->pw_uid);
-    setregid(pwd->pw_gid, pwd->pw_gid);
+    if (setregid(pwd->pw_gid, pwd->pw_gid) == -1) {
+        fprintf(stderr, "error: Unable to set real and effective gid (%s)\n",
+                strerror(errno));
+        exit(1);
+    }
+    if (setreuid(pwd->pw_uid, pwd->pw_uid) == -1) {
+        fprintf(stderr, "error: Unable to set real and effective uid (%s)\n",
+                strerror(errno));
+        exit(1);
+    }
+    if (setgroups(0, NULL) == -1) {
+        fprintf(stderr, "error: Unable to set supplementary groups IDs (%s)\n",
+                strerror(errno));
+        exit(1);
+    }
     execve(smart_argv[0], smart_argv, smart_envp);
     perror("error: Unable to execute smart");
     return 1;
