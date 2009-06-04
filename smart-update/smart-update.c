@@ -22,6 +22,7 @@
 
 */
 #define _GNU_SOURCE
+#include <sys/resource.h>
 #include <sys/types.h>
 #include <grp.h>
 #include <unistd.h>
@@ -30,6 +31,11 @@
 #include <errno.h>
 #include <stdio.h>
 #include <pwd.h>
+
+inline int min(int a, int b)
+{
+  return a < b ? a : b;
+}
 
 int main(int argc, char *argv[], char *envp[])
 {
@@ -77,6 +83,16 @@ int main(int argc, char *argv[], char *envp[])
         fprintf(stderr, "error: Unable to set supplementary groups IDs (%s)\n",
                 strerror(errno));
         exit(1);
+    }
+    struct rlimit rlp;
+    if (getrlimit(RLIMIT_NOFILE, &rlp) == -1) {
+        fprintf(stderr, "error: Unable to determine file descriptor limits (%s)\n",
+                strerror(errno));
+        exit(1);
+    }
+    int fd;
+    for (fd = 3; fd < min(4096, rlp.rlim_max); fd++) {
+      close(fd);
     }
     execve(smart_argv[0], smart_argv, smart_envp);
     perror("error: Unable to execute smart");
