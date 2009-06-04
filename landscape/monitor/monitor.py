@@ -73,11 +73,13 @@ class MonitorPlugin(Plugin):
             self._persist = registry.persist.root_at(self.persist_name)
 
     def call_on_accepted(self, type, callable, *args, **kwargs):
+
         def acceptance_changed(acceptance):
             if acceptance:
                 return callable(*args, **kwargs)
-        self.registry.reactor.call_on(("message-type-acceptance-changed", type),
-                                      acceptance_changed)
+
+        self.registry.reactor.call_on(("message-type-acceptance-changed",
+                                       type), acceptance_changed)
 
 
 class DataWatcher(MonitorPlugin):

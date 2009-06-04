@@ -1,4 +1,3 @@
-import os
 import logging
 import socket
 
@@ -16,12 +15,10 @@ class ComputerInfo(MonitorPlugin):
 
     def __init__(self, get_hostname=socket.gethostname,
                  meminfo_file="/proc/meminfo",
-                 lsb_release_filename="/etc/lsb-release",
-                 reboot_required_filename="/var/run/reboot-required"):
+                 lsb_release_filename="/etc/lsb-release"):
         self._get_hostname = get_hostname
         self._meminfo_file = meminfo_file
         self._lsb_release_filename = lsb_release_filename
-        self._reboot_required_filename = reboot_required_filename
 
     def register(self, registry):
         super(ComputerInfo, self).register(registry)
@@ -63,8 +60,6 @@ class ComputerInfo(MonitorPlugin):
         self._add_if_new(message, "total-memory",
                          total_memory)
         self._add_if_new(message, "total-swap", total_swap)
-        self._add_if_new(message, "reboot-required",
-                         self._check_reboot_required())
         return message
 
     def _add_if_new(self, message, key, value):
@@ -97,10 +92,6 @@ class ComputerInfo(MonitorPlugin):
                         "DISTRIB_DESCRIPTION": "description",
                         "DISTRIB_RELEASE": "release",
                         "DISTRIB_CODENAME": "code-name"}
-
-    def _check_reboot_required(self):
-        """Return a boolean indicating whether the computer needs a reboot."""
-        return os.path.exists(self._reboot_required_filename)
 
     def _get_distribution_info(self):
         """Get details about the distribution."""
