@@ -24,6 +24,7 @@
 #define _GNU_SOURCE
 #include <sys/resource.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <grp.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -41,6 +42,8 @@ int main(int argc, char *argv[], char *envp[])
 {
     char *smart_argv[] = {"/usr/share/smart/smart", "update", NULL, NULL};
     char *smart_envp[] = {"PATH=/bin:/usr/bin", NULL, NULL};
+
+    // Set the HOME environment variable
     struct passwd *pwd = getpwuid(geteuid());
     if (!pwd) {
         fprintf(stderr, "error: Unable to find passwd entry for uid %d (%s)\n",
@@ -52,6 +55,8 @@ int main(int argc, char *argv[], char *envp[])
                 strerror(errno));
         exit(1);
     }
+
+    // Handle the --after command line option
     if (argc != 1) {
         if (argc != 3 || strcmp(argv[1], "--after") != 0) {
           fprintf(stderr, "error: Unsupported command line option\n");
@@ -69,6 +74,8 @@ int main(int argc, char *argv[], char *envp[])
           exit(1);
         }
     }
+
+    // Set real/effective gid and uid
     if (setregid(pwd->pw_gid, pwd->pw_gid) == -1) {
         fprintf(stderr, "error: Unable to set real and effective gid (%s)\n",
                 strerror(errno));
@@ -79,11 +86,15 @@ int main(int argc, char *argv[], char *envp[])
                 strerror(errno));
         exit(1);
     }
+
+    // Drop any supplementary group
     if (setgroups(0, NULL) == -1) {
         fprintf(stderr, "error: Unable to set supplementary groups IDs (%s)\n",
                 strerror(errno));
         exit(1);
     }
+
+    // Close all file descriptors except the standard ones
     struct rlimit rlp;
     if (getrlimit(RLIMIT_NOFILE, &rlp) == -1) {
         fprintf(stderr, "error: Unable to determine file descriptor limits (%s)\n",
@@ -94,6 +105,18 @@ int main(int argc, char *argv[], char *envp[])
     for (fd = 3; fd < min(4096, rlp.rlim_max); fd++) {
       close(fd);
     }
+
+    // Set umask to 022
+    umask(S_IWGRP | S_IWOTH);
+
+    // Change working directory to "/tmp"
+    if (chdir("/") == -1) {
+        fprintf(stderr, "error: Unable change working directory (%s)\n",
+                strerror(errno));
+        exit(1);
+    }
+
+    // Run smart update
     execve(smart_argv[0], smart_argv, smart_envp);
     perror("error: Unable to execute smart");
     return 1;
