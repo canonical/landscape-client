@@ -29,7 +29,7 @@ class DeploymentTest(LandscapeTest):
                             "-d", self.make_path()])
         monitor = MonitorService(configuration)
         plugins = monitor.plugins
-        self.assertEquals(len(plugins), 10)
+        self.assertEquals(len(plugins), 11)
 
 
 class MonitorServiceTest(LandscapeIsolatedTest):

@@ -15,7 +15,7 @@ from landscape.broker.remote import (RemoteBroker,
 ALL_PLUGINS = ["ActiveProcessInfo", "ComputerInfo", "HardwareInventory",
                "LoadAverage", "MemoryInfo", "MountInfo", "ProcessorInfo",
                "Temperature", "PackageMonitor",
-               "UserMonitor"]
+               "UserMonitor", "RebootRequired"]
 
 
 class MonitorConfiguration(Configuration):
