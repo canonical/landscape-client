@@ -33,11 +33,6 @@
 #include <stdio.h>
 #include <pwd.h>
 
-inline int min(int a, int b)
-{
-  return a < b ? a : b;
-}
-
 int main(int argc, char *argv[], char *envp[])
 {
     char *smart_argv[] = {"/usr/share/smart/smart", "update", NULL, NULL};
@@ -51,8 +46,7 @@ int main(int argc, char *argv[], char *envp[])
         exit(1);
     }
     if (asprintf(&smart_envp[1], "HOME=%s", pwd->pw_dir) == -1) {
-        fprintf(stderr, "error: Unable to create HOME environment variable (%s)\n",
-                strerror(errno));
+        perror("error: Unable to create HOME environment variable");
         exit(1);
     }
 
@@ -64,15 +58,20 @@ int main(int argc, char *argv[], char *envp[])
         }
         char *end;
         long interval = strtol(argv[2], &end, 10);
-        if (interval == 0) {
-          fprintf(stderr, "error: Wrong interval value '%s'\n", argv[2]);
+        if (end == argv[2]) {
+          fprintf(stderr, "error: Interval value '%s' not a number\n", argv[2]);
           exit(1);
         }
         if (asprintf(&smart_argv[2], "--after=%ld", interval) == -1) {
-          fprintf(stderr, "error: Unable to create argument variable (%s)\n",
-                  strerror(errno));
+          perror("error: Unable to create argument variable");
           exit(1);
         }
+    }
+
+    // Drop any supplementary group
+    if (setgroups(0, NULL) == -1) {
+        perror("error: Unable to set supplementary groups IDs");
+        exit(1);
     }
 
     // Set real/effective gid and uid
@@ -82,37 +81,31 @@ int main(int argc, char *argv[], char *envp[])
         exit(1);
     }
     if (setreuid(pwd->pw_uid, pwd->pw_uid) == -1) {
-        fprintf(stderr, "error: Unable to set real and effective uid (%s)\n",
-                strerror(errno));
-        exit(1);
-    }
-
-    // Drop any supplementary group
-    if (setgroups(0, NULL) == -1) {
-        fprintf(stderr, "error: Unable to set supplementary groups IDs (%s)\n",
-                strerror(errno));
+        perror("error: Unable to set real and effective uid");
         exit(1);
     }
 
     // Close all file descriptors except the standard ones
     struct rlimit rlp;
     if (getrlimit(RLIMIT_NOFILE, &rlp) == -1) {
-        fprintf(stderr, "error: Unable to determine file descriptor limits (%s)\n",
-                strerror(errno));
+        perror("error: Unable to determine file descriptor limits");
         exit(1);
     }
-    int fd;
-    for (fd = 3; fd < min(4096, rlp.rlim_max); fd++) {
-      close(fd);
+    int file_max;
+    if (rlp.rlim_max == RLIM_INFINITY || rlp.rlim_max > 4096)
+        file_max = 4096;
+    else
+        file_max = rlp.rlim_max;
+    int file;
+    for (file = 3; file < file_max; file++) {
+        close(file);
     }
 
     // Set umask to 022
     umask(S_IWGRP | S_IWOTH);
 
-    // Change working directory to "/tmp"
     if (chdir("/") == -1) {
-        fprintf(stderr, "error: Unable change working directory (%s)\n",
-                strerror(errno));
+        perror("error: Unable to change working directory");
         exit(1);
     }
 
