@@ -40,7 +40,7 @@ class RebootRequiredTest(LandscapeIsolatedTest):
         if the reboot-required status of the system has changed.
         """
         self.plugin.send_message()
-        self.assertIn("Queueing message with updated reboot-required info.",
+        self.assertIn("Queueing message with updated reboot-required status.",
                       self.logfile.getvalue())
         self.assertMessages(self.mstore.get_pending_messages(),
                             [{"type": "reboot-required", "flag": True}])
