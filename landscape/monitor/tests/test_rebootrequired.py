@@ -1,6 +1,5 @@
 import os
 
-from landscape.lib.persist import Persist
 from landscape.monitor.rebootrequired import RebootRequired
 from landscape.tests.helpers import LandscapeIsolatedTest
 from landscape.tests.helpers import (
