@@ -28,7 +28,7 @@ class RebootRequiredTest(LandscapeIsolatedTest):
 
     def test_wb_create_message(self):
         """
-        A message should be created if and only the reboot-required status
+        A message should be created if and only if the reboot-required status
         of the system has changed.
         """
         self.assertEquals(self.plugin._create_message(), {"flag": True})
@@ -50,7 +50,7 @@ class RebootRequiredTest(LandscapeIsolatedTest):
 
     def test_run(self):
         """
-        If the server can accept them, the plugin is should send
+        If the server can accept them, the plugin should send
         C{reboot-required} messages.
         """
         mock_plugin = self.mocker.patch(self.plugin)

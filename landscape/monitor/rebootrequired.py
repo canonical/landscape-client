@@ -21,7 +21,6 @@ class RebootRequired(MonitorPlugin):
 
     def _create_message(self):
         """Return the body of the reboot-required message to be sent."""
-
         message = {}
         key = "flag"
         value = self._check_reboot_required()
@@ -33,7 +32,7 @@ class RebootRequired(MonitorPlugin):
     def send_message(self):
         """Send a reboot-required message if needed.
 
-        A message will be send only if the reboot-required status of the
+        A message will be sent only if the reboot-required status of the
         system has changed.
         """
         message = self._create_message()
