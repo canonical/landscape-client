@@ -22,13 +22,12 @@ class RebootRequired(MonitorPlugin):
     def _create_message(self):
         """Return the body of the reboot-required message to be sent."""
 
-        def add_if_new(message, key, value):
-            if value != self._persist.get(key):
-                self._persist.set(key, value)
-                message[key] = value
-
         message = {}
-        add_if_new(message, "flag", self._check_reboot_required())
+        key = "flag"
+        value = self._check_reboot_required()
+        if value != self._persist.get(key):
+            self._persist.set(key, value)
+            message[key] = value
         return message
 
     def send_message(self):
