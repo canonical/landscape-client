@@ -1,6 +1,7 @@
 import glob
 import sys
 import os
+import logging
 
 from twisted.internet.defer import Deferred
 from twisted.internet import reactor
@@ -483,6 +484,9 @@ class PackageReporterTest(LandscapeIsolatedTest):
         deferred = Deferred()
 
         def do_test():
+            def raiseme(x):
+                raise Exception
+            logging.warning = raiseme
             result = self.reporter.run_smart_update()
             def callback((out, err, code)):
                 interval = self.reporter.smart_update_interval
@@ -498,13 +502,13 @@ class PackageReporterTest(LandscapeIsolatedTest):
     def test_run_smart_update_warns_about_failures(self):
         """
         The L{PackageReporter.run_smart_update} method should log a warning
-        in case smart-update terminates with a non-zero exit code.
+        in case smart-update terminates with a non-zero exit code other than 1.
         """
         self.reporter.smart_update_filename = self.makeFile(
-            "#!/bin/sh\necho -n error\nexit 1")
+            "#!/bin/sh\necho -n error\nexit 2")
         os.chmod(self.reporter.smart_update_filename, 0755)
         logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("'%s' exited with status 1"
+        logging_mock("'%s' exited with status 2"
                      " (error)" % self.reporter.smart_update_filename)
         self.mocker.replay()
         deferred = Deferred()
@@ -514,6 +518,57 @@ class PackageReporterTest(LandscapeIsolatedTest):
             def callback((out, err, code)):
                 interval = self.reporter.smart_update_interval
                 self.assertEquals(out, "error")
+                self.assertEquals(err, "")
+                self.assertEquals(code, 2)
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
+
+    def test_run_smart_update_warns_exit_code_1_and_non_empty_output(self):
+        """
+        The L{PackageReporter.run_smart_update} method should log a warning
+        in case smart-update terminates with exit code 1 and non empty output.
+        """
+        self.reporter.smart_update_filename = self.makeFile(
+            "#!/bin/sh\necho -n error\nexit 1")
+        os.chmod(self.reporter.smart_update_filename, 0755)
+        logging_mock = self.mocker.replace("logging.warning")
+        logging_mock("'%s' exited with status 1"
+                     " (error)" % self.reporter.smart_update_filename)
+        self.mocker.replay()
+        deferred = Deferred()
+        def do_test():
+            result = self.reporter.run_smart_update()
+            def callback((out, err, code)):
+                interval = self.reporter.smart_update_interval
+                self.assertEquals(out, "error")
+                self.assertEquals(err, "")
+                self.assertEquals(code, 1)
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
+
+    def test_run_smart_update_ignores_exit_code_1_and_empty_output(self):
+        """
+        The L{PackageReporter.run_smart_update} method should not log anything
+        in case smart-update terminates with exit code 1 empty output.
+        """
+        self.reporter.smart_update_filename = self.makeFile(
+            "#!/bin/sh\nexit 1")
+        os.chmod(self.reporter.smart_update_filename, 0755)
+        deferred = Deferred()
+        def do_test():
+            def raiseme(x):
+                raise Exception
+            logging.warning = raiseme
+            result = self.reporter.run_smart_update()
+            def callback((out, err, code)):
+                interval = self.reporter.smart_update_interval
+                self.assertEquals(out, "")
                 self.assertEquals(err, "")
                 self.assertEquals(code, 1)
             result.addCallback(callback)

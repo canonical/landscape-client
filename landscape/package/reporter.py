@@ -138,7 +138,15 @@ class PackageReporter(PackageTaskHandler):
                                                 self.smart_update_interval))
 
         def callback((out, err, code)):
-            if code != 0:
+            # smart-update --after N will exit with error code 1 when it
+            # doesn't actually run the update code because to enough time
+            # has passed yet, but we don't actually consider it a failure.
+            smart_failed = False
+            if code != 0 and code != 1:
+                smart_failed = True
+            if code == 1 and out != "":
+                smart_failed = True
+            if smart_failed:
                 logging.warning("'%s' exited with status %d (%s)" % (
                     self.smart_update_filename, code, out))
             return (out, err, code)
