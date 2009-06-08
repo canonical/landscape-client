@@ -481,6 +481,11 @@ class PackageReporterTest(LandscapeIsolatedTest):
         self.reporter.smart_update_filename = self.makeFile(
             "#!/bin/sh\necho -n $@")
         os.chmod(self.reporter.smart_update_filename, 0755)
+        logging_mock = self.mocker.replace("logging.debug")
+        logging_mock("'%s' exited with status 0 (out='--after %d', err=''" % (
+            self.reporter.smart_update_filename,
+            self.reporter.smart_update_interval))
+        self.mocker.replay()
         deferred = Deferred()
 
         def do_test():
