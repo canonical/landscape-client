@@ -149,6 +149,8 @@ class PackageReporter(PackageTaskHandler):
             if smart_failed:
                 logging.warning("'%s' exited with status %d (%s)" % (
                     self.smart_update_filename, code, out))
+            logging.debug("'%s' exited with status %d (out='%s', err='%s'" % (
+                self.smart_update_filename, code, out, err))
             return (out, err, code)
 
         result.addCallback(callback)
