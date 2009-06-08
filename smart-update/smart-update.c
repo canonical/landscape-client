@@ -1,8 +1,10 @@
 /*
 
  Copyright (c) 2004 Conectiva, Inc.
+ Copyright (c) 2009 Canonical, Ltd.
 
- Written by Gustavo Niemeyer <niemeyer@conectiva.com>
+ Written by Gustavo Niemeyer <niemeyer@conectiva.com>,
+            Free Ekanayaka <free.ekanayaka@canonical.com>
 
  This file is part of Smart Package Manager.
 
