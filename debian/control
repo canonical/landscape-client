@@ -2,8 +2,7 @@ Source: landscape-client
 Section: admin
 Priority: optional
 Maintainer: Landscape Team <landscape-team@canonical.com>
-Build-Depends: debhelper (>= 5), po-debconf
-Build-Depends-Indep: python-dev, python-central | python-support, lsb-release, gawk
+Build-Depends: debhelper (>= 5), po-debconf, python-dev, python-central | python-support, lsb-release, gawk
 Standards-Version: 3.8.0
 Vcs-Bzr: http://bazaar.launchpad.net/~ubuntu-core-dev/landscape-client/ubuntu
 XS-Python-Version: >= 2.4

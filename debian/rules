@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-dist_release := $(shell grep ^DISTRIB_CODENAME /etc/lsb-release | cut -f 2 -d =)
+dist_release := $(shell lsb_release -cs)
 ifneq ($(dist_release),dapper)
   use_pycentral = yes
 endif
@@ -49,10 +49,10 @@ install: build
 	install -D -o root -g root -m 644 debian/cloud-default.conf $(root_dir)/usr/share/landscape/cloud-default.conf
 	install -D -o root -g root -m 755 smart-update/smart-update $(root_dir)/usr/lib/landscape/smart-update
 
-binary-arch:
+binary-indep:
 # do nothing
 #
-binary-indep: build install
+binary-arch: build install
 	# That's not present in Ubuntu releases we still support, so
 	# we're just installing the lintian overrides file by hand
 	# for now.
