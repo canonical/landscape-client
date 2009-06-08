@@ -2,16 +2,25 @@ Source: landscape-client
 Section: admin
 Priority: optional
 Maintainer: Landscape Team <landscape-team@canonical.com>
-Build-Depends: debhelper (>= 6.0.7~), po-debconf
-Build-Depends-Indep: python-dev, python-central, lsb-release, gawk
+Build-Depends: debhelper (>= 5), po-debconf
+Build-Depends-Indep: python-dev, python-central | python-support, lsb-release, gawk
 Standards-Version: 3.8.0
+Vcs-Bzr: http://bazaar.launchpad.net/~ubuntu-core-dev/landscape-client/ubuntu
 XS-Python-Version: >= 2.4
 
 Package: landscape-common
 Architecture: all
 Pre-Depends: python, python-gobject
-Depends: ${python:Depends}, ${misc:Depends}, python-twisted-core, python-dbus, lsb-release, lsb-base, perl-modules,  python-gdbm,  ca-certificates, adduser
-XB-Python-Version: ${python:Versions}
+Depends: ${python:Depends}, ${misc:Depends},
+         python-pysqlite2 | python2.4-pysqlite2,
+         update-motd | lsb-base (<< 3.2-14ubuntu2),
+         python-dbus | python2.4-dbus,
+         python-twisted-core,
+         ca-certificates,
+         perl-modules,
+         python-gdbm,
+         lsb-release,
+         adduser
 Replaces: landscape-client (<= 1.0.23-0ubuntu0.8.10)
 Description: The Landscape administration system client
  Landscape is a web-based tool for managing Ubuntu systems. This
@@ -19,15 +28,22 @@ Description: The Landscape administration system client
  Landscape account.
  .
  This package provides the core libraries.
+XB-Python-Version: ${python:Versions}
 
 Package: landscape-client
 Architecture: any
 Pre-Depends: python
-Depends: ${python:Depends}, ${misc:Depends}, landscape-common, hal, python-twisted-web, python-smartpm, python-pycurl
-XB-Python-Version: ${python:Versions}
+Depends: ${python:Depends}, ${misc:Depends},
+         python-smartpm | smartpm-core (>= 1.1),
+         python-pycurl | python2.4-pycurl,
+         python-twisted-web,
+         landscape-common,
+         libcurl3,
+         hal
 Description: The Landscape administration system client
  Landscape is a web-based tool for managing Ubuntu systems. This
  package is necessary if you want your machine to be managed in a
  Landscape account.
  .
  This package provides the Landscape client and requires a Landscape account.
+XB-Python-Version: ${python:Versions}
