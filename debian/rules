@@ -1,8 +1,16 @@
 #!/usr/bin/make -f
 
-dist_release := $(shell grep ^DISTRIB_CODENAME /etc/lsb-release | cut -f 2 -d)
+dist_release := $(shell grep ^DISTRIB_CODENAME /etc/lsb-release | cut -f 2 -d =)
 ifneq ($(dist_release),dapper)
   use_pycentral = yes
+endif
+
+-include /usr/share/python/python.mk
+ifeq (,$(py_sitename))
+  py_sitename = site-packages
+  py_libdir = /usr/lib/python$(subst python,,$(1))/site-packages
+  py_sitename_sh = $(py_sitename)
+  py_libdir_sh = $(py_libdir)
 endif
 
 package = landscape-client
