@@ -19,6 +19,13 @@ set -e
 
 case "$1" in
     remove|upgrade|deconfigure)
+
+        # Remove statoverride for smart-update
+        smart_update=/usr/lib/landscape/smart-update
+        if dpkg-statoverride --list $smart_update >/dev/null 2>&1; then
+            dpkg-statoverride --remove $smart_update
+        fi
+
     ;;
 
     failed-upgrade)
