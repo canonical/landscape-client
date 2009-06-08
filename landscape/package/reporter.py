@@ -28,7 +28,7 @@ class PackageReporter(PackageTaskHandler):
     """
     queue_name = "reporter"
     smart_update_interval = 60
-    smart_update_filename = "/usr/lib/smart/smart-update"
+    smart_update_filename = "/usr/lib/landscape/smart-update"
 
     def run(self):
         result = Deferred()
