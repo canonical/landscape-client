@@ -36,7 +36,7 @@ Depends: ${python:Depends}, ${misc:Depends},
          python-smartpm | smartpm-core (>= 1.1),
          python-pycurl | python2.4-pycurl,
          python-twisted-web,
-         landscape-common (>= ${binary:Version}),
+         landscape-common (>= ${Source-Version}),
          libcurl3,
          hal
 Description: The Landscape administration system client
