@@ -69,6 +69,8 @@ class SmartFacade(object):
                     install_landscape_interface)
                 install_landscape_interface()
             self._ctrl = smart.init(**self._smart_init_kwargs)
+            smart.initDistro(self._ctrl)
+            smart.initPlugins()
             smart.sysconf.set("pm-iface-output", True, soft=True)
             smart.sysconf.set("deb-non-interactive", True, soft=True)
 
