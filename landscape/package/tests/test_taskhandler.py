@@ -101,6 +101,26 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
 
         return result
 
+    def test_use_hash_id_db_undetermined_server_uuid(self):
+        """
+        If the server-uuid can't be determined for some reason, no hash-di db
+        should be used and the failure should be properly logged.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid(None)
+
+        logging_mock = self.mocker.replace("logging.warning")
+        logging_mock("Couldn't determine which hash=>id database to use: "
+                     "server UUID not available")
+        self.mocker.result(None)
+        self.mocker.replay()
+
+        result = self.handler.use_hash_id_db()
+        def callback(ignore):
+            self.assertFalse(self.store.has_hash_id_db())
+        result.addCallback(callback)
+        return result
+
     def test_use_hash_id_db_undetermined_arch(self):
 
         # Fake uuid and codename
