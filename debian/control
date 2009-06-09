@@ -37,7 +37,7 @@ Depends: ${python:Depends}, ${misc:Depends},
          python-pycurl | python2.4-pycurl,
          python-twisted-web,
          landscape-common (>= ${Source-Version}),
-         libcurl3,
+         libcurl3 (>= 7.15.1-1ubuntu3),
          hal
 Description: The Landscape administration system client
  Landscape is a web-based tool for managing Ubuntu systems. This
