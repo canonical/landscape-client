@@ -101,6 +101,20 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
 
         return result
 
+    def test_wb_determine_hash_id_db_filename_server_uuid_is_none(self):
+        """
+        The L{PaclageTaskHandler._determine_hash_id_db_filename} method should
+        return C{None} if the server uuid is C{None}.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid(None)
+
+        result = self.handler._determine_hash_id_db_filename()
+        def callback(hash_id_db_filename):
+            self.assertIs(hash_id_db_filename, None)
+        result.addCallback(callback)
+        return result
+        
     def test_use_hash_id_db_undetermined_server_uuid(self):
         """
         If the server-uuid can't be determined for some reason, no hash-id db
