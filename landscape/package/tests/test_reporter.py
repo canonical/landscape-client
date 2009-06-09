@@ -309,6 +309,23 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         return result
 
+    def test_fetch_hash_id_db_undetermined_server_uuid(self):
+        """
+        If the server-uuid can't be determined for some reason, no download
+        should be attempted and the failure should be properly logged.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid(None)
+
+        logging_mock = self.mocker.replace("logging.warning")
+        logging_mock("Couldn't determine which hash=>id database to use: "
+                     "server UUID not available")
+        self.mocker.result(None)
+        self.mocker.replay()
+
+        result = self.reporter.fetch_hash_id_db()
+        return result
+
     def test_fetch_hash_id_db_undetermined_codename(self):
 
         # Fake uuid

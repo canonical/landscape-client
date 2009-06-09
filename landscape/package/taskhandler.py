@@ -63,7 +63,7 @@ class PackageTaskHandler(object):
         """
         def use_it(hash_id_db_filename):
 
-            if not hash_id_db_filename:
+            if hash_id_db_filename is None:
                 # Couldn't determine which hash=>id database to use,
                 # just ignore the failure and go on
                 return
@@ -88,15 +88,26 @@ class PackageTaskHandler(object):
         return result
 
     def _determine_hash_id_db_filename(self):
+        """Build up the filename of the hash=>id database to use.
+
+        @return: a deferred resulting in the filename to use or C{None}
+            in case of errors.
+        """
 
         def got_server_uuid(server_uuid):
+
+            warning = "Couldn't determine which hash=>id database to use: %s"
+
+            if server_uuid is None:
+                logging.warning(warning % "server UUID not available")
+                return None
+
             try:
-                # XXX we should add some methods to the Smart facade to get these
+                # XXX replace these with L{SmartFacade} methods
                 codename = run_command("lsb_release -cs")
                 arch = run_command("dpkg --print-architecture")
             except CommandError, error:
-                logging.warning("Couldn't determine which hash=>id database "
-                                "to use: %s" % str(error))
+                logging.warning(warning % str(error))
                 return None
 
             package_directory = os.path.join(self._config.data_path, "package")

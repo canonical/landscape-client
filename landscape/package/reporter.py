@@ -73,7 +73,7 @@ class PackageReporter(PackageTaskHandler):
 
         def fetch_it(hash_id_db_filename):
 
-            if not hash_id_db_filename:
+            if hash_id_db_filename is None:
                 # Couldn't determine which hash=>id database to fetch,
                 # just ignore the failure and go on
                 return
