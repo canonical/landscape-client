@@ -103,7 +103,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
 
     def test_use_hash_id_db_undetermined_server_uuid(self):
         """
-        If the server-uuid can't be determined for some reason, no hash-di db
+        If the server-uuid can't be determined for some reason, no hash-id db
         should be used and the failure should be properly logged.
         """
         message_store = self.broker_service.message_store
