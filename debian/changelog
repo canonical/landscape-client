@@ -1,3 +1,9 @@
+landscape-client (1.3.2-0ubuntu0.9.10) UNRELEASED; urgency=low
+
+  * Make the source package buildable on Ubuntu releases <= hardy
+
+ -- Free Ekanayaka <free.ekanayaka@canonical.com>  Tue, 09 Jun 2009 09:27:43 +0200
+
 landscape-client (1.0.29.1-0ubuntu0.9.04.0) jaunty; urgency=low
 
   * Apply a fix for segfault bug involving curl timeouts. (LP: #360510)
