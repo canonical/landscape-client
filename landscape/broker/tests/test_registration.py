@@ -24,9 +24,9 @@ class RegistrationTest(LandscapeTest):
         self.identity = self.broker_service.identity
         self.handler = self.broker_service.registration
         logging.getLogger().setLevel(logging.INFO)
-        self.hostname = "ooga"
-        self.addCleanup(setattr, socket, "gethostname", socket.gethostname)
-        socket.gethostname = lambda: self.hostname
+        self.hostname = "ooga.local"
+        self.addCleanup(setattr, socket, "getfqdn", socket.getfqdn)
+        socket.getfqdn = lambda: self.hostname
 
     def check_persist_property(self, attr, persist_name):
         value = "VALUE"
@@ -142,7 +142,7 @@ class RegistrationTest(LandscapeTest):
                               "computer_title": "Computer Title",
                               "account_name": "account_name",
                               "registration_password": None,
-                              "hostname": "ooga"}
+                              "hostname": "ooga.local"}
                             ])
         self.assertEquals(self.logfile.getvalue().strip(),
                           "INFO: Queueing message to register with account "
@@ -160,7 +160,7 @@ class RegistrationTest(LandscapeTest):
                               "computer_title": "Computer Title",
                               "account_name": "account_name",
                               "registration_password": "SEKRET",
-                              "hostname": "ooga"}
+                              "hostname": "ooga.local"}
                             ])
         self.assertEquals(self.logfile.getvalue().strip(),
                           "INFO: Queueing message to register with account "
@@ -342,7 +342,7 @@ class RegistrationTest(LandscapeTest):
                               "computer_title": "Computer Title",
                               "account_name": "account_name",
                               "registration_password": "SEKRET",
-                              "hostname": socket.gethostname()}
+                              "hostname": socket.getfqdn()}
                              ])
 
     def get_registration_handler_for_cloud(
@@ -407,7 +407,7 @@ class RegistrationTest(LandscapeTest):
         """
         message = dict(type="register-cloud-vm",
                        otp="otp1",
-                       hostname="ooga",
+                       hostname="ooga.local",
                        local_hostname="ooga.local",
                        public_hostname="ooga.amazon.com",
                        instance_key=u"key1",
@@ -642,7 +642,7 @@ class RegistrationTest(LandscapeTest):
                               "computer_title": u"whatever",
                               "account_name": u"onward",
                               "registration_password": u"password",
-                              "hostname": socket.gethostname()}])
+                              "hostname": socket.getfqdn()}])
 
     def test_should_register_in_cloud(self):
         """

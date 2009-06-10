@@ -208,7 +208,7 @@ class RegistrationHandler(object):
                     logging.info("Queueing message to register with OTP")
                     message = {"type": "register-cloud-vm",
                                "otp": self._otp,
-                               "hostname": socket.gethostname(),
+                               "hostname": socket.getfqdn(),
                                "account_name": None,
                                "registration_password": None,
                                }
@@ -219,7 +219,7 @@ class RegistrationHandler(object):
                                  "%r as an EC2 instance." % (id.account_name,))
                     message = {"type": "register-cloud-vm",
                                "otp": None,
-                               "hostname": socket.gethostname(),
+                               "hostname": socket.getfqdn(),
                                "account_name": id.account_name,
                                "registration_password": \
                                    id.registration_password}
@@ -236,7 +236,7 @@ class RegistrationHandler(object):
                            "computer_title": id.computer_title,
                            "account_name": id.account_name,
                            "registration_password": id.registration_password,
-                           "hostname": socket.gethostname()}
+                           "hostname": socket.getfqdn()}
                 self._exchange.send(message)
             else:
                 self._reactor.fire("registration-failed")
