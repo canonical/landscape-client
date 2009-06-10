@@ -57,7 +57,7 @@ DISTRIB_DESCRIPTION="Ubuntu 6.06.1 LTS"
         messages = self.mstore.get_pending_messages()
         self.assertEquals(len(messages), 1)
         self.assertEquals(messages[0]["type"], "computer-info")
-        self.assertEquals(messages[0]["hostname"], "ooga")
+        self.assertEquals(messages[0]["hostname"], "ooga.local")
 
     def test_get_real_hostname(self):
         self.mstore.set_accepted_types(["computer-info"])
@@ -277,7 +277,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         plugin.exchange()
         self.reactor.fire("resynchronize")
         plugin.exchange()
-        computer_info = {"type": "computer-info", "hostname": "ooga",
+        computer_info = {"type": "computer-info", "hostname": "ooga.local",
                          "timestamp": 0, "total-memory": 1510,
                          "total-swap": 1584}
         dist_info = {"type": "distribution-info",
