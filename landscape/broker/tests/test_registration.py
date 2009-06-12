@@ -852,3 +852,30 @@ class IsCloudManagedTests(LandscapeTest):
         socket_obj.close()
         self.mocker.replay()
         self.assertTrue(is_cloud_managed(self.fake_fetch))
+
+    def test_waiting_times_out(self):
+        """
+        We'll only wait five minutes for the network to come up.
+        """
+        def fake_fetch(url, connect_timeout=None):
+            raise FetchError(7, "couldn't connect to host")
+
+        self.mocker.order()
+        time_sleep = self.mocker.replace("time.sleep", passthrough=False)
+        time_time = self.mocker.replace("time.time", passthrough=False)
+        time_time()
+        self.mocker.result(100)
+        socket_class = self.mocker.replace("socket.socket", passthrough=False)
+        socket_obj = socket_class()
+        socket_obj.connect((EC2_HOST, 80))
+        self.mocker.throw(socket.error("woops"))
+        time_sleep(1)
+        time_time()
+        self.mocker.result(401)
+        self.mocker.replay()
+        # Mocking time.time is dangerous, because the test harness calls it. So
+        # we explicitly reset mocker before returning from the test.
+        try:
+            self.assertFalse(is_cloud_managed(fake_fetch))
+        finally:
+            self.mocker.reset()
