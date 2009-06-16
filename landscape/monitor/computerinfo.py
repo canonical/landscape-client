@@ -13,10 +13,10 @@ class ComputerInfo(MonitorPlugin):
 
     persist_name = "computer-info"
 
-    def __init__(self, get_hostname=socket.gethostname,
+    def __init__(self, get_fqdn=socket.getfqdn,
                  meminfo_file="/proc/meminfo",
                  lsb_release_filename="/etc/lsb-release"):
-        self._get_hostname = get_hostname
+        self._get_fqdn = get_fqdn
         self._meminfo_file = meminfo_file
         self._lsb_release_filename = lsb_release_filename
 
@@ -55,7 +55,7 @@ class ComputerInfo(MonitorPlugin):
     def _create_computer_info_message(self):
         message = {}
         self._add_if_new(message, "hostname",
-                         self._get_hostname())
+                         self._get_fqdn())
         total_memory, total_swap = self._get_memory_info()
         self._add_if_new(message, "total-memory",
                          total_memory)
