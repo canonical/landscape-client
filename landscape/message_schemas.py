@@ -324,6 +324,10 @@ GRAPH_DATA = KeyDict({"values": List(Tuple(Float(), Float())),
 CUSTOM_GRAPH = Message("custom-graph", {
     "data": Dict(Int(), GRAPH_DATA)})
 
+REBOOT_REQUIRED = Message(
+    "reboot-required",
+    {"flag": Bool()})
+
 message_schemas = {}
 for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                OPERATION_RESULT, COMPUTER_INFO, DISTRIBUTION_INFO,
@@ -332,5 +336,6 @@ for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                REGISTER, REGISTER_CLOUD_VM, TEMPERATURE, PROCESSOR_INFO,
                USERS, PACKAGES,
                CHANGE_PACKAGES_RESULT, UNKNOWN_PACKAGE_HASHES,
-               ADD_PACKAGES, TEXT_MESSAGE, TEST, CUSTOM_GRAPH]:
+               ADD_PACKAGES, TEXT_MESSAGE, TEST, CUSTOM_GRAPH,
+               REBOOT_REQUIRED]:
     message_schemas[schema.type] = schema

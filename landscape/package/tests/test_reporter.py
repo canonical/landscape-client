@@ -309,6 +309,23 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         return result
 
+    def test_fetch_hash_id_db_undetermined_server_uuid(self):
+        """
+        If the server-uuid can't be determined for some reason, no download
+        should be attempted and the failure should be properly logged.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid(None)
+
+        logging_mock = self.mocker.replace("logging.warning")
+        logging_mock("Couldn't determine which hash=>id database to use: "
+                     "server UUID not available")
+        self.mocker.result(None)
+        self.mocker.replay()
+
+        result = self.reporter.fetch_hash_id_db()
+        return result
+
     def test_fetch_hash_id_db_undetermined_codename(self):
 
         # Fake uuid
@@ -510,7 +527,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         in case smart-update terminates with a non-zero exit code other than 1.
         """
         self.reporter.smart_update_filename = self.makeFile(
-            "#!/bin/sh\necho -n error\nexit 2")
+            "#!/bin/sh\necho -n error >&2\necho -n output\nexit 2")
         os.chmod(self.reporter.smart_update_filename, 0755)
         logging_mock = self.mocker.replace("logging.warning")
         logging_mock("'%s' exited with status 2"
@@ -522,8 +539,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
             result = self.reporter.run_smart_update()
             def callback((out, err, code)):
                 interval = self.reporter.smart_update_interval
-                self.assertEquals(out, "error")
-                self.assertEquals(err, "")
+                self.assertEquals(out, "output")
+                self.assertEquals(err, "error")
                 self.assertEquals(code, 2)
             result.addCallback(callback)
             result.chainDeferred(deferred)
@@ -531,25 +548,25 @@ class PackageReporterTest(LandscapeIsolatedTest):
         reactor.callWhenRunning(do_test)
         return deferred
 
-    def test_run_smart_update_warns_exit_code_1_and_non_empty_output(self):
+    def test_run_smart_update_warns_exit_code_1_and_non_empty_stderr(self):
         """
         The L{PackageReporter.run_smart_update} method should log a warning
-        in case smart-update terminates with exit code 1 and non empty output.
+        in case smart-update terminates with exit code 1 and non empty stderr.
         """
         self.reporter.smart_update_filename = self.makeFile(
-            "#!/bin/sh\necho -n error\nexit 1")
+            "#!/bin/sh\necho -n \"error  \" >&2\nexit 1")
         os.chmod(self.reporter.smart_update_filename, 0755)
         logging_mock = self.mocker.replace("logging.warning")
         logging_mock("'%s' exited with status 1"
-                     " (error)" % self.reporter.smart_update_filename)
+                     " (error  )" % self.reporter.smart_update_filename)
         self.mocker.replay()
         deferred = Deferred()
         def do_test():
             result = self.reporter.run_smart_update()
             def callback((out, err, code)):
                 interval = self.reporter.smart_update_interval
-                self.assertEquals(out, "error")
-                self.assertEquals(err, "")
+                self.assertEquals(out, "")
+                self.assertEquals(err, "error  ")
                 self.assertEquals(code, 1)
             result.addCallback(callback)
             result.chainDeferred(deferred)
@@ -560,10 +577,11 @@ class PackageReporterTest(LandscapeIsolatedTest):
     def test_run_smart_update_ignores_exit_code_1_and_empty_output(self):
         """
         The L{PackageReporter.run_smart_update} method should not log anything
-        in case smart-update terminates with exit code 1 empty output.
+        in case smart-update terminates with exit code 1 and output containing
+        only a newline character.
         """
         self.reporter.smart_update_filename = self.makeFile(
-            "#!/bin/sh\nexit 1")
+            "#!/bin/sh\necho\nexit 1")
         os.chmod(self.reporter.smart_update_filename, 0755)
         deferred = Deferred()
         def do_test():
@@ -573,7 +591,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
             result = self.reporter.run_smart_update()
             def callback((out, err, code)):
                 interval = self.reporter.smart_update_interval
-                self.assertEquals(out, "")
+                self.assertEquals(out, "\n")
                 self.assertEquals(err, "")
                 self.assertEquals(code, 1)
             result.addCallback(callback)

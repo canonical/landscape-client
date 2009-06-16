@@ -148,13 +148,14 @@ class PackageStoreTest(LandscapeTest):
                           non_compliant_db_factory())
         self.assertFalse(self.store1.has_hash_id_db())
 
+    def hash_id_db_factory(self, hash_ids):
+        filename = self.makeFile()
+        store = HashIdStore(filename)
+        store.set_hash_ids(hash_ids)
+        return filename
+
     def test_get_hash_id_using_hash_id_dbs(self):
 
-        def hash_id_db_factory(hash_ids):
-            filename = self.makeFile()
-            store = HashIdStore(filename)
-            store.set_hash_ids(hash_ids)
-            return filename
 
         # Without hash=>id dbs
         self.assertEquals(self.store1.get_hash_id("hash1"), None)
@@ -164,15 +165,29 @@ class PackageStoreTest(LandscapeTest):
         self.store1.set_hash_ids({"hash1": 1})
 
         # Add a couple of hash=>id dbs
-        self.store1.add_hash_id_db(hash_id_db_factory({"hash1": 2,
-                                                       "hash2": 3}))
-        self.store1.add_hash_id_db(hash_id_db_factory({"hash2": 4,
-                                                       "ha\x00sh1": 5}))
+        self.store1.add_hash_id_db(self.hash_id_db_factory({"hash1": 2,
+                                                            "hash2": 3}))
+        self.store1.add_hash_id_db(self.hash_id_db_factory({"hash2": 4,
+                                                            "ha\x00sh1": 5}))
 
         # Check look-up priorities and binary hashes
         self.assertEquals(self.store1.get_hash_id("hash1"), 2)
         self.assertEquals(self.store1.get_hash_id("hash2"), 3)
         self.assertEquals(self.store1.get_hash_id("ha\x00sh1"), 5)
+
+    def test_get_id_hash_using_hash_id_db(self):
+        """
+        When lookaside hash->id dbs are used, L{get_id_hash} has
+        to query them first, falling back to the regular db in case
+        the desired mapping is not found.
+        """
+        self.store1.add_hash_id_db(self.hash_id_db_factory({"hash1": 123}))
+        self.store1.add_hash_id_db(self.hash_id_db_factory({"hash1": 999,
+                                                            "hash2": 456}))
+        self.store1.set_hash_ids({"hash3": 789})
+        self.assertEquals(self.store1.get_id_hash(123), "hash1")
+        self.assertEquals(self.store1.get_id_hash(456), "hash2")
+        self.assertEquals(self.store1.get_id_hash(789), "hash3")
 
     def test_add_and_get_available_packages(self):
         self.store1.add_available([1, 2])

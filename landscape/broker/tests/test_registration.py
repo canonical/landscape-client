@@ -6,7 +6,8 @@ import socket
 from twisted.internet.defer import succeed, fail
 
 from landscape.broker.registration import (
-    InvalidCredentialsError, RegistrationHandler, is_cloud_managed, EC2_API)
+    InvalidCredentialsError, RegistrationHandler, is_cloud_managed, EC2_HOST,
+    EC2_API)
 
 from landscape.broker.deployment import BrokerConfiguration
 from landscape.tests.helpers import LandscapeTest, ExchangeHelper
@@ -732,15 +733,27 @@ class RegistrationTest(LandscapeTest):
         self.assertFalse(handler.should_register())
 
 
-class IsCloudManagedTests(unittest.TestCase):
+class IsCloudManagedTests(LandscapeTest):
 
     def setUp(self):
+        super(IsCloudManagedTests, self).setUp()
         self.urls = []
         self.responses = []
 
     def fake_fetch(self, url, connect_timeout=None):
         self.urls.append((url, connect_timeout))
         return self.responses.pop(0)
+
+    def mock_socket(self):
+        """
+        Mock out socket usage by is_cloud_managed to wait for the network.
+        """
+        # Mock the socket.connect call that it also does
+        socket_class = self.mocker.replace("socket.socket", passthrough=False)
+        socket = socket_class()
+        socket.connect((EC2_HOST, 80))
+        socket.close()
+        
 
     def test_is_managed(self):
         """
@@ -750,6 +763,10 @@ class IsCloudManagedTests(unittest.TestCase):
         user_data = {"otps": ["otp1"], "exchange-url": "http://exchange",
                      "ping-url": "http://ping"}
         self.responses = [dumps(user_data), "0"]
+
+        self.mock_socket()
+        self.mocker.replay()
+
         self.assertTrue(is_cloud_managed(self.fake_fetch))
         self.assertEquals(
             self.urls,
@@ -761,38 +778,104 @@ class IsCloudManagedTests(unittest.TestCase):
                      "exchange-url": "http://exchange",
                      "ping-url": "http://ping"}
         self.responses = [dumps(user_data), "1"]
+        self.mock_socket()
+        self.mocker.replay()
         self.assertTrue(is_cloud_managed(self.fake_fetch))
 
     def test_is_managed_wrong_index(self):
         user_data = {"otps": ["otp1"], "exchange-url": "http://exchange",
                      "ping-url": "http://ping"}
         self.responses = [dumps(user_data), "1"]
+        self.mock_socket()
+        self.mocker.replay()
         self.assertFalse(is_cloud_managed(self.fake_fetch))
 
     def test_is_managed_exchange_url(self):
         user_data = {"otps": ["otp1"], "ping-url": "http://ping"}
         self.responses = [dumps(user_data), "0"]
+        self.mock_socket()
+        self.mocker.replay()
         self.assertFalse(is_cloud_managed(self.fake_fetch))
 
     def test_is_managed_ping_url(self):
         user_data = {"otps": ["otp1"], "exchange-url": "http://exchange"}
         self.responses = [dumps(user_data), "0"]
+        self.mock_socket()
+        self.mocker.replay()
         self.assertFalse(is_cloud_managed(self.fake_fetch))
 
     def test_is_managed_bpickle(self):
         self.responses = ["some other user data", "0"]
+        self.mock_socket()
+        self.mocker.replay()
         self.assertFalse(is_cloud_managed(self.fake_fetch))
 
     def test_is_managed_no_data(self):
         self.responses = ["", "0"]
+        self.mock_socket()
+        self.mocker.replay()
         self.assertFalse(is_cloud_managed(self.fake_fetch))
 
     def test_is_managed_fetch_not_found(self):
         def fake_fetch(url, connect_timeout=None):
             raise HTTPCodeError(404, "ohnoes")
+        self.mock_socket()
+        self.mocker.replay()
         self.assertFalse(is_cloud_managed(fake_fetch))
 
     def test_is_managed_fetch_error(self):
         def fake_fetch(url, connect_timeout=None):
             raise FetchError(7, "couldn't connect to host")
+        self.mock_socket()
+        self.mocker.replay()
         self.assertFalse(is_cloud_managed(fake_fetch))
+
+    def test_waits_for_network(self):
+        """
+        is_cloud_managed will wait until the network before trying to fetch
+        the EC2 user data.
+        """
+        user_data = {"otps": ["otp1"], "exchange-url": "http://exchange",
+                     "ping-url": "http://ping"}
+        self.responses = [dumps(user_data), "0"]
+
+        self.mocker.order()
+        time_sleep = self.mocker.replace("time.sleep", passthrough=False)
+        socket_class = self.mocker.replace("socket.socket", passthrough=False)
+        socket_obj = socket_class()
+        socket_obj.connect((EC2_HOST, 80))
+        self.mocker.throw(socket.error("woops"))
+        time_sleep(1)
+        socket_obj = socket_class()
+        socket_obj.connect((EC2_HOST, 80))
+        self.mocker.result(None)
+        socket_obj.close()
+        self.mocker.replay()
+        self.assertTrue(is_cloud_managed(self.fake_fetch))
+
+    def test_waiting_times_out(self):
+        """
+        We'll only wait five minutes for the network to come up.
+        """
+        def fake_fetch(url, connect_timeout=None):
+            raise FetchError(7, "couldn't connect to host")
+
+        self.mocker.order()
+        time_sleep = self.mocker.replace("time.sleep", passthrough=False)
+        time_time = self.mocker.replace("time.time", passthrough=False)
+        time_time()
+        self.mocker.result(100)
+        socket_class = self.mocker.replace("socket.socket", passthrough=False)
+        socket_obj = socket_class()
+        socket_obj.connect((EC2_HOST, 80))
+        self.mocker.throw(socket.error("woops"))
+        time_sleep(1)
+        time_time()
+        self.mocker.result(401)
+        self.mocker.replay()
+        # Mocking time.time is dangerous, because the test harness calls it. So
+        # we explicitly reset mocker before returning from the test.
+        try:
+            self.assertFalse(is_cloud_managed(fake_fetch))
+        finally:
+            self.mocker.reset()
