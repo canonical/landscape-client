@@ -83,10 +83,14 @@ END
             dpkg-statoverride --update --add root landscape 4754 $smart_update
         fi
 
-        # Remove old cron job
-        cron_job=/etc/cron.hourly/landscape-client
-        if [ -e $cron_job ]; then
-            rm $cron_job
+        # Remove old cron jobs
+        old_cron_job=/etc/cron.hourly/landscape-client
+        if [ -e $old_cron_job ]; then
+            rm $old_cron_job
+        fi
+        very_old_cron_job=/etc/cron.hourly/smartpm-core
+        if [ -e $very_old_cron_job ]; then
+            rm $very_old_cron_job
         fi
 
     ;;
