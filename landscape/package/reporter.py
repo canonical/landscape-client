@@ -144,7 +144,7 @@ class PackageReporter(PackageTaskHandler):
             smart_failed = False
             if code != 0 and code != 1:
                 smart_failed = True
-            if code == 1 and out != "":
+            if code == 1 and out.strip() != "":
                 smart_failed = True
             if smart_failed:
                 logging.warning("'%s' exited with status %d (%s)" % (
