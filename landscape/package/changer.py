@@ -3,6 +3,7 @@ import time
 import sys
 import os
 import pwd
+import grp
 
 from twisted.internet.defer import Deferred, fail
 
@@ -47,6 +48,7 @@ class PackageChanger(PackageTaskHandler):
             task2 = self._store.get_next_task(self.queue_name)
             if task1 and task1.id != (task2 and task2.id):
                 if os.getuid() == 0:
+                    os.setgid(grp.getgrnam("landscape").gr_gid)
                     os.setuid(pwd.getpwnam("landscape").pw_uid)
                 os.system(find_reporter_command())
 
