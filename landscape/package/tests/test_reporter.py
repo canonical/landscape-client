@@ -527,7 +527,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         in case smart-update terminates with a non-zero exit code other than 1.
         """
         self.reporter.smart_update_filename = self.makeFile(
-            "#!/bin/sh\necho -n error\nexit 2")
+            "#!/bin/sh\necho -n error >&2\necho -n output\nexit 2")
         os.chmod(self.reporter.smart_update_filename, 0755)
         logging_mock = self.mocker.replace("logging.warning")
         logging_mock("'%s' exited with status 2"
@@ -539,8 +539,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
             result = self.reporter.run_smart_update()
             def callback((out, err, code)):
                 interval = self.reporter.smart_update_interval
-                self.assertEquals(out, "error")
-                self.assertEquals(err, "")
+                self.assertEquals(out, "output")
+                self.assertEquals(err, "error")
                 self.assertEquals(code, 2)
             result.addCallback(callback)
             result.chainDeferred(deferred)
@@ -548,13 +548,13 @@ class PackageReporterTest(LandscapeIsolatedTest):
         reactor.callWhenRunning(do_test)
         return deferred
 
-    def test_run_smart_update_warns_exit_code_1_and_non_empty_output(self):
+    def test_run_smart_update_warns_exit_code_1_and_non_empty_stderr(self):
         """
         The L{PackageReporter.run_smart_update} method should log a warning
-        in case smart-update terminates with exit code 1 and non empty output.
+        in case smart-update terminates with exit code 1 and non empty stderr.
         """
         self.reporter.smart_update_filename = self.makeFile(
-            "#!/bin/sh\necho -n \"error  \"\nexit 1")
+            "#!/bin/sh\necho -n \"error  \" >&2\nexit 1")
         os.chmod(self.reporter.smart_update_filename, 0755)
         logging_mock = self.mocker.replace("logging.warning")
         logging_mock("'%s' exited with status 1"
@@ -565,8 +565,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
             result = self.reporter.run_smart_update()
             def callback((out, err, code)):
                 interval = self.reporter.smart_update_interval
-                self.assertEquals(out, "error  ")
-                self.assertEquals(err, "")
+                self.assertEquals(out, "")
+                self.assertEquals(err, "error  ")
                 self.assertEquals(code, 1)
             result.addCallback(callback)
             result.chainDeferred(deferred)

@@ -144,11 +144,11 @@ class PackageReporter(PackageTaskHandler):
             smart_failed = False
             if code != 0 and code != 1:
                 smart_failed = True
-            if code == 1 and out.strip() != "":
+            if code == 1 and err.strip() != "":
                 smart_failed = True
             if smart_failed:
                 logging.warning("'%s' exited with status %d (%s)" % (
-                    self.smart_update_filename, code, out))
+                    self.smart_update_filename, code, err))
             logging.debug("'%s' exited with status %d (out='%s', err='%s'" % (
                 self.smart_update_filename, code, out, err))
             return (out, err, code)
