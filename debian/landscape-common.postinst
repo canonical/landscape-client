@@ -74,10 +74,8 @@ case "$1" in
             addgroup --quiet --system landscape
         fi
 
-        # Add the landscape user to its group (for <= 1.0.29.1-0ubuntu0.9.04.0)
-        if ! groups landscape|grep -q landscape; then
-            adduser --quiet landscape landscape
-        fi
+        # Ensure primary group is landscape (for <= 1.0.29.1-0ubuntu0.9.04.0)
+        usermod -g landscape landscape
 
         # Fix prior ownerships
         find /var/lib/landscape/ -wholename /var/lib/landscape/client/custom-graph-scripts -prune -or -exec chown landscape {} \;
