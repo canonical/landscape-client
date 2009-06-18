@@ -3,8 +3,9 @@ import time
 import sys
 import os
 import pwd
+import grp
 
-from twisted.internet.defer import Deferred, fail
+from twisted.internet.defer import fail
 
 from landscape.package.reporter import find_reporter_command
 from landscape.package.taskhandler import PackageTaskHandler, run_task_handler
@@ -46,7 +47,12 @@ class PackageChanger(PackageTaskHandler):
         def finished(result):
             task2 = self._store.get_next_task(self.queue_name)
             if task1 and task1.id != (task2 and task2.id):
+                # In order to let the reporter run smart-update cleanly,
+                # we have to deinitialize Smart, so that the write lock
+                # gets released
+                self._facade.deinit()
                 if os.getuid() == 0:
+                    os.setgid(grp.getgrnam("landscape").gr_gid)
                     os.setuid(pwd.getpwnam("landscape").pw_uid)
                 os.system(find_reporter_command())
 
