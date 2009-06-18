@@ -47,6 +47,7 @@ class PackageChanger(PackageTaskHandler):
         def finished(result):
             task2 = self._store.get_next_task(self.queue_name)
             if task1 and task1.id != (task2 and task2.id):
+                self._facade.deinit()
                 if os.getuid() == 0:
                     os.setgid(grp.getgrnam("landscape").gr_gid)
                     os.setuid(pwd.getpwnam("landscape").pw_uid)
