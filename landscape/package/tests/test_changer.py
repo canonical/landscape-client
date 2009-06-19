@@ -522,7 +522,6 @@ class PackageChangerTest(LandscapeIsolatedTest):
         return result.addCallback(got_result)
 
     def test_main(self):
-        data_path = self.makeDir()
         self.mocker.order()
         
         run_task_handler = self.mocker.replace("landscape.package.taskhandler"
