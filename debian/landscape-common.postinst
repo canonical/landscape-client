@@ -42,8 +42,18 @@ case "$1" in
 
         # Create landscape system user
         if ! getent passwd landscape >/dev/null; then
-            adduser --quiet --system --disabled-password \
+            adduser --quiet --system --group --disabled-password \
                 --home /var/lib/landscape --no-create-home landscape
+        fi
+
+        # Create landscape system group (for <= 1.0.29.1-0ubuntu0.9.04.0)
+        if ! getent group landscape >/dev/null; then
+            addgroup --quiet --system landscape
+        fi
+
+        # Add the landscape user to its group (for <= 1.0.29.1-0ubuntu0.9.04.0)
+        if ! groups landscape|grep -q landscape; then
+            adduser --quiet landscape landscape
         fi
 
         # Fix prior ownerships

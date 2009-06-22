@@ -12,6 +12,7 @@ build: build-stamp
 build-stamp:
 	dh_testdir
 	python setup.py build
+	make -C smart-update
 	touch build-stamp
 
 clean:
@@ -19,6 +20,7 @@ clean:
 	dh_testroot
 	rm -f build-stamp
 	rm -rf build
+	make -C smart-update clean
 	dh_clean
 	debconf-updatepo
 
@@ -37,9 +39,7 @@ install: build
 	install -D -o root -g root -m 644 dbus/landscape.conf $(root_dir)/etc/dbus-1/system.d/landscape.conf
 	#install -D -o root -g root -m 755 debian/landscape-sysinfo.wrapper $(root_dir)/usr/share/landscape/landscape-sysinfo.wrapper
 	install -D -o root -g root -m 644 debian/cloud-default.conf $(root_dir)/usr/share/landscape/cloud-default.conf
-
-
-	dh_installcron
+	install -D -o root -g root -m 755 smart-update/smart-update $(root_dir)/usr/lib/landscape/smart-update
 
 binary-arch:
 # do nothing
@@ -55,7 +55,7 @@ binary-indep: build install
 	dh_installman -p landscape-client man/landscape-client.1 man/landscape-config.1 man/landscape-message.1
 	dh_installchangelogs
 	dh_install --sourcedir debian/tmp/
-	dh_installinit -- start 25 2 3 4 5 . stop 15 1 .
+	dh_installinit -- start 45 2 3 4 5 . stop 15 1 .
 	dh_installlogrotate
 	dh_installdebconf
 	dh_compress

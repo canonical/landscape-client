@@ -9,3 +9,4 @@ usr/bin/landscape-package-reporter
 usr/bin/landscape-is-cloud-managed
 etc/dbus-1/system.d/landscape.conf
 usr/share/landscape/cloud-default.conf
+usr/lib/landscape

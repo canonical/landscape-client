@@ -1,13 +1,12 @@
 import re
-import os
 
 from landscape.monitor.computerinfo import ComputerInfo
 from landscape.tests.helpers import LandscapeTest, MakePathHelper, MonitorHelper
 from landscape.tests.mocker import ANY
 
 
-def get_hostname():
-    return "ooga"
+def get_fqdn():
+    return "ooga.local"
 
 
 class ComputerInfoTest(LandscapeTest):
@@ -48,18 +47,17 @@ DISTRIB_RELEASE=6.06
 DISTRIB_CODENAME=dapper
 DISTRIB_DESCRIPTION="Ubuntu 6.06.1 LTS"
 """)
-        self.reboot_required_filename = self.make_path("")
 
-    def test_get_hostname(self):
+    def test_get_fqdn(self):
         self.mstore.set_accepted_types(["computer-info"])
-        plugin = ComputerInfo(get_hostname=get_hostname,
+        plugin = ComputerInfo(get_fqdn=get_fqdn,
                               lsb_release_filename=self.lsb_release_filename)
         self.monitor.add(plugin)
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
         self.assertEquals(len(messages), 1)
         self.assertEquals(messages[0]["type"], "computer-info")
-        self.assertEquals(messages[0]["hostname"], "ooga")
+        self.assertEquals(messages[0]["hostname"], "ooga.local")
 
     def test_get_real_hostname(self):
         self.mstore.set_accepted_types(["computer-info"])
@@ -74,7 +72,7 @@ DISTRIB_DESCRIPTION="Ubuntu 6.06.1 LTS"
 
     def test_only_report_changed_hostnames(self):
         self.mstore.set_accepted_types(["computer-info"])
-        plugin = ComputerInfo(get_hostname=get_hostname)
+        plugin = ComputerInfo(get_fqdn=get_fqdn)
         self.monitor.add(plugin)
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
@@ -84,7 +82,6 @@ DISTRIB_DESCRIPTION="Ubuntu 6.06.1 LTS"
         self.assertEquals(len(messages), 1)
 
     def test_report_changed_hostnames(self):
-
         def hostname_factory(hostnames=["ooga", "wubble", "wubble"]):
             i = 0
             while i < len(hostnames):
@@ -92,7 +89,7 @@ DISTRIB_DESCRIPTION="Ubuntu 6.06.1 LTS"
                 i = i + 1
 
         self.mstore.set_accepted_types(["computer-info"])
-        plugin = ComputerInfo(get_hostname=hostname_factory().next)
+        plugin = ComputerInfo(get_fqdn=hostname_factory().next)
         self.monitor.add(plugin)
 
         plugin.exchange()
@@ -161,47 +158,6 @@ DISTRIB_DESCRIPTION="Ubuntu 6.06.1 LTS"
         message = self.mstore.get_pending_messages()[1]
         self.assertEquals(message["total-swap"], 2048)
         self.assertTrue("total-memory" not in message)
-
-    def test_report_reboot_required(self):
-        """
-        A message with the "reboot-required" field set to C{True} or C{False}
-        should be send, depending whether the computer requires are reboot
-        or not.
-        """
-        self.mstore.set_accepted_types(["computer-info"])
-        plugin = ComputerInfo(reboot_required_filename=
-                              self.reboot_required_filename)
-        self.monitor.add(plugin)
-
-        plugin.exchange()
-        messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 1)
-        self.assertEquals(messages[0]["type"], "computer-info")
-        self.assertEquals(messages[0]["reboot-required"], True)
-
-        os.remove(self.reboot_required_filename)
-
-        plugin.exchange()
-        messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 2)
-        self.assertEquals(messages[1]["type"], "computer-info")
-        self.assertEquals(messages[1]["reboot-required"], False)
-
-    def test_only_report_changed_reboot_required(self):
-        """
-        The reboot-required flag shouldn't be reported unless it's changed
-        since the last time it was reported.
-        """
-        self.mstore.set_accepted_types(["computer-info"])
-        plugin = ComputerInfo(reboot_required_filename=
-                              self.reboot_required_filename)
-        self.monitor.add(plugin)
-        plugin.exchange()
-        messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 1)
-        plugin.exchange()
-        messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 1)
 
     def test_get_distribution(self):
         """
@@ -314,16 +270,16 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         """
         self.mstore.set_accepted_types(["distribution-info", "computer-info"])
         meminfo_filename = self.make_path(self.sample_memory_info)
-        plugin = ComputerInfo(get_hostname=get_hostname,
+        plugin = ComputerInfo(get_fqdn=get_fqdn,
                               meminfo_file=meminfo_filename,
                               lsb_release_filename=self.lsb_release_filename)
         self.monitor.add(plugin)
         plugin.exchange()
         self.reactor.fire("resynchronize")
         plugin.exchange()
-        computer_info = {"type": "computer-info", "hostname": "ooga",
+        computer_info = {"type": "computer-info", "hostname": "ooga.local",
                          "timestamp": 0, "total-memory": 1510,
-                         "total-swap": 1584, "reboot-required": False}
+                         "total-swap": 1584}
         dist_info = {"type": "distribution-info",
                      "code-name": "dapper", "description": "Ubuntu 6.06.1 LTS",
                      "distributor-id": "Ubuntu", "release": "6.06"}

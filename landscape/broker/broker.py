@@ -71,6 +71,7 @@ class BrokerDBusObject(Object):
             self.server_uuid_changed(old_uuid or "", new_uuid or "")
         reactor.call_on("server-uuid-changed", server_uuid_changed)
         reactor.call_on("resynchronize-clients", self.resynchronize)
+        self.broker_started()
 
     @signal(IFACE_NAME)
     def resynchronize(self):
@@ -168,6 +169,10 @@ Please contact the Landscape team for more information.
 
     @signal(IFACE_NAME)
     def registration_failed(self):
+        pass
+
+    @signal(IFACE_NAME)
+    def broker_started(self):
         pass
 
     @method(IFACE_NAME, out_signature="as")

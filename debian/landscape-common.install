@@ -1,2 +1,2 @@
-usr/lib/*
+usr/lib/python*
 usr/bin/landscape-sysinfo

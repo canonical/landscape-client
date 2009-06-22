@@ -1,4 +1,5 @@
 
+import time
 import logging
 import socket
 
@@ -10,7 +11,8 @@ from landscape.lib.log import log_failure
 from landscape.lib.fetch import fetch, FetchError
 
 
-EC2_API = "http://169.254.169.254/latest"
+EC2_HOST = "169.254.169.254"
+EC2_API = "http://%s/latest" % (EC2_HOST,)
 
 
 class InvalidCredentialsError(Exception):
@@ -208,7 +210,7 @@ class RegistrationHandler(object):
                     logging.info("Queueing message to register with OTP")
                     message = {"type": "register-cloud-vm",
                                "otp": self._otp,
-                               "hostname": socket.gethostname(),
+                               "hostname": socket.getfqdn(),
                                "account_name": None,
                                "registration_password": None,
                                }
@@ -219,7 +221,7 @@ class RegistrationHandler(object):
                                  "%r as an EC2 instance." % (id.account_name,))
                     message = {"type": "register-cloud-vm",
                                "otp": None,
-                               "hostname": socket.gethostname(),
+                               "hostname": socket.getfqdn(),
                                "account_name": id.account_name,
                                "registration_password": \
                                    id.registration_password}
@@ -236,7 +238,7 @@ class RegistrationHandler(object):
                            "computer_title": id.computer_title,
                            "account_name": id.account_name,
                            "registration_password": id.registration_password,
-                           "hostname": socket.gethostname()}
+                           "hostname": socket.getfqdn()}
                 self._exchange.send(message)
             else:
                 self._reactor.fire("registration-failed")
@@ -327,11 +329,37 @@ def _extract_ec2_instance_data(raw_user_data, launch_index):
             "ping-url": user_data["ping-url"]}
 
 
+def _wait_for_network():
+    """
+    Keep trying to connect to the EC2 metadata server until it becomes
+    accessible or until five minutes pass.
+
+    This is necessary because the networking init script on Ubuntu is
+    asynchronous; the network may not actually be up by the time the
+    landscape-client init script is invoked.
+    """
+    timeout = 5*60
+    port = 80
+
+    start = time.time()
+    while True:
+        s = socket.socket()
+        try:
+            s.connect((EC2_HOST, port))
+            s.close()
+            return
+        except socket.error, e:
+            time.sleep(1)
+            if time.time() - start > timeout:
+                break
+                
+
 def is_cloud_managed(fetch=fetch):
     """
     Return C{True} if the machine has been started by Landscape, i.e. if we can
     find the expected data inside the EC2 user-data field.
     """
+    _wait_for_network()
     try:
         raw_user_data = fetch(EC2_API + "/user-data",
                               connect_timeout=5)

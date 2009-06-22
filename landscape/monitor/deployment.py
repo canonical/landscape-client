@@ -15,7 +15,7 @@ from landscape.broker.remote import (RemoteBroker,
 ALL_PLUGINS = ["ActiveProcessInfo", "ComputerInfo", "HardwareInventory",
                "LoadAverage", "MemoryInfo", "MountInfo", "ProcessorInfo",
                "Temperature", "PackageMonitor",
-               "UserMonitor"]
+               "UserMonitor", "RebootRequired"]
 
 
 class MonitorConfiguration(Configuration):
@@ -68,20 +68,27 @@ class MonitorService(LandscapeService):
 
         # If this raises ServiceUnknownError, we should do something nice.
         self.remote_broker = RemoteBroker(self.bus)
+
         self.registry = MonitorPluginRegistry(self.remote_broker, self.reactor,
                                               self.config, self.bus,
                                               self.persist,
                                               self.persist_filename)
         self.dbus_service = MonitorDBusObject(self.bus, self.registry)
         DBusSignalToReactorTransmitter(self.bus, self.reactor)
-        self.remote_broker.register_plugin(self.dbus_service.bus_name,
-                                           self.dbus_service.object_path)
 
         for plugin in self.plugins:
             self.registry.add(plugin)
 
         self.flush_call_id = self.reactor.call_every(
             self.config.flush_interval, self.registry.flush)
+
+        def broker_started():
+            self.remote_broker.register_plugin(self.dbus_service.bus_name,
+                                               self.dbus_service.object_path)
+            self.registry.broker_started()
+
+        broker_started()
+        self.bus.add_signal_receiver(broker_started, "broker_started")
 
     def stopService(self):
         """Stop the monitor.

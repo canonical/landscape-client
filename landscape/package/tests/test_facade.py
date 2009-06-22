@@ -1,6 +1,7 @@
 import time
 import os
 import re
+import sys
 
 from smart.control import Control
 from smart.cache import Provides
@@ -98,7 +99,6 @@ class SmartFacadeTest(LandscapeTest):
     def test_reload_channels_clears_hash_cache(self):
         # Load hashes.
         self.facade.reload_channels()
-        start = time.time()
 
         # Hold a reference to packages.
         pkg1 = self.facade.get_packages_by_name("name1")[0]
@@ -424,7 +424,7 @@ class SmartFacadeTest(LandscapeTest):
                                      "distribution": "hardy",
                                      "components": "main",
                                      "type": "apt-deb"})
-                     
+
         self.assertEquals(channel1, {"path": "/my/repo",
                                      "type": "deb-dir"})
 
@@ -473,3 +473,13 @@ class SmartFacadeTest(LandscapeTest):
         ignore_re = re.compile("\[Smart\].*'alias'.*/does/not/exist")
 
         self.log_helper.ignored_exception_regexes = [ignore_re]
+
+    def test_init_landscape_plugins(self):
+        """
+        The landscape plugin which helps managing proxies is loaded when smart
+        is initialized: this sets a smart configuration variable and load the
+        module.
+        """
+        self.facade.reload_channels()
+        self.assertTrue(smart.sysconf.get("use-landscape-proxies"))
+        self.assertIn("smart.plugins.landscape", sys.modules)

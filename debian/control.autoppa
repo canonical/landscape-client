@@ -24,11 +24,11 @@ Description: The Landscape administration system client
  This package provides the core libraries.
 
 Package: landscape-client
-Architecture: all
+Architecture: any
 Pre-Depends: python
-AUTOPPA_INCLUDE(dapper):Depends: ${python:Depends}, ${misc:Depends}, landscape-common, libcurl3 (>= 7.15.1-1ubuntu3), python-twisted-web, python2.4-pycurl, hal, smartpm-core (>= 1.1), cron
-AUTOPPA_INCLUDE(gutsy,hardy):Depends: ${python:Depends}, ${misc:Depends}, landscape-common, python-twisted-web, python-pycurl, hal, smartpm-core (>= 1.1), cron
-AUTOPPA_INCLUDE(intrepid):Depends: ${python:Depends}, ${misc:Depends}, landscape-common, hal, python-twisted-web, python-smartpm, python-pycurl, cron
+AUTOPPA_INCLUDE(dapper):Depends: ${python:Depends}, ${misc:Depends}, landscape-common, libcurl3 (>= 7.15.1-1ubuntu3), python-twisted-web, python2.4-pycurl, hal, smartpm-core (>= 1.1)
+AUTOPPA_INCLUDE(gutsy,hardy):Depends: ${python:Depends}, ${misc:Depends}, landscape-common, python-twisted-web, python-pycurl, hal, smartpm-core (>= 1.1)
+AUTOPPA_INCLUDE(intrepid):Depends: ${python:Depends}, ${misc:Depends}, landscape-common, hal, python-twisted-web, python-smartpm, python-pycurl
 AUTOPPA_INCLUDE(hardy,intrepid):XB-Python-Version: ${python:Versions}
 Description: The Landscape administration system client
  Landscape is a web-based tool for managing Ubuntu systems. This

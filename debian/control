@@ -21,9 +21,9 @@ Description: The Landscape administration system client
  This package provides the core libraries.
 
 Package: landscape-client
-Architecture: all
+Architecture: any
 Pre-Depends: python
-Depends: ${python:Depends}, ${misc:Depends}, landscape-common, hal, python-twisted-web, python-smartpm, python-pycurl, cron
+Depends: ${python:Depends}, ${misc:Depends}, landscape-common, hal, python-twisted-web, python-smartpm, python-pycurl
 XB-Python-Version: ${python:Versions}
 Description: The Landscape administration system client
  Landscape is a web-based tool for managing Ubuntu systems. This
