@@ -1,7 +1,23 @@
-landscape-client (1.3.2-0ubuntu0.9.10) UNRELEASED; urgency=low
+landscape-client (1.3.2-0ubuntu0.9.10) karmic; urgency=low
 
-  * Make the source package buildable on Ubuntu releases <= hardy
-
+  * New upstream release:
+    - The init script does not wait for the network to be available
+      before checking for EC2 user data (LP: #383336)
+    - When the broker is restarted by the watchdog, the state of the client
+      is inconsistent (LP: #380633)
+    - Package stays unknown forever in the client with hash-id-databases
+      support (LP: #381356)
+    - Standard error not captured when calling smart-update (LP: #387441)
+    - Changer calls reporter without switching groups, just user (LP: #388092)
+    - Run smart update in the package-reporter instead of having a cronjob (LP: #362355)
+    - Package changer does not inherit proxy settings (LP: #381241)
+    - The ./test script doesn't work in landscape-client (LP: #381613)
+    - The source package should build on all supported releases (LP: #385098)
+    - Strip smart update's output (LP: #387331)
+    - The fetch() timeout isn't based on activity (#389224)
+    - Client can use a UUID of "None" when fetching the hash-id-database (LP: #381291)
+    - Registration should use the fqdn rather than just the hostname (LP: #385730)
+  
  -- Free Ekanayaka <free.ekanayaka@canonical.com>  Tue, 09 Jun 2009 09:27:43 +0200
 
 landscape-client (1.0.29.1-0ubuntu0.9.04.0) jaunty; urgency=low
