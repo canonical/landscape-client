@@ -10,6 +10,7 @@ Package: landscape-common
 Architecture: all
 Pre-Depends: python, python-gobject
 Depends: ${python:Depends}, ${misc:Depends},
+         python-smartpm (>> 1.2-3),
          python-pysqlite2 | python2.4-pysqlite2,
          update-motd | lsb-base (<< 3.2-14ubuntu2),
          python-dbus | python2.4-dbus,
@@ -32,7 +33,6 @@ Package: landscape-client
 Architecture: any
 Pre-Depends: python
 Depends: ${python:Depends}, ${misc:Depends},
-         python-smartpm | smartpm-core (>= 1.1),
          python-pycurl | python2.4-pycurl,
          python-twisted-web,
          landscape-common (>= ${Source-Version}),
