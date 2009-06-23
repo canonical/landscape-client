@@ -1,0 +1,7 @@
+#!/bin/sh
+echo
+echo -n "  System information as of "
+/bin/date
+echo
+/usr/bin/landscape-sysinfo
+

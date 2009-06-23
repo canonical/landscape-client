@@ -1,0 +1,16 @@
+When making a revision to this package, please update the *last* digit in the
+Debian version number. e.g.
+
+  1.0.29-0ubuntu0.9.04.0
+
+should become
+
+  1.0.29-0ubuntu0.9.04.1
+
+In addition, when you build a new package, it would be appreciated if you also
+updated landscape/__init__.py to include the entire new version number. This
+helps us keep track of exact version of clients in use.
+
+The update-motd | lsb-base (<< 3.2-14ubuntu2) dependency in debian/control is
+there to ensure that the package can be correctly installed on Ubuntu releases
+without the update-motd package (in particular dapper and hardy).

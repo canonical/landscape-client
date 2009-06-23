@@ -1,265 +1,288 @@
-landscape-client (1.0.23-0ubuntu0.6.06) dapper; urgency=low
+landscape-client (1.3.2-0ubuntu0.9.10) karmic; urgency=low
 
-  * rebuild for dapper with the correct distro number (6.06, and not
-    6.04)
+  * New upstream release:
+    - The init script does not wait for the network to be available
+      before checking for EC2 user data (LP: #383336)
+    - When the broker is restarted by the watchdog, the state of the client
+      is inconsistent (LP: #380633)
+    - Package stays unknown forever in the client with hash-id-databases
+      support (LP: #381356)
+    - Standard error not captured when calling smart-update (LP: #387441)
+    - Changer calls reporter without switching groups, just user (LP: #388092)
+    - Run smart update in the package-reporter instead of having a cronjob (LP: #362355)
+    - Package changer does not inherit proxy settings (LP: #381241)
+    - The ./test script doesn't work in landscape-client (LP: #381613)
+    - The source package should build on all supported releases (LP: #385098)
+    - Strip smart update's output (LP: #387331)
+    - The fetch() timeout isn't based on activity (#389224)
+    - Client can use a UUID of "None" when fetching the hash-id-database (LP: #381291)
+    - Registration should use the fqdn rather than just the hostname (LP: #385730)
+  
+ -- Free Ekanayaka <free.ekanayaka@canonical.com>  Tue, 09 Jun 2009 09:27:43 +0200
+
+landscape-client (1.0.29.1-0ubuntu0.9.04.0) jaunty; urgency=low
+
+  * Apply a fix for segfault bug involving curl timeouts. (LP: #360510)
+
+ -- Christopher Armstrong <radix@ubuntu.com>  Mon, 13 Apr 2009 14:33:31 -0400
 
- -- Andreas Hasenack <andreas@canonical.com>  Thu, 9 Oct 2008 17:50:32 +0000
+landscape-client (1.0.29-0ubuntu0.9.04.0) jaunty; urgency=low
 
-landscape-client (1.0.23-0ubuntu0.8.04) hardy; urgency=low
+  * New upstream bugfix release (LP: #358744)
+    - Add a timeout to HTTP operations to avoid hanging (LP: #349737)
+    - Clean up environment variables on startup to avoid propagating
+      variables that will corrupt package installation (LP: #348681)
+    - Clean up FDs on startup for the same reason (LP: #352458)
+    - Catch and handle certain errors from smart (such as invalid package
+      data) to avoid "stuck" Landscape activities (LP: #268745)
+    - Don't print warnings meant for developers to the console (LP: #336669)
 
-  * rebuild with new package versioning scheme
+ -- Christopher Armstrong <radix@ubuntu.com>  Thu, 09 Apr 2009 17:09:50 -0400
 
- -- Andreas Hasenack <andreas@canonical.com>  Thu, 9 Oct 2008 01:04:50 +0000
+landscape-client (1.0.28-0ubuntu1.9.04.0) jaunty; urgency=low
 
-landscape-client (1.0.23-0ubuntu0.7.10) gutsy; urgency=low
+  * Fix minor packaging issues in last release (LP: #343954)
+    - Version number in landscape.VERSION is now correct
+    - Fixed package version number to maintain convention
+  * The following changes are in the 1.0.28 release:
+    - Invalidate package cache when server UUID changes (LP: #339948)
+    - Improve the "cloud mode" introduced in 1.0.26 to send more
+      disambiguation data (LP: #343942) and allow the EC2 user data to specify
+      the exchange and ping URLs (LP: #343947)
+    - Allow importing of initial configurations (along with public SSL
+      certificates) when running landscape-config (LP: #341705)
+    - Support a non-root mode which allows running the client without the
+      management functionality (LP: #82159)
+    - Automatic cloud registration when there's no user-data to specify an OTP
+      now works (LP: #344323)
+
+ -- Christopher Armstrong <radix@ubuntu.com>  Thu, 19 Mar 2009 09:52:03 -0400
+
+landscape-client (1.0.28-0ubuntu1) jaunty; urgency=low
+
+  * New upstream release. (LP: #343954)
+
+ -- Martin Pitt <martin.pitt@ubuntu.com>  Wed, 18 Mar 2009 20:42:05 +0100
+
+landscape-client (1.0.26.1-0ubuntu0.9.04) jaunty; urgency=low
+
+  * Build for python2.6, include the symlinks in the package.
+
+ -- Matthias Klose <doko@ubuntu.com>  Wed, 25 Feb 2009 12:03:23 +0000
+
+landscape-client (1.0.26-0ubuntu0.9.04) jaunty; urgency=low
+
+  * New upstream release (LP: #328151)
+
+ -- Christopher Armstrong <radix@ubuntu.com>  Wed, 11 Feb 2009 17:00:54 +0000
+
+landscape-client (1.0.25-0ubuntu0.9.04) jaunty; urgency=low
+
+  * New upstream release supporting custom graphs (LP: #306360)
+    - Multiple custom graphs can be used at the same time (LP: #307314)
+    - PATH is now set for scripts in script execution (LP: #257018)
+  * debian/landscape-common.postinst: Only chown parts of /var/lib/landscape
+    because we now store files in it that should maintain their ownership
+    (LP: #307321).
+  * debian/landscape-client.postinst: Work around chfn/system user problem
+    by not specifying a --gecos (LP: #238755)
+  * debian/landscape-client.logrotate: logrotate no longer reports spurious
+    errors when the client isn't running (LP: #271767)
 
-  * rebuild with new package versioning scheme
+ -- Christopher Armstrong <radix@ubuntu.com>  Thu, 11 Dec 2008 17:11:08 -0800
 
- -- Andreas Hasenack <andreas@canonical.com>  Thu, 9 Oct 2008 01:04:46 +0000
+landscape-client (1.0.23-0ubuntu0.8.10.1) intrepid; urgency=low
 
-landscape-client (1.0.23-0ubuntu0.7.04) feisty; urgency=low
+  * debian/control: Update Replaces to < 1.0.23-0ubuntu0.8.10 to correctly
+    replace newer unsplit versions of the landscape package (LP: #285030).
 
-  * rebuild with new package versioning scheme
+ -- Christopher Armstrong <radix@ubuntu.com>  Fri, 17 Oct 2008 12:42:23 -0400
 
- -- Andreas Hasenack <andreas@canonical.com>  Thu, 9 Oct 2008 01:04:43 +0000
-
-landscape-client (1.0.23-0ubuntu0.6.04) dapper; urgency=low
-
-  * rebuild with new package versioning scheme
-
- -- Andreas Hasenack <andreas@canonical.com>  Thu, 9 Oct 2008 01:04:38 +0000
-
-landscape-client (1.0.23-hardy1-landscape1) hardy; urgency=low
-
-  * don't show unnecessary warnings for / (#260230)
-  * don't crash when run as the incorrect user (#268879)
-  * use lower timeouts for package activities (#268218)
-  * don't crash when restart failed or dbus is not available (#274819)
-
- -- Andreas Hasenack <andreas@canonical.com>  Wed, 8 Oct 2008 17:55:33 +0000
-
-landscape-client (1.0.23-gutsy1-landscape1) gutsy; urgency=low
-
-  * don't show unnecessary warnings for / (#260230)
-  * don't crash when run as the incorrect user (#268879)
-  * use lower timeouts for package activities (#268218)
-  * don't crash when restart failed or dbus is not available (#274819)
-
- -- Andreas Hasenack <andreas@canonical.com>  Wed, 8 Oct 2008 17:55:29 +0000
-
-landscape-client (1.0.23-feisty1-landscape1) feisty; urgency=low
-
-  * don't show unnecessary warnings for / (#260230)
-  * don't crash when run as the incorrect user (#268879)
-  * use lower timeouts for package activities (#268218)
-  * don't crash when restart failed or dbus is not available (#274819)
-
- -- Andreas Hasenack <andreas@canonical.com>  Wed, 8 Oct 2008 17:55:25 +0000
-
-landscape-client (1.0.23-dapper1-landscape1) dapper; urgency=low
-
-  * don't show unnecessary warnings for / (#260230)
-  * don't crash when run as the incorrect user (#268879)
-  * use lower timeouts for package activities (#268218)
-  * don't crash when restart failed or dbus is not available (#274819)
-
- -- Andreas Hasenack <andreas@canonical.com>  Wed, 8 Oct 2008 17:55:17 +0000
-
-landscape-client (1.0.22-hardy1-landscape1) hardy; urgency=low
-
-  * remove pid file when the daemon exits
-  * landscape-client now returns non-zero when something failed
-  * better fix for not corrupting the pid file when starting up
-  * fixed location of pid file in logrotate script
-  * fixed zombie warning
-  * fixed divide-by-zero error in sysinfo disk plugin
-  * use system wide log and conf files when running as root
-
- -- Andreas Hasenack <andreas@canonical.com>  Wed, 24 Sep 2008 18:08:35 +0000
-
-landscape-client (1.0.22-gutsy1-landscape1) gutsy; urgency=low
-
-  * remove pid file when the daemon exits
-  * landscape-client now returns non-zero when something failed
-  * better fix for not corrupting the pid file when starting up
-  * fixed location of pid file in logrotate script
-  * fixed zombie warning
-  * fixed divide-by-zero error in sysinfo disk plugin
-  * use system wide log and conf files when running as root
-
- -- Andreas Hasenack <andreas@canonical.com>  Wed, 24 Sep 2008 18:08:31 +0000
-
-landscape-client (1.0.22-feisty1-landscape1) feisty; urgency=low
-
-  * remove pid file when the daemon exits
-  * landscape-client now returns non-zero when something failed
-  * better fix for not corrupting the pid file when starting up
-  * fixed location of pid file in logrotate script
-  * fixed zombie warning
-  * fixed divide-by-zero error in sysinfo disk plugin
-  * use system wide log and conf files when running as root
-
- -- Andreas Hasenack <andreas@canonical.com>  Wed, 24 Sep 2008 18:08:27 +0000
-
-landscape-client (1.0.22-dapper1-landscape1) dapper; urgency=low
-
-  * remove pid file when the daemon exits
-  * landscape-client now returns non-zero when something failed
-  * better fix for not corrupting the pid file when starting up
-  * fixed location of pid file in logrotate script
-  * fixed zombie warning
-  * fixed divide-by-zero error in sysinfo disk plugin
-  * use system wide log and conf files when running as root
-
- -- Andreas Hasenack <andreas@canonical.com>  Wed, 24 Sep 2008 18:08:18 +0000
-
-landscape-client (1.0.20-hardy1-landscape1) hardy; urgency=low
-
-  * reverted pidfile fix as it introduced serious regressions
-
- -- Andreas Hasenack <andreas@canonical.com>  Wed, 17 Sep 2008 15:42:00 +0000
-
-landscape-client (1.0.20-gutsy1-landscape1) gutsy; urgency=low
-
-  * reverted pidfile fix as it introduced serious regressions
-
- -- Andreas Hasenack <andreas@canonical.com>  Wed, 17 Sep 2008 15:41:56 +0000
-
-landscape-client (1.0.20-feisty1-landscape1) feisty; urgency=low
-
-  * reverted pidfile fix as it introduced serious regressions
-
- -- Andreas Hasenack <andreas@canonical.com>  Wed, 17 Sep 2008 15:41:52 +0000
-
-landscape-client (1.0.20-dapper1-landscape1) dapper; urgency=low
-
-  * reverted pidfile fix as it introduced serious regressions
-
- -- Andreas Hasenack <andreas@canonical.com>  Wed, 17 Sep 2008 15:41:44 +0000
-
-landscape-client (1.0.19-hardy1-landscape2) hardy; urgency=low
-
-  * fixed path to the pid file in logrotate
-
- -- Andreas Hasenack <andreas@canonical.com>  Tue, 16 Sep 2008 21:48:13 +0000
-
-landscape-client (1.0.19-gutsy1-landscape2) gutsy; urgency=low
-
-  * fixed path to the pid file in logrotate
-
- -- Andreas Hasenack <andreas@canonical.com>  Tue, 16 Sep 2008 21:48:09 +0000
-
-landscape-client (1.0.19-feisty1-landscape2) feisty; urgency=low
-
-  * fixed path to the pid file in logrotate
-
- -- Andreas Hasenack <andreas@canonical.com>  Tue, 16 Sep 2008 21:48:04 +0000
-
-landscape-client (1.0.19-dapper1-landscape2) dapper; urgency=low
-
-  * fixed path to the pid file in logrotate
-
- -- Andreas Hasenack <andreas@canonical.com>  Tue, 16 Sep 2008 21:47:53 +0000
-
-landscape-client (1.0.19-hardy1-landscape1) hardy; urgency=low
-
-  * relaxed the default umask for script execution to be 0022 instead
-    of 0077 (#255856)
-  * don't write out a pidfile if the daemon is not going to stay
-    running (#257079)
-  * many packaging improvements, merged back from the Intrepid package
-  * landscape-sysinfo now logs errors in ~/.landscape/sysinfo.log
-  * landscape-sysinfo now supports a configuration file in
-    ~/.landscape/sysinfo.conf
-  * other landscape-sysinfo improvements (#260231, #260230, #264870,
-    #259585)
-  * added a better check for the interpreter in script execution
-
- -- Andreas Hasenack <andreas@canonical.com>  Wed, 10 Sep 2008 17:27:13 +0000
-
-landscape-client (1.0.19-gutsy1-landscape1) gutsy; urgency=low
-
-  * relaxed the default umask for script execution to be 0022 instead
-    of 0077 (#255856)
-  * don't write out a pidfile if the daemon is not going to stay
-    running (#257079)
-  * many packaging improvements, merged back from the Intrepid package
-  * landscape-sysinfo now logs errors in ~/.landscape/sysinfo.log
-  * landscape-sysinfo now supports a configuration file in
-    ~/.landscape/sysinfo.conf
-  * other landscape-sysinfo improvements (#260231, #260230, #264870,
-    #259585)
-  * added a better check for the interpreter in script execution
-
- -- Andreas Hasenack <andreas@canonical.com>  Wed, 10 Sep 2008 17:27:09 +0000
-
-landscape-client (1.0.19-feisty1-landscape1) feisty; urgency=low
-
-  * relaxed the default umask for script execution to be 0022 instead
-    of 0077 (#255856)
-  * don't write out a pidfile if the daemon is not going to stay
-    running (#257079)
-  * many packaging improvements, merged back from the Intrepid package
-  * landscape-sysinfo now logs errors in ~/.landscape/sysinfo.log
-  * landscape-sysinfo now supports a configuration file in
-    ~/.landscape/sysinfo.conf
-  * other landscape-sysinfo improvements (#260231, #260230, #264870,
-    #259585)
-  * added a better check for the interpreter in script execution
-
- -- Andreas Hasenack <andreas@canonical.com>  Wed, 10 Sep 2008 17:27:04 +0000
-
-landscape-client (1.0.19-dapper1-landscape1) dapper; urgency=low
-
-  * relaxed the default umask for script execution to be 0022 instead
-    of 0077 (#255856)
-  * don't write out a pidfile if the daemon is not going to stay
-    running (#257079)
-  * many packaging improvements, merged back from the Intrepid package
-  * landscape-sysinfo now logs errors in ~/.landscape/sysinfo.log
-  * landscape-sysinfo now supports a configuration file in
-    ~/.landscape/sysinfo.conf
-  * other landscape-sysinfo improvements (#260231, #260230, #264870,
-    #259585)
-  * added a better check for the interpreter in script execution
-
- -- Andreas Hasenack <andreas@canonical.com>  Wed, 10 Sep 2008 17:26:49 +0000
-
-landscape-client (1.0.17-hardy1-landscape1) hardy; urgency=low
-
-  * more landscape-sysinfo plugins: memory, swap, temperature, logged
-    in users, processes
-  * support for script attachments
-  * improved timestamp accuracy used for process killing
-
- -- Andreas Hasenack <andreas@canonical.com>  Thu, 21 Aug 2008 14:01:44 +0000
-
-landscape-client (1.0.17-gutsy1-landscape1) gutsy; urgency=low
-
-  * more landscape-sysinfo plugins: memory, swap, temperature, logged
-    in users, processes
-  * support for script attachments
-  * improved timestamp accuracy used for process killing
-
- -- Andreas Hasenack <andreas@canonical.com>  Thu, 21 Aug 2008 14:01:40 +0000
-
-landscape-client (1.0.17-feisty1-landscape1) feisty; urgency=low
-
-  * more landscape-sysinfo plugins: memory, swap, temperature, logged
-    in users, processes
-  * support for script attachments
-  * improved timestamp accuracy used for process killing
-
- -- Andreas Hasenack <andreas@canonical.com>  Thu, 21 Aug 2008 14:01:37 +0000
-
-landscape-client (1.0.17-dapper1-landscape1) dapper; urgency=low
-
-  * more landscape-sysinfo plugins: memory, swap, temperature, logged
-    in users, processes
-  * support for script attachments
-  * improved timestamp accuracy used for process killing
-
- -- Andreas Hasenack <andreas@canonical.com>  Thu, 21 Aug 2008 14:01:27 +0000
+landscape-client (1.0.23-0ubuntu0.8.10) intrepid; urgency=low
+
+  * New upstream release. (LP: #277658):
+    Changes since 1.0.21.1:
+    - Don't print duplicate warnings when / is nearing capacity in sysinfo
+      (LP: #260230).
+    - Slight change to link text in landscape-sysinfo.
+    - Don't crash badly when programs are run as the incorrect user
+      (LP: #268879).
+  * debian/changelog: New debian-version scheme including Ubuntu version. The
+    same upstream version is available for all supported releases.
+    (LP: #277682).
+  * debian/landscape-client.postrm: Delete log and data files upon purge
+    (LP: #121182).
+  * debian/landscape-common.postrm: Delete the sysinfo logs upon purge.
+
+ -- Christopher Armstrong <radix@ubuntu.com>  Thu, 09 Oct 2008 11:40:51 -0400
+
+landscape-client (1.0.21.1-0ubuntu2) intrepid; urgency=low
+
+  * debian/control: fix bzr url
+  * debian/landscape-sysinfo.wrapper: print a timestamp before the sysinfo
+    data to ensure appropriate context (LP: #270862)
+
+ -- Dustin Kirkland <kirkland@ubuntu.com>  Tue, 30 Sep 2008 17:13:18 -0500
+
+landscape-client (1.0.21.1-0ubuntu1) intrepid; urgency=low
+
+  * New upstream version: 
+    * Add ok-no-register option to landscape-config script to not fail if
+      dbus isn't started or landscape-client isn't running.
+    * lower timeout related to package management in landscape.
+  * debian/control: Depend on cron. 
+  * debian/landscape-client.postinst: use ok-no-register option so that the
+    postinst script doesn't fail when run from the installer. (LP: #274573).
+
+ -- Mathias Gug <mathiaz@ubuntu.com>  Thu, 25 Sep 2008 17:54:00 -0400
+
+landscape-client (1.0.21-0ubuntu2) intrepid; urgency=low
+
+  * debian/rules: Install an hourly cron job to update smart package data.
+    Thanks to Christopher Armstrong (LP: #268765).
+  * debian/control:
+    - Move ${misc:Depends} to Depends.
+    - Add VCS-* headers.
+  * debian/landscape-client.postrm:
+    - remove /etc/default/landscape-client when the package is purged.
+
+ -- Mathias Gug <mathiaz@ubuntu.com>  Tue, 23 Sep 2008 18:19:26 -0400
+
+landscape-client (1.0.21-0ubuntu1) intrepid; urgency=low
+
+  [ Christopher Armstrong ]
+  * New upstream release (LP: #271886):
+    - Bug fix release:
+    - Avoid the PotentialZombieWarning on landscape-client startup.
+     (LP: #257346)
+    - When run as root, read sysinfo configuration from /etc and and write
+      logs to /var/log instead of /root. (LP: #268560)
+    - Avoid ZeroDivisionErrors when /home is an autofs. (LP: #269634)
+    - Don't corrupt a pid file when trying to start the client when it's
+      already running. (LP: #269634)
+    - Remove the pid file when shutting down the client. (LP: #257081)
+
+  [ Mathias Gug ]
+  * debian/landscape-client.init: specify the pid file and use --startas
+    instead of --exec when starting landscape-client so that the init script
+    doesn't fail if landscape-client is already running.
+
+ -- Mathias Gug <mathiaz@ubuntu.com>  Fri, 19 Sep 2008 17:28:08 -0400
+
+landscape-client (1.0.18-0ubuntu4) intrepid; urgency=low
+
+  [ Christopher Armstrong ]
+  * debian/landscape-common.postinst: Don't blow up when the landscape-sysinfo
+    symlinks already exist (LP: #270131)
+
+  [ Mathias Gug ]
+  * debian/landscape-common.postinst, debian/landscape-common.prerm: don't
+    call update-motd init script as it's no longer available in the
+    update-motd package. Call directly /usr/sbin/update-motd instead. 
+    (LP: #271854)
+
+ -- Mathias Gug <mathiaz@ubuntu.com>  Thu, 18 Sep 2008 16:47:08 -0400
+
+landscape-client (1.0.18-0ubuntu3) intrepid; urgency=low
+
+  * debian/control: Add Replaces for landscape-common since
+    landscape-sysinfo has been moved from -client to -common.
+
+ -- Mathias Gug <mathiaz@ubuntu.com>  Tue, 16 Sep 2008 17:16:50 -0400
+
+landscape-client (1.0.18-0ubuntu2) intrepid; urgency=low
+
+  [ Mathias Gug ]
+  * Split the package into two packages:
+    - landscape-common: has the python libraries and the landscape-sysinfo
+      command. A landscape account is not required to use this package.
+    - landscape-client: has all the binaries required to run the
+      landscape-client. Requires a landscape account.
+    - debian/control: 
+      + move some dependencies to landscape-client so that
+        landscape-common doesn't install unecessary packages in the 
+        default -server install.
+      + move python-gobject to a Pre-Depends so that landscape-config can
+        register the system during the postinst (LP: #268838).
+  * debian/control:
+    - depend on python-smartpm instead of smartpm-core.
+  * debian/landscape-client.postrm: delete /etc/landscape/client.conf when 
+    the package is purged.
+  * debian/landscape-client.postinst: remove sysinfo_in_motd debconf question
+    as it wasn't used.
+
+  [ Christopher Armstrong ]
+  * Fixes for (LP: #268352).
+    - scripts/landscape-sysinfo.wrapper: New script to run landscape-sysinfo
+      with leading whitespace.
+    - debian/rules: Install wrapper into /usr/share/landscape.
+    - debian/landscape-client.postinst: Link wrapper into place.
+
+ -- Mathias Gug <mathiaz@ubuntu.com>  Mon, 15 Sep 2008 17:21:53 -0400
+
+landscape-client (1.0.18-0ubuntu1) intrepid; urgency=low
+
+  * New upstream release 
+
+ -- Rick Clark <rick.clark@ubuntu.com>  Mon, 08 Sep 2008 16:35:57 -0500
+
+landscape-client (1.0.17-0ubuntu1) intrepid; urgency=low
+
+  [ Dustin Kirkland and Rick Clark ]
+  * debian/compat: updated to 6.
+  * debian/config: initial debconf config.
+  * debian/control: reformatted depends and changed smartpm-core version;
+    changed Standards-Version to 3.8.0; added adduser to depends as needed by
+    postinst and postrm; updates smartpm-core dep to >1.0; moved most build
+    deps to Build-Depends-Indep; add po-debconf build dependency; added
+    debconf hooks for installing landscape-sysinfo as an update-motd or
+    profile.d script.
+  * debian/copyright: updated copyright date; removed incorrect symlink to
+    GPL-3; added Dustin and Rick to the packaging credits.
+  * debian/landscape-client.init: removed S from stop; rewritten to be more
+    lsb/Debian compliant; added status action; fixed whitespacing
+    inconsistency; use $NAME whenever possible; comment why we're not using
+    status_of_proc().
+  * debian/landscape-client.lintian-overrides: added with two overrides
+  * debian/landscape-client.overrides: removed.
+  * debian/landscape-client.prerm: initial creation, remove landscape-sysinfo
+    update-motd or profile.d script, if any exists.
+  * debian/landscape-client.postinst: fixed deprecated chmod call; changed
+    home dir of landscape user; removed uneeded update-rc.d; added code to
+    handle debconf; created a function for retrieving values from ini config;
+    /usr/share/debconf/comfmodule to top of postinst; add db_stop back in.
+  * debian/landscape-client.postrm: added debhelper tag.
+  * debian/rules: added po debconf bits for translation; depend on update-motd.
+  * debian/pycompat: initial creation.
+  * debian/po/POTFILES.in, debian/po/templates.pot: initial creation.
+  * man/txt2man, man/*.txt: removed; manpages should *really* be in native
+    format.
+  * man/landscape-client.1, man/landscape-config.1, man/landscape-message.1:
+    manpages in roff format, initially created by txt2man, some minor tweaks
+    to the title and such.
+
+  [ Gustavo Niemeyer ]
+  * New Upstream release
+  * Fix copyright dates in debian/copyright
+  * fix the chown call to use a colon
+  * Fixed missing $PACKAGES variable in postinst
+  * Implemented support for configuration the computer title via debconf
+
+  [ Kees Cook ]
+  * removed unused debian/autoppa-switch.
+  * fixed debian/landscape-client.init to run log_end_msg in the right place.
+  * debian/landscape-client.postrm: rewrote to allow debhelper to do its
+    job, fixed deluser call.
+  * debian/landscape-client.postinst: rewrote to allow debhelper to do its
+    job, fixed use of adduser.
+  * debian/rules: use "install" instead of "cp", dropped lintian overrides.
+  * debian/changelog: drop redundant changelog entries.
+
+  [ Rick Clark ]
+  * removed .override file
+  * removed .autoppa files
+
+ -- Dustin Kirkland <kirkland@ubuntu.com>  Thu, 04 Sep 2008 13:28:14 -0500
 
 landscape-client (1.0.16-intrepid1-landscape1) intrepid; urgency=low
 
