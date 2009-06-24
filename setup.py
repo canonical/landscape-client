@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name="Landscape Client",
-      version="1.3.2-0ubuntu0.9.10.0",
+      version="1.3.2",
       description="Landscape Client",
       author="Landscape Team",
       author_email="landscape-team@canonical.com",

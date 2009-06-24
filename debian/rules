@@ -16,9 +16,12 @@ endif
 package = landscape-client
 root_dir = debian/tmp/
 
+revision = $(shell dpkg-parsechangelog | grep ^Version | cut -f 2 -d " "| cut -f 2 -d "-")
+
 build: build-stamp
 build-stamp:
 	dh_testdir
+	sed -i -e "s/^DEBIAN_REVISION = .*/DEBIAN_REVISION = \"$(revision)\"/g" landscape/__init__.py
 	python setup.py build
 	make -C smart-update
 	touch build-stamp
@@ -31,6 +34,7 @@ clean:
 	make -C smart-update clean
 	dh_clean
 	debconf-updatepo
+	sed -i -e "s/^DEBIAN_REVISION = .*/DEBIAN_REVISION = \"trunk\"/g" landscape/__init__.py
 
 install: build
 	dh_testdir
