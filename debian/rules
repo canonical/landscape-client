@@ -21,7 +21,7 @@ revision = $(shell dpkg-parsechangelog | grep ^Version | cut -f 2 -d " "| cut -f
 build: build-stamp
 build-stamp:
 	dh_testdir
-	sed -i -e "s/^DEBIAN_REVISION = \"\"/DEBIAN_REVISION = \"$(revision)\"/g" landscape/__init__.py
+	sed -i -e "s/^DEBIAN_REVISION = \"\"/DEBIAN_REVISION = \"-$(revision)\"/g" landscape/__init__.py
 	python setup.py build
 	make -C smart-update
 	touch build-stamp
