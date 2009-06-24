@@ -2,8 +2,10 @@
 
 from distutils.core import setup
 
+from landscape import UPSTREAM_VERSION
+
 setup(name="Landscape Client",
-      version="1.3.2-0ubuntu0.9.10.0",
+      version=UPSTREAM_VERSION,
       description="Landscape Client",
       author="Landscape Team",
       author_email="landscape-team@canonical.com",
