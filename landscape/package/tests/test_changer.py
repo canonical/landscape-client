@@ -419,18 +419,40 @@ class PackageChangerTest(LandscapeIsolatedTest):
                               "REPORTER RUN")
         return result.addCallback(got_result)
 
-    def test_set_effective_uid_when_running_as_root(self):
+    def test_set_effective_uid_and_gid_when_running_as_root(self):
         """
         After the package changer has run, we want the package-reporter to run
         to report the recent changes.  If we're running as root, we want to
-        change to the "landscape" user.
+        change to the "landscape" user and "landscape" group. We also want to
+        deinitialize Smart to let the reporter run smart-update cleanly.
         """
+
         # We are running as root
         getuid_mock = self.mocker.replace("os.getuid")
         getuid_mock()
         self.mocker.result(0)
 
-        # We want to return a known uid
+        # The order matters (first smart then gid and finally uid)
+        self.mocker.order()
+
+        # Deinitialize smart
+        facade_mock = self.mocker.patch(self.facade)
+        facade_mock.deinit()
+
+        # We want to return a known gid
+        grnam_mock = self.mocker.replace("grp.getgrnam")
+        grnam_mock("landscape")
+
+        class FakeGroup(object):
+            gr_gid = 199
+
+        self.mocker.result(FakeGroup())
+
+        # First the changer should change the group
+        setgid_mock = self.mocker.replace("os.setgid")
+        setgid_mock(199)
+
+        # And a known uid as well
         pwnam_mock = self.mocker.replace("pwd.getpwnam")
         pwnam_mock("landscape")
 
@@ -439,11 +461,11 @@ class PackageChangerTest(LandscapeIsolatedTest):
 
         self.mocker.result(FakeUser())
 
-        # And now, the changer should change the user
+        # And now the user as well
         setuid_mock = self.mocker.replace("os.setuid")
         setuid_mock(199)
 
-        # Finally, we don't really want the package changer to run.
+        # Finally, we don't really want the package reporter to run.
         system_mock = self.mocker.replace("os.system")
         system_mock(ANY)
 
@@ -500,7 +522,6 @@ class PackageChangerTest(LandscapeIsolatedTest):
         return result.addCallback(got_result)
 
     def test_main(self):
-        data_path = self.makeDir()
         self.mocker.order()
         
         run_task_handler = self.mocker.replace("landscape.package.taskhandler"

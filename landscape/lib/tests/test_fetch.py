@@ -48,7 +48,8 @@ class FetchTest(LandscapeTest):
                            pycurl.FOLLOWLOCATION: True,
                            pycurl.MAXREDIRS: 5,
                            pycurl.CONNECTTIMEOUT: 30,
-                           pycurl.TIMEOUT: 600,
+                           pycurl.LOW_SPEED_LIMIT: 1,
+                           pycurl.LOW_SPEED_TIME: 600,
                            pycurl.NOSIGNAL: 1,
                            pycurl.WRITEFUNCTION: Any()})
 
@@ -61,7 +62,8 @@ class FetchTest(LandscapeTest):
                            pycurl.FOLLOWLOCATION: True,
                            pycurl.MAXREDIRS: 5,
                            pycurl.CONNECTTIMEOUT: 30,
-                           pycurl.TIMEOUT: 600,
+                           pycurl.LOW_SPEED_LIMIT: 1,
+                           pycurl.LOW_SPEED_TIME: 600,
                            pycurl.NOSIGNAL: 1,
                            pycurl.WRITEFUNCTION: Any(),
                            pycurl.POST: True})
@@ -76,7 +78,8 @@ class FetchTest(LandscapeTest):
                            pycurl.FOLLOWLOCATION: True,
                            pycurl.MAXREDIRS: 5,
                            pycurl.CONNECTTIMEOUT: 30,
-                           pycurl.TIMEOUT: 600,
+                           pycurl.LOW_SPEED_LIMIT: 1,
+                           pycurl.LOW_SPEED_TIME: 600,
                            pycurl.NOSIGNAL: 1,
                            pycurl.WRITEFUNCTION: Any(),
                            pycurl.POST: True,
@@ -92,7 +95,8 @@ class FetchTest(LandscapeTest):
                            pycurl.FOLLOWLOCATION: True,
                            pycurl.MAXREDIRS: 5,
                            pycurl.CONNECTTIMEOUT: 30,
-                           pycurl.TIMEOUT: 600,
+                           pycurl.LOW_SPEED_LIMIT: 1,
+                           pycurl.LOW_SPEED_TIME: 600,
                            pycurl.NOSIGNAL: 1,
                            pycurl.WRITEFUNCTION: Any(),
                            pycurl.CAINFO: "cainfo"})
@@ -113,7 +117,8 @@ class FetchTest(LandscapeTest):
                            pycurl.FOLLOWLOCATION: True,
                            pycurl.MAXREDIRS: 5,
                            pycurl.CONNECTTIMEOUT: 30,
-                           pycurl.TIMEOUT: 600,
+                           pycurl.LOW_SPEED_LIMIT: 1,
+                           pycurl.LOW_SPEED_TIME: 600,
                            pycurl.NOSIGNAL: 1,
                            pycurl.WRITEFUNCTION: Any(),
                            pycurl.HTTPHEADER: ["a: 1", "b: 2"]})
@@ -128,7 +133,8 @@ class FetchTest(LandscapeTest):
                            pycurl.FOLLOWLOCATION: True,
                            pycurl.MAXREDIRS: 5,
                            pycurl.CONNECTTIMEOUT: 5,
-                           pycurl.TIMEOUT: 30,
+                           pycurl.LOW_SPEED_LIMIT: 1,
+                           pycurl.LOW_SPEED_TIME: 30,
                            pycurl.NOSIGNAL: 1,
                            pycurl.WRITEFUNCTION: Any()})
 
@@ -186,7 +192,8 @@ class FetchTest(LandscapeTest):
                                pycurl.FOLLOWLOCATION: True,
                                pycurl.MAXREDIRS: 5,
                                pycurl.CONNECTTIMEOUT: 30,
-                               pycurl.TIMEOUT: 600,
+                               pycurl.LOW_SPEED_LIMIT: 1,
+                               pycurl.LOW_SPEED_TIME: 600,
                                pycurl.NOSIGNAL: 1,
                                pycurl.WRITEFUNCTION: Any()})
         finally:

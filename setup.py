@@ -2,8 +2,10 @@
 
 from distutils.core import setup
 
+from landscape import UPSTREAM_VERSION
+
 setup(name="Landscape Client",
-      version="AUTOPPA_VERSION(1.0.28)"[len("AUTOPPA_VERSION("):-1],
+      version=UPSTREAM_VERSION,
       description="Landscape Client",
       author="Landscape Team",
       author_email="landscape-team@canonical.com",

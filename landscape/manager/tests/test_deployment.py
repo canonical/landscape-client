@@ -1,5 +1,7 @@
 import os
 
+from twisted.internet.defer import Deferred
+
 from landscape.tests.helpers import (
     LandscapeTest, LandscapeIsolatedTest, RemoteBrokerHelper)
 from landscape.manager.deployment import ManagerService, ManagerConfiguration
@@ -70,32 +72,63 @@ class DeploymentBusTests(LandscapeIsolatedTest):
 
     helpers = [RemoteBrokerHelper]
 
-    def test_dbus_reactor_transmitter_installed(self):
+    def setUp(self):
+        super(DeploymentBusTests, self).setUp()
         configuration = ManagerConfiguration()
-        configuration.load(["-d", self.make_dir(), "--bus", "session",
+        self.path = self.make_dir()
+        configuration.load(["-d", self.path, "--bus", "session",
                             "--manager-plugins", "ProcessKiller"])
-        manager_service = ManagerService(configuration)
-        manager_service.startService()
+        self.manager_service = ManagerService(configuration)
+        self.manager_service.startService()
+
+    def test_dbus_reactor_transmitter_installed(self):
         return assertTransmitterActive(self, self.broker_service,
-                                       manager_service.reactor)
+                                       self.manager_service.reactor)
 
     def test_receives_messages(self):
-        configuration = ManagerConfiguration()
-        configuration.load(["-d", self.make_dir(), "--bus", "session",
-                            "--manager-plugins", "ProcessKiller"])
-        manager_service = ManagerService(configuration)
-        manager_service.startService()
-        return assertReceivesMessages(self, manager_service.dbus_service,
+        return assertReceivesMessages(self, self.manager_service.dbus_service,
                                       self.broker_service, self.remote)
 
     def test_manager_store(self):
-        configuration = ManagerConfiguration()
-        path = self.make_dir()
-        configuration.load(["-d", path, "--bus", "session",
-                            "--manager-plugins", "ProcessKiller"])
-        manager_service = ManagerService(configuration)
-        manager_service.startService()
-        self.assertNotIdentical(manager_service.registry.store, None)
+        self.assertNotIdentical(self.manager_service.registry.store, None)
         self.assertTrue(
-            isinstance(manager_service.registry.store, ManagerStore))
-        self.assertTrue(os.path.isfile(os.path.join(path, "manager.database")))
+            isinstance(self.manager_service.registry.store, ManagerStore))
+        self.assertTrue(
+            os.path.isfile(os.path.join(self.path, "manager.database")))
+
+    def test_register_plugin_on_broker_started(self):
+        """
+        When the broker is restarted, it fires a "broker-started" signal which
+        makes the Manager plugin register itself again.
+        """
+        d = Deferred()
+        def register_plugin(bus_name, object_path):
+            d.callback((bus_name, object_path))
+        def patch(ignore):
+            self.manager_service.remote_broker.register_plugin = register_plugin
+            self.broker_service.dbus_object.broker_started()
+            return d
+        return self.remote.get_registered_plugins(
+            ).addCallback(patch
+            ).addCallback(self.assertEquals,
+                ("com.canonical.landscape.Manager",
+                 "/com/canonical/landscape/Manager"))
+
+    def test_register_message_on_broker_started(self):
+        """
+        When the broker is restarted, it fires a "broker-started" signal which
+        makes the Manager plugin register all registered messages again.
+        """
+        self.manager_service.registry.register_message("foo", lambda x: None)
+        d = Deferred()
+        def register_client_accepted_message_type(type):
+            if type == "foo":
+                d.callback(type)
+        def patch(ignore):
+            self.manager_service.remote_broker.register_client_accepted_message_type = \
+                register_client_accepted_message_type
+            self.broker_service.dbus_object.broker_started()
+            return d
+        return self.remote.get_registered_plugins(
+            ).addCallback(patch
+            ).addCallback(self.assertEquals, "foo")

@@ -3,6 +3,7 @@ import os
 import sys
 import tempfile
 import stat
+import pwd
 
 from twisted.internet.defer import gatherResults
 from twisted.internet.error import ProcessDone
@@ -19,7 +20,7 @@ from landscape.tests.mocker import ANY, ARGS
 
 
 def get_default_environment():
-    username = os.getlogin()
+    username = pwd.getpwuid(os.getuid())[0]
     uid, gid, home = get_user_info(username)
     return  {
         "PATH": UBUNTU_PATH,
@@ -346,7 +347,7 @@ class RunScriptTests(LandscapeTest):
         correct permissions. Therefore os.chmod and os.chown must be called
         before data is written.
         """
-        username = os.getlogin()
+        username = pwd.getpwuid(os.getuid())[0]
         uid, gid, home = get_user_info(username)
 
         mock_chown = self.mocker.replace("os.chown", passthrough=False)
@@ -472,7 +473,7 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
 
     def test_user(self):
         """A user can be specified in the message."""
-        username = os.getlogin()
+        username = pwd.getpwuid(os.getuid())[0]
         uid, gid, home = get_user_info(username)
 
         # ignore the call to chown!
@@ -549,7 +550,7 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
 
     def test_urgent_response(self):
         """Responses to script execution messages are urgent."""
-        username = os.getlogin()
+        username = pwd.getpwuid(os.getuid())[0]
         uid, gid, home = get_user_info(username)
 
         # ignore the call to chown!
@@ -588,7 +589,7 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         If a script outputs non-printable characters not handled by utf-8, they
         are replaced during the encoding phase but the script succeeds.
         """
-        username = os.getlogin()
+        username = pwd.getpwuid(os.getuid())[0]
         uid, gid, home = get_user_info(username)
 
         mock_chown = self.mocker.replace("os.chown", passthrough=False)
@@ -631,12 +632,20 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         self.manager.dispatch_message(
             {"type": "execute-script", "operation-id": 444})
 
+        if sys.version_info[:2] < (2, 6):
+            expected_message = [{"type": "operation-result",
+                                 "operation-id": 444,
+                                 "result-text": u"KeyError: 'username'",
+                                 "status": FAILED}]
+        else:
+            expected_message = [{"type": "operation-result",
+                                 "operation-id": 444,
+                                 "result-text": u"KeyError: username",
+                                 "status": FAILED}]
+
         self.assertMessages(
             self.broker_service.message_store.get_pending_messages(),
-            [{"type": "operation-result",
-              "operation-id": 444,
-              "result-text": u"KeyError: 'username'",
-              "status": FAILED}])
+            expected_message)
 
         self.assertTrue("KeyError: 'username'" in self.logfile.getvalue())
 

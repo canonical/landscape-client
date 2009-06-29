@@ -5,6 +5,7 @@ import sys
 import os
 
 from twisted.internet.defer import Deferred, succeed
+from twisted.internet.utils import getProcessOutputAndValue
 
 from landscape.lib.sequenceranges import sequence_to_ranges
 from landscape.lib.twisted_util import gather_results
@@ -19,8 +20,15 @@ MAX_UNKNOWN_HASHES_PER_REQUEST = 500
 
 
 class PackageReporter(PackageTaskHandler):
+    """Report information about the system packages.
 
+    @cvar queue_name: Name of the task queue to pick tasks from.
+    @cvar smart_update_interval: Time interval in minutes to pass to
+        the C{--after} command line option of C{smart-update}.
+    """
     queue_name = "reporter"
+    smart_update_interval = 60
+    smart_update_filename = "/usr/lib/landscape/smart-update"
 
     def run(self):
         result = Deferred()
@@ -30,6 +38,9 @@ class PackageReporter(PackageTaskHandler):
 
         # Attach the hash=>id database if available
         result.addCallback(lambda x: self.use_hash_id_db())
+
+        # Run smart-update
+        result.addCallback(lambda x: self.run_smart_update())
 
         # Now, handle any queued tasks.
         result.addCallback(lambda x: self.handle_tasks())
@@ -62,7 +73,7 @@ class PackageReporter(PackageTaskHandler):
 
         def fetch_it(hash_id_db_filename):
 
-            if not hash_id_db_filename:
+            if hash_id_db_filename is None:
                 # Couldn't determine which hash=>id database to fetch,
                 # just ignore the failure and go on
                 return
@@ -80,10 +91,10 @@ class PackageReporter(PackageTaskHandler):
             url = str(base_url + os.path.basename(hash_id_db_filename))
 
             def fetch_ok(data):
-                logging.info("Downloaded hash=>id database from %s" % url)
                 hash_id_db_fd = open(hash_id_db_filename, "w")
                 hash_id_db_fd.write(data)
-                hash_id_db.fd.close()
+                hash_id_db_fd.close()
+                logging.info("Downloaded hash=>id database from %s" % url)
 
             def fetch_error(failure):
                 exception = failure.value
@@ -116,6 +127,34 @@ class PackageReporter(PackageTaskHandler):
                                         "hash-id-databases")
 
         return base_url.rstrip("/") + "/"
+
+    def run_smart_update(self):
+        """Run smart-update and log a warning in case of non-zero exit code.
+
+        @return: a deferred returning (out, err, code)
+        """
+        result = getProcessOutputAndValue(self.smart_update_filename,
+                                          args=("--after", "%d" %
+                                                self.smart_update_interval))
+
+        def callback((out, err, code)):
+            # smart-update --after N will exit with error code 1 when it
+            # doesn't actually run the update code because to enough time
+            # has passed yet, but we don't actually consider it a failure.
+            smart_failed = False
+            if code != 0 and code != 1:
+                smart_failed = True
+            if code == 1 and err.strip() != "":
+                smart_failed = True
+            if smart_failed:
+                logging.warning("'%s' exited with status %d (%s)" % (
+                    self.smart_update_filename, code, err))
+            logging.debug("'%s' exited with status %d (out='%s', err='%s'" % (
+                self.smart_update_filename, code, out, err))
+            return (out, err, code)
+
+        result.addCallback(callback)
+        return result
 
     def handle_task(self, task):
         message = task.data

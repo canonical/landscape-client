@@ -1,4 +1,3 @@
-import os
 import logging
 import socket
 
@@ -14,14 +13,12 @@ class ComputerInfo(MonitorPlugin):
 
     persist_name = "computer-info"
 
-    def __init__(self, get_hostname=socket.gethostname,
+    def __init__(self, get_fqdn=socket.getfqdn,
                  meminfo_file="/proc/meminfo",
-                 lsb_release_filename="/etc/lsb-release",
-                 reboot_required_filename="/var/run/reboot-required"):
-        self._get_hostname = get_hostname
+                 lsb_release_filename="/etc/lsb-release"):
+        self._get_fqdn = get_fqdn
         self._meminfo_file = meminfo_file
         self._lsb_release_filename = lsb_release_filename
-        self._reboot_required_filename = reboot_required_filename
 
     def register(self, registry):
         super(ComputerInfo, self).register(registry)
@@ -58,13 +55,11 @@ class ComputerInfo(MonitorPlugin):
     def _create_computer_info_message(self):
         message = {}
         self._add_if_new(message, "hostname",
-                         self._get_hostname())
+                         self._get_fqdn())
         total_memory, total_swap = self._get_memory_info()
         self._add_if_new(message, "total-memory",
                          total_memory)
         self._add_if_new(message, "total-swap", total_swap)
-        self._add_if_new(message, "reboot-required",
-                         self._check_reboot_required())
         return message
 
     def _add_if_new(self, message, key, value):
@@ -97,10 +92,6 @@ class ComputerInfo(MonitorPlugin):
                         "DISTRIB_DESCRIPTION": "description",
                         "DISTRIB_RELEASE": "release",
                         "DISTRIB_CODENAME": "code-name"}
-
-    def _check_reboot_required(self):
-        """Return a boolean indicating whether the computer needs a reboot."""
-        return os.path.exists(self._reboot_required_filename)
 
     def _get_distribution_info(self):
         """Get details about the distribution."""

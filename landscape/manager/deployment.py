@@ -84,10 +84,17 @@ class ManagerService(LandscapeService):
                                               self.config, self.bus, store_name)
         self.dbus_service = ManagerDBusObject(self.bus, self.registry)
         DBusSignalToReactorTransmitter(self.bus, self.reactor)
-        self.remote_broker.register_plugin(self.dbus_service.bus_name,
-                                           self.dbus_service.object_path)
+
         for plugin in self.plugins:
             self.registry.add(plugin)
+
+        def broker_started():
+            self.remote_broker.register_plugin(self.dbus_service.bus_name,
+                                               self.dbus_service.object_path)
+            self.registry.broker_started()
+
+        broker_started()
+        self.bus.add_signal_receiver(broker_started, "broker_started")
 
 
 def run(args):

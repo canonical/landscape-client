@@ -26,6 +26,29 @@ PYTHON=/usr/bin/python
 case "$1" in
     configure)
 
+       db_get $PACKAGE/sysinfo
+       # Choices:
+       #  * Do not display sysinfo on login
+       #  * Cache sysinfo in /etc/motd
+       #  * Run sysinfo on every login
+       SYSINFO="${RET:-Cache sysinfo in /etc/motd}"
+       WRAPPER=/usr/share/landscape/landscape-sysinfo.wrapper
+       PROFILE_LOCATION=/etc/profile.d/50-landscape-sysinfo.sh
+       UPDATE_MOTD_LOCATION=/etc/update-motd.d/50-landscape-sysinfo
+       if [ "$RET" = "Cache sysinfo in /etc/motd" ]; then
+           rm -f $PROFILE_LOCATION 2>/dev/null || true
+           ln -sf $WRAPPER $UPDATE_MOTD_LOCATION
+           /usr/sbin/update-motd 2>/dev/null || true
+       elif [ "$RET" = "Run sysinfo on every login" ]; then
+           rm -f $UPDATE_MOTD_LOCATION 2>/dev/null || true
+           /usr/sbin/update-motd 2>/dev/null || true
+           ln -sf $WRAPPER $PROFILE_LOCATION
+       else
+           rm -f $UPDATE_MOTD_LOCATION 2>/dev/null || true
+           /usr/sbin/update-motd 2>/dev/null || true
+           rm -f $PROFILE_LOCATION || true
+       fi
+
         # 0.9.1 introduces non-backwards compatible changes.  This detects
         # whether or not the data is in the current format.  If not, all
         # existing data is removed.
@@ -42,9 +65,17 @@ case "$1" in
 
         # Create landscape system user
         if ! getent passwd landscape >/dev/null; then
-            adduser --quiet --system --disabled-password \
+            adduser --quiet --system --group --disabled-password \
                 --home /var/lib/landscape --no-create-home landscape
         fi
+
+        # Create landscape system group (for <= 1.0.29.1-0ubuntu0.9.04.0)
+        if ! getent group landscape >/dev/null; then
+            addgroup --quiet --system landscape
+        fi
+
+        # Ensure primary group is landscape (for <= 1.0.29.1-0ubuntu0.9.04.0)
+        usermod -g landscape landscape
 
         # Fix prior ownerships
         find /var/lib/landscape/ -wholename /var/lib/landscape/client/custom-graph-scripts -prune -or -exec chown landscape {} \;

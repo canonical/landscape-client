@@ -18,6 +18,7 @@ PIDDIR=/var/run/landscape
 PIDFILE=$PIDDIR/$NAME.pid
 RUN=0 # overridden in /etc/default/landscape-client
 CLOUD=0 # overridden in /etc/default/landscape-client
+DAEMON_GROUP=landscape
 
 [ -f $DAEMON ] || exit 0
 
@@ -34,7 +35,6 @@ if [ $RUN -eq 0 ]; then
 			# Override default file for not going in this conditional again at
 			# next startup
 			echo "RUN=1" > $LANDSCAPE_DEFAULTS
-			/usr/share/smart/smart update > /dev/null 2>&1 &
 		else
 			echo "$NAME is not configured, please run landscape-config."
 			exit 0
@@ -52,7 +52,7 @@ case "$1" in
 			mkdir $PIDDIR
 			chown landscape $PIDDIR
 		fi
-		FULL_COMMAND="start-stop-daemon --start --quiet --oknodo --startas $DAEMON --pidfile $PIDFILE -- --daemon --pid-file $PIDFILE"
+		FULL_COMMAND="start-stop-daemon --start --quiet --oknodo --startas $DAEMON --pidfile $PIDFILE -g $DAEMON_GROUP -- --daemon --pid-file $PIDFILE"
 		if [ x"$DAEMON_USER" != x ]; then
 			sudo -u $DAEMON_USER $FULL_COMMAND
 		else

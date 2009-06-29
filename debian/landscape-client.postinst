@@ -76,6 +76,23 @@ END
             echo "Old monolithic client data file migrated to new format."
         fi
 
+        # Add the setuid flag to smart-update and it be executable by users in
+        # the landscape group (that normally means landscape itself)
+        smart_update=/usr/lib/landscape/smart-update
+        if ! dpkg-statoverride --list $smart_update >/dev/null 2>&1; then
+            dpkg-statoverride --update --add root landscape 4754 $smart_update
+        fi
+
+        # Remove old cron jobs
+        old_cron_job=/etc/cron.hourly/landscape-client
+        if [ -e $old_cron_job ]; then
+            rm $old_cron_job
+        fi
+        very_old_cron_job=/etc/cron.hourly/smartpm-core
+        if [ -e $very_old_cron_job ]; then
+            rm $very_old_cron_job
+        fi
+
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
