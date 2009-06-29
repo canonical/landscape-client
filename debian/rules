@@ -73,6 +73,9 @@ binary-arch: build install
 	dh_compress
 	dh_fixperms
 
+ifneq (,$(findstring $(dist_release),"intrepid jaunty karmic"))
+	echo "extra:Depends=update-motd" >> debian/landscape-common.substvars
+endif
 
 ifeq ($(use_pycentral),yes)
    ifneq (,$(py_setup_install_args))
