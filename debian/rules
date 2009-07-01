@@ -73,7 +73,7 @@ binary-arch: build install
 	dh_compress
 	dh_fixperms
 
-ifneq (,$(findstring $(dist_release),"intrepid jaunty karmic"))
+ifeq (,$(findstring $(dist_release),"dapper hardy"))
 	# We want update-motd in releases >hardy
 	echo "extra:Depends=update-motd" >> debian/landscape-common.substvars
 endif
