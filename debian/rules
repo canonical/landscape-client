@@ -73,6 +73,10 @@ binary-arch: build install
 	dh_compress
 	dh_fixperms
 
+ifeq (,$(findstring $(dist_release),"dapper hardy"))
+	# We want update-motd in releases >hardy
+	echo "extra:Depends=update-motd" >> debian/landscape-common.substvars
+endif
 
 ifeq ($(use_pycentral),yes)
    ifneq (,$(py_setup_install_args))

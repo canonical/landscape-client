@@ -13,7 +13,3 @@ landscape/__init__.py to include the entire new client version number. This
 helps us keep track of exact version of clients in use. There's no need to
 update the DEBIAN_REVISION variable, as it gets automatically set at build
 time. 
-
-The update-motd | lsb-base (<< 3.2-14ubuntu2) dependency in debian/control is
-there to ensure that the package can be correctly installed on Ubuntu releases
-without the update-motd package (in particular dapper and hardy).
