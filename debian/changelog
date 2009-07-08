@@ -1,3 +1,10 @@
+landscape-client (1.3.3-0ubuntu0.9.10.1) UNRELEASED; urgency=low
+
+  * New upstream release:
+    - Include the README file in the packages (LP: #396260)
+
+ -- Free Ekanayaka <free.ekanayaka@canonical.com>  Wed, 08 Jul 2009 10:36:13 +0200
+
 landscape-client (1.3.2.1-0ubuntu1.9.10.0) karmic; urgency=low
 
   * Use substvars to conditionally depend on update-motd (LP: #393454)
