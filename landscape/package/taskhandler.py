@@ -103,11 +103,15 @@ class PackageTaskHandler(object):
                 return None
 
             try:
-                # XXX replace these with L{SmartFacade} methods
+                # XXX replace this with a L{SmartFacade} method
                 codename = run_command("lsb_release -cs")
-                arch = run_command("dpkg --print-architecture")
             except CommandError, error:
                 logging.warning(warning % str(error))
+                return None
+
+            arch = self._facade.get_arch()
+            if not isinstance(arch, str):
+                logging.warning(warning % "unknown dpkg architecture")
                 return None
 
             package_directory = os.path.join(self._config.data_path, "package")
