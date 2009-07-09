@@ -61,6 +61,7 @@ class PackageTaskHandler(object):
         """
         Attach the appropriate pre-canned hash=>id database to our store.
         """
+
         def use_it(hash_id_db_filename):
 
             if hash_id_db_filename is None:
@@ -125,6 +126,7 @@ class PackageTaskHandler(object):
         result = self._broker.get_server_uuid()
         result.addCallback(got_server_uuid)
         return result
+
 
 def run_task_handler(cls, args, reactor=None):
     from twisted.internet.glib2reactor import install
