@@ -511,7 +511,8 @@ class DaemonTest(DaemonTestBase):
     def test_start_process(self):
         output_filename = self.makeFile("NOT RUN")
         self.makeFile('#!/bin/sh\n'\
-                      'echo "RUN $@ HOME=$HOME USER=$USER" > %s'\
+                      'echo "RUN $@ '\
+                      'HOME=$HOME USER=$USER LOGNAME=$LOGNAME" > %s'\
                       % output_filename, path=self.exec_name)
         os.chmod(self.exec_name, 0755)
 
@@ -521,8 +522,10 @@ class DaemonTest(DaemonTestBase):
 
         pw_dir = pwd.getpwnam(self.daemon.username).pw_dir
         self.assertEquals(open(output_filename).read(),
-                          "RUN --ignore-sigint --quiet HOME=%s USER=%s\n"\
-                          % (pw_dir, self.daemon.username))
+                          "RUN --ignore-sigint --quiet "\
+                          "HOME=%s USER=%s LOGNAME=%s\n"\
+                          % (pw_dir, self.daemon.username,
+                             self.daemon.username))
 
         return self.daemon.stop()
 
@@ -1317,6 +1320,7 @@ class WatchDogRunTests(LandscapeTest):
         os.environ["DEBIAN_YO"] = "yo"
         os.environ["DEBCONF_YO"] = "yo"
         os.environ["LANDSCAPE_ATTACHMENTS"] = "some attachments"
+        os.environ["MAIL"] = "/some/path"
         os.environ["UNRELATED"] = "unrelated"
 
         reactor = FakeReactor()
@@ -1325,4 +1329,5 @@ class WatchDogRunTests(LandscapeTest):
         self.assertNotIn("DEBIAN_YO", os.environ)
         self.assertNotIn("DEBCONF_YO", os.environ)
         self.assertNotIn("LANDSCAPE_ATTACHMENTS", os.environ)
+        self.assertNotIn("MAIL", os.environ)
         self.assertEquals(os.environ["UNRELATED"], "unrelated")

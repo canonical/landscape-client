@@ -89,6 +89,7 @@ class Daemon(object):
         self._env = os.environ.copy()
         self._env["HOME"] = pwd_info.pw_dir
         self._env["USER"] = self.username
+        self._env["LOGNAME"] = self.username
         self._verbose = verbose
         self._config = config
         self._process = None
@@ -513,16 +514,17 @@ bootstrap_list = BootstrapList([
 
 
 def clean_environment():
-    """Unset any environment variables that begin with DEBIAN_ or DEBCONF_.
+    """Unset dangerous environment variables.
 
-    We do this to avoid any problems when landscape-client is invoked from its
+    In particular unsert all variables beginning with DEBIAN_ or DEBCONF_,
+    to avoid any problems when landscape-client is invoked from its
     postinst script.  Some environment variables may be set which would affect
     *other* maintainer scripts which landscape-client invokes (via smart).
     """
     for key in os.environ.keys():
         if (key.startswith("DEBIAN_")
             or key.startswith("DEBCONF_")
-            or key == "LANDSCAPE_ATTACHMENTS"):
+            or key in ["LANDSCAPE_ATTACHMENTS", "MAIL"]):
             del os.environ[key]
 
 
