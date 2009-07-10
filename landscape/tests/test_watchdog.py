@@ -1,6 +1,7 @@
 import stat
 import time
 import sys
+import pwd
 import os
 import signal
 import logging
@@ -509,18 +510,19 @@ class DaemonTest(DaemonTestBase):
 
     def test_start_process(self):
         output_filename = self.makeFile("NOT RUN")
-        self.makeFile('#!/bin/sh\necho "RUN $@" > %s' % output_filename,
-                      path=self.exec_name)
+        self.makeFile('#!/bin/sh\n'\
+                      'echo "RUN $@ HOME=$HOME USER=$USER" > %s'\
+                      % output_filename, path=self.exec_name)
         os.chmod(self.exec_name, 0755)
 
         waiter = FileChangeWaiter(output_filename)
-
         self.daemon.start()
-
         waiter.wait()
 
+        pw_dir = pwd.getpwnam(self.daemon.username).pw_dir
         self.assertEquals(open(output_filename).read(),
-                          "RUN --ignore-sigint --quiet\n")
+                          "RUN --ignore-sigint --quiet HOME=%s USER=%s\n"\
+                          % (pw_dir, self.daemon.username))
 
         return self.daemon.stop()
 
@@ -1299,8 +1301,12 @@ class WatchDogRunTests(LandscapeTest):
         The watchdog *can* be run as the 'landscape' user.
         """
         getpwnam = self.mocker.replace("pwd.getpwnam")
-        getpwnam("landscape").pw_uid
-        self.mocker.result(os.getuid())
+        class PwdMock:
+            pw_uid = os.getuid()
+            pw_dir = None
+        getpwnam("landscape")
+        self.mocker.result(PwdMock())
+        self.mocker.count(3)
         self.mocker.replay()
         reactor = FakeReactor()
         run(["--bus", "system", "--log-dir", self.make_path()],

@@ -76,15 +76,19 @@ class Daemon(object):
         """
         self._bus = bus
         self._reactor = reactor
+
+        pwd_info = pwd.getpwnam(self.username)
         if os.getuid() == 0:
-            info = pwd.getpwnam(self.username)
-            self._uid = info.pw_uid
-            self._gid = info.pw_gid
+            self._uid = pwd_info.pw_uid
+            self._gid = pwd_info.pw_gid
         else:
             # We can only switch UIDs if we're root, so simply don't switch
             # UIDs if we're not.
             self._uid = None
             self._gid = None
+        self._env = os.environ.copy()
+        self._env["HOME"] = pwd_info.pw_dir
+        self._env["USER"] = self.username
         self._verbose = verbose
         self._config = config
         self._process = None
@@ -127,7 +131,7 @@ class Daemon(object):
         if self._config:
             args.extend(["-c", self._config])
         self._reactor.spawnProcess(self._process, exe, args=args,
-                                   env=os.environ,uid=self._uid, gid=self._gid)
+                                   env=self._env, uid=self._uid, gid=self._gid)
 
     def stop(self):
         """Stop this daemon."""
