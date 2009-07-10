@@ -945,13 +945,13 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         results = [Deferred() for i in range(7)]
 
-        reporter_mock.fetch_hash_id_db()
+        reporter_mock.run_smart_update()
         self.mocker.result(results[0])
 
-        reporter_mock.use_hash_id_db()
+        reporter_mock.fetch_hash_id_db()
         self.mocker.result(results[1])
 
-        reporter_mock.run_smart_update()
+        reporter_mock.use_hash_id_db()
         self.mocker.result(results[2])
 
         reporter_mock.handle_tasks()
