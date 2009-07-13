@@ -1,7 +1,6 @@
 import stat
 import time
 import sys
-import pwd
 import os
 import signal
 import logging
@@ -510,22 +509,18 @@ class DaemonTest(DaemonTestBase):
 
     def test_start_process(self):
         output_filename = self.makeFile("NOT RUN")
-        self.makeFile('#!/bin/sh\n'\
-                      'echo "RUN $@ '\
-                      'HOME=$HOME USER=$USER LOGNAME=$LOGNAME" > %s'\
-                      % output_filename, path=self.exec_name)
+        self.makeFile('#!/bin/sh\necho "RUN $@" > %s' % output_filename,
+                      path=self.exec_name)
         os.chmod(self.exec_name, 0755)
 
         waiter = FileChangeWaiter(output_filename)
+
         self.daemon.start()
+
         waiter.wait()
 
-        pw_dir = pwd.getpwnam(self.daemon.username).pw_dir
         self.assertEquals(open(output_filename).read(),
-                          "RUN --ignore-sigint --quiet "\
-                          "HOME=%s USER=%s LOGNAME=%s\n"\
-                          % (pw_dir, self.daemon.username,
-                             self.daemon.username))
+                          "RUN --ignore-sigint --quiet\n")
 
         return self.daemon.stop()
 
@@ -814,8 +809,14 @@ time.sleep(999)
         info = getpwnam("landscape")
         self.expect(info.pw_uid).result(123)
         self.expect(info.pw_gid).result(456)
+        self.expect(info.pw_dir).result("/var/lib/landscape")
 
-        reactor.spawnProcess(ARGS, KWARGS, uid=123, gid=456)
+        env = os.environ.copy()
+        env["HOME"] = "/var/lib/landscape"
+        env["USER"] = "landscape"
+        env["LOGNAME"] = "landscape"
+
+        reactor.spawnProcess(ARGS, KWARGS, env=env, uid=123, gid=456)
 
         self.mocker.replay()
 
@@ -1304,12 +1305,8 @@ class WatchDogRunTests(LandscapeTest):
         The watchdog *can* be run as the 'landscape' user.
         """
         getpwnam = self.mocker.replace("pwd.getpwnam")
-        class PwdMock:
-            pw_uid = os.getuid()
-            pw_dir = None
-        getpwnam("landscape")
-        self.mocker.result(PwdMock())
-        self.mocker.count(3)
+        getpwnam("landscape").pw_uid
+        self.mocker.result(os.getuid())
         self.mocker.replay()
         reactor = FakeReactor()
         run(["--bus", "system", "--log-dir", self.make_path()],

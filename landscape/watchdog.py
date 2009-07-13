@@ -76,20 +76,19 @@ class Daemon(object):
         """
         self._bus = bus
         self._reactor = reactor
-
-        pwd_info = pwd.getpwnam(self.username)
+        self._env = os.environ.copy()
         if os.getuid() == 0:
+            pwd_info = pwd.getpwnam(self.username)
             self._uid = pwd_info.pw_uid
             self._gid = pwd_info.pw_gid
+            self._env["HOME"] = pwd_info.pw_dir
+            self._env["USER"] = self.username
+            self._env["LOGNAME"] = self.username
         else:
             # We can only switch UIDs if we're root, so simply don't switch
             # UIDs if we're not.
             self._uid = None
             self._gid = None
-        self._env = os.environ.copy()
-        self._env["HOME"] = pwd_info.pw_dir
-        self._env["USER"] = self.username
-        self._env["LOGNAME"] = self.username
         self._verbose = verbose
         self._config = config
         self._process = None
