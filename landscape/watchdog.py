@@ -515,7 +515,7 @@ bootstrap_list = BootstrapList([
 def clean_environment():
     """Unset dangerous environment variables.
 
-    In particular unsert all variables beginning with DEBIAN_ or DEBCONF_,
+    In particular unset all variables beginning with DEBIAN_ or DEBCONF_,
     to avoid any problems when landscape-client is invoked from its
     postinst script.  Some environment variables may be set which would affect
     *other* maintainer scripts which landscape-client invokes (via smart).
