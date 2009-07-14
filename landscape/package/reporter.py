@@ -33,14 +33,15 @@ class PackageReporter(PackageTaskHandler):
     def run(self):
         result = Deferred()
 
+        # Run smart-update before anything else, to make sure that
+        # the SmartFacade will load freshly updated channels
+        result.addCallback(lambda x: self.run_smart_update())
+
         # If the appropriate hash=>id db is not there, fetch it
         result.addCallback(lambda x: self.fetch_hash_id_db())
 
         # Attach the hash=>id database if available
         result.addCallback(lambda x: self.use_hash_id_db())
-
-        # Run smart-update
-        result.addCallback(lambda x: self.run_smart_update())
 
         # Now, handle any queued tasks.
         result.addCallback(lambda x: self.handle_tasks())

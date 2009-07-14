@@ -7,6 +7,10 @@ from smart.control import Control
 from smart.cache import Provides
 from smart.const import NEVER
 
+from twisted.internet import reactor
+from twisted.internet.defer import Deferred
+from twisted.internet.utils import getProcessOutputAndValue
+
 import smart
 
 from landscape.package.facade import (
@@ -427,6 +431,24 @@ class SmartFacadeTest(LandscapeTest):
 
         self.assertEquals(channel1, {"path": "/my/repo",
                                      "type": "deb-dir"})
+
+    def test_get_arch(self):
+        """
+        The L{SmartFacade.get_arch} should return the system dpkg
+        architecture.
+        """
+        deferred = Deferred()
+
+        def do_test():
+            result = getProcessOutputAndValue("/usr/bin/dpkg",
+                                              ("--print-architecture",))
+            def callback((out, err, code)):
+                self.assertEquals(self.facade.get_arch(), out.strip())
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
 
     def test_set_arch_multiple_times(self):
 
