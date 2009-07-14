@@ -225,9 +225,17 @@ class SmartFacade(object):
         cache.reset()
         cache.load()
 
+    def get_arch(self):
+        """
+        Get the host dpkg architecture.
+        """
+        self._get_ctrl()
+        from smart.backends.deb.loader import DEBARCH
+        return DEBARCH
+
     def set_arch(self, arch):
         """
-        Set the host architecture.
+        Set the host dpkg architecture.
 
         To take effect it must be called before L{reload_channels}.
 
@@ -268,7 +276,7 @@ class SmartFacade(object):
             add (see the Smart API for details about valid keys and values).
         """
         channels = self.get_channels()
-        channels.update({alias : channel})
+        channels.update({alias: channel})
         smart.sysconf.set("channels", channels, soft=True)
 
     def get_channels(self):

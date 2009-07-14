@@ -63,8 +63,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         command_mock = self.mocker.replace("landscape.lib.command.run_command")
         command_mock("lsb_release -cs")
         self.mocker.result("codename")
-        command_mock("dpkg --print-architecture")
-        self.mocker.result("arch")
+        self.facade.set_arch("arch")
 
         # Attach the hash=>id database to our store
         self.mocker.replay()
@@ -145,14 +144,12 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         self.mocker.result("codename")
 
         # Undetermined arch
-        command_mock("dpkg --print-architecture")
-        command_error = CommandError("dpkg --print-architecture", 1, "error")
-        self.mocker.throw(command_error)
+        self.facade.set_arch(None)
 
         # The failure should be properly logged
         logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("Couldn't determine which hash=>id database to use: %s" %
-                     str(command_error))
+        logging_mock("Couldn't determine which hash=>id database to use: "\
+                     "unknown dpkg architecture")
         self.mocker.result(None)
 
         # Go!
@@ -172,8 +169,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         command_mock = self.mocker.replace("landscape.lib.command.run_command")
         command_mock("lsb_release -cs")
         self.mocker.result("codename")
-        command_mock("dpkg --print-architecture")
-        self.mocker.result("arch")
+        self.facade.set_arch("arch")
 
         # Let's try
         self.mocker.replay()
@@ -201,8 +197,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         command_mock = self.mocker.replace("landscape.lib.command.run_command")
         command_mock("lsb_release -cs")
         self.mocker.result("codename")
-        command_mock("dpkg --print-architecture")
-        self.mocker.result("arch")
+        self.facade.set_arch("arch")
 
         # The failure should be properly logged
         logging_mock = self.mocker.replace("logging.warning")
