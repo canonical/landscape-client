@@ -111,7 +111,7 @@ class PackageTaskHandler(object):
                 return None
 
             arch = self._facade.get_arch()
-            if not isinstance(arch, str):
+            if arch is None:
                 logging.warning(warning % "unknown dpkg architecture")
                 return None
 
