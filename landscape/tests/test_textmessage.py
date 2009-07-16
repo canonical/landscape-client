@@ -94,3 +94,18 @@ class ScriptTest(LandscapeTest):
         from stdin.
         """
         self.assertRaises(EmptyMessageError, get_message, ["landscape-message"])
+
+    def test_get_message_without_encoding(self):
+        """
+        If sys.stdin.encoding is None, it's likely a pipe, so try to
+        decode it as UTF-8 by default.
+        """
+        encoding = sys.stdin.encoding
+        sys.stdin.encoding = None
+        try:
+            message = get_message(
+                ["landscape-message",
+                 u"\N{HIRAGANA LETTER A}".encode("UTF-8"), "a!"])
+        finally:
+            sys.stdin.encoding = encoding
+        self.assertEquals(message, u"\N{HIRAGANA LETTER A} a!")
