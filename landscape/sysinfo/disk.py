@@ -9,7 +9,7 @@ from landscape.lib.disk import get_mount_info, get_filesystem_for_path
 
 # List of filesystem types to exclude when generating disk use statistics.
 BORING_FILESYSTEMS = set(["udf", "iso9660", "fuse.gvfs-fuse-daemon",
-                          "squashfs", "encryptfs"])
+                          "squashfs", "ecryptfs"])
 
 
 def format_megabytes(megabytes):

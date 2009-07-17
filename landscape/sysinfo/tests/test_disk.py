@@ -146,7 +146,7 @@ class DiskTest(LandscapeTest):
                        fs="fuse.gvfs-fuse-daemon")
         self.add_mount("/mnt/livecd", capacity=1000, unused=0, fs="squashfs")
         self.add_mount("/home/mg/.Private", capacity=1000, unused=0,
-                       fs="encryptfs")
+                       fs="ecryptfs")
         self.disk.run()
         self.assertEquals(self.sysinfo.get_notes(), [])
 
