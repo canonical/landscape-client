@@ -7,6 +7,11 @@ from twisted.internet.defer import succeed
 from landscape.lib.disk import get_mount_info, get_filesystem_for_path
 
 
+# List of filesystem types to exclude when generating disk use statistics.
+BORING_FILESYSTEMS = set(["udf", "iso9660", "fuse.gvfs-fuse-daemon",
+                          "squashfs", "encryptfs"])
+
+
 def format_megabytes(megabytes):
     if megabytes >= 1024*1024:
         return "%.2fTB" % (megabytes/(1024*1024))
@@ -20,6 +25,7 @@ def usage(info):
     total = info["total-space"]
     used = total - info["free-space"]
     return "%0.1f%% of %s" % ((used / total) * 100, format_megabytes(total))
+
 
 class Disk(object):
 
@@ -58,7 +64,7 @@ class Disk(object):
             if mount_seen or device_seen:
                 continue
 
-            if info["filesystem"] in ("udf", "iso9660", "fuse.gvfs-fuse-daemon", "squashfs"):
+            if info["filesystem"] in BORING_FILESYSTEMS:
                 continue
             if total <= 0:
                 # Some "virtual" filesystems have 0 total space. ignore them.
