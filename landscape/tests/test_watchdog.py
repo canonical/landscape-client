@@ -809,8 +809,14 @@ time.sleep(999)
         info = getpwnam("landscape")
         self.expect(info.pw_uid).result(123)
         self.expect(info.pw_gid).result(456)
+        self.expect(info.pw_dir).result("/var/lib/landscape")
 
-        reactor.spawnProcess(ARGS, KWARGS, uid=123, gid=456)
+        env = os.environ.copy()
+        env["HOME"] = "/var/lib/landscape"
+        env["USER"] = "landscape"
+        env["LOGNAME"] = "landscape"
+
+        reactor.spawnProcess(ARGS, KWARGS, env=env, uid=123, gid=456)
 
         self.mocker.replay()
 
@@ -1311,6 +1317,7 @@ class WatchDogRunTests(LandscapeTest):
         os.environ["DEBIAN_YO"] = "yo"
         os.environ["DEBCONF_YO"] = "yo"
         os.environ["LANDSCAPE_ATTACHMENTS"] = "some attachments"
+        os.environ["MAIL"] = "/some/path"
         os.environ["UNRELATED"] = "unrelated"
 
         reactor = FakeReactor()
@@ -1319,4 +1326,5 @@ class WatchDogRunTests(LandscapeTest):
         self.assertNotIn("DEBIAN_YO", os.environ)
         self.assertNotIn("DEBCONF_YO", os.environ)
         self.assertNotIn("LANDSCAPE_ATTACHMENTS", os.environ)
+        self.assertNotIn("MAIL", os.environ)
         self.assertEquals(os.environ["UNRELATED"], "unrelated")
