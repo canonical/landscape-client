@@ -419,6 +419,32 @@ class PackageChangerTest(LandscapeIsolatedTest):
                               "REPORTER RUN")
         return result.addCallback(got_result)
 
+    def test_spawn_reporter_after_running_with_config(self):
+        """The changer passes the config to the reporter when running it."""
+        self.config.config = "test.conf"
+        output_filename = self.makeFile("REPORTER NOT RUN")
+        reporter_filename = self.makeFile("#!/bin/sh\necho ARGS $@ > %s" %
+                                          output_filename)
+        os.chmod(reporter_filename, 0755)
+
+        find_command_mock = self.mocker.replace(
+            "landscape.package.reporter.find_reporter_command")
+        find_command_mock()
+        self.mocker.result(reporter_filename)
+        self.mocker.replay()
+
+        # Add a task that will do nothing besides producing an answer.
+        # The reporter is only spawned if at least one task was handled.
+        self.store.add_task("changer", {"type": "change-packages",
+                                        "operation-id": 123})
+
+        result = self.changer.run()
+
+        def got_result(result):
+            self.assertEquals(open(output_filename).read().strip(),
+                              "ARGS -c test.conf")
+        return result.addCallback(got_result)
+
     def test_set_effective_uid_and_gid_when_running_as_root(self):
         """
         After the package changer has run, we want the package-reporter to run

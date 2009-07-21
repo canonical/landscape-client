@@ -54,7 +54,10 @@ class PackageChanger(PackageTaskHandler):
                 if os.getuid() == 0:
                     os.setgid(grp.getgrnam("landscape").gr_gid)
                     os.setuid(pwd.getpwnam("landscape").pw_uid)
-                os.system(find_reporter_command())
+                command = find_reporter_command()
+                if self._config.config is not None:
+                    command += " -c %s" % self._config.config
+                os.system(command)
 
         result = self.use_hash_id_db()
         result.addCallback(lambda x: self.handle_tasks())
