@@ -73,9 +73,13 @@ binary-arch: build install
 	dh_compress
 	dh_fixperms
 
-ifeq (,$(findstring $(dist_release),"dapper hardy"))
-	# We want update-motd in releases >hardy
+ifneq (,$(findstring $(dist_release),"intrepid jaunty"))
+	# We want update-motd in intrepid and jaunty
 	echo "extra:Depends=update-motd" >> debian/landscape-common.substvars
+endif
+ifneq (,$(findstring $(dist_release),"karmic"))
+	# We want libpam-modules in karmic
+	echo "extra:Depends=libpam-modules (>= 1.0.1-9ubuntu3)" >> debian/landscape-common.substvars
 endif
 
 ifeq ($(use_pycentral),yes)
