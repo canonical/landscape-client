@@ -307,6 +307,8 @@ class Configuration(BaseConfiguration):
                                "critical.")
         parser.add_option("--ignore-sigint", action="store_true", default=False,
                           help="Ignore interrupt signals. ")
+        parser.add_option("--ignore-sigusr1", action="store_true", default=False,
+                          help="Ignore SIGUSR1 signal to rotate logs. ")
 
         return parser
 
@@ -346,7 +348,8 @@ class LandscapeService(Service, object):
         self.reactor = self.reactor_factory()
         if self.persist_filename:
             self.persist = get_versioned_persist(self)
-        signal.signal(signal.SIGUSR1, lambda signal, frame: rotate_logs())
+        if not (self.config is not None and self.config.ignore_sigusr1):
+            signal.signal(signal.SIGUSR1, lambda signal, frame: rotate_logs())
 
     def startService(self):
         """Extend L{twisted.application.service.IService.startService}.

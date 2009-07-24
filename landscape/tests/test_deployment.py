@@ -363,6 +363,14 @@ class GetVersionedPersistTest(LandscapeTest):
 
 class LandscapeServiceTest(LandscapeTest):
 
+    def setUp(self):
+        super(LandscapeServiceTest, self).setUp()
+        signal.signal(signal.SIGUSR1, signal.SIG_DFL)
+
+    def tearDown(self):
+        super(LandscapeServiceTest, self).tearDown()
+        signal.signal(signal.SIGUSR1, signal.SIG_DFL)
+
     def test_create_persist(self):
         class FakeService(LandscapeService):
             persist_filename = self.make_path(content="")
@@ -399,6 +407,20 @@ class LandscapeServiceTest(LandscapeTest):
         for stream in new_streams:
             self.assertTrue(stream not in original_streams)
 
+    def test_ignore_sigusr1(self):
+        """
+        SIGUSR1 is ignored if we so request.
+        """
+        class Configuration:
+            ignore_sigusr1 = True
+
+        # Instantiating LandscapeService should not register the
+        # handler if we request to ignore it.
+        config = Configuration()
+        LandscapeService(config)
+
+        handler = signal.getsignal(signal.SIGUSR1)
+        self.assertFalse(handler)
 
 
 class AssertUnownedBusNameTest(LandscapeIsolatedTest):

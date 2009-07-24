@@ -270,7 +270,9 @@ class FakeRemoteBrokerHelper(object):
             default_config_filenames = [test_case.config_filename]
 
         config = MyBrokerConfiguration()
-        config.load(["--bus", "session", "--data-path", test_case.data_path])
+        config.load(["--bus", "session",
+                     "--data-path", test_case.data_path,
+                     "--ignore-sigusr1"])
 
         class FakeBrokerService(BrokerService):
             """A broker which uses a fake reactor and fake transport."""
