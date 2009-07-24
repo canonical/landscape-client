@@ -6,6 +6,7 @@ import re
 import os
 import tempfile
 import sys
+import unittest
 
 import dbus
 
@@ -37,19 +38,11 @@ DEFAULT_ACCEPTED_TYPES = [
     "set-intervals", "unknown-id"]
 
 
-class LandscapeTest(MockerTestCase, TestCase):
+class HelperTestCase(unittest.TestCase):
 
     helpers = []
 
     def setUp(self):
-        super(LandscapeTest, self).setUp()
-
-        self._old_config_filenames = BaseConfiguration.default_config_filenames
-        BaseConfiguration.default_config_filenames = []
-        # make_path-related stuff
-        self.dirname = tempfile.mkdtemp()
-        self.counter = 0
-
         self._helper_instances = []
         if LogKeeperHelper not in self.helpers:
             self.helpers.insert(0, LogKeeperHelper)
@@ -59,11 +52,39 @@ class LandscapeTest(MockerTestCase, TestCase):
             self._helper_instances.append(helper)
 
     def tearDown(self):
-        BaseConfiguration.default_config_filenames = self._old_config_filenames
         for helper in reversed(self._helper_instances):
             helper.tear_down(self)
+
+
+class MakeDirTestCase(unittest.TestCase):
+
+    def setUp(self):
+        # make_path-related stuff
+        self.dirname = tempfile.mkdtemp()
+        self.counter = 0
+
+    def tearDown(self):
         shutil.rmtree(self.dirname)
-        super(LandscapeTest, self).tearDown()
+
+    def make_dir(self):
+        path = self.make_path()
+        os.mkdir(path)
+        return path
+
+    def make_path(self, content=None, path=None):
+        if path is None:
+            self.counter += 1
+            path = "%s/%03d" % (self.dirname, self.counter)
+        if content is not None:
+            file = open(path, "w")
+            try:
+                file.write(content)
+            finally:
+                file.close()
+        return path
+
+
+class MessageTestCase(unittest.TestCase):
 
     def assertMessage(self, obtained, expected):
         obtained = obtained.copy()
@@ -93,6 +114,25 @@ class LandscapeTest(MockerTestCase, TestCase):
             raise self.failureException("Got %d more messages than expected:\n"
                                         "%s" % (diff, extra))
 
+
+class LandscapeTest(MessageTestCase, MockerTestCase, MakeDirTestCase,
+                    HelperTestCase, TestCase):
+
+    def setUp(self):
+        self._old_config_filenames = BaseConfiguration.default_config_filenames
+        BaseConfiguration.default_config_filenames = []
+        MockerTestCase.setUp(self)
+        MakeDirTestCase.setUp(self)
+        HelperTestCase.setUp(self)
+        TestCase.setUp(self)
+
+    def tearDown(self):
+        BaseConfiguration.default_config_filenames = self._old_config_filenames
+        TestCase.tearDown(self)
+        HelperTestCase.tearDown(self)
+        MakeDirTestCase.tearDown(self)
+        MockerTestCase.tearDown(self)
+
     def assertDeferredSucceeded(self, deferred):
         self.assertTrue(isinstance(deferred, Deferred))
         called = []
@@ -100,24 +140,6 @@ class LandscapeTest(MockerTestCase, TestCase):
             called.append(True)
         deferred.addCallback(callback)
         self.assertTrue(called)
-
-    def make_dir(self):
-        path = self.make_path()
-        os.mkdir(path)
-        return path
-
-    def make_path(self, content=None, path=None):
-        if path is None:
-            self.counter += 1
-            path = "%s/%03d" % (self.dirname, self.counter)
-        if content is not None:
-            file = open(path, "w")
-            try:
-                file.write(content)
-            finally:
-                file.close()
-        return path
-
 
 class LandscapeIsolatedTest(LandscapeTest):
     """TestCase that also runs all test methods in a subprocess."""
