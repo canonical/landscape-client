@@ -271,9 +271,13 @@ class FakeRemoteBrokerHelper(object):
       - data_path: The data path that the broker will use.
     """
 
-    def set_up(self, test_case):
+    reactor_factory = FakeReactor
+    transport_factory = FakeTransport
+    needs_bpickle_dbus = True
 
-        bpickle_dbus.install()
+    def set_up(self, test_case):
+        if self.needs_bpickle_dbus:
+            bpickle_dbus.install()
 
         test_case.config_filename = test_case.make_path(
             "[client]\n"
@@ -298,15 +302,16 @@ class FakeRemoteBrokerHelper(object):
 
         class FakeBrokerService(BrokerService):
             """A broker which uses a fake reactor and fake transport."""
-            reactor_factory = FakeReactor
-            transport_factory = FakeTransport
+            reactor_factory = self.reactor_factory
+            transport_factory = self.transport_factory
 
         test_case.broker_service = service = FakeBrokerService(config)
         test_case.remote = FakeRemoteBroker(service.exchanger,
                                             service.message_store)
 
     def tear_down(self, test_case):
-        bpickle_dbus.uninstall()
+        if self.needs_bpickle_dbus:
+            bpickle_dbus.uninstall()
 
 
 class RemoteBrokerHelper(FakeRemoteBrokerHelper):
