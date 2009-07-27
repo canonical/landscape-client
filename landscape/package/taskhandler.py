@@ -61,6 +61,7 @@ class PackageTaskHandler(object):
         """
         Attach the appropriate pre-canned hash=>id database to our store.
         """
+
         def use_it(hash_id_db_filename):
 
             if hash_id_db_filename is None:
@@ -103,11 +104,18 @@ class PackageTaskHandler(object):
                 return None
 
             try:
-                # XXX replace these with L{SmartFacade} methods
+                # XXX replace this with a L{SmartFacade} method
                 codename = run_command("lsb_release -cs")
-                arch = run_command("dpkg --print-architecture")
             except CommandError, error:
                 logging.warning(warning % str(error))
+                return None
+
+            arch = self._facade.get_arch()
+            if arch is None:
+                # The Smart code should always return a proper string, so this
+                # branch shouldn't get executed at all. However this check is
+                # kept as an extra paranoia sanity check.
+                logging.warning(warning % "unknown dpkg architecture")
                 return None
 
             package_directory = os.path.join(self._config.data_path, "package")
@@ -121,6 +129,7 @@ class PackageTaskHandler(object):
         result = self._broker.get_server_uuid()
         result.addCallback(got_server_uuid)
         return result
+
 
 def run_task_handler(cls, args, reactor=None):
     from twisted.internet.glib2reactor import install

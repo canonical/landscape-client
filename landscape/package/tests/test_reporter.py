@@ -239,8 +239,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         command_mock = self.mocker.replace("landscape.lib.command.run_command")
         command_mock("lsb_release -cs")
         self.mocker.result("codename")
-        command_mock("dpkg --print-architecture")
-        self.mocker.result("arch")
+        self.facade.set_arch("arch")
 
         # Let's say fetch_async is successful
         hash_id_db_url = self.config.package_hash_id_url + "uuid_codename_arch"
@@ -286,8 +285,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         command_mock = self.mocker.replace("landscape.lib.command.run_command")
         command_mock("lsb_release -cs")
         self.mocker.result("codename")
-        command_mock("dpkg --print-architecture")
-        self.mocker.result("arch")
+        self.facade.set_arch("arch")
 
         # Intercept any call to fetch_async
         fetch_async_mock = self.mocker.replace("landscape.lib.fetch.fetch_async")
@@ -360,14 +358,12 @@ class PackageReporterTest(LandscapeIsolatedTest):
         self.mocker.result("codename")
 
         # Undetermined arch
-        command_mock("dpkg --print-architecture")
-        command_error = CommandError("dpkg --print-architecture", 1, "error")
-        self.mocker.throw(command_error)
+        self.facade.set_arch(None)
 
         # The failure should be properly logged
         logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("Couldn't determine which hash=>id database to use: %s" %
-                     str(command_error))
+        logging_mock("Couldn't determine which hash=>id database to use: "\
+                     "unknown dpkg architecture")
         self.mocker.result(None)
 
         # Go!
@@ -392,8 +388,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         command_mock = self.mocker.replace("landscape.lib.command.run_command")
         command_mock("lsb_release -cs")
         self.mocker.result("codename")
-        command_mock("dpkg --print-architecture")
-        self.mocker.result("arch")
+        self.facade.set_arch("arch")
 
         # Check fetch_async is called with the default url
         hash_id_db_url = "http://fake.url/path/hash-id-databases/" \
@@ -427,8 +422,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         command_mock = self.mocker.replace("landscape.lib.command.run_command")
         command_mock("lsb_release -cs")
         self.mocker.result("codename")
-        command_mock("dpkg --print-architecture")
-        self.mocker.result("arch")
+        self.facade.set_arch("arch")
 
         # Let's say fetch_async fails
         hash_id_db_url = self.config.package_hash_id_url + "uuid_codename_arch"
@@ -468,8 +462,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         command_mock = self.mocker.replace("landscape.lib.command.run_command")
         command_mock("lsb_release -cs")
         self.mocker.result("codename")
-        command_mock("dpkg --print-architecture")
-        self.mocker.result("arch")
+        self.facade.set_arch("arch")
 
         # The failure should be properly logged
         logging_mock = self.mocker.replace("logging.warning")
@@ -952,13 +945,13 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         results = [Deferred() for i in range(7)]
 
-        reporter_mock.fetch_hash_id_db()
+        reporter_mock.run_smart_update()
         self.mocker.result(results[0])
 
-        reporter_mock.use_hash_id_db()
+        reporter_mock.fetch_hash_id_db()
         self.mocker.result(results[1])
 
-        reporter_mock.run_smart_update()
+        reporter_mock.use_hash_id_db()
         self.mocker.result(results[2])
 
         reporter_mock.handle_tasks()
