@@ -92,7 +92,7 @@ class SQLitePatchTest(LandscapeTest):
 
     def setUp(self):
         LandscapeTest.setUp(self)
-        self.db_filename = self.make_path()
+        self.db_filename = self.makeFile()
         self.db = sqlite3.connect(self.db_filename, isolation_level=None)
         self.cursor = self.db.cursor()
         self.manager = SQLiteUpgradeManager()

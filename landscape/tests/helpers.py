@@ -56,34 +56,6 @@ class HelperTestCase(unittest.TestCase):
             helper.tear_down(self)
 
 
-class MakeDirTestCase(unittest.TestCase):
-
-    def setUp(self):
-        # make_path-related stuff
-        self.dirname = tempfile.mkdtemp()
-        self.counter = 0
-
-    def tearDown(self):
-        shutil.rmtree(self.dirname)
-
-    def make_dir(self):
-        path = self.make_path()
-        os.mkdir(path)
-        return path
-
-    def make_path(self, content=None, path=None):
-        if path is None:
-            self.counter += 1
-            path = "%s/%03d" % (self.dirname, self.counter)
-        if content is not None:
-            file = open(path, "w")
-            try:
-                file.write(content)
-            finally:
-                file.close()
-        return path
-
-
 class MessageTestCase(unittest.TestCase):
 
     def assertMessage(self, obtained, expected):
@@ -115,14 +87,13 @@ class MessageTestCase(unittest.TestCase):
                                         "%s" % (diff, extra))
 
 
-class LandscapeTest(MessageTestCase, MockerTestCase, MakeDirTestCase,
+class LandscapeTest(MessageTestCase, MockerTestCase,
                     HelperTestCase, TestCase):
 
     def setUp(self):
         self._old_config_filenames = BaseConfiguration.default_config_filenames
         BaseConfiguration.default_config_filenames = []
         MockerTestCase.setUp(self)
-        MakeDirTestCase.setUp(self)
         HelperTestCase.setUp(self)
         TestCase.setUp(self)
 
@@ -130,7 +101,6 @@ class LandscapeTest(MessageTestCase, MockerTestCase, MakeDirTestCase,
         BaseConfiguration.default_config_filenames = self._old_config_filenames
         TestCase.tearDown(self)
         HelperTestCase.tearDown(self)
-        MakeDirTestCase.tearDown(self)
         MockerTestCase.tearDown(self)
 
     def assertDeferredSucceeded(self, deferred):
@@ -270,15 +240,15 @@ class FakeRemoteBrokerHelper(object):
         if self.needs_bpickle_dbus:
             bpickle_dbus.install()
 
-        test_case.config_filename = test_case.make_path(
+        test_case.config_filename = test_case.makeFile(
             "[client]\n"
             "url = http://localhost:91919\n"
             "computer_title = Default Computer Title\n"
             "account_name = default_account_name\n"
             "ping_url = http://localhost:91910/\n")
 
-        test_case.data_path = test_case.make_dir()
-        test_case.log_dir = test_case.make_dir()
+        test_case.data_path = test_case.makeDir()
+        test_case.log_dir = test_case.makeDir()
 
         bootstrap_list.bootstrap(data_path=test_case.data_path,
                                  log_dir=test_case.log_dir)
@@ -365,7 +335,7 @@ class MonitorHelper(ExchangeHelper):
     def set_up(self, test_case):
         super(MonitorHelper, self).set_up(test_case)
         persist = Persist()
-        persist_filename = test_case.make_path()
+        persist_filename = test_case.makeFile()
         test_case.monitor = MonitorPluginRegistry(
             test_case.remote, test_case.broker_service.reactor,
             test_case.broker_service.config,

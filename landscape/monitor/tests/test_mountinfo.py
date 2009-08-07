@@ -67,7 +67,7 @@ class MountInfoTest(LandscapeTest):
             else:
                 return (4096, 0, mb(10000L), mb(1000L), 0L, 0L, 0L, 0, 0)
 
-        filename = self.make_path("""\
+        filename = self.makeFile("""\
 rootfs / rootfs rw 0 0
 none /dev ramfs rw 0 0
 /dev/hda1 / ext3 rw 0 0
@@ -83,7 +83,7 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
 /dev/sdb2 /media/Boot\\040OSX hfsplus nls=utf8 0 0
 """)
 
-        mtab_filename = self.make_path("""\
+        mtab_filename = self.makeFile("""\
 rootfs / rootfs rw 0 0
 none /dev ramfs rw 0 0
 /dev/hda1 / ext3 rw 0 0
@@ -138,7 +138,7 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         def statvfs(path, multiplier=mock_counter(1).next):
             return (4096, 0, mb(multiplier() * 1000), mb(100), 0, 0, 0, 0, 0)
 
-        filename = self.make_path("""\
+        filename = self.makeFile("""\
 /dev/hda1 / ext3 rw 0 0
 """)
         plugin = self.get_mount_info(mounts_file=filename, statvfs=statvfs,
@@ -174,7 +174,7 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
                 return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
             return (4096, 0, mb(multiplier() * 1000), mb(100), 0, 0, 0, 0, 0)
 
-        filename = self.make_path("""\
+        filename = self.makeFile("""\
 /dev/hda1 / ext3 rw 0 0
 /dev/hde1 /mnt/hde1 ext3 rw 0 0
 """)
@@ -217,7 +217,7 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         def statvfs(path):
             return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
 
-        filename = self.make_path("""\
+        filename = self.makeFile("""\
 /dev/hda1 / ext3 rw 0 0
 """)
         plugin = self.get_mount_info(mounts_file=filename, statvfs=statvfs,
@@ -247,7 +247,7 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         def statvfs(path):
             return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
 
-        filename = self.make_path("""\
+        filename = self.makeFile("""\
 /dev/hda1 / ext3 rw 0 0
 """)
         plugin = self.get_mount_info(mounts_file=filename, statvfs=statvfs,
@@ -273,7 +273,7 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         def statvfs(path):
             return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
 
-        filename = self.make_path("""\
+        filename = self.makeFile("""\
 /dev/hdc4 /mm xfs rw 0 0
 /mm/ubuntu-mirror /home/dchroot/warty/mirror none bind 0 0
 /mm/ubuntu-mirror /home/dchroot/hoary/mirror none bind 0 0
@@ -304,7 +304,7 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         mount points.
         """
 
-        filename = self.make_path("""\
+        filename = self.makeFile("""\
 ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=ennui 0 0
 """)
         plugin = self.get_mount_info(mounts_file=filename, mtab_file=filename)
@@ -327,7 +327,7 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
                                       "block.device": "/dev/scd0",
                                       "info.parent": "wubble"}),]
 
-        filename = self.make_path("""\
+        filename = self.makeFile("""\
 /dev/scd0 /media/Xerox_M750 iso9660 ro,nosuid,nodev,uid=1000,utf8 0 0
 """)
         plugin = self.get_mount_info(mounts_file=filename, hal_devices=devices,
@@ -346,7 +346,7 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
         devices = [MockRealHALDevice({"info.udi": "wubble",
                                       "block.device": "/dev/scd0",
                                       "storage.removable": True}),]
-        filename = self.make_path("""\
+        filename = self.makeFile("""\
 /dev/scd0 /media/Xerox_M750 iso9660 ro,nosuid,nodev,uid=1000,utf8 0 0
 """)
         plugin = self.get_mount_info(mounts_file=filename, hal_devices=devices,
@@ -376,7 +376,7 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
                                       "info.parent": "wubble0"}),]
 
 
-        filename = self.make_path("""\
+        filename = self.makeFile("""\
 /dev/scd0a /media/Xerox_M750 iso9660 ro,nosuid,nodev,uid=1000,utf8 0 0
 """)
         plugin = self.get_mount_info(mounts_file=filename, hal_devices=devices,
@@ -392,7 +392,7 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
         def statvfs(path, multiplier=mock_counter(1).next):
             return (4096, 0, mb(1000), mb(multiplier() * 100), 0, 0, 0, 0, 0)
 
-        filename = self.make_path("""\
+        filename = self.makeFile("""\
 /dev/hda2 / xfs rw 0 0
 """)
         plugin = self.get_mount_info(mounts_file=filename, statvfs=statvfs,
@@ -418,7 +418,7 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
         """
         self.mstore.set_accepted_types(["load-average"])
 
-        filename = self.make_path("")
+        filename = self.makeFile("")
         plugin = self.get_mount_info(mounts_file=filename, mtab_file=filename)
         self.monitor.add(plugin)
         self.monitor.exchange()
@@ -432,7 +432,7 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
         def statvfs(path):
             return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
 
-        filename = self.make_path("""\
+        filename = self.makeFile("""\
 /dev/hda2 / xfs rw 0 0
 """)
         plugin = self.get_mount_info(mounts_file=filename, statvfs=statvfs,
@@ -463,7 +463,7 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
         previous known state is detected.  If mount activity has never
         been reported, it should be.
         """
-        filename = self.make_path("""\
+        filename = self.makeFile("""\
 /dev/hda2 / xfs rw 0 0
 """)
         plugin = self.get_mount_info(mounts_file=filename,
@@ -482,7 +482,7 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
 
     def test_wb_umount_activity(self):
         """Test ensures the plugin reports new umounts."""
-        filename = self.make_path("""\
+        filename = self.makeFile("""\
 /dev/hda2 / xfs rw 0 0
 """)
         plugin = self.get_mount_info(mounts_file=filename,
@@ -496,7 +496,7 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
         self.assertEquals(message.get("type"), "mount-activity")
         self.assertEquals(message.get("activities"), [(step_size, "/", True)])
 
-        plugin._mounts_file = self.make_path("""\
+        plugin._mounts_file = self.makeFile("""\
 """)
         self.reactor.advance(step_size)
         message = plugin.create_mount_activity_message()
@@ -506,7 +506,7 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
 
     def test_wb_mount_activity(self):
         """Test ensures the plugin reports new mounts."""
-        filename = self.make_path("""\
+        filename = self.makeFile("""\
 /dev/hda2 / xfs rw 0 0
 """)
         plugin = self.get_mount_info(mounts_file=filename,
@@ -520,8 +520,8 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
         self.assertEquals(message.get("type"), "mount-activity")
         self.assertEquals(message.get("activities"), [(step_size, "/", True)])
 
-        mount_dir = self.make_dir()
-        plugin._mounts_file = self.make_path("""\
+        mount_dir = self.makeDir()
+        plugin._mounts_file = self.makeFile("""\
 /dev/hda2 / xfs rw 0 0
 /dev/hdb5 %s xfs rw 0 0
 """ % mount_dir)
@@ -539,7 +539,7 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
         """
         def statvfs(path):
             return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
-        filename = self.make_path("""\
+        filename = self.makeFile("""\
 /dev/hda1 / ext3 rw 0 0
 """)
         plugin = self.get_mount_info(mounts_file=filename,
@@ -572,14 +572,14 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
 
         # From this test data, we expect only two mount points to be returned,
         # and the other two to be ignored (the rebound /dev/hda2 -> /mnt mounting)
-        filename = self.make_path("""\
+        filename = self.makeFile("""\
 /dev/devices/by-uuid/12345567 / ext3 rw 0 0
 /dev/hda2 /usr ext3 rw 0 0
 /dev/devices/by-uuid/12345567 /mnt ext3 rw 0 0
 /dev/devices/by-uuid/12345567 /media/Boot\\040OSX hfsplus rw 0 0
 """)
 
-        mtab_filename = self.make_path("""\
+        mtab_filename = self.makeFile("""\
 /dev/hda1 / ext3 rw 0 0
 /dev/hda2 /usr ext3 rw 0 0
 /opt /mnt none rw,bind 0 0
@@ -611,7 +611,7 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
 
         # In this test, we expect all mount points to be returned, as we can't
         # identify any as bind mounts.
-        filename = self.make_path("""\
+        filename = self.makeFile("""\
 /dev/devices/by-uuid/12345567 / ext3 rw 0 0
 /dev/hda2 /usr ext3 rw 0 0
 /dev/devices/by-uuid/12345567 /mnt ext3 rw 0 0
@@ -648,13 +648,13 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
 
         # From this test data, we expect only two mount points to be returned,
         # and the third to be ignored (the rebound /dev/hda2 -> /mnt mounting)
-        filename = self.make_path("""\
+        filename = self.makeFile("""\
 /dev/devices/by-uuid/12345567 / ext3 rw 0 0
 /dev/hda2 /usr ext3 rw 0 0
 /dev/devices/by-uuid/12345567 /mnt ext3 rw 0 0
 """)
 
-        mtab_filename = self.make_path("""\
+        mtab_filename = self.makeFile("""\
 /dev/hda1 / ext3 rw 0 0
 /dev/hda2 /usr ext3 rw 0 0
 /opt /mnt none rw,bind 0 0
@@ -694,7 +694,7 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
         def statvfs(path):
             return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
 
-        filename = self.make_path("""\
+        filename = self.makeFile("""\
 /dev/hda1 / ext3 rw 0 0
 """)
         plugin = MountInfo(mounts_file=filename, create_time=self.reactor.time,

@@ -15,7 +15,7 @@ class UserWriteTest(LandscapeTest):
 
     def setUp(self):
         LandscapeTest.setUp(self)
-        self.shadow_file = self.make_path("""\
+        self.shadow_file = self.makeFile("""\
 jdoe:$1$xFlQvTqe$cBtrNEDOIKMy/BuJoUdeG0:13348:0:99999:7:::
 psmith:!:13348:0:99999:7:::
 sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
@@ -380,7 +380,7 @@ class GroupWriteTest(LandscapeTest):
 
     def setUp(self):
         LandscapeTest.setUp(self)
-        self.shadow_file = self.make_path("""\
+        self.shadow_file = self.makeFile("""\
 jdoe:$1$xFlQvTqe$cBtrNEDOIKMy/BuJoUdeG0:13348:0:99999:7:::
 psmith:!:13348:0:99999:7:::
 sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::

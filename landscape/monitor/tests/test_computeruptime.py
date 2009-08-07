@@ -31,7 +31,7 @@ class UptimeTest(LandscapeTest):
 
     def test_valid_uptime_file(self):
         """Test ensures that we can read a valid /proc/uptime file."""
-        proc_file = self.make_path("17608.24 16179.25")
+        proc_file = self.makeFile("17608.24 16179.25")
         self.assertEquals("%0.2f" % get_uptime(proc_file),
                           "17608.24")
 
@@ -41,7 +41,7 @@ class LoginInfoReaderTest(LandscapeTest):
 
     def test_read_empty_file(self):
         """Test ensures the reader is resilient to empty files."""
-        filename = self.make_path("")
+        filename = self.makeFile("")
 
         file = open(filename, "rb")
         try:
@@ -52,7 +52,7 @@ class LoginInfoReaderTest(LandscapeTest):
 
     def test_read_login_info(self):
         """Test ensures the reader can read login info."""
-        filename = self.make_path("")
+        filename = self.makeFile("")
         append_login_data(filename, login_type=1, pid=100, tty_device="/dev/",
                           id="1", username="jkakar", hostname="localhost",
                           termination_status=0, exit_status=0, session_id=1,
@@ -101,7 +101,7 @@ class LoginInfoReaderTest(LandscapeTest):
 
     def test_login_info_iterator(self):
         """Test ensures iteration behaves correctly."""
-        filename = self.make_path("")
+        filename = self.makeFile("")
         append_login_data(filename)
         append_login_data(filename)
 
@@ -129,7 +129,7 @@ class ComputerUptimeTest(LandscapeTest):
 
     def test_deliver_message(self):
         """Test delivering a message with the boot and shutdown times."""
-        wtmp_filename = self.make_path("")
+        wtmp_filename = self.makeFile("")
         append_login_data(wtmp_filename, tty_device="~", username="shutdown",
                           entry_time_seconds=535)
         plugin = ComputerUptime(wtmp_file=wtmp_filename)
@@ -144,7 +144,7 @@ class ComputerUptimeTest(LandscapeTest):
 
     def test_only_deliver_unique_shutdown_messages(self):
         """Test that only unique shutdown messages are generated."""
-        wtmp_filename = self.make_path("")
+        wtmp_filename = self.makeFile("")
         append_login_data(wtmp_filename, tty_device="~", username="shutdown",
                           entry_time_seconds=535)
 
@@ -170,7 +170,7 @@ class ComputerUptimeTest(LandscapeTest):
 
     def test_only_queue_messages_with_data(self):
         """Test ensures that messages without data are not queued."""
-        wtmp_filename = self.make_path("")
+        wtmp_filename = self.makeFile("")
         append_login_data(wtmp_filename, tty_device="~", username="reboot",
                           entry_time_seconds=3212)
         append_login_data(wtmp_filename, tty_device="~", username="shutdown",
@@ -185,7 +185,7 @@ class ComputerUptimeTest(LandscapeTest):
         self.assertEquals(len(self.mstore.get_pending_messages()), 1)
 
     def test_missing_wtmp_file(self):
-        wtmp_filename = self.make_path()
+        wtmp_filename = self.makeFile()
         plugin = ComputerUptime(wtmp_file=wtmp_filename)
         self.monitor.add(plugin)
         plugin.run()
@@ -193,7 +193,7 @@ class ComputerUptimeTest(LandscapeTest):
 
     def test_boot_time_same_as_last_known_startup_time(self):
         """Ensure one message is queued for duplicate startup times."""
-        wtmp_filename = self.make_path("")
+        wtmp_filename = self.makeFile("")
         append_login_data(wtmp_filename, tty_device="~", username="reboot",
                           entry_time_seconds=3212)
         plugin = ComputerUptime(wtmp_file=wtmp_filename)
@@ -210,7 +210,7 @@ class ComputerUptimeTest(LandscapeTest):
         Test ensures startup times are not duplicated even across restarts of
         the client. This is simulated by creating a new instance of the plugin.
         """
-        wtmp_filename = self.make_path("")
+        wtmp_filename = self.makeFile("")
         append_login_data(wtmp_filename, tty_device="~", username="reboot",
                           entry_time_seconds=3212)
         plugin1 = ComputerUptime(wtmp_file=wtmp_filename)
@@ -234,8 +234,8 @@ class ComputerUptimeTest(LandscapeTest):
 
     def test_check_last_logrotated_file(self):
         """Test ensures reading falls back to logrotated files."""
-        wtmp_filename = self.make_path("")
-        logrotated_filename = self.make_path("", wtmp_filename + ".1")
+        wtmp_filename = self.makeFile("")
+        logrotated_filename = self.makeFile("", path=wtmp_filename + ".1")
         append_login_data(logrotated_filename, tty_device="~",
                           username="reboot", entry_time_seconds=125)
         append_login_data(logrotated_filename, tty_device="~",
@@ -255,8 +255,8 @@ class ComputerUptimeTest(LandscapeTest):
 
     def test_check_logrotate_spillover(self):
         """Test ensures reading falls back to logrotated files."""
-        wtmp_filename = self.make_path("")
-        logrotated_filename = self.make_path("", wtmp_filename + ".1")
+        wtmp_filename = self.makeFile("")
+        logrotated_filename = self.makeFile("", path=wtmp_filename + ".1")
         append_login_data(logrotated_filename, tty_device="~",
                           username="reboot", entry_time_seconds=125)
         append_login_data(logrotated_filename, tty_device="~",
@@ -290,7 +290,7 @@ class ComputerUptimeTest(LandscapeTest):
         self.assertEquals(message["shutdown-times"], [1150])
 
     def test_call_on_accepted(self):
-        wtmp_filename = self.make_path("")
+        wtmp_filename = self.makeFile("")
         append_login_data(wtmp_filename, tty_device="~", username="shutdown",
                           entry_time_seconds=535)
         plugin = ComputerUptime(wtmp_file=wtmp_filename)
@@ -310,7 +310,7 @@ class ComputerUptimeTest(LandscapeTest):
         accepting their type.
         """
         self.mstore.set_accepted_types([])
-        wtmp_filename = self.make_path("")
+        wtmp_filename = self.makeFile("")
         append_login_data(wtmp_filename, tty_device="~", username="shutdown",
                           entry_time_seconds=535)
         plugin = ComputerUptime(wtmp_file=wtmp_filename)
@@ -327,7 +327,7 @@ class BootTimesTest(LandscapeTest):
         When no data is available in C{/var/log/wtmp}
         L{BootTimes.get_last_boot_time} falls back to C{/proc/uptime}.
         """
-        wtmp_filename = self.make_path("")
+        wtmp_filename = self.makeFile("")
         append_login_data(wtmp_filename, tty_device="~", username="shutdown",
                           entry_time_seconds=535)
         self.assertTrue(BootTimes(filename=wtmp_filename).get_last_boot_time())

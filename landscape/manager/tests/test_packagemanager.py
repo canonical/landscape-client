@@ -205,7 +205,7 @@ class PackageManagerTest(LandscapeIsolatedTest):
     def test_spawn_changer_doesnt_chdir(self):
         command = self.makeFile("#!/bin/sh\necho RUN\n")
         os.chmod(command, 0755)
-        dir = self.make_dir()
+        dir = self.makeDir()
         os.chdir(dir)
         os.chmod(dir, 0)
         

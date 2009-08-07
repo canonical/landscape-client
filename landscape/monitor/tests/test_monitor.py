@@ -46,7 +46,7 @@ class MonitorTest(LandscapeTest):
         self.assertEquals(persist.get("a"), 1)
 
     def test_creating_loads_persist(self):
-        filename = self.make_path()
+        filename = self.makeFile()
 
         persist = Persist()
         persist.set("a", "Hi there!")

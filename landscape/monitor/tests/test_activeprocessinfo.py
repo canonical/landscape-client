@@ -492,7 +492,7 @@ class PluginManagerIntegrationTest(LandscapeTest):
 
     def setUp(self):
         LandscapeTest.setUp(self)
-        self.sample_dir = self.make_dir()
+        self.sample_dir = self.makeDir()
         self.builder = ProcessDataBuilder(self.sample_dir)
         self.mstore.set_accepted_types(["active-process-info",
                                         "operation-result"])

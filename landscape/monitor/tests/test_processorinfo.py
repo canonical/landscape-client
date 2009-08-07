@@ -104,7 +104,7 @@ pmac-generation : NewWorld
 
     def test_read_sample_ppc_g5_data(self):
         """Ensure the plugin can parse /proc/cpuinfo from a dual PowerPC G5."""
-        filename = self.make_path(self.SMP_PPC_G5)
+        filename = self.makeFile(self.SMP_PPC_G5)
         plugin = ProcessorInfo(machine_name="ppc64",
                                source_filename=filename)
         message = plugin.create_message()
@@ -125,7 +125,7 @@ pmac-generation : NewWorld
 
     def test_ppc_g5_cpu_info_same_as_last_known_cpu_info(self):
         """Test that one message is queued for duplicate G5 CPU info."""
-        filename = self.make_path(self.SMP_PPC_G5)
+        filename = self.makeFile(self.SMP_PPC_G5)
         plugin = ProcessorInfo(delay=0.1, machine_name="ppc64",
                                source_filename=filename)
         self.monitor.add(plugin)
@@ -153,7 +153,7 @@ pmac-generation : NewWorld
 
     def test_read_sample_ppc_g4_data(self):
         """Ensure the plugin can parse /proc/cpuinfo from a G4 PowerBook."""
-        filename = self.make_path(self.UP_PPC_G4)
+        filename = self.makeFile(self.UP_PPC_G4)
         plugin = ProcessorInfo(machine_name="ppc",
                                source_filename=filename)
         message = plugin.create_message()
@@ -246,7 +246,7 @@ Processor       : ARMv7 Processor rev 1 (v7l)
 
     def test_read_sample_nokia_data(self):
         """Ensure the plugin can parse /proc/cpuinfo from a Nokia N810."""
-        filename = self.make_path(self.ARM_NOKIA)
+        filename = self.makeFile(self.ARM_NOKIA)
         plugin = ProcessorInfo(machine_name="armv6l",
                                source_filename=filename)
         message = plugin.create_message()
@@ -261,7 +261,7 @@ Processor       : ARMv7 Processor rev 1 (v7l)
 
     def test_read_sample_armv7_data(self):
         """Ensure the plugin can parse /proc/cpuinfo from a sample ARMv7."""
-        filename = self.make_path(self.ARMv7)
+        filename = self.makeFile(self.ARMv7)
         plugin = ProcessorInfo(machine_name="armv7l",
                                source_filename=filename)
         message = plugin.create_message()
@@ -277,7 +277,7 @@ Processor       : ARMv7 Processor rev 1 (v7l)
 
     def test_read_sample_armv7_reverse_data(self):
         """Ensure the plugin can parse a reversed sample ARMv7 /proc/cpuinfo"""
-        filename = self.make_path(self.ARMv7_reverse)
+        filename = self.makeFile(self.ARMv7_reverse)
         plugin = ProcessorInfo(machine_name="armv7l",
                                source_filename=filename)
         message = plugin.create_message()
@@ -317,7 +317,7 @@ CPU1:           online
 
     def test_read_sample_sparc_data(self):
         """Ensure the plugin can parse /proc/cpuinfo from a dual UltraSparc."""
-        filename = self.make_path(self.SMP_SPARC)
+        filename = self.makeFile(self.SMP_SPARC)
         plugin = ProcessorInfo(machine_name="sparc64",
                                source_filename=filename)
         message = plugin.create_message()
@@ -413,7 +413,7 @@ bogomips        : 1198.25
 
     def test_read_sample_opteron_data(self):
         """Ensure the plugin can parse /proc/cpuinfo from a dual Opteron."""
-        filename = self.make_path(self.SMP_OPTERON)
+        filename = self.makeFile(self.SMP_OPTERON)
         plugin = ProcessorInfo(machine_name="x86_64",
                                source_filename=filename)
         message = plugin.create_message()
@@ -438,7 +438,7 @@ bogomips        : 1198.25
 
     def test_plugin_manager(self):
         """Test plugin manager integration."""
-        filename = self.make_path(self.UP_PENTIUM_M)
+        filename = self.makeFile(self.UP_PENTIUM_M)
         plugin = ProcessorInfo(delay=0.1, machine_name="i686",
                                source_filename=filename)
         self.monitor.add(plugin)
@@ -457,7 +457,7 @@ bogomips        : 1198.25
 
     def test_read_sample_pentium_m_data(self):
         """Ensure the plugin can parse /proc/cpuinfo from a Pentium-M."""
-        filename = self.make_path(self.UP_PENTIUM_M)
+        filename = self.makeFile(self.UP_PENTIUM_M)
         plugin = ProcessorInfo(machine_name="i686",
                                source_filename=filename)
         message = plugin.create_message()
@@ -475,7 +475,7 @@ bogomips        : 1198.25
     def test_pentium_m_cpu_info_same_as_last_known_cpu_info(self):
         """Test that one message is queued for duplicate Pentium-M CPU info."""
 
-        filename = self.make_path(self.UP_PENTIUM_M)
+        filename = self.makeFile(self.UP_PENTIUM_M)
         plugin = ProcessorInfo(delay=0.1, machine_name="i686",
                                source_filename=filename)
         self.monitor.add(plugin)
@@ -499,7 +499,7 @@ bogomips        : 1198.25
         self.assertEquals(processor["processor-id"], 0)
 
     def test_unchanging_data(self):
-        filename = self.make_path(self.UP_PENTIUM_M)
+        filename = self.makeFile(self.UP_PENTIUM_M)
         plugin = ProcessorInfo(delay=0.1, machine_name="i686",
                                source_filename=filename)
         self.monitor.add(plugin)
@@ -508,12 +508,12 @@ bogomips        : 1198.25
         self.assertEquals(len(self.mstore.get_pending_messages()), 1)
 
     def test_changing_data(self):
-        filename = self.make_path(self.UP_PENTIUM_M)
+        filename = self.makeFile(self.UP_PENTIUM_M)
         plugin = ProcessorInfo(delay=0.1, machine_name="i686",
                                source_filename=filename)
         self.monitor.add(plugin)
         plugin.run()
-        self.make_path(self.SMP_OPTERON, filename)
+        self.makeFile(self.SMP_OPTERON, path=filename)
         plugin.run()
 
         self.assertEquals(len(self.mstore.get_pending_messages()), 2)
@@ -524,7 +524,7 @@ bogomips        : 1198.25
         accepting their type.
         """
         self.mstore.set_accepted_types([])
-        filename = self.make_path(self.UP_PENTIUM_M)
+        filename = self.makeFile(self.UP_PENTIUM_M)
         plugin = ProcessorInfo(delay=0.1, machine_name="i686",
                                source_filename=filename)
         self.monitor.add(plugin)

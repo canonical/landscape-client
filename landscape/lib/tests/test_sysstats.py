@@ -36,7 +36,7 @@ VmallocChunk:   510252 kB
 class MemoryStatsTest(LandscapeTest):
 
     def test_get_memory_info(self):
-        filename = self.make_path(SAMPLE_MEMORY_INFO)
+        filename = self.makeFile(SAMPLE_MEMORY_INFO)
         memstats = MemoryStats(filename)
         self.assertEquals(memstats.total_memory, 1510)
         self.assertEquals(memstats.free_memory, 503)
@@ -52,7 +52,7 @@ class MemoryStatsTest(LandscapeTest):
     def test_get_memory_info_without_swap(self):
         sample = re.subn(r"Swap(Free|Total): *\d+ kB", r"Swap\1:       0",
                          SAMPLE_MEMORY_INFO)[0]
-        filename = self.make_path(sample)
+        filename = self.makeFile(sample)
         memstats = MemoryStats(filename)
         self.assertEquals(memstats.total_swap, 0)
         self.assertEquals(memstats.free_swap, 0)

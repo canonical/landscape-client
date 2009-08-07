@@ -25,7 +25,7 @@ class ManagerServiceTest(LandscapeIsolatedTest):
         def check_result(result):
             self.assertEquals(result, ["psmith"])
 
-        self.shadow_file = self.make_path("""\
+        self.shadow_file = self.makeFile("""\
 jdoe:$1$xFlQvTqe$cBtrNEDOIKMy/BuJoUdeG0:13348:0:99999:7:::
 psmith:!:13348:0:99999:7:::
 sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
@@ -44,7 +44,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         def check_result(result):
             self.assertEquals(result, [])
 
-        self.shadow_file = self.make_path("\n")
+        self.shadow_file = self.makeFile("\n")
         UserManagerDBusObject(self.broker_service.bus,
                               shadow_file=self.shadow_file)
         remote_service = get_object(self.broker_service.bus,
@@ -66,7 +66,7 @@ class UserGroupTestBase(LandscapeIsolatedTest):
             self.broker_service.config, self.broker_service.bus,
             self.persist)
 
-        self.shadow_file = self.make_path("""\
+        self.shadow_file = self.makeFile("""\
 jdoe:$1$xFlQvTqe$cBtrNEDOIKMy/BuJoUdeG0:13348:0:99999:7:::
 psmith:!:13348:0:99999:7:::
 sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::

@@ -164,7 +164,7 @@ class TestMigration(LandscapeTest):
 
     def setUp(self):
         super(TestMigration, self).setUp()
-        self.data_dir = self.make_dir()
+        self.data_dir = self.makeDir()
         self.persist_filename = "data.bpickle"
         self.broker_filename = "broker_data.bpickle"
         self.monitor_filename = "monitor_data.bpickle"

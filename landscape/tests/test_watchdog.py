@@ -962,7 +962,7 @@ class WatchDogServiceTest(LandscapeTest):
         service.startService()
 
     def test_pid_file(self):
-        pid_file = self.make_path()
+        pid_file = self.makeFile()
 
         watchdog = self.mocker.patch(WatchDog)
         watchdog.check_running()
@@ -989,7 +989,7 @@ class WatchDogServiceTest(LandscapeTest):
         """
         self.log_helper.ignore_errors(
             "ERROR: The following daemons are already running: program-name")
-        pid_file = self.make_path()
+        pid_file = self.makeFile()
 
         daemonize = self.mocker.replace("landscape.watchdog.daemonize",
                                         passthrough=False)
@@ -1043,7 +1043,7 @@ class WatchDogServiceTest(LandscapeTest):
 
         self.mocker.replay()
 
-        pid_file = self.make_path()
+        pid_file = self.makeFile()
         self.configuration.daemon = True
         self.configuration.pid_file = pid_file
         service = WatchDogService(self.configuration)
@@ -1060,7 +1060,7 @@ class WatchDogServiceTest(LandscapeTest):
 
         self.mocker.replay()
 
-        pid_file = self.make_path()
+        pid_file = self.makeFile()
         self.configuration.pid_file = pid_file
         service = WatchDogService(self.configuration)
         open(pid_file, "w").write("abc")
@@ -1068,7 +1068,7 @@ class WatchDogServiceTest(LandscapeTest):
         self.assertTrue(os.path.exists(pid_file))
 
     def test_remove_pid_file_doesnt_explode_on_inaccessibility(self):
-        pid_file = self.make_path()
+        pid_file = self.makeFile()
         # Make os.access say that the file isn't writable
         mock_os = self.mocker.replace("os")
         mock_os.access(pid_file, os.W_OK)
@@ -1209,7 +1209,7 @@ class WatchDogServiceTest(LandscapeTest):
         """
         SIGUSR1 should cause logs to be reopened.
         """
-        logging.getLogger().addHandler(logging.FileHandler(self.make_path()))
+        logging.getLogger().addHandler(logging.FileHandler(self.makeFile()))
         service = WatchDogService(self.configuration)
         # We expect the Watchdog to delegate to each of the sub-processes
         daemon_mock = self.mocker.patch(Daemon)
@@ -1309,7 +1309,7 @@ class WatchDogRunTests(LandscapeTest):
         self.mocker.result(os.getuid())
         self.mocker.replay()
         reactor = FakeReactor()
-        run(["--bus", "system", "--log-dir", self.make_path()],
+        run(["--bus", "system", "--log-dir", self.makeFile()],
             reactor=reactor)
         self.assertTrue(reactor.running)
 
@@ -1321,7 +1321,7 @@ class WatchDogRunTests(LandscapeTest):
         os.environ["UNRELATED"] = "unrelated"
 
         reactor = FakeReactor()
-        run(["--bus", "session", "--log-dir", self.make_path()],
+        run(["--bus", "session", "--log-dir", self.makeFile()],
             reactor=reactor)
         self.assertNotIn("DEBIAN_YO", os.environ)
         self.assertNotIn("DEBCONF_YO", os.environ)

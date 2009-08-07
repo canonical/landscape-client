@@ -41,7 +41,7 @@ VmallocChunk:   107432 kB
 
     def setUp(self):
         LandscapeTest.setUp(self)
-        self.lsb_release_filename = self.make_path("""\
+        self.lsb_release_filename = self.makeFile("""\
 DISTRIB_ID=Ubuntu
 DISTRIB_RELEASE=6.06
 DISTRIB_CODENAME=dapper
@@ -104,7 +104,7 @@ DISTRIB_DESCRIPTION="Ubuntu 6.06.1 LTS"
 
     def test_get_total_memory(self):
         self.mstore.set_accepted_types(["computer-info"])
-        meminfo_filename = self.make_path(self.sample_memory_info)
+        meminfo_filename = self.makeFile(self.sample_memory_info)
         plugin = ComputerInfo(meminfo_file=meminfo_filename)
         self.monitor.add(plugin)
         plugin.exchange()
@@ -116,7 +116,7 @@ DISTRIB_DESCRIPTION="Ubuntu 6.06.1 LTS"
 
     def test_get_real_total_memory(self):
         self.mstore.set_accepted_types(["computer-info"])
-        meminfo_filename = self.make_path(self.sample_memory_info)
+        meminfo_filename = self.makeFile(self.sample_memory_info)
         plugin = ComputerInfo()
         self.monitor.add(plugin)
         plugin.exchange()
@@ -229,7 +229,7 @@ DISTRIB_DESCRIPTION="Ubuntu 6.06.1 LTS"
         self.assertEquals(message["release"], "6.06")
         self.assertEquals(message["code-name"], "dapper")
 
-        plugin._lsb_release_filename = self.make_path("""\
+        plugin._lsb_release_filename = self.makeFile("""\
 DISTRIB_ID=Ubuntu
 DISTRIB_RELEASE=6.10
 DISTRIB_CODENAME=edgy
@@ -245,7 +245,7 @@ DISTRIB_DESCRIPTION="Ubuntu 6.10"
 
     def test_unknown_distribution_key(self):
         self.mstore.set_accepted_types(["distribution-info"])
-        lsb_release_filename = self.make_path("""\
+        lsb_release_filename = self.makeFile("""\
 DISTRIB_ID=Ubuntu
 DISTRIB_RELEASE=6.10
 DISTRIB_CODENAME=edgy
@@ -269,7 +269,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         all computer info should be generated.
         """
         self.mstore.set_accepted_types(["distribution-info", "computer-info"])
-        meminfo_filename = self.make_path(self.sample_memory_info)
+        meminfo_filename = self.makeFile(self.sample_memory_info)
         plugin = ComputerInfo(get_fqdn=get_fqdn,
                               meminfo_file=meminfo_filename,
                               lsb_release_filename=self.lsb_release_filename)

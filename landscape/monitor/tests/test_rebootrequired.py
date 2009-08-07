@@ -11,7 +11,7 @@ class RebootRequiredTest(LandscapeIsolatedTest):
 
     def setUp(self):
         super(RebootRequiredTest, self).setUp()
-        self.reboot_required_filename = self.make_path("")
+        self.reboot_required_filename = self.makeFile("")
         self.plugin = RebootRequired(self.reboot_required_filename)
         self.monitor.add(self.plugin)
         self.mstore.set_accepted_types(["reboot-required"])

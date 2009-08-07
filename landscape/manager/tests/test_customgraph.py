@@ -24,7 +24,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.manager.store = self.store
         self.broker_service.message_store.set_accepted_types(
             ["custom-graph"])
-        self.data_path = self.make_dir()
+        self.data_path = self.makeDir()
         self.manager.config.data_path = self.data_path
         os.makedirs(os.path.join(self.data_path, "custom-graph-scripts"))
         self.manager.config.script_users = "ALL"
@@ -92,7 +92,7 @@ class CustomGraphManagerTests(LandscapeTest):
         class pwnam(object):
             pw_uid = 1234
             pw_gid = 5678
-            pw_dir = self.make_path()
+            pw_dir = self.makeFile()
 
         self.expect(mock_getpwnam("bar")).result(pwnam)
         self.mocker.replay()
@@ -197,7 +197,7 @@ class CustomGraphManagerTests(LandscapeTest):
         return self.graph_manager.run().addCallback(check)
 
     def test_run_cast_result_error(self):
-        filename = self.make_path("some_content")
+        filename = self.makeFile("some_content")
         self.store.add_graph(123, filename, None)
         factory = StubProcessFactory()
         self.graph_manager.process_factory = factory
@@ -223,7 +223,7 @@ class CustomGraphManagerTests(LandscapeTest):
         return result.addCallback(check)
 
     def test_run_no_output_error(self):
-        filename = self.make_path("some_content")
+        filename = self.makeFile("some_content")
         self.store.add_graph(123, filename, None)
         factory = StubProcessFactory()
         self.graph_manager.process_factory = factory
@@ -248,9 +248,9 @@ class CustomGraphManagerTests(LandscapeTest):
         return result.addCallback(check)
 
     def test_run_no_output_error_with_other_result(self):
-        filename1 = self.make_path("some_content")
+        filename1 = self.makeFile("some_content")
         self.store.add_graph(123, filename1, None)
-        filename2 = self.make_path("some_content")
+        filename2 = self.makeFile("some_content")
         self.store.add_graph(124, filename2, None)
         factory = StubProcessFactory()
         self.graph_manager.process_factory = factory
@@ -278,9 +278,9 @@ class CustomGraphManagerTests(LandscapeTest):
         return result.addCallback(check)
 
     def test_multiple_errors(self):
-        filename1 = self.make_path("some_content")
+        filename1 = self.makeFile("some_content")
         self.store.add_graph(123, filename1, None)
-        filename2 = self.make_path("some_content")
+        filename2 = self.makeFile("some_content")
         self.store.add_graph(124, filename2, None)
         factory = StubProcessFactory()
         self.graph_manager.process_factory = factory
@@ -309,7 +309,7 @@ class CustomGraphManagerTests(LandscapeTest):
         return result.addCallback(check)
 
     def test_run_user(self):
-        filename = self.make_path("some content")
+        filename = self.makeFile("some content")
         self.store.add_graph(123, filename, "bar")
         factory = StubProcessFactory()
         self.graph_manager.process_factory = factory
@@ -318,7 +318,7 @@ class CustomGraphManagerTests(LandscapeTest):
         class pwnam(object):
             pw_uid = 1234
             pw_gid = 5678
-            pw_dir = self.make_path()
+            pw_dir = self.makeFile()
 
         self.expect(mock_getpwnam("bar")).result(pwnam)
         self.mocker.replay()
@@ -344,7 +344,7 @@ class CustomGraphManagerTests(LandscapeTest):
         username = info.pw_name
         self.manager.config.script_users = "foo"
 
-        filename = self.make_path("some content")
+        filename = self.makeFile("some content")
         self.store.add_graph(123, filename, username)
         factory = StubProcessFactory()
         self.graph_manager.process_factory = factory
@@ -374,7 +374,7 @@ class CustomGraphManagerTests(LandscapeTest):
 
         self.manager.config.script_users = "foo"
 
-        filename = self.make_path("some content")
+        filename = self.makeFile("some content")
         self.store.add_graph(123, filename, "foo")
         factory = StubProcessFactory()
         self.graph_manager.process_factory = factory
@@ -395,7 +395,7 @@ class CustomGraphManagerTests(LandscapeTest):
         return result.addCallback(check)
 
     def test_run_timeout(self):
-        filename = self.make_path("some content")
+        filename = self.makeFile("some content")
         self.store.add_graph(123, filename, None)
         factory = StubProcessFactory()
         self.graph_manager.process_factory = factory
