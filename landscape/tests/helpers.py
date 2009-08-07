@@ -232,15 +232,6 @@ class LogKeeperHelper(object):
             self.ignored_exception_types.append(type_or_regex)
 
 
-class MakePathHelper(object):
-
-    def set_up(self, test_case):
-        pass
-
-    def tear_down(self, test_case):
-        pass
-
-
 class EnvironSnapshot(object):
 
     def __init__(self):

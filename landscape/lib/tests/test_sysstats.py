@@ -3,8 +3,7 @@ import re
 
 from landscape.lib.sysstats import (
     MemoryStats, CommandError, get_logged_in_users, get_thermal_zones)
-from landscape.tests.helpers import (
-    LandscapeTest, MakePathHelper, EnvironSaverHelper)
+from landscape.tests.helpers import LandscapeTest, EnvironSaverHelper
 
 
 SAMPLE_MEMORY_INFO = """
@@ -35,8 +34,6 @@ VmallocChunk:   510252 kB
 
 
 class MemoryStatsTest(LandscapeTest):
-
-    helpers = [MakePathHelper]
 
     def test_get_memory_info(self):
         filename = self.make_path(SAMPLE_MEMORY_INFO)

@@ -2,7 +2,7 @@ from landscape.lib import md5crypt
 from landscape.user.management import UserManagement, UserManagementError
 from landscape.user.tests.helpers import FakeUserProvider
 from landscape.user.provider import UserNotFoundError, GroupNotFoundError
-from landscape.tests.helpers import LandscapeTest, MakePathHelper, MockPopen
+from landscape.tests.helpers import LandscapeTest, MockPopen
 
 
 def guess_password(generated_password, plaintext_password):
@@ -12,8 +12,6 @@ def guess_password(generated_password, plaintext_password):
 
 
 class UserWriteTest(LandscapeTest):
-
-    helpers = [MakePathHelper]
 
     def setUp(self):
         LandscapeTest.setUp(self)
@@ -379,8 +377,6 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
 
 
 class GroupWriteTest(LandscapeTest):
-
-    helpers = [MakePathHelper]
 
     def setUp(self):
         LandscapeTest.setUp(self)

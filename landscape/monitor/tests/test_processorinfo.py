@@ -1,7 +1,6 @@
 from landscape.plugin import PluginConfigError
 from landscape.monitor.processorinfo import ProcessorInfo
-from landscape.tests.helpers import (
-    LandscapeTest, MakePathHelper, MonitorHelper)
+from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.tests.mocker import ANY
 
 
@@ -62,7 +61,7 @@ class ResynchTest(LandscapeTest):
 class PowerPCMessageTest(LandscapeTest):
     """Tests for powerpc-specific message builder."""
 
-    helpers = [MonitorHelper, MakePathHelper]
+    helpers = [MonitorHelper]
 
     SMP_PPC_G5 = """
 processor       : 0
@@ -170,7 +169,7 @@ pmac-generation : NewWorld
 class ARMMessageTest(LandscapeTest):
     """Tests for ARM-specific message builder."""
 
-    helpers = [MonitorHelper, MakePathHelper]
+    helpers = [MonitorHelper]
 
     ARM_NOKIA = """
 Processor       : ARMv6-compatible processor rev 2 (v6l)
@@ -295,7 +294,7 @@ Processor       : ARMv7 Processor rev 1 (v7l)
 class SparcMessageTest(LandscapeTest):
     """Tests for sparc-specific message builder."""
 
-    helpers = [MonitorHelper, MakePathHelper]
+    helpers = [MonitorHelper]
 
     SMP_SPARC = """
 cpu             : TI UltraSparc IIIi (Jalapeno)
@@ -341,7 +340,7 @@ CPU1:           online
 class X86MessageTest(LandscapeTest):
     """Test for x86-specific message handling."""
 
-    helpers = [MonitorHelper, MakePathHelper]
+    helpers = [MonitorHelper]
 
     SMP_OPTERON = """
 processor       : 0

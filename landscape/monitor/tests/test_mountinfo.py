@@ -4,8 +4,7 @@ from twisted.internet.defer import succeed
 
 from landscape.monitor.mountinfo import MountInfo
 from landscape.tests.test_hal import MockHALManager, MockRealHALDevice
-from landscape.tests.helpers import (LandscapeTest, MakePathHelper,
-                                     mock_counter, MonitorHelper)
+from landscape.tests.helpers import LandscapeTest, mock_counter, MonitorHelper
 from landscape.tests.mocker import ANY
 
 
@@ -15,7 +14,7 @@ mb = lambda x: x * 1024 * 1024
 class MountInfoTest(LandscapeTest):
     """Tests for mount-info plugin."""
 
-    helpers = [MonitorHelper, MakePathHelper]
+    helpers = [MonitorHelper]
 
     def setUp(self):
         LandscapeTest.setUp(self)

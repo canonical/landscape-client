@@ -1,11 +1,11 @@
 from landscape.monitor.memoryinfo import MemoryInfo
-from landscape.tests.helpers import LandscapeTest, MakePathHelper, MonitorHelper
+from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.tests.mocker import ANY
 
 
 class MemoryInfoTest(LandscapeTest):
 
-    helpers = [MonitorHelper, MakePathHelper]
+    helpers = [MonitorHelper]
 
     SAMPLE_DATA = """
 MemTotal:      1546436 kB

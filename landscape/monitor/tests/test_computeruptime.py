@@ -4,8 +4,7 @@ import struct
 from landscape.monitor.computeruptime import (LoginInfo, LoginInfoReader,
                                               ComputerUptime, BootTimes,
                                               get_uptime)
-from landscape.tests.helpers import (LandscapeTest, MakePathHelper,
-                                     MonitorHelper)
+from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.tests.mocker import ANY
 
 
@@ -39,8 +38,6 @@ class UptimeTest(LandscapeTest):
 
 class LoginInfoReaderTest(LandscapeTest):
     """Tests for login info file reader."""
-
-    helpers = [MakePathHelper]
 
     def test_read_empty_file(self):
         """Test ensures the reader is resilient to empty files."""
@@ -124,7 +121,7 @@ class LoginInfoReaderTest(LandscapeTest):
 class ComputerUptimeTest(LandscapeTest):
     """Tests for the computer-uptime plugin."""
 
-    helpers = [MakePathHelper, MonitorHelper]
+    helpers = [MonitorHelper]
 
     def setUp(self):
         LandscapeTest.setUp(self)
@@ -324,8 +321,6 @@ class ComputerUptimeTest(LandscapeTest):
 
 
 class BootTimesTest(LandscapeTest):
-
-    helpers = [MakePathHelper]
 
     def test_fallback_to_uptime(self):
         """

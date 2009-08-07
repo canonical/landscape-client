@@ -1,7 +1,7 @@
 import re
 
 from landscape.monitor.computerinfo import ComputerInfo
-from landscape.tests.helpers import LandscapeTest, MakePathHelper, MonitorHelper
+from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.tests.mocker import ANY
 
 
@@ -11,7 +11,7 @@ def get_fqdn():
 
 class ComputerInfoTest(LandscapeTest):
 
-    helpers = [MonitorHelper, MakePathHelper]
+    helpers = [MonitorHelper]
 
     sample_memory_info = """
 MemTotal:      1547072 kB

@@ -4,7 +4,7 @@ import os
 from landscape.lib.persist import (
     path_string_to_tuple, path_tuple_to_string, Persist, RootedPersist,
     PickleBackend, ConfigObjBackend, PersistError, PersistReadOnlyError)
-from landscape.tests.helpers import LandscapeTest, MakePathHelper
+from landscape.tests.helpers import LandscapeTest
 
 
 class PersistHelpersTest(LandscapeTest):
@@ -276,8 +276,6 @@ class GeneralPersistTest(BasePersistTest):
 
 
 class SaveLoadPersistTest(BasePersistTest):
-
-    helpers = [MakePathHelper]
 
     def test_readonly(self):
         self.assertFalse(self.persist.readonly)

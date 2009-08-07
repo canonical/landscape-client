@@ -8,13 +8,13 @@ from landscape.monitor.usermonitor import UserMonitor, UserMonitorDBusObject
 from landscape.manager.usermanager import UserManagerDBusObject
 from landscape.user.tests.helpers import FakeUserProvider
 from landscape.tests.helpers import LandscapeIsolatedTest
-from landscape.tests.helpers import MakePathHelper, RemoteBrokerHelper
+from landscape.tests.helpers import RemoteBrokerHelper
 from landscape.tests.mocker import ANY
 
 
 class UserMonitorNoManagerTest(LandscapeIsolatedTest):
 
-    helpers = [MakePathHelper, RemoteBrokerHelper]
+    helpers = [RemoteBrokerHelper]
 
     def setUp(self):
         super(UserMonitorNoManagerTest, self).setUp()
@@ -53,7 +53,7 @@ class UserMonitorNoManagerTest(LandscapeIsolatedTest):
 
 class UserMonitorTest(LandscapeIsolatedTest):
 
-    helpers = [MakePathHelper, RemoteBrokerHelper]
+    helpers = [RemoteBrokerHelper]
 
     def setUp(self):
         super(UserMonitorTest, self).setUp()

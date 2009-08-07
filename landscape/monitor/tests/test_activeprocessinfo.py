@@ -7,8 +7,8 @@ import subprocess
 from twisted.internet.defer import fail
 
 from landscape.monitor.activeprocessinfo import ActiveProcessInfo
-from landscape.tests.helpers import (LandscapeTest, MakePathHelper,
-                                     MonitorHelper, ProcessDataBuilder)
+from landscape.tests.helpers import (LandscapeTest, MonitorHelper,
+                                     ProcessDataBuilder)
 from landscape.tests.mocker import ANY
 from landscape import API
 
@@ -16,7 +16,7 @@ from landscape import API
 class ActiveProcessInfoTest(LandscapeTest):
     """Active process info plugin tests."""
 
-    helpers = [MonitorHelper, MakePathHelper]
+    helpers = [MonitorHelper]
 
     def setUp(self):
         """Initialize helpers and sample data builder."""
@@ -488,7 +488,7 @@ class ActiveProcessInfoTest(LandscapeTest):
 
 class PluginManagerIntegrationTest(LandscapeTest):
 
-    helpers = [MonitorHelper, MakePathHelper]
+    helpers = [MonitorHelper]
 
     def setUp(self):
         LandscapeTest.setUp(self)

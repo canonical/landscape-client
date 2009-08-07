@@ -6,13 +6,10 @@ from landscape.user.provider import (UserProvider, UserNotFoundError,
 
 from landscape.user.tests.helpers import FakeUserProvider
 
-from landscape.tests.helpers import (
-    LandscapeTest, MakePathHelper)
+from landscape.tests.helpers import LandscapeTest
 
 
 class ProviderTest(LandscapeTest):
-
-    helpers = [MakePathHelper]
 
     def setUp(self):
         LandscapeTest.setUp(self)

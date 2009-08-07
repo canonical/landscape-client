@@ -2,13 +2,12 @@ import os
 
 from landscape.monitor.rebootrequired import RebootRequired
 from landscape.tests.helpers import LandscapeIsolatedTest
-from landscape.tests.helpers import (
-    MakePathHelper, MonitorHelper, LogKeeperHelper)
+from landscape.tests.helpers import MonitorHelper, LogKeeperHelper
 
 
 class RebootRequiredTest(LandscapeIsolatedTest):
 
-    helpers = [MakePathHelper, MonitorHelper, LogKeeperHelper]
+    helpers = [MonitorHelper, LogKeeperHelper]
 
     def setUp(self):
         super(RebootRequiredTest, self).setUp()
