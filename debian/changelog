@@ -1,4 +1,4 @@
-landscape-client (1.3.2.2-0ubuntu0.9.10.3~landscape1) karmic; urgency=low
+landscape-client (1.3.2.2-0ubuntu0.9.10.3) karmic; urgency=low
 
   * Drop unsed dependency on libcurl3 and explicitly depend on
     libcurl3-gnutls (>= 7.15.1-1ubuntu3) on dapper (LP: #406885)
