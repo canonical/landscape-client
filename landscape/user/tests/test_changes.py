@@ -2,18 +2,17 @@ from landscape.lib.persist import Persist
 from landscape.user.changes import UserChanges
 from landscape.user.tests.helpers import FakeUserInfo, FakeUserProvider
 
-from landscape.tests.helpers import (LandscapeTest, MonitorHelper,
-    MakePathHelper)
+from landscape.tests.helpers import LandscapeTest, MonitorHelper
 
 
 class UserChangesTest(LandscapeTest):
 
-    helpers = [MonitorHelper, MakePathHelper]
+    helpers = [MonitorHelper]
 
     def setUp(self):
         super(UserChangesTest, self).setUp()
         self.persist = Persist()
-        self.shadow_file = self.make_path("""\
+        self.shadow_file = self.makeFile("""\
 jdoe:$1$xFlQvTqe$cBtrNEDOIKMy/BuJoUdeG0:13348:0:99999:7:::
 psmith:!:13348:0:99999:7:::
 sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::

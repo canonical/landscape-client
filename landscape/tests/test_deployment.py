@@ -345,7 +345,7 @@ class GetVersionedPersistTest(LandscapeTest):
 
     def test_upgrade_service(self):
         class FakeService(object):
-            persist_filename = self.make_path(content="")
+            persist_filename = self.makeFile(content="")
             service_name = "monitor"
 
         upgrade_managers = self.mocker.replace(
@@ -363,9 +363,17 @@ class GetVersionedPersistTest(LandscapeTest):
 
 class LandscapeServiceTest(LandscapeTest):
 
+    def setUp(self):
+        super(LandscapeServiceTest, self).setUp()
+        signal.signal(signal.SIGUSR1, signal.SIG_DFL)
+
+    def tearDown(self):
+        super(LandscapeServiceTest, self).tearDown()
+        signal.signal(signal.SIGUSR1, signal.SIG_DFL)
+
     def test_create_persist(self):
         class FakeService(LandscapeService):
-            persist_filename = self.make_path(content="")
+            persist_filename = self.makeFile(content="")
             service_name = "monitor"
         service = FakeService(None)
         self.assertEquals(service.persist.filename, service.persist_filename)
@@ -380,7 +388,7 @@ class LandscapeServiceTest(LandscapeTest):
         """
         SIGUSR1 should cause logs to be reopened.
         """
-        logging.getLogger().addHandler(logging.FileHandler(self.make_path()))
+        logging.getLogger().addHandler(logging.FileHandler(self.makeFile()))
         # Store the initial set of handlers
         original_streams = [handler.stream for handler in
                             logging.getLogger().handlers if
@@ -399,6 +407,20 @@ class LandscapeServiceTest(LandscapeTest):
         for stream in new_streams:
             self.assertTrue(stream not in original_streams)
 
+    def test_ignore_sigusr1(self):
+        """
+        SIGUSR1 is ignored if we so request.
+        """
+        class Configuration:
+            ignore_sigusr1 = True
+
+        # Instantiating LandscapeService should not register the
+        # handler if we request to ignore it.
+        config = Configuration()
+        LandscapeService(config)
+
+        handler = signal.getsignal(signal.SIGUSR1)
+        self.assertFalse(handler)
 
 
 class AssertUnownedBusNameTest(LandscapeIsolatedTest):

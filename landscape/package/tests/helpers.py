@@ -7,8 +7,8 @@ import smart
 class SmartHelper(object):
 
     def set_up(self, test_case):
-        test_case.smart_dir = test_case.make_dir()
-        test_case.repository_dir = test_case.make_dir()
+        test_case.smart_dir = test_case.makeDir()
+        test_case.repository_dir = test_case.makeDir()
         create_repository(test_case.repository_dir)
 
     def tear_down(self, test_case):

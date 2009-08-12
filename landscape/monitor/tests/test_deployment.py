@@ -16,7 +16,7 @@ class DeploymentTest(LandscapeTest):
     def test_get_plugins(self):
         configuration = MonitorConfiguration()
         configuration.load(["--monitor-plugins", "ComputerInfo, LoadAverage",
-                            "-d", self.make_path()])
+                            "-d", self.makeFile()])
         monitor = MonitorService(configuration)
         plugins = monitor.plugins
         self.assertEquals(len(plugins), 2)
@@ -26,7 +26,7 @@ class DeploymentTest(LandscapeTest):
     def test_get_all_plugins(self):
         configuration = MonitorConfiguration()
         configuration.load(["--monitor-plugins", "ALL",
-                            "-d", self.make_path()])
+                            "-d", self.makeFile()])
         monitor = MonitorService(configuration)
         plugins = monitor.plugins
         self.assertEquals(len(plugins), 11)

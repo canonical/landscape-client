@@ -8,7 +8,7 @@ class DiskTest(LandscapeTest):
 
     def setUp(self):
         super(DiskTest, self).setUp()
-        self.mount_file = self.make_path("")
+        self.mount_file = self.makeFile("")
         self.stat_results = {}
 
         self.disk = Disk(mounts_file=self.mount_file,

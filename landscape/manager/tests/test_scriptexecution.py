@@ -69,7 +69,7 @@ class RunScriptTests(LandscapeTest):
 
     def test_concurrent(self):
         """Scripts run with the ScriptExecutionPlugin plugin are run concurrently."""
-        fifo = self.make_path()
+        fifo = self.makeFile()
         os.mkfifo(fifo)
         # If the first process is blocking on a fifo, and the second process
         # wants to write to the fifo, the only way this will complete is if
@@ -218,7 +218,7 @@ class RunScriptTests(LandscapeTest):
         class pwnam(object):
             pw_uid = 1234
             pw_gid = 5678
-            pw_dir = self.make_path()
+            pw_dir = self.makeFile()
 
         self.expect(mock_getpwnam("user")).result(pwnam)
 

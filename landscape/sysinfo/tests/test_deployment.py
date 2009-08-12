@@ -24,31 +24,31 @@ class DeploymentTest(LandscapeTest):
 
     def test_get_plugins(self):
         self.configuration.load(["--sysinfo-plugins", "Load,TestPlugin",
-                                 "-d", self.make_path()])
+                                 "-d", self.makeFile()])
         plugins = self.configuration.get_plugins()
         self.assertEquals(len(plugins), 2)
         self.assertTrue(isinstance(plugins[0], Load))
         self.assertTrue(isinstance(plugins[1], TestPlugin))
 
     def test_get_all_plugins(self):
-        self.configuration.load(["-d", self.make_path()])
+        self.configuration.load(["-d", self.makeFile()])
         plugins = self.configuration.get_plugins()
         self.assertEquals(len(plugins), len(ALL_PLUGINS))
 
     def test_exclude_plugins(self):
         exclude = ",".join(x for x in ALL_PLUGINS if x != "Load")
         self.configuration.load(["--exclude-sysinfo-plugins", exclude,
-                                 "-d", self.make_path()])
+                                 "-d", self.makeFile()])
         plugins = self.configuration.get_plugins()
         self.assertEquals(len(plugins), 1)
         self.assertTrue(isinstance(plugins[0], Load))
 
     def test_config_file(self):
-        filename = self.make_path()
+        filename = self.makeFile()
         f = open(filename, "w")
         f.write("[sysinfo]\nsysinfo_plugins = TestPlugin\n")
         f.close()
-        self.configuration.load(["--config", filename, "-d", self.make_path()])
+        self.configuration.load(["--config", filename, "-d", self.makeFile()])
         plugins = self.configuration.get_plugins()
         self.assertEquals(len(plugins), 1)
         self.assertTrue(isinstance(plugins[0], TestPlugin))
@@ -234,7 +234,7 @@ class RunTest(LandscapeTest):
                           "/var/log/landscape/sysinfo.log")
 
     def test_create_log_dir(self):
-        log_dir = self.make_path()
+        log_dir = self.makeFile()
         self.assertFalse(os.path.exists(log_dir))
         setup_logging(landscape_dir=log_dir)
         self.assertTrue(os.path.exists(log_dir))
