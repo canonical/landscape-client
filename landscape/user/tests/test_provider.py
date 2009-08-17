@@ -6,29 +6,26 @@ from landscape.user.provider import (UserProvider, UserNotFoundError,
 
 from landscape.user.tests.helpers import FakeUserProvider
 
-from landscape.tests.helpers import (
-    LandscapeTest, MakePathHelper)
+from landscape.tests.helpers import LandscapeTest
 
 
 class ProviderTest(LandscapeTest):
 
-    helpers = [MakePathHelper]
-
     def setUp(self):
         LandscapeTest.setUp(self)
-        self.shadow_file = self.make_path("""\
+        self.shadow_file = self.makeFile("""\
 jdoe:$1$xFlQvTqe$cBtrNEDOIKMy/BuJoUdeG0:13348:0:99999:7:::
 psmith:!:13348:0:99999:7:::
 sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
 """)
 
-        self.passwd_file = self.make_path("""\
+        self.passwd_file = self.makeFile("""\
 root:x:0:0:root:/root:/bin/bash
 haldaemon:x:107:116:Hardware abstraction layer,,,:/home/haldaemon:/bin/false
 kevin:x:1001:65534:Kevin,101,+44123123,+44123124:/home/kevin:/bin/bash
 """)
 
-        self.group_file = self.make_path("""\
+        self.group_file = self.makeFile("""\
 root:x:0:
 cdrom:x:24:haldaemon,kevin
 kevin:x:1000:
@@ -405,7 +402,7 @@ kevin:x:1000:
         Incorrectly formatted lines according to passwd(5) should be ignored
         during processing.
         """
-        passwd_file = self.make_path("""\
+        passwd_file = self.makeFile("""\
 root:x:0:0:root:/root:/bin/bash
 broken
 haldaemon:x:107:Hardware abstraction layer,,,:/home/haldaemon:/bin/false
@@ -449,7 +446,7 @@ broken2
         We should ignore the specific pattern for NIS user-extensions in passwd
         files.
         """
-        passwd_file = self.make_path("""\
+        passwd_file = self.makeFile("""\
 root:x:0:0:root:/root:/bin/bash
 kevin:x:1001:65534:Kevin,101,+44123123,+44123124:/home/kevin:/bin/bash
 +jkakar::::::
@@ -487,7 +484,7 @@ kevin:x:1001:65534:Kevin,101,+44123123,+44123124:/home/kevin:/bin/bash
         Incorrectly formatted lines according to group(5) should be ignored
         during processing.
         """
-        group_file = self.make_path("""\
+        group_file = self.makeFile("""\
 root:x:0:
 cdrom:x:24:
 kevin:x:kevin:
@@ -509,7 +506,7 @@ kevin:x:kevin:
         We should ignore the specific pattern for NIS user-extensions in group 
         files.
         """
-        group_file = self.make_path("""\
+        group_file = self.makeFile("""\
 root:x:0:
 cdrom:x:24:
 +jkakar:::

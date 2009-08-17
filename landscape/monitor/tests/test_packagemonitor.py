@@ -216,7 +216,7 @@ class PackageMonitorTest(LandscapeIsolatedTest):
     def test_spawn_reporter_doesnt_chdir(self):
         command = self.makeFile("#!/bin/sh\necho RUN\n")
         os.chmod(command, 0755)
-        dir = self.make_dir()
+        dir = self.makeDir()
         cwd = os.getcwd()
         os.chdir(dir)
         os.chmod(dir, 0)

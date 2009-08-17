@@ -4,7 +4,7 @@ import os
 from landscape.lib.persist import (
     path_string_to_tuple, path_tuple_to_string, Persist, RootedPersist,
     PickleBackend, ConfigObjBackend, PersistError, PersistReadOnlyError)
-from landscape.tests.helpers import LandscapeTest, MakePathHelper
+from landscape.tests.helpers import LandscapeTest
 
 
 class PersistHelpersTest(LandscapeTest):
@@ -277,8 +277,6 @@ class GeneralPersistTest(BasePersistTest):
 
 class SaveLoadPersistTest(BasePersistTest):
 
-    helpers = [MakePathHelper]
-
     def test_readonly(self):
         self.assertFalse(self.persist.readonly)
         self.persist.readonly = True
@@ -326,7 +324,7 @@ class SaveLoadPersistTest(BasePersistTest):
         for path in self.set_result:
             self.persist.set(path, self.set_result[path])
 
-        filename = self.make_path()
+        filename = self.makeFile()
         self.persist.save(filename)
 
         persist = self.build_persist()
@@ -337,7 +335,7 @@ class SaveLoadPersistTest(BasePersistTest):
                           self.format(result, self.set_result))
 
     def test_save_on_unexistent_dir(self):
-        dirname = self.make_path()
+        dirname = self.makeFile()
         filename = os.path.join(dirname, "foobar")
 
         self.assertFalse(os.path.exists(dirname))
@@ -345,7 +343,7 @@ class SaveLoadPersistTest(BasePersistTest):
         self.assertTrue(os.path.isfile(filename))
 
     def test_save_creates_backup(self):
-        filename = self.make_path("foobar")
+        filename = self.makeFile("foobar")
 
         self.assertFalse(os.path.exists(filename+".old"))
         self.persist.save(filename)
@@ -356,7 +354,7 @@ class SaveLoadPersistTest(BasePersistTest):
         Persist can be constructed with a filename, and Persist.save with no
         arguments will write to that filename.
         """
-        filename = self.make_path()
+        filename = self.makeFile()
         persist = self.build_persist(filename=filename)
         self.assertFalse(os.path.exists(filename))
         persist.save()
@@ -374,7 +372,7 @@ class SaveLoadPersistTest(BasePersistTest):
         If a Persist is created with a default filename, and the filename
         exists, it will be loaded.
         """
-        filename = self.make_path()
+        filename = self.makeFile()
         persist = self.build_persist(filename=filename)
         persist.set("foo", "bar")
         persist.save()
@@ -383,7 +381,7 @@ class SaveLoadPersistTest(BasePersistTest):
         self.assertEquals(persist.get("foo"), "bar")
 
     def test_load_restores_backup(self):
-        filename = self.make_path("foobar")
+        filename = self.makeFile("foobar")
 
         self.persist.set("a", 1)
         self.persist.save(filename+".old")
@@ -394,7 +392,7 @@ class SaveLoadPersistTest(BasePersistTest):
         self.assertEquals(persist.get("a"), 1)
 
     def test_load_empty_files_wont_break(self):
-        filename = self.make_path("")
+        filename = self.makeFile("")
         self.persist.load(filename)
 
 

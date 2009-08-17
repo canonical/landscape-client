@@ -74,4 +74,7 @@ freshrun: freshdata run
 tags:
 	-ctags --languages=python -R .
 
-.PHONY: tags
+etags:
+	-etags --languages=python -R .
+
+.PHONY: tags etags

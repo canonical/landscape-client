@@ -2,17 +2,16 @@ import os
 
 from landscape.monitor.rebootrequired import RebootRequired
 from landscape.tests.helpers import LandscapeIsolatedTest
-from landscape.tests.helpers import (
-    MakePathHelper, MonitorHelper, LogKeeperHelper)
+from landscape.tests.helpers import MonitorHelper, LogKeeperHelper
 
 
 class RebootRequiredTest(LandscapeIsolatedTest):
 
-    helpers = [MakePathHelper, MonitorHelper, LogKeeperHelper]
+    helpers = [MonitorHelper, LogKeeperHelper]
 
     def setUp(self):
         super(RebootRequiredTest, self).setUp()
-        self.reboot_required_filename = self.make_path("")
+        self.reboot_required_filename = self.makeFile("")
         self.plugin = RebootRequired(self.reboot_required_filename)
         self.monitor.add(self.plugin)
         self.mstore.set_accepted_types(["reboot-required"])
