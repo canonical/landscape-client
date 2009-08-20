@@ -3,6 +3,7 @@ import os
 from landscape.monitor.rebootrequired import RebootRequired
 from landscape.tests.helpers import LandscapeIsolatedTest
 from landscape.tests.helpers import MonitorHelper, LogKeeperHelper
+from landscape.tests.mocker import ANY
 
 
 class RebootRequiredTest(LandscapeIsolatedTest):
@@ -53,7 +54,7 @@ class RebootRequiredTest(LandscapeIsolatedTest):
         C{reboot-required} messages.
         """
         mock_plugin = self.mocker.patch(self.plugin)
-        mock_plugin.send_message()
+        mock_plugin.send_message(ANY, urgent=True)
         self.mocker.count(1)
         self.mocker.replay()
         self.plugin.run()
