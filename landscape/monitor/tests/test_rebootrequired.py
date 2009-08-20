@@ -53,9 +53,8 @@ class RebootRequiredTest(LandscapeIsolatedTest):
         If the server can accept them, the plugin should send
         C{reboot-required} messages.
         """
-        mock_plugin = self.mocker.patch(self.plugin)
-        mock_plugin.send_message(ANY, urgent=True)
-        self.mocker.count(1)
+        broker_mock = self.mocker.replace(self.remote)
+        broker_mock.send_message(ANY, urgent=True)
         self.mocker.replay()
         self.plugin.run()
         self.mstore.set_accepted_types([])
