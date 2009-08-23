@@ -492,12 +492,13 @@ class WatchDogService(Service):
         return done
 
     def _remove_pid(self):
-        if os.access(self._config.pid_file, os.W_OK):
-            stream = open(self._config.pid_file)
+        pid_file = self._config.pid_file
+        if pidfile is not None and os.access(pid_file, os.W_OK):
+            stream = open(pid_file)
             pid = stream.read()
             stream.close()
             if pid == str(os.getpid()):
-                os.unlink(self._config.pid_file)
+                os.unlink(pid_file)
 
 
 bootstrap_list = BootstrapList([
