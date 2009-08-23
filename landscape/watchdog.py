@@ -493,7 +493,7 @@ class WatchDogService(Service):
 
     def _remove_pid(self):
         pid_file = self._config.pid_file
-        if pidfile is not None and os.access(pid_file, os.W_OK):
+        if pid_file is not None and os.access(pid_file, os.W_OK):
             stream = open(pid_file)
             pid = stream.read()
             stream.close()
