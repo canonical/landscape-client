@@ -374,7 +374,6 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
             self.assertRaises(AssertionError, self.mocker.verify)
 
             # DO THE REST OF IT! :-)
-            #result.callback(None)
             to_call[0]()
 
             # Are we there yet!?
