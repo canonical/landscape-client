@@ -371,7 +371,7 @@ def ensure_hash_id_schema(db):
     try:
         cursor.execute("CREATE TABLE hash"
                        " (id INTEGER PRIMARY KEY, hash BLOB UNIQUE)")
-    except sqlite3.OperationalError:
+    except (sqlite3.OperationalError, sqlite3.DatabaseError):
         cursor.close()
         db.rollback()
     else:
@@ -385,7 +385,7 @@ def ensure_hash_id_schema(db):
     try:
         try:
             cursor.execute("SELECT id FROM hash limit 1")
-        except sqlite3.OperationalError:
+        except (sqlite3.OperationalError, sqlite3.DatabaseError):
             pass
     finally:
         cursor.close()
