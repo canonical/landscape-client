@@ -371,7 +371,7 @@ def ensure_hash_id_schema(db):
     try:
         cursor.execute("CREATE TABLE hash"
                        " (id INTEGER PRIMARY KEY, hash BLOB UNIQUE)")
-    except (sqlite3.OperationalError, sqlite3.DatabaseError):
+    except sqlite3.OperationalError:
         cursor.close()
         db.rollback()
     else:
@@ -383,10 +383,11 @@ def ensure_hash_id_schema(db):
     # tables. Running a query resets that cache.
     cursor = db.cursor()
     try:
-        cursor.execute("SELECT id FROM hash limit 1")
-    except (sqlite3.OperationalError, sqlite3.DatabaseError):
-        cursor.close()
-    else:
+        try:
+            cursor.execute("SELECT id FROM hash limit 1")
+        except sqlite3.OperationalError:
+            pass
+    finally:
         cursor.close()
 
 
@@ -425,8 +426,9 @@ def ensure_package_schema(db):
     # tables. Running a query resets that cache.
     cursor = db.cursor()
     try:
-        cursor.execute("SELECT id FROM task limit 1")
-    except sqlite3.OperationalError:
-        cursor.close()
-    else:
+        try:
+            cursor.execute("SELECT id FROM task limit 1")
+        except sqlite3.OperationalError:
+            pass
+    finally:
         cursor.close()
