@@ -34,8 +34,9 @@ def get_user_info(username=None):
     gid = None
     path = None
     if username is not None:
+        username_str = username.encode("utf-8")
         try:
-            info = pwd.getpwnam(username)
+            info = pwd.getpwnam(username_str)
         except KeyError, e:
             raise UnknownUserError(u"Unknown user '%s'" % username)
         uid = info.pw_uid

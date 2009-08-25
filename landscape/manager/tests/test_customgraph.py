@@ -344,8 +344,7 @@ class CustomGraphManagerTests(LandscapeTest):
         username = info.pw_name
         self.manager.config.script_users = "foo"
 
-        filename = self.makeFile("some content")
-        self.store.add_graph(123, filename, username)
+        self.store.add_graph(123, "filename", username)
         factory = StubProcessFactory()
         self.graph_manager.process_factory = factory
         result = self.graph_manager.run()
@@ -360,7 +359,7 @@ class CustomGraphManagerTests(LandscapeTest):
                       {"error":
                        u"ProhibitedUserError: Custom graph cannot be run as "
                         "user %s" % (username,),
-                       "script-hash": "9893532233caff98cd083a116b013c0b",
+                       "script-hash": "",
                        "values": []}},
                   "type": "custom-graph"}])
 
@@ -374,8 +373,7 @@ class CustomGraphManagerTests(LandscapeTest):
 
         self.manager.config.script_users = "foo"
 
-        filename = self.makeFile("some content")
-        self.store.add_graph(123, filename, "foo")
+        self.store.add_graph(123, "filename", "foo")
         factory = StubProcessFactory()
         self.graph_manager.process_factory = factory
         result = self.graph_manager.run()
@@ -388,7 +386,7 @@ class CustomGraphManagerTests(LandscapeTest):
                 self.broker_service.message_store.get_pending_messages(),
                 [{"data": {123:
                       {"error": u"UnknownUserError: Unknown user 'foo'",
-                       "script-hash": "9893532233caff98cd083a116b013c0b",
+                       "script-hash": "",
                        "values": []}},
                   "type": "custom-graph"}])
 
@@ -426,7 +424,7 @@ class CustomGraphManagerTests(LandscapeTest):
     def test_run_removed_file(self):
         """
         If run is called on a script file that has been removed, it doesn't try
-        to run it, and remove the graph from the store.
+        to run it, but report it with an empty hash value.
         """
         self.store.add_graph(123, "/nonexistent", None)
         factory = StubProcessFactory()
@@ -438,9 +436,8 @@ class CustomGraphManagerTests(LandscapeTest):
         self.graph_manager.exchange()
         self.assertMessages(
             self.broker_service.message_store.get_pending_messages(),
-            [{"data": {},
+            [{"data": {123: {"error": u"", "script-hash": "", "values": []}},
               "type": "custom-graph"}])
-        self.assertIdentical(self.store.get_graph(123), None)
 
     def test_send_message_add_stored_graph(self):
         """
@@ -466,11 +463,8 @@ class CustomGraphManagerTests(LandscapeTest):
               "timestamp": 0,
               "type": "custom-graph"}])
 
-    def test_send_message_remove_not_present_graph(self):
-        """
-        C{send_message} checks the presence of the custom-graph script, and
-        remove the graph if the file is not present anymore.
-        """
+    def test_send_message_check_not_present_graph(self):
+        """C{send_message} checks the presence of the custom-graph script."""
         uid = os.getuid()
         info = pwd.getpwuid(uid)
         username = info.pw_name
@@ -489,7 +483,6 @@ class CustomGraphManagerTests(LandscapeTest):
               "data": {},
               "timestamp": 0,
               "type": "custom-graph"}])
-        self.assertIdentical(self.store.get_graph(123), None)
 
     def test_send_message_dont_rehash(self):
         """
@@ -596,7 +589,8 @@ class CustomGraphManagerTests(LandscapeTest):
                 self.broker_service.message_store.get_pending_messages(),
                 [{"api": API,
                   "data": {123: {"error": u"",
-                                 "script-hash": "991e15a81929c79fe1d243b2afd99c62",
+                                 "script-hash":
+                                    "991e15a81929c79fe1d243b2afd99c62",
                                  "values": []}},
                   "timestamp": 0,
                   "type": "custom-graph"}])
@@ -679,3 +673,33 @@ class CustomGraphManagerTests(LandscapeTest):
         self.assertEquals(len(factory.spawns), 0)
 
         return result.addCallback(self.assertEquals, [])
+
+    def test_run_unknown_user_with_unicode(self):
+        """
+        Using a non-existent user containing unicode characters fails with the
+        appropriate error message.
+        """
+        username = u"non-existent-f\N{LATIN SMALL LETTER E WITH ACUTE}e"
+
+        self.manager.config.script_users = "ALL"
+
+        filename = self.makeFile("some content")
+        self.store.add_graph(123, filename, username)
+        factory = StubProcessFactory()
+        self.graph_manager.process_factory = factory
+        result = self.graph_manager.run()
+
+        self.assertEquals(len(factory.spawns), 0)
+
+        def check(ignore):
+            self.graph_manager.exchange()
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [{"data": {123:
+                      {"error":
+                           u"UnknownUserError: Unknown user '%s'" % username,
+                       "script-hash": "9893532233caff98cd083a116b013c0b",
+                       "values": []}},
+                  "type": "custom-graph"}])
+
+        return result.addCallback(check)
