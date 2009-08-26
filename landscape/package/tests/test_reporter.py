@@ -1008,7 +1008,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
     def test_resynchronize(self):
         """
         When a resynchronize task arrives, the reporter should clear
-        out all the data in the package store, except the hash ids.
+        out all the data in the package store, except the hash ids and
+        the hash ids requests.
         This is done in the reporter so that we know it happens when
         no other reporter is possibly running at the same time.
         """
@@ -1019,6 +1020,11 @@ class PackageReporterTest(LandscapeIsolatedTest):
         request1 = self.store.add_hash_id_request(["hash3"])
         request2 = self.store.add_hash_id_request(["hash4"])
 
+        # Set the message id to avoid the requests being deleted by the
+        # L{PackageReporter.remove_expired_hash_id_requests} method.
+        request1.message_id = 1
+        request2.message_id = 2
+
         # Let's make sure the data is there.
         self.assertEquals(self.store.get_available_upgrades(), [2])
         self.assertEquals(self.store.get_available(), [1])
@@ -1026,7 +1032,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         self.assertEquals(self.store.get_hash_id_request(request1.id).id, request1.id)
 
         self.store.add_task("reporter", {"type": "resynchronize"})
-        
+
         deferred = self.reporter.run()
 
         def check_result(result):
@@ -1042,13 +1048,18 @@ class PackageReporterTest(LandscapeIsolatedTest):
             self.assertEquals(self.store.get_available(), [3, 4])
             self.assertEquals(self.store.get_installed(), [])
 
-            # A New hash id request should also be detected for HASH3,
-            # but there should be no other hash id requests.
+            # The original hash id requests should be still there, and
+            # a new hash id request should also be detected for HASH3.
             request = self.store.get_hash_id_request(request1.id)
             self.assertEquals(request.id, request1.id)
+            self.assertEquals(request.hashes, ["hash3"])
+            request = self.store.get_hash_id_request(request2.id)
+            self.assertEquals(request.id, request2.id)
+            self.assertEquals(request.hashes, ["hash4"])
+            request = self.store.get_hash_id_request(request2.id + 1)
+            self.assertEquals(request.id, request2.id + 1)
             self.assertEquals(request.hashes, [HASH3])
-            self.assertRaises(UnknownHashIDRequest,
-                              self.store.get_hash_id_request, request2.id)
+
         deferred.addCallback(check_result)
         return deferred
 
