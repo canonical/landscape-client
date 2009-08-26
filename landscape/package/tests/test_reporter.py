@@ -1048,17 +1048,21 @@ class PackageReporterTest(LandscapeIsolatedTest):
             self.assertEquals(self.store.get_available(), [3, 4])
             self.assertEquals(self.store.get_installed(), [])
 
-            # The original hash id requests should be still there, and
+            # The two original hash id requests should be still there, and
             # a new hash id request should also be detected for HASH3.
-            request = self.store.get_hash_id_request(request1.id)
-            self.assertEquals(request.id, request1.id)
-            self.assertEquals(request.hashes, ["hash3"])
-            request = self.store.get_hash_id_request(request2.id)
-            self.assertEquals(request.id, request2.id)
-            self.assertEquals(request.hashes, ["hash4"])
-            request = self.store.get_hash_id_request(request2.id + 1)
-            self.assertEquals(request.id, request2.id + 1)
-            self.assertEquals(request.hashes, [HASH3])
+            requests_count = 0
+            new_request_found = False
+            for request in self.store.iter_hash_id_requests():
+                requests_count += 1
+                if request.id == request1.id:
+                    self.assertEquals(request.hashes, ["hash3"])
+                elif request.id == request2.id:
+                    self.assertEquals(request.hashes, ["hash4"])
+                elif not new_request_found:
+                    self.assertEquals(request.hashes, [HASH3])
+                else:
+                    self.fail("Unexpected hash-id request!")
+            self.assertEquals(requests_count, 3)
 
         deferred.addCallback(check_result)
         return deferred
