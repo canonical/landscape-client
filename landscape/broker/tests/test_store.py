@@ -359,7 +359,7 @@ class MessageStoreTest(LandscapeTest):
         The Message Store can be told to save its persistent data to disk on
         demand.
         """
-        filename = self.make_path()
+        filename = self.makeFile()
         store = MessageStore(Persist(filename=filename), self.temp_dir)
         store.set_accepted_types(["foo", "bar"])
 

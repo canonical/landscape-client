@@ -32,7 +32,7 @@ class ProcessKillerTests(LandscapeTest):
 
     def setUp(self):
         LandscapeTest.setUp(self)
-        self.sample_dir = self.make_dir()
+        self.sample_dir = self.makeDir()
         self.builder = ProcessDataBuilder(self.sample_dir)
         self.process_info = ProcessInformation(proc_dir=self.sample_dir,
                                                jiffies=1, boot_time=10)
