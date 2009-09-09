@@ -34,7 +34,7 @@ if [ $RUN -eq 0 ]; then
 			cp /usr/share/landscape/cloud-default.conf /etc/landscape/client.conf
 			# Override default file for not going in this conditional again at
 			# next startup
-			echo "RUN=1" > $LANDSCAPE_DEFAULTS
+			sed -i "s/^RUN=.*/RUN=1/" $LANDSCAPE_DEFAULTS
 		else
 			echo "$NAME is not configured, please run landscape-config."
 			exit 0

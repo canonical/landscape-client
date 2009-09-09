@@ -1,4 +1,4 @@
-import sha
+from landscape.lib.hashlib import sha1
 
 
 PACKAGE   = 1 << 0
@@ -38,7 +38,7 @@ class PackageSkeleton(object):
         self.relations.append((type, info))
 
     def get_hash(self):
-        digest = sha.new("[%d %s %s]" % (self.type, self.name, self.version))
+        digest = sha1("[%d %s %s]" % (self.type, self.name, self.version))
         self.relations.sort()
         for pair in self.relations:
             digest.update("[%d %s]" % pair)
