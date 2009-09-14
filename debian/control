@@ -11,7 +11,6 @@ Architecture: all
 Pre-Depends: python, python-gobject
 Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          python-smartpm (>= 1.2-0ubuntu1),
-         python-pysqlite2 | python2.4-pysqlite2,
          python-dbus | python2.4-dbus,
          python-twisted-core,
          ca-certificates,
@@ -36,7 +35,6 @@ Depends: ${python:Depends}, ${misc:Depends},
          python-pycurl | python2.4-pycurl,
          python-twisted-web,
          landscape-common (>= ${Source-Version}),
-         libcurl3 (>= 7.15.1-1ubuntu3),
          hal
 Description: The Landscape administration system client
  Landscape is a web-based tool for managing Ubuntu systems. This
