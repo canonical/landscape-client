@@ -215,8 +215,6 @@ class PackageReporter(PackageTaskHandler):
         # This problem would happen for example when switching the client from
         # one Landscape server to another, because the uuid-changed event would
         # cause a resynchronize task to be created by the monitor. See #417122.
-        #
-        #self._store.clear_hash_id_requests()
 
         return succeed(None)
 
