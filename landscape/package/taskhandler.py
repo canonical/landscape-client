@@ -22,7 +22,6 @@ class PackageTaskHandler(object):
         self._broker = remote_broker
         self._config = config
         self._channels_reloaded = False
-        self._server_uuid = None
 
     def ensure_channels_reloaded(self):
         if not self._channels_reloaded:
