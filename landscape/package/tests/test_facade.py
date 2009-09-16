@@ -419,6 +419,19 @@ class SmartFacadeTest(LandscapeTest):
 
         self.assertEquals(self.facade.get_channels(), dict(channels))
 
+    def test_add_apt_deb_channel(self):
+        """
+        The L{SmartFacade.add_apt_deb_channel} add a Smart channel of
+        type C{"apt-deb"}.
+        """
+        self.facade.reset_channels()
+        self.facade.add_apt_deb_channel("http://url/", "name", "component")
+        self.assertEquals(self.facade.get_channels(),
+                          {"name": {"baseurl": "http://url/",
+                                        "distribution": "name",
+                                        "components": "component",
+                                        "type": "apt-deb"}})
+
     def test_make_channels(self):
 
         channel0 = make_apt_deb_channel("http://my.url/dir", "hardy", "main")

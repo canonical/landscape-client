@@ -279,6 +279,16 @@ class SmartFacade(object):
         channels.update({alias: channel})
         smart.sysconf.set("channels", channels, soft=True)
 
+    def add_channel_apt_deb(self, url, codename, components):
+        """Add a Smart channel of type C{"apt-deb"}.
+
+        @see: L{add_channel}
+        """
+        alias = codename
+        channel = {"baseurl": url, "distribution": codename,
+                   "components": components, "type": "apt-deb"}
+        self.add_channel(alias, channel)
+
     def get_channels(self):
         """
         @return: A C{dict} of all configured channels.
