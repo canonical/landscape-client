@@ -201,7 +201,21 @@ class PackageReporter(PackageTaskHandler):
         self._store.clear_available()
         self._store.clear_available_upgrades()
         self._store.clear_installed()
-        self._store.clear_hash_id_requests()
+
+        # Don't clear the hash_id_requests table because the messages
+        # associated with the existing requests might still have to be
+        # delivered, and if we clear the table and later create a new request,
+        # that new request could get the same id of one of the deleted ones,
+        # and when the pending message eventually gets delivered the reporter
+        # would think that the message is associated to the newly created
+        # request, as it have the same id has the deleted request the message
+        # actually refers to. This would cause the ids in the message to be
+        # possibly mapped to the wrong hashes.
+        #
+        # This problem would happen for example when switching the client from
+        # one Landscape server to another, because the uuid-changed event would
+        # cause a resynchronize task to be created by the monitor. See #417122.
+
         return succeed(None)
 
     def _handle_unknown_packages(self, hashes):
