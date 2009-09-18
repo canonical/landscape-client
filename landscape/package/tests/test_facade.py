@@ -14,13 +14,13 @@ from twisted.internet.utils import getProcessOutputAndValue
 import smart
 
 from landscape.package.facade import (
-    TransactionError, DependencyError, ChannelError, SmartError,
-    make_apt_deb_channel, make_deb_dir_channel)
+    TransactionError, DependencyError, ChannelError, SmartError)
 
 from landscape.tests.mocker import ANY
 from landscape.tests.helpers import LandscapeTest
 from landscape.package.tests.helpers import (
-    SmartFacadeHelper, HASH1, HASH2, HASH3, PKGNAME1)
+    SmartFacadeHelper, HASH1, HASH2, HASH3, PKGNAME1,
+    create_full_repository)
 
 
 class SmartFacadeTest(LandscapeTest):
@@ -421,29 +421,27 @@ class SmartFacadeTest(LandscapeTest):
 
     def test_add_apt_deb_channel(self):
         """
-        The L{SmartFacade.add_apt_deb_channel} add a Smart channel of
+        The L{SmartFacade.add_channel_apt_deb} add a Smart channel of
         type C{"apt-deb"}.
         """
         self.facade.reset_channels()
-        self.facade.add_apt_deb_channel("http://url/", "name", "component")
+        self.facade.add_channel_apt_deb("http://url/", "name", "component")
         self.assertEquals(self.facade.get_channels(),
                           {"name": {"baseurl": "http://url/",
                                         "distribution": "name",
                                         "components": "component",
                                         "type": "apt-deb"}})
 
-    def test_make_channels(self):
-
-        channel0 = make_apt_deb_channel("http://my.url/dir", "hardy", "main")
-        channel1 = make_deb_dir_channel("/my/repo")
-
-        self.assertEquals(channel0, {"baseurl": "http://my.url/dir",
-                                     "distribution": "hardy",
-                                     "components": "main",
-                                     "type": "apt-deb"})
-
-        self.assertEquals(channel1, {"path": "/my/repo",
-                                     "type": "deb-dir"})
+    def test_add_deb_dir_channel(self):
+        """
+        The L{SmartFacade.add_channel_deb_dir} add a Smart channel of
+        type C{"deb-dir"}.
+        """
+        self.facade.reset_channels()
+        self.facade.add_channel_deb_dir("/my/repo")
+        self.assertEquals(self.facade.get_channels(),
+                          {"/my/repo": {"path": "/my/repo",
+                                        "type": "deb-dir"}})
 
     def test_get_arch(self):
         """
@@ -465,32 +463,30 @@ class SmartFacadeTest(LandscapeTest):
 
     def test_set_arch_multiple_times(self):
 
-        repository_dir = os.path.join(os.path.dirname(__file__), "repository")
-
-        alias = "alias"
-        channel = {"baseurl": "file://%s" % repository_dir,
-                   "distribution": "hardy",
-                   "components": "main",
-                   "type": "apt-deb"}
+        repo = create_full_repository(self.makeDir())
 
         self.facade.set_arch("i386")
         self.facade.reset_channels()
-        self.facade.add_channel(alias, channel)
+        self.facade.add_channel_apt_deb(repo.url, repo.codename,
+                                        repo.components)
         self.facade.reload_channels()
 
         pkgs = self.facade.get_packages()
-        self.assertEquals(len(pkgs), 1)
+        self.assertEquals(len(pkgs), 2)
         self.assertEquals(pkgs[0].name, "syslinux")
+        self.assertEquals(pkgs[1].name, "kairos")
 
         self.facade.deinit()
         self.facade.set_arch("amd64")
         self.facade.reset_channels()
-        self.facade.add_channel(alias, channel)
+        self.facade.add_channel_apt_deb(repo.url, repo.codename,
+                                        repo.components)
         self.facade.reload_channels()
 
         pkgs = self.facade.get_packages()
-        self.assertEquals(len(pkgs), 1)
+        self.assertEquals(len(pkgs), 2)
         self.assertEquals(pkgs[0].name, "libclthreads2")
+        self.assertEquals(pkgs[1].name, "kairos")
 
     def test_set_caching_with_reload_error(self):
 
