@@ -364,7 +364,7 @@ def create_full_repository(target_dir):
     class Repository(object):
 
         codename = "hardy"
-        variant = "updates"
+        variant = "hardy-updates"
         components = "main restricted"
         archs = ["amd64", "i386"]
         hashes = [HASH4, HASH5, HASH6, HASH7]
@@ -376,8 +376,7 @@ def create_full_repository(target_dir):
     repository = Repository(target_dir)
     dists_directory = os.path.join(repository.root, "dists")
     os.mkdir(dists_directory)
-    for dist in [repository.codename,
-                 "%s-%s" % (repository.codename, repository.variant)]:
+    for dist in [repository.codename, repository.variant]:
         dist_directory = os.path.join(dists_directory, dist)
         os.mkdir(dist_directory)
         fd = open(os.path.join(dist_directory, "Release"), "w")
