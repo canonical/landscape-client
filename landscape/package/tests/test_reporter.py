@@ -244,7 +244,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         # Let's say fetch_async is successful
         hash_id_db_url = self.config.package_hash_id_url + "uuid_codename_arch"
         fetch_async_mock = self.mocker.replace("landscape.lib.fetch.fetch_async")
-        fetch_async_mock(hash_id_db_url)
+        fetch_async_mock(hash_id_db_url, cainfo=None)
         fetch_async_result = Deferred()
         fetch_async_result.callback("hash-ids")
         self.mocker.result(fetch_async_result)
@@ -394,7 +394,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         hash_id_db_url = "http://fake.url/path/hash-id-databases/" \
                          "uuid_codename_arch"
         fetch_async_mock = self.mocker.replace("landscape.lib.fetch.fetch_async")
-        fetch_async_mock(hash_id_db_url)
+        fetch_async_mock(hash_id_db_url, cainfo=None)
         fetch_async_result = Deferred()
         fetch_async_result.callback("hash-ids")
         self.mocker.result(fetch_async_result)
@@ -427,7 +427,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         # Let's say fetch_async fails
         hash_id_db_url = self.config.package_hash_id_url + "uuid_codename_arch"
         fetch_async_mock = self.mocker.replace("landscape.lib.fetch.fetch_async")
-        fetch_async_mock(hash_id_db_url)
+        fetch_async_mock(hash_id_db_url, cainfo=None)
         fetch_async_result = Deferred()
         fetch_async_result.errback(FetchError("fetch error"))
         self.mocker.result(fetch_async_result)
@@ -480,6 +480,38 @@ class PackageReporterTest(LandscapeIsolatedTest):
                                                "hash-id", "uuid_codename_arch")
             self.assertEquals(os.path.exists(hash_id_db_filename), False)
         result.addCallback(callback)
+
+        return result
+
+    def test_fetch_hash_id_db_with_custom_certificate(self):
+        """
+        The L{PackageReporter.fetch_hash_id_db} method takes into account the
+        possible custom SSL certificate specified in the client configuration.
+        """
+
+        self.config.url = "http://fake.url/path/message-system/"
+        self.config.ssl_public_key = "/some/key"
+
+        # Fake uuid, codename and arch
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid")
+        command_mock = self.mocker.replace("landscape.lib.command.run_command")
+        command_mock("lsb_release -cs")
+        self.mocker.result("codename")
+        self.facade.set_arch("arch")
+
+        # Check fetch_async is called with the default url
+        hash_id_db_url = "http://fake.url/path/hash-id-databases/" \
+                         "uuid_codename_arch"
+        fetch_async_mock = self.mocker.replace("landscape.lib.fetch.fetch_async")
+        fetch_async_mock(hash_id_db_url, cainfo=self.config.ssl_public_key)
+        fetch_async_result = Deferred()
+        fetch_async_result.callback("hash-ids")
+        self.mocker.result(fetch_async_result)
+
+        # Now go!
+        self.mocker.replay()
+        result = self.reporter.fetch_hash_id_db()
 
         return result
 
