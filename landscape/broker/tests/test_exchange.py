@@ -1,7 +1,7 @@
-import md5
 
 from landscape import API
 from landscape.lib.persist import Persist
+from landscape.lib.hashlib import md5
 from landscape.schema import Message, Int
 from landscape.broker.exchange import get_accepted_types_diff, MessageExchange
 from landscape.broker.transport import FakeTransport
@@ -92,7 +92,7 @@ class MessageExchangeTest(LandscapeTest):
         """
         payload = self.exchanger.make_payload()
         self.assertTrue("accepted-types" in payload)
-        self.assertEquals(payload["accepted-types"], md5.new("").digest())
+        self.assertEquals(payload["accepted-types"], md5("").digest())
 
     def test_set_accepted_types(self):
         """
@@ -125,7 +125,7 @@ class MessageExchangeTest(LandscapeTest):
         payload = self.exchanger.make_payload()
         self.assertTrue("accepted-types" in payload)
         self.assertEquals(payload["accepted-types"],
-                          md5.new("ack;bar").digest())
+                          md5("ack;bar").digest())
 
     def test_accepted_types_causes_urgent_if_held_messages_exist(self):
         """
@@ -692,7 +692,7 @@ class MessageExchangeTest(LandscapeTest):
         self.exchanger.register_client_accepted_message_type("type-A")
         self.exchanger.register_client_accepted_message_type("type-B")
         types = sorted(["type-A", "type-B"] + DEFAULT_ACCEPTED_TYPES)
-        accepted_types_digest = md5.new(";".join(types)).digest()
+        accepted_types_digest = md5(";".join(types)).digest()
         self.transport.extra["client-accepted-types-hash"] = \
             accepted_types_digest
         self.exchanger.exchange()
@@ -717,7 +717,7 @@ class MessageExchangeTest(LandscapeTest):
         client will send a new list to the server.
         """
         self.exchanger.register_client_accepted_message_type("type-A")
-        types_hash = md5.new("type-A").digest()
+        types_hash = md5("type-A").digest()
         self.transport.extra["client-accepted-types-hash"] = types_hash
         self.exchanger.exchange()
         self.exchanger.register_client_accepted_message_type("type-B")
@@ -732,7 +732,7 @@ class MessageExchangeTest(LandscapeTest):
         send a new list of types.
         """
         self.exchanger.register_client_accepted_message_type("type-A")
-        types_hash = md5.new("type-A").digest()
+        types_hash = md5("type-A").digest()
         self.transport.extra["client-accepted-types-hash"] = types_hash
         self.exchanger.exchange()
         self.transport.extra["client-accepted-types-hash"] = "lol"

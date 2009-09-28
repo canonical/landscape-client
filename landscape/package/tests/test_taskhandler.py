@@ -113,7 +113,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
             self.assertIs(hash_id_db_filename, None)
         result.addCallback(callback)
         return result
-        
+
     def test_use_hash_id_db_undetermined_server_uuid(self):
         """
         If the server-uuid can't be determined for some reason, no hash-id db
@@ -340,12 +340,9 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         self.mocker.passthrough() # Let the real constructor run for testing.
         self.mocker.call(lambda *args: handler_args.extend(args))
 
-        # Finally, the task handler must be run, and will return a deferred.
-        # We'll return a real deferred so that we can call it back and test
-        # whatever was hooked in as well.
-        deferred = Deferred()
-        handler_mock.run()
-        self.mocker.result(deferred)
+        to_call = []
+        reactor_mock.callWhenRunning(ANY)
+        self.mocker.call(lambda callback: to_call.append(callback))
 
         # With all of that done, the Twisted reactor must be run, so that
         # deferred tasks are correctly performed.
@@ -377,7 +374,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
             self.assertRaises(AssertionError, self.mocker.verify)
 
             # DO THE REST OF IT! :-)
-            result.callback(None)
+            to_call[0]()
 
             # Are we there yet!?
             self.mocker.verify()

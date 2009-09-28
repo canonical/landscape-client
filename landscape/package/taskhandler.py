@@ -22,7 +22,6 @@ class PackageTaskHandler(object):
         self._broker = remote_broker
         self._config = config
         self._channels_reloaded = False
-        self._server_uuid = None
 
     def ensure_channels_reloaded(self):
         if not self._channels_reloaded:
@@ -182,9 +181,11 @@ def run_task_handler(cls, args, reactor=None):
     def got_err(failure):
         log_failure(failure)
 
-    result = handler.run()
+    result = Deferred()
+    result.addCallback(lambda ignored: handler.run())
     result.addErrback(got_err)
     result.addBoth(lambda ignored: reactor.callLater(0, reactor.stop))
+    reactor.callWhenRunning(lambda: result.callback(None))
 
     reactor.run()
 

@@ -107,7 +107,7 @@ class HashIdStore(object):
         """
         try:
             cursor.execute("SELECT id FROM hash WHERE hash=?", ("",))
-        except sqlite3.DatabaseError, e:
+        except sqlite3.DatabaseError:
             raise InvalidHashIdDb(self._filename)
 
 
@@ -378,6 +378,18 @@ def ensure_hash_id_schema(db):
         cursor.close()
         db.commit()
 
+    # When 2 concurrent processes try to create the tables around the same
+    # time, the one which fails has an incorrect cache, and doesn't see the
+    # tables. Running a query resets that cache.
+    cursor = db.cursor()
+    try:
+        try:
+            cursor.execute("SELECT id FROM hash limit 1")
+        except (sqlite3.OperationalError, sqlite3.DatabaseError):
+            pass
+    finally:
+        cursor.close()
+
 
 def ensure_package_schema(db):
     """Create all tables needed by a L{PackageStore}.
@@ -408,3 +420,15 @@ def ensure_package_schema(db):
     else:
         cursor.close()
         db.commit()
+
+    # When 2 concurrent processes try to create the tables around the same
+    # time, the one which fails has an incorrect cache, and doesn't see the
+    # tables. Running a query resets that cache.
+    cursor = db.cursor()
+    try:
+        try:
+            cursor.execute("SELECT id FROM task limit 1")
+        except sqlite3.OperationalError:
+            pass
+    finally:
+        cursor.close()

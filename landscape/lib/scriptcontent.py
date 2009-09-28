@@ -1,4 +1,4 @@
-import md5
+from landscape.lib.hashlib import md5
 
 def build_script(interpreter, code):
     """
@@ -12,4 +12,4 @@ def generate_script_hash(script):
     """
     Return a hash for a given script.
     """
-    return md5.new(script).hexdigest()
+    return md5(script).hexdigest()

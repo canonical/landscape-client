@@ -75,6 +75,10 @@ binary-arch: build install
 	dh_compress
 	dh_fixperms
 
+ifneq (,$(findstring $(dist_release),"dapper"))
+	# We need python2.4-pysqlite2 and a non-buggy libcurl3-gnutls on dapper
+	echo "extra:Depends=python2.4-pysqlite2, libcurl3-gnutls (>= 7.15.1-1ubuntu3)" >> $(landscape_substvars)
+endif
 ifneq (,$(findstring $(dist_release),"intrepid jaunty"))
 	# We want update-motd in intrepid and jaunty
 	echo "extra:Depends=update-motd" >> $(landscape_substvars)
