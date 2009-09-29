@@ -102,7 +102,8 @@ class PackageReporter(PackageTaskHandler):
                 logging.warning("Couldn't download hash=>id database: %s" %
                                 str(exception))
 
-            result = fetch_async(url)
+            result = fetch_async(url,
+                                 cainfo=self._config.get("ssl_public_key"))
             result.addCallback(fetch_ok)
             result.addErrback(fetch_error)
 
