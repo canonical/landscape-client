@@ -51,6 +51,7 @@ class HardwareInventory(MonitorPlugin):
             self._persist.remove(key)
         del self._persist_sets[:]
         del self._persist_removes[:]
+        self.registry.flush()
 
     def create_message(self):
         # FIXME Using persist to keep track of changes here uses a
