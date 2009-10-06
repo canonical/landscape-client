@@ -51,6 +51,7 @@ class ActiveProcessInfo(DataWatcher):
         self._first_run = False
         self._persist_processes = self._previous_processes
         self._previous_processes = {}
+        self.registry.flush()
 
     def _get_processes(self):
         processes = {}
