@@ -51,6 +51,9 @@ class HardwareInventory(MonitorPlugin):
             self._persist.remove(key)
         del self._persist_sets[:]
         del self._persist_removes[:]
+        # This forces the registry to write the persistent store to disk
+        # This means that the persistent data reflects the state of the
+        # messages sent.
         self.registry.flush()
 
     def create_message(self):
