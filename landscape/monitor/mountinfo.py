@@ -89,6 +89,7 @@ class MountInfo(MonitorPlugin):
             mount_point = mount_info["mount-point"]
             self._persist.set(("mount-info", mount_point), mount_info)
         self._mount_info_to_persist = None
+        self.registry.flush()
 
     def run(self):
         self._monitor.ping()
