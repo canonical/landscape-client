@@ -15,6 +15,7 @@ from landscape.broker.remote import RemoteBroker
 class PackageTaskHandler(object):
 
     queue_name = "default"
+    config_factory = Configuration
 
     def __init__(self, package_store, package_facade, remote_broker, config):
         self._store = package_store
@@ -141,7 +142,7 @@ def run_task_handler(cls, args, reactor=None):
 
     program_name = cls.queue_name
 
-    config = Configuration()
+    config = cls.config_factory()
     config.load(args)
 
     package_directory = os.path.join(config.data_path, "package")

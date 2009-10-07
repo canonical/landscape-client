@@ -2,6 +2,7 @@ import glob
 import sys
 import os
 import logging
+import unittest
 
 from twisted.internet.defer import Deferred
 from twisted.internet import reactor
@@ -11,7 +12,8 @@ from landscape.lib.command import CommandError
 
 from landscape.package.store import PackageStore, UnknownHashIDRequest
 from landscape.package.reporter import (
-    PackageReporter, HASH_ID_REQUEST_TIMEOUT, main, find_reporter_command)
+    PackageReporter, HASH_ID_REQUEST_TIMEOUT, main, find_reporter_command,
+    PackageReporterConfiguration)
 from landscape.package import reporter
 from landscape.package.facade import SmartFacade
 
@@ -26,6 +28,19 @@ from landscape.tests.helpers import (
 from landscape.tests.mocker import ANY
 
 
+class PackageReporterConfigurationTest(unittest.TestCase):
+
+    def test_force_smart_update_option(self):
+        """
+        The L{PackageReporterConfiguration} supports a '--force-smart-update'
+        command line option.
+        """
+        config = PackageReporterConfiguration()
+        self.assertFalse(config.force_smart_update)
+        config.load(["--force-smart-update"])
+        self.assertTrue(config.force_smart_update)
+
+
 class PackageReporterTest(LandscapeIsolatedTest):
 
     helpers = [SmartFacadeHelper, RemoteBrokerHelper]
@@ -34,7 +49,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         super(PackageReporterTest, self).setUp()
 
         self.store = PackageStore(self.makeFile())
-        self.config = Configuration()
+        self.config = PackageReporterConfiguration()
         self.reporter = PackageReporter(self.store, self.facade, self.remote, self.config)
 
     def set_pkg2_upgrades_pkg1(self):
@@ -540,6 +555,30 @@ class PackageReporterTest(LandscapeIsolatedTest):
                 self.assertEquals(out, "--after %d" % interval)
                 self.assertEquals(err, "")
                 self.assertEquals(code, 0)
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
+
+    def test_run_smart_update_with_force_smart_update(self):
+        """
+        L{PackageReporter.run_smart_update} forces a smart-update run if
+        the '--force-smart-update' command line option was passed.
+
+        """
+        self.config.load(["--force-smart-update"])
+        self.reporter.smart_update_filename = self.makeFile(
+            "#!/bin/sh\necho -n $@")
+        os.chmod(self.reporter.smart_update_filename, 0755)
+
+        deferred = Deferred()
+
+        def do_test():
+            result = self.reporter.run_smart_update()
+            def callback((out, err, code)):
+                interval = self.reporter.smart_update_interval
+                self.assertEquals(out, "")
             result.addCallback(callback)
             result.chainDeferred(deferred)
 
