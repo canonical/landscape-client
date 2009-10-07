@@ -11,12 +11,28 @@ from landscape.lib.sequenceranges import sequence_to_ranges
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.fetch import fetch_async
 
+from landscape.deployment import Configuration
 from landscape.package.taskhandler import PackageTaskHandler, run_task_handler
 from landscape.package.store import UnknownHashIDRequest
 
 
 HASH_ID_REQUEST_TIMEOUT = 7200
 MAX_UNKNOWN_HASHES_PER_REQUEST = 500
+
+
+class PackageReporterConfiguration(Configuration):
+    """Specialized configuration for the Landscape package-reporter."""
+
+    def make_parser(self):
+        """
+        Specialize L{Configuration.make_parser}, adding options
+        reporter-specific options.
+        """
+        parser = super(PackageReporterConfiguration, self).make_parser()
+        parser.add_option("--force-smart-update", default=False,
+                          action="store_true",
+                          help="Force running smart-update.")
+        return parser
 
 
 class PackageReporter(PackageTaskHandler):
@@ -27,6 +43,7 @@ class PackageReporter(PackageTaskHandler):
         the C{--after} command line option of C{smart-update}.
     """
     queue_name = "reporter"
+    config_factory = PackageReporterConfiguration
     smart_update_interval = 60
     smart_update_filename = "/usr/lib/landscape/smart-update"
 
@@ -135,9 +152,12 @@ class PackageReporter(PackageTaskHandler):
 
         @return: a deferred returning (out, err, code)
         """
+        if self._config.force_smart_update:
+            args = ()
+        else:
+            args = ("--after", "%d" % self.smart_update_interval)
         result = getProcessOutputAndValue(self.smart_update_filename,
-                                          args=("--after", "%d" %
-                                                self.smart_update_interval))
+                                          args=args)
 
         def callback((out, err, code)):
             # smart-update --after N will exit with error code 1 when it
