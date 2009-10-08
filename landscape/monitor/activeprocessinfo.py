@@ -51,6 +51,10 @@ class ActiveProcessInfo(DataWatcher):
         self._first_run = False
         self._persist_processes = self._previous_processes
         self._previous_processes = {}
+        # This forces the registry to write the persistent store to disk
+        # This means that the persistent data reflects the state of the
+        # messages sent.
+        self.registry.flush()
 
     def _get_processes(self):
         processes = {}

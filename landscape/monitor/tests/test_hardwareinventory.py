@@ -72,7 +72,11 @@ class HardwareInventoryTest(LandscapeTest):
         self.hal_manager.devices = [
             MockRealHALDevice({u"info.udi": u"wubble",
                                u"info.product": u"Wubble",}),]
-
+        registry_mocker = self.mocker.replace(self.plugin.registry)
+        registry_mocker.flush()
+        self.mocker.count(2)
+        self.mocker.result(None)
+        self.mocker.replay()
         message = self.plugin.create_message()
         self.plugin.persist_data(None)
         self.assertEquals(message, [("create", {u"info.udi": u"wubble",

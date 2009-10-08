@@ -1,15 +1,21 @@
 #!/usr/bin/python
 import sys, os
-if os.path.dirname(os.path.abspath(sys.argv[0])) == os.path.abspath("scripts"):
-    sys.path.insert(0, "./")
-else:
-    from landscape.lib.warning import hide_warnings
-    hide_warnings()
 
+try:
+    if os.path.dirname(os.path.abspath(sys.argv[0])) == os.path.abspath("scripts"):
+        sys.path.insert(0, "./")
+    else:
+        from landscape.lib.warning import hide_warnings
+        hide_warnings()
 
-from twisted.internet import reactor
+    from twisted.internet import reactor
 
-from landscape.sysinfo.deployment import run
+    from landscape.sysinfo.deployment import run
+except ImportError:
+    # For some reasons the libraries are not importable for now. We are
+    # probably during an upgrade procedure, so let's exit, expecting the
+    # dependencies to be fixed at next run.
+    sys.exit(2)
 
 
 if __name__ == "__main__":
