@@ -97,6 +97,27 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         result = self.handler.use_hash_id_db()
         return result
 
+    def test_use_hash_id_db_wit_non_existing_lsb_release(self):
+
+        # Fake uuid
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid")
+
+        # Undetermined codename
+        self.handler.lsb_release_filename = self.makeFile()
+
+        # The failure should be properly logged
+        logging_mock = self.mocker.replace("logging.warning")
+        logging_mock("Couldn't determine which hash=>id database to use: "
+                     "[Errno 2] No such file or directory: '%s'" %
+                     self.handler.lsb_release_filename)
+        self.mocker.result(None)
+
+        # Go!
+        self.mocker.replay()
+        result = self.handler.use_hash_id_db()
+        return result
+
     def test_wb_determine_hash_id_db_filename_server_uuid_is_none(self):
         """
         The L{PaclageTaskHandler._determine_hash_id_db_filename} method should

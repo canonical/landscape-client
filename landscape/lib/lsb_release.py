@@ -8,7 +8,10 @@ LSB_RELEASE_INFO_KEYS = {"DISTRIB_ID": "distributor-id",
 
 
 def parse_lsb_release(lsb_release_filename):
-    """Return a C{dict} holding information about the system LSB release."""
+    """Return a C{dict} holding information about the system LSB release.
+
+    @raises: An IOError exception if C{lsb_release_filename} could not be read.
+    """
     fd = open(lsb_release_filename, "r")
     info = {}
     for line in fd:

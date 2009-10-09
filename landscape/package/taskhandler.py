@@ -122,7 +122,11 @@ class PackageTaskHandler(object):
                 logging.warning(warning % "server UUID not available")
                 return None
 
-            lsb_release_info = parse_lsb_release(self.lsb_release_filename)
+            try:
+                lsb_release_info = parse_lsb_release(self.lsb_release_filename)
+            except IOError, error:
+                logging.warning(warning % str(error))
+                return None
             try:
                 codename = lsb_release_info["code-name"]
             except KeyError:
