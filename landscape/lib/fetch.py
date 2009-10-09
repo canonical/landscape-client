@@ -28,7 +28,7 @@ class PyCurlError(FetchError):
 
     def __init__(self, error_code, message):
         self.error_code = error_code
-        self.message = message
+        self._message = message
 
     def __str__(self):
         return "Error %d: %s" % (self.error_code, self.message)
@@ -37,13 +37,9 @@ class PyCurlError(FetchError):
         return "<PyCurlError args=(%d, '%s')>" % (self.error_code,
                                                   self.message)
 
-    def _get_message(self):
+    @property
+    def message(self):
         return self._message
-
-    def _set_message(self, message):
-        self._message = message
-
-    message = property(_get_message, _set_message)
 
 
 def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None,
