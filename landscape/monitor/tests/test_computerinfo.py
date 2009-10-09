@@ -4,6 +4,11 @@ from landscape.monitor.computerinfo import ComputerInfo
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.tests.mocker import ANY
 
+SAMPLE_LSB_RELEASE = "DISTRIB_ID=Ubuntu\n"                         \
+                     "DISTRIB_RELEASE=6.06\n"                      \
+                     "DISTRIB_CODENAME=dapper\n"                   \
+                     "DISTRIB_DESCRIPTION=\"Ubuntu 6.06.1 LTS\"\n"
+
 
 def get_fqdn():
     return "ooga.local"
@@ -41,17 +46,11 @@ VmallocChunk:   107432 kB
 
     def setUp(self):
         LandscapeTest.setUp(self)
-        self.lsb_release_filename = self.makeFile("""\
-DISTRIB_ID=Ubuntu
-DISTRIB_RELEASE=6.06
-DISTRIB_CODENAME=dapper
-DISTRIB_DESCRIPTION="Ubuntu 6.06.1 LTS"
-""")
+        self.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
 
     def test_get_fqdn(self):
         self.mstore.set_accepted_types(["computer-info"])
-        plugin = ComputerInfo(get_fqdn=get_fqdn,
-                              lsb_release_filename=self.lsb_release_filename)
+        plugin = ComputerInfo(get_fqdn=get_fqdn)
         self.monitor.add(plugin)
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
@@ -82,6 +81,7 @@ DISTRIB_DESCRIPTION="Ubuntu 6.06.1 LTS"
         self.assertEquals(len(messages), 1)
 
     def test_report_changed_hostnames(self):
+
         def hostname_factory(hostnames=["ooga", "wubble", "wubble"]):
             i = 0
             while i < len(hostnames):

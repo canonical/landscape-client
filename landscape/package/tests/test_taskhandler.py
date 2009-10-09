@@ -23,6 +23,8 @@ def ISTYPE(match_type):
     return MATCH(lambda arg: type(arg) is match_type)
 
 
+SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
+
 class PackageTaskHandlerTest(LandscapeIsolatedTest):
 
     helpers = [SmartFacadeHelper, RemoteBrokerHelper]
@@ -32,8 +34,8 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
 
         self.config = PackageTaskHandlerConfiguration()
         self.store = PackageStore(self.makeFile())
-
-        self.handler = PackageTaskHandler(self.store, self.facade, self.remote, self.config)
+        self.handler = PackageTaskHandler(self.store, self.facade, self.remote,
+                                          self.config)
 
     def test_ensure_channels_reloaded(self):
         self.assertEquals(len(self.facade.get_packages()), 0)
@@ -60,9 +62,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        self.mocker.result("codename")
+        self.handler.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
         self.facade.set_arch("arch")
 
         # Attach the hash=>id database to our store
@@ -83,21 +83,18 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         message_store.set_server_uuid("uuid")
 
         # Undetermined codename
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        command_error = CommandError("lsb_release -cs", 1, "error")
-        self.mocker.throw(command_error)
+        self.handler.lsb_release_filename = self.makeFile("Foo=bar")
 
         # The failure should be properly logged
         logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("Couldn't determine which hash=>id database to use: %s" %
-                     str(command_error))
+        logging_mock("Couldn't determine which hash=>id database to use: "
+                     "missing code-name key in %s" %
+                     self.handler.lsb_release_filename)
         self.mocker.result(None)
 
         # Go!
         self.mocker.replay()
         result = self.handler.use_hash_id_db()
-
         return result
 
     def test_wb_determine_hash_id_db_filename_server_uuid_is_none(self):
@@ -139,9 +136,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         # Fake uuid and codename
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        self.mocker.result("codename")
+        self.handler.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
 
         # Undetermined arch
         self.facade.set_arch(None)
@@ -166,9 +161,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        self.mocker.result("codename")
+        self.handler.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
         self.facade.set_arch("arch")
 
         # Let's try
@@ -194,9 +187,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        self.mocker.result("codename")
+        self.handler.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
         self.facade.set_arch("arch")
 
         # The failure should be properly logged
