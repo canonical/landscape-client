@@ -7,7 +7,7 @@ from twisted.internet.defer import succeed
 from landscape.package.store import PackageStore
 from landscape.package.changer import PackageChanger, find_changer_command
 from landscape.package.releaseupgrader import (
-    PackageReleaseUpgrader, find_release_upgrader_command)
+    ReleaseUpgrader, find_release_upgrader_command)
 from landscape.manager.manager import ManagerPlugin
 
 
@@ -37,7 +37,7 @@ class PackageManager(ManagerPlugin):
         if message["type"] == "change-packages":
             cls = PackageChanger
         if message["type"] == "release-upgrade":
-            cls = PackageReleaseUpgrader
+            cls = ReleaseUpgrader
         self._package_store.add_task(cls.queue_name, message)
         self.spawn_handler(cls)
 
@@ -53,7 +53,7 @@ class PackageManager(ManagerPlugin):
     def find_handler_command(self, cls):
         if cls == PackageChanger:
             return find_changer_command()
-        if cls == PackageReleaseUpgrader:
+        if cls == ReleaseUpgrader:
             return find_release_upgrader_command()
 
     def spawn_handler(self, cls):

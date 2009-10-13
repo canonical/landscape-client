@@ -4,7 +4,7 @@ from twisted.internet.defer import Deferred
 
 from landscape.package.changer import find_changer_command, PackageChanger
 from landscape.package.releaseupgrader import (
-    PackageReleaseUpgrader, find_release_upgrader_command)
+    ReleaseUpgrader, find_release_upgrader_command)
 from landscape.package.store import PackageStore
 
 from landscape.manager.packagemanager import PackageManager
@@ -111,7 +111,7 @@ class PackageManagerTest(LandscapeIsolatedTest):
         self.manager.add(self.package_manager)
 
         package_manager_mock = self.mocker.patch(self.package_manager)
-        package_manager_mock.spawn_handler(PackageReleaseUpgrader)
+        package_manager_mock.spawn_handler(ReleaseUpgrader)
         self.mocker.replay()
 
         message = {"type": "release-upgrade"}
@@ -148,7 +148,7 @@ class PackageManagerTest(LandscapeIsolatedTest):
     def test_spawn_release_upgrader(self):
         """
         The L{PackageManager.spawn_handler} method executes the correct command
-        when passed the L{PackageReleaseUpgrader} class as argument.
+        when passed the L{ReleaseUpgrader} class as argument.
         """
         command = self.makeFile("#!/bin/sh\necho 'I am the upgrader!' >&2\n")
         os.chmod(command, 0755)
@@ -160,7 +160,7 @@ class PackageManagerTest(LandscapeIsolatedTest):
         self.package_store.add_task("release-upgrader", "Do something!")
 
         self.manager.add(self.package_manager)
-        result = self.package_manager.spawn_handler(PackageReleaseUpgrader)
+        result = self.package_manager.spawn_handler(ReleaseUpgrader)
 
         def got_result(result):
             log = self.logfile.getvalue()
