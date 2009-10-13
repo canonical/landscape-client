@@ -6,8 +6,10 @@ import pycurl
 
 from twisted.internet.threads import deferToThread
 
+
 class FetchError(Exception):
     pass
+
 
 class HTTPCodeError(FetchError):
 
@@ -23,9 +25,10 @@ class HTTPCodeError(FetchError):
 
 
 class PyCurlError(FetchError):
+
     def __init__(self, error_code, message):
         self.error_code = error_code
-        self.message = message
+        self._message = message
 
     def __str__(self):
         return "Error %d: %s" % (self.error_code, self.message)
@@ -33,6 +36,11 @@ class PyCurlError(FetchError):
     def __repr__(self):
         return "<PyCurlError args=(%d, '%s')>" % (self.error_code,
                                                   self.message)
+
+    @property
+    def message(self):
+        return self._message
+
 
 def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None,
           connect_timeout=30, total_timeout=600):

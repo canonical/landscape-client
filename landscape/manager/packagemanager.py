@@ -5,7 +5,7 @@ from twisted.internet.utils import getProcessOutput
 from twisted.internet.defer import succeed
 
 from landscape.package.store import PackageStore
-from landscape.package.changer import find_changer_command
+from landscape.package.changer import PackageChanger, find_changer_command
 from landscape.manager.manager import ManagerPlugin
 
 
@@ -36,7 +36,7 @@ class PackageManager(ManagerPlugin):
         self.run()
 
     def _enqueue_message_as_changer_task(self, message):
-        self._package_store.add_task("changer", message)
+        self._package_store.add_task(PackageChanger.queue_name, message)
         self.spawn_changer()
 
     def run(self):
@@ -52,7 +52,7 @@ class PackageManager(ManagerPlugin):
         args = ["--quiet"]
         if self.config.config:
             args.extend(["-c", self.config.config])
-        if self._package_store.get_next_task("changer"):
+        if self._package_store.get_next_task(PackageChanger.queue_name):
             # path is set to None so that getProcessOutput does not
             # chdir to "." see bug #211373
             result = getProcessOutput(self._changer_command,
