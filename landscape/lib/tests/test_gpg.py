@@ -3,10 +3,11 @@ import os
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 
-from landscape.tests.helpers import LandscapeIsolatedTest
+from landscape.tests.helpers import LandscapeTest
 from landscape.lib.gpg import gpg_verify
 
-class GpgTest(LandscapeIsolatedTest):
+
+class GpgTest(LandscapeTest):
 
     def test_gpg_verify(self):
         """

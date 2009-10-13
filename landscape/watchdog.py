@@ -504,7 +504,8 @@ bootstrap_list = BootstrapList([
     BootstrapDirectory("$data_path", "landscape", "root", 0755),
     BootstrapDirectory("$data_path/package", "landscape", "root", 0755),
     BootstrapDirectory("$data_path/package/hash-id", "landscape", "root", 0755),
-    BootstrapDirectory("$data_path/upgrade-tool", "landscape", "root", 0755),
+    BootstrapDirectory(
+        "$data_path/package/upgrade-tool", "landscape", "root", 0755),
     BootstrapDirectory("$data_path/messages", "landscape", "root", 0755),
     BootstrapDirectory(
         "$data_path/custom-graph-scripts", "landscape", "root", 0755),

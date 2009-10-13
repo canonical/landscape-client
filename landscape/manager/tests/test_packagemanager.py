@@ -103,6 +103,11 @@ class PackageManagerTest(LandscapeIsolatedTest):
         self.assertEquals(task.data, message)
 
     def test_release_upgrade_handling(self):
+        """
+        The L{PackageManager.handle_message} method is registered has handler
+        for messages of type C{"release-upgrade"}, and queues a task in the
+        appropriate queue.
+        """
         self.manager.add(self.package_manager)
 
         package_manager_mock = self.mocker.patch(self.package_manager)
