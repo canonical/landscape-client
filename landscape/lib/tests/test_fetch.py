@@ -249,7 +249,7 @@ class FetchTest(LandscapeTest):
 
     def test_fetch_many_async(self):
         """
-        L{fetch_many_async} retrives multiple URLs, and returns a C{DeferredList}
+        L{fetch_many_async} retrieves multiple URLs, and returns a C{DeferredList}
         firing its callback when all the URLs have successfully completed.
         """
         urls = ["http://good/", "http://better/"]
@@ -323,6 +323,22 @@ class FetchTest(LandscapeTest):
                 fd = open(os.path.join(directory, result))
                 self.assertEquals(fd.read(), result)
                 fd.close()
+
+        result.addCallback(check_files)
+        return result
+
+    def test_fetch_to_files_with_trailing_slash(self):
+        """
+        L{fetch_to_files} discards trailing slashes from the final component
+        of the given URLs when saving them as files.
+        """
+        directory = self.makeDir()
+        curl = CurlStub("data")
+
+        result = fetch_to_files(["http:///with/slash/"], directory, curl=curl)
+
+        def check_files(ignored):
+            os.path.exists(os.path.join(directory, "slash"))
 
         result.addCallback(check_files)
         return result

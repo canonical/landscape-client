@@ -155,7 +155,7 @@ def fetch_to_files(urls, directory, logger=None, **kwargs):
     """
 
     def write(data, url):
-        filename = os.path.join(directory, url.split("/")[-1])
+        filename = os.path.join(directory, url.rstrip("/").split("/")[-1])
         fd = open(filename, "w")
         fd.write(data)
         fd.close()
