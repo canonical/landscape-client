@@ -2,6 +2,8 @@ import os
 
 import pycurl
 
+from twisted.internet.defer import FirstError
+
 from landscape.lib.fetch import (
     fetch, fetch_async, fetch_many_async, fetch_to_files,
     HTTPCodeError, PyCurlError)
@@ -296,19 +298,18 @@ class FetchTest(LandscapeTest):
         d = fetch_many_async(urls, callback=callback, errback=errback,
                              curl=curl)
 
-        def completed(result):
-            self.fail()
-
-        def aborted(failure):
+        def check_failure(failure):
+            self.assertTrue(isinstance(failure.subFailure.value,
+                                       HTTPCodeError))
             self.assertEquals(fetched_urls, ["http://right/", "http://wrong/"])
 
-        d.addCallback(completed)
-        d.addErrback(aborted)
+        self.assertFailure(d, FirstError)
+        d.addCallback(check_failure)
         return d
 
     def test_fetch_to_files(self):
         """
-        L{fetch_to_files} fetches a list of URLs and save they're content
+        L{fetch_to_files} fetches a list of URLs and save their content
         in the given directory.
         """
         urls = ["http://good/file", "http://even/better-file"]

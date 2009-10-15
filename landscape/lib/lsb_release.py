@@ -14,11 +14,13 @@ def parse_lsb_release(lsb_release_filename):
     """
     fd = open(lsb_release_filename, "r")
     info = {}
-    for line in fd:
-        key, value = line.split("=")
-        if key in LSB_RELEASE_INFO_KEYS:
-            key = LSB_RELEASE_INFO_KEYS[key.strip()]
-            value = value.strip().strip('"')
-            info[key] = value
-    fd.close()
+    try:
+        for line in fd:
+            key, value = line.split("=")
+            if key in LSB_RELEASE_INFO_KEYS:
+                key = LSB_RELEASE_INFO_KEYS[key.strip()]
+                value = value.strip().strip('"')
+                info[key] = value
+    finally:
+        fd.close()
     return info
