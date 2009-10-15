@@ -6,7 +6,7 @@ from twisted.internet.defer import Deferred, succeed
 from landscape.lib.dbus_util import get_bus
 from landscape.lib.lock import lock_path, LockError
 from landscape.lib.log import log_failure
-from landscape.lib.command import run_command, CommandError
+from landscape.lib.lsb_release import LSB_RELEASE_FILENAME, parse_lsb_release
 from landscape.deployment import Configuration, init_logging
 from landscape.package.store import PackageStore, InvalidHashIdDb
 from landscape.broker.remote import RemoteBroker
@@ -36,6 +36,7 @@ class PackageTaskHandler(object):
     config_factory = PackageTaskHandlerConfiguration
 
     queue_name = "default"
+    lsb_release_filename = LSB_RELEASE_FILENAME
 
     def __init__(self, package_store, package_facade, remote_broker, config):
         self._store = package_store
@@ -122,10 +123,15 @@ class PackageTaskHandler(object):
                 return None
 
             try:
-                # XXX replace this with a L{SmartFacade} method
-                codename = run_command("lsb_release -cs")
-            except CommandError, error:
+                lsb_release_info = parse_lsb_release(self.lsb_release_filename)
+            except IOError, error:
                 logging.warning(warning % str(error))
+                return None
+            try:
+                codename = lsb_release_info["code-name"]
+            except KeyError:
+                logging.warning(warning % "missing code-name key in %s" %
+                                self.lsb_release_filename)
                 return None
 
             arch = self._facade.get_arch()

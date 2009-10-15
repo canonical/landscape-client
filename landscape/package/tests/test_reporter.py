@@ -8,7 +8,6 @@ from twisted.internet.defer import Deferred
 from twisted.internet import reactor
 
 from landscape.lib.fetch import fetch_async, FetchError
-from landscape.lib.command import CommandError
 from landscape.package.store import PackageStore, UnknownHashIDRequest
 from landscape.package.reporter import (
     PackageReporter, HASH_ID_REQUEST_TIMEOUT, main, find_reporter_command,
@@ -21,6 +20,8 @@ from landscape.package.tests.helpers import (
 from landscape.tests.helpers import (
     LandscapeIsolatedTest, RemoteBrokerHelper)
 from landscape.tests.mocker import ANY
+
+SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
 
 
 class PackageReporterConfigurationTest(unittest.TestCase):
@@ -250,9 +251,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        self.mocker.result("codename")
+        self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
         self.facade.set_arch("arch")
 
         # Let's say fetch_async is successful
@@ -296,9 +295,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        self.mocker.result("codename")
+        self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
         self.facade.set_arch("arch")
 
         # Intercept any call to fetch_async
@@ -345,15 +342,13 @@ class PackageReporterTest(LandscapeIsolatedTest):
         message_store.set_server_uuid("uuid")
 
         # Undetermined codename
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        command_error = CommandError("lsb_release -cs", 1, "error")
-        self.mocker.throw(command_error)
+        self.reporter.lsb_release_filename = self.makeFile("Foo=bar")
 
         # The failure should be properly logged
         logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("Couldn't determine which hash=>id database to use: %s" %
-                     str(command_error))
+        logging_mock("Couldn't determine which hash=>id database to use: "
+                     "missing code-name key in %s" %
+                     self.reporter.lsb_release_filename)
         self.mocker.result(None)
 
         # Go!
@@ -367,9 +362,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         # Fake uuid and codename
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        self.mocker.result("codename")
+        self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
 
         # Undetermined arch
         self.facade.set_arch(None)
@@ -399,9 +392,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        self.mocker.result("codename")
+        self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
         self.facade.set_arch("arch")
 
         # Check fetch_async is called with the default url
@@ -433,9 +424,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        self.mocker.result("codename")
+        self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
         self.facade.set_arch("arch")
 
         # Let's say fetch_async fails
@@ -473,9 +462,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        self.mocker.result("codename")
+        self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
         self.facade.set_arch("arch")
 
         # The failure should be properly logged
@@ -509,9 +496,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        self.mocker.result("codename")
+        self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
         self.facade.set_arch("arch")
 
         # Check fetch_async is called with the default url
