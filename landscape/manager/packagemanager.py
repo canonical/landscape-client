@@ -49,6 +49,8 @@ class PackageManager(ManagerPlugin):
     def _got_message_types(self, message_types):
         if "change-packages-result" in message_types:
             self.spawn_handler(PackageChanger)
+        if "operation-result" in message_types:
+            self.spawn_handler(ReleaseUpgrader)
 
     def find_handler_command(self, cls):
         if cls == PackageChanger:
