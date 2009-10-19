@@ -24,7 +24,7 @@ class PackageManager(ManagerPlugin):
 
         if not self._package_store:
             filename = os.path.join(registry.config.data_path,
-                                          "package/database")
+                                    "package/database")
             self._package_store = PackageStore(filename)
 
         registry.register_message("change-packages", self.handle_message)
