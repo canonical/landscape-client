@@ -11,4 +11,6 @@ from twisted.python import util
 def initgroups(uid, gid):
     return cinitgroups(pwd.getpwuid(uid).pw_name, gid)
 
+# Patch twisted initgroups implementation, which can result in very long calls
+# to grp.getrlall()
 util.initgroups = initgroups
