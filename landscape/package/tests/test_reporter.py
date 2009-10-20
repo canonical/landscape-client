@@ -8,24 +8,20 @@ from twisted.internet.defer import Deferred
 from twisted.internet import reactor
 
 from landscape.lib.fetch import fetch_async, FetchError
-from landscape.lib.command import CommandError
-
 from landscape.package.store import PackageStore, UnknownHashIDRequest
 from landscape.package.reporter import (
     PackageReporter, HASH_ID_REQUEST_TIMEOUT, main, find_reporter_command,
     PackageReporterConfiguration)
 from landscape.package import reporter
 from landscape.package.facade import SmartFacade
-
-from landscape.deployment import Configuration
 from landscape.broker.remote import RemoteBroker
-
 from landscape.package.tests.helpers import (
     SmartFacadeHelper, HASH1, HASH2, HASH3)
-
 from landscape.tests.helpers import (
     LandscapeIsolatedTest, RemoteBrokerHelper)
 from landscape.tests.mocker import ANY
+
+SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
 
 
 class PackageReporterConfigurationTest(unittest.TestCase):
@@ -50,10 +46,12 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         self.store = PackageStore(self.makeFile())
         self.config = PackageReporterConfiguration()
-        self.reporter = PackageReporter(self.store, self.facade, self.remote, self.config)
+        self.reporter = PackageReporter(self.store, self.facade, self.remote,
+                                        self.config)
 
     def set_pkg2_upgrades_pkg1(self):
         previous = self.Facade.channels_reloaded
+
         def callback(self):
             from smart.backends.deb.base import DebUpgrades
             previous(self)
@@ -64,15 +62,16 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
     def set_pkg1_installed(self):
         previous = self.Facade.channels_reloaded
+
         def callback(self):
             previous(self)
             self.get_packages_by_name("name1")[0].installed = True
         self.Facade.channels_reloaded = callback
 
     def test_set_package_ids_with_all_known(self):
-        request1 = self.store.add_hash_id_request(["hash1", "hash2"])
+        self.store.add_hash_id_request(["hash1", "hash2"])
         request2 = self.store.add_hash_id_request(["hash3", "hash4"])
-        request3 = self.store.add_hash_id_request(["hash5", "hash6"])
+        self.store.add_hash_id_request(["hash5", "hash6"])
 
         self.store.add_task("reporter",
                             {"type": "package-ids", "ids": [123, 456],
@@ -179,7 +178,6 @@ class PackageReporterTest(LandscapeIsolatedTest):
                                 "request-id": request2.id,
                   "type": "add-packages"}])
 
-
         class FakePackage(object):
             type = 65537
             name = u"name1"
@@ -202,7 +200,9 @@ class PackageReporterTest(LandscapeIsolatedTest):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["add-packages"])
 
-        class Boom(Exception): pass
+        class Boom(Exception):
+            pass
+
         deferred = Deferred()
         deferred.errback(Boom())
 
@@ -251,9 +251,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        self.mocker.result("codename")
+        self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
         self.facade.set_arch("arch")
 
         # Let's say fetch_async is successful
@@ -297,9 +295,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        self.mocker.result("codename")
+        self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
         self.facade.set_arch("arch")
 
         # Intercept any call to fetch_async
@@ -346,15 +342,13 @@ class PackageReporterTest(LandscapeIsolatedTest):
         message_store.set_server_uuid("uuid")
 
         # Undetermined codename
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        command_error = CommandError("lsb_release -cs", 1, "error")
-        self.mocker.throw(command_error)
+        self.reporter.lsb_release_filename = self.makeFile("Foo=bar")
 
         # The failure should be properly logged
         logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("Couldn't determine which hash=>id database to use: %s" %
-                     str(command_error))
+        logging_mock("Couldn't determine which hash=>id database to use: "
+                     "missing code-name key in %s" %
+                     self.reporter.lsb_release_filename)
         self.mocker.result(None)
 
         # Go!
@@ -368,9 +362,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         # Fake uuid and codename
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        self.mocker.result("codename")
+        self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
 
         # Undetermined arch
         self.facade.set_arch(None)
@@ -400,9 +392,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        self.mocker.result("codename")
+        self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
         self.facade.set_arch("arch")
 
         # Check fetch_async is called with the default url
@@ -434,9 +424,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        self.mocker.result("codename")
+        self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
         self.facade.set_arch("arch")
 
         # Let's say fetch_async fails
@@ -474,9 +462,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        self.mocker.result("codename")
+        self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
         self.facade.set_arch("arch")
 
         # The failure should be properly logged
@@ -510,9 +496,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        self.mocker.result("codename")
+        self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
         self.facade.set_arch("arch")
 
         # Check fetch_async is called with the default url
@@ -546,10 +530,13 @@ class PackageReporterTest(LandscapeIsolatedTest):
         deferred = Deferred()
 
         def do_test():
+
             def raiseme(x):
                 raise Exception
+
             logging.warning = raiseme
             result = self.reporter.run_smart_update()
+
             def callback((out, err, code)):
                 interval = self.reporter.smart_update_interval
                 self.assertEquals(out, "--after %d" % interval)
@@ -576,8 +563,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         def do_test():
             result = self.reporter.run_smart_update()
+
             def callback((out, err, code)):
-                interval = self.reporter.smart_update_interval
                 self.assertEquals(out, "")
             result.addCallback(callback)
             result.chainDeferred(deferred)
@@ -601,8 +588,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         def do_test():
             result = self.reporter.run_smart_update()
+
             def callback((out, err, code)):
-                interval = self.reporter.smart_update_interval
                 self.assertEquals(out, "output")
                 self.assertEquals(err, "error")
                 self.assertEquals(code, 2)
@@ -625,10 +612,11 @@ class PackageReporterTest(LandscapeIsolatedTest):
                      " (error  )" % self.reporter.smart_update_filename)
         self.mocker.replay()
         deferred = Deferred()
+
         def do_test():
             result = self.reporter.run_smart_update()
+
             def callback((out, err, code)):
-                interval = self.reporter.smart_update_interval
                 self.assertEquals(out, "")
                 self.assertEquals(err, "error  ")
                 self.assertEquals(code, 1)
@@ -648,13 +636,15 @@ class PackageReporterTest(LandscapeIsolatedTest):
             "#!/bin/sh\necho\nexit 1")
         os.chmod(self.reporter.smart_update_filename, 0755)
         deferred = Deferred()
+
         def do_test():
+
             def raiseme(x):
                 raise Exception
             logging.warning = raiseme
             result = self.reporter.run_smart_update()
+
             def callback((out, err, code)):
-                interval = self.reporter.smart_update_interval
                 self.assertEquals(out, "\n")
                 self.assertEquals(err, "")
                 self.assertEquals(code, 1)
@@ -819,7 +809,9 @@ class PackageReporterTest(LandscapeIsolatedTest):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["unknown-package-hashes"])
 
-        class Boom(Exception): pass
+        class Boom(Exception):
+            pass
+
         deferred = Deferred()
         deferred.errback(Boom())
 
@@ -1050,8 +1042,6 @@ class PackageReporterTest(LandscapeIsolatedTest):
             deferred.callback(None)
 
     def test_main(self):
-        data_path = self.makeDir()
-
         run_task_handler = self.mocker.replace("landscape.package.taskhandler"
                                                ".run_task_handler",
                                                passthrough=False)
