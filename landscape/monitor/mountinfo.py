@@ -89,6 +89,10 @@ class MountInfo(MonitorPlugin):
             mount_point = mount_info["mount-point"]
             self._persist.set(("mount-info", mount_point), mount_info)
         self._mount_info_to_persist = None
+        # This forces the registry to write the persistent store to disk
+        # This means that the persistent data reflects the state of the
+        # messages sent.
+        self.registry.flush()
 
     def run(self):
         self._monitor.ping()

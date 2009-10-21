@@ -226,6 +226,12 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         step_size = self.monitor.step_size
         self.monitor.add(plugin)
 
+        # Exchange should trigger a flush of the persist database
+        registry_mocker = self.mocker.replace(plugin.registry)
+        registry_mocker.flush()
+        self.mocker.result(None)
+        self.mocker.replay()
+
         self.reactor.advance(step_size * 2)
         self.monitor.exchange()
 

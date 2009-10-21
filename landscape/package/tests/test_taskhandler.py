@@ -4,7 +4,6 @@ from twisted.internet import reactor
 from twisted.internet.defer import Deferred, fail
 
 from landscape.lib.lock import lock_path
-from landscape.lib.command import CommandError
 
 from landscape.broker.remote import RemoteBroker
 
@@ -24,6 +23,7 @@ def ISTYPE(match_type):
 
 
 SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
+
 
 class PackageTaskHandlerTest(LandscapeIsolatedTest):
 
@@ -127,6 +127,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         message_store.set_server_uuid(None)
 
         result = self.handler._determine_hash_id_db_filename()
+
         def callback(hash_id_db_filename):
             self.assertIs(hash_id_db_filename, None)
         result.addCallback(callback)
@@ -147,6 +148,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         self.mocker.replay()
 
         result = self.handler.use_hash_id_db()
+
         def callback(ignore):
             self.assertFalse(self.store.has_hash_id_db())
         result.addCallback(callback)
@@ -247,6 +249,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         results = [Deferred() for i in range(3)]
 
         stash = []
+
         def handle_task(task):
             result = results[task.data]
             result.addCallback(lambda x: stash.append(task.data))
@@ -284,7 +287,8 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
 
         self.store.add_task(queue_name, 0)
 
-        class MyException(Exception): pass
+        class MyException(Exception):
+            pass
 
         def handle_task(task):
             result = Deferred()

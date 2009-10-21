@@ -2,6 +2,8 @@ import os
 
 import pycurl
 
+from twisted.internet.defer import FirstError
+
 from landscape.lib.fetch import (
     fetch, fetch_async, fetch_many_async, fetch_to_files,
     HTTPCodeError, PyCurlError)
@@ -262,7 +264,7 @@ class FetchTest(LandscapeTest):
 
     def test_fetch_many_async(self):
         """
-        L{fetch_many_async} retrives multiple URLs, and returns a C{DeferredList}
+        L{fetch_many_async} retrieves multiple URLs, and returns a C{DeferredList}
         firing its callback when all the URLs have successfully completed.
         """
         urls = ["http://good/", "http://better/"]
@@ -309,19 +311,18 @@ class FetchTest(LandscapeTest):
         d = fetch_many_async(urls, callback=callback, errback=errback,
                              curl=curl)
 
-        def completed(result):
-            self.fail()
-
-        def aborted(failure):
+        def check_failure(failure):
+            self.assertTrue(isinstance(failure.subFailure.value,
+                                       HTTPCodeError))
             self.assertEquals(fetched_urls, ["http://right/", "http://wrong/"])
 
-        d.addCallback(completed)
-        d.addErrback(aborted)
+        self.assertFailure(d, FirstError)
+        d.addCallback(check_failure)
         return d
 
     def test_fetch_to_files(self):
         """
-        L{fetch_to_files} fetches a list of URLs and save they're content
+        L{fetch_to_files} fetches a list of URLs and save their content
         in the given directory.
         """
         urls = ["http://good/file", "http://even/better-file"]
@@ -336,6 +337,22 @@ class FetchTest(LandscapeTest):
                 fd = open(os.path.join(directory, result))
                 self.assertEquals(fd.read(), result)
                 fd.close()
+
+        result.addCallback(check_files)
+        return result
+
+    def test_fetch_to_files_with_trailing_slash(self):
+        """
+        L{fetch_to_files} discards trailing slashes from the final component
+        of the given URLs when saving them as files.
+        """
+        directory = self.makeDir()
+        curl = CurlStub("data")
+
+        result = fetch_to_files(["http:///with/slash/"], directory, curl=curl)
+
+        def check_files(ignored):
+            os.path.exists(os.path.join(directory, "slash"))
 
         result.addCallback(check_files)
         return result

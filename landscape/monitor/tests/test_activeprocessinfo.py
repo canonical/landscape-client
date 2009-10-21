@@ -449,6 +449,13 @@ class ActiveProcessInfoTest(LandscapeTest):
         plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=100,
                                    jiffies=10, boot_time=0)
         self.monitor.add(plugin)
+
+        registry_mocker = self.mocker.replace(plugin.registry)
+        registry_mocker.flush()
+        self.mocker.count(2)
+        self.mocker.result(None)
+        self.mocker.replay()
+
         plugin.exchange()
 
         messages = self.mstore.get_pending_messages()
