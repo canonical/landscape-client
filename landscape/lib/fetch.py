@@ -80,7 +80,7 @@ def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None,
         curl.setopt(pycurl.HTTPHEADER,
                     ["%s: %s" % pair for pair in sorted(headers.iteritems())])
 
-    curl.setopt(pycurl.URL, url)
+    curl.setopt(pycurl.URL, str(url))
     curl.setopt(pycurl.FOLLOWLOCATION, True)
     curl.setopt(pycurl.MAXREDIRS, 5)
     curl.setopt(pycurl.CONNECTTIMEOUT, connect_timeout)

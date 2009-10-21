@@ -23,6 +23,8 @@ class CurlStub(object):
         raise RuntimeError("Stub doesn't know about %d info" % what)
 
     def setopt(self, option, value):
+        if isinstance(value, unicode):
+            raise AssertionError("setopt() doesn't accept unicode values")
         if self.performed:
             raise AssertionError("setopt() can't be called after perform()")
         self.options[option] = value
@@ -167,6 +169,17 @@ class FetchTest(LandscapeTest):
                            pycurl.LOW_SPEED_TIME: 30,
                            pycurl.NOSIGNAL: 1,
                            pycurl.WRITEFUNCTION: Any()})
+
+    def test_unicode(self):
+        """
+        The L{fetch} function converts the C{url} parameter to C{str} before
+        passing it to curl.
+        """
+        curl = CurlStub("result")
+        result = fetch(u"http://example.com", curl=curl)
+        self.assertEquals(result, "result")
+        self.assertEquals(curl.options[pycurl.URL], "http://example.com")
+        self.assertTrue(isinstance(curl.options[pycurl.URL], str))
 
     def test_non_200_result(self):
         curl = CurlStub("result", http_code=404)
