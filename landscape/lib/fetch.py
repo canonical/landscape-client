@@ -140,6 +140,20 @@ def fetch_many_async(urls, callback=None, errback=None, **kwargs):
     return DeferredList(results, fireOnOneErrback=True, consumeErrors=True)
 
 
+def url_to_filename(url, directory=None):
+    """Return the last component of the given C{url}.
+
+    @param url: The URL to get the filename from.
+    @param directory: Optionally a path to prepend to the returned filename.
+
+    @note: Any trailing slash in the C{url} will be removed
+    """
+    filename = url.rstrip("/").split("/")[-1]
+    if directory is not None:
+        filename = os.path.join(directory, filename)
+    return filename
+
+
 def fetch_to_files(urls, directory, logger=None, **kwargs):
     """
     Retrieve a list of URLs and save their content as files in a directory.
@@ -151,7 +165,7 @@ def fetch_to_files(urls, directory, logger=None, **kwargs):
     """
 
     def write(data, url):
-        filename = os.path.join(directory, url.rstrip("/").split("/")[-1])
+        filename = url_to_filename(url, directory=directory)
         fd = open(filename, "w")
         fd.write(data)
         fd.close()

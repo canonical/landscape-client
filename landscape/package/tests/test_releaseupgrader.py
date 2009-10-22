@@ -74,14 +74,15 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         self.mocker.result(succeed("signature"))
 
         self.mocker.replay()
-        result = self.upgrader.fetch(tarball_url, signature_url)
+        result = self.upgrader.fetch(tarball_url,
+                                     signature_url)
 
         def check_result(ignored):
             directory = self.config.upgrade_tool_directory
-            self.assertFileContent(os.path.join(directory, "karmic.tar.gz"),
-                                   "tarball")
-            self.assertFileContent(os.path.join(directory, "karmic.tar.gz.gpg"),
-                                   "signature")
+            self.assertFileContent(
+                os.path.join(directory, "karmic.tar.gz"), "tarball")
+            self.assertFileContent(
+                os.path.join(directory, "karmic.tar.gz.gpg"), "signature")
             self.assertIn("INFO: Successfully fetched upgrade-tool files",
                           self.logfile.getvalue())
 
@@ -103,11 +104,12 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         self.mocker.result(fail(HTTPCodeError(404, "not found")))
         self.mocker.replay()
 
-        result = self.upgrader.fetch(tarball_url, signature_url)
+        result = self.upgrader.fetch(tarball_url,
+                                     signature_url)
 
         def check_failure(failure):
-            self.assertIn("WARNING: Couldn't fetch file from %s (Server returned HTTP "
-                          "code 404)" % signature_url,
+            self.assertIn("WARNING: Couldn't fetch file from %s (Server return"
+                          "ed HTTP code 404)" % signature_url,
                           self.logfile.getvalue())
             self.assertIn("WARNING: Couldn't fetch all upgrade-tool files",
                           self.logfile.getvalue())
@@ -121,15 +123,15 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         L{ReleaseUpgrader.verify} verifies the upgrade tool tarball against
         its signature.
         """
-        tarball = "/some/tarball"
-        signature = "/some/signature"
+        tarball_filename = "/some/tarball"
+        signature_filename = "/some/signature"
 
         gpg_verify_mock = self.mocker.replace("landscape.lib.gpg.gpg_verify")
-        gpg_verify_mock(tarball, signature)
+        gpg_verify_mock(tarball_filename, signature_filename)
         self.mocker.result(succeed(True))
         self.mocker.replay()
 
-        result = self.upgrader.verify(tarball, signature)
+        result = self.upgrader.verify(tarball_filename, signature_filename)
 
         def check_result(ignored):
             self.assertIn("INFO: Successfully verified upgrade-tool tarball",
@@ -143,15 +145,15 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         L{ReleaseUpgrader.verify} logs a warning in case the tarball signature
         is not valid.
         """
-        tarball = "/some/tarball"
-        signature = "/some/signature"
+        tarball_filename = "/some/tarball"
+        signature_filename = "/some/signature"
 
         gpg_verify_mock = self.mocker.replace("landscape.lib.gpg.gpg_verify")
-        gpg_verify_mock(tarball, signature)
+        gpg_verify_mock(tarball_filename, signature_filename)
         self.mocker.result(fail(InvalidGpgSignature("gpg error")))
         self.mocker.replay()
 
-        result = self.upgrader.verify(tarball, signature)
+        result = self.upgrader.verify(tarball_filename, signature_filename)
 
         def check_failure(failure):
             self.assertIn("WARNING: Invalid signature for upgrade-tool "
@@ -165,9 +167,9 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         """
         The L{ReleaseUpgrader.extract} method extracts the upgrade-tool tarball
         in the proper directory.
-        """        
-        tarball = self.makeFile(base64.decodestring(SAMPLE_TARBALL))
-        result = self.upgrader.extract(tarball)
+        """
+        tarball_filename = self.makeFile(base64.decodestring(SAMPLE_TARBALL))
+        result = self.upgrader.extract(tarball_filename)
 
         def check_result(ignored):
             filename = os.path.join(self.config.upgrade_tool_directory, "file")
@@ -387,15 +389,15 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
             calls.append("fetch")
             return succeed(None)
 
-        def verify(tarball, signature):
-            self.assertEquals(tarball,
+        def verify(tarball_filename, signature_filename):
+            self.assertEquals(tarball_filename,
                               os.path.join(upgrade_tool_directory, "tarball"))
-            self.assertEquals(signature,
+            self.assertEquals(signature_filename,
                               os.path.join(upgrade_tool_directory, "sign"))
             calls.append("verify")
 
-        def extract(tarball):
-            self.assertEquals(tarball,
+        def extract(filename_tarball):
+            self.assertEquals(filename_tarball,
                               os.path.join(upgrade_tool_directory, "tarball"))
             calls.append("extract")
 
@@ -418,8 +420,8 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
 
         message = {"type": "release-upgrade",
                    "dist": "karmic",
-                   "upgrade-tool": "http://some/tarball",
-                   "upgrade-tool-signature": "http://some/sign",
+                   "upgrade-tool-tarball-url": "http://some/tarball",
+                   "upgrade-tool-signature-url": "http://some/sign",
                    "operation-id": 100}
 
         result = self.upgrader.handle_release_upgrade(message)
@@ -474,11 +476,11 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
             calls.append("fetch")
             return succeed(None)
 
-        def verify(tarball, signature):
+        def verify(tarball_filename, signature_filename):
             calls.append("verify")
             raise Exception("failure")
 
-        def extract(tarball):
+        def extract(tarball_filename):
             calls.append("extract")
 
         def upgrade(dist, operation_id):
@@ -496,8 +498,8 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         message = {"type": "release-upgrade",
                    "dist": "karmic",
                    "operation-id": 100,
-                   "upgrade-tool": "http://some/tarball",
-                   "upgrade-tool-signature": "http://some/signature"}
+                   "upgrade-tool-tarball-url": "http://some/tarball",
+                   "upgrade-tool-signature-url": "http://some/signature"}
 
         result = self.upgrader.handle_release_upgrade(message)
 
@@ -549,7 +551,7 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         running in its own process group.
         """
         self.mocker.order()
-        
+
         run_task_handler = self.mocker.replace("landscape.package.taskhandler"
                                                ".run_task_handler",
                                                passthrough=False)

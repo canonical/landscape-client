@@ -9,7 +9,7 @@ import tarfile
 from twisted.internet.defer import succeed
 from twisted.internet.utils import getProcessOutputAndValue
 
-from landscape.lib.fetch import fetch_to_files
+from landscape.lib.fetch import url_to_filename, fetch_to_files
 from landscape.lib.lsb_release import parse_lsb_release, LSB_RELEASE_FILENAME
 from landscape.lib.gpg import gpg_verify
 from landscape.package.taskhandler import (
@@ -71,31 +71,33 @@ class ReleaseUpgrader(PackageTaskHandler):
 
             return self._broker.send_message(message, True)
 
-        upgrade_tool = message["upgrade-tool"]
-        upgrade_tool_signature = message["upgrade-tool-signature"]
-        tarball = os.path.join(self._config.upgrade_tool_directory,
-                               upgrade_tool.split("/")[-1])
-        signature = os.path.join(self._config.upgrade_tool_directory,
-                                 upgrade_tool_signature.split("/")[-1])
+        tarball_url = message["upgrade-tool-tarball-url"]
+        signature_url = message["upgrade-tool-signature-url"]
+        directory = self._config.upgrade_tool_directory
+        tarball_filename = url_to_filename(tarball_url,
+                                           directory=directory)
+        signature_filename = url_to_filename(signature_url,
+                                             directory=directory)
 
-        result = self.fetch(upgrade_tool, upgrade_tool_signature)
-        result.addCallback(lambda x: self.verify(tarball, signature))
-        result.addCallback(lambda x: self.extract(tarball))
+        result = self.fetch(tarball_url, signature_url)
+        result.addCallback(lambda x: self.verify(tarball_filename,
+                                                 signature_filename))
+        result.addCallback(lambda x: self.extract(tarball_filename))
         result.addCallback(lambda x: self.upgrade(dist, operation_id))
         result.addCallback(lambda x: self.finish())
         result.addErrback(self.abort, operation_id)
         return result
 
-    def fetch(self, upgrade_tool, upgrade_tool_signature):
+    def fetch(self, tarball_url, signature_url):
         """Fetch the upgrade-tool files.
 
-        @param upgrade_tool: The upgrade-tool tarball URL.
-        @param upgrade_tool_signature: The upgrade-tool signature URL.
+        @param tarball_url: The upgrade-tool tarball URL.
+        @param signature_url: The upgrade-tool signature URL.
         """
         if not os.path.exists(self._config.upgrade_tool_directory):
             os.mkdir(self._config.upgrade_tool_directory)
 
-        result = fetch_to_files([upgrade_tool, upgrade_tool_signature],
+        result = fetch_to_files([tarball_url, signature_url],
                                 self._config.upgrade_tool_directory,
                                 logger=logging.warning)
 
@@ -110,13 +112,13 @@ class ReleaseUpgrader(PackageTaskHandler):
         result.addErrback(log_failure)
         return result
 
-    def verify(self, tarball, signature):
+    def verify(self, tarball_filename, signature_filename):
         """Verify the upgrade-tool tarball against its signature.
 
-        @param tarball: The filename of the fetched upgrade-tool tarball.
-        @param signature: The filename of the fetched upgrade-tool signature.
+        @param tarball_filename: The filename of the upgrade-tool tarball.
+        @param signature_filename: The filename of the tarball signature.
         """
-        result = gpg_verify(tarball, signature)
+        result = gpg_verify(tarball_filename, signature_filename)
 
         def log_success(ignored):
             logging.info("Successfully verified upgrade-tool tarball")
@@ -130,19 +132,19 @@ class ReleaseUpgrader(PackageTaskHandler):
         result.addErrback(log_failure)
         return result
 
-    def extract(self, tarball):
+    def extract(self, tarball_filename):
         """Extract the upgrade-tool tarball.
 
-        @param tarball: The filename of the fetched upgrade-tool tarball.
+        @param tarball_filename: The filename of the upgrade-tool tarball.
         """
-        tf = tarfile.open(tarball, "r:gz")
+        tf = tarfile.open(tarball_filename, "r:gz")
         tf.extractall(path=self._config.upgrade_tool_directory)
         return succeed(None)
 
     def upgrade(self, dist, operation_id):
         """Run the upgrade-tool command and send a report of the results.
 
-        @param release: The release to upgrade to.
+        @param dist: The code-name of the release to upgrade to.
         @param operation_id: The activity id for this task.
         """
         upgrade_tool_directory = self._config.upgrade_tool_directory
