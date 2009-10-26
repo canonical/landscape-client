@@ -151,7 +151,7 @@ class PackageTaskHandler(object):
 
 
 def run_task_handler(cls, args, reactor=None):
-    from twisted.internet.glib2reactor import install
+    from landscape.reactor import install
     install()
 
     # please only pass reactor when you have totally mangled everything with
