@@ -11,12 +11,28 @@ from landscape.lib.sequenceranges import sequence_to_ranges
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.fetch import fetch_async
 
-from landscape.package.taskhandler import PackageTaskHandler, run_task_handler
+from landscape.package.taskhandler import (
+    PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler)
 from landscape.package.store import UnknownHashIDRequest
 
 
 HASH_ID_REQUEST_TIMEOUT = 7200
 MAX_UNKNOWN_HASHES_PER_REQUEST = 500
+
+
+class PackageReporterConfiguration(PackageTaskHandlerConfiguration):
+    """Specialized configuration for the Landscape package-reporter."""
+
+    def make_parser(self):
+        """
+        Specialize L{Configuration.make_parser}, adding options
+        reporter-specific options.
+        """
+        parser = super(PackageReporterConfiguration, self).make_parser()
+        parser.add_option("--force-smart-update", default=False,
+                          action="store_true",
+                          help="Force running smart-update.")
+        return parser
 
 
 class PackageReporter(PackageTaskHandler):
@@ -26,7 +42,10 @@ class PackageReporter(PackageTaskHandler):
     @cvar smart_update_interval: Time interval in minutes to pass to
         the C{--after} command line option of C{smart-update}.
     """
+    config_factory = PackageReporterConfiguration
+
     queue_name = "reporter"
+
     smart_update_interval = 60
     smart_update_filename = "/usr/lib/landscape/smart-update"
 
@@ -102,7 +121,8 @@ class PackageReporter(PackageTaskHandler):
                 logging.warning("Couldn't download hash=>id database: %s" %
                                 str(exception))
 
-            result = fetch_async(url)
+            result = fetch_async(url,
+                                 cainfo=self._config.get("ssl_public_key"))
             result.addCallback(fetch_ok)
             result.addErrback(fetch_error)
 
@@ -134,9 +154,12 @@ class PackageReporter(PackageTaskHandler):
 
         @return: a deferred returning (out, err, code)
         """
+        if self._config.force_smart_update:
+            args = ()
+        else:
+            args = ("--after", "%d" % self.smart_update_interval)
         result = getProcessOutputAndValue(self.smart_update_filename,
-                                          args=("--after", "%d" %
-                                                self.smart_update_interval))
+                                          args=args)
 
         def callback((out, err, code)):
             # smart-update --after N will exit with error code 1 when it
@@ -166,7 +189,6 @@ class PackageReporter(PackageTaskHandler):
 
     def _handle_package_ids(self, message):
         unknown_hashes = []
-        request_id = message["request-id"]
 
         try:
             request = self._store.get_hash_id_request(message["request-id"])
@@ -325,11 +347,14 @@ class PackageReporter(PackageTaskHandler):
         request = self._store.add_hash_id_request(unknown_hashes)
         message["request-id"] = request.id
         result = self._broker.send_message(message, True)
+
         def set_message_id(message_id):
             request.message_id = message_id
+
         def send_message_failed(failure):
             request.remove()
             return failure
+
         return result.addCallbacks(set_message_id, send_message_failed)
 
     def detect_changes(self):

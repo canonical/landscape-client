@@ -4,12 +4,11 @@ from twisted.internet import reactor
 from twisted.internet.defer import Deferred, fail
 
 from landscape.lib.lock import lock_path
-from landscape.lib.command import CommandError
 
-from landscape.deployment import Configuration
 from landscape.broker.remote import RemoteBroker
 
-from landscape.package.taskhandler import PackageTaskHandler, run_task_handler
+from landscape.package.taskhandler import (
+    PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler)
 from landscape.package.facade import SmartFacade
 from landscape.package.store import HashIdStore, PackageStore
 from landscape.package.tests.helpers import SmartFacadeHelper
@@ -23,6 +22,9 @@ def ISTYPE(match_type):
     return MATCH(lambda arg: type(arg) is match_type)
 
 
+SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
+
+
 class PackageTaskHandlerTest(LandscapeIsolatedTest):
 
     helpers = [SmartFacadeHelper, RemoteBrokerHelper]
@@ -30,10 +32,10 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
     def setUp(self):
         super(PackageTaskHandlerTest, self).setUp()
 
-        self.config = Configuration()
+        self.config = PackageTaskHandlerConfiguration()
         self.store = PackageStore(self.makeFile())
-
-        self.handler = PackageTaskHandler(self.store, self.facade, self.remote, self.config)
+        self.handler = PackageTaskHandler(self.store, self.facade, self.remote,
+                                          self.config)
 
     def test_ensure_channels_reloaded(self):
         self.assertEquals(len(self.facade.get_packages()), 0)
@@ -60,9 +62,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        self.mocker.result("codename")
+        self.handler.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
         self.facade.set_arch("arch")
 
         # Attach the hash=>id database to our store
@@ -83,21 +83,39 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         message_store.set_server_uuid("uuid")
 
         # Undetermined codename
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        command_error = CommandError("lsb_release -cs", 1, "error")
-        self.mocker.throw(command_error)
+        self.handler.lsb_release_filename = self.makeFile("Foo=bar")
 
         # The failure should be properly logged
         logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("Couldn't determine which hash=>id database to use: %s" %
-                     str(command_error))
+        logging_mock("Couldn't determine which hash=>id database to use: "
+                     "missing code-name key in %s" %
+                     self.handler.lsb_release_filename)
         self.mocker.result(None)
 
         # Go!
         self.mocker.replay()
         result = self.handler.use_hash_id_db()
+        return result
 
+    def test_use_hash_id_db_wit_non_existing_lsb_release(self):
+
+        # Fake uuid
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid")
+
+        # Undetermined codename
+        self.handler.lsb_release_filename = self.makeFile()
+
+        # The failure should be properly logged
+        logging_mock = self.mocker.replace("logging.warning")
+        logging_mock("Couldn't determine which hash=>id database to use: "
+                     "[Errno 2] No such file or directory: '%s'" %
+                     self.handler.lsb_release_filename)
+        self.mocker.result(None)
+
+        # Go!
+        self.mocker.replay()
+        result = self.handler.use_hash_id_db()
         return result
 
     def test_wb_determine_hash_id_db_filename_server_uuid_is_none(self):
@@ -109,6 +127,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         message_store.set_server_uuid(None)
 
         result = self.handler._determine_hash_id_db_filename()
+
         def callback(hash_id_db_filename):
             self.assertIs(hash_id_db_filename, None)
         result.addCallback(callback)
@@ -129,6 +148,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         self.mocker.replay()
 
         result = self.handler.use_hash_id_db()
+
         def callback(ignore):
             self.assertFalse(self.store.has_hash_id_db())
         result.addCallback(callback)
@@ -139,9 +159,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         # Fake uuid and codename
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        self.mocker.result("codename")
+        self.handler.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
 
         # Undetermined arch
         self.facade.set_arch(None)
@@ -166,9 +184,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        self.mocker.result("codename")
+        self.handler.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
         self.facade.set_arch("arch")
 
         # Let's try
@@ -194,9 +210,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        self.mocker.result("codename")
+        self.handler.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
         self.facade.set_arch("arch")
 
         # The failure should be properly logged
@@ -235,6 +249,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         results = [Deferred() for i in range(3)]
 
         stash = []
+
         def handle_task(task):
             result = results[task.data]
             result.addCallback(lambda x: stash.append(task.data))
@@ -256,7 +271,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
 
         results[0].callback(None)
         self.assertEquals(stash, [0, 1])
-        self.assertFalse(handle_tasks_result.called)
+        self.assertTrue(handle_tasks_result.called)
         self.assertEquals(self.store.get_next_task(queue_name).data, 2)
 
         results[2].callback(None)
@@ -272,7 +287,8 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
 
         self.store.add_task(queue_name, 0)
 
-        class MyException(Exception): pass
+        class MyException(Exception):
+            pass
 
         def handle_task(task):
             result = Deferred()
@@ -330,7 +346,8 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         # Once locking is done, it's safe to start logging without
         # corrupting the file.  We don't want any output unless it's
         # breaking badly, so the quiet option should be set.
-        init_logging_mock(ISTYPE(Configuration), "package-default")
+        init_logging_mock(ISTYPE(PackageTaskHandlerConfiguration),
+                          "package-default")
 
         # Then, it must create an instance of the TaskHandler subclass
         # passed in as a parameter.  We'll keep track of the arguments
@@ -388,7 +405,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         self.assertEquals(type(store), PackageStore)
         self.assertEquals(type(facade), SmartFacade)
         self.assertEquals(type(broker), RemoteBroker)
-        self.assertEquals(type(config), Configuration)
+        self.assertEquals(type(config), PackageTaskHandlerConfiguration)
 
         # Let's see if the store path is where it should be.
         filename = os.path.join(data_path, "package", "database")

@@ -6,15 +6,37 @@ from twisted.internet.defer import Deferred, succeed
 from landscape.lib.dbus_util import get_bus
 from landscape.lib.lock import lock_path, LockError
 from landscape.lib.log import log_failure
-from landscape.lib.command import run_command, CommandError
+from landscape.lib.lsb_release import LSB_RELEASE_FILENAME, parse_lsb_release
 from landscape.deployment import Configuration, init_logging
 from landscape.package.store import PackageStore, InvalidHashIdDb
 from landscape.broker.remote import RemoteBroker
 
 
+class PackageTaskHandlerConfiguration(Configuration):
+    """Specialized configuration for L{PackageTaskHandler}s."""
+
+    @property
+    def package_directory(self):
+        """Get the path to the package directory."""
+        return os.path.join(self.data_path, "package")
+
+    @property
+    def store_filename(self):
+        """Get the path to the SQlite file for the L{PackageStore}."""
+        return os.path.join(self.package_directory, "database")
+
+    @property
+    def hash_id_directory(self):
+        """Get the path to the directory holding the stock hash-id stores."""
+        return os.path.join(self.package_directory, "hash-id")
+
+
 class PackageTaskHandler(object):
 
+    config_factory = PackageTaskHandlerConfiguration
+
     queue_name = "default"
+    lsb_release_filename = LSB_RELEASE_FILENAME
 
     def __init__(self, package_store, package_facade, remote_broker, config):
         self._store = package_store
@@ -32,11 +54,9 @@ class PackageTaskHandler(object):
         return self.handle_tasks()
 
     def handle_tasks(self):
-        deferred = Deferred()
-        self._handle_next_task(None, deferred)
-        return deferred
+        return self._handle_next_task(None)
 
-    def _handle_next_task(self, result, deferred, last_task=None):
+    def _handle_next_task(self, result, last_task=None):
         if last_task is not None:
             # Last task succeeded.  We can safely kill it now.
             last_task.remove()
@@ -46,12 +66,12 @@ class PackageTaskHandler(object):
         if task:
             # We have another task.  Let's handle it.
             result = self.handle_task(task)
-            result.addCallback(self._handle_next_task, deferred, task)
-            result.addErrback(deferred.errback)
+            result.addCallback(self._handle_next_task, task)
+            return result
 
         else:
             # No more tasks!  We're done!
-            deferred.callback(None)
+            return succeed(None)
 
     def handle_task(self, task):
         return succeed(None)
@@ -103,10 +123,15 @@ class PackageTaskHandler(object):
                 return None
 
             try:
-                # XXX replace this with a L{SmartFacade} method
-                codename = run_command("lsb_release -cs")
-            except CommandError, error:
+                lsb_release_info = parse_lsb_release(self.lsb_release_filename)
+            except IOError, error:
                 logging.warning(warning % str(error))
+                return None
+            try:
+                codename = lsb_release_info["code-name"]
+            except KeyError:
+                logging.warning(warning % "missing code-name key in %s" %
+                                self.lsb_release_filename)
                 return None
 
             arch = self._facade.get_arch()
@@ -117,13 +142,8 @@ class PackageTaskHandler(object):
                 logging.warning(warning % "unknown dpkg architecture")
                 return None
 
-            package_directory = os.path.join(self._config.data_path, "package")
-            hash_id_db_directory = os.path.join(package_directory, "hash-id")
-
-            return os.path.join(hash_id_db_directory,
-                                "%s_%s_%s" % (server_uuid,
-                                              codename,
-                                              arch))
+            return os.path.join(self._config.hash_id_directory,
+                                "%s_%s_%s" % (server_uuid, codename, arch))
 
         result = self._broker.get_server_uuid()
         result.addCallback(got_server_uuid)
@@ -139,18 +159,16 @@ def run_task_handler(cls, args, reactor=None):
     if reactor is None:
         from twisted.internet import reactor
 
-    program_name = cls.queue_name
-
-    config = Configuration()
+    config = cls.config_factory()
     config.load(args)
 
-    package_directory = os.path.join(config.data_path, "package")
-    hash_id_directory = os.path.join(package_directory, "hash-id")
-    for directory in [package_directory, hash_id_directory]:
+    for directory in [config.package_directory, config.hash_id_directory]:
         if not os.path.isdir(directory):
             os.mkdir(directory)
 
-    lock_filename = os.path.join(package_directory, program_name + ".lock")
+    program_name = cls.queue_name
+    lock_filename = os.path.join(config.package_directory,
+                                 program_name + ".lock")
     try:
         lock_path(lock_filename)
     except LockError:
@@ -162,8 +180,6 @@ def run_task_handler(cls, args, reactor=None):
 
     init_logging(config, "package-" + program_name)
 
-    store_filename = os.path.join(package_directory, "database")
-
     # Setup our umask for Smart to use, this needs to setup file permissions to
     # 0644 so...
     os.umask(022)
@@ -172,7 +188,7 @@ def run_task_handler(cls, args, reactor=None):
     # import Smart unless we need to.
     from landscape.package.facade import SmartFacade
 
-    package_store = PackageStore(store_filename)
+    package_store = PackageStore(config.store_filename)
     package_facade = SmartFacade()
     remote = RemoteBroker(get_bus(config.bus))
 
