@@ -12,5 +12,5 @@ def initgroups(uid, gid):
     return cinitgroups(pwd.getpwuid(uid).pw_name, gid)
 
 # Patch twisted initgroups implementation, which can result in very long calls
-# to grp.getrlall()
+# to grp.getrlall(). See http://twistedmatrix.com/trac/ticket/3226
 util.initgroups = initgroups
