@@ -7,6 +7,12 @@ from twisted.python import util
 
 
 def initgroups(uid, gid):
+    """Initializes the group access list.
+
+    It replaces the default implementation of Twisted which iterates other all
+    groups, using the system call C{initgroups} instead. This wrapper just
+    translates the numeric C{uid} to a user name understood by C{initgroups}.
+    """
     import pwd
     from landscape.lib.initgroups import initgroups as cinitgroups
     return cinitgroups(pwd.getpwuid(uid).pw_name, gid)
