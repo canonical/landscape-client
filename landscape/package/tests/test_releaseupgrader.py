@@ -7,7 +7,7 @@ import unittest
 from twisted.internet import reactor
 from twisted.internet.defer import succeed, fail, Deferred
 
-from landscape.lib.gpg import InvalidGpgSignature
+from landscape.lib.gpg import InvalidGPGSignature
 from landscape.lib.fetch import HTTPCodeError
 from landscape.package.store import PackageStore
 from landscape.package.releaseupgrader import (
@@ -150,7 +150,7 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
 
         gpg_verify_mock = self.mocker.replace("landscape.lib.gpg.gpg_verify")
         gpg_verify_mock(tarball_filename, signature_filename)
-        self.mocker.result(fail(InvalidGpgSignature("gpg error")))
+        self.mocker.result(fail(InvalidGPGSignature("gpg error")))
         self.mocker.replay()
 
         result = self.upgrader.verify(tarball_filename, signature_filename)
@@ -401,8 +401,8 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
                               os.path.join(upgrade_tool_directory, "tarball"))
             calls.append("extract")
 
-        def upgrade(dist, operation_id):
-            self.assertEquals(dist, "karmic")
+        def upgrade(code_name, operation_id):
+            self.assertEquals(code_name, "karmic")
             self.assertEquals(operation_id, 100)
             calls.append("upgrade")
 
@@ -419,7 +419,7 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
             "DISTRIB_CODENAME=jaunty\n")
 
         message = {"type": "release-upgrade",
-                   "dist": "karmic",
+                   "code-name": "karmic",
                    "upgrade-tool-tarball-url": "http://some/tarball",
                    "upgrade-tool-signature-url": "http://some/sign",
                    "operation-id": 100}
@@ -442,7 +442,7 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
             "DISTRIB_CODENAME=karmic\n")
 
         message = {"type": "release-upgrade",
-                   "dist": "karmic",
+                   "code-name": "karmic",
                    "operation-id": 100}
 
         result = self.upgrader.handle_release_upgrade(message)
@@ -483,7 +483,7 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         def extract(tarball_filename):
             calls.append("extract")
 
-        def upgrade(dist, operation_id):
+        def upgrade(code_name, operation_id):
             calls.append("upgrade")
 
         def finish():
@@ -496,7 +496,7 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         self.upgrader.finish = finish
 
         message = {"type": "release-upgrade",
-                   "dist": "karmic",
+                   "code-name": "karmic",
                    "operation-id": 100,
                    "upgrade-tool-tarball-url": "http://some/tarball",
                    "upgrade-tool-signature-url": "http://some/signature"}

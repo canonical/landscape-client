@@ -55,16 +55,16 @@ class ReleaseUpgrader(PackageTaskHandler):
 
         @param message: A message of type C{"release-upgrade"}.
         """
-        dist = message["dist"]
+        code_name = message["code-name"]
         operation_id = message["operation-id"]
 
         lsb_release_info = parse_lsb_release(self.lsb_release_filename)
 
-        if dist == lsb_release_info["code-name"]:
+        if code_name == lsb_release_info["code-name"]:
 
             message = self.make_operation_result_message(
                 operation_id, FAILED,
-                "The system is already running %s." % dist, 1)
+                "The system is already running %s." % code_name, 1)
 
             logging.info("Queuing message with release upgrade failure to "
                          "exchange urgently.")
@@ -83,7 +83,7 @@ class ReleaseUpgrader(PackageTaskHandler):
         result.addCallback(lambda x: self.verify(tarball_filename,
                                                  signature_filename))
         result.addCallback(lambda x: self.extract(tarball_filename))
-        result.addCallback(lambda x: self.upgrade(dist, operation_id))
+        result.addCallback(lambda x: self.upgrade(code_name, operation_id))
         result.addCallback(lambda x: self.finish())
         result.addErrback(self.abort, operation_id)
         return result
@@ -141,14 +141,14 @@ class ReleaseUpgrader(PackageTaskHandler):
         tf.extractall(path=self._config.upgrade_tool_directory)
         return succeed(None)
 
-    def upgrade(self, dist, operation_id):
+    def upgrade(self, code_name, operation_id):
         """Run the upgrade-tool command and send a report of the results.
 
-        @param dist: The code-name of the release to upgrade to.
+        @param code_name: The code-name of the release to upgrade to.
         @param operation_id: The activity id for this task.
         """
         upgrade_tool_directory = self._config.upgrade_tool_directory
-        upgrade_tool_filename = os.path.join(upgrade_tool_directory, dist)
+        upgrade_tool_filename = os.path.join(upgrade_tool_directory, code_name)
         args = ("--frontend", "DistUpgradeViewNonInteractive")
         result = getProcessOutputAndValue(upgrade_tool_filename, args=args,
                                           env=os.environ,
