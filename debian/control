@@ -11,7 +11,9 @@ Architecture: any
 Pre-Depends: python, python-gobject
 Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          python-dbus | python2.4-dbus,
+         python-gnupginterface,
          python-twisted-core,
+         python-apt,
          ca-certificates,
          perl-modules,
          python-gdbm,
