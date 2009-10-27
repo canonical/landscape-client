@@ -10,6 +10,7 @@ import gobject
 from twisted.test.proto_helpers import FakeDatagramTransport
 from twisted.internet.defer import succeed, fail
 from twisted.internet.error import DNSLookupError
+from twisted.internet.glib2reactor import Glib2Reactor
 
 from landscape.log import format_object
 
@@ -435,3 +436,27 @@ class TwistedReactor(EventHandlingReactorMixin,
 
         """
         return self._reactor.resolve(host)
+
+
+class CustomGlib2Reactor(Glib2Reactor):
+
+    def simulate(self):
+        """Run simulation loops and reschedule callbacks.
+
+        This particular implementation differs from the L{Glib2Reactor} one by
+        having a much higher timeout, to wake up less.
+        """
+        if self._simtag is not None:
+            gobject.source_remove(self._simtag)
+        self.runUntilCurrent()
+        timeout = min(self.timeout(), 1)
+        if timeout is None:
+            timeout = 1
+        self._simtag = gobject.timeout_add(int(timeout * 1010), self.simulate)
+
+
+def install():
+    """Configure the Twisted mainloop to use our custom glib reactor."""
+    reactor = CustomGlib2Reactor()
+    from twisted.internet.main import installReactor
+    installReactor(reactor)

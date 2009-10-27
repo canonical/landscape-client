@@ -1352,8 +1352,7 @@ class RegisterFunctionTest(LandscapeIsolatedTest):
         config_mock = self.mocker.replace(service.config)
         print_text_mock = self.mocker.replace(print_text)
         reactor_mock = self.mocker.proxy("twisted.internet.reactor")
-        install_mock = self.mocker.replace("twisted.internet."
-                                           "glib2reactor.install")
+        install_mock = self.mocker.replace("landscape.reactor.install")
 
         # This must necessarily happen in the following order.
         self.mocker.order()
@@ -1410,8 +1409,7 @@ class RegisterFunctionTest(LandscapeIsolatedTest):
         config_mock = self.mocker.replace(service.config)
         print_text_mock = self.mocker.replace(print_text)
         reactor_mock = self.mocker.proxy("twisted.internet.reactor")
-        install_mock = self.mocker.replace("twisted.internet."
-                                           "glib2reactor.install")
+        install_mock = self.mocker.replace("landscape.reactor.install")
 
         # This must necessarily happen in the following order.
         self.mocker.order()
@@ -1467,8 +1465,7 @@ class RegisterFunctionTest(LandscapeIsolatedTest):
         config_mock = self.mocker.replace(service.config)
         print_text_mock = self.mocker.replace(print_text)
         reactor_mock = self.mocker.proxy("twisted.internet.reactor")
-        install_mock = self.mocker.replace("twisted.internet."
-                                           "glib2reactor.install")
+        install_mock = self.mocker.replace("landscape.reactor.install")
 
         # This must necessarily happen in the following order.
         self.mocker.order()
@@ -1526,8 +1523,7 @@ class RegisterFunctionTest(LandscapeIsolatedTest):
         config_mock = self.mocker.replace(service.config)
         print_text_mock = self.mocker.replace(print_text)
         reactor_mock = self.mocker.proxy("twisted.internet.reactor")
-        install_mock = self.mocker.replace("twisted.internet."
-                                           "glib2reactor.install")
+        install_mock = self.mocker.replace("landscape.reactor.install")
 
         # This must necessarily happen in the following order.
         self.mocker.order()
@@ -1573,8 +1569,7 @@ class RegisterFunctionTest(LandscapeIsolatedTest):
         remote_broker_factory = self.mocker.replace(
             "landscape.broker.remote.RemoteBroker", passthrough=False)
         print_text_mock = self.mocker.replace(print_text)
-        install_mock = self.mocker.replace("twisted.internet."
-                                           "glib2reactor.install")
+        install_mock = self.mocker.replace("landscape.reactor.install")
         time_mock = self.mocker.replace("time")
 
         install_mock()
@@ -1603,8 +1598,7 @@ class RegisterFunctionTest(LandscapeIsolatedTest):
         remote_broker_factory = self.mocker.replace(
             "landscape.broker.remote.RemoteBroker", passthrough=False)
         print_text_mock = self.mocker.replace(print_text)
-        install_mock = self.mocker.replace("twisted.internet."
-                                           "glib2reactor.install")
+        install_mock = self.mocker.replace("landscape.reactor.install")
         time_mock = self.mocker.replace("time")
 
         install_mock()
@@ -1642,8 +1636,7 @@ class RegisterFunctionNoServiceTest(LandscapeIsolatedTest):
         """
         print_text_mock = self.mocker.replace(print_text)
         reactor_mock = self.mocker.proxy("twisted.internet.reactor")
-        install_mock = self.mocker.replace("twisted.internet."
-                                           "glib2reactor.install")
+        install_mock = self.mocker.replace("landscape.reactor.install")
 
         install_mock()
         print_text_mock("Please wait... ", "")
@@ -1678,8 +1671,7 @@ class RegisterFunctionNoServiceTest(LandscapeIsolatedTest):
 
         print_text_mock = self.mocker.replace(print_text)
         reactor_mock = self.mocker.proxy("twisted.internet.reactor")
-        install_mock = self.mocker.replace("twisted.internet."
-                                           "glib2reactor.install")
+        install_mock = self.mocker.replace("landscape.reactor.install")
         # This is unordered. It's just way too much of a pain.
 
         install_mock()

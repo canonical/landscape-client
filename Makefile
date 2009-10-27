@@ -1,7 +1,13 @@
 PYDOCTOR ?= pydoctor
 TXT2MAN=man/txt2man
+PYTHON ?= python
 
-check:
+all: build
+
+build:
+	$(PYTHON) setup.py build_ext -i
+
+check: build
 	-./test
 	-pyflakes landscape
 

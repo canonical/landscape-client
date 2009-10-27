@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from distutils.core import setup
+from distutils.core import setup, Extension
 
 from landscape import UPSTREAM_VERSION
 
@@ -30,4 +30,6 @@ setup(name="Landscape Client",
                "scripts/landscape-release-upgrader",
                "scripts/landscape-sysinfo",
                "scripts/landscape-is-cloud-managed"],
+      ext_modules=[Extension("landscape.lib.initgroups",
+                             ["landscape/lib/initgroups.c"])]
      )
