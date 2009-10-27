@@ -1,10 +1,10 @@
-import os
+import shutil
 import tempfile
 
 from twisted.internet.utils import getProcessOutputAndValue
 
 
-class InvalidGpgSignature(Exception):
+class InvalidGPGSignature(Exception):
     """Raised when the gpg signature for a given file is invalid."""
 
 
@@ -18,18 +18,13 @@ def gpg_verify(filename, signature, gpg="/usr/bin/gpg"):
             valid, C{False} otherwise.
         """
 
-    def remove_gpg_home(passthrough):
-        try:
-            os.remove(os.path.join(gpg_home, "trustdb.gpg"))
-        except OSError:
-            # GPG has failed, just pass through whatever failure
-            pass
-        os.rmdir(gpg_home)
-        return passthrough
+    def remove_gpg_home(ignored):
+        shutil.rmtree(gpg_home)
+        return ignored
 
     def check_gpg_exit_code((out, err, code)):
         if code != 0:
-            raise InvalidGpgSignature("%s failed (out='%s', err='%s', "
+            raise InvalidGPGSignature("%s failed (out='%s', err='%s', "
                                       "code='%d')" % (gpg, out, err, code))
 
     gpg_home = tempfile.mkdtemp()
