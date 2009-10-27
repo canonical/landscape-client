@@ -401,7 +401,7 @@ def run_landscape_service(configuration_class, service_class, args, bus_name):
     @param bus_name: A bus name used to verify if the service is already
         running.
     """
-    from twisted.internet.glib2reactor import install
+    from landscape.reactor import install
     install()
 
     # Let's consider adding this:

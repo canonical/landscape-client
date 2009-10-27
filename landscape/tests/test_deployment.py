@@ -443,8 +443,7 @@ class AssertUnownedBusNameTest(LandscapeIsolatedTest):
 class RunLandscapeServiceTests(LandscapeTest):
     def test_wrong_user(self):
         getuid_mock = self.mocker.replace("os.getuid")
-        reactor_install_mock = self.mocker.replace(
-            "twisted.internet.glib2reactor.install")
+        reactor_install_mock = self.mocker.replace("landscape.reactor.install")
         reactor_install_mock()
         getuid_mock()
         self.mocker.result(1)
