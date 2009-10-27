@@ -660,6 +660,9 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         self.mocker.count(0, None)
         self.mocker.replace("os.setgid", passthrough=False)(ARGS)
         self.mocker.count(0, None)
+        self.mocker.replace(
+            "twisted.python.util.initgroups", passthrough=False)(ARGS)
+        self.mocker.count(0, None)
         self.mocker.replay()
 
         self.manager.add(ScriptExecutionPlugin())
