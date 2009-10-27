@@ -7,7 +7,7 @@ from landscape.tests.helpers import LandscapeTest
 from landscape.lib.gpg import gpg_verify
 
 
-class GpgTest(LandscapeTest):
+class GPGTest(LandscapeTest):
 
     def test_gpg_verify(self):
         """

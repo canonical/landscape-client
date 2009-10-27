@@ -24,7 +24,7 @@ class PackageManager(ManagerPlugin):
 
         if not self._package_store:
             filename = os.path.join(registry.config.data_path,
-                                          "package/database")
+                                    "package/database")
             self._package_store = PackageStore(filename)
 
         registry.register_message("change-packages", self.handle_message)
@@ -49,6 +49,8 @@ class PackageManager(ManagerPlugin):
     def _got_message_types(self, message_types):
         if "change-packages-result" in message_types:
             self.spawn_handler(PackageChanger)
+        if "operation-result" in message_types:
+            self.spawn_handler(ReleaseUpgrader)
 
     def find_handler_command(self, cls):
         if cls == PackageChanger:

@@ -39,11 +39,30 @@ class PackageManagerTest(LandscapeIsolatedTest):
         self.manager.add(package_manager)
         self.assertTrue(os.path.isfile(filename))
 
-    def test_dont_spawn_handler_if_message_not_accepted(self):
+    def test_dont_spawn_changer_if_message_not_accepted(self):
+        """
+        The L{PackageManager} spawns a L{PackageChanger} run only if the
+        appropriate message type is accepted.
+        """
         self.manager.add(self.package_manager)
 
         package_manager_mock = self.mocker.patch(self.package_manager)
         package_manager_mock.spawn_handler(PackageChanger)
+        self.mocker.count(0)
+
+        self.mocker.replay()
+
+        return self.package_manager.run()
+
+    def test_dont_spawn_release_upgrader_if_message_not_accepted(self):
+        """
+        The L{PackageManager} spawns a L{ReleaseUpgrader} run only if the
+        appropriate message type is accepted.
+        """
+        self.manager.add(self.package_manager)
+
+        package_manager_mock = self.mocker.patch(self.package_manager)
+        package_manager_mock.spawn_handler(ReleaseUpgrader)
         self.mocker.count(0)
 
         self.mocker.replay()
@@ -74,7 +93,11 @@ class PackageManagerTest(LandscapeIsolatedTest):
 
         return deferred
 
-    def test_spawn_handler_on_run_if_message_accepted(self):
+    def test_spawn_changer_on_run_if_message_accepted(self):
+        """
+        The L{PackageManager} spawns a L{PackageChanger} run if messages
+        of type C{"change-packages-result"} are accepted.
+        """
         self.manager.add(self.package_manager)
 
         service = self.broker_service
@@ -82,6 +105,24 @@ class PackageManagerTest(LandscapeIsolatedTest):
 
         package_manager_mock = self.mocker.patch(self.package_manager)
         package_manager_mock.spawn_handler(PackageChanger)
+        self.mocker.count(2) # Once for registration, then again explicitly.
+
+        self.mocker.replay()
+
+        return self.package_manager.run()
+
+    def test_spawn_release_upgrader_on_run_if_message_accepted(self):
+        """
+        The L{PackageManager} spawns a L{ReleaseUpgrader} run if messages
+        of type C{"operation-result"} are accepted.
+        """
+        self.manager.add(self.package_manager)
+
+        service = self.broker_service
+        service.message_store.set_accepted_types(["operation-result"])
+
+        package_manager_mock = self.mocker.patch(self.package_manager)
+        package_manager_mock.spawn_handler(ReleaseUpgrader)
         self.mocker.count(2) # Once for registration, then again explicitly.
 
         self.mocker.replay()
