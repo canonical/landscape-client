@@ -198,6 +198,10 @@ class ReleaseUpgrader(PackageTaskHandler):
 
         return self._broker.send_message(message, True)
 
+    @staticmethod
+    def find_command():
+        return find_release_upgrader_command()
+
 
 def find_release_upgrader_command():
     """Return the path to the landscape-release-upgrader script."""

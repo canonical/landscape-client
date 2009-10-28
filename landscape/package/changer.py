@@ -166,13 +166,17 @@ class PackageChanger(PackageTaskHandler):
                      "exchange urgently.")
         return self._broker.send_message(message, True)
 
-
-def main(args):
-    if os.getpgrp() != os.getpid():
-        os.setsid()
-    return run_task_handler(PackageChanger, args)
+    @staticmethod
+    def find_command():
+        return find_changer_command()
 
 
 def find_changer_command():
     dirname = os.path.dirname(os.path.abspath(sys.argv[0]))
     return os.path.join(dirname, "landscape-package-changer")
+
+
+def main(args):
+    if os.getpgrp() != os.getpid():
+        os.setsid()
+    return run_task_handler(PackageChanger, args)
