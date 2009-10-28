@@ -447,7 +447,6 @@ class WatchDogService(Service):
 
     def startService(self):
         Service.startService(self)
-
         bootstrap_list.bootstrap(data_path=self._config.data_path,
                                  log_dir=self._config.log_dir)
 
@@ -505,6 +504,8 @@ bootstrap_list = BootstrapList([
     BootstrapDirectory("$data_path", "landscape", "root", 0755),
     BootstrapDirectory("$data_path/package", "landscape", "root", 0755),
     BootstrapDirectory("$data_path/package/hash-id", "landscape", "root", 0755),
+    BootstrapDirectory(
+        "$data_path/package/upgrade-tool", "landscape", "root", 0755),
     BootstrapDirectory("$data_path/messages", "landscape", "root", 0755),
     BootstrapDirectory(
         "$data_path/custom-graph-scripts", "landscape", "root", 0755),

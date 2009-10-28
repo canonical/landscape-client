@@ -111,6 +111,13 @@ class LandscapeTest(MessageTestCase, MockerTestCase,
         deferred.addCallback(callback)
         self.assertTrue(called)
 
+    def assertFileContent(self, filename, expected_content):
+        fd = open(filename)
+        actual_content = fd.read()
+        fd.close()
+        self.assertEquals(expected_content, actual_content)
+
+
 class LandscapeIsolatedTest(LandscapeTest):
     """TestCase that also runs all test methods in a subprocess."""
 
@@ -355,6 +362,7 @@ class ManagerHelper(FakeRemoteBrokerHelper):
         class MyManagerConfiguration(ManagerConfiguration):
             default_config_filenames = [test_case.config_filename]
         config = MyManagerConfiguration()
+        config.load(["--data-path", test_case.data_path])
         test_case.manager = ManagerPluginRegistry(
             test_case.remote, test_case.broker_service.reactor,
             config)
