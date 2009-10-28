@@ -136,12 +136,12 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
             "execute-script", self._handle_execute_script)
 
     def _respond(self, status, data, opid, result_code=None):
-        message =  {"type": "operation-result",
-                    "status": status,
-                    # Let's decode result-text, replacing non-printable
-                    # characters
-                    "result-text": data.decode("utf-8", "replace"),
-                    "operation-id": opid}
+        message = {"type": "operation-result",
+                   "status": status,
+                   # Let's decode result-text, replacing non-printable
+                   # characters
+                   "result-text": data.decode("utf-8", "replace"),
+                   "operation-id": opid}
         if result_code:
             message["result-code"] = result_code
         return self.registry.broker.send_message(message, True)
@@ -307,7 +307,8 @@ class ProcessAccumulationProtocol(ProcessProtocol):
             if reason.check(ProcessDone):
                 self.result_deferred.callback(data)
             else:
-                self.result_deferred.errback(ProcessFailedError(data, exit_code))
+                self.result_deferred.errback(ProcessFailedError(data,
+                                                                exit_code))
 
     def _cancel(self):
         """

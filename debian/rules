@@ -80,19 +80,19 @@ ifneq (,$(findstring $(dist_release),"dapper"))
 	echo "extra:Depends=python2.4-pysqlite2, libcurl3-gnutls (>= 7.15.1-1ubuntu3), python-smartpm (>= 1.1.1~bzr20081010-0ubuntu1)" >> $(landscape_substvars)
 endif
 ifneq (,$(findstring $(dist_release),"hardy"))
-	# We want update-motd in intrepid and jaunty
+	# We want the smart 1.1.1 from the Landscape repository on hardy
 	echo "extra:Depends=python-smartpm (>= 1.1.1~bzr20081010-0ubuntu1)" >> $(landscape_substvars)
 endif
 ifneq (,$(findstring $(dist_release),"intrepid"))
-	# We want update-motd in intrepid and jaunty
+	# We want the SRU-ed smart 1.1.1 on intrepid
 	echo "extra:Depends=update-motd, python-smartpm (>= 1.1.1~bzr20081010-0ubuntu1)" >> $(landscape_substvars)
 endif
 ifneq (,$(findstring $(dist_release),"jaunty"))
-	# We want update-motd in intrepid and jaunty
+	# We want update-motd on jaunty, and the SRU-ed smart 1.2
 	echo "extra:Depends=update-motd, python-smartpm (>= 1.2-0ubuntu1)" >> $(landscape_substvars)
 endif
 ifneq (,$(findstring $(dist_release),"karmic"))
-	# We want libpam-modules in karmic
+	# We want libpam-modules in karmic, and smart 1.2
 	echo "extra:Depends=libpam-modules (>= 1.0.1-9ubuntu3), python-smartpm (>= 1.2-0ubuntu1)" >> $(landscape_substvars)
 endif
 

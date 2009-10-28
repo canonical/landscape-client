@@ -6,7 +6,10 @@ import shutil
 import logging
 import tarfile
 
-from twisted.internet.defer import succeed
+from twisted.internet import reactor
+from twisted.internet.protocol import ProcessProtocol
+from twisted.internet.error import ProcessDone
+from twisted.internet.defer import succeed, Deferred
 from twisted.internet.utils import getProcessOutputAndValue
 
 from landscape.lib.fetch import url_to_filename, fetch_to_files
@@ -19,7 +22,7 @@ from landscape.package.reporter import find_reporter_command
 
 
 class ReleaseUpgraderConfiguration(PackageTaskHandlerConfiguration):
-    """Specialized configuration for the Landscape package-reporter."""
+    """Specialized configuration for the Landscape release-upgrader."""
 
     @property
     def upgrade_tool_directory(self):
@@ -173,19 +176,24 @@ class ReleaseUpgrader(PackageTaskHandler):
         shutil.rmtree(self._config.upgrade_tool_directory)
 
         if os.getuid() == 0:
-            os.setgid(grp.getgrnam("landscape").gr_gid)
-            os.setuid(pwd.getpwnam("landscape").pw_uid)
+            uid = pwd.getpwnam("landscape").pw_uid
+            gid = grp.getgrnam("landscape").gr_gid
+        else:
+            uid = None
+            gid = None
 
         reporter = find_reporter_command()
 
         # Force a smart-update run, because the sources.list has changed
-        args = ["--force-smart-update"]
+        args = [reporter, "--force-smart-update"]
 
         if self._config.config is not None:
             args.append("--config=%s" % self._config.config)
 
-        result = getProcessOutputAndValue(reporter, args=args, path=None)
-        return result
+        pp = PackageReporterProcessProtocol()
+        reactor.spawnProcess(pp, reporter, args=args, uid=uid, gid=gid,
+                             path=os.getcwd(), env=os.environ)
+        return pp.result
 
     def abort(self, failure, operation_id):
         """Abort the task reporting details about the failure."""
@@ -201,6 +209,19 @@ class ReleaseUpgrader(PackageTaskHandler):
     @staticmethod
     def find_command():
         return find_release_upgrader_command()
+
+
+class PackageReporterProcessProtocol(ProcessProtocol):
+    """A ProcessProtocol which runs the package-reporter."""
+
+    def __init__(self):
+        self.result = Deferred()
+
+    def processEnded(self, status):
+        if status.check(ProcessDone):
+            self.result.callback(0)
+        else:
+            self.result.errback(status.value.exitCode)
 
 
 def find_release_upgrader_command():

@@ -272,9 +272,11 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         open(os.path.join(upgrade_tool_directory, "somefile"), "w").close()
         os.mkdir(os.path.join(upgrade_tool_directory, "somedir"))
 
+        output_filename = self.makeFile()
         reporter_filename = self.makeFile("#!/bin/sh\n"
-                                          "echo $@\n"
-                                          "echo $(pwd)\n")
+                                          "echo $@ > %s\n"
+                                          "echo $(pwd) >> %s\n"
+                                          % (output_filename, output_filename))
         os.chmod(reporter_filename, 0755)
 
         find_reporter_mock = self.mocker.replace("landscape.package.reporter."
@@ -289,11 +291,10 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
 
             result = self.upgrader.finish()
 
-            def check_result((out, err, code)):
+            def check_result(code):
                 self.assertFalse(os.path.exists(upgrade_tool_directory))
-                self.assertEquals(out, "--force-smart-update\n%s\n" %
+                self.assertFileContent(output_filename, "--force-smart-update\n%s\n" %
                                   os.getcwd())
-                self.assertEquals(err, "")
                 self.assertEquals(code, 0)
 
             result.addCallback(check_result)
@@ -305,50 +306,63 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
     def test_finish_as_root(self):
         """
         If the release-upgrader process is run as root, as it alwyas should,
-        the L{ReleaseUpgrader.finish} changes the process gid and uid before
-        spawning the reporter.
+        the L{ReleaseUpgrader.finish} method spawns the package-reporter with
+        the landscape uid and gid.
         """
-        reporter_filename = self.makeFile("#!/bin/sh\nexit\n")
-        os.chmod(reporter_filename, 0755)
+ 
+        find_reporter_mock = self.mocker.replace("landscape.package.reporter."
+                                                 "find_reporter_command")
+        find_reporter_mock()
+        self.mocker.result("reporter")
 
         getuid_mock = self.mocker.replace("os.getuid")
         getuid_mock()
         self.mocker.result(0)
-        setgid_mock = self.mocker.replace("os.setgid")
-        setgid_mock(grp.getgrnam("landscape").gr_gid)
-        setgid_mock = self.mocker.replace("os.setuid")
-        setgid_mock(pwd.getpwnam("landscape").pw_uid)
 
-        find_reporter_mock = self.mocker.replace("landscape.package.reporter."
-                                                 "find_reporter_command")
-        find_reporter_mock()
-        self.mocker.result(reporter_filename)
+        getpwnam_mock = self.mocker.replace("pwd.getpwnam")
+        getpwnam_mock("landscape")
+
+        class FakePwNam(object):
+            pw_uid = 1234
+
+        self.mocker.result(FakePwNam())
+
+        getgrnam_mock = self.mocker.replace("grp.getgrnam")
+        getgrnam_mock("landscape")
+
+        class FakeGrNam(object):
+            gr_gid = 5678
+
+        self.mocker.result(FakeGrNam())
+
+        spawn_process_was_called = False
+
+        def spawn_process(pp, reporter, args=None, uid=None, gid=None,
+                          path=None, env=None):
+            self.assertEquals(uid, 1234)
+            self.assertEquals(gid, 5678)
+            self.spawn_process_was_called = True
+
+        saved_spawn_process = reactor.spawnProcess
+        reactor.spawnProcess = spawn_process
+
         self.mocker.replay()
 
-        deferred = Deferred()
-
-        def do_test():
-
-            result = self.upgrader.finish()
-
-            def check_result((out, err, code)):
-                self.assertEquals(out, "")
-                self.assertEquals(err, "")
-                self.assertEquals(code, 0)
-
-            result.addCallback(check_result)
-            result.chainDeferred(deferred)
-
-        reactor.callWhenRunning(do_test)
-        return deferred
+        try:
+            self.upgrader.finish()
+        finally:
+            reactor.spawnProcess = saved_spawn_process
+        self.assertTrue(self.spawn_process_was_called)
 
     def test_finish_with_config_file(self):
         """
         The L{ReleaseUpgrader.finish} method passes over to the reporter the
         configuration file the release-upgrader was called with.
         """
+        output_filename = self.makeFile()
         reporter_filename = self.makeFile("#!/bin/sh\n"
-                                          "echo $@\n")
+                                          "echo $@ > %s\n"
+                                          % output_filename)
         os.chmod(reporter_filename, 0755)
         self.config.config = "/some/config"
         find_reporter_mock = self.mocker.replace("landscape.package.reporter."
@@ -363,10 +377,10 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
 
             result = self.upgrader.finish()
 
-            def check_result((out, err, code)):
-                self.assertEquals(out, "--force-smart-update "
-                                  "--config=/some/config\n")
-                self.assertEquals(err, "")
+            def check_result(code):
+                self.assertFileContent(output_filename,
+                                       "--force-smart-update "
+                                       "--config=/some/config\n")
                 self.assertEquals(code, 0)
 
             result.addCallback(check_result)
