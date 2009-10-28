@@ -145,9 +145,9 @@ class PackageManagerTest(LandscapeIsolatedTest):
 
     def test_release_upgrade_handling(self):
         """
-        The L{PackageManager.handle_message} method is registered has handler
-        for messages of type C{"release-upgrade"}, and queues a task in the
-        appropriate queue.
+        The L{PackageManager.handle_release_upgrade} method is registered has
+        handler for messages of type C{"release-upgrade"}, and queues a task
+        in the appropriate queue.
         """
         self.manager.add(self.package_manager)
 
@@ -156,7 +156,6 @@ class PackageManagerTest(LandscapeIsolatedTest):
         self.mocker.replay()
 
         message = {"type": "release-upgrade"}
-        service = self.broker_service
         self.manager.dispatch_message(message)
         task = self.package_store.get_next_task("release-upgrader")
         self.assertTrue(task)
