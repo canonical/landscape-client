@@ -480,7 +480,6 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
                    "upgrade-tool-tarball-url": "http://some/tarball",
                    "upgrade-tool-signature-url": "http://some/sign",
                    "allow-third-party": True,
-                   "debug": False,
                    "operation-id": 100}
 
         result = self.upgrader.handle_release_upgrade(message)
@@ -558,9 +557,7 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
                    "code-name": "karmic",
                    "operation-id": 100,
                    "upgrade-tool-tarball-url": "http://some/tarball",
-                   "upgrade-tool-signature-url": "http://some/signature",
-                   "allow-third-party": False,
-                   "debug": False}
+                   "upgrade-tool-signature-url": "http://some/signature"}
 
         result = self.upgrader.handle_release_upgrade(message)
 

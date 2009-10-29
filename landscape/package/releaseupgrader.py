@@ -75,8 +75,8 @@ class ReleaseUpgrader(PackageTaskHandler):
 
         tarball_url = message["upgrade-tool-tarball-url"]
         signature_url = message["upgrade-tool-signature-url"]
-        allow_third_party = message["allow-third-party"]
-        debug = message["debug"]
+        allow_third_party = message.get("allow-third-party", False)
+        debug = message.get("debug", False)
         directory = self._config.upgrade_tool_directory
         tarball_filename = url_to_filename(tarball_url,
                                            directory=directory)
