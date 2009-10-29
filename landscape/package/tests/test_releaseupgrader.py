@@ -309,7 +309,7 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         the L{ReleaseUpgrader.finish} method spawns the package-reporter with
         the landscape uid and gid.
         """
- 
+
         find_reporter_mock = self.mocker.replace("landscape.package.reporter."
                                                  "find_reporter_command")
         find_reporter_mock()
@@ -335,13 +335,13 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
 
         self.mocker.result(FakeGrNam())
 
-        spawn_process_was_called = False
+        spawn_process_calls = []
 
         def spawn_process(pp, reporter, args=None, uid=None, gid=None,
                           path=None, env=None):
             self.assertEquals(uid, 1234)
             self.assertEquals(gid, 5678)
-            self.spawn_process_was_called = True
+            spawn_process_calls.append(True)
 
         saved_spawn_process = reactor.spawnProcess
         reactor.spawnProcess = spawn_process
@@ -352,7 +352,7 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
             self.upgrader.finish()
         finally:
             reactor.spawnProcess = saved_spawn_process
-        self.assertTrue(self.spawn_process_was_called)
+        self.assertEquals(spawn_process_calls, [True])
 
     def test_finish_with_config_file(self):
         """
