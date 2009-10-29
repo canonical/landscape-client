@@ -6,7 +6,6 @@ import shutil
 import logging
 import tarfile
 
-from twisted.internet import reactor
 from twisted.internet.protocol import ProcessProtocol
 from twisted.internet.error import ProcessDone
 from twisted.internet.defer import succeed, Deferred
@@ -191,6 +190,7 @@ class ReleaseUpgrader(PackageTaskHandler):
             args.append("--config=%s" % self._config.config)
 
         pp = PackageReporterProcessProtocol()
+        from twisted.internet import reactor
         reactor.spawnProcess(pp, reporter, args=args, uid=uid, gid=gid,
                              path=os.getcwd(), env=os.environ)
         return pp.result
