@@ -200,7 +200,7 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
 
         def do_test():
 
-            result = self.upgrader.upgrade("karmic", 100)
+            result = self.upgrader.upgrade("karmic", False, False, 100)
 
             def check_result(ignored):
                 self.assertIn("INFO: Queuing message with release upgrade "
@@ -208,6 +208,47 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
                               self.logfile.getvalue())
                 result_text = u"--frontend DistUpgradeViewNonInteractive\n" \
                               "FOO=bar\nPWD=%s\nout\n" % upgrade_tool_directory
+                self.assertMessages(self.get_pending_messages(),
+                                    [{"type": "operation-result",
+                                      "operation-id": 100,
+                                      "status": SUCCEEDED,
+                                      "result-text": result_text,
+                                      "result-code": 0}])
+
+            result.addCallback(check_result)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+
+        def cleanup(ignored):
+            os.environ = env_backup
+            return ignored
+
+        deferred.addBoth(cleanup)
+        return deferred
+
+    def test_upgrade_with_env_variables(self):
+        """
+        The L{ReleaseUpgrader.upgrade} method optionally sets environment
+        variables to be passed to the upgrade-tool process.
+        """
+        upgrade_tool_directory = self.config.upgrade_tool_directory
+        upgrade_tool_filename = os.path.join(upgrade_tool_directory, "karmic")
+        fd = open(upgrade_tool_filename, "w")
+        fd.write("#!/bin/sh\nenv|grep -v ^PWD|sort\n")
+        fd.close()
+        os.chmod(upgrade_tool_filename, 0755)
+        env_backup = os.environ.copy()
+        os.environ.clear()
+        deferred = Deferred()
+
+        def do_test():
+
+            result = self.upgrader.upgrade("karmic", True, True, 100)
+
+            def check_result(ignored):
+                result_text = u"DEBUG_UPDATE_MANAGER=True\n" \
+                              u"RELEASE_UPRADER_ALLOW_THIRD_PARTY=True\n"
                 self.assertMessages(self.get_pending_messages(),
                                     [{"type": "operation-result",
                                       "operation-id": 100,
@@ -246,7 +287,7 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
 
         def do_test():
 
-            result = self.upgrader.upgrade("karmic", 100)
+            result = self.upgrader.upgrade("karmic", False, False, 100)
 
             def check_result(ignored):
                 self.assertMessages(self.get_pending_messages(),
@@ -415,9 +456,11 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
                               os.path.join(upgrade_tool_directory, "tarball"))
             calls.append("extract")
 
-        def upgrade(code_name, operation_id):
-            self.assertEquals(code_name, "karmic")
+        def upgrade(code_name, allow_third_party, debug, operation_id):
             self.assertEquals(operation_id, 100)
+            self.assertEquals(code_name, "karmic")
+            self.assertTrue(allow_third_party)
+            self.assertFalse(debug)
             calls.append("upgrade")
 
         def finish():
@@ -436,6 +479,8 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
                    "code-name": "karmic",
                    "upgrade-tool-tarball-url": "http://some/tarball",
                    "upgrade-tool-signature-url": "http://some/sign",
+                   "allow-third-party": True,
+                   "debug": False,
                    "operation-id": 100}
 
         result = self.upgrader.handle_release_upgrade(message)
@@ -513,7 +558,9 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
                    "code-name": "karmic",
                    "operation-id": 100,
                    "upgrade-tool-tarball-url": "http://some/tarball",
-                   "upgrade-tool-signature-url": "http://some/signature"}
+                   "upgrade-tool-signature-url": "http://some/signature",
+                   "allow-third-party": False,
+                   "debug": False}
 
         result = self.upgrader.handle_release_upgrade(message)
 

@@ -75,6 +75,8 @@ class ReleaseUpgrader(PackageTaskHandler):
 
         tarball_url = message["upgrade-tool-tarball-url"]
         signature_url = message["upgrade-tool-signature-url"]
+        allow_third_party = message["allow-third-party"]
+        debug = message["debug"]
         directory = self._config.upgrade_tool_directory
         tarball_filename = url_to_filename(tarball_url,
                                            directory=directory)
@@ -85,7 +87,8 @@ class ReleaseUpgrader(PackageTaskHandler):
         result.addCallback(lambda x: self.verify(tarball_filename,
                                                  signature_filename))
         result.addCallback(lambda x: self.extract(tarball_filename))
-        result.addCallback(lambda x: self.upgrade(code_name, operation_id))
+        result.addCallback(lambda x: self.upgrade(code_name, allow_third_party,
+                                                  debug, operation_id))
         result.addCallback(lambda x: self.finish())
         result.addErrback(self.abort, operation_id)
         return result
@@ -143,17 +146,25 @@ class ReleaseUpgrader(PackageTaskHandler):
         tf.extractall(path=self._config.upgrade_tool_directory)
         return succeed(None)
 
-    def upgrade(self, code_name, operation_id):
+    def upgrade(self, code_name, allow_third_party, debug, operation_id):
         """Run the upgrade-tool command and send a report of the results.
 
+        @param code_name: The code-name of the release to upgrade to.
+        @param allow_third_party: Whether to enable non-official APT repo.
+        @param debug: Whether to turn on debug level logging.
         @param code_name: The code-name of the release to upgrade to.
         @param operation_id: The activity id for this task.
         """
         upgrade_tool_directory = self._config.upgrade_tool_directory
         upgrade_tool_filename = os.path.join(upgrade_tool_directory, code_name)
         args = ("--frontend", "DistUpgradeViewNonInteractive")
+        env = os.environ.copy()
+        if allow_third_party:
+            env["RELEASE_UPRADER_ALLOW_THIRD_PARTY"] = "True"
+        if debug:
+            env["DEBUG_UPDATE_MANAGER"] = "True"
         result = getProcessOutputAndValue(upgrade_tool_filename, args=args,
-                                          env=os.environ,
+                                          env=env,
                                           path=upgrade_tool_directory)
 
         def send_operation_result((out, err, code)):
