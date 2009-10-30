@@ -6,7 +6,7 @@ from twisted.internet.defer import FirstError
 
 from landscape.lib.fetch import (
     fetch, fetch_async, fetch_many_async, fetch_to_files,
-    HTTPCodeError, PyCurlError)
+    url_to_filename, HTTPCodeError, PyCurlError)
 from landscape.tests.helpers import LandscapeTest
 
 
@@ -25,6 +25,8 @@ class CurlStub(object):
         raise RuntimeError("Stub doesn't know about %d info" % what)
 
     def setopt(self, option, value):
+        if isinstance(value, unicode):
+            raise AssertionError("setopt() doesn't accept unicode values")
         if self.performed:
             raise AssertionError("setopt() can't be called after perform()")
         self.options[option] = value
@@ -36,6 +38,7 @@ class CurlStub(object):
             raise AssertionError("Can't perform twice")
         self.options[pycurl.WRITEFUNCTION](self.result)
         self.performed = True
+
 
 class CurlManyStub(object):
 
@@ -57,14 +60,16 @@ class CurlManyStub(object):
         result = self.curls[self.count].getinfo(what)
         self.count += 1
         return result
-        
+
     def setopt(self, option, value):
         self.curls[self.count].setopt(option, value)
 
     def perform(self):
         self.curls[self.count].perform()
 
+
 class Any(object):
+
     def __eq__(self, other):
         return True
 
@@ -141,8 +146,8 @@ class FetchTest(LandscapeTest):
 
     def test_headers(self):
         curl = CurlStub("result")
-        result = fetch("http://example.com", headers={"a":"1", "b":"2"},
-                       curl=curl)
+        result = fetch("http://example.com",
+                       headers={"a":"1", "b":"2"}, curl=curl)
         self.assertEquals(result, "result")
         self.assertEquals(curl.options,
                           {pycurl.URL: "http://example.com",
@@ -157,8 +162,8 @@ class FetchTest(LandscapeTest):
 
     def test_timeouts(self):
         curl = CurlStub("result")
-        result = fetch("http://example.com", connect_timeout=5, total_timeout=30,
-                       curl=curl)
+        result = fetch("http://example.com", connect_timeout=5,
+                       total_timeout=30, curl=curl)
         self.assertEquals(result, "result")
         self.assertEquals(curl.options,
                           {pycurl.URL: "http://example.com",
@@ -169,6 +174,17 @@ class FetchTest(LandscapeTest):
                            pycurl.LOW_SPEED_TIME: 30,
                            pycurl.NOSIGNAL: 1,
                            pycurl.WRITEFUNCTION: Any()})
+
+    def test_unicode(self):
+        """
+        The L{fetch} function converts the C{url} parameter to C{str} before
+        passing it to curl.
+        """
+        curl = CurlStub("result")
+        result = fetch(u"http://example.com", curl=curl)
+        self.assertEquals(result, "result")
+        self.assertEquals(curl.options[pycurl.URL], "http://example.com")
+        self.assertTrue(isinstance(curl.options[pycurl.URL], str))
 
     def test_non_200_result(self):
         curl = CurlStub("result", http_code=404)
@@ -251,8 +267,9 @@ class FetchTest(LandscapeTest):
 
     def test_fetch_many_async(self):
         """
-        L{fetch_many_async} retrieves multiple URLs, and returns a C{DeferredList}
-        firing its callback when all the URLs have successfully completed.
+        L{fetch_many_async} retrieves multiple URLs, and returns a
+        C{DeferredList} firing its callback when all the URLs have
+        successfully completed.
         """
         urls = ["http://good/", "http://better/"]
         results = ["good", "better"]
@@ -293,7 +310,7 @@ class FetchTest(LandscapeTest):
             self.assertEquals(failure.value.body, "wrong")
             self.assertEquals(failure.value.http_code, 501)
             return failure
-    
+
         curl = CurlManyStub(results)
         d = fetch_many_async(urls, callback=callback, errback=errback,
                              curl=curl)
@@ -306,6 +323,16 @@ class FetchTest(LandscapeTest):
         self.assertFailure(d, FirstError)
         d.addCallback(check_failure)
         return d
+
+    def test_url_to_filename(self):
+        """
+        L{url_to_filename} extracts the filename part of an URL, optionally
+        prepending a directory path to it.
+        """
+        self.assertEquals(url_to_filename("http://some/file"), "file")
+        self.assertEquals(url_to_filename("http://some/file/"), "file")
+        self.assertEquals(url_to_filename("http://some/file", directory="dir"),
+                          os.path.join("dir", "file"))
 
     def test_fetch_to_files(self):
         """

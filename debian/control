@@ -10,9 +10,10 @@ Package: landscape-common
 Architecture: any
 Pre-Depends: python, python-gobject
 Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
-         python-smartpm (>= 1.2-0ubuntu1),
          python-dbus | python2.4-dbus,
+         python-gnupginterface,
          python-twisted-core,
+         python-apt,
          ca-certificates,
          perl-modules,
          python-gdbm,

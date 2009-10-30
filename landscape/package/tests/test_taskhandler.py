@@ -346,7 +346,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         # corrupting the file.  We don't want any output unless it's
         # breaking badly, so the quiet option should be set.
         init_logging_mock(ISTYPE(PackageTaskHandlerConfiguration),
-                          "package-default")
+                          "package-task-handler")
 
         # Then, it must create an instance of the TaskHandler subclass
         # passed in as a parameter.  We'll keep track of the arguments

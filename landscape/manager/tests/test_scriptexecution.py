@@ -3,7 +3,6 @@ import os
 import sys
 import tempfile
 import stat
-import pwd
 
 from twisted.internet.defer import gatherResults
 from twisted.internet.error import ProcessDone
@@ -61,6 +60,7 @@ class RunScriptTests(LandscapeTest):
         result = self.plugin.run_script(
             sys.executable,
             "import os\nprint os.environ")
+
         def check_environment(results):
             for string in get_default_environment().keys():
                 self.assertIn(string, results)
@@ -99,6 +99,7 @@ class RunScriptTests(LandscapeTest):
         accented_content = u"\N{LATIN SMALL LETTER E WITH ACUTE}"
         result = self.plugin.run_script(
             u"/bin/echo %s" % (accented_content,), u"")
+
         def check(result):
             self.assertTrue(
                 "%s " % (accented_content.encode("utf-8"),) in result)
@@ -140,6 +141,7 @@ class RunScriptTests(LandscapeTest):
             u"/bin/sh",
             u"ls $LANDSCAPE_ATTACHMENTS && cat $LANDSCAPE_ATTACHMENTS/file1",
             attachments={u"file1": "some data"})
+
         def check(result):
             self.assertEquals(result, "file1\nsome data")
         result.addCallback(check)
@@ -163,6 +165,7 @@ class RunScriptTests(LandscapeTest):
             u"/bin/sh",
             u"ls $LANDSCAPE_ATTACHMENTS && rm -r $LANDSCAPE_ATTACHMENTS",
             attachments={u"file1": "some data"})
+
         def check(result):
             self.assertEquals(result, "file1\n")
         result.addCallback(check)
@@ -404,6 +407,7 @@ class RunScriptTests(LandscapeTest):
                 failure.value.interpreter,
                 "/bin/cantpossiblyexist")
         return d.addCallback(cb).addErrback(eb)
+
 
 class ScriptExecutionMessageTests(LandscapeIsolatedTest):
     helpers = [ManagerHelper]
