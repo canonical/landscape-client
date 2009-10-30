@@ -30,13 +30,20 @@ class PackageManagerTest(LandscapeIsolatedTest):
                                                        "package/database"))
         self.package_manager = PackageManager()
 
-    def test_create_default_store_on_registration(self):
+    def test_create_default_store_upon_message_handling(self):
+        """
+        If the package sqlite database file doesn't exist yet, it is created
+        upon message handling.
+        """
         filename = os.path.join(self.broker_service.config.data_path,
                                 "package/database")
-        package_manager = PackageManager()
         os.unlink(filename)
         self.assertFalse(os.path.isfile(filename))
-        self.manager.add(package_manager)
+
+        self.manager.add(self.package_manager)
+        self.package_manager.spawn_handler = lambda x: None
+        message = {"type": "release-upgrade"}
+        self.package_manager.handle_release_upgrade(message)
         self.assertTrue(os.path.isfile(filename))
 
     def test_dont_spawn_changer_if_message_not_accepted(self):

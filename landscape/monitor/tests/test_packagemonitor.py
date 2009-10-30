@@ -31,13 +31,24 @@ class PackageMonitorTest(LandscapeIsolatedTest):
 
         self.package_monitor = PackageMonitor(self.package_store_filename)
 
-    def test_create_default_store_on_registration(self):
+    def test_create_default_store_upon_message_handling(self):
+        """
+        If the package sqlite database file doesn't exist yet, it is created
+        upon message handling.
+        """
         filename = os.path.join(self.broker_service.config.data_path,
                                 "package/database")
         package_monitor = PackageMonitor()
         os.unlink(filename)
         self.assertFalse(os.path.isfile(filename))
+
         self.monitor.add(package_monitor)
+        package_monitor_mock = self.mocker.patch(package_monitor)
+        package_monitor_mock.spawn_reporter()
+        self.mocker.replay()
+
+        message = {"type": "package-ids"}
+        self.monitor.dispatch_message(message)
         self.assertTrue(os.path.isfile(filename))
 
     def test_dont_spawn_reporter_if_message_not_accepted(self):
