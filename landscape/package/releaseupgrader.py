@@ -164,8 +164,7 @@ class ReleaseUpgrader(PackageTaskHandler):
         if debug:
             env["DEBUG_UPDATE_MANAGER"] = "True"
         result = getProcessOutputAndValue(upgrade_tool_filename, args=args,
-                                          env=env,
-                                          path=upgrade_tool_directory)
+                                          env=env, path=upgrade_tool_directory)
 
         def send_operation_result((out, err, code)):
             if code == 0:
