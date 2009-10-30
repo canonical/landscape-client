@@ -1,8 +1,7 @@
 import os
-import grp
-import pwd
 import base64
 import unittest
+import signal
 
 from twisted.internet import reactor
 from twisted.internet.defer import succeed, fail, Deferred
@@ -303,6 +302,85 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         reactor.callWhenRunning(do_test)
         return deferred
 
+    def test_upgrade_with_open_child_fds(self):
+        """
+        The deferred returned by the L{ReleaseUpgrader.upgrade} method
+        callbacks correctly even if the spawned upgrade-tool process forks
+        and passes its files descriptors over to child processes we don't know
+        about.
+        """
+        upgrade_tool_directory = self.config.upgrade_tool_directory
+        upgrade_tool_filename = os.path.join(upgrade_tool_directory, "karmic")
+        child_pid_filename = self.makeFile()
+        fd = open(upgrade_tool_filename, "w")
+        fd.write("#!/usr/bin/env python\n"
+                 "import os\n"
+                 "import time\n"
+                 "import sys\n"
+                 "if __name__ == '__main__':\n"
+                 "    print 'First parent'\n"
+                 "    pid = os.fork()\n"
+                 "    if pid > 0:\n"
+                 "        print 'Second parent'\n"
+                 "        sys.exit(0)\n"
+                 "    pid = os.fork()\n"
+                 "    if pid > 0:\n"
+                 "        print 'Child pid %%d' %% pid\n"
+                 "        fd = open('%s', 'w')\n"
+                 "        fd.write(str(pid))\n"
+                 "        fd.close()\n"
+                 "        sys.exit(0)\n"
+                 "    while True:\n"
+                 "        time.sleep(2)\n" % child_pid_filename)
+        fd.close()
+        os.chmod(upgrade_tool_filename, 0755)
+        env_backup = os.environ.copy()
+        os.environ.clear()
+        os.environ.update({"FOO": "bar"})
+        deferred = Deferred()
+
+        def do_test():
+
+            result = self.upgrader.upgrade("karmic", False, False, 100)
+
+            def kill_child(how):
+                fd = open(child_pid_filename, "r")
+                child_pid = int(fd.read())
+                fd.close()
+                os.remove(child_pid_filename)
+                try:
+                    os.kill(child_pid, signal.SIGKILL)
+                    self.assertEquals(how, "cleanly")
+                    return child_pid
+                except OSError:
+                    pass
+
+            force_kill_child = reactor.callLater(2, kill_child, "brutally")
+
+            def check_result(ignored):
+                force_kill_child.cancel()
+                self.assertIn("INFO: Queuing message with release upgrade "
+                              "results to exchange urgently.",
+                              self.logfile.getvalue())
+                child_pid = kill_child("cleanly")
+                result_text = self.get_pending_messages()[0]["result-text"]
+                self.assertIn("First parent\n", result_text)
+                self.assertIn("Second parent\n", result_text)
+                self.assertIn("Child pid %d\n" % child_pid, result_text)
+
+            result.addCallback(check_result)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+
+        def cleanup(ignored):
+            os.environ = env_backup
+            self.assertFalse(os.path.exists(child_pid_filename))
+            return ignored
+
+        deferred.addBoth(cleanup)
+        return deferred
+
     def test_finish(self):
         """
         The L{ReleaseUpgrader.finish} method wipes the upgrade-tool directory
@@ -313,11 +391,9 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         open(os.path.join(upgrade_tool_directory, "somefile"), "w").close()
         os.mkdir(os.path.join(upgrade_tool_directory, "somedir"))
 
-        output_filename = self.makeFile()
         reporter_filename = self.makeFile("#!/bin/sh\n"
-                                          "echo $@ > %s\n"
-                                          "echo $(pwd) >> %s\n"
-                                          % (output_filename, output_filename))
+                                          "echo $@\n"
+                                          "echo $(pwd)\n")
         os.chmod(reporter_filename, 0755)
 
         find_reporter_mock = self.mocker.replace("landscape.package.reporter."
@@ -332,10 +408,11 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
 
             result = self.upgrader.finish()
 
-            def check_result(code):
+            def check_result((out, err, code)):
                 self.assertFalse(os.path.exists(upgrade_tool_directory))
-                self.assertFileContent(output_filename, "--force-smart-update\n%s\n" %
-                                  os.getcwd())
+                self.assertEquals(out, "--force-smart-update\n%s\n"
+                                  % os.getcwd())
+                self.assertEquals(err, "")
                 self.assertEquals(code, 0)
 
             result.addCallback(check_result)
@@ -400,10 +477,7 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         The L{ReleaseUpgrader.finish} method passes over to the reporter the
         configuration file the release-upgrader was called with.
         """
-        output_filename = self.makeFile()
-        reporter_filename = self.makeFile("#!/bin/sh\n"
-                                          "echo $@ > %s\n"
-                                          % output_filename)
+        reporter_filename = self.makeFile("#!/bin/sh\necho $@\n")
         os.chmod(reporter_filename, 0755)
         self.config.config = "/some/config"
         find_reporter_mock = self.mocker.replace("landscape.package.reporter."
@@ -418,10 +492,10 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
 
             result = self.upgrader.finish()
 
-            def check_result(code):
-                self.assertFileContent(output_filename,
-                                       "--force-smart-update "
+            def check_result((out, err, code)):
+                self.assertEquals(out, "--force-smart-update "
                                        "--config=/some/config\n")
+                self.assertEquals(err, "")
                 self.assertEquals(code, 0)
 
             result.addCallback(check_result)
