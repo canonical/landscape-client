@@ -191,7 +191,6 @@ class ReleaseUpgrader(PackageTaskHandler):
         process.maybeCallProcessEnded = maybeCallProcessEnded
 
         def send_operation_result((out, err, code)):
-            print (out, err, code)
             if code == 0:
                 status = SUCCEEDED
             else:
