@@ -334,7 +334,6 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
                  "        time.sleep(2)\n" % child_pid_filename)
         fd.close()
         os.chmod(upgrade_tool_filename, 0755)
-        env_backup = os.environ.copy()
         os.environ.clear()
         os.environ.update({"FOO": "bar"})
         deferred = Deferred()
@@ -374,7 +373,6 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         reactor.callWhenRunning(do_test)
 
         def cleanup(ignored):
-            os.environ = env_backup
             self.assertFalse(os.path.exists(child_pid_filename))
             return ignored
 
