@@ -179,8 +179,6 @@ class ReleaseUpgrader(PackageTaskHandler):
             for the stdin/stdout pipes to close, because the child process
             itself might have passed them to its own child processes.
             """
-            if process.pipes and process.pid:
-                return
             if process.pipes and not process.pid:
                 for pipe in process.pipes.itervalues():
                     if isinstance(pipe, ProcessReader):
@@ -188,10 +186,7 @@ class ReleaseUpgrader(PackageTaskHandler):
                         pipe.doRead()
                     reactor.removeReader(pipe)
                 process.pipes = {}
-            if not process.lostProcess:
-                process.reapProcess()
-                return
-            super(Process, process).maybeCallProcessEnded()
+            Process.maybeCallProcessEnded(process)
 
         process.maybeCallProcessEnded = maybeCallProcessEnded
 
