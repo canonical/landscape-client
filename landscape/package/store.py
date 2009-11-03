@@ -30,7 +30,7 @@ def with_cursor(method):
     def inner(self, *args, **kwargs):
         if not self._db:
             # Create the database connection only when we start to actually
-            # use it. This is practically just a workaroud of a sqlite bug
+            # use it. This is essentially just a workaroud of a sqlite bug
             # happening when 2 concurrent processes try to create the tables
             # around the same time, the one which fails having an incorrect
             # cache and not seeing the tables
