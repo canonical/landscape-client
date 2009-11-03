@@ -31,13 +31,24 @@ class HashIdStoreTest(LandscapeTest):
         self.store1.set_hash_ids(hash_ids)
         self.assertEquals(self.store1.get_hash_ids(), hash_ids)
 
+    def test_wb_lazy_connection(self):
+        """
+        The connection to the sqlite database is created only when some query
+        gets actually requsted.
+        """
+        self.assertEquals(self.store1._db, None)
+        self.store1.get_hash_ids()
+        self.assertTrue(isinstance(self.store1._db, sqlite3.Connection))
+
     def test_wb_transactional_commits(self):
+        self.store1._db = sqlite3.connect(self.store1._filename)
         mock_db = self.mocker.replace(self.store1._db)
         mock_db.commit()
         self.mocker.replay()
         self.store1.set_hash_ids({})
 
     def test_wb_transactional_rolls_back(self):
+        self.store1._db = sqlite3.connect(self.store1._filename)
         mock_db = self.mocker.replace(self.store1._db)
         mock_db.rollback()
         self.mocker.replay()

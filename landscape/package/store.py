@@ -28,6 +28,14 @@ def with_cursor(method):
     """
 
     def inner(self, *args, **kwargs):
+        if not self._db:
+            # Create the database connection only when we start to actually
+            # use it. This is essentially just a workaroud of a sqlite bug
+            # happening when 2 concurrent processes try to create the tables
+            # around the same time, the one which fails having an incorrect
+            # cache and not seeing the tables
+            self._db = sqlite3.connect(self._filename)
+            self._ensure_schema()
         try:
             cursor = self._db.cursor()
             try:
@@ -48,13 +56,15 @@ class HashIdStore(object):
     The implementation uses a SQLite database as backend, with a single
     table called "hash", whose schema is defined in L{ensure_hash_id_schema}.
     """
+    _db = None
 
     def __init__(self, filename):
         """
         @param filename: The file where the mappings are persisted to.
         """
         self._filename = filename
-        self._db = sqlite3.connect(self._filename)
+
+    def _ensure_schema(self):
         ensure_hash_id_schema(self._db)
 
     @with_cursor
@@ -127,6 +137,9 @@ class PackageStore(HashIdStore):
         """
         super(PackageStore, self).__init__(filename)
         self._hash_id_stores = []
+
+    def _ensure_schema(self):
+        super(PackageStore, self)._ensure_schema()
         ensure_package_schema(self._db)
 
     def add_hash_id_db(self, filename):
@@ -378,18 +391,6 @@ def ensure_hash_id_schema(db):
         cursor.close()
         db.commit()
 
-    # When 2 concurrent processes try to create the tables around the same
-    # time, the one which fails has an incorrect cache, and doesn't see the
-    # tables. Running a query resets that cache.
-    cursor = db.cursor()
-    try:
-        try:
-            cursor.execute("SELECT id FROM hash limit 1")
-        except (sqlite3.OperationalError, sqlite3.DatabaseError):
-            pass
-    finally:
-        cursor.close()
-
 
 def ensure_package_schema(db):
     """Create all tables needed by a L{PackageStore}.
@@ -420,15 +421,3 @@ def ensure_package_schema(db):
     else:
         cursor.close()
         db.commit()
-
-    # When 2 concurrent processes try to create the tables around the same
-    # time, the one which fails has an incorrect cache, and doesn't see the
-    # tables. Running a query resets that cache.
-    cursor = db.cursor()
-    try:
-        try:
-            cursor.execute("SELECT id FROM task limit 1")
-        except sqlite3.OperationalError:
-            pass
-    finally:
-        cursor.close()
