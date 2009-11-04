@@ -10,7 +10,7 @@ from twisted.python.failure import Failure
 
 from landscape.manager.scriptexecution import (
     ScriptExecutionPlugin, ProcessTimeLimitReachedError, PROCESS_FAILED_RESULT,
-    UBUNTU_PATH, get_user_info, UnknownInterpreterError)
+    UBUNTU_PATH, get_user_info, UnknownInterpreterError, UnknownUserError)
 from landscape.manager.manager import SUCCEEDED, FAILED
 from landscape.tests.helpers import (
     LandscapeTest, LandscapeIsolatedTest, ManagerHelper,
@@ -232,7 +232,6 @@ class RunScriptTests(LandscapeTest):
         info = pwd.getpwuid(uid)
         username = info.pw_name
         gid = info.pw_gid
-        path = info.pw_dir
 
         mock_chown = self.mocker.replace("os.chown", passthrough=False)
         mock_chown(ANY, uid, gid)
@@ -314,7 +313,7 @@ class RunScriptTests(LandscapeTest):
         """
         factory = StubProcessFactory()
         self.plugin.process_factory = factory
-        result = self.plugin.run_script("/bin/sh", "", time_limit=500)
+        self.plugin.run_script("/bin/sh", "", time_limit=500)
         protocol = factory.spawns[0][0]
         transport = DummyProcess()
         protocol.makeConnection(transport)
@@ -501,6 +500,28 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         result = self._send_script(sys.executable, "print 'hi'", user=username)
         return result
 
+    def test_unknown_user_with_unicode(self):
+        """
+        If an error happens because an unknow user is selected, and that this
+        user name happens to contain unicode characters, the error message is
+        correctly encoded and reported.
+
+        This test mainly ensures that unicode error message works, using
+        unknown user as an easy way to test it.
+        """
+        self.log_helper.ignore_errors(UnknownUserError)
+        username = u"non-existent-f\N{LATIN SMALL LETTER E WITH ACUTE}e"
+        self.manager.add(
+            ScriptExecutionPlugin())
+
+        self._send_script(sys.executable, "print 'hi'", user=username)
+        self.assertMessages(
+            self.broker_service.message_store.get_pending_messages(),
+            [{"type": "operation-result",
+              "operation-id": 123,
+              "result-text": u"UnknownUserError: Unknown user '%s'" % username,
+              "status": FAILED}])
+
     def test_timeout(self):
         """
         If a L{ProcessTimeLimitReachedError} is fired back, the
@@ -636,16 +657,10 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         self.manager.dispatch_message(
             {"type": "execute-script", "operation-id": 444})
 
-        if sys.version_info[:2] < (2, 6):
-            expected_message = [{"type": "operation-result",
-                                 "operation-id": 444,
-                                 "result-text": u"KeyError: 'username'",
-                                 "status": FAILED}]
-        else:
-            expected_message = [{"type": "operation-result",
-                                 "operation-id": 444,
-                                 "result-text": u"KeyError: username",
-                                 "status": FAILED}]
+        expected_message = [{"type": "operation-result",
+                             "operation-id": 444,
+                             "result-text": u"KeyError: username",
+                             "status": FAILED}]
 
         self.assertMessages(
             self.broker_service.message_store.get_pending_messages(),
