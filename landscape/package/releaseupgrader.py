@@ -5,7 +5,7 @@ import pwd
 import shutil
 import logging
 import tarfile
-import StringIO
+import cStringIO
 
 from twisted.internet.protocol import ProcessProtocol
 from twisted.internet.defer import succeed, Deferred
@@ -178,13 +178,16 @@ class ReleaseUpgrader(PackageTaskHandler):
             process has ended already and sent us a SIGCHLD, it doesn't wait
             for the stdin/stdout pipes to close, because the child process
             itself might have passed them to its own child processes.
+
+            @note: Twisted 8.2 now has a processExited hook that could
+                be used in place of this workaround.
             """
             if process.pipes and not process.pid:
                 for pipe in process.pipes.itervalues():
                     if isinstance(pipe, ProcessReader):
                         # Read whatever is left
                         pipe.doRead()
-                    reactor.removeReader(pipe)
+                        pipe.stopReading()
                 process.pipes = {}
             Process.maybeCallProcessEnded(process)
 
@@ -251,8 +254,8 @@ class EverythingGetter(ProcessProtocol):
 
     def __init__(self, deferred):
         self.deferred = deferred
-        self.outBuf = StringIO.StringIO()
-        self.errBuf = StringIO.StringIO()
+        self.outBuf = cStringIO.StringIO()
+        self.errBuf = cStringIO.StringIO()
         self.outReceived = self.outBuf.write
         self.errReceived = self.errBuf.write
 
