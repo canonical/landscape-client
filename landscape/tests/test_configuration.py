@@ -1258,6 +1258,7 @@ account_name = account
 
         config_filename = self.makeFile("")
         key_filename = config_filename + ".ssl_public_key"
+        self.addCleanup(os.remove, key_filename)
 
         print_text_mock = self.mocker.replace(print_text)
         print_text_mock("Writing SSL public key to %s..." % key_filename)

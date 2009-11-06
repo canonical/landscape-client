@@ -135,6 +135,7 @@ class RunScriptTests(LandscapeTest):
         self.mocker.replay()
         self.assertRaises(OSError, self.plugin.run_script, "/bin/sh", "umask",
                           attachments={u"file1": "some data"})
+        self.assertFalse(os.path.exists(filename))
 
     def test_run_with_attachments(self):
         result = self.plugin.run_script(

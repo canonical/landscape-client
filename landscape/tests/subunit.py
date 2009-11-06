@@ -356,7 +356,13 @@ def run_isolated(klass, self, result):
         ### XXX: test and write that bit.
 
         result = TestProtocolClient(sys.stdout)
-        klass.run(self, result)
+        try:
+            klass.run(self, result)
+        finally:
+            # FIXME: This is needed because this child process sets its
+            # own __cleanup_paths attribute of MockerTestCase, leaving
+            # the instance of the parent process empty.
+            self._MockerTestCase__cleanup()
         sys.stdout.flush()
         sys.stderr.flush()
         # exit HARD, exit NOW.

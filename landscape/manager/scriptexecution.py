@@ -241,13 +241,18 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
 
             result = self._run_script(
                 filename, uid, gid, path, env, time_limit)
+
+            def remove_script_cb(result, *args, **kwargs):
+                self._remove_script(*args, **kwargs)
+                return result
+
             return result.addBoth(
-                self._remove_script, filename, attachment_dir, old_umask)
+                remove_script_cb, filename, attachment_dir, old_umask)
         except:
-            os.umask(old_umask)
+            self._remove_script(filename, None, old_umask)
             raise
 
-    def _remove_script(self, result, filename, attachment_dir, old_umask):
+    def _remove_script(self, filename, attachment_dir, old_umask):
         try:
             os.unlink(filename)
         except:
@@ -258,7 +263,6 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
             except:
                 pass
         os.umask(old_umask)
-        return result
 
 
 class ProcessAccumulationProtocol(ProcessProtocol):
