@@ -35,6 +35,9 @@ if [ $RUN -eq 0 ]; then
 			# Override default file for not going in this conditional again at
 			# next startup
 			sed -i "s/^RUN=.*/RUN=1/" $LANDSCAPE_DEFAULTS
+			if ! grep -q "^RUN=" $LANDSCAPE_DEFAULTS; then
+				echo "RUN=1" >> $LANDSCAPE_DEFAULTS
+			fi
 		else
 			echo "$NAME is not configured, please run landscape-config."
 			exit 0
