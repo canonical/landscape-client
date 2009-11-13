@@ -222,8 +222,7 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
             }
         old_umask = os.umask(0022)
 
-        def run_with_attachments(attachments, filename, uid, gid, path,
-                                 env, time_limit):
+        def run_with_attachments():
             if attachments:
                 attachment_dir = tempfile.mkdtemp()
                 env["LANDSCAPE_ATTACHMENTS"] = attachment_dir
@@ -243,8 +242,7 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
             return self._run_script(
                 filename, uid, gid, path, env, time_limit)
 
-        result = maybeDeferred(run_with_attachments, attachments, filename,
-                               uid, gid, path, env, time_limit)
+        result = maybeDeferred(run_with_attachments)
         return result.addBoth(self._cleanup, filename, env, old_umask)
 
     def _cleanup(self, result, filename, env, old_umask):
