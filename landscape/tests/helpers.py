@@ -139,13 +139,15 @@ class LandscapeIsolatedTest(LandscapeTest):
     """TestCase that also runs all test methods in a subprocess."""
 
     def run(self, result):
-        run_method = LandscapeTest.run
-        def run_wrapper(oself, *args, **kwargs):
-            try:
-                return run_method(oself, *args, **kwargs)
-            finally:
-                MockerTestCase._MockerTestCase__cleanup(oself)
-        LandscapeTest.run = run_wrapper
+        if not getattr(LandscapeTest, "_cleanup_patch", False):
+            run_method = LandscapeTest.run
+            def run_wrapper(oself, *args, **kwargs):
+                try:
+                    return run_method(oself, *args, **kwargs)
+                finally:
+                    MockerTestCase._MockerTestCase__cleanup(oself)
+            LandscapeTest.run = run_wrapper
+            LandscapeTest._cleanup_patch = True
         run_isolated(LandscapeTest, self, result)
 
 

@@ -71,6 +71,7 @@ class RunScriptTests(LandscapeTest):
         """Scripts run with the ScriptExecutionPlugin plugin are run concurrently."""
         fifo = self.makeFile()
         os.mkfifo(fifo)
+        self.addCleanup(os.remove, fifo)
         # If the first process is blocking on a fifo, and the second process
         # wants to write to the fifo, the only way this will complete is if
         # run_script is truly async
