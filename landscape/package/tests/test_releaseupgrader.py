@@ -323,11 +323,10 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
                  "    print 'First parent'\n"
                  "    pid = os.fork()\n"
                  "    if pid > 0:\n"
-                 "        print 'Second parent'\n"
+                 "        time.sleep(0.5)\n"
                  "        sys.exit(0)\n"
                  "    pid = os.fork()\n"
                  "    if pid > 0:\n"
-                 "        print 'Child pid %%d' %% pid\n"
                  "        fd = open('%s', 'w')\n"
                  "        fd.write(str(pid))\n"
                  "        fd.close()\n"
@@ -366,8 +365,6 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
                 child_pid = kill_child("cleanly")
                 result_text = self.get_pending_messages()[0]["result-text"]
                 self.assertIn("First parent\n", result_text)
-                self.assertIn("Second parent\n", result_text)
-                self.assertIn("Child pid %d\n" % child_pid, result_text)
 
             result.addCallback(check_result)
             result.chainDeferred(deferred)
