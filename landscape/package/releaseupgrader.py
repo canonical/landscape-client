@@ -5,11 +5,11 @@ import pwd
 import shutil
 import logging
 import tarfile
+import cStringIO
 
 from twisted.internet.protocol import ProcessProtocol
-from twisted.internet.error import ProcessDone
 from twisted.internet.defer import succeed, Deferred
-from twisted.internet.utils import getProcessOutputAndValue
+from twisted.internet.process import Process, ProcessReader
 
 from landscape.lib.fetch import url_to_filename, fetch_to_files
 from landscape.lib.lsb_release import parse_lsb_release, LSB_RELEASE_FILENAME
@@ -157,14 +157,42 @@ class ReleaseUpgrader(PackageTaskHandler):
         """
         upgrade_tool_directory = self._config.upgrade_tool_directory
         upgrade_tool_filename = os.path.join(upgrade_tool_directory, code_name)
-        args = ("--frontend", "DistUpgradeViewNonInteractive")
+        args = (upgrade_tool_filename, "--frontend",
+                "DistUpgradeViewNonInteractive")
         env = os.environ.copy()
         if allow_third_party:
             env["RELEASE_UPRADER_ALLOW_THIRD_PARTY"] = "True"
         if debug:
             env["DEBUG_UPDATE_MANAGER"] = "True"
-        result = getProcessOutputAndValue(upgrade_tool_filename, args=args,
-                                          env=env, path=upgrade_tool_directory)
+
+        from twisted.internet import reactor
+        result = Deferred()
+        process_protocol = AllOutputProcessProtocol(result)
+        process = reactor.spawnProcess(process_protocol, upgrade_tool_filename,
+                                       args=args, env=env,
+                                       path=upgrade_tool_directory)
+
+        def maybeCallProcessEnded():
+            """A less strict version of Process.maybeCallProcessEnded.
+
+            This behaves exactly like the original method, but in case the
+            process has ended already and sent us a SIGCHLD, it doesn't wait
+            for the stdin/stdout pipes to close, because the child process
+            itself might have passed them to its own child processes.
+
+            @note: Twisted 8.2 now has a processExited hook that could
+                be used in place of this workaround.
+            """
+            if process.pipes and not process.pid:
+                for pipe in process.pipes.itervalues():
+                    if isinstance(pipe, ProcessReader):
+                        # Read whatever is left
+                        pipe.doRead()
+                    pipe.stopReading()
+                process.pipes = {}
+            Process.maybeCallProcessEnded(process)
+
+        process.maybeCallProcessEnded = maybeCallProcessEnded
 
         def send_operation_result((out, err, code)):
             if code == 0:
@@ -199,11 +227,12 @@ class ReleaseUpgrader(PackageTaskHandler):
         if self._config.config is not None:
             args.append("--config=%s" % self._config.config)
 
-        pp = PackageReporterProcessProtocol()
+        result = Deferred()
+        process_protocol = AllOutputProcessProtocol(result)
         from twisted.internet import reactor
-        reactor.spawnProcess(pp, reporter, args=args, uid=uid, gid=gid,
-                             path=os.getcwd(), env=os.environ)
-        return pp.result
+        reactor.spawnProcess(process_protocol, reporter, args=args, uid=uid,
+                             gid=gid, path=os.getcwd(), env=os.environ)
+        return result
 
     def abort(self, failure, operation_id):
         """Abort the task reporting details about the failure."""
@@ -221,17 +250,25 @@ class ReleaseUpgrader(PackageTaskHandler):
         return find_release_upgrader_command()
 
 
-class PackageReporterProcessProtocol(ProcessProtocol):
-    """A ProcessProtocol which runs the package-reporter."""
+class AllOutputProcessProtocol(ProcessProtocol):
+    """A process protocoll for getting stdout, stderr and exit code."""
 
-    def __init__(self):
-        self.result = Deferred()
+    def __init__(self, deferred):
+        self.deferred = deferred
+        self.outBuf = cStringIO.StringIO()
+        self.errBuf = cStringIO.StringIO()
+        self.outReceived = self.outBuf.write
+        self.errReceived = self.errBuf.write
 
-    def processEnded(self, status):
-        if status.check(ProcessDone):
-            self.result.callback(0)
+    def processEnded(self, reason):
+        out = self.outBuf.getvalue()
+        err = self.errBuf.getvalue()
+        e = reason.value
+        code = e.exitCode
+        if e.signal:
+            self.deferred.errback((out, err, e.signal))
         else:
-            self.result.errback(status.value.exitCode)
+            self.deferred.callback((out, err, code))
 
 
 def find_release_upgrader_command():
