@@ -188,7 +188,8 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         fd = open(upgrade_tool_filename, "w")
         fd.write("#!/bin/sh\n"
                  "echo $@\n"
-                 "env\n"
+                 "echo FOO=$FOO\n"
+                 "echo PWD=$PWD\n"
                  "echo out\n")
         fd.close()
         os.chmod(upgrade_tool_filename, 0755)
@@ -233,7 +234,10 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         upgrade_tool_directory = self.config.upgrade_tool_directory
         upgrade_tool_filename = os.path.join(upgrade_tool_directory, "karmic")
         fd = open(upgrade_tool_filename, "w")
-        fd.write("#!/bin/sh\nenv|grep -v ^PWD|sort\n")
+        fd.write("#!/bin/sh\n"
+                 "echo DEBUG_UPDATE_MANAGER=$DEBUG_UPDATE_MANAGER\n"
+                 "echo RELEASE_UPRADER_ALLOW_THIRD_PARTY="
+                 "$RELEASE_UPRADER_ALLOW_THIRD_PARTY\n")
         fd.close()
         os.chmod(upgrade_tool_filename, 0755)
         env_backup = os.environ.copy()
