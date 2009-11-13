@@ -188,7 +188,7 @@ class ReleaseUpgrader(PackageTaskHandler):
                     if isinstance(pipe, ProcessReader):
                         # Read whatever is left
                         pipe.doRead()
-                        pipe.stopReading()
+                    pipe.stopReading()
                 process.pipes = {}
             Process.maybeCallProcessEnded(process)
 
