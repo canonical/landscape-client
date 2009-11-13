@@ -167,9 +167,10 @@ class ReleaseUpgrader(PackageTaskHandler):
 
         from twisted.internet import reactor
         result = Deferred()
-        pp = EverythingGetter(result)
-        process = reactor.spawnProcess(pp, upgrade_tool_filename, args=args,
-                                       env=env, path=upgrade_tool_directory)
+        process_protocol = AllOutputProcessProtocol(result)
+        process = reactor.spawnProcess(process_protocol, upgrade_tool_filename,
+                                       args=args, env=env,
+                                       path=upgrade_tool_directory)
 
         def maybeCallProcessEnded():
             """A less strict version of Process.maybeCallProcessEnded.
@@ -227,10 +228,10 @@ class ReleaseUpgrader(PackageTaskHandler):
             args.append("--config=%s" % self._config.config)
 
         result = Deferred()
-        pp = EverythingGetter(result)
+        process_protocol = AllOutputProcessProtocol(result)
         from twisted.internet import reactor
-        reactor.spawnProcess(pp, reporter, args=args, uid=uid, gid=gid,
-                             path=os.getcwd(), env=os.environ)
+        reactor.spawnProcess(process_protocol, reporter, args=args, uid=uid,
+                             gid=gid, path=os.getcwd(), env=os.environ)
         return result
 
     def abort(self, failure, operation_id):
@@ -249,7 +250,7 @@ class ReleaseUpgrader(PackageTaskHandler):
         return find_release_upgrader_command()
 
 
-class EverythingGetter(ProcessProtocol):
+class AllOutputProcessProtocol(ProcessProtocol):
     """A process protocoll for getting stdout, stderr and exit code."""
 
     def __init__(self, deferred):

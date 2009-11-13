@@ -223,8 +223,7 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
             os.environ = env_backup
             return ignored
 
-        deferred.addBoth(cleanup)
-        return deferred
+        return deferred.addBoth(cleanup)
 
     def test_upgrade_with_env_variables(self):
         """
@@ -264,8 +263,7 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
             os.environ = env_backup
             return ignored
 
-        deferred.addBoth(cleanup)
-        return deferred
+        return deferred.addBoth(cleanup)
 
     def test_upgrade_with_failure(self):
         """
@@ -376,8 +374,7 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
             self.assertFalse(os.path.exists(child_pid_filename))
             return ignored
 
-        deferred.addBoth(cleanup)
-        return deferred
+        return deferred.addBoth(cleanup)
 
     def test_finish(self):
         """
