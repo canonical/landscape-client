@@ -118,9 +118,9 @@ class LandscapeTest(MessageTestCase, MockerTestCase,
         self.assertEquals(expected_content, actual_content)
 
     def makePersistFile(self, *args, **kwargs):
-        """Return a temporary filename to be usued by a L{Persist} object.
+        """Return a temporary filename to be used by a L{Persist} object.
 
-        The possible .old persist file is cleaned up after the test..
+        The possible .old persist file is cleaned up after the test.
 
         @see: L{MockerTestCase.makeFile}
         """
