@@ -71,6 +71,7 @@ class RunScriptTests(LandscapeTest):
         """Scripts run with the ScriptExecutionPlugin plugin are run concurrently."""
         fifo = self.makeFile()
         os.mkfifo(fifo)
+        self.addCleanup(os.remove, fifo)
         # If the first process is blocking on a fifo, and the second process
         # wants to write to the fifo, the only way this will complete is if
         # run_script is truly async
@@ -133,8 +134,9 @@ class RunScriptTests(LandscapeTest):
         self.mocker.throw(OSError("Fail!"))
         mock_umask(0077)
         self.mocker.replay()
-        self.assertRaises(OSError, self.plugin.run_script, "/bin/sh", "umask",
-                          attachments={u"file1": "some data"})
+        result = self.plugin.run_script("/bin/sh", "umask",
+                                        attachments={u"file1": "some data"})
+        self.assertFailure(result, OSError)
 
     def test_run_with_attachments(self):
         result = self.plugin.run_script(

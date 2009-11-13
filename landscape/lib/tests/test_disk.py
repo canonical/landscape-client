@@ -45,6 +45,7 @@ class DiskUtilitiesTest(LandscapeTest):
     def test_symlink_home(self):
         symlink_path = self.makeFile()
         os.symlink("/foo/bar", symlink_path)
+        self.addCleanup(os.remove, symlink_path)
         self.set_mount_points(["/", "/foo"])
         info = get_filesystem_for_path(symlink_path,
                                        self.mount_file, self.statvfs)

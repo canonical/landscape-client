@@ -276,7 +276,7 @@ class GeneralPersistTest(BasePersistTest):
 
 
 class SaveLoadPersistTest(BasePersistTest):
-
+        
     def test_readonly(self):
         self.assertFalse(self.persist.readonly)
         self.persist.readonly = True
@@ -343,11 +343,12 @@ class SaveLoadPersistTest(BasePersistTest):
         self.assertTrue(os.path.isfile(filename))
 
     def test_save_creates_backup(self):
-        filename = self.makeFile("foobar")
+        filename = self.makePersistFile("foobar")
+        filename_old = filename + ".old"
 
-        self.assertFalse(os.path.exists(filename+".old"))
+        self.assertFalse(os.path.exists(filename_old))
         self.persist.save(filename)
-        self.assertTrue(os.path.exists(filename+".old"))
+        self.assertTrue(os.path.exists(filename_old))
 
     def test_save_to_default_file(self):
         """
@@ -381,10 +382,11 @@ class SaveLoadPersistTest(BasePersistTest):
         self.assertEquals(persist.get("foo"), "bar")
 
     def test_load_restores_backup(self):
-        filename = self.makeFile("foobar")
+        filename = self.makePersistFile("foobar")
+        filename_old = filename + ".old"
 
         self.persist.set("a", 1)
-        self.persist.save(filename+".old")
+        self.persist.save(filename_old)
 
         persist = self.build_persist()
         persist.load(filename)

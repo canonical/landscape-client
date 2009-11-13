@@ -117,11 +117,37 @@ class LandscapeTest(MessageTestCase, MockerTestCase,
         fd.close()
         self.assertEquals(expected_content, actual_content)
 
+    def makePersistFile(self, *args, **kwargs):
+        """Return a temporary filename to be used by a L{Persist} object.
+
+        The possible .old persist file is cleaned up after the test.
+
+        @see: L{MockerTestCase.makeFile}
+        """
+        persist_filename = self.makeFile(*args, **kwargs)
+
+        def remove_saved_persist():
+            try:
+                os.remove(persist_filename + ".old")
+            except OSError:
+                pass
+        self.addCleanup(remove_saved_persist)
+        return persist_filename
+
 
 class LandscapeIsolatedTest(LandscapeTest):
     """TestCase that also runs all test methods in a subprocess."""
 
     def run(self, result):
+        if not getattr(LandscapeTest, "_cleanup_patch", False):
+            run_method = LandscapeTest.run
+            def run_wrapper(oself, *args, **kwargs):
+                try:
+                    return run_method(oself, *args, **kwargs)
+                finally:
+                    MockerTestCase._MockerTestCase__cleanup(oself)
+            LandscapeTest.run = run_wrapper
+            LandscapeTest._cleanup_patch = True
         run_isolated(LandscapeTest, self, result)
 
 
@@ -342,7 +368,7 @@ class MonitorHelper(ExchangeHelper):
     def set_up(self, test_case):
         super(MonitorHelper, self).set_up(test_case)
         persist = Persist()
-        persist_filename = test_case.makeFile()
+        persist_filename = test_case.makePersistFile()
         test_case.monitor = MonitorPluginRegistry(
             test_case.remote, test_case.broker_service.reactor,
             test_case.broker_service.config,
