@@ -1,4 +1,5 @@
 import os
+import re
 import logging
 
 from twisted.internet.defer import Deferred, succeed
@@ -151,7 +152,7 @@ class PackageTaskHandler(object):
 
 
 def run_task_handler(cls, args, reactor=None):
-    from twisted.internet.glib2reactor import install
+    from landscape.reactor import install
     install()
 
     # please only pass reactor when you have totally mangled everything with
@@ -178,7 +179,8 @@ def run_task_handler(cls, args, reactor=None):
                          % program_name)
 
 
-    init_logging(config, "package-" + program_name)
+    words = re.findall("[A-Z][a-z]+", cls.__name__)
+    init_logging(config, "-".join(word.lower() for word in words))
 
     # Setup our umask for Smart to use, this needs to setup file permissions to
     # 0644 so...

@@ -3,7 +3,6 @@ import os
 import sys
 import tempfile
 import stat
-import pwd
 
 from twisted.internet.defer import gatherResults
 from twisted.internet.error import ProcessDone
@@ -11,7 +10,7 @@ from twisted.python.failure import Failure
 
 from landscape.manager.scriptexecution import (
     ScriptExecutionPlugin, ProcessTimeLimitReachedError, PROCESS_FAILED_RESULT,
-    UBUNTU_PATH, get_user_info, UnknownInterpreterError)
+    UBUNTU_PATH, get_user_info, UnknownInterpreterError, UnknownUserError)
 from landscape.manager.manager import SUCCEEDED, FAILED
 from landscape.tests.helpers import (
     LandscapeTest, LandscapeIsolatedTest, ManagerHelper,
@@ -61,6 +60,7 @@ class RunScriptTests(LandscapeTest):
         result = self.plugin.run_script(
             sys.executable,
             "import os\nprint os.environ")
+
         def check_environment(results):
             for string in get_default_environment().keys():
                 self.assertIn(string, results)
@@ -71,6 +71,7 @@ class RunScriptTests(LandscapeTest):
         """Scripts run with the ScriptExecutionPlugin plugin are run concurrently."""
         fifo = self.makeFile()
         os.mkfifo(fifo)
+        self.addCleanup(os.remove, fifo)
         # If the first process is blocking on a fifo, and the second process
         # wants to write to the fifo, the only way this will complete is if
         # run_script is truly async
@@ -99,6 +100,7 @@ class RunScriptTests(LandscapeTest):
         accented_content = u"\N{LATIN SMALL LETTER E WITH ACUTE}"
         result = self.plugin.run_script(
             u"/bin/echo %s" % (accented_content,), u"")
+
         def check(result):
             self.assertTrue(
                 "%s " % (accented_content.encode("utf-8"),) in result)
@@ -132,14 +134,16 @@ class RunScriptTests(LandscapeTest):
         self.mocker.throw(OSError("Fail!"))
         mock_umask(0077)
         self.mocker.replay()
-        self.assertRaises(OSError, self.plugin.run_script, "/bin/sh", "umask",
-                          attachments={u"file1": "some data"})
+        result = self.plugin.run_script("/bin/sh", "umask",
+                                        attachments={u"file1": "some data"})
+        self.assertFailure(result, OSError)
 
     def test_run_with_attachments(self):
         result = self.plugin.run_script(
             u"/bin/sh",
             u"ls $LANDSCAPE_ATTACHMENTS && cat $LANDSCAPE_ATTACHMENTS/file1",
             attachments={u"file1": "some data"})
+
         def check(result):
             self.assertEquals(result, "file1\nsome data")
         result.addCallback(check)
@@ -163,6 +167,7 @@ class RunScriptTests(LandscapeTest):
             u"/bin/sh",
             u"ls $LANDSCAPE_ATTACHMENTS && rm -r $LANDSCAPE_ATTACHMENTS",
             attachments={u"file1": "some data"})
+
         def check(result):
             self.assertEquals(result, "file1\n")
         result.addCallback(check)
@@ -229,7 +234,6 @@ class RunScriptTests(LandscapeTest):
         info = pwd.getpwuid(uid)
         username = info.pw_name
         gid = info.pw_gid
-        path = info.pw_dir
 
         mock_chown = self.mocker.replace("os.chown", passthrough=False)
         mock_chown(ANY, uid, gid)
@@ -311,7 +315,7 @@ class RunScriptTests(LandscapeTest):
         """
         factory = StubProcessFactory()
         self.plugin.process_factory = factory
-        result = self.plugin.run_script("/bin/sh", "", time_limit=500)
+        self.plugin.run_script("/bin/sh", "", time_limit=500)
         protocol = factory.spawns[0][0]
         transport = DummyProcess()
         protocol.makeConnection(transport)
@@ -405,6 +409,7 @@ class RunScriptTests(LandscapeTest):
                 "/bin/cantpossiblyexist")
         return d.addCallback(cb).addErrback(eb)
 
+
 class ScriptExecutionMessageTests(LandscapeIsolatedTest):
     helpers = [ManagerHelper]
 
@@ -496,6 +501,28 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
 
         result = self._send_script(sys.executable, "print 'hi'", user=username)
         return result
+
+    def test_unknown_user_with_unicode(self):
+        """
+        If an error happens because an unknow user is selected, and that this
+        user name happens to contain unicode characters, the error message is
+        correctly encoded and reported.
+
+        This test mainly ensures that unicode error message works, using
+        unknown user as an easy way to test it.
+        """
+        self.log_helper.ignore_errors(UnknownUserError)
+        username = u"non-existent-f\N{LATIN SMALL LETTER E WITH ACUTE}e"
+        self.manager.add(
+            ScriptExecutionPlugin())
+
+        self._send_script(sys.executable, "print 'hi'", user=username)
+        self.assertMessages(
+            self.broker_service.message_store.get_pending_messages(),
+            [{"type": "operation-result",
+              "operation-id": 123,
+              "result-text": u"UnknownUserError: Unknown user '%s'" % username,
+              "status": FAILED}])
 
     def test_timeout(self):
         """
@@ -632,16 +659,10 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         self.manager.dispatch_message(
             {"type": "execute-script", "operation-id": 444})
 
-        if sys.version_info[:2] < (2, 6):
-            expected_message = [{"type": "operation-result",
-                                 "operation-id": 444,
-                                 "result-text": u"KeyError: 'username'",
-                                 "status": FAILED}]
-        else:
-            expected_message = [{"type": "operation-result",
-                                 "operation-id": 444,
-                                 "result-text": u"KeyError: username",
-                                 "status": FAILED}]
+        expected_message = [{"type": "operation-result",
+                             "operation-id": 444,
+                             "result-text": u"KeyError: username",
+                             "status": FAILED}]
 
         self.assertMessages(
             self.broker_service.message_store.get_pending_messages(),
@@ -659,6 +680,9 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         self.mocker.replace("os.setuid", passthrough=False)(ARGS)
         self.mocker.count(0, None)
         self.mocker.replace("os.setgid", passthrough=False)(ARGS)
+        self.mocker.count(0, None)
+        self.mocker.replace(
+            "twisted.python.util.initgroups", passthrough=False)(ARGS)
         self.mocker.count(0, None)
         self.mocker.replay()
 

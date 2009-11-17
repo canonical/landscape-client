@@ -10,6 +10,7 @@ import gobject
 from twisted.test.proto_helpers import FakeDatagramTransport
 from twisted.internet.defer import succeed, fail
 from twisted.internet.error import DNSLookupError
+from twisted.internet.gtk2reactor import Gtk2Reactor
 
 from landscape.log import format_object
 
@@ -435,3 +436,33 @@ class TwistedReactor(EventHandlingReactorMixin,
 
         """
         return self._reactor.resolve(host)
+
+
+class CustomGtk2Reactor(Gtk2Reactor):
+    """
+    This is a custom GTK reactor, but this ought to be a Glib reactor, but old
+    versions of Twisted don't have such a class.
+    """
+
+    _simtag = None
+
+    def simulate(self):
+        """Run simulation loops and reschedule callbacks.
+
+        This particular implementation differs from the L{Gtk2Reactor} one by
+        having a much higher timeout, to wake up less.
+        """
+        if self._simtag is not None:
+            gobject.source_remove(self._simtag)
+        self.runUntilCurrent()
+        timeout = min(self.timeout(), 1)
+        if timeout is None:
+            timeout = 1
+        self._simtag = gobject.timeout_add(int(timeout * 1010), self.simulate)
+
+
+def install():
+    """Configure the Twisted mainloop to use our custom glib reactor."""
+    reactor = CustomGtk2Reactor(useGtk=False)
+    from twisted.internet.main import installReactor
+    installReactor(reactor)

@@ -6,7 +6,7 @@ from twisted.internet.defer import FirstError
 
 from landscape.lib.fetch import (
     fetch, fetch_async, fetch_many_async, fetch_to_files,
-    HTTPCodeError, PyCurlError)
+    url_to_filename, HTTPCodeError, PyCurlError)
 from landscape.tests.helpers import LandscapeTest
 
 
@@ -25,6 +25,8 @@ class CurlStub(object):
         raise RuntimeError("Stub doesn't know about %d info" % what)
 
     def setopt(self, option, value):
+        if isinstance(value, unicode):
+            raise AssertionError("setopt() doesn't accept unicode values")
         if self.performed:
             raise AssertionError("setopt() can't be called after perform()")
         self.options[option] = value
@@ -37,34 +39,40 @@ class CurlStub(object):
         self.options[pycurl.WRITEFUNCTION](self.result)
         self.performed = True
 
+
 class CurlManyStub(object):
 
-    def __init__(self, results):
-        self.curls = []
-        for result in results:
+    def __init__(self, url_results):
+        self.curls = {}
+        for url in url_results:
+            result = url_results[url]
             if isinstance(result, str):
                 body = result
                 http_code = 200
             else:
                 body = result[0]
                 http_code = result[1]
-            self.curls.append(CurlStub(body, http_code=http_code))
-        self.count = 0
+            self.curls[url] = CurlStub(body, http_code=http_code)
+        self.current = None
 
     def getinfo(self, what):
-        if not self.curls[self.count].performed:
+        if not self.current.performed:
             raise AssertionError("getinfo() can't be called before perform()")
-        result = self.curls[self.count].getinfo(what)
-        self.count += 1
+        result = self.current.getinfo(what)
+        self.current = None
         return result
-        
+
     def setopt(self, option, value):
-        self.curls[self.count].setopt(option, value)
+        if option is pycurl.URL:
+            self.current = self.curls[value]
+        self.current.setopt(option, value)
 
     def perform(self):
-        self.curls[self.count].perform()
+        self.current.perform()
+
 
 class Any(object):
+
     def __eq__(self, other):
         return True
 
@@ -141,8 +149,8 @@ class FetchTest(LandscapeTest):
 
     def test_headers(self):
         curl = CurlStub("result")
-        result = fetch("http://example.com", headers={"a":"1", "b":"2"},
-                       curl=curl)
+        result = fetch("http://example.com",
+                       headers={"a":"1", "b":"2"}, curl=curl)
         self.assertEquals(result, "result")
         self.assertEquals(curl.options,
                           {pycurl.URL: "http://example.com",
@@ -157,8 +165,8 @@ class FetchTest(LandscapeTest):
 
     def test_timeouts(self):
         curl = CurlStub("result")
-        result = fetch("http://example.com", connect_timeout=5, total_timeout=30,
-                       curl=curl)
+        result = fetch("http://example.com", connect_timeout=5,
+                       total_timeout=30, curl=curl)
         self.assertEquals(result, "result")
         self.assertEquals(curl.options,
                           {pycurl.URL: "http://example.com",
@@ -169,6 +177,17 @@ class FetchTest(LandscapeTest):
                            pycurl.LOW_SPEED_TIME: 30,
                            pycurl.NOSIGNAL: 1,
                            pycurl.WRITEFUNCTION: Any()})
+
+    def test_unicode(self):
+        """
+        The L{fetch} function converts the C{url} parameter to C{str} before
+        passing it to curl.
+        """
+        curl = CurlStub("result")
+        result = fetch(u"http://example.com", curl=curl)
+        self.assertEquals(result, "result")
+        self.assertEquals(curl.options[pycurl.URL], "http://example.com")
+        self.assertTrue(isinstance(curl.options[pycurl.URL], str))
 
     def test_non_200_result(self):
         curl = CurlStub("result", http_code=404)
@@ -251,29 +270,27 @@ class FetchTest(LandscapeTest):
 
     def test_fetch_many_async(self):
         """
-        L{fetch_many_async} retrieves multiple URLs, and returns a C{DeferredList}
-        firing its callback when all the URLs have successfully completed.
+        L{fetch_many_async} retrieves multiple URLs, and returns a
+        C{DeferredList} firing its callback when all the URLs have
+        successfully completed.
         """
-        urls = ["http://good/", "http://better/"]
-        results = ["good", "better"]
+        url_results = {"http://good/": "good",
+                       "http://better/": "better"}
 
         def callback(result, url):
-            self.assertIn(result, results)
-            self.assertIn(url, urls)
-            urls.remove(url)
-            results.remove(result)
+            self.assertIn(result, url_results.values())
+            self.assertIn(url, url_results)
+            url_results.pop(url)
 
         def errback(failure, url):
             self.fail()
 
-        curl = CurlManyStub(results)
-        d = fetch_many_async(urls, callback=callback, errback=errback,
-                             curl=curl)
+        curl = CurlManyStub(url_results)
+        d = fetch_many_async(url_results.keys(), callback=callback,
+                             errback=errback, curl=curl)
 
         def completed(result):
-            self.assertEquals(curl.count, 2)
-            self.assertEquals(urls, [])
-            self.assertEquals(results, [])
+            self.assertEquals(url_results, {})
 
         return d.addCallback(completed)
 
@@ -281,46 +298,53 @@ class FetchTest(LandscapeTest):
         """
         L{fetch_many_async} aborts as soon as one URL fails.
         """
-        urls = ["http://right/", "http://wrong/", "http://impossilbe/"]
-        results = ["right", ("wrong", 501), "impossible"]
-        fetched_urls = []
-
-        def callback(result, url):
-            fetched_urls.append(url)
+        url_results = {"http://right/": "right",
+                       "http://wrong/": ("wrong", 501),
+                       "http://impossilbe/": "impossible"}
+        failed_urls = []
 
         def errback(failure, url):
-            fetched_urls.append(url)
+            failed_urls.append(url)
             self.assertEquals(failure.value.body, "wrong")
             self.assertEquals(failure.value.http_code, 501)
             return failure
-    
-        curl = CurlManyStub(results)
-        d = fetch_many_async(urls, callback=callback, errback=errback,
-                             curl=curl)
+
+        curl = CurlManyStub(url_results)
+        result = fetch_many_async(url_results.keys(), callback=None,
+                                  errback=errback, curl=curl)
 
         def check_failure(failure):
             self.assertTrue(isinstance(failure.subFailure.value,
                                        HTTPCodeError))
-            self.assertEquals(fetched_urls, ["http://right/", "http://wrong/"])
+            self.assertEquals(failed_urls, ["http://wrong/"])
 
-        self.assertFailure(d, FirstError)
-        d.addCallback(check_failure)
-        return d
+        self.assertFailure(result, FirstError)
+        return result.addCallback(check_failure)
+
+    def test_url_to_filename(self):
+        """
+        L{url_to_filename} extracts the filename part of an URL, optionally
+        prepending a directory path to it.
+        """
+        self.assertEquals(url_to_filename("http://some/file"), "file")
+        self.assertEquals(url_to_filename("http://some/file/"), "file")
+        self.assertEquals(url_to_filename("http://some/file", directory="dir"),
+                          os.path.join("dir", "file"))
 
     def test_fetch_to_files(self):
         """
         L{fetch_to_files} fetches a list of URLs and save their content
         in the given directory.
         """
-        urls = ["http://good/file", "http://even/better-file"]
-        results = ["file", "better-file"]
+        url_results = {"http://good/file": "file",
+                       "http://even/better-file": "better-file"}
         directory = self.makeDir()
-        curl = CurlManyStub(results)
+        curl = CurlManyStub(url_results)
 
-        result = fetch_to_files(urls, directory, curl=curl)
+        result = fetch_to_files(url_results.keys(), directory, curl=curl)
 
         def check_files(ignored):
-            for result in results:
+            for result in url_results.itervalues():
                 fd = open(os.path.join(directory, result))
                 self.assertEquals(fd.read(), result)
                 fd.close()
@@ -349,14 +373,17 @@ class FetchTest(LandscapeTest):
         L{fetch_to_files} optionally logs an error message as soon as one URL
         fails, and aborts.
         """
-        urls = ["http://im/right", "http://im/wrong", "http://im/not"]
-        results = ["right", ("wrong", 404), "not"]
+        url_results = {"http://im/right": "right",
+                       "http://im/wrong": ("wrong", 404),
+                       "http://im/not": "not"}
         directory = self.makeDir()
         messages = []
         logger = lambda message: messages.append(message)
-        curl = CurlManyStub(results)
+        curl = CurlManyStub(url_results)
+        failed_urls = []
 
-        result = fetch_to_files(urls, directory, logger=logger, curl=curl)
+        result = fetch_to_files(url_results.keys(), directory, logger=logger,
+                                curl=curl)
 
         def check_messages(failure):
             self.assertEquals(len(messages), 1)
@@ -367,8 +394,7 @@ class FetchTest(LandscapeTest):
 
         def check_files(ignored):
             self.assertEquals(messages, [])
-            self.assertTrue(os.path.exists(os.path.join(directory, "right")))
-            self.assertFalse(os.path.exists(os.path.join(directory, "not")))
+            self.assertFalse(os.path.exists(os.path.join(directory, "wrong")))
 
         result.addErrback(check_messages)
         result.addCallback(check_files)
@@ -379,19 +405,17 @@ class FetchTest(LandscapeTest):
         The deferred list returned by L{fetch_to_files} results in a failure
         if the destination directory doesn't exist.
         """
-        urls = ["http://im/right", "http://im/good"]
-        results = ["right", "good"]
+        url_results = {"http://im/right": "right"}
         directory = "i/dont/exist/"
-        curl = CurlManyStub(results)
+        curl = CurlManyStub(url_results)
 
-        result = fetch_to_files(urls, directory, curl=curl)
+        result = fetch_to_files(url_results.keys(), directory, curl=curl)
 
         def check_error(failure):
             error = str(failure.value.subFailure.value)
             self.assertEquals(error, "[Errno 2] No such file or directory: "
                               "'i/dont/exist/right'")
             self.assertFalse(os.path.exists(os.path.join(directory, "right")))
-            self.assertFalse(os.path.exists(os.path.join(directory, "good")))
 
         result.addErrback(check_error)
         return result

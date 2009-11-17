@@ -345,7 +345,7 @@ class GetVersionedPersistTest(LandscapeTest):
 
     def test_upgrade_service(self):
         class FakeService(object):
-            persist_filename = self.makeFile(content="")
+            persist_filename = self.makePersistFile(content="")
             service_name = "monitor"
 
         upgrade_managers = self.mocker.replace(
@@ -373,7 +373,7 @@ class LandscapeServiceTest(LandscapeTest):
 
     def test_create_persist(self):
         class FakeService(LandscapeService):
-            persist_filename = self.makeFile(content="")
+            persist_filename = self.makePersistFile(content="")
             service_name = "monitor"
         service = FakeService(None)
         self.assertEquals(service.persist.filename, service.persist_filename)
@@ -443,8 +443,7 @@ class AssertUnownedBusNameTest(LandscapeIsolatedTest):
 class RunLandscapeServiceTests(LandscapeTest):
     def test_wrong_user(self):
         getuid_mock = self.mocker.replace("os.getuid")
-        reactor_install_mock = self.mocker.replace(
-            "twisted.internet.glib2reactor.install")
+        reactor_install_mock = self.mocker.replace("landscape.reactor.install")
         reactor_install_mock()
         getuid_mock()
         self.mocker.result(1)

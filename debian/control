@@ -2,17 +2,18 @@ Source: landscape-client
 Section: admin
 Priority: optional
 Maintainer: Landscape Team <landscape-team@canonical.com>
-Build-Depends: debhelper (>= 5), po-debconf, python-dev, python-central | python-support, lsb-release, gawk
+Build-Depends: debhelper (>= 5), po-debconf, python-dev, python-central | python-support, lsb-release, gawk, python-twisted-core
 Standards-Version: 3.8.0
 XS-Python-Version: >= 2.4, << 2.7
 
 Package: landscape-common
-Architecture: all
+Architecture: any
 Pre-Depends: python, python-gobject
 Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
-         python-smartpm (>= 1.2-0ubuntu1),
          python-dbus | python2.4-dbus,
+         python-gnupginterface,
          python-twisted-core,
+         python-apt,
          ca-certificates,
          perl-modules,
          python-gdbm,

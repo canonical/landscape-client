@@ -103,7 +103,7 @@ def run(args=sys.argv):
     messages, and exits the process.
     """
     import dbus.glib
-    from twisted.internet.glib2reactor import install
+    from landscape.reactor import install
     install()
     from twisted.internet import reactor
 

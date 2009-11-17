@@ -321,8 +321,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         # Prepare the mock objects.
         lock_path_mock = self.mocker.replace("landscape.lib.lock.lock_path",
                                              passthrough=False)
-        install_mock = self.mocker.replace("twisted.internet."
-                                           "glib2reactor.install")
+        install_mock = self.mocker.replace("landscape.reactor.install")
         reactor_mock = self.mocker.replace("twisted.internet.reactor",
                                            passthrough=False)
         init_logging_mock = self.mocker.replace("landscape.deployment"
@@ -347,7 +346,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         # corrupting the file.  We don't want any output unless it's
         # breaking badly, so the quiet option should be set.
         init_logging_mock(ISTYPE(PackageTaskHandlerConfiguration),
-                          "package-default")
+                          "package-task-handler")
 
         # Then, it must create an instance of the TaskHandler subclass
         # passed in as a parameter.  We'll keep track of the arguments
@@ -420,8 +419,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
     def test_run_task_handler_when_already_locked(self):
         data_path = self.makeDir()
 
-        install_mock = self.mocker.replace("twisted.internet."
-                                           "glib2reactor.install")
+        install_mock = self.mocker.replace("landscape.reactor.install")
         install_mock()
 
         self.mocker.replay()
@@ -439,8 +437,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
     def test_run_task_handler_when_already_locked_and_quiet_option(self):
         data_path = self.makeDir()
 
-        install_mock = self.mocker.replace("twisted.internet."
-                                           "glib2reactor.install")
+        install_mock = self.mocker.replace("landscape.reactor.install")
         install_mock()
 
         self.mocker.replay()
@@ -458,8 +455,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
 
     def test_errors_in_tasks_are_printed_and_exit_program(self):
         # Ignore a bunch of crap that we don't care about
-        install_mock = self.mocker.replace("twisted.internet."
-                                           "glib2reactor.install")
+        install_mock = self.mocker.replace("landscape.reactor.install")
         install_mock()
         reactor_mock = self.mocker.proxy(reactor)
         init_logging_mock = self.mocker.replace("landscape.deployment"

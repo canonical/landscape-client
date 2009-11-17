@@ -41,7 +41,7 @@ class ShutdownManager(ManagerPlugin):
         it will be responded as failed.
         """
         operation_id = message["operation-id"]
-        reboot = reboot=message["reboot"]
+        reboot = message["reboot"]
         protocol = ShutdownProcessProtocol()
         protocol.set_timeout(self.registry.reactor)
         protocol.result.addCallback(self._respond_success, operation_id)
