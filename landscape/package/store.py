@@ -261,6 +261,27 @@ class PackageStore(HashIdStore):
         return [row[0] for row in cursor.fetchall()]
 
     @with_cursor
+    def get_locked(self, cursor):
+        """Get the package ids of all locked packages."""
+        cursor.execute("SELECT id FROM locked")
+        return [row[0] for row in cursor.fetchall()]
+
+    @with_cursor
+    def add_locked(self, cursor, ids):
+        """Add the given package ids to the list of locked packages."""
+        for id in ids:
+            cursor.execute("REPLACE INTO locked VALUES (?)", (id,))
+
+    @with_cursor
+    def remove_locked(self, cursor, ids):
+        id_list = ",".join(str(int(id)) for id in ids)
+        cursor.execute("DELETE FROM locked WHERE id IN (%s)" % id_list)
+
+    @with_cursor
+    def clear_locked(self, cursor):
+        cursor.execute("DELETE FROM locked")
+
+    @with_cursor
     def add_hash_id_request(self, cursor, hashes):
         hashes = list(hashes)
         cursor.execute("INSERT INTO hash_id_request (hashes, timestamp)"
@@ -403,6 +424,8 @@ def ensure_package_schema(db):
     #       try block.
     cursor = db.cursor()
     try:
+        cursor.execute("CREATE TABLE locked"
+                       " (id INTEGER PRIMARY KEY)")
         cursor.execute("CREATE TABLE available"
                        " (id INTEGER PRIMARY KEY)")
         cursor.execute("CREATE TABLE available_upgrade"

@@ -304,6 +304,45 @@ class PackageStoreTest(LandscapeTest):
         self.store1.clear_installed()
         self.assertEquals(self.store2.get_installed(), [])
 
+    def test_add_and_get_locked(self):
+        """
+        L{PackageStore.add_locked} adds the given ids to the table of locked
+        packages and commits the changes.
+        """
+        self.store1.add_locked([1])
+        self.assertEquals(self.store2.get_locked(), [1])
+
+    def test_add_locked_conflicting(self):
+        """Adding the same locked pacakge id twice is fine."""
+        self.store1.add_locked([1])
+        self.store1.add_locked([1])
+        self.assertEquals(self.store2.get_locked(), [1])
+
+    def test_remove_locked(self):
+        """
+        L{PackageStore.removed_locked} remove the given ids from the table
+        of locked packages and commits the changes.
+        """
+        self.store1.add_locked([1, 2, 3, 4])
+        self.store1.remove_locked([2, 3])
+        self.assertEquals(self.store2.get_locked(), [1, 4])
+
+    def test_remove_locked_non_existing(self):
+        """
+        Removing non-existing locked packages is fine.
+        """
+        self.store1.remove_locked([1])
+        self.assertEquals(self.store2.get_locked(), [])
+
+    def test_clear_locked(self):
+        """
+        L{PackageStore.clear_locked} clears the table of locked packages by
+        removing all its package ids.
+        """
+        self.store1.add_locked([1, 2, 3, 4])
+        self.store1.clear_locked()
+        self.assertEquals(self.store2.get_locked(), [])
+
     def test_add_hash_id_request(self):
         hashes = ("ha\x00sh1", "ha\x00sh2")
         request1 = self.store1.add_hash_id_request(hashes)
