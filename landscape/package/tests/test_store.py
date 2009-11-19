@@ -343,6 +343,90 @@ class PackageStoreTest(LandscapeTest):
         self.store1.clear_locked()
         self.assertEquals(self.store2.get_locked(), [])
 
+    def test_get_package_locks_with_no_lock(self):
+        """
+        L{PackageStore.get_package_locks} returns an empty list if no package
+        locks are stored.
+        """
+        self.assertEquals(self.store1.get_package_locks(), [])
+
+    def test_add_package_locks(self):
+        """
+        L{PackageStore.add_package_locks} adds a package lock to the store.
+        """
+        self.store1.add_package_locks([("name", None, None)])
+        self.assertEquals(self.store2.get_package_locks(),
+                          [("name", None, None)])
+
+    def test_add_package_locks_idempotence(self):
+        """
+        The operation of adding a lock is idempotent.
+        """
+        self.store1.add_package_locks([("name", None, None)])
+        self.store1.add_package_locks([("name", None, None)])
+        self.assertEquals(self.store2.get_package_locks(),
+                          [("name", None, None)])
+
+    def test_add_package_locks_multiple_times(self):
+        """
+        L{PackageStore.add_package_locks} can be called multiple times and
+        with multiple locks each time.
+        """
+        self.store1.add_package_locks([("name1", None, None)])
+        self.store1.add_package_locks([("name2", "<", "0.2"),
+                                       ("name3", None, None)])
+        self.assertEquals(sorted(self.store2.get_package_locks()),
+                          sorted([("name1", None, None),
+                                  ("name2", "<", "0.2"),
+                                  ("name3", None, None)]))
+
+    def test_add_package_locks_without_name(self):
+        """
+        It's not possible to add a package lock without a name.
+        """
+        self.assertRaises(sqlite3.IntegrityError,
+                          self.store1.add_package_locks,
+                          [(None, None, None)])
+
+    def test_remove_package_locks(self):
+        """
+        L{PackageStore.remove_package_locks} removes a package lock from
+        the store.
+        """
+        self.store1.add_package_locks([("name1", None, None)])
+        self.store1.remove_package_locks([("name1", None, None)])
+        self.assertEquals(self.store2.get_package_locks(), [])
+
+    def test_remove_package_locks_multiple_times(self):
+        """
+        L{PackageStore.remove_package_locks} can be called multiple times and
+        with multiple locks each time.
+        """
+        self.store1.add_package_locks([("name1", None, None),
+                                       ("name2", "<", "0.2"),
+                                       ("name3", None, None)])
+        self.store1.remove_package_locks([("name1", None, None)])
+        self.store1.remove_package_locks([("name2", "<", "0.2"),
+                                          ("name3", None, None)])
+        self.assertEquals(self.store2.get_package_locks(), [])
+
+    def test_remove_package_locks_without_matching_lock(self):
+        """
+        It's fine to remove a non-existent lock.
+        """
+        self.store1.remove_package_locks([("name", None, None)])
+        self.assertEquals(self.store2.get_package_locks(), [])
+
+    def test_clear_package_locks(self):
+        """
+        L{PackageStore.clear_package_locks} removes all package locks
+        from the store.
+        """
+        self.store1.add_package_locks([("name1", None, None),
+                                       ("name2", "<", "0.2")])
+        self.store1.clear_package_locks()
+        self.assertEquals(self.store2.get_package_locks(), [])
+
     def test_add_hash_id_request(self):
         hashes = ("ha\x00sh1", "ha\x00sh2")
         request1 = self.store1.add_hash_id_request(hashes)
