@@ -1001,6 +1001,82 @@ class PackageReporterTest(LandscapeIsolatedTest):
         result = self.reporter.detect_changes()
         return result.addCallback(got_result)
 
+    def test_detect_changes_with_locked(self):
+        """
+        If Smart reports us locked packages we didn't know about, report
+        them to the server.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+
+        self.facade.set_package_lock("name1")
+        self.facade.set_package_lock("name2", ">=", "version2")
+
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2})
+        self.store.add_available([1, 2])
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "packages", "locked": [1, 2]}])
+            self.assertEquals(sorted(self.store.get_locked()), [1, 2])
+
+        result = self.reporter.detect_changes()
+        return result.addCallback(got_result)
+
+    def test_detect_changes_with_locked_with_unknown_hash(self):
+        """
+        Locked packages whose hashes are unkwnown don't get reported.
+        """
+        self.facade.set_package_lock("name1")
+
+        def got_result(result):
+            self.assertEquals(sorted(self.store.get_locked()), [])
+
+        result = self.reporter.detect_changes()
+        return result.addCallback(got_result)
+
+    def test_detect_changes_with_locked_and_previously_known(self):
+        """
+        We don't report locked packages we already know about.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+
+        self.facade.set_package_lock("name1")
+        self.facade.set_package_lock("name2", ">=", "version2")
+
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2})
+        self.store.add_available([1, 2])
+        self.store.add_locked([1])
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "packages", "locked": [2]}])
+
+            self.assertEquals(sorted(self.store.get_locked()), [1, 2])
+
+        result = self.reporter.detect_changes()
+        return result.addCallback(got_result)
+
+    def test_detect_changes_with_not_locked(self):
+        """
+        We report when a package was previously locked and isn't anymore.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+
+        self.store.set_hash_ids({HASH1: 1})
+        self.store.add_available([1])
+        self.store.add_locked([1])
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "packages", "not-locked": [1]}])
+            self.assertEquals(sorted(self.store.get_locked()), [])
+
+        result = self.reporter.detect_changes()
+        return result.addCallback(got_result)
+
     def test_run(self):
         reporter_mock = self.mocker.patch(self.reporter)
 

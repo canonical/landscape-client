@@ -270,11 +270,14 @@ PACKAGES = Message(
     {"installed": package_ids_or_ranges,
      "available": package_ids_or_ranges,
      "available-upgrades": package_ids_or_ranges,
+     "locked": package_ids_or_ranges,
      "not-installed": package_ids_or_ranges,
      "not-available": package_ids_or_ranges,
-     "not-available-upgrades": package_ids_or_ranges},
-    optional=["installed", "available", "available-upgrades",
-              "not-available", "not-installed", "not-available-upgrades"])
+     "not-available-upgrades": package_ids_or_ranges,
+     "not-locked": package_ids_or_ranges},
+    optional=["installed", "available", "available-upgrades", "locked",
+              "not-available", "not-installed", "not-available-upgrades",
+              "not-locked"])
 
 CHANGE_PACKAGES_RESULT = Message(
     "change-packages-result",
