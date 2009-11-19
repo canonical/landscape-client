@@ -514,3 +514,94 @@ class SmartFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         self.assertTrue(smart.sysconf.get("use-landscape-proxies"))
         self.assertIn("smart.plugins.landscape", sys.modules)
+
+    def test_get_package_locks_with_no_lock(self):
+        """
+        If no package locks are set, L{SmartFacade.get_package_locks} returns
+        an empty C{list}.
+        """
+        self.assertEquals(self.facade.get_package_locks(), [])
+
+    def test_get_package_locks_with_one_lock(self):
+        """
+        If one lock is set, the list of locks contains one item.
+        """
+        self.facade.set_package_lock("name1", "<", "version1")
+        self.assertEquals(self.facade.get_package_locks(),
+                          [("name1", "<", "version1")])
+
+    def test_get_package_locks_with_many_locks(self):
+        """
+        It's possible to have more than one package lock and several conditions
+        for each of them.        
+        """
+        self.facade.set_package_lock("name1", "<", "version1")
+        self.facade.set_package_lock("name1", ">=", "version3")
+        self.facade.set_package_lock("name2", None, None)
+        self.assertEquals(sorted(self.facade.get_package_locks()),
+                          sorted([("name1", "<", "version1"),
+                                  ("name1", ">=", "version3"),
+                                  ("name2", None, None)]))
+
+    def test_set_package_lock(self):
+        """
+        It is possible to lock a package by simply specifying its name.
+        """
+        self.facade.set_package_lock("name1")
+        self.facade.reload_channels()
+        [package] = self.facade.get_locked_packages()
+        self.assertEquals(package.name, "name1")
+
+    def test_set_package_lock_with_matching_condition(self):
+        """
+        It is possible to set a package lock specifying both a
+        package name and version condition. Any matching package
+        will be locked.
+        """
+        self.facade.set_package_lock("name1", "<", "version2")
+        self.facade.reload_channels()
+        [package] = self.facade.get_locked_packages()
+        self.assertEquals(package.name, "name1")
+
+    def test_set_package_lock_with_non_matching_condition(self):
+        """
+        If the package lock conditions do not match any package,
+        no package will be locked.
+        """
+        self.facade.set_package_lock("name1", "<", "version1")
+        self.facade.reload_channels()
+        self.assertEquals(self.facade.get_locked_packages(), [])
+
+    def test_set_package_lock_with_missing_version(self):
+        """
+        When specifing a relation for a package lock condition, a version
+        must be provided as well.
+        """
+        error = self.assertRaises(RuntimeError, self.facade.set_package_lock,
+                                  "name1", "<", None)
+        self.assertEquals(str(error), "Package lock version not provided")
+
+    def test_set_package_lock_with_missing_relation(self):
+        """
+        When specifing a version for a package lock condition, a relation
+        must be provided as well.
+        """
+        error = self.assertRaises(RuntimeError, self.facade.set_package_lock,
+                                  "name1", None, "version1")
+        self.assertEquals(str(error), "Package lock relation not provided")
+
+    def test_remove_package_lock(self):
+        """
+        It is possibly to remove a package lock without any version condition.
+        """
+        self.facade.set_package_lock("name1", None, None)
+        self.facade.remove_package_lock("name1", None, None)
+        self.assertEquals(self.facade.get_locked_packages(), [])
+
+    def test_remove_package_lock_with_condition(self):
+        """
+        It is possibly to remove a package lock with a version condition.
+        """
+        self.facade.set_package_lock("name1", "<", "version1")
+        self.facade.remove_package_lock("name1", "<", "version1")
+        self.assertEquals(self.facade.get_locked_packages(), [])
