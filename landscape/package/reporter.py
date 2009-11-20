@@ -73,6 +73,7 @@ class PackageReporter(PackageTaskHandler):
 
         # Finally, verify if we have anything new to report to the server.
         result.addCallback(lambda x: self.detect_changes())
+        result.addCallback(lambda x: self.detect_package_locks_changes())
 
         result.callback(None)
         return result
@@ -470,9 +471,8 @@ class PackageReporter(PackageTaskHandler):
 
             logging.info("Queuing message with changes in known packages: "
                          "%d installed, %d available, %d available upgrades, "
-                         "%d locked, "
-                         "%d not installed, %d not available, %d not "
-                         "available upgrades, %d not locked."
+                         "%d locked, %d not installed, %d not available, "
+                         "%d not available upgrades, %d not locked."
                          % (len(new_installed), len(new_available),
                             len(new_upgrades), len(new_locked),
                             len(not_installed), len(not_available),
@@ -495,6 +495,50 @@ class PackageReporter(PackageTaskHandler):
                 self._store.remove_available_upgrades(not_upgrades)
             if not_locked:
                 self._store.remove_locked(not_locked)
+
+        result.addCallback(update_currently_known)
+
+        return result
+
+    def detect_package_locks_changes(self):
+        """Detect changes in known package locks.
+
+        This method will verify if there are package locks that:
+
+        - are now set, and were not;
+        - were previously set but are not anymore;
+
+        In all cases, the server is notified of the new situation
+        with a "packages" message.
+        """
+        old_package_locks = set(self._store.get_package_locks())
+        current_package_locks = set(self._facade.get_package_locks())
+
+        set_package_locks = current_package_locks - old_package_locks
+        unset_package_locks = old_package_locks - current_package_locks
+
+        message = {}
+        if set_package_locks:
+            message["set"] = sorted(set_package_locks)
+        if unset_package_locks:
+            message["unset"] = sorted(unset_package_locks)
+
+        if not message:
+            result = succeed(None)
+        else:
+            message["type"] = "package-locks"
+
+            result = self._broker.send_message(message, True)
+
+            logging.info("Queuing message with changes in known package locks:"
+                         " %d set, %d unset." % (len(set_package_locks),
+                                                 len(unset_package_locks)))
+
+        def update_currently_known(result):
+            if set_package_locks:
+                self._store.add_package_locks(set_package_locks)
+            if unset_package_locks:
+                self._store.remove_package_locks(unset_package_locks)
 
         result.addCallback(update_currently_known)
 

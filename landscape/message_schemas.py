@@ -279,6 +279,16 @@ PACKAGES = Message(
               "not-available", "not-installed", "not-available-upgrades",
               "not-locked"])
 
+package_lock_relation = Any(utf8, Constant(None))
+package_lock_version = Any(utf8, Constant(None))
+package_lock = Tuple(utf8, package_lock_relation, package_lock_version)
+package_locks_list = List(package_lock)
+PACKAGE_LOCKS = Message(
+    "package-locks",
+    {"set": package_locks_list,
+     "unset": package_locks_list},
+    optional=["set", "unset"])
+
 CHANGE_PACKAGES_RESULT = Message(
     "change-packages-result",
     {"operation-id": Int(),
@@ -337,7 +347,7 @@ for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                HARDWARE_INVENTORY, LOAD_AVERAGE, MEMORY_INFO,
                RESYNCHRONIZE, MOUNT_ACTIVITY, MOUNT_INFO, FREE_SPACE,
                REGISTER, REGISTER_CLOUD_VM, TEMPERATURE, PROCESSOR_INFO,
-               USERS, PACKAGES,
+               USERS, PACKAGES, PACKAGE_LOCKS,
                CHANGE_PACKAGES_RESULT, UNKNOWN_PACKAGE_HASHES,
                ADD_PACKAGES, TEXT_MESSAGE, TEST, CUSTOM_GRAPH,
                REBOOT_REQUIRED]:
