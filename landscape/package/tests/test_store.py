@@ -354,31 +354,40 @@ class PackageStoreTest(LandscapeTest):
         """
         L{PackageStore.add_package_locks} adds a package lock to the store.
         """
-        self.store1.add_package_locks([("name", None, None)])
+        self.store1.add_package_locks([("name", "", "")])
         self.assertEquals(self.store2.get_package_locks(),
-                          [("name", None, None)])
+                          [("name", "", "")])
 
     def test_add_package_locks_idempotence(self):
         """
         The operation of adding a lock is idempotent.
         """
-        self.store1.add_package_locks([("name", None, None)])
+        self.store1.add_package_locks([("name", "", "")])
+        self.store1.add_package_locks([("name", "", "")])
+        self.assertEquals(self.store2.get_package_locks(),
+                          [("name", "", "")])
+
+    def test_add_package_locks_with_none(self):
+        """
+        If None, package locks relation and version values are automatically
+        converted to empty strings.
+        """
         self.store1.add_package_locks([("name", None, None)])
         self.assertEquals(self.store2.get_package_locks(),
-                          [("name", None, None)])
+                          [("name", "", "")])
 
     def test_add_package_locks_multiple_times(self):
         """
         L{PackageStore.add_package_locks} can be called multiple times and
         with multiple locks each time.
         """
-        self.store1.add_package_locks([("name1", None, None)])
+        self.store1.add_package_locks([("name1", "", "")])
         self.store1.add_package_locks([("name2", "<", "0.2"),
-                                       ("name3", None, None)])
+                                       ("name3", "", "")])
         self.assertEquals(sorted(self.store2.get_package_locks()),
-                          sorted([("name1", None, None),
+                          sorted([("name1", "", ""),
                                   ("name2", "<", "0.2"),
-                                  ("name3", None, None)]))
+                                  ("name3", "", "")]))
 
     def test_add_package_locks_without_name(self):
         """
@@ -393,8 +402,8 @@ class PackageStoreTest(LandscapeTest):
         L{PackageStore.remove_package_locks} removes a package lock from
         the store.
         """
-        self.store1.add_package_locks([("name1", None, None)])
-        self.store1.remove_package_locks([("name1", None, None)])
+        self.store1.add_package_locks([("name1", "", "")])
+        self.store1.remove_package_locks([("name1", "", "")])
         self.assertEquals(self.store2.get_package_locks(), [])
 
     def test_remove_package_locks_multiple_times(self):
@@ -402,19 +411,19 @@ class PackageStoreTest(LandscapeTest):
         L{PackageStore.remove_package_locks} can be called multiple times and
         with multiple locks each time.
         """
-        self.store1.add_package_locks([("name1", None, None),
+        self.store1.add_package_locks([("name1", "", ""),
                                        ("name2", "<", "0.2"),
-                                       ("name3", None, None)])
-        self.store1.remove_package_locks([("name1", None, None)])
+                                       ("name3", "", "")])
+        self.store1.remove_package_locks([("name1", "", "")])
         self.store1.remove_package_locks([("name2", "<", "0.2"),
-                                          ("name3", None, None)])
+                                          ("name3", "", "")])
         self.assertEquals(self.store2.get_package_locks(), [])
 
     def test_remove_package_locks_without_matching_lock(self):
         """
         It's fine to remove a non-existent lock.
         """
-        self.store1.remove_package_locks([("name", None, None)])
+        self.store1.remove_package_locks([("name", "", "")])
         self.assertEquals(self.store2.get_package_locks(), [])
 
     def test_clear_package_locks(self):
@@ -422,7 +431,7 @@ class PackageStoreTest(LandscapeTest):
         L{PackageStore.clear_package_locks} removes all package locks
         from the store.
         """
-        self.store1.add_package_locks([("name1", None, None),
+        self.store1.add_package_locks([("name1", "", ""),
                                        ("name2", "<", "0.2")])
         self.store1.clear_package_locks()
         self.assertEquals(self.store2.get_package_locks(), [])

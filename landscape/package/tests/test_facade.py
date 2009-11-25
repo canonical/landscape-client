@@ -533,15 +533,15 @@ class SmartFacadeTest(LandscapeTest):
     def test_get_package_locks_with_many_locks(self):
         """
         It's possible to have more than one package lock and several conditions
-        for each of them.        
+        for each of them.
         """
         self.facade.set_package_lock("name1", "<", "version1")
         self.facade.set_package_lock("name1", ">=", "version3")
-        self.facade.set_package_lock("name2", None, None)
+        self.facade.set_package_lock("name2")
         self.assertEquals(sorted(self.facade.get_package_locks()),
                           sorted([("name1", "<", "version1"),
                                   ("name1", ">=", "version3"),
-                                  ("name2", None, None)]))
+                                  ("name2", "", "")]))
 
     def test_set_package_lock(self):
         """
@@ -578,7 +578,7 @@ class SmartFacadeTest(LandscapeTest):
         must be provided as well.
         """
         error = self.assertRaises(RuntimeError, self.facade.set_package_lock,
-                                  "name1", "<", None)
+                                  "name1", "<", "")
         self.assertEquals(str(error), "Package lock version not provided")
 
     def test_set_package_lock_with_missing_relation(self):
@@ -587,15 +587,15 @@ class SmartFacadeTest(LandscapeTest):
         must be provided as well.
         """
         error = self.assertRaises(RuntimeError, self.facade.set_package_lock,
-                                  "name1", None, "version1")
+                                  "name1", "", "version1")
         self.assertEquals(str(error), "Package lock relation not provided")
 
     def test_remove_package_lock(self):
         """
         It is possibly to remove a package lock without any version condition.
         """
-        self.facade.set_package_lock("name1", None, None)
-        self.facade.remove_package_lock("name1", None, None)
+        self.facade.set_package_lock("name1")
+        self.facade.remove_package_lock("name1")
         self.assertEquals(self.facade.get_locked_packages(), [])
 
     def test_remove_package_lock_with_condition(self):

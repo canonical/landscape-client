@@ -286,18 +286,7 @@ class PackageStore(HashIdStore):
     def get_package_locks(self, cursor):
         """Get all package locks."""
         cursor.execute("SELECT name, relation, version FROM package_locks")
-        return [(row[0], row[1] or None, row[2] or None)
-                for row in cursor.fetchall()]
-
-    def _stringify_package_lock(self, relation, version):
-        """
-        Turn None's into ""'s to make the UNIQUE constraint actually work.
-        """
-        if relation is None:
-            relation = ""
-        if version is None:
-            version = ""
-        return relation, version
+        return [(row[0], row[1], row[2]) for row in cursor.fetchall()]
 
     @with_cursor
     def add_package_locks(self, cursor, locks):
@@ -307,9 +296,8 @@ class PackageStore(HashIdStore):
             name, the relation and the version of the package lock to be added.
         """
         for name, relation, version in locks:
-            relation, version = self._stringify_package_lock(relation, version)
             cursor.execute("REPLACE INTO package_locks VALUES (?, ?, ?)",
-                           (name, relation, version,))
+                           (name, relation or "", version or "",))
 
     @with_cursor
     def remove_package_locks(self, cursor, locks):
@@ -319,10 +307,9 @@ class PackageStore(HashIdStore):
             the relation and the version of the package lock to be removed.
         """
         for name, relation, version in locks:
-            relation, version = self._stringify_package_lock(relation, version)
             cursor.execute("DELETE FROM package_locks WHERE name=? AND "
                            "relation=? AND version=?",
-                           (name, relation, version))
+                           (name, relation or "", version or ""))
 
     @with_cursor
     def clear_package_locks(self, cursor):

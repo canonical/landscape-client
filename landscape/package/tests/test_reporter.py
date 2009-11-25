@@ -1077,7 +1077,6 @@ class PackageReporterTest(LandscapeIsolatedTest):
         result = self.reporter.detect_changes()
         return result.addCallback(got_result)
 
-
     def test_detect_package_locks_changes_with_set_locks(self):
         """
         If Smart indicates us package locks we didn't know about, report
@@ -1096,9 +1095,9 @@ class PackageReporterTest(LandscapeIsolatedTest):
         def got_result(result):
             self.assertMessages(message_store.get_pending_messages(),
                                 [{"type": "package-locks",
-                                  "set": [("name", None, None)]}])
+                                  "set": [("name", "", "")]}])
             self.assertEquals(self.store.get_package_locks(),
-                              [("name", None, None)])
+                              [("name", "", "")])
 
         result = self.reporter.detect_package_locks_changes()
         return result.addCallback(got_result)
@@ -1113,7 +1112,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         self.facade.set_package_lock("name1")
         self.facade.set_package_lock("name2", "<", "1.2")
 
-        self.store.add_package_locks([("name1", None, None)])
+        self.store.add_package_locks([("name1", "", "")])
 
         logging_mock = self.mocker.replace("logging.info")
         logging_mock("Queuing message with changes in known package locks:"
@@ -1125,7 +1124,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
                                 [{"type": "package-locks",
                                   "set": [("name2", "<", "1.2")]}])
             self.assertEquals(sorted(self.store.get_package_locks()),
-                              [("name1", None, None),
+                              [("name1", "", ""),
                                ("name2", "<", "1.2")])
 
         result = self.reporter.detect_package_locks_changes()
@@ -1139,7 +1138,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["package-locks"])
 
-        self.store.add_package_locks([("name1", None, None)])
+        self.store.add_package_locks([("name1", "", "")])
 
         logging_mock = self.mocker.replace("logging.info")
         logging_mock("Queuing message with changes in known package locks:"
@@ -1149,7 +1148,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         def got_result(result):
             self.assertMessages(message_store.get_pending_messages(),
                                 [{"type": "package-locks",
-                                  "unset": [("name1",None, None)]}])
+                                  "unset": [("name1","", "")]}])
             self.assertEquals(self.store.get_package_locks(), [])
 
         result = self.reporter.detect_package_locks_changes()

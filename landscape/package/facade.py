@@ -323,8 +323,8 @@ class SmartFacade(object):
         locks_by_name = smart.pkgconf.getFlagTargets("lock")
         for name in locks_by_name:
             for condition in locks_by_name[name]:
-                relation = condition[0]
-                version = condition[1]
+                relation = condition[0] or ""
+                version = condition[1] or ""
                 locks.append((name, relation, version))
         return locks
 
@@ -334,7 +334,7 @@ class SmartFacade(object):
         if version and not relation:
             raise RuntimeError("Package lock relation not provided")
 
-    def set_package_lock(self, name, relation=None, version=None):
+    def set_package_lock(self, name, relation="", version=""):
         """Set a new package lock.
 
         Any package matching the given name and possibly the given version
@@ -346,16 +346,23 @@ class SmartFacade(object):
         """
         self._validate_lock_condition(relation, version)
         self._get_ctrl()
+
+        # Smart wants None here
+        if relation == "":
+            relation = None
+        if version == "":
+            version = None
+
         smart.pkgconf.setFlag("lock", name, relation, version)
 
-    def remove_package_lock(self, name, relation=None, version=None):
+    def remove_package_lock(self, name, relation="", version=""):
         """Remove a package lock."""
         self._validate_lock_condition(relation, version)
 
-        # Smart wants () instead of None
-        if relation is None:
+        # Smart wants () here
+        if not relation:
             relation = ()
-        if version is None:
+        if not version:
             version = ()
 
         self._get_ctrl()
