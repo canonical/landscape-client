@@ -1023,6 +1023,29 @@ class PackageReporterTest(LandscapeIsolatedTest):
         result = self.reporter.detect_changes()
         return result.addCallback(got_result)
 
+    def test_detect_changes_with_locked_and_ranges(self):
+        """
+        Ranges are used when reporting changes to 3 or more locked packages
+        having consecutive ids.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+
+        self.facade.set_package_lock("name1")
+        self.facade.set_package_lock("name2", ">=", "version2")
+        self.facade.set_package_lock("name3", "<", "version4")
+
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
+        self.store.add_available([1, 2, 3])
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "packages", "locked": [(1, 3)]}])
+            self.assertEquals(sorted(self.store.get_locked()), [1, 2, 3])
+
+        result = self.reporter.detect_changes()
+        return result.addCallback(got_result)
+
     def test_detect_changes_with_locked_with_unknown_hash(self):
         """
         Locked packages whose hashes are unkwnown don't get reported.
@@ -1073,6 +1096,27 @@ class PackageReporterTest(LandscapeIsolatedTest):
             self.assertMessages(message_store.get_pending_messages(),
                                 [{"type": "packages", "not-locked": [1]}])
             self.assertEquals(self.store.get_locked(), [])
+
+        result = self.reporter.detect_changes()
+        return result.addCallback(got_result)
+
+    def test_detect_changes_with_not_locked_and_ranges(self):
+        """
+        Ranges are used when reporting changes to 3 or more not locked packages
+        having consecutive ids.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+
+        self.store.add_locked([1, 2, 3])
+
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
+        self.store.add_available([1, 2, 3])
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "packages", "not-locked": [(1, 3)]}])
+            self.assertEquals(sorted(self.store.get_locked()), [])
 
         result = self.reporter.detect_changes()
         return result.addCallback(got_result)
@@ -1148,7 +1192,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         def got_result(result):
             self.assertMessages(message_store.get_pending_messages(),
                                 [{"type": "package-locks",
-                                  "unset": [("name1","", "")]}])
+                                  "unset": [("name1", "", "")]}])
             self.assertEquals(self.store.get_package_locks(), [])
 
         result = self.reporter.detect_package_locks_changes()
