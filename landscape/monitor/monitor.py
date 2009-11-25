@@ -112,8 +112,10 @@ class DataWatcher(MonitorPlugin):
             info("Queueing a message with updated data watcher info "
                  "for %s.", format_object(self))
             result = self.registry.broker.send_message(message, urgent=urgent)
+
             def persist_data(message_id):
                 self.persist_data()
+
             result.addCallback(persist_data)
             result.addErrback(log_failure)
             return result
