@@ -279,14 +279,11 @@ PACKAGES = Message(
               "not-available", "not-installed", "not-available-upgrades",
               "not-locked"])
 
-package_lock_relation = Any(utf8, Constant(None))
-package_lock_version = Any(utf8, Constant(None))
-package_lock = Tuple(utf8, package_lock_relation, package_lock_version)
-package_locks_list = List(package_lock)
+package_locks = List(Tuple(utf8, utf8, utf8))
 PACKAGE_LOCKS = Message(
     "package-locks",
-    {"set": package_locks_list,
-     "unset": package_locks_list},
+    {"set": package_locks,
+     "unset": package_locks},
     optional=["set", "unset"])
 
 CHANGE_PACKAGES_RESULT = Message(
