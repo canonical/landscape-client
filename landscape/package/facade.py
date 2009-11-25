@@ -314,9 +314,8 @@ class SmartFacade(object):
     def get_package_locks(self):
         """Return all set package locks.
 
-        @return: A C{dict} mapping package names to a list of version
-            conditions. Each condition is a binary tuple containing the
-            relation and version of the condition.
+        @return: A C{list} of ternary tuples, contaning the name, relation
+            and version details for each lock currently set on the system.
         """
         self._get_ctrl()
         locks = []
