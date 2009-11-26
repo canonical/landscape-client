@@ -283,8 +283,8 @@ package_locks = List(Tuple(utf8, utf8, utf8))
 PACKAGE_LOCKS = Message(
     "package-locks",
     {"created": package_locks,
-     "removed": package_locks},
-    optional=["created", "removed"])
+     "deleted": package_locks},
+    optional=["created", "deleted"])
 
 CHANGE_PACKAGES_RESULT = Message(
     "change-packages-result",

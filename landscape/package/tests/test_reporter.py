@@ -1133,7 +1133,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         logging_mock = self.mocker.replace("logging.info")
         logging_mock("Queuing message with changes in known package locks:"
-                     " 1 created, 0 removed.")
+                     " 1 created, 0 deleted.")
         self.mocker.replay()
 
         def got_result(result):
@@ -1160,7 +1160,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         logging_mock = self.mocker.replace("logging.info")
         logging_mock("Queuing message with changes in known package locks:"
-                     " 1 created, 0 removed.")
+                     " 1 created, 0 deleted.")
         self.mocker.replay()
 
         def got_result(result):
@@ -1174,7 +1174,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         result = self.reporter.detect_package_locks_changes()
         return result.addCallback(got_result)
 
-    def test_detect_package_locks_changes_with_removed_locks(self):
+    def test_detect_package_locks_changes_with_deleted_locks(self):
         """
         If Smart indicates newly unset package locks, report them to the
         server.
@@ -1186,13 +1186,13 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         logging_mock = self.mocker.replace("logging.info")
         logging_mock("Queuing message with changes in known package locks:"
-                     " 0 created, 1 removed.")
+                     " 0 created, 1 deleted.")
         self.mocker.replay()
 
         def got_result(result):
             self.assertMessages(message_store.get_pending_messages(),
                                 [{"type": "package-locks",
-                                  "removed": [("name1", "", "")]}])
+                                  "deleted": [("name1", "", "")]}])
             self.assertEquals(self.store.get_package_locks(), [])
 
         result = self.reporter.detect_package_locks_changes()

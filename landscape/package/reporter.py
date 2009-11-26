@@ -521,7 +521,7 @@ class PackageReporter(PackageTaskHandler):
         if set_package_locks:
             message["created"] = sorted(set_package_locks)
         if unset_package_locks:
-            message["removed"] = sorted(unset_package_locks)
+            message["deleted"] = sorted(unset_package_locks)
 
         if not message:
             result = succeed(None)
@@ -531,7 +531,7 @@ class PackageReporter(PackageTaskHandler):
             result = self._broker.send_message(message, True)
 
             logging.info("Queuing message with changes in known package locks:"
-                         " %d created, %d removed." %
+                         " %d created, %d deleted." %
                          (len(set_package_locks), len(unset_package_locks)))
 
         def update_currently_known(result):
