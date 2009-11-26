@@ -1003,7 +1003,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
     def test_detect_changes_with_locked(self):
         """
-        If Smart indicates us locked packages we didn't know about, report
+        If Smart indicates locked packages we didn't know about, report
         them to the server.
         """
         message_store = self.broker_service.message_store
@@ -1048,7 +1048,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
     def test_detect_changes_with_locked_with_unknown_hash(self):
         """
-        Locked packages whose hashes are unkwnown don't get reported.
+        Locked packages whose hashes are unknown don't get reported.
         """
         self.facade.set_package_lock("name1")
 
@@ -1123,7 +1123,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
     def test_detect_package_locks_changes_with_set_locks(self):
         """
-        If Smart indicates us package locks we didn't know about, report
+        If Smart indicates package locks we didn't know about, report
         them to the server.
         """
         message_store = self.broker_service.message_store

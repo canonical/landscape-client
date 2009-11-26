@@ -333,37 +333,27 @@ class SmartFacade(object):
         if version and not relation:
             raise RuntimeError("Package lock relation not provided")
 
-    def set_package_lock(self, name, relation="", version=""):
+    def set_package_lock(self, name, relation=None, version=None):
         """Set a new package lock.
 
         Any package matching the given name and possibly the given version
         condition will be locked.
 
         @param name: The name a package must match in order to be locked.
-        @param relation, version: The condition the package version must
-            satisfy in order to be locked.
+        @param relation: Optionally, the relation of the version condition the
+            package must satisfy in order to be considered as locked.
+        @param version: Optionally, the version associated with C{relation}.
+
+        @note: If used at all, the C{relation} and C{version} parameter must be
+           both provided.
         """
         self._validate_lock_condition(relation, version)
         self._get_ctrl()
-
-        # Smart wants None here
-        if relation == "":
-            relation = None
-        if version == "":
-            version = None
-
         smart.pkgconf.setFlag("lock", name, relation, version)
 
-    def remove_package_lock(self, name, relation="", version=""):
+    def remove_package_lock(self, name, relation=(), version=()):
         """Remove a package lock."""
         self._validate_lock_condition(relation, version)
-
-        # Smart wants () here
-        if not relation:
-            relation = ()
-        if not version:
-            version = ()
-
         self._get_ctrl()
         smart.pkgconf.clearFlag("lock", name=name, relation=relation,
                                 version=version)
