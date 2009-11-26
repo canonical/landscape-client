@@ -330,7 +330,7 @@ REBOOT_REQUIRED = Message(
 
 APT_PINNING = Message(
     "apt-pinning",
-    {"status": Bool()})
+    {"files": Dict(utf8, Unicode())})
 
 message_schemas = {}
 for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,

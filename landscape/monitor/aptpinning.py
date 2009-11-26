@@ -5,34 +5,41 @@ from landscape.monitor.monitor import DataWatcher
 
 class AptPinning(DataWatcher):
     """
-    Report whether the system uses APT pinning.
+    Report the system APT pinning configuration.
     """
 
     persist_name = "apt-pinning"
     message_type = "apt-pinning"
-    message_key = "status"
+    message_key = "files"
     run_interval = 3600 # 1 hour
 
     def __init__(self, etc_apt_directory="/etc/apt"):
         self._etc_apt_directory = etc_apt_directory
 
     def get_data(self):
-        """Return a boolean indicating whether the computer needs a reboot."""
+        """Return a C{dict} mapping APT pinning file names to their content."""
+        data = {}
 
-        def join_etc_apt(path):
-            return os.path.join(self._etc_apt_directory, path)
+        def read_file(filename):
+            fd = open(filename, "r")
+            content = fd.read()
+            fd.close()
+            return content
 
+        preferences_filename = os.path.join(self._etc_apt_directory,
+                                            "preferences")
+        if os.path.exists(preferences_filename):
+            data[preferences_filename] = read_file(preferences_filename)
 
-        if os.path.exists(join_etc_apt("preferences")):
-            return True
+        preferences_directory = os.path.join(self._etc_apt_directory,
+                                            "preferences.d")
+        if os.path.isdir(preferences_directory):
+            for entry in os.listdir(preferences_directory):
+                filename = os.path.join(preferences_directory, entry)
+                if os.path.isfile(filename):
+                    data[filename] = read_file(filename)
 
-        preferences_directory = join_etc_apt("preferences.d")
-        if not os.path.exists(preferences_directory):
-            return False
-        for filename in os.listdir(preferences_directory):
-            if os.path.isfile(os.path.join(preferences_directory, filename)):
-                return True
-        return False
+        return data
 
     def run(self):
         return self.exchange(urgent=True)

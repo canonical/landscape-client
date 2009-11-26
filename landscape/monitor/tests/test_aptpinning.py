@@ -19,28 +19,46 @@ class AptPinningTest(LandscapeIsolatedTest):
         self.monitor.add(self.plugin)
         self.mstore.set_accepted_types(["apt-pinning"])
 
-    def test_get_data(self):
+    def test_get_data_without_apt_pinning_files(self):
         """
-        L{AptPinning.get_data} should return C{True} if the an APT preferences
-        file is present.
+        L{AptPinning.get_data} returns an empty C{dict} if not APT pinning
+        file is detected.
         """
-        self.assertFalse(self.plugin.get_data())
+        self.assertEquals(self.plugin.get_data(), {})
+
+    def test_get_data_with_apt_preferences(self):
+        """
+        L{AptPinning.get_data} includes the contents of the main APT pinning
+        preferences file.
+        """
         preferences_filename = os.path.join(self.etc_apt_directory,
                                             "preferences")
         self.makeFile(path=preferences_filename, content="crap")
-        self.assertTrue(self.plugin.get_data())
+        self.assertEquals(self.plugin.get_data(),
+                          {preferences_filename: "crap"})
 
-    def test_get_data_with_preferences_directory(self):
+    def test_get_data_with_empty_preferences_directory(self):
         """
-        L{AptPinning.get_data} should return C{True} if the a file the APT
-        preferences directory is present.
+        L{AptPinning.get_data} returns an empty C{dict} if the APT preference
+        directory is present but empty.
         """
         preferences_directory = os.path.join(self.etc_apt_directory,
                                              "preferences.d")
         self.makeDir(path=preferences_directory)
-        self.assertFalse(self.plugin.get_data())
-        self.makeFile(dirname=preferences_directory, content="crap")
-        self.assertTrue(self.plugin.get_data())
+        self.assertEquals(self.plugin.get_data(), {})
+
+    def test_get_data_with_preferences_directory(self):
+        """
+        L{AptPinning.get_data} includes the contents of all the file in the APT
+        preferences directory.
+        """
+        preferences_directory = os.path.join(self.etc_apt_directory,
+                                             "preferences.d")
+        self.makeDir(path=preferences_directory)
+        filename1 = self.makeFile(dirname=preferences_directory, content="foo")
+        filename2 = self.makeFile(dirname=preferences_directory, content="bar")
+        self.assertEquals(self.plugin.get_data(), {filename1: "foo",
+                                                   filename2: "bar"})
 
     def test_exchange(self):
         """
@@ -50,7 +68,7 @@ class AptPinningTest(LandscapeIsolatedTest):
         self.plugin.exchange()
         messages = self.mstore.get_pending_messages()
         self.assertEquals(messages[0]["type"], "apt-pinning")
-        self.assertEquals(messages[0]["status"], False)
+        self.assertEquals(messages[0]["files"], {})
 
     def test_run(self):
         """
