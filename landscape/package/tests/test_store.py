@@ -304,6 +304,40 @@ class PackageStoreTest(LandscapeTest):
         self.store1.clear_installed()
         self.assertEquals(self.store2.get_installed(), [])
 
+    def test_ensure_package_schema_with_new_tables(self):
+        """
+        The L{ensure_package_schema} function behaves correctly when new
+        tables are added.
+        """
+        filename = self.makeFile()
+        database = sqlite3.connect(filename)
+        cursor = database.cursor()
+        cursor.execute("CREATE TABLE available"
+                       " (id INTEGER PRIMARY KEY)")
+        cursor.execute("CREATE TABLE available_upgrade"
+                       " (id INTEGER PRIMARY KEY)")
+        cursor.execute("CREATE TABLE installed"
+                       " (id INTEGER PRIMARY KEY)")
+        cursor.execute("CREATE TABLE hash_id_request"
+                       " (id INTEGER PRIMARY KEY, timestamp TIMESTAMP,"
+                       " message_id INTEGER, hashes BLOB)")
+        cursor.execute("CREATE TABLE task"
+                       " (id INTEGER PRIMARY KEY, queue TEXT,"
+                       " timestamp TIMESTAMP, data BLOB)")
+        cursor.close()
+        database.commit()
+        database.close()
+
+        store = PackageStore(filename)
+        store.get_locked()
+
+        database = sqlite3.connect(filename)
+        cursor = database.cursor()
+        for table in ["package_locks", "locked"]:
+            query = "pragma table_info(%s)" % table
+            result = cursor.execute(query).fetchall()
+            self.assertTrue(len(result) > 0)
+
     def test_add_and_get_locked(self):
         """
         L{PackageStore.add_locked} adds the given ids to the table of locked
