@@ -3,21 +3,21 @@ import os
 from landscape.monitor.monitor import DataWatcher
 
 
-class AptPinning(DataWatcher):
+class AptPreferences(DataWatcher):
     """
-    Report the system APT pinning configuration.
+    Report the system APT preferences configuration.
     """
 
-    persist_name = "apt-pinning"
-    message_type = "apt-pinning"
-    message_key = "files"
+    persist_name = "apt-preferences"
+    message_type = "apt-preferences"
+    message_key = "contents"
     run_interval = 3600 # 1 hour
 
     def __init__(self, etc_apt_directory="/etc/apt"):
         self._etc_apt_directory = etc_apt_directory
 
     def get_data(self):
-        """Return a C{dict} mapping APT pinning file names to their content."""
+        """Return a C{dict} mapping APT preferences files to their contents."""
         data = {}
 
         def read_file(filename):

@@ -2,33 +2,32 @@ import os
 
 from twisted.internet.defer import succeed
 
-from landscape.monitor.aptpinning import AptPinning
+from landscape.monitor.aptpreferences import AptPreferences
 from landscape.tests.helpers import LandscapeIsolatedTest
 from landscape.tests.helpers import MonitorHelper
 from landscape.tests.mocker import ANY
 
 
-class AptPinningTest(LandscapeIsolatedTest):
+class AptPreferencesTest(LandscapeIsolatedTest):
 
     helpers = [MonitorHelper]
 
     def setUp(self):
-        super(AptPinningTest, self).setUp()
+        super(AptPreferencesTest, self).setUp()
         self.etc_apt_directory = self.makeDir()
-        self.plugin = AptPinning(self.etc_apt_directory)
+        self.plugin = AptPreferences(self.etc_apt_directory)
         self.monitor.add(self.plugin)
-        self.mstore.set_accepted_types(["apt-pinning"])
 
-    def test_get_data_without_apt_pinning_files(self):
+    def test_get_data_without_apt_preferences_files(self):
         """
-        L{AptPinning.get_data} returns an empty C{dict} if not APT pinning
-        file is detected.
+        L{AptPreferences.get_data} returns an empty C{dict} if no APT
+        preferences file is detected.
         """
         self.assertEquals(self.plugin.get_data(), {})
 
     def test_get_data_with_apt_preferences(self):
         """
-        L{AptPinning.get_data} includes the contents of the main APT pinning
+        L{AptPreferences.get_data} includes the contents of the main APT
         preferences file.
         """
         preferences_filename = os.path.join(self.etc_apt_directory,
@@ -39,7 +38,7 @@ class AptPinningTest(LandscapeIsolatedTest):
 
     def test_get_data_with_empty_preferences_directory(self):
         """
-        L{AptPinning.get_data} returns an empty C{dict} if the APT preference
+        L{AptPreferences.get_data} returns an empty C{dict} if the APT preference
         directory is present but empty.
         """
         preferences_directory = os.path.join(self.etc_apt_directory,
@@ -49,7 +48,7 @@ class AptPinningTest(LandscapeIsolatedTest):
 
     def test_get_data_with_preferences_directory(self):
         """
-        L{AptPinning.get_data} includes the contents of all the file in the APT
+        L{AptPreferences.get_data} includes the contents of all the file in the APT
         preferences directory.
         """
         preferences_directory = os.path.join(self.etc_apt_directory,
@@ -62,19 +61,21 @@ class AptPinningTest(LandscapeIsolatedTest):
 
     def test_exchange(self):
         """
-        The L{AptPinning.exchange} method sends messages of type "apt-pinning".
+        The L{AptPreferences.exchange} method sends messages of
+        type "apt-preferences".
         """
-        self.mstore.set_accepted_types(["apt-pinning"])
+        self.mstore.set_accepted_types(["apt-preferences"])
         self.plugin.exchange()
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(messages[0]["type"], "apt-pinning")
-        self.assertEquals(messages[0]["files"], {})
+        self.assertEquals(messages[0]["type"], "apt-preferences")
+        self.assertEquals(messages[0]["contents"], {})
 
     def test_run(self):
         """
-        If the server can accept them, the plugin should send C{apt-pinning}
+        If the server can accept them, the plugin should send C{apt-preferences}
         urgent messages.
         """
+        self.mstore.set_accepted_types(["apt-preferences"])
         broker_mock = self.mocker.replace(self.remote)
         broker_mock.send_message(ANY, urgent=True)
         self.mocker.result(succeed(None))

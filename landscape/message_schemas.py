@@ -328,9 +328,9 @@ REBOOT_REQUIRED = Message(
     "reboot-required",
     {"flag": Bool()})
 
-APT_PINNING = Message(
-    "apt-pinning",
-    {"files": Dict(utf8, Unicode())})
+APT_PREFERENCES = Message(
+    "apt-preferences",
+    {"contents": Dict(utf8, Unicode())})
 
 message_schemas = {}
 for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
@@ -341,5 +341,5 @@ for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                USERS, PACKAGES,
                CHANGE_PACKAGES_RESULT, UNKNOWN_PACKAGE_HASHES,
                ADD_PACKAGES, TEXT_MESSAGE, TEST, CUSTOM_GRAPH,
-               REBOOT_REQUIRED, APT_PINNING]:
+               REBOOT_REQUIRED, APT_PREFERENCES]:
     message_schemas[schema.type] = schema
