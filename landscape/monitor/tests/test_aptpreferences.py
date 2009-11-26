@@ -23,7 +23,7 @@ class AptPreferencesTest(LandscapeIsolatedTest):
         L{AptPreferences.get_data} returns an empty C{dict} if no APT
         preferences file is detected.
         """
-        self.assertEquals(self.plugin.get_data(), {})
+        self.assertEquals(self.plugin.get_data(), None)
 
     def test_get_data_with_apt_preferences(self):
         """
@@ -59,10 +59,18 @@ class AptPreferencesTest(LandscapeIsolatedTest):
         self.assertEquals(self.plugin.get_data(), {filename1: "foo",
                                                    filename2: "bar"})
 
+    def test_exchange_without_apt_preferences_data(self):
+        """
+        If the system has no APT preferences data, no message is sent.
+        """
+        self.mstore.set_accepted_types(["apt-preferences"])
+        self.plugin.exchange()
+        self.assertEquals(self.mstore.get_pending_messages(), [])
+
     def test_exchange(self):
         """
-        The L{AptPreferences.exchange} method sends messages of
-        type "apt-preferences".
+        If the system has some APT preferences data, a message of type
+        "apt-preferences" is sent.
         """
         self.mstore.set_accepted_types(["apt-preferences"])
         main_preferences_filename = os.path.join(self.etc_apt_directory,
@@ -81,6 +89,13 @@ class AptPreferencesTest(LandscapeIsolatedTest):
                            sub_preferences_filename: u"foo"})
         for filename in messages[0]["data"]:
             self.assertTrue(isinstance(filename, unicode))
+
+        os.remove(main_preferences_filename)
+        os.remove(sub_preferences_filename)
+        self.plugin.exchange()
+        messages = self.mstore.get_pending_messages()
+        self.assertEquals(messages[1]["type"], "apt-preferences")
+        self.assertEquals(messages[1]["data"], None)
 
     def test_run(self):
         """

@@ -17,7 +17,11 @@ class AptPreferences(DataWatcher):
         self._etc_apt_directory = etc_apt_directory
 
     def get_data(self):
-        """Return a C{dict} mapping APT preferences files to their contents."""
+        """Return a C{dict} mapping APT preferences files to their contents.
+
+        If no APT preferences configuration is set at all on the system, then
+        simply return C{None}
+        """
         data = {}
 
         def read_file(filename):
@@ -39,6 +43,8 @@ class AptPreferences(DataWatcher):
                 if os.path.isfile(filename):
                     data[filename] = read_file(filename)
 
+        if data == {}:
+            return None
         return data
 
     def run(self):
