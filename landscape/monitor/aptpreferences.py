@@ -10,7 +10,7 @@ class AptPreferences(DataWatcher):
 
     persist_name = "apt-preferences"
     message_type = "apt-preferences"
-    message_key = "contents"
+    message_key = "data"
     run_interval = 3600 # 1 hour
 
     def __init__(self, etc_apt_directory="/etc/apt"):

@@ -68,7 +68,7 @@ class AptPreferencesTest(LandscapeIsolatedTest):
         self.plugin.exchange()
         messages = self.mstore.get_pending_messages()
         self.assertEquals(messages[0]["type"], "apt-preferences")
-        self.assertEquals(messages[0]["contents"], {})
+        self.assertEquals(messages[0]["data"], {})
 
     def test_run(self):
         """
