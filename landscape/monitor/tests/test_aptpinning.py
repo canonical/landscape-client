@@ -4,13 +4,13 @@ from twisted.internet.defer import succeed
 
 from landscape.monitor.aptpinning import AptPinning
 from landscape.tests.helpers import LandscapeIsolatedTest
-from landscape.tests.helpers import MonitorHelper, LogKeeperHelper
+from landscape.tests.helpers import MonitorHelper
 from landscape.tests.mocker import ANY
 
 
 class AptPinningTest(LandscapeIsolatedTest):
 
-    helpers = [MonitorHelper, LogKeeperHelper]
+    helpers = [MonitorHelper]
 
     def setUp(self):
         super(AptPinningTest, self).setUp()
@@ -41,6 +41,16 @@ class AptPinningTest(LandscapeIsolatedTest):
         self.assertFalse(self.plugin.get_data())
         self.makeFile(dirname=preferences_directory, content="crap")
         self.assertTrue(self.plugin.get_data())
+
+    def test_exchange(self):
+        """
+        The L{AptPinning.exchange} method sends messages of type "apt-pinning".
+        """
+        self.mstore.set_accepted_types(["apt-pinning"])
+        self.plugin.exchange()
+        messages = self.mstore.get_pending_messages()
+        self.assertEquals(messages[0]["type"], "apt-pinning")
+        self.assertEquals(messages[0]["status"], False)
 
     def test_run(self):
         """
