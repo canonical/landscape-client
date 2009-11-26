@@ -330,7 +330,7 @@ REBOOT_REQUIRED = Message(
 
 APT_PREFERENCES = Message(
     "apt-preferences",
-    {"data": Dict(utf8, Unicode())})
+    {"data": Dict(Unicode(), Unicode())})
 
 message_schemas = {}
 for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,

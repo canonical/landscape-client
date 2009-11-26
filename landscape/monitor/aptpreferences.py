@@ -24,15 +24,15 @@ class AptPreferences(DataWatcher):
             fd = open(filename, "r")
             content = fd.read()
             fd.close()
-            return content
+            return unicode(content)
 
         preferences_filename = os.path.join(self._etc_apt_directory,
-                                            "preferences")
+                                            u"preferences")
         if os.path.exists(preferences_filename):
             data[preferences_filename] = read_file(preferences_filename)
 
         preferences_directory = os.path.join(self._etc_apt_directory,
-                                            "preferences.d")
+                                            u"preferences.d")
         if os.path.isdir(preferences_directory):
             for entry in os.listdir(preferences_directory):
                 filename = os.path.join(preferences_directory, entry)

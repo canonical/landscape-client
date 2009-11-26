@@ -65,10 +65,22 @@ class AptPreferencesTest(LandscapeIsolatedTest):
         type "apt-preferences".
         """
         self.mstore.set_accepted_types(["apt-preferences"])
+        main_preferences_filename = os.path.join(self.etc_apt_directory,
+                                                 "preferences")
+        self.makeFile(path=main_preferences_filename, content="crap")
+        preferences_directory = os.path.join(self.etc_apt_directory,
+                                             "preferences.d")
+        self.makeDir(path=preferences_directory)
+        sub_preferences_filename = self.makeFile(dirname=preferences_directory,
+                                                 content="foo")
         self.plugin.exchange()
         messages = self.mstore.get_pending_messages()
         self.assertEquals(messages[0]["type"], "apt-preferences")
-        self.assertEquals(messages[0]["data"], {})
+        self.assertEquals(messages[0]["data"],
+                          {main_preferences_filename: u"crap",
+                           sub_preferences_filename: u"foo"})
+        for filename in messages[0]["data"]:
+            self.assertTrue(isinstance(filename, unicode))
 
     def test_run(self):
         """
