@@ -407,7 +407,7 @@ def register(config, reactor=None):
         have totally mangled everything with mocker.  Otherwise bad things
         will happen.
     """
-    from twisted.internet.glib2reactor import install
+    from landscape.reactor import install
     install()
     if reactor is None:
         from twisted.internet import reactor

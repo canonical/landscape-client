@@ -864,7 +864,7 @@ time.sleep(999)
                                           errortoo=True)
 
         # Wait until the process starts up, trying the call a few times.
-        for i in range(10):
+        for i in range(50):
             if self.daemon.request_exit():
                 break
             time.sleep(0.1)
@@ -1180,6 +1180,7 @@ class WatchDogServiceTest(LandscapeTest):
         chown(path("messages"), 1234, 5678)
         chown(path("package"), 1234, 5678)
         chown(path("package/hash-id"), 1234, 5678)
+        chown(path("package/upgrade-tool"), 1234, 5678)
         chown(path("custom-graph-scripts"), 1234, 5678)
         chown(path("package/database"), 1234, 5678)
         chown(log_dir, 1234, 5678)

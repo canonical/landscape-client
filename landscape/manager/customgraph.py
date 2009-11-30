@@ -126,7 +126,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
 
         try:
             uid, gid = get_user_info(user)[:2]
-        except UnknownUserError, e:
+        except UnknownUserError:
            logging.error(u"Attempt to add graph with unknown user %s" %
                          user)
         else:
@@ -138,7 +138,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         self.registry.store.add_graph(graph_id, filename, user)
 
     def _format_exception(self, e):
-        return u"%s: %s" % (e.__class__.__name__, e)
+        return u"%s: %s" % (e.__class__.__name__, e.args[0])
 
     def exchange(self, urgent=False):
         self.registry.broker.call_if_accepted(
@@ -172,7 +172,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
             return
         try:
             data = float(output)
-        except ValueError, e:
+        except ValueError:
             if output:
                 raise InvalidFormatError(output)
             else:

@@ -10,7 +10,7 @@ import operator
 import shutil
 
 from twisted.internet.protocol import ProcessProtocol
-from twisted.internet.defer import Deferred, fail
+from twisted.internet.defer import Deferred, fail, maybeDeferred
 from twisted.internet.error import ProcessDone
 
 from landscape.lib.scriptcontent import build_script
@@ -37,7 +37,7 @@ def get_user_info(username=None):
         username_str = username.encode("utf-8")
         try:
             info = pwd.getpwnam(username_str)
-        except KeyError, e:
+        except KeyError:
             raise UnknownUserError(u"Unknown user '%s'" % username)
         uid = info.pw_uid
         gid = info.pw_gid
@@ -73,8 +73,8 @@ class ProcessFailedError(Exception):
 
 class UnknownInterpreterError(Exception):
     """Raised when the interpreter specified to run a script is invalid.
-           
-       @ivar interpreter: the interpreter specified for the script.
+
+    @ivar interpreter: the interpreter specified for the script.
     """
 
     def __init__(self, interpreter):
@@ -136,12 +136,14 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
             "execute-script", self._handle_execute_script)
 
     def _respond(self, status, data, opid, result_code=None):
-        message =  {"type": "operation-result",
-                    "status": status,
-                    # Let's decode result-text, replacing non-printable
-                    # characters
-                    "result-text": data.decode("utf-8", "replace"),
-                    "operation-id": opid}
+        if not isinstance(data, unicode):
+            # Let's decode result-text, replacing non-printable
+            # characters
+            data = data.decode("utf-8", "replace")
+        message = {"type": "operation-result",
+                   "status": status,
+                   "result-text": data,
+                   "operation-id": opid}
         if result_code:
             message["result-code"] = result_code
         return self.registry.broker.send_message(message, True)
@@ -167,7 +169,7 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
             raise
 
     def _format_exception(self, e):
-        return u"%s: %s" % (e.__class__.__name__, e)
+        return u"%s: %s" % (e.__class__.__name__, e.args[0])
 
     def _respond_success(self, data, opid):
         return self._respond(SUCCEEDED, data, opid)
@@ -218,9 +220,9 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
             "USER": user or "",
             "HOME": path or "",
             }
-        attachment_dir = ""
         old_umask = os.umask(0022)
-        try:
+
+        def run_with_attachments():
             if attachments:
                 attachment_dir = tempfile.mkdtemp()
                 env["LANDSCAPE_ATTACHMENTS"] = attachment_dir
@@ -237,22 +239,20 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
                 if uid is not None:
                     os.chown(attachment_dir, uid, gid)
 
-            result = self._run_script(
+            return self._run_script(
                 filename, uid, gid, path, env, time_limit)
-            return result.addBoth(
-                self._remove_script, filename, attachment_dir, old_umask)
-        except:
-            os.umask(old_umask)
-            raise
 
-    def _remove_script(self, result, filename, attachment_dir, old_umask):
+        result = maybeDeferred(run_with_attachments)
+        return result.addBoth(self._cleanup, filename, env, old_umask)
+
+    def _cleanup(self, result, filename, env, old_umask):
         try:
             os.unlink(filename)
         except:
             pass
-        if attachment_dir:
+        if "LANDSCAPE_ATTACHMENTS" in env:
             try:
-                shutil.rmtree(attachment_dir)
+                shutil.rmtree(env["LANDSCAPE_ATTACHMENTS"])
             except:
                 pass
         os.umask(old_umask)
@@ -307,7 +307,8 @@ class ProcessAccumulationProtocol(ProcessProtocol):
             if reason.check(ProcessDone):
                 self.result_deferred.callback(data)
             else:
-                self.result_deferred.errback(ProcessFailedError(data, exit_code))
+                self.result_deferred.errback(ProcessFailedError(data,
+                                                                exit_code))
 
     def _cancel(self):
         """

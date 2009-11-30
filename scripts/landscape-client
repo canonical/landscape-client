@@ -13,7 +13,7 @@ from landscape.lib.fd import clean_fds
 clean_fds()
 
 # This is needed for DBUS listeners to work.
-from twisted.internet.glib2reactor import install
+from landscape.reactor import install
 install()
 
 from landscape.watchdog import run
