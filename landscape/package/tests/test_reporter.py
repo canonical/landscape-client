@@ -891,7 +891,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
                                 [{"type": "packages",
                                   "not-available": [(1, 3)]}])
 
-            self.assertEquals(sorted(self.store.get_available()), [])
+            self.assertEquals(self.store.get_available(), [])
 
         result = self.reporter.detect_changes()
         return result.addCallback(got_result)
@@ -909,7 +909,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
             self.assertMessages(message_store.get_pending_messages(),
                                 [{"type": "packages", "installed": [1]}])
 
-            self.assertEquals(sorted(self.store.get_installed()), [1])
+            self.assertEquals(self.store.get_installed(), [1])
 
         result = self.reporter.detect_changes()
         return result.addCallback(got_result)
@@ -942,7 +942,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
             self.assertMessages(message_store.get_pending_messages(),
                                 [{"type": "packages", "not-installed": [1]}])
 
-            self.assertEquals(sorted(self.store.get_installed()), [])
+            self.assertEquals(self.store.get_installed(), [])
 
         result = self.reporter.detect_changes()
         return result.addCallback(got_result)
@@ -978,7 +978,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
                                 [{"type": "packages",
                                   "available-upgrades": [2]}])
 
-            self.assertEquals(sorted(self.store.get_available_upgrades()), [2])
+            self.assertEquals(self.store.get_available_upgrades(), [2])
 
         result = self.reporter.detect_changes()
         return result.addCallback(got_result)
@@ -996,9 +996,206 @@ class PackageReporterTest(LandscapeIsolatedTest):
                                 [{"type": "packages",
                                   "not-available-upgrades": [2]}])
 
-            self.assertEquals(sorted(self.store.get_available_upgrades()), [])
+            self.assertEquals(self.store.get_available_upgrades(), [])
 
         result = self.reporter.detect_changes()
+        return result.addCallback(got_result)
+
+    def test_detect_changes_with_locked(self):
+        """
+        If Smart indicates locked packages we didn't know about, report
+        them to the server.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+
+        self.facade.set_package_lock("name1")
+        self.facade.set_package_lock("name2", ">=", "version2")
+
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2})
+        self.store.add_available([1, 2])
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "packages", "locked": [1, 2]}])
+            self.assertEquals(sorted(self.store.get_locked()), [1, 2])
+
+        result = self.reporter.detect_changes()
+        return result.addCallback(got_result)
+
+    def test_detect_changes_with_locked_and_ranges(self):
+        """
+        Ranges are used when reporting changes to 3 or more locked packages
+        having consecutive ids.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+
+        self.facade.set_package_lock("name1")
+        self.facade.set_package_lock("name2", ">=", "version2")
+        self.facade.set_package_lock("name3", "<", "version4")
+
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
+        self.store.add_available([1, 2, 3])
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "packages", "locked": [(1, 3)]}])
+            self.assertEquals(sorted(self.store.get_locked()), [1, 2, 3])
+
+        result = self.reporter.detect_changes()
+        return result.addCallback(got_result)
+
+    def test_detect_changes_with_locked_with_unknown_hash(self):
+        """
+        Locked packages whose hashes are unknown don't get reported.
+        """
+        self.facade.set_package_lock("name1")
+
+        def got_result(result):
+            self.assertEquals(self.store.get_locked(), [])
+
+        result = self.reporter.detect_changes()
+        return result.addCallback(got_result)
+
+    def test_detect_changes_with_locked_and_previously_known(self):
+        """
+        We don't report locked packages we already know about.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+
+        self.facade.set_package_lock("name1")
+        self.facade.set_package_lock("name2", ">=", "version2")
+
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2})
+        self.store.add_available([1, 2])
+        self.store.add_locked([1])
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "packages", "locked": [2]}])
+
+            self.assertEquals(sorted(self.store.get_locked()), [1, 2])
+
+        result = self.reporter.detect_changes()
+        return result.addCallback(got_result)
+
+    def test_detect_changes_with_not_locked(self):
+        """
+        We report when a package was previously locked and isn't anymore.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+
+        self.store.set_hash_ids({HASH1: 1})
+        self.store.add_available([1])
+        self.store.add_locked([1])
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "packages", "not-locked": [1]}])
+            self.assertEquals(self.store.get_locked(), [])
+
+        result = self.reporter.detect_changes()
+        return result.addCallback(got_result)
+
+    def test_detect_changes_with_not_locked_and_ranges(self):
+        """
+        Ranges are used when reporting changes to 3 or more not locked packages
+        having consecutive ids.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+
+        self.store.add_locked([1, 2, 3])
+
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
+        self.store.add_available([1, 2, 3])
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "packages", "not-locked": [(1, 3)]}])
+            self.assertEquals(sorted(self.store.get_locked()), [])
+
+        result = self.reporter.detect_changes()
+        return result.addCallback(got_result)
+
+    def test_detect_package_locks_changes_with_create_locks(self):
+        """
+        If Smart indicates package locks we didn't know about, report
+        them to the server.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["package-locks"])
+
+        self.facade.set_package_lock("name")
+
+        logging_mock = self.mocker.replace("logging.info")
+        logging_mock("Queuing message with changes in known package locks:"
+                     " 1 created, 0 deleted.")
+        self.mocker.replay()
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "package-locks",
+                                  "created": [("name", "", "")]}])
+            self.assertEquals(self.store.get_package_locks(),
+                              [("name", "", "")])
+
+        result = self.reporter.detect_package_locks_changes()
+        return result.addCallback(got_result)
+
+    def test_detect_package_locks_changes_with_already_known_locks(self):
+        """
+        We don't report changes about locks we already know about.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["package-locks"])
+
+        self.facade.set_package_lock("name1")
+        self.facade.set_package_lock("name2", "<", "1.2")
+
+        self.store.add_package_locks([("name1", "", "")])
+
+        logging_mock = self.mocker.replace("logging.info")
+        logging_mock("Queuing message with changes in known package locks:"
+                     " 1 created, 0 deleted.")
+        self.mocker.replay()
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "package-locks",
+                                  "created": [("name2", "<", "1.2")]}])
+            self.assertEquals(sorted(self.store.get_package_locks()),
+                              [("name1", "", ""),
+                               ("name2", "<", "1.2")])
+
+        result = self.reporter.detect_package_locks_changes()
+        return result.addCallback(got_result)
+
+    def test_detect_package_locks_changes_with_deleted_locks(self):
+        """
+        If Smart indicates newly unset package locks, report them to the
+        server.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["package-locks"])
+
+        self.store.add_package_locks([("name1", "", "")])
+
+        logging_mock = self.mocker.replace("logging.info")
+        logging_mock("Queuing message with changes in known package locks:"
+                     " 0 created, 1 deleted.")
+        self.mocker.replay()
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "package-locks",
+                                  "deleted": [("name1", "", "")]}])
+            self.assertEquals(self.store.get_package_locks(), [])
+
+        result = self.reporter.detect_package_locks_changes()
         return result.addCallback(got_result)
 
     def test_run(self):
@@ -1006,7 +1203,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         self.mocker.order()
 
-        results = [Deferred() for i in range(7)]
+        results = [Deferred() for i in range(8)]
 
         reporter_mock.run_smart_update()
         self.mocker.result(results[0])
@@ -1028,6 +1225,9 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         reporter_mock.detect_changes()
         self.mocker.result(results[6])
+
+        reporter_mock.detect_package_locks_changes()
+        self.mocker.result(results[7])
 
         self.mocker.replay()
 
