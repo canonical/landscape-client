@@ -1,0 +1,138 @@
+#!/bin/sh -e
+
+help () {
+    cat <<EOF
+$0 [OPTION] ... <release>: build a landscape-client VM for the specified release
+
+Available options:
+
+  -m, --mirror <mirror>      The Ubuntu mirror to use to build the VM, and
+                             for the APT sources inside the VM itself.
+
+  -s, --server <host>        The hostname of the Landscape server the client
+                             should connect to.
+
+  -a, --account <account>    The name of the Landscape account to use.
+
+  -p, --password <password>  The password for the Landscape account.
+
+  -P, --profile <profile>    Package profile to use, can be server or desktop.
+
+EOF
+}
+
+OPTS=$(getopt -o hm:s:a:p:P: --long help,mirror:,server:,account:,password:,profile: -- "$@")
+
+if [ $? != 0 ]; then
+    exit 1
+fi
+
+eval set -- "$OPTS"
+
+MIRROR=http://archive.ubuntu.com/ubuntu
+SERVER=staging.landscape.canonical.com
+ACCOUNT=landscape-devel
+PASSWORD=
+PROFILE=server
+
+while true ; do
+    case "$1" in
+	-h|--help) help; shift ;;
+	-m|--mirror) MIRROR=$2; shift 2 ;;
+	-s|--server) SERVER=$2; shift 2;;
+	-a|--account) ACCOUNT=$2; shift 2;;
+	-p|--password) PASSWORD=$2; shift 2;;
+	-P|--profile) PROFILE=$2; shift 2;;
+	--) shift ; break ;;
+	*) echo "Internal error!" ; exit 1 ;;
+    esac
+done
+
+if [ "$1" = "" ]; then
+    help
+    exit
+fi
+
+RELEASE=$1
+TOPDIR=$(pwd)/build/$RELEASE
+SSH_KEY=$TOPDIR/ssh_key
+SSH_PORT=3322
+PPA=landscape/ppa
+
+rm -fR $TOPDIR
+mkdir -p $TOPDIR
+ssh-keygen -N '' -f $SSH_KEY
+
+cd $TOPDIR
+
+cat > config <<EOF
+[client]
+url = https://${SERVER}/message-system
+computer_title = ${RELEASE} test VM $$
+data_path = /var/lib/landscape/client
+script_users = ALL
+ping_url = http://${SERVER}/ping
+include_manager_plugins = ScriptExecution
+account_name = ${ACCOUNT}
+registration_password = ${PASSWORD}
+#log_level = debug
+EOF
+
+cat > script-wrapper <<EOF
+#!/bin/sh -e
+chroot \$1 /root/script
+EOF
+chmod 755 script-wrapper
+
+cat> ppa-key <<EOF
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: SKS 1.0.10
+
+mI0ESXN/egEEAOgRYISU9dnQm4BB5ZEEwKT+NKUDNd/DhMYdtBMw9Yk7S5cyoqpbtwoPJVzK
+AXxq+ng5e3yYypSv98pLMr5UF09FGaeyGlD4s1uaVFWkFCO4jsTg7pWIY6qzO/jMxB5+Yu/G
+0GjWQMNKxFk0oHMa0PhNBZtdPacVz65mOVmCsh/lABEBAAG0G0xhdW5jaHBhZCBQUEEgZm9y
+IExhbmRzY2FwZYi2BBMBAgAgBQJJc396AhsDBgsJCAcDAgQVAggDBBYCAwECHgECF4AACgkQ
+boWobkZStOb+rwP+ONKUWeX+MTIPqGWkknBPV7jm8nyyIUojC4IhS+9YR6GYnn0hMABSkEHm
+IV73feKmrT2GESYI1UdYeKiOkWsPN/JyBk+eTvKet0qsw5TluqiHSW+LEi/+zUyrS3dDMX3o
+yaLgYa+UkjIyxnaKLkQuCiS+D+fYwnJulIkhaKObtdE=
+=UwRd
+-----END PGP PUBLIC KEY BLOCK-----
+EOF
+
+cat > script <<EOF
+#!/bin/sh -e
+chown landscape /etc/landscape/client.conf
+chmod 600 /etc/landscape/client.conf
+apt-key add /root/ppa-key
+echo "RUN=1" > /etc/default/landscape-client
+EOF
+chmod 755 script
+
+cat > manifest <<EOF
+ppa-key /root
+script /root/script
+config /etc/landscape/client.conf
+EOF
+#/etc/landscape/certs/sample_ca.crt /etc/landscape/client.conf.ssl_public_key
+
+cat > ssh <<EOF
+#!/bin/sh
+exec ssh -p $SSH_PORT -i $SSH_KEY -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@localhost
+EOF
+chmod 755 ssh
+
+cat > run <<EOF
+#!/bin/sh
+exec kvm --redir tcp:$SSH_PORT::22 -m 1280 -smp 1 -drive file=$TOPDIR/ubuntu-kvm/disk0.qcow2 "$@"
+EOF
+chmod 755 run
+
+ADDPKGS="--addpkg=landscape-client --addpkg=openssh-server"
+
+if [ "$PROFILE" = "server" ]; then
+    ADDPKGS="$ADDPKGS --addpkg apache2-mpm-prefork --addpkg postgresql --addpkg postfix"
+else
+    ADDPKGS="$ADDPKGS --addpkg ubuntu-desktop"
+fi
+
+sudo ubuntu-vm-builder kvm "$RELEASE" --mirror="$MIRROR" --ppa="$PPA" $ADDPKGS --execscript=./script-wrapper --copy=manifest --ssh-key=${SSH_KEY}.pub
