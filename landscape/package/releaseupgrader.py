@@ -143,7 +143,8 @@ class ReleaseUpgrader(PackageTaskHandler):
         @param tarball_filename: The filename of the upgrade-tool tarball.
         """
         tf = tarfile.open(tarball_filename, "r:gz")
-        tf.extractall(path=self._config.upgrade_tool_directory)
+        for member in tf.getmembers():
+            tf.extract(member, path=self._config.upgrade_tool_directory)
         return succeed(None)
 
     def upgrade(self, code_name, allow_third_party, debug, operation_id):
