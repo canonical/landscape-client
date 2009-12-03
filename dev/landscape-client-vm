@@ -9,6 +9,14 @@ Available options:
   -m, --mirror <mirror>      The Ubuntu mirror to use to build the VM, and
                              for the APT sources inside the VM itself.
 
+                             If you want to use apt-proxy, you have to modify the
+                             apt-proxy-v2.conf file to make apt-proxy listen to
+                             your actual network interface address, instead of
+                             the loopback one. For example:
+
+                             ;; Server IP to listen on
+                             address = 192.168.1.162
+
   -s, --server <host>        The hostname of the Landscape server the client
                              should connect to.
 
