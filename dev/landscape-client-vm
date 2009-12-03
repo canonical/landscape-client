@@ -26,6 +26,23 @@ Available options:
 
   -P, --profile <profile>    Package profile to use, can be server or desktop.
 
+For example, this script can be invoked like this:
+
+./dev/landscape-client-vm --password <LANDSCAPE_DEVEL_ACCOUNT_PW> intrepid
+
+where <LANDSCAPE_DEVEL_ACCOUNT_PW> is the account password of the landscape-devel
+account on the Landscape staging server (or you can specify another account with
+the --account parameter).
+
+The built VM will be stored under ./build/intrepid along with some other
+files. To launch the VM, cd to ./build/intrepid and issue:
+
+./run
+
+Once it's booted you can log into it with:
+
+./ssh
+
 EOF
 }
 
