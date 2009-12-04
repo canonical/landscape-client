@@ -1,5 +1,4 @@
 import os
-import base64
 import unittest
 import signal
 import tarfile
