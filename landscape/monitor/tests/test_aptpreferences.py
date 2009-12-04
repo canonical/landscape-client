@@ -38,18 +38,18 @@ class AptPreferencesTest(LandscapeIsolatedTest):
 
     def test_get_data_with_empty_preferences_directory(self):
         """
-        L{AptPreferences.get_data} returns an empty C{dict} if the APT preference
-        directory is present but empty.
+        L{AptPreferences.get_data} returns an empty C{dict} if the APT
+        preference directory is present but empty.
         """
         preferences_directory = os.path.join(self.etc_apt_directory,
                                              "preferences.d")
         self.makeDir(path=preferences_directory)
-        self.assertEquals(self.plugin.get_data(), {})
+        self.assertEquals(self.plugin.get_data(), None)
 
     def test_get_data_with_preferences_directory(self):
         """
-        L{AptPreferences.get_data} includes the contents of all the file in the APT
-        preferences directory.
+        L{AptPreferences.get_data} includes the contents of all the file in the
+        APT preferences directory.
         """
         preferences_directory = os.path.join(self.etc_apt_directory,
                                              "preferences.d")
