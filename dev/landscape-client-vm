@@ -62,7 +62,7 @@ PROFILE=server
 
 while true ; do
     case "$1" in
-	-h|--help) help; shift ;;
+	-h|--help) help; exit 1; shift ;;
 	-m|--mirror) MIRROR=$2; shift 2 ;;
 	-s|--server) SERVER=$2; shift 2;;
 	-a|--account) ACCOUNT=$2; shift 2;;
