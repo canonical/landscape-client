@@ -73,6 +73,9 @@ class RegistrationTest(LandscapeTest):
     def test_registration_password(self):
         self.check_config_property("registration_password")
 
+    def test_client_tags(self):
+        self.check_config_property("tags")
+
     def test_server_initiated_id_changing(self):
         """
         The server must be able to ask a client to change its secure
@@ -143,7 +146,8 @@ class RegistrationTest(LandscapeTest):
                               "computer_title": "Computer Title",
                               "account_name": "account_name",
                               "registration_password": None,
-                              "hostname": "ooga.local"}
+                              "hostname": "ooga.local",
+                              "tags": None,}
                             ])
         self.assertEquals(self.logfile.getvalue().strip(),
                           "INFO: Queueing message to register with account "
@@ -161,11 +165,60 @@ class RegistrationTest(LandscapeTest):
                               "computer_title": "Computer Title",
                               "account_name": "account_name",
                               "registration_password": "SEKRET",
-                              "hostname": "ooga.local"}
+                              "hostname": "ooga.local",
+                              "tags": None,}
                             ])
         self.assertEquals(self.logfile.getvalue().strip(),
                           "INFO: Queueing message to register with account "
                           "'account_name' with a password.")
+
+    def test_queue_message_on_exchange_with_tags(self):
+        """
+        If the admin has defined tags for this computer, we send them to the
+        server.
+        """
+        self.mstore.set_accepted_types(["register"])
+        self.config.computer_title = "Computer Title"
+        self.config.account_name = "account_name"
+        self.config.registration_password = "SEKRET"
+        self.config.tags = u"computer,tag"
+        self.reactor.fire("pre-exchange")
+        self.assertMessages(self.mstore.get_pending_messages(),
+                            [{"type": "register",
+                              "computer_title": "Computer Title",
+                              "account_name": "account_name",
+                              "registration_password": "SEKRET",
+                              "hostname": "ooga.local",
+                              "tags": u"computer,tag"}
+                            ])
+        self.assertEquals(self.logfile.getvalue().strip(),
+                          "INFO: Queueing message to register with account "
+                          "'account_name' and tags computer,tag "
+                          "with a password.")
+
+    def test_queue_message_on_exchange_with_unicode_tags(self):
+        """
+        If the admin has defined tags for this computer, we send them to the
+        server.
+        """
+        self.mstore.set_accepted_types(["register"])
+        self.config.computer_title = "Computer Title"
+        self.config.account_name = "account_name"
+        self.config.registration_password = "SEKRET"
+        self.config.tags = u"prova\N{LATIN SMALL LETTER J WITH CIRCUMFLEX}o"
+        self.reactor.fire("pre-exchange")
+        self.assertMessages(self.mstore.get_pending_messages(),
+                            [{"type": "register",
+                              "computer_title": "Computer Title",
+                              "account_name": "account_name",
+                              "registration_password": "SEKRET",
+                              "hostname": "ooga.local",
+                              "tags": u"prova\N{LATIN SMALL LETTER J WITH CIRCUMFLEX}o"}
+                            ])
+        self.assertEquals(self.logfile.getvalue().strip(),
+                          "INFO: Queueing message to register with account "
+                          "'account_name' and tags prova\xc4\xb5o "
+                          "with a password.")
 
     def test_queueing_registration_message_resets_message_store(self):
         """
@@ -343,7 +396,8 @@ class RegistrationTest(LandscapeTest):
                               "computer_title": "Computer Title",
                               "account_name": "account_name",
                               "registration_password": "SEKRET",
-                              "hostname": socket.getfqdn()}
+                              "hostname": socket.getfqdn(),
+                              "tags": None,}
                              ])
 
     def get_registration_handler_for_cloud(
@@ -389,7 +443,7 @@ class RegistrationTest(LandscapeTest):
         return handler
 
     def prepare_cloud_registration(self, handler, account_name=None,
-                                   registration_password=None):
+                                   registration_password=None, tags=None):
         # Set things up so that the client thinks it should register
         mstore = self.broker_service.message_store
         mstore.set_accepted_types(list(mstore.get_accepted_types())
@@ -398,6 +452,7 @@ class RegistrationTest(LandscapeTest):
         config.account_name = account_name
         config.registration_password = registration_password
         config.computer_title = None
+        config.tags = tags
         self.broker_service.identity.secure_id = None
         self.assertTrue(handler.should_register())
 
@@ -418,7 +473,8 @@ class RegistrationTest(LandscapeTest):
                        launch_index=0,
                        image_key=u"image1",
                        account_name=None,
-                       registration_password=None)
+                       registration_password=None,
+                       tags=None)
         message.update(kwargs)
         return message
 
@@ -460,6 +516,32 @@ class RegistrationTest(LandscapeTest):
         self.assertEquals(len(self.transport.payloads), 1)
         self.assertMessages(self.transport.payloads[0]["messages"],
                             [self.get_expected_cloud_message()])
+
+    def test_cloud_registration_with_invalid_tags(self):
+        """
+        Invalid tags in the configuration should result in the tags not being
+        sent to the server, and this fact logged.
+        """
+        self.log_helper.ignore_errors("Invalid tags provided for cloud "
+                                      "registration")
+        handler = self.get_registration_handler_for_cloud()
+        config = self.broker_service.config
+        self.prepare_cloud_registration(handler,
+            tags=u"<script>alert()</script>,hardy")
+
+        # metadata is fetched and stored at reactor startup:
+        self.reactor.fire("run")
+        self.broker_service.exchanger.exchange()
+        self.assertEquals(len(self.transport.payloads), 1)
+        self.assertMessages(self.transport.payloads[0]["messages"],
+                            [self.get_expected_cloud_message(tags=None)])
+        self.assertEquals(self.logfile.getvalue().strip(),
+                          "ERROR: Invalid tags provided for cloud "
+                          "registration.\n    "
+                          "INFO: Queueing message to register with OTP\n    "
+                          "INFO: Starting message exchange with "
+                          "https://example.com/message-system.\n    "
+                          "INFO: Message exchange completed in 0.00s.")
 
     def test_wrong_user_data(self):
         handler = self.get_registration_handler_for_cloud(
@@ -643,7 +725,8 @@ class RegistrationTest(LandscapeTest):
                               "computer_title": u"whatever",
                               "account_name": u"onward",
                               "registration_password": u"password",
-                              "hostname": socket.getfqdn()}])
+                              "hostname": socket.getfqdn(),
+                              "tags": None,}])
 
     def test_should_register_in_cloud(self):
         """
@@ -753,7 +836,6 @@ class IsCloudManagedTests(LandscapeTest):
         socket = socket_class()
         socket.connect((EC2_HOST, 80))
         socket.close()
-        
 
     def test_is_managed(self):
         """

@@ -472,6 +472,54 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.assertEquals(self.config.script_users,
                           "root, nobody, landscape")
 
+    def test_tags_not_defined_on_command_line(self):
+        """
+        If tags are not provided, the user should be prompted for them.
+        """
+        self.mocker.order()
+        script_mock = self.mocker.patch(self.script)
+        script_mock.show_help("You may provide tags for this computer e.g. "
+                              "server,hardy.")
+        script_mock.prompt("tags", "Tags", False)
+        self.mocker.replay()
+        self.script.query_tags()
+
+    def test_invalid_tags_entered_by_user(self):
+        """
+        If tags are not provided, the user should be prompted for them, and
+        they should be valid tags, if not the user should be prompted for them
+        again.
+        """
+        script_mock = self.mocker.patch(self.script)
+        script_mock.show_help("You may provide tags for this computer e.g. "
+                              "server,hardy.")
+        script_mock.prompt_get_input("Tags: ", False)
+        self.mocker.result(u"<script>alert();</script>")
+        script_mock.show_help("Tag names may only contain alphanumeric "
+                              "characters.")
+        script_mock.prompt_get_input("Tags: ", False)
+        self.mocker.result(u"london")
+        self.mocker.replay()
+        self.script.query_tags()
+
+    def test_tags_defined_on_command_line(self):
+        """
+        Tags defined on the command line can be verified by the user.
+        """
+        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
+        self.expect(raw_input_mock(ANY)).count(0)
+        self.mocker.replay()
+        self.config.load_command_line(["--tags", u"server,london"])
+        self.script.query_tags()
+        self.assertEquals(self.config.tags, u"server,london")
+
+    def test_invalid_tags_defined_on_command_line_raises_error(self):
+        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
+        self.expect(raw_input_mock(ANY)).count(0)
+        self.mocker.replay()
+        self.config.load_command_line(["--tags", u"<script>alert();</script>"])
+        self.assertRaises(ConfigurationError, self.script.query_tags)
+
     def test_show_header(self):
         help_snippet = "This script will"
         script_mock = self.mocker.patch(self.script)
@@ -488,6 +536,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         script_mock.query_registration_password()
         script_mock.query_proxies()
         script_mock.query_script_plugin()
+        script_mock.query_tags()
         self.mocker.replay()
 
         self.script.run()
@@ -525,7 +574,8 @@ class ConfigurationFunctionsTest(LandscapeTest):
                                  "http_proxy = http://old.proxy\n"
                                  "https_proxy = https://old.proxy\n"
                                  "url = http://url\n"
-                                 "include_manager_plugins = ScriptExecution"
+                                 "include_manager_plugins = ScriptExecution\n"
+                                 "tags = london, server"
                                  )
 
         raw_input = self.mocker.replace("__builtin__.raw_input",
@@ -541,6 +591,8 @@ class ConfigurationFunctionsTest(LandscapeTest):
         expect(raw_input(C("[http://old.proxy]"))).result("http://new.proxy")
         expect(raw_input(C("[https://old.proxy]"))).result("https://new.proxy")
         expect(raw_input(C("Enable script execution? [Y/n]"))).result("n")
+        expect(raw_input(C("Tags [london, server]: "))).result(
+            u"glasgow, laptop")
 
         # Negative assertion.  We don't want it called in any other way.
         expect(raw_input(ANY)).count(0)
@@ -550,7 +602,6 @@ class ConfigurationFunctionsTest(LandscapeTest):
         expect(print_text_mock(ANY)).count(0, None)
 
         self.mocker.replay()
-
         config = self.get_config(["--no-start", "--config", filename])
         setup(config)
         self.assertEquals(type(config), LandscapeSetupConfiguration)
@@ -564,6 +615,7 @@ class ConfigurationFunctionsTest(LandscapeTest):
         self.assertEquals(config.http_proxy, "http://new.proxy")
         self.assertEquals(config.https_proxy, "https://new.proxy")
         self.assertEquals(config.include_manager_plugins, "")
+        self.assertEquals(config.tags, u"glasgow, laptop")
 
     def test_silent_setup(self):
         """
@@ -806,7 +858,7 @@ account_name = account
         sysvconfig_mock.set_start_on_boot(True)
         sysvconfig_mock.restart_landscape()
         self.mocker.throw(ProcessError)
-        
+
         print_text_mock("Couldn't restart the Landscape client.", error=True)
         print_text_mock(CONTAINS("This machine will be registered"), error=True)
 
@@ -827,7 +879,7 @@ account_name = account
         sysvconfig_mock.set_start_on_boot(True)
         sysvconfig_mock.restart_landscape()
         self.mocker.throw(ProcessError)
-        
+
         print_text_mock("Couldn't restart the Landscape client.", error=True)
         print_text_mock(CONTAINS("This machine will be registered"), error=True)
 
@@ -1169,7 +1221,7 @@ account_name = account
             self.get_config(["--config", config_filename, "--silent",
                              "--import", "https://config.url"])
         except ImportOptionError, error:
-            self.assertEquals(str(error), 
+            self.assertEquals(str(error),
                               "Couldn't download configuration from "
                               "https://config.url: Server "
                               "returned HTTP code 501")
@@ -1192,7 +1244,7 @@ account_name = account
             self.get_config(["--config", config_filename, "--silent",
                              "--import", "https://config.url"])
         except ImportOptionError, error:
-            self.assertEquals(str(error), 
+            self.assertEquals(str(error),
                               "Couldn't download configuration from "
                               "https://config.url: Error 60: pycurl message")
         else:

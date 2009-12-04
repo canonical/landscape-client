@@ -14,6 +14,8 @@ from StringIO import StringIO
 
 from dbus.exceptions import DBusException
 
+from landscape.lib.tag import is_valid_tag
+
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.lib.dbus_util import (
     get_bus, NoReplyError, ServiceUnknownError, SecurityError)
@@ -139,6 +141,20 @@ class LandscapeSetupScript(object):
         lines = text.strip().splitlines()
         print_text("\n"+"".join([line.strip()+"\n" for line in lines]))
 
+    def prompt_get_input(self, msg, required):
+        """Prompt the user on the terminal for a value
+
+        @param msg: Message to prompt user with
+        @param required: True if value must be entered
+        """
+        while True:
+            value = raw_input(msg)
+            if value:
+                return value
+            elif not required:
+                break
+            self.show_help("This option is required to configure Landscape.")
+
     def prompt(self, option, msg, required=False):
         """Prompt the user on the terminal for a value.
 
@@ -153,14 +169,10 @@ class LandscapeSetupScript(object):
             msg += " [%s]: " % default
         else:
             msg += ": "
-        while True:
-            value = raw_input(msg)
-            if value:
-                setattr(self.config, option, value)
-                break
-            elif default or not required:
-                break
-            self.show_help("This option is required to configure Landscape.")
+        required = required and not (bool(default))
+        result = self.prompt_get_input(msg, required)
+        if result:
+            setattr(self.config, option, result)
 
     def password_prompt(self, option, msg, required=False):
         """Prompt the user on the terminal for a password and mask the value.
@@ -307,6 +319,37 @@ class LandscapeSetupScript(object):
                 included_plugins.remove("ScriptExecution")
         self.config.include_manager_plugins = ", ".join(included_plugins)
 
+    def _get_invalid_tags(self, tagnames):
+        """
+        Splits a string on , and checks the validity of each tag, returns any
+        invalid tags.
+        """
+        invalid_tags = []
+        if tagnames:
+           tags  = [tag.strip() for tag in tagnames.split(",")]
+           invalid_tags = [tag for tag in tags if not is_valid_tag(tag)]
+        return invalid_tags
+
+    def query_tags(self):
+        options = self.config.get_command_line_options()
+        if "tags" in options:
+            invalid_tags = self._get_invalid_tags(options["tags"])
+            if invalid_tags:
+                raise ConfigurationError("Invalid tags: %s" %
+                                         ", ".join(invalid_tags))
+            return
+
+        self.show_help("You may provide tags for this computer e.g. "
+                       "server,hardy.")
+        while True:
+            self.prompt("tags", "Tags", False)
+            if self._get_invalid_tags(self.config.tags):
+               self.show_help("Tag names may only contain alphanumeric "
+                              "characters.")
+               self.config.tags = None # Reset for the next prompt
+            else:
+                break
+
     def show_header(self):
         self.show_help(
             """
@@ -330,6 +373,7 @@ class LandscapeSetupScript(object):
         self.query_registration_password()
         self.query_proxies()
         self.query_script_plugin()
+        self.query_tags()
 
 
 def setup_init_script_and_start_client():
@@ -372,7 +416,7 @@ def setup(config):
     else:
         script = LandscapeSetupScript(config)
         script.run()
-    
+
     if config.ssl_public_key and config.ssl_public_key.startswith("base64:"):
         key_filename = config.get_config_filename() + ".ssl_public_key"
         print_text("Writing SSL public key to %s..." % key_filename)
@@ -411,7 +455,7 @@ def register(config, reactor=None):
     install()
     if reactor is None:
         from twisted.internet import reactor
-    
+
     # XXX: many of these reactor.stop() calls should also specify a non-0 exit
     # code, unless ok-no-register is passed.
 

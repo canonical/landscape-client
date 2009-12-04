@@ -140,9 +140,10 @@ REGISTER = Message(
     {"registration_password": Any(utf8, Constant(None)),
      "computer_title": utf8,
      "hostname": utf8,
-     "account_name": utf8},
+     "account_name": utf8,
+     "tags": Any(utf8, Constant(None))},
     # hostname wasn't around in old versions
-    optional=["registration_password", "hostname"])
+    optional=["registration_password", "hostname", "tags"])
 
 REGISTER_CLOUD_VM = Message(
     "register-cloud-vm",
@@ -158,7 +159,8 @@ REGISTER_CLOUD_VM = Message(
      "ramdisk_key": Unicode(),
      "launch_index": Int(),
      "image_key": Unicode(),
-     })
+     "tags": Any(utf8, Constant(None))},
+     optional=["tags"])
 
 TEMPERATURE = Message("temperature", {
     "thermal-zone": utf8,

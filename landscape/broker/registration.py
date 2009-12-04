@@ -9,6 +9,7 @@ from landscape.lib.twisted_util import gather_results
 from landscape.lib.bpickle import loads
 from landscape.lib.log import log_failure
 from landscape.lib.fetch import fetch, FetchError
+from landscape.lib.tag import is_valid_tag_list
 
 
 EC2_HOST = "169.254.169.254"
@@ -44,6 +45,7 @@ class Identity(object):
     @ivar computer_title: See L{BrokerConfiguration}.
     @ivar account_name: See L{BrokerConfiguration}.
     @ivar registration_password: See L{BrokerConfiguration}.
+    @ivar tags: See L{BrokerConfiguration}
     """
 
     secure_id = persist_property("secure-id")
@@ -51,6 +53,7 @@ class Identity(object):
     computer_title = config_property("computer_title")
     account_name = config_property("account_name")
     registration_password = config_property("registration_password")
+    tags = config_property("tags")
 
     def __init__(self, config, persist):
         """
@@ -203,9 +206,13 @@ class RegistrationHandler(object):
 
         if self._should_register:
             id = self._identity
-
             self._message_store.delete_all_messages()
             if self._cloud and self._ec2_data is not None:
+                tags = id.tags
+                if not is_valid_tag_list(tags):
+                    tags = None
+                    logging.error("Invalid tags provided for cloud "
+                                  "registration.")
                 if self._otp:
                     logging.info("Queueing message to register with OTP")
                     message = {"type": "register-cloud-vm",
@@ -213,39 +220,44 @@ class RegistrationHandler(object):
                                "hostname": socket.getfqdn(),
                                "account_name": None,
                                "registration_password": None,
-                               }
+                               "tags": tags}
                     message.update(self._ec2_data)
                     self._exchange.send(message)
                 elif id.account_name:
-                    logging.info("Queueing message to register with account "
-                                 "%r as an EC2 instance." % (id.account_name,))
+                    with_tags = ["", u"and tags %s " % tags][bool(tags)]
+                    logging.info(u"Queueing message to register with account %r %s"
+                                 "as an EC2 instance.." % (
+                                 id.account_name, with_tags,))
                     message = {"type": "register-cloud-vm",
                                "otp": None,
                                "hostname": socket.getfqdn(),
                                "account_name": id.account_name,
                                "registration_password": \
-                                   id.registration_password}
+                                   id.registration_password,
+                               "tags": tags}
                     message.update(self._ec2_data)
                     self._exchange.send(message)
                 else:
                     self._reactor.fire("registration-failed")
             elif id.account_name:
                 with_word = ["without", "with"][bool(id.registration_password)]
-                logging.info("Queueing message to register with account %r %s "
-                             "a password." % (id.account_name, with_word))
-
+                with_tags = ["", u"and tags %s " % id.tags][bool(id.tags)]
+                logging.info(u"Queueing message to register with account %r %s"
+                              "%s a password." % (id.account_name, with_tags,
+                              with_word))
                 message = {"type": "register",
                            "computer_title": id.computer_title,
                            "account_name": id.account_name,
                            "registration_password": id.registration_password,
-                           "hostname": socket.getfqdn()}
+                           "hostname": socket.getfqdn(),
+                           "tags": id.tags}
                 self._exchange.send(message)
             else:
                 self._reactor.fire("registration-failed")
 
     def _handle_set_id(self, message):
         """Registered handler for the C{"set-id"} event.
-        
+
         Record and start using the secure and insecure IDs from the given
         message.
 
