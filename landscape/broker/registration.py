@@ -226,7 +226,7 @@ class RegistrationHandler(object):
                 elif id.account_name:
                     with_tags = ["", u"and tags %s " % tags][bool(tags)]
                     logging.info(u"Queueing message to register with account %r %s"
-                                 "as an EC2 instance.." % (
+                                 "as an EC2 instance." % (
                                  id.account_name, with_tags,))
                     message = {"type": "register-cloud-vm",
                                "otp": None,

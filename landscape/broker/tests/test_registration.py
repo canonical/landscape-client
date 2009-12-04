@@ -493,7 +493,7 @@ class RegistrationTest(LandscapeTest):
         handler = self.get_registration_handler_for_cloud()
 
         config = self.broker_service.config
-        self.prepare_cloud_registration(handler)
+        self.prepare_cloud_registration(handler, tags=u"server,london")
 
         # metadata is fetched and stored at reactor startup:
         self.reactor.fire("run")
@@ -515,8 +515,8 @@ class RegistrationTest(LandscapeTest):
         # written like this
         self.assertEquals(len(self.transport.payloads), 1)
         self.assertMessages(self.transport.payloads[0]["messages"],
-                            [self.get_expected_cloud_message()])
-
+                            [self.get_expected_cloud_message(tags=u"server,london")])
+ 
     def test_cloud_registration_with_invalid_tags(self):
         """
         Invalid tags in the configuration should result in the tags not being
@@ -613,7 +613,8 @@ class RegistrationTest(LandscapeTest):
             instance_key=u"key1")
         self.prepare_cloud_registration(handler,
                                         account_name=u"onward",
-                                        registration_password=u"password")
+                                        registration_password=u"password",
+                                        tags=u"london,server")
 
         self.reactor.fire("run")
         self.broker_service.exchanger.exchange()
@@ -623,7 +624,13 @@ class RegistrationTest(LandscapeTest):
                             [self.get_expected_cloud_message(
                                 otp=None,
                                 account_name=u"onward",
-                                registration_password=u"password")])
+                                registration_password=u"password",
+                                tags=u"london,server")])
+        self.assertEquals(self.logfile.getvalue().strip(),
+           "INFO: Queueing message to register with account u'onward' and "
+           "tags london,server as an EC2 instance.\n    "
+           "INFO: Starting message exchange with http://localhost:91919.\n    "
+           "INFO: Message exchange completed in 0.00s.")
 
     def test_queueing_cloud_registration_message_resets_message_store(self):
         """

@@ -76,7 +76,7 @@ class BrokerConfiguration(Configuration):
                           help="Set this if your computer is in an EC2 cloud.")
         parser.add_option("--tags",
                           help="Comma separated list of tag names to be sent "
-                               "to the server")
+                               "to the server.")
         return parser
 
     @property

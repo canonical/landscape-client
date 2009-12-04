@@ -331,6 +331,7 @@ class LandscapeSetupScript(object):
         return invalid_tags
 
     def query_tags(self):
+        """Query tags from the user."""
         options = self.config.get_command_line_options()
         if "tags" in options:
             invalid_tags = self._get_invalid_tags(options["tags"])
