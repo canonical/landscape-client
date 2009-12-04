@@ -6,6 +6,7 @@ import shutil
 import logging
 import tarfile
 import cStringIO
+import ConfigParser
 
 from twisted.internet.protocol import ProcessProtocol
 from twisted.internet.defer import succeed, Deferred
@@ -145,6 +146,21 @@ class ReleaseUpgrader(PackageTaskHandler):
         tf = tarfile.open(tarball_filename, "r:gz")
         for member in tf.getmembers():
             tf.extract(member, path=self._config.upgrade_tool_directory)
+
+        # Fix a bug in the DistUpgrade.cfg.dapper file contained in
+        # the upgrade tool tarball
+        dapper_filename = os.path.join(self._config.upgrade_tool_directory,
+                                       "DistUpgrade.cfg.dapper")
+        if os.path.exists(dapper_filename):
+            config = ConfigParser.ConfigParser()
+            config.read(dapper_filename)
+            if not config.has_section("NonInteractive"):
+                config.add_section("NonInteractive")
+                config.set("NonInteractive", "ForceOverwrite", "no")
+                fd = open(dapper_filename, "w")
+                config.write(fd)
+                fd.close()
+
         return succeed(None)
 
     def upgrade(self, code_name, allow_third_party, debug, operation_id):
