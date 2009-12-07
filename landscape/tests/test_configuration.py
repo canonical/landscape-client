@@ -472,6 +472,51 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.assertEquals(self.config.script_users,
                           "root, nobody, landscape")
 
+    def test_query_script_users_defined_on_command_line_with_unknown_user(self):
+        pwnam_mock = self.mocker.replace("pwd.getpwnam")
+        pwnam_mock("root")
+        self.mocker.result(None)
+        pwnam_mock("nobody")
+        self.mocker.result(None)
+        pwnam_mock("landscape")
+        self.mocker.result(None)
+        pwnam_mock("unknown")
+        self.mocker.throw(KeyError())
+        self.mocker.replay()
+
+        self.config.load_command_line(
+            ["--script-users", "root, nobody, landscape, unknown",
+            "--include-manager-plugins", "ScriptPlugin"])
+        self.assertRaises(ConfigurationError, self.script.query_script_plugin)
+
+    def test_query_script_users_defined_on_command_line_with_ALL_user(self):
+        self.config.load_command_line(
+            ["--script-users", "ALL",
+            "--include-manager-plugins", "ScriptPlugin"])
+        self.script.query_script_plugin()
+        self.assertEquals(self.config.script_users,
+                          "ALL")
+
+    def test_query_script_users_defined_on_command_line_with_all_user(self):
+        self.config.load_command_line(
+            ["--script-users", "all",
+            "--include-manager-plugins", "ScriptPlugin"])
+        self.script.query_script_plugin()
+        self.assertEquals(self.config.script_users,
+                          "ALL")
+
+    def test_query_script_users_defined_on_command_line_with_all_and_extra_user(self):
+        self.config.load_command_line(
+            ["--script-users", "all, kevin",
+            "--include-manager-plugins", "ScriptPlugin"])
+        self.assertRaises(ConfigurationError, self.script.query_script_plugin)
+
+    def test_query_script_users_defined_on_command_line_with_ALL_and_extra_user(self):
+        self.config.load_command_line(
+            ["--script-users", "ALL, kevin",
+            "--include-manager-plugins", "ScriptPlugin"])
+        self.assertRaises(ConfigurationError, self.script.query_script_plugin)
+
     def test_tags_not_defined_on_command_line(self):
         """
         If tags are not provided, the user should be prompted for them.

@@ -9,6 +9,7 @@ import time
 import sys
 import os
 import getpass
+import pwd
 from ConfigParser import ConfigParser, Error as ConfigParserError
 from StringIO import StringIO
 
@@ -283,11 +284,35 @@ class LandscapeSetupScript(object):
         if not "https_proxy" in options:
             self.prompt("https_proxy", "HTTPS proxy URL")
 
+    def _normalize_users(self, users):
+        users = users.replace("all", "ALL")
+        return users.replace("All", "ALL")
+
+    def _get_invalid_users(self, users):
+        user_list = [user.strip() for user in users.split(",")]
+        if "ALL" in user_list:
+            if len(user_list) > 1:
+                raise ConfigurationError(
+                    "Extra users specified with ALL users")
+            user_list.remove("ALL")
+        invalid_users = []
+        for user in user_list:
+            try:
+                pwd.getpwnam(user)
+            except KeyError:
+                invalid_users.append(user)
+        return invalid_users
+
     def query_script_plugin(self):
         options = self.config.get_command_line_options()
         if "include_manager_plugins" in options and "script_users" in options:
+            options["script_users"] = self._normalize_users(
+                options["script_users"])
+            invalid_users = self._get_invalid_users(options["script_users"])
+            if invalid_users:
+                raise ConfigurationError("Unknown system users: %s" %
+                                         ", ".join(invalid_users))
             return
-
         self.show_help(
             """
             Landscape has a feature which enables administrators to run
