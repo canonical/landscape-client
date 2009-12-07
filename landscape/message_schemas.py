@@ -270,11 +270,21 @@ PACKAGES = Message(
     {"installed": package_ids_or_ranges,
      "available": package_ids_or_ranges,
      "available-upgrades": package_ids_or_ranges,
+     "locked": package_ids_or_ranges,
      "not-installed": package_ids_or_ranges,
      "not-available": package_ids_or_ranges,
-     "not-available-upgrades": package_ids_or_ranges},
-    optional=["installed", "available", "available-upgrades",
-              "not-available", "not-installed", "not-available-upgrades"])
+     "not-available-upgrades": package_ids_or_ranges,
+     "not-locked": package_ids_or_ranges},
+    optional=["installed", "available", "available-upgrades", "locked",
+              "not-available", "not-installed", "not-available-upgrades",
+              "not-locked"])
+
+package_locks = List(Tuple(utf8, utf8, utf8))
+PACKAGE_LOCKS = Message(
+    "package-locks",
+    {"created": package_locks,
+     "deleted": package_locks},
+    optional=["created", "deleted"])
 
 CHANGE_PACKAGES_RESULT = Message(
     "change-packages-result",
@@ -334,7 +344,7 @@ for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                HARDWARE_INVENTORY, LOAD_AVERAGE, MEMORY_INFO,
                RESYNCHRONIZE, MOUNT_ACTIVITY, MOUNT_INFO, FREE_SPACE,
                REGISTER, REGISTER_CLOUD_VM, TEMPERATURE, PROCESSOR_INFO,
-               USERS, PACKAGES,
+               USERS, PACKAGES, PACKAGE_LOCKS,
                CHANGE_PACKAGES_RESULT, UNKNOWN_PACKAGE_HASHES,
                ADD_PACKAGES, TEXT_MESSAGE, TEST, CUSTOM_GRAPH,
                REBOOT_REQUIRED]:

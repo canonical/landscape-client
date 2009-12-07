@@ -1,7 +1,8 @@
 import os
-import base64
 import unittest
 import signal
+import tarfile
+import ConfigParser
 
 from twisted.internet import reactor
 from twisted.internet.defer import succeed, fail, Deferred
@@ -16,12 +17,6 @@ from landscape.tests.helpers import (
     EnvironSaverHelper)
 from landscape.package.tests.helpers import SmartFacadeHelper
 from landscape.manager.manager import SUCCEEDED, FAILED
-
-
-SAMPLE_TARBALL = "H4sIAKoz00oAA+3RQQrCMBCF4Vl7ipygnbQzyXkCtlDoqtb72yKCbioIQc" \
-                 "T/2wxMsnjDa1qpTjfZ\nfZ8xuz7PB4mxS5b6mHrb9jmZS/D60USul7UsIc" \
-                 "i4DMPRv3fvP6ppx2mufNhecDI76N9f+4/q2knQ\nurHu/rz/c1nL6dshAA" \
-                 "AAAAAAAAAAAAAAAHzkBrUGOrYAKAAA\n"
 
 
 class ReleaseUpgraderConfigurationTest(unittest.TestCase):
@@ -167,13 +162,67 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         The L{ReleaseUpgrader.extract} method extracts the upgrade-tool tarball
         in the proper directory.
         """
-        tarball_filename = self.makeFile(base64.decodestring(SAMPLE_TARBALL))
+        original_filename = self.makeFile("data\n")
+        tarball_filename = self.makeFile()
+        tarball = tarfile.open(tarball_filename, "w:gz")
+        tarball.add(original_filename, arcname="file")
+        tarball.close()
+
         result = self.upgrader.extract(tarball_filename)
 
         def check_result(ignored):
             filename = os.path.join(self.config.upgrade_tool_directory, "file")
             self.assertTrue(os.path.exists(filename))
             self.assertFileContent(filename, "data\n")
+
+        result.addCallback(check_result)
+        return result
+
+    def test_extract_fixes_broken_dapper_config(self):
+        """
+        The L{ReleaseUpgrader.extract} method fixes a missing section in the
+        dapper config files included in the upgrade tool tarball.
+        """
+        original_filename = self.makeFile("[Files]\n"
+                                          "BackupExt=distUpgrade\n"
+                                          "LogDir=/var/log/dist-upgrade\n")
+        tarball_filename = self.makeFile()
+        tarball = tarfile.open(tarball_filename, "w:gz")
+        tarball.add(original_filename, arcname="DistUpgrade.cfg.dapper")
+        tarball.close()
+
+        result = self.upgrader.extract(tarball_filename)
+
+        def check_result(ignored):
+            dapper_filename = os.path.join(self.config.upgrade_tool_directory,
+                                           "DistUpgrade.cfg.dapper")
+            config = ConfigParser.ConfigParser()
+            config.read(dapper_filename)
+            self.assertFalse(config.getboolean("NonInteractive",
+                                               "ForceOverwrite"))
+
+        result.addCallback(check_result)
+        return result
+
+    def test_extract_does_not_change_good_dapper_config(self):
+        """
+        The L{ReleaseUpgrader.extract} method doesn't change the dapper config
+        file if it's not broken.
+        """
+        original_filename = self.makeFile("[NonInteractive]\n"
+                                          "ForceOverwrite=No\n")
+        tarball_filename = self.makeFile()
+        tarball = tarfile.open(tarball_filename, "w:gz")
+        tarball.add(original_filename, arcname="DistUpgrade.cfg.dapper")
+        tarball.close()
+
+        result = self.upgrader.extract(tarball_filename)
+
+        def check_result(ignored):
+            dapper_filename = os.path.join(self.config.upgrade_tool_directory,
+                                           "DistUpgrade.cfg.dapper")
+            self.assertFileContent(dapper_filename, "[NonInteractive]\n"
+                                                    "ForceOverwrite=No\n")
 
         result.addCallback(check_result)
         return result

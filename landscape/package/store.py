@@ -261,6 +261,62 @@ class PackageStore(HashIdStore):
         return [row[0] for row in cursor.fetchall()]
 
     @with_cursor
+    def get_locked(self, cursor):
+        """Get the package ids of all locked packages."""
+        cursor.execute("SELECT id FROM locked")
+        return [row[0] for row in cursor.fetchall()]
+
+    @with_cursor
+    def add_locked(self, cursor, ids):
+        """Add the given package ids to the list of locked packages."""
+        for id in ids:
+            cursor.execute("REPLACE INTO locked VALUES (?)", (id,))
+
+    @with_cursor
+    def remove_locked(self, cursor, ids):
+        id_list = ",".join(str(int(id)) for id in ids)
+        cursor.execute("DELETE FROM locked WHERE id IN (%s)" % id_list)
+
+    @with_cursor
+    def clear_locked(self, cursor):
+        """Remove all the package ids in the locked table."""
+        cursor.execute("DELETE FROM locked")
+
+    @with_cursor
+    def get_package_locks(self, cursor):
+        """Get all package locks."""
+        cursor.execute("SELECT name, relation, version FROM package_locks")
+        return [(row[0], row[1], row[2]) for row in cursor.fetchall()]
+
+    @with_cursor
+    def add_package_locks(self, cursor, locks):
+        """Add a list of package locks to the store.
+
+        @param locks: A C{list} of ternary tuples each one contains the
+            name, the relation and the version of the package lock to be added.
+        """
+        for name, relation, version in locks:
+            cursor.execute("REPLACE INTO package_locks VALUES (?, ?, ?)",
+                           (name, relation or "", version or "",))
+
+    @with_cursor
+    def remove_package_locks(self, cursor, locks):
+        """Remove a list of package locks from the store.
+
+        @param locks: A C{list} of ternary tuples each one contains the name,
+            the relation and the version of the package lock to be removed.
+        """
+        for name, relation, version in locks:
+            cursor.execute("DELETE FROM package_locks WHERE name=? AND "
+                           "relation=? AND version=?",
+                           (name, relation or "", version or ""))
+
+    @with_cursor
+    def clear_package_locks(self, cursor):
+        """Remove all package locks."""
+        cursor.execute("DELETE FROM package_locks")
+
+    @with_cursor
     def add_hash_id_request(self, cursor, hashes):
         hashes = list(hashes)
         cursor.execute("INSERT INTO hash_id_request (hashes, timestamp)"
@@ -403,6 +459,11 @@ def ensure_package_schema(db):
     #       try block.
     cursor = db.cursor()
     try:
+        cursor.execute("CREATE TABLE package_locks"
+                       " (name TEXT NOT NULL, relation TEXT, version TEXT,"
+                       " UNIQUE(name, relation, version))")
+        cursor.execute("CREATE TABLE locked"
+                       " (id INTEGER PRIMARY KEY)")
         cursor.execute("CREATE TABLE available"
                        " (id INTEGER PRIMARY KEY)")
         cursor.execute("CREATE TABLE available_upgrade"

@@ -148,6 +148,10 @@ class SmartFacade(object):
         return [pkg for pkg in self._get_ctrl().getCache().getPackages()
                 if isinstance(pkg, self._deb_package_type)]
 
+    def get_locked_packages(self):
+        """Get all packages in the channels matching the set locks."""
+        return smart.pkgconf.filterByFlag("lock", self.get_packages())
+
     def get_packages_by_name(self, name):
         """
         Get all available packages matching the provided name.
@@ -306,3 +310,50 @@ class SmartFacade(object):
         """
         self._get_ctrl()
         return smart.sysconf.get("channels")
+
+    def get_package_locks(self):
+        """Return all set package locks.
+
+        @return: A C{list} of ternary tuples, contaning the name, relation
+            and version details for each lock currently set on the system.
+        """
+        self._get_ctrl()
+        locks = []
+        locks_by_name = smart.pkgconf.getFlagTargets("lock")
+        for name in locks_by_name:
+            for condition in locks_by_name[name]:
+                relation = condition[0] or ""
+                version = condition[1] or ""
+                locks.append((name, relation, version))
+        return locks
+
+    def _validate_lock_condition(self, relation, version):
+        if relation and not version:
+            raise RuntimeError("Package lock version not provided")
+        if version and not relation:
+            raise RuntimeError("Package lock relation not provided")
+
+    def set_package_lock(self, name, relation=None, version=None):
+        """Set a new package lock.
+
+        Any package matching the given name and possibly the given version
+        condition will be locked.
+
+        @param name: The name a package must match in order to be locked.
+        @param relation: Optionally, the relation of the version condition the
+            package must satisfy in order to be considered as locked.
+        @param version: Optionally, the version associated with C{relation}.
+
+        @note: If used at all, the C{relation} and C{version} parameter must be
+           both provided.
+        """
+        self._validate_lock_condition(relation, version)
+        self._get_ctrl()
+        smart.pkgconf.setFlag("lock", name, relation, version)
+
+    def remove_package_lock(self, name, relation=(), version=()):
+        """Remove a package lock."""
+        self._validate_lock_condition(relation, version)
+        self._get_ctrl()
+        smart.pkgconf.clearFlag("lock", name=name, relation=relation,
+                                version=version)
