@@ -1,4 +1,3 @@
-import unittest
 import logging
 import pycurl
 import socket
@@ -195,6 +194,33 @@ class RegistrationTest(LandscapeTest):
                           "INFO: Queueing message to register with account "
                           "'account_name' and tags computer,tag "
                           "with a password.")
+
+    def test_queue_message_on_exchange_with_invalid_tags(self):
+        """
+        If the admin has defined tags for this computer, but they are not
+        valid, we drop them, and report an error.
+        """
+        self.log_helper.ignore_errors("Invalid tags provided for cloud "
+                                      "registration")
+        self.mstore.set_accepted_types(["register"])
+        self.config.computer_title = "Computer Title"
+        self.config.account_name = "account_name"
+        self.config.registration_password = "SEKRET"
+        self.config.tags = u"<script>alert()</script>"
+        self.reactor.fire("pre-exchange")
+        self.assertMessages(self.mstore.get_pending_messages(),
+                            [{"type": "register",
+                              "computer_title": "Computer Title",
+                              "account_name": "account_name",
+                              "registration_password": "SEKRET",
+                              "hostname": "ooga.local",
+                              "tags": None}
+                            ])
+        self.assertEquals(self.logfile.getvalue().strip(),
+                          "ERROR: Invalid tags provided for cloud "
+                          "registration.\n    "
+                          "INFO: Queueing message to register with account "
+                          "'account_name' with a password.")
 
     def test_queue_message_on_exchange_with_unicode_tags(self):
         """

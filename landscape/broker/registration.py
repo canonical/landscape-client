@@ -30,6 +30,7 @@ def persist_property(name):
         self._persist.set(name, value)
     return property(get, set)
 
+
 def config_property(name):
     def get(self):
         return getattr(self._config, name)
@@ -207,12 +208,12 @@ class RegistrationHandler(object):
         if self._should_register:
             id = self._identity
             self._message_store.delete_all_messages()
+            tags = id.tags
+            if not is_valid_tag_list(tags):
+                tags = None
+                logging.error("Invalid tags provided for cloud "
+                              "registration.")
             if self._cloud and self._ec2_data is not None:
-                tags = id.tags
-                if not is_valid_tag_list(tags):
-                    tags = None
-                    logging.error("Invalid tags provided for cloud "
-                                  "registration.")
                 if self._otp:
                     logging.info("Queueing message to register with OTP")
                     message = {"type": "register-cloud-vm",
@@ -241,7 +242,7 @@ class RegistrationHandler(object):
                     self._reactor.fire("registration-failed")
             elif id.account_name:
                 with_word = ["without", "with"][bool(id.registration_password)]
-                with_tags = ["", u"and tags %s " % id.tags][bool(id.tags)]
+                with_tags = ["", u"and tags %s " % tags][bool(tags)]
                 logging.info(u"Queueing message to register with account %r %s"
                               "%s a password." % (id.account_name, with_tags,
                               with_word))
@@ -250,7 +251,7 @@ class RegistrationHandler(object):
                            "account_name": id.account_name,
                            "registration_password": id.registration_password,
                            "hostname": socket.getfqdn(),
-                           "tags": id.tags}
+                           "tags": tags}
                 self._exchange.send(message)
             else:
                 self._reactor.fire("registration-failed")
