@@ -26,6 +26,8 @@ Available options:
 
   -P, --profile <profile>    Package profile to use, can be server or desktop.
 
+  -k, --ssl-key <key>        Specify an SSL key to be used in the client config.
+
 For example, this script can be invoked like this:
 
 ./dev/landscape-client-vm --password <LANDSCAPE_DEVEL_ACCOUNT_PW> intrepid
@@ -46,7 +48,7 @@ Once it's booted you can log into it with:
 EOF
 }
 
-OPTS=$(getopt -o hm:s:a:p:P: --long help,mirror:,server:,account:,password:,profile: -- "$@")
+OPTS=$(getopt -o hm:s:a:p:P:k: --long help,mirror:,server:,account:,password:,profile:,ssl-key: -- "$@")
 
 if [ $? != 0 ]; then
     exit 1
@@ -59,6 +61,7 @@ SERVER=staging.landscape.canonical.com
 ACCOUNT=landscape-devel
 PASSWORD=
 PROFILE=server
+SSL_KEY=
 
 while true ; do
     case "$1" in
@@ -68,6 +71,7 @@ while true ; do
 	-a|--account) ACCOUNT=$2; shift 2;;
 	-p|--password) PASSWORD=$2; shift 2;;
 	-P|--profile) PROFILE=$2; shift 2;;
+	-S|--ssl-key) SSL_KEY=$2; shift 2;;
 	--) shift ; break ;;
 	*) echo "Internal error!" ; exit 1 ;;
     esac
@@ -83,6 +87,7 @@ TOPDIR=$(pwd)/build/$RELEASE
 SSH_KEY=$TOPDIR/ssh_key
 SSH_PORT=3322
 PPA=landscape/ppa
+ROOTSIZE=8192
 
 rm -fR $TOPDIR
 mkdir -p $TOPDIR
@@ -102,6 +107,10 @@ account_name = ${ACCOUNT}
 registration_password = ${PASSWORD}
 #log_level = debug
 EOF
+
+if ! [ "$WITH_SSL" = "" ]; then
+    echo ssl_public_key = $SSL_KEY >> config
+fi
 
 cat > script-wrapper <<EOF
 #!/bin/sh -e
@@ -138,7 +147,10 @@ ppa-key /root
 script /root/script
 config /etc/landscape/client.conf
 EOF
-#/etc/landscape/certs/sample_ca.crt /etc/landscape/client.conf.ssl_public_key
+
+if [ "$WITH_SSL" = "yes" ]; then
+    echo /etc/landscape/certs/sample_ca.crt /etc/landscape/client.conf.ssl_public_key >> manifest
+fi
 
 cat > ssh <<EOF
 #!/bin/sh
@@ -160,4 +172,4 @@ else
     ADDPKGS="$ADDPKGS --addpkg ubuntu-desktop"
 fi
 
-sudo ubuntu-vm-builder kvm "$RELEASE" --mirror="$MIRROR" --ppa="$PPA" $ADDPKGS --execscript=./script-wrapper --copy=manifest --ssh-key=${SSH_KEY}.pub
+sudo ubuntu-vm-builder kvm "$RELEASE" --rootsize=$ROOTSIZE --mirror="$MIRROR" --ppa="$PPA" $ADDPKGS --execscript=./script-wrapper --copy=manifest --ssh-key=${SSH_KEY}.pub
