@@ -172,4 +172,8 @@ else
     ADDPKGS="$ADDPKGS --addpkg ubuntu-desktop"
 fi
 
-sudo ubuntu-vm-builder kvm "$RELEASE" --rootsize=$ROOTSIZE --mirror="$MIRROR" --ppa="$PPA" $ADDPKGS --execscript=./script-wrapper --copy=manifest --ssh-key=${SSH_KEY}.pub
+if [ -n "$TMPDIR" ]; then
+    TEMP_DIR_OPT="-t $TMPDIR"
+fi
+
+sudo ubuntu-vm-builder kvm "$RELEASE" --rootsize=$ROOTSIZE --mirror="$MIRROR" --ppa="$PPA" $ADDPKGS --execscript=./script-wrapper --copy=manifest --ssh-key=$SSH_KEY.pub $TEMP_DIR_OPT
