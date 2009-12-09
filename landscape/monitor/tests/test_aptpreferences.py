@@ -20,10 +20,10 @@ class AptPreferencesTest(LandscapeIsolatedTest):
 
     def test_get_data_without_apt_preferences_files(self):
         """
-        L{AptPreferences.get_data} returns an empty C{dict} if no APT
-        preferences file is detected.
+        L{AptPreferences.get_data} returns C{None} if no APT preferences file
+        is detected.
         """
-        self.assertEquals(self.plugin.get_data(), None)
+        self.assertIdentical(self.plugin.get_data(), None)
 
     def test_get_data_with_apt_preferences(self):
         """
@@ -38,13 +38,13 @@ class AptPreferencesTest(LandscapeIsolatedTest):
 
     def test_get_data_with_empty_preferences_directory(self):
         """
-        L{AptPreferences.get_data} returns an empty C{dict} if the APT
-        preference directory is present but empty.
+        L{AptPreferences.get_data} returns C{None} if the APT preference
+        directory is present but empty.
         """
         preferences_directory = os.path.join(self.etc_apt_directory,
                                              "preferences.d")
         self.makeDir(path=preferences_directory)
-        self.assertEquals(self.plugin.get_data(), None)
+        self.assertIdentical(self.plugin.get_data(), None)
 
     def test_get_data_with_preferences_directory(self):
         """
@@ -97,7 +97,7 @@ class AptPreferencesTest(LandscapeIsolatedTest):
         self.plugin.exchange()
         messages = self.mstore.get_pending_messages()
         self.assertEquals(messages[1]["type"], "apt-preferences")
-        self.assertEquals(messages[1]["data"], None)
+        self.assertIdentical(messages[1]["data"], None)
 
     def test_run(self):
         """
