@@ -70,7 +70,8 @@ class AptPreferencesTest(LandscapeIsolatedTest):
     def test_exchange(self):
         """
         If the system has some APT preferences data, a message of type
-        "apt-preferences" is sent.
+        C{apt-preferences} is sent. If the data then gets removed, a
+        further message with the C{data} field set to C{None} is sent.
         """
         self.mstore.set_accepted_types(["apt-preferences"])
         main_preferences_filename = os.path.join(self.etc_apt_directory,
@@ -90,6 +91,7 @@ class AptPreferencesTest(LandscapeIsolatedTest):
         for filename in messages[0]["data"]:
             self.assertTrue(isinstance(filename, unicode))
 
+        # Remove all APT preferences data from the system
         os.remove(main_preferences_filename)
         os.remove(sub_preferences_filename)
         self.plugin.exchange()
