@@ -455,6 +455,9 @@ class LandscapeSetupScriptTest(LandscapeTest):
                           "FooPlugin, ScriptExecution")
 
     def test_query_script_users_defined_on_command_line(self):
+        """
+        Confirm with the user for users specified for the ScriptPlugin.
+        """
         self.config.include_manager_plugins = "FooPlugin"
         self.mocker.order()
         script_mock = self.mocker.patch(self.script)
@@ -473,6 +476,10 @@ class LandscapeSetupScriptTest(LandscapeTest):
                           "root, nobody, landscape")
 
     def test_query_script_users_defined_on_command_line_with_unknown_user(self):
+        """
+        If several users are provided on the command line, we verify the users
+        and raise a ConfigurationError if any are unknown on this system.
+        """
         pwnam_mock = self.mocker.replace("pwd.getpwnam")
         pwnam_mock("root")
         self.mocker.result(None)
@@ -490,6 +497,9 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.assertRaises(ConfigurationError, self.script.query_script_plugin)
 
     def test_query_script_users_defined_on_command_line_with_ALL_user(self):
+        """
+        ALL is the special marker for all users.
+        """
         self.config.load_command_line(
             ["--script-users", "ALL",
             "--include-manager-plugins", "ScriptPlugin"])
@@ -498,6 +508,10 @@ class LandscapeSetupScriptTest(LandscapeTest):
                           "ALL")
 
     def test_query_script_users_defined_on_command_line_with_all_user(self):
+        """
+        If the user provides "all" this should be converted to ALL in the
+        configuration.
+        """
         self.config.load_command_line(
             ["--script-users", "all",
             "--include-manager-plugins", "ScriptPlugin"])
@@ -506,16 +520,40 @@ class LandscapeSetupScriptTest(LandscapeTest):
                           "ALL")
 
     def test_query_script_users_defined_on_command_line_with_all_and_extra_user(self):
+        """
+        If all and additional users are provided as the users on the command
+        line, this should raise an appropriate ConfigurationError.
+        """
         self.config.load_command_line(
             ["--script-users", "all, kevin",
             "--include-manager-plugins", "ScriptPlugin"])
         self.assertRaises(ConfigurationError, self.script.query_script_plugin)
 
     def test_query_script_users_defined_on_command_line_with_ALL_and_extra_user(self):
+        """
+        If ALL and additional users are provided as the users on the command
+        line, this should raise an appropriate ConfigurationError.
+        """
         self.config.load_command_line(
             ["--script-users", "ALL, kevin",
             "--include-manager-plugins", "ScriptPlugin"])
         self.assertRaises(ConfigurationError, self.script.query_script_plugin)
+
+    def test_invalid_user_entered_by_user(self):
+        """
+        """
+        script_mock = self.mocker.patch(self.script)
+        script_mock.show_help("You may provide tags for this computer e.g. "
+                              "server,hardy.")
+        script_mock.prompt_get_input("Tags: ", False)
+        self.mocker.result(u"<script>alert();</script>")
+        script_mock.show_help("Tag names may only contain alphanumeric "
+                              "characters.")
+        script_mock.prompt_get_input("Tags: ", False)
+        self.mocker.result(u"london")
+        self.mocker.replay()
+        self.script.query_tags()
+
 
     def test_tags_not_defined_on_command_line(self):
         """
