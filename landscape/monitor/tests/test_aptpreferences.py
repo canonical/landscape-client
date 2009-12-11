@@ -99,10 +99,26 @@ class AptPreferencesTest(LandscapeIsolatedTest):
         self.assertEquals(messages[1]["type"], "apt-preferences")
         self.assertIdentical(messages[1]["data"], None)
 
+    def test_exchange_only_once(self):
+        """
+        If the system has some APT preferences data, a message of type
+        C{apt-preferences} is sent. If the data then gets removed, a
+        further message with the C{data} field set to C{None} is sent.
+        """
+        self.mstore.set_accepted_types(["apt-preferences"])
+        preferences_filename = os.path.join(self.etc_apt_directory,
+                                            "preferences")
+        self.makeFile(path=preferences_filename, content="crap")
+        self.plugin.exchange()
+        messages = self.mstore.get_pending_messages()
+        self.assertEquals(len(messages), 1)
+        messages = self.mstore.get_pending_messages()
+        self.assertEquals(len(messages), 1)
+
     def test_run(self):
         """
-        If the server can accept them, the plugin should send C{apt-preferences}
-        urgent messages.
+        If the server can accept them, the plugin should send
+        C{apt-preferences} urgent messages.
         """
         self.mstore.set_accepted_types(["apt-preferences"])
         broker_mock = self.mocker.replace(self.remote)
