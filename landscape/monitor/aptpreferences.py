@@ -12,6 +12,7 @@ class AptPreferences(DataWatcher):
     message_type = "apt-preferences"
     message_key = "data"
     run_interval = 900 # 15 minutes
+    size_limit = 1048576 # 1 MByte
 
     def __init__(self, etc_apt_directory="/etc/apt"):
         self._etc_apt_directory = etc_apt_directory
@@ -45,6 +46,13 @@ class AptPreferences(DataWatcher):
 
         if data == {}:
             return None
+
+        item_size_limit = self.size_limit / len(data.keys())
+        for filename, contents in data.iteritems():
+            if len(filename) + len(contents) > item_size_limit:
+                truncated_contents_size = item_size_limit - len(filename)
+                data[filename] = data[filename][0:truncated_contents_size]
+
         return data
 
     def run(self):

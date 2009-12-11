@@ -59,6 +59,35 @@ class AptPreferencesTest(LandscapeIsolatedTest):
         self.assertEquals(self.plugin.get_data(), {filename1: "foo",
                                                    filename2: "bar"})
 
+    def test_get_data_with_one_big_file(self):
+        """
+        L{AptPreferences.get_data} truncates the contents of an APT preferences
+        files bigger than the size limit.
+        """
+        preferences_filename = os.path.join(self.etc_apt_directory,
+                                            "preferences")
+        limit = self.plugin.size_limit
+        self.makeFile(path=preferences_filename, content="a" * (limit + 1))
+        self.assertEquals(self.plugin.get_data(), {
+            preferences_filename: "a" * (limit - len(preferences_filename))})
+
+    def test_get_data_with_many_big_files(self):
+        """
+        L{AptPreferences.get_data} truncates the contents of individual APT
+        preferences files in the total size is bigger than the size limit.
+        """
+        preferences_directory = os.path.join(self.etc_apt_directory,
+                                             "preferences.d")
+        self.makeDir(path=preferences_directory)
+        limit = self.plugin.size_limit
+        filename1 = self.makeFile(dirname=preferences_directory,
+                                  content="a" * (limit / 2))
+        filename2 = self.makeFile(dirname=preferences_directory,
+                                  content="b" * (limit /2 ))
+        self.assertEquals(self.plugin.get_data(),
+                          {filename1: "a" * (limit / 2 - len(filename1)),
+                           filename2: "b" * (limit / 2 - len(filename2))})
+
     def test_exchange_without_apt_preferences_data(self):
         """
         If the system has no APT preferences data, no message is sent.
