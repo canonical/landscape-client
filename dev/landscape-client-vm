@@ -83,7 +83,7 @@ if [ "$1" = "" ]; then
 fi
 
 RELEASE=$1
-TOPDIR=$(pwd)/build/$RELEASE
+TOPDIR=$(pwd)/build/${RELEASE}-${PROFILE}
 SSH_KEY=$TOPDIR/ssh_key
 SSH_PORT=3322
 PPA=landscape/ppa
