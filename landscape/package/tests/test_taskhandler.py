@@ -403,7 +403,8 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         # Verify if the arguments to the reporter constructor were correct.
         self.assertEquals(type(store), PackageStore)
         self.assertEquals(type(facade), SmartFacade)
-        self.assertEquals(type(broker), RemoteBroker)
+        from landscape.package.taskhandler import LazyRemoteBroker
+        self.assertEquals(type(broker), LazyRemoteBroker)
         self.assertEquals(type(config), PackageTaskHandlerConfiguration)
 
         # Let's see if the store path is where it should be.

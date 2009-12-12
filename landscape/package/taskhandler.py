@@ -32,6 +32,23 @@ class PackageTaskHandlerConfiguration(Configuration):
         return os.path.join(self.package_directory, "hash-id")
 
 
+class LazyRemoteBroker(object):
+    """Wrapper class around L{RemoteBroker} providing lazy initialization.
+
+    This class is a wrapper around a regular L{RemoteBroker}. It creates
+    the remote broker object only when one of its attributes is first accessed.
+    """
+
+    def __init__(self, bus):
+        self._remote = None
+        self._bus = bus
+
+    def __getattr__(self, name):
+        if not self._remote:
+            self._remote = RemoteBroker(get_bus(self._bus))
+        return getattr(self._remote, name)
+
+
 class PackageTaskHandler(object):
 
     config_factory = PackageTaskHandlerConfiguration
@@ -192,7 +209,8 @@ def run_task_handler(cls, args, reactor=None):
 
     package_store = PackageStore(config.store_filename)
     package_facade = SmartFacade()
-    remote = RemoteBroker(get_bus(config.bus))
+#    remote = RemoteBroker(get_bus(config.bus))
+    remote = LazyRemoteBroker(config.bus)
 
     handler = cls(package_store, package_facade, remote, config)
 
