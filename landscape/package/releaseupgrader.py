@@ -38,6 +38,7 @@ class ReleaseUpgrader(PackageTaskHandler):
     config_factory = ReleaseUpgraderConfiguration
     queue_name = "release-upgrader"
     lsb_release_filename = LSB_RELEASE_FILENAME
+    landscape_ppa_url = "http://ppa.launchpad.net/landscape/ppa/ubuntu/"
 
     def make_operation_result_message(self, operation_id, status, text, code):
         """Convenience to create messages of type C{"operation-result"}."""
@@ -58,26 +59,27 @@ class ReleaseUpgrader(PackageTaskHandler):
 
         @param message: A message of type C{"release-upgrade"}.
         """
-        code_name = message["code-name"]
+        target_code_name = message["code-name"]
         operation_id = message["operation-id"]
-
         lsb_release_info = parse_lsb_release(self.lsb_release_filename)
+        current_code_name = lsb_release_info["code-name"]
 
-        if code_name == lsb_release_info["code-name"]:
-
+        if target_code_name == current_code_name:
             message = self.make_operation_result_message(
                 operation_id, FAILED,
-                "The system is already running %s." % code_name, 1)
-
+                "The system is already running %s." % target_code_name, 1)
             logging.info("Queuing message with release upgrade failure to "
                          "exchange urgently.")
-
             return self._broker.send_message(message, True)
 
         tarball_url = message["upgrade-tool-tarball-url"]
         signature_url = message["upgrade-tool-signature-url"]
         allow_third_party = message.get("allow-third-party", False)
         debug = message.get("debug", False)
+        if current_code_name == "dapper":
+            mode = "server"
+        else:
+            mode = None
         directory = self._config.upgrade_tool_directory
         tarball_filename = url_to_filename(tarball_url,
                                            directory=directory)
@@ -88,8 +90,10 @@ class ReleaseUpgrader(PackageTaskHandler):
         result.addCallback(lambda x: self.verify(tarball_filename,
                                                  signature_filename))
         result.addCallback(lambda x: self.extract(tarball_filename))
-        result.addCallback(lambda x: self.upgrade(code_name, allow_third_party,
-                                                  debug, operation_id))
+        result.addCallback(lambda x: self.tweak(current_code_name))
+        result.addCallback(lambda x: self.upgrade(
+            target_code_name, operation_id,
+            allow_third_party=allow_third_party, debug=debug, mode=mode))
         result.addCallback(lambda x: self.finish())
         result.addErrback(self.abort, operation_id)
         return result
@@ -146,36 +150,76 @@ class ReleaseUpgrader(PackageTaskHandler):
         tf = tarfile.open(tarball_filename, "r:gz")
         for member in tf.getmembers():
             tf.extract(member, path=self._config.upgrade_tool_directory)
+        return succeed(None)
 
-        # Fix a bug in the DistUpgrade.cfg.dapper file contained in
-        # the upgrade tool tarball
-        dapper_filename = os.path.join(self._config.upgrade_tool_directory,
-                                       "DistUpgrade.cfg.dapper")
-        if os.path.exists(dapper_filename):
+    def tweak(self, current_code_name):
+        """Tweak the files of the extracted tarballs to workaround known bugs.
+
+        @param current_code_name: The code-name of the current release.
+        """
+        if current_code_name == "dapper":
+            upgrade_tool_directory = self._config.upgrade_tool_directory
+            config_filename = os.path.join(upgrade_tool_directory,
+                                           "DistUpgrade.cfg.dapper")
             config = ConfigParser.ConfigParser()
-            config.read(dapper_filename)
+            config.read(config_filename)
+
+            # Fix a bug in the DistUpgrade.cfg.dapper file contained in
+            # the upgrade tool tarball
             if not config.has_section("NonInteractive"):
                 config.add_section("NonInteractive")
                 config.set("NonInteractive", "ForceOverwrite", "no")
-                fd = open(dapper_filename, "w")
-                config.write(fd)
-                fd.close()
+
+            # Workaround for Bug #174148, which prevents dbus from restarting
+            # after a dapper->hardy upgrade
+            if not config.has_section("Distro"):
+                config.add_section("Distro")
+            if not config.has_option("Distro", "PostInstallScripts"):
+                config.set("Distro", "PostInstallScripts", "./dbus/sh")
+            else:
+                scripts = config.get("Distro", "PostInstallScripts")
+                scripts += ", ./dbus.sh"
+                config.set("Distro", "PostInstallScripts", scripts)
+            fd = open(config_filename, "w")
+            config.write(fd)
+            fd.close()
+
+            # On dapper the upgrade-tool doesn't support the allow third party
+            # environment variable, so this trick is needed to make it possible
+            # to upgrade against testing client packages from the Landscape PPA
+            mirrors_filename = os.path.join(upgrade_tool_directory,
+                                            "mirrors.cfg")
+            fd = open(mirrors_filename, "a")
+            fd.write(self.landscape_ppa_url + "\n")
+            fd.close()
+
+            dbus_sh_filename = os.path.join(upgrade_tool_directory,
+                                            "dbus.sh")
+            fd = open(dbus_sh_filename, "w")
+            fd.write("#!/bin/sh\n"
+                     "/etc/init.d/dbus start\n")
+            fd.close()
+            os.chmod(dbus_sh_filename, 0755)
 
         return succeed(None)
 
-    def upgrade(self, code_name, allow_third_party, debug, operation_id):
+    def upgrade(self, code_name, operation_id, allow_third_party=False,
+                debug=False, mode=None):
         """Run the upgrade-tool command and send a report of the results.
 
         @param code_name: The code-name of the release to upgrade to.
+        @param operation_id: The activity id for this task.
         @param allow_third_party: Whether to enable non-official APT repo.
         @param debug: Whether to turn on debug level logging.
-        @param code_name: The code-name of the release to upgrade to.
-        @param operation_id: The activity id for this task.
+        @param mode: Optionally, the mode to run the upgrade-tool as. It
+            can be "server" or "desktop", and it's relevant only for dapper.
         """
         upgrade_tool_directory = self._config.upgrade_tool_directory
         upgrade_tool_filename = os.path.join(upgrade_tool_directory, code_name)
-        args = (upgrade_tool_filename, "--frontend",
-                "DistUpgradeViewNonInteractive")
+        args = [upgrade_tool_filename, "--frontend",
+                "DistUpgradeViewNonInteractive"]
+        if mode:
+            args.extend(["--mode", mode])
         env = os.environ.copy()
         if allow_third_party:
             env["RELEASE_UPRADER_ALLOW_THIRD_PARTY"] = "True"
