@@ -157,8 +157,9 @@ class ReleaseUpgrader(PackageTaskHandler):
 
         @param current_code_name: The code-name of the current release.
         """
+        upgrade_tool_directory = self._config.upgrade_tool_directory
+
         if current_code_name == "dapper":
-            upgrade_tool_directory = self._config.upgrade_tool_directory
             config_filename = os.path.join(upgrade_tool_directory,
                                            "DistUpgrade.cfg.dapper")
             config = ConfigParser.ConfigParser()
@@ -184,15 +185,6 @@ class ReleaseUpgrader(PackageTaskHandler):
             config.write(fd)
             fd.close()
 
-            # On dapper the upgrade-tool doesn't support the allow third party
-            # environment variable, so this trick is needed to make it possible
-            # to upgrade against testing client packages from the Landscape PPA
-            mirrors_filename = os.path.join(upgrade_tool_directory,
-                                            "mirrors.cfg")
-            fd = open(mirrors_filename, "a")
-            fd.write(self.landscape_ppa_url + "\n")
-            fd.close()
-
             dbus_sh_filename = os.path.join(upgrade_tool_directory,
                                             "dbus.sh")
             fd = open(dbus_sh_filename, "w")
@@ -200,6 +192,16 @@ class ReleaseUpgrader(PackageTaskHandler):
                      "/etc/init.d/dbus start\n")
             fd.close()
             os.chmod(dbus_sh_filename, 0755)
+
+        # On some releases the upgrade-tool doesn't support the allow third
+        # party environment variable, so this trick is needed to make it
+        # possible to upgrade against testing client packages from the
+        # Landscape PPA
+        mirrors_filename = os.path.join(upgrade_tool_directory,
+                                        "mirrors.cfg")
+        fd = open(mirrors_filename, "a")
+        fd.write(self.landscape_ppa_url + "\n")
+        fd.close()
 
         return succeed(None)
 
