@@ -239,7 +239,7 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
                                    "http://ppa.launchpad.net/landscape/"
                                    "ppa/ubuntu/\n")
 
-        result = self.upgrader.tweak("dapper")
+        result = self.upgrader.tweak("hardy")
         result.addCallback(check_result)
         return result
 
