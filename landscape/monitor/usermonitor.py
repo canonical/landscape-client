@@ -50,6 +50,7 @@ class UserMonitor(MonitorPlugin):
         """Resynchronize user and group data."""
         changes = UserChanges(self._persist, self._provider)
         changes.clear()
+        return self._run_detect_changes()
 
     def run(self, operation_id=None):
         return self.registry.broker.call_if_accepted(
