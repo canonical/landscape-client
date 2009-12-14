@@ -8,13 +8,14 @@ from landscape.lib.lock import lock_path
 from landscape.broker.remote import RemoteBroker
 
 from landscape.package.taskhandler import (
-    PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler)
+    PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler,
+    LazyRemoteBroker)
 from landscape.package.facade import SmartFacade
 from landscape.package.store import HashIdStore, PackageStore
 from landscape.package.tests.helpers import SmartFacadeHelper
 
 from landscape.tests.helpers import (
-    LandscapeIsolatedTest, RemoteBrokerHelper)
+    LandscapeTest, LandscapeIsolatedTest, RemoteBrokerHelper)
 from landscape.tests.mocker import ANY, ARGS, MATCH
 
 
@@ -352,7 +353,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         # passed in as a parameter.  We'll keep track of the arguments
         # given and verify them later.
         handler_args = []
-        handler_mock = HandlerMock(ANY, ANY, ANY, ANY)
+        HandlerMock(ANY, ANY, ANY, ANY)
         self.mocker.passthrough() # Let the real constructor run for testing.
         self.mocker.call(lambda *args: handler_args.extend(args))
 
@@ -382,9 +383,8 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
 
         try:
             # DO IT!
-            result = run_task_handler(HandlerMock,
-                                      ["--data-path", data_path,
-                                       "--bus", "session"])
+            run_task_handler(HandlerMock, ["--data-path", data_path,
+                                           "--bus", "session"])
 
             # reactor.stop() wasn't run yet, so it must fail right now.
             self.assertRaises(AssertionError, self.mocker.verify)
@@ -403,7 +403,7 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         # Verify if the arguments to the reporter constructor were correct.
         self.assertEquals(type(store), PackageStore)
         self.assertEquals(type(facade), SmartFacade)
-        self.assertEquals(type(broker), RemoteBroker)
+        self.assertEquals(type(broker), LazyRemoteBroker)
         self.assertEquals(type(config), PackageTaskHandlerConfiguration)
 
         # Let's see if the store path is where it should be.
@@ -491,3 +491,20 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
             self.assertIn("MyException", self.logfile.getvalue())
 
         return done.addCallback(everything_stopped)
+
+
+class LazyRemoteBrokerTest(LandscapeTest):
+
+
+    def test_wb_is_lazy(self):
+        """
+        The L{LazyRemoteBroker} class doesn't initialize the actual remote
+        broker until one of its attributes gets actually accessed.
+        """
+        self.broker = LazyRemoteBroker("bus")
+        self.assertIdentical(self.broker._remote, None)
+        get_bus_mock = self.mocker.replace("landscape.lib.dbus_util.get_bus")
+        get_bus_mock("bus")
+        self.mocker.result("bus_object")
+        self.mocker.replay()
+        self.assertEquals(self.broker.bus, "bus_object")
