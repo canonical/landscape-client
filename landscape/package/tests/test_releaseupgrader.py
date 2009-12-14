@@ -695,9 +695,9 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         result.addCallback(check_result)
         return result
 
-    def test_handle_release_upgrade_on_dapper(self):
+    def test_handle_release_upgrade_on_dapper_server(self):
         """
-        When running on Dapper, the L{ReleaseUpgrader.handle_release_upgrade}
+        On Dapper server, the L{ReleaseUpgrader.handle_release_upgrade}
         method calls sets the upgrade-tool running mode to "server".
         """
         calls = []
@@ -716,6 +716,44 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
 
         self.upgrader.lsb_release_filename = self.makeFile(
             "DISTRIB_CODENAME=dapper\n")
+        self.upgrader.xorg_conf_filename = "/I/Dont/Exist"
+
+        message = {"type": "release-upgrade",
+                   "code-name": "hardy",
+                   "upgrade-tool-tarball-url": "http://some/tarball",
+                   "upgrade-tool-signature-url": "http://some/sign",
+                   "operation-id": 100}
+
+        result = self.upgrader.handle_release_upgrade(message)
+
+        def check_result(ignored):
+            self.assertEquals(calls, ["upgrade"])
+
+        result.addCallback(check_result)
+        return result
+
+    def test_handle_release_upgrade_on_dapper_desktop(self):
+        """
+        On Dapper desktop, the L{ReleaseUpgrader.handle_release_upgrade}
+        method doesn't pass to the upgrade-tool any specific mode.
+        """
+        calls = []
+
+        def upgrade(code_name, operation_id, allow_third_party=False,
+                    debug=False, mode=None):
+            self.assertEquals(mode, None)
+            calls.append("upgrade")
+
+        self.upgrader.fetch = lambda x, y: succeed(None)
+        self.upgrader.verify = lambda x, y: None
+        self.upgrader.extract = lambda x: None
+        self.upgrader.tweak = lambda x: None
+        self.upgrader.upgrade = upgrade
+        self.upgrader.finish = lambda: None
+
+        self.upgrader.lsb_release_filename = self.makeFile(
+            "DISTRIB_CODENAME=dapper\n")
+        self.upgrader.xorg_conf_filename = self.makeFile("foo")
 
         message = {"type": "release-upgrade",
                    "code-name": "hardy",

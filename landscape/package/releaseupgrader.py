@@ -38,6 +38,7 @@ class ReleaseUpgrader(PackageTaskHandler):
     config_factory = ReleaseUpgraderConfiguration
     queue_name = "release-upgrader"
     lsb_release_filename = LSB_RELEASE_FILENAME
+    xorg_conf_filename = "/etc/X11/xorg.conf"
     landscape_ppa_url = "http://ppa.launchpad.net/landscape/ppa/ubuntu/"
 
     def make_operation_result_message(self, operation_id, status, text, code):
@@ -76,10 +77,14 @@ class ReleaseUpgrader(PackageTaskHandler):
         signature_url = message["upgrade-tool-signature-url"]
         allow_third_party = message.get("allow-third-party", False)
         debug = message.get("debug", False)
+        mode = None
         if current_code_name == "dapper":
-            mode = "server"
-        else:
-            mode = None
+            # On Dapper the upgrade tool must be passed "--mode server"
+            # when run on a server system. The way we detect this is
+            # simply check for the presence of an Xorg configuration file,
+            # which implies a desktop system.
+            if not os.path.exists(self.xorg_conf_filename):
+                mode = "server"
         directory = self._config.upgrade_tool_directory
         tarball_filename = url_to_filename(tarball_url,
                                            directory=directory)
