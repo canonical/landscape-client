@@ -263,7 +263,8 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
                                    "dbus.sh")
             self.assertFileContent(dbus_sh,
                                    "#!/bin/sh\n"
-                                   "/etc/init.d/dbus start\n")
+                                   "/etc/init.d/dbus start\n"
+                                   "sleep 10\n")
 
         result = self.upgrader.tweak("dapper")
         result.addCallback(check_result)

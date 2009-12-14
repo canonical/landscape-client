@@ -194,7 +194,8 @@ class ReleaseUpgrader(PackageTaskHandler):
                                             "dbus.sh")
             fd = open(dbus_sh_filename, "w")
             fd.write("#!/bin/sh\n"
-                     "/etc/init.d/dbus start\n")
+                     "/etc/init.d/dbus start\n"
+                     "sleep 10\n")
             fd.close()
             os.chmod(dbus_sh_filename, 0755)
 
