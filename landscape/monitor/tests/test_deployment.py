@@ -1,5 +1,6 @@
 from landscape.lib.persist import Persist
 from landscape.reactor import FakeReactor
+from landscape.manager.usermanager import UserManagerDBusObject
 from landscape.monitor.computerinfo import ComputerInfo
 from landscape.monitor.loadaverage import LoadAverage
 from landscape.monitor.deployment import MonitorService, MonitorConfiguration
@@ -53,6 +54,10 @@ class MonitorServiceTest(LandscapeIsolatedTest):
 class DeploymentBusTest(MonitorServiceTest):
 
     def test_dbus_reactor_transmitter_installed(self):
+        # This manager's DBus object is needed because assertTransmitterActive
+        # fires a resynchronize event and the monitor's callback registered
+        # for it will look for this object.
+        UserManagerDBusObject(self.broker_service.bus, shadow_file=None)
         return assertTransmitterActive(self, self.broker_service,
                                        self.monitor.reactor)
 
