@@ -8,11 +8,11 @@ XS-Python-Version: >= 2.4, << 2.7
 
 Package: landscape-common
 Architecture: any
-Pre-Depends: python, python-gobject
 Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          python-dbus | python2.4-dbus,
          python-gnupginterface,
          python-twisted-core,
+         python-gobject,
          python-apt,
          ca-certificates,
          perl-modules,
@@ -31,7 +31,6 @@ XB-Python-Version: ${python:Versions}
 
 Package: landscape-client
 Architecture: any
-Pre-Depends: python
 Depends: ${python:Depends}, ${misc:Depends},
          python-pycurl | python2.4-pycurl,
          python-twisted-web,
