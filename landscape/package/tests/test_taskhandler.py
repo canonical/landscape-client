@@ -5,8 +5,6 @@ from twisted.internet.defer import Deferred, fail
 
 from landscape.lib.lock import lock_path
 
-from landscape.broker.remote import RemoteBroker
-
 from landscape.package.taskhandler import (
     PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler,
     LazyRemoteBroker)
