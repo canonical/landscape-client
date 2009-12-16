@@ -348,8 +348,8 @@ class LandscapeSetupScript(object):
                     if not invalid_users:
                         break
                     else:
-                        system.show_help("Unknown system users: %s" %
-                                         ",".join(invalid_users))
+                        self.show_help("Unknown system users: %s" %
+                                       ",".join(invalid_users))
                         self.config.script_users = None
         else:
             if "ScriptExecution" in included_plugins:
