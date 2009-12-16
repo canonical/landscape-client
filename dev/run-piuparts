@@ -1,0 +1,97 @@
+#!/bin/sh -e
+
+
+help () {
+    cat <<EOF
+$0 [OPTION]: run piuparts against landscape-client packages built from a branch
+
+Available options:
+
+  -m, --mirror <mirror>      The Ubuntu mirror to use to build the pbuilder
+                             used by piuparts chroot.
+EOF
+}
+
+OPTS=$(getopt -o hm: --long help,mirror: -- "$@")
+
+if [ $? != 0 ]; then
+    exit 1
+fi
+
+eval set -- "$OPTS"
+
+MIRROR=http://archive.ubuntu.com/ubuntu
+
+while true ; do
+    case "$1" in
+	-h|--help) help; exit 1; shift ;;
+	-m|--mirror) MIRROR=$2; shift 2 ;;
+	--) shift ; break ;;
+	*) echo "Internal error!" ; exit 1 ;;
+    esac
+done
+
+TOPDIR=$(pwd)/build/piuparts
+RELEASE=$(lsb_release -cs)
+SOURCE=$(dpkg-parsechangelog |grep "^Source:" | cut -f 2 -d " ")
+VERSION=$(dpkg-parsechangelog |grep "^Version:" | cut -f 2 -d " ")
+ARCH=$(dpkg --print-architecture)
+
+# Export the sources
+rm -rf $TOPDIR
+mkdir -p $TOPDIR
+bzr export $TOPDIR/$SOURCE-$VERSION
+
+# Build the package
+cd $TOPDIR/$SOURCE-$VERSION
+dpkg-buildpackage -b -uc -us
+cd $TOPDIR
+
+BASETGZ=/var/cache/pbuilder/${SOURCE}-${RELEASE}-${ARCH}.tgz
+if ! [ -e "$BASETGZ" ]; then
+    # Create the pbuilder chroot
+    COMPONENTS="main universe multiverse restricted"
+    OTHERMIRROR="deb ${MIRROR} ${RELEASE}-updates ${COMPONENTS}"
+
+    if [ "${RELEASE}" = "hardy" ] || [ "${RELEASE}" = "dapper" ]; then
+        LANDSCAPE_REPO="deb http://landscape.canonical.com/packages/${RELEASE} ./"
+        OTHERMIRROR="${OTHERMIRROR} | ${LANDSCAPE_REPO}"
+    fi
+
+    sudo pbuilder \
+        --create \
+        --distribution ${RELEASE} \
+        --mirror ${MIRROR} \
+        --components "${COMPONENTS}" \
+        --othermirror "${OTHERMIRROR}" \
+        --basetgz ${BASETGZ}
+else
+    # Update the pbuilder chroot
+    sudo pbuilder \
+        --update \
+        --basetgz ${BASETGZ}
+fi
+
+# Run piuparts
+mkdir -p ${TOPDIR}/scripts/
+
+cat > ${TOPDIR}/scripts/post_purge_policy_kit <<EOF
+#!/bin/sh
+rm -rf /var/lib/PolicyKit/user-haldaemon.auths
+rm -rf /usr/lib/python2.6/dist-packages/twisted
+rm -rf /var/lib/update-rc.d/dbus
+rm -rf /var/lib/update-rc.d/hal
+rm -rf /var/lib/update-rc.d/landscape-client
+EOF
+chmod 755 ${TOPDIR}/scripts/post_purge_policy_kit
+
+sudo piuparts \
+    --scriptsdir=${TOPDIR}/scripts/ \
+    --keep-sources-list \
+    --skip-minimize \
+    --no-symlinks \
+    -l ${TOPDIR}/output.log \
+    -i /var/lib/PolicyKit \
+    -i /etc/ssl \
+    -b ${BASETGZ} \
+    ${SOURCE}_${VERSION}_${ARCH}.changes
