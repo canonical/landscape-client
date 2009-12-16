@@ -4,7 +4,6 @@ import logging
 
 from twisted.internet.defer import Deferred, succeed
 
-from landscape.lib.dbus_util import get_bus
 from landscape.lib.lock import lock_path, LockError
 from landscape.lib.log import log_failure
 from landscape.lib.lsb_release import LSB_RELEASE_FILENAME, parse_lsb_release
@@ -30,6 +29,29 @@ class PackageTaskHandlerConfiguration(Configuration):
     def hash_id_directory(self):
         """Get the path to the directory holding the stock hash-id stores."""
         return os.path.join(self.package_directory, "hash-id")
+
+
+class LazyRemoteBroker(object):
+    """Wrapper class around L{RemoteBroker} providing lazy initialization.
+
+    This class is a wrapper around a regular L{RemoteBroker}. It creates
+    the remote broker object only when one of its attributes is first accessed.
+
+    @note: This behaviour is needed in particular by the ReleaseUpgrader and
+    the PackageChanger, because if the they connect early and DBus gets
+    upgraded while they run, they might crash or not be able to communicate
+    with the broker due to bugs in DBus.
+    """
+
+    def __init__(self, bus):
+        self._remote = None
+        self._bus = bus
+
+    def __getattr__(self, name):
+        if not self._remote:
+            from landscape.lib.dbus_util import get_bus
+            self._remote = RemoteBroker(get_bus(self._bus))
+        return getattr(self._remote, name)
 
 
 class PackageTaskHandler(object):
@@ -192,7 +214,7 @@ def run_task_handler(cls, args, reactor=None):
 
     package_store = PackageStore(config.store_filename)
     package_facade = SmartFacade()
-    remote = RemoteBroker(get_bus(config.bus))
+    remote = LazyRemoteBroker(config.bus)
 
     handler = cls(package_store, package_facade, remote, config)
 
