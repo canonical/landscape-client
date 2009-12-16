@@ -285,23 +285,25 @@ class LandscapeSetupScript(object):
             self.prompt("https_proxy", "HTTPS proxy URL")
 
     def _normalize_users(self, users):
-        users = users.replace("all", "ALL")
-        return users.replace("All", "ALL")
+        if users is not None:
+            users = users.replace("all", "ALL")
+            return users.replace("All", "ALL")
 
     def _get_invalid_users(self, users):
-        user_list = [user.strip() for user in users.split(",")]
-        if "ALL" in user_list:
-            if len(user_list) > 1:
-                raise ConfigurationError(
-                    "Extra users specified with ALL users")
-            user_list.remove("ALL")
-        invalid_users = []
-        for user in user_list:
-            try:
-                pwd.getpwnam(user)
-            except KeyError:
-                invalid_users.append(user)
-        return invalid_users
+        if users is not None:
+            user_list = [user.strip() for user in users.split(",")]
+            if "ALL" in user_list:
+                if len(user_list) > 1:
+                    raise ConfigurationError(
+                        "Extra users specified with ALL users")
+                user_list.remove("ALL")
+            invalid_users = []
+            for user in user_list:
+                try:
+                    pwd.getpwnam(user)
+                except KeyError:
+                    invalid_users.append(user)
+            return invalid_users
 
     def query_script_plugin(self):
         options = self.config.get_command_line_options()
@@ -338,7 +340,17 @@ class LandscapeSetupScript(object):
                 by any user, enter "ALL".
                 """)
             if not "script_users" in options:
-                self.prompt("script_users", "Script users")
+                while True:
+                    self.prompt("script_users", "Script users")
+                    normalized_users = self._normalize_users(
+                        self.config.script_users)
+                    invalid_users = self._get_invalid_users(normalized_users)
+                    if not invalid_users:
+                        break
+                    else:
+                        system.show_help("Unknown system users: %s" %
+                                         ",".join(invalid_users))
+                        self.config.script_users = None
         else:
             if "ScriptExecution" in included_plugins:
                 included_plugins.remove("ScriptExecution")

@@ -541,18 +541,24 @@ class LandscapeSetupScriptTest(LandscapeTest):
 
     def test_invalid_user_entered_by_user(self):
         """
+        If an invalid user is entered on the command line the user should be
+        informed and prompted again.
         """
+        help_snippet = "Landscape has a feature which enables administrators"
+        self.mocker.order()
         script_mock = self.mocker.patch(self.script)
-        script_mock.show_help("You may provide tags for this computer e.g. "
-                              "server,hardy.")
-        script_mock.prompt_get_input("Tags: ", False)
-        self.mocker.result(u"<script>alert();</script>")
-        script_mock.show_help("Tag names may only contain alphanumeric "
-                              "characters.")
-        script_mock.prompt_get_input("Tags: ", False)
-        self.mocker.result(u"london")
+        script_mock.show_help(self.get_matcher(help_snippet))
+        script_mock.prompt_yes_no("Enable script execution?", default=False)
+        self.mocker.result(False)
+        script_mock.prompt_get_input("Script users: ", False)
+        self.mocker.result(u"nonexistent")
+        script_mock.show_help("Invalid user: nonexistent")
+        script_mock.prompt_get_input("Script users: ", False)
+        self.mocker.result(u"root")
         self.mocker.replay()
-        self.script.query_tags()
+        self.script.query_script_plugin()
+        self.assertEquals(self.config.script_users,
+                          "root")
 
     def test_tags_not_defined_on_command_line(self):
         """
@@ -572,22 +578,17 @@ class LandscapeSetupScriptTest(LandscapeTest):
         they should be valid tags, if not the user should be prompted for them
         again.
         """
-        self.config.include_manager_plugins = "FooPlugin"
-        self.mocker.order()
         script_mock = self.mocker.patch(self.script)
-        script_mock.show_help(ANY)
-        script_mock.prompt_get_input("Enable script execution: ", False)
-        self.mocker.result("Y")
-        script_mock.show_help(ANY)
-        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
-        self.expect(raw_input_mock(ANY)).count(0)
+        script_mock.show_help("You may provide tags for this computer e.g. "
+                              "server,hardy.")
+        script_mock.prompt_get_input("Tags: ", False)
+        self.mocker.result(u"<script>alert();</script>")
+        script_mock.show_help("Tag names may only contain alphanumeric "
+                              "characters.")
+        script_mock.prompt_get_input("Tags: ", False)
+        self.mocker.result(u"london")
         self.mocker.replay()
-
-        self.config.load_command_line(
-            ["--script-users", "root, nobody, landscape"])
-        self.script.query_script_plugin()
-        self.assertEquals(self.config.script_users,
-                          "root, nobody, landscape")
+        self.script.query_tags()
 
     def test_tags_defined_on_command_line(self):
         """
