@@ -1,5 +1,6 @@
 from landscape.lib.persist import Persist
 from landscape.reactor import FakeReactor
+from landscape.manager.usermanager import UserManagerDBusObject
 from landscape.monitor.computerinfo import ComputerInfo
 from landscape.monitor.loadaverage import LoadAverage
 from landscape.monitor.deployment import MonitorService, MonitorConfiguration
@@ -53,6 +54,10 @@ class MonitorServiceTest(LandscapeIsolatedTest):
 class DeploymentBusTest(MonitorServiceTest):
 
     def test_dbus_reactor_transmitter_installed(self):
+        # The the config to monitor only, because assertTransmitterActive
+        # fires a resynchronize event and the monitor's callback registered
+        # for it would try to get a DBus object published by the manager.
+        self.monitor.registry.config.monitor_only = True
         return assertTransmitterActive(self, self.broker_service,
                                        self.monitor.reactor)
 
