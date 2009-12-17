@@ -285,6 +285,10 @@ class LandscapeSetupScript(object):
             self.prompt("https_proxy", "HTTPS proxy URL")
 
     def _get_invalid_users(self, users):
+        """
+        Process a string with a list of comma separated usernames, this returns
+        any usernames not known to the underlying user database.
+        """
         if users is not None:
             user_list = [user.strip() for user in users.split(",")]
             if "ALL" in user_list:
