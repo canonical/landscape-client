@@ -766,6 +766,23 @@ script_users = root, nobody
 account_name = account
 """)
 
+    def test_silent_script_users_with_all_user(self):
+        """
+        In silent mode, we shouldn't accept invalid users, it should raise a
+        configuration error.
+        """
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        sysvconfig_mock.set_start_on_boot(True)
+        self.mocker.replay()
+
+        config = self.get_config(
+            ["--script-users", "all",
+             "--include-manager-plugins", "ScriptPlugin",
+             "-a", "account",
+             "-t", "rex",
+             "--silent"])
+        self.assertRaises(ConfigurationError, setup, config)
+
     def test_silent_setup_with_ping_url(self):
         sysvconfig_mock = self.mocker.patch(SysVConfig)
         sysvconfig_mock.set_start_on_boot(True)
