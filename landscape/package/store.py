@@ -28,6 +28,14 @@ def with_cursor(method):
     """
 
     def inner(self, *args, **kwargs):
+        if not self._db:
+            # Create the database connection only when we start to actually
+            # use it. This is essentially just a workaroud of a sqlite bug
+            # happening when 2 concurrent processes try to create the tables
+            # around the same time, the one which fails having an incorrect
+            # cache and not seeing the tables
+            self._db = sqlite3.connect(self._filename)
+            self._ensure_schema()
         try:
             cursor = self._db.cursor()
             try:
@@ -48,13 +56,15 @@ class HashIdStore(object):
     The implementation uses a SQLite database as backend, with a single
     table called "hash", whose schema is defined in L{ensure_hash_id_schema}.
     """
+    _db = None
 
     def __init__(self, filename):
         """
         @param filename: The file where the mappings are persisted to.
         """
         self._filename = filename
-        self._db = sqlite3.connect(self._filename)
+
+    def _ensure_schema(self):
         ensure_hash_id_schema(self._db)
 
     @with_cursor
@@ -107,7 +117,7 @@ class HashIdStore(object):
         """
         try:
             cursor.execute("SELECT id FROM hash WHERE hash=?", ("",))
-        except sqlite3.DatabaseError, e:
+        except sqlite3.DatabaseError:
             raise InvalidHashIdDb(self._filename)
 
 
@@ -127,6 +137,9 @@ class PackageStore(HashIdStore):
         """
         super(PackageStore, self).__init__(filename)
         self._hash_id_stores = []
+
+    def _ensure_schema(self):
+        super(PackageStore, self)._ensure_schema()
         ensure_package_schema(self._db)
 
     def add_hash_id_db(self, filename):
@@ -246,6 +259,62 @@ class PackageStore(HashIdStore):
     def get_installed(self, cursor):
         cursor.execute("SELECT id FROM installed")
         return [row[0] for row in cursor.fetchall()]
+
+    @with_cursor
+    def get_locked(self, cursor):
+        """Get the package ids of all locked packages."""
+        cursor.execute("SELECT id FROM locked")
+        return [row[0] for row in cursor.fetchall()]
+
+    @with_cursor
+    def add_locked(self, cursor, ids):
+        """Add the given package ids to the list of locked packages."""
+        for id in ids:
+            cursor.execute("REPLACE INTO locked VALUES (?)", (id,))
+
+    @with_cursor
+    def remove_locked(self, cursor, ids):
+        id_list = ",".join(str(int(id)) for id in ids)
+        cursor.execute("DELETE FROM locked WHERE id IN (%s)" % id_list)
+
+    @with_cursor
+    def clear_locked(self, cursor):
+        """Remove all the package ids in the locked table."""
+        cursor.execute("DELETE FROM locked")
+
+    @with_cursor
+    def get_package_locks(self, cursor):
+        """Get all package locks."""
+        cursor.execute("SELECT name, relation, version FROM package_locks")
+        return [(row[0], row[1], row[2]) for row in cursor.fetchall()]
+
+    @with_cursor
+    def add_package_locks(self, cursor, locks):
+        """Add a list of package locks to the store.
+
+        @param locks: A C{list} of ternary tuples each one contains the
+            name, the relation and the version of the package lock to be added.
+        """
+        for name, relation, version in locks:
+            cursor.execute("REPLACE INTO package_locks VALUES (?, ?, ?)",
+                           (name, relation or "", version or "",))
+
+    @with_cursor
+    def remove_package_locks(self, cursor, locks):
+        """Remove a list of package locks from the store.
+
+        @param locks: A C{list} of ternary tuples each one contains the name,
+            the relation and the version of the package lock to be removed.
+        """
+        for name, relation, version in locks:
+            cursor.execute("DELETE FROM package_locks WHERE name=? AND "
+                           "relation=? AND version=?",
+                           (name, relation or "", version or ""))
+
+    @with_cursor
+    def clear_package_locks(self, cursor):
+        """Remove all package locks."""
+        cursor.execute("DELETE FROM package_locks")
 
     @with_cursor
     def add_hash_id_request(self, cursor, hashes):
@@ -390,6 +459,11 @@ def ensure_package_schema(db):
     #       try block.
     cursor = db.cursor()
     try:
+        cursor.execute("CREATE TABLE package_locks"
+                       " (name TEXT NOT NULL, relation TEXT, version TEXT,"
+                       " UNIQUE(name, relation, version))")
+        cursor.execute("CREATE TABLE locked"
+                       " (id INTEGER PRIMARY KEY)")
         cursor.execute("CREATE TABLE available"
                        " (id INTEGER PRIMARY KEY)")
         cursor.execute("CREATE TABLE available_upgrade"

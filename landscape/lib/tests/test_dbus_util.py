@@ -330,7 +330,7 @@ class RetryTests(LandscapeIsolatedTest):
         return d.addCallback(self.assertEquals, 1)
 
     def _start_service_in_subprocess(self):
-        executable = self.make_path("""\
+        executable = self.makeFile("""\
 #!%s
 from twisted.internet.glib2reactor import install
 install()

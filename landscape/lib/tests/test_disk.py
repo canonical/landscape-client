@@ -8,7 +8,7 @@ class DiskUtilitiesTest(LandscapeTest):
 
     def setUp(self):
         super(DiskUtilitiesTest, self).setUp()
-        self.mount_file = self.make_path("")
+        self.mount_file = self.makeFile("")
         self.stat_results = {}
         self.statvfs = self.stat_results.get
 
@@ -43,8 +43,9 @@ class DiskUtilitiesTest(LandscapeTest):
         self.assertEquals(info["mount-point"], "/")
 
     def test_symlink_home(self):
-        symlink_path = self.make_path()
+        symlink_path = self.makeFile()
         os.symlink("/foo/bar", symlink_path)
+        self.addCleanup(os.remove, symlink_path)
         self.set_mount_points(["/", "/foo"])
         info = get_filesystem_for_path(symlink_path,
                                        self.mount_file, self.statvfs)

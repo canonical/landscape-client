@@ -1,20 +1,65 @@
 import os
+import re
 import logging
 
 from twisted.internet.defer import Deferred, succeed
 
-from landscape.lib.dbus_util import get_bus
 from landscape.lib.lock import lock_path, LockError
 from landscape.lib.log import log_failure
-from landscape.lib.command import run_command, CommandError
+from landscape.lib.lsb_release import LSB_RELEASE_FILENAME, parse_lsb_release
 from landscape.deployment import Configuration, init_logging
 from landscape.package.store import PackageStore, InvalidHashIdDb
 from landscape.broker.remote import RemoteBroker
 
 
+class PackageTaskHandlerConfiguration(Configuration):
+    """Specialized configuration for L{PackageTaskHandler}s."""
+
+    @property
+    def package_directory(self):
+        """Get the path to the package directory."""
+        return os.path.join(self.data_path, "package")
+
+    @property
+    def store_filename(self):
+        """Get the path to the SQlite file for the L{PackageStore}."""
+        return os.path.join(self.package_directory, "database")
+
+    @property
+    def hash_id_directory(self):
+        """Get the path to the directory holding the stock hash-id stores."""
+        return os.path.join(self.package_directory, "hash-id")
+
+
+class LazyRemoteBroker(object):
+    """Wrapper class around L{RemoteBroker} providing lazy initialization.
+
+    This class is a wrapper around a regular L{RemoteBroker}. It creates
+    the remote broker object only when one of its attributes is first accessed.
+
+    @note: This behaviour is needed in particular by the ReleaseUpgrader and
+    the PackageChanger, because if the they connect early and DBus gets
+    upgraded while they run, they might crash or not be able to communicate
+    with the broker due to bugs in DBus.
+    """
+
+    def __init__(self, bus):
+        self._remote = None
+        self._bus = bus
+
+    def __getattr__(self, name):
+        if not self._remote:
+            from landscape.lib.dbus_util import get_bus
+            self._remote = RemoteBroker(get_bus(self._bus))
+        return getattr(self._remote, name)
+
+
 class PackageTaskHandler(object):
 
+    config_factory = PackageTaskHandlerConfiguration
+
     queue_name = "default"
+    lsb_release_filename = LSB_RELEASE_FILENAME
 
     def __init__(self, package_store, package_facade, remote_broker, config):
         self._store = package_store
@@ -22,7 +67,6 @@ class PackageTaskHandler(object):
         self._broker = remote_broker
         self._config = config
         self._channels_reloaded = False
-        self._server_uuid = None
 
     def ensure_channels_reloaded(self):
         if not self._channels_reloaded:
@@ -33,11 +77,9 @@ class PackageTaskHandler(object):
         return self.handle_tasks()
 
     def handle_tasks(self):
-        deferred = Deferred()
-        self._handle_next_task(None, deferred)
-        return deferred
+        return self._handle_next_task(None)
 
-    def _handle_next_task(self, result, deferred, last_task=None):
+    def _handle_next_task(self, result, last_task=None):
         if last_task is not None:
             # Last task succeeded.  We can safely kill it now.
             last_task.remove()
@@ -47,12 +89,12 @@ class PackageTaskHandler(object):
         if task:
             # We have another task.  Let's handle it.
             result = self.handle_task(task)
-            result.addCallback(self._handle_next_task, deferred, task)
-            result.addErrback(deferred.errback)
+            result.addCallback(self._handle_next_task, task)
+            return result
 
         else:
             # No more tasks!  We're done!
-            deferred.callback(None)
+            return succeed(None)
 
     def handle_task(self, task):
         return succeed(None)
@@ -61,6 +103,7 @@ class PackageTaskHandler(object):
         """
         Attach the appropriate pre-canned hash=>id database to our store.
         """
+
         def use_it(hash_id_db_filename):
 
             if hash_id_db_filename is None:
@@ -103,27 +146,35 @@ class PackageTaskHandler(object):
                 return None
 
             try:
-                # XXX replace these with L{SmartFacade} methods
-                codename = run_command("lsb_release -cs")
-                arch = run_command("dpkg --print-architecture")
-            except CommandError, error:
+                lsb_release_info = parse_lsb_release(self.lsb_release_filename)
+            except IOError, error:
                 logging.warning(warning % str(error))
                 return None
+            try:
+                codename = lsb_release_info["code-name"]
+            except KeyError:
+                logging.warning(warning % "missing code-name key in %s" %
+                                self.lsb_release_filename)
+                return None
 
-            package_directory = os.path.join(self._config.data_path, "package")
-            hash_id_db_directory = os.path.join(package_directory, "hash-id")
+            arch = self._facade.get_arch()
+            if arch is None:
+                # The Smart code should always return a proper string, so this
+                # branch shouldn't get executed at all. However this check is
+                # kept as an extra paranoia sanity check.
+                logging.warning(warning % "unknown dpkg architecture")
+                return None
 
-            return os.path.join(hash_id_db_directory,
-                                "%s_%s_%s" % (server_uuid,
-                                              codename,
-                                              arch))
+            return os.path.join(self._config.hash_id_directory,
+                                "%s_%s_%s" % (server_uuid, codename, arch))
 
         result = self._broker.get_server_uuid()
         result.addCallback(got_server_uuid)
         return result
 
+
 def run_task_handler(cls, args, reactor=None):
-    from twisted.internet.glib2reactor import install
+    from landscape.reactor import install
     install()
 
     # please only pass reactor when you have totally mangled everything with
@@ -131,18 +182,16 @@ def run_task_handler(cls, args, reactor=None):
     if reactor is None:
         from twisted.internet import reactor
 
-    program_name = cls.queue_name
-
-    config = Configuration()
+    config = cls.config_factory()
     config.load(args)
 
-    package_directory = os.path.join(config.data_path, "package")
-    hash_id_directory = os.path.join(package_directory, "hash-id")
-    for directory in [package_directory, hash_id_directory]:
+    for directory in [config.package_directory, config.hash_id_directory]:
         if not os.path.isdir(directory):
             os.mkdir(directory)
 
-    lock_filename = os.path.join(package_directory, program_name + ".lock")
+    program_name = cls.queue_name
+    lock_filename = os.path.join(config.package_directory,
+                                 program_name + ".lock")
     try:
         lock_path(lock_filename)
     except LockError:
@@ -152,9 +201,8 @@ def run_task_handler(cls, args, reactor=None):
                          % program_name)
 
 
-    init_logging(config, "package-" + program_name)
-
-    store_filename = os.path.join(package_directory, "database")
+    words = re.findall("[A-Z][a-z]+", cls.__name__)
+    init_logging(config, "-".join(word.lower() for word in words))
 
     # Setup our umask for Smart to use, this needs to setup file permissions to
     # 0644 so...
@@ -164,18 +212,20 @@ def run_task_handler(cls, args, reactor=None):
     # import Smart unless we need to.
     from landscape.package.facade import SmartFacade
 
-    package_store = PackageStore(store_filename)
+    package_store = PackageStore(config.store_filename)
     package_facade = SmartFacade()
-    remote = RemoteBroker(get_bus(config.bus))
+    remote = LazyRemoteBroker(config.bus)
 
     handler = cls(package_store, package_facade, remote, config)
 
     def got_err(failure):
         log_failure(failure)
 
-    result = handler.run()
+    result = Deferred()
+    result.addCallback(lambda ignored: handler.run())
     result.addErrback(got_err)
     result.addBoth(lambda ignored: reactor.callLater(0, reactor.stop))
+    reactor.callWhenRunning(lambda: result.callback(None))
 
     reactor.run()
 

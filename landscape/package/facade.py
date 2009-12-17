@@ -9,6 +9,7 @@ from landscape.package.skeleton import build_skeleton
 class TransactionError(Exception):
     """Raised when the transaction fails to run."""
 
+
 class DependencyError(Exception):
     """Raised when a needed dependency wasn't explicitly marked."""
 
@@ -18,6 +19,7 @@ class DependencyError(Exception):
     def __str__(self):
         return ("Missing dependencies: %s" %
                 ", ".join([str(package) for package in self.packages]))
+
 
 class SmartError(Exception):
     """Raised when Smart fails in an undefined way."""
@@ -146,6 +148,10 @@ class SmartFacade(object):
         return [pkg for pkg in self._get_ctrl().getCache().getPackages()
                 if isinstance(pkg, self._deb_package_type)]
 
+    def get_locked_packages(self):
+        """Get all packages in the channels matching the set locks."""
+        return smart.pkgconf.filterByFlag("lock", self.get_packages())
+
     def get_packages_by_name(self, name):
         """
         Get all available packages matching the provided name.
@@ -225,9 +231,17 @@ class SmartFacade(object):
         cache.reset()
         cache.load()
 
+    def get_arch(self):
+        """
+        Get the host dpkg architecture.
+        """
+        self._get_ctrl()
+        from smart.backends.deb.loader import DEBARCH
+        return DEBARCH
+
     def set_arch(self, arch):
         """
-        Set the host architecture.
+        Set the host dpkg architecture.
 
         To take effect it must be called before L{reload_channels}.
 
@@ -268,8 +282,27 @@ class SmartFacade(object):
             add (see the Smart API for details about valid keys and values).
         """
         channels = self.get_channels()
-        channels.update({alias : channel})
+        channels.update({alias: channel})
         smart.sysconf.set("channels", channels, soft=True)
+
+    def add_channel_apt_deb(self, url, codename, components):
+        """Add a Smart channel of type C{"apt-deb"}.
+
+        @see: L{add_channel}
+        """
+        alias = codename
+        channel = {"baseurl": url, "distribution": codename,
+                   "components": components, "type": "apt-deb"}
+        self.add_channel(alias, channel)
+
+    def add_channel_deb_dir(self, path):
+        """Add a Smart channel of type C{"deb-dir"}.
+
+        @see: L{add_channel}
+        """
+        alias = path
+        channel = {"path": path, "type": "deb-dir"}
+        self.add_channel(alias, channel)
 
     def get_channels(self):
         """
@@ -278,15 +311,49 @@ class SmartFacade(object):
         self._get_ctrl()
         return smart.sysconf.get("channels")
 
+    def get_package_locks(self):
+        """Return all set package locks.
 
-def make_apt_deb_channel(baseurl, distribution, components):
-    """Convenience to create Smart channels of type C{"apt-deb"}."""
-    return {"baseurl": baseurl,
-            "distribution": distribution,
-            "components": components,
-            "type": "apt-deb"}
+        @return: A C{list} of ternary tuples, contaning the name, relation
+            and version details for each lock currently set on the system.
+        """
+        self._get_ctrl()
+        locks = []
+        locks_by_name = smart.pkgconf.getFlagTargets("lock")
+        for name in locks_by_name:
+            for condition in locks_by_name[name]:
+                relation = condition[0] or ""
+                version = condition[1] or ""
+                locks.append((name, relation, version))
+        return locks
 
-def make_deb_dir_channel(path):
-    """Convenience to create Smart channels of type C{"deb-dir"}."""
-    return {"path": path,
-            "type": "deb-dir"}
+    def _validate_lock_condition(self, relation, version):
+        if relation and not version:
+            raise RuntimeError("Package lock version not provided")
+        if version and not relation:
+            raise RuntimeError("Package lock relation not provided")
+
+    def set_package_lock(self, name, relation=None, version=None):
+        """Set a new package lock.
+
+        Any package matching the given name and possibly the given version
+        condition will be locked.
+
+        @param name: The name a package must match in order to be locked.
+        @param relation: Optionally, the relation of the version condition the
+            package must satisfy in order to be considered as locked.
+        @param version: Optionally, the version associated with C{relation}.
+
+        @note: If used at all, the C{relation} and C{version} parameter must be
+           both provided.
+        """
+        self._validate_lock_condition(relation, version)
+        self._get_ctrl()
+        smart.pkgconf.setFlag("lock", name, relation, version)
+
+    def remove_package_lock(self, name, relation=(), version=()):
+        """Remove a package lock."""
+        self._validate_lock_condition(relation, version)
+        self._get_ctrl()
+        smart.pkgconf.clearFlag("lock", name=name, relation=relation,
+                                version=version)

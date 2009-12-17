@@ -54,7 +54,10 @@ class PackageChanger(PackageTaskHandler):
                 if os.getuid() == 0:
                     os.setgid(grp.getgrnam("landscape").gr_gid)
                     os.setuid(pwd.getpwnam("landscape").pw_uid)
-                os.system(find_reporter_command())
+                command = find_reporter_command()
+                if self._config.config is not None:
+                    command += " -c %s" % self._config.config
+                os.system(command)
 
         result = self.use_hash_id_db()
         result.addCallback(lambda x: self.handle_tasks())
@@ -163,13 +166,17 @@ class PackageChanger(PackageTaskHandler):
                      "exchange urgently.")
         return self._broker.send_message(message, True)
 
-
-def main(args):
-    if os.getpgrp() != os.getpid():
-        os.setsid()
-    return run_task_handler(PackageChanger, args)
+    @staticmethod
+    def find_command():
+        return find_changer_command()
 
 
 def find_changer_command():
     dirname = os.path.dirname(os.path.abspath(sys.argv[0]))
     return os.path.join(dirname, "landscape-package-changer")
+
+
+def main(args):
+    if os.getpgrp() != os.getpid():
+        os.setsid()
+    return run_task_handler(PackageChanger, args)

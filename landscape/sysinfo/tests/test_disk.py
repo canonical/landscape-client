@@ -8,7 +8,7 @@ class DiskTest(LandscapeTest):
 
     def setUp(self):
         super(DiskTest, self).setUp()
-        self.mount_file = self.make_path("")
+        self.mount_file = self.makeFile("")
         self.stat_results = {}
 
         self.disk = Disk(mounts_file=self.mount_file,
@@ -145,6 +145,8 @@ class DiskTest(LandscapeTest):
         self.add_mount("/home/radix/.gvfs", capacity=1000, unused=0,
                        fs="fuse.gvfs-fuse-daemon")
         self.add_mount("/mnt/livecd", capacity=1000, unused=0, fs="squashfs")
+        self.add_mount("/home/mg/.Private", capacity=1000, unused=0,
+                       fs="ecryptfs")
         self.disk.run()
         self.assertEquals(self.sysinfo.get_notes(), [])
 

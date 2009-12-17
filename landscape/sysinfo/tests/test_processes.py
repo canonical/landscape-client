@@ -9,7 +9,7 @@ class ProcessesTest(LandscapeTest):
 
     def setUp(self):
         super(ProcessesTest, self).setUp()
-        self.fake_proc = self.make_dir()
+        self.fake_proc = self.makeDir()
         self.processes = Processes(proc_dir=self.fake_proc)
         self.sysinfo = SysInfoPluginRegistry()
         self.sysinfo.add(self.processes)

@@ -11,12 +11,28 @@ from landscape.lib.sequenceranges import sequence_to_ranges
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.fetch import fetch_async
 
-from landscape.package.taskhandler import PackageTaskHandler, run_task_handler
+from landscape.package.taskhandler import (
+    PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler)
 from landscape.package.store import UnknownHashIDRequest
 
 
 HASH_ID_REQUEST_TIMEOUT = 7200
 MAX_UNKNOWN_HASHES_PER_REQUEST = 500
+
+
+class PackageReporterConfiguration(PackageTaskHandlerConfiguration):
+    """Specialized configuration for the Landscape package-reporter."""
+
+    def make_parser(self):
+        """
+        Specialize L{Configuration.make_parser}, adding options
+        reporter-specific options.
+        """
+        parser = super(PackageReporterConfiguration, self).make_parser()
+        parser.add_option("--force-smart-update", default=False,
+                          action="store_true",
+                          help="Force running smart-update.")
+        return parser
 
 
 class PackageReporter(PackageTaskHandler):
@@ -26,21 +42,25 @@ class PackageReporter(PackageTaskHandler):
     @cvar smart_update_interval: Time interval in minutes to pass to
         the C{--after} command line option of C{smart-update}.
     """
+    config_factory = PackageReporterConfiguration
+
     queue_name = "reporter"
+
     smart_update_interval = 60
     smart_update_filename = "/usr/lib/landscape/smart-update"
 
     def run(self):
         result = Deferred()
 
+        # Run smart-update before anything else, to make sure that
+        # the SmartFacade will load freshly updated channels
+        result.addCallback(lambda x: self.run_smart_update())
+
         # If the appropriate hash=>id db is not there, fetch it
         result.addCallback(lambda x: self.fetch_hash_id_db())
 
         # Attach the hash=>id database if available
         result.addCallback(lambda x: self.use_hash_id_db())
-
-        # Run smart-update
-        result.addCallback(lambda x: self.run_smart_update())
 
         # Now, handle any queued tasks.
         result.addCallback(lambda x: self.handle_tasks())
@@ -53,6 +73,7 @@ class PackageReporter(PackageTaskHandler):
 
         # Finally, verify if we have anything new to report to the server.
         result.addCallback(lambda x: self.detect_changes())
+        result.addCallback(lambda x: self.detect_package_locks_changes())
 
         result.callback(None)
         return result
@@ -101,7 +122,8 @@ class PackageReporter(PackageTaskHandler):
                 logging.warning("Couldn't download hash=>id database: %s" %
                                 str(exception))
 
-            result = fetch_async(url)
+            result = fetch_async(url,
+                                 cainfo=self._config.get("ssl_public_key"))
             result.addCallback(fetch_ok)
             result.addErrback(fetch_error)
 
@@ -133,9 +155,12 @@ class PackageReporter(PackageTaskHandler):
 
         @return: a deferred returning (out, err, code)
         """
+        if self._config.force_smart_update:
+            args = ()
+        else:
+            args = ("--after", "%d" % self.smart_update_interval)
         result = getProcessOutputAndValue(self.smart_update_filename,
-                                          args=("--after", "%d" %
-                                                self.smart_update_interval))
+                                          args=args)
 
         def callback((out, err, code)):
             # smart-update --after N will exit with error code 1 when it
@@ -165,7 +190,6 @@ class PackageReporter(PackageTaskHandler):
 
     def _handle_package_ids(self, message):
         unknown_hashes = []
-        request_id = message["request-id"]
 
         try:
             request = self._store.get_hash_id_request(message["request-id"])
@@ -200,7 +224,21 @@ class PackageReporter(PackageTaskHandler):
         self._store.clear_available()
         self._store.clear_available_upgrades()
         self._store.clear_installed()
-        self._store.clear_hash_id_requests()
+
+        # Don't clear the hash_id_requests table because the messages
+        # associated with the existing requests might still have to be
+        # delivered, and if we clear the table and later create a new request,
+        # that new request could get the same id of one of the deleted ones,
+        # and when the pending message eventually gets delivered the reporter
+        # would think that the message is associated to the newly created
+        # request, as it have the same id has the deleted request the message
+        # actually refers to. This would cause the ids in the message to be
+        # possibly mapped to the wrong hashes.
+        #
+        # This problem would happen for example when switching the client from
+        # one Landscape server to another, because the uuid-changed event would
+        # cause a resynchronize task to be created by the monitor. See #417122.
+
         return succeed(None)
 
     def _handle_unknown_packages(self, hashes):
@@ -310,11 +348,14 @@ class PackageReporter(PackageTaskHandler):
         request = self._store.add_hash_id_request(unknown_hashes)
         message["request-id"] = request.id
         result = self._broker.send_message(message, True)
+
         def set_message_id(message_id):
             request.message_id = message_id
+
         def send_message_failed(failure):
             request.remove()
             return failure
+
         return result.addCallbacks(set_message_id, send_message_failed)
 
     def detect_changes(self):
@@ -324,8 +365,15 @@ class PackageReporter(PackageTaskHandler):
 
         - are now installed, and were not;
         - are now available, and were not;
+        - are now locked, and were not;
         - were previously available but are not anymore;
         - were previously installed but are not anymore;
+        - were previously locked but are not anymore;
+
+        Additionally it will report package locks that:
+
+        - are now set, and were not;
+        - were previously set but are not anymore;
 
         In all cases, the server is notified of the new situation
         with a "packages" message.
@@ -335,10 +383,12 @@ class PackageReporter(PackageTaskHandler):
         old_installed = set(self._store.get_installed())
         old_available = set(self._store.get_available())
         old_upgrades = set(self._store.get_available_upgrades())
+        old_locked = set(self._store.get_locked())
 
         current_installed = set()
         current_available = set()
         current_upgrades = set()
+        current_locked = set()
 
         for package in self._facade.get_packages():
             hash = self._facade.get_package_hash(package)
@@ -369,13 +419,21 @@ class PackageReporter(PackageTaskHandler):
                         continue
                     break
 
+        for package in self._facade.get_locked_packages():
+            hash = self._facade.get_package_hash(package)
+            id = self._store.get_hash_id(hash)
+            if id is not None:
+                current_locked.add(id)
+
         new_installed = current_installed - old_installed
         new_available = current_available - old_available
         new_upgrades = current_upgrades - old_upgrades
+        new_locked = current_locked - old_locked
 
         not_installed = old_installed - current_installed
         not_available = old_available - current_available
         not_upgrades = old_upgrades - current_upgrades
+        not_locked = old_locked - current_locked
 
         message = {}
         if new_installed:
@@ -387,6 +445,9 @@ class PackageReporter(PackageTaskHandler):
         if new_upgrades:
             message["available-upgrades"] = \
                 list(sequence_to_ranges(sorted(new_upgrades)))
+        if new_locked:
+            message["locked"] = \
+                list(sequence_to_ranges(sorted(new_locked)))
 
         if not_installed:
             message["not-installed"] = \
@@ -397,6 +458,9 @@ class PackageReporter(PackageTaskHandler):
         if not_upgrades:
             message["not-available-upgrades"] = \
                 list(sequence_to_ranges(sorted(not_upgrades)))
+        if not_locked:
+            message["not-locked"] = \
+                list(sequence_to_ranges(sorted(not_locked)))
 
         if not message:
             result = succeed(None)
@@ -407,11 +471,12 @@ class PackageReporter(PackageTaskHandler):
 
             logging.info("Queuing message with changes in known packages: "
                          "%d installed, %d available, %d available upgrades, "
-                         "%d not installed, %d not available, %d not "
-                         "available upgrades."
+                         "%d locked, %d not installed, %d not available, "
+                         "%d not available upgrades, %d not locked."
                          % (len(new_installed), len(new_available),
-                            len(new_upgrades), len(not_installed),
-                            len(not_available), len(not_upgrades)))
+                            len(new_upgrades), len(new_locked),
+                            len(not_installed), len(not_available),
+                            len(not_upgrades), len(not_locked)))
 
         def update_currently_known(result):
             if new_installed:
@@ -420,12 +485,60 @@ class PackageReporter(PackageTaskHandler):
                 self._store.remove_installed(not_installed)
             if new_available:
                 self._store.add_available(new_available)
+            if new_locked:
+                self._store.add_locked(new_locked)
             if not_available:
                 self._store.remove_available(not_available)
             if new_upgrades:
                 self._store.add_available_upgrades(new_upgrades)
             if not_upgrades:
                 self._store.remove_available_upgrades(not_upgrades)
+            if not_locked:
+                self._store.remove_locked(not_locked)
+
+        result.addCallback(update_currently_known)
+
+        return result
+
+    def detect_package_locks_changes(self):
+        """Detect changes in known package locks.
+
+        This method will verify if there are package locks that:
+
+        - are now set, and were not;
+        - were previously set but are not anymore;
+
+        In all cases, the server is notified of the new situation
+        with a "packages" message.
+        """
+        old_package_locks = set(self._store.get_package_locks())
+        current_package_locks = set(self._facade.get_package_locks())
+
+        set_package_locks = current_package_locks - old_package_locks
+        unset_package_locks = old_package_locks - current_package_locks
+
+        message = {}
+        if set_package_locks:
+            message["created"] = sorted(set_package_locks)
+        if unset_package_locks:
+            message["deleted"] = sorted(unset_package_locks)
+
+        if not message:
+            result = succeed(None)
+        else:
+            message["type"] = "package-locks"
+
+            result = self._broker.send_message(message, True)
+
+            logging.info("Queuing message with changes in known package locks:"
+                         " %d created, %d deleted." %
+                         (len(set_package_locks), len(unset_package_locks)))
+
+        def update_currently_known(result):
+            if set_package_locks:
+                self._store.add_package_locks(set_package_locks)
+            if unset_package_locks:
+                self._store.remove_package_locks(unset_package_locks)
 
         result.addCallback(update_currently_known)
 

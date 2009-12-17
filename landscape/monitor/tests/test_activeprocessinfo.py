@@ -7,8 +7,8 @@ import subprocess
 from twisted.internet.defer import fail
 
 from landscape.monitor.activeprocessinfo import ActiveProcessInfo
-from landscape.tests.helpers import (LandscapeTest, MakePathHelper,
-                                     MonitorHelper, ProcessDataBuilder)
+from landscape.tests.helpers import (LandscapeTest, MonitorHelper,
+                                     ProcessDataBuilder)
 from landscape.tests.mocker import ANY
 from landscape import API
 
@@ -16,7 +16,7 @@ from landscape import API
 class ActiveProcessInfoTest(LandscapeTest):
     """Active process info plugin tests."""
 
-    helpers = [MonitorHelper, MakePathHelper]
+    helpers = [MonitorHelper]
 
     def setUp(self):
         """Initialize helpers and sample data builder."""
@@ -449,6 +449,13 @@ class ActiveProcessInfoTest(LandscapeTest):
         plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=100,
                                    jiffies=10, boot_time=0)
         self.monitor.add(plugin)
+
+        registry_mocker = self.mocker.replace(plugin.registry)
+        registry_mocker.flush()
+        self.mocker.count(2)
+        self.mocker.result(None)
+        self.mocker.replay()
+
         plugin.exchange()
 
         messages = self.mstore.get_pending_messages()
@@ -488,11 +495,11 @@ class ActiveProcessInfoTest(LandscapeTest):
 
 class PluginManagerIntegrationTest(LandscapeTest):
 
-    helpers = [MonitorHelper, MakePathHelper]
+    helpers = [MonitorHelper]
 
     def setUp(self):
         LandscapeTest.setUp(self)
-        self.sample_dir = self.make_dir()
+        self.sample_dir = self.makeDir()
         self.builder = ProcessDataBuilder(self.sample_dir)
         self.mstore.set_accepted_types(["active-process-info",
                                         "operation-result"])

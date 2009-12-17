@@ -1,11 +1,11 @@
 from landscape.monitor.memoryinfo import MemoryInfo
-from landscape.tests.helpers import LandscapeTest, MakePathHelper, MonitorHelper
+from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.tests.mocker import ANY
 
 
 class MemoryInfoTest(LandscapeTest):
 
-    helpers = [MonitorHelper, MakePathHelper]
+    helpers = [MonitorHelper]
 
     SAMPLE_DATA = """
 MemTotal:      1546436 kB
@@ -66,7 +66,7 @@ VmallocChunk:   510252 kB
         This test uses sample /proc/meminfo data and ensures that
         messages contain expected free memory and free swap values.
         """
-        filename = self.make_path(self.SAMPLE_DATA)
+        filename = self.makeFile(self.SAMPLE_DATA)
         plugin = MemoryInfo(source_filename=filename,
                             create_time=self.reactor.time)
         step_size = self.monitor.step_size
@@ -83,7 +83,7 @@ VmallocChunk:   510252 kB
         available, a message with an empty C{memory-info} list is
         expected.
         """
-        filename = self.make_path(self.SAMPLE_DATA)
+        filename = self.makeFile(self.SAMPLE_DATA)
         plugin = MemoryInfo(source_filename=filename,
                             create_time=self.reactor.time)
         self.monitor.add(plugin)
@@ -102,7 +102,7 @@ VmallocChunk:   510252 kB
         messages.  Timestamps should always be contiguous, and always
         fall on a step boundary.
         """
-        filename = self.make_path(self.SAMPLE_DATA)
+        filename = self.makeFile(self.SAMPLE_DATA)
         plugin = MemoryInfo(source_filename=filename,
                             create_time=self.reactor.time)
         self.monitor.add(plugin)
@@ -123,7 +123,7 @@ VmallocChunk:   510252 kB
         """
         self.mstore.set_accepted_types(["memory-info"])
 
-        filename = self.make_path(self.SAMPLE_DATA)
+        filename = self.makeFile(self.SAMPLE_DATA)
         plugin = MemoryInfo(source_filename=filename,
                             create_time=self.reactor.time)
         self.monitor.add(plugin)
@@ -139,7 +139,7 @@ VmallocChunk:   510252 kB
         """
         self.mstore.set_accepted_types(["memory-info"])
 
-        filename = self.make_path(self.SAMPLE_DATA)
+        filename = self.makeFile(self.SAMPLE_DATA)
         plugin = MemoryInfo(source_filename=filename,
                             create_time=self.reactor.time)
         step_size = self.monitor.step_size
@@ -154,7 +154,7 @@ VmallocChunk:   510252 kB
                                               (step_size * 2, 503, 1567)]}])
 
     def test_call_on_accepted(self):
-        plugin = MemoryInfo(source_filename=self.make_path(self.SAMPLE_DATA),
+        plugin = MemoryInfo(source_filename=self.makeFile(self.SAMPLE_DATA),
                             create_time=self.reactor.time)
         self.monitor.add(plugin)
 

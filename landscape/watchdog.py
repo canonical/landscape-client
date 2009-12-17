@@ -76,10 +76,14 @@ class Daemon(object):
         """
         self._bus = bus
         self._reactor = reactor
+        self._env = os.environ.copy()
         if os.getuid() == 0:
-            info = pwd.getpwnam(self.username)
-            self._uid = info.pw_uid
-            self._gid = info.pw_gid
+            pwd_info = pwd.getpwnam(self.username)
+            self._uid = pwd_info.pw_uid
+            self._gid = pwd_info.pw_gid
+            self._env["HOME"] = pwd_info.pw_dir
+            self._env["USER"] = self.username
+            self._env["LOGNAME"] = self.username
         else:
             # We can only switch UIDs if we're root, so simply don't switch
             # UIDs if we're not.
@@ -127,7 +131,7 @@ class Daemon(object):
         if self._config:
             args.extend(["-c", self._config])
         self._reactor.spawnProcess(self._process, exe, args=args,
-                                   env=os.environ,uid=self._uid, gid=self._gid)
+                                   env=self._env, uid=self._uid, gid=self._gid)
 
     def stop(self):
         """Stop this daemon."""
@@ -443,7 +447,6 @@ class WatchDogService(Service):
 
     def startService(self):
         Service.startService(self)
-
         bootstrap_list.bootstrap(data_path=self._config.data_path,
                                  log_dir=self._config.log_dir)
 
@@ -488,18 +491,21 @@ class WatchDogService(Service):
         return done
 
     def _remove_pid(self):
-        if os.access(self._config.pid_file, os.W_OK):
-            stream = open(self._config.pid_file)
+        pid_file = self._config.pid_file
+        if pid_file is not None and os.access(pid_file, os.W_OK):
+            stream = open(pid_file)
             pid = stream.read()
             stream.close()
             if pid == str(os.getpid()):
-                os.unlink(self._config.pid_file)
+                os.unlink(pid_file)
 
 
 bootstrap_list = BootstrapList([
     BootstrapDirectory("$data_path", "landscape", "root", 0755),
     BootstrapDirectory("$data_path/package", "landscape", "root", 0755),
     BootstrapDirectory("$data_path/package/hash-id", "landscape", "root", 0755),
+    BootstrapDirectory(
+        "$data_path/package/upgrade-tool", "landscape", "root", 0755),
     BootstrapDirectory("$data_path/messages", "landscape", "root", 0755),
     BootstrapDirectory(
         "$data_path/custom-graph-scripts", "landscape", "root", 0755),
@@ -509,16 +515,17 @@ bootstrap_list = BootstrapList([
 
 
 def clean_environment():
-    """Unset any environment variables that begin with DEBIAN_ or DEBCONF_.
+    """Unset dangerous environment variables.
 
-    We do this to avoid any problems when landscape-client is invoked from its
+    In particular unset all variables beginning with DEBIAN_ or DEBCONF_,
+    to avoid any problems when landscape-client is invoked from its
     postinst script.  Some environment variables may be set which would affect
     *other* maintainer scripts which landscape-client invokes (via smart).
     """
     for key in os.environ.keys():
         if (key.startswith("DEBIAN_")
             or key.startswith("DEBCONF_")
-            or key == "LANDSCAPE_ATTACHMENTS"):
+            or key in ["LANDSCAPE_ATTACHMENTS", "MAIL"]):
             del os.environ[key]
 
 

@@ -6,6 +6,7 @@ import re
 import os
 import tempfile
 import sys
+import unittest
 
 import dbus
 
@@ -37,19 +38,11 @@ DEFAULT_ACCEPTED_TYPES = [
     "set-intervals", "unknown-id"]
 
 
-class LandscapeTest(MockerTestCase, TestCase):
+class HelperTestCase(unittest.TestCase):
 
     helpers = []
 
     def setUp(self):
-        super(LandscapeTest, self).setUp()
-
-        self._old_config_filenames = BaseConfiguration.default_config_filenames
-        BaseConfiguration.default_config_filenames = []
-        # make_path-related stuff
-        self.dirname = tempfile.mkdtemp()
-        self.counter = 0
-
         self._helper_instances = []
         if LogKeeperHelper not in self.helpers:
             self.helpers.insert(0, LogKeeperHelper)
@@ -59,11 +52,11 @@ class LandscapeTest(MockerTestCase, TestCase):
             self._helper_instances.append(helper)
 
     def tearDown(self):
-        BaseConfiguration.default_config_filenames = self._old_config_filenames
         for helper in reversed(self._helper_instances):
             helper.tear_down(self)
-        shutil.rmtree(self.dirname)
-        super(LandscapeTest, self).tearDown()
+
+
+class MessageTestCase(unittest.TestCase):
 
     def assertMessage(self, obtained, expected):
         obtained = obtained.copy()
@@ -93,6 +86,23 @@ class LandscapeTest(MockerTestCase, TestCase):
             raise self.failureException("Got %d more messages than expected:\n"
                                         "%s" % (diff, extra))
 
+
+class LandscapeTest(MessageTestCase, MockerTestCase,
+                    HelperTestCase, TestCase):
+
+    def setUp(self):
+        self._old_config_filenames = BaseConfiguration.default_config_filenames
+        BaseConfiguration.default_config_filenames = []
+        MockerTestCase.setUp(self)
+        HelperTestCase.setUp(self)
+        TestCase.setUp(self)
+
+    def tearDown(self):
+        BaseConfiguration.default_config_filenames = self._old_config_filenames
+        TestCase.tearDown(self)
+        HelperTestCase.tearDown(self)
+        MockerTestCase.tearDown(self)
+
     def assertDeferredSucceeded(self, deferred):
         self.assertTrue(isinstance(deferred, Deferred))
         called = []
@@ -101,28 +111,43 @@ class LandscapeTest(MockerTestCase, TestCase):
         deferred.addCallback(callback)
         self.assertTrue(called)
 
-    def make_dir(self):
-        path = self.make_path()
-        os.mkdir(path)
-        return path
+    def assertFileContent(self, filename, expected_content):
+        fd = open(filename)
+        actual_content = fd.read()
+        fd.close()
+        self.assertEquals(expected_content, actual_content)
 
-    def make_path(self, content=None, path=None):
-        if path is None:
-            self.counter += 1
-            path = "%s/%03d" % (self.dirname, self.counter)
-        if content is not None:
-            file = open(path, "w")
+    def makePersistFile(self, *args, **kwargs):
+        """Return a temporary filename to be used by a L{Persist} object.
+
+        The possible .old persist file is cleaned up after the test.
+
+        @see: L{MockerTestCase.makeFile}
+        """
+        persist_filename = self.makeFile(*args, **kwargs)
+
+        def remove_saved_persist():
             try:
-                file.write(content)
-            finally:
-                file.close()
-        return path
+                os.remove(persist_filename + ".old")
+            except OSError:
+                pass
+        self.addCleanup(remove_saved_persist)
+        return persist_filename
 
 
 class LandscapeIsolatedTest(LandscapeTest):
     """TestCase that also runs all test methods in a subprocess."""
 
     def run(self, result):
+        if not getattr(LandscapeTest, "_cleanup_patch", False):
+            run_method = LandscapeTest.run
+            def run_wrapper(oself, *args, **kwargs):
+                try:
+                    return run_method(oself, *args, **kwargs)
+                finally:
+                    MockerTestCase._MockerTestCase__cleanup(oself)
+            LandscapeTest.run = run_wrapper
+            LandscapeTest._cleanup_patch = True
         run_isolated(LandscapeTest, self, result)
 
 
@@ -210,15 +235,6 @@ class LogKeeperHelper(object):
             self.ignored_exception_types.append(type_or_regex)
 
 
-class MakePathHelper(object):
-
-    def set_up(self, test_case):
-        pass
-
-    def tear_down(self, test_case):
-        pass
-
-
 class EnvironSnapshot(object):
 
     def __init__(self):
@@ -249,19 +265,23 @@ class FakeRemoteBrokerHelper(object):
       - data_path: The data path that the broker will use.
     """
 
+    reactor_factory = FakeReactor
+    transport_factory = FakeTransport
+    needs_bpickle_dbus = True
+
     def set_up(self, test_case):
+        if self.needs_bpickle_dbus:
+            bpickle_dbus.install()
 
-        bpickle_dbus.install()
-
-        test_case.config_filename = test_case.make_path(
+        test_case.config_filename = test_case.makeFile(
             "[client]\n"
             "url = http://localhost:91919\n"
             "computer_title = Default Computer Title\n"
             "account_name = default_account_name\n"
             "ping_url = http://localhost:91910/\n")
 
-        test_case.data_path = test_case.make_dir()
-        test_case.log_dir = test_case.make_dir()
+        test_case.data_path = test_case.makeDir()
+        test_case.log_dir = test_case.makeDir()
 
         bootstrap_list.bootstrap(data_path=test_case.data_path,
                                  log_dir=test_case.log_dir)
@@ -270,19 +290,22 @@ class FakeRemoteBrokerHelper(object):
             default_config_filenames = [test_case.config_filename]
 
         config = MyBrokerConfiguration()
-        config.load(["--bus", "session", "--data-path", test_case.data_path])
+        config.load(["--bus", "session",
+                     "--data-path", test_case.data_path,
+                     "--ignore-sigusr1"])
 
         class FakeBrokerService(BrokerService):
             """A broker which uses a fake reactor and fake transport."""
-            reactor_factory = FakeReactor
-            transport_factory = FakeTransport
+            reactor_factory = self.reactor_factory
+            transport_factory = self.transport_factory
 
         test_case.broker_service = service = FakeBrokerService(config)
         test_case.remote = FakeRemoteBroker(service.exchanger,
                                             service.message_store)
 
     def tear_down(self, test_case):
-        bpickle_dbus.uninstall()
+        if self.needs_bpickle_dbus:
+            bpickle_dbus.uninstall()
 
 
 class RemoteBrokerHelper(FakeRemoteBrokerHelper):
@@ -345,7 +368,7 @@ class MonitorHelper(ExchangeHelper):
     def set_up(self, test_case):
         super(MonitorHelper, self).set_up(test_case)
         persist = Persist()
-        persist_filename = test_case.make_path()
+        persist_filename = test_case.makePersistFile()
         test_case.monitor = MonitorPluginRegistry(
             test_case.remote, test_case.broker_service.reactor,
             test_case.broker_service.config,
@@ -365,6 +388,7 @@ class ManagerHelper(FakeRemoteBrokerHelper):
         class MyManagerConfiguration(ManagerConfiguration):
             default_config_filenames = [test_case.config_filename]
         config = MyManagerConfiguration()
+        config.load(["--data-path", test_case.data_path])
         test_case.manager = ManagerPluginRegistry(
             test_case.remote, test_case.broker_service.reactor,
             config)

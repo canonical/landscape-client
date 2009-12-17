@@ -1,7 +1,7 @@
 """The part of the broker which deals with communications with the server."""
 import time
 import logging
-import md5
+from landscape.lib.hashlib import md5
 
 from twisted.internet.defer import succeed
 
@@ -283,7 +283,7 @@ class MessageExchange(object):
 
     def _hash_types(self, types):
         accepted_types_str = ";".join(types)
-        return md5.new(accepted_types_str).digest()
+        return md5(accepted_types_str).digest()
 
     def _handle_result(self, payload, result):
         """Handle a response from the server.

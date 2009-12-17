@@ -7,16 +7,20 @@ from smart.control import Control
 from smart.cache import Provides
 from smart.const import NEVER
 
+from twisted.internet import reactor
+from twisted.internet.defer import Deferred
+from twisted.internet.utils import getProcessOutputAndValue
+
 import smart
 
 from landscape.package.facade import (
-    TransactionError, DependencyError, ChannelError, SmartError,
-    make_apt_deb_channel, make_deb_dir_channel)
+    TransactionError, DependencyError, ChannelError, SmartError)
 
 from landscape.tests.mocker import ANY
 from landscape.tests.helpers import LandscapeTest
 from landscape.package.tests.helpers import (
-    SmartFacadeHelper, HASH1, HASH2, HASH3, PKGNAME1)
+    SmartFacadeHelper, HASH1, HASH2, HASH3, PKGNAME1,
+    create_full_repository)
 
 
 class SmartFacadeTest(LandscapeTest):
@@ -415,47 +419,74 @@ class SmartFacadeTest(LandscapeTest):
 
         self.assertEquals(self.facade.get_channels(), dict(channels))
 
-    def test_make_channels(self):
+    def test_add_apt_deb_channel(self):
+        """
+        The L{SmartFacade.add_channel_apt_deb} add a Smart channel of
+        type C{"apt-deb"}.
+        """
+        self.facade.reset_channels()
+        self.facade.add_channel_apt_deb("http://url/", "name", "component")
+        self.assertEquals(self.facade.get_channels(),
+                          {"name": {"baseurl": "http://url/",
+                                        "distribution": "name",
+                                        "components": "component",
+                                        "type": "apt-deb"}})
 
-        channel0 = make_apt_deb_channel("http://my.url/dir", "hardy", "main")
-        channel1 = make_deb_dir_channel("/my/repo")
+    def test_add_deb_dir_channel(self):
+        """
+        The L{SmartFacade.add_channel_deb_dir} add a Smart channel of
+        type C{"deb-dir"}.
+        """
+        self.facade.reset_channels()
+        self.facade.add_channel_deb_dir("/my/repo")
+        self.assertEquals(self.facade.get_channels(),
+                          {"/my/repo": {"path": "/my/repo",
+                                        "type": "deb-dir"}})
 
-        self.assertEquals(channel0, {"baseurl": "http://my.url/dir",
-                                     "distribution": "hardy",
-                                     "components": "main",
-                                     "type": "apt-deb"})
+    def test_get_arch(self):
+        """
+        The L{SmartFacade.get_arch} should return the system dpkg
+        architecture.
+        """
+        deferred = Deferred()
 
-        self.assertEquals(channel1, {"path": "/my/repo",
-                                     "type": "deb-dir"})
+        def do_test():
+            result = getProcessOutputAndValue("/usr/bin/dpkg",
+                                              ("--print-architecture",))
+            def callback((out, err, code)):
+                self.assertEquals(self.facade.get_arch(), out.strip())
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
 
     def test_set_arch_multiple_times(self):
 
-        repository_dir = os.path.join(os.path.dirname(__file__), "repository")
-
-        alias = "alias"
-        channel = {"baseurl": "file://%s" % repository_dir,
-                   "distribution": "hardy",
-                   "components": "main",
-                   "type": "apt-deb"}
+        repo = create_full_repository(self.makeDir())
 
         self.facade.set_arch("i386")
         self.facade.reset_channels()
-        self.facade.add_channel(alias, channel)
+        self.facade.add_channel_apt_deb(repo.url, repo.codename,
+                                        repo.components)
         self.facade.reload_channels()
 
         pkgs = self.facade.get_packages()
-        self.assertEquals(len(pkgs), 1)
+        self.assertEquals(len(pkgs), 2)
         self.assertEquals(pkgs[0].name, "syslinux")
+        self.assertEquals(pkgs[1].name, "kairos")
 
         self.facade.deinit()
         self.facade.set_arch("amd64")
         self.facade.reset_channels()
-        self.facade.add_channel(alias, channel)
+        self.facade.add_channel_apt_deb(repo.url, repo.codename,
+                                        repo.components)
         self.facade.reload_channels()
 
         pkgs = self.facade.get_packages()
-        self.assertEquals(len(pkgs), 1)
+        self.assertEquals(len(pkgs), 2)
         self.assertEquals(pkgs[0].name, "libclthreads2")
+        self.assertEquals(pkgs[1].name, "kairos")
 
     def test_set_caching_with_reload_error(self):
 
@@ -483,3 +514,94 @@ class SmartFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         self.assertTrue(smart.sysconf.get("use-landscape-proxies"))
         self.assertIn("smart.plugins.landscape", sys.modules)
+
+    def test_get_package_locks_with_no_lock(self):
+        """
+        If no package locks are set, L{SmartFacade.get_package_locks} returns
+        an empty C{list}.
+        """
+        self.assertEquals(self.facade.get_package_locks(), [])
+
+    def test_get_package_locks_with_one_lock(self):
+        """
+        If one lock is set, the list of locks contains one item.
+        """
+        self.facade.set_package_lock("name1", "<", "version1")
+        self.assertEquals(self.facade.get_package_locks(),
+                          [("name1", "<", "version1")])
+
+    def test_get_package_locks_with_many_locks(self):
+        """
+        It's possible to have more than one package lock and several conditions
+        for each of them.
+        """
+        self.facade.set_package_lock("name1", "<", "version1")
+        self.facade.set_package_lock("name1", ">=", "version3")
+        self.facade.set_package_lock("name2")
+        self.assertEquals(sorted(self.facade.get_package_locks()),
+                          sorted([("name1", "<", "version1"),
+                                  ("name1", ">=", "version3"),
+                                  ("name2", "", "")]))
+
+    def test_set_package_lock(self):
+        """
+        It is possible to lock a package by simply specifying its name.
+        """
+        self.facade.set_package_lock("name1")
+        self.facade.reload_channels()
+        [package] = self.facade.get_locked_packages()
+        self.assertEquals(package.name, "name1")
+
+    def test_set_package_lock_with_matching_condition(self):
+        """
+        It is possible to set a package lock specifying both a
+        package name and version condition. Any matching package
+        will be locked.
+        """
+        self.facade.set_package_lock("name1", "<", "version2")
+        self.facade.reload_channels()
+        [package] = self.facade.get_locked_packages()
+        self.assertEquals(package.name, "name1")
+
+    def test_set_package_lock_with_non_matching_condition(self):
+        """
+        If the package lock conditions do not match any package,
+        no package will be locked.
+        """
+        self.facade.set_package_lock("name1", "<", "version1")
+        self.facade.reload_channels()
+        self.assertEquals(self.facade.get_locked_packages(), [])
+
+    def test_set_package_lock_with_missing_version(self):
+        """
+        When specifing a relation for a package lock condition, a version
+        must be provided as well.
+        """
+        error = self.assertRaises(RuntimeError, self.facade.set_package_lock,
+                                  "name1", "<", "")
+        self.assertEquals(str(error), "Package lock version not provided")
+
+    def test_set_package_lock_with_missing_relation(self):
+        """
+        When specifing a version for a package lock condition, a relation
+        must be provided as well.
+        """
+        error = self.assertRaises(RuntimeError, self.facade.set_package_lock,
+                                  "name1", "", "version1")
+        self.assertEquals(str(error), "Package lock relation not provided")
+
+    def test_remove_package_lock(self):
+        """
+        It is possibly to remove a package lock without any version condition.
+        """
+        self.facade.set_package_lock("name1")
+        self.facade.remove_package_lock("name1")
+        self.assertEquals(self.facade.get_locked_packages(), [])
+
+    def test_remove_package_lock_with_condition(self):
+        """
+        It is possibly to remove a package lock with a version condition.
+        """
+        self.facade.set_package_lock("name1", "<", "version1")
+        self.facade.remove_package_lock("name1", "<", "version1")
+        self.assertEquals(self.facade.get_locked_packages(), [])

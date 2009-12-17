@@ -2,28 +2,39 @@ import glob
 import sys
 import os
 import logging
+import unittest
 
 from twisted.internet.defer import Deferred
 from twisted.internet import reactor
 
 from landscape.lib.fetch import fetch_async, FetchError
-from landscape.lib.command import CommandError
-
 from landscape.package.store import PackageStore, UnknownHashIDRequest
 from landscape.package.reporter import (
-    PackageReporter, HASH_ID_REQUEST_TIMEOUT, main, find_reporter_command)
+    PackageReporter, HASH_ID_REQUEST_TIMEOUT, main, find_reporter_command,
+    PackageReporterConfiguration)
 from landscape.package import reporter
 from landscape.package.facade import SmartFacade
-
-from landscape.deployment import Configuration
 from landscape.broker.remote import RemoteBroker
-
 from landscape.package.tests.helpers import (
     SmartFacadeHelper, HASH1, HASH2, HASH3)
-
 from landscape.tests.helpers import (
     LandscapeIsolatedTest, RemoteBrokerHelper)
 from landscape.tests.mocker import ANY
+
+SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
+
+
+class PackageReporterConfigurationTest(unittest.TestCase):
+
+    def test_force_smart_update_option(self):
+        """
+        The L{PackageReporterConfiguration} supports a '--force-smart-update'
+        command line option.
+        """
+        config = PackageReporterConfiguration()
+        self.assertFalse(config.force_smart_update)
+        config.load(["--force-smart-update"])
+        self.assertTrue(config.force_smart_update)
 
 
 class PackageReporterTest(LandscapeIsolatedTest):
@@ -34,11 +45,13 @@ class PackageReporterTest(LandscapeIsolatedTest):
         super(PackageReporterTest, self).setUp()
 
         self.store = PackageStore(self.makeFile())
-        self.config = Configuration()
-        self.reporter = PackageReporter(self.store, self.facade, self.remote, self.config)
+        self.config = PackageReporterConfiguration()
+        self.reporter = PackageReporter(self.store, self.facade, self.remote,
+                                        self.config)
 
     def set_pkg2_upgrades_pkg1(self):
         previous = self.Facade.channels_reloaded
+
         def callback(self):
             from smart.backends.deb.base import DebUpgrades
             previous(self)
@@ -49,15 +62,16 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
     def set_pkg1_installed(self):
         previous = self.Facade.channels_reloaded
+
         def callback(self):
             previous(self)
             self.get_packages_by_name("name1")[0].installed = True
         self.Facade.channels_reloaded = callback
 
     def test_set_package_ids_with_all_known(self):
-        request1 = self.store.add_hash_id_request(["hash1", "hash2"])
+        self.store.add_hash_id_request(["hash1", "hash2"])
         request2 = self.store.add_hash_id_request(["hash3", "hash4"])
-        request3 = self.store.add_hash_id_request(["hash5", "hash6"])
+        self.store.add_hash_id_request(["hash5", "hash6"])
 
         self.store.add_task("reporter",
                             {"type": "package-ids", "ids": [123, 456],
@@ -164,7 +178,6 @@ class PackageReporterTest(LandscapeIsolatedTest):
                                 "request-id": request2.id,
                   "type": "add-packages"}])
 
-
         class FakePackage(object):
             type = 65537
             name = u"name1"
@@ -187,7 +200,9 @@ class PackageReporterTest(LandscapeIsolatedTest):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["add-packages"])
 
-        class Boom(Exception): pass
+        class Boom(Exception):
+            pass
+
         deferred = Deferred()
         deferred.errback(Boom())
 
@@ -236,16 +251,13 @@ class PackageReporterTest(LandscapeIsolatedTest):
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        self.mocker.result("codename")
-        command_mock("dpkg --print-architecture")
-        self.mocker.result("arch")
+        self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
+        self.facade.set_arch("arch")
 
         # Let's say fetch_async is successful
         hash_id_db_url = self.config.package_hash_id_url + "uuid_codename_arch"
         fetch_async_mock = self.mocker.replace("landscape.lib.fetch.fetch_async")
-        fetch_async_mock(hash_id_db_url)
+        fetch_async_mock(hash_id_db_url, cainfo=None)
         fetch_async_result = Deferred()
         fetch_async_result.callback("hash-ids")
         self.mocker.result(fetch_async_result)
@@ -283,11 +295,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        self.mocker.result("codename")
-        command_mock("dpkg --print-architecture")
-        self.mocker.result("arch")
+        self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
+        self.facade.set_arch("arch")
 
         # Intercept any call to fetch_async
         fetch_async_mock = self.mocker.replace("landscape.lib.fetch.fetch_async")
@@ -333,15 +342,13 @@ class PackageReporterTest(LandscapeIsolatedTest):
         message_store.set_server_uuid("uuid")
 
         # Undetermined codename
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        command_error = CommandError("lsb_release -cs", 1, "error")
-        self.mocker.throw(command_error)
+        self.reporter.lsb_release_filename = self.makeFile("Foo=bar")
 
         # The failure should be properly logged
         logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("Couldn't determine which hash=>id database to use: %s" %
-                     str(command_error))
+        logging_mock("Couldn't determine which hash=>id database to use: "
+                     "missing code-name key in %s" %
+                     self.reporter.lsb_release_filename)
         self.mocker.result(None)
 
         # Go!
@@ -355,19 +362,15 @@ class PackageReporterTest(LandscapeIsolatedTest):
         # Fake uuid and codename
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        self.mocker.result("codename")
+        self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
 
         # Undetermined arch
-        command_mock("dpkg --print-architecture")
-        command_error = CommandError("dpkg --print-architecture", 1, "error")
-        self.mocker.throw(command_error)
+        self.facade.set_arch(None)
 
         # The failure should be properly logged
         logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("Couldn't determine which hash=>id database to use: %s" %
-                     str(command_error))
+        logging_mock("Couldn't determine which hash=>id database to use: "\
+                     "unknown dpkg architecture")
         self.mocker.result(None)
 
         # Go!
@@ -389,17 +392,14 @@ class PackageReporterTest(LandscapeIsolatedTest):
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        self.mocker.result("codename")
-        command_mock("dpkg --print-architecture")
-        self.mocker.result("arch")
+        self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
+        self.facade.set_arch("arch")
 
         # Check fetch_async is called with the default url
         hash_id_db_url = "http://fake.url/path/hash-id-databases/" \
                          "uuid_codename_arch"
         fetch_async_mock = self.mocker.replace("landscape.lib.fetch.fetch_async")
-        fetch_async_mock(hash_id_db_url)
+        fetch_async_mock(hash_id_db_url, cainfo=None)
         fetch_async_result = Deferred()
         fetch_async_result.callback("hash-ids")
         self.mocker.result(fetch_async_result)
@@ -424,16 +424,13 @@ class PackageReporterTest(LandscapeIsolatedTest):
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        self.mocker.result("codename")
-        command_mock("dpkg --print-architecture")
-        self.mocker.result("arch")
+        self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
+        self.facade.set_arch("arch")
 
         # Let's say fetch_async fails
         hash_id_db_url = self.config.package_hash_id_url + "uuid_codename_arch"
         fetch_async_mock = self.mocker.replace("landscape.lib.fetch.fetch_async")
-        fetch_async_mock(hash_id_db_url)
+        fetch_async_mock(hash_id_db_url, cainfo=None)
         fetch_async_result = Deferred()
         fetch_async_result.errback(FetchError("fetch error"))
         self.mocker.result(fetch_async_result)
@@ -465,11 +462,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
         # Fake uuid, codename and arch
         message_store = self.broker_service.message_store
         message_store.set_server_uuid("uuid")
-        command_mock = self.mocker.replace("landscape.lib.command.run_command")
-        command_mock("lsb_release -cs")
-        self.mocker.result("codename")
-        command_mock("dpkg --print-architecture")
-        self.mocker.result("arch")
+        self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
+        self.facade.set_arch("arch")
 
         # The failure should be properly logged
         logging_mock = self.mocker.replace("logging.warning")
@@ -490,6 +484,36 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         return result
 
+    def test_fetch_hash_id_db_with_custom_certificate(self):
+        """
+        The L{PackageReporter.fetch_hash_id_db} method takes into account the
+        possible custom SSL certificate specified in the client configuration.
+        """
+
+        self.config.url = "http://fake.url/path/message-system/"
+        self.config.ssl_public_key = "/some/key"
+
+        # Fake uuid, codename and arch
+        message_store = self.broker_service.message_store
+        message_store.set_server_uuid("uuid")
+        self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
+        self.facade.set_arch("arch")
+
+        # Check fetch_async is called with the default url
+        hash_id_db_url = "http://fake.url/path/hash-id-databases/" \
+                         "uuid_codename_arch"
+        fetch_async_mock = self.mocker.replace("landscape.lib.fetch.fetch_async")
+        fetch_async_mock(hash_id_db_url, cainfo=self.config.ssl_public_key)
+        fetch_async_result = Deferred()
+        fetch_async_result.callback("hash-ids")
+        self.mocker.result(fetch_async_result)
+
+        # Now go!
+        self.mocker.replay()
+        result = self.reporter.fetch_hash_id_db()
+
+        return result
+
     def test_run_smart_update(self):
         """
         The L{PackageReporter.run_smart_update} method should run smart-update
@@ -506,15 +530,42 @@ class PackageReporterTest(LandscapeIsolatedTest):
         deferred = Deferred()
 
         def do_test():
+
             def raiseme(x):
                 raise Exception
+
             logging.warning = raiseme
             result = self.reporter.run_smart_update()
+
             def callback((out, err, code)):
                 interval = self.reporter.smart_update_interval
                 self.assertEquals(out, "--after %d" % interval)
                 self.assertEquals(err, "")
                 self.assertEquals(code, 0)
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
+
+    def test_run_smart_update_with_force_smart_update(self):
+        """
+        L{PackageReporter.run_smart_update} forces a smart-update run if
+        the '--force-smart-update' command line option was passed.
+
+        """
+        self.config.load(["--force-smart-update"])
+        self.reporter.smart_update_filename = self.makeFile(
+            "#!/bin/sh\necho -n $@")
+        os.chmod(self.reporter.smart_update_filename, 0755)
+
+        deferred = Deferred()
+
+        def do_test():
+            result = self.reporter.run_smart_update()
+
+            def callback((out, err, code)):
+                self.assertEquals(out, "")
             result.addCallback(callback)
             result.chainDeferred(deferred)
 
@@ -537,8 +588,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         def do_test():
             result = self.reporter.run_smart_update()
+
             def callback((out, err, code)):
-                interval = self.reporter.smart_update_interval
                 self.assertEquals(out, "output")
                 self.assertEquals(err, "error")
                 self.assertEquals(code, 2)
@@ -561,10 +612,11 @@ class PackageReporterTest(LandscapeIsolatedTest):
                      " (error  )" % self.reporter.smart_update_filename)
         self.mocker.replay()
         deferred = Deferred()
+
         def do_test():
             result = self.reporter.run_smart_update()
+
             def callback((out, err, code)):
-                interval = self.reporter.smart_update_interval
                 self.assertEquals(out, "")
                 self.assertEquals(err, "error  ")
                 self.assertEquals(code, 1)
@@ -584,13 +636,15 @@ class PackageReporterTest(LandscapeIsolatedTest):
             "#!/bin/sh\necho\nexit 1")
         os.chmod(self.reporter.smart_update_filename, 0755)
         deferred = Deferred()
+
         def do_test():
+
             def raiseme(x):
                 raise Exception
             logging.warning = raiseme
             result = self.reporter.run_smart_update()
+
             def callback((out, err, code)):
-                interval = self.reporter.smart_update_interval
                 self.assertEquals(out, "\n")
                 self.assertEquals(err, "")
                 self.assertEquals(code, 1)
@@ -755,7 +809,9 @@ class PackageReporterTest(LandscapeIsolatedTest):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["unknown-package-hashes"])
 
-        class Boom(Exception): pass
+        class Boom(Exception):
+            pass
+
         deferred = Deferred()
         deferred.errback(Boom())
 
@@ -835,7 +891,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
                                 [{"type": "packages",
                                   "not-available": [(1, 3)]}])
 
-            self.assertEquals(sorted(self.store.get_available()), [])
+            self.assertEquals(self.store.get_available(), [])
 
         result = self.reporter.detect_changes()
         return result.addCallback(got_result)
@@ -853,7 +909,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
             self.assertMessages(message_store.get_pending_messages(),
                                 [{"type": "packages", "installed": [1]}])
 
-            self.assertEquals(sorted(self.store.get_installed()), [1])
+            self.assertEquals(self.store.get_installed(), [1])
 
         result = self.reporter.detect_changes()
         return result.addCallback(got_result)
@@ -886,7 +942,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
             self.assertMessages(message_store.get_pending_messages(),
                                 [{"type": "packages", "not-installed": [1]}])
 
-            self.assertEquals(sorted(self.store.get_installed()), [])
+            self.assertEquals(self.store.get_installed(), [])
 
         result = self.reporter.detect_changes()
         return result.addCallback(got_result)
@@ -922,7 +978,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
                                 [{"type": "packages",
                                   "available-upgrades": [2]}])
 
-            self.assertEquals(sorted(self.store.get_available_upgrades()), [2])
+            self.assertEquals(self.store.get_available_upgrades(), [2])
 
         result = self.reporter.detect_changes()
         return result.addCallback(got_result)
@@ -940,9 +996,206 @@ class PackageReporterTest(LandscapeIsolatedTest):
                                 [{"type": "packages",
                                   "not-available-upgrades": [2]}])
 
-            self.assertEquals(sorted(self.store.get_available_upgrades()), [])
+            self.assertEquals(self.store.get_available_upgrades(), [])
 
         result = self.reporter.detect_changes()
+        return result.addCallback(got_result)
+
+    def test_detect_changes_with_locked(self):
+        """
+        If Smart indicates locked packages we didn't know about, report
+        them to the server.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+
+        self.facade.set_package_lock("name1")
+        self.facade.set_package_lock("name2", ">=", "version2")
+
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2})
+        self.store.add_available([1, 2])
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "packages", "locked": [1, 2]}])
+            self.assertEquals(sorted(self.store.get_locked()), [1, 2])
+
+        result = self.reporter.detect_changes()
+        return result.addCallback(got_result)
+
+    def test_detect_changes_with_locked_and_ranges(self):
+        """
+        Ranges are used when reporting changes to 3 or more locked packages
+        having consecutive ids.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+
+        self.facade.set_package_lock("name1")
+        self.facade.set_package_lock("name2", ">=", "version2")
+        self.facade.set_package_lock("name3", "<", "version4")
+
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
+        self.store.add_available([1, 2, 3])
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "packages", "locked": [(1, 3)]}])
+            self.assertEquals(sorted(self.store.get_locked()), [1, 2, 3])
+
+        result = self.reporter.detect_changes()
+        return result.addCallback(got_result)
+
+    def test_detect_changes_with_locked_with_unknown_hash(self):
+        """
+        Locked packages whose hashes are unknown don't get reported.
+        """
+        self.facade.set_package_lock("name1")
+
+        def got_result(result):
+            self.assertEquals(self.store.get_locked(), [])
+
+        result = self.reporter.detect_changes()
+        return result.addCallback(got_result)
+
+    def test_detect_changes_with_locked_and_previously_known(self):
+        """
+        We don't report locked packages we already know about.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+
+        self.facade.set_package_lock("name1")
+        self.facade.set_package_lock("name2", ">=", "version2")
+
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2})
+        self.store.add_available([1, 2])
+        self.store.add_locked([1])
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "packages", "locked": [2]}])
+
+            self.assertEquals(sorted(self.store.get_locked()), [1, 2])
+
+        result = self.reporter.detect_changes()
+        return result.addCallback(got_result)
+
+    def test_detect_changes_with_not_locked(self):
+        """
+        We report when a package was previously locked and isn't anymore.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+
+        self.store.set_hash_ids({HASH1: 1})
+        self.store.add_available([1])
+        self.store.add_locked([1])
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "packages", "not-locked": [1]}])
+            self.assertEquals(self.store.get_locked(), [])
+
+        result = self.reporter.detect_changes()
+        return result.addCallback(got_result)
+
+    def test_detect_changes_with_not_locked_and_ranges(self):
+        """
+        Ranges are used when reporting changes to 3 or more not locked packages
+        having consecutive ids.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+
+        self.store.add_locked([1, 2, 3])
+
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
+        self.store.add_available([1, 2, 3])
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "packages", "not-locked": [(1, 3)]}])
+            self.assertEquals(sorted(self.store.get_locked()), [])
+
+        result = self.reporter.detect_changes()
+        return result.addCallback(got_result)
+
+    def test_detect_package_locks_changes_with_create_locks(self):
+        """
+        If Smart indicates package locks we didn't know about, report
+        them to the server.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["package-locks"])
+
+        self.facade.set_package_lock("name")
+
+        logging_mock = self.mocker.replace("logging.info")
+        logging_mock("Queuing message with changes in known package locks:"
+                     " 1 created, 0 deleted.")
+        self.mocker.replay()
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "package-locks",
+                                  "created": [("name", "", "")]}])
+            self.assertEquals(self.store.get_package_locks(),
+                              [("name", "", "")])
+
+        result = self.reporter.detect_package_locks_changes()
+        return result.addCallback(got_result)
+
+    def test_detect_package_locks_changes_with_already_known_locks(self):
+        """
+        We don't report changes about locks we already know about.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["package-locks"])
+
+        self.facade.set_package_lock("name1")
+        self.facade.set_package_lock("name2", "<", "1.2")
+
+        self.store.add_package_locks([("name1", "", "")])
+
+        logging_mock = self.mocker.replace("logging.info")
+        logging_mock("Queuing message with changes in known package locks:"
+                     " 1 created, 0 deleted.")
+        self.mocker.replay()
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "package-locks",
+                                  "created": [("name2", "<", "1.2")]}])
+            self.assertEquals(sorted(self.store.get_package_locks()),
+                              [("name1", "", ""),
+                               ("name2", "<", "1.2")])
+
+        result = self.reporter.detect_package_locks_changes()
+        return result.addCallback(got_result)
+
+    def test_detect_package_locks_changes_with_deleted_locks(self):
+        """
+        If Smart indicates newly unset package locks, report them to the
+        server.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["package-locks"])
+
+        self.store.add_package_locks([("name1", "", "")])
+
+        logging_mock = self.mocker.replace("logging.info")
+        logging_mock("Queuing message with changes in known package locks:"
+                     " 0 created, 1 deleted.")
+        self.mocker.replay()
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "package-locks",
+                                  "deleted": [("name1", "", "")]}])
+            self.assertEquals(self.store.get_package_locks(), [])
+
+        result = self.reporter.detect_package_locks_changes()
         return result.addCallback(got_result)
 
     def test_run(self):
@@ -950,15 +1203,15 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         self.mocker.order()
 
-        results = [Deferred() for i in range(7)]
-
-        reporter_mock.fetch_hash_id_db()
-        self.mocker.result(results[0])
-
-        reporter_mock.use_hash_id_db()
-        self.mocker.result(results[1])
+        results = [Deferred() for i in range(8)]
 
         reporter_mock.run_smart_update()
+        self.mocker.result(results[0])
+
+        reporter_mock.fetch_hash_id_db()
+        self.mocker.result(results[1])
+
+        reporter_mock.use_hash_id_db()
         self.mocker.result(results[2])
 
         reporter_mock.handle_tasks()
@@ -973,6 +1226,9 @@ class PackageReporterTest(LandscapeIsolatedTest):
         reporter_mock.detect_changes()
         self.mocker.result(results[6])
 
+        reporter_mock.detect_package_locks_changes()
+        self.mocker.result(results[7])
+
         self.mocker.replay()
 
         self.reporter.run()
@@ -986,8 +1242,6 @@ class PackageReporterTest(LandscapeIsolatedTest):
             deferred.callback(None)
 
     def test_main(self):
-        data_path = self.makeDir()
-
         run_task_handler = self.mocker.replace("landscape.package.taskhandler"
                                                ".run_task_handler",
                                                passthrough=False)
@@ -1015,7 +1269,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
     def test_resynchronize(self):
         """
         When a resynchronize task arrives, the reporter should clear
-        out all the data in the package store, except the hash ids.
+        out all the data in the package store, except the hash ids and
+        the hash ids requests.
         This is done in the reporter so that we know it happens when
         no other reporter is possibly running at the same time.
         """
@@ -1026,6 +1281,11 @@ class PackageReporterTest(LandscapeIsolatedTest):
         request1 = self.store.add_hash_id_request(["hash3"])
         request2 = self.store.add_hash_id_request(["hash4"])
 
+        # Set the message id to avoid the requests being deleted by the
+        # L{PackageReporter.remove_expired_hash_id_requests} method.
+        request1.message_id = 1
+        request2.message_id = 2
+
         # Let's make sure the data is there.
         self.assertEquals(self.store.get_available_upgrades(), [2])
         self.assertEquals(self.store.get_available(), [1])
@@ -1033,7 +1293,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         self.assertEquals(self.store.get_hash_id_request(request1.id).id, request1.id)
 
         self.store.add_task("reporter", {"type": "resynchronize"})
-        
+
         deferred = self.reporter.run()
 
         def check_result(result):
@@ -1049,13 +1309,22 @@ class PackageReporterTest(LandscapeIsolatedTest):
             self.assertEquals(self.store.get_available(), [3, 4])
             self.assertEquals(self.store.get_installed(), [])
 
-            # A New hash id request should also be detected for HASH3,
-            # but there should be no other hash id requests.
-            request = self.store.get_hash_id_request(request1.id)
-            self.assertEquals(request.id, request1.id)
-            self.assertEquals(request.hashes, [HASH3])
-            self.assertRaises(UnknownHashIDRequest,
-                              self.store.get_hash_id_request, request2.id)
+            # The two original hash id requests should be still there, and
+            # a new hash id request should also be detected for HASH3.
+            requests_count = 0
+            new_request_found = False
+            for request in self.store.iter_hash_id_requests():
+                requests_count += 1
+                if request.id == request1.id:
+                    self.assertEquals(request.hashes, ["hash3"])
+                elif request.id == request2.id:
+                    self.assertEquals(request.hashes, ["hash4"])
+                elif not new_request_found:
+                    self.assertEquals(request.hashes, [HASH3])
+                else:
+                    self.fail("Unexpected hash-id request!")
+            self.assertEquals(requests_count, 3)
+
         deferred.addCallback(check_result)
         return deferred
 

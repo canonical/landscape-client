@@ -31,13 +31,24 @@ class HashIdStoreTest(LandscapeTest):
         self.store1.set_hash_ids(hash_ids)
         self.assertEquals(self.store1.get_hash_ids(), hash_ids)
 
+    def test_wb_lazy_connection(self):
+        """
+        The connection to the sqlite database is created only when some query
+        gets actually requsted.
+        """
+        self.assertEquals(self.store1._db, None)
+        self.store1.get_hash_ids()
+        self.assertTrue(isinstance(self.store1._db, sqlite3.Connection))
+
     def test_wb_transactional_commits(self):
+        self.store1._db = sqlite3.connect(self.store1._filename)
         mock_db = self.mocker.replace(self.store1._db)
         mock_db.commit()
         self.mocker.replay()
         self.store1.set_hash_ids({})
 
     def test_wb_transactional_rolls_back(self):
+        self.store1._db = sqlite3.connect(self.store1._filename)
         mock_db = self.mocker.replace(self.store1._db)
         mock_db.rollback()
         self.mocker.replay()
@@ -292,6 +303,172 @@ class PackageStoreTest(LandscapeTest):
         self.store1.add_installed([1, 2, 3, 4])
         self.store1.clear_installed()
         self.assertEquals(self.store2.get_installed(), [])
+
+    def test_ensure_package_schema_with_new_tables(self):
+        """
+        The L{ensure_package_schema} function behaves correctly when new
+        tables are added.
+        """
+        filename = self.makeFile()
+        database = sqlite3.connect(filename)
+        cursor = database.cursor()
+        cursor.execute("CREATE TABLE available"
+                       " (id INTEGER PRIMARY KEY)")
+        cursor.execute("CREATE TABLE available_upgrade"
+                       " (id INTEGER PRIMARY KEY)")
+        cursor.execute("CREATE TABLE installed"
+                       " (id INTEGER PRIMARY KEY)")
+        cursor.execute("CREATE TABLE hash_id_request"
+                       " (id INTEGER PRIMARY KEY, timestamp TIMESTAMP,"
+                       " message_id INTEGER, hashes BLOB)")
+        cursor.execute("CREATE TABLE task"
+                       " (id INTEGER PRIMARY KEY, queue TEXT,"
+                       " timestamp TIMESTAMP, data BLOB)")
+        cursor.close()
+        database.commit()
+        database.close()
+
+        store = PackageStore(filename)
+        store.get_locked()
+
+        database = sqlite3.connect(filename)
+        cursor = database.cursor()
+        for table in ["package_locks", "locked"]:
+            query = "pragma table_info(%s)" % table
+            result = cursor.execute(query).fetchall()
+            self.assertTrue(len(result) > 0)
+
+    def test_add_and_get_locked(self):
+        """
+        L{PackageStore.add_locked} adds the given ids to the table of locked
+        packages and commits the changes.
+        """
+        self.store1.add_locked([1])
+        self.assertEquals(self.store2.get_locked(), [1])
+
+    def test_add_locked_conflicting(self):
+        """Adding the same locked pacakge id twice is fine."""
+        self.store1.add_locked([1])
+        self.store1.add_locked([1])
+        self.assertEquals(self.store2.get_locked(), [1])
+
+    def test_remove_locked(self):
+        """
+        L{PackageStore.removed_locked} remove the given ids from the table
+        of locked packages and commits the changes.
+        """
+        self.store1.add_locked([1, 2, 3, 4])
+        self.store1.remove_locked([2, 3])
+        self.assertEquals(self.store2.get_locked(), [1, 4])
+
+    def test_remove_locked_non_existing(self):
+        """
+        Removing non-existing locked packages is fine.
+        """
+        self.store1.remove_locked([1])
+        self.assertEquals(self.store2.get_locked(), [])
+
+    def test_clear_locked(self):
+        """
+        L{PackageStore.clear_locked} clears the table of locked packages by
+        removing all its package ids.
+        """
+        self.store1.add_locked([1, 2, 3, 4])
+        self.store1.clear_locked()
+        self.assertEquals(self.store2.get_locked(), [])
+
+    def test_get_package_locks_with_no_lock(self):
+        """
+        L{PackageStore.get_package_locks} returns an empty list if no package
+        locks are stored.
+        """
+        self.assertEquals(self.store1.get_package_locks(), [])
+
+    def test_add_package_locks(self):
+        """
+        L{PackageStore.add_package_locks} adds a package lock to the store.
+        """
+        self.store1.add_package_locks([("name", "", "")])
+        self.assertEquals(self.store2.get_package_locks(),
+                          [("name", "", "")])
+
+    def test_add_package_locks_idempotence(self):
+        """
+        The operation of adding a lock is idempotent.
+        """
+        self.store1.add_package_locks([("name", "", "")])
+        self.store1.add_package_locks([("name", "", "")])
+        self.assertEquals(self.store2.get_package_locks(),
+                          [("name", "", "")])
+
+    def test_add_package_locks_with_none(self):
+        """
+        If None, package locks relation and version values are automatically
+        converted to empty strings.
+        """
+        self.store1.add_package_locks([("name", None, None)])
+        self.assertEquals(self.store2.get_package_locks(),
+                          [("name", "", "")])
+
+    def test_add_package_locks_multiple_times(self):
+        """
+        L{PackageStore.add_package_locks} can be called multiple times and
+        with multiple locks each time.
+        """
+        self.store1.add_package_locks([("name1", "", "")])
+        self.store1.add_package_locks([("name2", "<", "0.2"),
+                                       ("name3", "", "")])
+        self.assertEquals(sorted(self.store2.get_package_locks()),
+                          sorted([("name1", "", ""),
+                                  ("name2", "<", "0.2"),
+                                  ("name3", "", "")]))
+
+    def test_add_package_locks_without_name(self):
+        """
+        It's not possible to add a package lock without a name.
+        """
+        self.assertRaises(sqlite3.IntegrityError,
+                          self.store1.add_package_locks,
+                          [(None, None, None)])
+
+    def test_remove_package_locks(self):
+        """
+        L{PackageStore.remove_package_locks} removes a package lock from
+        the store.
+        """
+        self.store1.add_package_locks([("name1", "", "")])
+        self.store1.remove_package_locks([("name1", "", "")])
+        self.assertEquals(self.store2.get_package_locks(), [])
+
+    def test_remove_package_locks_multiple_times(self):
+        """
+        L{PackageStore.remove_package_locks} can be called multiple times and
+        with multiple locks each time.
+        """
+        self.store1.add_package_locks([("name1", "", ""),
+                                       ("name2", "<", "0.2"),
+                                       ("name3", "", "")])
+        self.store1.remove_package_locks([("name1", "", "")])
+        self.store1.remove_package_locks([("name2", "<", "0.2"),
+                                          ("name3", "", "")])
+        self.assertEquals(self.store2.get_package_locks(), [])
+
+    def test_remove_package_locks_without_matching_lock(self):
+        """
+        It's fine to remove a non-existent lock.
+        """
+        self.store1.remove_package_locks([("name", "", "")])
+        self.assertEquals(self.store2.get_package_locks(), [])
+
+    def test_clear_package_locks(self):
+        """
+        L{PackageStore.clear_package_locks} removes all package locks
+        from the store.
+        """
+        self.store1.add_package_locks([("name1", "", ""),
+                                       ("name2", "<", "0.2")])
+        self.store1.clear_package_locks()
+        self.assertEquals(self.store2.get_package_locks(), [])
 
     def test_add_hash_id_request(self):
         hashes = ("ha\x00sh1", "ha\x00sh2")

@@ -17,7 +17,7 @@ class DeploymentTest(LandscapeTest):
     def test_get_plugins(self):
         configuration = ManagerConfiguration()
         configuration.load(["--manager-plugins", "ProcessKiller",
-                            "-d", self.make_dir()])
+                            "-d", self.makeDir()])
         manager_service = ManagerService(configuration)
         plugins = manager_service.plugins
         self.assertEquals(len(plugins), 1)
@@ -26,14 +26,14 @@ class DeploymentTest(LandscapeTest):
     def test_get_all_plugins(self):
         configuration = ManagerConfiguration()
         configuration.load(["--manager-plugins", "ALL",
-                            "-d", self.make_dir()])
+                            "-d", self.makeDir()])
         manager_service = ManagerService(configuration)
         self.assertEquals(len(manager_service.plugins), 4)
 
     def test_include_script_execution(self):
         configuration = ManagerConfiguration()
         configuration.load(["--include-manager-plugins", "ScriptExecution",
-                            "-d", self.make_dir()])
+                            "-d", self.makeDir()])
         manager_service = ManagerService(configuration)
         self.assertEquals(len(manager_service.plugins), 5)
 
@@ -43,7 +43,7 @@ class DeploymentTest(LandscapeTest):
         as.
         """
         configuration = ManagerConfiguration()
-        configuration.load(["-d", self.make_dir(),
+        configuration.load(["-d", self.makeDir(),
                             "--script-users", "foo, bar,baz"])
         self.assertEquals(configuration.get_allowed_script_users(),
                           ["foo", "bar", "baz"])
@@ -54,7 +54,7 @@ class DeploymentTest(LandscapeTest):
         L{ALL_USERS}.
         """
         configuration = ManagerConfiguration()
-        configuration.load(["-d", self.make_dir(),
+        configuration.load(["-d", self.makeDir(),
                             "--script-users", "\tALL "])
         self.assertEquals(configuration.get_allowed_script_users(), ALL_USERS)
 
@@ -63,7 +63,7 @@ class DeploymentTest(LandscapeTest):
         If no script users are specified, the default is 'nobody'.
         """
         configuration = ManagerConfiguration()
-        configuration.load(["-d", self.make_dir()])
+        configuration.load(["-d", self.makeDir()])
         self.assertEquals(configuration.get_allowed_script_users(),
                           ["nobody"])
 
@@ -75,7 +75,7 @@ class DeploymentBusTests(LandscapeIsolatedTest):
     def setUp(self):
         super(DeploymentBusTests, self).setUp()
         configuration = ManagerConfiguration()
-        self.path = self.make_dir()
+        self.path = self.makeDir()
         configuration.load(["-d", self.path, "--bus", "session",
                             "--manager-plugins", "ProcessKiller"])
         self.manager_service = ManagerService(configuration)

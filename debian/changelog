@@ -1,13 +1,74 @@
-landscape-client (1.3.2.1-0ubuntu0.9.10.0) karmic; urgency=low
+landscape-client (1.4.0-0ubuntu0.9.10.0) lucid; urgency=low
+
+  * New upstream release with several bug fixes:
+    - Fix landscape daemons fail to start when too many groups are
+      available (LP: #456124)
+    - Fix landscape programs wake up far too much. (LP: #340843)
+    - Fix Package manager fails with 'no such table: task' (LP #465846)
+    - Fix test suite leaving temporary files around (LP #476418)
+
+  * Add support for Ubuntu release upgrades:
+    - Add helper function to fetch many files at once (LP: #450629)
+    - Handle release-upgrade messages in the packagemanager
+      plugin (LP: #455217)
+    - Add a release-upgrader task handler (LP: #462543)
+    - Support upgrade-tool environment variables (LP: #463321)
+
+  * Add initial support for Smart package locking:
+    - Detect and report changes about Smart package locks (#488108)
+  
+ -- Free Ekanayaka <free.ekanayaka@canonical.com>  Tue, 01 Dec 2009 09:16:26 +0100
+
+landscape-client (1.3.2.4-0ubuntu0.9.10.0) karmic; urgency=low
 
   * New upstream release:
+    - Catch import errors in the landscape-sysinfo script to prevent
+      errors when landscape-sysinfo is run to update the motd during
+      upgrade (LP: #349996)
+    - Fix a long-standing bug in the client which causes resynchronisations
+      on the server (LP: #144475)
+    - When downloading hash-id stores, pass possible custom SSL certificates
+      to the fetch fuction (LP: #435887)
+    - Handle unicode username in custom graphs, and also report missing user
+      to the server properly (LP: #406388)
+    - Handle a SQlite bug when creating package store database, by making an
+      extra query to flush the table cache (LP: #416629)
+
+ -- Free Ekanayaka <free.ekanayaka@canonical.com>  Fri, 09 Oct 2009 18:21:24 +0200
+
+landscape-client (1.3.2.3-0ubuntu0.9.10.0) karmic; urgency=low
+
+  * New upstream release:
+    - Don't clear the hash_id_requests table upon resynchronize (LP #417122)
+
+ -- Free Ekanayaka <free.ekanayaka@canonical.com>  Wed, 26 Aug 2009 15:16:59 +0200
+
+landscape-client (1.3.2.2-0ubuntu0.9.10.3) karmic; urgency=low
+
+  * Drop unsed dependency on libcurl3 and explicitly depend on
+    libcurl3-gnutls (>= 7.15.1-1ubuntu3) on dapper (LP: #406885)
+  * Add missing debian/landscape-common.config (LP: #410378)
+
+ -- Free Ekanayaka <free.ekanayaka@canonical.com>  Thu, 30 Jul 2009 15:16:07 +0200
+
+landscape-client (1.3.2.2-0ubuntu0.9.10.2) karmic; urgency=low
+
+  * debian/control: dropping python-pysqlite2 dependency, since this
+    package is in universe, and python now has built-in sqlite support,
+    LP: #406641
+
+ -- Dustin Kirkland <kirkland@ubuntu.com>  Wed, 29 Jul 2009 17:33:47 -0500
+
+landscape-client (1.3.2.2-0ubuntu0.9.10.1) karmic; urgency=low
+
+  [ Free Ekanayaka ]
+  * New upstream release:
+    - Include the README file in landscape-client (LP: #396260)
+    - Fix client capturing stderr from run_command when constructing
+      hash-id-databases url (LP: #397480)
+    - Use substvars to conditionally depend on update-motd or
+      libpam-modules (LP: #393454)
     - Fix reporting wrong version to the server (LP: #391225)
-
- -- Free Ekanayaka <freee@debian.org>  Wed, 24 Jun 2009 16:50:49 +0200
-
-landscape-client (1.3.2-0ubuntu0.9.10.0) karmic; urgency=low
-
-  * New upstream release:
     - The init script does not wait for the network to be available
       before checking for EC2 user data (LP: #383336)
     - When the broker is restarted by the watchdog, the state of the client
@@ -24,8 +85,14 @@ landscape-client (1.3.2-0ubuntu0.9.10.0) karmic; urgency=low
     - The fetch() timeout isn't based on activity (#389224)
     - Client can use a UUID of "None" when fetching the hash-id-database (LP: #381291)
     - Registration should use the fqdn rather than just the hostname (LP: #385730)
-  
- -- Free Ekanayaka <free.ekanayaka@canonical.com>  Tue, 09 Jun 2009 09:27:43 +0200
+
+ -- Mathias Gug <mathiaz@ubuntu.com>  Wed, 22 Jul 2009 14:54:50 -0400
+
+landscape-client (1.0.29.1-0ubuntu0.9.04.1) karmic; urgency=low
+
+  * debian/control: depend on libpam-modules, rather than update-motd
+
+ -- Dustin Kirkland <kirkland@ubuntu.com>  Thu, 16 Jul 2009 11:36:27 -0500
 
 landscape-client (1.0.29.1-0ubuntu0.9.04.0) jaunty; urgency=low
 

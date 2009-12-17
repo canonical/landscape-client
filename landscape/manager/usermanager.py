@@ -139,4 +139,3 @@ class UserManager(ManagerPlugin):
     def _remove_group(self, message):
         """Run an C{remove-group} operation."""
         return self._management.remove_group(message["groupname"])
-

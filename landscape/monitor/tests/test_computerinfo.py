@@ -1,8 +1,13 @@
 import re
 
 from landscape.monitor.computerinfo import ComputerInfo
-from landscape.tests.helpers import LandscapeTest, MakePathHelper, MonitorHelper
+from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.tests.mocker import ANY
+
+SAMPLE_LSB_RELEASE = "DISTRIB_ID=Ubuntu\n"                         \
+                     "DISTRIB_RELEASE=6.06\n"                      \
+                     "DISTRIB_CODENAME=dapper\n"                   \
+                     "DISTRIB_DESCRIPTION=\"Ubuntu 6.06.1 LTS\"\n"
 
 
 def get_fqdn():
@@ -11,7 +16,7 @@ def get_fqdn():
 
 class ComputerInfoTest(LandscapeTest):
 
-    helpers = [MonitorHelper, MakePathHelper]
+    helpers = [MonitorHelper]
 
     sample_memory_info = """
 MemTotal:      1547072 kB
@@ -41,17 +46,11 @@ VmallocChunk:   107432 kB
 
     def setUp(self):
         LandscapeTest.setUp(self)
-        self.lsb_release_filename = self.make_path("""\
-DISTRIB_ID=Ubuntu
-DISTRIB_RELEASE=6.06
-DISTRIB_CODENAME=dapper
-DISTRIB_DESCRIPTION="Ubuntu 6.06.1 LTS"
-""")
+        self.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
 
     def test_get_fqdn(self):
         self.mstore.set_accepted_types(["computer-info"])
-        plugin = ComputerInfo(get_fqdn=get_fqdn,
-                              lsb_release_filename=self.lsb_release_filename)
+        plugin = ComputerInfo(get_fqdn=get_fqdn)
         self.monitor.add(plugin)
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
@@ -82,6 +81,7 @@ DISTRIB_DESCRIPTION="Ubuntu 6.06.1 LTS"
         self.assertEquals(len(messages), 1)
 
     def test_report_changed_hostnames(self):
+
         def hostname_factory(hostnames=["ooga", "wubble", "wubble"]):
             i = 0
             while i < len(hostnames):
@@ -104,7 +104,7 @@ DISTRIB_DESCRIPTION="Ubuntu 6.06.1 LTS"
 
     def test_get_total_memory(self):
         self.mstore.set_accepted_types(["computer-info"])
-        meminfo_filename = self.make_path(self.sample_memory_info)
+        meminfo_filename = self.makeFile(self.sample_memory_info)
         plugin = ComputerInfo(meminfo_file=meminfo_filename)
         self.monitor.add(plugin)
         plugin.exchange()
@@ -116,7 +116,7 @@ DISTRIB_DESCRIPTION="Ubuntu 6.06.1 LTS"
 
     def test_get_real_total_memory(self):
         self.mstore.set_accepted_types(["computer-info"])
-        meminfo_filename = self.make_path(self.sample_memory_info)
+        meminfo_filename = self.makeFile(self.sample_memory_info)
         plugin = ComputerInfo()
         self.monitor.add(plugin)
         plugin.exchange()
@@ -229,7 +229,7 @@ DISTRIB_DESCRIPTION="Ubuntu 6.06.1 LTS"
         self.assertEquals(message["release"], "6.06")
         self.assertEquals(message["code-name"], "dapper")
 
-        plugin._lsb_release_filename = self.make_path("""\
+        plugin._lsb_release_filename = self.makeFile("""\
 DISTRIB_ID=Ubuntu
 DISTRIB_RELEASE=6.10
 DISTRIB_CODENAME=edgy
@@ -245,7 +245,7 @@ DISTRIB_DESCRIPTION="Ubuntu 6.10"
 
     def test_unknown_distribution_key(self):
         self.mstore.set_accepted_types(["distribution-info"])
-        lsb_release_filename = self.make_path("""\
+        lsb_release_filename = self.makeFile("""\
 DISTRIB_ID=Ubuntu
 DISTRIB_RELEASE=6.10
 DISTRIB_CODENAME=edgy
@@ -269,7 +269,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         all computer info should be generated.
         """
         self.mstore.set_accepted_types(["distribution-info", "computer-info"])
-        meminfo_filename = self.make_path(self.sample_memory_info)
+        meminfo_filename = self.makeFile(self.sample_memory_info)
         plugin = ComputerInfo(get_fqdn=get_fqdn,
                               meminfo_file=meminfo_filename,
                               lsb_release_filename=self.lsb_release_filename)

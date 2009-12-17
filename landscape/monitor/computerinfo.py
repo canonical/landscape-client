@@ -1,6 +1,7 @@
 import logging
 import socket
 
+from landscape.lib.lsb_release import LSB_RELEASE_FILENAME, parse_lsb_release
 from landscape.monitor.monitor import MonitorPlugin
 
 
@@ -15,7 +16,7 @@ class ComputerInfo(MonitorPlugin):
 
     def __init__(self, get_fqdn=socket.getfqdn,
                  meminfo_file="/proc/meminfo",
-                 lsb_release_filename="/etc/lsb-release"):
+                 lsb_release_filename=LSB_RELEASE_FILENAME):
         self._get_fqdn = get_fqdn
         self._meminfo_file = meminfo_file
         self._lsb_release_filename = lsb_release_filename
@@ -88,20 +89,8 @@ class ComputerInfo(MonitorPlugin):
         file.close()
         return (message["MemTotal"] // 1024, message["SwapTotal"] // 1024)
 
-    lsb_release_keys = {"DISTRIB_ID": "distributor-id",
-                        "DISTRIB_DESCRIPTION": "description",
-                        "DISTRIB_RELEASE": "release",
-                        "DISTRIB_CODENAME": "code-name"}
-
     def _get_distribution_info(self):
         """Get details about the distribution."""
         message = {}
-        file = open(self._lsb_release_filename, "r")
-        for line in file:
-            key, value = line.split("=")
-            if key in self.lsb_release_keys:
-                key = self.lsb_release_keys[key.strip()]
-                value = value.strip().strip('"')
-                message[key] = value
-        file.close()
+        message.update(parse_lsb_release(self._lsb_release_filename))
         return message

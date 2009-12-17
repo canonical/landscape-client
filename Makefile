@@ -1,7 +1,13 @@
 PYDOCTOR ?= pydoctor
 TXT2MAN=man/txt2man
+PYTHON ?= python
 
-check:
+all: build
+
+build:
+	$(PYTHON) setup.py build_ext -i
+
+check: build
 	-./test
 	-pyflakes landscape
 
@@ -14,6 +20,7 @@ clean:
 	-rm _trial_temp -rf
 	-rm docs/api -rf;
 	-rm man/\*.1 -rf
+	-rm sdist -rf
 
 doc: docs/api/twisted/pickle
 	mkdir -p docs/api
@@ -74,4 +81,16 @@ freshrun: freshdata run
 tags:
 	-ctags --languages=python -R .
 
-.PHONY: tags
+etags:
+	-etags --languages=python -R .
+
+UPSTREAM_VERSION=$(shell python -c "from landscape import UPSTREAM_VERSION; print UPSTREAM_VERSION")
+sdist:
+	mkdir -p sdist
+	bzr export sdist/landscape-client-$(UPSTREAM_VERSION)
+	rm -rf sdist/landscape-client-$(UPSTREAM_VERSION)/debian
+	cd sdist && tar cfz landscape-client-$(UPSTREAM_VERSION).tar.gz landscape-client-$(UPSTREAM_VERSION)
+	cd sdist && md5sum landscape-client-$(UPSTREAM_VERSION).tar.gz > landscape-client-$(UPSTREAM_VERSION).tar.gz.md5
+	rm -rf sdist/landscape-client-$(UPSTREAM_VERSION)
+
+.PHONY: tags etags

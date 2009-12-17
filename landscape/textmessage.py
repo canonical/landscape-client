@@ -72,12 +72,13 @@ def got_error(failure):
 
 
 def get_message(args):
+    encoding = sys.stdin.encoding or "UTF-8"
     if len(args) < 2:
         print ("Please enter your message, and send EOF (Control + D after "
                "newline) when done.")
-        message = sys.stdin.read().decode(sys.stdin.encoding)
+        message = sys.stdin.read().decode(encoding)
     else:
-        message = u" ".join([x.decode(sys.stdin.encoding) for x in args[1:]])
+        message = u" ".join([x.decode(encoding) for x in args[1:]])
     if not message:
         raise EmptyMessageError("Text messages may not be empty.")
     return message
@@ -102,7 +103,7 @@ def run(args=sys.argv):
     messages, and exits the process.
     """
     import dbus.glib
-    from twisted.internet.glib2reactor import install
+    from landscape.reactor import install
     install()
     from twisted.internet import reactor
 

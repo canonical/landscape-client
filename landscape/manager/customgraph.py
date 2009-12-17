@@ -126,19 +126,19 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
 
         try:
             uid, gid = get_user_info(user)[:2]
-        except UnknownUserError, e:
+        except UnknownUserError:
            logging.error(u"Attempt to add graph with unknown user %s" %
                          user)
         else:
             script_file = file(filename, "w")
-            self.write_script_file(script_file, filename, shell, code, uid,
-                                   gid)
+            self.write_script_file(
+                script_file, filename, shell, code, uid, gid)
             if graph_id in self._data:
-                    del self._data[graph_id]
+                del self._data[graph_id]
         self.registry.store.add_graph(graph_id, filename, user)
 
     def _format_exception(self, e):
-        return u"%s: %s" % (e.__class__.__name__, e)
+        return u"%s: %s" % (e.__class__.__name__, e.args[0])
 
     def exchange(self, urgent=False):
         self.registry.broker.call_if_accepted(
@@ -151,10 +151,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         graphs = list(self.registry.store.get_graphs())
         for graph_id, filename, user in graphs:
             if graph_id not in self._data:
-                if not os.path.isfile(filename):
-                    # Remove the graph to get resync, and don't add to data
-                    self.registry.store.remove_graph(graph_id)
-                else:
+                if os.path.isfile(filename):
                     script_hash = self._get_script_hash(filename)
                     self._data[graph_id] = {
                         "values": [], "error": u"", "script-hash": script_hash}
@@ -175,7 +172,7 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
             return
         try:
             data = float(output)
-        except ValueError, e:
+        except ValueError:
             if output:
                 raise InvalidFormatError(output)
             else:
@@ -227,33 +224,32 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         now = int(self._create_time())
 
         for graph_id, filename, user in graphs:
-            if not os.path.isfile(filename):
-                # The script file has been remove, let's remove the graph from
-                # the database to get resync by the server
-                self.registry.store.remove_graph(graph_id)
-                continue
-            script_hash = self._get_script_hash(filename)
+            if os.path.isfile(filename):
+                script_hash = self._get_script_hash(filename)
+            else:
+                script_hash = ""
             if graph_id not in self._data:
                 self._data[graph_id] = {
                     "values": [], "error": u"", "script-hash": script_hash}
             else:
                 self._data[graph_id]["script-hash"] = script_hash
-            if user is not None:
-                if not self.is_user_allowed(user):
-                    d = fail(ProhibitedUserError(user))
-                    d.addErrback(self._handle_error, graph_id)
-                    deferred_list.append(d)
-                    continue
             try:
                 uid, gid, path = get_user_info(user)
             except UnknownUserError, e:
                 d = fail(e)
                 d.addErrback(self._handle_error, graph_id)
                 deferred_list.append(d)
-            else:
-                result = self._run_script(
-                    filename, uid, gid, path, {}, self.time_limit)
-                result.addCallback(self._handle_data, graph_id, now)
-                result.addErrback(self._handle_error, graph_id)
-                deferred_list.append(result)
+                continue
+            if not self.is_user_allowed(user):
+                d = fail(ProhibitedUserError(user))
+                d.addErrback(self._handle_error, graph_id)
+                deferred_list.append(d)
+                continue
+            if not os.path.isfile(filename):
+                continue
+            result = self._run_script(
+                filename, uid, gid, path, {}, self.time_limit)
+            result.addCallback(self._handle_data, graph_id, now)
+            result.addErrback(self._handle_error, graph_id)
+            deferred_list.append(result)
         return DeferredList(deferred_list)
