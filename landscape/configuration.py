@@ -284,11 +284,6 @@ class LandscapeSetupScript(object):
         if not "https_proxy" in options:
             self.prompt("https_proxy", "HTTPS proxy URL")
 
-    def _normalize_users(self, users):
-        if users is not None:
-            users = users.replace("all", "ALL")
-            return users.replace("All", "ALL")
-
     def _get_invalid_users(self, users):
         if users is not None:
             user_list = [user.strip() for user in users.split(",")]
@@ -308,8 +303,6 @@ class LandscapeSetupScript(object):
     def query_script_plugin(self):
         options = self.config.get_command_line_options()
         if "include_manager_plugins" in options and "script_users" in options:
-            options["script_users"] = self._normalize_users(
-                options["script_users"])
             invalid_users = self._get_invalid_users(options["script_users"])
             if invalid_users:
                 raise ConfigurationError("Unknown system users: %s" %
@@ -342,9 +335,8 @@ class LandscapeSetupScript(object):
             if not "script_users" in options:
                 while True:
                     self.prompt("script_users", "Script users")
-                    normalized_users = self._normalize_users(
+                    invalid_users = self._get_invalid_users(
                         self.config.script_users)
-                    invalid_users = self._get_invalid_users(normalized_users)
                     if not invalid_users:
                         break
                     else:

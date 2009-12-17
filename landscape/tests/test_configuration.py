@@ -496,6 +496,15 @@ class LandscapeSetupScriptTest(LandscapeTest):
             "--include-manager-plugins", "ScriptPlugin"])
         self.assertRaises(ConfigurationError, self.script.query_script_plugin)
 
+    def test_query_script_users_defined_on_command_line_with_all_user(self):
+        """
+        We shouldn't accept all as a synonym for ALL
+        """
+        self.config.load_command_line(
+            ["--script-users", "all",
+            "--include-manager-plugins", "ScriptPlugin"])
+        self.assertRaises(ConfigurationError, self.script.query_script_plugin)
+
     def test_query_script_users_defined_on_command_line_with_ALL_user(self):
         """
         ALL is the special marker for all users.
@@ -506,28 +515,6 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.script.query_script_plugin()
         self.assertEquals(self.config.script_users,
                           "ALL")
-
-    def test_query_script_users_defined_on_command_line_with_all_user(self):
-        """
-        If the user provides "all" this should be converted to ALL in the
-        configuration.
-        """
-        self.config.load_command_line(
-            ["--script-users", "all",
-            "--include-manager-plugins", "ScriptPlugin"])
-        self.script.query_script_plugin()
-        self.assertEquals(self.config.script_users,
-                          "ALL")
-
-    def test_query_script_users_defined_on_command_line_with_all_and_extra_user(self):
-        """
-        If all and additional users are provided as the users on the command
-        line, this should raise an appropriate ConfigurationError.
-        """
-        self.config.load_command_line(
-            ["--script-users", "all, kevin",
-            "--include-manager-plugins", "ScriptPlugin"])
-        self.assertRaises(ConfigurationError, self.script.query_script_plugin)
 
     def test_query_script_users_defined_on_command_line_with_ALL_and_extra_user(self):
         """
