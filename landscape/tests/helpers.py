@@ -341,6 +341,12 @@ class RemoteBrokerHelper(FakeRemoteBrokerHelper):
 
 
 class BrokerConfigurationHelper(object):
+    """
+    The following attributes will be set on your test case:
+      - config: A sample L{BrokerConfiguration}.
+      - config_filename: The name of the configuration file that was used to
+        generate the above C{config}.
+    """
 
     def set_up(self, test_case):
         data_path = test_case.makeDir()
@@ -363,6 +369,22 @@ class BrokerConfigurationHelper(object):
         pass
 
 class ExchangeHelper(BrokerConfigurationHelper):
+    """
+    This helper uses the sample broker configuration provided by the
+    L{BrokerConfigurationHelper} to create all the components needed by
+    a L{MessageExchange}.  The following attributes will be set on your
+    test case:
+      - exchanger: A L{MessageExchange} using a L{FakeReactor} and a
+        L{FakeTransport}.
+      - reactor: The L{FakeReactor} used by the C{exchager}.
+      - transport: The L{FakeTransport} used by the C{exchanger}.
+      - identity: The L{Identity} used by the C{exchanger} and based
+        on the sample configuration.
+      - mstore: The L{MessageStore} used by the C{exchanger} and based
+        on the sample configuration.
+      - persist: The L{Persist} object used by C{mstore} and C{identity}.
+      - persit_filename: Path to the file holding the C{persist} data.
+    """
 
     def set_up(self, test_case):
         super(ExchangeHelper, self).set_up(test_case)
