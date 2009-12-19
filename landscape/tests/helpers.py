@@ -4,7 +4,6 @@ import shutil
 import pprint
 import re
 import os
-import tempfile
 import sys
 import unittest
 
@@ -27,6 +26,9 @@ from landscape.broker.deployment import (BrokerService, BrokerConfiguration)
 from landscape.deployment import BaseConfiguration
 from landscape.broker.remote import RemoteBroker, FakeRemoteBroker
 from landscape.broker.transport import FakeTransport
+from landscape.broker.exchange import MessageExchange
+from landscape.broker.store import get_default_message_store
+from landscape.broker.registration import Identity
 
 from landscape.monitor.monitor import MonitorPluginRegistry
 from landscape.manager.manager import ManagerPluginRegistry
@@ -338,19 +340,58 @@ class RemoteBrokerHelper(FakeRemoteBrokerHelper):
         super(RemoteBrokerHelper, self).tear_down(test_case)
 
 
-class ExchangeHelper(FakeRemoteBrokerHelper):
+class BrokerConfigurationHelper(object):
+
+    def set_up(self, test_case):
+        data_path = test_case.makeDir()
+        log_dir = test_case.makeDir()
+        test_case.config_filename = test_case.makeFile(
+            "[client]\n"
+            "url = http://localhost:91919\n"
+            "computer_title = Some Computer\n"
+            "account_name = some_account\n"
+            "ping_url = http://localhost:91910\n"
+            "data_path = %s\n"
+            "log_dir = %s\n" % (data_path, log_dir))
+
+        bootstrap_list.bootstrap(data_path=data_path, log_dir=log_dir)
+
+        test_case.config = BrokerConfiguration()
+        test_case.config.load(["-c", test_case.config_filename])
+
+    def tear_down(self, test_case):
+        pass
+
+class ExchangeHelper(BrokerConfigurationHelper):
+
+    def set_up(self, test_case):
+        super(ExchangeHelper, self).set_up(test_case)
+        persist = Persist(filename=test_case.makePersistFile())
+        test_case.mstore = get_default_message_store(
+            persist, test_case.config.message_store_path)
+        test_case.identity = Identity(test_case.config, persist)
+        test_case.transport = FakeTransport(test_case.config.url,
+                                            test_case.config.ssl_public_key)
+        test_case.reactor = FakeReactor()
+        test_case.exchanger = MessageExchange(
+            test_case.reactor, test_case.mstore, test_case.transport,
+            test_case.identity)
+
+    def tear_down(self, test_case):
+        pass
+
+
+class LegacyExchangeHelper(FakeRemoteBrokerHelper):
     """
     Backwards compatibility layer for tests that want a bunch of attributes
     jammed on to them instead of having C{self.broker_service}.
     """
 
     def set_up(self, test_case):
-        super(ExchangeHelper, self).set_up(test_case)
+        super(LegacyExchangeHelper, self).set_up(test_case)
 
         service = test_case.broker_service
 
-        test_case.persist_filename = service.persist_filename
-        test_case.message_directory = service.config.message_store_path
         test_case.transport = service.transport
         test_case.reactor = service.reactor
         test_case.persist = service.persist
@@ -359,7 +400,7 @@ class ExchangeHelper(FakeRemoteBrokerHelper):
         test_case.identity = service.identity
 
 
-class MonitorHelper(ExchangeHelper):
+class MonitorHelper(LegacyExchangeHelper):
     """
     Provides everything that L{ExchangeHelper} does plus a
     L{landscape.monitor.monitor.Monitor}.

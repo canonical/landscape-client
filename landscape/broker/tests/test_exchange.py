@@ -6,13 +6,13 @@ from landscape.schema import Message, Int
 from landscape.broker.exchange import get_accepted_types_diff, MessageExchange
 from landscape.broker.transport import FakeTransport
 from landscape.broker.store import MessageStore
-from landscape.tests.helpers import (LandscapeTest, ExchangeHelper,
+from landscape.tests.helpers import (LandscapeTest, LegacyExchangeHelper,
                                      DEFAULT_ACCEPTED_TYPES)
 
 
 class MessageExchangeTest(LandscapeTest):
 
-    helpers = [ExchangeHelper]
+    helpers = [LegacyExchangeHelper]
 
     def setUp(self):
         super(MessageExchangeTest, self).setUp()
