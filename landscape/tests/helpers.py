@@ -366,16 +366,18 @@ class ExchangeHelper(BrokerConfigurationHelper):
 
     def set_up(self, test_case):
         super(ExchangeHelper, self).set_up(test_case)
-        persist = Persist(filename=test_case.makePersistFile())
+        test_case.persist_filename=test_case.makePersistFile()
+        test_case.persist = Persist(filename=test_case.persist_filename)
         test_case.mstore = get_default_message_store(
-            persist, test_case.config.message_store_path)
-        test_case.identity = Identity(test_case.config, persist)
+            test_case.persist, test_case.config.message_store_path)
+        test_case.identity = Identity(test_case.config, test_case.persist)
         test_case.transport = FakeTransport(test_case.config.url,
                                             test_case.config.ssl_public_key)
         test_case.reactor = FakeReactor()
         test_case.exchanger = MessageExchange(
             test_case.reactor, test_case.mstore, test_case.transport,
-            test_case.identity)
+            test_case.identity, test_case.config.exchange_interval,
+            test_case.config.urgent_exchange_interval)
 
     def tear_down(self, test_case):
         pass
