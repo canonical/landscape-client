@@ -155,7 +155,7 @@ class BrokerService(LandscapeService):
                                                 self.exchanger,
                                                 self.pinger,
                                                 self.message_store,
-                                                config.cloud, fetch_async)
+                                                fetch_async)
 
         self.reactor.call_on("post-exit", self._exit)
 

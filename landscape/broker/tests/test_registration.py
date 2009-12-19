@@ -87,7 +87,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         super(RegistrationHandlerTest, self).setUp()
         self.handler = RegistrationHandler(
             self.config, self.identity, self.reactor, self.exchanger,
-            self.pinger, self.mstore, self.config.cloud, fetch_async)
+            self.pinger, self.mstore, fetch_async)
 
     def test_server_initiated_id_changing(self):
         """
@@ -445,6 +445,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
 
     def setUp(self):
         super(CloudRegistrationHandlerTest, self).setUp()
+        self.config.cloud = True
         self.query_results = {}
 
         def fetch_stub(url):
@@ -456,7 +457,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
 
         self.handler = RegistrationHandler(
             self.config, self.identity, self.reactor, self.exchanger,
-            self.pinger, self.mstore, cloud=True, fetch_async=fetch_stub)
+            self.pinger, self.mstore, fetch_async=fetch_stub)
 
     def get_user_data(self, otps=None,
                       exchange_url="https://example.com/message-system",
@@ -694,7 +695,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
 
         self.handler = RegistrationHandler(
             self.config, self.identity, self.reactor, self.exchanger,
-            self.pinger, self.mstore, cloud=True, fetch_async=fetch_stub)
+            self.pinger, self.mstore, fetch_async=fetch_stub)
 
         self.fetch_stub = fetch_stub
         self.prepare_query_results()

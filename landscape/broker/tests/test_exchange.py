@@ -785,7 +785,7 @@ class AcceptedTypesMessageExchangeTest(MessageExchangeTestBase):
                              self.exchanger)
         self.handler = RegistrationHandler(
             self.config, self.identity, self.reactor, self.exchanger,
-            self.pinger, self.mstore, self.config.cloud, fetch_async)
+            self.pinger, self.mstore, fetch_async)
 
     def test_register_accepted_message_type(self):
         self.exchanger.register_client_accepted_message_type("type-B")
