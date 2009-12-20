@@ -19,6 +19,7 @@ from landscape.watchdog import bootstrap_list
 from landscape.lib.dbus_util import get_object
 from landscape.lib import bpickle_dbus
 from landscape.lib.persist import Persist
+from landscape.lib.fetch import fetch_async
 
 from landscape.reactor import FakeReactor
 
@@ -28,7 +29,8 @@ from landscape.broker.remote import RemoteBroker, FakeRemoteBroker
 from landscape.broker.transport import FakeTransport
 from landscape.broker.exchange import MessageExchange
 from landscape.broker.store import get_default_message_store
-from landscape.broker.registration import Identity
+from landscape.broker.registration import Identity, RegistrationHandler
+from landscape.broker.ping import Pinger
 
 from landscape.monitor.monitor import MonitorPluginRegistry
 from landscape.manager.manager import ManagerPluginRegistry
@@ -400,6 +402,35 @@ class ExchangeHelper(BrokerConfigurationHelper):
             test_case.reactor, test_case.mstore, test_case.transport,
             test_case.identity, test_case.config.exchange_interval,
             test_case.config.urgent_exchange_interval)
+
+    def tear_down(self, test_case):
+        pass
+
+
+class RegistrationHelper(ExchangeHelper):
+    """
+    This helper adds a registration handler to the L{ExchangeHelper}.  If the
+    test case has C{cloud} class attribute, the C{handler} will be configured
+    for a cloud registration.  The following attributes will be set in your
+    test case:
+      - handler: A L{RegistrationHandler}
+      - fetch_func: The C{fetch_async} function used by the C{handler}, it
+        can be customised by test cases.
+    """
+    def set_up(self, test_case):
+        super(RegistrationHelper, self).set_up(test_case)
+        test_case.pinger = Pinger(test_case.reactor, test_case.config.ping_url,
+                                  test_case.identity, test_case.exchanger)
+
+        def fetch_func(*args, **kwargs):
+            return test_case.fetch_func(*args, **kwargs)
+
+        test_case.fetch_func = fetch_async
+        test_case.config.cloud = getattr(test_case, "cloud", False)
+        test_case.handler = RegistrationHandler(
+            test_case.config, test_case.identity, test_case.reactor,
+            test_case.exchanger, test_case.pinger, test_case.mstore,
+            fetch_async=fetch_func)
 
     def tear_down(self, test_case):
         pass

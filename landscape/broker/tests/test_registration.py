@@ -10,12 +10,10 @@ from landscape.broker.registration import (
 
 from landscape.broker.deployment import BrokerConfiguration
 from landscape.tests.helpers import (
-    LandscapeTest, ExchangeHelper, BrokerConfigurationHelper)
+    LandscapeTest, BrokerConfigurationHelper, RegistrationHelper)
 from landscape.lib.bpickle import dumps
 from landscape.lib.fetch import HTTPCodeError, FetchError
 from landscape.lib.persist import Persist
-from landscape.broker.ping import Pinger
-from landscape.lib.fetch import fetch_async
 
 
 class IdentityTest(LandscapeTest):
@@ -69,12 +67,10 @@ class IdentityTest(LandscapeTest):
 
 class RegistrationHandlerTestBase(LandscapeTest):
 
-    helpers = [ExchangeHelper]
+    helpers = [RegistrationHelper]
 
     def setUp(self):
         super(RegistrationHandlerTestBase, self).setUp()
-        self.pinger = Pinger(self.reactor, self.config.ping_url, self.identity,
-                             self.exchanger)
         logging.getLogger().setLevel(logging.INFO)
         self.hostname = "ooga.local"
         self.addCleanup(setattr, socket, "getfqdn", socket.getfqdn)
@@ -82,12 +78,6 @@ class RegistrationHandlerTestBase(LandscapeTest):
 
 
 class RegistrationHandlerTest(RegistrationHandlerTestBase):
-
-    def setUp(self):
-        super(RegistrationHandlerTest, self).setUp()
-        self.handler = RegistrationHandler(
-            self.config, self.identity, self.reactor, self.exchanger,
-            self.pinger, self.mstore, fetch_async)
 
     def test_server_initiated_id_changing(self):
         """
@@ -443,9 +433,10 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
 
 class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
 
+    cloud = True
+
     def setUp(self):
         super(CloudRegistrationHandlerTest, self).setUp()
-        self.config.cloud = True
         self.query_results = {}
 
         def fetch_stub(url):
@@ -455,9 +446,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
             else:
                 return succeed(value)
 
-        self.handler = RegistrationHandler(
-            self.config, self.identity, self.reactor, self.exchanger,
-            self.pinger, self.mstore, fetch_async=fetch_stub)
+        self.fetch_func = fetch_stub
 
     def get_user_data(self, otps=None,
                       exchange_url="https://example.com/message-system",
