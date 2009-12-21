@@ -131,10 +131,10 @@ class WordsProtocol(AMP):
         pass
 
 
-class AmpRcpResponderTest(TestCase):
+class AmpRpcResponderTest(TestCase):
 
     def setUp(self):
-        super(AmpRcpResponderTest, self).setUp()
+        super(AmpRpcResponderTest, self).setUp()
         socket = self.mktemp()
         factory = Factory()
         factory.protocol = WordsProtocol
@@ -150,7 +150,7 @@ class AmpRcpResponderTest(TestCase):
         return connected.addCallback(set_protocol)
 
     def tearDown(self):
-        super(AmpRcpResponderTest, self).setUp()
+        super(AmpRpcResponderTest, self).setUp()
         self.port.loseConnection()
         self.protocol.transport.loseConnection()
 
