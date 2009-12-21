@@ -73,8 +73,6 @@ def amp_rpc_responder(method):
         the target model method that we want to call.  A L{Command} sub-class
         with equivalent appropriate name must exist, and the given C{method}
         will be registered as its responder.
-    @result: An AMP response message, holding the result of the model call
-        in its "result" key.
     """
     # Lookup the Command class the decorated method is associated with, for
     # example if method.__name__ is "foo_bar" the associated Command class
