@@ -29,7 +29,6 @@ ARGUMENT_TYPES = {String: str,
                   Types: list}
 
 
-
 class BrokerServerProtocolFactoryTest(LandscapeTest):
 
     def test_provides_protocol_type(self):
@@ -103,7 +102,6 @@ class BrokerServerProtocolTest(LandscapeTest):
 
         # Wrap the model method with one that will keep track of its calls
         calls = []
-        original_method = getattr(model, method)
         self.create_method_wrapper(model, method, calls)
 
         for name, kind in command.arguments:
@@ -139,7 +137,7 @@ class BrokerServerProtocolTest(LandscapeTest):
         for command in [Ping, RegisterClient, SendMessage, IsMessagePending,
                         StopClients, ReloadConfiguration, Register,
                         GetAcceptedMessageTypes, GetServerUuid,
-                        RegisterClientAcceptedMessageType]:
+                        RegisterClientAcceptedMessageType, Exit]:
             performed.append(self.assert_responder(command, self.broker))
         return DeferredList(performed, fireOnOneErrback=True)
 
