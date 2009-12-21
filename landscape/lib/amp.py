@@ -79,9 +79,9 @@ def amp_rpc_responder(method):
 
         # Look for hidden arguments
         for key, value in model_kwargs.iteritems():
-            if key.startswith("__amp_rpc"):
+            if key.startswith("__amp_rpc_"):
                 model_kwargs.pop(key)
-                model_kwargs[key.lstrip("__amp_rpc_")] = get_nested_attr(value)
+                model_kwargs[key[len("__amp_rpc_"):]] = get_nested_attr(value)
 
         # Call the model method with the matching name
         model = get_nested_attr(self.__amp_rpc_model__)
