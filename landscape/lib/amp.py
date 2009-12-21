@@ -111,3 +111,38 @@ def amp_rpc_responder(method):
             return {"result": result}
 
     return command.responder(call_model_method)
+
+
+def amp_rpc_caller(method):
+    """Decorator turning a protocol method into an L{Command} caller.
+
+    @param method: A method of an L{AMP}-based protocol matching the name of
+        the class name of the command we want to send.  A L{Command} sub-class
+        with equivalent appropriate name must exist.  When the decorated
+        C{method} is called, it sends the associated L{Command} to the remote
+        peer passing it the arguments it was called with, and returing a
+        L{Deferred} resulting in the command's response value.
+    """
+    # Lookup the Command class the decorated method is associated with, for
+    # example if method.__name__ is "foo_bar" the associated Command class
+    # must be named "FooBar""
+    outer_frame = inspect.stack()[1][0]
+    command = outer_frame.f_globals["".join(
+        [word.capitalize() for word in method.__name__.split("_")])]
+
+    def perform_remote_method_call(self, *method_args, **method_kwargs):
+        amp_kwargs = method_kwargs.copy()
+        for method_arg, (name, kind) in zip(method_args, command.arguments):
+            amp_kwargs[name] = method_arg
+
+        def unpack_response(response):
+            if not command.response:
+                return None
+            else:
+                return response["result"]
+
+        performed = self.callRemote(command, **amp_kwargs)
+        performed.addCallback(unpack_response)
+        return performed
+
+    return perform_remote_method_call
