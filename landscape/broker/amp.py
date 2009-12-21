@@ -1,5 +1,6 @@
 from twisted.protocols.amp import AMP, Command, String, Integer, Boolean
 from twisted.internet.protocol import ServerFactory
+from twisted.internet.defer import succeed
 
 from landscape.lib.amp import amp_rpc_responder, StringOrNone, BPickle, Hidden
 
@@ -153,3 +154,7 @@ class RemoteClient(object):
         """
         self.name = name
         self._protocol = protocol
+
+    def exit(self):
+        """Placeholder to make tests pass, it will be replaced later."""
+        return succeed(None)

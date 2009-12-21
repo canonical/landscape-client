@@ -1,6 +1,6 @@
 import re
 
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import DeferredList
 from twisted.internet import reactor
 from twisted.internet.protocol import ClientCreator
 from twisted.protocols.amp import AMP, String, Integer, Boolean
@@ -15,6 +15,19 @@ from landscape.broker.amp import (
     Ping, Exit)
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServerHelper, DEFAULT_ACCEPTED_TYPES)
+
+
+ARGUMENT_SAMPLES = {String: "some_sring",
+                    Boolean: True,
+                    Integer: 123,
+                    Message: {"type": "test"}}
+
+ARGUMENT_TYPES = {String: str,
+                  Boolean: bool,
+                  Integer: int,
+                  Message: dict,
+                  Types: list}
+
 
 
 class BrokerServerProtocolFactoryTest(LandscapeTest):
@@ -59,9 +72,27 @@ class BrokerServerProtocolTest(LandscapeTest):
         self.port.loseConnection()
         self.protocol.transport.loseConnection()
 
-    def assert_amp_rpc(self, command, model):
+    def create_method_wrapper(self, obj, method, calls):
         """
-        Assert that an C{AMP.callRemote} invocation against the given
+        Replace the given C{method} of the given object with a wrapper
+        which will behave exactly as the original method but will also
+        append a C{True} element to the given C{calls} list upon invokation.
+        After the wrapper is called, it replaces the object's method with
+        the original one.
+        """
+        original_method = getattr(obj, method)
+
+        def method_wrapper(*args, **kwargs):
+            calls.append(True)
+            result = original_method(*args, **kwargs)
+            setattr(obj, method, original_method)
+            return result
+
+        setattr(obj, method, method_wrapper)
+
+    def assert_responder(self, command, model):
+        """
+        Assert that an C{AMP.callRemote} invocation against the given AMP
         C{command}, actually calls the appropriate C{model} method.
         """
         kwargs = {}
@@ -73,32 +104,13 @@ class BrokerServerProtocolTest(LandscapeTest):
         # Wrap the model method with one that will keep track of its calls
         calls = []
         original_method = getattr(model, method)
-
-        def method_wrapper(*args, **kwargs):
-            calls.append(True)
-            result = original_method(*args, **kwargs)
-            setattr(model, method, original_method)
-            return result
-
-        setattr(model, method, method_wrapper)
-
-        # Some sample arguments for every agrument type
-        argument_to_value = {String: "some_sring",
-                             Boolean: True,
-                             Integer: 123,
-                             Message: {"type": "test"}}
-
-        response_to_type = {String: str,
-                            Boolean: bool,
-                            Integer: int,
-                            Message: dict,
-                            Types: list}
+        self.create_method_wrapper(model, method, calls)
 
         for name, kind in command.arguments:
             if kind.__class__ is Hidden:
                 # Skip hidden arguments
                 continue
-            kwargs[name] = argument_to_value[kind.__class__]
+            kwargs[name] = ARGUMENT_SAMPLES[kind.__class__]
 
         def assert_response(response):
             self.assertEquals(calls, [True])
@@ -110,12 +122,12 @@ class BrokerServerProtocolTest(LandscapeTest):
                         self.assertTrue(isinstance(result, str))
                 else:
                     self.assertTrue(
-                        isinstance(result, response_to_type[kind.__class__]))
+                        isinstance(result, ARGUMENT_TYPES[kind.__class__]))
 
         performed = self.protocol.callRemote(command, **kwargs)
         return performed.addCallback(assert_response)
 
-    def test_amp_rpc_commands(self):
+    def test_commands(self):
         """
         All accepted L{BrokerServerProtocol} commands issued by a connected
         client are correctly performed.  The appropriate L{BrokerServer}
@@ -123,20 +135,13 @@ class BrokerServerProtocolTest(LandscapeTest):
         """
         # We need this in order to make the message store happy
         self.mstore.set_accepted_types(["test"])
-        doit = Deferred()
-        for command in [RegisterClient, SendMessage, IsMessagePending,
+        performed = []
+        for command in [Ping, RegisterClient, SendMessage, IsMessagePending,
                         StopClients, ReloadConfiguration, Register,
                         GetAcceptedMessageTypes, GetServerUuid,
-                        RegisterClientAcceptedMessageType, Ping, Exit]:
-            doit.addCallback(lambda x: self.assert_amp_rpc(command,
-                                                           self.broker))
-        doit.callback(None)
-        return doit
-
-    def test_send_message_amp_rpc(self):
-        """Test that C{SendMessage} commands a correctly performed."""
-        self.mstore.set_accepted_types(["test"])
-        return self.assert_amp_rpc(SendMessage, self.broker)
+                        RegisterClientAcceptedMessageType]:
+            performed.append(self.assert_responder(command, self.broker))
+        return DeferredList(performed, fireOnOneErrback=True)
 
     def test_register_client(self):
         """
