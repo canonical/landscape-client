@@ -31,6 +31,7 @@ from landscape.broker.exchange import MessageExchange
 from landscape.broker.store import get_default_message_store
 from landscape.broker.registration import Identity, RegistrationHandler
 from landscape.broker.ping import Pinger
+from landscape.broker.server import BrokerServer
 
 from landscape.monitor.monitor import MonitorPluginRegistry
 from landscape.manager.manager import ManagerPluginRegistry
@@ -417,6 +418,7 @@ class RegistrationHelper(ExchangeHelper):
       - fetch_func: The C{fetch_async} function used by the C{handler}, it
         can be customised by test cases.
     """
+
     def set_up(self, test_case):
         super(RegistrationHelper, self).set_up(test_case)
         test_case.pinger = Pinger(test_case.reactor, test_case.config.ping_url,
@@ -431,6 +433,23 @@ class RegistrationHelper(ExchangeHelper):
             test_case.config, test_case.identity, test_case.reactor,
             test_case.exchanger, test_case.pinger, test_case.mstore,
             fetch_async=fetch_func)
+
+    def tear_down(self, test_case):
+        pass
+
+
+class BrokerServerHelper(RegistrationHelper):
+    """
+    This helper adds a broker server to the L{RegistrationHelper}.  The
+    following attributes will be set in your test case:
+      - server: A L{BrokerServer}.
+    """
+
+    def set_up(self, test_case):
+        super(BrokerServerHelper, self).set_up(test_case)
+        test_case.broker = BrokerServer(test_case.config, test_case.reactor,
+                                        test_case.exchanger, test_case.handler,
+                                        test_case.mstore)
 
     def tear_down(self, test_case):
         pass
