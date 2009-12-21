@@ -24,6 +24,10 @@ class BrokerServer(object):
         self._message_store = message_store
         self._registered_clients = {}
 
+    def ping(self):
+        """Return C{True}."""
+        return True
+
     def register_client(self, name, protocol):
         """Register a broker client called C{name} connected with C{protocol}.
 

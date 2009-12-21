@@ -9,6 +9,12 @@ class BrokerServerTest(LandscapeTest):
 
     helpers = [BrokerServerHelper]
 
+    def test_ping(self):
+        """
+        The L{BrokerServer.ping} simply returns C{True}.
+        """
+        self.assertTrue(self.broker.ping())
+
     def test_send_message(self):
         """
         The L{BrokerServer.send_message} method forwards a message to the
