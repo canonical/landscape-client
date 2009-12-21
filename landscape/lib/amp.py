@@ -1,11 +1,28 @@
 import inspect
 
-from twisted.protocols.amp import Argument
+from twisted.protocols.amp import Argument, String
 
 from landscape.lib.bpickle import loads, dumps
 
 
+class StringOrNone(String):
+    """An argument that can be a C{str} or C{None}."""
+
+    def toString(self, inObject):
+        if inObject is None:
+            return ""
+        else:
+            return super(StringOrNone, self).toString(inObject)
+
+    def fromString(self, inString):
+        if inString == "":
+            return None
+        else:
+            return super(StringOrNone, self).fromString(inString)
+
+
 class BPickle(Argument):
+    """A bpickle-compatbile argument."""
 
     def toString(self, inObject):
         return dumps(inObject)
@@ -88,7 +105,7 @@ def amp_rpc_responder(method):
         result = getattr(model, method.__name__)(**model_kwargs)
 
         # Return an AMP response to be delivered to the remote caller
-        if result is None:
+        if not command.response:
             return {}
         else:
             return {"result": result}

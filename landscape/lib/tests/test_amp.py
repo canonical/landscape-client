@@ -3,7 +3,7 @@ from twisted.internet import reactor
 from twisted.internet.protocol import Factory, ClientCreator
 from twisted.protocols.amp import AMP, Command, String, Integer
 
-from landscape.lib.amp import amp_rpc_responder, BPickle, Hidden
+from landscape.lib.amp import amp_rpc_responder, StringOrNone, BPickle, Hidden
 
 
 class Words(object):
@@ -16,6 +16,12 @@ class Words(object):
 
     def capitalize(self, word):
         return word.capitalize()
+
+    def synonym(self, word):
+        if word == "hi":
+            return "hello"
+        else:
+            return None
 
     def concatenate(self, word1, word2):
         return word1 + word2
@@ -57,6 +63,12 @@ class Capitalize(Command):
     response = [("result", String())]
 
 
+class Synonym(Command):
+
+    arguments = [("word", String())]
+    response = [("result", StringOrNone())]
+
+
 class Concatenate(Command):
 
     arguments = [("word1", String()), ("word2", String())]
@@ -96,6 +108,10 @@ class WordsProtocol(AMP):
 
     @amp_rpc_responder
     def capitalize(self, word):
+        pass
+
+    @amp_rpc_responder
+    def synonym(self, word):
         pass
 
     @amp_rpc_responder
@@ -162,6 +178,20 @@ class AmpRcpResponderTest(TestCase):
         """
         performed = self.protocol.callRemote(Capitalize, word="john")
         return performed.addCallback(self.assertEquals, {"result": "John"})
+
+    def test_synonim(self):
+        """
+        The L{StringOrNone} argument normally behaves like a L{String}
+        """
+        performed = self.protocol.callRemote(Synonym, word="hi")
+        return performed.addCallback(self.assertEquals, {"result": "hello"})
+
+    def test_synonim_with_none(self):
+        """
+        The value of a L{StringOrNone} argument can be C{None}.
+        """
+        performed = self.protocol.callRemote(Synonym, word="foo")
+        return performed.addCallback(self.assertEquals, {"result": None})
 
     def test_concatenate(self):
         """
