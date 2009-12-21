@@ -2,7 +2,8 @@ from twisted.protocols.amp import AMP, Command, String, Integer, Boolean
 from twisted.internet.protocol import ServerFactory
 from twisted.internet.defer import succeed
 
-from landscape.lib.amp import amp_rpc_responder, StringOrNone, BPickle, Hidden
+from landscape.lib.amp import (
+    amp_rpc_responder, amp_rpc_caller, StringOrNone, BPickle, Hidden)
 
 
 class Message(BPickle):
@@ -141,6 +142,56 @@ class BrokerServerProtocolFactory(ServerFactory):
         @param: The L{BrokerServer} the connections will talk to.
         """
         self.broker = broker
+
+
+class BrokerClientProtocol(AMP):
+    """
+    Communication protocol between the a broker client and its server.
+    """
+
+    @amp_rpc_caller
+    def ping(self):
+        """@see L{BrokerServer.ping}"""
+
+    @amp_rpc_caller
+    def register_client(self, name):
+        """@see L{BrokerServer.register_client}"""
+
+    @amp_rpc_caller
+    def send_message(self, message, urgent):
+        """@see L{BrokerServer.send_message}"""
+
+    @amp_rpc_caller
+    def is_message_pending(self, message_id):
+        """@see L{BrokerServer.is_message_pending}"""
+
+    @amp_rpc_caller
+    def stop_clients(self):
+        """@see L{BrokerServer.stop_clients}"""
+
+    @amp_rpc_caller
+    def reload_configuration(self):
+        """@see L{BrokerServer.reload_configuration}"""
+
+    @amp_rpc_caller
+    def register(self):
+        """@see L{BrokerServer.register}"""
+
+    @amp_rpc_caller
+    def get_accepted_message_types(self):
+        """@see L{BrokerServer.get_accepted_message_types}"""
+
+    @amp_rpc_caller
+    def get_server_uuid(self):
+        """@see L{BrokerServer.get_server_uuid}"""
+
+    @amp_rpc_caller
+    def register_client_accepted_message_type(self, type):
+        """@see L{BrokerServer.register_client_accepted_message_type}"""
+
+    @amp_rpc_caller
+    def exit(self):
+        """@see L{BrokerServer.exit}"""
 
 
 class RemoteClient(object):

@@ -1,4 +1,5 @@
 import re
+import sys
 
 from twisted.internet.defer import DeferredList
 from twisted.internet import reactor
@@ -12,7 +13,7 @@ from landscape.broker.amp import (
     RegisterClient, SendMessage, RegisterClientAcceptedMessageType,
     IsMessagePending, StopClients, ReloadConfiguration, Register,
     GetAcceptedMessageTypes, GetServerUuid,
-    Ping, Exit)
+    Ping, Exit, BrokerClientProtocol)
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServerHelper, DEFAULT_ACCEPTED_TYPES)
 
@@ -49,12 +50,12 @@ class BrokerServerProtocolFactoryTest(LandscapeTest):
         self.assertEquals(factory.broker, stub_broker)
 
 
-class BrokerServerProtocolTest(LandscapeTest):
+class BrokerProtocolTestBase(LandscapeTest):
 
     helpers = [BrokerServerHelper]
 
     def setUp(self):
-        super(BrokerServerProtocolTest, self).setUp()
+        super(BrokerProtocolTestBase, self).setUp()
         socket = self.makeFile()
         factory = BrokerServerProtocolFactory(self.broker)
         self.port = reactor.listenUNIX(socket, factory)
@@ -62,12 +63,12 @@ class BrokerServerProtocolTest(LandscapeTest):
         def set_protocol(protocol):
             self.protocol = protocol
 
-        connector = ClientCreator(reactor, AMP)
+        connector = ClientCreator(reactor, self.client_protocol)
         connected = connector.connectUNIX(socket)
         return connected.addCallback(set_protocol)
 
     def tearDown(self):
-        super(BrokerServerProtocolTest, self).tearDown()
+        super(BrokerProtocolTestBase, self).tearDown()
         self.port.loseConnection()
         self.protocol.transport.loseConnection()
 
@@ -88,6 +89,11 @@ class BrokerServerProtocolTest(LandscapeTest):
             return result
 
         setattr(obj, method, method_wrapper)
+
+
+class BrokerServerProtocolTest(BrokerProtocolTestBase):
+
+    client_protocol = AMP
 
     def assert_responder(self, command, model):
         """
@@ -203,3 +209,75 @@ class BrokerServerProtocolTest(LandscapeTest):
         performed = self.protocol.callRemote(RegisterClientAcceptedMessageType,
                                              type="type")
         return performed.addCallback(assert_response)
+
+
+class BrokerClientProtocolTest(BrokerProtocolTestBase):
+
+    client_protocol = BrokerClientProtocol
+
+    def assert_caller(self, method, model):
+        """
+        Assert that a protocol method decorated with L{amp_rpc_caller} actually
+        sends the appropriate AMP command and the matching C{model} method gets
+        eventually called with the proper arguments.
+        """
+        # Figure out the AMP command associated with the given method
+        command_name = "".join([word.capitalize()
+                                for word in method.split("_")])
+        command = getattr(sys.modules["landscape.broker.amp"], command_name)
+
+        args = []
+
+        # Wrap the model method with one that will keep track of its calls
+        calls = []
+        self.create_method_wrapper(model, method, calls)
+
+        for name, kind in command.arguments:
+            if kind.__class__ is Hidden:
+                # Skip hidden arguments
+                continue
+            args.append(ARGUMENT_SAMPLES[kind.__class__])
+
+        def assert_result(result):
+            self.assertEquals(calls, [True])
+            if command.response:
+                name, kind = command.response[0]
+                if isinstance(kind, StringOrNone):
+                    if result is not None:
+                        self.assertTrue(isinstance(result, str))
+                else:
+                    self.assertTrue(
+                        isinstance(result, ARGUMENT_TYPES[kind.__class__]))
+
+        performed = getattr(self.protocol, method)(*args)
+        return performed.addCallback(assert_result)
+
+    def test_callers(self):
+        """
+        The L{BrokerClientProtocol} methods decorated with C{amp_rpc_caller}
+        can be used to call methods on the remote broker object.
+        """
+        # We need this in order to make the message store happy
+        self.mstore.set_accepted_types(["test"])
+        performed = []
+        for method in ["ping", "register_client", "send_message",
+                       "is_message_pending", "stop_clients",
+                       "reload_configuration", "register",
+                       "get_accepted_message_types", "get_server_uuid",
+                       "register_client_accepted_message_type", "exit"]:
+            performed.append(self.assert_caller(method, self.broker))
+        return DeferredList(performed, fireOnOneErrback=True)
+
+    def test_register_client(self):
+        """
+        The L{BrokerClientProtocol.register_client} method forwards a
+        registration request to the broker object.
+        """
+
+        def assert_result(result):
+            self.assertEquals(result, None)
+            [client] = self.broker.get_clients()
+            self.assertEquals(client.name, "client")
+
+        performed = self.protocol.register_client("client")
+        return performed.addCallback(assert_result)
