@@ -81,10 +81,10 @@ class MethodCall(Command):
 
     @classmethod
     def responder(cls, method):
-        """Decorator turning a protocol method into an L{Command} responder.
+        """Decorator turning a protocol method into an L{MethodCall} responder.
 
         This decorator is used to implement remote procedure calls over AMP
-        commands.  The L{AmpRpc}-based protocol class making use of it must
+        commands.  The L{MethodCallProtocol} sub-class making use of it must
         define a C{_object} attribute, which must return an object that will
         be used as model object to perform the remote procedure call on.
 
@@ -96,12 +96,12 @@ class MethodCall(Command):
 
         @param cls: The L{MethodCall} sub-class the given C{method} will be
             registered as responder of.
-        @param method: A method of an L{AmpRpc}-based protocol matching the
-            name of the target model method that we want to call.
+        @param method: A method of an L{MethodCallProtocol} sub-class matching
+            the name of the target object method that it should call.
         """
 
-        def call_object_method(self, **amp_kwargs):
-            object_kwargs = amp_kwargs.copy()
+        def call_object_method(self, **command_kwargs):
+            object_kwargs = command_kwargs.copy()
 
             # Look for protocol attribute arguments
             for key, value in object_kwargs.iteritems():
