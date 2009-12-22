@@ -164,20 +164,3 @@ class RemoteBrokerHelper(BrokerProtocolHelper):
         connected.addCallback(lambda x: setattr(
             test_case, "remote", RemoteBroker(test_case.protocol)))
         return connected
-
-
-        socket = test_case.makeFile()
-        factory = BrokerServerProtocolFactory(test_case.broker)
-        test_case.port = reactor.listenUNIX(socket, factory)
-
-        def set_protocol(protocol):
-            test_case.protocol = protocol
-
-        connector = ClientCreator(reactor, test_case.client_protocol)
-        connected = connector.connectUNIX(socket)
-        return connected.addCallback(set_protocol)
-
-    def tear_down(self, test_case):
-        super(BrokerProtocolHelper, self).tear_down(test_case)
-        test_case.port.loseConnection()
-        test_case.protocol.transport.loseConnection()
