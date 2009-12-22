@@ -11,7 +11,8 @@ from landscape.broker.store import get_default_message_store
 from landscape.broker.registration import Identity, RegistrationHandler
 from landscape.broker.ping import Pinger
 from landscape.broker.server import BrokerServer
-from landscape.broker.amp import BrokerServerProtocolFactory
+from landscape.broker.amp import (
+    BrokerServerProtocolFactory, BrokerClientProtocol, RemoteBroker)
 from landscape.broker.transport import FakeTransport
 
 
@@ -132,6 +133,39 @@ class BrokerProtocolHelper(BrokerServerHelper):
 
     def set_up(self, test_case):
         super(BrokerProtocolHelper, self).set_up(test_case)
+        socket = test_case.makeFile()
+        factory = BrokerServerProtocolFactory(test_case.broker)
+        test_case.port = reactor.listenUNIX(socket, factory)
+
+        def set_protocol(protocol):
+            test_case.protocol = protocol
+
+        connector = ClientCreator(reactor, test_case.client_protocol)
+        connected = connector.connectUNIX(socket)
+        return connected.addCallback(set_protocol)
+
+    def tear_down(self, test_case):
+        super(BrokerProtocolHelper, self).tear_down(test_case)
+        test_case.port.loseConnection()
+        test_case.protocol.transport.loseConnection()
+
+
+class RemoteBrokerHelper(BrokerProtocolHelper):
+    """
+    This helper adds a connected L{RemoteBroker} to a L{BrokerProtocolHelper}.
+    The following attributes will be set in your test case:
+      - remote: The C{RemoteBroker} object connected to the broker server with
+        a L{BrokerClientProtocol} instance.
+    """
+
+    def set_up(self, test_case):
+        test_case.client_protocol = BrokerClientProtocol
+        connected = super(RemoteBrokerHelper, self).set_up(test_case)
+        connected.addCallback(lambda x: setattr(
+            test_case, "remote", RemoteBroker(test_case.protocol)))
+        return connected
+
+
         socket = test_case.makeFile()
         factory = BrokerServerProtocolFactory(test_case.broker)
         test_case.port = reactor.listenUNIX(socket, factory)

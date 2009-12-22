@@ -2,8 +2,6 @@ import sys
 
 from twisted.trial.unittest import TestCase
 from twisted.internet.defer import DeferredList
-from twisted.internet import reactor
-from twisted.internet.protocol import ClientCreator
 from twisted.protocols.amp import AMP, String, Integer, Boolean
 
 
@@ -14,7 +12,8 @@ from landscape.broker.amp import (
     RegisterClientAcceptedMessageType, IsMessagePending, BrokerClientProtocol,
     Ping, get_method_name, RemoteBroker)
 from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
-from landscape.broker.tests.helpers import BrokerProtocolHelper
+from landscape.broker.tests.helpers import (
+    BrokerProtocolHelper, RemoteBrokerHelper)
 
 
 ARGUMENT_SAMPLES = {String: "some_sring",
@@ -86,7 +85,6 @@ class BrokerProtocolTestBase(LandscapeTest):
 class BrokerServerProtocolTest(BrokerProtocolTestBase):
 
     client_protocol = AMP
-
 
     def assert_responder(self, method_call, model):
         """
@@ -269,15 +267,9 @@ class BrokerClientProtocolTest(BrokerProtocolTestBase):
         return sent.addCallback(assert_result)
 
 
-class RemoteBrokerTest(BrokerProtocolTestBase):
+class RemoteBrokerTest(LandscapeTest):
 
-    client_protocol = BrokerClientProtocol
-
-    def setUp(self):
-        setup = super(RemoteBrokerTest, self).setUp()
-        setup.addCallback(lambda x: setattr(self, "remote",
-                                            RemoteBroker(self.protocol)))
-        return setup
+    helpers = [RemoteBrokerHelper]
 
     def test_methods(self):
         """
