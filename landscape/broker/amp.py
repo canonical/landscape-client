@@ -21,6 +21,7 @@ class Ping(MethodCall):
 
 
 class RegisterClient(MethodCall):
+
     arguments = [("name", String()), ("__protocol_attribute_protocol",
                                       ProtocolAttribute(""))]
     response = []
