@@ -1,6 +1,5 @@
-import inspect
-
-from twisted.protocols.amp import Argument, String
+from twisted.protocols.amp import (
+    Argument, String, Command, CommandLocator, AMP)
 
 from landscape.lib.bpickle import loads, dumps
 
@@ -31,116 +30,124 @@ class BPickle(Argument):
         return loads(inString)
 
 
-class Hidden(Argument):
-    """A hidden argument passed to the model but not exposed to the caller.
+class ProtocolAttribute(Argument):
+    """A protocol attribute that gets passed to the object as extra argument.
 
-    This is useful when using the L{amp_rpc_decorator}, if the target model
-    method needs to be passed some extra protocol-specific argument that the
-    AMP client can't know.
+    This argument type works only with L{MethodCall}s commands. It useful
+    the target object method we want to call needs to be passed some extra
+    protocol-specific argument that the connected AMP client can't know.
 
-    The argument name of a L{Hidden} argument must always start with the
-    prefix C{__amp_rpc_} and end with the name of the target model method
-    argument it is associated with.
+    The argument name of a L{ProtocolAttribute} argument must always start
+    with the C{__protocol_attribute} marker prefix and end with the name
+    of the target object method argument it will be passed to.
     """
 
-    def __init__(self, attribute):
+    def __init__(self, path):
         """
-        @param attribute: A the path to a possibly nested attribute of the
-            protocol object, that should be passed to the model method as
-            extra argument.
+        @param attribute: The path to a possibly nested attribute of the
+            protocol instance that should be passed to the target object
+            method as extra argument.
         """
         self.optional = True
-        self.retrieve = lambda d, name, proto: attribute
-        self.toString = lambda x: attribute
-        self.fromString = lambda x: attribute
+        self.retrieve = lambda d, name, proto: path
+        self.toString = lambda x: path
+        self.fromString = lambda x: path
 
 
-def amp_rpc_responder(method):
-    """Decorator turning a protocol method into an L{Command} responder.
+def get_nested_attr(obj, path):
+    """Like C{getattr} but works with nested attributes as well.
 
-    This decorator is used to implement remote procedure calls over AMP
-    commands.  The L{AMP}-based protocol instance making use of it must
-    define an C{__amp_rpc_model__} attribute, which is the name of an
-    attribute of the protocol itself that will be used as model object
-    to perform the remote procedure call on.  The idea is that if a
-    connected AMP client issues a C{FooBar} command, the model method
-    call L{foo_bar} will be called and its return value delivered back
-    to the client as response to the command.  Note also that for this
-    to work the C{FooBar.attributes} and C{FooBar.response} schemas must
-    match the signature of the target model method.
-
-    @param method: A method of an L{AMP}-based protocol matching the name of
-        the target model method that we want to call.  A L{Command} sub-class
-        with equivalent appropriate name must exist, and the given C{method}
-        will be registered as its responder.
+    @param obj: The object we want to get the attribute of.
+    @param path: The path to the attribute, like C{.some.nested.attr},
+        if C{.} is given the object itself is returned.
     """
-    # Lookup the Command class the decorated method is associated with, for
-    # example if method.__name__ is "foo_bar" the associated Command class
-    # must be named "FooBar""
-    outer_frame = inspect.stack()[1][0]
-    command = outer_frame.f_globals["".join(
-        [word.capitalize() for word in method.__name__.split("_")])]
-
-    def call_model_method(self, **amp_kwargs):
-        model_kwargs = amp_kwargs.copy()
-
-        def get_nested_attr(path):
-            """Like C{getattr} but works with nested attributes as well."""
-            obj = self
-            if path != ".":
-                for attribute in path.split(".")[1:]:
-                    obj = getattr(obj, attribute)
-            return obj
-
-        # Look for hidden arguments
-        for key, value in model_kwargs.iteritems():
-            if key.startswith("__amp_rpc_"):
-                model_kwargs.pop(key)
-                model_kwargs[key[len("__amp_rpc_"):]] = get_nested_attr(value)
-
-        # Call the model method with the matching name
-        model = get_nested_attr(self.__amp_rpc_model__)
-        result = getattr(model, method.__name__)(**model_kwargs)
-
-        # Return an AMP response to be delivered to the remote caller
-        if not command.response:
-            return {}
-        else:
-            return {"result": result}
-
-    return command.responder(call_model_method)
+    attr = obj
+    if path != "":
+        for name in path.split(".")[:]:
+            attr = getattr(attr, name)
+    return attr
 
 
-def amp_rpc_caller(method):
-    """Decorator turning a protocol method into an L{Command} caller.
+class MethodCallProtocol(AMP):
+    """An L{AMP}-based remote procedure call protocol."""
 
-    @param method: A method of an L{AMP}-based protocol matching the name of
-        the class name of the command we want to send.  A L{Command} sub-class
-        with equivalent appropriate name must exist.  When the decorated
-        C{method} is called, it sends the associated L{Command} to the remote
-        peer passing it the arguments it was called with, and returing a
-        L{Deferred} resulting in the command's response value.
-    """
-    # Lookup the Command class the decorated method is associated with, for
-    # example if method.__name__ is "foo_bar" the associated Command class
-    # must be named "FooBar""
-    outer_frame = inspect.stack()[1][0]
-    command = outer_frame.f_globals["".join(
-        [word.capitalize() for word in method.__name__.split("_")])]
+    @property
+    def _object(self):
+        """The object the remote L{MethodCall}s commands will be act on."""
+        raise NotImplementedError()
 
-    def perform_remote_method_call(self, *method_args, **method_kwargs):
-        amp_kwargs = method_kwargs.copy()
-        for method_arg, (name, kind) in zip(method_args, command.arguments):
-            amp_kwargs[name] = method_arg
 
-        def unpack_response(response):
-            if not command.response:
-                return None
+class MethodCall(Command):
+
+    @classmethod
+    def responder(cls, method):
+        """Decorator turning a protocol method into an L{MethodCall} responder.
+
+        This decorator is used to implement remote procedure calls over AMP
+        commands.  The L{MethodCallProtocol} sub-class making use of it must
+        define a C{_object} attribute, which must return an object that will
+        be used as model object to perform the remote procedure call on.
+
+        The idea is that if a connected AMP client issues a C{FooBar} command,
+        the model method named L{foo_bar} will be called and its return value
+        delivered back to the client as response to the command.  Note also
+        that for this to work the C{FooBar.attributes} and C{FooBar.response}
+        schemas must match the signature of the target model method.
+
+        @param cls: The L{MethodCall} sub-class the given C{method} will be
+            registered as responder of.
+        @param method: A method of an L{MethodCallProtocol} sub-class matching
+            the name of the target object method that it should call.
+        """
+
+        def call_object_method(self, **command_kwargs):
+            object_kwargs = command_kwargs.copy()
+
+            # Look for protocol attribute arguments
+            for key, value in object_kwargs.iteritems():
+                prefix = "__protocol_attribute_"
+                if key.startswith(prefix):
+                    object_kwargs.pop(key)
+                    object_kwargs[key[len(prefix):]] = get_nested_attr(self,
+                                                                       value)
+
+            # Call the model method with the matching name
+            result = getattr(self._object, method.__name__)(**object_kwargs)
+
+            # Return an AMP response to be delivered to the remote caller
+            if not cls.response:
+                return {}
             else:
-                return response["result"]
+                return {"result": result}
 
-        performed = self.callRemote(command, **amp_kwargs)
-        performed.addCallback(unpack_response)
-        return performed
+        return CommandLocator._currentClassCommands.append(
+            (cls, call_object_method))
 
-    return perform_remote_method_call
+    @classmethod
+    def sender(cls, method):
+        """Decorator turning a protocol method into an L{MethodCall} sender.
+
+        When the decorated method is called, it sends the associated
+        L{MethodCall} to the remote peer passing it the arguments it
+        was called with, and returing a L{Deferred} resulting in the
+        command's response value.
+
+        @param method: A method of a L{AMP} protocol.
+        """
+
+        def send_method_call(self, *method_args, **method_kwargs):
+            command_kwargs = method_kwargs.copy()
+            for method_arg, (name, kind) in zip(method_args, cls.arguments):
+                command_kwargs[name] = method_arg
+
+            def unpack_response(response):
+                if not cls.response:
+                    return None
+                else:
+                    return response["result"]
+
+            sent = self.callRemote(cls, **command_kwargs)
+            sent.addCallback(unpack_response)
+            return sent
+
+        return send_method_call

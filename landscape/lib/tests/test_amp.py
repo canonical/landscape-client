@@ -1,10 +1,11 @@
 from twisted.trial.unittest import TestCase
 from twisted.internet import reactor
 from twisted.internet.protocol import Factory, ClientCreator
-from twisted.protocols.amp import AMP, Command, String, Integer
+from twisted.protocols.amp import AMP, String, Integer
 
 from landscape.lib.amp import (
-    amp_rpc_responder, amp_rpc_caller, StringOrNone, BPickle, Hidden)
+    StringOrNone, BPickle, ProtocolAttribute, MethodCall, MethodCallProtocol,
+    get_nested_attr)
 
 
 class Words(object):
@@ -46,131 +47,156 @@ class Words(object):
             raise RuntimeError("'%s' doesn't exit in %s" % (word, language))
 
 
-class Empty(Command):
+class Empty(MethodCall):
 
     arguments = []
     response = []
 
 
-class Motd(Command):
+class Motd(MethodCall):
 
     arguments = []
     response = [("result", String())]
 
 
-class Capitalize(Command):
+class Capitalize(MethodCall):
 
     arguments = [("word", String())]
     response = [("result", String())]
 
 
-class Synonym(Command):
+class Synonym(MethodCall):
 
     arguments = [("word", String())]
     response = [("result", StringOrNone())]
 
 
-class Concatenate(Command):
+class Concatenate(MethodCall):
 
     arguments = [("word1", String()), ("word2", String())]
     response = [("result", String())]
 
 
-class LowerCase(Command):
+class LowerCase(MethodCall):
 
     arguments = [("word", String()), ("index", Integer(optional=True))]
     response = [("result", String())]
 
 
-class MultiplyAlphabetically(Command):
+class MultiplyAlphabetically(MethodCall):
 
     arguments = [("word_times", BPickle())]
     response = [("result", String())]
 
 
-class Translate(Command):
+class Translate(MethodCall):
 
-    arguments = [("word", String()),
-                 ("__amp_rpc_language", Hidden(".factory.language"))]
+    arguments = [("word", String()), ("__protocol_attribute_language",
+                                      ProtocolAttribute("factory.language"))]
     response = [("result", String())]
 
 
-class WordsServerProtocol(AMP):
+class WordsServerProtocol(MethodCallProtocol):
 
-    __amp_rpc_model__ = ".factory.words"
+    @property
+    def _object(self):
+        return self.factory.words
 
-    @amp_rpc_responder
+    @Empty.responder
     def empty(self):
         pass
 
-    @amp_rpc_responder
+    @Motd.responder
     def motd(self):
         pass
 
-    @amp_rpc_responder
+    @Capitalize.responder
     def capitalize(self, word):
         pass
 
-    @amp_rpc_responder
+    @Synonym.responder
     def synonym(self, word):
         pass
 
-    @amp_rpc_responder
+    @Concatenate.responder
     def concatenate(self, word1, word2):
         pass
 
-    @amp_rpc_responder
+    @LowerCase.responder
     def lower_case(self, word, index):
         pass
 
-    @amp_rpc_responder
+    @MultiplyAlphabetically.responder
     def multiply_alphabetically(self, word_times):
         pass
 
-    @amp_rpc_responder
+    @Translate.responder
     def translate(self, word):
         pass
 
 
 class WordsClientProtocol(AMP):
 
-    @amp_rpc_caller
+    @Empty.sender
     def empty(self):
         pass
 
-    @amp_rpc_caller
+    @Motd.sender
     def motd(self):
         pass
 
-    @amp_rpc_caller
+    @Capitalize.sender
     def capitalize(self, word):
         pass
 
-    @amp_rpc_caller
+    @Synonym.sender
     def synonym(self, word):
         pass
 
-    @amp_rpc_caller
+    @Concatenate.sender
     def concatenate(self, word1, word2):
         pass
 
-    @amp_rpc_caller
+    @LowerCase.sender
     def lower_case(self, word, index=None):
         pass
 
-    @amp_rpc_caller
+    @MultiplyAlphabetically.sender
     def multiply_alphabetically(self, word_times):
         pass
 
-    @amp_rpc_caller
+    @Translate.sender
     def translate(self, word):
         pass
 
 
-class AmpRpcResponderTest(TestCase):
+class GetNestedAttrTest(TestCase):
+
+    def test_nested_attr(self):
+        """
+        The L{get_nested_attr} function returns nested attributes.
+        """
+
+        class Object(object):
+            pass
+        obj = Object()
+        obj.foo = Object()
+        obj.foo.bar = 1
+        self.assertEquals(get_nested_attr(obj, "foo.bar"), 1)
+
+    def test_nested_attr_with_empty_path(self):
+        """
+        The L{get_nested_attr} function returns the object itself if its
+        passed an empty string.
+        ."""
+        obj = object()
+        self.assertIdentical(get_nested_attr(obj, ""), obj)
+
+
+class MethodCallResponderTest(TestCase):
 
     def setUp(self):
-        super(AmpRpcResponderTest, self).setUp()
+        super(MethodCallResponderTest, self).setUp()
         socket = self.mktemp()
         factory = Factory()
         factory.protocol = WordsServerProtocol
@@ -186,7 +212,7 @@ class AmpRpcResponderTest(TestCase):
         return connected.addCallback(set_protocol)
 
     def tearDown(self):
-        super(AmpRpcResponderTest, self).setUp()
+        super(MethodCallResponderTest, self).setUp()
         self.port.loseConnection()
         self.protocol.transport.loseConnection()
 
@@ -200,7 +226,7 @@ class AmpRpcResponderTest(TestCase):
 
     def test_motd(self):
         """
-        A connected AMP client can issue a command targeted to a model
+        A connected AMP client can issue a command targeted to an object
         method with a return value.
         """
         performed = self.protocol.callRemote(Motd)
@@ -240,7 +266,7 @@ class AmpRpcResponderTest(TestCase):
     def test_lower_case(self):
         """
         A connected AMP client can issue a command with many arguments some
-        of which have default values in the model.
+        of which have default values in the target object.
         """
         performed = self.protocol.callRemote(LowerCase, word="OHH")
         return performed.addCallback(self.assertEquals, {"result": "ohh"})
@@ -248,16 +274,16 @@ class AmpRpcResponderTest(TestCase):
     def test_lower_case_with_index(self):
         """
         A connected AMP client can issue a command with many arguments some
-        of which have default values in the model.  If a value is specified
-        by the caller it will be used in place of the default value
+        of which have default values in the target object.  If a value is
+        specified by the caller it will be used in place of the default value
         """
         performed = self.protocol.callRemote(LowerCase, word="OHH", index=2)
         return performed.addCallback(self.assertEquals, {"result": "OHh"})
 
     def test_multiply_alphabetically(self):
         """
-        The L{BPickle} argument type can be used for model commands requiring
-        dictionary arguments.
+        The L{BPickle} argument type can be used to define L{MethodCall}s for
+        methods requiring dictionary arguments.
         """
         performed = self.protocol.callRemote(MultiplyAlphabetically,
                                              word_times={"foo": 2, "bar": 3})
@@ -266,17 +292,17 @@ class AmpRpcResponderTest(TestCase):
 
     def test_translate(self):
         """
-        The L{Hidden} argument type can be used for model commands requiring
-        dictionary arguments.
+        The L{Hidden} argument type can be used to define L{MethodCall}s for
+        methods requiring additional arguments.
         """
         performed = self.protocol.callRemote(Translate, word="hi")
         return performed.addCallback(self.assertEquals, {"result": "ciao"})
 
 
-class AmpRpcCallerTest(TestCase):
+class MethodCallSenderTest(TestCase):
 
     def setUp(self):
-        super(AmpRpcCallerTest, self).setUp()
+        super(MethodCallSenderTest, self).setUp()
         socket = self.mktemp()
         factory = Factory()
         factory.protocol = WordsServerProtocol
@@ -292,7 +318,7 @@ class AmpRpcCallerTest(TestCase):
         return connected.addCallback(set_protocol)
 
     def tearDown(self):
-        super(AmpRpcCallerTest, self).setUp()
+        super(MethodCallSenderTest, self).setUp()
         self.port.loseConnection()
         self.protocol.transport.loseConnection()
 
