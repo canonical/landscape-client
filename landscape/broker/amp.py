@@ -81,6 +81,12 @@ class Exit(MethodCall):
     response = []
 
 
+BROKER_SERVER_METHOD_CALLS = [
+    Ping, RegisterClient, SendMessage, IsMessagePending, StopClients,
+    ReloadConfiguration, Register, GetAcceptedMessageTypes, GetServerUuid,
+    RegisterClientAcceptedMessageType, Exit]
+
+
 class BrokerServerProtocol(MethodCallProtocol):
     """
     Communication protocol between the broker server and its clients.

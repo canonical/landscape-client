@@ -9,10 +9,8 @@ from twisted.protocols.amp import AMP, String, Integer, Boolean
 from landscape.lib.amp import ProtocolAttribute, StringOrNone
 from landscape.broker.amp import (
     BrokerServerProtocol, BrokerServerProtocolFactory, Message, Types,
-    RegisterClient, SendMessage, RegisterClientAcceptedMessageType,
-    IsMessagePending, StopClients, ReloadConfiguration, Register,
-    GetAcceptedMessageTypes, GetServerUuid,
-    Ping, Exit)
+    RegisterClient, BROKER_SERVER_METHOD_CALLS, SendMessage,
+    RegisterClientAcceptedMessageType, IsMessagePending)
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServerHelper, DEFAULT_ACCEPTED_TYPES)
 
@@ -89,22 +87,22 @@ class BrokerServerProtocolTest(LandscapeTest):
 
         setattr(obj, method, method_wrapper)
 
-    def assert_responder(self, command, model):
+    def assert_responder(self, method_call, model):
         """
         Assert that an C{AMP.callRemote} invocation against the given AMP
-        C{command}, actually calls the appropriate C{model} method.
+        c{method_call}, actually calls the appropriate target object method.
         """
         kwargs = {}
 
-        # Figure out the model method associated with the given command
-        words = re.findall("[A-Z][a-z]+", command.__name__)
+        # Figure out the model method associated with the given method_call
+        words = re.findall("[A-Z][a-z]+", method_call.__name__)
         method = "_".join(word.lower() for word in words)
 
         # Wrap the model method with one that will keep track of its calls
         calls = []
         self.create_method_wrapper(model, method, calls)
 
-        for name, kind in command.arguments:
+        for name, kind in method_call.arguments:
             if kind.__class__ is ProtocolAttribute:
                 # Skip protocol attribute arguments
                 continue
@@ -112,8 +110,8 @@ class BrokerServerProtocolTest(LandscapeTest):
 
         def assert_response(response):
             self.assertEquals(calls, [True])
-            if command.response:
-                name, kind = command.response[0]
+            if method_call.response:
+                name, kind = method_call.response[0]
                 result = response[name]
                 if isinstance(kind, StringOrNone):
                     if result is not None:
@@ -122,7 +120,7 @@ class BrokerServerProtocolTest(LandscapeTest):
                     self.assertTrue(
                         isinstance(result, ARGUMENT_TYPES[kind.__class__]))
 
-        performed = self.protocol.callRemote(command, **kwargs)
+        performed = self.protocol.callRemote(method_call, **kwargs)
         return performed.addCallback(assert_response)
 
     def test_commands(self):
@@ -134,11 +132,8 @@ class BrokerServerProtocolTest(LandscapeTest):
         # We need this in order to make the message store happy
         self.mstore.set_accepted_types(["test"])
         performed = []
-        for command in [Ping, RegisterClient, SendMessage, IsMessagePending,
-                        StopClients, ReloadConfiguration, Register,
-                        GetAcceptedMessageTypes, GetServerUuid,
-                        RegisterClientAcceptedMessageType, Exit]:
-            performed.append(self.assert_responder(command, self.broker))
+        for method_call in BROKER_SERVER_METHOD_CALLS:
+            performed.append(self.assert_responder(method_call, self.broker))
         return DeferredList(performed, fireOnOneErrback=True)
 
     def test_register_client(self):
