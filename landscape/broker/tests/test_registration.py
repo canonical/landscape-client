@@ -9,8 +9,9 @@ from landscape.broker.registration import (
     EC2_API, Identity)
 
 from landscape.broker.deployment import BrokerConfiguration
-from landscape.tests.helpers import (
-    LandscapeTest, BrokerConfigurationHelper, RegistrationHelper)
+from landscape.tests.helpers import LandscapeTest
+from landscape.broker.tests.helpers import (
+    BrokerConfigurationHelper, RegistrationHelper)
 from landscape.lib.bpickle import dumps
 from landscape.lib.fetch import HTTPCodeError, FetchError
 from landscape.lib.persist import Persist

@@ -9,8 +9,8 @@ from landscape.broker.transport import FakeTransport
 from landscape.broker.store import MessageStore
 from landscape.broker.ping import Pinger
 from landscape.broker.registration import RegistrationHandler
-from landscape.tests.helpers import (LandscapeTest, ExchangeHelper,
-                                     DEFAULT_ACCEPTED_TYPES)
+from landscape.tests.helpers import (LandscapeTest, DEFAULT_ACCEPTED_TYPES)
+from landscape.broker.tests.helpers import ExchangeHelper
 
 
 class MessageExchangeTestBase(LandscapeTest):

@@ -19,7 +19,6 @@ from landscape.watchdog import bootstrap_list
 from landscape.lib.dbus_util import get_object
 from landscape.lib import bpickle_dbus
 from landscape.lib.persist import Persist
-from landscape.lib.fetch import fetch_async
 
 from landscape.reactor import FakeReactor
 
@@ -27,11 +26,6 @@ from landscape.broker.deployment import (BrokerService, BrokerConfiguration)
 from landscape.deployment import BaseConfiguration
 from landscape.broker.remote import RemoteBroker, FakeRemoteBroker
 from landscape.broker.transport import FakeTransport
-from landscape.broker.exchange import MessageExchange
-from landscape.broker.store import get_default_message_store
-from landscape.broker.registration import Identity, RegistrationHandler
-from landscape.broker.ping import Pinger
-from landscape.broker.server import BrokerServer
 
 from landscape.monitor.monitor import MonitorPluginRegistry
 from landscape.manager.manager import ManagerPluginRegistry
@@ -51,10 +45,14 @@ class HelperTestCase(unittest.TestCase):
         self._helper_instances = []
         if LogKeeperHelper not in self.helpers:
             self.helpers.insert(0, LogKeeperHelper)
+        result = None
         for helper_factory in self.helpers:
             helper = helper_factory()
-            helper.set_up(self)
+            result = helper.set_up(self)
             self._helper_instances.append(helper)
+        # Return the return value of the last helper, which
+        # might be a deferred
+        return result
 
     def tearDown(self):
         for helper in reversed(self._helper_instances):
@@ -99,8 +97,8 @@ class LandscapeTest(MessageTestCase, MockerTestCase,
         self._old_config_filenames = BaseConfiguration.default_config_filenames
         BaseConfiguration.default_config_filenames = []
         MockerTestCase.setUp(self)
-        HelperTestCase.setUp(self)
         TestCase.setUp(self)
+        return HelperTestCase.setUp(self)
 
     def tearDown(self):
         BaseConfiguration.default_config_filenames = self._old_config_filenames
@@ -341,118 +339,6 @@ class RemoteBrokerHelper(FakeRemoteBrokerHelper):
     def tear_down(self, test_case):
         test_case.broker_service.stopService()
         super(RemoteBrokerHelper, self).tear_down(test_case)
-
-
-class BrokerConfigurationHelper(object):
-    """
-    The following attributes will be set on your test case:
-      - config: A sample L{BrokerConfiguration}.
-      - config_filename: The name of the configuration file that was used to
-        generate the above C{config}.
-    """
-
-    def set_up(self, test_case):
-        data_path = test_case.makeDir()
-        log_dir = test_case.makeDir()
-        test_case.config_filename = test_case.makeFile(
-            "[client]\n"
-            "url = http://localhost:91919\n"
-            "computer_title = Some Computer\n"
-            "account_name = some_account\n"
-            "ping_url = http://localhost:91910\n"
-            "data_path = %s\n"
-            "log_dir = %s\n" % (data_path, log_dir))
-
-        bootstrap_list.bootstrap(data_path=data_path, log_dir=log_dir)
-
-        test_case.config = BrokerConfiguration()
-        test_case.config.load(["-c", test_case.config_filename])
-
-    def tear_down(self, test_case):
-        pass
-
-class ExchangeHelper(BrokerConfigurationHelper):
-    """
-    This helper uses the sample broker configuration provided by the
-    L{BrokerConfigurationHelper} to create all the components needed by
-    a L{MessageExchange}.  The following attributes will be set on your
-    test case:
-      - exchanger: A L{MessageExchange} using a L{FakeReactor} and a
-        L{FakeTransport}.
-      - reactor: The L{FakeReactor} used by the C{exchager}.
-      - transport: The L{FakeTransport} used by the C{exchanger}.
-      - identity: The L{Identity} used by the C{exchanger} and based
-        on the sample configuration.
-      - mstore: The L{MessageStore} used by the C{exchanger} and based
-        on the sample configuration.
-      - persist: The L{Persist} object used by C{mstore} and C{identity}.
-      - persit_filename: Path to the file holding the C{persist} data.
-    """
-
-    def set_up(self, test_case):
-        super(ExchangeHelper, self).set_up(test_case)
-        test_case.persist_filename=test_case.makePersistFile()
-        test_case.persist = Persist(filename=test_case.persist_filename)
-        test_case.mstore = get_default_message_store(
-            test_case.persist, test_case.config.message_store_path)
-        test_case.identity = Identity(test_case.config, test_case.persist)
-        test_case.transport = FakeTransport(test_case.config.url,
-                                            test_case.config.ssl_public_key)
-        test_case.reactor = FakeReactor()
-        test_case.exchanger = MessageExchange(
-            test_case.reactor, test_case.mstore, test_case.transport,
-            test_case.identity, test_case.config.exchange_interval,
-            test_case.config.urgent_exchange_interval)
-
-    def tear_down(self, test_case):
-        pass
-
-
-class RegistrationHelper(ExchangeHelper):
-    """
-    This helper adds a registration handler to the L{ExchangeHelper}.  If the
-    test case has C{cloud} class attribute, the C{handler} will be configured
-    for a cloud registration.  The following attributes will be set in your
-    test case:
-      - handler: A L{RegistrationHandler}
-      - fetch_func: The C{fetch_async} function used by the C{handler}, it
-        can be customised by test cases.
-    """
-
-    def set_up(self, test_case):
-        super(RegistrationHelper, self).set_up(test_case)
-        test_case.pinger = Pinger(test_case.reactor, test_case.config.ping_url,
-                                  test_case.identity, test_case.exchanger)
-
-        def fetch_func(*args, **kwargs):
-            return test_case.fetch_func(*args, **kwargs)
-
-        test_case.fetch_func = fetch_async
-        test_case.config.cloud = getattr(test_case, "cloud", False)
-        test_case.handler = RegistrationHandler(
-            test_case.config, test_case.identity, test_case.reactor,
-            test_case.exchanger, test_case.pinger, test_case.mstore,
-            fetch_async=fetch_func)
-
-    def tear_down(self, test_case):
-        pass
-
-
-class BrokerServerHelper(RegistrationHelper):
-    """
-    This helper adds a broker server to the L{RegistrationHelper}.  The
-    following attributes will be set in your test case:
-      - server: A L{BrokerServer}.
-    """
-
-    def set_up(self, test_case):
-        super(BrokerServerHelper, self).set_up(test_case)
-        test_case.broker = BrokerServer(test_case.config, test_case.reactor,
-                                        test_case.exchanger, test_case.handler,
-                                        test_case.mstore)
-
-    def tear_down(self, test_case):
-        pass
 
 
 class LegacyExchangeHelper(FakeRemoteBrokerHelper):

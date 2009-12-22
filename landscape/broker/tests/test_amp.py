@@ -13,8 +13,8 @@ from landscape.broker.amp import (
     RegisterClient, BROKER_SERVER_METHOD_CALLS, SendMessage,
     RegisterClientAcceptedMessageType, IsMessagePending, BrokerClientProtocol,
     Ping, get_method_name, RemoteBroker)
-from landscape.tests.helpers import (
-    LandscapeTest, BrokerServerHelper, DEFAULT_ACCEPTED_TYPES)
+from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
+from landscape.broker.tests.helpers import BrokerProtocolHelper
 
 
 ARGUMENT_SAMPLES = {String: "some_sring",
@@ -59,27 +59,10 @@ class GetMethodNameTest(TestCase):
         self.assertEquals(get_method_name(Ping), "ping")
         self.assertEquals(get_method_name(RegisterClient), "register_client")
 
+
 class BrokerProtocolTestBase(LandscapeTest):
 
-    helpers = [BrokerServerHelper]
-
-    def setUp(self):
-        super(BrokerProtocolTestBase, self).setUp()
-        socket = self.makeFile()
-        factory = BrokerServerProtocolFactory(self.broker)
-        self.port = reactor.listenUNIX(socket, factory)
-
-        def set_protocol(protocol):
-            self.protocol = protocol
-
-        connector = ClientCreator(reactor, self.client_protocol)
-        connected = connector.connectUNIX(socket)
-        return connected.addCallback(set_protocol)
-
-    def tearDown(self):
-        super(BrokerProtocolTestBase, self).tearDown()
-        self.port.loseConnection()
-        self.protocol.transport.loseConnection()
+    helpers = [BrokerProtocolHelper]
 
     def create_method_wrapper(self, obj, method, calls):
         """
@@ -103,6 +86,7 @@ class BrokerProtocolTestBase(LandscapeTest):
 class BrokerServerProtocolTest(BrokerProtocolTestBase):
 
     client_protocol = AMP
+
 
     def assert_responder(self, method_call, model):
         """
@@ -294,7 +278,6 @@ class RemoteBrokerTest(BrokerProtocolTestBase):
         setup.addCallback(lambda x: setattr(self, "remote",
                                             RemoteBroker(self.protocol)))
         return setup
-                      
 
     def test_methods(self):
         """
@@ -311,6 +294,7 @@ class RemoteBrokerTest(BrokerProtocolTestBase):
         A L{RemoteBroker} has a C{register_client} method forwards a
         registration request to the connected remote broker.
         """
+
         def assert_result(result):
             self.assertEquals(result, None)
             [client] = self.broker.get_clients()
