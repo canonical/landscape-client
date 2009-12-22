@@ -1,3 +1,5 @@
+import re
+
 from twisted.protocols.amp import String, Integer, Boolean
 from twisted.internet.protocol import ServerFactory
 from twisted.internet.defer import succeed
@@ -79,6 +81,12 @@ class Exit(MethodCall):
 
     arguments = []
     response = []
+
+
+BROKER_SERVER_METHOD_CALLS = [
+    Ping, RegisterClient, SendMessage, IsMessagePending, StopClients,
+    ReloadConfiguration, Register, GetAcceptedMessageTypes, GetServerUuid,
+    RegisterClientAcceptedMessageType, Exit]
 
 
 class BrokerServerProtocol(MethodCallProtocol):
@@ -203,8 +211,8 @@ class RemoteClient(object):
     def __init__(self, name, protocol):
         """
         @param name: Name of the broker client.
-        @param protocol: A L{BrokerServerProtocol} connection with the broker
-            server.
+        @param protocol: A L{BrokerServerProtocol} connection with a remote
+            client.
         """
         self.name = name
         self._protocol = protocol
@@ -212,3 +220,26 @@ class RemoteClient(object):
     def exit(self):
         """Placeholder to make tests pass, it will be replaced later."""
         return succeed(None)
+
+
+class RemoteBroker(object):
+    """A protocol wrapper able to call methods on a remote L{BrokerServer}.
+
+    Exposes the user-callable sender methods of a L{BrokerClientProtocol}.
+    """
+
+    def __init__(self, protocol):
+        """
+        @param protocol: A L{BrokerClientProtocol} connection with a remote
+            broker server.
+        """
+        self._protocol = protocol
+        for method_call in BROKER_SERVER_METHOD_CALLS:
+            method_name = get_method_name(method_call)
+            setattr(self, method_name, getattr(self._protocol, method_name))
+
+
+def get_method_name(method_call):
+    """Return the target object method name associated with C{method_call}."""
+    words = re.findall("[A-Z][a-z]+", method_call.__name__)
+    return "_".join(word.lower() for word in words)

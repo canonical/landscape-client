@@ -1,6 +1,6 @@
-import re
 import sys
 
+from twisted.trial.unittest import TestCase
 from twisted.internet.defer import DeferredList
 from twisted.internet import reactor
 from twisted.internet.protocol import ClientCreator
@@ -10,10 +10,9 @@ from twisted.protocols.amp import AMP, String, Integer, Boolean
 from landscape.lib.amp import ProtocolAttribute, StringOrNone
 from landscape.broker.amp import (
     BrokerServerProtocol, BrokerServerProtocolFactory, Message, Types,
-    RegisterClient, SendMessage, RegisterClientAcceptedMessageType,
-    IsMessagePending, StopClients, ReloadConfiguration, Register,
-    GetAcceptedMessageTypes, GetServerUuid,
-    Ping, Exit, BrokerClientProtocol)
+    RegisterClient, BROKER_SERVER_METHOD_CALLS, SendMessage,
+    RegisterClientAcceptedMessageType, IsMessagePending, BrokerClientProtocol,
+    Ping, get_method_name, RemoteBroker)
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServerHelper, DEFAULT_ACCEPTED_TYPES)
 
@@ -49,6 +48,16 @@ class BrokerServerProtocolFactoryTest(LandscapeTest):
         factory = BrokerServerProtocolFactory(stub_broker)
         self.assertEquals(factory.broker, stub_broker)
 
+
+class GetMethodNameTest(TestCase):
+
+    def test_get_method_name(self):
+        """
+        The L{get_method_name} function returns the target object method
+        name associated the given C{MethodCall}.
+        """
+        self.assertEquals(get_method_name(Ping), "ping")
+        self.assertEquals(get_method_name(RegisterClient), "register_client")
 
 class BrokerProtocolTestBase(LandscapeTest):
 
@@ -95,22 +104,21 @@ class BrokerServerProtocolTest(BrokerProtocolTestBase):
 
     client_protocol = AMP
 
-    def assert_responder(self, command, model):
+    def assert_responder(self, method_call, model):
         """
         Assert that an C{AMP.callRemote} invocation against the given AMP
-        C{command}, actually calls the appropriate C{model} method.
+        c{method_call}, actually calls the appropriate target object method.
         """
         kwargs = {}
 
-        # Figure out the model method associated with the given command
-        words = re.findall("[A-Z][a-z]+", command.__name__)
-        method = "_".join(word.lower() for word in words)
+        # Figure out the model method associated with the given method_call
+        method_name = get_method_name(method_call)
 
         # Wrap the model method with one that will keep track of its calls
         calls = []
-        self.create_method_wrapper(model, method, calls)
+        self.create_method_wrapper(model, method_name, calls)
 
-        for name, kind in command.arguments:
+        for name, kind in method_call.arguments:
             if kind.__class__ is ProtocolAttribute:
                 # Skip protocol attribute arguments
                 continue
@@ -118,8 +126,8 @@ class BrokerServerProtocolTest(BrokerProtocolTestBase):
 
         def assert_response(response):
             self.assertEquals(calls, [True])
-            if command.response:
-                name, kind = command.response[0]
+            if method_call.response:
+                name, kind = method_call.response[0]
                 result = response[name]
                 if isinstance(kind, StringOrNone):
                     if result is not None:
@@ -128,10 +136,10 @@ class BrokerServerProtocolTest(BrokerProtocolTestBase):
                     self.assertTrue(
                         isinstance(result, ARGUMENT_TYPES[kind.__class__]))
 
-        performed = self.protocol.callRemote(command, **kwargs)
+        performed = self.protocol.callRemote(method_call, **kwargs)
         return performed.addCallback(assert_response)
 
-    def test_commands(self):
+    def test_responders(self):
         """
         All accepted L{BrokerServerProtocol} commands issued by a connected
         client are correctly performed.  The appropriate L{BrokerServer}
@@ -140,11 +148,8 @@ class BrokerServerProtocolTest(BrokerProtocolTestBase):
         # We need this in order to make the message store happy
         self.mstore.set_accepted_types(["test"])
         performed = []
-        for command in [Ping, RegisterClient, SendMessage, IsMessagePending,
-                        StopClients, ReloadConfiguration, Register,
-                        GetAcceptedMessageTypes, GetServerUuid,
-                        RegisterClientAcceptedMessageType, Exit]:
-            performed.append(self.assert_responder(command, self.broker))
+        for method_call in BROKER_SERVER_METHOD_CALLS:
+            performed.append(self.assert_responder(method_call, self.broker))
         return DeferredList(performed, fireOnOneErrback=True)
 
     def test_register_client(self):
@@ -260,12 +265,9 @@ class BrokerClientProtocolTest(BrokerProtocolTestBase):
         # We need this in order to make the message store happy
         self.mstore.set_accepted_types(["test"])
         sent = []
-        for method in ["ping", "register_client", "send_message",
-                       "is_message_pending", "stop_clients",
-                       "reload_configuration", "register",
-                       "get_accepted_message_types", "get_server_uuid",
-                       "register_client_accepted_message_type", "exit"]:
-            sent.append(self.assert_sender(method, self.broker))
+        for method_call in BROKER_SERVER_METHOD_CALLS:
+            method_name = get_method_name(method_call)
+            sent.append(self.assert_sender(method_name, self.broker))
         return DeferredList(sent, fireOnOneErrback=True)
 
     def test_register_client(self):
@@ -281,3 +283,38 @@ class BrokerClientProtocolTest(BrokerProtocolTestBase):
 
         sent = self.protocol.register_client("client")
         return sent.addCallback(assert_result)
+
+
+class RemoteBrokerTest(BrokerProtocolTestBase):
+
+    client_protocol = BrokerClientProtocol
+
+    def setUp(self):
+        setup = super(RemoteBrokerTest, self).setUp()
+        setup.addCallback(lambda x: setattr(self, "remote",
+                                            RemoteBroker(self.protocol)))
+        return setup
+                      
+
+    def test_methods(self):
+        """
+        The L{RemoteBroker} methods are simply the L{MethodCall} senders
+        of the the underlying L{BrokerClientProtocol}.
+        """
+        for method_call in BROKER_SERVER_METHOD_CALLS:
+            method_name = get_method_name(method_call)
+            self.assertEquals(getattr(self.remote, method_name),
+                              getattr(self.protocol, method_name))
+
+    def test_register_client(self):
+        """
+        A L{RemoteBroker} has a C{register_client} method forwards a
+        registration request to the connected remote broker.
+        """
+        def assert_result(result):
+            self.assertEquals(result, None)
+            [client] = self.broker.get_clients()
+            self.assertEquals(client.name, "client")
+
+        registered = self.remote.register_client("client")
+        return registered.addCallback(assert_result)
