@@ -128,6 +128,8 @@ class BrokerClientPluginRegistryTest(LandscapeTest):
         self.registry.add(plugin2)
         spy.clear(plugin2)
         self.registry.exchange()
+        self.assertTrue("Error during plugin exchange" in
+                        self.logfile.getvalue())
         self.assertTrue("ZeroDivisionError" in self.logfile.getvalue())
         spy.replay(plugin2)
         self.assertEquals(spy.history(plugin2), [plugin2.exchange()])
