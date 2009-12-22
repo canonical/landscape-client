@@ -6,7 +6,7 @@ from twisted.internet.protocol import ClientCreator
 from twisted.protocols.amp import AMP, String, Integer, Boolean
 
 
-from landscape.lib.amp import Hidden, StringOrNone
+from landscape.lib.amp import ProtocolAttribute, StringOrNone
 from landscape.broker.amp import (
     BrokerServerProtocol, BrokerServerProtocolFactory, Message, Types,
     RegisterClient, SendMessage, RegisterClientAcceptedMessageType,
@@ -105,8 +105,8 @@ class BrokerServerProtocolTest(LandscapeTest):
         self.create_method_wrapper(model, method, calls)
 
         for name, kind in command.arguments:
-            if kind.__class__ is Hidden:
-                # Skip hidden arguments
+            if kind.__class__ is ProtocolAttribute:
+                # Skip protocol attribute arguments
                 continue
             kwargs[name] = ARGUMENT_SAMPLES[kind.__class__]
 
