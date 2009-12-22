@@ -1,9 +1,9 @@
-from twisted.protocols.amp import AMP, Command, String, Integer, Boolean
+from twisted.protocols.amp import String, Integer, Boolean
 from twisted.internet.protocol import ServerFactory
 from twisted.internet.defer import succeed
 
 from landscape.lib.amp import (
-    amp_rpc_responder, amp_rpc_caller, StringOrNone, BPickle, Hidden)
+    MethodCallProtocol, MethodCall, StringOrNone, BPickle, ProtocolAttribute)
 
 
 class Message(BPickle):
@@ -14,120 +14,122 @@ class Types(BPickle):
     """Marker class for commands with message type arguments."""
 
 
-class Ping(Command):
+class Ping(MethodCall):
 
     arguments = []
     response = [("result", Boolean())]
 
 
-class RegisterClient(Command):
-
-    arguments = [("name", String()), ("__amp_rpc_protocol", Hidden("."))]
+class RegisterClient(MethodCall):
+    arguments = [("name", String()), ("__protocol_attribute_protocol",
+                                      ProtocolAttribute(""))]
     response = []
 
 
-class SendMessage(Command):
+class SendMessage(MethodCall):
 
     arguments = [("message", Message()), ("urgent", Boolean())]
     response = [("result", Integer())]
 
 
-class IsMessagePending(Command):
+class IsMessagePending(MethodCall):
 
     arguments = [("message_id", Integer())]
     response = [("result", Boolean())]
 
 
-class StopClients(Command):
+class StopClients(MethodCall):
 
     arguments = []
     response = []
 
 
-class ReloadConfiguration(Command):
+class ReloadConfiguration(MethodCall):
 
     arguments = []
     response = []
 
 
-class Register(Command):
+class Register(MethodCall):
 
     arguments = []
     response = []
 
 
-class GetAcceptedMessageTypes(Command):
+class GetAcceptedMessageTypes(MethodCall):
 
     arguments = []
     response = [("result", Types())]
 
 
-class GetServerUuid(Command):
+class GetServerUuid(MethodCall):
 
     arguments = []
     response = [("result", StringOrNone())]
 
 
-class RegisterClientAcceptedMessageType(Command):
+class RegisterClientAcceptedMessageType(MethodCall):
 
     arguments = [("type", String())]
     response = []
 
 
-class Exit(Command):
+class Exit(MethodCall):
 
     arguments = []
     response = []
 
 
-class BrokerServerProtocol(AMP):
+class BrokerServerProtocol(MethodCallProtocol):
     """
     Communication protocol between the broker server and its clients.
     """
 
-    __amp_rpc_model__ = ".factory.broker"
+    @property
+    def _object(self):
+        return self.factory.broker
 
-    @amp_rpc_responder
+    @Ping.responder
     def ping(self):
         """@see L{BrokerServer.ping}"""
 
-    @amp_rpc_responder
+    @RegisterClient.responder
     def register_client(self, name):
         """@see L{BrokerServer.register_client}"""
 
-    @amp_rpc_responder
+    @SendMessage.responder
     def send_message(self, message, urgent):
         """@see L{BrokerServer.send_message}"""
 
-    @amp_rpc_responder
+    @IsMessagePending.responder
     def is_message_pending(self, message_id):
         """@see L{BrokerServer.is_message_pending}"""
 
-    @amp_rpc_responder
+    @StopClients.responder
     def stop_clients(self):
         """@see L{BrokerServer.stop_clients}"""
 
-    @amp_rpc_responder
+    @ReloadConfiguration.responder
     def reload_configuration(self):
         """@see L{BrokerServer.reload_configuration}"""
 
-    @amp_rpc_responder
+    @Register.responder
     def register(self):
         """@see L{BrokerServer.register}"""
 
-    @amp_rpc_responder
+    @GetAcceptedMessageTypes.responder
     def get_accepted_message_types(self):
         """@see L{BrokerServer.get_accepted_message_types}"""
 
-    @amp_rpc_responder
+    @GetServerUuid.responder
     def get_server_uuid(self):
         """@see L{BrokerServer.get_server_uuid}"""
 
-    @amp_rpc_responder
+    @RegisterClientAcceptedMessageType.responder
     def register_client_accepted_message_type(self, type):
         """@see L{BrokerServer.register_client_accepted_message_type}"""
 
-    @amp_rpc_responder
+    @Exit.responder
     def exit(self):
         """@see L{BrokerServer.exit}"""
 
@@ -144,52 +146,52 @@ class BrokerServerProtocolFactory(ServerFactory):
         self.broker = broker
 
 
-class BrokerClientProtocol(AMP):
+class BrokerClientProtocol(MethodCallProtocol):
     """
     Communication protocol between the a broker client and its server.
     """
 
-    @amp_rpc_caller
+    @Ping.sender
     def ping(self):
         """@see L{BrokerServer.ping}"""
 
-    @amp_rpc_caller
+    @RegisterClient.sender
     def register_client(self, name):
         """@see L{BrokerServer.register_client}"""
 
-    @amp_rpc_caller
+    @SendMessage.sender
     def send_message(self, message, urgent):
         """@see L{BrokerServer.send_message}"""
 
-    @amp_rpc_caller
+    @IsMessagePending.sender
     def is_message_pending(self, message_id):
         """@see L{BrokerServer.is_message_pending}"""
 
-    @amp_rpc_caller
+    @StopClients.sender
     def stop_clients(self):
         """@see L{BrokerServer.stop_clients}"""
 
-    @amp_rpc_caller
+    @ReloadConfiguration.sender
     def reload_configuration(self):
         """@see L{BrokerServer.reload_configuration}"""
 
-    @amp_rpc_caller
+    @Register.sender
     def register(self):
         """@see L{BrokerServer.register}"""
 
-    @amp_rpc_caller
+    @GetAcceptedMessageTypes.sender
     def get_accepted_message_types(self):
         """@see L{BrokerServer.get_accepted_message_types}"""
 
-    @amp_rpc_caller
+    @GetServerUuid.sender
     def get_server_uuid(self):
         """@see L{BrokerServer.get_server_uuid}"""
 
-    @amp_rpc_caller
+    @RegisterClientAcceptedMessageType.sender
     def register_client_accepted_message_type(self, type):
         """@see L{BrokerServer.register_client_accepted_message_type}"""
 
-    @amp_rpc_caller
+    @Exit.sender
     def exit(self):
         """@see L{BrokerServer.exit}"""
 

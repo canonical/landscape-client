@@ -7,7 +7,7 @@ from twisted.internet.protocol import ClientCreator
 from twisted.protocols.amp import AMP, String, Integer, Boolean
 
 
-from landscape.lib.amp import Hidden, StringOrNone
+from landscape.lib.amp import ProtocolAttribute, StringOrNone
 from landscape.broker.amp import (
     BrokerServerProtocol, BrokerServerProtocolFactory, Message, Types,
     RegisterClient, SendMessage, RegisterClientAcceptedMessageType,
@@ -111,8 +111,8 @@ class BrokerServerProtocolTest(BrokerProtocolTestBase):
         self.create_method_wrapper(model, method, calls)
 
         for name, kind in command.arguments:
-            if kind.__class__ is Hidden:
-                # Skip hidden arguments
+            if kind.__class__ is ProtocolAttribute:
+                # Skip protocol attribute arguments
                 continue
             kwargs[name] = ARGUMENT_SAMPLES[kind.__class__]
 
@@ -215,9 +215,9 @@ class BrokerClientProtocolTest(BrokerProtocolTestBase):
 
     client_protocol = BrokerClientProtocol
 
-    def assert_caller(self, method, model):
+    def assert_sender(self, method, model):
         """
-        Assert that a protocol method decorated with L{amp_rpc_caller} actually
+        Assert that a protocol method decorated with L{MethodCall.sender}
         sends the appropriate AMP command and the matching C{model} method gets
         eventually called with the proper arguments.
         """
@@ -233,7 +233,7 @@ class BrokerClientProtocolTest(BrokerProtocolTestBase):
         self.create_method_wrapper(model, method, calls)
 
         for name, kind in command.arguments:
-            if kind.__class__ is Hidden:
+            if kind.__class__ is ProtocolAttribute:
                 # Skip hidden arguments
                 continue
             args.append(ARGUMENT_SAMPLES[kind.__class__])
@@ -252,21 +252,21 @@ class BrokerClientProtocolTest(BrokerProtocolTestBase):
         performed = getattr(self.protocol, method)(*args)
         return performed.addCallback(assert_result)
 
-    def test_callers(self):
+    def test_senders(self):
         """
-        The L{BrokerClientProtocol} methods decorated with C{amp_rpc_caller}
+        The L{BrokerClientProtocol} methods decorated with C{MethodCall.sender}
         can be used to call methods on the remote broker object.
         """
         # We need this in order to make the message store happy
         self.mstore.set_accepted_types(["test"])
-        performed = []
+        sent = []
         for method in ["ping", "register_client", "send_message",
                        "is_message_pending", "stop_clients",
                        "reload_configuration", "register",
                        "get_accepted_message_types", "get_server_uuid",
                        "register_client_accepted_message_type", "exit"]:
-            performed.append(self.assert_caller(method, self.broker))
-        return DeferredList(performed, fireOnOneErrback=True)
+            sent.append(self.assert_sender(method, self.broker))
+        return DeferredList(sent, fireOnOneErrback=True)
 
     def test_register_client(self):
         """
@@ -279,5 +279,5 @@ class BrokerClientProtocolTest(BrokerProtocolTestBase):
             [client] = self.broker.get_clients()
             self.assertEquals(client.name, "client")
 
-        performed = self.protocol.register_client("client")
-        return performed.addCallback(assert_result)
+        sent = self.protocol.register_client("client")
+        return sent.addCallback(assert_result)
