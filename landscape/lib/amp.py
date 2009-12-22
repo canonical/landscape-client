@@ -1,5 +1,3 @@
-import inspect
-
 from twisted.protocols.amp import (
     Argument, String, Command, CommandLocator, AMP)
 
