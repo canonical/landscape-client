@@ -59,6 +59,7 @@ class GetMethodNameTest(TestCase):
         self.assertEquals(get_method_name(Ping), "ping")
         self.assertEquals(get_method_name(RegisterClient), "register_client")
 
+
 class BrokerProtocolTestBase(LandscapeTest):
 
     helpers = [BrokerServerHelper]
@@ -294,7 +295,6 @@ class RemoteBrokerTest(BrokerProtocolTestBase):
         setup.addCallback(lambda x: setattr(self, "remote",
                                             RemoteBroker(self.protocol)))
         return setup
-                      
 
     def test_methods(self):
         """
@@ -311,6 +311,7 @@ class RemoteBrokerTest(BrokerProtocolTestBase):
         A L{RemoteBroker} has a C{register_client} method forwards a
         registration request to the connected remote broker.
         """
+
         def assert_result(result):
             self.assertEquals(result, None)
             [client] = self.broker.get_clients()
