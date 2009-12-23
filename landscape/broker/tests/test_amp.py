@@ -91,7 +91,6 @@ class BrokerServerProtocolTest(LandscapeTest):
         c{method_call}, actually calls the appropriate target object method.
         """
         kwargs = {}
-
         method_name = method_call.get_method_name()
 
         # Wrap the model method with one that will keep track of its calls
