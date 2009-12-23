@@ -67,7 +67,7 @@ class BrokerServerProtocolTest(LandscapeTest):
         self.port.loseConnection()
         self.protocol.transport.loseConnection()
 
-    def create_method_wrapper(self, obj, method_name, calls):
+    def create_method_wrapper(self, object, method_name, calls):
         """
         Replace the method  of the given object with the given C{method_name}
         with a wrapper which will behave exactly as the original method but
@@ -75,27 +75,28 @@ class BrokerServerProtocolTest(LandscapeTest):
         invokation.  After the wrapper is called, it replaces the object's
         method with the original one.
         """
-        original_method = getattr(obj, method_name)
+        original_method = getattr(object, method_name)
 
         def method_wrapper(*args, **kwargs):
             calls.append(True)
             result = original_method(*args, **kwargs)
-            setattr(obj, method_name, original_method)
+            setattr(object, method_name, original_method)
             return result
 
-        setattr(obj, method_name, method_wrapper)
+        setattr(object, method_name, method_wrapper)
 
-    def assert_responder(self, method_call, model):
+    def assert_responder(self, method_call, object):
         """
         Assert that an C{AMP.callRemote} invocation against the given AMP
-        c{method_call}, actually calls the appropriate target object method.
+        c{method_call}, actually calls the appropriate target method of
+        the given C{object).
         """
         kwargs = {}
         method_name = method_call.get_method_name()
 
         # Wrap the model method with one that will keep track of its calls
         calls = []
-        self.create_method_wrapper(model, method_name, calls)
+        self.create_method_wrapper(object, method_name, calls)
 
         for name, kind in method_call.arguments:
             if kind.__class__ is ProtocolAttribute:
