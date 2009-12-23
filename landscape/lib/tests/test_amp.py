@@ -103,35 +103,35 @@ class WordsProtocol(MethodCallProtocol):
         return self.factory.words
 
     @Empty.responder
-    def empty(self):
+    def _empty(self):
         pass
 
     @Motd.responder
-    def motd(self):
+    def _motd(self):
         pass
 
     @Capitalize.responder
-    def capitalize(self, word):
+    def _capitalize(self, word):
         pass
 
     @Synonym.responder
-    def synonym(self, word):
+    def _synonym(self, word):
         pass
 
     @Concatenate.responder
-    def concatenate(self, word1, word2):
+    def _concatenate(self, word1, word2):
         pass
 
     @LowerCase.responder
-    def lower_case(self, word, index):
+    def _lower_case(self, word, index):
         pass
 
     @MultiplyAlphabetically.responder
-    def multiply_alphabetically(self, word_times):
+    def _multiply_alphabetically(self, word_times):
         pass
 
     @Translate.responder
-    def translate(self, word):
+    def _translate(self, word):
         pass
 
 
@@ -156,6 +156,17 @@ class GetNestedAttrTest(TestCase):
         ."""
         obj = object()
         self.assertIdentical(get_nested_attr(obj, ""), obj)
+
+
+class MethodCallTest(TestCase):
+
+    def test_get_method_name(self):
+        """
+        The L{get_method_name} function returns the target object method
+        name associated the given C{MethodCall}.
+        """
+        self.assertEquals(Empty.get_method_name(), "empty")
+        self.assertEquals(LowerCase.get_method_name(), "lower_case")
 
 
 class MethodCallResponderTest(TestCase):

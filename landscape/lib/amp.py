@@ -1,3 +1,4 @@
+import re
 from twisted.protocols.amp import (
     Argument, String, Command, CommandLocator, AMP)
 
@@ -80,25 +81,34 @@ class MethodCallProtocol(AMP):
 class MethodCall(Command):
 
     @classmethod
+    def get_method_name(cls):
+        """
+        Get the target object method name associated with this L{MethodCall}.
+        """
+        words = re.findall("[A-Z][a-z]+", cls.__name__)
+        return "_".join(word.lower() for word in words)
+
+    @classmethod
     def responder(cls, method):
         """Decorator turning a protocol method into an L{MethodCall} responder.
 
         This decorator is used to implement remote procedure calls over AMP
         commands.  The L{MethodCallProtocol} sub-class making use of it must
         define a C{_object} attribute, which must return an object that will
-        be used as model object to perform the remote procedure call on.
+        be used as the target object to perform the remote procedure call on.
 
         The idea is that if a connected AMP client issues a C{FooBar} command,
-        the model method named L{foo_bar} will be called and its return value
-        delivered back to the client as response to the command.  Note also
-        that for this to work the C{FooBar.attributes} and C{FooBar.response}
-        schemas must match the signature of the target model method.
+        the target object method named L{foo_bar} will be called and its return
+        value delivered back to the client as response to the command.  Note
+        also that for this to work C{FooBar}'s C{attributes} and C{response}
+        schemas must match the signature of the target object method.
 
         @param cls: The L{MethodCall} sub-class the given C{method} will be
             registered as responder of.
-        @param method: A method of an L{MethodCallProtocol} sub-class matching
-            the name of the target object method that it should call.
+        @param method: A method of a L{MethodCallProtocol} sub-class.  The
+            implementation of this method is supposed to be empty.
         """
+        method_name = cls.get_method_name()
 
         def call_object_method(self, **command_kwargs):
             object_kwargs = command_kwargs.copy()
@@ -112,7 +122,7 @@ class MethodCall(Command):
                                                                        value)
 
             # Call the model method with the matching name
-            result = getattr(self._object, method.__name__)(**object_kwargs)
+            result = getattr(self._object, method_name)(**object_kwargs)
 
             # Return an AMP response to be delivered to the remote caller
             if not cls.response:
