@@ -26,6 +26,9 @@ class BrokerClient(object):
         self._plugins = []
         self._plugin_names = {}
 
+        # Expose ourselves to the broker over AMP
+        self.broker.client = self
+
     def ping(self):
         """Return C{True}"""
         return True

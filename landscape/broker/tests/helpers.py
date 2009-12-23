@@ -1,6 +1,5 @@
 from twisted.internet import reactor
 from twisted.internet.protocol import ClientCreator
-from twisted.protocols.amp import AMP
 
 from landscape.lib.fetch import fetch_async
 from landscape.lib.persist import Persist
@@ -13,7 +12,8 @@ from landscape.broker.registration import Identity, RegistrationHandler
 from landscape.broker.ping import Pinger
 from landscape.broker.deployment import BrokerConfiguration
 from landscape.broker.server import BrokerServer
-from landscape.broker.amp import BrokerServerProtocolFactory, RemoteBroker
+from landscape.broker.amp import (
+    BrokerServerProtocolFactory, RemoteBroker, BrokerClientProtocol)
 from landscape.broker.client import BrokerClient
 
 
@@ -139,7 +139,7 @@ class BrokerProtocolHelper(BrokerServerHelper):
         def set_protocol(protocol):
             test_case.protocol = protocol
 
-        connector = ClientCreator(reactor, AMP)
+        connector = ClientCreator(reactor, BrokerClientProtocol)
         connected = connector.connectUNIX(socket)
         return connected.addCallback(set_protocol)
 

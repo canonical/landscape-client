@@ -6,10 +6,12 @@ from landscape.lib.amp import ProtocolAttribute, StringOrNone
 from landscape.broker.amp import (
     BrokerServerProtocol, BrokerServerProtocolFactory, Message, Types,
     RegisterClient, BROKER_SERVER_METHOD_CALLS, SendMessage,
-    RegisterClientAcceptedMessageType, IsMessagePending)
+    RegisterClientAcceptedMessageType, IsMessagePending, DispatchMessage,
+    BROKER_CLIENT_METHOD_CALLS)
 from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
 from landscape.broker.tests.helpers import (
-    BrokerProtocolHelper, RemoteBrokerHelper)
+    BrokerProtocolHelper, RemoteBrokerHelper, BrokerClientHelper)
+from landscape.broker.client import HandlerNotFoundError
 
 ARGUMENT_SAMPLES = {String: "some_sring",
                     Boolean: True,
@@ -136,7 +138,7 @@ class BrokerServerProtocolTest(LandscapeTest, MethodCallTestMixin):
 
     helpers = [BrokerProtocolHelper]
 
-    def test_commands(self):
+    def test_responders(self):
         """
         All accepted L{BrokerServerProtocol} commands issued by a connected
         client are correctly performed.  The appropriate L{BrokerServer}
@@ -218,6 +220,15 @@ class RemoteBrokerTest(LandscapeTest, MethodCallTestMixin):
 
     helpers = [RemoteBrokerHelper]
 
+    def test_wb_set_client(self):
+        """
+        The C{client} attribute of a L{RemoteBroker} passes a references to
+        the connected L{BrokerClient} to the underlying protocol.
+        """
+        client = object()
+        self.remote.client = client
+        self.assertIdentical(self.remote._protocol.client, client)
+
     def test_senders(self):
         """
         The L{BrokerClientProtocol} methods decorated with C{MethodCall.sender}
@@ -244,3 +255,129 @@ class RemoteBrokerTest(LandscapeTest, MethodCallTestMixin):
 
         sent = self.remote.register_client("client")
         return sent.addCallback(assert_result)
+
+
+class BrokerClientProtocolTest(LandscapeTest, MethodCallTestMixin):
+
+    helpers = [BrokerClientHelper]
+
+    def setUp(self):
+
+        def register_client(ignored):
+
+            def set_client_protocol(ignored):
+                [remote_client] = self.broker.get_clients()
+                self.client_protocol = remote_client._protocol
+
+            registered = self.remote.register_client("test")
+            return registered.addCallback(set_client_protocol)
+
+        connected = super(BrokerClientProtocolTest, self).setUp()
+        return connected.addCallback(register_client)
+
+    def test_responders(self):
+        performed = []
+        for method_call in BROKER_CLIENT_METHOD_CALLS:
+            performed.append(self.assert_responder(self.protocol, method_call,
+                                                   self.broker))
+        return DeferredList(performed, fireOnOneErrback=True)
+
+    def test_responders(self):
+        """
+        The L{BrokerClientProtocol} methods decorated with the
+        L{MethodCall.responder} decorator response to the associated AMP
+        commands and call the proper L{BrokerClient} methods.
+        """
+
+        def assert_responders(ignored):
+
+            performed = []
+            for method_call in BROKER_CLIENT_METHOD_CALLS:
+                performed.append(self.assert_responder(self.client_protocol,
+                                                       method_call,
+                                                       self.client))
+            return DeferredList(performed, fireOnOneErrback=True)
+
+        # We need to register a test message handler to let the DispatchMessage
+        # method call succeed
+        registered = self.client.register_message("test", lambda x: object())
+        return registered.addCallback(assert_responders)
+
+    def test_dispatch_message_with_handler_not_found(self):
+        """
+        If a L{BrokerClient} can't find a handler for the given message,
+        the L{Dispatch} method call results in a failure.
+        """
+
+        def assert_failure(failure):
+            self.assertEquals(str(failure), "test")
+
+        sent = self.client_protocol.callRemote(DispatchMessage,
+                                               message={"type": "test"})
+        self.assertFailure(sent, HandlerNotFoundError)
+        return sent.addCallback(assert_failure)
+
+
+class RemoteClientTest(LandscapeTest, MethodCallTestMixin):
+
+    helpers = [BrokerClientHelper]
+
+    def setUp(self):
+
+        def register_client(ignored):
+
+            def set_remote_client(ignored):
+                [remote_client] = self.broker.get_clients()
+                self.remote_client = remote_client
+
+            registered = self.remote.register_client("test")
+            return registered.addCallback(set_remote_client)
+
+        connected = super(RemoteClientTest, self).setUp()
+        return connected.addCallback(register_client)
+
+    def test_senders(self):
+        """
+        The L{RemoteClient} methods decorated with C{MethodCall.sender}
+        can be used to call methods on the remote broker object.
+        """
+        # We need this in order to make the message store happy
+        self.mstore.set_accepted_types(["test"])
+        sent = []
+        for method_call in BROKER_SERVER_METHOD_CALLS:
+            sent.append(self.assert_sender(self.remote, method_call,
+                                           self.broker))
+        return DeferredList(sent, fireOnOneErrback=True)
+
+    def test_senders(self):
+        """
+        The L{RemoteClient} methods decorated with the L{MethodCall.responder}
+        decorator send the associated AMP commands and eventually call the
+        proper L{BrokerClient} methods.
+        """
+
+        def assert_senders(ignored):
+
+            sent = []
+            for method_call in BROKER_CLIENT_METHOD_CALLS:
+                sent.append(self.assert_sender(self.remote_client,
+                                               method_call, self.client))
+            return DeferredList(sent, fireOnOneErrback=True)
+
+        # We need to register a test message handler to let the DispatchMessage
+        # method call succeed
+        registered = self.client.register_message("test", lambda x: object())
+        return registered.addCallback(assert_senders)
+
+    def test_dispatch_message_with_handler_not_found(self):
+        """
+        If a L{BrokerClient} can't find a handler for the given message,
+        the L{Dispatch} method call results in a failure.
+        """
+
+        def assert_failure(failure):
+            self.assertEquals(str(failure), "test")
+
+        sent = self.remote_client.dispatch_message({"type": "test"})
+        self.assertFailure(sent, HandlerNotFoundError)
+        return sent.addCallback(assert_failure)

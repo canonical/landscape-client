@@ -4,6 +4,7 @@ from twisted.internet.defer import succeed
 
 from landscape.lib.amp import (
     MethodCallProtocol, MethodCall, StringOrNone, BPickle, ProtocolAttribute)
+from landscape.broker.client import HandlerNotFoundError
 
 
 class Message(BPickle):
@@ -153,23 +154,6 @@ class BrokerServerProtocolFactory(ServerFactory):
         self.broker = broker
 
 
-class RemoteClient(object):
-    """A connected client utilizing features provided by a L{BrokerServer}."""
-
-    def __init__(self, name, protocol):
-        """
-        @param name: Name of the broker client.
-        @param protocol: A L{BrokerServerProtocol} connection with the broker
-            server.
-        """
-        self.name = name
-        self._protocol = protocol
-
-    def exit(self):
-        """Placeholder to make tests pass, it will be replaced later."""
-        return succeed(None)
-
-
 class RemoteBroker(object):
     """A connected broker utilizing features provided by a L{BrokerServer}."""
 
@@ -179,6 +163,12 @@ class RemoteBroker(object):
             broker server.
         """
         self._protocol = protocol
+
+    def _set_client(self, client):
+        """Set a reference to the connected L{BrokerClient}."""
+        self._protocol.client = client
+
+    client = property(None, _set_client)
 
     @Ping.sender
     def ping(self):
@@ -223,3 +213,75 @@ class RemoteBroker(object):
     @Exit.sender
     def exit(self):
         """@see L{BrokerServer.exit}"""
+
+
+class DispatchMessage(MethodCall):
+
+    arguments = [("message", Message())]
+    response = [("result", Boolean())]
+    errors = {HandlerNotFoundError: "HANDLER_NOT_FOUND"}
+
+
+class Exchange(MethodCall):
+
+    arguments = []
+    response = []
+
+
+BROKER_CLIENT_METHOD_CALLS = [
+    Ping, DispatchMessage, Exchange, Exit]
+
+
+class BrokerClientProtocol(MethodCallProtocol):
+    """
+    Communication protocol between the a broker client and its server.
+    """
+
+    @property
+    def _object(self):
+        return self.client
+
+    @Ping.responder
+    def _ping(self):
+        """@see L{BrokerClient.ping}"""
+
+    @DispatchMessage.responder
+    def _dispatch_message(self):
+        """@see L{BrokerClient.dispatch_message}"""
+
+    @Exchange.responder
+    def _exchange(self):
+        """@see L{BrokerClient.exchange}"""
+
+    @Exit.responder
+    def _exit(self):
+        """@see L{BrokerClient.exit}"""
+
+
+class RemoteClient(object):
+    """A connected client utilizing features provided by a L{BrokerServer}."""
+
+    def __init__(self, name, protocol):
+        """
+        @param name: Name of the broker client.
+        @param protocol: A L{BrokerServerProtocol} connection with the broker
+            server.
+        """
+        self.name = name
+        self._protocol = protocol
+
+    @Ping.sender
+    def ping(self):
+        """@see L{BrokerClient.ping}"""
+
+    @DispatchMessage.sender
+    def dispatch_message(self):
+        """@see L{BrokerClient.dispatch_message}"""
+
+    @Exchange.sender
+    def exchange(self):
+        """@see L{BrokerClient.exchange}"""
+
+    @Exit.sender
+    def exit(self):
+        """@see L{BrokerClient.exit}"""
