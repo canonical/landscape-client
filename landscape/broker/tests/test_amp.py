@@ -82,7 +82,7 @@ class BrokerServerProtocolTest(BrokerProtocolTestBase):
         kwargs = {}
         method_name = method_call.get_method_name()
 
-        # Wrap the model method with one that will keep track of its calls
+        # Wrap the object method with one that will keep track of its calls
         calls = []
         self.create_method_wrapper(object, method_name, calls)
 
@@ -188,22 +188,25 @@ class BrokerClientProtocolTest(BrokerProtocolTestBase):
 
     client_protocol = BrokerClientProtocol
 
-    def assert_sender(self, method, model):
+    def assert_sender(self, method_name, object):
         """
         Assert that a protocol method decorated with L{MethodCall.sender}
-        sends the appropriate AMP command and the matching C{model} method gets
-        eventually called with the proper arguments.
+        sends the appropriate AMP command and the matching C{object} method
+        gets eventually called with the proper arguments.
+
+        @param method_name: The name of the target object method under test.
+        @param object: The target object method under test.
         """
         # Figure out the AMP command associated with the given method
         command_name = "".join([word.capitalize()
-                                for word in method.split("_")])
+                                for word in method_name.split("_")])
         command = getattr(sys.modules["landscape.broker.amp"], command_name)
 
         args = []
 
-        # Wrap the model method with one that will keep track of its calls
+        # Wrap the object method with one that will keep track of its calls
         calls = []
-        self.create_method_wrapper(model, method, calls)
+        self.create_method_wrapper(object, method_name, calls)
 
         for name, kind in command.arguments:
             if kind.__class__ is ProtocolAttribute:
@@ -222,7 +225,7 @@ class BrokerClientProtocolTest(BrokerProtocolTestBase):
                     self.assertTrue(
                         isinstance(result, ARGUMENT_TYPES[kind.__class__]))
 
-        performed = getattr(self.protocol, method)(*args)
+        performed = getattr(self.protocol, method_name)(*args)
         return performed.addCallback(assert_result)
 
     def test_senders(self):
