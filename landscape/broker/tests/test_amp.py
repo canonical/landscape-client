@@ -9,9 +9,8 @@ from landscape.broker.amp import (
     BrokerServerProtocol, BrokerServerProtocolFactory, Message, Types,
     RegisterClient, BROKER_SERVER_METHOD_CALLS, SendMessage,
     RegisterClientAcceptedMessageType, IsMessagePending)
-from landscape.tests.helpers import (
-    LandscapeTest, BrokerServerHelper, DEFAULT_ACCEPTED_TYPES)
-
+from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
+from landscape.broker.tests.helpers import BrokerServerHelper
 
 ARGUMENT_SAMPLES = {String: "some_sring",
                     Boolean: True,
