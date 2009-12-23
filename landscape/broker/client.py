@@ -3,10 +3,6 @@ from logging import info, exception
 from landscape.log import format_object
 
 
-class HandlerNotFoundError(Exception):
-    """A handler for the given message type was not found."""
-
-
 class BrokerClient(object):
     """Basic plugin registry for clients that have to deal with the broker.
 
@@ -72,21 +68,19 @@ class BrokerClient(object):
     def dispatch_message(self, message):
         """Run the handler registered for the type of the given message.
 
-        @return: A boolean indicating if the message was handled correctly.
-        @raises: L{HandlerNotFoundError} if no handler was defined for the
-            type of the given message.
+        @return: A boolean indicating if an handler for the message was found.
         """
         type = message["type"]
         handler = self._registered_messages.get(type)
         if handler is None:
-            raise HandlerNotFoundError(type)
+            return False
         try:
             handler(message)
-            return True
         except:
             exception("Error running message handler for type %r: %r"
                       % (type, handler))
-            return False
+        finally:
+            return True
 
     def exchange(self):
         """Call C{exchange} on all plugins."""

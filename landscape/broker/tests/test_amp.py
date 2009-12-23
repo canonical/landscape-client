@@ -1,4 +1,4 @@
-from twisted.internet.defer import DeferredList
+from twisted.internet.defer import DeferredList, succeed
 from twisted.protocols.amp import String, Integer, Boolean
 
 
@@ -7,11 +7,10 @@ from landscape.broker.amp import (
     BrokerServerProtocol, BrokerServerProtocolFactory, Message, Types,
     RegisterClient, BROKER_SERVER_METHOD_CALLS, SendMessage,
     RegisterClientAcceptedMessageType, IsMessagePending, DispatchMessage,
-    BROKER_CLIENT_METHOD_CALLS)
+    BROKER_CLIENT_METHOD_CALLS, RemoteClient)
 from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
 from landscape.broker.tests.helpers import (
     BrokerProtocolHelper, RemoteBrokerHelper, BrokerClientHelper)
-from landscape.broker.client import HandlerNotFoundError
 
 ARGUMENT_SAMPLES = {String: "some_sring",
                     Boolean: True,
@@ -146,6 +145,14 @@ class BrokerServerProtocolTest(LandscapeTest, MethodCallTestMixin):
         """
         # We need this in order to make the message store happy
         self.mstore.set_accepted_types(["test"])
+
+        # Mock the remote client's exit methods
+        remote_client_mock = self.mocker.patch(RemoteClient)
+        remote_client_mock.exit()
+        self.mocker.result(succeed(None))
+        self.mocker.count(1, None)
+        self.mocker.replay()
+
         performed = []
         for method_call in BROKER_SERVER_METHOD_CALLS:
             performed.append(self.assert_responder(self.protocol, method_call,
@@ -237,6 +244,14 @@ class RemoteBrokerTest(LandscapeTest, MethodCallTestMixin):
         # We need this in order to make the message store happy
         self.mstore.set_accepted_types(["test"])
         sent = []
+
+        # Mock the remote client's exit methods
+        remote_client_mock = self.mocker.patch(RemoteClient)
+        remote_client_mock.exit()
+        self.mocker.result(succeed(None))
+        self.mocker.count(1, None)
+        self.mocker.replay()
+
         for method_call in BROKER_SERVER_METHOD_CALLS:
             sent.append(self.assert_sender(self.remote, method_call,
                                            self.broker))
@@ -276,13 +291,6 @@ class BrokerClientProtocolTest(LandscapeTest, MethodCallTestMixin):
         return connected.addCallback(register_client)
 
     def test_responders(self):
-        performed = []
-        for method_call in BROKER_CLIENT_METHOD_CALLS:
-            performed.append(self.assert_responder(self.protocol, method_call,
-                                                   self.broker))
-        return DeferredList(performed, fireOnOneErrback=True)
-
-    def test_responders(self):
         """
         The L{BrokerClientProtocol} methods decorated with the
         L{MethodCall.responder} decorator response to the associated AMP
@@ -306,16 +314,15 @@ class BrokerClientProtocolTest(LandscapeTest, MethodCallTestMixin):
     def test_dispatch_message_with_handler_not_found(self):
         """
         If a L{BrokerClient} can't find a handler for the given message,
-        the L{Dispatch} method call results in a failure.
+        the L{Dispatch} method call returns C{False} as its result.
         """
 
-        def assert_failure(failure):
-            self.assertEquals(str(failure), "test")
+        def assert_result(result):
+            self.assertEquals(result, {"result": False})
 
         sent = self.client_protocol.callRemote(DispatchMessage,
                                                message={"type": "test"})
-        self.assertFailure(sent, HandlerNotFoundError)
-        return sent.addCallback(assert_failure)
+        return sent.addCallback(assert_result)
 
 
 class RemoteClientTest(LandscapeTest, MethodCallTestMixin):
@@ -335,19 +342,6 @@ class RemoteClientTest(LandscapeTest, MethodCallTestMixin):
 
         connected = super(RemoteClientTest, self).setUp()
         return connected.addCallback(register_client)
-
-    def test_senders(self):
-        """
-        The L{RemoteClient} methods decorated with C{MethodCall.sender}
-        can be used to call methods on the remote broker object.
-        """
-        # We need this in order to make the message store happy
-        self.mstore.set_accepted_types(["test"])
-        sent = []
-        for method_call in BROKER_SERVER_METHOD_CALLS:
-            sent.append(self.assert_sender(self.remote, method_call,
-                                           self.broker))
-        return DeferredList(sent, fireOnOneErrback=True)
 
     def test_senders(self):
         """
@@ -371,13 +365,12 @@ class RemoteClientTest(LandscapeTest, MethodCallTestMixin):
 
     def test_dispatch_message_with_handler_not_found(self):
         """
-        If a L{BrokerClient} can't find a handler for the given message,
-        the L{Dispatch} method call results in a failure.
+        The L{RemoteClient.dispatch_message} method results in C{False} if
+        no handler for the given message was defined.
         """
 
-        def assert_failure(failure):
-            self.assertEquals(str(failure), "test")
+        def assert_result(result):
+            self.assertEquals(result, False)
 
         sent = self.remote_client.dispatch_message({"type": "test"})
-        self.assertFailure(sent, HandlerNotFoundError)
-        return sent.addCallback(assert_failure)
+        return sent.addCallback(assert_result)

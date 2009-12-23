@@ -3,7 +3,6 @@ from twisted.internet.protocol import ServerFactory
 
 from landscape.lib.amp import (
     MethodCallProtocol, MethodCall, StringOrNone, BPickle, ProtocolAttribute)
-from landscape.broker.client import HandlerNotFoundError
 
 
 class Message(BPickle):
@@ -218,7 +217,6 @@ class DispatchMessage(MethodCall):
 
     arguments = [("message", Message())]
     response = [("result", Boolean())]
-    errors = {HandlerNotFoundError: "HANDLER_NOT_FOUND"}
 
 
 class Exchange(MethodCall):
