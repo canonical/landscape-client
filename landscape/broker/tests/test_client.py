@@ -3,7 +3,6 @@ from landscape.lib.twisted_util import gather_results
 from landscape.tests.helpers import (
     LandscapeTest, DEFAULT_ACCEPTED_TYPES, TestSpy, spy)
 from landscape.broker.tests.helpers import BrokerClientHelper
-from landscape.broker.client import HandlerNotFoundError
 
 
 class BrokerClientTest(LandscapeTest):
@@ -92,7 +91,7 @@ class BrokerClientTest(LandscapeTest):
 
         def dispatch_message(result):
             message = {"type": "foo"}
-            self.assertFalse(self.client.dispatch_message(message))
+            self.assertTrue(self.client.dispatch_message(message))
             self.assertTrue("Error running message handler for type 'foo'" in
                             self.logfile.getvalue())
 
@@ -101,11 +100,10 @@ class BrokerClientTest(LandscapeTest):
 
     def test_dispatch_nonexistent_message(self):
         """
-        L{HandlerNotFoundError} is raised when a message handler can't be
-        found.
+        C{BrokerClient.dispatch_message} return C{False} if no handler was
+        found for the given message.
         """
-        self.assertRaises(HandlerNotFoundError,
-                          self.client.dispatch_message, {"type": "test"})
+        self.assertFalse(self.client.dispatch_message({"type": "test"}))
 
     def test_exchange(self):
         """
