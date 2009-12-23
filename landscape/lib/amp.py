@@ -135,14 +135,16 @@ class MethodCall(Command):
 
     @classmethod
     def sender(cls, method):
-        """Decorator turning a protocol method into an L{MethodCall} sender.
+        """Decorator turning a method into an L{MethodCall} sender.
+
+        Instances of the class of the method being decorated method must
+        provide a C{_protocol} attribute, connected to the peer we want
+        to send commands to.
 
         When the decorated method is called, it sends the associated
         L{MethodCall} to the remote peer passing it the arguments it
         was called with, and returing a L{Deferred} resulting in the
         command's response value.
-
-        @param method: A method of a L{AMP} protocol.
         """
 
         def send_method_call(self, *method_args, **method_kwargs):
@@ -156,7 +158,7 @@ class MethodCall(Command):
                 else:
                     return response["result"]
 
-            sent = self.callRemote(cls, **command_kwargs)
+            sent = self._protocol.callRemote(cls, **command_kwargs)
             sent.addCallback(unpack_response)
             return sent
 

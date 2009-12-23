@@ -135,7 +135,10 @@ class WordsServerProtocol(MethodCallProtocol):
         pass
 
 
-class WordsClientProtocol(AMP):
+class RemoteWords(object):
+
+    def __init__(self, protocol):
+        self._protocol = protocol
 
     @Empty.sender
     def empty(self):
@@ -323,8 +326,9 @@ class MethodCallSenderTest(TestCase):
 
         def set_protocol(protocol):
             self.protocol = protocol
+            self.words = RemoteWords(protocol)
 
-        connector = ClientCreator(reactor, WordsClientProtocol)
+        connector = ClientCreator(reactor, AMP)
         connected = connector.connectUNIX(socket)
         return connected.addCallback(set_protocol)
 
@@ -338,7 +342,7 @@ class MethodCallSenderTest(TestCase):
         The L{amp_rpc_caller} decorator can send commands without arguments
         and with an empty response.
         """
-        performed = self.protocol.empty()
+        performed = self.words.empty()
         return performed.addCallback(self.assertEquals, None)
 
     def test_motd(self):
@@ -346,7 +350,7 @@ class MethodCallSenderTest(TestCase):
         The L{amp_rpc_caller} decorator can send commands without arguments
         and get back the value of the commands's response.
         """
-        performed = self.protocol.motd()
+        performed = self.words.motd()
         return performed.addCallback(self.assertEquals, "Words are cool")
 
     def test_capitalize(self):
@@ -354,7 +358,7 @@ class MethodCallSenderTest(TestCase):
         The L{amp_rpc_caller} decorator can send commands with one
         argument and get the response value.
         """
-        performed = self.protocol.capitalize("john")
+        performed = self.words.capitalize("john")
         return performed.addCallback(self.assertEquals, "John")
 
     def test_capitalize_with_kwarg(self):
@@ -362,7 +366,7 @@ class MethodCallSenderTest(TestCase):
         The L{amp_rpc_caller} decorator can send commands with a named
         argument.
         """
-        performed = self.protocol.capitalize(word="john")
+        performed = self.words.capitalize(word="john")
         return performed.addCallback(self.assertEquals, "John")
 
     def test_concatenate(self):
@@ -370,7 +374,7 @@ class MethodCallSenderTest(TestCase):
         The L{amp_rpc_caller} decorator can send commands with more
         than one argument.
         """
-        performed = self.protocol.concatenate("You ", "rock")
+        performed = self.words.concatenate("You ", "rock")
         return performed.addCallback(self.assertEquals, "You rock")
 
     def test_concatenate_with_kwargs(self):
@@ -378,7 +382,7 @@ class MethodCallSenderTest(TestCase):
         The L{amp_rpc_caller} decorator can send commands with several
         named arguments.
         """
-        performed = self.protocol.concatenate(word2="rock", word1="You ")
+        performed = self.words.concatenate(word2="rock", word1="You ")
         return performed.addCallback(self.assertEquals, "You rock")
 
     def test_lower_case(self):
@@ -386,7 +390,7 @@ class MethodCallSenderTest(TestCase):
         The L{amp_rpc_caller} decorator can send a command having an
         argument with a default value.
         """
-        performed = self.protocol.lower_case("OHH")
+        performed = self.words.lower_case("OHH")
         return performed.addCallback(self.assertEquals, "ohh")
 
     def test_lower_case_with_index(self):
@@ -394,7 +398,7 @@ class MethodCallSenderTest(TestCase):
         The L{amp_rpc_caller} decorator can send a command overriding
         the default value of an argument.
         """
-        performed = self.protocol.lower_case("OHH", 2)
+        performed = self.words.lower_case("OHH", 2)
         return performed.addCallback(self.assertEquals, "OHh")
 
     def test_multiply_alphabetically(self):
@@ -402,7 +406,7 @@ class MethodCallSenderTest(TestCase):
         The L{amp_rpc_caller} decorator can send a command requiring a
         {BPickle} argument, transparently handling the serialization.
         """
-        performed = self.protocol.multiply_alphabetically({"foo": 2, "bar": 3})
+        performed = self.words.multiply_alphabetically({"foo": 2, "bar": 3})
         return performed.addCallback(self.assertEquals, "barbarbarfoofoo")
 
     def test_translate(self):
@@ -410,5 +414,5 @@ class MethodCallSenderTest(TestCase):
         The L{amp_rpc_caller} decorator can send a command requiring L{Hidden}
         arguments, which won't be exposed to the caller.
         """
-        performed = self.protocol.translate("hi")
+        performed = self.words.translate("hi")
         return performed.addCallback(self.assertEquals, "ciao")
