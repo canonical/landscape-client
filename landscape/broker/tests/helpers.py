@@ -14,6 +14,7 @@ from landscape.broker.ping import Pinger
 from landscape.broker.deployment import BrokerConfiguration
 from landscape.broker.server import BrokerServer
 from landscape.broker.amp import BrokerServerProtocolFactory, RemoteBroker
+from landscape.broker.client import BrokerClient
 
 
 class BrokerConfigurationHelper(object):
@@ -160,3 +161,20 @@ class RemoteBrokerHelper(BrokerProtocolHelper):
         connected.addCallback(lambda x: setattr(
             test_case, "remote", RemoteBroker(test_case.protocol)))
         return connected
+
+
+class BrokerClientHelper(RemoteBrokerHelper):
+    """
+    This helper adds a L{BrokerClient} to a L{RemoteBrokerHelper}.
+    The following attributes will be set in your test case:
+      - client: A C{BrokerClient} object connected to a remote broker.
+    """
+
+    def set_up(self, test_case):
+
+        def set_broker_client(ignored):
+            test_case.client = BrokerClient(test_case.remote,
+                                            test_case.reactor)
+
+        connected = super(BrokerClientHelper, self).set_up(test_case)
+        return connected.addCallback(set_broker_client)

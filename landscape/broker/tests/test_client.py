@@ -2,20 +2,13 @@ from twisted.internet.defer import Deferred
 from landscape.lib.twisted_util import gather_results
 from landscape.tests.helpers import (
     LandscapeTest, DEFAULT_ACCEPTED_TYPES, TestSpy, spy)
-from landscape.broker.tests.helpers import RemoteBrokerHelper
-from landscape.broker.client import (BrokerClient, HandlerNotFoundError)
+from landscape.broker.tests.helpers import BrokerClientHelper
+from landscape.broker.client import HandlerNotFoundError
 
 
 class BrokerClientTest(LandscapeTest):
 
-    helpers = [RemoteBrokerHelper]
-
-    def setUp(self):
-        connected = super(BrokerClientTest, self).setUp()
-        connected.addCallback(lambda x: setattr(
-            self, "client", BrokerClient(self.remote,
-                                         self.reactor)))
-        return connected
+    helpers = [BrokerClientHelper]
 
     def test_ping(self):
         """
