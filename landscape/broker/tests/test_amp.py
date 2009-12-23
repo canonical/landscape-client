@@ -1,5 +1,3 @@
-import sys
-
 from twisted.internet.defer import DeferredList
 from twisted.protocols.amp import String, Integer, Boolean
 
@@ -8,9 +6,10 @@ from landscape.lib.amp import ProtocolAttribute, StringOrNone
 from landscape.broker.amp import (
     BrokerServerProtocol, BrokerServerProtocolFactory, Message, Types,
     RegisterClient, BROKER_SERVER_METHOD_CALLS, SendMessage,
-    RegisterClientAcceptedMessageType, IsMessagePending, RemoteBroker)
+    RegisterClientAcceptedMessageType, IsMessagePending)
 from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
-from landscape.broker.tests.helpers import BrokerProtocolHelper
+from landscape.broker.tests.helpers import (
+    BrokerProtocolHelper, RemoteBrokerHelper)
 
 ARGUMENT_SAMPLES = {String: "some_sring",
                     Boolean: True,
@@ -109,7 +108,7 @@ class MethodCallTestMixin(object):
 
         # Wrap the object method with one that will keep track of its calls
         method_name = method_call.get_method_name()
-        calls = [] 
+        calls = []
         self._create_method_wrapper(object, method_name, calls)
 
         for name, kind in method_call.arguments:
@@ -217,13 +216,7 @@ class BrokerServerProtocolTest(LandscapeTest, MethodCallTestMixin):
 
 class RemoteBrokerTest(LandscapeTest, MethodCallTestMixin):
 
-    helpers = [BrokerProtocolHelper]
-
-    def setUp(self):
-        connected = super(RemoteBrokerTest, self).setUp()
-        connected.addCallback(lambda x: setattr(self, "remote",
-                                                RemoteBroker(self.protocol)))
-        return connected
+    helpers = [RemoteBrokerHelper]
 
     def test_senders(self):
         """
