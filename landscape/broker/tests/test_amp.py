@@ -102,7 +102,7 @@ class BrokerServerProtocolTest(BrokerProtocolTestBase):
         kwargs = {}
         method_name = method_call.get_method_name()
 
-        # Wrap the model method with one that will keep track of its calls
+        # Wrap the object method with one that will keep track of its calls
         calls = []
         self.create_method_wrapper(object, method_name, calls)
 
