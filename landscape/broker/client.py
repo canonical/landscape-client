@@ -67,16 +67,23 @@ class BrokerClient(object):
         return self.broker.register_client_accepted_message_type(type)
 
     def dispatch_message(self, message):
-        """Run the handler registered for the type of the given message."""
+        """Run the handler registered for the type of the given message.
+
+        @return: A boolean indicating if the message was handled correctly.
+        @raises: L{HandlerNotFoundError} if no handler was defined for the
+            type of the given message.
+        """
         type = message["type"]
         handler = self._registered_messages.get(type)
         if handler is None:
             raise HandlerNotFoundError(type)
         try:
-            return handler(message)
+            handler(message)
+            return True
         except:
             exception("Error running message handler for type %r: %r"
                       % (type, handler))
+            return False
 
     def exchange(self):
         """Call C{exchange} on all plugins."""
