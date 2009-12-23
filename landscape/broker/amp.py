@@ -1,5 +1,3 @@
-import re
-
 from twisted.protocols.amp import String, Integer, Boolean
 from twisted.internet.protocol import ServerFactory
 from twisted.internet.defer import succeed
@@ -155,10 +153,32 @@ class BrokerServerProtocolFactory(ServerFactory):
         self.broker = broker
 
 
-class BrokerClientProtocol(MethodCallProtocol):
-    """
-    Communication protocol between the a broker client and its server.
-    """
+class RemoteClient(object):
+    """A connected client utilizing features provided by a L{BrokerServer}."""
+
+    def __init__(self, name, protocol):
+        """
+        @param name: Name of the broker client.
+        @param protocol: A L{BrokerServerProtocol} connection with the broker
+            server.
+        """
+        self.name = name
+        self._protocol = protocol
+
+    def exit(self):
+        """Placeholder to make tests pass, it will be replaced later."""
+        return succeed(None)
+
+
+class RemoteBroker(object):
+    """A connected broker utilizing features provided by a L{BrokerServer}."""
+
+    def __init__(self, protocol):
+        """
+        @param protocol: A L{BrokerServerProtocol} connection with a remote
+            broker server.
+        """
+        self._protocol = protocol
 
     @Ping.sender
     def ping(self):
@@ -203,37 +223,3 @@ class BrokerClientProtocol(MethodCallProtocol):
     @Exit.sender
     def exit(self):
         """@see L{BrokerServer.exit}"""
-
-
-class RemoteClient(object):
-    """A connected client utilizing features provided by a L{BrokerServer}."""
-
-    def __init__(self, name, protocol):
-        """
-        @param name: Name of the broker client.
-        @param protocol: A L{BrokerServerProtocol} connection with a remote
-            client.
-        """
-        self.name = name
-        self._protocol = protocol
-
-    def exit(self):
-        """Placeholder to make tests pass, it will be replaced later."""
-        return succeed(None)
-
-
-class RemoteBroker(object):
-    """A protocol wrapper able to call methods on a remote L{BrokerServer}.
-
-    Exposes the user-callable sender methods of a L{BrokerClientProtocol}.
-    """
-
-    def __init__(self, protocol):
-        """
-        @param protocol: A L{BrokerClientProtocol} connection with a remote
-            broker server.
-        """
-        self._protocol = protocol
-        for method_call in BROKER_SERVER_METHOD_CALLS:
-            method_name = method_call.get_method_name()
-            setattr(self, method_name, getattr(self._protocol, method_name))

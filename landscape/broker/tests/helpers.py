@@ -1,19 +1,19 @@
 from twisted.internet import reactor
 from twisted.internet.protocol import ClientCreator
+from twisted.protocols.amp import AMP
 
 from landscape.lib.fetch import fetch_async
 from landscape.lib.persist import Persist
-from landscape.reactor import FakeReactor
 from landscape.watchdog import bootstrap_list
-from landscape.broker.deployment import BrokerConfiguration
+from landscape.reactor import FakeReactor
+from landscape.broker.transport import FakeTransport
 from landscape.broker.exchange import MessageExchange
 from landscape.broker.store import get_default_message_store
 from landscape.broker.registration import Identity, RegistrationHandler
 from landscape.broker.ping import Pinger
+from landscape.broker.deployment import BrokerConfiguration
 from landscape.broker.server import BrokerServer
-from landscape.broker.amp import (
-    BrokerServerProtocolFactory, BrokerClientProtocol, RemoteBroker)
-from landscape.broker.transport import FakeTransport
+from landscape.broker.amp import BrokerServerProtocolFactory, RemoteBroker
 
 
 class BrokerConfigurationHelper(object):
@@ -126,9 +126,7 @@ class BrokerProtocolHelper(BrokerServerHelper):
     The following attributes will be set in your test case:
       - port: The C{Port} object connected to the Unix socket the server
           is listening to.
-      - protocol: The client protocol instance connected to the server's port.
-          The client protocol class must be specified by the test case with
-          a C{client_protocol} attribute.
+      - protocol: An L{AMP} protocol instance connected to the server's port.
     """
 
     def set_up(self, test_case):
@@ -140,7 +138,7 @@ class BrokerProtocolHelper(BrokerServerHelper):
         def set_protocol(protocol):
             test_case.protocol = protocol
 
-        connector = ClientCreator(reactor, test_case.client_protocol)
+        connector = ClientCreator(reactor, AMP)
         connected = connector.connectUNIX(socket)
         return connected.addCallback(set_protocol)
 
@@ -154,12 +152,10 @@ class RemoteBrokerHelper(BrokerProtocolHelper):
     """
     This helper adds a connected L{RemoteBroker} to a L{BrokerProtocolHelper}.
     The following attributes will be set in your test case:
-      - remote: The C{RemoteBroker} object connected to the broker server with
-        a L{BrokerClientProtocol} instance.
+      - remote: A C{RemoteBroker} object connected to the broker server.
     """
 
     def set_up(self, test_case):
-        test_case.client_protocol = BrokerClientProtocol
         connected = super(RemoteBrokerHelper, self).set_up(test_case)
         connected.addCallback(lambda x: setattr(
             test_case, "remote", RemoteBroker(test_case.protocol)))

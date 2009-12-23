@@ -13,18 +13,15 @@ from landscape.tests.helpers import (LandscapeTest, DEFAULT_ACCEPTED_TYPES)
 from landscape.broker.tests.helpers import ExchangeHelper
 
 
-class MessageExchangeTestBase(LandscapeTest):
+class MessageExchangeTest(LandscapeTest):
 
     helpers = [ExchangeHelper]
 
     def setUp(self):
-        super(MessageExchangeTestBase, self).setUp()
+        super(MessageExchangeTest, self).setUp()
         self.mstore.add_schema(Message("empty", {}))
         self.mstore.add_schema(Message("data", {"data": Int()}))
         self.mstore.add_schema(Message("holdme", {}))
-
-
-class MessageExchangeTest(MessageExchangeTestBase):
 
     def wait_for_exchange(self, urgent=False, factor=1, delta=0):
         if urgent:
@@ -777,12 +774,16 @@ class MessageExchangeTest(MessageExchangeTestBase):
         self.assertNotIn("INFO: Server UUID changed", self.logfile.getvalue())
 
 
-class AcceptedTypesMessageExchangeTest(MessageExchangeTestBase):
+class AcceptedTypesMessageExchangeTest(LandscapeTest):
+
+    helpers = [ExchangeHelper]
 
     def setUp(self):
         super(AcceptedTypesMessageExchangeTest, self).setUp()
         self.pinger = Pinger(self.reactor, self.config.ping_url, self.identity,
                              self.exchanger)
+        # The __init__ method of RegistrationHandler registers a few default
+        # message types that we want to catch as well
         self.handler = RegistrationHandler(
             self.config, self.identity, self.reactor, self.exchanger,
             self.pinger, self.mstore, fetch_async)

@@ -1,3 +1,4 @@
+from cStringIO import StringIO
 import logging
 import shutil
 import pprint
@@ -8,8 +9,7 @@ import unittest
 import dbus
 
 from functools import partial
-from cStringIO import StringIO
-
+from logging import Handler, ERROR, Formatter
 from twisted.trial.unittest import TestCase
 from twisted.internet.defer import Deferred
 
@@ -110,6 +110,7 @@ class LandscapeTest(MessageTestCase, MockerTestCase,
     def assertDeferredSucceeded(self, deferred):
         self.assertTrue(isinstance(deferred, Deferred))
         called = []
+
         def callback(result):
             called.append(True)
         deferred.addCallback(callback)
@@ -145,6 +146,7 @@ class LandscapeIsolatedTest(LandscapeTest):
     def run(self, result):
         if not getattr(LandscapeTest, "_cleanup_patch", False):
             run_method = LandscapeTest.run
+
             def run_wrapper(oself, *args, **kwargs):
                 try:
                     return run_method(oself, *args, **kwargs)
@@ -170,9 +172,8 @@ class DBusHelper(object):
         bpickle_dbus.uninstall()
 
 
-from logging import Handler, ERROR, Formatter
-
 class ErrorHandler(Handler):
+
     def __init__(self, *args, **kwargs):
         Handler.__init__(self, *args, **kwargs)
         self.errors = []
@@ -183,6 +184,7 @@ class ErrorHandler(Handler):
 
 
 class LoggedErrorsError(Exception):
+
     def __str__(self):
         out = "The following errors were logged\n"
         formatter = Formatter()
@@ -558,7 +560,6 @@ class DummyProcess(object):
 
     def closeChildFD(self, fd):
         pass
-
 
 
 class ProcessDataBuilder(object):

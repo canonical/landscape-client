@@ -122,7 +122,7 @@ class BrokerClientPluginRegistryTest(LandscapeTest):
         logged and other plugins are processed.
         """
         self.log_helper.ignore_errors(ZeroDivisionError)
-        plugin1 = TestSpy(plugin_name="foo", exchange=lambda: 1/0)
+        plugin1 = TestSpy(plugin_name="foo", exchange=lambda: 1 / 0)
         plugin2 = TestSpy(plugin_name="bar")
         self.registry.add(plugin1)
         self.registry.add(plugin2)
