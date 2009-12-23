@@ -71,11 +71,10 @@ class BrokerClientTest(LandscapeTest):
 
         def handle_message(message):
             history.append(message)
-            return "bar"
 
         def dispatch_message(result):
             message = {"type": "foo"}
-            self.assertEquals(self.client.dispatch_message(message), "bar")
+            self.assertTrue(self.client.dispatch_message(message))
             self.assertEquals(history, [message])
 
         result = self.client.register_message("foo", handle_message)
@@ -93,7 +92,7 @@ class BrokerClientTest(LandscapeTest):
 
         def dispatch_message(result):
             message = {"type": "foo"}
-            self.assertEquals(self.client.dispatch_message(message), None)
+            self.assertFalse(self.client.dispatch_message(message))
             self.assertTrue("Error running message handler for type 'foo'" in
                             self.logfile.getvalue())
 
