@@ -1,6 +1,5 @@
 from twisted.protocols.amp import String, Integer, Boolean
 from twisted.internet.protocol import ServerFactory
-from twisted.internet.defer import succeed
 
 from landscape.lib.amp import (
     MethodCallProtocol, MethodCall, StringOrNone, BPickle, ProtocolAttribute)
