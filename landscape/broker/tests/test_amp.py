@@ -12,7 +12,7 @@ from landscape.broker.amp import (
     BrokerServerProtocol, BrokerServerProtocolFactory, Message, Types,
     RegisterClient, BROKER_SERVER_METHOD_CALLS, SendMessage,
     RegisterClientAcceptedMessageType, IsMessagePending, BrokerClientProtocol,
-    Ping, get_method_name, RemoteBroker)
+    Ping, RemoteBroker)
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServerHelper, DEFAULT_ACCEPTED_TYPES)
 
@@ -47,17 +47,6 @@ class BrokerServerProtocolFactoryTest(LandscapeTest):
         stub_broker = object()
         factory = BrokerServerProtocolFactory(stub_broker)
         self.assertEquals(factory.broker, stub_broker)
-
-
-class GetMethodNameTest(TestCase):
-
-    def test_get_method_name(self):
-        """
-        The L{get_method_name} function returns the target object method
-        name associated the given C{MethodCall}.
-        """
-        self.assertEquals(get_method_name(Ping), "ping")
-        self.assertEquals(get_method_name(RegisterClient), "register_client")
 
 
 class BrokerProtocolTestBase(LandscapeTest):
@@ -113,7 +102,7 @@ class BrokerServerProtocolTest(BrokerProtocolTestBase):
         kwargs = {}
 
         # Figure out the model method associated with the given method_call
-        method_name = get_method_name(method_call)
+        method_name = method_call.get_method_name()
 
         # Wrap the model method with one that will keep track of its calls
         calls = []
@@ -267,7 +256,7 @@ class BrokerClientProtocolTest(BrokerProtocolTestBase):
         self.mstore.set_accepted_types(["test"])
         sent = []
         for method_call in BROKER_SERVER_METHOD_CALLS:
-            method_name = get_method_name(method_call)
+            method_name = method_call.get_method_name()
             sent.append(self.assert_sender(method_name, self.broker))
         return DeferredList(sent, fireOnOneErrback=True)
 
@@ -302,7 +291,7 @@ class RemoteBrokerTest(BrokerProtocolTestBase):
         of the the underlying L{BrokerClientProtocol}.
         """
         for method_call in BROKER_SERVER_METHOD_CALLS:
-            method_name = get_method_name(method_call)
+            method_name = method_call.get_method_name()
             self.assertEquals(getattr(self.remote, method_name),
                               getattr(self.protocol, method_name))
 

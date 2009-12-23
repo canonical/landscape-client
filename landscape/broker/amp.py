@@ -99,47 +99,47 @@ class BrokerServerProtocol(MethodCallProtocol):
         return self.factory.broker
 
     @Ping.responder
-    def ping(self):
+    def _ping(self):
         """@see L{BrokerServer.ping}"""
 
     @RegisterClient.responder
-    def register_client(self, name):
+    def _register_client(self, name):
         """@see L{BrokerServer.register_client}"""
 
     @SendMessage.responder
-    def send_message(self, message, urgent):
+    def _send_message(self, message, urgent):
         """@see L{BrokerServer.send_message}"""
 
     @IsMessagePending.responder
-    def is_message_pending(self, message_id):
+    def _is_message_pending(self, message_id):
         """@see L{BrokerServer.is_message_pending}"""
 
     @StopClients.responder
-    def stop_clients(self):
+    def _stop_clients(self):
         """@see L{BrokerServer.stop_clients}"""
 
     @ReloadConfiguration.responder
-    def reload_configuration(self):
+    def _reload_configuration(self):
         """@see L{BrokerServer.reload_configuration}"""
 
     @Register.responder
-    def register(self):
+    def _register(self):
         """@see L{BrokerServer.register}"""
 
     @GetAcceptedMessageTypes.responder
-    def get_accepted_message_types(self):
+    def _get_accepted_message_types(self):
         """@see L{BrokerServer.get_accepted_message_types}"""
 
     @GetServerUuid.responder
-    def get_server_uuid(self):
+    def _get_server_uuid(self):
         """@see L{BrokerServer.get_server_uuid}"""
 
     @RegisterClientAcceptedMessageType.responder
-    def register_client_accepted_message_type(self, type):
+    def _register_client_accepted_message_type(self, type):
         """@see L{BrokerServer.register_client_accepted_message_type}"""
 
     @Exit.responder
-    def exit(self):
+    def _exit(self):
         """@see L{BrokerServer.exit}"""
 
 
@@ -235,11 +235,5 @@ class RemoteBroker(object):
         """
         self._protocol = protocol
         for method_call in BROKER_SERVER_METHOD_CALLS:
-            method_name = get_method_name(method_call)
+            method_name = method_call.get_method_name()
             setattr(self, method_name, getattr(self._protocol, method_name))
-
-
-def get_method_name(method_call):
-    """Return the target object method name associated with C{method_call}."""
-    words = re.findall("[A-Z][a-z]+", method_call.__name__)
-    return "_".join(word.lower() for word in words)
