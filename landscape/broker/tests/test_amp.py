@@ -1,5 +1,5 @@
 from twisted.internet.defer import DeferredList
-from twisted.protocols.amp import AMP, String, Integer, Boolean
+from twisted.protocols.amp import String, Integer, Boolean
 
 
 from landscape.lib.amp import ProtocolAttribute, StringOrNone
@@ -42,17 +42,16 @@ class BrokerServerProtocolFactoryTest(LandscapeTest):
         self.assertEquals(factory.broker, stub_broker)
 
 
-class BrokerServerProtocolTest(LandscapeTest):
+class MethodCallTestMixin(object):
 
-    helpers = [BrokerProtocolHelper]
-
-    def create_method_wrapper(self, object, method_name, calls):
+    def _create_method_wrapper(self, object, method_name, calls):
         """
-        Replace the method  of the given object with the given C{method_name}
-        with a wrapper which will behave exactly as the original method but
-        will also append a C{True} element to the given C{calls} list upon
-        invokation.  After the wrapper is called, it replaces the object's
-        method with the original one.
+        Replace the method named C{method_name} of the given C{object} with a
+        wrapper which will behave exactly as the original method but will also
+        append a C{True} element to the given C{calls} list upon invokation.
+
+        After the wrapper is called, it's replaced back with the original
+        object's method
         """
         original_method = getattr(object, method_name)
 
@@ -64,18 +63,18 @@ class BrokerServerProtocolTest(LandscapeTest):
 
         setattr(object, method_name, method_wrapper)
 
-    def assert_responder(self, method_call, object):
+    def assert_responder(self, protocol, method_call, object):
         """
-        Assert that an C{AMP.callRemote} invocation against the given AMP
-        c{method_call}, actually calls the appropriate target method of
-        the given C{object).
+        Assert that an C{AMP.callRemote} invocation on the given C{protocol}
+        against the given AMP c{method_call}, actually calls the appropriate
+        target method of the given C{object).
         """
         kwargs = {}
         method_name = method_call.get_method_name()
 
         # Wrap the object method with one that will keep track of its calls
         calls = []
-        self.create_method_wrapper(object, method_name, calls)
+        self._create_method_wrapper(object, method_name, calls)
 
         for name, kind in method_call.arguments:
             if kind.__class__ is ProtocolAttribute:
@@ -95,8 +94,13 @@ class BrokerServerProtocolTest(LandscapeTest):
                     self.assertTrue(
                         isinstance(result, ARGUMENT_TYPES[kind.__class__]))
 
-        performed = self.protocol.callRemote(method_call, **kwargs)
+        performed = protocol.callRemote(method_call, **kwargs)
         return performed.addCallback(assert_response)
+
+
+class BrokerServerProtocolTest(LandscapeTest, MethodCallTestMixin):
+
+    helpers = [BrokerProtocolHelper]
 
     def test_commands(self):
         """
@@ -108,7 +112,8 @@ class BrokerServerProtocolTest(LandscapeTest):
         self.mstore.set_accepted_types(["test"])
         performed = []
         for method_call in BROKER_SERVER_METHOD_CALLS:
-            performed.append(self.assert_responder(method_call, self.broker))
+            performed.append(self.assert_responder(self.protocol, method_call,
+                                                   self.broker))
         return DeferredList(performed, fireOnOneErrback=True)
 
     def test_register_client(self):
