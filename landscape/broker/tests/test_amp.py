@@ -1,9 +1,7 @@
 import sys
 
 from twisted.internet.defer import DeferredList
-from twisted.internet import reactor
-from twisted.internet.protocol import ClientCreator
-from twisted.protocols.amp import AMP, String, Integer, Boolean
+from twisted.protocols.amp import String, Integer, Boolean
 
 
 from landscape.lib.amp import ProtocolAttribute, StringOrNone
@@ -11,9 +9,8 @@ from landscape.broker.amp import (
     BrokerServerProtocol, BrokerServerProtocolFactory, Message, Types,
     RegisterClient, BROKER_SERVER_METHOD_CALLS, SendMessage,
     RegisterClientAcceptedMessageType, IsMessagePending, RemoteBroker)
-from landscape.tests.helpers import (
-    LandscapeTest, BrokerServerHelper, DEFAULT_ACCEPTED_TYPES)
-
+from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
+from landscape.broker.tests.helpers import BrokerProtocolHelper
 
 ARGUMENT_SAMPLES = {String: "some_sring",
                     Boolean: True,
@@ -49,25 +46,7 @@ class BrokerServerProtocolFactoryTest(LandscapeTest):
 
 class BrokerProtocolTestBase(LandscapeTest):
 
-    helpers = [BrokerServerHelper]
-
-    def setUp(self):
-        super(BrokerProtocolTestBase, self).setUp()
-        socket = self.makeFile()
-        factory = BrokerServerProtocolFactory(self.broker)
-        self.port = reactor.listenUNIX(socket, factory)
-
-        def set_protocol(protocol):
-            self.protocol = protocol
-
-        connector = ClientCreator(reactor, self.client_protocol)
-        connected = connector.connectUNIX(socket)
-        return connected.addCallback(set_protocol)
-
-    def tearDown(self):
-        super(BrokerProtocolTestBase, self).tearDown()
-        self.port.loseConnection()
-        self.protocol.transport.loseConnection()
+    helpers = [BrokerProtocolHelper]
 
     def create_method_wrapper(self, object, method_name, calls):
         """
@@ -89,8 +68,6 @@ class BrokerProtocolTestBase(LandscapeTest):
 
 
 class BrokerServerProtocolTest(BrokerProtocolTestBase):
-
-    client_protocol = AMP
 
     def assert_responder(self, method_call, object):
         """
@@ -204,8 +181,6 @@ class BrokerServerProtocolTest(BrokerProtocolTestBase):
 
 
 class RemoteBrokerTest(BrokerProtocolTestBase):
-
-    client_protocol = AMP
 
     def setUp(self):
         connected = super(RemoteBrokerTest, self).setUp()

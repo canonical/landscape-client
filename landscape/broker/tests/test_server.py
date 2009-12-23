@@ -1,8 +1,8 @@
 from twisted.internet.defer import succeed, fail
 
 from landscape.broker.amp import RemoteClient
-from landscape.tests.helpers import (
-    LandscapeTest, BrokerServerHelper, DEFAULT_ACCEPTED_TYPES)
+from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
+from landscape.broker.tests.helpers import BrokerServerHelper
 
 
 class BrokerServerTest(LandscapeTest):
