@@ -1,3 +1,7 @@
+from twisted.internet import reactor
+from twisted.internet.protocol import ClientCreator
+from twisted.protocols.amp import AMP
+
 from landscape.lib.fetch import fetch_async
 from landscape.lib.persist import Persist
 from landscape.watchdog import bootstrap_list
@@ -9,6 +13,7 @@ from landscape.broker.registration import Identity, RegistrationHandler
 from landscape.broker.ping import Pinger
 from landscape.broker.deployment import BrokerConfiguration
 from landscape.broker.server import BrokerServer
+from landscape.broker.amp import BrokerServerProtocolFactory
 
 
 class BrokerConfigurationHelper(object):
@@ -113,3 +118,31 @@ class BrokerServerHelper(RegistrationHelper):
         test_case.broker = BrokerServer(test_case.config, test_case.reactor,
                                         test_case.exchanger, test_case.handler,
                                         test_case.mstore)
+
+
+class BrokerProtocolHelper(BrokerServerHelper):
+    """
+    This helper adds a connected broker protocol to the L{BrokerServerHelper}.
+    The following attributes will be set in your test case:
+      - port: The C{Port} object connected to the Unix socket the server
+          is listening to.
+      - protocol: An L{AMP} protocol instance connected to the server's port.
+    """
+
+    def set_up(self, test_case):
+        super(BrokerProtocolHelper, self).set_up(test_case)
+        socket = test_case.makeFile()
+        factory = BrokerServerProtocolFactory(test_case.broker)
+        test_case.port = reactor.listenUNIX(socket, factory)
+
+        def set_protocol(protocol):
+            test_case.protocol = protocol
+
+        connector = ClientCreator(reactor, AMP)
+        connected = connector.connectUNIX(socket)
+        return connected.addCallback(set_protocol)
+
+    def tear_down(self, test_case):
+        super(BrokerProtocolHelper, self).tear_down(test_case)
+        test_case.port.loseConnection()
+        test_case.protocol.transport.loseConnection()

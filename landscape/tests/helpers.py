@@ -45,10 +45,14 @@ class HelperTestCase(unittest.TestCase):
         self._helper_instances = []
         if LogKeeperHelper not in self.helpers:
             self.helpers.insert(0, LogKeeperHelper)
+        result = None
         for helper_factory in self.helpers:
             helper = helper_factory()
-            helper.set_up(self)
+            result = helper.set_up(self)
             self._helper_instances.append(helper)
+        # Return the return value of the last helper, which
+        # might be a deferred
+        return result
 
     def tearDown(self):
         for helper in reversed(self._helper_instances):
@@ -93,8 +97,8 @@ class LandscapeTest(MessageTestCase, MockerTestCase,
         self._old_config_filenames = BaseConfiguration.default_config_filenames
         BaseConfiguration.default_config_filenames = []
         MockerTestCase.setUp(self)
-        HelperTestCase.setUp(self)
         TestCase.setUp(self)
+        return HelperTestCase.setUp(self)
 
     def tearDown(self):
         BaseConfiguration.default_config_filenames = self._old_config_filenames

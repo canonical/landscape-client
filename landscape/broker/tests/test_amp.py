@@ -1,6 +1,4 @@
 from twisted.internet.defer import DeferredList
-from twisted.internet import reactor
-from twisted.internet.protocol import ClientCreator
 from twisted.protocols.amp import AMP, String, Integer, Boolean
 
 
@@ -10,7 +8,7 @@ from landscape.broker.amp import (
     RegisterClient, BROKER_SERVER_METHOD_CALLS, SendMessage,
     RegisterClientAcceptedMessageType, IsMessagePending)
 from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
-from landscape.broker.tests.helpers import BrokerServerHelper
+from landscape.broker.tests.helpers import BrokerProtocolHelper
 
 ARGUMENT_SAMPLES = {String: "some_sring",
                     Boolean: True,
@@ -46,25 +44,7 @@ class BrokerServerProtocolFactoryTest(LandscapeTest):
 
 class BrokerServerProtocolTest(LandscapeTest):
 
-    helpers = [BrokerServerHelper]
-
-    def setUp(self):
-        super(BrokerServerProtocolTest, self).setUp()
-        socket = self.makeFile()
-        factory = BrokerServerProtocolFactory(self.broker)
-        self.port = reactor.listenUNIX(socket, factory)
-
-        def set_protocol(protocol):
-            self.protocol = protocol
-
-        connector = ClientCreator(reactor, AMP)
-        connected = connector.connectUNIX(socket)
-        return connected.addCallback(set_protocol)
-
-    def tearDown(self):
-        super(BrokerServerProtocolTest, self).tearDown()
-        self.port.loseConnection()
-        self.protocol.transport.loseConnection()
+    helpers = [BrokerProtocolHelper]
 
     def create_method_wrapper(self, object, method_name, calls):
         """
