@@ -10,8 +10,7 @@ from landscape.lib.amp import ProtocolAttribute, StringOrNone
 from landscape.broker.amp import (
     BrokerServerProtocol, BrokerServerProtocolFactory, Message, Types,
     RegisterClient, BROKER_SERVER_METHOD_CALLS, SendMessage,
-    RegisterClientAcceptedMessageType, IsMessagePending, BrokerClientProtocol,
-    RemoteBroker)
+    RegisterClientAcceptedMessageType, IsMessagePending, RemoteBroker)
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServerHelper, DEFAULT_ACCEPTED_TYPES)
 
@@ -204,9 +203,15 @@ class BrokerServerProtocolTest(BrokerProtocolTestBase):
         return performed.addCallback(assert_response)
 
 
-class BrokerClientProtocolTest(BrokerProtocolTestBase):
+class RemoteBrokerTest(BrokerProtocolTestBase):
 
-    client_protocol = BrokerClientProtocol
+    client_protocol = AMP
+
+    def setUp(self):
+        connected = super(RemoteBrokerTest, self).setUp()
+        connected.addCallback(lambda x: setattr(self, "remote",
+                                                RemoteBroker(self.protocol)))
+        return connected
 
     def assert_sender(self, method_name, object):
         """
@@ -245,7 +250,7 @@ class BrokerClientProtocolTest(BrokerProtocolTestBase):
                     self.assertTrue(
                         isinstance(result, ARGUMENT_TYPES[kind.__class__]))
 
-        performed = getattr(self.protocol, method_name)(*args)
+        performed = getattr(self.remote, method_name)(*args)
         return performed.addCallback(assert_result)
 
     def test_senders(self):
@@ -272,40 +277,5 @@ class BrokerClientProtocolTest(BrokerProtocolTestBase):
             [client] = self.broker.get_clients()
             self.assertEquals(client.name, "client")
 
-        sent = self.protocol.register_client("client")
+        sent = self.remote.register_client("client")
         return sent.addCallback(assert_result)
-
-
-class RemoteBrokerTest(BrokerProtocolTestBase):
-
-    client_protocol = BrokerClientProtocol
-
-    def setUp(self):
-        setup = super(RemoteBrokerTest, self).setUp()
-        setup.addCallback(lambda x: setattr(self, "remote",
-                                            RemoteBroker(self.protocol)))
-        return setup
-
-    def test_methods(self):
-        """
-        The L{RemoteBroker} methods are simply the L{MethodCall} senders
-        of the the underlying L{BrokerClientProtocol}.
-        """
-        for method_call in BROKER_SERVER_METHOD_CALLS:
-            method_name = method_call.get_method_name()
-            self.assertEquals(getattr(self.remote, method_name),
-                              getattr(self.protocol, method_name))
-
-    def test_register_client(self):
-        """
-        A L{RemoteBroker} has a C{register_client} method forwards a
-        registration request to the connected remote broker.
-        """
-
-        def assert_result(result):
-            self.assertEquals(result, None)
-            [client] = self.broker.get_clients()
-            self.assertEquals(client.name, "client")
-
-        registered = self.remote.register_client("client")
-        return registered.addCallback(assert_result)

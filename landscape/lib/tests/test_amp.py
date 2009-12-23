@@ -325,7 +325,9 @@ class MethodCallSenderTest(TestCase):
         self.port = reactor.listenUNIX(socket, factory)
 
         def set_protocol(protocol):
+            self.protocol = protocol
             self.words = RemoteWords(protocol)
+
         connector = ClientCreator(reactor, AMP)
         connected = connector.connectUNIX(socket)
         return connected.addCallback(set_protocol)
