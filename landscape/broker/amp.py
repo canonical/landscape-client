@@ -154,13 +154,13 @@ class BrokerServerProtocolFactory(ServerFactory):
 
 
 class RemoteClient(object):
-    """A connected client utilizing features provided by a L{BrokerClient}."""
+    """A connected client utilizing features provided by a L{BrokerServer}."""
 
     def __init__(self, name, protocol):
         """
         @param name: Name of the broker client.
-        @param protocol: A L{BrokerClientProtocol} connection with a remote
-            client.
+        @param protocol: A L{BrokerServerProtocol} connection with the broker
+            server.
         """
         self.name = name
         self._protocol = protocol
