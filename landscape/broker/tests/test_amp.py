@@ -1,6 +1,5 @@
 import sys
 
-from twisted.trial.unittest import TestCase
 from twisted.internet.defer import DeferredList
 from twisted.internet import reactor
 from twisted.internet.protocol import ClientCreator
@@ -12,7 +11,7 @@ from landscape.broker.amp import (
     BrokerServerProtocol, BrokerServerProtocolFactory, Message, Types,
     RegisterClient, BROKER_SERVER_METHOD_CALLS, SendMessage,
     RegisterClientAcceptedMessageType, IsMessagePending, BrokerClientProtocol,
-    Ping, RemoteBroker)
+    RemoteBroker)
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServerHelper, DEFAULT_ACCEPTED_TYPES)
 
@@ -71,23 +70,23 @@ class BrokerProtocolTestBase(LandscapeTest):
         self.port.loseConnection()
         self.protocol.transport.loseConnection()
 
-    def create_method_wrapper(self, obj, method, calls):
+    def create_method_wrapper(self, obj, method_name, calls):
         """
-        Replace the given C{method} of the given object with a wrapper
-        which will behave exactly as the original method but will also
-        append a C{True} element to the given C{calls} list upon invokation.
-        After the wrapper is called, it replaces the object's method with
-        the original one.
+        Replace the method  of the given object with the given C{method_name}
+        with a wrapper which will behave exactly as the original method but
+        will also append a C{True} element to the given C{calls} list upon
+        invokation.  After the wrapper is called, it replaces the object's
+        method with the original one.
         """
-        original_method = getattr(obj, method)
+        original_method = getattr(obj, method_name)
 
         def method_wrapper(*args, **kwargs):
             calls.append(True)
             result = original_method(*args, **kwargs)
-            setattr(obj, method, original_method)
+            setattr(obj, method_name, original_method)
             return result
 
-        setattr(obj, method, method_wrapper)
+        setattr(obj, method_name, method_wrapper)
 
 
 class BrokerServerProtocolTest(BrokerProtocolTestBase):
@@ -100,8 +99,6 @@ class BrokerServerProtocolTest(BrokerProtocolTestBase):
         c{method_call}, actually calls the appropriate target object method.
         """
         kwargs = {}
-
-        # Figure out the model method associated with the given method_call
         method_name = method_call.get_method_name()
 
         # Wrap the model method with one that will keep track of its calls
