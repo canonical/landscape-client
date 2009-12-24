@@ -1,144 +1,30 @@
-from twisted.protocols.amp import String, Integer, Boolean
+from twisted.protocols.amp import AMP
 from twisted.internet.protocol import ServerFactory
 from twisted.internet.defer import succeed
 
-from landscape.lib.amp import (
-    MethodCallProtocol, MethodCall, StringOrNone, BPickle, ProtocolAttribute)
+from landscape.lib.amp import MethodCall
 
 
-class Message(BPickle):
-    """Marker class for commands with message arguments."""
-
-
-class Types(BPickle):
-    """Marker class for commands with message type arguments."""
-
-
-class Ping(MethodCall):
-
-    arguments = []
-    response = [("result", Boolean())]
-
-
-class RegisterClient(MethodCall):
-
-    arguments = [("name", String()), ("__protocol_attribute_protocol",
-                                      ProtocolAttribute(""))]
-    response = []
-
-
-class SendMessage(MethodCall):
-
-    arguments = [("message", Message()), ("urgent", Boolean())]
-    response = [("result", Integer())]
-
-
-class IsMessagePending(MethodCall):
-
-    arguments = [("message_id", Integer())]
-    response = [("result", Boolean())]
-
-
-class StopClients(MethodCall):
-
-    arguments = []
-    response = []
-
-
-class ReloadConfiguration(MethodCall):
-
-    arguments = []
-    response = []
-
-
-class Register(MethodCall):
-
-    arguments = []
-    response = []
-
-
-class GetAcceptedMessageTypes(MethodCall):
-
-    arguments = []
-    response = [("result", Types())]
-
-
-class GetServerUuid(MethodCall):
-
-    arguments = []
-    response = [("result", StringOrNone())]
-
-
-class RegisterClientAcceptedMessageType(MethodCall):
-
-    arguments = [("type", String())]
-    response = []
-
-
-class Exit(MethodCall):
-
-    arguments = []
-    response = []
-
-
-BROKER_SERVER_METHOD_CALLS = [
-    Ping, RegisterClient, SendMessage, IsMessagePending, StopClients,
-    ReloadConfiguration, Register, GetAcceptedMessageTypes, GetServerUuid,
-    RegisterClientAcceptedMessageType, Exit]
-
-
-class BrokerServerProtocol(MethodCallProtocol):
+class BrokerServerProtocol(AMP):
     """
     Communication protocol between the broker server and its clients.
     """
+    _broker_method_calls = ["ping",
+                            "register_client",
+                            "send_message",
+                            "is_message_pending",
+                            "stop_clients",
+                            "reload_configuration",
+                            "register",
+                            "get_accepted_message_types",
+                            "get_server_uuid",
+                            "register_client_accepted_message_type",
+                            "exit"]
 
-    @property
-    def _object(self):
-        return self.factory.broker
-
-    @Ping.responder
-    def _ping(self):
-        """@see L{BrokerServer.ping}"""
-
-    @RegisterClient.responder
-    def _register_client(self, name):
-        """@see L{BrokerServer.register_client}"""
-
-    @SendMessage.responder
-    def _send_message(self, message, urgent):
-        """@see L{BrokerServer.send_message}"""
-
-    @IsMessagePending.responder
-    def _is_message_pending(self, message_id):
-        """@see L{BrokerServer.is_message_pending}"""
-
-    @StopClients.responder
-    def _stop_clients(self):
-        """@see L{BrokerServer.stop_clients}"""
-
-    @ReloadConfiguration.responder
-    def _reload_configuration(self):
-        """@see L{BrokerServer.reload_configuration}"""
-
-    @Register.responder
-    def _register(self):
-        """@see L{BrokerServer.register}"""
-
-    @GetAcceptedMessageTypes.responder
-    def _get_accepted_message_types(self):
-        """@see L{BrokerServer.get_accepted_message_types}"""
-
-    @GetServerUuid.responder
-    def _get_server_uuid(self):
-        """@see L{BrokerServer.get_server_uuid}"""
-
-    @RegisterClientAcceptedMessageType.responder
-    def _register_client_accepted_message_type(self, type):
-        """@see L{BrokerServer.register_client_accepted_message_type}"""
-
-    @Exit.responder
-    def _exit(self):
-        """@see L{BrokerServer.exit}"""
+    @MethodCall.responder
+    def _get_broker_method(self, name):
+        if name in self._broker_method_calls:
+            return getattr(self.factory.broker, name)
 
 
 class BrokerServerProtocolFactory(ServerFactory):
@@ -180,46 +66,46 @@ class RemoteBroker(object):
         """
         self._protocol = protocol
 
-    @Ping.sender
+    @MethodCall.sender
     def ping(self):
         """@see L{BrokerServer.ping}"""
 
-    @RegisterClient.sender
-    def register_client(self, name):
+    @MethodCall.sender
+    def register_client(self, name, _protocol=""):
         """@see L{BrokerServer.register_client}"""
 
-    @SendMessage.sender
+    @MethodCall.sender
     def send_message(self, message, urgent):
         """@see L{BrokerServer.send_message}"""
 
-    @IsMessagePending.sender
+    @MethodCall.sender
     def is_message_pending(self, message_id):
         """@see L{BrokerServer.is_message_pending}"""
 
-    @StopClients.sender
+    @MethodCall.sender
     def stop_clients(self):
         """@see L{BrokerServer.stop_clients}"""
 
-    @ReloadConfiguration.sender
+    @MethodCall.sender
     def reload_configuration(self):
         """@see L{BrokerServer.reload_configuration}"""
 
-    @Register.sender
+    @MethodCall.sender
     def register(self):
         """@see L{BrokerServer.register}"""
 
-    @GetAcceptedMessageTypes.sender
+    @MethodCall.sender
     def get_accepted_message_types(self):
         """@see L{BrokerServer.get_accepted_message_types}"""
 
-    @GetServerUuid.sender
+    @MethodCall.sender
     def get_server_uuid(self):
         """@see L{BrokerServer.get_server_uuid}"""
 
-    @RegisterClientAcceptedMessageType.sender
+    @MethodCall.sender
     def register_client_accepted_message_type(self, type):
         """@see L{BrokerServer.register_client_accepted_message_type}"""
 
-    @Exit.sender
+    @MethodCall.sender
     def exit(self):
         """@see L{BrokerServer.exit}"""
