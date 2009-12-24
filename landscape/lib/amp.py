@@ -9,7 +9,10 @@ class BPickle(Argument):
     """A bpickle-compatbile argument."""
 
     def toString(self, inObject):
-        return dumps(inObject)
+        try:
+            return dumps(inObject)
+        except ValueError:
+            return dumps(None)
 
     def fromString(self, inString):
         return loads(inString)
@@ -29,26 +32,34 @@ def get_nested_attr(obj, path):
     return attr
 
 
+class MethodCallError(Exception):
+    """Raised when trying to call a non accessible method."""
+
+
 class MethodCall(Command):
 
     arguments = [("name", String()),
                  ("args", BPickle()),
                  ("kwargs", BPickle())]
     response = [("result", BPickle())]
+    errors = {MethodCallError: "UNAUTHORIZED_METHOD_CALL"}
 
     @classmethod
-    def responder(cls, method):
+    def responder(cls, protocol_method):
         """Decorator turning a protocol method into an L{MethodCall} responder.
 
         This decorator is used to implement remote procedure calls over AMP
-        commands.  The decorated method must return an object that will be used
-        as the target object to perform the method calls on.
+        commands.  The decorated method must accept a C{name} parameter and
+        return the callable associated with that name (typically and object's
+        method with the same name).
 
         The idea is that if a connected AMP client sends a L{MethodCall} with
-        name C{foo_bar} the target object method named C{foo_bar} will be
-        called and its return value delivered back to the client as response
-        to the command. The L{MethodCall}'s C{args} and C{kwargs} arguments
-        will be passed to the object's C{foo_bar} method when calling it.
+        name C{foo_bar}, then the actual method associated with C{foo_bar} as
+        returned by the decorated method will be called and its return value
+        delivered back to the client as response to the command.
+
+        The L{MethodCall}'s C{args} and C{kwargs} arguments  will be passed to
+        the actual method when calling it.
 
         @param cls: The L{MethodCall} class itself.
         @param method: A method of a L{MethodCallProtocol} sub-class.  The
@@ -66,8 +77,11 @@ class MethodCall(Command):
                     kwargs.pop(key)
                     kwargs[key[1:]] = get_nested_attr(self, value)
 
-            # Call the model method with the matching name
-            result = getattr(method(self), name)(*args, **kwargs)
+            # Call the object method with the matching name
+            object_method = protocol_method(self, name)
+            if object_method is None:
+                raise MethodCallError(name)
+            result = object_method(*args, **kwargs)
 
             # Return an AMP response to be delivered to the remote caller
             if not cls.response:

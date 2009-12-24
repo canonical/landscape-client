@@ -1,9 +1,10 @@
 from twisted.trial.unittest import TestCase
 from twisted.internet import reactor
 from twisted.internet.protocol import Factory, ClientCreator
+from twisted.internet.defer import Deferred
 from twisted.protocols.amp import AMP
 
-from landscape.lib.amp import MethodCall, get_nested_attr
+from landscape.lib.amp import MethodCallError, MethodCall, get_nested_attr
 
 
 class Words(object):
@@ -54,12 +55,19 @@ class Words(object):
     def guess(self, word, *args, **kwargs):
         return self._check(word, *args, **kwargs)
 
+    def meaning_of_life(self):
+        return Deferred()
+
+    def secret(self):
+        raise RuntimeError("I'm not supposed to be called!")
+
 
 class WordsServerProtocol(AMP):
 
     @MethodCall.responder
-    def _words(self):
-        return self.factory.words
+    def _get_words_method(self, name):
+        if name != "secret":
+            return getattr(self.factory.words, name)
 
 
 class RemoteWords(object):
@@ -105,6 +113,10 @@ class RemoteWords(object):
 
     @MethodCall.sender
     def guess(self, word, *args, **kwargs):
+        pass
+
+    @MethodCall.sender
+    def get_meaning_of_life(self):
         pass
 
 
@@ -231,7 +243,8 @@ class MethodCallResponderTest(TestCase):
         """
         performed = self.protocol.callRemote(MethodCall,
                                              name="multiply_alphabetically",
-                                             args=[{"foo": 2, "bar": 3}], kwargs={})
+                                             args=[{"foo": 2, "bar": 3}],
+                                             kwargs={})
         return performed.addCallback(self.assertEquals,
                                      {"result": "barbarbarfoofoo"})
 
@@ -242,7 +255,8 @@ class MethodCallResponderTest(TestCase):
         """
         performed = self.protocol.callRemote(MethodCall, name="translate",
                                              args=["hi"],
-                                             kwargs={"_language": "factory.language"})
+                                             kwargs={"_language": "factory."
+                                                                  "language"})
         return performed.addCallback(self.assertEquals, {"result": "ciao"})
 
     def test_guess(self):
@@ -254,6 +268,24 @@ class MethodCallResponderTest(TestCase):
                                              args=["word", "cool"],
                                              kwargs={"value": 4})
         return performed.addCallback(self.assertEquals, {"result": "Guessed!"})
+
+    def test_meaning_of_life(self):
+        """
+        If the target object method returns an object that can't be serialized,
+        the L{MethodCall} result is C{None}.
+        """
+        performed = self.protocol.callRemote(MethodCall,
+                                             name="meaning_of_life", args=[],
+                                             kwargs={})
+        return performed.addCallback(self.assertEquals, {"result": None})
+
+    def test_secret(self):
+        """
+        If the decorated protocl method returns C{None}, an exception is rasied.
+        """
+        performed = self.protocol.callRemote(MethodCall,
+                                             name="secret", args=[], kwargs={})
+        return self.assertFailure(performed, MethodCallError)
 
 
 class MethodCallSenderTest(TestCase):
