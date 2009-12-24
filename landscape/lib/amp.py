@@ -5,22 +5,6 @@ from twisted.protocols.amp import Argument, String, Command, CommandLocator
 from landscape.lib.bpickle import loads, dumps
 
 
-class StringOrNone(String):
-    """An argument that can be a C{str} or C{None}."""
-
-    def toString(self, inObject):
-        if inObject is None:
-            return ""
-        else:
-            return super(StringOrNone, self).toString(inObject)
-
-    def fromString(self, inString):
-        if inString == "":
-            return None
-        else:
-            return super(StringOrNone, self).fromString(inString)
-
-
 class BPickle(Argument):
     """A bpickle-compatbile argument."""
 
@@ -50,7 +34,7 @@ class MethodCall(Command):
     arguments = [("name", String()),
                  ("args", BPickle()),
                  ("kwargs", BPickle())]
-    response = [("result", StringOrNone())]
+    response = [("result", BPickle())]
 
     @classmethod
     def responder(cls, method):

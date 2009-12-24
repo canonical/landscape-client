@@ -23,6 +23,9 @@ class Words(object):
         else:
             return None
 
+    def is_short(self, word):
+        return len(word) < 4
+
     def concatenate(self, word1, word2):
         return word1 + word2
 
@@ -78,6 +81,10 @@ class RemoteWords(object):
 
     @MethodCall.sender
     def synonym(self, word):
+        pass
+
+    @MethodCall.sender
+    def is_short(self, word):
         pass
 
     @MethodCall.sender
@@ -177,19 +184,19 @@ class MethodCallResponderTest(TestCase):
 
     def test_synonim(self):
         """
-        The L{StringOrNone} argument normally behaves like a L{String}
-        """
-        performed = self.protocol.callRemote(MethodCall, name="synonym",
-                                             args=["hi"], kwargs={})
-        return performed.addCallback(self.assertEquals, {"result": "hello"})
-
-    def test_synonim_with_none(self):
-        """
-        The return value of a L{StringOrNone} argument can be C{None}.
+        The response of a L{MethodCall} command can be C{None}.
         """
         performed = self.protocol.callRemote(MethodCall, name="synonym",
                                              args=["foo"], kwargs={})
         return performed.addCallback(self.assertEquals, {"result": None})
+
+    def test_is_short(self):
+        """
+        The return value of a L{MethodCall} argument can be a boolean.
+        """
+        performed = self.protocol.callRemote(MethodCall, name="is_short",
+                                             args=["hi"], kwargs={})
+        return performed.addCallback(self.assertEquals, {"result": True})
 
     def test_concatenate(self):
         """
@@ -304,6 +311,13 @@ class MethodCallSenderTest(TestCase):
         """
         performed = self.words.capitalize(word="john")
         return performed.addCallback(self.assertEquals, "John")
+
+    def test_is_short(self):
+        """
+        The return value of a L{MethodCall} argument can be a boolean.
+        """
+        performed = self.words.is_short("hi")
+        return performed.addCallback(self.assertEquals, True)
 
     def test_concatenate(self):
         """
