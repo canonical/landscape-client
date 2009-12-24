@@ -171,8 +171,10 @@ class MethodCallResponderTest(LandscapeTest):
         A connected AMP client can issue a L{MethodCall} without arguments and
         with an empty response.
         """
-        result = self.protocol.callRemote(MethodCall, name="empty",
-                                          args=[], kwargs={})
+        result = self.protocol.callRemote(MethodCall,
+                                          name="empty",
+                                          args=[],
+                                          kwargs={})
         return self.assertSuccess(result, {"result": None})
 
     def test_motd(self):
@@ -180,8 +182,10 @@ class MethodCallResponderTest(LandscapeTest):
         A connected AMP client can issue a L{MethodCall} targeted to an
         object method with a return value.
         """
-        result = self.protocol.callRemote(MethodCall, name="motd",
-                                          args=[], kwargs={})
+        result = self.protocol.callRemote(MethodCall,
+                                          name="motd",
+                                          args=[],
+                                          kwargs={})
         return self.assertSuccess(result, {"result": "Words are cool"})
 
     def test_capitalize(self):
@@ -189,32 +193,40 @@ class MethodCallResponderTest(LandscapeTest):
         A connected AMP client can issue a L{MethodCall} with one argument and
         a response value.
         """
-        result = self.protocol.callRemote(MethodCall, name="capitalize",
-                                          args=["john"], kwargs={})
+        result = self.protocol.callRemote(MethodCall,
+                                          name="capitalize",
+                                          args=["john"],
+                                          kwargs={})
         return self.assertSuccess(result, {"result": "John"})
 
     def test_synonim(self):
         """
         The response of a L{MethodCall} command can be C{None}.
         """
-        result = self.protocol.callRemote(MethodCall, name="synonym",
-                                          args=["foo"], kwargs={})
+        result = self.protocol.callRemote(MethodCall,
+                                          name="synonym",
+                                          args=["foo"],
+                                          kwargs={})
         return self.assertSuccess(result, {"result": None})
 
     def test_is_short(self):
         """
         The return value of a L{MethodCall} argument can be a boolean.
         """
-        result = self.protocol.callRemote(MethodCall, name="is_short",
-                                          args=["hi"], kwargs={})
+        result = self.protocol.callRemote(MethodCall,
+                                          name="is_short",
+                                          args=["hi"],
+                                          kwargs={})
         return self.assertSuccess(result, {"result": True})
 
     def test_concatenate(self):
         """
         A connected AMP client can issue a L{MethodCall} with many arguments.
         """
-        result = self.protocol.callRemote(MethodCall, name="concatenate",
-                                          args=["You ", "rock"], kwargs={})
+        result = self.protocol.callRemote(MethodCall,
+                                          name="concatenate",
+                                          args=["You ", "rock"],
+                                          kwargs={})
         return self.assertSuccess(result, {"result": "You rock"})
 
     def test_lower_case(self):
@@ -222,8 +234,10 @@ class MethodCallResponderTest(LandscapeTest):
         A connected AMP client can issue a L{MethodCall} for methods having
         default arguments.
         """
-        result = self.protocol.callRemote(MethodCall, name="lower_case",
-                                          args=["OHH"], kwargs={})
+        result = self.protocol.callRemote(MethodCall,
+                                          name="lower_case",
+                                          args=["OHH"],
+                                          kwargs={})
         return self.assertSuccess(result, {"result": "ohh"})
 
     def test_lower_case_with_index(self):
@@ -232,8 +246,10 @@ class MethodCallResponderTest(LandscapeTest):
         having default values in the target object.  If a value is specified by
         the caller it will be used in place of the default value
         """
-        result = self.protocol.callRemote(MethodCall, name="lower_case",
-                                          args=["OHH"], kwargs={"index": 2})
+        result = self.protocol.callRemote(MethodCall,
+                                          name="lower_case",
+                                          args=["OHH"],
+                                          kwargs={"index": 2})
         return self.assertSuccess(result, {"result": "OHh"})
 
     def test_multiply_alphabetically(self):
@@ -251,10 +267,11 @@ class MethodCallResponderTest(LandscapeTest):
         A keyword argument prefixed by C{_} can be used to send a L{MethodCall}
         for a method requiring additional protocol-specific arguments.
         """
-        result = self.protocol.callRemote(MethodCall, name="translate",
+        result = self.protocol.callRemote(MethodCall,
+                                          name="translate",
                                           args=["hi"],
                                           kwargs={"_language": "factory."
-                                                                  "language"})
+                                                               "language"})
         return self.assertSuccess(result, {"result": "ciao"})
 
     def test_guess(self):
@@ -262,7 +279,8 @@ class MethodCallResponderTest(LandscapeTest):
         The L{Hidden} argument type can be used to define L{MethodCall}s for
         methods requiring additional arguments.
         """
-        result = self.protocol.callRemote(MethodCall, name="guess",
+        result = self.protocol.callRemote(MethodCall,
+                                          name="guess",
                                           args=["word", "cool"],
                                           kwargs={"value": 4})
         return self.assertSuccess(result, {"result": "Guessed!"})
@@ -273,7 +291,8 @@ class MethodCallResponderTest(LandscapeTest):
         the L{MethodCall} result is C{None}.
         """
         result = self.protocol.callRemote(MethodCall,
-                                          name="meaning_of_life", args=[],
+                                          name="meaning_of_life",
+                                          args=[],
                                           kwargs={})
         return self.assertSuccess(result, {"result": None})
 
@@ -282,7 +301,9 @@ class MethodCallResponderTest(LandscapeTest):
         If the decorated protocl method returns C{None}, an exception is rasied.
         """
         result = self.protocol.callRemote(MethodCall,
-                                          name="secret", args=[], kwargs={})
+                                          name="secret",
+                                          args=[],
+                                          kwargs={})
         return self.assertFailure(result, MethodCallError)
 
 
