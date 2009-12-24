@@ -1,6 +1,5 @@
 from twisted.protocols.amp import AMP
 from twisted.internet.protocol import ServerFactory
-from twisted.internet.defer import succeed
 
 from landscape.lib.amp import MethodCall
 

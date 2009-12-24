@@ -25,6 +25,9 @@ class BrokerClient(object):
         # Expose ourselves to the broker over AMP
         self.broker.client = self
 
+        # Register event handlers
+        self.reactor.call_on("impending_exchange", self.notify_exchange)
+
     def ping(self):
         """Return C{True}"""
         return True

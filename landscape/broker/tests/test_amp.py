@@ -1,8 +1,8 @@
-from twisted.internet.defer import DeferredList
+from twisted.internet.defer import DeferredList, succeed
 
 from landscape.lib.amp import MethodCall, MethodCallError
 from landscape.broker.amp import (
-    BrokerServerProtocol, BrokerServerProtocolFactory)
+    BrokerServerProtocol, BrokerServerProtocolFactory, RemoteClient)
 from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
 from landscape.broker.tests.helpers import (
     BrokerProtocolHelper, RemoteBrokerHelper, BrokerClientHelper)
@@ -110,6 +110,13 @@ class BrokerServerProtocolTest(LandscapeTest, MethodCallTestMixin):
         """
         # We need this in order to make the message store happy
         self.mstore.set_accepted_types(["test"])
+
+        # Mock the remote client's exit methods
+        remote_client_mock = self.mocker.patch(RemoteClient)
+        remote_client_mock.exit()
+        self.mocker.result(succeed(None))
+        self.mocker.count(1, None)
+        self.mocker.replay()
 
         calls = {"ping": {"result": True},
                  "register_client": {"args": ["client"],
@@ -238,6 +245,14 @@ class RemoteBrokerTest(LandscapeTest, MethodCallTestMixin):
         """
         # We need this in order to make the message store happy
         self.mstore.set_accepted_types(["test"])
+
+        # Mock the remote client's exit methods
+        remote_client_mock = self.mocker.patch(RemoteClient)
+        remote_client_mock.exit()
+        self.mocker.result(succeed(None))
+        self.mocker.count(1, None)
+        self.mocker.replay()
+
         calls = {"ping": {"result": True},
                  "register_client": {"args": ["client"]},
                  "send_message": {"args": [{"type": "test"}],
@@ -387,19 +402,6 @@ class RemoteClientTest(LandscapeTest, MethodCallTestMixin):
 
         connected = super(RemoteClientTest, self).setUp()
         return connected.addCallback(register_client)
-
-    def test_senders(self):
-        """
-        The L{RemoteClient} methods decorated with C{MethodCall.sender}
-        can be used to call methods on the remote broker object.
-        """
-        # We need this in order to make the message store happy
-        self.mstore.set_accepted_types(["test"])
-        sent = []
-        for method_call in BROKER_SERVER_METHOD_CALLS:
-            sent.append(self.assert_sender(self.remote, method_call,
-                                           self.broker))
-        return DeferredList(sent, fireOnOneErrback=True)
 
     def test_senders(self):
         """

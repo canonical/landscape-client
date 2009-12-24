@@ -1,8 +1,10 @@
 from twisted.internet.defer import succeed, fail
 
 from landscape.broker.amp import RemoteClient
-from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
-from landscape.broker.tests.helpers import BrokerServerHelper
+from landscape.tests.helpers import (
+    LandscapeTest, DEFAULT_ACCEPTED_TYPES, TestSpy, spy)
+from landscape.broker.tests.helpers import (
+    BrokerServerHelper, BrokerClientHelper)
 
 
 class BrokerServerTest(LandscapeTest):
@@ -282,3 +284,61 @@ class BrokerServerTest(LandscapeTest):
 
         broker_exited = self.broker.exit()
         return broker_exited.addCallback(assert_exit_calls)
+
+
+class EventTest(LandscapeTest):
+
+    helpers = [BrokerClientHelper]
+
+    def setUp(self):
+
+        def register_client(ignored):
+            return self.remote.register_client("test")
+
+        connected = super(EventTest, self).setUp()
+        return connected.addCallback(register_client)
+
+    def test_resynchronize(self):
+        """
+        The L{event} decorator turns a L{BrokerServer} method into and
+        event broadcaster.  An event with the same name as the decorated
+        method is fired on all connected clients.
+        """
+        calls = []
+
+        real_fire_event = self.client.fire_event
+
+        def fire_event(event_type):
+            calls.append("fire_event")
+            real_fire_event(event_type)
+
+        self.client.fire_event = fire_event
+
+        def callback():
+            calls.append("callback")
+            
+        self.reactor.call_on("resynchronize", callback)
+
+        def assert_calls(ignored):
+            self.assertEquals(calls, ["fire_event", "callback"])
+
+        broadcasted = self.broker.resynchronize()
+        return broadcasted.addCallback(assert_calls)
+
+    def test_impending_exchange(self):
+        """
+        All L{BrokerClient} register an handler for the C{impending_exchange}
+        event.
+        """
+        plugin = TestSpy()
+        self.client.register_plugin(plugin)
+        spy.clear(plugin)
+
+        def assert_exchange(ignored):
+            spy.replay(plugin)
+            self.assertEquals(spy.history(plugin), [plugin.exchange()])
+            self.assertTrue("Got notification of impending exchange." in
+                            self.logfile.getvalue())
+
+        broadcasted = self.broker.impending_exchange()
+        return broadcasted.addCallback(assert_exchange)

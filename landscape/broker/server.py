@@ -2,6 +2,23 @@ from landscape.lib.twisted_util import gather_results
 from landscape.broker.amp import RemoteClient
 
 
+def event(method):
+    """Turns a L{BrokerServer} method into and event broadcaster.
+
+    When the decorated method is called, an event with the same name
+    as the decorated method is fired on all connected clients.
+    """
+    event_type = method.__name__
+
+    def broadcast_event(self, *args, **kwargs):
+        fired = []
+        for client in self.get_clients():
+            fired.append(client.fire_event(event_type, *args, **kwargs))
+        return gather_results(fired)
+
+    return broadcast_event
+
+
 class BrokerServer(object):
     """
     A broker server capable of handling messages from plugins connected using
@@ -125,3 +142,11 @@ class BrokerServer(object):
             self._reactor.fire("post-exit")
 
         return clients_stopped.addBoth(fire_post_exit)
+
+    @event
+    def resynchronize(self):
+        """Broadcast a C{resynchronize} event to the clients."""
+
+    @event
+    def impending_exchange(self):
+        """Broadcast an C{impending_exchange} event to the clients."""
