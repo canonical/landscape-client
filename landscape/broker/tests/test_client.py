@@ -117,8 +117,6 @@ class BrokerClientTest(LandscapeTest):
         self.client.exchange()
         spy.replay(plugin)
         self.assertEquals(spy.history(plugin), [plugin.exchange()])
-        self.assertTrue("Got notification of impending exchange. "
-                        "Notifying all plugins." in self.logfile.getvalue())
 
     def test_exchange_on_plugin_without_exchange_method(self):
         """
@@ -150,6 +148,45 @@ class BrokerClientTest(LandscapeTest):
         self.assertTrue("ZeroDivisionError" in self.logfile.getvalue())
         spy.replay(plugin2)
         self.assertEquals(spy.history(plugin2), [plugin2.exchange()])
+
+    def test_notify_exchange(self):
+        """
+        The L{BrokerClient.notify_exchange} method calls C{exchange} on all
+        plugins and logs the event.
+        """
+        plugin = TestSpy(plugin_name="test")
+        self.client.register_plugin(plugin)
+        spy.clear(plugin)
+        self.client.notify_exchange()
+        spy.replay(plugin)
+        self.assertEquals(spy.history(plugin), [plugin.exchange()])
+        self.assertTrue("Got notification of impending exchange. "
+                        "Notifying all plugins." in self.logfile.getvalue())
+
+    def test_fire_event(self):
+        """
+        The L{BrokerClient.fire_event} method makes the reactor fire the
+        given event.
+        """
+        calls = []
+        self.reactor.call_on("event", lambda: calls.append(True))
+        self.client.fire_event("event")
+        self.assertEquals(calls, [True])
+
+    def test_fire_event_with_arguments(self):
+        """
+        The L{BrokerClient.fire_event} accepts optional arguments and keyword
+        arguments to pass to the registered callback.
+        """
+        calls = []
+        def callback(arg, kwarg=1):
+            self.assertEquals(arg, True)
+            self.assertEquals(kwarg, 2)
+            calls.append(True)
+        
+        self.reactor.call_on("event", callback)
+        self.client.fire_event("event", True, kwarg=2)
+        self.assertEquals(calls, [True])
 
     def test_broker_started(self):
         """

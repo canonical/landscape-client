@@ -84,13 +84,21 @@ class BrokerClient(object):
 
     def exchange(self):
         """Call C{exchange} on all plugins."""
-        info("Got notification of impending exchange. Notifying all plugins.")
         for plugin in self.get_plugins():
             if hasattr(plugin, "exchange"):
                 try:
                     plugin.exchange()
                 except:
                     exception("Error during plugin exchange")
+
+    def notify_exchange(self):
+        """Notify all plugins about an impending exchange."""
+        info("Got notification of impending exchange. Notifying all plugins.")
+        self.exchange()
+
+    def fire_event(self, event_type, *args, **kwargs):
+        """Fire an event of a given type."""
+        self.reactor.fire(event_type, *args, **kwargs)
 
     def broker_started(self):
         """
