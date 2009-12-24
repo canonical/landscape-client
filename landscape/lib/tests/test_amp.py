@@ -1,9 +1,9 @@
 from twisted.trial.unittest import TestCase
 from twisted.internet import reactor
 from twisted.internet.protocol import Factory, ClientCreator
-from twisted.protocols.amp import AMP, String, Integer
+from twisted.protocols.amp import AMP
 
-from landscape.lib.amp import StringOrNone, BPickle, MethodCall, get_nested_attr
+from landscape.lib.amp import MethodCall, get_nested_attr
 
 
 class Words(object):
@@ -99,6 +99,29 @@ class RemoteWords(object):
     @MethodCall.sender
     def guess(self, word, *args, **kwargs):
         pass
+
+
+class GetNestedAttrTest(TestCase):
+
+    def test_nested_attr(self):
+        """
+        The L{get_nested_attr} function returns nested attributes.
+        """
+
+        class Object(object):
+            pass
+        obj = Object()
+        obj.foo = Object()
+        obj.foo.bar = 1
+        self.assertEquals(get_nested_attr(obj, "foo.bar"), 1)
+
+    def test_nested_attr_with_empty_path(self):
+        """
+        The L{get_nested_attr} function returns the object itself if its
+        passed an empty string.
+        ."""
+        obj = object()
+        self.assertIdentical(get_nested_attr(obj, ""), obj)
 
 
 class MethodCallResponderTest(TestCase):
