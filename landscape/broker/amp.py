@@ -40,23 +40,6 @@ class BrokerServerProtocolFactory(ServerFactory):
         self.broker = broker
 
 
-class RemoteClient(object):
-    """A connected client utilizing features provided by a L{BrokerServer}."""
-
-    def __init__(self, name, protocol):
-        """
-        @param name: Name of the broker client.
-        @param protocol: A L{BrokerServerProtocol} connection with the broker
-            server.
-        """
-        self.name = name
-        self._protocol = protocol
-
-    def exit(self):
-        """Placeholder to make tests pass, it will be replaced later."""
-        return succeed(None)
-
-
 class RemoteBroker(object):
     """A connected broker utilizing features provided by a L{BrokerServer}."""
 
@@ -66,6 +49,12 @@ class RemoteBroker(object):
             broker server.
         """
         self._protocol = protocol
+
+    def _set_client(self, client):
+        """Set a reference to the connected L{BrokerClient}."""
+        self._protocol.client = client
+
+    client = property(None, _set_client)
 
     @MethodCall.sender
     def ping(self):
@@ -110,3 +99,48 @@ class RemoteBroker(object):
     @MethodCall.sender
     def exit(self):
         """@see L{BrokerServer.exit}"""
+
+
+class BrokerClientProtocol(AMP):
+    """
+    Communication protocol between the broker server and its clients.
+    """
+
+    _broker_client_calls = ["ping",
+                            "dispatch_message",
+                            "fire_event",
+                            "exit"]
+
+    @MethodCall.responder
+    def _get_client_method(self, name):
+        if name in self._broker_client_calls:
+            return getattr(self.client, name)
+
+
+class RemoteClient(object):
+    """A connected client utilizing features provided by a L{BrokerServer}."""
+
+    def __init__(self, name, protocol):
+        """
+        @param name: Name of the broker client.
+        @param protocol: A L{BrokerServerProtocol} connection with the broker
+            server.
+        """
+        self.name = name
+        self._protocol = protocol
+
+    @MethodCall.sender
+    def ping(self):
+        """@see L{BrokerClient.ping}"""
+
+    @MethodCall.sender
+    def dispatch_message(self):
+        """@see L{BrokerClient.dispatch_message}"""
+
+    @MethodCall.sender
+    def fire_event(self):
+        """@see L{BrokerClient.fire_event}"""
+
+    @MethodCall.sender
+    def exit(self):
+        """@see L{BrokerClient.exit}"""
