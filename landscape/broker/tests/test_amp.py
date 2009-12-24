@@ -1,4 +1,5 @@
 from twisted.internet.defer import DeferredList
+
 from landscape.lib.amp import MethodCall, MethodCallError
 from landscape.broker.amp import (
     BrokerServerProtocol, BrokerServerProtocolFactory)
@@ -71,8 +72,10 @@ class MethodCallTestMixin(object):
                 self.assertTrue(isinstance(response["result"], result))
             else:
                 self.assertEquals(response, {"result": result})
+
         performed = protocol.callRemote(MethodCall, name=name, args=args,
                                         kwargs=kwargs)
+
         return performed.addCallback(assert_response)
 
     def assert_sender(self, remote, name, args, kwargs, result, object):
@@ -107,6 +110,7 @@ class BrokerServerProtocolTest(LandscapeTest, MethodCallTestMixin):
         """
         # We need this in order to make the message store happy
         self.mstore.set_accepted_types(["test"])
+
         calls = {"ping": {"result": True},
                  "register_client": {"args": ["client"],
                                      "kwargs": {"_protocol": ""}},
@@ -121,6 +125,7 @@ class BrokerServerProtocolTest(LandscapeTest, MethodCallTestMixin):
                  "get_server_uuid": {"result": None},
                  "register_client_accepted_message_type": {"args": ["test"]},
                  "exit": {}}
+
         performed = []
         for name in calls:
             call = calls[name]

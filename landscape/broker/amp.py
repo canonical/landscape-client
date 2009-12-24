@@ -9,6 +9,7 @@ class BrokerServerProtocol(AMP):
     """
     Communication protocol between the broker server and its clients.
     """
+
     _broker_method_calls = ["ping",
                             "register_client",
                             "send_message",
