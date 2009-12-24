@@ -1,11 +1,10 @@
 from twisted.trial.unittest import TestCase
 from twisted.internet import reactor
 from twisted.internet.protocol import Factory, ClientCreator
-from twisted.protocols.amp import AMP, String, Integer
+from twisted.internet.defer import Deferred
+from twisted.protocols.amp import AMP
 
-from landscape.lib.amp import (
-    StringOrNone, BPickle, ProtocolAttribute, MethodCall, MethodCallProtocol,
-    get_nested_attr)
+from landscape.lib.amp import MethodCallError, MethodCall, get_nested_attr
 
 
 class Words(object):
@@ -24,6 +23,9 @@ class Words(object):
             return "hello"
         else:
             return None
+
+    def is_short(self, word):
+        return len(word) < 4
 
     def concatenate(self, word1, word2):
         return word1 + word2
@@ -46,92 +48,75 @@ class Words(object):
         else:
             raise RuntimeError("'%s' doesn't exit in %s" % (word, language))
 
+    def _check(self, word, seed, value=3):
+        if seed == "cool" and value == 4:
+            return "Guessed!"
 
-class Empty(MethodCall):
+    def guess(self, word, *args, **kwargs):
+        return self._check(word, *args, **kwargs)
 
-    arguments = []
-    response = []
+    def meaning_of_life(self):
+        return Deferred()
 
-
-class Motd(MethodCall):
-
-    arguments = []
-    response = [("result", String())]
-
-
-class Capitalize(MethodCall):
-
-    arguments = [("word", String())]
-    response = [("result", String())]
+    def secret(self):
+        raise RuntimeError("I'm not supposed to be called!")
 
 
-class Synonym(MethodCall):
+class WordsServerProtocol(AMP):
 
-    arguments = [("word", String())]
-    response = [("result", StringOrNone())]
-
-
-class Concatenate(MethodCall):
-
-    arguments = [("word1", String()), ("word2", String())]
-    response = [("result", String())]
+    @MethodCall.responder
+    def _get_words_method(self, name):
+        if name != "secret":
+            return getattr(self.factory.words, name)
 
 
-class LowerCase(MethodCall):
+class RemoteWords(object):
 
-    arguments = [("word", String()), ("index", Integer(optional=True))]
-    response = [("result", String())]
+    def __init__(self, protocol):
+        self._protocol = protocol
 
-
-class MultiplyAlphabetically(MethodCall):
-
-    arguments = [("word_times", BPickle())]
-    response = [("result", String())]
-
-
-class Translate(MethodCall):
-
-    arguments = [("word", String()), ("__protocol_attribute_language",
-                                      ProtocolAttribute("factory.language"))]
-    response = [("result", String())]
-
-
-class WordsProtocol(MethodCallProtocol):
-
-    @property
-    def _object(self):
-        return self.factory.words
-
-    @Empty.responder
-    def _empty(self):
+    @MethodCall.sender
+    def empty(self):
         pass
 
-    @Motd.responder
-    def _motd(self):
+    @MethodCall.sender
+    def motd(self):
         pass
 
-    @Capitalize.responder
-    def _capitalize(self, word):
+    @MethodCall.sender
+    def capitalize(self, word):
         pass
 
-    @Synonym.responder
-    def _synonym(self, word):
+    @MethodCall.sender
+    def synonym(self, word):
         pass
 
-    @Concatenate.responder
-    def _concatenate(self, word1, word2):
+    @MethodCall.sender
+    def is_short(self, word):
         pass
 
-    @LowerCase.responder
-    def _lower_case(self, word, index):
+    @MethodCall.sender
+    def concatenate(self, word1, word2):
         pass
 
-    @MultiplyAlphabetically.responder
-    def _multiply_alphabetically(self, word_times):
+    @MethodCall.sender
+    def lower_case(self, word, index=None):
         pass
 
-    @Translate.responder
-    def _translate(self, word):
+    @MethodCall.sender
+    def multiply_alphabetically(self, word_times):
+        pass
+
+    @MethodCall.sender
+    def translate(self, word, _language="factory.language"):
+        pass
+
+    @MethodCall.sender
+    def guess(self, word, *args, **kwargs):
+        pass
+
+    @MethodCall.sender
+    def get_meaning_of_life(self):
         pass
 
 
@@ -158,24 +143,13 @@ class GetNestedAttrTest(TestCase):
         self.assertIdentical(get_nested_attr(obj, ""), obj)
 
 
-class MethodCallTest(TestCase):
-
-    def test_get_method_name(self):
-        """
-        The L{get_method_name} function returns the target object method
-        name associated the given C{MethodCall}.
-        """
-        self.assertEquals(Empty.get_method_name(), "empty")
-        self.assertEquals(LowerCase.get_method_name(), "lower_case")
-
-
 class MethodCallResponderTest(TestCase):
 
     def setUp(self):
         super(MethodCallResponderTest, self).setUp()
         socket = self.mktemp()
         factory = Factory()
-        factory.protocol = WordsProtocol
+        factory.protocol = WordsServerProtocol
         factory.words = Words()
         factory.language = "italian"
         self.port = reactor.listenUNIX(socket, factory)
@@ -194,82 +168,241 @@ class MethodCallResponderTest(TestCase):
 
     def test_empty(self):
         """
-        A connected AMP client can issue a command without arguments and with
-        an empty response.
+        A connected AMP client can issue a L{MethodCall} without arguments and
+        with an empty response.
         """
-        performed = self.protocol.callRemote(Empty)
-        return performed.addCallback(self.assertEquals, {})
+        performed = self.protocol.callRemote(MethodCall, name="empty",
+                                             args=[], kwargs={})
+        return performed.addCallback(self.assertEquals, {"result": None})
 
     def test_motd(self):
         """
-        A connected AMP client can issue a command targeted to an object
-        method with a return value.
+        A connected AMP client can issue a L{MethodCall} targeted to an
+        object method with a return value.
         """
-        performed = self.protocol.callRemote(Motd)
+        performed = self.protocol.callRemote(MethodCall, name="motd",
+                                             args=[], kwargs={})
         return performed.addCallback(self.assertEquals,
                                      {"result": "Words are cool"})
 
     def test_capitalize(self):
         """
-        A connected AMP client can issue a command with one argument and
+        A connected AMP client can issue a L{MethodCall} with one argument and
         a response value.
         """
-        performed = self.protocol.callRemote(Capitalize, word="john")
+        performed = self.protocol.callRemote(MethodCall, name="capitalize",
+                                             args=["john"], kwargs={})
         return performed.addCallback(self.assertEquals, {"result": "John"})
 
     def test_synonim(self):
         """
-        The L{StringOrNone} argument normally behaves like a L{String}
+        The response of a L{MethodCall} command can be C{None}.
         """
-        performed = self.protocol.callRemote(Synonym, word="hi")
-        return performed.addCallback(self.assertEquals, {"result": "hello"})
-
-    def test_synonim_with_none(self):
-        """
-        The value of a L{StringOrNone} argument can be C{None}.
-        """
-        performed = self.protocol.callRemote(Synonym, word="foo")
+        performed = self.protocol.callRemote(MethodCall, name="synonym",
+                                             args=["foo"], kwargs={})
         return performed.addCallback(self.assertEquals, {"result": None})
+
+    def test_is_short(self):
+        """
+        The return value of a L{MethodCall} argument can be a boolean.
+        """
+        performed = self.protocol.callRemote(MethodCall, name="is_short",
+                                             args=["hi"], kwargs={})
+        return performed.addCallback(self.assertEquals, {"result": True})
 
     def test_concatenate(self):
         """
-        A connected AMP client can issue a command with many arguments.
+        A connected AMP client can issue a L{MethodCall} with many arguments.
         """
-        performed = self.protocol.callRemote(Concatenate,
-                                             word1="You ", word2="rock")
+        performed = self.protocol.callRemote(MethodCall, name="concatenate",
+                                             args=["You ", "rock"], kwargs={})
         return performed.addCallback(self.assertEquals, {"result": "You rock"})
 
     def test_lower_case(self):
         """
-        A connected AMP client can issue a command with many arguments some
-        of which have default values in the target object.
+        A connected AMP client can issue a L{MethodCall} for methods having
+        default arguments.
         """
-        performed = self.protocol.callRemote(LowerCase, word="OHH")
+        performed = self.protocol.callRemote(MethodCall, name="lower_case",
+                                             args=["OHH"], kwargs={})
         return performed.addCallback(self.assertEquals, {"result": "ohh"})
 
     def test_lower_case_with_index(self):
         """
-        A connected AMP client can issue a command with many arguments some
-        of which have default values in the target object.  If a value is
-        specified by the caller it will be used in place of the default value
+        A connected AMP client can issue a L{MethodCall} with keyword arguments
+        having default values in the target object.  If a value is specified by
+        the caller it will be used in place of the default value
         """
-        performed = self.protocol.callRemote(LowerCase, word="OHH", index=2)
+        performed = self.protocol.callRemote(MethodCall, name="lower_case",
+                                             args=["OHH"], kwargs={"index": 2})
         return performed.addCallback(self.assertEquals, {"result": "OHh"})
 
     def test_multiply_alphabetically(self):
         """
-        The L{BPickle} argument type can be used to define L{MethodCall}s for
-        methods requiring dictionary arguments.
+        Method arguments passed to a L{MethodCall} can be dictionaries.
         """
-        performed = self.protocol.callRemote(MultiplyAlphabetically,
-                                             word_times={"foo": 2, "bar": 3})
+        performed = self.protocol.callRemote(MethodCall,
+                                             name="multiply_alphabetically",
+                                             args=[{"foo": 2, "bar": 3}],
+                                             kwargs={})
         return performed.addCallback(self.assertEquals,
                                      {"result": "barbarbarfoofoo"})
 
     def test_translate(self):
         """
+        A keyword argument prefixed by C{_} can be used to send a L{MethodCall}
+        for a method requiring additional protocol-specific arguments.
+        """
+        performed = self.protocol.callRemote(MethodCall, name="translate",
+                                             args=["hi"],
+                                             kwargs={"_language": "factory."
+                                                                  "language"})
+        return performed.addCallback(self.assertEquals, {"result": "ciao"})
+
+    def test_guess(self):
+        """
         The L{Hidden} argument type can be used to define L{MethodCall}s for
         methods requiring additional arguments.
         """
-        performed = self.protocol.callRemote(Translate, word="hi")
-        return performed.addCallback(self.assertEquals, {"result": "ciao"})
+        performed = self.protocol.callRemote(MethodCall, name="guess",
+                                             args=["word", "cool"],
+                                             kwargs={"value": 4})
+        return performed.addCallback(self.assertEquals, {"result": "Guessed!"})
+
+    def test_meaning_of_life(self):
+        """
+        If the target object method returns an object that can't be serialized,
+        the L{MethodCall} result is C{None}.
+        """
+        performed = self.protocol.callRemote(MethodCall,
+                                             name="meaning_of_life", args=[],
+                                             kwargs={})
+        return performed.addCallback(self.assertEquals, {"result": None})
+
+    def test_secret(self):
+        """
+        If the decorated protocl method returns C{None}, an exception is rasied.
+        """
+        performed = self.protocol.callRemote(MethodCall,
+                                             name="secret", args=[], kwargs={})
+        return self.assertFailure(performed, MethodCallError)
+
+
+class MethodCallSenderTest(TestCase):
+
+    def setUp(self):
+        super(MethodCallSenderTest, self).setUp()
+        socket = self.mktemp()
+        factory = Factory()
+        factory.protocol = WordsServerProtocol
+        factory.words = Words()
+        factory.language = "italian"
+        self.port = reactor.listenUNIX(socket, factory)
+
+        def set_protocol(protocol):
+            self.protocol = protocol
+            self.words = RemoteWords(protocol)
+
+        connector = ClientCreator(reactor, AMP)
+        connected = connector.connectUNIX(socket)
+        return connected.addCallback(set_protocol)
+
+    def tearDown(self):
+        super(MethodCallSenderTest, self).setUp()
+        self.port.loseConnection()
+        self.protocol.transport.loseConnection()
+
+    def test_empty(self):
+        """
+        The L{sender} decorator can send L{MethodCall}s without arguments
+        and with an empty response.
+        """
+        performed = self.words.empty()
+        return performed.addCallback(self.assertEquals, None)
+
+    def test_motd(self):
+        """
+        The L{sender} decorator can send L{MethodCall}s without arguments
+        and get back the value of the commands's response.
+        """
+        performed = self.words.motd()
+        return performed.addCallback(self.assertEquals, "Words are cool")
+
+    def test_capitalize(self):
+        """
+        The L{sender} decorator can send L{MethodCall}s with one
+        argument and get the response value.
+        """
+        performed = self.words.capitalize("john")
+        return performed.addCallback(self.assertEquals, "John")
+
+    def test_capitalize_with_kwarg(self):
+        """
+        The L{sender} decorator can send L{MethodCall}s with a named
+        argument.
+        """
+        performed = self.words.capitalize(word="john")
+        return performed.addCallback(self.assertEquals, "John")
+
+    def test_is_short(self):
+        """
+        The return value of a L{MethodCall} argument can be a boolean.
+        """
+        performed = self.words.is_short("hi")
+        return performed.addCallback(self.assertEquals, True)
+
+    def test_concatenate(self):
+        """
+        The L{sender} decorator can send L{MethodCall}s with more
+        than one argument.
+        """
+        performed = self.words.concatenate("You ", "rock")
+        return performed.addCallback(self.assertEquals, "You rock")
+
+    def test_concatenate_with_kwargs(self):
+        """
+        The L{sender} decorator can send L{MethodCall}s with several
+        named arguments.
+        """
+        performed = self.words.concatenate(word2="rock", word1="You ")
+        return performed.addCallback(self.assertEquals, "You rock")
+
+    def test_lower_case(self):
+        """
+        The L{sender} decorator can send a L{MethodCall} having an argument
+        with a default value.
+        """
+        performed = self.words.lower_case("OHH")
+        return performed.addCallback(self.assertEquals, "ohh")
+
+    def test_lower_case_with_index(self):
+        """
+        The L{sender} decorator can send L{MethodCall}s overriding the default
+        value of an argument.
+        """
+        performed = self.words.lower_case("OHH", 2)
+        return performed.addCallback(self.assertEquals, "OHh")
+
+    def test_multiply_alphabetically(self):
+        """
+        The L{sender} decorator can send a L{MethodCall}s for methods requiring
+        a dictionary arguments.
+        """
+        performed = self.words.multiply_alphabetically({"foo": 2, "bar": 3})
+        return performed.addCallback(self.assertEquals, "barbarbarfoofoo")
+
+    def test_translate(self):
+        """
+        The L{sender} decorator can send a L{MethodCall} requiring protocol
+        arguments, which won't be exposed to the caller.
+        """
+        performed = self.words.translate("hi")
+        return performed.addCallback(self.assertEquals, "ciao")
+
+    def test_guess(self):
+        """
+        The L{sender} decorator behaves well with L{MethodCall}s for methods
+        having generic C{*args} and C{**kwargs} arguments.
+        """
+        performed = self.words.guess("word", "cool", value=4)
+        return performed.addCallback(self.assertEquals, "Guessed!")
