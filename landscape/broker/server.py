@@ -68,8 +68,7 @@ class BrokerServer(object):
         for client in self.get_clients():
             results.append(client.exit())
         result = gather_results(results, consume_errors=True)
-        result.addCallback(lambda ignored: None)
-        return result
+        return result.addCallback(lambda ignored: None)
 
     def reload_configuration(self):
         """Reload the configuration file, and stop all clients."""

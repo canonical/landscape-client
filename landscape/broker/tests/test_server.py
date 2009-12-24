@@ -23,8 +23,7 @@ class BrokerServerTest(LandscapeTest):
         message = {"type": "test"}
         self.mstore.set_accepted_types(["test"])
         self.broker.send_message(message)
-        self.assertMessages(self.mstore.get_pending_messages(),
-                            [message])
+        self.assertMessages(self.mstore.get_pending_messages(), [message])
         self.assertFalse(self.exchanger.is_urgent())
 
     def test_send_message_with_urgent(self):
@@ -35,8 +34,7 @@ class BrokerServerTest(LandscapeTest):
         message = {"type": "test"}
         self.mstore.set_accepted_types(["test"])
         self.broker.send_message(message, True)
-        self.assertMessages(self.mstore.get_pending_messages(),
-                            [message])
+        self.assertMessages(self.mstore.get_pending_messages(), [message])
         self.assertTrue(self.exchanger.is_urgent())
 
     def test_is_pending(self):
@@ -70,23 +68,12 @@ class BrokerServerTest(LandscapeTest):
         """
         self.broker.register_client("foo", None)
         self.broker.register_client("bar", None)
-        exited_clients = []
         for client in self.broker.get_clients():
-
-            def create_exit_func(client):
-
-                def exit():
-                    exited_clients.append(client.name)
-                    return succeed(None)
-                return exit
-            client.exit = create_exit_func(client)
-
-        def assert_result(result):
-            self.assertIdentical(result, None)
-            self.assertEquals(sorted(exited_clients), ["bar", "foo"])
-
-        clients_stopped = self.broker.stop_clients()
-        return clients_stopped.addCallback(assert_result)
+            client.exit = self.mocker.mock()
+            client.exit()
+            self.mocker.result(succeed(None))
+        self.mocker.replay()
+        return self.assertSuccess(self.broker.stop_clients())
 
     def test_stop_clients_with_failure(self):
         """
@@ -96,18 +83,11 @@ class BrokerServerTest(LandscapeTest):
         """
         self.broker.register_client("foo", None)
         self.broker.register_client("bar", None)
-        for client in self.broker.get_clients():
-            if client.name == "foo":
-                client.exit = lambda: succeed(None)
-            else:
-                client.exit = lambda: fail(Exception("bar"))
-        clients_stopped = self.broker.stop_clients()
-        self.assertFailure(clients_stopped, Exception)
-
-        def assert_error(error):
-            self.assertEquals(error.args[0], "bar")
-
-        return clients_stopped.addCallback(assert_error)
+        [client1, client2] = self.broker.get_clients()
+        client1.exit = self.makeCallableMock(result=succeed(None))
+        client2.exit = self.makeCallableMock(result=fail(Exception()))
+        self.mocker.replay()
+        return self.assertFailure(self.broker.stop_clients(), Exception)
 
     def test_reload_configuration(self):
         """
@@ -115,12 +95,9 @@ class BrokerServerTest(LandscapeTest):
         file associated with the broker server to be reloaded.
         """
         open(self.config_filename, "a").write("computer_title = New Title")
-        config_reloaded = self.broker.reload_configuration()
-
-        def assert_config(result):
-            self.assertEquals(self.config.computer_title, "New Title")
-
-        return config_reloaded.addCallback(assert_config)
+        result = self.broker.reload_configuration()
+        return self.assertEventuallyEquals(result, self.config.computer_title,
+                                           "New Title")
 
     def test_reload_configuration_stops_clients(self):
         """
@@ -129,23 +106,10 @@ class BrokerServerTest(LandscapeTest):
         """
         self.broker.register_client("foo", None)
         self.broker.register_client("bar", None)
-        exited_clients = []
         for client in self.broker.get_clients():
-
-            def create_exit_func(client):
-
-                def exit():
-                    exited_clients.append(client.name)
-                    return succeed(None)
-                return exit
-            client.exit = create_exit_func(client)
-
-        config_reloaded = self.broker.reload_configuration()
-
-        def assert_exited_clients(result):
-            self.assertEquals(sorted(exited_clients), ["bar", "foo"])
-
-        return config_reloaded.addCallback(assert_exited_clients)
+            client.exit = self.makeCallableMock(result=succeed(None))
+        self.mocker.replay()
+        return self.assertSuccess(self.broker.reload_configuration())
 
     def test_register(self):
         """
@@ -156,7 +120,7 @@ class BrokerServerTest(LandscapeTest):
         # This should callback the deferred.
         self.exchanger.handle_message({"type": "set-id", "id": "abc",
                                        "insecure-id": "def"})
-        return registered.addCallback(self.assertEquals, None)
+        return self.assertSuccess(registered)
 
     def test_get_accepted_types_empty(self):
         """
@@ -206,22 +170,10 @@ class BrokerServerTest(LandscapeTest):
         """
         self.broker.register_client("foo", None)
         self.broker.register_client("bar", None)
-        exited_clients = []
         for client in self.broker.get_clients():
-
-            def create_exit_func(client):
-
-                def exit():
-                    exited_clients.append(client.name)
-                    return succeed(None)
-                return exit
-            client.exit = create_exit_func(client)
-
-        def assert_exited_clients(ignored):
-            self.assertEquals(sorted(exited_clients), ["bar", "foo"])
-
-        broker_exited = self.broker.exit()
-        return broker_exited.addCallback(assert_exited_clients)
+            client.exit = self.makeCallableMock(result=succeed(None))
+        self.mocker.replay()
+        return self.assertSuccess(self.broker.exit())
 
     def test_exit_exits_when_other_daemons_blow_up(self):
         """
@@ -230,24 +182,11 @@ class BrokerServerTest(LandscapeTest):
         """
         self.broker.register_client("foo", None)
         [client] = self.broker.get_clients()
-        client_exit_calls = []
-
-        def client_exit():
-            client_exit_calls.append(True)
-            return fail(ZeroDivisionError())
-
-        client.exit = client_exit
-
-        post_exits = []
-        self.reactor.call_on("post-exit", lambda: post_exits.append(True))
-
-        def assert_result(result):
-            self.assertEquals(client_exit_calls, [True])
-            self.assertEquals(result, None)
-            self.assertEquals(post_exits, [True])
-
-        broker_exited = self.broker.exit()
-        return broker_exited.addCallback(assert_result)
+        client.exit = self.makeCallableMock(result=fail(ZeroDivisionError()))
+        post_exit = self.makeCallableMock()
+        self.mocker.replay()
+        self.reactor.call_on("post-exit", post_exit)
+        return self.assertSuccess(self.broker.exit())
 
     def test_exit_fires_reactor_events(self):
         """
@@ -256,29 +195,11 @@ class BrokerServerTest(LandscapeTest):
         """
         self.broker.register_client("foo", None)
         [client] = self.broker.get_clients()
-        client_exit_calls = []
-
-        def client_exit():
-            client_exit_calls.append(True)
-            return fail(ZeroDivisionError())
-
-        client.exit = client_exit
-
-        fired_exit_calls = []
-
-        def pre_exit():
-            self.assertEquals(client_exit_calls, [])
-            fired_exit_calls.append("pre")
-
-        def post_exit():
-            self.assertEquals(client_exit_calls, [True])
-            fired_exit_calls.append("post")
-
+        self.mocker.order()
+        pre_exit = self.makeCallableMock()
+        client.exit = self.makeCallableMock(result=fail(ZeroDivisionError()))
+        post_exit = self.makeCallableMock()
+        self.mocker.replay()
         self.reactor.call_on("pre-exit", pre_exit)
         self.reactor.call_on("post-exit", post_exit)
-
-        def assert_exit_calls(result):
-            self.assertEquals(fired_exit_calls, ["pre", "post"])
-
-        broker_exited = self.broker.exit()
-        return broker_exited.addCallback(assert_exit_calls)
+        return self.assertSuccess(self.broker.exit())
