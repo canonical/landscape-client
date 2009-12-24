@@ -111,8 +111,10 @@ class LandscapeTest(MessageTestCase, MockerTestCase,
         deferred.addCallback(callback)
         self.assertTrue(called)
 
-    def assertSuccess(self, deferred, result):
-        """Assert that the given C{deferred} results in the given C{result}."""
+    def assertSuccess(self, deferred, result=None):
+        """
+        Assert that the given C{deferred} results in the given C{result}.
+        """
         self.assertTrue(isinstance(deferred, Deferred))
         return deferred.addCallback(self.assertEquals, result)
 

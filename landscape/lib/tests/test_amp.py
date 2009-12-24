@@ -336,8 +336,7 @@ class MethodCallSenderTest(LandscapeTest):
         The L{sender} decorator can send L{MethodCall}s without arguments
         and with an empty response.
         """
-        result = self.words.empty()
-        return self.assertSuccess(result, None)
+        return self.assertSuccess(self.words.empty())
 
     def test_motd(self):
         """
@@ -367,8 +366,7 @@ class MethodCallSenderTest(LandscapeTest):
         """
         The return value of a L{MethodCall} argument can be a boolean.
         """
-        result = self.words.is_short("hi")
-        return self.assertSuccess(result, True)
+        return self.assertSuccess(self.words.is_short("hi"))
 
     def test_concatenate(self):
         """
