@@ -111,11 +111,32 @@ class LandscapeTest(MessageTestCase, MockerTestCase,
         deferred.addCallback(callback)
         self.assertTrue(called)
 
+    def assertSuccess(self, deferred, result=None):
+        """
+        Assert that the given C{deferred} results in the given C{result}.
+        """
+        self.assertTrue(isinstance(deferred, Deferred))
+        return deferred.addCallback(self.assertEquals, result)
+
+    def assertEventuallyEquals(self, deferred, expr1, expr2):
+        """
+        Assert that when the given C{deferred} callbacks, C{expr1}
+        equals C{expr2}.
+        """
+        return deferred.addCallback(lambda x: self.assertEquals(expr1, expr2))
+
     def assertFileContent(self, filename, expected_content):
         fd = open(filename)
         actual_content = fd.read()
         fd.close()
         self.assertEquals(expected_content, actual_content)
+
+    def makeCallableMock(self, result=None, count=1):
+        mock = self.mocker.mock()
+        mock()
+        self.mocker.result(result)
+        self.mocker.count(count)
+        return mock
 
     def makePersistFile(self, *args, **kwargs):
         """Return a temporary filename to be used by a L{Persist} object.
