@@ -66,7 +66,7 @@ class MethodCall(Command):
             implementation of this method is supposed to be empty.
         """
 
-        def call_object_method(self, **method_call_kwargs):
+        def call_method(self, **method_call_kwargs):
             name = method_call_kwargs["name"]
             args = method_call_kwargs["args"][:]
             kwargs = method_call_kwargs["kwargs"].copy()
@@ -90,7 +90,7 @@ class MethodCall(Command):
                 return {"result": result}
 
         return CommandLocator._currentClassCommands.append(
-            (MethodCall, call_object_method))
+            (MethodCall, call_method))
 
     @classmethod
     def sender(cls, method):

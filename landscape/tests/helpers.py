@@ -111,6 +111,11 @@ class LandscapeTest(MessageTestCase, MockerTestCase,
         deferred.addCallback(callback)
         self.assertTrue(called)
 
+    def assertSuccess(self, deferred, result):
+        """Assert that the given C{deferred} results in the given C{result}."""
+        self.assertTrue(isinstance(deferred, Deferred))
+        return deferred.addCallback(self.assertEquals, result)
+
     def assertFileContent(self, filename, expected_content):
         fd = open(filename)
         actual_content = fd.read()
