@@ -45,28 +45,28 @@ class MethodCall(Command):
     errors = {MethodCallError: "UNAUTHORIZED_METHOD_CALL"}
 
     @classmethod
-    def responder(cls, protocol_method):
+    def responder(cls, method_getter):
         """Decorator turning a protocol method into an L{MethodCall} responder.
 
         This decorator is used to implement remote procedure calls over AMP
-        commands.  The decorated method must accept a C{name} parameter and
-        return the callable associated with that name (typically and object's
-        method with the same name).
+        commands.  The decorated C{method_getter} must accept a C{name}
+        parameter and return the callable associated with that name (typically
+        and object's method with the same name).
 
         The idea is that if a connected AMP client sends a L{MethodCall} with
         name C{foo_bar}, then the actual method associated with C{foo_bar} as
-        returned by the decorated method will be called and its return value
+        returned by the C{method_getter} will be called and its return value
         delivered back to the client as response to the command.
 
         The L{MethodCall}'s C{args} and C{kwargs} arguments  will be passed to
         the actual method when calling it.
 
         @param cls: The L{MethodCall} class itself.
-        @param method: A method of a L{MethodCallProtocol} sub-class.  The
-            implementation of this method is supposed to be empty.
+        @param method_getter: A method of a L{MethodCallProtocol} sub-class, it
+            must return the method associated with a given name.
         """
 
-        def call_object_method(self, **method_call_kwargs):
+        def call_method(self, **method_call_kwargs):
             name = method_call_kwargs["name"]
             args = method_call_kwargs["args"][:]
             kwargs = method_call_kwargs["kwargs"].copy()
@@ -77,20 +77,17 @@ class MethodCall(Command):
                     kwargs.pop(key)
                     kwargs[key[1:]] = get_nested_attr(self, value)
 
-            # Call the object method with the matching name
-            object_method = protocol_method(self, name)
-            if object_method is None:
+            # Call the appropriate method
+            method = method_getter(self, name)
+            if method is None:
                 raise MethodCallError(name)
-            result = object_method(*args, **kwargs)
+            result = method(*args, **kwargs)
 
             # Return an AMP response to be delivered to the remote caller
-            if not cls.response:
-                return {}
-            else:
-                return {"result": result}
+            return {"result": result}
 
         return CommandLocator._currentClassCommands.append(
-            (MethodCall, call_object_method))
+            (MethodCall, call_method))
 
     @classmethod
     def sender(cls, method):
@@ -136,10 +133,7 @@ class MethodCall(Command):
             method_call_kwargs.update(protocol_attributes_kwargs)
 
             def unpack_response(response):
-                if not cls.response:
-                    return None
-                else:
-                    return response["result"]
+                return response["result"]
 
             sent = self._protocol.callRemote(MethodCall,
                                              name=method_call_name,
