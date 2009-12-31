@@ -150,3 +150,27 @@ class BrokerServer(object):
     @event
     def impending_exchange(self):
         """Broadcast an C{impending_exchange} event to the clients."""
+
+    @event
+    def exchange_failed(self):
+        """Broadcast a C{exchange_failed} event to the clients."""
+
+    @event
+    def registration_done(self):
+        """Broadcast a C{registration_done} event to the clients."""
+
+    @event
+    def registration_failed(self):
+        """Broadcast a C{registration_failed} event to the clients."""
+
+    @event
+    def broker_started(self):
+        """Broadcast a C{broker_started} event to the clients."""
+
+    @event
+    def server_uuid_changed(self, old_uuid, new_uuid):
+        """Broadcast a C{server_uuid_changed} event to the clients."""
+
+    @event
+    def message_type_acceptance_changed(self, type, accepted):
+        pass

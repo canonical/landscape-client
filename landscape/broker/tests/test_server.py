@@ -342,3 +342,20 @@ class EventTest(LandscapeTest):
 
         broadcasted = self.broker.impending_exchange()
         return broadcasted.addCallback(assert_exchange)
+
+    def test_server_uuid_changed(self):
+        """
+        The L{BrokerServer.server_uuid_changed} method broadcasts a
+        C{server_uuid_changed} event carrying the old and the new uuids.
+        """
+        uuids = []
+
+        def callback(old_uuid, new_uuid):
+            uuids.extend([old_uuid, new_uuid])
+            
+        def assert_uuids(ignored):
+            self.assertEquals(uuids, [None, "uuid"])
+
+        self.reactor.call_on("server_uuid_changed", callback)
+        broadcasted = self.broker.server_uuid_changed(None, "uuid")
+        return broadcasted.addCallback(assert_uuids)
