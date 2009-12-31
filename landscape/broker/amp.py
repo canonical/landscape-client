@@ -9,7 +9,7 @@ class BrokerServerProtocol(AMP):
     Communication protocol between the broker server and its clients.
     """
 
-    _broker_method_calls = ["ping",
+    _broker_method_calls = ("ping",
                             "register_client",
                             "send_message",
                             "is_message_pending",
@@ -19,7 +19,7 @@ class BrokerServerProtocol(AMP):
                             "get_accepted_message_types",
                             "get_server_uuid",
                             "register_client_accepted_message_type",
-                            "exit"]
+                            "exit")
 
     @MethodCall.responder
     def _get_broker_method(self, name):

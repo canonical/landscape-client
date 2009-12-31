@@ -25,8 +25,7 @@ class BrokerServerTest(LandscapeTest):
         message = {"type": "test"}
         self.mstore.set_accepted_types(["test"])
         self.broker.send_message(message)
-        self.assertMessages(self.mstore.get_pending_messages(),
-                            [message])
+        self.assertMessages(self.mstore.get_pending_messages(), [message])
         self.assertFalse(self.exchanger.is_urgent())
 
     def test_send_message_with_urgent(self):
@@ -37,8 +36,7 @@ class BrokerServerTest(LandscapeTest):
         message = {"type": "test"}
         self.mstore.set_accepted_types(["test"])
         self.broker.send_message(message, True)
-        self.assertMessages(self.mstore.get_pending_messages(),
-                            [message])
+        self.assertMessages(self.mstore.get_pending_messages(), [message])
         self.assertTrue(self.exchanger.is_urgent())
 
     def test_is_pending(self):
@@ -72,23 +70,11 @@ class BrokerServerTest(LandscapeTest):
         """
         self.broker.register_client("foo", None)
         self.broker.register_client("bar", None)
-        exited_clients = []
         for client in self.broker.get_clients():
-
-            def create_exit_func(client):
-
-                def exit():
-                    exited_clients.append(client.name)
-                    return succeed(None)
-                return exit
-            client.exit = create_exit_func(client)
-
-        def assert_result(result):
-            self.assertIdentical(result, None)
-            self.assertEquals(sorted(exited_clients), ["bar", "foo"])
-
-        clients_stopped = self.broker.stop_clients()
-        return clients_stopped.addCallback(assert_result)
+            client.exit = self.mocker.mock()
+            self.expect(client.exit()).result(succeed(None))
+        self.mocker.replay()
+        return self.assertSuccess(self.broker.stop_clients())
 
     def test_stop_clients_with_failure(self):
         """
@@ -98,18 +84,13 @@ class BrokerServerTest(LandscapeTest):
         """
         self.broker.register_client("foo", None)
         self.broker.register_client("bar", None)
-        for client in self.broker.get_clients():
-            if client.name == "foo":
-                client.exit = lambda: succeed(None)
-            else:
-                client.exit = lambda: fail(Exception("bar"))
-        clients_stopped = self.broker.stop_clients()
-        self.assertFailure(clients_stopped, Exception)
-
-        def assert_error(error):
-            self.assertEquals(error.args[0], "bar")
-
-        return clients_stopped.addCallback(assert_error)
+        [client1, client2] = self.broker.get_clients()
+        client1.exit = self.mocker.mock()
+        client2.exit = self.mocker.mock()
+        self.expect(client1.exit()).result(succeed(None))
+        self.expect(client2.exit()).result(fail(Exception()))
+        self.mocker.replay()
+        return self.assertFailure(self.broker.stop_clients(), Exception)
 
     def test_reload_configuration(self):
         """
@@ -117,12 +98,10 @@ class BrokerServerTest(LandscapeTest):
         file associated with the broker server to be reloaded.
         """
         open(self.config_filename, "a").write("computer_title = New Title")
-        config_reloaded = self.broker.reload_configuration()
-
-        def assert_config(result):
-            self.assertEquals(self.config.computer_title, "New Title")
-
-        return config_reloaded.addCallback(assert_config)
+        result = self.broker.reload_configuration()
+        result.addCallback(lambda x: self.assertEquals(
+            self.config.computer_title, "New Title"))
+        return result
 
     def test_reload_configuration_stops_clients(self):
         """
@@ -131,23 +110,11 @@ class BrokerServerTest(LandscapeTest):
         """
         self.broker.register_client("foo", None)
         self.broker.register_client("bar", None)
-        exited_clients = []
         for client in self.broker.get_clients():
-
-            def create_exit_func(client):
-
-                def exit():
-                    exited_clients.append(client.name)
-                    return succeed(None)
-                return exit
-            client.exit = create_exit_func(client)
-
-        config_reloaded = self.broker.reload_configuration()
-
-        def assert_exited_clients(result):
-            self.assertEquals(sorted(exited_clients), ["bar", "foo"])
-
-        return config_reloaded.addCallback(assert_exited_clients)
+            client.exit = self.mocker.mock()
+            self.expect(client.exit()).result(succeed(None))
+        self.mocker.replay()
+        return self.assertSuccess(self.broker.reload_configuration())
 
     def test_register(self):
         """
@@ -158,7 +125,7 @@ class BrokerServerTest(LandscapeTest):
         # This should callback the deferred.
         self.exchanger.handle_message({"type": "set-id", "id": "abc",
                                        "insecure-id": "def"})
-        return registered.addCallback(self.assertEquals, None)
+        return self.assertSuccess(registered)
 
     def test_get_accepted_types_empty(self):
         """
@@ -208,22 +175,11 @@ class BrokerServerTest(LandscapeTest):
         """
         self.broker.register_client("foo", None)
         self.broker.register_client("bar", None)
-        exited_clients = []
         for client in self.broker.get_clients():
-
-            def create_exit_func(client):
-
-                def exit():
-                    exited_clients.append(client.name)
-                    return succeed(None)
-                return exit
-            client.exit = create_exit_func(client)
-
-        def assert_exited_clients(ignored):
-            self.assertEquals(sorted(exited_clients), ["bar", "foo"])
-
-        broker_exited = self.broker.exit()
-        return broker_exited.addCallback(assert_exited_clients)
+            client.exit = self.mocker.mock()
+            self.expect(client.exit()).result(succeed(None))
+        self.mocker.replay()
+        return self.assertSuccess(self.broker.exit())
 
     def test_exit_exits_when_other_daemons_blow_up(self):
         """
@@ -232,24 +188,13 @@ class BrokerServerTest(LandscapeTest):
         """
         self.broker.register_client("foo", None)
         [client] = self.broker.get_clients()
-        client_exit_calls = []
-
-        def client_exit():
-            client_exit_calls.append(True)
-            return fail(ZeroDivisionError())
-
-        client.exit = client_exit
-
-        post_exits = []
-        self.reactor.call_on("post-exit", lambda: post_exits.append(True))
-
-        def assert_result(result):
-            self.assertEquals(client_exit_calls, [True])
-            self.assertEquals(result, None)
-            self.assertEquals(post_exits, [True])
-
-        broker_exited = self.broker.exit()
-        return broker_exited.addCallback(assert_result)
+        client.exit = self.mocker.mock()
+        post_exit = self.mocker.mock()
+        self.expect(client.exit()).result(fail(ZeroDivisionError()))
+        post_exit()
+        self.mocker.replay()
+        self.reactor.call_on("post-exit", post_exit)
+        return self.assertSuccess(self.broker.exit())
 
     def test_exit_fires_reactor_events(self):
         """
@@ -258,32 +203,17 @@ class BrokerServerTest(LandscapeTest):
         """
         self.broker.register_client("foo", None)
         [client] = self.broker.get_clients()
-        client_exit_calls = []
-
-        def client_exit():
-            client_exit_calls.append(True)
-            return fail(ZeroDivisionError())
-
-        client.exit = client_exit
-
-        fired_exit_calls = []
-
-        def pre_exit():
-            self.assertEquals(client_exit_calls, [])
-            fired_exit_calls.append("pre")
-
-        def post_exit():
-            self.assertEquals(client_exit_calls, [True])
-            fired_exit_calls.append("post")
-
+        self.mocker.order()
+        pre_exit = self.mocker.mock()
+        client.exit = self.mocker.mock()
+        post_exit = self.mocker.mock()
+        pre_exit()
+        self.expect(client.exit()).result(fail(ZeroDivisionError()))
+        post_exit()
+        self.mocker.replay()
         self.reactor.call_on("pre-exit", pre_exit)
         self.reactor.call_on("post-exit", post_exit)
-
-        def assert_exit_calls(result):
-            self.assertEquals(fired_exit_calls, ["pre", "post"])
-
-        broker_exited = self.broker.exit()
-        return broker_exited.addCallback(assert_exit_calls)
+        return self.assertSuccess(self.broker.exit())
 
 
 class EventTest(LandscapeTest):
@@ -300,62 +230,96 @@ class EventTest(LandscapeTest):
 
     def test_resynchronize(self):
         """
-        The L{event} decorator turns a L{BrokerServer} method into and
-        event broadcaster.  An event with the same name as the decorated
-        method is fired on all connected clients.
+        The L{BrokerServer.resynchronize} method broadcasts a C{resynchronize}
+        event to all connected clients.
         """
-        calls = []
-
-        real_fire_event = self.client.fire_event
-
-        def fire_event(event_type):
-            calls.append("fire_event")
-            real_fire_event(event_type)
-
-        self.client.fire_event = fire_event
-
-        def callback():
-            calls.append("callback")
-            
+        callback = self.mocker.mock()
+        callback()
+        self.mocker.replay()
         self.reactor.call_on("resynchronize", callback)
-
-        def assert_calls(ignored):
-            self.assertEquals(calls, ["fire_event", "callback"])
-
-        broadcasted = self.broker.resynchronize()
-        return broadcasted.addCallback(assert_calls)
+        return self.assertSuccess(self.broker.resynchronize(), [None])
 
     def test_impending_exchange(self):
         """
-        All L{BrokerClient} register an handler for the C{impending_exchange}
-        event.
+        The L{BrokerServer.impending_exchange} method broadcasts an
+        C{impending_exchange} event to all connected clients.
         """
-        plugin = TestSpy()
+        plugin = self.mocker.mock()
+        plugin.register(self.client)
+        plugin.exchange()
+        self.mocker.replay()
         self.client.register_plugin(plugin)
-        spy.clear(plugin)
+        return self.assertSuccess(self.broker.impending_exchange(), [None])
 
-        def assert_exchange(ignored):
-            spy.replay(plugin)
-            self.assertEquals(spy.history(plugin), [plugin.exchange()])
-            self.assertTrue("Got notification of impending exchange." in
-                            self.logfile.getvalue())
+    def test_exchange_failed(self):
+        """
+        The L{BrokerServer.exchange_failed} method broadcasts an
+        C{exchange_failed} event to all connected clients.
+        """
+        callback = self.mocker.mock()
+        callback()
+        self.mocker.replay()
+        self.reactor.call_on("exchange_failed", callback)
+        return self.assertSuccess(self.broker.exchange_failed(), [None])
 
-        broadcasted = self.broker.impending_exchange()
-        return broadcasted.addCallback(assert_exchange)
+    def test_registration_done(self):
+        """
+        The L{BrokerServer.registration_done} method broadcasts a
+        C{registration_done} event to all connected clients.
+        """
+        callback = self.mocker.mock()
+        callback()
+        self.mocker.replay()
+        self.reactor.call_on("registration_done", callback)
+        return self.assertSuccess(self.broker.registration_done(), [None])
+
+    def test_registration_failed(self):
+        """
+        The L{BrokerServer.registration_failed} method broadcasts a
+        C{registration_failed} event to all connected clients.
+        """
+        callback = self.mocker.mock()
+        callback()
+        self.mocker.replay()
+        self.reactor.call_on("registration_failed", callback)
+        return self.assertSuccess(self.broker.registration_failed(), [None])
+
+    def test_broker_started(self):
+        """
+        The L{BrokerServer.broker_started} method broadcasts a C{broker_started}
+        event to all connected clients, which makes them re-registered any
+        previously registered accepted message type.
+        """
+        def assert_broker_started(ignored):
+            self.remote.register_client_accepted_message_type = \
+                                                        self.mocker.mock()
+            self.remote.register_client_accepted_message_type("type")
+            self.mocker.replay()
+            return self.assertSuccess(self.broker.broker_started(), [None])
+
+        registered = self.client.register_message("type", lambda x: None)
+        return registered.addCallback(assert_broker_started)
 
     def test_server_uuid_changed(self):
         """
-        The L{BrokerServer.server_uuid_changed} method broadcasts a
-        C{server_uuid_changed} event carrying the old and the new uuids.
+        The L{BrokerServer.server_uuid_changed} method broadcasts an
+        C{server_uuid_changed} event to all connected clients.
         """
-        uuids = []
-
-        def callback(old_uuid, new_uuid):
-            uuids.extend([old_uuid, new_uuid])
-            
-        def assert_uuids(ignored):
-            self.assertEquals(uuids, [None, "uuid"])
-
+        callback = self.mocker.mock()
+        callback(None, "abc")
+        self.mocker.replay()
         self.reactor.call_on("server_uuid_changed", callback)
-        broadcasted = self.broker.server_uuid_changed(None, "uuid")
-        return broadcasted.addCallback(assert_uuids)
+        return self.assertSuccess(self.broker.server_uuid_changed(None, "abc"),
+                                  [None])
+
+    def test_message_type_acceptance_changed(self):
+        """
+        The L{BrokerServer.message_type_acceptance_changed} method broadcasts an
+        C{message_type_acceptance_changed} event to all connected clients.
+        """
+        callback = self.mocker.mock()
+        callback("type", True)
+        self.mocker.replay()
+        self.reactor.call_on("message_type_acceptance_changed", callback)
+        return self.assertSuccess(
+            self.broker.message_type_acceptance_changed("type", True), [None])

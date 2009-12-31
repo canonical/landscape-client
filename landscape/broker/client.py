@@ -27,6 +27,7 @@ class BrokerClient(object):
 
         # Register event handlers
         self.reactor.call_on("impending_exchange", self.notify_exchange)
+        self.reactor.call_on("broker_started", self.broker_started)
 
     def ping(self):
         """Return C{True}"""

@@ -1,8 +1,6 @@
-from twisted.internet.defer import DeferredList, succeed
-
 from landscape.lib.amp import MethodCall, MethodCallError
 from landscape.broker.amp import (
-    BrokerServerProtocol, BrokerServerProtocolFactory, RemoteClient)
+    BrokerServerProtocol, BrokerServerProtocolFactory)
 from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
 from landscape.broker.tests.helpers import (
     BrokerProtocolHelper, RemoteBrokerHelper, BrokerClientHelper)
@@ -28,127 +26,27 @@ class BrokerServerProtocolFactoryTest(LandscapeTest):
         self.assertEquals(factory.broker, stub_broker)
 
 
-class MethodCallTestMixin(object):
-
-    def _create_method_wrapper(self, object, method_name, calls):
-        """
-        Replace the method named C{method_name} of the given C{object} with a
-        wrapper which will behave exactly as the original method but will also
-        append a C{True} element to the given C{calls} list upon invokation.
-
-        After the wrapper is called, it's replaced back with the original
-        object's method
-        """
-        original_method = getattr(object, method_name)
-
-        def method_wrapper(*args, **kwargs):
-            calls.append(True)
-            result = original_method(*args, **kwargs)
-            setattr(object, method_name, original_method)
-            return result
-
-        setattr(object, method_name, method_wrapper)
-
-    def assert_responder(self, protocol, name, args, kwargs, result, object):
-        """
-        Send a L{MethodCall} over the given C{protocol} and with the given
-        parameters, asserting that the proper C{object} method gets actually
-        called and the correct C{result} returned.
-
-        @param protocol: the L{AMP} protocol to send the L{MethodCall} over
-        @param name: The C{name} parameter of the L{MethodCall}
-        @param args: The C{args} parameter of the L{MethodCall}
-        @param kwargs: The C{kwargs} parameter of the L{MethodCall}
-        @param result: The expected result value or type
-        @param object: The target object the to invoke methods on
-        """
-        # Wrap the object method with one that will keep track of its calls
-        calls = []
-        self._create_method_wrapper(object, name, calls)
-
-        def assert_response(response):
-            self.assertEquals(calls, [True])
-            if isinstance(result, type):
-                self.assertTrue(isinstance(response["result"], result))
-            else:
-                self.assertEquals(response, {"result": result})
-
-        performed = protocol.callRemote(MethodCall, name=name, args=args,
-                                        kwargs=kwargs)
-
-        return performed.addCallback(assert_response)
-
-    def assert_sender(self, remote, name, args, kwargs, result, object):
-        """
-        Assert that the C{remote}'s method decorated with C{method_call.sender}
-        sends the appropriate AMP command and the matching target C{object}'s
-        method eventually gets called with the proper arguments.
-        """
-        # Wrap the object method with one that will keep track of its calls
-        calls = []
-        self._create_method_wrapper(object, name, calls)
-
-        def assert_response(response):
-            self.assertEquals(calls, [True])
-            if isinstance(result, type):
-                self.assertTrue(isinstance(response, result))
-            else:
-                self.assertEquals(response, result)
-        performed = getattr(remote, name)(*args, **kwargs)
-        return performed.addCallback(assert_response)
-
-
-class BrokerServerProtocolTest(LandscapeTest, MethodCallTestMixin):
+class BrokerServerProtocolTest(LandscapeTest):
 
     helpers = [BrokerProtocolHelper]
 
-    def test_commands(self):
+    def test_ping(self):
         """
-        All accepted L{MethodCall} commands issued by a connected client
-        are correctly performed.  The appropriate L{BrokerServer} methods
-        are called with the correct arguments.
+        When sent a L{MethodCall} command with C{ping} as parameter, the
+        L{BrokerServerProtocol} forwards the request to the L{BrokerServer}
+        instance of its protocol factory.
         """
-        # We need this in order to make the message store happy
-        self.mstore.set_accepted_types(["test"])
-
-        # Mock the remote client's exit methods
-        remote_client_mock = self.mocker.patch(RemoteClient)
-        remote_client_mock.exit()
-        self.mocker.result(succeed(None))
-        self.mocker.count(1, None)
-        self.mocker.replay()
-
-        calls = {"ping": {"result": True},
-                 "register_client": {"args": ["client"],
-                                     "kwargs": {"_protocol": ""}},
-                 "send_message": {"args": [{"type": "test"}],
-                                  "result": int},
-                 "is_message_pending": {"args": [1234567],
-                                        "result": False},
-                 "stop_clients": {},
-                 "reload_configuration": {},
-                 "register": {},
-                 "get_accepted_message_types": {"result": list},
-                 "get_server_uuid": {"result": None},
-                 "register_client_accepted_message_type": {"args": ["test"]},
-                 "exit": {}}
-
-        performed = []
-        for name in calls:
-            call = calls[name]
-            performed.append(self.assert_responder(self.protocol,
-                                                   name,
-                                                   call.get("args", []),
-                                                   call.get("kwargs", {}),
-                                                   call.get("result", None),
-                                                   self.broker))
-        return DeferredList(performed, fireOnOneErrback=True)
+        result = self.protocol.callRemote(MethodCall,
+                                          name="ping",
+                                          args=[],
+                                          kwargs={})
+        return self.assertSuccess(result, {"result": True})
 
     def test_register_client(self):
         """
-        The L{RegisterComponent} command of the L{BrokerServerProtocol}
-        forwards a registration request to the broker object of the protocol
-        factory.
+        When sent a L{MethodCall} command with C{register_client} as parameter,
+        the L{BrokerServerProtocol} forwards the registration request to the
+        broker object of the protocol factory.
         """
 
         def assert_response(response):
@@ -157,17 +55,17 @@ class BrokerServerProtocolTest(LandscapeTest, MethodCallTestMixin):
             self.assertEquals(client.name, "client")
             self.assertTrue(isinstance(client._protocol, BrokerServerProtocol))
 
-        performed = self.protocol.callRemote(MethodCall,
-                                             name="register_client",
-                                             args=["client"],
-                                             kwargs={"_protocol": ""})
-        return performed.addCallback(assert_response)
+        result = self.protocol.callRemote(MethodCall,
+                                          name="register_client",
+                                          args=["client"],
+                                          kwargs={"_protocol": ""})
+        return result.addCallback(assert_response)
 
     def test_send_message(self):
         """
-        The L{SendComponent} command of the L{BrokerServerProtocol} forwards
-        a message for the Landscape server to the broker object of the
-        protocol factory.
+        When sent a L{MethodCall} command with C{send_message} as parameter,
+        the L{BrokerServerProtocol} forwards the request to the L{BrokerServer}
+        instance of its protocol factory.
         """
         message = {"type": "test"}
         self.mstore.set_accepted_types(["test"])
@@ -177,25 +75,85 @@ class BrokerServerProtocolTest(LandscapeTest, MethodCallTestMixin):
             self.assertMessages(self.mstore.get_pending_messages(),
                                 [message])
 
-        performed = self.protocol.callRemote(MethodCall,
-                                             name="send_message",
-                                             args=[message],
-                                             kwargs={"urgent": True})
-        return performed.addCallback(assert_response)
+        result = self.protocol.callRemote(MethodCall,
+                                          name="send_message",
+                                          args=[message],
+                                          kwargs={"urgent": True})
+        return result.addCallback(assert_response)
 
     def test_is_pending_message(self):
         """
-        The L{RegisterComponent} command of the forwards a registration
-        request to the broker object of the protocol factory.
+        When sent a L{MethodCall} command with C{is_pending_message} as
+        parameter, the L{BrokerServerProtocol} forwards the request to
+        the L{BrokerServer} instance of its protocol factory.
         """
+        result = self.protocol.callRemote(MethodCall,
+                                          name="is_message_pending",
+                                          args=[3],
+                                          kwargs={})
+        return self.assertSuccess(result, {"result": False})
 
-        def assert_response(response):
-            self.assertEquals(response, {"result": False})
+    def test_stop_clients(self):
+        """
+        When sent a L{MethodCall} command with C{stop_clients} as parameter,
+        the L{BrokerServerProtocol} forwards the request to the L{BrokerServer}
+        instance of its protocol factory.
+        """
+        result = self.protocol.callRemote(MethodCall,
+                                          name="stop_clients",
+                                          args=[],
+                                          kwargs={})
+        return self.assertSuccess(result, {"result": None})
 
-        performed = self.protocol.callRemote(MethodCall,
-                                             name="is_message_pending",
-                                             args=[3], kwargs={})
-        return performed.addCallback(assert_response)
+    def test_reload_configuration(self):
+        """
+        When sent a L{MethodCall} command with C{reload_configuration} as
+        parameter, the L{BrokerServerProtocol} forwards the request to
+        the L{BrokerServer} instance of its protocol factory.
+        """
+        result = self.protocol.callRemote(MethodCall,
+                                          name="reload_configuration",
+                                          args=[],
+                                          kwargs={})
+        return self.assertSuccess(result, {"result": None})
+
+    def test_register(self):
+        """
+        When sent a L{MethodCall} command with C{register} as parameter,
+        the L{BrokerServerProtocol} forwards the request to the L{BrokerServer}
+        instance of its protocol factory.
+        """
+        result = self.protocol.callRemote(MethodCall,
+                                          name="register",
+                                          args=[],
+                                          kwargs={})
+        return self.assertSuccess(result, {"result": None})
+
+    def test_get_accepted_message_types(self):
+        """
+        When sent a L{MethodCall} command with C{get_accepted_message_types} as
+        parameter, the L{BrokerServerProtocol} forwards the request to the
+        L{BrokerServer} instance of its protocol factory.
+        """
+        result = self.protocol.callRemote(MethodCall,
+                                          name="get_accepted_message_types",
+                                          args=[],
+                                          kwargs={})
+        return self.assertSuccess(result, {"result":
+                                           self.mstore.get_accepted_types()})
+
+    def test_get_server_uuid(self):
+        """
+        When sent a L{MethodCall} command with C{get_server_uuid} as
+        parameter, the L{BrokerServerProtocol} forwards the request to the
+        L{BrokerServer} instance of its protocol factory.
+        """
+        self.mstore.set_server_uuid("abcde")
+        result = self.protocol.callRemote(MethodCall,
+                                          name="get_server_uuid",
+                                          args=[],
+                                          kwargs={})
+        return self.assertSuccess(result, {"result": "abcde"})
 
     def test_register_client_accepted_message_type(self):
         """
@@ -210,22 +168,37 @@ class BrokerServerProtocolTest(LandscapeTest, MethodCallTestMixin):
                 self.exchanger.get_client_accepted_message_types(),
                 sorted(["type"] + DEFAULT_ACCEPTED_TYPES))
 
-        performed = self.protocol.callRemote(MethodCall,
-                                             name="register_client_accepted_"
-                                                  "message_type",
-                                             args=["type"], kwargs={})
-        return performed.addCallback(assert_response)
+        result = self.protocol.callRemote(MethodCall,
+                                          name="register_client_accepted_"
+                                               "message_type",
+                                          args=["type"],
+                                          kwargs={})
+        return result.addCallback(assert_response)
+
+    def test_exit(self):
+        """
+        When sent a L{MethodCall} command with C{exit} as parameter, the
+        L{BrokerServerProtocol} forwards the request to the L{BrokerServer}
+        instance of its protocol factory.
+        """
+        result = self.protocol.callRemote(MethodCall,
+                                          name="exit",
+                                          args=[],
+                                          kwargs={})
+        return self.assertSuccess(result, {"result": None})
 
     def test_method_call_error(self):
         """
         Trying to call an non-exposed broker method results in a failure.
         """
-        performed = self.protocol.callRemote(MethodCall, name="get_clients",
-                                             args=[], kwargs={})
-        return self.assertFailure(performed, MethodCallError)
+        result = self.protocol.callRemote(MethodCall,
+                                          name="get_clients",
+                                          args=[],
+                                          kwargs={})
+        return self.assertFailure(result, MethodCallError)
 
 
-class RemoteBrokerTest(LandscapeTest, MethodCallTestMixin):
+class RemoteBrokerTest(LandscapeTest):
 
     helpers = [RemoteBrokerHelper]
 
@@ -238,48 +211,19 @@ class RemoteBrokerTest(LandscapeTest, MethodCallTestMixin):
         self.remote.client = client
         self.assertIdentical(self.remote._protocol.client, client)
 
-    def test_senders(self):
+    def test_ping(self):
         """
-        The L{BrokerClientProtocol} methods decorated with C{MethodCall.sender}
-        can be used to call methods on the remote broker object.
+        The L{RemoteBroker.ping} method calls the C{ping} method of the
+        remote L{BrokerServer} instance and returns its result with a
+        L{Deferred}.
         """
-        # We need this in order to make the message store happy
-        self.mstore.set_accepted_types(["test"])
-
-        # Mock the remote client's exit methods
-        remote_client_mock = self.mocker.patch(RemoteClient)
-        remote_client_mock.exit()
-        self.mocker.result(succeed(None))
-        self.mocker.count(1, None)
-        self.mocker.replay()
-
-        calls = {"ping": {"result": True},
-                 "register_client": {"args": ["client"]},
-                 "send_message": {"args": [{"type": "test"}],
-                                  "result": int},
-                 "is_message_pending": {"args": [1234567],
-                                        "result": False},
-                 "stop_clients": {},
-                 "reload_configuration": {},
-                 "register": {},
-                 "get_accepted_message_types": {"result": list},
-                 "get_server_uuid": {"result": None},
-                 "register_client_accepted_message_type": {"args": ["test"]},
-                 "exit": {}}
-        performed = []
-        for name in calls:
-            call = calls[name]
-            performed.append(self.assert_sender(self.remote, name,
-                                                   call.get("args", []),
-                                                   call.get("kwargs", {}),
-                                                   call.get("result", None),
-                                                   self.broker))
-        return DeferredList(performed, fireOnOneErrback=True)
+        result = self.remote.ping()
+        return self.assertSuccess(result, True)
 
     def test_register_client(self):
         """
-        The L{BrokerClientProtocol.register_client} method forwards a
-        registration request to the broker object.
+        The L{RemoteBroker.register_client} method forwards a registration
+        request to the remote L{BrokerServer} object.
         """
 
         def assert_result(result):
@@ -290,8 +234,105 @@ class RemoteBrokerTest(LandscapeTest, MethodCallTestMixin):
         sent = self.remote.register_client("client")
         return sent.addCallback(assert_result)
 
+    def test_send_message(self):
+        """
+        The L{RemoteBroker.send_message} method calls the C{send_message}
+        method of the remote L{BrokerServer} instance and returns its result
+        with a L{Deferred}.
+        """
+        message = {"type": "test"}
+        self.mstore.set_accepted_types(["test"])
 
-class BrokerClientProtocolTest(LandscapeTest, MethodCallTestMixin):
+        def assert_response(message_id):
+            self.assertTrue(isinstance(message_id, int))
+            self.assertTrue(self.mstore.is_pending(message_id))
+            self.assertMessages(self.mstore.get_pending_messages(),
+                                [message])
+
+        result = self.remote.send_message(message, urgent=True)
+        return result.addCallback(assert_response)
+
+    def test_is_message_pending(self):
+        """
+        The L{RemoteBroker.is_message_pending} method calls the
+        C{is_message_pending} method of the remote L{BrokerServer} instance
+        and returns its result with a L{Deferred}.
+        """
+        result = self.remote.is_message_pending(1234)
+        return self.assertSuccess(result, False)
+
+    def test_stop_clients(self):
+        """
+        The L{RemoteBroker.stop_clients} method calls the C{stop_clients}
+        method of the remote L{BrokerServer} instance and returns its result
+        with a L{Deferred}.
+        """
+        result = self.remote.stop_clients()
+        return self.assertSuccess(result, None)
+
+    def test_reload_configuration(self):
+        """
+        The L{RemoteBroker.reload_configuration} method calls the
+        C{reload_configuration} method of the remote L{BrokerServer}
+        instance and returns its result with a L{Deferred}.
+        """
+        result = self.remote.reload_configuration()
+        return self.assertSuccess(result, None)
+
+    def test_register(self):
+        """
+        The L{RemoteBroker.register} method calls the C{register} method
+        of the remote L{BrokerServer} instance and returns its result with
+        a L{Deferred}.
+        """
+        result = self.remote.register()
+        return self.assertSuccess(result, None)
+
+    def test_get_accepted_message_types(self):
+        """
+        The L{RemoteBroker.get_accepted_message_types} method calls the
+        C{get_accepted_message_types} method of the remote L{BrokerServer}
+        instance and returns its result with a L{Deferred}.
+        """
+        result = self.remote.get_accepted_message_types()
+        return self.assertSuccess(result, self.mstore.get_accepted_types())
+
+    def test_get_server_uuid(self):
+        """
+        The L{RemoteBroker.get_server_uuid} method calls the C{get_server_uuid}
+        method of the remote L{BrokerServer} instance and returns its result
+        with a L{Deferred}.
+        """
+        self.mstore.set_server_uuid("abcde")
+        result = self.remote.get_server_uuid()
+        return self.assertSuccess(result, "abcde")
+
+    def test_register_client_accepted_message_type(self):
+        """
+        The L{RemoteBroker.register_client_accepted_message_type} method calls
+        the C{register_client_accepted_message_type} method of the remote
+        L{BrokerServer} instance and returns its result with a L{Deferred}.
+        """
+
+        def assert_response(response):
+            self.assertEquals(response, None)
+            self.assertEquals(
+                self.exchanger.get_client_accepted_message_types(),
+                sorted(["type"] + DEFAULT_ACCEPTED_TYPES))
+
+        result = self.remote.register_client_accepted_message_type("type")
+        return result.addCallback(assert_response)
+
+    def test_exit(self):
+        """
+        The L{RemoteBroker.exit} method calls the C{exit} method of the remote
+        L{BrokerServer} instance and returns its result with a L{Deferred}.
+        """
+        result = self.remote.exit()
+        return self.assertSuccess(result, None)
+
+
+class BrokerClientProtocolTest(LandscapeTest):
 
     helpers = [BrokerClientHelper]
 
@@ -309,83 +350,70 @@ class BrokerClientProtocolTest(LandscapeTest, MethodCallTestMixin):
         connected = super(BrokerClientProtocolTest, self).setUp()
         return connected.addCallback(register_client)
 
-    def test_responders(self):
+    def test_ping(self):
         """
-        The L{BrokerClientProtocol} methods decorated with the
-        L{MethodCall.responder} decorator response to the associated AMP
-        commands and call the proper L{BrokerClient} methods.
+        When sent a L{MethodCall} command with C{ping} as parameter, the
+        L{BrokerClientProtocol} forwards the request to the associated
+        L{BrokerClient} instance.
         """
-        calls = {"ping": {"result": True},
-                 "dispatch_message": {"args": [{"type": "test"}],
-                                      "result": False},
-                 "fire_event": {"args": ["event"]},
-                 "exit": {}}
+        result = self.client_protocol.callRemote(MethodCall,
+                                                 name="ping",
+                                                 args=[],
+                                                 kwargs={})
+        return self.assertSuccess(result, {"result": True})
 
-        performed = []
-        for name in calls:
-            call = calls[name]
-            performed.append(self.assert_responder(self.client_protocol,
-                                                   name,
-                                                   call.get("args", []),
-                                                   call.get("kwargs", {}),
-                                                   call.get("result", None),
-                                                   self.client))
-        return DeferredList(performed, fireOnOneErrback=True)
-
-    def test_dispatch_message_with_handler(self):
+    def test_dispatch_message(self):
         """
-        The registered message handlers are properly called when a message
-        is dispatched.
+        When sent a L{MethodCall} command with C{dispatch_message} as
+        parameter, the L{BrokerClientProtocol} forwards the request to
+        the associated L{BrokerClient} instance.
         """
-        calls = []
-
-        def handler(message):
-            self.assertEquals(message, {"type": "test"})
-            calls.append(True)
+        handler = self.mocker.mock()
+        handler({"type": "test"})
+        self.mocker.replay()
 
         def dispatch_message(ignored):
-
-            def assert_response(response):
-                self.assertEquals(response, {"result": True})
-                self.assertEquals(calls, [True])
-
-            sent = self.client_protocol.callRemote(MethodCall,
+            result = self.client_protocol.callRemote(MethodCall,
                                                    name="dispatch_message",
                                                    args=[{"type": "test"}],
                                                    kwargs={})
-            return sent.addCallback(assert_response)
+            return self.assertSuccess(result, {"result": True})
 
         # We need to register a test message handler to let the dispatch
         # message method call succeed
         registered = self.client.register_message("test", handler)
         return registered.addCallback(dispatch_message)
 
-    def test_fire_event_with_args(self):
+    def test_fire_event(self):
         """
-        The C{fire_event} method call fires the registered handlers with
-        the correct arguments.
+        When sent a L{MethodCall} command with C{fire_event} as parameter,
+        the L{BrokerClientProtocol} forwards the request to the associated
+        L{BrokerClient} instance.
         """
-
-        calls = []
-
-        def callback(arg, kwarg=1):
-            self.assertEquals(arg, True)
-            self.assertEquals(kwarg, 2)
-            calls.append(True)
-
-        def assert_response(response):
-            self.assertEquals(response, {"result": None})
-            self.assertEquals(calls, [True])
-
+        callback = self.mocker.mock()
+        callback(True, kwarg=2)
+        self.mocker.replay()
         self.reactor.call_on("event", callback)
-        fired = self.client_protocol.callRemote(MethodCall,
-                                                name="fire_event",
-                                                args=["event", True],
-                                                kwargs={"kwarg": 2})
-        return fired.addCallback(assert_response)
+        result = self.client_protocol.callRemote(MethodCall,
+                                                 name="fire_event",
+                                                 args=["event", True],
+                                                 kwargs={"kwarg": 2})
+        return self.assertSuccess(result, {"result": None})
+
+    def test_exit(self):
+        """
+        When sent a L{MethodCall} command with C{exit} as parameter, the
+        L{BrokerClientProtocol} forwards the request to the associated
+        L{BrokerClient} instance.
+        """
+        result = self.client_protocol.callRemote(MethodCall,
+                                                 name="exit",
+                                                 args=[],
+                                                 kwargs={})
+        return self.assertSuccess(result, {"result": None})
 
 
-class RemoteClientTest(LandscapeTest, MethodCallTestMixin):
+class RemoteClientTest(LandscapeTest):
 
     helpers = [BrokerClientHelper]
 
@@ -403,50 +431,43 @@ class RemoteClientTest(LandscapeTest, MethodCallTestMixin):
         connected = super(RemoteClientTest, self).setUp()
         return connected.addCallback(register_client)
 
-    def test_senders(self):
+    def test_dispatch_message(self):
         """
-        The L{RemoteClient} methods decorated with the L{MethodCall.sender}
-        decorator send the appropriate L{MethodCall} command, which eventually
-        calls the proper L{BrokerClient} methods.
+        The L{RemoteClient.dispatch_message} method calls the
+        C{dispatch_message} method of the remote L{BrokerClient} instance and
+        returns its result with a L{Deferred}.
         """
-        calls = {"ping": {"result": True},
-                 "dispatch_message": {"args": [{"type": "test"}],
-                                      "result": False},
-                 "fire_event": {"args": ["event"]},
-                 "exit": {}}
-
-        performed = []
-        for name in calls:
-            call = calls[name]
-            performed.append(self.assert_sender(self.remote_client,
-                                                name,
-                                                call.get("args", []),
-                                                call.get("kwargs", {}),
-                                                call.get("result", None),
-                                                self.client))
-        return DeferredList(performed, fireOnOneErrback=True)
-
-    def test_dispatch_message_with_handler(self):
-        """
-        The registered message handlers are properly called when a message
-        is dispatched.
-        """
-        calls = []
-
-        def handler(message):
-            self.assertEquals(message, {"type": "test"})
-            calls.append(True)
+        handler = self.mocker.mock()
+        handler({"type": "test"})
+        self.mocker.replay()
 
         def dispatch_message(ignored):
 
-            def assert_response(response):
-                self.assertEquals(response, True)
-                self.assertEquals(calls, [True])
-
-            sent = self.remote_client.dispatch_message({"type": "test"})
-            return sent.addCallback(assert_response)
+            result = self.remote_client.dispatch_message({"type": "test"})
+            return self.assertSuccess(result, True)
 
         # We need to register a test message handler to let the dispatch
         # message method call succeed
         registered = self.client.register_message("test", handler)
         return registered.addCallback(dispatch_message)
+
+    def test_fire_event(self):
+        """
+        The L{RemoteClient.fire_event} method calls the C{fire_event} method of
+        the remote L{BrokerClient} instance and returns its result with a
+        L{Deferred}.
+        """
+        callback = self.mocker.mock()
+        callback(True, kwarg=2)
+        self.mocker.replay()
+        self.reactor.call_on("event", callback)
+        result = self.remote_client.fire_event("event", True, kwarg=2)
+        return self.assertSuccess(result, None)
+
+    def test_exit(self):
+        """
+        The L{RemoteClient.exit} method calls the C{exit} method of the remote
+        L{BrokerClient} instance and returns its result with a L{Deferred}.
+        """
+        result = self.remote_client.exit()
+        return self.assertSuccess(result, None)
