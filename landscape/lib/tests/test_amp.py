@@ -7,6 +7,7 @@ from twisted.protocols.amp import AMP
 from landscape.lib.amp import MethodCallError, MethodCall, get_nested_attr
 from landscape.tests.helpers import LandscapeTest
 
+
 class Words(object):
 
     def empty(self):
@@ -366,7 +367,7 @@ class MethodCallSenderTest(LandscapeTest):
         """
         The return value of a L{MethodCall} argument can be a boolean.
         """
-        return self.assertSuccess(self.words.is_short("hi"))
+        return self.assertSuccess(self.words.is_short("hi"), True)
 
     def test_concatenate(self):
         """

@@ -84,10 +84,7 @@ class MethodCall(Command):
             result = object_method(*args, **kwargs)
 
             # Return an AMP response to be delivered to the remote caller
-            if not cls.response:
-                return {}
-            else:
-                return {"result": result}
+            return {"result": result}
 
         return CommandLocator._currentClassCommands.append(
             (MethodCall, call_method))
@@ -136,10 +133,7 @@ class MethodCall(Command):
             method_call_kwargs.update(protocol_attributes_kwargs)
 
             def unpack_response(response):
-                if not cls.response:
-                    return None
-                else:
-                    return response["result"]
+                return response["result"]
 
             sent = self._protocol.callRemote(MethodCall,
                                              name=method_call_name,
