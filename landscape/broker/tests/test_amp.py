@@ -1,5 +1,3 @@
-from twisted.internet.defer import DeferredList
-
 from landscape.lib.amp import MethodCall, MethodCallError
 from landscape.broker.amp import (
     BrokerServerProtocol, BrokerServerProtocolFactory)
@@ -155,7 +153,6 @@ class BrokerServerProtocolTest(LandscapeTest):
                                           args=[],
                                           kwargs={})
         return self.assertSuccess(result, {"result": "abcde"})
-
 
     def test_register_client_accepted_message_type(self):
         """
