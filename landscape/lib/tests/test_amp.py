@@ -299,7 +299,8 @@ class MethodCallResponderTest(LandscapeTest):
 
     def test_secret(self):
         """
-        If the decorated protocl method returns C{None}, an exception is rasied.
+        If the decorated protocl method returns C{None}, an exception is
+        raised.
         """
         result = self.protocol.callRemote(MethodCall,
                                           name="secret",
