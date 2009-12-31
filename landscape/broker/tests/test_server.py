@@ -70,8 +70,7 @@ class BrokerServerTest(LandscapeTest):
         self.broker.register_client("bar", None)
         for client in self.broker.get_clients():
             client.exit = self.mocker.mock()
-            client.exit()
-            self.mocker.result(succeed(None))
+            self.expect(client.exit()).result(succeed(None))
         self.mocker.replay()
         return self.assertSuccess(self.broker.stop_clients())
 
@@ -84,8 +83,10 @@ class BrokerServerTest(LandscapeTest):
         self.broker.register_client("foo", None)
         self.broker.register_client("bar", None)
         [client1, client2] = self.broker.get_clients()
-        client1.exit = self.makeCallableMock(result=succeed(None))
-        client2.exit = self.makeCallableMock(result=fail(Exception()))
+        client1.exit = self.mocker.mock()
+        client2.exit = self.mocker.mock()
+        self.expect(client1.exit()).result(succeed(None))
+        self.expect(client2.exit()).result(fail(Exception()))
         self.mocker.replay()
         return self.assertFailure(self.broker.stop_clients(), Exception)
 
@@ -96,8 +97,9 @@ class BrokerServerTest(LandscapeTest):
         """
         open(self.config_filename, "a").write("computer_title = New Title")
         result = self.broker.reload_configuration()
-        return self.assertEventuallyEquals(result, self.config.computer_title,
-                                           "New Title")
+        result.addCallback(lambda x: self.assertEquals(
+            self.config.computer_title, "New Title"))
+        return result
 
     def test_reload_configuration_stops_clients(self):
         """
@@ -107,7 +109,8 @@ class BrokerServerTest(LandscapeTest):
         self.broker.register_client("foo", None)
         self.broker.register_client("bar", None)
         for client in self.broker.get_clients():
-            client.exit = self.makeCallableMock(result=succeed(None))
+            client.exit = self.mocker.mock()
+            self.expect(client.exit()).result(succeed(None))
         self.mocker.replay()
         return self.assertSuccess(self.broker.reload_configuration())
 
@@ -171,7 +174,8 @@ class BrokerServerTest(LandscapeTest):
         self.broker.register_client("foo", None)
         self.broker.register_client("bar", None)
         for client in self.broker.get_clients():
-            client.exit = self.makeCallableMock(result=succeed(None))
+            client.exit = self.mocker.mock()
+            self.expect(client.exit()).result(succeed(None))
         self.mocker.replay()
         return self.assertSuccess(self.broker.exit())
 
@@ -182,8 +186,10 @@ class BrokerServerTest(LandscapeTest):
         """
         self.broker.register_client("foo", None)
         [client] = self.broker.get_clients()
-        client.exit = self.makeCallableMock(result=fail(ZeroDivisionError()))
-        post_exit = self.makeCallableMock()
+        client.exit = self.mocker.mock()
+        post_exit = self.mocker.mock()
+        self.expect(client.exit()).result(fail(ZeroDivisionError()))
+        post_exit()
         self.mocker.replay()
         self.reactor.call_on("post-exit", post_exit)
         return self.assertSuccess(self.broker.exit())
@@ -196,9 +202,12 @@ class BrokerServerTest(LandscapeTest):
         self.broker.register_client("foo", None)
         [client] = self.broker.get_clients()
         self.mocker.order()
-        pre_exit = self.makeCallableMock()
-        client.exit = self.makeCallableMock(result=fail(ZeroDivisionError()))
-        post_exit = self.makeCallableMock()
+        pre_exit = self.mocker.mock()
+        client.exit = self.mocker.mock()
+        post_exit = self.mocker.mock()
+        pre_exit()
+        self.expect(client.exit()).result(fail(ZeroDivisionError()))
+        post_exit()
         self.mocker.replay()
         self.reactor.call_on("pre-exit", pre_exit)
         self.reactor.call_on("post-exit", post_exit)
