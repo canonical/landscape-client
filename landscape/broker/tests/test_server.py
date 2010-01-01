@@ -1,8 +1,7 @@
 from twisted.internet.defer import succeed, fail
 
 from landscape.broker.amp import RemoteClient
-from landscape.tests.helpers import (
-    LandscapeTest, DEFAULT_ACCEPTED_TYPES, TestSpy, spy)
+from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
 from landscape.broker.tests.helpers import (
     BrokerServerHelper, BrokerClientHelper)
 
@@ -286,10 +285,11 @@ class EventTest(LandscapeTest):
 
     def test_broker_started(self):
         """
-        The L{BrokerServer.broker_started} method broadcasts a C{broker_started}
-        event to all connected clients, which makes them re-registered any
-        previously registered accepted message type.
+        The L{BrokerServer.broker_started} method broadcasts a
+        C{broker_started} event to all connected clients, which makes them
+        re-registered any previously registered accepted message type.
         """
+
         def assert_broker_started(ignored):
             self.remote.register_client_accepted_message_type = \
                                                         self.mocker.mock()
@@ -302,7 +302,7 @@ class EventTest(LandscapeTest):
 
     def test_server_uuid_changed(self):
         """
-        The L{BrokerServer.server_uuid_changed} method broadcasts an
+        The L{BrokerServer.server_uuid_changed} method broadcasts a
         C{server_uuid_changed} event to all connected clients.
         """
         callback = self.mocker.mock()
@@ -314,8 +314,8 @@ class EventTest(LandscapeTest):
 
     def test_message_type_acceptance_changed(self):
         """
-        The L{BrokerServer.message_type_acceptance_changed} method broadcasts an
-        C{message_type_acceptance_changed} event to all connected clients.
+        The L{BrokerServer.message_type_acceptance_changed} method broadcasts
+        a C{message_type_acceptance_changed} event to all connected clients.
         """
         callback = self.mocker.mock()
         callback("type", True)
