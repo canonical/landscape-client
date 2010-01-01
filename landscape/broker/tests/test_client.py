@@ -1,8 +1,7 @@
-from twisted.internet.defer import Deferred
 from landscape.lib.twisted_util import gather_results
-from landscape.tests.helpers import (
-    LandscapeTest, DEFAULT_ACCEPTED_TYPES, TestSpy, spy)
+from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
 from landscape.broker.tests.helpers import BrokerClientHelper
+from landscape.broker.client import BrokerClientPlugin
 
 
 class BrokerClientTest(LandscapeTest):
@@ -20,31 +19,42 @@ class BrokerClientTest(LandscapeTest):
         The L{BrokerClient.register_plugin} method registers a new plugin
         plugin, and calls the plugin's C{register} method.
         """
-        plugin = TestSpy()
+        plugin = BrokerClientPlugin()
         self.client.register_plugin(plugin)
-        spy.replay(plugin)
-        self.assertEquals(spy.history(plugin),
-                          [plugin.register(self.client)])
+        self.assertIs(plugin.client, self.client)
 
     def test_get_plugins(self):
         """
         The L{BrokerClient.get_plugins} method returns a list
         of registered plugins.
         """
-        plugin1 = TestSpy()
-        plugin2 = TestSpy()
-        self.client.register_plugin(plugin1)
-        self.client.register_plugin(plugin2)
-        self.assertEquals(self.client.get_plugins(), [plugin1, plugin2])
+        plugins = [BrokerClientPlugin(), BrokerClientPlugin()]
+        self.client.register_plugin(plugins[0])
+        self.client.register_plugin(plugins[1])
+        self.assertEquals(self.client.get_plugins(), plugins)
 
     def test_get_named_plugin(self):
         """
         If a plugin has a C{plugin_name} attribute, it is possible to look it
         up by name after adding it to the L{BrokerClient}.
         """
-        plugin = TestSpy(plugin_name="foo")
+        plugin = BrokerClientPlugin()
+        plugin.plugin_name = "foo"
         self.client.register_plugin(plugin)
         self.assertEquals(self.client.get_plugin("foo"), plugin)
+
+    def test_run_interval(self):
+        """
+        If a plugin has a C{run} method, the reactor will call it every
+        C{run_interval} seconds.
+        """
+        plugin = BrokerClientPlugin()
+        plugin.run = self.mocker.mock()
+        self.expect(plugin.run()).count(2)
+        self.mocker.replay()
+        self.client.register_plugin(plugin)
+        self.reactor.advance(plugin.run_interval)
+        self.reactor.advance(plugin.run_interval)
 
     def test_register_message(self):
         """
@@ -66,15 +76,13 @@ class BrokerClientTest(LandscapeTest):
         C{BrokerClient.dispatch_message} calls a previously-registered message
         handler.
         """
-        history = []
-
-        def handle_message(message):
-            history.append(message)
+        message = {"type": "foo"}
+        handle_message = self.mocker.mock()
+        handle_message(message)
+        self.mocker.replay()
 
         def dispatch_message(result):
-            message = {"type": "foo"}
             self.assertTrue(self.client.dispatch_message(message))
-            self.assertEquals(history, [message])
 
         result = self.client.register_message("foo", handle_message)
         return result.addCallback(dispatch_message)
@@ -84,13 +92,15 @@ class BrokerClientTest(LandscapeTest):
         C{BrokerClient.dispatch_message} gracefully logs exceptions raised
         by message handlers.
         """
+        message = {"type": "foo"}
+        handle_message = self.mocker.mock()
+        handle_message(message)
+        self.mocker.throw(ZeroDivisionError)
+        self.mocker.replay()
+
         self.log_helper.ignore_errors("Error running message handler.*")
 
-        def handle_message(message):
-            raise ZeroDivisionError
-
         def dispatch_message(result):
-            message = {"type": "foo"}
             self.assertTrue(self.client.dispatch_message(message))
             self.assertTrue("Error running message handler for type 'foo'" in
                             self.logfile.getvalue())
@@ -98,7 +108,7 @@ class BrokerClientTest(LandscapeTest):
         result = self.client.register_message("foo", handle_message)
         return result.addCallback(dispatch_message)
 
-    def test_dispatch_nonexistent_message(self):
+    def test_dispatch_message_with_no_handler(self):
         """
         C{BrokerClient.dispatch_message} return C{False} if no handler was
         found for the given message.
@@ -110,26 +120,21 @@ class BrokerClientTest(LandscapeTest):
         The L{BrokerClient.exchange} method calls C{exchange} on all
         plugins, if available.
         """
-        plugin = TestSpy(plugin_name="test")
-        self.assertTrue(hasattr(plugin, "exchange"))
+        plugin = BrokerClientPlugin()
+        plugin.exchange = self.mocker.mock()
+        plugin.exchange()
+        self.mocker.replay()
         self.client.register_plugin(plugin)
-        spy.clear(plugin)
         self.client.exchange()
-        spy.replay(plugin)
-        self.assertEquals(spy.history(plugin), [plugin.exchange()])
 
     def test_exchange_on_plugin_without_exchange_method(self):
         """
         The L{BrokerClient.exchange} method ignores plugins without
         an C{exchange} method.
         """
-        plugin = TestSpy(plugin_name="test")
-        spy.blacklist(plugin, "exchange")
+        plugin = BrokerClientPlugin()
         self.assertFalse(hasattr(plugin, "exchange"))
-        self.client.register_plugin(plugin)
-        spy.clear(plugin)
         self.client.exchange()
-        self.assertEquals(spy.history(plugin), [])
 
     def test_exchange_logs_errors_and_continues(self):
         """
@@ -137,29 +142,31 @@ class BrokerClientTest(LandscapeTest):
         logged and other plugins are processed.
         """
         self.log_helper.ignore_errors(ZeroDivisionError)
-        plugin1 = TestSpy(plugin_name="foo", exchange=lambda: 1 / 0)
-        plugin2 = TestSpy(plugin_name="bar")
+        plugin1 = BrokerClientPlugin()
+        plugin2 = BrokerClientPlugin()
+        plugin1.exchange = self.mocker.mock()
+        plugin2.exchange = self.mocker.mock()
+        self.expect(plugin1.exchange()).throw(ZeroDivisionError)
+        plugin2.exchange()
+        self.mocker.replay()
         self.client.register_plugin(plugin1)
         self.client.register_plugin(plugin2)
-        spy.clear(plugin2)
         self.client.exchange()
         self.assertTrue("Error during plugin exchange" in
                         self.logfile.getvalue())
         self.assertTrue("ZeroDivisionError" in self.logfile.getvalue())
-        spy.replay(plugin2)
-        self.assertEquals(spy.history(plugin2), [plugin2.exchange()])
 
     def test_notify_exchange(self):
         """
         The L{BrokerClient.notify_exchange} method calls C{exchange} on all
         plugins and logs the event.
         """
-        plugin = TestSpy(plugin_name="test")
+        plugin = BrokerClientPlugin()
+        plugin.exchange = self.mocker.mock()
+        plugin.exchange()
+        self.mocker.replay()
         self.client.register_plugin(plugin)
-        spy.clear(plugin)
         self.client.notify_exchange()
-        spy.replay(plugin)
-        self.assertEquals(spy.history(plugin), [plugin.exchange()])
         self.assertTrue("Got notification of impending exchange. "
                         "Notifying all plugins." in self.logfile.getvalue())
 
@@ -168,25 +175,22 @@ class BrokerClientTest(LandscapeTest):
         The L{BrokerClient.fire_event} method makes the reactor fire the
         given event.
         """
-        calls = []
-        self.reactor.call_on("event", lambda: calls.append(True))
+        callback = self.mocker.mock()
+        callback()
+        self.mocker.replay()
+        self.reactor.call_on("event", callback)
         self.client.fire_event("event")
-        self.assertEquals(calls, [True])
 
     def test_fire_event_with_arguments(self):
         """
         The L{BrokerClient.fire_event} accepts optional arguments and keyword
         arguments to pass to the registered callback.
         """
-        calls = []
-        def callback(arg, kwarg=1):
-            self.assertEquals(arg, True)
-            self.assertEquals(kwarg, 2)
-            calls.append(True)
-        
+        callback = self.mocker.mock()
+        callback(True, kwarg=2)
+        self.mocker.replay()
         self.reactor.call_on("event", callback)
         self.client.fire_event("event", True, kwarg=2)
-        self.assertEquals(calls, [True])
 
     def test_broker_started(self):
         """
@@ -195,27 +199,21 @@ class BrokerClientTest(LandscapeTest):
         """
         result1 = self.client.register_message("foo", lambda m: None)
         result2 = self.client.register_message("bar", lambda m: None)
-        types = []
-        d = Deferred()
-
-        def register_client_accepted_message_type(type):
-            types.append(type)
-            if len(types) == 2:
-                d.callback(types)
 
         def got_result(result):
-            self.client.broker.register_client_accepted_message_type = \
-                 register_client_accepted_message_type
+            self.client.broker = self.mocker.mock()
+            self.client.broker.register_client_accepted_message_type("foo")
+            self.client.broker.register_client_accepted_message_type("bar")
+            self.mocker.replay()
             self.client.broker_started()
-            return d.addCallback(self.assertEquals, ["foo", "bar"])
+
         return gather_results([result1, result2]).addCallback(got_result)
 
     def test_exit(self):
         """
         The L{BrokerClient.exit} method causes the reactor to be stopped.
         """
-        self.client.reactor = TestSpy()
+        self.client.reactor = self.mocker.mock()
+        self.client.reactor.stop()
+        self.mocker.replay()
         self.client.exit()
-        spy.replay(self.client.reactor)
-        self.assertEquals(spy.history(self.client.reactor),
-                          [self.client.reactor.stop()])

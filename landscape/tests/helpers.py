@@ -442,61 +442,6 @@ class StandardIOHelper(object):
         sys.stdin = test_case.old_stdin
 
 
-class TestSpy(object):
-
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
-        self._replay_mode = False
-        self._blacklist = set()
-        self._responses = {}
-        self._history = []
-
-    def __getattr__(self, name):
-        if name in self._blacklist:
-            raise AttributeError()
-        if name in self.__dict__:
-            return self.__dict__[name]
-        if self._replay_mode:
-            return self.__dict__.get(name, partial(self._stringify_call, name))
-        return self.__dict__.get(name, partial(self._log_call, name))
-
-    def __setattr__(self, name, value):
-        self.__dict__[name] = value
-
-    def _log_call(self, name, *args, **kwargs):
-        function_call = self._stringify_call(name, *args, **kwargs)
-        self._history.append(function_call)
-        return self._responses.get(function_call)
-
-    def _stringify_call(self, name, *args, **kwargs):
-        arguments = [str(arg) for arg in args]
-        arguments.extend(
-            "%s=%s" % (item[0], item[1]) for item in kwargs.iteritems())
-        return "%s(%s)" % (name, ", ".join(arguments))
-
-
-class TestSpyController(object):
-
-    def blacklist(self, spy, name):
-        spy._blacklist.add(name)
-
-    def respond(self, spy, value, name, *args, **kwargs):
-        function_call = spy._stringify_call(name, *args, **kwargs)
-        spy._responses[function_call] = value
-
-    def history(self, spy):
-        return spy._history
-
-    def clear(self, spy):
-        spy._history = []
-
-    def replay(self, *args):
-        for spy in args:
-            spy._replay_mode = True
-
-spy = TestSpyController()
-
-
 class MockCoverageMonitor(object):
 
     def __init__(self, count=None, expected_count=None, percent=None,

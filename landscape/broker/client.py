@@ -3,6 +3,28 @@ from logging import info, exception
 from landscape.log import format_object
 
 
+class BrokerClientPlugin(object):
+    """A convenience for writing L{BrokerClient} plugins.
+
+    This provides a register method which will set up a bunch of
+    reactor handlers in the idiomatic way.
+
+    If C{run} is defined on subclasses, it will be called every C{run_interval}
+    seconds after being registered.
+
+    @cvar run_interval: The interval, in seconds, to execute the
+    C{run} method. If set to C{None}, then C{run} will not be
+    scheduled.
+    """
+
+    run_interval = 5
+
+    def register(self, client):
+        self.client = client
+        if hasattr(self, "run") and self.run_interval is not None:
+            self.client.reactor.call_every(self.run_interval, self.run)
+
+
 class BrokerClient(object):
     """Basic plugin registry for clients that have to deal with the broker.
 
