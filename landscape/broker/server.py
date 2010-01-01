@@ -7,8 +7,10 @@ def event(method):
 
     When the decorated method is called, an event with the same name
     as the decorated method is fired on all connected clients.
+
+    @note: Any underscore in the method name will be replaced with a dash.
     """
-    event_type = method.__name__
+    event_type = method.__name__.replace("_", "-")
 
     def broadcast_event(self, *args, **kwargs):
         fired = []

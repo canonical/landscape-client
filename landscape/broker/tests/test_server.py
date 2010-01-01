@@ -241,7 +241,7 @@ class EventTest(LandscapeTest):
     def test_impending_exchange(self):
         """
         The L{BrokerServer.impending_exchange} method broadcasts an
-        C{impending_exchange} event to all connected clients.
+        C{impending-exchange} event to all connected clients.
         """
         plugin = self.mocker.mock()
         plugin.register(self.client)
@@ -253,40 +253,40 @@ class EventTest(LandscapeTest):
     def test_exchange_failed(self):
         """
         The L{BrokerServer.exchange_failed} method broadcasts an
-        C{exchange_failed} event to all connected clients.
+        C{exchange-failed} event to all connected clients.
         """
         callback = self.mocker.mock()
         callback()
         self.mocker.replay()
-        self.reactor.call_on("exchange_failed", callback)
+        self.reactor.call_on("exchange-failed", callback)
         return self.assertSuccess(self.broker.exchange_failed(), [None])
 
     def test_registration_done(self):
         """
         The L{BrokerServer.registration_done} method broadcasts a
-        C{registration_done} event to all connected clients.
+        C{registration-done} event to all connected clients.
         """
         callback = self.mocker.mock()
         callback()
         self.mocker.replay()
-        self.reactor.call_on("registration_done", callback)
+        self.reactor.call_on("registration-done", callback)
         return self.assertSuccess(self.broker.registration_done(), [None])
 
     def test_registration_failed(self):
         """
         The L{BrokerServer.registration_failed} method broadcasts a
-        C{registration_failed} event to all connected clients.
+        C{registration-failed} event to all connected clients.
         """
         callback = self.mocker.mock()
         callback()
         self.mocker.replay()
-        self.reactor.call_on("registration_failed", callback)
+        self.reactor.call_on("registration-failed", callback)
         return self.assertSuccess(self.broker.registration_failed(), [None])
 
     def test_broker_started(self):
         """
         The L{BrokerServer.broker_started} method broadcasts a
-        C{broker_started} event to all connected clients, which makes them
+        C{broker-started} event to all connected clients, which makes them
         re-registered any previously registered accepted message type.
         """
 
@@ -308,18 +308,18 @@ class EventTest(LandscapeTest):
         callback = self.mocker.mock()
         callback(None, "abc")
         self.mocker.replay()
-        self.reactor.call_on("server_uuid_changed", callback)
+        self.reactor.call_on("server-uuid-changed", callback)
         return self.assertSuccess(self.broker.server_uuid_changed(None, "abc"),
                                   [None])
 
     def test_message_type_acceptance_changed(self):
         """
         The L{BrokerServer.message_type_acceptance_changed} method broadcasts
-        a C{message_type_acceptance_changed} event to all connected clients.
+        a C{message-type-acceptance-changed} event to all connected clients.
         """
         callback = self.mocker.mock()
         callback("type", True)
         self.mocker.replay()
-        self.reactor.call_on("message_type_acceptance_changed", callback)
+        self.reactor.call_on("message-type-acceptance-changed", callback)
         return self.assertSuccess(
             self.broker.message_type_acceptance_changed("type", True), [None])
