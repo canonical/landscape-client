@@ -84,6 +84,11 @@ class BrokerConfiguration(Configuration):
         """Get the path to the message store."""
         return os.path.join(self.data_path, "messages")
 
+    @property
+    def socket_path(self):
+        """Get the path to the broker Unix socket."""
+        return os.path.join(self.data_path, "broker.sock")
+
     def load(self, args, accept_nonexistent_config=False):
         """
         Load options from command line arguments and a config file.
