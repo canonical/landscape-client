@@ -6,6 +6,7 @@ from landscape.log import format_object
 from landscape.plugin import Plugin, BrokerClientPluginRegistry, BrokerPlugin
 from landscape.manager.store import ManagerStore
 from landscape.lib.dbus_util import method
+from landscape.broker.client import BrokerClient
 
 # Protocol messages! Same constants are defined in the server.
 FAILED = 5
@@ -74,3 +75,13 @@ class ManagerPlugin(Plugin):
         if text:
             operation_result["result-text"] = text
         return self.registry.broker.send_message(operation_result, urgent=True)
+
+
+class Manager(BrokerClient):
+    """Central point of integration for the Landscape Manager."""
+
+    def __init__(self, broker, reactor, config):
+        super(Manager, self).__init__(broker, reactor)
+        self.reactor = reactor
+        self.config = config
+        self.store = ManagerStore(self.config.store_filename)

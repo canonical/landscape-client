@@ -3,11 +3,13 @@ from twisted.internet.defer import Deferred
 from landscape.manager.deployment import ManagerService, ManagerConfiguration
 from landscape.manager.manager import (
     ManagerPlugin, ManagerDBusObject, SUCCEEDED, FAILED)
+from landscape.manager.store import ManagerStore
 
 from landscape.lib.dbus_util import get_object
 
 from landscape.tests.helpers import (
     LandscapeTest, LandscapeIsolatedTest, ManagerHelper)
+from landscape.manager.tests.helpers import ManagerHelper as ManagerHelper_
 
 
 class PluginOperationResultTest(LandscapeTest):
@@ -103,3 +105,33 @@ class ManagerDBusObjectTest(LandscapeIsolatedTest):
         self.mocker.replay()
         self.dbus_object.exit()
         return result
+
+
+class ManagerTest(LandscapeTest):
+
+    helpers = [ManagerHelper_]
+
+    def test_reactor(self):
+        """
+        A L{Manager} instance has a proper C{reactor} attribute.
+        """
+        self.assertIs(self.manager.reactor, self.reactor)
+
+    def test_broker(self):
+        """
+        A L{Manager} instance has a proper C{broker} attribute referencing
+        a connected L{RemoteBroker}.
+        """
+        return self.assertSuccess(self.manager.broker.ping(), True)
+
+    def test_config(self):
+        """
+        A L{Manager} instance has a proper C{config} attribute.
+        """
+        self.assertIs(self.manager.config, self.config)
+
+    def test_store(self):
+        """
+        A L{Manager} instance has a proper C{store} attribute.
+        """
+        self.assertTrue(isinstance(self.manager.store, ManagerStore))
