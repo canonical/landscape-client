@@ -1,3 +1,5 @@
+from twisted.internet.error import ConnectionDone
+
 from landscape.lib.amp import MethodCall, MethodCallError
 from landscape.broker.amp import (
     BrokerServerProtocol, BrokerServerProtocolFactory)
@@ -330,6 +332,15 @@ class RemoteBrokerTest(LandscapeTest):
         """
         result = self.remote.exit()
         return self.assertSuccess(result, None)
+
+    def test_disconnect(self):
+        """
+        The L{RemoteBroker.disconnect} method closes the connection with
+        the broker server.
+        """
+        self.remote.disconnect()
+        result = self.remote.ping()
+        return self.assertFailure(result, ConnectionDone)
 
 
 class BrokerClientProtocolTest(LandscapeTest):

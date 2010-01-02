@@ -72,8 +72,8 @@ class BrokerService(LandscapeService):
     def startService(self):
         """Start the broker.
 
-        Create a L{BrokerServer} listening on C{socket_path} for clients
-        connecting with the L{BrokerClientProtocol}, and start the
+        Create a L{BrokerServer} listening on C{broker_socket_filename} for
+        clients connecting with the L{BrokerClientProtocol}, and start the
         L{MessageExchange} and L{Pinger} services.
         """
         super(BrokerService, self).startService()
@@ -81,7 +81,7 @@ class BrokerService(LandscapeService):
                                    self.registration, self.message_store)
         self.factory = BrokerServerProtocolFactory(self.broker)
         self.port = self.reactor._reactor.listenUNIX(
-            self.config.socket_path, self.factory)
+            self.config.broker_socket_filename, self.factory)
         self.exchanger.start()
         self.pinger.start()
 

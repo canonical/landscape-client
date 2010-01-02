@@ -15,6 +15,7 @@ from landscape.broker.server import BrokerServer
 from landscape.broker.amp import (
     BrokerServerProtocolFactory, RemoteBroker, BrokerClientProtocol)
 from landscape.broker.client import BrokerClient
+from landscape.broker.service import BrokerService
 
 
 class BrokerConfigurationHelper(object):
@@ -178,3 +179,44 @@ class BrokerClientHelper(RemoteBrokerHelper):
 
         connected = super(BrokerClientHelper, self).set_up(test_case)
         return connected.addCallback(set_broker_client)
+
+
+class BrokerServiceHelper(object):
+    """
+    The following attributes will be set in your test case:
+      - broker_service: A started C{BrokerService}.
+      - remote: A C{RemoteBroker} object connected to the broker server.
+    """
+
+    def set_up(self, test_case):
+        data_path = test_case.makeDir()
+        log_dir = test_case.makeDir()
+        test_case.config_filename = test_case.makeFile(
+            "[client]\n"
+            "url = http://localhost:91919\n"
+            "computer_title = Some Computer\n"
+            "account_name = some_account\n"
+            "ping_url = http://localhost:91910\n"
+            "data_path = %s\n"
+            "log_dir = %s\n" % (data_path, log_dir))
+
+        bootstrap_list.bootstrap(data_path=data_path, log_dir=log_dir)
+
+        config = BrokerConfiguration()
+        config.load(["-c", test_case.config_filename])
+
+        class FakeBrokerService(BrokerService):
+            reactor_factory = FakeReactor
+            transport_factory = FakeTransport
+
+        test_case.broker_service = FakeBrokerService(config)
+        test_case.broker_service.startService()
+
+        connector = ClientCreator(reactor, BrokerClientProtocol)
+        connected = connector.connectUNIX(config.broker_socket_filename)
+        return connected.addCallback(lambda protocol: setattr(
+            test_case, "remote", RemoteBroker(protocol)))
+
+    def tear_down(self, test_case):
+        test_case.broker_service.stopService()
+        test_case.remote.disconnect()
