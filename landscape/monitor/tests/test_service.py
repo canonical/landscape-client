@@ -70,9 +70,11 @@ class MonitorServiceTest(LandscapeTest):
     def test_stop_service(self):
         """
         The L{MonitorService.stopService} method flushes the data before
-        shutting down the monitor.
+        shutting down the monitor, and closes the connection with the broker.
         """
         self.service.monitor = self.mocker.mock()
         self.service.monitor.flush()
+        self.service.broker = self.mocker.mock()
+        self.service.broker.disconnect()
         self.mocker.replay()
         self.service.stopService()
