@@ -55,3 +55,58 @@ class RemoteClient(object):
     def exit(self):
         """Placeholder to make tests pass, it will be replaced later."""
         return succeed(None)
+
+
+class RemoteBroker(object):
+    """A connected broker utilizing features provided by a L{BrokerServer}."""
+
+    def __init__(self, protocol):
+        """
+        @param protocol: A L{BrokerServerProtocol} connection with a remote
+            broker server.
+        """
+        self._protocol = protocol
+
+    @MethodCall.sender
+    def ping(self):
+        """@see L{BrokerServer.ping}"""
+
+    @MethodCall.sender
+    def register_client(self, name, _protocol=""):
+        """@see L{BrokerServer.register_client}"""
+
+    @MethodCall.sender
+    def send_message(self, message, urgent):
+        """@see L{BrokerServer.send_message}"""
+
+    @MethodCall.sender
+    def is_message_pending(self, message_id):
+        """@see L{BrokerServer.is_message_pending}"""
+
+    @MethodCall.sender
+    def stop_clients(self):
+        """@see L{BrokerServer.stop_clients}"""
+
+    @MethodCall.sender
+    def reload_configuration(self):
+        """@see L{BrokerServer.reload_configuration}"""
+
+    @MethodCall.sender
+    def register(self):
+        """@see L{BrokerServer.register}"""
+
+    @MethodCall.sender
+    def get_accepted_message_types(self):
+        """@see L{BrokerServer.get_accepted_message_types}"""
+
+    @MethodCall.sender
+    def get_server_uuid(self):
+        """@see L{BrokerServer.get_server_uuid}"""
+
+    @MethodCall.sender
+    def register_client_accepted_message_type(self, type):
+        """@see L{BrokerServer.register_client_accepted_message_type}"""
+
+    @MethodCall.sender
+    def exit(self):
+        """@see L{BrokerServer.exit}"""
