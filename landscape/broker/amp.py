@@ -1,5 +1,5 @@
 from twisted.protocols.amp import AMP
-from twisted.internet.protocol import ServerFactory
+from twisted.internet.protocol import ServerFactory, ClientCreator
 from twisted.internet.defer import succeed
 
 from landscape.lib.amp import MethodCall
@@ -60,12 +60,30 @@ class RemoteClient(object):
 class RemoteBroker(object):
     """A connected broker utilizing features provided by a L{BrokerServer}."""
 
-    def __init__(self, protocol):
+    def __init__(self, config, reactor):
         """
         @param protocol: A L{BrokerServerProtocol} connection with a remote
             broker server.
         """
-        self._protocol = protocol
+        self._config = config
+        self._reactor = reactor
+        self._protocol = None
+
+    def connect(self):
+        """Connect to the remote L{BrokerServer}."""
+
+        def set_protocol(protocol):
+            self._protocol = protocol
+
+        connector = ClientCreator(self._reactor._reactor, AMP)
+        socket = self._config.broker_socket_filename
+        connected = connector.connectUNIX(socket)
+        return connected.addCallback(set_protocol)
+
+    def disconnect(self):
+        """Disconnect from the remote L{BrokerServer}."""
+        self._protocol.transport.loseConnection()
+        self._protocol = None
 
     @MethodCall.sender
     def ping(self):
