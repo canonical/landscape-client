@@ -4,7 +4,6 @@ import os
 from landscape.lib.fetch import fetch_async
 from landscape.service import LandscapeService, run_landscape_service
 from landscape.broker.registration import RegistrationHandler, Identity
-from landscape.broker.amp import BrokerServerProtocolFactory
 from landscape.broker.deployment import BrokerConfiguration
 from landscape.broker.transport import HTTPTransport
 from landscape.broker.exchange import MessageExchange
@@ -72,23 +71,21 @@ class BrokerService(LandscapeService):
     def startService(self):
         """Start the broker.
 
-        Create a L{BrokerServer} listening on C{broker_socket_filename} for
-        clients connecting with the L{BrokerClientProtocol}, and start the
+        Create a L{BrokerServer} listening on C{broker_socket_path} for clients
+        connecting with the L{BrokerClientProtocol}, and start the
         L{MessageExchange} and L{Pinger} services.
         """
         super(BrokerService, self).startService()
         self.broker = BrokerServer(self.config, self.reactor, self.exchanger,
                                    self.registration, self.message_store)
-        self.factory = BrokerServerProtocolFactory(self.broker)
-        self.port = self.reactor._reactor.listenUNIX(
-            self.config.broker_socket_filename, self.factory)
+        self.broker.start()
         self.exchanger.start()
         self.pinger.start()
 
     def stopService(self):
         """Stop the broker."""
         self.exchanger.stop()
-        self.port.stopListening()
+        self.broker.stop()
         super(BrokerService, self).stopService()
 
 

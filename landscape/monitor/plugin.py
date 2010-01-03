@@ -11,9 +11,13 @@ class MonitorPlugin(BrokerClientPlugin):
 
     def register(self, monitor):
         super(MonitorPlugin, self).register(monitor)
-        self.monitor = self.client
         if self.persist_name is not None:
             self._persist = self.monitor.persist.root_at(self.persist_name)
+
+    @property
+    def monitor(self):
+        """An alias for the C{client} attribute."""
+        return self.client
 
     def call_on_accepted(self, type, callable, *args, **kwargs):
         """

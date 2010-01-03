@@ -63,3 +63,12 @@ class ManagerServiceTest(LandscapeTest):
 
         started = self.service.startService()
         return started.addCallback(assert_broker_connection)
+
+    def test_stop_service(self):
+        """
+        The L{BrokerService.stopService} closes the connection with the broker.
+        """
+        self.service.broker = self.mocker.mock()
+        self.service.broker.disconnect()
+        self.mocker.replay()
+        self.service.stopService()
