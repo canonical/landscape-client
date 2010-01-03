@@ -117,10 +117,6 @@ class RemoteBroker(object):
     def exit(self):
         """@see L{BrokerServer.exit}"""
 
-    def disconnect(self):
-        """Close the connection with the broker server."""
-        self._protocol.transport.loseConnection()
-
 
 class BrokerClientProtocol(AMP):
     """
