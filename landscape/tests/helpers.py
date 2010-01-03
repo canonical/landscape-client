@@ -8,7 +8,6 @@ import sys
 import unittest
 import dbus
 
-from functools import partial
 from logging import Handler, ERROR, Formatter
 from twisted.trial.unittest import TestCase
 from twisted.internet.defer import Deferred

@@ -1,5 +1,5 @@
 from landscape.lib.twisted_util import gather_results
-from landscape.broker.amp import RemoteClient
+from landscape.broker.amp import RemoteClient, BrokerServerProtocolFactory
 
 
 def event(method):
@@ -143,6 +143,16 @@ class BrokerServer(object):
             self._reactor.fire("post-exit")
 
         return clients_stopped.addBoth(fire_post_exit)
+
+    def start(self):
+        """Start listening for incoming AMP connections."""
+        socket = self._config.broker_socket_filename
+        factory = BrokerServerProtocolFactory(self)
+        self._port = self._reactor._reactor.listenUNIX(socket, factory)
+
+    def stop(self):
+        """Stop listening."""
+        self._port.stopListening()
 
     @event
     def resynchronize(self):
