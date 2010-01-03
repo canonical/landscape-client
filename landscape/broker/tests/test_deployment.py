@@ -145,12 +145,3 @@ class ConfigurationTests(LandscapeTest):
 
         self.assertEquals(configuration.urgent_exchange_interval, 12)
         self.assertEquals(configuration.exchange_interval, 34)
-
-    def test_socket_path(self):
-        """
-        The L{BrokerConfiguration.broker_sock} attribute holds the filename of
-        the Unix socket used to communicate with the broker.
-        """
-        config = BrokerConfiguration()
-        self.assertEquals(config.socket_path,
-                          os.path.join(config.data_path, "broker.sock"))
