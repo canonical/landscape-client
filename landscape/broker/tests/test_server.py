@@ -1,4 +1,8 @@
+from twisted.internet import reactor
 from twisted.internet.defer import succeed, fail
+from twisted.internet.protocol import ClientCreator
+from twisted.internet.error import ConnectError
+from twisted.protocols.amp import AMP
 
 from landscape.broker.amp import RemoteClient
 from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
@@ -213,6 +217,30 @@ class BrokerServerTest(LandscapeTest):
         self.reactor.call_on("pre-exit", pre_exit)
         self.reactor.call_on("post-exit", post_exit)
         return self.assertSuccess(self.broker.exit())
+
+    def test_listen(self):
+        """
+        Once started, the L{BrokerServer} listens for incoming connections on
+        the proper socket.
+        """
+
+        def assert_protocol(protocol):
+            self.assertTrue(isinstance(protocol, AMP))
+            protocol.transport.loseConnection()
+
+        connector = ClientCreator(reactor, AMP)
+        connected = connector.connectUNIX(self.config.broker_socket_filename)
+        return connected.addCallback(assert_protocol)
+
+    def test_stop_listening(self):
+        """
+        The L{BrokerServer.stop_listening} stops listening for incoming
+        connections.
+        """
+        self.broker.stop_listening()
+        connector = ClientCreator(reactor, AMP)
+        connected = connector.connectUNIX(self.config.broker_socket_filename)
+        return self.assertFailure(connected, ConnectError)
 
 
 class EventTest(LandscapeTest):

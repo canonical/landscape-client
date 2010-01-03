@@ -282,6 +282,11 @@ class Configuration(BaseConfiguration):
     def hashdb_filename(self):
         return os.path.join(self.data_path, "hash.db")
 
+    @property
+    def broker_socket_filename(self):
+        """Get the path to the broker Unix socket."""
+        return os.path.join(self.data_path, "broker.sock")
+
     def make_parser(self):
         """Parser factory for supported options.
 
