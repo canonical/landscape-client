@@ -115,10 +115,10 @@ class BrokerServerHelper(RegistrationHelper):
         test_case.broker = BrokerServer(test_case.config, test_case.reactor,
                                         test_case.exchanger, test_case.handler,
                                         test_case.mstore)
-        test_case.broker.listen()
+        test_case.broker.start()
 
     def tear_down(self, test_case):
-        test_case.broker.stop_listening()
+        test_case.broker.stop()
         super(BrokerServerHelper, self).tear_down(test_case)
 
 

@@ -218,7 +218,7 @@ class BrokerServerTest(LandscapeTest):
         self.reactor.call_on("post-exit", post_exit)
         return self.assertSuccess(self.broker.exit())
 
-    def test_listen(self):
+    def test_start(self):
         """
         Once started, the L{BrokerServer} listens for incoming connections on
         the proper socket.
@@ -232,12 +232,12 @@ class BrokerServerTest(LandscapeTest):
         connected = connector.connectUNIX(self.config.broker_socket_filename)
         return connected.addCallback(assert_protocol)
 
-    def test_stop_listening(self):
+    def test_stop(self):
         """
-        The L{BrokerServer.stop_listening} stops listening for incoming
+        The L{BrokerServer.stop} method stops listening for incoming
         connections.
         """
-        self.broker.stop_listening()
+        self.broker.stop()
         connector = ClientCreator(reactor, AMP)
         connected = connector.connectUNIX(self.config.broker_socket_filename)
         return self.assertFailure(connected, ConnectError)
