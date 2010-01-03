@@ -119,48 +119,28 @@ class BrokerServerHelper(RegistrationHelper):
         test_case.broker = BrokerServer(test_case.config, test_case.reactor,
                                         test_case.exchanger, test_case.handler,
                                         test_case.mstore)
-
-
-class BrokerProtocolHelper(BrokerServerHelper):
-    """
-    This helper adds a connected broker protocol to the L{BrokerServerHelper}.
-    The following attributes will be set in your test case:
-      - port: The C{Port} object connected to the Unix socket the server
-          is listening to.
-      - protocol: An L{AMP} protocol instance connected to the server's port.
-    """
-
-    def set_up(self, test_case):
-        super(BrokerProtocolHelper, self).set_up(test_case)
-        socket = test_case.makeFile()
-        factory = BrokerServerProtocolFactory(test_case.broker)
-        test_case.port = reactor.listenUNIX(socket, factory)
-
-        def set_protocol(protocol):
-            test_case.protocol = protocol
-
-        connector = ClientCreator(reactor, AMP)
-        connected = connector.connectUNIX(socket)
-        return connected.addCallback(set_protocol)
+        test_case.broker.listen()
 
     def tear_down(self, test_case):
-        super(BrokerProtocolHelper, self).tear_down(test_case)
-        test_case.port.loseConnection()
-        test_case.protocol.transport.loseConnection()
+        test_case.broker.stop_listening()
+        super(BrokerServerHelper, self).tear_down(test_case)
 
 
-class RemoteBrokerHelper(BrokerProtocolHelper):
+class RemoteBrokerHelper(BrokerServerHelper):
     """
-    This helper adds a connected L{RemoteBroker} to a L{BrokerProtocolHelper}.
+    This helper adds a connected L{RemoteBroker} to a L{BrokerServerHelper}.
     The following attributes will be set in your test case:
       - remote: A C{RemoteBroker} object connected to the broker server.
     """
 
     def set_up(self, test_case):
-        connected = super(RemoteBrokerHelper, self).set_up(test_case)
-        connected.addCallback(lambda x: setattr(
-            test_case, "remote", RemoteBroker(test_case.protocol)))
-        return connected
+        super(RemoteBrokerHelper, self).set_up(test_case)
+        test_case.remote = RemoteBroker(test_case.config, test_case.reactor)
+        return test_case.remote.connect()
+
+    def tear_down(self, test_case):
+        test_case.remote.disconnect()
+        super(RemoteBrokerHelper, self).tear_down(test_case)
 
 
 class BrokerClientHelper(RemoteBrokerHelper):

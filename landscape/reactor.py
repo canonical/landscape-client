@@ -228,6 +228,11 @@ class FakeReactor(EventHandlingReactorMixin,
         self.udp_transports = {}
         self.hosts = {}
 
+        # We need a reference to the Twisted reactor as well to
+        # let Landscape services listen to Unix sockets
+        from twisted.internet import reactor
+        self._reactor = reactor
+
     def time(self):
         return float(self._current_time)
 
