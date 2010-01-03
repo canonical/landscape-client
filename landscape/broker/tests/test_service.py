@@ -674,7 +674,7 @@ class BrokerServiceTest(LandscapeTest):
 
         def lose_connection(protocol):
             protocol.transport.loseConnection()
-            self.service.port.stopListening()
+            self.service.broker.stop()
 
         connector = ClientCreator(reactor, AMP)
         connected = connector.connectUNIX(self.config.socket_path)
@@ -687,7 +687,7 @@ class BrokerServiceTest(LandscapeTest):
         """
         self.service.exchanger.stop = self.mocker.mock()
         self.service.exchanger.stop()
-        self.service.port = self.mocker.mock()
-        self.service.port.stopListening()
+        self.service.broker = self.mocker.mock()
+        self.service.broker.stop()
         self.mocker.replay()
         self.service.stopService()
