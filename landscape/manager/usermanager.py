@@ -1,6 +1,12 @@
+import logging
+
 from twisted.python import log
+from twisted.protocols.amp import AMP
+from twisted.internet.protocol import ServerFactory, ClientCreator
 
 from landscape.lib.dbus_util import get_object, method, Object
+from landscape.lib.amp import MethodCall
+from landscape.lib.twisted_util import gather_results
 
 from landscape.user.management import UserManagement
 from landscape.manager.manager import ManagerPlugin
@@ -37,6 +43,60 @@ class UserManagerDBusObject(Object):
         return locked_users
 
 
+class UserManagerProtocol(AMP):
+    """L{AMP}-based protocol for calling L{UserManager}'s methods remotely."""
+
+    @MethodCall.responder
+    def _get_user_manager_method(self, name):
+        if name == "get_locked_usernames":
+            return self.factory.user_manager.get_locked_usernames
+
+
+class UserManagerProtocolFactory(ServerFactory):
+    """A protocol factory for the L{UserManagerProtocol}."""
+
+    protocol = UserManagerProtocol
+
+    def __init__(self, user_manager):
+        """
+        @param: The L{BrokerServer} the connections will talk to.
+        """
+        self.user_manager = user_manager
+
+
+class RemoteUserManager(object):
+
+    def __init__(self, config, reactor):
+        """
+        @param config: A L{Configuration} object, used to get the path to
+            the L{UserManager} Unix socket.
+        @param reactor: A L{TwistedReactor}, used to connect to the socket.
+        """
+        self._config = config
+        self._reactor = reactor
+        self._protocol = None
+
+    def connect(self):
+        """Connect to a remote L{UserManager}."""
+
+        def set_protocol(protocol):
+            self._protocol = protocol
+
+        connector = ClientCreator(self._reactor._reactor, AMP)
+        connected = connector.connectUNIX(
+            self._config.user_manager_socket_filename)
+        return connected.addCallback(set_protocol)
+
+    def disconnect(self):
+        """Close the connection with the remote L{UserManager}."""
+        self._protocol.transport.loseConnection()
+        self._protocol = None
+
+    @MethodCall.sender
+    def get_locked_usernames(self):
+        """@see: L{UserManager.get_locked_usernames}."""
+
+
 class UserManager(ManagerPlugin):
 
     def __init__(self, management=None, shadow_file="/etc/shadow"):
@@ -61,15 +121,40 @@ class UserManager(ManagerPlugin):
         """
         super(UserManager, self).register(registry)
         self._registry = registry
-        # Register user management operation handlers.
-        self._user_service = get_object(registry.bus,
-                                        UserMonitorDBusObject.bus_name,
-                                        UserMonitorDBusObject.object_path)
+        results = []
         for message_type in self._message_types:
-            self._registry.register_message(message_type,
-                                            self._message_dispatch)
-        self._dbus_object = UserManagerDBusObject(registry.bus,
-                                                  self._shadow_file)
+            result = self._registry.register_message(message_type,
+                                                     self._message_dispatch)
+            results.append(result)
+        # FIXME: this conditional should go away after the AMP migration
+        # is completed
+        if self._registry.config.bus == "amp":
+            factory = UserManagerProtocolFactory(self)
+            self.port = self.registry.reactor._reactor.listenUNIX(
+                self.registry.config.user_manager_socket_filename, factory)
+            return gather_results(results)
+        else:
+            # Register user management operation handlers.
+            self._user_service = get_object(registry.bus,
+                                            UserMonitorDBusObject.bus_name,
+                                            UserMonitorDBusObject.object_path)
+            self._dbus_object = UserManagerDBusObject(registry.bus,
+                                                      self._shadow_file)
+
+    def get_locked_usernames(self):
+        """Return a list of usernames with locked system accounts."""
+        locked_users = []
+        if self._shadow_file:
+            try:
+                shadow_file = open(self._shadow_file, "r")
+                for line in shadow_file:
+                    parts = line.split(":")
+                    if len(parts)>1:
+                        if parts[1].startswith("!"):
+                            locked_users.append(parts[0].strip())
+            except IOError, e:
+                logging.error("Error reading shadow file. %s" % e)
+        return locked_users
 
     def _message_dispatch(self, message):
         result = self._user_service.detect_changes()

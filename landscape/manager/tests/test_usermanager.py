@@ -1,16 +1,18 @@
+import os
+
 from landscape.lib.dbus_util import get_object
-
 from landscape.lib.persist import Persist
-
 from landscape.manager.manager import SUCCEEDED, FAILED
 from landscape.monitor.monitor import MonitorPluginRegistry
 from landscape.manager.manager import ManagerPluginRegistry
 from landscape.monitor.usermonitor import UserMonitor
-from landscape.manager.usermanager import UserManager, UserManagerDBusObject
+from landscape.manager.usermanager import (
+    UserManager, UserManagerDBusObject, RemoteUserManager)
 from landscape.user.tests.helpers import FakeUserProvider, FakeUserManagement
-from landscape.tests.helpers import LandscapeIsolatedTest
+from landscape.tests.helpers import LandscapeIsolatedTest, LandscapeTest
 from landscape.user.provider import UserManagementError
 from landscape.tests.helpers import RemoteBrokerHelper
+from landscape.manager.tests.helpers import ManagerHelper
 
 
 class ManagerServiceTest(LandscapeIsolatedTest):
@@ -1298,3 +1300,81 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         result = plugin.run()
         result.addCallback(handle_callback1)
         return result
+
+
+class UserManagerTest(LandscapeTest):
+
+    def setUp(self):
+        super(UserManagerTest, self).setUp()
+        self.shadow_file = self.makeFile()
+        self.user_manager = UserManager(shadow_file=self.shadow_file)
+
+    def test_get_locked_usernames(self):
+        """
+        The L{UserManager.get_locked_usernames} method returns only user names
+        of locked users.
+        """
+        fd = open(self.shadow_file, "w")
+        fd.write("jdoe:$1$xFlQvTqe$cBtrNEDOIKMy/BuJoUdeG0:13348:0:99999:7:::\n"
+                 "psmith:!:13348:0:99999:7:::\n"
+                 "yo:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::\n")
+        fd.close()
+        self.assertEquals(self.user_manager.get_locked_usernames(), ["psmith"])
+
+    def test_get_locked_usernames_with_empty_shadow_file(self):
+        """
+        The L{UserManager.get_locked_usernames} method returns an empty C{list}
+        if the shadow file is empty.
+        """
+        fd = open(self.shadow_file, "w")
+        fd.write("\n")
+        fd.close()
+        self.assertEquals(self.user_manager.get_locked_usernames(), [])
+
+    def test_get_locked_usernames_with_non_existing_shadow_file(self):
+        """
+        The L{UserManager.get_locked_usernames} method returns an empty C{list}
+        if the shadow file can't be read.  An error message is logged as well.
+        """
+        self.log_helper.ignore_errors("Error reading shadow file.*")
+        self.assertFalse(os.path.exists(self.shadow_file))
+        self.assertEquals(self.user_manager.get_locked_usernames(), [])
+        self.assertIn("Error reading shadow file. [Errno 2] No such file or "
+                      "directory", self.logfile.getvalue())
+
+
+class RemoteUserManagerTest(LandscapeTest):
+
+    helpers = [ManagerHelper]
+
+    def setUp(self):
+
+        def connect(ignored):
+            return self.remote_user_manager.connect()
+
+        def register_user_manager(ignored):
+            self.shadow_file = self.makeFile()
+            self.user_manager = UserManager(shadow_file=self.shadow_file)
+            self.remote_user_manager = RemoteUserManager(self.config, self.reactor)
+
+            registered = self.user_manager.register(self.manager)
+            return registered.addCallback(connect)
+
+        super_setup = super(RemoteUserManagerTest, self).setUp()
+        return super_setup.addCallback(register_user_manager)
+
+    def tearDown(self):
+        self.remote_user_manager.disconnect()
+        self.user_manager.port.loseConnection()
+        return super(RemoteUserManagerTest, self).tearDown()
+
+    def test_get_locked_usernames(self):
+        """
+        The L{RemoteUserManager.get_locked_usernames} method forwards the
+        request to the remote L{UserManager} object.
+        """
+        self.user_manager.get_locked_usernames = self.mocker.mock()
+        self.expect(self.user_manager.get_locked_usernames()).result(["fred"])
+        self.mocker.replay()
+        result = self.remote_user_manager.get_locked_usernames()
+        return self.assertSuccess(result, ["fred"])

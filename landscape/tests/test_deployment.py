@@ -234,6 +234,8 @@ class ConfigurationTest(LandscapeTest):
         self.assertEquals(self.config.bus, "session")
         self.config.load(["--bus", "system"])
         self.assertEquals(self.config.bus, "system")
+        self.config.load(["--bus", "amp"])
+        self.assertEquals(self.config.bus, "amp")
 
     def test_config_option(self):
         opts = self.parser.parse_args(["--config", "hello.cfg"])[0]

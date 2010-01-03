@@ -164,8 +164,8 @@ class BaseConfiguration(object):
                          "or the '%s' directive in the config file."
                          % (option.replace('_','-'), option))
 
-        if self.bus not in ("session", "system"):
-            sys.exit("error: bus must be one of 'session' or 'system'")
+        if self.bus not in ("session", "system", "amp"):
+            sys.exit("error: bus must be one of 'session', 'system' or 'amp'")
 
     def _load_external_options(self):
         """Hook for loading options from elsewhere (e.g. for --import)."""
@@ -241,8 +241,8 @@ class BaseConfiguration(object):
                           help="Use config from this file (any command line "
                                "options override settings from the file).")
         parser.add_option("--bus", default="system",
-                          help="Which DBUS bus to use. One of 'session' "
-                               "or 'system'.")
+                          help="Which DBUS bus to use. One of 'session', "
+                               "'system' or. 'amp'")
         return parser
 
     def get_config_filename(self):
@@ -286,6 +286,11 @@ class Configuration(BaseConfiguration):
     def broker_socket_filename(self):
         """Get the path to the broker Unix socket."""
         return os.path.join(self.data_path, "broker.sock")
+
+    @property
+    def user_manager_socket_filename(self):
+        """Get the path to the user manager plugin Unix socket."""
+        return os.path.join(self.data_path, "usermanager.sock")
 
     def make_parser(self):
         """Parser factory for supported options.
@@ -363,7 +368,9 @@ class LandscapeService(Service, object):
         save it in the public L{self.bus} instance variable.
         """
         Service.startService(self)
-        self.bus = get_bus(self.config.bus)
+        # FIXME: this should go away after the AMP migration is completed
+        if self.config.bus != "amp":
+            self.bus = get_bus(self.config.bus)
         info("%s started on '%s' bus with config %s" % (
                 self.service_name.capitalize(), self.config.bus,
                 self.config.get_config_filename()))

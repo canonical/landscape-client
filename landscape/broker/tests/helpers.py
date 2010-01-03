@@ -198,6 +198,7 @@ class BrokerServiceHelper(object):
             "account_name = some_account\n"
             "ping_url = http://localhost:91910\n"
             "data_path = %s\n"
+            "bus = amp\n"
             "log_dir = %s\n" % (data_path, log_dir))
 
         bootstrap_list.bootstrap(data_path=data_path, log_dir=log_dir)
