@@ -677,7 +677,7 @@ class BrokerServiceTest(LandscapeTest):
             self.service.broker.stop()
 
         connector = ClientCreator(reactor, AMP)
-        connected = connector.connectUNIX(self.config.socket_path)
+        connected = connector.connectUNIX(self.config.broker_socket_filename)
         return connected.addCallback(lose_connection)
 
     def test_stop(self):
