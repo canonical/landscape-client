@@ -84,15 +84,39 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
     def test_wb_resynchronize_event(self):
         """
         When a C{resynchronize} event occurs any cached L{UserChange}
-        snapshots should be cleared.
+        snapshots should be cleared and a new message with users generated.
         """
         def resynchronize_complete(result, plugin):
+
+            def resynchronization_new_messages(result):
+                self.assertMessages(
+                    self.broker_service.message_store.get_pending_messages(),
+                    [{"create-group-members": {u"webdev":[u"jdoe"]},
+                      "create-groups": [{"gid": 1000, "name": u"webdev"}],
+                      "create-users": [{"enabled": True, "home-phone": None,
+                                        "location": None, "name": u"JD",
+                                        "primary-gid": 1000, "uid": 1000,
+                                        "username": u"jdoe",
+                                        "work-phone": None}],
+                                        "type": "users"}])
+
             persist = plugin._persist
             self.assertTrue(persist.get("users"))
             self.assertTrue(persist.get("groups"))
-            self.monitor.reactor.fire("resynchronize")
-            self.assertFalse(persist.get("users"))
-            self.assertFalse(persist.get("groups"))
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [{"create-group-members": {u"webdev":[u"jdoe"]},
+                  "create-groups": [{"gid": 1000, "name": u"webdev"}],
+                  "create-users": [{"enabled": True, "home-phone": None,
+                                    "location": None, "name": u"JD",
+                                    "primary-gid": 1000, "uid": 1000,
+                                    "username": u"jdoe", "work-phone": None}],
+                                    "type": "users"}])
+            # Clear all the messages from the message store
+            self.broker_service.message_store.delete_all_messages()
+            deferred = self.monitor.reactor.fire("resynchronize")[0]
+            deferred.addCallback(resynchronization_new_messages)
+            return deferred
 
         users = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh")]
         groups = [("webdev", "x", 1000, ["jdoe"])]
