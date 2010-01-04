@@ -1,21 +1,30 @@
 import inspect
 
-from twisted.protocols.amp import Argument, String, Command, CommandLocator
+from twisted.protocols.amp import (
+    Argument, String, Command, CommandLocator, AMP)
 
-from landscape.lib.bpickle import loads, dumps
+from landscape.lib.bpickle import loads, dumps, dumps_table
 
 
-class BPickle(Argument):
+class MethodCallError(Exception):
+    """Raised when trying to call a non accessible method."""
+
+
+class MethodCallArgument(Argument):
     """A bpickle-compatbile argument."""
 
     def toString(self, inObject):
-        try:
-            return dumps(inObject)
-        except ValueError:
-            return dumps(None)
+        """Serialize an argument."""
+        return dumps(inObject)
 
     def fromString(self, inString):
+        """Unserialize an argument."""
         return loads(inString)
+
+    @classmethod
+    def check(cls, inObject):
+        """Check if an argument is serializable."""
+        return type(inObject) in dumps_table
 
 
 def get_nested_attr(obj, path):
@@ -32,17 +41,13 @@ def get_nested_attr(obj, path):
     return attr
 
 
-class MethodCallError(Exception):
-    """Raised when trying to call a non accessible method."""
-
-
 class MethodCall(Command):
 
     arguments = [("name", String()),
-                 ("args", BPickle()),
-                 ("kwargs", BPickle())]
-    response = [("result", BPickle())]
-    errors = {MethodCallError: "UNAUTHORIZED_METHOD_CALL"}
+                 ("args", MethodCallArgument()),
+                 ("kwargs", MethodCallArgument())]
+    response = [("result", MethodCallArgument())]
+    errors = {MethodCallError: "METHOD_CALL_ERROR"}
 
     @classmethod
     def responder(cls, method_getter):
@@ -80,8 +85,11 @@ class MethodCall(Command):
             # Call the appropriate method
             method = method_getter(self, name)
             if method is None:
-                raise MethodCallError(name)
+                raise MethodCallError("Can't call method '%s'" % name)
             result = method(*args, **kwargs)
+
+            if not MethodCallArgument.check(result):
+                raise MethodCallError("Non-serializable result")
 
             # Return an AMP response to be delivered to the remote caller
             return {"result": result}
@@ -143,3 +151,7 @@ class MethodCall(Command):
             return sent
 
         return send_method_call
+
+
+class MethodCallProtocol(AMP):
+    """Placeholder, will be replaced later."""

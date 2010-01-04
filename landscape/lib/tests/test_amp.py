@@ -1,10 +1,9 @@
 from twisted.trial.unittest import TestCase
 from twisted.internet import reactor
 from twisted.internet.protocol import Factory, ClientCreator
-from twisted.internet.defer import Deferred
-from twisted.protocols.amp import AMP
 
-from landscape.lib.amp import MethodCallError, MethodCall, get_nested_attr
+from landscape.lib.amp import (
+    MethodCallError, MethodCall, get_nested_attr, MethodCallProtocol)
 from landscape.tests.helpers import LandscapeTest
 
 
@@ -57,13 +56,16 @@ class Words(object):
         return self._check(word, *args, **kwargs)
 
     def meaning_of_life(self):
-        return Deferred()
+
+        class Complex(object):
+            pass
+        return Complex()
 
     def secret(self):
         raise RuntimeError("I'm not supposed to be called!")
 
 
-class WordsServerProtocol(AMP):
+class WordsServerProtocol(MethodCallProtocol):
 
     @MethodCall.responder
     def _get_words_method(self, name):
@@ -158,7 +160,7 @@ class MethodCallResponderTest(LandscapeTest):
         def set_protocol(protocol):
             self.protocol = protocol
 
-        connector = ClientCreator(reactor, AMP)
+        connector = ClientCreator(reactor, MethodCallProtocol)
         connected = connector.connectUNIX(socket)
         return connected.addCallback(set_protocol)
 
@@ -295,7 +297,7 @@ class MethodCallResponderTest(LandscapeTest):
                                           name="meaning_of_life",
                                           args=[],
                                           kwargs={})
-        return self.assertSuccess(result, {"result": None})
+        return self.assertFailure(result, MethodCallError)
 
     def test_secret(self):
         """
@@ -324,7 +326,7 @@ class MethodCallSenderTest(LandscapeTest):
             self.protocol = protocol
             self.words = RemoteWords(protocol)
 
-        connector = ClientCreator(reactor, AMP)
+        connector = ClientCreator(reactor, MethodCallProtocol)
         connected = connector.connectUNIX(socket)
         return connected.addCallback(set_protocol)
 
