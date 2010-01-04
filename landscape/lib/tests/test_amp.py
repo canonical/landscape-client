@@ -1,6 +1,6 @@
 from twisted.trial.unittest import TestCase
 from twisted.internet import reactor
-from twisted.internet.protocol import Factory, ClientCreator
+from twisted.internet.protocol import ServerFactory, ClientCreator
 
 from landscape.lib.amp import (
     MethodCallError, MethodCall, get_nested_attr, MethodCallProtocol)
@@ -151,7 +151,7 @@ class MethodCallResponderTest(LandscapeTest):
     def setUp(self):
         super(MethodCallResponderTest, self).setUp()
         socket = self.mktemp()
-        factory = Factory()
+        factory = ServerFactory()
         factory.protocol = WordsServerProtocol
         factory.words = Words()
         factory.language = "italian"
@@ -316,7 +316,7 @@ class MethodCallSenderTest(LandscapeTest):
     def setUp(self):
         super(MethodCallSenderTest, self).setUp()
         socket = self.mktemp()
-        factory = Factory()
+        factory = ServerFactory()
         factory.protocol = WordsServerProtocol
         factory.words = Words()
         factory.language = "italian"
