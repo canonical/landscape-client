@@ -1,7 +1,7 @@
 from twisted.trial.unittest import TestCase
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
-from twisted.internet.protocol import ServerFactory, ClientCreator
+from twisted.internet.protocol import ClientCreator
 
 from landscape.lib.amp import (
     MethodCallError, MethodCall, get_nested_attr, Method, MethodCallProtocol,
@@ -60,6 +60,18 @@ class Words(object):
     def guess(self, word, *args, **kwargs):
         return self._check(word, *args, **kwargs)
 
+    def google(self, word):
+        deferred = Deferred()
+        if word == "Landscape":
+            reactor.callLater(0.01, lambda: deferred.callback("Cool!"))
+        elif word == "Easy query":
+            deferred.callback("Done!")
+        elif word == "Weird stuff":
+            reactor.callLater(0.01, lambda: deferred.errback(Exception("bad")))
+        elif word == "Censored":
+            deferred.errback(Exception("very bad"))
+        return deferred
+
 
 class WordsProtocol(MethodCallProtocol):
 
@@ -72,7 +84,8 @@ class WordsProtocol(MethodCallProtocol):
                Method("multiply_alphabetically"),
                Method("translate", language="factory.language"),
                Method("meaning_of_life"),
-               Method("guess")]
+               Method("guess"),
+               Method("google")]
 
 
 class MethodCallProtocolTest(LandscapeTest):
@@ -113,7 +126,8 @@ class MethodCallProtocolTest(LandscapeTest):
         """
         result = self.protocol.callRemote(MethodCall,
                                           name="empty")
-        return self.assertSuccess(result, {"result": None})
+        return self.assertSuccess(result, {"result": None,
+                                           "deferred": None})
 
     def test_motd(self):
         """
@@ -122,7 +136,8 @@ class MethodCallProtocolTest(LandscapeTest):
         """
         result = self.protocol.callRemote(MethodCall,
                                           name="motd")
-        return self.assertSuccess(result, {"result": "Words are cool"})
+        return self.assertSuccess(result, {"result": "Words are cool",
+                                           "deferred": None})
 
     def test_capitalize(self):
         """
@@ -132,7 +147,8 @@ class MethodCallProtocolTest(LandscapeTest):
         result = self.protocol.callRemote(MethodCall,
                                           name="capitalize",
                                           args=["john"])
-        return self.assertSuccess(result, {"result": "John"})
+        return self.assertSuccess(result, {"result": "John",
+                                           "deferred": None})
 
     def test_is_short(self):
         """
@@ -141,7 +157,8 @@ class MethodCallProtocolTest(LandscapeTest):
         result = self.protocol.callRemote(MethodCall,
                                           name="is_short",
                                           args=["hi"])
-        return self.assertSuccess(result, {"result": True})
+        return self.assertSuccess(result, {"result": True,
+                                           "deferred": None})
 
     def test_concatenate(self):
         """
@@ -150,7 +167,8 @@ class MethodCallProtocolTest(LandscapeTest):
         result = self.protocol.callRemote(MethodCall,
                                           name="concatenate",
                                           args=["You ", "rock"])
-        return self.assertSuccess(result, {"result": "You rock"})
+        return self.assertSuccess(result, {"result": "You rock",
+                                           "deferred": None})
 
     def test_lower_case(self):
         """
@@ -160,7 +178,8 @@ class MethodCallProtocolTest(LandscapeTest):
         result = self.protocol.callRemote(MethodCall,
                                           name="lower_case",
                                           args=["OHH"])
-        return self.assertSuccess(result, {"result": "ohh"})
+        return self.assertSuccess(result, {"result": "ohh",
+                                           "deferred": None})
 
     def test_lower_case_with_index(self):
         """
@@ -172,7 +191,8 @@ class MethodCallProtocolTest(LandscapeTest):
                                           name="lower_case",
                                           args=["OHH"],
                                           kwargs={"index": 2})
-        return self.assertSuccess(result, {"result": "OHh"})
+        return self.assertSuccess(result, {"result": "OHh",
+                                           "deferred": None})
 
     def test_multiply_alphabetically(self):
         """
@@ -182,7 +202,8 @@ class MethodCallProtocolTest(LandscapeTest):
                                           name="multiply_alphabetically",
                                           args=[{"foo": 2, "bar": 3}],
                                           kwargs={})
-        return self.assertSuccess(result, {"result": "barbarbarfoofoo"})
+        return self.assertSuccess(result, {"result": "barbarbarfoofoo",
+                                           "deferred": None})
 
     def test_translate(self):
         """
@@ -192,7 +213,7 @@ class MethodCallProtocolTest(LandscapeTest):
         result = self.protocol.callRemote(MethodCall,
                                           name="translate",
                                           args=["hi"])
-        return self.assertSuccess(result, {"result": "ciao"})
+        return self.assertSuccess(result, {"result": "ciao", "deferred": None})
 
     def test_meaning_of_life(self):
         """
@@ -317,6 +338,36 @@ class RemoteObjectTest(LandscapeTest):
         """
         result = self.words.guess("word", "cool", value=4)
         return self.assertSuccess(result, "Guessed!")
+
+    def test_google(self):
+        """
+        If the target object method returns a L{Deferred}, it is handled
+        transparently.
+        """
+        result = self.words.google("Landscape")
+        return self.assertSuccess(result, "Cool!")
+
+    def test_google_with_errback(self):
+        """
+        If the target object method returns a failing L{Deferred}, a
+        L{MethodCallError} is raised.
+        """
+        result = self.words.google("Weird stuff")
+        return self.assertFailure(result, MethodCallError)
+
+    def test_google_with_already_fired(self):
+        """
+        The target object method can return an already fired L{Deferred}.
+        """
+        result = self.words.google("Easy query")
+        return self.assertSuccess(result, "Done!")
+
+    def test_google_with_already_errback(self):
+        """
+        If the target object method can return an already failed L{Deferred}.
+        """
+        result = self.words.google("Censored")
+        return self.assertFailure(result, MethodCallError)
 
 
 class GetNestedAttrTest(TestCase):
