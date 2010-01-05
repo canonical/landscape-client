@@ -43,22 +43,22 @@ upstream=$(echo $version | cut -f 1 -d "-")
 for i in $*; do
     case $i in
         -p=*|--ppa=*)
-		ppa=`echo $i | sed 's/[-a-zA-Z0-9]*=//'`
-		;;
-    	-k=*|--key=*)
-		key=`echo $i | sed 's/[-a-zA-Z0-9]*=//'`
-		;;
-    	-s|--snapshot)
-		snapshot=yes
-		;;
-    	-h|--help)
-		help
-		;;
-    	*)
+                ppa=`echo $i | sed 's/[-a-zA-Z0-9]*=//'`
+                ;;
+        -k=*|--key=*)
+                key=`echo $i | sed 's/[-a-zA-Z0-9]*=//'`
+                ;;
+        -s|--snapshot)
+                snapshot=yes
+                ;;
+        -h|--help)
+                help
+                ;;
+        *)
                 echo "Error: unknown option $i"
                 echo
                 help
-		;;
+                ;;
     esac
 done
 
