@@ -131,18 +131,17 @@ class RemoteBrokerHelper(BrokerServerHelper):
 
     def set_up(self, test_case):
         super(RemoteBrokerHelper, self).set_up(test_case)
-        socket = test_case.config.broker_socket_filename
-        reactor = test_case.reactor._reactor
-        test_case.creator = RemoteBrokerCreator(reactor, socket)
+        self._creator = RemoteBrokerCreator(test_case.reactor,
+                                            test_case.config)
 
         def set_remote(remote):
             test_case.remote = remote
 
-        connected = test_case.creator.connect()
+        connected = self._creator.connect()
         return connected.addCallback(set_remote)
 
     def tear_down(self, test_case):
-        test_case.creator.disconnect()
+        self._creator.disconnect()
         super(RemoteBrokerHelper, self).tear_down(test_case)
 
 
