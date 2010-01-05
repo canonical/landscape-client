@@ -130,8 +130,9 @@ class RemoteBrokerHelper(BrokerServerHelper):
 
     def set_up(self, test_case):
         super(RemoteBrokerHelper, self).set_up(test_case)
-        test_case.creator = RemoteBrokerCreator(test_case.config,
-                                                test_case.reactor)
+        socket = test_case.config.broker_socket_filename
+        reactor = test_case.reactor._reactor
+        test_case.creator = RemoteBrokerCreator(reactor, socket)
 
         def set_remote(remote):
             test_case.remote = remote
