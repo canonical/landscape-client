@@ -1,5 +1,6 @@
 from landscape.lib.twisted_util import gather_results
-from landscape.broker.amp import RemoteClient, BrokerServerProtocolFactory
+from landscape.lib.amp import MethodCallFactory
+from landscape.broker.amp import BrokerServerProtocol
 
 
 class BrokerServer(object):
@@ -40,7 +41,9 @@ class BrokerServer(object):
         @param protocol: The L{BrokerProtocol} over which the client is
             connected.
         """
-        self._registered_clients[name] = RemoteClient(name, protocol)
+        client = protocol.remote
+        client.name = name
+        self._registered_clients[name] = client
 
     def get_clients(self):
         """Get L{BrokerPlugin} instances for registered plugins."""
@@ -128,7 +131,8 @@ class BrokerServer(object):
     def start(self):
         """Start listening for incoming AMP connections."""
         socket = self._config.broker_socket_filename
-        factory = BrokerServerProtocolFactory(self)
+        factory = MethodCallFactory(self._reactor._reactor, self)
+        factory.protocol = BrokerServerProtocol
         self._port = self._reactor._reactor.listenUNIX(socket, factory)
 
     def stop(self):

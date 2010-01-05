@@ -1,28 +1,6 @@
 from landscape.lib.amp import MethodCall, MethodCallError
-from landscape.broker.amp import (
-    BrokerServerProtocol, BrokerServerProtocolFactory)
 from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
 from landscape.broker.tests.helpers import RemoteBrokerHelper
-
-
-class BrokerServerProtocolFactoryTest(LandscapeTest):
-
-    def test_provides_protocol_type(self):
-        """
-        The L{BrokerServerProtocolFactory} instantiates protocols objects of
-        type L{BrokerServerProtocol}.
-        """
-        self.assertEquals(BrokerServerProtocolFactory.protocol,
-                          BrokerServerProtocol)
-
-    def test_provides_broker_object(self):
-        """
-        Instances of the L{BrokerServerProtocolFactory} class have a C{broker}
-        attribute references the broker object they were instantiated with.
-        """
-        stub_broker = object()
-        factory = BrokerServerProtocolFactory(stub_broker)
-        self.assertEquals(factory.broker, stub_broker)
 
 
 class RemoteBrokerTest(LandscapeTest):
@@ -103,6 +81,9 @@ class RemoteBrokerTest(LandscapeTest):
         of the remote L{BrokerServer} instance and returns its result with
         a L{Deferred}.
         """
+        # This should make the registration succeed
+        self.transport.responses.append([{"type": "set-id", "id": "abc",
+                                          "insecure-id": "def"}])
         result = self.remote.register()
         return self.assertSuccess(result, None)
 
