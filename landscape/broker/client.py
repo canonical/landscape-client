@@ -35,7 +35,8 @@ class BrokerClient(object):
 
     def __init__(self, broker, reactor):
         """
-        @param broker: A connected L{RemoteBroker} instance.
+        @param broker: A L{RemoteObject} connected to a remote broker.
+        @param reactor: A L{TwistedReactor}.
         """
         super(BrokerClient, self).__init__()
         self.broker = broker
