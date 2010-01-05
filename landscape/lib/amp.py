@@ -1,13 +1,29 @@
-import inspect
-
-from twisted.protocols.amp import (
-    Argument, String, Command, CommandLocator, AMP)
+from twisted.internet.protocol import ServerFactory
+from twisted.protocols.amp import Argument, String, Command, AMP
 
 from landscape.lib.bpickle import loads, dumps, dumps_table
 
 
-class MethodCallError(Exception):
-    """Raised when trying to call a non accessible method."""
+class Method(object):
+    """A callable method in the object of a L{MethodCallProtocol}.
+
+    This class is used when sub-classing a L{MethodCallProtocol} for declaring
+    the methods call the protocol will respond to.
+    """
+
+    def __init__(self, name, **kwargs):
+        """
+        @param name: The name of a callable method.
+        @param kwargs: Optional additional protocol-specific keyword
+            argument that must be passed to the method when call it.  Their
+            default value  will be treated as a protocol attribute name
+            to be passed to the object method as extra argument.  It useful
+            when the remote object method we want to call needs to be passed
+            some extra protocol-specific argument that the connected client
+            can't know (for example the protocol object itself).
+        """
+        self.name = name
+        self.kwargs = kwargs
 
 
 class MethodCallArgument(Argument):
@@ -27,118 +43,47 @@ class MethodCallArgument(Argument):
         return type(inObject) in dumps_table
 
 
-def get_nested_attr(obj, path):
-    """Like C{getattr} but works with nested attributes as well.
-
-    @param obj: The object we want to get the attribute of.
-    @param path: The path to the attribute, like C{.some.nested.attr},
-        if C{.} is given the object itself is returned.
-    """
-    attr = obj
-    if path != "":
-        for name in path.split(".")[:]:
-            attr = getattr(attr, name)
-    return attr
+class MethodCallError(Exception):
+    """Raised when trying to call a non accessible method."""
 
 
 class MethodCall(Command):
+    """Call a method on the object associated with a L{MethodCallProtocol}."""
 
     arguments = [("name", String()),
-                 ("args", MethodCallArgument()),
-                 ("kwargs", MethodCallArgument())]
+                 ("args", MethodCallArgument(optional=True)),
+                 ("kwargs", MethodCallArgument(optional=True))]
+
     response = [("result", MethodCallArgument())]
+
     errors = {MethodCallError: "METHOD_CALL_ERROR"}
 
-    @classmethod
-    def responder(cls, method_getter):
-        """Decorator turning a protocol method into an L{MethodCall} responder.
 
-        This decorator is used to implement remote procedure calls over AMP
-        commands.  The decorated C{method_getter} must accept a C{name}
-        parameter and return the callable associated with that name (typically
-        and object's method with the same name).
+class RemoteObject(object):
+    """An object able to transparently call methods on a remote object."""
 
-        The idea is that if a connected AMP client sends a L{MethodCall} with
-        name C{foo_bar}, then the actual method associated with C{foo_bar} as
-        returned by the C{method_getter} will be called and its return value
-        delivered back to the client as response to the command.
+    def __init__(self, protocol):
+        self._protocol = protocol
 
-        The L{MethodCall}'s C{args} and C{kwargs} arguments  will be passed to
-        the actual method when calling it.
+    def __getattr__(self, name):
+        return self._method_call_sender(name)
 
-        @param cls: The L{MethodCall} class itself.
-        @param method_getter: A method of a L{MethodCallProtocol} sub-class, it
-            must return the method associated with a given name.
-        """
+    def _method_call_sender(self, name):
+        """Create a L{MethodCall} sender for the method with the given C{name}.
 
-        def call_method(self, **method_call_kwargs):
-            name = method_call_kwargs["name"]
-            args = method_call_kwargs["args"][:]
-            kwargs = method_call_kwargs["kwargs"].copy()
-
-            # Look for protocol attribute arguments
-            for key, value in kwargs.iteritems():
-                if key.startswith("_"):
-                    kwargs.pop(key)
-                    kwargs[key[1:]] = get_nested_attr(self, value)
-
-            # Call the appropriate method
-            method = method_getter(self, name)
-            if method is None:
-                raise MethodCallError("Can't call method '%s'" % name)
-            result = method(*args, **kwargs)
-
-            if not MethodCallArgument.check(result):
-                raise MethodCallError("Non-serializable result")
-
-            # Return an AMP response to be delivered to the remote caller
-            return {"result": result}
-
-        return CommandLocator._currentClassCommands.append(
-            (MethodCall, call_method))
-
-    @classmethod
-    def sender(cls, method):
-        """Decorator turning a method into an L{MethodCall} sender.
-
-        Instances of the class of the method being decorated method must
-        provide a C{_protocol} attribute, connected to the peer we want
-        to send the L{MethodCall} command to.
-
-        When the decorated method is called, it sends the an appropriate
+        When the created function is called, it sends the an appropriate
         L{MethodCall} to the remote peer passing it the arguments and
         keyword arguments it was called with, and returing a L{Deferred}
         resulting in the L{MethodCall}'s response value.
 
         The generated L{MethodCall} will invoke the remote object method
-        with the same name as the decorated method.
-
-        The decorated method can include in its signature hidden keyword
-        arguments starting with the prefix '_'.  Their default value
-        will be treated as a protocol attribute name to be passed to the
-        remote object method as extra argument.  It useful when the remote
-        object method we want to call needs to be passed some extra
-        protocol-specific argument that the connected AMP client can't know.
+        named C{name}..
         """
-        # The name of the decorated method must match the name of the
-        # remote object method we want to call
-        method_call_name = method.__name__
 
-        # Check for protocol attributes arguments specified in the
-        # method signature
-        signature = inspect.getargspec(method)
-        args = signature[0]
-        defaults = signature[3]
-        protocol_attributes_kwargs = {}
-        if defaults is not None:
-            for key, value in zip(args[-len(defaults):], defaults):
-                if key.startswith("_"):
-                    protocol_attributes_kwargs[key] = value
-
-        def send_method_call(self, *args, **kwargs):
+        def send_method_call(*args, **kwargs):
+            method_call_name = name
             method_call_args = args[:]
             method_call_kwargs = kwargs.copy()
-            method_call_kwargs.update(protocol_attributes_kwargs)
 
             def unpack_response(response):
                 return response["result"]
@@ -154,4 +99,90 @@ class MethodCall(Command):
 
 
 class MethodCallProtocol(AMP):
-    """Placeholder, will be replaced later."""
+    """A protocol for calling methods on a remote object.
+
+    @cvar methods: A list of L{Method}s describing the methods that can be
+        called with the protocol. It must be defined by sub-classes.
+    """
+
+    methods = []
+
+    def __init__(self, object=None):
+        """
+        @param object: The object the requested methods will be called on. Each
+            L{Method} declared in the C{methods} attribute is supposed to match
+            an actuall method of the given C{object}. If C{None} is given, the
+            protocol can only be used to invoke methods.
+        """
+        super(MethodCallProtocol, self).__init__()
+        self._object = object
+        self._methods_by_name = {}
+        for method in self.methods:
+            self._methods_by_name[method.name] = method
+        self.remote = RemoteObject(self)
+
+    @MethodCall.responder
+    def _method_call_responder(self, name, args, kwargs):
+        """Call an object method with the given arguments.
+
+        If a connected client sends a L{MethodCall} with name C{foo_bar}, then
+        the actual method C{foo_bar} of the object associated with the protocol
+        will be called with the given C{args} and C{kwargs} and its return
+        value delivered back to the client as response to the command.
+
+        The L{MethodCall}'s C{args} and C{kwargs} arguments  will be passed to
+        the actual method when calling it.
+        """
+        method = self._methods_by_name.get(name, None)
+        if method is None:
+            raise MethodCallError("Forbidden method '%s'" % name)
+
+        method_func = getattr(self._object, name)
+        method_args = []
+        method_kwargs = {}
+
+        if args:
+            method_args.extend(args)
+        if kwargs:
+            method_kwargs.update(kwargs)
+        if method.kwargs:
+            for key, value in method.kwargs.iteritems():
+                method_kwargs[key] = get_nested_attr(self, value)
+
+        result = method_func(*method_args, **method_kwargs)
+        if not MethodCallArgument.check(result):
+            raise MethodCallError("Non-serializable result")
+        return {"result": result}
+
+
+class MethodCallFactory(ServerFactory):
+    """Factory for building L{MethodCallProtocol}s."""
+
+    protocol = MethodCallProtocol
+
+    def __init__(self, object=None):
+        """
+        @param object: The object that will be associated with the created
+            protocol.
+        """
+        self._object = object
+
+    def buildProtocol(self, addr):
+        """Create a new protocol instance."""
+        protocol = self.protocol(self._object)
+        protocol.factory = self
+        return protocol
+
+
+def get_nested_attr(obj, path):
+    """Like C{getattr} but works with nested attributes as well.
+
+    @param obj: The object we want to get the attribute of.
+    @param path: The path to the attribute, like C{.some.nested.attr},
+        if C{.} is given the object itself is returned.
+    """
+    attr = obj
+    if path != "":
+        for name in path.split(".")[:]:
+            attr = getattr(attr, name)
+    return attr
