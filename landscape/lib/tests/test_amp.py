@@ -70,6 +70,9 @@ class Words(object):
             reactor.callLater(0.01, lambda: deferred.errback(Exception("bad")))
         elif word == "Censored":
             deferred.errback(Exception("very bad"))
+        elif word == "Long query":
+            # Do nothing, the deferred won't be fired at all
+            pass
         return deferred
 
 
@@ -93,7 +96,7 @@ class MethodCallProtocolTest(LandscapeTest):
     def setUp(self):
         super(MethodCallProtocolTest, self).setUp()
         socket = self.mktemp()
-        factory = MethodCallFactory(Words())
+        factory = MethodCallFactory(reactor, Words())
         factory.protocol = WordsProtocol
         factory.language = "italian"
         self.port = reactor.listenUNIX(socket, factory)
@@ -101,7 +104,7 @@ class MethodCallProtocolTest(LandscapeTest):
         def set_protocol(protocol):
             self.protocol = protocol
 
-        connector = ClientCreator(reactor, MethodCallProtocol)
+        connector = ClientCreator(reactor, MethodCallProtocol, reactor)
         connected = connector.connectUNIX(socket)
         return connected.addCallback(set_protocol)
 
@@ -230,7 +233,7 @@ class RemoteObjectTest(LandscapeTest):
     def setUp(self):
         super(RemoteObjectTest, self).setUp()
         socket = self.mktemp()
-        factory = MethodCallFactory(Words())
+        factory = MethodCallFactory(reactor, Words())
         factory.protocol = WordsProtocol
         factory.language = "italian"
         self.port = reactor.listenUNIX(socket, factory)
@@ -239,7 +242,7 @@ class RemoteObjectTest(LandscapeTest):
             self.protocol = protocol
             self.words = protocol.remote
 
-        connector = ClientCreator(reactor, MethodCallProtocol)
+        connector = ClientCreator(reactor, MethodCallProtocol, reactor)
         connected = connector.connectUNIX(socket)
         return connected.addCallback(set_protocol)
 
@@ -367,6 +370,14 @@ class RemoteObjectTest(LandscapeTest):
         If the target object method can return an already failed L{Deferred}.
         """
         result = self.words.google("Censored")
+        return self.assertFailure(result, MethodCallError)
+
+    def test_google_timeout(self):
+        """
+        If the target object method can return an already failed L{Deferred}.
+        """
+        self.protocol.timeout = 0.1
+        result = self.words.google("Long query")
         return self.assertFailure(result, MethodCallError)
 
 

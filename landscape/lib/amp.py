@@ -2,7 +2,7 @@ from uuid import uuid4
 
 from twisted.internet.defer import Deferred
 from twisted.internet.protocol import ServerFactory
-from twisted.protocols.amp import Argument, String, Command, AMP
+from twisted.protocols.amp import Argument, String, Integer, Command, AMP
 from twisted.python.failure import Failure
 
 from landscape.lib.bpickle import loads, dumps, dumps_table
@@ -64,7 +64,7 @@ class MethodCall(Command):
     errors = {MethodCallError: "METHOD_CALL_ERROR"}
 
 
-class _FireDeferred(Command):
+class FireDeferred(Command):
     """Fire a L{Deferred} associated with an outstanding method call result."""
 
     arguments = [("uuid", String()),
@@ -78,21 +78,28 @@ class MethodCallProtocol(AMP):
 
     @cvar methods: A list of L{Method}s describing the methods that can be
         called with the protocol. It must be defined by sub-classes.
+    @cvar timeout: A timeout for remote methods returning L{Deferred}s, if a
+        response for the deferred is not received within this amount of
+        seconds, the remote method call will errback with a L{MethodCallError}.
     """
 
     methods = []
+    timeout = 60
 
-    def __init__(self, object=None):
+    def __init__(self, reactor, object=None):
         """
+        @param reactor: The reactor used by L{RemoteObject} associated with the
+            protocol to schedule timeouts for methods returning L{Deferred}s.
         @param object: The object the requested methods will be called on. Each
             L{Method} declared in the C{methods} attribute is supposed to match
             an actuall method of the given C{object}. If C{None} is given, the
             protocol can only be used to invoke methods.
         """
         super(MethodCallProtocol, self).__init__()
+        self._reactor = reactor
         self._object = object
         self._methods_by_name = {}
-        self._outstanding_deferreds = {}
+        self._pending_methods = {}
         for method in self.methods:
             self._methods_by_name[method.name] = method
         self.remote = RemoteObject(self)
@@ -140,37 +147,60 @@ class MethodCallProtocol(AMP):
                 return {"result": result.result}
 
             uuid = str(uuid4())
-            result.addCallback(self._send_deferred_result, uuid)
-            result.addErrback(self._send_deferred_failure, uuid)
+            result.addCallback(self.send_success, uuid)
+            result.addErrback(self.send_failure, uuid)
             return {"result": None, "deferred": uuid}
 
         if not MethodCallArgument.check(result):
             raise MethodCallError("Non-serializable result")
         return {"result": result}
 
-    def _send_deferred_result(self, result, uuid):
-        """Send a successful L{_FireDeferred} for the given C{uuid}."""
-        self.callRemote(_FireDeferred, uuid=uuid, result=result)
+    def send_success(self, result, uuid):
+        """Send a successful L{FireDeferred} for the given C{uuid}."""
+        self.callRemote(FireDeferred, uuid=uuid, result=result)
 
-    def _send_deferred_failure(self, error, uuid):
-        """Send a failed L{_FireDeferred} for the given C{uuid}."""
+    def send_failure(self, error, uuid):
+        """Send a failed L{FireDeferred} for the given C{uuid}."""
         failure = str(error.value)
-        self.callRemote(_FireDeferred, uuid=uuid, failure=failure)
+        self.callRemote(FireDeferred, uuid=uuid, failure=failure)
 
-    @_FireDeferred.responder
-    def _fire_deferred(self, uuid, result, failure):
+    @FireDeferred.responder
+    def fire_deferred(self, uuid, result, failure):
         """Receive the deferred L{MethodCall} result.
 
         @param uuid: The id of the L{MethodCall} we're getting the result of.
         @param result: The result of the associated deferred if successful.
         @param failure: The failure message of the deferred if it failed.
         """
-        deferred = self._outstanding_deferreds.pop(uuid)
+        deferred, call = self._pending_methods.pop(uuid)
+        call.cancel()
         if failure is None:
-            deferred.callback(result)
+            deferred.callback({"result": result})
         else:
             deferred.errback(MethodCallError(failure))
         return {}
+
+    def cancel_deferred(self, uuid):
+        if uuid in self._pending_methods:
+            deferred, call = self._pending_methods.pop(uuid)
+            deferred.errback(MethodCallError("timeout"))
+
+    def handle_response(self, response):
+
+        if response["deferred"]:
+            uuid = response["deferred"]
+            deferred = Deferred()
+            call = self._reactor.callLater(self.timeout,
+                                           self.cancel_deferred, uuid)
+            self._pending_methods[uuid] = (deferred, call)
+            return deferred
+
+        return response
+
+    def callRemote(self, *args, **kwargs):
+        result = super(MethodCallProtocol, self).callRemote(*args, **kwargs)
+        if result is not None:
+            return result.addCallback(self.handle_response)
 
 
 class RemoteObject(object):
@@ -198,27 +228,17 @@ class RemoteObject(object):
             method_call_name = name
             method_call_args = args[:]
             method_call_kwargs = kwargs.copy()
-
-            def unpack_response(response):
-                # If the remote method call resulted in a Deferred, we return
-                # a Deferred as well, which will be fired as soon as the remote
-                # one does.
-                if response["deferred"]:
-                    uuid = response["deferred"]
-                    deferred = Deferred()
-                    self._protocol._outstanding_deferreds[uuid] = deferred
-                    return deferred
-
-                return response["result"]
-
             sent = self._protocol.callRemote(MethodCall,
                                              name=method_call_name,
                                              args=method_call_args,
                                              kwargs=method_call_kwargs)
-            sent.addCallback(unpack_response)
+            sent.addCallback(lambda response: response["result"])
             return sent
 
         return send_method_call
+
+    def __method_call_timeout(self, uuid):
+        pass
 
 
 class MethodCallFactory(ServerFactory):
@@ -226,16 +246,17 @@ class MethodCallFactory(ServerFactory):
 
     protocol = MethodCallProtocol
 
-    def __init__(self, object=None):
+    def __init__(self, *args, **kwargs):
         """
-        @param object: The object that will be associated with the created
-            protocol.
+        @param args: Arguments to pass to the protocol constructor.
+        @param kwargs: Keyword arguments for the protocol constructor.
         """
-        self._object = object
+        self._args = args
+        self._kwargs = kwargs
 
     def buildProtocol(self, addr):
         """Create a new protocol instance."""
-        protocol = self.protocol(self._object)
+        protocol = self.protocol(*self._args, **self._kwargs)
         protocol.factory = self
         return protocol
 
