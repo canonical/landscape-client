@@ -465,8 +465,8 @@ class LandscapeSetupScriptTest(LandscapeTest):
         script_mock.prompt_yes_no("Enable script execution?", default=False)
         self.mocker.result(True)
         script_mock.show_help(ANY)
-        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
-        self.expect(raw_input_mock(ANY)).count(0)
+        script_mock.prompt_get_input(
+            "Script users [root, nobody, landscape]: ", False)
         self.mocker.replay()
 
         self.config.load_command_line(

@@ -337,17 +337,16 @@ class LandscapeSetupScript(object):
                 that scripts will be restricted to. To allow scripts to be run
                 by any user, enter "ALL".
                 """)
-            if not "script_users" in options:
-                while True:
-                    self.prompt("script_users", "Script users")
-                    invalid_users = get_invalid_users(
-                        self.config.script_users)
-                    if not invalid_users:
-                        break
-                    else:
-                        self.show_help("Unknown system users: %s" %
-                                       ",".join(invalid_users))
-                        self.config.script_users = None
+            while True:
+                self.prompt("script_users", "Script users")
+                invalid_users = get_invalid_users(
+                    self.config.script_users)
+                if not invalid_users:
+                    break
+                else:
+                    self.show_help("Unknown system users: %s" %
+                                   ",".join(invalid_users))
+                    self.config.script_users = None
         else:
             if "ScriptExecution" in included_plugins:
                 included_plugins.remove("ScriptExecution")
