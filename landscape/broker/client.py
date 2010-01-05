@@ -46,7 +46,7 @@ class BrokerClient(object):
         self._plugin_names = {}
 
         # Expose ourselves to the broker over AMP
-        self.broker._protocol._object = self
+        self.broker.protocol.object = self
 
         # Register event handlers
         self.reactor.call_on("impending-exchange", self.notify_exchange)
