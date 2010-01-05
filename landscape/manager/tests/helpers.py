@@ -17,6 +17,7 @@ class ManagerHelper(BrokerServiceHelper):
             test_case.reactor = test_case.broker_service.reactor
             test_case.manager = Manager(
                 test_case.remote, test_case.reactor, test_case.config)
+            test_case.mstore = test_case.broker_service.message_store
 
         broker_started = super(ManagerHelper, self).set_up(test_case)
         return broker_started.addCallback(set_manager)
