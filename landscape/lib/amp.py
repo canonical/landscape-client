@@ -73,6 +73,49 @@ class _DeferredResponse(Command):
     requiresAnswer = False
 
 
+class RemoteObject(object):
+    """An object able to transparently call methods on a remote object.
+
+    @ivar protocol: A reference to a connected L{MethodCallProtocol}, which
+        will be used to send L{MethodCall} commands.
+    """
+
+    def __init__(self, protocol):
+        self._protocol = protocol
+
+    @property
+    def protocol(self):
+        """Return a reference to the connected L{MethodCallProtocol}."""
+        return self._protocol
+
+    def __getattr__(self, name):
+        return self._create_method_call_sender(name)
+
+    def _create_method_call_sender(self, name):
+        """Create a L{MethodCall} sender for the method with the given C{name}.
+
+        When the created function is called, it sends the an appropriate
+        L{MethodCall} to the remote peer passing it the arguments and
+        keyword arguments it was called with, and returing a L{Deferred}
+        resulting in the L{MethodCall}'s response value.
+
+        The generated L{MethodCall} will invoke the remote object method
+        named C{name}..
+        """
+
+        def send_method_call(*args, **kwargs):
+            method_call_name = name
+            method_call_args = args[:]
+            method_call_kwargs = kwargs.copy()
+            called = self.protocol.callRemote(MethodCall,
+                                              name=method_call_name,
+                                              args=method_call_args,
+                                              kwargs=method_call_kwargs)
+            return called.addCallback(lambda response: response["result"])
+
+        return send_method_call
+
+
 class MethodCallProtocol(AMP):
     """A protocol for calling methods on a remote object.
 
@@ -81,6 +124,7 @@ class MethodCallProtocol(AMP):
     @cvar timeout: A timeout for remote methods returning L{Deferred}s, if a
         response for the deferred is not received within this amount of
         seconds, the remote method call will errback with a L{MethodCallError}.
+    @cvar remote_factory: The factory used to build the C{remote} attribute.
     @ivar object: The object exposed by the protocol instance, it can be passed
         to the constructor or set later on the protocol instance itself.
     @ivar remote: A L{RemoteObject} able to transparently call methods on
@@ -89,6 +133,7 @@ class MethodCallProtocol(AMP):
 
     methods = []
     timeout = 60
+    remote_factory = RemoteObject
 
     def __init__(self, reactor, object=None):
         """
@@ -102,7 +147,7 @@ class MethodCallProtocol(AMP):
         super(MethodCallProtocol, self).__init__()
         self._reactor = reactor
         self.object = object
-        self.remote = RemoteObject(self)
+        self.remote = self.remote_factory(self)
 
         self._methods_by_name = {}
         self._pending_responses = {}
@@ -211,52 +256,6 @@ class MethodCallProtocol(AMP):
         result = super(MethodCallProtocol, self).callRemote(*args, **kwargs)
         if result is not None:
             return result.addCallback(self._handle_response)
-
-
-class RemoteObject(object):
-    """An object able to transparently call methods on a remote object.
-
-    @ivar protocol: A reference to a connected L{MethodCallProtocol}, which
-        will be used to send L{MethodCall} commands.
-    """
-
-    def __init__(self, protocol):
-        self._protocol = protocol
-
-    @property
-    def protocol(self):
-        """Return a reference to the connected L{MethodCallProtocol}."""
-        return self._protocol
-
-    def __getattr__(self, name):
-        return self._create_method_call_sender(name)
-
-    def _create_method_call_sender(self, name):
-        """Create a L{MethodCall} sender for the method with the given C{name}.
-
-        When the created function is called, it sends the an appropriate
-        L{MethodCall} to the remote peer passing it the arguments and
-        keyword arguments it was called with, and returing a L{Deferred}
-        resulting in the L{MethodCall}'s response value.
-
-        The generated L{MethodCall} will invoke the remote object method
-        named C{name}..
-        """
-
-        def send_method_call(*args, **kwargs):
-            method_call_name = name
-            method_call_args = args[:]
-            method_call_kwargs = kwargs.copy()
-            called = self.protocol.callRemote(MethodCall,
-                                              name=method_call_name,
-                                              args=method_call_args,
-                                              kwargs=method_call_kwargs)
-            return called.addCallback(lambda response: response["result"])
-
-        return send_method_call
-
-    def __method_call_timeout(self, uuid):
-        pass
 
 
 class MethodCallFactory(ServerFactory):
