@@ -45,7 +45,7 @@ class BrokerClientProtocol(MethodCallProtocol):
     """Communication protocol between a client and the broker."""
 
     methods = [Method("ping"),
-               Method("dispatch_message"),
+               Method("message"),
                Method("fire_event"),
                Method("exit")]
 
