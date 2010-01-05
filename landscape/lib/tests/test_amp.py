@@ -10,6 +10,7 @@ from landscape.tests.helpers import LandscapeTest
 
 
 class Words(object):
+    """Test class to be used as target object of a L{MethodCallProtocol}."""
 
     def secret(self):
         raise RuntimeError("I'm not supposed to be called!")
@@ -113,7 +114,7 @@ class MethodCallProtocolTest(LandscapeTest):
         self.port.loseConnection()
         super(MethodCallProtocolTest, self).tearDown()
 
-    def test_secret(self):
+    def test_with_forbidden_method(self):
         """
         If a method is not included in L{MethodCallProtocol.methods} it
         can't be called.
@@ -122,7 +123,7 @@ class MethodCallProtocolTest(LandscapeTest):
                                           name="secret")
         return self.assertFailure(result, MethodCallError)
 
-    def test_empty(self):
+    def test_with_no_arguments(self):
         """
         A connected client can issue a L{MethodCall} without arguments and
         with an empty response.
@@ -132,7 +133,7 @@ class MethodCallProtocolTest(LandscapeTest):
         return self.assertSuccess(result, {"result": None,
                                            "deferred": None})
 
-    def test_motd(self):
+    def test_with_return_value(self):
         """
         A connected client can issue a L{MethodCall} targeted to an
         object method with a return value.
@@ -142,7 +143,7 @@ class MethodCallProtocolTest(LandscapeTest):
         return self.assertSuccess(result, {"result": "Words are cool",
                                            "deferred": None})
 
-    def test_capitalize(self):
+    def test_with_one_argument(self):
         """
         A connected AMP client can issue a L{MethodCall} with one argument and
         a response value.
@@ -153,7 +154,7 @@ class MethodCallProtocolTest(LandscapeTest):
         return self.assertSuccess(result, {"result": "John",
                                            "deferred": None})
 
-    def test_is_short(self):
+    def test_with_boolean_return_value(self):
         """
         The return value of a L{MethodCall} argument can be a boolean.
         """
@@ -163,7 +164,7 @@ class MethodCallProtocolTest(LandscapeTest):
         return self.assertSuccess(result, {"result": True,
                                            "deferred": None})
 
-    def test_concatenate(self):
+    def test_with_many_arguments(self):
         """
         A connected client can issue a L{MethodCall} with many arguments.
         """
@@ -173,7 +174,7 @@ class MethodCallProtocolTest(LandscapeTest):
         return self.assertSuccess(result, {"result": "You rock",
                                            "deferred": None})
 
-    def test_lower_case(self):
+    def test_with_default_arguments(self):
         """
         A connected client can issue a L{MethodCall} for methods having
         default arguments.
@@ -184,7 +185,7 @@ class MethodCallProtocolTest(LandscapeTest):
         return self.assertSuccess(result, {"result": "ohh",
                                            "deferred": None})
 
-    def test_lower_case_with_index(self):
+    def test_with_overriden_default_arguments(self):
         """
         A connected client can issue a L{MethodCall} with keyword arguments
         having default values in the target object.  If a value is specified by
@@ -197,7 +198,7 @@ class MethodCallProtocolTest(LandscapeTest):
         return self.assertSuccess(result, {"result": "OHh",
                                            "deferred": None})
 
-    def test_multiply_alphabetically(self):
+    def test_with_dictionary_arguments(self):
         """
         Method arguments passed to a L{MethodCall} can be dictionaries.
         """
@@ -208,7 +209,7 @@ class MethodCallProtocolTest(LandscapeTest):
         return self.assertSuccess(result, {"result": "barbarbarfoofoo",
                                            "deferred": None})
 
-    def test_translate(self):
+    def test_with_protocol_specific_arguments(self):
         """
         A L{Method} can specify additional protocol-specific arguments
         that will be added to the ones provided by the L{MethodCall}.
@@ -218,7 +219,7 @@ class MethodCallProtocolTest(LandscapeTest):
                                           args=["hi"])
         return self.assertSuccess(result, {"result": "ciao", "deferred": None})
 
-    def test_meaning_of_life(self):
+    def test_with_non_serializable_return_value(self):
         """
         If the target object method returns an object that can't be serialized,
         the L{MethodCall} result is C{None}.
@@ -251,14 +252,22 @@ class RemoteObjectTest(LandscapeTest):
         self.port.loseConnection()
         super(RemoteObjectTest, self).tearDown()
 
-    def test_empty(self):
+    def test_method_call_sender_with_forbidden_method(self):
+        """
+        A L{RemoteObject} can send L{MethodCall}s without arguments and withj
+        an empty response.
+        """
+        result = self.words.secret()
+        return self.assertFailure(result, MethodCallError)
+
+    def test_with_no_arguments(self):
         """
         A L{RemoteObject} can send L{MethodCall}s without arguments and withj
         an empty response.
         """
         return self.assertSuccess(self.words.empty())
 
-    def test_motd(self):
+    def test_with_return_value(self):
         """
         A L{RemoteObject} can send L{MethodCall}s without arguments and get
         back the value of the commands's response.
@@ -266,7 +275,7 @@ class RemoteObjectTest(LandscapeTest):
         result = self.words.motd()
         return self.assertSuccess(result, "Words are cool")
 
-    def test_capitalize(self):
+    def test_with_one_argument(self):
         """
         A L{RemoteObject} can send L{MethodCall}s with one argument and get
         the response value.
@@ -274,27 +283,27 @@ class RemoteObjectTest(LandscapeTest):
         result = self.words.capitalize("john")
         return self.assertSuccess(result, "John")
 
-    def test_capitalize_with_kwarg(self):
+    def test_with_one_keyword_argument(self):
         """
         A L{RemoteObject} can send L{MethodCall}s with a named argument.
         """
         result = self.words.capitalize(word="john")
         return self.assertSuccess(result, "John")
 
-    def test_is_short(self):
+    def test_with_boolean_return_value(self):
         """
         The return value of a L{MethodCall} argument can be a boolean.
         """
         return self.assertSuccess(self.words.is_short("hi"), True)
 
-    def test_concatenate(self):
+    def test_with_many_arguments(self):
         """
         A L{RemoteObject} can send L{MethodCall}s with more than one argument.
         """
         result = self.words.concatenate("You ", "rock")
         return self.assertSuccess(result, "You rock")
 
-    def test_concatenate_with_kwargs(self):
+    def test_with_many_keyword_arguments(self):
         """
         A L{RemoteObject} can send L{MethodCall}s with several
         named arguments.
@@ -302,7 +311,7 @@ class RemoteObjectTest(LandscapeTest):
         result = self.words.concatenate(word2="rock", word1="You ")
         return self.assertSuccess(result, "You rock")
 
-    def test_lower_case(self):
+    def test_with_default_arguments(self):
         """
         A L{RemoteObject} can send a L{MethodCall} having an argument with
         a default value.
@@ -310,7 +319,7 @@ class RemoteObjectTest(LandscapeTest):
         result = self.words.lower_case("OHH")
         return self.assertSuccess(result, "ohh")
 
-    def test_lower_case_with_index(self):
+    def test_with_overriden_default_arguments(self):
         """
         A L{RemoteObject} can send L{MethodCall}s overriding the default
         value of an argument.
@@ -318,7 +327,7 @@ class RemoteObjectTest(LandscapeTest):
         result = self.words.lower_case("OHH", 2)
         return self.assertSuccess(result, "OHh")
 
-    def test_multiply_alphabetically(self):
+    def test_with_dictionary_arguments(self):
         """
         A L{RemoteObject} can send a L{MethodCall}s for methods requiring
         a dictionary arguments.
@@ -326,15 +335,15 @@ class RemoteObjectTest(LandscapeTest):
         result = self.words.multiply_alphabetically({"foo": 2, "bar": 3})
         return self.assertSuccess(result, "barbarbarfoofoo")
 
-    def test_translate(self):
+    def test_with_protocol_specific_arguments(self):
         """
-        A L{RemoteObject} can send a L{MethodCall} requiring protocol
+        A L{RemoteObject} can send a L{MethodCall} requiring protocol-specific
         arguments, which won't be exposed to the caller.
         """
         result = self.assertSuccess(self.words.translate("hi"), "ciao")
         return self.assertSuccess(result, "ciao")
 
-    def test_guess(self):
+    def test_with_generic_args_and_kwargs(self):
         """
         A L{RemoteObject} behaves well with L{MethodCall}s for methods
         having generic C{*args} and C{**kwargs} arguments.
@@ -342,7 +351,7 @@ class RemoteObjectTest(LandscapeTest):
         result = self.words.guess("word", "cool", value=4)
         return self.assertSuccess(result, "Guessed!")
 
-    def test_google(self):
+    def test_with_success_full_deferred(self):
         """
         If the target object method returns a L{Deferred}, it is handled
         transparently.
@@ -350,7 +359,7 @@ class RemoteObjectTest(LandscapeTest):
         result = self.words.google("Landscape")
         return self.assertSuccess(result, "Cool!")
 
-    def test_google_with_errback(self):
+    def test_with_failing_deferred(self):
         """
         If the target object method returns a failing L{Deferred}, a
         L{MethodCallError} is raised.
@@ -358,23 +367,24 @@ class RemoteObjectTest(LandscapeTest):
         result = self.words.google("Weird stuff")
         return self.assertFailure(result, MethodCallError)
 
-    def test_google_with_already_fired(self):
+    def test_with_already_callback_deferred(self):
         """
         The target object method can return an already fired L{Deferred}.
         """
         result = self.words.google("Easy query")
         return self.assertSuccess(result, "Done!")
 
-    def test_google_with_already_errback(self):
+    def test_with_already_errback_deferred(self):
         """
         If the target object method can return an already failed L{Deferred}.
         """
         result = self.words.google("Censored")
         return self.assertFailure(result, MethodCallError)
 
-    def test_google_timeout(self):
+    def test_with_deferred_timeout(self):
         """
-        If the target object method can return an already failed L{Deferred}.
+        If the peer protocol doesn't send a response for a deferred within
+        the given timeout, the method call fails.
         """
         self.protocol.timeout = 0.1
         result = self.words.google("Long query")
