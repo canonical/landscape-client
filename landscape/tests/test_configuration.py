@@ -511,7 +511,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         """
         self.config.load_command_line(
             ["--script-users", "ALL",
-            "--include-manager-plugins", "ScriptPlugin"])
+             "--include-manager-plugins", "ScriptPlugin"])
         self.script.query_script_plugin()
         self.assertEquals(self.config.script_users,
                           "ALL")
