@@ -59,68 +59,6 @@ class MethodCall(Command):
     errors = {MethodCallError: "METHOD_CALL_ERROR"}
 
 
-class MethodCallProtocol(AMP):
-    """A protocol for calling methods on a remote object.
-
-    @cvar methods: A list of L{Method}s describing the methods that can be
-        called with the protocol. It must be defined by sub-classes.
-    @ivar object: The object exposed by the protocol instance, it can be passed
-        to the constructor or set later on the protocol instance itself.
-    @ivar remote: A L{RemoteObject} able to transparently call methods on
-        to the actuall object associated with the remote peer protocol.
-    """
-
-    methods = []
-
-    def __init__(self, object=None):
-        """
-        @param object: The object the requested methods will be called on. Each
-            L{Method} declared in the C{methods} attribute is supposed to match
-            an actuall method of the given C{object}. If C{None} is given, the
-            protocol can only be used to invoke methods.
-        """
-        super(MethodCallProtocol, self).__init__()
-        self.object = object
-        self.remote = RemoteObject(self)
-
-        self._methods_by_name = {}
-        for method in self.methods:
-            self._methods_by_name[method.name] = method
-
-    @MethodCall.responder
-    def _call_object_method(self, name, args, kwargs):
-        """Call an object's method with the given arguments.
-
-        If a connected client sends a L{MethodCall} with name C{foo_bar}, then
-        the actual method C{foo_bar} of the object associated with the protocol
-        will be called with the given C{args} and C{kwargs} and its return
-        value delivered back to the client as response to the command.
-
-        The L{MethodCall}'s C{args} and C{kwargs} arguments  will be passed to
-        the actual method when calling it.
-        """
-        method = self._methods_by_name.get(name, None)
-        if method is None:
-            raise MethodCallError("Forbidden method '%s'" % name)
-
-        method_func = getattr(self.object, name)
-        method_args = []
-        method_kwargs = {}
-
-        if args:
-            method_args.extend(args)
-        if kwargs:
-            method_kwargs.update(kwargs)
-        if method.kwargs:
-            for key, value in method.kwargs.iteritems():
-                method_kwargs[key] = get_nested_attr(self, value)
-
-        result = method_func(*method_args, **method_kwargs)
-        if not MethodCallArgument.check(result):
-            raise MethodCallError("Non-serializable result")
-        return {"result": result}
-
-
 class RemoteObject(object):
     """An object able to transparently call methods on a remote object.
 
@@ -162,6 +100,70 @@ class RemoteObject(object):
             return called.addCallback(lambda response: response["result"])
 
         return send_method_call
+
+
+class MethodCallProtocol(AMP):
+    """A protocol for calling methods on a remote object.
+
+    @cvar methods: A list of L{Method}s describing the methods that can be
+        called with the protocol. It must be defined by sub-classes.
+    @cvar remote_factory: The factory used to build the C{remote} attribute.
+    @ivar object: The object exposed by the protocol instance, it can be passed
+        to the constructor or set later on the protocol instance itself.
+    @ivar remote: A L{RemoteObject} able to transparently call methods on
+        to the actuall object associated with the remote peer protocol.
+    """
+
+    methods = []
+    remote_factory = RemoteObject
+
+    def __init__(self, object=None):
+        """
+        @param object: The object the requested methods will be called on. Each
+            L{Method} declared in the C{methods} attribute is supposed to match
+            an actuall method of the given C{object}. If C{None} is given, the
+            protocol can only be used to invoke methods.
+        """
+        super(MethodCallProtocol, self).__init__()
+        self.object = object
+        self.remote = self.remote_factory(self)
+
+        self._methods_by_name = {}
+        for method in self.methods:
+            self._methods_by_name[method.name] = method
+
+    @MethodCall.responder
+    def _call_object_method(self, name, args, kwargs):
+        """Call an object's method with the given arguments.
+
+        If a connected client sends a L{MethodCall} with name C{foo_bar}, then
+        the actual method C{foo_bar} of the object associated with the protocol
+        will be called with the given C{args} and C{kwargs} and its return
+        value delivered back to the client as response to the command.
+
+        The L{MethodCall}'s C{args} and C{kwargs} arguments  will be passed to
+        the actual method when calling it.
+        """
+        method = self._methods_by_name.get(name, None)
+        if method is None:
+            raise MethodCallError("Forbidden method '%s'" % name)
+
+        method_func = getattr(self.object, name)
+        method_args = []
+        method_kwargs = {}
+
+        if args:
+            method_args.extend(args)
+        if kwargs:
+            method_kwargs.update(kwargs)
+        if method.kwargs:
+            for key, value in method.kwargs.iteritems():
+                method_kwargs[key] = get_nested_attr(self, value)
+
+        result = method_func(*method_args, **method_kwargs)
+        if not MethodCallArgument.check(result):
+            raise MethodCallError("Non-serializable result")
+        return {"result": result}
 
 
 class MethodCallFactory(ServerFactory):
