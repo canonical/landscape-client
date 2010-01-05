@@ -115,9 +115,6 @@ class RemoteObject(object):
 
         return send_method_call
 
-    def __method_call_timeout(self, uuid):
-        pass
-
 
 class MethodCallProtocol(AMP):
     """A protocol for calling methods on a remote object.
