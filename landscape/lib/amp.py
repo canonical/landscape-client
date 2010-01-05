@@ -83,7 +83,7 @@ class MethodCallProtocol(AMP):
         self.remote = RemoteObject(self)
 
     @MethodCall.responder
-    def _method_call_responder(self, name, args, kwargs):
+    def method_call_responder(self, name, args, kwargs):
         """Call an object method with the given arguments.
 
         If a connected client sends a L{MethodCall} with name C{foo_bar}, then
@@ -123,9 +123,9 @@ class RemoteObject(object):
         self._protocol = protocol
 
     def __getattr__(self, name):
-        return self._method_call_sender(name)
+        return self.__method_call_sender(name)
 
-    def _method_call_sender(self, name):
+    def __method_call_sender(self, name):
         """Create a L{MethodCall} sender for the method with the given C{name}.
 
         When the created function is called, it sends the an appropriate
