@@ -5,7 +5,7 @@ from twisted.internet.protocol import ClientCreator
 
 from landscape.lib.amp import (
     MethodCallError, MethodCall, get_nested_attr, Method, MethodCallProtocol,
-    MethodCallFactory)
+    MethodCallFactory, RemoteObjectCreator)
 from landscape.tests.helpers import LandscapeTest
 
 
@@ -239,16 +239,15 @@ class RemoteObjectTest(LandscapeTest):
         factory.language = "italian"
         self.port = reactor.listenUNIX(socket, factory)
 
-        def set_protocol(protocol):
-            self.protocol = protocol
-            self.words = protocol.remote
+        def set_words(remote):
+            self.words = remote
 
-        connector = ClientCreator(reactor, MethodCallProtocol, reactor)
-        connected = connector.connectUNIX(socket)
-        return connected.addCallback(set_protocol)
+        self.connector = RemoteObjectCreator(reactor, socket)
+        connected = self.connector.connect()
+        return connected.addCallback(set_words)
 
     def tearDown(self):
-        self.protocol.transport.loseConnection()
+        self.connector.disconnect()
         self.port.loseConnection()
         super(RemoteObjectTest, self).tearDown()
 
@@ -386,7 +385,7 @@ class RemoteObjectTest(LandscapeTest):
         If the peer protocol doesn't send a response for a deferred within
         the given timeout, the method call fails.
         """
-        self.protocol.timeout = 0.1
+        self.words.protocol.timeout = 0.1
         result = self.words.google("Long query")
         return self.assertFailure(result, MethodCallError)
 
