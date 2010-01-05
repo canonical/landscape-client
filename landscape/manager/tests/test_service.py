@@ -58,7 +58,7 @@ class ManagerServiceTest(LandscapeTest):
             [client] = self.broker_service.broker.get_clients()
             self.assertEquals(client.name, "manager")
             result = self.service.broker.ping()
-            result.addCallback(lambda x: self.service.broker.disconnect())
+            result.addCallback(lambda x: self.service.creator.disconnect())
             return result
 
         started = self.service.startService()
@@ -68,7 +68,7 @@ class ManagerServiceTest(LandscapeTest):
         """
         The L{BrokerService.stopService} closes the connection with the broker.
         """
-        self.service.broker = self.mocker.mock()
-        self.service.broker.disconnect()
+        self.service.creator = self.mocker.mock()
+        self.service.creator.disconnect()
         self.mocker.replay()
         self.service.stopService()
