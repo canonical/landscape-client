@@ -61,7 +61,7 @@ class MonitorServiceTest(LandscapeTest):
             [client] = self.broker_service.broker.get_clients()
             self.assertEquals(client.name, "monitor")
             result = self.service.broker.ping()
-            result.addCallback(lambda x: self.service.broker.disconnect())
+            result.addCallback(lambda x: self.service.creator.disconnect())
             return result
 
         started = self.service.startService()
@@ -74,7 +74,7 @@ class MonitorServiceTest(LandscapeTest):
         """
         self.service.monitor = self.mocker.mock()
         self.service.monitor.flush()
-        self.service.broker = self.mocker.mock()
-        self.service.broker.disconnect()
+        self.service.creator = self.mocker.mock()
+        self.service.creator.disconnect()
         self.mocker.replay()
         self.service.stopService()

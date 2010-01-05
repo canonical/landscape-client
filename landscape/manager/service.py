@@ -1,7 +1,7 @@
 from twisted.python.reflect import namedClass
 
 from landscape.deployment import LandscapeService
-from landscape.broker.amp import RemoteBroker
+from landscape.broker.amp import RemoteBrokerCreator
 from landscape.manager.manager import Manager
 
 
@@ -25,7 +25,8 @@ class ManagerService(LandscapeService):
     def startService(self):
         super(ManagerService, self).startService()
 
-        def start_plugins(protocol):
+        def start_plugins(broker):
+            self.broker = broker
             self.manager = Manager(self.broker, self.reactor, self.config)
 
             for plugin in self.plugins:
@@ -33,11 +34,11 @@ class ManagerService(LandscapeService):
 
             return self.broker.register_client(self.service_name)
 
-        self.broker = RemoteBroker(self.config, self.reactor)
-        connected = self.broker.connect()
+        self.creator = RemoteBrokerCreator(self.config, self.reactor)
+        connected = self.creator.connect()
         return connected.addCallback(start_plugins)
 
     def stopService(self):
         """Stop the manager and close the connection with the broker."""
-        self.broker.disconnect()
+        self.creator.disconnect()
         super(ManagerService, self).stopService()
