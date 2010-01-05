@@ -1,7 +1,6 @@
 from twisted.trial.unittest import TestCase
 from twisted.internet import reactor
-from twisted.internet.defer import Deferred
-from twisted.internet.protocol import ServerFactory, ClientCreator
+from twisted.internet.protocol import ClientCreator
 
 from landscape.lib.amp import (
     MethodCallError, MethodCall, get_nested_attr, Method, MethodCallProtocol,

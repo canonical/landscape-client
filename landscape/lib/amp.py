@@ -59,45 +59,6 @@ class MethodCall(Command):
     errors = {MethodCallError: "METHOD_CALL_ERROR"}
 
 
-class RemoteObject(object):
-    """An object able to transparently call methods on a remote object."""
-
-    def __init__(self, protocol):
-        self._protocol = protocol
-
-    def __getattr__(self, name):
-        return self._method_call_sender(name)
-
-    def _method_call_sender(self, name):
-        """Create a L{MethodCall} sender for the method with the given C{name}.
-
-        When the created function is called, it sends the an appropriate
-        L{MethodCall} to the remote peer passing it the arguments and
-        keyword arguments it was called with, and returing a L{Deferred}
-        resulting in the L{MethodCall}'s response value.
-
-        The generated L{MethodCall} will invoke the remote object method
-        named C{name}..
-        """
-
-        def send_method_call(*args, **kwargs):
-            method_call_name = name
-            method_call_args = args[:]
-            method_call_kwargs = kwargs.copy()
-
-            def unpack_response(response):
-                return response["result"]
-
-            sent = self._protocol.callRemote(MethodCall,
-                                             name=method_call_name,
-                                             args=method_call_args,
-                                             kwargs=method_call_kwargs)
-            sent.addCallback(unpack_response)
-            return sent
-
-        return send_method_call
-
-
 class MethodCallProtocol(AMP):
     """A protocol for calling methods on a remote object.
 
@@ -153,6 +114,45 @@ class MethodCallProtocol(AMP):
         if not MethodCallArgument.check(result):
             raise MethodCallError("Non-serializable result")
         return {"result": result}
+
+
+class RemoteObject(object):
+    """An object able to transparently call methods on a remote object."""
+
+    def __init__(self, protocol):
+        self._protocol = protocol
+
+    def __getattr__(self, name):
+        return self._method_call_sender(name)
+
+    def _method_call_sender(self, name):
+        """Create a L{MethodCall} sender for the method with the given C{name}.
+
+        When the created function is called, it sends the an appropriate
+        L{MethodCall} to the remote peer passing it the arguments and
+        keyword arguments it was called with, and returing a L{Deferred}
+        resulting in the L{MethodCall}'s response value.
+
+        The generated L{MethodCall} will invoke the remote object method
+        named C{name}..
+        """
+
+        def send_method_call(*args, **kwargs):
+            method_call_name = name
+            method_call_args = args[:]
+            method_call_kwargs = kwargs.copy()
+
+            def unpack_response(response):
+                return response["result"]
+
+            sent = self._protocol.callRemote(MethodCall,
+                                             name=method_call_name,
+                                             args=method_call_args,
+                                             kwargs=method_call_kwargs)
+            sent.addCallback(unpack_response)
+            return sent
+
+        return send_method_call
 
 
 class MethodCallFactory(ServerFactory):
