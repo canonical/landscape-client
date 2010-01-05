@@ -1,7 +1,7 @@
 from uuid import uuid4
 
 from twisted.internet.defer import Deferred
-from twisted.internet.protocol import ServerFactory
+from twisted.internet.protocol import ServerFactory, ClientCreator
 from twisted.protocols.amp import Argument, String, Command, AMP
 from twisted.python.failure import Failure
 
@@ -278,6 +278,35 @@ class MethodCallFactory(ServerFactory):
         protocol = self.protocol(self._reactor, self.object)
         protocol.factory = self
         return protocol
+
+
+class RemoteObjectCreator(object):
+    """Connect to remote objects exposed by a L{MethodCallProtocol}."""
+
+    protocol = MethodCallProtocol
+
+    def __init__(self, reactor, socket):
+        """
+        @param reactor: A reactor able to connect to Unix sockets.
+        @param socket: The path to the socket to connect to.
+        """
+        self._socket = socket
+        self._reactor = reactor
+
+    def connect(self):
+        """Connect to the remote L{BrokerServer}."""
+
+        def set_protocol(protocol):
+            self._protocol = protocol
+            return protocol.remote
+
+        connector = ClientCreator(self._reactor, self.protocol, self._reactor)
+        connected = connector.connectUNIX(self._socket)
+        return connected.addCallback(set_protocol)
+
+    def disconnect(self):
+        """Disconnect from the remote L{BrokerServer}."""
+        self._protocol.transport.loseConnection()
 
 
 def get_nested_attr(obj, path):

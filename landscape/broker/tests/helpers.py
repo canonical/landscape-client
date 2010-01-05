@@ -1,3 +1,5 @@
+from twisted.internet import reactor
+
 from landscape.lib.fetch import fetch_async
 from landscape.lib.persist import Persist
 from landscape.watchdog import bootstrap_list
@@ -132,8 +134,9 @@ class RemoteBrokerHelper(BrokerServerHelper):
 
     def set_up(self, test_case):
         super(RemoteBrokerHelper, self).set_up(test_case)
-        test_case.creator = RemoteBrokerCreator(test_case.config,
-                                                test_case.reactor)
+        socket = test_case.config.broker_socket_filename
+        reactor = test_case.reactor._reactor
+        test_case.creator = RemoteBrokerCreator(reactor, socket)
 
         def set_remote(remote):
             test_case.remote = remote
@@ -198,8 +201,8 @@ class BrokerServiceHelper(object):
         def set_remote(remote):
             test_case.remote = remote
 
-        self.creator = RemoteBrokerCreator(config,
-                                           test_case.broker_service.reactor)
+        socket = config.broker_socket_filename
+        self.creator = RemoteBrokerCreator(reactor, socket)
         connected = self.creator.connect()
         return connected.addCallback(set_remote)
 
