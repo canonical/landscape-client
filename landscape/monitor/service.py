@@ -44,7 +44,9 @@ class MonitorService(LandscapeService):
 
             return self.broker.register_client(self.service_name)
 
-        self.creator = RemoteBrokerCreator(self.config, self.reactor)
+        socket = self.config.broker_socket_filename
+        reactor = self.reactor._reactor
+        self.creator = RemoteBrokerCreator(reactor, socket)
         connected = self.creator.connect()
         return connected.addCallback(start_plugins)
 
