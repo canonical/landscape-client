@@ -190,25 +190,25 @@ class RemoteClientTest(LandscapeTest):
         result = self.remote_client.ping()
         return self.assertSuccess(result, True)
 
-    def test_dispatch_message(self):
+    def test_message(self):
         """
-        The L{RemoteClient.dispatch_message} method calls the
-        C{dispatch_message} method of the remote L{BrokerClient} instance and
-        returns its result with a L{Deferred}.
+        The L{RemoteClient.message} method calls the C{message} method of
+        the remote L{BrokerClient} instance and returns its result with
+        a L{Deferred}.
         """
         handler = self.mocker.mock()
         handler({"type": "test"})
         self.mocker.replay()
 
-        def dispatch_message(ignored):
+        def message(ignored):
 
-            result = self.remote_client.dispatch_message({"type": "test"})
+            result = self.remote_client.message({"type": "test"})
             return self.assertSuccess(result, True)
 
         # We need to register a test message handler to let the dispatch
         # message method call succeed
         registered = self.client.register_message("test", handler)
-        return registered.addCallback(dispatch_message)
+        return registered.addCallback(message)
 
     def test_fire_event(self):
         """
