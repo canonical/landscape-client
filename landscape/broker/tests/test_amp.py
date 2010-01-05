@@ -130,6 +130,27 @@ class RemoteBrokerTest(LandscapeTest):
         result = self.remote.exit()
         return self.assertSuccess(result, None)
 
+    def test_call_if_accepted(self):
+        """
+        The L{RemoteBroker.call_if_accepted} method calls a function if the
+        given message type is accepted.
+        """
+        self.mstore.set_accepted_types(["test"])
+        function = self.mocker.mock()
+        self.expect(function(123)).result("cool")
+        self.mocker.replay()
+        result = self.remote.call_if_accepted("test", function, 123)
+        return self.assertSuccess(result, "cool")
+
+    def test_call_if_accepted_with_not_accepted(self):
+        """
+        The L{RemoteBroker.call_if_accepted} method doesn't do anything if the
+        given message type is not accepted.
+        """
+        function = lambda: 1/0
+        result = self.remote.call_if_accepted("test", function)
+        return self.assertSuccess(result, None)
+
     def test_method_call_error(self):
         """
         Trying to call an non-exposed broker method results in a failure.
