@@ -134,8 +134,8 @@ class RemoteBrokerHelper(BrokerServerHelper):
         test_case.creator = RemoteBrokerCreator(test_case.config,
                                                 test_case.reactor)
 
-        def set_remote(protocol):
-            test_case.remote = protocol.remote
+        def set_remote(remote):
+            test_case.remote = remote
 
         connected = test_case.creator.connect()
         return connected.addCallback(set_remote)
