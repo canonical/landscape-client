@@ -340,6 +340,10 @@ REBOOT_REQUIRED = Message(
     "reboot-required",
     {"flag": Bool()})
 
+APT_PREFERENCES = Message(
+    "apt-preferences",
+    {"data": Any(Dict(Unicode(), Unicode()), Constant(None))})
+
 message_schemas = {}
 for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                OPERATION_RESULT, COMPUTER_INFO, DISTRIBUTION_INFO,
@@ -349,5 +353,5 @@ for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                USERS, PACKAGES, PACKAGE_LOCKS,
                CHANGE_PACKAGES_RESULT, UNKNOWN_PACKAGE_HASHES,
                ADD_PACKAGES, TEXT_MESSAGE, TEST, CUSTOM_GRAPH,
-               REBOOT_REQUIRED]:
+               REBOOT_REQUIRED, APT_PREFERENCES]:
     message_schemas[schema.type] = schema
