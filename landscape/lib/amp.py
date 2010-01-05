@@ -81,8 +81,10 @@ class MethodCallProtocol(AMP):
     @cvar timeout: A timeout for remote methods returning L{Deferred}s, if a
         response for the deferred is not received within this amount of
         seconds, the remote method call will errback with a L{MethodCallError}.
+    @ivar object: The object exposed by the protocol instance, it can be passed
+        to the constructor or set later on the protocol instance itself.
     @ivar remote: A L{RemoteObject} able to transparently call methods on
-       to the actuall object associated with the remote peer protocol.
+        to the actuall object associated with the remote peer protocol.
     """
 
     methods = []
@@ -99,12 +101,13 @@ class MethodCallProtocol(AMP):
         """
         super(MethodCallProtocol, self).__init__()
         self._reactor = reactor
-        self._object = object
+        self.object = object
+        self.remote = RemoteObject(self)
+
         self._methods_by_name = {}
         self._pending_responses = {}
         for method in self.methods:
             self._methods_by_name[method.name] = method
-        self.remote = RemoteObject(self)
 
     @MethodCall.responder
     def _call_object_method(self, name, args, kwargs):
@@ -122,7 +125,7 @@ class MethodCallProtocol(AMP):
         if method is None:
             raise MethodCallError("Forbidden method '%s'" % name)
 
-        method_func = getattr(self._object, name)
+        method_func = getattr(self.object, name)
         method_args = []
         method_kwargs = {}
 
@@ -211,10 +214,19 @@ class MethodCallProtocol(AMP):
 
 
 class RemoteObject(object):
-    """An object able to transparently call methods on a remote object."""
+    """An object able to transparently call methods on a remote object.
+
+    @ivar protocol: A reference to a connected L{MethodCallProtocol}, which
+        will be used to send L{MethodCall} commands.
+    """
 
     def __init__(self, protocol):
         self._protocol = protocol
+
+    @property
+    def protocol(self):
+        """Return a reference to the connected L{MethodCallProtocol}."""
+        return self._protocol
 
     def __getattr__(self, name):
         return self._create_method_call_sender(name)
@@ -235,10 +247,10 @@ class RemoteObject(object):
             method_call_name = name
             method_call_args = args[:]
             method_call_kwargs = kwargs.copy()
-            called = self._protocol.callRemote(MethodCall,
-                                             name=method_call_name,
-                                             args=method_call_args,
-                                             kwargs=method_call_kwargs)
+            called = self.protocol.callRemote(MethodCall,
+                                              name=method_call_name,
+                                              args=method_call_args,
+                                              kwargs=method_call_kwargs)
             return called.addCallback(lambda response: response["result"])
 
         return send_method_call
@@ -252,17 +264,18 @@ class MethodCallFactory(ServerFactory):
 
     protocol = MethodCallProtocol
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, reactor, object=None):
         """
-        @param args: Arguments to pass to the protocol constructor.
-        @param kwargs: Keyword arguments for the protocol constructor.
+        @param reactor: The reactor that will passed to the protocol.
+        @param object: The object that will be associated with the created
+            protocol.
         """
-        self._args = args
-        self._kwargs = kwargs
+        self._reactor = reactor
+        self.object = object
 
     def buildProtocol(self, addr):
         """Create a new protocol instance."""
-        protocol = self.protocol(*self._args, **self._kwargs)
+        protocol = self.protocol(self._reactor, self.object)
         protocol.factory = self
         return protocol
 
