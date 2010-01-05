@@ -1,6 +1,5 @@
 from landscape.lib.twisted_util import gather_results
-from landscape.lib.amp import MethodCallFactory
-from landscape.broker.amp import BrokerServerProtocol
+from landscape.broker.amp import BrokerServerFactory
 
 
 class BrokerServer(object):
@@ -131,8 +130,7 @@ class BrokerServer(object):
     def start(self):
         """Start listening for incoming AMP connections."""
         socket = self._config.broker_socket_filename
-        factory = MethodCallFactory(self._reactor._reactor, self)
-        factory.protocol = BrokerServerProtocol
+        factory = BrokerServerFactory(self._reactor._reactor, self)
         self._port = self._reactor._reactor.listenUNIX(socket, factory)
 
     def stop(self):
