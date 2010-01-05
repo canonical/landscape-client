@@ -1,13 +1,11 @@
 import os
 
-from landscape.lib.dbus_util import get_object
 from landscape.lib.persist import Persist
 from landscape.manager.manager import SUCCEEDED, FAILED
-from landscape.monitor.monitor import MonitorPluginRegistry
 from landscape.manager.manager import ManagerPluginRegistry
 from landscape.monitor.usermonitor import UserMonitor
 from landscape.manager.usermanager import (
-    UserManager, UserManagerDBusObject, RemoteUserManagerCreator)
+    UserManager, RemoteUserManagerCreator)
 from landscape.user.tests.helpers import FakeUserProvider, FakeUserManagement
 from landscape.tests.helpers import LandscapeIsolatedTest, LandscapeTest
 from landscape.user.provider import UserManagementError
@@ -15,79 +13,44 @@ from landscape.tests.helpers import RemoteBrokerHelper
 from landscape.manager.tests.helpers import ManagerHelper
 
 
-class ManagerServiceTest(LandscapeIsolatedTest):
-
-    helpers = [RemoteBrokerHelper]
-
-    def setUp(self):
-        super(ManagerServiceTest, self).setUp()
-
-    def test_remote_locked_usernames(self):
-
-        def check_result(result):
-            self.assertEquals(result, ["psmith"])
-
-        self.shadow_file = self.makeFile("""\
-jdoe:$1$xFlQvTqe$cBtrNEDOIKMy/BuJoUdeG0:13348:0:99999:7:::
-psmith:!:13348:0:99999:7:::
-sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
-""")
-        UserManagerDBusObject(self.broker_service.bus,
-                              shadow_file=self.shadow_file)
-        remote_service = get_object(self.broker_service.bus,
-            UserManagerDBusObject.bus_name, UserManagerDBusObject.object_path)
-
-        result = remote_service.get_locked_usernames()
-        result.addCallback(check_result)
-        return result
-
-    def test_remote_empty_shadow_file(self):
-
-        def check_result(result):
-            self.assertEquals(result, [])
-
-        self.shadow_file = self.makeFile("\n")
-        UserManagerDBusObject(self.broker_service.bus,
-                              shadow_file=self.shadow_file)
-        remote_service = get_object(self.broker_service.bus,
-            UserManagerDBusObject.bus_name, UserManagerDBusObject.object_path)
-
-        result = remote_service.get_locked_usernames()
-        result.addCallback(check_result)
-        return result
-
 class UserGroupTestBase(LandscapeIsolatedTest):
 
-    helpers = [RemoteBrokerHelper]
+    helpers = [ManagerHelper]
 
     def setUp(self):
-        super(UserGroupTestBase, self).setUp()
-        self.persist = Persist()
-        self.monitor = MonitorPluginRegistry(
-            self.remote, self.broker_service.reactor,
-            self.broker_service.config, self.broker_service.bus,
-            self.persist)
 
-        self.shadow_file = self.makeFile("""\
+        def set_up(ignored):            
+            self.shadow_file = self.makeFile("""\
 jdoe:$1$xFlQvTqe$cBtrNEDOIKMy/BuJoUdeG0:13348:0:99999:7:::
 psmith:!:13348:0:99999:7:::
 sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
 """)
-        accepted_types = ["operation-result", "users"]
-        self.broker_service.message_store.set_accepted_types(accepted_types)
-        self.manager = ManagerPluginRegistry(
-            self.remote, self.broker_service.reactor,
-            self.broker_service.config, self.broker_service.bus)
+            accepted_types = ["operation-result", "users"]
+            self.mstore.set_accepted_types(accepted_types)
+
+        super_setup = super(UserGroupTestBase, self).setUp()
+        return super_setup.addCallback(set_up)
+
+    def tearDown(self):
+        if hasattr(self, "ports"):
+            self.ports[0].stopListening()
+            self.ports[1].stopListening()
+        super(UserGroupTestBase, self).tearDown()
+        
+
 
     def setup_environment(self, users, groups, shadow_file):
         provider = FakeUserProvider(users=users, groups=groups,
                                     shadow_file=shadow_file)
-        plugin = UserMonitor(provider=provider)
-        self.monitor.add(plugin)
-        manager = UserManager(management=FakeUserManagement(provider=provider),
-                              shadow_file=shadow_file)
-        self.manager.add(manager)
-        return plugin
+        user_monitor = UserMonitor(provider=provider)
+        management = FakeUserManagement(provider=provider)
+        user_manager = UserManager(management=management,
+                                   shadow_file=shadow_file)
+        self.manager.persist = Persist()
+        user_monitor.register(self.manager)
+        user_manager.register(self.manager)
+        self.ports = [user_monitor._port, user_manager._port]
+        return user_monitor
 
 
 class UserOperationsMessagingTest(UserGroupTestBase):
@@ -136,6 +99,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         containing details of the failure.
         """
         self.log_helper.ignore_errors(KeyError)
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertMessages(messages,
@@ -1375,8 +1339,8 @@ class RemoteUserManagerTest(LandscapeTest):
 
     def test_get_locked_usernames(self):
         """
-        The L{RemoteUserManager.get_locked_usernames} method forwards the
-        request to the remote L{UserManager} object.
+        The L{get_locked_usernames} method forwards the request to the
+        remote L{UserManager} object.
         """
         self.user_manager.get_locked_usernames = self.mocker.mock()
         self.expect(self.user_manager.get_locked_usernames()).result(["fred"])
