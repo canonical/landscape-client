@@ -1,5 +1,8 @@
+import logging
+
 from landscape.lib.twisted_util import gather_results
 from landscape.broker.amp import BrokerServerFactory
+from landscape.manager.manager import FAILED
 
 
 def event(method):
@@ -42,6 +45,17 @@ class BrokerServer(object):
         self._registration = registration
         self._message_store = message_store
         self._registered_clients = {}
+
+        reactor.call_on("message", self.broadcast_message)
+        reactor.call_on("impending-exchange", self.impending_exchange)
+        reactor.call_on("exchange-failed", self.exchange_failed)
+        reactor.call_on("registration-done", self.registration_done)
+        reactor.call_on("registration-failed", self.registration_failed)
+        reactor.call_on("message-type-acceptance-changed",
+                        self.message_type_acceptance_changed)
+        reactor.call_on("server-uuid-changed", self.server_uuid_changed)
+        reactor.call_on("resynchronize-clients", self.resynchronize)
+        self.broker_started()
 
     def ping(self):
         """Return C{True}."""
@@ -187,3 +201,43 @@ class BrokerServer(object):
     @event
     def message_type_acceptance_changed(self, type, accepted):
         pass
+
+    def broadcast_message(self, message):
+        """Call the C{message} method of all the registered plugins.
+
+        @see: L{register_plugin}.
+        """
+        results = []
+        for plugin in self.get_clients():
+            results.append(plugin.message(message))
+        return gather_results(results).addCallback(self._message_delivered,
+                                                   message)
+
+    def _message_delivered(self, results, message):
+        """
+        If the message wasn't handled, and it's an operation request (i.e. it
+        has an operation-id), then respond with a failing operation result
+        indicating as such.
+        """
+        opid = message.get("operation-id")
+        if (True not in results
+            and opid is not None
+            and message["type"] != "resynchronize"):
+            mtype = message["type"]
+            logging.error("Nobody handled the %s message." % (mtype,))
+
+            result_text = """\
+Landscape client failed to handle this request (%s) because the
+plugin which should handle it isn't available.  This could mean that the
+plugin has been intentionally disabled, or that the client isn't running
+properly, or you may be running an older version of the client that doesn't
+support this feature.
+
+Please contact the Landscape team for more information.
+""" % (mtype,)
+            response = {
+                "type": "operation-result",
+                "status": FAILED,
+                "result-text": result_text,
+                "operation-id": opid}
+            self._exchanger.send(response, urgent=True)
