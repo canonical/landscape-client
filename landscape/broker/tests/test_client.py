@@ -1,7 +1,7 @@
 from landscape.lib.twisted_util import gather_results
 from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
 from landscape.broker.tests.helpers import BrokerClientHelper
-from landscape.broker.client import BrokerClientPlugin
+from landscape.broker.client import BrokerClientPlugin, HandlerNotFoundError
 
 
 class BrokerClientTest(LandscapeTest):
@@ -73,35 +73,34 @@ class BrokerClientTest(LandscapeTest):
 
     def test_dispatch_message(self):
         """
-        C{BrokerClient.dispatch_message} calls a previously-registered message
-        handler.
+        L{BrokerClient.dispatch_message} calls a previously-registered message
+        handler and return its value.
         """
         message = {"type": "foo"}
         handle_message = self.mocker.mock()
-        handle_message(message)
+        self.expect(handle_message(message)).result(123)
         self.mocker.replay()
 
         def dispatch_message(result):
-            self.assertTrue(self.client.dispatch_message(message))
+            self.assertEquals(self.client.dispatch_message(message), 123)
 
         result = self.client.register_message("foo", handle_message)
         return result.addCallback(dispatch_message)
 
     def test_dispatch_message_with_exception(self):
         """
-        C{BrokerClient.dispatch_message} gracefully logs exceptions raised
+        L{BrokerClient.dispatch_message} gracefully logs exceptions raised
         by message handlers.
         """
         message = {"type": "foo"}
         handle_message = self.mocker.mock()
-        handle_message(message)
-        self.mocker.throw(ZeroDivisionError)
+        self.expect(handle_message(message)).throw(ZeroDivisionError)
         self.mocker.replay()
 
         self.log_helper.ignore_errors("Error running message handler.*")
 
         def dispatch_message(result):
-            self.assertTrue(self.client.dispatch_message(message))
+            self.assertIs(self.client.dispatch_message(message), None)
             self.assertTrue("Error running message handler for type 'foo'" in
                             self.logfile.getvalue())
 
@@ -110,10 +109,37 @@ class BrokerClientTest(LandscapeTest):
 
     def test_dispatch_message_with_no_handler(self):
         """
-        C{BrokerClient.dispatch_message} return C{False} if no handler was
+        L{BrokerClient.dispatch_message} raises an error if no handler was
         found for the given message.
         """
-        self.assertFalse(self.client.dispatch_message({"type": "test"}))
+        error = self.assertRaises(HandlerNotFoundError,
+                                  self.client.dispatch_message, {"type": "x"})
+        self.assertEquals(str(error), "x")
+
+    def test_message(self):
+        """
+        The L{BrokerClient.message} method dispatches a message and
+        returns C{True} if an handler for it was found.
+        """
+        message = {"type": "foo"}
+
+        handle_message = self.mocker.mock()
+        handle_message(message)
+        self.mocker.replay()
+
+        def dispatch_message(result):
+            self.assertEquals(self.client.message(message), True)
+
+        result = self.client.register_message("foo", handle_message)
+        return result.addCallback(dispatch_message)
+
+    def test_message_with_no_handler(self):
+        """
+        The L{BrokerClient.message} method returns C{False} if no
+        handler was found.
+        """
+        message = {"type": "foo"}
+        self.assertEquals(self.client.message(message), False)
 
     def test_exchange(self):
         """
