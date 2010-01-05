@@ -135,8 +135,8 @@ class RemoteBrokerHelper(BrokerServerHelper):
         test_case.creator = RemoteBrokerCreator(test_case.config,
                                                 test_case.reactor)
 
-        def set_remote(protocol):
-            test_case.remote = protocol.remote
+        def set_remote(remote):
+            test_case.remote = remote
 
         connected = test_case.creator.connect()
         return connected.addCallback(set_remote)
@@ -167,7 +167,7 @@ class BrokerServiceHelper(object):
     """
     The following attributes will be set in your test case:
       - broker_service: A started C{BrokerService}.
-      - remote: A C{RemoteBroker} object connected to the broker server.
+      - remote: A C{RemoteObject} connected to the broker server.
     """
 
     def set_up(self, test_case):
@@ -193,9 +193,15 @@ class BrokerServiceHelper(object):
 
         test_case.broker_service = FakeBrokerService(config)
         test_case.broker_service.startService()
-        test_case.remote = RemoteBroker(config, test_case.broker_service.reactor)
-        return test_case.remote.connect()
+
+        def set_remote(remote):
+            test_case.remote = remote
+
+        self.creator = RemoteBrokerCreator(config,
+                                           test_case.broker_service.reactor)
+        connected = self.creator.connect()
+        return connected.addCallback(set_remote)
 
     def tear_down(self, test_case):
         test_case.broker_service.stopService()
-        test_case.remote.disconnect()
+        self.creator.disconnect()

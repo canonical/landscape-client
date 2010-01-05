@@ -23,22 +23,20 @@ class BrokerServerProtocol(MethodCallProtocol):
 class RemoteBrokerCreator(object):
     """A connected broker utilizing features provided by a L{BrokerServer}."""
 
-    def __init__(self, config, reactor, *args, **kwargs):
+    def __init__(self, config, reactor):
         """
         @param protocol: A L{BrokerServerProtocol} connection with a remote
             broker server.
         """
         self._config = config
         self._reactor = reactor
-        self._args = args
-        self._kwargs = kwargs
 
     def connect(self):
         """Connect to the remote L{BrokerServer}."""
 
         def set_protocol(protocol):
             self._protocol = protocol
-            return protocol
+            return protocol.remote
 
         connector = ClientCreator(self._reactor._reactor,
                                   BrokerClientProtocol,
