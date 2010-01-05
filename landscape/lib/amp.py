@@ -64,6 +64,8 @@ class MethodCallProtocol(AMP):
 
     @cvar methods: A list of L{Method}s describing the methods that can be
         called with the protocol. It must be defined by sub-classes.
+    @ivar remote: A L{RemoteObject} able to transparently call methods on
+       to the actuall object associated with the remote peer protocol.
     """
 
     methods = []
@@ -83,8 +85,8 @@ class MethodCallProtocol(AMP):
         self.remote = RemoteObject(self)
 
     @MethodCall.responder
-    def method_call_responder(self, name, args, kwargs):
-        """Call an object method with the given arguments.
+    def _call_object_method(self, name, args, kwargs):
+        """Call an object's method with the given arguments.
 
         If a connected client sends a L{MethodCall} with name C{foo_bar}, then
         the actual method C{foo_bar} of the object associated with the protocol
@@ -123,9 +125,9 @@ class RemoteObject(object):
         self._protocol = protocol
 
     def __getattr__(self, name):
-        return self.__method_call_sender(name)
+        return self._create_method_call_sender(name)
 
-    def __method_call_sender(self, name):
+    def _create_method_call_sender(self, name):
         """Create a L{MethodCall} sender for the method with the given C{name}.
 
         When the created function is called, it sends the an appropriate
@@ -141,16 +143,11 @@ class RemoteObject(object):
             method_call_name = name
             method_call_args = args[:]
             method_call_kwargs = kwargs.copy()
-
-            def unpack_response(response):
-                return response["result"]
-
-            sent = self._protocol.callRemote(MethodCall,
+            called = self._protocol.callRemote(MethodCall,
                                              name=method_call_name,
                                              args=method_call_args,
                                              kwargs=method_call_kwargs)
-            sent.addCallback(unpack_response)
-            return sent
+            return called.addCallback(lambda response: response["result"])
 
         return send_method_call
 
