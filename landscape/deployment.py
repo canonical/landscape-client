@@ -292,6 +292,11 @@ class Configuration(BaseConfiguration):
         """Get the path to the user manager plugin Unix socket."""
         return os.path.join(self.data_path, "usermanager.sock")
 
+    @property
+    def user_monitor_socket_filename(self):
+        """Get the path to the user manager plugin Unix socket."""
+        return os.path.join(self.data_path, "usermonitor.sock")
+
     def make_parser(self):
         """Parser factory for supported options.
 

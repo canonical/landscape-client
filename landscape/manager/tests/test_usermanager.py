@@ -7,7 +7,7 @@ from landscape.monitor.monitor import MonitorPluginRegistry
 from landscape.manager.manager import ManagerPluginRegistry
 from landscape.monitor.usermonitor import UserMonitor
 from landscape.manager.usermanager import (
-    UserManager, UserManagerDBusObject, RemoteUserManager)
+    UserManager, UserManagerDBusObject, RemoteUserManagerCreator)
 from landscape.user.tests.helpers import FakeUserProvider, FakeUserManagement
 from landscape.tests.helpers import LandscapeIsolatedTest, LandscapeTest
 from landscape.user.provider import UserManagementError
@@ -1350,13 +1350,18 @@ class RemoteUserManagerTest(LandscapeTest):
     def setUp(self):
 
         def connect(ignored):
-            return self.remote_user_manager.connect()
+
+            def set_remote(remote):
+                self.remote_user_manager = remote
+
+            connected = self.user_manager_creator.connect()
+            return connected.addCallback(set_remote)
 
         def register_user_manager(ignored):
             self.shadow_file = self.makeFile()
             self.user_manager = UserManager(shadow_file=self.shadow_file)
-            self.remote_user_manager = RemoteUserManager(self.config, self.reactor)
-
+            self.user_manager_creator = RemoteUserManagerCreator(self.reactor,
+                                                                 self.config)
             registered = self.user_manager.register(self.manager)
             return registered.addCallback(connect)
 
@@ -1364,8 +1369,8 @@ class RemoteUserManagerTest(LandscapeTest):
         return super_setup.addCallback(register_user_manager)
 
     def tearDown(self):
-        self.remote_user_manager.disconnect()
-        self.user_manager.port.loseConnection()
+        self.user_manager_creator.disconnect()
+        self.user_manager._port.loseConnection()
         return super(RemoteUserManagerTest, self).tearDown()
 
     def test_get_locked_usernames(self):

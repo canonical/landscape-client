@@ -1,11 +1,10 @@
 import logging
 
 from twisted.python import log
-from twisted.protocols.amp import AMP
-from twisted.internet.protocol import ServerFactory, ClientCreator
 
 from landscape.lib.dbus_util import get_object, method, Object
-from landscape.lib.amp import MethodCall
+from landscape.lib.amp import (
+    Method, MethodCallProtocol, MethodCallFactory, RemoteObjectCreator)
 from landscape.lib.twisted_util import gather_results
 
 from landscape.user.management import UserManagement
@@ -43,58 +42,24 @@ class UserManagerDBusObject(Object):
         return locked_users
 
 
-class UserManagerProtocol(AMP):
+class UserManagerProtocol(MethodCallProtocol):
     """L{AMP}-based protocol for calling L{UserManager}'s methods remotely."""
 
-    @MethodCall.responder
-    def _get_user_manager_method(self, name):
-        if name == "get_locked_usernames":
-            return self.factory.user_manager.get_locked_usernames
+    methods = [Method("get_locked_usernames")]
 
 
-class UserManagerProtocolFactory(ServerFactory):
-    """A protocol factory for the L{UserManagerProtocol}."""
+class UserManagerFactory(MethodCallFactory):
 
     protocol = UserManagerProtocol
 
-    def __init__(self, user_manager):
-        """
-        @param: The L{BrokerServer} the connections will talk to.
-        """
-        self.user_manager = user_manager
 
+class RemoteUserManagerCreator(RemoteObjectCreator):
 
-class RemoteUserManager(object):
+    protocol = UserManagerProtocol
 
-    def __init__(self, config, reactor):
-        """
-        @param config: A L{Configuration} object, used to get the path to
-            the L{UserManager} Unix socket.
-        @param reactor: A L{TwistedReactor}, used to connect to the socket.
-        """
-        self._config = config
-        self._reactor = reactor
-        self._protocol = None
-
-    def connect(self):
-        """Connect to a remote L{UserManager}."""
-
-        def set_protocol(protocol):
-            self._protocol = protocol
-
-        connector = ClientCreator(self._reactor._reactor, AMP)
-        connected = connector.connectUNIX(
-            self._config.user_manager_socket_filename)
-        return connected.addCallback(set_protocol)
-
-    def disconnect(self):
-        """Close the connection with the remote L{UserManager}."""
-        self._protocol.transport.loseConnection()
-        self._protocol = None
-
-    @MethodCall.sender
-    def get_locked_usernames(self):
-        """@see: L{UserManager.get_locked_usernames}."""
+    def __init__(self, reactor, config):
+        super(RemoteUserManagerCreator, self).__init__(
+            reactor._reactor, config.user_manager_socket_filename)
 
 
 class UserManager(ManagerPlugin):
@@ -129,9 +94,9 @@ class UserManager(ManagerPlugin):
         # FIXME: this conditional should go away after the AMP migration
         # is completed
         if self._registry.config.bus == "amp":
-            factory = UserManagerProtocolFactory(self)
-            self.port = self.registry.reactor._reactor.listenUNIX(
-                self.registry.config.user_manager_socket_filename, factory)
+            socket = self.registry.config.user_manager_socket_filename
+            factory = UserManagerFactory(self.registry.reactor, self)
+            self._port = self.registry.reactor._reactor.listenUNIX(socket, factory)
             return gather_results(results)
         else:
             # Register user management operation handlers.

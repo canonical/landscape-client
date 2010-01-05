@@ -349,6 +349,26 @@ class ConfigurationTest(LandscapeTest):
         self.assertEquals(self.config.broker_socket_filename,
                           os.path.join(self.config.data_path, "broker.sock"))
 
+    def test_user_manager_socket_filename(self):
+        """
+        The L{UsermanagerConfiguration.user_manager_socket_filename} attribute
+        holds the filename of the Unix socket used to communicate with the
+        L{UserManager}.
+        """
+        self.assertEquals(self.config.user_manager_socket_filename,
+                          os.path.join(self.config.data_path,
+                                       "usermanager.sock"))
+
+    def test_user_monitor_socket_filename(self):
+        """
+        The L{BrokerConfiguration.user_monitor_socket_filename} attribute
+        holds the filename of the Unix socket used to communicate with the
+        L{UserMonitor}.
+        """
+        self.assertEquals(self.config.user_monitor_socket_filename,
+                          os.path.join(self.config.data_path,
+                                       "usermonitor.sock"))
+
 
 class GetVersionedPersistTest(LandscapeTest):
 
