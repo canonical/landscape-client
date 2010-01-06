@@ -1,3 +1,5 @@
+"""Expose the methods of a remote object over AMP. """
+
 from twisted.internet.protocol import ServerFactory
 from twisted.protocols.amp import Argument, String, Command, AMP
 
@@ -5,10 +7,10 @@ from landscape.lib.bpickle import loads, dumps, dumps_table
 
 
 class Method(object):
-    """A callable method in the object of a L{MethodCallProtocol}.
+    """Marker to expose an object's method in a L{MethodCallProtocol}.
 
     This class is used when sub-classing a L{MethodCallProtocol} for declaring
-    the methods call the protocol will respond to.
+    the object's methods call the protocol will respond to.
     """
 
     def __init__(self, name, **kwargs):
@@ -44,11 +46,11 @@ class MethodCallArgument(Argument):
 
 
 class MethodCallError(Exception):
-    """Raised when trying to call a non accessible method."""
+    """Raised when a L{MethodCall} command fails."""
 
 
 class MethodCall(Command):
-    """Call a method on the object associated with a L{MethodCallProtocol}."""
+    """Call a method on the object exposed by a L{MethodCallProtocol}."""
 
     arguments = [("name", String()),
                  ("args", MethodCallArgument(optional=True)),
@@ -86,7 +88,7 @@ class RemoteObject(object):
         resulting in the L{MethodCall}'s response value.
 
         The generated L{MethodCall} will invoke the remote object method
-        named C{name}..
+        named C{name}.
         """
 
         def send_method_call(*args, **kwargs):
@@ -108,10 +110,10 @@ class MethodCallProtocol(AMP):
     @cvar methods: A list of L{Method}s describing the methods that can be
         called with the protocol. It must be defined by sub-classes.
     @cvar remote_factory: The factory used to build the C{remote} attribute.
-    @ivar object: The object exposed by the protocol instance, it can be passed
-        to the constructor or set later on the protocol instance itself.
     @ivar remote: A L{RemoteObject} able to transparently call methods on
         to the actuall object associated with the remote peer protocol.
+    @ivar object: Optionally, an object exposed by the protocol instance
+        itself, it can be passed to the constructor or set later directly.
     """
 
     methods = []
@@ -121,7 +123,7 @@ class MethodCallProtocol(AMP):
         """
         @param object: The object the requested methods will be called on. Each
             L{Method} declared in the C{methods} attribute is supposed to match
-            an actuall method of the given C{object}. If C{None} is given, the
+            an actuall method of the given C{object}.  If C{None} is given, the
             protocol can only be used to invoke methods.
         """
         super(MethodCallProtocol, self).__init__()
