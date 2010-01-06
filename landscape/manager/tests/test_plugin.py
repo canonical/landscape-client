@@ -1,11 +1,11 @@
 from landscape.tests.helpers import LandscapeTest
-from landscape.tests.helpers import ManagerHelper_, RemoteBrokerHelper_
+from landscape.tests.helpers import ManagerHelper, RemoteBrokerHelper_
 from landscape.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
 
 
 class BrokerPluginTest(LandscapeTest):
 
-    helpers = [ManagerHelper_, RemoteBrokerHelper_]
+    helpers = [ManagerHelper, RemoteBrokerHelper_]
 
     def test_call_with_operation_result_success(self):
         """

@@ -28,7 +28,6 @@ from landscape.broker.remote import RemoteBroker, FakeRemoteBroker
 from landscape.broker.transport import FakeTransport
 from landscape.broker.amp import RemoteBrokerCreator
 
-from landscape.monitor.monitor import MonitorPluginRegistry
 from landscape.monitor.config import MonitorConfiguration
 from landscape.monitor.monitor import Monitor
 from landscape.manager.manager import ManagerPluginRegistry
@@ -444,27 +443,7 @@ class BrokerServiceHelper(object):
             self.creator.disconnect()
 
 
-class MonitorHelper(LegacyExchangeHelper):
-    """
-    Provides everything that L{ExchangeHelper} does plus a
-    L{landscape.monitor.monitor.Monitor}.
-    """
-
-    def set_up(self, test_case):
-        super(MonitorHelper, self).set_up(test_case)
-        persist = Persist()
-        persist_filename = test_case.makePersistFile()
-        test_case.monitor = MonitorPluginRegistry(
-            test_case.remote, test_case.broker_service.reactor,
-            test_case.broker_service.config,
-            # XXX Ugh, the fake broker service doesn't have a bus.
-            # We should get rid of the fake broker service.
-            getattr(test_case.broker_service, "bus", None),
-            persist, persist_filename)
-
-
-# We can drop the "_" suffic once the AMP migration is completed
-class MonitorHelper_(BrokerServiceHelper):
+class MonitorHelper(BrokerServiceHelper):
     """
     Provides everything that L{BrokerServiceHelper} does plus a
     L{Monitor} instance.
@@ -483,7 +462,7 @@ class MonitorHelper_(BrokerServiceHelper):
                 persist, persist_filename)
             test_case.mstore = test_case.broker_service.message_store
 
-        result = super(MonitorHelper_, self).set_up(test_case)
+        result = super(MonitorHelper, self).set_up(test_case)
         if isinstance(result, Deferred):
             return result.addCallback(set_monitor)
         else:
@@ -491,13 +470,13 @@ class MonitorHelper_(BrokerServiceHelper):
             set_monitor(None)
 
 
-class ManagerHelper(FakeRemoteBrokerHelper):
+class LegacyManagerHelper(FakeRemoteBrokerHelper):
     """
     Provides everything that L{FakeRemoteBrokerHelper} does plus a
     L{landscape.manager.manager.Manager}.
     """
     def set_up(self, test_case):
-        super(ManagerHelper, self).set_up(test_case)
+        super(LegacyManagerHelper, self).set_up(test_case)
         class MyManagerConfiguration(ManagerConfiguration):
             default_config_filenames = [test_case.config_filename]
         config = MyManagerConfiguration()
@@ -508,7 +487,7 @@ class ManagerHelper(FakeRemoteBrokerHelper):
 
 
 # We can drop the "_" suffic once the AMP migration is completed
-class ManagerHelper_(BrokerServiceHelper):
+class ManagerHelper(BrokerServiceHelper):
     """
     Provides everything that L{BrokerServiceHelper} does plus a
     L{Manager} instance.
@@ -524,7 +503,7 @@ class ManagerHelper_(BrokerServiceHelper):
                 test_case.remote, test_case.reactor, test_case.config)
             test_case.mstore = test_case.broker_service.message_store
 
-        result = super(ManagerHelper_, self).set_up(test_case)
+        result = super(ManagerHelper, self).set_up(test_case)
         if isinstance(result, Deferred):
             return result.addCallback(set_manager)
         else:

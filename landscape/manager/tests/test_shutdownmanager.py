@@ -50,6 +50,9 @@ class ShutdownManagerTest(LandscapeTest):
         protocol.result.addCallback(restart_performed)
         protocol.childDataReceived(0, "Data may arrive ")
         protocol.childDataReceived(0, "in batches.")
+        # We need this to synchronize the time of the broker's reactor with
+        # the manager's one
+        self.broker_service.exchanger._reactor = self.manager.reactor
         self.manager.reactor.advance(10)
         return protocol.result
 

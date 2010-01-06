@@ -332,7 +332,6 @@ class ActiveProcessInfoTest(LandscapeTest):
         self.assertTrue("update-processes" in message)
         self.assertEquals(message["update-processes"][0]["state"], u"Z")
 
-
     def test_call_on_accepted(self):
         """
         L{MonitorPlugin}-based plugins can provide a callable to call
@@ -342,9 +341,14 @@ class ActiveProcessInfoTest(LandscapeTest):
                                    jiffies=10)
         self.monitor.add(plugin)
         self.assertEquals(len(self.mstore.get_pending_messages()), 0)
-        self.broker_service.reactor.fire(("message-type-acceptance-changed",
-                                          "active-process-info"), True)
-        self.assertEquals(len(self.mstore.get_pending_messages()), 1)
+        result = self.monitor.fire_event(
+            "message-type-acceptance-changed", "active-process-info", True)
+
+        def assert_messages(ignored):
+            self.assertEquals(len(self.mstore.get_pending_messages()), 1)
+
+        result.addCallback(assert_messages)
+        return result
 
     def test_resynchronize_event(self):
         """
