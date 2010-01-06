@@ -190,7 +190,7 @@ class BrokerServerTest(LandscapeTest):
         If a broker client blow up in its exit() methods, exit should ignore
         the error and exit anyway.
         """
-        self.broker.register_client("foo",  BrokerServerProtocol(None))
+        self.broker.register_client("foo", BrokerServerProtocol(None))
         [client] = self.broker.get_clients()
         client.exit = self.mocker.mock()
         post_exit = self.mocker.mock()
@@ -276,7 +276,7 @@ class EventTest(LandscapeTest):
         plugin.register(self.client)
         plugin.exchange()
         self.mocker.replay()
-        self.client.register_plugin(plugin)
+        self.client.add(plugin)
         return self.assertSuccess(self.broker.impending_exchange(), [None])
 
     def test_exchange_failed(self):
