@@ -1,8 +1,11 @@
 import logging
 import signal
 
+from landscape.reactor import FakeReactor
+from landscape.deployment import Configuration
 from landscape.service import LandscapeService
 from landscape.tests.helpers import LandscapeTest
+from landscape.amp import LandscapeComponentProtocolFactory
 
 
 class LandscapeServiceTest(LandscapeTest):
@@ -78,3 +81,44 @@ class LandscapeServiceTest(LandscapeTest):
 
         handler = signal.getsignal(signal.SIGUSR1)
         self.assertFalse(handler)
+
+    def test_ignore_sigusr1(self):
+        """
+        SIGUSR1 is ignored if we so request.
+        """
+
+        class Configuration:
+            ignore_sigusr1 = True
+
+        # Instantiating LandscapeService should not register the
+        # handler if we request to ignore it.
+        config = Configuration()
+        LandscapeService(config)
+
+        handler = signal.getsignal(signal.SIGUSR1)
+        self.assertFalse(handler)
+
+    def test_start_stop_service(self):
+        """
+        The L{startService} and makes the service start listening on a
+        socket for incoming connections.        
+        """
+
+        class FakeService(LandscapeService):
+            service_name = "monitor"
+
+        config = Configuration()
+        config.load(["-d", self.makeDir()])
+        reactor = FakeReactor()
+        service = FakeService(config)
+        service.factory = LandscapeComponentProtocolFactory(reactor, None)
+        service.startService()
+        creator = service.connector_factory(reactor, config, "monitor")
+
+        def assert_port(ignored):
+            self.assertTrue(service.port.connected)
+            creator.disconnect()
+            service.stopService()
+
+        connected = creator.connect()
+        return connected.addCallback(assert_port)

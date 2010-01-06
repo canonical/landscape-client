@@ -5,7 +5,8 @@ import os
 from twisted.python.reflect import namedClass
 
 from landscape.service import LandscapeService, run_landscape_service
-from landscape.broker.amp import RemoteBrokerCreator
+from landscape.amp import LandscapeComponentProtocolFactory
+from landscape.broker.service import BrokerService
 from landscape.monitor.config import MonitorConfiguration
 from landscape.monitor.monitor import Monitor
 
@@ -23,6 +24,10 @@ class MonitorService(LandscapeService):
                                              "%s.bpickle" % self.service_name)
         super(MonitorService, self).__init__(config)
         self.plugins = self.get_plugins()
+        self.monitor = Monitor(self.reactor, self.config, self.persist,
+                               persist_filename=self.persist_filename)
+        self.factory = LandscapeComponentProtocolFactory(self.reactor,
+                                                         self.monitor)
 
     def get_plugins(self):
         return [namedClass("landscape.monitor.%s.%s"
@@ -35,17 +40,14 @@ class MonitorService(LandscapeService):
 
         def start_plugins(broker):
             self.broker = broker
-            self.monitor = Monitor(self.broker, self.reactor,
-                                   self.config, self.persist,
-                                   persist_filename=self.persist_filename)
-
+            self.monitor.connected(broker)
             for plugin in self.plugins:
                 self.monitor.add(plugin)
-
             return self.broker.register_client(self.service_name)
 
-        self.creator = RemoteBrokerCreator(self.reactor, self.config)
-        connected = self.creator.connect()
+        self.connector = BrokerService.connector_factory(self.reactor,
+                                                         self.config)
+        connected = self.connector.connect()
         return connected.addCallback(start_plugins)
 
     def stopService(self):
@@ -55,7 +57,7 @@ class MonitorService(LandscapeService):
         get saved to disk.
         """
         self.monitor.flush()
-        self.creator.disconnect()
+        self.connector.disconnect()
         super(MonitorService, self).stopService()
 
 
