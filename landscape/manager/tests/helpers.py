@@ -1,3 +1,4 @@
+from landscape.reactor import FakeReactor
 from landscape.broker.tests.helpers import BrokerServiceHelper
 from landscape.manager.config import ManagerConfiguration
 from landscape.manager.manager import Manager
@@ -14,7 +15,7 @@ class ManagerHelper(BrokerServiceHelper):
         def set_manager(ignored):
             test_case.config = ManagerConfiguration()
             test_case.config.load(["-c", test_case.config_filename])
-            test_case.reactor = test_case.broker_service.reactor
+            test_case.reactor = FakeReactor()
             test_case.manager = Manager(
                 test_case.remote, test_case.reactor, test_case.config)
 

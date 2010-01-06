@@ -313,12 +313,13 @@ class MonitorTest(LandscapeTest):
     def test_flush_every_flush_interval(self):
         """
         The L{Monitor.flush} method gets called every C{flush_interval}
-        seconds.
+        seconds, and perists data to the disk.
         """
-        self.monitor.flush = self.mocker.mock()
-        self.monitor.flush()
+        self.monitor.persist.save = self.mocker.mock()
+        self.monitor.persist.save(self.monitor.persist_filename)
+        self.mocker.count(3)
         self.mocker.replay()
-        self.reactor.advance(self.config.flush_interval)
+        self.reactor.advance(self.config.flush_interval*3)
 
     def test_creating_loads_persist(self):
         """
