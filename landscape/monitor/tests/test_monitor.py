@@ -303,7 +303,7 @@ class MonitorTest(LandscapeTest):
         """
         plugin = BrokerClientPlugin()
         plugin.exchange = lambda: self.monitor.persist.set("a", 1)
-        self.monitor.register_plugin(plugin)
+        self.monitor.add(plugin)
         self.monitor.exchange()
 
         persist = Persist()
