@@ -1,11 +1,11 @@
 from landscape.tests.helpers import LandscapeTest
-from landscape.manager.tests.helpers import ManagerHelper
+from landscape.tests.helpers import ManagerHelper_, RemoteBrokerHelper_
 from landscape.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
 
 
 class BrokerPluginTest(LandscapeTest):
 
-    helpers = [ManagerHelper]
+    helpers = [ManagerHelper_, RemoteBrokerHelper_]
 
     def test_call_with_operation_result_success(self):
         """
@@ -22,12 +22,12 @@ class BrokerPluginTest(LandscapeTest):
         def assert_messages(ignored):
             messages = broker_service.message_store.get_pending_messages()
             self.assertMessages(messages,
-                                [{"type": "operation-result", "status": SUCCEEDED,
+                                [{"type": "operation-result",
+                                  "status": SUCCEEDED,
                                   "operation-id": 12312}])
 
         result = plugin.call_with_operation_result(message, operation)
         return result.addCallback(assert_messages)
-
 
     def test_call_with_operation_result_error(self):
         """

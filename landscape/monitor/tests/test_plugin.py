@@ -1,11 +1,10 @@
-from landscape.tests.helpers import LandscapeTest
-from landscape.monitor.tests.helpers import MonitorHelper
+from landscape.tests.helpers import LandscapeTest, MonitorHelper_
 from landscape.monitor.plugin import MonitorPlugin
 
 
 class MonitorPluginTest(LandscapeTest):
 
-    helpers = [MonitorHelper]
+    helpers = [MonitorHelper_]
 
     def test_without_persist_name(self):
         """
