@@ -161,8 +161,8 @@ class BrokerClientHelper(RemoteBrokerHelper):
     def set_up(self, test_case):
 
         def set_broker_client(ignored):
-            test_case.client = BrokerClient(test_case.remote,
-                                            test_case.reactor)
+            test_case.client = BrokerClient(test_case.reactor)
+            test_case.client.connected(test_case.remote)
 
         connected = super(BrokerClientHelper, self).set_up(test_case)
         return connected.addCallback(set_broker_client)
