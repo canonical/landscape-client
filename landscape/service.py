@@ -68,3 +68,8 @@ def run_landscape_service(configuration_class, service_class, args):
     service = service_class(configuration)
     service.setServiceParent(application)
     startApplication(application, False)
+
+    if configuration.ignore_sigint:
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+    service.reactor.run()

@@ -23,7 +23,7 @@ from landscape.lib.twisted_util import gather_results
 from landscape.lib.fetch import fetch, FetchError
 
 from landscape.broker.registration import InvalidCredentialsError
-from landscape.broker.deployment import BrokerConfiguration
+from landscape.broker.config import BrokerConfiguration
 from landscape.broker.remote import RemoteBroker
 
 

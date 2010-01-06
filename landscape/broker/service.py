@@ -4,7 +4,7 @@ import os
 from landscape.lib.fetch import fetch_async
 from landscape.service import LandscapeService, run_landscape_service
 from landscape.broker.registration import RegistrationHandler, Identity
-from landscape.broker.deployment import BrokerConfiguration
+from landscape.broker.config import BrokerConfiguration
 from landscape.broker.transport import HTTPTransport
 from landscape.broker.exchange import MessageExchange
 from landscape.broker.ping import Pinger

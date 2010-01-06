@@ -3,6 +3,8 @@ import logging
 from landscape.lib.twisted_util import gather_results
 from landscape.broker.amp import BrokerServerFactory
 from landscape.manager.manager import FAILED
+from landscape.broker.config import BrokerConfiguration
+from landscape.service import run_landscape_service
 
 
 def event(method):
@@ -241,3 +243,8 @@ Please contact the Landscape team for more information.
                 "result-text": result_text,
                 "operation-id": opid}
             self._exchanger.send(response, urgent=True)
+
+
+def run(args):
+    """Run the application, given some command line arguments."""
+    run_landscape_service(BrokerConfiguration, BrokerService, args)
