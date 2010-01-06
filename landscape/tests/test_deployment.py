@@ -339,14 +339,6 @@ class ConfigurationTest(LandscapeTest):
         self.assertEquals(self.config.get_config_filename(),
                           explicit_filename)
 
-    def test_broker_socket_filename(self):
-        """
-        The L{BrokerConfiguration.broker_socket_filename} attribute holds the
-        filename of the Unix socket used to communicate with the broker.
-        """
-        self.assertEquals(self.config.broker_socket_filename,
-                          os.path.join(self.config.data_path, "broker.sock"))
-
 
 class GetVersionedPersistTest(LandscapeTest):
 

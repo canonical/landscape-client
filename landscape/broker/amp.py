@@ -1,26 +1,27 @@
-from landscape.lib.amp import (
-    Method, MethodCallProtocol, MethodCallFactory, RemoteObject,
-    RemoteObjectCreator)
+import os
+
+from landscape.lib.amp import Method, RemoteObject, RemoteObjectCreator
+from landscape.amp import (
+    LandscapeComponentProtocol, LandscapeComponentProtocolFactory)
 
 
-class BrokerServerProtocol(MethodCallProtocol):
+class BrokerServerProtocol(LandscapeComponentProtocol):
     """
     Communication protocol between the broker server and its clients.
     """
-    methods = [Method("ping"),
-               Method("register_client", protocol=""),
-               Method("send_message"),
-               Method("is_message_pending"),
-               Method("stop_clients"),
-               Method("reload_configuration"),
-               Method("register"),
-               Method("get_accepted_message_types"),
-               Method("get_server_uuid"),
-               Method("register_client_accepted_message_type"),
-               Method("exit")]
+    methods = (LandscapeComponentProtocol.methods +
+               [Method("register_client", protocol=""),
+                Method("send_message"),
+                Method("is_message_pending"),
+                Method("stop_clients"),
+                Method("reload_configuration"),
+                Method("register"),
+                Method("get_accepted_message_types"),
+                Method("get_server_uuid"),
+                Method("register_client_accepted_message_type")])
 
 
-class BrokerServerFactory(MethodCallFactory):
+class BrokerProtocolFactory(LandscapeComponentProtocolFactory):
 
     protocol = BrokerServerProtocol
 
@@ -38,16 +39,12 @@ class RemoteBroker(RemoteObject):
         return deferred_types
 
 
-class BrokerClientProtocol(MethodCallProtocol):
-    """
-    Communication protocol between the broker server and its clients.
-    """
+class BrokerClientProtocol(LandscapeComponentProtocol):
     """Communication protocol between a client and the broker."""
 
-    methods = [Method("ping"),
-               Method("message"),
-               Method("fire_event"),
-               Method("exit")]
+    methods = (LandscapeComponentProtocol.methods +
+               [Method("message"),
+                Method("fire_event")])
 
     remote_factory = RemoteBroker
 
@@ -62,5 +59,5 @@ class RemoteBrokerCreator(RemoteObjectCreator):
         @param reactor: A L{TwistedReactor} object.
         @param socket: A L{Configuration} object.
         """
-        super(RemoteBrokerCreator, self).__init__(
-            reactor._reactor, config.broker_socket_filename)
+        socket = os.path.join(config.data_path, "broker.sock")
+        super(RemoteBrokerCreator, self).__init__(reactor._reactor, socket)
