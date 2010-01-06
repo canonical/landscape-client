@@ -30,7 +30,7 @@ class ManagerService(LandscapeService):
             self.manager = Manager(self.broker, self.reactor, self.config)
 
             for plugin in self.plugins:
-                self.manager.register_plugin(plugin)
+                self.manager.add(plugin)
 
             return self.broker.register_client(self.service_name)
 
