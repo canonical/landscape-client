@@ -53,8 +53,8 @@ class BrokerClient(object):
         """Return C{True}"""
         return True
 
-    def register_plugin(self, plugin):
-        """Register a plugin.
+    def add(self, plugin):
+        """Add a plugin.
 
         The plugin's C{register} method will be called with this broker client
         as its argument.
