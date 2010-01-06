@@ -40,7 +40,7 @@ class MonitorService(LandscapeService):
                                    persist_filename=self.persist_filename)
 
             for plugin in self.plugins:
-                self.monitor.register_plugin(plugin)
+                self.monitor.add(plugin)
 
             return self.broker.register_client(self.service_name)
 

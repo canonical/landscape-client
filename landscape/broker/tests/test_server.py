@@ -191,7 +191,7 @@ class BrokerServerTest(LandscapeTest):
         If a broker client blow up in its exit() methods, exit should ignore
         the error and exit anyway.
         """
-        self.broker.register_client("foo",  BrokerServerProtocol(None))
+        self.broker.register_client("foo", BrokerServerProtocol(None))
         [client] = self.broker.get_clients()
         client.exit = self.mocker.mock()
         post_exit = self.mocker.mock()

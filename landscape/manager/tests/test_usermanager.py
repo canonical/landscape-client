@@ -2,14 +2,12 @@ import os
 
 from landscape.lib.persist import Persist
 from landscape.manager.manager import SUCCEEDED, FAILED
-from landscape.manager.manager import ManagerPluginRegistry
 from landscape.monitor.usermonitor import UserMonitor
 from landscape.manager.usermanager import (
     UserManager, RemoteUserManagerCreator)
 from landscape.user.tests.helpers import FakeUserProvider, FakeUserManagement
 from landscape.tests.helpers import LandscapeIsolatedTest, LandscapeTest
 from landscape.user.provider import UserManagementError
-from landscape.tests.helpers import RemoteBrokerHelper
 from landscape.manager.tests.helpers import ManagerHelper
 
 
@@ -19,7 +17,7 @@ class UserGroupTestBase(LandscapeIsolatedTest):
 
     def setUp(self):
 
-        def set_up(ignored):            
+        def set_up(ignored):
             self.shadow_file = self.makeFile("""\
 jdoe:$1$xFlQvTqe$cBtrNEDOIKMy/BuJoUdeG0:13348:0:99999:7:::
 psmith:!:13348:0:99999:7:::
@@ -36,8 +34,6 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
             self.ports[0].stopListening()
             self.ports[1].stopListening()
         super(UserGroupTestBase, self).tearDown()
-        
-
 
     def setup_environment(self, users, groups, shadow_file):
         provider = FakeUserProvider(users=users, groups=groups,
@@ -62,6 +58,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         with details about the change and an C{operation-result} with
         details of the outcome of the operation.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertMessages(messages,
@@ -121,6 +118,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         event is received and processed.  In other words, a snapshot
         should have been taken after the operation was handled.
         """
+
         def handle_callback1(result):
             message_store = self.broker_service.message_store
             messages = message_store.get_pending_messages()
@@ -152,6 +150,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         should first detect changes and then perform the operation.
         The results should be reported in separate messages.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 3)
@@ -193,6 +192,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         with details about the change and an C{operation-result} with
         details of the outcome of the operation.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 3)
@@ -213,7 +213,8 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                                     "timestamp": 0, "type": "users",
                                   "operation-id": 99},])
 
-        users = [("jdoe", "x", 1001, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh")]
+        users = [("jdoe", "x", 1001, 1000, "John Doe,,,,",
+                  "/home/bo", "/bin/zsh")]
         groups = [("users", "x", 1001, [])]
         self.setup_environment(users, groups, None)
         result = self.manager.dispatch_message(
@@ -225,13 +226,13 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         result.addCallback(handle_callback)
         return result
 
-
     def test_edit_user_event_in_sync(self):
         """
         The client and server should be in sync after a C{edit-user}
         event is received and processed.  In other words, a snapshot
         should have been taken after the operation was handled.
         """
+
         def handle_callback1(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertTrue(messages)
@@ -240,11 +241,12 @@ class UserOperationsMessagingTest(UserGroupTestBase):
             return result
 
         def handle_callback2(result, messages):
-            new_messages = self.broker_service.message_store.get_pending_messages()
+            new_messages = self.mstore.get_pending_messages()
             self.assertEquals(messages, new_messages)
             return result
 
-        users = [("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh")]
+        users = [("jdoe", "x", 1000, 1000, "John Doe,,,,",
+                  "/home/bo", "/bin/zsh")]
         plugin = self.setup_environment(users, [], None)
         result = self.manager.dispatch_message(
             {"username": "jdoe", "password": "password", "name": "John Doe",
@@ -261,6 +263,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         should first detect changes and then perform the operation.
         The results should be reported in separate messages.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 3)
@@ -308,6 +311,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         and an C{operation-result} with details of the outcome of the
         operation.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 3)
@@ -368,6 +372,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         about the change and an C{operation-result} with details of
         the outcome of the operation.
         """
+
         def handle_callback(result):
                 messages = self.broker_service.message_store.get_pending_messages()
                 self.assertEquals(len(messages), 3)
@@ -396,6 +401,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         event is received and processed.  In other words, a snapshot
         should have been taken after the operation was handled.
         """
+
         def handle_callback1(result):
             message_store = self.broker_service.message_store
             messages = message_store.get_pending_messages()
@@ -464,6 +470,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         C{operation-result} with details of the outcome of the
         operation.
         """
+
         def handle_callback(result):
            messages = self.broker_service.message_store.get_pending_messages()
            self.assertEquals(len(messages), 3, messages)
@@ -499,6 +506,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         we expect only a single failure message to be generated.
         """
         self.log_helper.ignore_errors(UserManagementError)
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 1)
@@ -523,6 +531,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         event is received and processed.  In other words, a snapshot
         should have been taken after the operation was handled.
         """
+
         def handle_callback1(result):
             message_store = self.broker_service.message_store
             messages = message_store.get_pending_messages()
@@ -593,6 +602,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         with details about the change and an C{operation-result} with
         details of the outcome of the operation.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 3)
@@ -630,6 +640,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         error should be generated.
         """
         self.log_helper.ignore_errors(UserManagementError)
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 1)
@@ -655,6 +666,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         words, a snapshot should have been taken after the operation
         was handled.
         """
+
         def handle_callback(result):
             message_store = self.broker_service.message_store
             messages = message_store.get_pending_messages()
@@ -687,6 +699,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         operation.  The results should be reported in separate
         messages.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 3)
@@ -731,6 +744,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         with details about the change and an C{operation-result} with
         details of the outcome of the operation.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 2)
@@ -759,6 +773,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         event is received and processed.  In other words, a snapshot
         should have been taken after the operation was handled.
         """
+
         def handle_callback1(result):
             message_store = self.broker_service.message_store
             messages = message_store.get_pending_messages()
@@ -788,6 +803,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         should first detect changes and then perform the operation.
         The results should be reported in separate messages.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 3)
@@ -819,6 +835,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         and an C{operation-result} with details of the outcome of the
         operation.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 3)
@@ -857,6 +874,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         event is received and processed.  In other words, a snapshot
         should have been taken after the operation was handled.
         """
+
         def handle_callback1(result):
             message_store = self.broker_service.message_store
             messages = message_store.get_pending_messages()
@@ -889,6 +907,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         operation.  The results should be reported in separate
         messages.
         """
+
         def handle_callback1(result):
             result = self.manager.dispatch_message(
                 {"groupname": "sales", "new-name": "webdev",
@@ -928,6 +947,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         and an C{operation-result} with details of the outcome of the
         operation.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 3)
@@ -966,6 +986,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         and an C{operation-result} with details of the outcome of the
         operation.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 3)
@@ -1000,6 +1021,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         words, a snapshot should have been taken after the operation
         was handled.
         """
+
         def handle_callback(result):
             message_store = self.broker_service.message_store
             messages = message_store.get_pending_messages()
@@ -1033,6 +1055,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         operation.  The results should be reported in separate
         messages.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 3)
@@ -1071,6 +1094,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         and an C{operation-result} with details of the outcome of the
         operation.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 3)
@@ -1102,6 +1126,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         other words, a snapshot should have been taken after the
         operation was handled.
         """
+
         def handle_callback1(result):
             message_store = self.broker_service.message_store
             messages = self.broker_service.message_store.get_pending_messages()
@@ -1134,6 +1159,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         operation.  The results should be reported in separate
         messages.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 3)
@@ -1173,6 +1199,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         C{operation-result} with details of the outcome of the
         operation.
         """
+
         def handle_callback1(result):
 
             result = self.manager.dispatch_message(
@@ -1210,6 +1237,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         words, a snapshot should have been taken after the operation
         was handled.
         """
+
         def handle_callback1(result):
             message_store = self.broker_service.message_store
             messages = message_store.get_pending_messages()
@@ -1240,6 +1268,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         operation.  The results should be reported in separate
         messages.
         """
+
         def handle_callback1(result):
             result = self.manager.dispatch_message(
                 {"groupname": "sales", "operation-id": 123,

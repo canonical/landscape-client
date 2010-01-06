@@ -17,13 +17,13 @@ class BrokerClientTest(LandscapeTest):
         """
         self.assertTrue(self.client.ping())
 
-    def test_register_plugin(self):
+    def test_add(self):
         """
-        The L{BrokerClient.register_plugin} method registers a new plugin
+        The L{BrokerClient.add} method registers a new plugin
         plugin, and calls the plugin's C{register} method.
         """
         plugin = BrokerClientPlugin()
-        self.client.register_plugin(plugin)
+        self.client.add(plugin)
         self.assertIs(plugin.client, self.client)
 
     def test_get_plugins(self):
@@ -32,8 +32,8 @@ class BrokerClientTest(LandscapeTest):
         of registered plugins.
         """
         plugins = [BrokerClientPlugin(), BrokerClientPlugin()]
-        self.client.register_plugin(plugins[0])
-        self.client.register_plugin(plugins[1])
+        self.client.add(plugins[0])
+        self.client.add(plugins[1])
         self.assertEquals(self.client.get_plugins(), plugins)
 
     def test_get_named_plugin(self):
@@ -43,7 +43,7 @@ class BrokerClientTest(LandscapeTest):
         """
         plugin = BrokerClientPlugin()
         plugin.plugin_name = "foo"
-        self.client.register_plugin(plugin)
+        self.client.add(plugin)
         self.assertEquals(self.client.get_plugin("foo"), plugin)
 
     def test_run_interval(self):
@@ -55,7 +55,7 @@ class BrokerClientTest(LandscapeTest):
         plugin.run = self.mocker.mock()
         self.expect(plugin.run()).count(2)
         self.mocker.replay()
-        self.client.register_plugin(plugin)
+        self.client.add(plugin)
         self.reactor.advance(plugin.run_interval)
         self.reactor.advance(plugin.run_interval)
 
@@ -153,7 +153,7 @@ class BrokerClientTest(LandscapeTest):
         plugin.exchange = self.mocker.mock()
         plugin.exchange()
         self.mocker.replay()
-        self.client.register_plugin(plugin)
+        self.client.add(plugin)
         self.client.exchange()
 
     def test_exchange_on_plugin_without_exchange_method(self):
@@ -178,8 +178,8 @@ class BrokerClientTest(LandscapeTest):
         self.expect(plugin1.exchange()).throw(ZeroDivisionError)
         plugin2.exchange()
         self.mocker.replay()
-        self.client.register_plugin(plugin1)
-        self.client.register_plugin(plugin2)
+        self.client.add(plugin1)
+        self.client.add(plugin2)
         self.client.exchange()
         self.assertTrue("Error during plugin exchange" in
                         self.logfile.getvalue())
@@ -194,7 +194,7 @@ class BrokerClientTest(LandscapeTest):
         plugin.exchange = self.mocker.mock()
         plugin.exchange()
         self.mocker.replay()
-        self.client.register_plugin(plugin)
+        self.client.add(plugin)
         self.client.notify_exchange()
         self.assertTrue("Got notification of impending exchange. "
                         "Notifying all plugins." in self.logfile.getvalue())

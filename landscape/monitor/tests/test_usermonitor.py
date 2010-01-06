@@ -1,12 +1,9 @@
 from twisted.internet.defer import fail
 
-from landscape.lib.persist import Persist
-from landscape.monitor.monitor import MonitorPluginRegistry
 from landscape.monitor.usermonitor import UserMonitor, RemoteUserMonitorCreator
 from landscape.manager.usermanager import UserManager, UserManagerFactory
 from landscape.user.tests.helpers import FakeUserProvider
-from landscape.tests.helpers import LandscapeIsolatedTest, LandscapeTest
-from landscape.tests.helpers import RemoteBrokerHelper
+from landscape.tests.helpers import LandscapeTest
 from landscape.tests.mocker import ANY
 from landscape.monitor.tests.helpers import MonitorHelper
 
@@ -51,7 +48,7 @@ class UserMonitorTest(LandscapeTest):
 
     def setUp(self):
 
-        def register_plugin(ignored):
+        def add(ignored):
             self.shadow_file = self.makeFile(
                 "jdoe:$1$xFlQvTqe$cBtrNEDOIKMy/BuJoUdeG0:13348:0:99999:7:::\n"
                 "psmith:!:13348:0:99999:7:::\n"
@@ -65,7 +62,7 @@ class UserMonitorTest(LandscapeTest):
             self.plugin = UserMonitor(self.provider)
 
         super_setup = super(UserMonitorTest, self).setUp()
-        return super_setup.addCallback(register_plugin)
+        return super_setup.addCallback(add)
 
     def tearDown(self):
         self.port.stopListening()
@@ -87,6 +84,7 @@ class UserMonitorTest(LandscapeTest):
         When a C{resynchronize} event occurs any cached L{UserChange}
         snapshots should be cleared and a new message with users generated.
         """
+
         def resynchronize_complete(result, plugin):
 
             def resynchronization_new_messages(result):
@@ -123,7 +121,7 @@ class UserMonitorTest(LandscapeTest):
                                 "/home/jdoe", "/bin/sh")]
         self.provider.groups = [("webdev", "x", 1000, ["jdoe"])]
         self.broker_service.message_store.set_accepted_types(["users"])
-        self.monitor.register_plugin(self.plugin)
+        self.monitor.add(self.plugin)
         deferred = self.plugin.run()
         deferred.addCallback(resynchronize_complete, self.plugin)
         return deferred
@@ -134,6 +132,7 @@ class UserMonitorTest(LandscapeTest):
         message with  a diff-like representation of changes since the last
         run.
         """
+
         def got_result(result):
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
@@ -149,7 +148,7 @@ class UserMonitorTest(LandscapeTest):
                                 "/home/jdoe", "/bin/sh")]
         self.provider.groups = [("webdev", "x", 1000, ["jdoe"])]
         self.broker_service.message_store.set_accepted_types(["users"])
-        self.monitor.register_plugin(self.plugin)
+        self.monitor.add(self.plugin)
         result = self.plugin.run()
         result.addCallback(got_result)
         return result
@@ -163,10 +162,10 @@ class UserMonitorTest(LandscapeTest):
         self.plugin.run = self.mocker.mock()
         self.expect(self.plugin.run()).count(5)
         self.mocker.replay()
-        self.monitor.register_plugin(self.plugin)
+        self.monitor.add(self.plugin)
 
         self.broker_service.message_store.set_accepted_types(["users"])
-        self.reactor.advance(self.plugin.run_interval*5)
+        self.reactor.advance(self.plugin.run_interval * 5)
 
     def test_run_with_operation_id(self):
         """
@@ -174,6 +173,7 @@ class UserMonitorTest(LandscapeTest):
         message with  a diff-like representation of changes since the last
         run.
         """
+
         def got_result(result):
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
@@ -190,13 +190,14 @@ class UserMonitorTest(LandscapeTest):
         self.provider.users = [("jdoe", "x", 1000, 1000, "JD,,,,",
                                 "/home/jdoe", "/bin/sh")]
         self.provider.groups = [("webdev", "x", 1000, ["jdoe"])]
-        self.monitor.register_plugin(self.plugin)
+        self.monitor.add(self.plugin)
         self.broker_service.message_store.set_accepted_types(["users"])
         result = self.plugin.run(1001)
         result.addCallback(got_result)
         return result
 
     def test_detect_changes(self):
+
         def got_result(result):
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
@@ -213,7 +214,7 @@ class UserMonitorTest(LandscapeTest):
                                 "/home/jdoe", "/bin/sh")]
         self.provider.groups = [("webdev", "x", 1000, ["jdoe"])]
 
-        self.monitor.register_plugin(self.plugin)
+        self.monitor.add(self.plugin)
         creator = RemoteUserMonitorCreator(self.reactor, self.config)
         result = creator.connect()
         result.addCallback(lambda remote: remote.detect_changes())
@@ -226,6 +227,7 @@ class UserMonitorTest(LandscapeTest):
         The L{UserMonitor} should expose a remote
         C{remote_run} method which should call the remote
         """
+
         def got_result(result):
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
@@ -242,7 +244,7 @@ class UserMonitorTest(LandscapeTest):
         self.provider.users = [("jdoe", "x", 1000, 1000, "JD,,,,",
                                 "/home/jdoe", "/bin/sh")]
         self.provider.groups = [("webdev", "x", 1000, ["jdoe"])]
-        self.monitor.register_plugin(self.plugin)
+        self.monitor.add(self.plugin)
         creator = RemoteUserMonitorCreator(self.reactor, self.config)
         result = creator.connect()
         result.addCallback(lambda remote: remote.detect_changes(1001))
@@ -255,6 +257,7 @@ class UserMonitorTest(LandscapeTest):
         Don't add any messages at all if the broker isn't currently
         accepting their type.
         """
+
         def got_result(result):
             mstore = self.broker_service.message_store
             self.assertMessages(list(mstore.get_pending_messages()), [])
@@ -265,7 +268,7 @@ class UserMonitorTest(LandscapeTest):
         self.provider.users = [("jdoe", "x", 1000, 1000, "JD,,,,",
                                 "/home/jdoe", "/bin/sh")]
         self.provider.groups = [("webdev", "x", 1000, ["jdoe"])]
-        self.monitor.register_plugin(self.plugin)
+        self.monitor.add(self.plugin)
         creator = RemoteUserMonitorCreator(self.reactor, self.config)
         result = creator.connect()
         result.addCallback(lambda remote: remote.detect_changes(1001))
@@ -274,6 +277,7 @@ class UserMonitorTest(LandscapeTest):
         return result
 
     def test_call_on_accepted(self):
+
         def got_result(result):
             mstore = self.broker_service.message_store
             self.assertMessages(mstore.get_pending_messages(),
@@ -288,7 +292,7 @@ class UserMonitorTest(LandscapeTest):
         self.provider.users = [("jdoe", "x", 1000, 1000, "JD,,,,",
                                 "/home/jdoe", "/bin/sh")]
         self.provider.groups = [("webdev", "x", 1000, ["jdoe"])]
-        self.monitor.register_plugin(self.plugin)
+        self.monitor.add(self.plugin)
 
         self.broker_service.message_store.set_accepted_types(["users"])
         result = self.reactor.fire(
@@ -305,6 +309,7 @@ class UserMonitorTest(LandscapeTest):
         sent by the plugin has been sent.
         """
         self.log_helper.ignore_errors(RuntimeError)
+
         def got_result(result):
             persist = self.plugin._persist
             mstore = self.broker_service.message_store
@@ -321,7 +326,7 @@ class UserMonitorTest(LandscapeTest):
         self.provider.users = [("jdoe", "x", 1000, 1000, "JD,,,,",
                        "/home/jdoe", "/bin/sh")]
         self.provider.groups = [("webdev", "x", 1000, ["jdoe"])]
-        self.monitor.register_plugin(self.plugin)
+        self.monitor.add(self.plugin)
         creator = RemoteUserMonitorCreator(self.reactor, self.config)
         result = creator.connect()
         result.addCallback(lambda remote: remote.detect_changes(1001))
