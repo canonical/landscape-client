@@ -40,4 +40,5 @@ class RemoteLandscapeComponentCreator(RemoteObjectCreator):
         @param config: A L{LandscapeConfiguration}.
         """
         socket = os.path.join(config.data_path, self.socket + ".sock")
-        super(self.__class__, self).__init__(reactor._reactor, socket)
+        super(RemoteLandscapeComponentCreator, self).__init__(
+            reactor._reactor, socket)

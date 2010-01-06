@@ -40,7 +40,7 @@ class MonitorService(LandscapeService):
 
         def start_plugins(broker):
             self.broker = broker
-            self.monitor.broker = self.broker
+            self.monitor.connected(broker)
             for plugin in self.plugins:
                 self.monitor.add(plugin)
             return self.broker.register_client(self.service_name)
