@@ -9,15 +9,14 @@ from landscape.lib.dbus_util import get_object
 from landscape.tests.test_plugin import ExchangePlugin
 from landscape.tests.helpers import (
     LandscapeTest, LandscapeIsolatedTest, RemoteBrokerHelper, MonitorHelper,
-    LogKeeperHelper)
-from landscape.monitor.tests.helpers import MonitorHelper as MonitorHelper_
+    LogKeeperHelper, MonitorHelper_)
 from landscape.tests.mocker import ANY
 from landscape.broker.client import BrokerClientPlugin
 
 
 class MonitorPluginRegistryTest(LandscapeTest):
 
-    helpers = [MonitorHelper]
+    helpers = [MonitorHelper_]
 
     def test_persist(self):
         self.monitor.persist.set("a", 1)
