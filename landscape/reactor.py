@@ -158,6 +158,13 @@ class ThreadedCallsReactorMixin(object):
         self.cancel_call(self._run_threaded_callbacks_id)
 
 
+class UnixReactorMixin(object):
+
+    def listen_unix(self, *args, **kwargs):
+        """Start listen on a Unix socket."""
+        return self._reactor.listenUNIX(*args, **kwargs)
+
+
 class ReactorID(object):
 
     def __init__(self, timeout):
@@ -215,7 +222,7 @@ class FakeReactorID(object):
 
 
 class FakeReactor(EventHandlingReactorMixin,
-                  ThreadedCallsReactorMixin):
+                  ThreadedCallsReactorMixin, UnixReactorMixin):
     """
     @ivar udp_transports: dict of {port: (protocol, transport)}
     @ivar hosts: Dict of {hostname: ip}. Users should populate this
@@ -336,9 +343,8 @@ class FakeReactor(EventHandlingReactorMixin,
             return succeed(hostname)
 
 
-
 class TwistedReactor(EventHandlingReactorMixin,
-                     ThreadedCallsReactorMixin):
+                     ThreadedCallsReactorMixin, UnixReactorMixin):
     """Wrap and add functionalities to the Twisted C{reactor}."""
 
     def __init__(self):
