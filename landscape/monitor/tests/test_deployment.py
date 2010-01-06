@@ -1,6 +1,5 @@
 from landscape.lib.persist import Persist
 from landscape.reactor import FakeReactor
-from landscape.manager.usermanager import UserManagerDBusObject
 from landscape.monitor.computerinfo import ComputerInfo
 from landscape.monitor.loadaverage import LoadAverage
 from landscape.monitor.deployment import MonitorService, MonitorConfiguration
