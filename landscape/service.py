@@ -36,7 +36,7 @@ class LandscapeService(Service, object):
             self.persist = get_versioned_persist(self)
         if not (self.config is not None and self.config.ignore_sigusr1):
             signal.signal(signal.SIGUSR1, lambda signal, frame: rotate_logs())
-        if self.config is not None:
+        if self.config is not None and hasattr(self.config, "data_path"):
             self.socket = os.path.join(self.config.data_path,
                                        self.service_name + ".sock")
 
