@@ -1,3 +1,6 @@
+from twisted.internet import reactor
+from twisted.internet.defer import Deferred
+
 from landscape.lib.twisted_util import gather_results
 from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
 from landscape.broker.tests.helpers import BrokerClientHelper
@@ -217,6 +220,35 @@ class BrokerClientTest(LandscapeTest):
         self.mocker.replay()
         self.reactor.call_on("event", callback)
         self.client.fire_event("event", True, kwarg=2)
+
+    def test_fire_event_with_mixed_results(self):
+        """
+        The return values of the fired handlers can be part L{Deferred}s
+        and part not.
+        """
+        deferred = Deferred()
+        callback1 = self.mocker.mock()
+        callback2 = self.mocker.mock()
+        self.expect(callback1()).result(123)
+        self.expect(callback2()).result(deferred)
+        self.mocker.replay()
+        self.reactor.call_on("event", callback1)
+        self.reactor.call_on("event", callback2)
+        result = self.client.fire_event("event")
+        reactor.callLater(0, lambda: deferred.callback("abc"))
+        return self.assertSuccess(result, [123, "abc"])
+
+    def test_fire_event_with_acceptance_changed(self):
+        """
+        When the given event type is C{message-type-acceptance-changed}, the
+        fired event will be a 2-tuple of the eventy type and the message type.
+        """
+        event_type = "message-type-acceptance-changed"
+        callback = self.mocker.mock()
+        callback(False)
+        self.mocker.replay()
+        self.reactor.call_on((event_type, "test"), callback)
+        self.client.fire_event(event_type, "test", False)
 
     def test_broker_started(self):
         """

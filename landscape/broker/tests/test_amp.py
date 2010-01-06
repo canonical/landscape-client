@@ -221,7 +221,7 @@ class RemoteClientTest(LandscapeTest):
         self.mocker.replay()
         self.reactor.call_on("event", callback)
         result = self.remote_client.fire_event("event", True, kwarg=2)
-        return self.assertSuccess(result, None)
+        return self.assertSuccess(result, [None])
 
     def test_exit(self):
         """

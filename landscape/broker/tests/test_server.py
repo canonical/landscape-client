@@ -329,7 +329,7 @@ class EventTest(LandscapeTest):
                                                         self.mocker.mock()
             self.remote.register_client_accepted_message_type("type")
             self.mocker.replay()
-            return self.assertSuccess(self.broker.broker_started(), [None])
+            return self.assertSuccess(self.broker.broker_started(), [[None]])
 
         registered = self.client.register_message("type", lambda x: None)
         return registered.addCallback(assert_broker_started)

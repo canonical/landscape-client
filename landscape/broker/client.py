@@ -1,6 +1,9 @@
 from logging import info, exception
 
+from twisted.internet.defer import maybeDeferred
+
 from landscape.log import format_object
+from landscape.lib.twisted_util import gather_results
 
 
 class HandlerNotFoundError(Exception):
@@ -138,8 +141,19 @@ class BrokerClient(object):
         self.exchange()
 
     def fire_event(self, event_type, *args, **kwargs):
-        """Fire an event of a given type."""
-        self.reactor.fire(event_type, *args, **kwargs)
+        """Fire an event of a given type.
+
+        @return: A L{Deferred} resulting in a list of returns values of
+            the fired event handlers, in the order they were fired.
+        """
+        if event_type == "message-type-acceptance-changed":
+            message_type = args[0]
+            acceptance = args[1]
+            results = self.reactor.fire((event_type, message_type), acceptance)
+        else:
+            results = self.reactor.fire(event_type, *args, **kwargs)
+        return gather_results([
+            maybeDeferred(lambda x: x, result) for result in results])
 
     def broker_started(self):
         """
