@@ -6,14 +6,14 @@ from landscape.monitor.usermonitor import UserMonitor
 from landscape.manager.usermanager import (
     UserManager, RemoteUserManagerCreator)
 from landscape.user.tests.helpers import FakeUserProvider, FakeUserManagement
-from landscape.tests.helpers import LandscapeIsolatedTest, LandscapeTest
+from landscape.tests.helpers import (
+    LandscapeTest, ManagerHelper_, RemoteBrokerHelper_)
 from landscape.user.provider import UserManagementError
-from landscape.manager.tests.helpers import ManagerHelper
 
 
-class UserGroupTestBase(LandscapeIsolatedTest):
+class UserGroupTestBase(LandscapeTest):
 
-    helpers = [ManagerHelper]
+    helpers = [ManagerHelper_, RemoteBrokerHelper_]
 
     def setUp(self):
 
@@ -1338,7 +1338,7 @@ class UserManagerTest(LandscapeTest):
 
 class RemoteUserManagerTest(LandscapeTest):
 
-    helpers = [ManagerHelper]
+    helpers = [ManagerHelper_, RemoteBrokerHelper_]
 
     def setUp(self):
 

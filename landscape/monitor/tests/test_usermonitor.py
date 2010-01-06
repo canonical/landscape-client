@@ -3,14 +3,14 @@ from twisted.internet.defer import fail
 from landscape.monitor.usermonitor import UserMonitor, RemoteUserMonitorCreator
 from landscape.manager.usermanager import UserManager, UserManagerFactory
 from landscape.user.tests.helpers import FakeUserProvider
-from landscape.tests.helpers import LandscapeTest
+from landscape.tests.helpers import (
+    LandscapeTest, MonitorHelper_, RemoteBrokerHelper_)
 from landscape.tests.mocker import ANY
-from landscape.monitor.tests.helpers import MonitorHelper
 
 
 class UserMonitorNoManagerTest(LandscapeTest):
 
-    helpers = [MonitorHelper]
+    helpers = [MonitorHelper_, RemoteBrokerHelper_]
 
     def test_no_fetch_users_in_monitor_only_mode(self):
         """
@@ -44,7 +44,7 @@ class UserMonitorNoManagerTest(LandscapeTest):
 
 class UserMonitorTest(LandscapeTest):
 
-    helpers = [MonitorHelper]
+    helpers = [MonitorHelper_, RemoteBrokerHelper_]
 
     def setUp(self):
 
