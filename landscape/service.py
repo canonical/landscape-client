@@ -1,3 +1,4 @@
+import os
 import logging
 import signal
 
@@ -7,6 +8,7 @@ from twisted.application.app import startApplication
 from landscape.log import rotate_logs
 from landscape.reactor import TwistedReactor
 from landscape.deployment import get_versioned_persist, init_logging
+from landscape.amp import RemoteLandscapeComponentCreator
 
 
 class LandscapeService(Service, object):
@@ -15,12 +17,16 @@ class LandscapeService(Service, object):
     This sets up the reactor and L{Persist} object.
 
     @cvar service_name: The lower-case name of the service. This is used to
-        generate the bpickle filename.
+        generate the bpickle and the Unix socket filenames.
+    @cvar connector_factory: A factory class that can be used to connect to us.
     @ivar config: A L{Configuration} object.
     @ivar reactor: A L{TwistedReactor} object.
     @ivar persist: A L{Persist} object, if C{persist_filename} is defined.
+    @ivar factory: A L{LandscapeComponentProtocolFactory}, it must be provided
+        by instances of sub-classes.
     """
     reactor_factory = TwistedReactor
+    connector_factory = RemoteLandscapeComponentCreator
     persist_filename = None
 
     def __init__(self, config):
@@ -30,13 +36,18 @@ class LandscapeService(Service, object):
             self.persist = get_versioned_persist(self)
         if not (self.config is not None and self.config.ignore_sigusr1):
             signal.signal(signal.SIGUSR1, lambda signal, frame: rotate_logs())
+        if self.config is not None and hasattr(self.config, "data_path"):
+            self.socket = os.path.join(self.config.data_path,
+                                       self.service_name + ".sock")
 
     def startService(self):
         Service.startService(self)
         logging.info("%s started with config %s" % (
             self.service_name.capitalize(), self.config.get_config_filename()))
+        self.port = self.reactor.listen_unix(self.socket, self.factory)
 
     def stopService(self):
+        self.port.stopListening()
         Service.stopService(self)
         logging.info("%s stopped with config %s" % (
             self.service_name.capitalize(), self.config.get_config_filename()))

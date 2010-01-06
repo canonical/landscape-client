@@ -26,7 +26,6 @@ from landscape.broker.deployment import (BrokerService, BrokerConfiguration)
 from landscape.deployment import BaseConfiguration
 from landscape.broker.remote import RemoteBroker, FakeRemoteBroker
 from landscape.broker.transport import FakeTransport
-from landscape.broker.amp import RemoteBrokerCreator
 
 from landscape.monitor.monitor import MonitorPluginRegistry
 from landscape.monitor.config import MonitorConfiguration
@@ -434,14 +433,16 @@ class BrokerServiceHelper(object):
         def set_remote(remote):
             test_case.remote = remote
 
-        self.creator = RemoteBrokerCreator(FakeReactor(), config)
-        connected = self.creator.connect()
+        from time import time
+        self.connector = test_case.broker_service.connector_factory(
+            FakeReactor(), config)
+        connected = self.connector.connect()
         return connected.addCallback(set_remote)
 
     def tear_down(self, test_case):
         test_case.broker_service.stopService()
-        if hasattr(self, "creator"):
-            self.creator.disconnect()
+        if hasattr(self, "connector"):
+            self.connector.disconnect()
 
 
 class MonitorHelper(LegacyExchangeHelper):
@@ -479,8 +480,9 @@ class MonitorHelper_(BrokerServiceHelper):
             test_case.config.load(["-c", test_case.config_filename])
             test_case.reactor = FakeReactor()
             test_case.monitor = Monitor(
-                test_case.remote, test_case.reactor, test_case.config,
+                test_case.reactor, test_case.config,
                 persist, persist_filename)
+            test_case.monitor.connected(test_case.remote)
             test_case.mstore = test_case.broker_service.message_store
 
         result = super(MonitorHelper_, self).set_up(test_case)
@@ -520,8 +522,8 @@ class ManagerHelper_(BrokerServiceHelper):
             test_case.config = ManagerConfiguration_()
             test_case.config.load(["-c", test_case.config_filename])
             test_case.reactor = FakeReactor()
-            test_case.manager = Manager(
-                test_case.remote, test_case.reactor, test_case.config)
+            test_case.manager = Manager(test_case.reactor, test_case.config)
+            test_case.manager.connected(test_case.remote)
             test_case.mstore = test_case.broker_service.message_store
 
         result = super(ManagerHelper_, self).set_up(test_case)
