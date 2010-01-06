@@ -37,17 +37,23 @@ class BrokerClient(object):
     by the broker to the client.
     """
 
-    def __init__(self, broker, reactor):
+    def __init__(self, reactor):
         """
-        @param broker: A L{RemoteObject} connected to a remote broker.
         @param reactor: A L{TwistedReactor}.
         """
         super(BrokerClient, self).__init__()
-        self.broker = broker
         self.reactor = reactor
+        self.broker = None
         self._registered_messages = {}
         self._plugins = []
         self._plugin_names = {}
+
+    def connected(self, broker):
+        """Called upon broker connection.
+        @param broker: A connected L{RemoteBroker}..
+        """
+        self.broker = broker
+        self.broker.protocol.object = self
 
     def ping(self):
         """Return C{True}"""
