@@ -44,7 +44,8 @@ class MonitorServiceTest(LandscapeTest):
     def test_start_service(self):
         """
         The L{MonitorService.startService} method connects to the broker,
-        starts the plugins and register the monitor as broker client.
+        starts the plugins and register the monitor as broker client.  It also
+        start listening on its own socket for incoming connections.
         """
         # FIXME: don't actually run the real register method, because at the
         # moment the UserMonitor plugin still depends on DBus. We can probably
@@ -61,7 +62,11 @@ class MonitorServiceTest(LandscapeTest):
             [client] = self.broker_service.broker.get_clients()
             self.assertEquals(client.name, "monitor")
             result = self.service.broker.ping()
-            result.addCallback(lambda x: self.service.creator.disconnect())
+            connector = self.service.connector_factory(self.service.reactor,
+                                                       self.service.config)
+            result.addCallback(lambda x: connector.connect())
+            result.addCallback(lambda x: connector.disconnect())
+            result.addCallback(lambda x: self.service.stopService())
             return result
 
         started = self.service.startService()
@@ -74,7 +79,9 @@ class MonitorServiceTest(LandscapeTest):
         """
         self.service.monitor = self.mocker.mock()
         self.service.monitor.flush()
-        self.service.creator = self.mocker.mock()
-        self.service.creator.disconnect()
+        self.service.connector = self.mocker.mock()
+        self.service.connector.disconnect()
+        self.service.port = self.mocker.mock()
+        self.service.port.stopListening()
         self.mocker.replay()
         self.service.stopService()

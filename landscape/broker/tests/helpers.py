@@ -1,3 +1,5 @@
+import os
+
 from landscape.lib.fetch import fetch_async
 from landscape.lib.persist import Persist
 from landscape.watchdog import bootstrap_list
@@ -9,7 +11,7 @@ from landscape.broker.registration import Identity, RegistrationHandler
 from landscape.broker.ping import Pinger
 from landscape.broker.deployment import BrokerConfiguration
 from landscape.broker.server import BrokerServer
-from landscape.broker.amp import RemoteBrokerCreator
+from landscape.broker.amp import BrokerProtocolFactory, RemoteBrokerCreator
 from landscape.broker.client import BrokerClient
 
 
@@ -115,10 +117,8 @@ class BrokerServerHelper(RegistrationHelper):
         test_case.broker = BrokerServer(test_case.config, test_case.reactor,
                                         test_case.exchanger, test_case.handler,
                                         test_case.mstore)
-        test_case.broker.start()
 
     def tear_down(self, test_case):
-        test_case.broker.stop()
         super(BrokerServerHelper, self).tear_down(test_case)
 
 
@@ -131,6 +131,12 @@ class RemoteBrokerHelper(BrokerServerHelper):
 
     def set_up(self, test_case):
         super(RemoteBrokerHelper, self).set_up(test_case)
+
+        factory = BrokerProtocolFactory(test_case.reactor,
+                                        test_case.broker)
+        socket = os.path.join(test_case.config.data_path,
+                              RemoteBrokerCreator.socket)
+        self._port = test_case.reactor.listen_unix(socket, factory)
         self._creator = RemoteBrokerCreator(test_case.reactor,
                                             test_case.config)
 
@@ -142,6 +148,7 @@ class RemoteBrokerHelper(BrokerServerHelper):
 
     def tear_down(self, test_case):
         self._creator.disconnect()
+        self._port.stopListening()
         super(RemoteBrokerHelper, self).tear_down(test_case)
 
 
@@ -155,8 +162,8 @@ class BrokerClientHelper(RemoteBrokerHelper):
     def set_up(self, test_case):
 
         def set_broker_client(ignored):
-            test_case.client = BrokerClient(test_case.remote,
-                                            test_case.reactor)
+            test_case.client = BrokerClient(test_case.reactor)
+            test_case.client.connected(test_case.remote)
 
         connected = super(BrokerClientHelper, self).set_up(test_case)
         return connected.addCallback(set_broker_client)
