@@ -433,7 +433,6 @@ class BrokerServiceHelper(object):
         def set_remote(remote):
             test_case.remote = remote
 
-        from time import time
         self.connector = test_case.broker_service.connector_factory(
             FakeReactor(), config)
         connected = self.connector.connect()

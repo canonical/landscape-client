@@ -14,9 +14,6 @@ import time
 
 from logging import warning, info, error
 
-from dbus import DBusException
-import dbus.glib # Side-effects rule!
-
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, succeed
 from twisted.internet.protocol import ProcessProtocol
@@ -25,12 +22,15 @@ from twisted.application.service import Service, Application
 from twisted.application.app import startApplication
 
 from landscape.deployment import Configuration, init_logging
-from landscape.lib.dbus_util import get_bus
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.log import log_failure
 from landscape.lib.bootstrap import (BootstrapList, BootstrapFile,
                                      BootstrapDirectory)
 from landscape.log import rotate_logs
+from landscape.broker.service import BrokerService
+from landscape.monitor.service import MonitorService
+from landscape.manager.service import ManagerService
+from landscape.reactor import TwistedReactor
 
 GRACEFUL_WAIT_PERIOD = 10
 MAXIMUM_CONSECUTIVE_RESTARTS = 5
@@ -65,16 +65,16 @@ class Daemon(object):
 
     username = "landscape"
 
-    def __init__(self, bus, reactor=reactor, verbose=False, config=None):
+    def __init__(self, connector, reactor=reactor, verbose=False,
+                 config=None):
         """
-        @param bus: The bus which this program will listen and respond to pings
-            on.
+        @param connector: An AMP connector helper for the daemon.
         @param reactor: The reactor with which to spawn the process and
             schedule timed calls.
         @param verbose: Optionally, report more information when
             running this program.  Defaults to False.
         """
-        self._bus = bus
+        self._connector = connector
         self._reactor = reactor
         self._env = os.environ.copy()
         if os.getuid() == 0:
@@ -139,29 +139,36 @@ class Daemon(object):
             return succeed(None)
         return self._process.kill()
 
-    def request_exit(self):
-        try:
-            object = self._bus.get_object(self.bus_name, self.object_path,
-                                          introspect=False)
-            object.exit(dbus_interface=self.bus_name)
-        except DBusException, e:
-            return False
-        return True
+    def _connect_and_call(self, name, *args, **kwargs):
+        """Connect to the remote daemon over AMP and perform the given command.
 
-    def is_running(self):
+        @param name: The name of the command to perform.
+        @param args: Arguments list to be passed to the connect method
+        @param kwargs: Keywords arguments to pass to the connect method.
+        @return: A L{Deferred} resulting in C{True} if the command was
+            successful or C{False} otherwise.
+        @see: L{RemoteLandscapeComponentCreator.connect}.
+        """
+
+        def disconnect(ignored):
+            self._connector.disconnect()
+            return True
+
+        connected = self._connector.connect(*args, **kwargs)
+        connected.addCallback(lambda remote: getattr(remote, name)())
+        connected.addCallback(disconnect)
+        connected.addErrback(lambda x: False)
+        return connected
+
+    def request_exit(self, *args, **kwargs):
+        # FIXME: the old D-Bus logic relied on this call being synchronous
+        return self._connect_and_call("exit", *args, **kwargs)
+
+    def is_running(self, *args, **kwargs):
         # FIXME Error cases may not be handled in the best possible way
         # here. We're basically return False if any error happens from the
         # dbus ping.
-        result = Deferred()
-        try:
-            object = self._bus.get_object(self.bus_name, self.object_path,
-                                          introspect=False)
-            object.ping(reply_handler=result.callback,
-                        error_handler=lambda f: result.callback(False),
-                        dbus_interface=self.bus_name)
-        except DBusException, e:
-            result.callback(False)
-        return result
+        return self._connect_and_call("ping", *args, **kwargs)
 
     def wait(self):
         """
@@ -188,23 +195,14 @@ class Daemon(object):
 class Broker(Daemon):
     program = "landscape-broker"
 
-    from landscape.broker.broker import BUS_NAME as bus_name
-    from landscape.broker.broker import OBJECT_PATH as object_path
-
 
 class Monitor(Daemon):
     program = "landscape-monitor"
-
-    from landscape.monitor.monitor import BUS_NAME as bus_name
-    from landscape.monitor.monitor import OBJECT_PATH as object_path
 
 
 class Manager(Daemon):
     program = "landscape-manager"
     username = "root"
-
-    from landscape.manager.manager import BUS_NAME as bus_name
-    from landscape.manager.manager import OBJECT_PATH as object_path
 
 
 class WatchedProcessProtocol(ProcessProtocol):
@@ -290,17 +288,24 @@ class WatchDog(object):
     they are working.
     """
 
-    def __init__(self, bus, reactor=reactor, verbose=False, config=None,
-                 broker=None, monitor=None, manager=None, enabled_daemons=None):
-        self.bus = bus
+    def __init__(self, reactor=reactor, verbose=False, config=None,
+                 broker=None, monitor=None, manager=None,
+                 enabled_daemons=None):
+        twisted_reactor = TwistedReactor()
         if enabled_daemons is None:
             enabled_daemons = [Broker, Monitor, Manager]
         if broker is None and Broker in enabled_daemons:
-            broker = Broker(self.bus, verbose=verbose, config=config)
+            broker = Broker(
+                BrokerService.connector_factory(twisted_reactor, config),
+                verbose=verbose, config=config.config)
         if monitor is None and Monitor in enabled_daemons:
-            monitor = Monitor(self.bus, verbose=verbose, config=config)
+            monitor = Monitor(
+                MonitorService.connector_factory(twisted_reactor, config),
+                verbose=verbose, config=config.config)
         if manager is None and Manager in enabled_daemons:
-            manager = Manager(self.bus, verbose=verbose, config=config)
+            manager = Manager(
+                ManagerService.connector_factory(twisted_reactor, config),
+                verbose=verbose, config=config.config)
 
         self.broker = broker
         self.monitor = monitor
@@ -317,9 +322,13 @@ class WatchDog(object):
         """Return a list of any daemons that are already running."""
         results = []
         for daemon in self.daemons:
-            result = daemon.is_running()
+            # This method is called on startup, we try to connect a few times
+            # in fast sequence, if we don't get a response we assume the
+            # daemon is not running.
+            result = daemon.is_running(retry_interval=0.2, max_retries=5)
             result.addCallback(lambda is_running, d=daemon: (is_running, d))
             results.append(result)
+
         def got_all_results(r):
             return [x[1] for x in r if x[0]]
         return gather_results(results).addCallback(got_all_results)
@@ -354,6 +363,7 @@ class WatchDog(object):
             if self._ping_failures[daemon] == 5:
                 warning("%s died! Restarting." % (daemon.program,))
                 stopping = daemon.stop()
+
                 def stopped(ignored):
                     daemon.start()
                     self._ping_failures[daemon] = 0
@@ -365,9 +375,11 @@ class WatchDog(object):
     def _check(self):
         all_running = []
         for daemon in self.daemons:
-            is_running = daemon.is_running()
+            # We keep trying every second for a few times
+            is_running = daemon.is_running(retry_interval=1, max_retries=10)
             is_running.addCallback(self._restart_if_not_running, daemon)
             all_running.append(is_running)
+
         def reschedule(ignored):
             self._checking = self.reactor.callLater(5, self._check)
         gather_results(all_running).addBoth(reschedule)
@@ -424,7 +436,7 @@ def daemonize():
         os._exit(0) # kill off parent again.
     # some argue that this umask should be 0, but that's annoying.
     os.umask(077)
-    null=os.open('/dev/null', os.O_RDWR)
+    null = os.open('/dev/null', os.O_RDWR)
     for i in range(3):
         try:
             os.dup2(null, i)
@@ -438,10 +450,8 @@ class WatchDogService(Service):
 
     def __init__(self, config):
         self._config = config
-        self.bus = get_bus(config.bus)
-        self.watchdog = WatchDog(self.bus,
-                                 verbose=not config.daemon,
-                                 config=config.config,
+        self.watchdog = WatchDog(verbose=not config.daemon,
+                                 config=config,
                                  enabled_daemons=config.get_enabled_daemons())
         self.exit_code = 0
 
@@ -449,7 +459,6 @@ class WatchDogService(Service):
         Service.startService(self)
         bootstrap_list.bootstrap(data_path=self._config.data_path,
                                  log_dir=self._config.log_dir)
-
         result = self.watchdog.check_running()
 
         def start_if_not_running(running_daemons):
@@ -462,6 +471,7 @@ class WatchDogService(Service):
             self._daemonize()
             info("Watchdog watching for daemons on %r bus." % self._config.bus)
             return self.watchdog.start()
+
         def die(failure):
             log_failure(failure, "Unknown error occurred!")
             self.exit_code = 2
@@ -503,7 +513,8 @@ class WatchDogService(Service):
 bootstrap_list = BootstrapList([
     BootstrapDirectory("$data_path", "landscape", "root", 0755),
     BootstrapDirectory("$data_path/package", "landscape", "root", 0755),
-    BootstrapDirectory("$data_path/package/hash-id", "landscape", "root", 0755),
+    BootstrapDirectory(
+        "$data_path/package/hash-id", "landscape", "root", 0755),
     BootstrapDirectory(
         "$data_path/package/upgrade-tool", "landscape", "root", 0755),
     BootstrapDirectory("$data_path/messages", "landscape", "root", 0755),
@@ -532,8 +543,9 @@ def clean_environment():
 def run(args=sys.argv, reactor=None):
     """Start the watchdog.
 
-    This is the topmost function that kicks off the Landscape client.  It cleans
-    up the environment, loads the configuration, and starts the reactor.
+    This is the topmost function that kicks off the Landscape client.  It
+    cleans up the environment, loads the configuration, and starts the
+    reactor.
 
     @param args: Command line arguments, including the program name as the
         first element.
