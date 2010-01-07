@@ -55,6 +55,11 @@ class FakeRemoteBroker(object):
 
     def send_message(self, message, urgent=False):
         """Send to the previously given L{MessageExchange} object."""
+
+        # Check that the message to be sent is serializable over AMP
+        from landscape.lib.amp import MethodCallArgument
+        assert(MethodCallArgument.check(message))
+
         return execute(self.exchanger.send, message, urgent=urgent)
 
     def register_client_accepted_message_type(self, type):
