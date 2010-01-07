@@ -1,5 +1,7 @@
 import os
 
+from twisted.internet.error import ConnectError
+
 from landscape.tests.helpers import LandscapeTest
 from landscape.reactor import FakeReactor
 from landscape.deployment import Configuration
@@ -21,7 +23,7 @@ class RemoteLandscapeComponentTest(LandscapeTest):
         super(RemoteLandscapeComponentTest, self).setUp()
         reactor = FakeReactor()
         config = Configuration()
-        config.load(["-d", self.makeDir()])
+        config.data_path = self.makeDir()
         socket = os.path.join(config.data_path, "test.sock")
         self.component = TestComponent()
         factory = LandscapeComponentProtocolFactory(reactor, self.component)
@@ -59,3 +61,22 @@ class RemoteLandscapeComponentTest(LandscapeTest):
         self.mocker.replay()
         result = self.remote.exit()
         return self.assertSuccess(result)
+
+
+class RemoteLandscapeComponentCreatorTest(LandscapeTest):
+
+    def setUp(self):
+        super(RemoteLandscapeComponentCreatorTest, self).setUp()
+        reactor = FakeReactor()
+        config = Configuration()
+        config.data_path = self.makeDir()
+        socket = os.path.join(config.data_path, "test.sock")
+        self.connector = RemoteTestComponentCreator(reactor, config)
+
+    def test_connect(self):
+        """
+        """
+        self.connector.retry_interval = 0.01
+        self.connector.max_retries = 3
+        self.log_helper.ignore_errors("Error while trying to connect test")
+        return self.assertFailure(self.connector.connect(), ConnectError)

@@ -2,6 +2,7 @@ from twisted.trial.unittest import TestCase
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from twisted.internet.protocol import ClientCreator
+from twisted.internet.error import ConnectError
 
 from landscape.lib.amp import (
     MethodCallError, MethodCall, get_nested_attr, Method, MethodCallProtocol,
@@ -388,6 +389,67 @@ class RemoteObjectTest(LandscapeTest):
         self.words.protocol.timeout = 0.1
         result = self.words.google("Long query")
         return self.assertFailure(result, MethodCallError)
+
+
+class RemoteObjectCreatorTest(LandscapeTest):
+
+    def setUp(self):
+        super(RemoteObjectCreatorTest, self).setUp()
+        self.socket = self.mktemp()
+        self.factory = MethodCallFactory(reactor, Words())
+        self.factory.protocol = WordsProtocol
+        self.factory.language = "italian"
+
+        # FIX: maybe mocker could be used instead
+        self.count = 0
+
+        def connect(oself, *args, **kwargs):
+            self.count += 1
+            return original_connect(oself, *args, **kwargs)
+
+        original_connect = RemoteObjectCreator.connect
+        RemoteObjectCreator.connect = connect
+        self.addCleanup(setattr, RemoteObjectCreator, "connect",
+                        original_connect)
+        self.connector = RemoteObjectCreator(reactor, self.socket)
+
+
+    def test_connect_error(self):
+        """
+        If a C{retry_interval} is not given, the C{connect} method simply
+        fails
+        """
+        return self.assertFailure(self.connector.connect(), ConnectError)
+
+    def test_connect_with_retry(self):
+        """
+        If a C{retry_interval} is passed to L{RemoteObjectCreator.connect},
+        then the method will transparently retry to connect.
+        """
+
+        def listen():
+            self.port = reactor.listenUNIX(self.socket, self.factory)
+
+        def assert_connection(words):
+            self.assertEquals(self.count, 4)
+            result = words.empty()
+            result.addCallback(lambda x: self.connector.disconnect())
+            result.addCallback(lambda x: self.port.stopListening())
+            return result
+
+        reactor.callLater(0.12, listen)
+        connected = self.connector.connect(retry_interval=0.05)
+        return connected.addCallback(assert_connection)
+
+    def test_connect_max_retries(self):
+        """
+        If a C{max_retries} is passed to L{RemoteObjectCreator.connect},
+        then the method will give up after that amount of retries.
+        """
+        connected = self.connector.connect(retry_interval=0.01, max_retries=3)
+        self.assertFailure(connected, ConnectError)
+        return connected.addCallback(
+            lambda x: self.assertEquals(self.count, 3))
 
 
 class GetNestedAttrTest(TestCase):
