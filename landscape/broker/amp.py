@@ -1,7 +1,7 @@
 from landscape.lib.amp import Method, RemoteObject
 from landscape.amp import (
     LandscapeComponentProtocol, LandscapeComponentProtocolFactory,
-    RemoteLandscapeComponentCreatorBase)
+    RemoteLandscapeComponentCreator)
 
 
 class BrokerServerProtocol(LandscapeComponentProtocol):
@@ -48,8 +48,8 @@ class BrokerClientProtocol(LandscapeComponentProtocol):
     remote_factory = RemoteBroker
 
 
-class RemoteBrokerCreator(RemoteLandscapeComponentCreatorBase):
-    """Helper for creating connections with the L{BrokerServer}."""
+class RemoteBrokerCreator(RemoteLandscapeComponentCreator):
+    """Helper to create connections with the L{BrokerServer}."""
 
     protocol = BrokerClientProtocol
     socket = "broker.sock"

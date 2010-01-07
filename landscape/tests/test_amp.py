@@ -4,14 +4,14 @@ from landscape.tests.helpers import LandscapeTest
 from landscape.reactor import FakeReactor
 from landscape.deployment import Configuration
 from landscape.amp import (
-    LandscapeComponentProtocolFactory, RemoteLandscapeComponentCreatorBase)
+    LandscapeComponentProtocolFactory, RemoteLandscapeComponentCreator)
 
 
 class TestComponent(object):
     pass
 
 
-class RemoteTestComponentCreator(RemoteLandscapeComponentCreatorBase):
+class RemoteTestComponentCreator(RemoteLandscapeComponentCreator):
     socket = "test.sock"
 
 
