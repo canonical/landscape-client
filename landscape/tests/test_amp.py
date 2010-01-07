@@ -1,15 +1,18 @@
 import os
 
-from landscape.lib.amp import MethodCall, MethodCallError
 from landscape.tests.helpers import LandscapeTest
 from landscape.reactor import FakeReactor
 from landscape.deployment import Configuration
 from landscape.amp import (
-    LandscapeComponentProtocolFactory, RemoteLandscapeComponentCreator)
+    LandscapeComponentProtocolFactory, RemoteLandscapeComponentCreatorBase)
 
 
-class Component(object):
+class TestComponent(object):
     pass
+
+
+class RemoteTestComponentCreator(RemoteLandscapeComponentCreatorBase):
+    socket = "test.sock"
 
 
 class RemoteLandscapeComponentTest(LandscapeTest):
@@ -19,20 +22,19 @@ class RemoteLandscapeComponentTest(LandscapeTest):
         reactor = FakeReactor()
         config = Configuration()
         config.load(["-d", self.makeDir()])
-        name = "test"
-        socket = os.path.join(config.data_path, name + ".sock")
-        self.component = Component()
+        socket = os.path.join(config.data_path, "test.sock")
+        self.component = TestComponent()
         factory = LandscapeComponentProtocolFactory(reactor, self.component)
         self.port = reactor.listen_unix(socket, factory)
 
 
-        self.creator = RemoteLandscapeComponentCreator(reactor, config, name)
-        connected = self.creator.connect()
+        self.connector = RemoteTestComponentCreator(reactor, config)
+        connected = self.connector.connect()
         connected.addCallback(lambda remote: setattr(self, "remote", remote))
         return connected
 
     def tearDown(self):
-        self.creator.disconnect()
+        self.connector.disconnect()
         self.port.stopListening()
         super(RemoteLandscapeComponentTest, self).tearDown()
 

@@ -1,8 +1,7 @@
-import os
-
-from landscape.lib.amp import Method, RemoteObject, RemoteObjectCreator
+from landscape.lib.amp import Method, RemoteObject
 from landscape.amp import (
-    LandscapeComponentProtocol, LandscapeComponentProtocolFactory)
+    LandscapeComponentProtocol, LandscapeComponentProtocolFactory,
+    RemoteLandscapeComponentCreatorBase)
 
 
 class BrokerServerProtocol(LandscapeComponentProtocol):
@@ -49,15 +48,8 @@ class BrokerClientProtocol(LandscapeComponentProtocol):
     remote_factory = RemoteBroker
 
 
-class RemoteBrokerCreator(RemoteObjectCreator):
+class RemoteBrokerCreator(RemoteLandscapeComponentCreatorBase):
     """Helper for creating connections with the L{BrokerServer}."""
 
     protocol = BrokerClientProtocol
-
-    def __init__(self, reactor, config):
-        """
-        @param reactor: A L{TwistedReactor} object.
-        @param socket: A L{Configuration} object.
-        """
-        socket = os.path.join(config.data_path, "broker.sock")
-        super(RemoteBrokerCreator, self).__init__(reactor._reactor, socket)
+    socket = "broker.sock"
