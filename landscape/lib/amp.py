@@ -316,7 +316,10 @@ class RemoteObjectCreator(object):
                     self._deferred.errback(failure)
                     return
 
-            self._reactor.callLater(retry_interval, self.connect,
+            # Call specifically the connect method of this class,
+            # to let sub-classes use it transparently.
+            self._reactor.callLater(retry_interval,
+                                    RemoteObjectCreator.connect, self,
                                     retry_interval=retry_interval,
                                     max_retries=next_max_retries)
             return self._deferred
@@ -332,7 +335,7 @@ class RemoteObjectCreator(object):
         connector = ClientCreator(self._reactor, self.protocol, self._reactor)
         connected = connector.connectUNIX(self._socket)
         connected.addCallback(set_protocol)
-        if retry:
+        if retry_interval is not None:
             connected.addErrback(retry)
         return connected
 

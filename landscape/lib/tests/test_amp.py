@@ -399,17 +399,27 @@ class RemoteObjectCreatorTest(LandscapeTest):
         self.factory = MethodCallFactory(reactor, Words())
         self.factory.protocol = WordsProtocol
         self.factory.language = "italian"
-        self.connector = RemoteObjectCreator(reactor, self.socket)
 
         # FIX: maybe mocker could be used instead
         self.count = 0
 
-        def connect(*args, **kwargs):
+        def connect(oself, *args, **kwargs):
             self.count += 1
-            return original_connect(*args, **kwargs)
+            return original_connect(oself, *args, **kwargs)
 
-        original_connect = self.connector.connect
-        self.connector.connect = connect
+        original_connect = RemoteObjectCreator.connect
+        RemoteObjectCreator.connect = connect
+        self.addCleanup(setattr, RemoteObjectCreator, "connect",
+                        original_connect)
+        self.connector = RemoteObjectCreator(reactor, self.socket)
+
+
+    def test_connect_error(self):
+        """
+        If a C{retry_interval} is not given, the C{connect} method simply
+        fails
+        """
+        return self.assertFailure(self.connector.connect(), ConnectError)
 
     def test_connect_with_retry(self):
         """
@@ -433,8 +443,8 @@ class RemoteObjectCreatorTest(LandscapeTest):
 
     def test_connect_max_retries(self):
         """
-        If a C{retry_interval} is passed to L{RemoteObjectCreator.connect},
-        then the method will transparently retry to connect.
+        If a C{max_retries} is passed to L{RemoteObjectCreator.connect},
+        then the method will give up after that amount of retries.
         """
         connected = self.connector.connect(retry_interval=0.01, max_retries=3)
         self.assertFailure(connected, ConnectError)
