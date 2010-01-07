@@ -18,6 +18,7 @@ from landscape.manager.manager import FAILED
 from landscape.tests.helpers import DEFAULT_ACCEPTED_TYPES
 from landscape.broker.service import BrokerService, run
 from landscape.broker.transport import HTTPTransport
+from landscape.reactor import FakeReactor
 
 
 class SampleSignalReceiver(object):
@@ -659,7 +660,7 @@ class BrokerServiceTest(LandscapeTest):
         self.mocker.replay()
         self.service.reactor.fire("post-exit")
 
-    def test_start(self):
+    def test_start_stop(self):
         """
         The L{BrokerService.startService} method makes the process start
         listening to the broker socket, and starts the L{Exchanger} and
@@ -669,25 +670,14 @@ class BrokerServiceTest(LandscapeTest):
         self.service.exchanger.start()
         self.service.pinger.start = self.mocker.mock()
         self.service.pinger.start()
-        self.mocker.replay()
-        self.service.startService()
-
-        def lose_connection(protocol):
-            protocol.transport.loseConnection()
-            self.service.broker.stop()
-
-        connector = ClientCreator(reactor, AMP)
-        connected = connector.connectUNIX(self.config.broker_socket_filename)
-        return connected.addCallback(lose_connection)
-
-    def test_stop(self):
-        """
-        The L{BrokerService.stopService} method makes the process stop
-        listening to the broker socket, and stops the L{Exchanger} as well.
-        """
         self.service.exchanger.stop = self.mocker.mock()
         self.service.exchanger.stop()
-        self.service.broker = self.mocker.mock()
-        self.service.broker.stop()
         self.mocker.replay()
-        self.service.stopService()
+        self.service.startService()
+        reactor = FakeReactor()
+        connector = self.service.connector_factory(reactor, self.config)
+        connected = connector.connect()
+        connected.addCallback(lambda remote: remote.get_server_uuid())
+        connected.addCallback(lambda x: connector.disconnect())
+        connected.addCallback(lambda x: self.service.stopService())
+        return connected

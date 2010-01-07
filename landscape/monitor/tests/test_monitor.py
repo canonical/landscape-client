@@ -330,7 +330,6 @@ class MonitorTest(LandscapeTest):
         persist.set("a", "Hi there!")
         persist.save(filename)
 
-        monitor = Monitor(self.remote, self.reactor, self.config,
-                          persist=Persist(),
+        monitor = Monitor(self.reactor, self.config, persist=Persist(),
                           persist_filename=filename)
         self.assertEquals(monitor.persist.get("a"), "Hi there!")

@@ -1,9 +1,11 @@
 from twisted.python.reflect import namedClass
 
 from landscape.service import LandscapeService, run_landscape_service
-from landscape.broker.amp import RemoteBrokerCreator
 from landscape.manager.config import ManagerConfiguration
+from landscape.amp import LandscapeComponentProtocolFactory
+from landscape.broker.service import BrokerService
 from landscape.manager.manager import Manager
+from landscape.manager.amp import RemoteManagerCreator
 
 
 class ManagerService(LandscapeService):
@@ -13,10 +15,14 @@ class ManagerService(LandscapeService):
     """
 
     service_name = "manager"
+    connector_factory = RemoteManagerCreator
 
     def __init__(self, config):
         super(ManagerService, self).__init__(config)
         self.plugins = self.get_plugins()
+        self.manager = Manager(self.reactor, self.config)
+        self.factory = LandscapeComponentProtocolFactory(self.reactor,
+                                                         self.manager)
 
     def get_plugins(self):
         return [namedClass("landscape.manager.%s.%s"
@@ -28,20 +34,21 @@ class ManagerService(LandscapeService):
 
         def start_plugins(broker):
             self.broker = broker
-            self.manager = Manager(self.broker, self.reactor, self.config)
+            self.manager.connected(self.broker)
 
             for plugin in self.plugins:
                 self.manager.add(plugin)
 
             return self.broker.register_client(self.service_name)
 
-        self.creator = RemoteBrokerCreator(self.reactor, self.config)
-        connected = self.creator.connect()
+        self.connector = BrokerService.connector_factory(self.reactor,
+                                                         self.config)
+        connected = self.connector.connect()
         return connected.addCallback(start_plugins)
 
     def stopService(self):
         """Stop the manager and close the connection with the broker."""
-        self.creator.disconnect()
+        self.connector.disconnect()
         super(ManagerService, self).stopService()
 
 
