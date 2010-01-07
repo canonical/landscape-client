@@ -9,6 +9,7 @@ from landscape.amp import LandscapeComponentProtocolFactory
 from landscape.broker.service import BrokerService
 from landscape.monitor.config import MonitorConfiguration
 from landscape.monitor.monitor import Monitor
+from landscape.monitor.amp import RemoteMonitorCreator
 
 
 class MonitorService(LandscapeService):
@@ -18,6 +19,7 @@ class MonitorService(LandscapeService):
     """
 
     service_name = "monitor"
+    connector_factory = RemoteMonitorCreator
 
     def __init__(self, config):
         self.persist_filename = os.path.join(config.data_path,

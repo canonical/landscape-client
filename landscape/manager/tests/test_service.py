@@ -58,6 +58,10 @@ class ManagerServiceTest(LandscapeTest):
             [client] = self.broker_service.broker.get_clients()
             self.assertEquals(client.name, "manager")
             result = self.service.broker.ping()
+            connector = self.service.connector_factory(self.service.reactor,
+                                                       self.service.config)
+            result.addCallback(lambda x: connector.connect())
+            result.addCallback(lambda x: connector.disconnect())
             result.addCallback(lambda x: self.service.stopService())
             return result
 

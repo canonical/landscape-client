@@ -25,10 +25,10 @@ class LandscapeComponentProtocolFactory(MethodCallFactory):
 
 
 class RemoteLandscapeComponentCreator(RemoteObjectCreator):
-    """Helper to create connections with a Landscape component.
+    """Utility superclass for creating connections with a Landscape component.
 
     @cvar socket: The name of the socket to connect to, it must be set
-        by the subclasses.
+        by sub-classes.
     """
 
     protocol = MethodCallProtocol
@@ -39,6 +39,6 @@ class RemoteLandscapeComponentCreator(RemoteObjectCreator):
         @param reactor: A L{TwistedReactor} object.
         @param config: A L{LandscapeConfiguration}.
         """
-        socket = os.path.join(config.data_path, self.socket + ".sock")
+        socket = os.path.join(config.data_path, self.socket)
         super(RemoteLandscapeComponentCreator, self).__init__(
             reactor._reactor, socket)
