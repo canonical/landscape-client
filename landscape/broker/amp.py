@@ -76,4 +76,4 @@ class RemoteBrokerCreator(RemoteLandscapeComponentCreator):
     """Helper for creating connections with the L{BrokerServer}."""
 
     protocol = BrokerClientProtocol
-    socket = "broker"
+    socket = "broker.sock"
