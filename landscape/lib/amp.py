@@ -314,6 +314,7 @@ class RemoteObjectCreator(object):
                 next_max_retries -= 1
                 if next_max_retries == 0:
                     self._deferred.errback(failure)
+                    self._deferred = None
                     return
 
             # Call specifically the connect method of this class,

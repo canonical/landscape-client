@@ -413,7 +413,6 @@ class RemoteObjectCreatorTest(LandscapeTest):
                         original_connect)
         self.connector = RemoteObjectCreator(reactor, self.socket)
 
-
     def test_connect_error(self):
         """
         If a C{retry_interval} is not given, the C{connect} method simply
@@ -450,6 +449,24 @@ class RemoteObjectCreatorTest(LandscapeTest):
         self.assertFailure(connected, ConnectError)
         return connected.addCallback(
             lambda x: self.assertEquals(self.count, 3))
+
+    def test_connect_reuse(self):
+        """
+        The L{RemoteObjectConnector.connect} cleans up its state after a
+        failure and can be reused later.
+        """
+        connected = self.connector.connect(retry_interval=0.01, max_retries=3)
+        self.assertFailure(connected, ConnectError)
+
+        def connect(ignored):
+            self.port = reactor.listenUNIX(self.socket, self.factory)
+            connected = self.connector.connect(retry_interval=0.01,
+                                               max_retries=3)
+            connected.addCallback(lambda x: self.connector.disconnect())
+            connected.addCallback(lambda x: self.port.stopListening())
+            return connected
+
+        return connected.addCallback(connect)
 
 
 class GetNestedAttrTest(TestCase):
