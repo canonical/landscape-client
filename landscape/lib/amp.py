@@ -1,6 +1,7 @@
 from uuid import uuid4
 
 from twisted.internet.defer import Deferred
+from twisted.internet.error import ConnectError
 from twisted.internet.protocol import ServerFactory, ClientCreator
 from twisted.protocols.amp import Argument, String, Command, AMP
 from twisted.python.failure import Failure
@@ -291,17 +292,52 @@ class RemoteObjectCreator(object):
         """
         self._socket = socket
         self._reactor = reactor
+        self._deferred = None
 
-    def connect(self):
-        """Connect to the remote L{BrokerServer}."""
+    def connect(self, retry_interval=None, max_retries=None):
+        """Connect to the remote L{BrokerServer}.
+
+        @param retry_interval: An optional interval in seconds, if the first
+            connection attempt fails, this method will retry.
+        @param max_retries: If not C{None}, the method will give up after this
+            amount of retries.
+        """
+
+        def retry(failure):
+            failure.trap(ConnectError)
+
+            if not self._deferred:
+                self._deferred = Deferred()
+
+            next_max_retries = max_retries
+            if next_max_retries is not None:
+                next_max_retries -= 1
+                if next_max_retries == 0:
+                    self._deferred.errback(failure)
+                    return
+
+            # Call specifically the connect method of this class,
+            # to let sub-classes use it transparently.
+            self._reactor.callLater(retry_interval,
+                                    RemoteObjectCreator.connect, self,
+                                    retry_interval=retry_interval,
+                                    max_retries=next_max_retries)
+            return self._deferred
 
         def set_protocol(protocol):
             self._protocol = protocol
-            return protocol.remote
+            if self._deferred:
+                self._deferred.callback(protocol.remote)
+                self._deferred = None
+            else:
+                return protocol.remote
 
         connector = ClientCreator(self._reactor, self.protocol, self._reactor)
         connected = connector.connectUNIX(self._socket)
-        return connected.addCallback(set_protocol)
+        connected.addCallback(set_protocol)
+        if retry_interval is not None:
+            connected.addErrback(retry)
+        return connected
 
     def disconnect(self):
         """Disconnect from the remote L{BrokerServer}."""
