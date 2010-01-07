@@ -283,11 +283,6 @@ class Configuration(BaseConfiguration):
         return os.path.join(self.data_path, "hash.db")
 
     @property
-    def broker_socket_filename(self):
-        """Get the path to the broker Unix socket."""
-        return os.path.join(self.data_path, "broker.sock")
-
-    @property
     def user_manager_socket_filename(self):
         """Get the path to the user manager plugin Unix socket."""
         return os.path.join(self.data_path, "usermanager.sock")
