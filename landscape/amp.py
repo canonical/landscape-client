@@ -1,4 +1,5 @@
 import os
+import logging
 
 from landscape.lib.amp import (
     Method, MethodCallProtocol, MethodCallFactory, RemoteObjectCreator)
@@ -32,7 +33,8 @@ class RemoteLandscapeComponentCreator(RemoteObjectCreator):
     """
 
     protocol = MethodCallProtocol
-    socket = "landscape"
+    retry_interval = 5
+    max_retries = 10
 
     def __init__(self, reactor, config):
         """
@@ -42,3 +44,13 @@ class RemoteLandscapeComponentCreator(RemoteObjectCreator):
         socket = os.path.join(config.data_path, self.socket)
         super(RemoteLandscapeComponentCreator, self).__init__(
             reactor._reactor, socket)
+
+    def connect(self):
+
+        def log_error(failure):
+            logging.error("Error while trying to connect %s", self.socket)
+            return failure
+
+        connected = super(RemoteLandscapeComponentCreator, self).connect(
+            retry_interval=self.retry_interval, max_retries=self.max_retries)
+        return connected.addErrback(log_error)
