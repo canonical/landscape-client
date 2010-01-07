@@ -33,8 +33,6 @@ class RemoteLandscapeComponentCreator(RemoteObjectCreator):
     """
 
     protocol = MethodCallProtocol
-    retry_interval = 5
-    max_retries = 10
 
     def __init__(self, reactor, config):
         """
@@ -45,12 +43,22 @@ class RemoteLandscapeComponentCreator(RemoteObjectCreator):
         super(RemoteLandscapeComponentCreator, self).__init__(
             reactor._reactor, socket)
 
-    def connect(self):
+    def connect(self, retry_interval=5, max_retries=None, log_errors=False):
+        """Connect to the remote Landscape component.
+
+        @param retry_interval: Retry interval in seconds
+        @param max_retries: Maximum number of retries, C{None} (the default)
+            means keep trying indefinitely.
+        @param log_errors: Whether an error should be logged in case of
+            failure.
+        """
 
         def log_error(failure):
             logging.error("Error while trying to connect %s", self.socket)
             return failure
 
         connected = super(RemoteLandscapeComponentCreator, self).connect(
-            retry_interval=self.retry_interval, max_retries=self.max_retries)
-        return connected.addErrback(log_error)
+            retry_interval=retry_interval, max_retries=max_retries)
+        if log_errors:
+            connected.addErrback(log_error)
+        return connected

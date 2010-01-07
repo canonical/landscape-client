@@ -70,13 +70,21 @@ class RemoteLandscapeComponentCreatorTest(LandscapeTest):
         reactor = FakeReactor()
         config = Configuration()
         config.data_path = self.makeDir()
-        socket = os.path.join(config.data_path, "test.sock")
         self.connector = RemoteTestComponentCreator(reactor, config)
 
     def test_connect(self):
         """
+        The C{log_errors} option makes the C{connect} method log an error
+        in case of connection failure.
         """
         self.connector.retry_interval = 0.01
         self.connector.max_retries = 3
         self.log_helper.ignore_errors("Error while trying to connect test")
-        return self.assertFailure(self.connector.connect(), ConnectError)
+
+        def assert_log(ignored):
+            self.assertIn("Error while trying to connect test",
+                          self.logfile.getvalue())
+
+        result = self.assertFailure(self.connector.connect(
+            retry_interval=None, log_errors=True), ConnectError)
+        return result.addCallback(assert_log)
