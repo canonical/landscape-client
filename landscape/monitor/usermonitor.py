@@ -56,7 +56,7 @@ class UserMonitor(MonitorPlugin):
     def _start(self):
         socket = self.registry.config.user_monitor_socket_filename
         factory = UserMonitorFactory(self.registry.reactor._reactor, self)
-        self._port = self.registry.reactor._reactor.listenUNIX(socket, factory)
+        self._port = self.registry.reactor._reactor.listenUNIX(socket, factory, wantPID=True)
 
     def _resynchronize(self):
         """Resynchronize user and group data."""

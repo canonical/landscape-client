@@ -57,7 +57,7 @@ class UserManager(ManagerPlugin):
 
         socket = self.registry.config.user_manager_socket_filename
         factory = UserManagerFactory(self.registry.reactor, self)
-        self._port = self.registry.reactor._reactor.listenUNIX(socket, factory)
+        self._port = self.registry.reactor._reactor.listenUNIX(socket, factory, wantPID=True)
         self._user_monitor_creator = RemoteUserMonitorCreator(
             self.registry.reactor, self.registry.config)
 
