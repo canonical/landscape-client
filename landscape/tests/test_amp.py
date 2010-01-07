@@ -12,7 +12,7 @@ class TestComponent(object):
 
 
 class RemoteTestComponentCreator(RemoteLandscapeComponentCreatorBase):
-    socket = "test"
+    socket = "test.sock"
 
 
 class RemoteLandscapeComponentTest(LandscapeTest):

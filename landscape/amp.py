@@ -38,6 +38,6 @@ class RemoteLandscapeComponentCreatorBase(RemoteObjectCreator):
         @param reactor: A L{TwistedReactor} object.
         @param config: A L{LandscapeConfiguration}.
         """
-        socket = os.path.join(config.data_path, self.socket + ".sock")
+        socket = os.path.join(config.data_path, self.socket)
         super(RemoteLandscapeComponentCreatorBase, self).__init__(
             reactor._reactor, socket)
