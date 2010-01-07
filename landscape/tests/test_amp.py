@@ -7,8 +7,12 @@ from landscape.amp import (
     LandscapeComponentProtocolFactory, RemoteLandscapeComponentCreator)
 
 
-class Component(object):
+class TestComponent(object):
     pass
+
+
+class RemoteTestComponentCreator(RemoteLandscapeComponentCreator):
+    socket = "test.sock"
 
 
 class RemoteLandscapeComponentTest(LandscapeTest):
@@ -18,13 +22,13 @@ class RemoteLandscapeComponentTest(LandscapeTest):
         reactor = FakeReactor()
         config = Configuration()
         config.load(["-d", self.makeDir()])
-        socket = os.path.join(config.data_path, "landscape.sock")
-        self.component = Component()
+        socket = os.path.join(config.data_path, "test.sock")
+        self.component = TestComponent()
         factory = LandscapeComponentProtocolFactory(reactor, self.component)
         self.port = reactor.listen_unix(socket, factory)
 
 
-        self.connector = RemoteLandscapeComponentCreator(reactor, config)
+        self.connector = RemoteTestComponentCreator(reactor, config)
         connected = self.connector.connect()
         connected.addCallback(lambda remote: setattr(self, "remote", remote))
         return connected

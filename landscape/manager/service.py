@@ -1,8 +1,10 @@
 from twisted.python.reflect import namedClass
 
-from landscape.deployment import LandscapeService
+from landscape.service import LandscapeService
+from landscape.amp import LandscapeComponentProtocolFactory
 from landscape.broker.service import BrokerService
 from landscape.manager.manager import Manager
+from landscape.manager.amp import RemoteManagerCreator
 
 
 class ManagerService(LandscapeService):
@@ -12,11 +14,14 @@ class ManagerService(LandscapeService):
     """
 
     service_name = "manager"
+    connector_factory = RemoteManagerCreator
 
     def __init__(self, config):
         super(ManagerService, self).__init__(config)
         self.plugins = self.get_plugins()
         self.manager = Manager(self.reactor, self.config)
+        self.factory = LandscapeComponentProtocolFactory(self.reactor,
+                                                         self.manager)
 
     def get_plugins(self):
         return [namedClass("landscape.manager.%s.%s"
