@@ -134,7 +134,8 @@ class RemoteBrokerHelper(BrokerServerHelper):
 
         factory = BrokerProtocolFactory(test_case.reactor,
                                         test_case.broker)
-        socket = os.path.join(test_case.config.data_path, "broker.sock")
+        socket = os.path.join(test_case.config.data_path,
+                              RemoteBrokerCreator.socket)
         self._port = test_case.reactor.listen_unix(socket, factory)
         self._creator = RemoteBrokerCreator(test_case.reactor,
                                             test_case.config)
