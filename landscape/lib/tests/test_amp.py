@@ -5,7 +5,7 @@ from twisted.internet.protocol import ClientCreator
 
 from landscape.lib.amp import (
     MethodCallError, MethodCall, get_nested_attr, Method, MethodCallProtocol,
-    MethodCallFactory, RemoteObjectCreator)
+    MethodCallFactory)
 from landscape.tests.helpers import LandscapeTest
 
 
@@ -239,16 +239,17 @@ class RemoteObjectTest(LandscapeTest):
         factory.language = "italian"
         self.port = reactor.listenUNIX(socket, factory)
 
-        def set_words(remote):
-            self.words = remote
+        def set_words(protocol):
+            self.protocol = protocol
+            self.words = protocol.remote
 
-        self.connector = RemoteObjectCreator(reactor, socket)
-        connected = self.connector.connect()
+        connector = ClientCreator(reactor, MethodCallProtocol, reactor)
+        connected = connector.connectUNIX(socket)
         return connected.addCallback(set_words)
 
     def tearDown(self):
-        self.connector.disconnect()
-        self.port.loseConnection()
+        self.protocol.transport.loseConnection()
+        self.port.stopListening()
         super(RemoteObjectTest, self).tearDown()
 
     def test_method_call_sender_with_forbidden_method(self):

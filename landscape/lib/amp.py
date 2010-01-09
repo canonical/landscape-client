@@ -255,6 +255,8 @@ class MethodCallProtocol(AMP):
 
     def callRemote(self, *args, **kwargs):
         result = super(MethodCallProtocol, self).callRemote(*args, **kwargs)
+        # The result can be C{None} only if the requested command is a
+        # _DeferredResponse, which has requiresAnswer set to False
         if result is not None:
             return result.addCallback(self._handle_response)
 
@@ -278,35 +280,6 @@ class MethodCallFactory(Factory):
         protocol = self.protocol(self._reactor, self.object)
         protocol.factory = self
         return protocol
-
-
-class RemoteObjectCreator(object):
-    """Connect to remote objects exposed by a L{MethodCallProtocol}."""
-
-    protocol = MethodCallProtocol
-
-    def __init__(self, reactor, socket):
-        """
-        @param reactor: A reactor able to connect to Unix sockets.
-        @param socket: The path to the socket to connect to.
-        """
-        self._socket = socket
-        self._reactor = reactor
-
-    def connect(self):
-        """Connect to the remote L{BrokerServer}."""
-
-        def set_protocol(protocol):
-            self._protocol = protocol
-            return protocol.remote
-
-        connector = ClientCreator(self._reactor, self.protocol, self._reactor)
-        connected = connector.connectUNIX(self._socket)
-        return connected.addCallback(set_protocol)
-
-    def disconnect(self):
-        """Disconnect from the remote L{BrokerServer}."""
-        self._protocol.transport.loseConnection()
 
 
 def get_nested_attr(obj, path):
