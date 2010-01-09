@@ -4,7 +4,7 @@ from twisted.internet.protocol import ClientCreator
 
 from landscape.lib.amp import (
     MethodCallError, MethodCall, get_nested_attr, Method, MethodCallProtocol,
-    MethodCallFactory)
+    MethodCallServerFactory)
 from landscape.tests.helpers import LandscapeTest
 
 
@@ -80,7 +80,7 @@ class MethodCallProtocolTest(LandscapeTest):
     def setUp(self):
         super(MethodCallProtocolTest, self).setUp()
         socket = self.mktemp()
-        factory = MethodCallFactory(Words())
+        factory = MethodCallServerFactory(Words())
         factory.language = "italian"
         factory.protocol = WordsProtocol
         self.port = reactor.listenUNIX(socket, factory)
@@ -209,7 +209,7 @@ class RemoteObjectTest(LandscapeTest):
     def setUp(self):
         super(RemoteObjectTest, self).setUp()
         socket = self.mktemp()
-        factory = MethodCallFactory(Words())
+        factory = MethodCallServerFactory(Words())
         factory.protocol = WordsProtocol
         factory.language = "italian"
         self.port = reactor.listenUNIX(socket, factory)

@@ -162,7 +162,7 @@ class MethodCallProtocol(AMP):
         return {"result": result}
 
 
-class MethodCallFactory(ServerFactory):
+class MethodCallServerFactory(ServerFactory):
     """Factory for building L{MethodCallProtocol}s.
 
     @ivar object: The object exposed by the protocol instances that we build,
