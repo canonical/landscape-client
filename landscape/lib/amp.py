@@ -1,7 +1,8 @@
-from uuid import uuid4
+"""Expose the methods of a remote object over AMP. """
 
+from uuid import uuid4
 from twisted.internet.defer import Deferred
-from twisted.internet.protocol import ServerFactory, ClientCreator
+from twisted.internet.protocol import Factory, ClientCreator
 from twisted.protocols.amp import Argument, String, Command, AMP
 from twisted.python.failure import Failure
 
@@ -9,10 +10,10 @@ from landscape.lib.bpickle import loads, dumps, dumps_table
 
 
 class Method(object):
-    """A callable method in the object of a L{MethodCallProtocol}.
+    """Marker to expose an object's method in a L{MethodCallProtocol}.
 
     This class is used when sub-classing a L{MethodCallProtocol} for declaring
-    the methods call the protocol will respond to.
+    the object's methods call the protocol will respond to.
     """
 
     def __init__(self, name, **kwargs):
@@ -48,11 +49,11 @@ class MethodCallArgument(Argument):
 
 
 class MethodCallError(Exception):
-    """Raised when trying to call a non accessible method."""
+    """Raised when a L{MethodCall} command fails."""
 
 
 class MethodCall(Command):
-    """Call a method on the object associated with a L{MethodCallProtocol}."""
+    """Call a method on the object exposed by a L{MethodCallProtocol}."""
 
     arguments = [("name", String()),
                  ("args", MethodCallArgument(optional=True)),
@@ -100,7 +101,7 @@ class RemoteObject(object):
         resulting in the L{MethodCall}'s response value.
 
         The generated L{MethodCall} will invoke the remote object method
-        named C{name}..
+        named C{name}.
         """
 
         def send_method_call(*args, **kwargs):
@@ -125,10 +126,10 @@ class MethodCallProtocol(AMP):
         response for the deferred is not received within this amount of
         seconds, the remote method call will errback with a L{MethodCallError}.
     @cvar remote_factory: The factory used to build the C{remote} attribute.
-    @ivar object: The object exposed by the protocol instance, it can be passed
-        to the constructor or set later on the protocol instance itself.
     @ivar remote: A L{RemoteObject} able to transparently call methods on
         to the actuall object associated with the remote peer protocol.
+    @ivar object: Optionally, an object exposed by the protocol instance
+        itself, it can be passed to the constructor or set later directly.
     """
 
     methods = []
@@ -141,7 +142,7 @@ class MethodCallProtocol(AMP):
             protocol to schedule timeouts for methods returning L{Deferred}s.
         @param object: The object the requested methods will be called on. Each
             L{Method} declared in the C{methods} attribute is supposed to match
-            an actuall method of the given C{object}. If C{None} is given, the
+            an actuall method of the given C{object}.  If C{None} is given, the
             protocol can only be used to invoke methods.
         """
         super(MethodCallProtocol, self).__init__()
@@ -258,7 +259,7 @@ class MethodCallProtocol(AMP):
             return result.addCallback(self._handle_response)
 
 
-class MethodCallFactory(ServerFactory):
+class MethodCallFactory(Factory):
     """Factory for building L{MethodCallProtocol}s."""
 
     protocol = MethodCallProtocol
