@@ -81,8 +81,8 @@ class MethodCallProtocolTest(LandscapeTest):
         super(MethodCallProtocolTest, self).setUp()
         socket = self.mktemp()
         factory = MethodCallFactory(Words())
-        factory.protocol = WordsProtocol
         factory.language = "italian"
+        factory.protocol = WordsProtocol
         self.port = reactor.listenUNIX(socket, factory)
 
         def set_protocol(protocol):

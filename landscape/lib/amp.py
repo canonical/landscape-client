@@ -1,6 +1,6 @@
 """Expose the methods of a remote object over AMP. """
 
-from twisted.internet.protocol import Factory
+from twisted.internet.protocol import ServerFactory
 from twisted.protocols.amp import Argument, String, Command, AMP
 
 from landscape.lib.bpickle import loads, dumps, dumps_table
@@ -105,31 +105,25 @@ class RemoteObject(object):
 
 
 class MethodCallProtocol(AMP):
-    """A protocol for calling methods on a remote object.
+    """Expose methods of a local object and call methods on a remote one.
+
+    The object to be exposed (if any) is expected to be the C{object} attribute
+    of the factory the protocol was created by.
 
     @cvar methods: A list of L{Method}s describing the methods that can be
         called with the protocol. It must be defined by sub-classes.
     @cvar remote_factory: The factory used to build the C{remote} attribute.
     @ivar remote: A L{RemoteObject} able to transparently call methods on
-        to the actuall object associated with the remote peer protocol.
-    @ivar object: Optionally, an object exposed by the protocol instance
-        itself, it can be passed to the constructor or set later directly.
+        to the actuall object exposed by the remote peer protocol.
     """
 
     methods = []
     remote_factory = RemoteObject
 
-    def __init__(self, object=None):
-        """
-        @param object: The object the requested methods will be called on. Each
-            L{Method} declared in the C{methods} attribute is supposed to match
-            an actuall method of the given C{object}.  If C{None} is given, the
-            protocol can only be used to invoke methods.
-        """
+    def __init__(self):
+        """Create the L{RemoteObject} and initialize our internal state."""
         super(MethodCallProtocol, self).__init__()
-        self.object = object
         self.remote = self.remote_factory(self)
-
         self._methods_by_name = {}
         for method in self.methods:
             self._methods_by_name[method.name] = method
@@ -150,7 +144,7 @@ class MethodCallProtocol(AMP):
         if method is None:
             raise MethodCallError("Forbidden method '%s'" % name)
 
-        method_func = getattr(self.object, name)
+        method_func = getattr(self.factory.object, name)
         method_args = []
         method_kwargs = {}
 
@@ -168,23 +162,21 @@ class MethodCallProtocol(AMP):
         return {"result": result}
 
 
-class MethodCallFactory(Factory):
-    """Factory for building L{MethodCallProtocol}s."""
+class MethodCallFactory(ServerFactory):
+    """Factory for building L{MethodCallProtocol}s.
+
+    @ivar object: The object exposed by the protocol instances that we build,
+        it can be passed to the constructor or set later directly.
+    """
 
     protocol = MethodCallProtocol
 
-    def __init__(self, object=None):
+    def __init__(self, object):
         """
-        @param object: The object that will be associated with the created
-            protocol.
+        @param object: The object exposed by the L{MethodCallProtocol}s
+            instances created by this factory.
         """
         self.object = object
-
-    def buildProtocol(self, addr):
-        """Create a new protocol instance."""
-        protocol = self.protocol(self.object)
-        protocol.factory = self
-        return protocol
 
 
 def get_nested_attr(obj, path):
