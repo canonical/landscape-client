@@ -1,6 +1,6 @@
 """Expose the methods of a remote object over AMP. """
 
-from twisted.internet.protocol import ServerFactory
+from twisted.internet.protocol import Factory
 from twisted.protocols.amp import Argument, String, Command, AMP
 
 from landscape.lib.bpickle import loads, dumps, dumps_table
@@ -168,7 +168,7 @@ class MethodCallProtocol(AMP):
         return {"result": result}
 
 
-class MethodCallFactory(ServerFactory):
+class MethodCallFactory(Factory):
     """Factory for building L{MethodCallProtocol}s."""
 
     protocol = MethodCallProtocol
