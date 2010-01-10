@@ -147,7 +147,7 @@ class RemoteBrokerTest(LandscapeTest):
         The L{RemoteBroker.call_if_accepted} method doesn't do anything if the
         given message type is not accepted.
         """
-        function = lambda: 1/0
+        function = lambda: 1 / 0
         result = self.remote.call_if_accepted("test", function)
         return self.assertSuccess(result, None)
 
@@ -156,7 +156,7 @@ class RemoteBrokerTest(LandscapeTest):
         Trying to call an non-exposed broker method results in a failure.
         """
         result = self.remote._protocol.callRemote(MethodCall,
-                                                  name="get_clients",
+                                                  method="get_clients",
                                                   args=[],
                                                   kwargs={})
         return self.assertFailure(result, MethodCallError)

@@ -11,8 +11,7 @@ from landscape.broker.registration import Identity, RegistrationHandler
 from landscape.broker.ping import Pinger
 from landscape.broker.deployment import BrokerConfiguration
 from landscape.broker.server import BrokerServer
-from landscape.broker.amp import (
-    BrokerProtocolFactory, RemoteBrokerCreator)
+from landscape.broker.amp import BrokerServerFactory, RemoteBrokerCreator
 
 
 class BrokerConfigurationHelper(object):
@@ -132,21 +131,20 @@ class RemoteBrokerHelper(BrokerServerHelper):
     def set_up(self, test_case):
         super(RemoteBrokerHelper, self).set_up(test_case)
 
-        factory = BrokerProtocolFactory(test_case.reactor,
-                                        test_case.broker)
+        factory = BrokerServerFactory(test_case.broker)
         socket = os.path.join(test_case.config.data_path,
                               RemoteBrokerCreator.socket)
         self._port = test_case.reactor.listen_unix(socket, factory)
-        self._creator = RemoteBrokerCreator(test_case.reactor,
-                                            test_case.config)
+        self._connector = RemoteBrokerCreator(test_case.reactor,
+                                              test_case.config)
 
         def set_remote(remote):
             test_case.remote = remote
 
-        connected = self._creator.connect()
+        connected = self._connector.connect()
         return connected.addCallback(set_remote)
 
     def tear_down(self, test_case):
-        self._creator.disconnect()
+        self._connector.disconnect()
         self._port.stopListening()
         super(RemoteBrokerHelper, self).tear_down(test_case)

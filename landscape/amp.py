@@ -2,27 +2,31 @@ import os
 import logging
 
 from landscape.lib.amp import (
-    Method, MethodCallProtocol, MethodCallFactory, RemoteObjectCreator)
+    MethodCallServerProtocol, MethodCallServerFactory,
+    MethodCallClientProtocol, MethodCallClientFactory, RemoteObjectCreator)
 
 
-class LandscapeComponentProtocol(MethodCallProtocol):
+class LandscapeComponentServerProtocol(MethodCallServerProtocol):
     """
     Communication protocol between the various Landscape components.
     """
-    methods = [Method("ping"),
-               Method("exit")]
+    methods = ["ping",
+               "exit"]
 
 
-class LandscapeComponentProtocolFactory(MethodCallFactory):
+class LandscapeComponentServerFactory(MethodCallServerFactory):
 
-    protocol = LandscapeComponentProtocol
+    protocol = LandscapeComponentServerProtocol
 
-    def __init__(self, reactor, component):
-        """
-        @param reactor: A L{TwistedReactor} object.
-        @param component: The Landscape component to expose.
-        """
-        MethodCallFactory.__init__(self, reactor._reactor, component)
+
+class LandscapeComponentClientProtocol(MethodCallClientProtocol):
+
+    timeout = 60
+
+
+class LandscapeComponentClientFactory(MethodCallClientFactory):
+
+    protocol = MethodCallClientProtocol
 
 
 class RemoteLandscapeComponentCreator(RemoteObjectCreator):
@@ -32,25 +36,23 @@ class RemoteLandscapeComponentCreator(RemoteObjectCreator):
         by sub-classes.
     """
 
-    protocol = MethodCallProtocol
-    retry_interval = 5
-    max_retries = 10
+    factory = LandscapeComponentClientFactory
 
-    def __init__(self, reactor, config):
+    def __init__(self, reactor, config, *args, **kwargs):
         """
         @param reactor: A L{TwistedReactor} object.
         @param config: A L{LandscapeConfiguration}.
         """
         socket = os.path.join(config.data_path, self.socket)
         super(RemoteLandscapeComponentCreator, self).__init__(
-            reactor._reactor, socket)
+            reactor._reactor, socket, *args, **kwargs)
 
-    def connect(self):
+    def connect(self, max_retries=None):
 
         def log_error(failure):
             logging.error("Error while trying to connect %s", self.socket)
             return failure
 
         connected = super(RemoteLandscapeComponentCreator, self).connect(
-            retry_interval=self.retry_interval, max_retries=self.max_retries)
+            max_retries=max_retries)
         return connected.addErrback(log_error)

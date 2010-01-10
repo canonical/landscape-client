@@ -205,7 +205,8 @@ class MethodCallClientFactory(ReconnectingClientFactory):
         connection retries will decrease.
     @ivar notifier: If not C{None}, a callable that will be called when the
         factory builds a new connected protocol.  It will be passed the new
-        protocol instance as argument.
+        protocol instance as argument, or a L{Failure} if the connection
+        couldn't be established.
     """
 
     protocol = MethodCallClientProtocol
@@ -218,6 +219,12 @@ class MethodCallClientFactory(ReconnectingClientFactory):
         """
         self.reactor = reactor
         self.notifier = None
+
+    def clientConnectionFailed(self, connector, reason):
+        ReconnectingClientFactory.clientConnectionFailed(self, connector,
+                                                         reason)
+        if self.maxRetries is not None and (self.retries > self.maxRetries):
+            self.reactor.callLater(0, self.notifier, reason)
 
     def buildProtocol(self, addr):
         self.resetDelay()
@@ -388,23 +395,30 @@ class RemoteObjectCreator(object):
         self._args = args
         self._kwargs = kwargs
 
-    def connect(self):
+    def connect(self, max_retries=None):
         """Connect to a remote object exposed by a L{MethodCallProtocol}.
 
         This method will connect to the socket provided in the constructor
         and return a L{Deferred} resulting in a connected L{RemoteObject}.
+
+        @param max_retries: If not C{None} give up try to connect after this
+            amount of times.
         """
         self._connected = Deferred()
         self._factory = self.factory(self._reactor)
-        self._factory.notifier = self._connection_made
+        self._factory.maxRetries = max_retries
+        self._factory.notifier = self._done
         self._reactor.connectUNIX(self._socket, self._factory)
         return self._connected
 
-    def _connection_made(self, protocol):
+    def _done(self, result):
         """Called when the connection has been established"""
-        self._remote = self.remote(protocol, *self._args, **self._kwargs)
-        self._factory.notifier = self._remote._handle_reconnect
-        self._connected.callback(self._remote)
+        if isinstance(result, Failure):
+            self._connected.errback(result)
+        else:
+            self._remote = self.remote(result, *self._args, **self._kwargs)
+            self._factory.notifier = self._remote._handle_reconnect
+            self._connected.callback(self._remote)
 
     def disconnect(self):
         """Disconnect the L{RemoteObject} that we have created."""

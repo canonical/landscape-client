@@ -1,26 +1,27 @@
-from landscape.lib.amp import Method, RemoteObject
+from landscape.lib.amp import RemoteObject
 from landscape.amp import (
-    LandscapeComponentProtocol, LandscapeComponentProtocolFactory,
+    LandscapeComponentServerProtocol, LandscapeComponentServerFactory,
+    LandscapeComponentClientProtocol, LandscapeComponentClientFactory,
     RemoteLandscapeComponentCreator)
 
 
-class BrokerServerProtocol(LandscapeComponentProtocol):
+class BrokerServerProtocol(LandscapeComponentServerProtocol):
     """
     Communication protocol between the broker server and its clients.
     """
-    methods = (LandscapeComponentProtocol.methods +
-               [Method("register_client", protocol=""),
-                Method("send_message"),
-                Method("is_message_pending"),
-                Method("stop_clients"),
-                Method("reload_configuration"),
-                Method("register"),
-                Method("get_accepted_message_types"),
-                Method("get_server_uuid"),
-                Method("register_client_accepted_message_type")])
+    methods = (LandscapeComponentServerProtocol.methods +
+               ["register_client",
+                "send_message",
+                "is_message_pending",
+                "stop_clients",
+                "reload_configuration",
+                "register",
+                "get_accepted_message_types",
+                "get_server_uuid",
+                "register_client_accepted_message_type"])
 
 
-class BrokerProtocolFactory(LandscapeComponentProtocolFactory):
+class BrokerServerFactory(LandscapeComponentServerFactory):
 
     protocol = BrokerServerProtocol
 
@@ -38,16 +39,20 @@ class RemoteBroker(RemoteObject):
         return deferred_types
 
 
-class BrokerClientProtocol(LandscapeComponentProtocol):
+class BrokerClientProtocol(LandscapeComponentClientProtocol):
     """Communication protocol between a client and the broker."""
 
-    remote_factory = RemoteBroker
+
+class BrokerClientFactory(LandscapeComponentClientFactory):
+
+    protocol = BrokerClientProtocol
 
 
 class RemoteBrokerCreator(RemoteLandscapeComponentCreator):
     """Helper to create connections with the L{BrokerServer}."""
 
-    protocol = BrokerClientProtocol
+    factory = BrokerClientFactory
+    remote = RemoteBroker
     socket = "broker.sock"
 
 

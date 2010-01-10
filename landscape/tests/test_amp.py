@@ -6,14 +6,22 @@ from landscape.tests.helpers import LandscapeTest
 from landscape.reactor import FakeReactor
 from landscape.deployment import Configuration
 from landscape.amp import (
-    LandscapeComponentProtocolFactory, RemoteLandscapeComponentCreator)
+    LandscapeComponentServerFactory, LandscapeComponentClientFactory,
+    RemoteLandscapeComponentCreator)
 
 
 class TestComponent(object):
     pass
 
 
+class TestComponentClientFactory(LandscapeComponentClientFactory):
+
+    maxRetries = 0
+
+
 class RemoteTestComponentCreator(RemoteLandscapeComponentCreator):
+
+    factory = TestComponentClientFactory
     socket = "test.sock"
 
 
@@ -26,7 +34,7 @@ class RemoteLandscapeComponentTest(LandscapeTest):
         config.data_path = self.makeDir()
         socket = os.path.join(config.data_path, "test.sock")
         self.component = TestComponent()
-        factory = LandscapeComponentProtocolFactory(reactor, self.component)
+        factory = LandscapeComponentServerFactory(self.component)
         self.port = reactor.listen_unix(socket, factory)
 
 
@@ -70,13 +78,18 @@ class RemoteLandscapeComponentCreatorTest(LandscapeTest):
         reactor = FakeReactor()
         config = Configuration()
         config.data_path = self.makeDir()
-        socket = os.path.join(config.data_path, "test.sock")
         self.connector = RemoteTestComponentCreator(reactor, config)
 
-    def test_connect(self):
+    def test_connect_logs_errors(self):
         """
+        Connection errors are logged.
         """
-        self.connector.retry_interval = 0.01
-        self.connector.max_retries = 3
         self.log_helper.ignore_errors("Error while trying to connect test")
-        return self.assertFailure(self.connector.connect(), ConnectError)
+
+        def assert_log(ignored):
+            self.assertIn("Error while trying to connect test",
+                          self.logfile.getvalue())
+
+        result = self.connector.connect(max_retries=0)
+        self.assertFailure(result, ConnectError)
+        return result.addCallback(assert_log)
