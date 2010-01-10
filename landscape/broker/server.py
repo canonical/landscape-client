@@ -28,8 +28,8 @@ class BrokerServer(object):
         """Return C{True}."""
         return True
 
-    def register_client(self, name, protocol):
-        """Register a broker client called C{name} connected with C{protocol}.
+    def register_client(self, name):
+        """Register a broker client called C{name}.
 
         Various broker clients interact with the broker server, such as the
         monitor for example, using the L{BrokerProtocol} for communication.
@@ -37,10 +37,8 @@ class BrokerServer(object):
         registering themselves.
 
         @param name: The name of the client, such a C{monitor} or C{manager}.
-        @param protocol: The L{BrokerProtocol} over which the client is
-            connected.
         """
-        self._registered_clients[name] = RemoteClient(name, protocol)
+        self._registered_clients[name] = RemoteClient(name)
 
     def get_clients(self):
         """Get L{BrokerPlugin} instances for registered plugins."""
