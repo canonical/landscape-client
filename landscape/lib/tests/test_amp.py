@@ -1,6 +1,7 @@
 from twisted.internet import reactor
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import Deferred, DeferredList
 from twisted.internet.protocol import ClientCreator
+from twisted.internet.error import ConnectionDone
 
 from landscape.lib.amp import (
     MethodCallError, MethodCall, MethodCallServerProtocol,
@@ -442,7 +443,7 @@ class MethodCallClientFactoryTest(LandscapeTest):
 
         def restart_listening():
             ports.append(reactor.listenUNIX(self.socket, self.server_factory))
-        
+
         def connection_made(protocol):
             if len(ports) == 1:
                 # First connection
@@ -460,7 +461,7 @@ class MethodCallClientFactoryTest(LandscapeTest):
                 protocol.transport.loseConnection()
                 ports[1].stopListening()
                 reconnected.callback(None)
-                
+
         client_factory = WordsClientFactory(reactor)
         client_factory.notifier = connection_made
         reactor.connectUNIX(self.socket, client_factory)
@@ -474,7 +475,9 @@ class RemoteObjectCreatorTest(LandscapeTest):
         self.socket = self.mktemp()
         self.server_factory = WordsServerFactory(Words())
         self.port = reactor.listenUNIX(self.socket, self.server_factory)
-        self.connector = RemoteWordsCreator(reactor, self.socket)
+        self.connector = RemoteWordsCreator(reactor, self.socket,
+                                            retry_on_reconnect=True,
+                                            timeout=0.7)
 
         def set_remote(words):
             self.words = words
@@ -515,3 +518,122 @@ class RemoteObjectCreatorTest(LandscapeTest):
         reactor.callLater(0.01, restart_listening)
         reconnected = Deferred()
         return reconnected
+
+    def test_method_call_error(self):
+        """
+        If a L{MethodCall} fails due to a L{MethodCallError}, the L{RemoteObject}
+        won't try to perform it again.
+        """
+        return self.assertFailure(self.words.secret(), MethodCallError)
+
+    def test_retry(self):
+        """
+        If the connection is lost, the L{RemoteObject} created by the creator
+        will transparently retry to perform the L{MethodCall} requests that
+        failed due to the broken connection.
+        """
+        def restart_listening():
+            self.port = reactor.listenUNIX(self.socket, self.server_factory)
+
+        self.words._protocol.transport.loseConnection()
+        self.port.stopListening()
+        reactor.callLater(0.1, restart_listening)
+        return self.words.empty()
+
+    def test_retry_with_method_call_error(self):
+        """
+        If a retried L{MethodCall} request fails due to a L{MethodCallError},
+        the L{RemoteObject} will properly propagate the error to the original
+        caller.
+        """
+
+        self.words._protocol.transport.loseConnection()
+        self.port.stopListening()
+
+        def restart_listening():
+            self.port = reactor.listenUNIX(self.socket, self.server_factory)
+
+        def assert_failure(error):
+            self.assertEquals(str(error), "Forbidden method 'secret'")
+
+        reactor.callLater(0.5, restart_listening)
+        result = self.words.secret()
+        self.assertFailure(result, MethodCallError)
+        return result.addCallback(assert_failure)
+
+    def test_retry_with_many_method_calls(self):
+        """
+        If several L{MethodCall} requests were issued while disconnected, they
+        will be all eventually completed when the connection gets established
+        again.
+        """
+        self.words._protocol.transport.loseConnection()
+        self.port.stopListening()
+
+        def restart_listening():
+            self.port = reactor.listenUNIX(self.socket, self.server_factory)
+
+        def assert_guess(response):
+            self.assertEquals(response, "Guessed!")
+
+        def assert_secret(failure):
+            self.assertEquals(str(failure.value), "Forbidden method 'secret'")
+
+        def assert_motd(response):
+            self.assertEquals(response, "Words are cool")
+
+        reactor.callLater(0.1, restart_listening)
+
+        results = [self.words.guess("word", "cool", value=4),
+                   self.words.secret(),
+                   self.words.motd()]
+        results[0].addCallback(assert_guess)
+        results[1].addErrback(assert_secret)
+        results[2].addCallback(assert_motd)
+        return DeferredList(results)
+
+    def test_retry_without_retry_on_reconnect(self):
+        """
+        If C{retry_on_reconnect} is C{False}, the L{RemoteObject} object won't
+        retry to perform requests which failed because the connection was
+        lost, however requests made after a reconnection will still succeed.
+        """
+        def restart_listening():
+            self.port = reactor.listenUNIX(self.socket, self.server_factory)
+            reactor.callLater(0.1, assert_reconnected)
+
+        def assert_reconnected():
+            result = self.words.empty()
+            result.addCallback(lambda x: reconnected.callback(None))
+            return result
+
+        self.words._protocol.transport.loseConnection()
+        self.port.stopListening()
+        reactor.callLater(0.1, restart_listening)
+        self.words._retry_on_reconnect = False
+        result = self.words.empty()
+        self.assertFailure(result, ConnectionDone)
+        reconnected = Deferred()
+        return result.addCallback(lambda x: reconnected)
+
+    def test_retry_with_timeout(self):
+        """
+        If a C{timeout} is set, the L{RemoteObject} object will errback failed
+        L{MethodCall}s after that amount of seconds, without retrying them when
+        the connection established again.
+        """
+        def restart_listening():
+            self.port = reactor.listenUNIX(self.socket, self.server_factory)
+            reactor.callLater(0.1, reconnected.callback, None)
+
+        def assert_failure(error):
+            self.assertEquals(str(error), "timeout")
+            return reconnected
+
+        self.words._protocol.transport.loseConnection()
+        self.port.stopListening()
+        reactor.callLater(0.9, restart_listening)
+        result = self.words.empty()
+        self.assertFailure(result, MethodCallError)
+        reconnected = Deferred()
+        return result.addCallback(assert_failure)

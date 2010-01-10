@@ -197,6 +197,12 @@ class MethodCallServerFactory(ServerFactory):
 class MethodCallClientFactory(ReconnectingClientFactory):
     """Factory for building L{AMP} connections to L{MethodCall} servers.
 
+    If the connection fails or is lost the factory will keep retrying to
+    establish it.
+
+    @cvar protocol: The factory used to build protocol instances.
+    @cvar factor: The factor by which the delay between two subsequent
+        connection retries will decrease.
     @ivar notifier: If not C{None}, a callable that will be called when the
         factory builds a new connected protocol.  It will be passed the new
         protocol instance as argument.
@@ -230,12 +236,23 @@ class RemoteObject(object):
     the remote object exposed by the peer.
     """
 
-    def __init__(self, protocol):
+    def __init__(self, protocol, retry_on_reconnect=False, timeout=None):
         """
         @param protocol: A reference to a connected L{AMP} protocol instance,
             which will be used to send L{MethodCall} commands.
+        @param retry_on_reconnect: If C{True}, this L{RemoteObject} will retry
+            to perfom requests that failed due to a lost connection, as soon
+            as a new connection is available.
+        @param timeout: A timeout for failed requests, if the L{RemoteObject}
+            can't perform them again successfully within this amout of seconds,
+            the will errback with a L{MethodCallError}.
         """
         self._protocol = protocol
+        self._reactor = self._protocol.factory.reactor
+        self._retry_on_reconnect = retry_on_reconnect
+        self._timeout = timeout
+        self._pending_requests = {}
+        self._retry_call = None
 
     def __getattr__(self, method):
         """Return a function sending a L{MethodCall} for the given C{method}.
@@ -247,13 +264,19 @@ class RemoteObject(object):
         """
 
         def send_method_call(*args, **kwargs):
-            called = self._protocol.callRemote(MethodCall,
-                                               method=method,
-                                               args=args[:],
-                                               kwargs=kwargs.copy())
-            return called.addCallback(lambda response: response["result"])
+            result = self._call_remote(method, args, kwargs)
+            result.addCallback(self._handle_response)
+            result.addErrback(self._handle_failure, method, args, kwargs)
+            return result
 
         return send_method_call
+
+    def _call_remote(self, method, args, kwargs):
+        """Perform a L{MethodCall} with the given arguments."""
+        return self._protocol.callRemote(MethodCall,
+                                         method=method,
+                                         args=args[:],
+                                         kwargs=kwargs.copy())
 
     def _handle_reconnect(self, protocol):
         """Handles a reconnection.
@@ -261,6 +284,90 @@ class RemoteObject(object):
         @param protocol: The newly connected protocol instance.
         """
         self._protocol = protocol
+        if self._retry_on_reconnect:
+            self._retry()
+
+    def _handle_response(self, response, deferred=None, call=None):
+        """Handles a successful L{MethodCall} response.
+
+        @param response: The L{MethodCall} response.
+        @param deferred: If not C{None}, the deferred that was returned to
+            the caller when the first attempt failed.
+        @param call: If not C{None}, the scheduled timeout call associated with
+            the given deferred.
+        """
+        result = response["result"]
+        if deferred:
+            if call:
+                call.cancel()
+            deferred.callback(result)
+        else:
+            return result
+
+    def _handle_failure(self, failure, method, args, kwargs, deferred=None,
+                        call=None):
+        """Called when a L{MethodCall} command fails.
+
+        If a failure is due to a connection error}, and if C{retry_inteval} is
+        not C{None} we will try to perform the requested L{MethodCall} again
+        every C{retry_inteval} seconds, up to C{max_retries} times or
+        indefinitely if C{max_retries} is C{None}.
+
+        @param failure: The L{Failure} raised by the requested L{MethodCall}
+        @param name: The method name associated with the failed L{MethodCall}
+        @param args: The arguments of the failed L{MethodCall}.
+        @param kwargs: The keyword arguments of the failed L{MethodCall}.
+        @param deferred: If not C{None}, the deferred that was returned to
+            the caller when the first attempt failed.
+        @param call: If not C{None}, the scheduled timeout call associated with
+            the given deferred.
+        """
+        is_first_failure = deferred is None
+        is_method_call_error = failure.type is MethodCallError
+        no_retry = self._retry_on_reconnect == False
+
+        if is_method_call_error or no_retry:
+            # This means that the connection is working, and a protocol
+            # error occured, just propagate it.
+            if is_first_failure:
+                return failure
+            else:
+                if call:
+                    call.cancel()
+                deferred.errback(failure)
+                return
+
+        if is_first_failure:
+            deferred = Deferred()
+            if self._timeout:
+                failure = Failure(MethodCallError("timeout"))
+                call = self._reactor.callLater(self._timeout,
+                                               self._handle_failure,
+                                               failure, method, args,
+                                               kwargs, deferred=deferred)
+
+        self._pending_requests[deferred] = (method, args, kwargs, call)
+
+        if is_first_failure:
+            return deferred
+
+    def _retry(self):
+        """Try to perform again requests that failed."""
+
+        # We need to copy the requests list before iterating over it, because
+        # if we are still disconnected callRemote will immediately return a
+        # failed deferred and the _handle_failure errback will be executed
+        # during the iteration, modifing the requests list itself.
+        requests = self._pending_requests
+        self._pending_requests = {}
+
+        while requests:
+            deferred, (method, args, kwargs, call) = requests.popitem()
+            result = self._call_remote(method, args, kwargs)
+            result.addCallback(self._handle_response,
+                               deferred=deferred, call=call)
+            result.addErrback(self._handle_failure, method, args, kwargs,
+                              deferred=deferred, call=call)
 
 
 class RemoteObjectCreator(object):
@@ -269,13 +376,17 @@ class RemoteObjectCreator(object):
     factory = MethodCallClientFactory
     remote = RemoteObject
 
-    def __init__(self, reactor, socket):
+    def __init__(self, reactor, socket, *args, **kwargs):
         """
         @param reactor: A reactor able to connect to Unix sockets.
         @param socket: The path to the socket we want to connect to.
+        @param args: Arguments to passed to the created L{RemoteObject}.
+        @param kwargs: Keyword arguments for the created L{RemoteObject}.
         """
         self._socket = socket
         self._reactor = reactor
+        self._args = args
+        self._kwargs = kwargs
 
     def connect(self):
         """Connect to a remote object exposed by a L{MethodCallProtocol}.
@@ -291,7 +402,7 @@ class RemoteObjectCreator(object):
 
     def _connection_made(self, protocol):
         """Called when the connection has been established"""
-        self._remote = self.remote(protocol)
+        self._remote = self.remote(protocol, *self._args, **self._kwargs)
         self._factory.notifier = self._remote._handle_reconnect
         self._connected.callback(self._remote)
 
