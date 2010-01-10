@@ -503,6 +503,8 @@ class RemoteObjectCreatorTest(LandscapeTest):
         If the connection is lost, the L{RemoteObject} created by the creator
         will transparently handle the reconnection.
         """
+        self.words._protocol.transport.loseConnection()
+        self.port.stopListening()
 
         def restart_listening():
             self.port = reactor.listenUNIX(self.socket, self.server_factory)
@@ -513,16 +515,14 @@ class RemoteObjectCreatorTest(LandscapeTest):
             result.addCallback(lambda x: reconnected.callback(None))
             return result
 
-        self.words._protocol.transport.loseConnection()
-        self.port.stopListening()
         reactor.callLater(0.01, restart_listening)
         reconnected = Deferred()
         return reconnected
 
     def test_method_call_error(self):
         """
-        If a L{MethodCall} fails due to a L{MethodCallError}, the L{RemoteObject}
-        won't try to perform it again.
+        If a L{MethodCall} fails due to a L{MethodCallError}, the
+        L{RemoteObject} won't try to perform it again.
         """
         return self.assertFailure(self.words.secret(), MethodCallError)
 
@@ -532,11 +532,12 @@ class RemoteObjectCreatorTest(LandscapeTest):
         will transparently retry to perform the L{MethodCall} requests that
         failed due to the broken connection.
         """
+        self.words._protocol.transport.loseConnection()
+        self.port.stopListening()
+
         def restart_listening():
             self.port = reactor.listenUNIX(self.socket, self.server_factory)
 
-        self.words._protocol.transport.loseConnection()
-        self.port.stopListening()
         reactor.callLater(0.1, restart_listening)
         return self.words.empty()
 
@@ -546,7 +547,6 @@ class RemoteObjectCreatorTest(LandscapeTest):
         the L{RemoteObject} will properly propagate the error to the original
         caller.
         """
-
         self.words._protocol.transport.loseConnection()
         self.port.stopListening()
 
@@ -557,6 +557,43 @@ class RemoteObjectCreatorTest(LandscapeTest):
             self.assertEquals(str(error), "Forbidden method 'secret'")
 
         reactor.callLater(0.5, restart_listening)
+        result = self.words.secret()
+        self.assertFailure(result, MethodCallError)
+        return result.addCallback(assert_failure)
+
+    def test_wb_retry_with_while_still_disconnected(self):
+        """
+        The L{RemoteObject._retry} method gets called as soon as a new
+        connection is ready, but even in case for whatever reason the
+        connection drops again very quickly, the C{_retry} method will
+        behave as expected.
+        """
+        self.words._protocol.transport.loseConnection()
+        self.port.stopListening()
+
+        def handle_reconnect(protocol):
+            # In this precise moment we have a newly connected protocol
+            self.words._protocol = protocol
+
+            # Pretend that the connection is lost very quickly
+            protocol.transport.loseConnection()
+            self.port.stopListening()
+
+            # Force RemoteObject._retry to run using a disconnected protocol
+            reactor.callLater(0, self.words._retry)
+
+            # Restore the real handler and start listening again very soon
+            self.connector._factory.notifier = self.words._handle_reconnect
+            reactor.callLater(0.2, restart_listening)
+
+        def restart_listening():
+            self.port = reactor.listenUNIX(self.socket, self.server_factory)
+
+        def assert_failure(error):
+            self.assertEquals(str(error), "Forbidden method 'secret'")
+
+        self.connector._factory.notifier = handle_reconnect
+        reactor.callLater(0.2, restart_listening)
         result = self.words.secret()
         self.assertFailure(result, MethodCallError)
         return result.addCallback(assert_failure)
@@ -598,17 +635,18 @@ class RemoteObjectCreatorTest(LandscapeTest):
         retry to perform requests which failed because the connection was
         lost, however requests made after a reconnection will still succeed.
         """
+        self.words._protocol.transport.loseConnection()
+        self.port.stopListening()
+
         def restart_listening():
             self.port = reactor.listenUNIX(self.socket, self.server_factory)
-            reactor.callLater(0.1, assert_reconnected)
+            reactor.callLater(0.3, assert_reconnected)
 
         def assert_reconnected():
             result = self.words.empty()
             result.addCallback(lambda x: reconnected.callback(None))
             return result
 
-        self.words._protocol.transport.loseConnection()
-        self.port.stopListening()
         reactor.callLater(0.1, restart_listening)
         self.words._retry_on_reconnect = False
         result = self.words.empty()
@@ -622,6 +660,9 @@ class RemoteObjectCreatorTest(LandscapeTest):
         L{MethodCall}s after that amount of seconds, without retrying them when
         the connection established again.
         """
+        self.words._protocol.transport.loseConnection()
+        self.port.stopListening()
+
         def restart_listening():
             self.port = reactor.listenUNIX(self.socket, self.server_factory)
             reactor.callLater(0.1, reconnected.callback, None)
@@ -630,8 +671,6 @@ class RemoteObjectCreatorTest(LandscapeTest):
             self.assertEquals(str(error), "timeout")
             return reconnected
 
-        self.words._protocol.transport.loseConnection()
-        self.port.stopListening()
         reactor.callLater(0.9, restart_listening)
         result = self.words.empty()
         self.assertFailure(result, MethodCallError)

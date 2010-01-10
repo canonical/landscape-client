@@ -355,11 +355,11 @@ class RemoteObject(object):
         """Try to perform again requests that failed."""
 
         # We need to copy the requests list before iterating over it, because
-        # if we are still disconnected callRemote will immediately return a
-        # failed deferred and the _handle_failure errback will be executed
-        # during the iteration, modifing the requests list itself.
-        requests = self._pending_requests
-        self._pending_requests = {}
+        # if we are actually still disconnected, callRemote will return failed
+        # deferred and the _handle_failure errback will be executed during the
+        # iteration, modifing the requests list itself.
+        requests = self._pending_requests.copy()
+        self._pending_requests.clear()
 
         while requests:
             deferred, (method, args, kwargs, call) = requests.popitem()
