@@ -2,7 +2,8 @@
 
 from uuid import uuid4
 from twisted.internet.defer import Deferred
-from twisted.internet.protocol import ServerFactory, ClientFactory
+from twisted.internet.protocol import (
+    ServerFactory, ReconnectingClientFactory)
 from twisted.protocols.amp import Argument, String, Command, AMP
 from twisted.python.failure import Failure
 
@@ -193,26 +194,31 @@ class MethodCallServerFactory(ServerFactory):
         self.object = object
 
 
-class MethodCallClientFactory(ClientFactory):
-    """Factory for building L{AMP} connections to L{MethodCall} servers."""
+class MethodCallClientFactory(ReconnectingClientFactory):
+    """Factory for building L{AMP} connections to L{MethodCall} servers.
+
+    @ivar notifier: If not C{None}, a callable that will be called when the
+        factory builds a new connected protocol.  It will be passed the new
+        protocol instance as argument.
+    """
 
     protocol = MethodCallClientProtocol
+    factor = 1.6180339887498948
 
-    def __init__(self, reactor, notifier):
+    def __init__(self, reactor):
         """
         @param reactor: The reactor that will used by the created protocols
             to schedule timeouts for methods returning deferreds.
-        @param notifier: A function that will be called when the factory builds
-            a new connected protocol.  It will be passed the new protocol
-            instance as argument.
         """
         self.reactor = reactor
-        self._notifier = notifier
+        self.notifier = None
 
     def buildProtocol(self, addr):
+        self.resetDelay()
         protocol = self.protocol()
         protocol.factory = self
-        self.reactor.callLater(0, self._notifier, protocol)
+        if self.notifier:
+            self.reactor.callLater(0, self.notifier, protocol)
         return protocol
 
 
@@ -249,6 +255,13 @@ class RemoteObject(object):
 
         return send_method_call
 
+    def _handle_reconnect(self, protocol):
+        """Handles a reconnection.
+
+        @param protocol: The newly connected protocol instance.
+        """
+        self._protocol = protocol
+
 
 class RemoteObjectCreator(object):
     """Connect to remote objects exposed by a L{MethodCallProtocol}."""
@@ -263,7 +276,6 @@ class RemoteObjectCreator(object):
         """
         self._socket = socket
         self._reactor = reactor
-        self._remote = None
 
     def connect(self):
         """Connect to a remote object exposed by a L{MethodCallProtocol}.
@@ -271,17 +283,19 @@ class RemoteObjectCreator(object):
         This method will connect to the socket provided in the constructor
         and return a L{Deferred} resulting in a connected L{RemoteObject}.
         """
-        deferred = Deferred()
-        factory = self.factory(self._reactor, deferred.callback)
-        self._reactor.connectUNIX(self._socket, factory)
-        deferred.addCallback(self._connection_made)
-        return deferred
+        self._connected = Deferred()
+        self._factory = self.factory(self._reactor)
+        self._factory.notifier = self._connection_made
+        self._reactor.connectUNIX(self._socket, self._factory)
+        return self._connected
 
     def _connection_made(self, protocol):
         """Called when the connection has been established"""
         self._remote = self.remote(protocol)
-        return self._remote
+        self._factory.notifier = self._remote._handle_reconnect
+        self._connected.callback(self._remote)
 
     def disconnect(self):
         """Disconnect the L{RemoteObject} that we have created."""
+        self._factory.stopTrying()
         self._remote._protocol.transport.loseConnection()

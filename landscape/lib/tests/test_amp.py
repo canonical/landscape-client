@@ -1,8 +1,6 @@
-from twisted.trial.unittest import TestCase
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from twisted.internet.protocol import ClientCreator
-from twisted.protocols.amp import AMP
 
 from landscape.lib.amp import (
     MethodCallError, MethodCall, MethodCallServerProtocol,
@@ -73,7 +71,7 @@ class Words(object):
         return deferred
 
 
-class WordsProtocol(MethodCallServerProtocol):
+class WordsServerProtocol(MethodCallServerProtocol):
 
     methods = ["empty",
                "motd",
@@ -88,19 +86,39 @@ class WordsProtocol(MethodCallServerProtocol):
                "google"]
 
 
+class WordsClientProtocol(MethodCallClientProtocol):
+
+    timeout = 0.1
+
+
+class WordsServerFactory(MethodCallServerFactory):
+
+    protocol = WordsServerProtocol
+
+
+class WordsClientFactory(MethodCallClientFactory):
+
+    protocol = WordsClientProtocol
+    factor = 0.19
+
+
+class RemoteWordsCreator(RemoteObjectCreator):
+
+    factory = WordsClientFactory
+
+
 class MethodCallProtocolTest(LandscapeTest):
 
     def setUp(self):
         super(MethodCallProtocolTest, self).setUp()
         socket = self.mktemp()
-        factory = MethodCallServerFactory(Words())
-        factory.protocol = WordsProtocol
+        factory = WordsServerFactory(Words())
         self.port = reactor.listenUNIX(socket, factory)
 
         def set_protocol(protocol):
             self.protocol = protocol
 
-        connector = ClientCreator(reactor, MethodCallClientProtocol)
+        connector = ClientCreator(reactor, WordsClientProtocol)
         connected = connector.connectUNIX(socket)
         return connected.addCallback(set_protocol)
 
@@ -231,17 +249,18 @@ class RemoteObjectTest(LandscapeTest):
     def setUp(self):
         super(RemoteObjectTest, self).setUp()
         socket = self.mktemp()
-        server_factory = MethodCallServerFactory(Words())
-        server_factory.protocol = WordsProtocol
+        server_factory = WordsServerFactory(Words())
         self.port = reactor.listenUNIX(socket, server_factory)
 
         def set_remote(protocol):
             self.protocol = protocol
             self.words = RemoteObject(protocol)
+            client_factory.stopTrying()
 
         connected = Deferred()
         connected.addCallback(set_remote)
-        client_factory = MethodCallClientFactory(reactor, connected.callback)
+        client_factory = WordsClientFactory(reactor)
+        client_factory.notifier = connected.callback
         reactor.connectUNIX(socket, client_factory)
         return connected
 
@@ -376,24 +395,90 @@ class RemoteObjectTest(LandscapeTest):
         If the peer protocol doesn't send a response for a deferred within
         the given timeout, the method call fails.
         """
-        self.protocol.timeout = 0.1
         result = self.words.google("Long query")
         return self.assertFailure(result, MethodCallError)
+
+
+class MethodCallClientFactoryTest(LandscapeTest):
+
+    def setUp(self):
+        super(MethodCallClientFactoryTest, self).setUp()
+        self.socket = self.mktemp()
+        self.server_factory = WordsServerFactory(Words())
+
+    def test_connect_with_retry(self):
+        """
+        The L{MethodCallClientFactory} keeps trying connecting till it
+        succeeds.
+        """
+        connected = Deferred()
+        client_factory = WordsClientFactory(reactor)
+        client_factory.notifier = connected.callback
+
+        ports = []
+
+        def listen():
+            self.assertTrue(client_factory.retries > 0)
+            ports.append(reactor.listenUNIX(self.socket, self.server_factory))
+
+        def assert_connection(protocol):
+            self.assertTrue(isinstance(protocol, WordsClientProtocol))
+            client_factory.stopTrying()
+            protocol.transport.loseConnection()
+            ports[0].stopListening()
+
+        reactor.callLater(0.2, listen)
+        reactor.connectUNIX(self.socket, client_factory)
+        return connected.addCallback(assert_connection)
+
+    def test_reconnect(self):
+        """
+        The L{MethodCallClientFactory} reconnects automatically if the
+        connection drops, and calls the notifier function again.
+        """
+        ports = [reactor.listenUNIX(self.socket, self.server_factory)]
+        protocols = []
+        reconnected = Deferred()
+
+        def restart_listening():
+            ports.append(reactor.listenUNIX(self.socket, self.server_factory))
+        
+        def connection_made(protocol):
+            if len(ports) == 1:
+                # First connection
+                self.assertTrue(client_factory.retries == 0)
+                protocols.append(protocol)
+                protocol.transport.loseConnection()
+                ports[0].stopListening()
+                reactor.callLater(0.1, restart_listening)
+            else:
+                # Second connection
+                self.assertEquals(client_factory.delay,
+                                  client_factory.initialDelay)
+                self.assertIsNot(protocol, protocols[0])
+                client_factory.stopTrying()
+                protocol.transport.loseConnection()
+                ports[1].stopListening()
+                reconnected.callback(None)
+                
+        client_factory = WordsClientFactory(reactor)
+        client_factory.notifier = connection_made
+        reactor.connectUNIX(self.socket, client_factory)
+        return reconnected
 
 
 class RemoteObjectCreatorTest(LandscapeTest):
 
     def setUp(self):
         super(RemoteObjectCreatorTest, self).setUp()
-        socket = self.mktemp()
-        factory = MethodCallServerFactory(Words())
-        factory.protocol = WordsProtocol
-        self.port = reactor.listenUNIX(socket, factory)
+        self.socket = self.mktemp()
+        self.server_factory = WordsServerFactory(Words())
+        self.port = reactor.listenUNIX(self.socket, self.server_factory)
+        self.connector = RemoteWordsCreator(reactor, self.socket)
 
-        def set_remote(remote):
-            self.words = remote
+        def set_remote(words):
+            self.words = words
 
-        self.connector = RemoteObjectCreator(reactor, socket)
         connected = self.connector.connect()
         return connected.addCallback(set_remote)
 
@@ -404,7 +489,29 @@ class RemoteObjectCreatorTest(LandscapeTest):
 
     def test_connect(self):
         """
-        A L{RemoteObject} can send L{MethodCall}s without arguments and withj
-        an empty response.
+        The L{RemoteObject} resulting form the deferred returned by
+        L{RemoteObjectCreator.connect} is properly connected to the
+        remote peer.
         """
         return self.assertSuccess(self.words.empty())
+
+    def test_reconnect(self):
+        """
+        If the connection is lost, the L{RemoteObject} created by the creator
+        will transparently handle the reconnection.
+        """
+
+        def restart_listening():
+            self.port = reactor.listenUNIX(self.socket, self.server_factory)
+            reactor.callLater(0.3, assert_remote)
+
+        def assert_remote():
+            result = self.words.empty()
+            result.addCallback(lambda x: reconnected.callback(None))
+            return result
+
+        self.words._protocol.transport.loseConnection()
+        self.port.stopListening()
+        reactor.callLater(0.01, restart_listening)
+        reconnected = Deferred()
+        return reconnected
