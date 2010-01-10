@@ -2,33 +2,11 @@
 
 from uuid import uuid4
 from twisted.internet.defer import Deferred
-from twisted.internet.protocol import Factory, ClientCreator
+from twisted.internet.protocol import ServerFactory, ClientFactory
 from twisted.protocols.amp import Argument, String, Command, AMP
 from twisted.python.failure import Failure
 
 from landscape.lib.bpickle import loads, dumps, dumps_table
-
-
-class Method(object):
-    """Marker to expose an object's method in a L{MethodCallProtocol}.
-
-    This class is used when sub-classing a L{MethodCallProtocol} for declaring
-    the object's methods call the protocol will respond to.
-    """
-
-    def __init__(self, name, **kwargs):
-        """
-        @param name: The name of a callable method.
-        @param kwargs: Optional additional protocol-specific keyword
-            argument that must be passed to the method when call it.  Their
-            default value  will be treated as a protocol attribute name
-            to be passed to the object method as extra argument.  It useful
-            when the remote object method we want to call needs to be passed
-            some extra protocol-specific argument that the connected client
-            can't know (for example the protocol object itself).
-        """
-        self.name = name
-        self.kwargs = kwargs
 
 
 class MethodCallArgument(Argument):
@@ -55,9 +33,9 @@ class MethodCallError(Exception):
 class MethodCall(Command):
     """Call a method on the object exposed by a L{MethodCallProtocol}."""
 
-    arguments = [("name", String()),
-                 ("args", MethodCallArgument(optional=True)),
-                 ("kwargs", MethodCallArgument(optional=True))]
+    arguments = [("method", String()),
+                 ("args", MethodCallArgument()),
+                 ("kwargs", MethodCallArgument())]
 
     response = [("result", MethodCallArgument()),
                 ("deferred", String(optional=True))]
@@ -74,114 +52,37 @@ class _DeferredResponse(Command):
     requiresAnswer = False
 
 
-class RemoteObject(object):
-    """An object able to transparently call methods on a remote object.
+class MethodCallServerProtocol(AMP):
+    """Expose methods of a local object over AMP.
 
-    @ivar protocol: A reference to a connected L{MethodCallProtocol}, which
-        will be used to send L{MethodCall} commands.
-    """
+    The object to be exposed is expected to be the C{object} attribute of our
+    protocol factory.
 
-    def __init__(self, protocol):
-        self._protocol = protocol
-
-    @property
-    def protocol(self):
-        """Return a reference to the connected L{MethodCallProtocol}."""
-        return self._protocol
-
-    def __getattr__(self, name):
-        return self._create_method_call_sender(name)
-
-    def _create_method_call_sender(self, name):
-        """Create a L{MethodCall} sender for the method with the given C{name}.
-
-        When the created function is called, it sends the an appropriate
-        L{MethodCall} to the remote peer passing it the arguments and
-        keyword arguments it was called with, and returing a L{Deferred}
-        resulting in the L{MethodCall}'s response value.
-
-        The generated L{MethodCall} will invoke the remote object method
-        named C{name}.
-        """
-
-        def send_method_call(*args, **kwargs):
-            method_call_name = name
-            method_call_args = args[:]
-            method_call_kwargs = kwargs.copy()
-            called = self.protocol.callRemote(MethodCall,
-                                              name=method_call_name,
-                                              args=method_call_args,
-                                              kwargs=method_call_kwargs)
-            return called.addCallback(lambda response: response["result"])
-
-        return send_method_call
-
-
-class MethodCallProtocol(AMP):
-    """A protocol for calling methods on a remote object.
-
-    @cvar methods: A list of L{Method}s describing the methods that can be
-        called with the protocol. It must be defined by sub-classes.
-    @cvar timeout: A timeout for remote methods returning L{Deferred}s, if a
-        response for the deferred is not received within this amount of
-        seconds, the remote method call will errback with a L{MethodCallError}.
-    @cvar remote_factory: The factory used to build the C{remote} attribute.
-    @ivar remote: A L{RemoteObject} able to transparently call methods on
-        to the actuall object associated with the remote peer protocol.
-    @ivar object: Optionally, an object exposed by the protocol instance
-        itself, it can be passed to the constructor or set later directly.
+    @cvar methods: The list of exposed object's methods that can be called with
+        the protocol. It must be defined by sub-classes.
     """
 
     methods = []
-    timeout = 60
-    remote_factory = RemoteObject
-
-    def __init__(self, reactor, object=None):
-        """
-        @param reactor: The reactor used by L{RemoteObject} associated with the
-            protocol to schedule timeouts for methods returning L{Deferred}s.
-        @param object: The object the requested methods will be called on. Each
-            L{Method} declared in the C{methods} attribute is supposed to match
-            an actuall method of the given C{object}.  If C{None} is given, the
-            protocol can only be used to invoke methods.
-        """
-        super(MethodCallProtocol, self).__init__()
-        self._reactor = reactor
-        self.object = object
-        self.remote = self.remote_factory(self)
-
-        self._methods_by_name = {}
-        self._pending_responses = {}
-        for method in self.methods:
-            self._methods_by_name[method.name] = method
 
     @MethodCall.responder
-    def _call_object_method(self, name, args, kwargs):
+    def _call_object_method(self, method, args, kwargs):
         """Call an object's method with the given arguments.
 
-        If a connected client sends a L{MethodCall} with name C{foo_bar}, then
+        If a connected client sends a L{MethodCall} for method C{foo_bar}, then
         the actual method C{foo_bar} of the object associated with the protocol
         will be called with the given C{args} and C{kwargs} and its return
         value delivered back to the client as response to the command.
 
-        The L{MethodCall}'s C{args} and C{kwargs} arguments  will be passed to
-        the actual method when calling it.
+        @param method: The name of the object's method to call.
+        @param args: The arguments to pass to the method.
+        @param kwargs: The keywords arguments to pass to the method.
         """
-        method = self._methods_by_name.get(name, None)
-        if method is None:
-            raise MethodCallError("Forbidden method '%s'" % name)
+        if not method in self.methods:
+            raise MethodCallError("Forbidden method '%s'" % method)
 
-        method_func = getattr(self.object, name)
-        method_args = []
-        method_kwargs = {}
-
-        if args:
-            method_args.extend(args)
-        if kwargs:
-            method_kwargs.update(kwargs)
-        if method.kwargs:
-            for key, value in method.kwargs.iteritems():
-                method_kwargs[key] = get_nested_attr(self, value)
+        method_func = getattr(self.factory.object, method)
+        method_args = args[:]
+        method_kwargs = kwargs.copy()
 
         result = method_func(*method_args, **method_kwargs)
 
@@ -213,6 +114,23 @@ class MethodCallProtocol(AMP):
         else:
             kwargs["result"] = result
         self.callRemote(_DeferredResponse, **kwargs)
+
+
+class MethodCallClientProtocol(AMP):
+    """Calls methods of a remote object over L{AMP}.
+
+    @note: If the remote method returns a deferreds, the associated local
+        deferred returned by L{callRemote} will result in the same callback
+        value of the remote deferred.
+    @cvar timeout: A timeout for remote methods returning L{Deferred}s, if a
+        response for the deferred is not received within this amount of
+        seconds, the remote method call will errback with a L{MethodCallError}.
+    """
+    timeout = 60
+
+    def __init__(self):
+        AMP.__init__(self)
+        self._pending_responses = {}
 
     @_DeferredResponse.responder
     def _receive_deferred_response(self, uuid, result, failure):
@@ -246,51 +164,124 @@ class MethodCallProtocol(AMP):
         if response["deferred"]:
             uuid = response["deferred"]
             deferred = Deferred()
-            call = self._reactor.callLater(self.timeout, self._fire_deferred,
-                                           uuid, None, "timeout")
+            call = self.factory.reactor.callLater(self.timeout,
+                                                  self._fire_deferred,
+                                                  uuid, None, "timeout")
             self._pending_responses[uuid] = (deferred, call)
             return deferred
 
         return response
 
     def callRemote(self, *args, **kwargs):
-        result = super(MethodCallProtocol, self).callRemote(*args, **kwargs)
+        result = AMP.callRemote(self, *args, **kwargs)
         # The result can be C{None} only if the requested command is a
         # _DeferredResponse, which has requiresAnswer set to False
         if result is not None:
             return result.addCallback(self._handle_response)
 
 
-class MethodCallFactory(Factory):
-    """Factory for building L{MethodCallProtocol}s."""
+class MethodCallServerFactory(ServerFactory):
+    """Factory for building L{MethodCallProtocol}s exposing an object."""
 
-    protocol = MethodCallProtocol
+    protocol = MethodCallServerProtocol
 
-    def __init__(self, reactor, object=None):
+    def __init__(self, object):
         """
-        @param reactor: The reactor that will passed to the protocol.
-        @param object: The object that will be associated with the created
-            protocol.
+        @param object: The object exposed by the L{MethodCallProtocol}s
+            instances created by this factory.
         """
-        self._reactor = reactor
         self.object = object
 
+
+class MethodCallClientFactory(ClientFactory):
+    """Factory for building L{AMP} connections to L{MethodCall} servers."""
+
+    protocol = MethodCallClientProtocol
+
+    def __init__(self, reactor, notifier):
+        """
+        @param reactor: The reactor that will used by the created protocols
+            to schedule timeouts for methods returning deferreds.
+        @param notifier: A function that will be called when the factory builds
+            a new connected protocol.  It will be passed the new protocol
+            instance as argument.
+        """
+        self.reactor = reactor
+        self._notifier = notifier
+
     def buildProtocol(self, addr):
-        """Create a new protocol instance."""
-        protocol = self.protocol(self._reactor, self.object)
+        protocol = self.protocol()
         protocol.factory = self
+        self.reactor.callLater(0, self._notifier, protocol)
         return protocol
 
 
-def get_nested_attr(obj, path):
-    """Like C{getattr} but works with nested attributes as well.
+class RemoteObject(object):
+    """An object able to transparently call methods on a remote object.
 
-    @param obj: The object we want to get the attribute of.
-    @param path: The path to the attribute, like C{.some.nested.attr},
-        if C{.} is given the object itself is returned.
+    Any method call on a L{RemoteObject} instance will return a L{Deferred}
+    resulting in the return value of the same method call performed on
+    the remote object exposed by the peer.
     """
-    attr = obj
-    if path != "":
-        for name in path.split(".")[:]:
-            attr = getattr(attr, name)
-    return attr
+
+    def __init__(self, protocol):
+        """
+        @param protocol: A reference to a connected L{AMP} protocol instance,
+            which will be used to send L{MethodCall} commands.
+        """
+        self._protocol = protocol
+
+    def __getattr__(self, method):
+        """Return a function sending a L{MethodCall} for the given C{method}.
+
+        When the created function is called, it sends the an appropriate
+        L{MethodCall} to the remote peer passing it the arguments and
+        keyword arguments it was called with, and returing a L{Deferred}
+        resulting in the L{MethodCall}'s response value.
+        """
+
+        def send_method_call(*args, **kwargs):
+            called = self._protocol.callRemote(MethodCall,
+                                               method=method,
+                                               args=args[:],
+                                               kwargs=kwargs.copy())
+            return called.addCallback(lambda response: response["result"])
+
+        return send_method_call
+
+
+class RemoteObjectCreator(object):
+    """Connect to remote objects exposed by a L{MethodCallProtocol}."""
+
+    factory = MethodCallClientFactory
+    remote = RemoteObject
+
+    def __init__(self, reactor, socket):
+        """
+        @param reactor: A reactor able to connect to Unix sockets.
+        @param socket: The path to the socket we want to connect to.
+        """
+        self._socket = socket
+        self._reactor = reactor
+        self._remote = None
+
+    def connect(self):
+        """Connect to a remote object exposed by a L{MethodCallProtocol}.
+
+        This method will connect to the socket provided in the constructor
+        and return a L{Deferred} resulting in a connected L{RemoteObject}.
+        """
+        deferred = Deferred()
+        factory = self.factory(self._reactor, deferred.callback)
+        self._reactor.connectUNIX(self._socket, factory)
+        deferred.addCallback(self._connection_made)
+        return deferred
+
+    def _connection_made(self, protocol):
+        """Called when the connection has been established"""
+        self._remote = self.remote(protocol)
+        return self._remote
+
+    def disconnect(self):
+        """Disconnect the L{RemoteObject} that we have created."""
+        self._remote._protocol.transport.loseConnection()
