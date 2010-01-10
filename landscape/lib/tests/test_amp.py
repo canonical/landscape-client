@@ -1,7 +1,7 @@
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.internet.protocol import ClientCreator
-from twisted.internet.error import ConnectionDone
+from twisted.internet.error import ConnectionDone, ConnectError
 
 from landscape.lib.amp import (
     MethodCallError, MethodCall, MethodCallServerProtocol,
@@ -497,6 +497,22 @@ class RemoteObjectCreatorTest(LandscapeTest):
         remote peer.
         """
         return self.assertSuccess(self.words.empty())
+
+    def test_connect_with_max_retries(self):
+        """
+        If C{max_retries} is passed to the L{RemoteObjectCreator} method,
+        then it will give up trying to connect after that amout of times.
+        """
+        self.connector.disconnect()
+        self.port.stopListening()
+
+        def reconnect(ignored):
+            self.port = reactor.listenUNIX(self.socket, self.server_factory)
+            return self.connector.connect()
+
+        result = self.connector.connect(max_retries=0)
+        self.assertFailure(result, ConnectError)
+        return result.addCallback(reconnect)
 
     def test_reconnect(self):
         """
