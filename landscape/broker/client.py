@@ -1,6 +1,9 @@
 from logging import info, exception
 
+from twisted.internet.defer import maybeDeferred
+
 from landscape.log import format_object
+from landscape.lib.twisted_util import gather_results
 
 
 class HandlerNotFoundError(Exception):
@@ -35,6 +38,9 @@ class BrokerClient(object):
     This knows about the needs of a client when dealing with the Landscape
     broker, including interest in messages of a particular type delivered
     by the broker to the client.
+
+    @cvar name: The name used when registering to the broker, it must be
+        defined by sub-classes.
     """
 
     def __init__(self, reactor):
@@ -48,12 +54,28 @@ class BrokerClient(object):
         self._plugins = []
         self._plugin_names = {}
 
-    def connected(self, broker):
+        # Register event handlers
+        self.reactor.call_on("impending-exchange", self.notify_exchange)
+        self.reactor.call_on("broker-started", self.broker_started)
+
+    def handle_connected(self, broker):
         """Called upon broker connection.
         @param broker: A connected L{RemoteBroker}..
         """
+        # We have a broker!
         self.broker = broker
+
+        # Expose ourselves to the broker over AMP
         self.broker.protocol.object = self
+
+        # Register ourselves and possibly re-notify our accepted message types,
+        # in case the connection was lost and we are reconnecting
+        results = [self.broker.register_client(self.name)]
+        for type in self._registered_messages:
+            result = self.broker.register_client_accepted_message_type(type)
+            results.append(result)
+
+        return gather_results(results)
 
     def ping(self):
         """Return C{True}"""
@@ -137,8 +159,19 @@ class BrokerClient(object):
         self.exchange()
 
     def fire_event(self, event_type, *args, **kwargs):
-        """Fire an event of a given type."""
-        self.reactor.fire(event_type, *args, **kwargs)
+        """Fire an event of a given type.
+
+        @return: A L{Deferred} resulting in a list of returns values of
+            the fired event handlers, in the order they were fired.
+        """
+        if event_type == "message-type-acceptance-changed":
+            message_type = args[0]
+            acceptance = args[1]
+            results = self.reactor.fire((event_type, message_type), acceptance)
+        else:
+            results = self.reactor.fire(event_type, *args, **kwargs)
+        return gather_results([
+            maybeDeferred(lambda x: x, result) for result in results])
 
     def broker_started(self):
         """

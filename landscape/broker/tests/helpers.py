@@ -9,7 +9,7 @@ from landscape.broker.exchange import MessageExchange
 from landscape.broker.store import get_default_message_store
 from landscape.broker.registration import Identity, RegistrationHandler
 from landscape.broker.ping import Pinger
-from landscape.broker.deployment import BrokerConfiguration
+from landscape.broker.config import BrokerConfiguration
 from landscape.broker.server import BrokerServer
 from landscape.broker.amp import BrokerProtocolFactory, RemoteBrokerCreator
 from landscape.broker.client import BrokerClient
@@ -122,48 +122,45 @@ class BrokerServerHelper(RegistrationHelper):
         super(BrokerServerHelper, self).tear_down(test_case)
 
 
-class RemoteBrokerHelper(BrokerServerHelper):
+class BrokerClientHelper(BrokerServerHelper):
     """
-    This helper adds a connected L{RemoteBroker} to a L{BrokerServerHelper}.
+    This helper adds a L{BrokerClient} connected  to a L{BrokerServerHelper}.
     The following attributes will be set in your test case:
-      - remote: A C{RemoteObject} connected to the broker server.
+      - client: A connected L{BrokerClient}
+      - client_reactor: The L{FakeReactor} used by the client
+      - remote: The L{RemoteBroker} instance the client uses to communicate
+        with the broker.
+      - remote_client: The L{RemoteObject} instance the broker uses to
+        communicate with the client.
     """
 
     def set_up(self, test_case):
-        super(RemoteBrokerHelper, self).set_up(test_case)
+        super(BrokerClientHelper, self).set_up(test_case)
 
-        factory = BrokerProtocolFactory(test_case.reactor,
-                                        test_case.broker)
-        socket = os.path.join(test_case.config.data_path,
-                              RemoteBrokerCreator.socket)
-        self._port = test_case.reactor.listen_unix(socket, factory)
-        self._creator = RemoteBrokerCreator(test_case.reactor,
-                                            test_case.config)
+        test_case.factory = BrokerProtocolFactory(test_case.reactor,
+                                                  test_case.broker)
+        test_case.socket = os.path.join(test_case.config.data_path,
+                                        RemoteBrokerCreator.socket)
+
+        # The client needs its own reactor to avoid infinite loops
+        # when the broker broadcasts and event
+        test_case.client_reactor = FakeReactor()
+        test_case.client = BrokerClient(test_case.client_reactor)
+        test_case.client.name = "test"
+        test_case.connector = RemoteBrokerCreator(test_case.client_reactor,
+                                                  test_case.config,
+                                                  test_case.client)
+        test_case.port = test_case.reactor.listen_unix(test_case.socket,
+                                                       test_case.factory)
 
         def set_remote(remote):
             test_case.remote = remote
+            test_case.remote_client = test_case.broker.get_clients()[0]
 
-        connected = self._creator.connect()
+        connected = test_case.connector.connect()
         return connected.addCallback(set_remote)
 
     def tear_down(self, test_case):
-        self._creator.disconnect()
-        self._port.stopListening()
-        super(RemoteBrokerHelper, self).tear_down(test_case)
-
-
-class BrokerClientHelper(RemoteBrokerHelper):
-    """
-    This helper adds a L{BrokerClient} to a L{RemoteBrokerHelper}.
-    The following attributes will be set in your test case:
-      - client: A C{BrokerClient} object connected to a remote broker.
-    """
-
-    def set_up(self, test_case):
-
-        def set_broker_client(ignored):
-            test_case.client = BrokerClient(test_case.reactor)
-            test_case.client.connected(test_case.remote)
-
-        connected = super(BrokerClientHelper, self).set_up(test_case)
-        return connected.addCallback(set_broker_client)
+        test_case.connector.disconnect()
+        test_case.port.stopListening()
+        super(BrokerClientHelper, self).tear_down(test_case)
