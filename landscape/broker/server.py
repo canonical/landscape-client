@@ -1,4 +1,5 @@
 from landscape.lib.twisted_util import gather_results
+from landscape.broker.amp import RemoteClient
 
 
 class BrokerServer(object):
@@ -27,8 +28,8 @@ class BrokerServer(object):
         """Return C{True}."""
         return True
 
-    def register_client(self, name, protocol):
-        """Register a broker client called C{name} connected with C{protocol}.
+    def register_client(self, name):
+        """Register a broker client called C{name}.
 
         Various broker clients interact with the broker server, such as the
         monitor for example, using the L{BrokerProtocol} for communication.
@@ -36,12 +37,8 @@ class BrokerServer(object):
         registering themselves.
 
         @param name: The name of the client, such a C{monitor} or C{manager}.
-        @param protocol: The L{BrokerProtocol} over which the client is
-            connected.
         """
-        client = protocol.remote
-        client.name = name
-        self._registered_clients[name] = client
+        self._registered_clients[name] = RemoteClient(name)
 
     def get_clients(self):
         """Get L{BrokerPlugin} instances for registered plugins."""
