@@ -75,7 +75,7 @@ class RegistrationHandler(object):
     """
 
     def __init__(self, config, identity, reactor, exchange, pinger,
-                 message_store, cloud=False, fetch_async=None):
+                 message_store, fetch_async=None):
         self._config = config
         self._identity = identity
         self._reactor = reactor
@@ -90,7 +90,7 @@ class RegistrationHandler(object):
         self._exchange.register_message("registration",
                                         self._handle_registration)
         self._should_register = None
-        self._cloud = cloud
+        self._cloud = config.cloud
         self._fetch_async = fetch_async
         self._otp = None
         self._ec2_data = None
