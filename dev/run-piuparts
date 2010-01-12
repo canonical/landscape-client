@@ -138,7 +138,6 @@ sudo piuparts \
     --keep-sources-list \
     --skip-minimize \
     --no-symlinks \
-    -l ${TOPDIR}/output.log \
     -i /var/lib/PolicyKit \
     -i /etc/ssl \
     -I "/etc/udev.*" \
