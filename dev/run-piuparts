@@ -38,7 +38,7 @@ fi
 # Check we have piuparts >= 0.36
 #
 PIUPARTS_VERSION=$(sudo piuparts --version 2>/dev/null| cut -f 2 -d " ")
-if ! dpkg --compare-versions $PIUPARTS_VERSION ge 0.38; then
+if ! dpkg --compare-versions $PIUPARTS_VERSION ge 0.36; then
     cat <<EOF
 You need piuparts 0.36 or higher
 EOF
