@@ -58,7 +58,7 @@ OPTIONS
                            the command line, with precedence being given to
                            real command line options
   --script-users=USERS     A comma-separated list of users to allow scripts to
-                           run.  To allow scripts to be run by any user, 
+                           run. To allow scripts to be run by any user, 
                            enter: ALL
   --include-manager-plugins=PLUGINS   A comma-separated list of manager 
                            plugins to load.
