@@ -34,7 +34,7 @@ OPTIONS
 EXAMPLES
 
 To run the client in the foreground, with all logging data printed to standard
-IO:
+I/O:
 
   landscape-client
 
