@@ -15,10 +15,13 @@ interaction.
 Running the landscape-config program without arguments will start the
 program, prompting you for the necessary information to run the client.
 Optionally you can provide command-line arguments (detailed below) to
-specify default responses. You will be told if the registration was
-successful or if an error occurred. When registration is successful
-Landscape is configured and running on your system. Errors can occur if
-you provide incorrect registration details.
+specify default responses.
+
+You will be told if the registration was successful or if an error occurred.
+When registration is successful Landscape is configured and running on your
+system. Errors can occur if you provide incorrect registration details or if
+there are network issues. In the latter case, the client will keep trying
+to complete the registration in the background.
 
 OPTIONS
   --version             show program's version number and exit
@@ -92,6 +95,10 @@ Register a machine with the script execution plugin enabled, without
 requiring user interaction:
 
   landscape-config --silent -a account-name -p secret -t `hostname` --script-users nobody,landscape,root
+
+Register a machine with some tags:
+
+  landscape-config --silent -a account-name -p secret -t `hostname` --tags=server,www
 
 To disable a client, stopping current instances and disabling start at
 bootup:
