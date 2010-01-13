@@ -21,31 +21,58 @@ Landscape is configured and running on your system. Errors can occur if
 you provide incorrect registration details.
 
 OPTIONS
- --version                                   show program's version number and exit
- -h, --help                                  show this help message and exit
- -c FILE, --config=FILE                      Use config from this file (any command line options override settings from the file)
- --bus=BUS                                   The DBUS bus to use. One of 'session' or 'system'
- -d PATH, --data-path=PATH                   The directory to store data files in
- -q, --quiet                                 Do not log to the standard output
- -l FILE, --log-dir=FILE                     The directory to write log files to
- --log-level=LOG_LEVEL                       One of debug, info, warning, error or critical
- --ignore-sigint                             Ignore interrupt signals
- -a NAME, --account-name=NAME                The account this computer belongs to
- -p SECRET, --registration-password=SECRET   The account-wide password used for registering clients
- -t TITLE, --computer-title=TITLE            The title of this computer
- --script-users=USERS                        A comma-separated list of users to allow scripts to run. To allow scripts to be run by any user, enter ALL
- --include-manager-plugins=PLUGINS           A comma-separated list of manager plugins to load
- -u URL, --url=URL                           The server URL to connect to
- -k SSL_KEY, --ssl-public-key=SSL_KEY        The public SSL key to verify the server, only used if the given URL is https
- --exchange-interval=INTERVAL                The number of seconds between server exchanges
- --urgent-exchange-interval=INTERVAL         The number of seconds between urgent server exchanges
- --ping-url=PING_URL                         The URL to perform lightweight exchange initiation with
- --http-proxy=URL                            The URL of the HTTP proxy, if one is needed
- --https-proxy=URL                           The URL of the HTTPS proxy, if one is needed
- -n, --no-start                              Don't start the client automatically
- --silent                                    Run without manual interaction
- --disable                                   Stop running clients and disable start at boot
-
+  --version             show program's version number and exit
+  -h, --help            show this help message and exit
+  -c FILE, --config=FILE
+                        Use config from this file (any command line options
+                        override settings from the file).
+  --bus=BUS             Which DBUS bus to use. One of 'session' or 'system'.
+  -d PATH, --data-path=PATH
+                        The directory to store data files in.
+  -q, --quiet           Do not log to the standard output.
+  -l FILE, --log-dir=FILE
+                        The directory to write log files to.
+  --log-level=LOG_LEVEL
+                        One of debug, info, warning, error or critical.
+  --ignore-sigint       Ignore interrupt signals.
+  --ignore-sigusr1      Ignore SIGUSR1 signal to rotate logs.
+  -a NAME, --account-name=NAME
+                        The account this computer belongs to.
+  -p PASSWORD, --registration-password=PASSWORD
+                        The account-wide password used for registering
+                        clients.
+  -t TITLE, --computer-title=TITLE
+                        The title of this computer
+  -u URL, --url=URL     The server URL to connect to.
+  -k SSL_PUBLIC_KEY, --ssl-public-key=SSL_PUBLIC_KEY
+                        The public SSL key to verify the server. Only used if
+                        the given URL is https.
+  --exchange-interval=INTERVAL
+                        The number of seconds between server exchanges.
+  --urgent-exchange-interval=INTERVAL
+                        The number of seconds between urgent server exchanges.
+  --ping-url=PING_URL   The URL to perform lightweight exchange initiation
+                        with.
+  --http-proxy=URL      The URL of the HTTP proxy, if one is needed.
+  --https-proxy=URL     The URL of the HTTPS proxy, if one is needed.
+  --cloud               Set this if your computer is in an EC2 cloud.
+  --tags=TAGS           Comma separated list of tag names to be sent to the
+                        server.
+  --import=FILENAME_OR_URL
+                        Filename or URL to import configuration from. Imported
+                        options behave as if they were passed in the command
+                        line, with precedence being given to real command line
+                        options.
+  --script-users=USERS  A comma-separated list of users to allow scripts to
+                        run.  To allow scripts to be run by any user, enter:
+                        ALL
+  --include-manager-plugins=PLUGINS
+                        A comma-separated list of manager plugins to load.
+  -n, --no-start        Don't start the client automatically.
+  --ok-no-register      Return exit code 0 instead of 2 if the client can't be
+                        registered.
+  --silent              Run without manual interaction.
+  --disable             Stop running clients and disable start at boot.
 
 EXAMPLES
 
