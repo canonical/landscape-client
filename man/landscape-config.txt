@@ -2,8 +2,7 @@ NAME
   landscape-config - configure the Landscape management client
 
 SYNOPSIS
-  landscape-config [--silent, -a ACCOUNT, -t TITLE, -p PASSWORD, -l LOG,
-                    -k KEY, -d PATH]
+  landscape-config [options]
 
 DESCRIPTION
 

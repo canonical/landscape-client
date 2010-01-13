@@ -3,7 +3,7 @@ NAME
 
 SYNOPSIS
 
-  landscape-client [-c FILE, --bus BUS, --pid-file FILE, --daemon]
+  landscape-client [options]
 
 DESCRIPTION
 

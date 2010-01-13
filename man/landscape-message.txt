@@ -2,7 +2,7 @@ NAME
   landscape-message - Send a message to the landscape web interface
 
 SYNOPSIS
-  landscape-message [MESSAGE] ...
+  landscape-message [options] [MESSAGE] ...
 
 DESCRIPTION
 
