@@ -93,7 +93,7 @@ bzr export $TOPDIR/$SOURCE-$VERSION
 # Build the package
 #
 cd $TOPDIR/$SOURCE-$VERSION
-dpkg-buildpackage -b -uc -us
+dpkg-buildpackage -rfakeroot -b -uc -us
 cd $TOPDIR
 
 BASETGZ=/var/cache/pbuilder/${SOURCE}-${RELEASE}-${ARCH}.tgz
