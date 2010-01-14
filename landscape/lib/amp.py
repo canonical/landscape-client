@@ -40,7 +40,7 @@ class MethodCall(Command):
     errors = {MethodCallError: "METHOD_CALL_ERROR"}
 
 
-class MethodCallProtocol(AMP):
+class MethodCallServerProtocol(AMP):
     """Expose methods of a local object over AMP.
 
     The object to be exposed is expected to be the C{object} attribute of our
@@ -53,7 +53,7 @@ class MethodCallProtocol(AMP):
     methods = []
 
     @MethodCall.responder
-    def call_object_method(self, method, args, kwargs):
+    def receive_method_call(self, method, args, kwargs):
         """Call an object's method with the given arguments.
 
         If a connected client sends a L{MethodCall} for method C{foo_bar}, then
@@ -78,10 +78,24 @@ class MethodCallProtocol(AMP):
         return {"result": result}
 
 
+class MethodCallClientProtocol(AMP):
+    """Calls methods of a remote object over L{AMP}."""
+
+    def send_method_call(self, method, args=[], kwargs={}):
+        """Send a L{MethodCall} command with the given arguments.
+
+        @param method: The name of the remote method to invoke.
+        @param args: The positional arguments to pass to the remote method.
+        @param args: The keyword arguments to pass to the remote method.
+        """
+        return self.callRemote(MethodCall,
+                               method=method, args=args, kwargs=kwargs)
+
+
 class MethodCallServerFactory(ServerFactory):
     """Factory for building L{MethodCallProtocol}s exposing an object."""
 
-    protocol = MethodCallProtocol
+    protocol = MethodCallServerProtocol
 
     def __init__(self, object):
         """
@@ -94,7 +108,7 @@ class MethodCallServerFactory(ServerFactory):
 class MethodCallClientFactory(ClientFactory):
     """Factory for building L{AMP} connections to L{MethodCall} servers."""
 
-    protocol = AMP
+    protocol = MethodCallClientProtocol
 
     def __init__(self, reactor, notifier):
         """
@@ -136,10 +150,9 @@ class RemoteObject(object):
         """
 
         def send_method_call(*args, **kwargs):
-            result = self._protocol.callRemote(MethodCall,
-                                               method=method,
-                                               args=args[:],
-                                               kwargs=kwargs.copy())
+            result = self._protocol.send_method_call(method=method,
+                                                     args=args[:],
+                                                     kwargs=kwargs.copy())
             return result.addCallback(lambda response: response["result"])
 
         return send_method_call
