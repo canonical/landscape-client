@@ -1,8 +1,6 @@
-from twisted.trial.unittest import TestCase
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from twisted.internet.protocol import ClientCreator
-from twisted.protocols.amp import AMP
 
 from landscape.lib.amp import (
     MethodCallError, MethodCall, MethodCallServerProtocol,
@@ -114,10 +112,9 @@ class MethodCallProtocolTest(LandscapeTest):
         If a method is not included in L{MethodCallProtocol.methods} it
         can't be called.
         """
-        result = self.protocol.callRemote(MethodCall,
-                                          method="secret",
-                                          args=[],
-                                          kwargs={})
+        result = self.protocol.send_method_call(method="secret",
+                                                args=[],
+                                                kwargs={})
         return self.assertFailure(result, MethodCallError)
 
     def test_with_no_arguments(self):

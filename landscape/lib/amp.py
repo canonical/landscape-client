@@ -1,4 +1,4 @@
-"""Expose the methods of a remote object over AMP. """
+"""Expose the methods of a remote object over AMP."""
 
 from uuid import uuid4
 from twisted.internet.defer import Deferred
@@ -43,7 +43,7 @@ class MethodCall(Command):
     errors = {MethodCallError: "METHOD_CALL_ERROR"}
 
 
-class _DeferredResponse(Command):
+class DeferredResponse(Command):
     """Fire a L{Deferred} associated with an outstanding method call result."""
 
     arguments = [("uuid", String()),
@@ -65,7 +65,7 @@ class MethodCallServerProtocol(AMP):
     methods = []
 
     @MethodCall.responder
-    def _call_object_method(self, method, args, kwargs):
+    def receive_method_call(self, method, args, kwargs):
         """Call an object's method with the given arguments.
 
         If a connected client sends a L{MethodCall} for method C{foo_bar}, then
@@ -94,34 +94,34 @@ class MethodCallServerProtocol(AMP):
             if result.called:
                 if isinstance(result.result, Failure):
                     failure = str(result.result.value)
-                    result.addErrback(lambda x: None)
+                    result.addErrback(lambda error: None) # Stop propagating
                     raise MethodCallError(failure)
                 return {"result": result.result}
 
             uuid = str(uuid4())
-            result.addBoth(self._send_deferred_response, uuid)
+            result.addBoth(self.send_deferred_response, uuid)
             return {"result": None, "deferred": uuid}
 
         if not MethodCallArgument.check(result):
             raise MethodCallError("Non-serializable result")
         return {"result": result}
 
-    def _send_deferred_response(self, result, uuid):
+    def send_deferred_response(self, result, uuid):
         """Send a successful L{FireDeferred} for the given C{uuid}."""
         kwargs = {"uuid": uuid}
         if isinstance(result, Failure):
             kwargs["failure"] = str(result.value)
         else:
             kwargs["result"] = result
-        self.callRemote(_DeferredResponse, **kwargs)
+        self.callRemote(DeferredResponse, **kwargs)
 
 
 class MethodCallClientProtocol(AMP):
     """Calls methods of a remote object over L{AMP}.
 
-    @note: If the remote method returns a deferreds, the associated local
-        deferred returned by L{callRemote} will result in the same callback
-        value of the remote deferred.
+    @note: If the remote method returns a deferred, the associated local
+        deferred returned by L{send_method_call} will result in the same
+        callback value of the remote deferred.
     @cvar timeout: A timeout for remote methods returning L{Deferred}s, if a
         response for the deferred is not received within this amount of
         seconds, the remote method call will errback with a L{MethodCallError}.
@@ -132,18 +132,18 @@ class MethodCallClientProtocol(AMP):
         AMP.__init__(self)
         self._pending_responses = {}
 
-    @_DeferredResponse.responder
-    def _receive_deferred_response(self, uuid, result, failure):
+    @DeferredResponse.responder
+    def receive_deferred_response(self, uuid, result, failure):
         """Receive the deferred L{MethodCall} response.
 
         @param uuid: The id of the L{MethodCall} we're getting the result of.
         @param result: The result of the associated deferred if successful.
         @param failure: The failure message of the deferred if it failed.
         """
-        self._fire_deferred(uuid, result, failure)
+        self.fire_deferred(uuid, result, failure)
         return {}
 
-    def _fire_deferred(self, uuid, result, failure):
+    def fire_deferred(self, uuid, result, failure):
         """Receive the deferred L{MethodCall} result.
 
         @param uuid: The id of the L{MethodCall} we're getting the result of.
@@ -158,7 +158,7 @@ class MethodCallClientProtocol(AMP):
         else:
             deferred.errback(MethodCallError(failure))
 
-    def _handle_response(self, response):
+    def handle_response(self, response):
         """Handle a L{MethodCall} response, possibly queing it as pending."""
 
         if response["deferred"]:
@@ -172,12 +172,12 @@ class MethodCallClientProtocol(AMP):
 
         return response
 
-    def callRemote(self, *args, **kwargs):
-        result = AMP.callRemote(self, *args, **kwargs)
+    def send_method_call(self, *args, **kwargs):
+        result = self.callRemote(self, *args, **kwargs)
         # The result can be C{None} only if the requested command is a
         # _DeferredResponse, which has requiresAnswer set to False
         if result is not None:
-            return result.addCallback(self._handle_response)
+            return result.addCallback(self.handle_response)
 
 
 class MethodCallServerFactory(ServerFactory):
@@ -200,8 +200,8 @@ class MethodCallClientFactory(ClientFactory):
 
     def __init__(self, reactor, notifier):
         """
-        @param reactor: The reactor that will used by the created protocols
-            to schedule timeouts for methods returning deferreds.
+        @param reactor: The reactor used by the created protocols
+            to schedule notifications and timeouts.
         @param notifier: A function that will be called when the factory builds
             a new connected protocol.  It will be passed the new protocol
             instance as argument.
@@ -236,16 +236,16 @@ class RemoteObject(object):
 
         When the created function is called, it sends the an appropriate
         L{MethodCall} to the remote peer passing it the arguments and
-        keyword arguments it was called with, and returing a L{Deferred}
+        keyword arguments it was called with, and returning a L{Deferred}
         resulting in the L{MethodCall}'s response value.
         """
 
         def send_method_call(*args, **kwargs):
-            called = self._protocol.callRemote(MethodCall,
+            result = self._protocol.callRemote(MethodCall,
                                                method=method,
                                                args=args[:],
                                                kwargs=kwargs.copy())
-            return called.addCallback(lambda response: response["result"])
+            return result.addCallback(lambda response: response["result"])
 
         return send_method_call
 
