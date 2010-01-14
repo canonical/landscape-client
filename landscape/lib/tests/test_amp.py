@@ -1,11 +1,10 @@
-from twisted.trial.unittest import TestCase
 from twisted.internet import reactor
 from twisted.internet.protocol import ClientCreator
 from twisted.protocols.amp import AMP
 
 from landscape.lib.amp import (
     MethodCallError, MethodCall, MethodCallProtocol, MethodCallServerFactory,
-    MethodCallClientFactory, RemoteObject, RemoteObjectCreator)
+    RemoteObject, RemoteObjectCreator)
 from landscape.tests.helpers import LandscapeTest
 
 

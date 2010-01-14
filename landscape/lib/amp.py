@@ -1,4 +1,4 @@
-"""Expose the methods of a remote object over AMP. """
+"""Expose the methods of a remote object over AMP."""
 
 from twisted.internet.defer import Deferred
 from twisted.internet.protocol import ServerFactory, ClientFactory
@@ -53,7 +53,7 @@ class MethodCallProtocol(AMP):
     methods = []
 
     @MethodCall.responder
-    def _call_object_method(self, method, args, kwargs):
+    def call_object_method(self, method, args, kwargs):
         """Call an object's method with the given arguments.
 
         If a connected client sends a L{MethodCall} for method C{foo_bar}, then
@@ -97,6 +97,11 @@ class MethodCallClientFactory(ClientFactory):
     protocol = AMP
 
     def __init__(self, reactor, notifier):
+        """
+        @param reactor: The reactor used to schedule connection callbacks.
+        @param notifier: A function that will be called when the connection is
+            established. It will be passed the protocol instance as argument.
+        """
         self._reactor = reactor
         self._notifier = notifier
 
@@ -126,16 +131,16 @@ class RemoteObject(object):
 
         When the created function is called, it sends the an appropriate
         L{MethodCall} to the remote peer passing it the arguments and
-        keyword arguments it was called with, and returing a L{Deferred}
+        keyword arguments it was called with, and returning a L{Deferred}
         resulting in the L{MethodCall}'s response value.
         """
 
         def send_method_call(*args, **kwargs):
-            called = self._protocol.callRemote(MethodCall,
+            result = self._protocol.callRemote(MethodCall,
                                                method=method,
                                                args=args[:],
                                                kwargs=kwargs.copy())
-            return called.addCallback(lambda response: response["result"])
+            return result.addCallback(lambda response: response["result"])
 
         return send_method_call
 
