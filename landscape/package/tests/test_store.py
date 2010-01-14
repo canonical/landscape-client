@@ -335,7 +335,8 @@ class PackageStoreTest(LandscapeTest):
         cursor = database.cursor()
         for table in ["package_locks", "locked"]:
             query = "pragma table_info(%s)" % table
-            result = cursor.execute(query).fetchall()
+            cursor.execute(query)
+            result = cursor.fetchall()
             self.assertTrue(len(result) > 0)
 
     def test_add_and_get_locked(self):
