@@ -4,9 +4,9 @@ from twisted.internet.protocol import ClientCreator
 from twisted.internet.error import ConnectionDone, ConnectError
 
 from landscape.lib.amp import (
-    MethodCallError, MethodCall, MethodCallServerProtocol,
-    MethodCallClientProtocol, MethodCallServerFactory,
-    MethodCallClientFactory, RemoteObject, RemoteObjectCreator)
+    MethodCallError, MethodCallServerProtocol, MethodCallClientProtocol,
+    MethodCallServerFactory, MethodCallClientFactory, RemoteObject,
+    RemoteObjectCreator)
 from landscape.tests.helpers import LandscapeTest
 
 
@@ -133,10 +133,9 @@ class MethodCallProtocolTest(LandscapeTest):
         If a method is not included in L{MethodCallProtocol.methods} it
         can't be called.
         """
-        result = self.protocol.callRemote(MethodCall,
-                                          method="secret",
-                                          args=[],
-                                          kwargs={})
+        result = self.protocol.send_method_call(method="secret",
+                                                args=[],
+                                                kwargs={})
         return self.assertFailure(result, MethodCallError)
 
     def test_with_no_arguments(self):
@@ -144,10 +143,9 @@ class MethodCallProtocolTest(LandscapeTest):
         A connected client can issue a L{MethodCall} without arguments and
         with an empty response.
         """
-        result = self.protocol.callRemote(MethodCall,
-                                          method="empty",
-                                          args=[],
-                                          kwargs={})
+        result = self.protocol.send_method_call(method="empty",
+                                                args=[],
+                                                kwargs={})
         return self.assertSuccess(result, {"result": None,
                                            "deferred": None})
 
@@ -156,10 +154,9 @@ class MethodCallProtocolTest(LandscapeTest):
         A connected client can issue a L{MethodCall} targeted to an
         object method with a return value.
         """
-        result = self.protocol.callRemote(MethodCall,
-                                          method="motd",
-                                          args=[],
-                                          kwargs={})
+        result = self.protocol.send_method_call(method="motd",
+                                                args=[],
+                                                kwargs={})
         return self.assertSuccess(result, {"result": "Words are cool",
                                            "deferred": None})
 
@@ -168,10 +165,9 @@ class MethodCallProtocolTest(LandscapeTest):
         A connected AMP client can issue a L{MethodCall} with one argument and
         a response value.
         """
-        result = self.protocol.callRemote(MethodCall,
-                                          method="capitalize",
-                                          args=["john"],
-                                          kwargs={})
+        result = self.protocol.send_method_call(method="capitalize",
+                                                args=["john"],
+                                                kwargs={})
         return self.assertSuccess(result, {"result": "John",
                                            "deferred": None})
 
@@ -179,10 +175,9 @@ class MethodCallProtocolTest(LandscapeTest):
         """
         The return value of a L{MethodCall} argument can be a boolean.
         """
-        result = self.protocol.callRemote(MethodCall,
-                                          method="is_short",
-                                          args=["hi"],
-                                          kwargs={})
+        result = self.protocol.send_method_call(method="is_short",
+                                                args=["hi"],
+                                                kwargs={})
         return self.assertSuccess(result, {"result": True,
                                            "deferred": None})
 
@@ -190,10 +185,9 @@ class MethodCallProtocolTest(LandscapeTest):
         """
         A connected client can issue a L{MethodCall} with many arguments.
         """
-        result = self.protocol.callRemote(MethodCall,
-                                          method="concatenate",
-                                          args=["You ", "rock"],
-                                          kwargs={})
+        result = self.protocol.send_method_call(method="concatenate",
+                                                args=["You ", "rock"],
+                                                kwargs={})
         return self.assertSuccess(result, {"result": "You rock",
                                            "deferred": None})
 
@@ -202,10 +196,9 @@ class MethodCallProtocolTest(LandscapeTest):
         A connected client can issue a L{MethodCall} for methods having
         default arguments.
         """
-        result = self.protocol.callRemote(MethodCall,
-                                          method="lower_case",
-                                          args=["OHH"],
-                                          kwargs={})
+        result = self.protocol.send_method_call(method="lower_case",
+                                                args=["OHH"],
+                                                kwargs={})
         return self.assertSuccess(result, {"result": "ohh",
                                            "deferred": None})
 
@@ -215,10 +208,9 @@ class MethodCallProtocolTest(LandscapeTest):
         having default values in the target object.  If a value is specified by
         the caller it will be used in place of the default value
         """
-        result = self.protocol.callRemote(MethodCall,
-                                          method="lower_case",
-                                          args=["OHH"],
-                                          kwargs={"index": 2})
+        result = self.protocol.send_method_call(method="lower_case",
+                                                args=["OHH"],
+                                                kwargs={"index": 2})
         return self.assertSuccess(result, {"result": "OHh",
                                            "deferred": None})
 
@@ -226,10 +218,10 @@ class MethodCallProtocolTest(LandscapeTest):
         """
         Method arguments passed to a L{MethodCall} can be dictionaries.
         """
-        result = self.protocol.callRemote(MethodCall,
-                                          method="multiply_alphabetically",
-                                          args=[{"foo": 2, "bar": 3}],
-                                          kwargs={})
+        result = self.protocol.send_method_call(method="multiply_"
+                                                       "alphabetically",
+                                                args=[{"foo": 2, "bar": 3}],
+                                                kwargs={})
         return self.assertSuccess(result, {"result": "barbarbarfoofoo",
                                            "deferred": None})
 
@@ -238,10 +230,9 @@ class MethodCallProtocolTest(LandscapeTest):
         If the target object method returns an object that can't be serialized,
         the L{MethodCall} result is C{None}.
         """
-        result = self.protocol.callRemote(MethodCall,
-                                          method="meaning_of_life",
-                                          args=[],
-                                          kwargs={})
+        result = self.protocol.send_method_call(method="meaning_of_life",
+                                                args=[],
+                                                kwargs={})
         return self.assertFailure(result, MethodCallError)
 
 
@@ -261,7 +252,7 @@ class RemoteObjectTest(LandscapeTest):
         connected = Deferred()
         connected.addCallback(set_remote)
         client_factory = WordsClientFactory(reactor)
-        client_factory.notifier = connected.callback
+        client_factory.add_notifier(connected.callback)
         reactor.connectUNIX(socket, client_factory)
         return connected
 
@@ -414,7 +405,7 @@ class MethodCallClientFactoryTest(LandscapeTest):
         """
         connected = Deferred()
         client_factory = WordsClientFactory(reactor)
-        client_factory.notifier = connected.callback
+        client_factory.add_notifier(connected.callback)
 
         ports = []
 
@@ -463,7 +454,7 @@ class MethodCallClientFactoryTest(LandscapeTest):
                 reconnected.callback(None)
 
         client_factory = WordsClientFactory(reactor)
-        client_factory.notifier = connection_made
+        client_factory.add_notifier(connection_made)
         reactor.connectUNIX(self.socket, client_factory)
         return reconnected
 
@@ -599,7 +590,8 @@ class RemoteObjectCreatorTest(LandscapeTest):
             reactor.callLater(0, self.words._retry)
 
             # Restore the real handler and start listening again very soon
-            self.connector._factory.notifier = self.words._handle_reconnect
+            self.connector._factory.remove_notifier(handle_reconnect)
+            self.connector._factory.add_notifier(self.words._handle_reconnect)
             reactor.callLater(0.2, restart_listening)
 
         def restart_listening():
@@ -608,7 +600,8 @@ class RemoteObjectCreatorTest(LandscapeTest):
         def assert_failure(error):
             self.assertEquals(str(error), "Forbidden method 'secret'")
 
-        self.connector._factory.notifier = handle_reconnect
+        self.connector._factory.remove_notifier(self.words._handle_reconnect)
+        self.connector._factory.add_notifier(handle_reconnect)
         reactor.callLater(0.2, restart_listening)
         result = self.words.secret()
         self.assertFailure(result, MethodCallError)
