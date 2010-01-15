@@ -1,5 +1,6 @@
 import threading
 import time
+import sys
 
 try:
     import sqlite3
@@ -428,7 +429,11 @@ class PackageStoreTest(LandscapeTest):
         """
         It's not possible to add a package lock without a name.
         """
-        self.assertRaises(sqlite3.IntegrityError,
+        if sys.version_info >= (2, 5):
+            sqlite_error = sqlite3.IntegrityError
+        else:
+            sqlite_error = sqlite3.OperationalError
+        self.assertRaises(sqlite_error,
                           self.store1.add_package_locks,
                           [(None, None, None)])
 
