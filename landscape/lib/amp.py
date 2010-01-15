@@ -107,7 +107,12 @@ class MethodCallServerProtocol(AMP):
         return {"result": result}
 
     def send_deferred_response(self, result, uuid):
-        """Send a successful L{FireDeferred} for the given C{uuid}."""
+        """Send a L{DeferredResponse} for the deferred with given C{uuid}.
+
+        This is called when the result of L{Deferred} returned by an
+        object's method becomes available. A L{DeferredResponse} notifying
+        such result (either success or failure) is sent to the peer.
+        """
         kwargs = {"uuid": uuid}
         if isinstance(result, Failure):
             kwargs["failure"] = str(result.value)
@@ -144,7 +149,7 @@ class MethodCallClientProtocol(AMP):
         return {}
 
     def fire_deferred(self, uuid, result, failure):
-        """Receive the deferred L{MethodCall} result.
+        """Fire a pending deferred.
 
         @param uuid: The id of the L{MethodCall} we're getting the result of.
         @param result: The result of the associated deferred if successful.
@@ -159,23 +164,34 @@ class MethodCallClientProtocol(AMP):
             deferred.errback(MethodCallError(failure))
 
     def handle_response(self, response):
-        """Handle a L{MethodCall} response, possibly queing it as pending."""
+        """Handle a L{MethodCall} response.
 
+        If the response is tagged as deferred, it will be queued as pending,
+        and a L{Deferred} is returned, which will be fired as soon as the
+        final response becomes available.
+        """
         if response["deferred"]:
             uuid = response["deferred"]
             deferred = Deferred()
             call = self.factory.reactor.callLater(self.timeout,
-                                                  self._fire_deferred,
+                                                  self.fire_deferred,
                                                   uuid, None, "timeout")
             self._pending_responses[uuid] = (deferred, call)
             return deferred
 
         return response
 
-    def send_method_call(self, *args, **kwargs):
-        result = self.callRemote(self, *args, **kwargs)
+    def send_method_call(self, method, args=[], kwargs={}):
+        """Send a L{MethodCall} command with the given arguments.
+
+        @param method: The name of the remote method to invoke.
+        @param args: The positional arguments to pass to the remote method.
+        @param args: The keyword arguments to pass to the remote method.
+        """
+        result = self.callRemote(MethodCall,
+                                 method=method, args=args, kwargs=kwargs)
         # The result can be C{None} only if the requested command is a
-        # _DeferredResponse, which has requiresAnswer set to False
+        # DeferredResponse, which has requiresAnswer set to False
         if result is not None:
             return result.addCallback(self.handle_response)
 
@@ -241,10 +257,9 @@ class RemoteObject(object):
         """
 
         def send_method_call(*args, **kwargs):
-            result = self._protocol.callRemote(MethodCall,
-                                               method=method,
-                                               args=args[:],
-                                               kwargs=kwargs.copy())
+            result = self._protocol.send_method_call(method=method,
+                                                     args=args[:],
+                                                     kwargs=kwargs.copy())
             return result.addCallback(lambda response: response["result"])
 
         return send_method_call
