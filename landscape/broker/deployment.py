@@ -55,8 +55,9 @@ class BrokerConfiguration(Configuration):
         parser.add_option("-u", "--url",
                           help="The server URL to connect to.")
         parser.add_option("-k", "--ssl-public-key",
-                          help="The public SSL key to verify the server. "
-                               "Only used if the given URL is https.")
+                          help="The SSL CA certificate to verify the server "
+                                "with. Only used if the server URL to which "
+                                "we connect is https.")
         parser.add_option("--exchange-interval", default=15*60, type="int",
                           metavar="INTERVAL",
                           help="The number of seconds between server "
