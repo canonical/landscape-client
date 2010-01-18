@@ -54,12 +54,12 @@ class BrokerConfiguration(Configuration):
                           help="The title of this computer")
         parser.add_option("-u", "--url",
                           help="The server URL to connect to (default: "
-                                "https://landscape.canonical.com/"
-                                "message-system).")
+                               "https://landscape.canonical.com/"
+                               "message-system).")
         parser.add_option("-k", "--ssl-public-key",
                           help="The SSL CA certificate to verify the server "
-                                "with. Only used if the server URL to which "
-                                "we connect is https.")
+                               "with. Only used if the server URL to which "
+                               "we connect is https.")
         parser.add_option("--exchange-interval", default=15*60, type="int",
                           metavar="INTERVAL",
                           help="The number of seconds between server "

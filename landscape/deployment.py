@@ -298,12 +298,12 @@ class Configuration(BaseConfiguration):
         parser.add_option("-d", "--data-path", metavar="PATH",
                           default="/var/lib/landscape/client/",
                           help="The directory to store data files in "
-                          "(default: '/var/lib/landscape/client/').")
+                               "(default: '/var/lib/landscape/client/').")
         parser.add_option("-q", "--quiet", default=False, action="store_true",
                           help="Do not log to the standard output.")
         parser.add_option("-l", "--log-dir", metavar="FILE",
                           help="The directory to write log files to "
-                          "(default: '/var/log/landscape').",
+                               "(default: '/var/log/landscape').",
                           default="/var/log/landscape")
         parser.add_option("--log-level", default="info",
                           help="One of debug, info, warning, error or "
