@@ -8,7 +8,7 @@ from landscape.lib.bpickle import loads, dumps, dumps_table
 
 
 class MethodCallArgument(Argument):
-    """A bpickle-compatbile argument."""
+    """A bpickle-compatible argument."""
 
     def toString(self, inObject):
         """Serialize an argument."""
@@ -68,11 +68,7 @@ class MethodCallServerProtocol(AMP):
         if not method in self.methods:
             raise MethodCallError("Forbidden method '%s'" % method)
 
-        method_func = getattr(self.factory.object, method)
-        method_args = args[:]
-        method_kwargs = kwargs.copy()
-
-        result = method_func(*method_args, **method_kwargs)
+        result = getattr(self.factory.object, method)(*args, **kwargs)
         if not MethodCallArgument.check(result):
             raise MethodCallError("Non-serializable result")
         return {"result": result}
@@ -164,12 +160,12 @@ class RemoteObjectCreator(object):
     factory = MethodCallClientFactory
     remote = RemoteObject
 
-    def __init__(self, reactor, socket):
+    def __init__(self, reactor, socket_path):
         """
         @param reactor: A reactor able to connect to Unix sockets.
         @param socket: The path to the socket we want to connect to.
         """
-        self._socket = socket
+        self._socket_path = socket_path
         self._reactor = reactor
         self._remote = None
 
@@ -181,7 +177,7 @@ class RemoteObjectCreator(object):
         """
         deferred = Deferred()
         factory = self.factory(self._reactor, deferred.callback)
-        self._reactor.connectUNIX(self._socket, factory)
+        self._reactor.connectUNIX(self._socket_path, factory)
         deferred.addCallback(self._connection_made)
         return deferred
 

@@ -326,7 +326,7 @@ class RemoteObjectCreatorTest(LandscapeTest):
 
     def test_connect(self):
         """
-        A L{RemoteObject} can send L{MethodCall}s without arguments and withj
+        A L{RemoteObject} can send L{MethodCall}s without arguments and with
         an empty response.
         """
         return self.assertSuccess(self.words.empty())
