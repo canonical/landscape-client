@@ -39,9 +39,9 @@ OPTIONS
                            used for registering clients.
   -t TITLE, --computer-title=TITLE   The title of this computer.
   -u URL, --url=URL        The server URL to connect to.
-  -k SSL_PUBLIC_KEY, --ssl-public-key=SSL_PUBLIC_KEY   The public SSL key to 
-                           verify the server. Only used if the given URL is 
-                           https.
+  -k SSL_PUBLIC_KEY, --ssl-public-key=SSL_PUBLIC_KEY   The SSL CA certificate to 
+                           verify the server with. Only used if the server URL
+                           to which we connect is https.
   --exchange-interval=INTERVAL   The number of seconds between server
                            exchanges.
   --urgent-exchange-interval=INTERVAL   The number of seconds between urgent
