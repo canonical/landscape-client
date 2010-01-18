@@ -74,7 +74,10 @@ class BrokerConfiguration(Configuration):
         parser.add_option("--https-proxy", metavar="URL",
                           help="The URL of the HTTPS proxy, if one is needed.")
         parser.add_option("--cloud", action="store_true",
-                          help="Set this if your computer is in an EC2 cloud.")
+                          help="Set this if your computer is a cloud instance "
+                               "(EC2 or UEC) and you want it to be managed by "
+                               "Landscape's cloud features. See the manpage "
+                               "for details.")
         parser.add_option("--tags",
                           help="Comma separated list of tag names to be sent "
                                "to the server.")
