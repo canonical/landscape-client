@@ -4,12 +4,11 @@ import shutil
 import pprint
 import re
 import os
-import tempfile
 import sys
 import unittest
-
 import dbus
 
+from logging import Handler, ERROR, Formatter
 from twisted.trial.unittest import TestCase
 from twisted.internet.defer import Deferred
 
@@ -106,6 +105,7 @@ class LandscapeTest(MessageTestCase, MockerTestCase,
     def assertDeferredSucceeded(self, deferred):
         self.assertTrue(isinstance(deferred, Deferred))
         called = []
+
         def callback(result):
             called.append(True)
         deferred.addCallback(callback)
@@ -141,6 +141,7 @@ class LandscapeIsolatedTest(LandscapeTest):
     def run(self, result):
         if not getattr(LandscapeTest, "_cleanup_patch", False):
             run_method = LandscapeTest.run
+
             def run_wrapper(oself, *args, **kwargs):
                 try:
                     return run_method(oself, *args, **kwargs)
@@ -166,9 +167,8 @@ class DBusHelper(object):
         bpickle_dbus.uninstall()
 
 
-from logging import Handler, ERROR, Formatter
-
 class ErrorHandler(Handler):
+
     def __init__(self, *args, **kwargs):
         Handler.__init__(self, *args, **kwargs)
         self.errors = []
@@ -179,6 +179,7 @@ class ErrorHandler(Handler):
 
 
 class LoggedErrorsError(Exception):
+
     def __str__(self):
         out = "The following errors were logged\n"
         formatter = Formatter()
@@ -338,19 +339,17 @@ class RemoteBrokerHelper(FakeRemoteBrokerHelper):
         super(RemoteBrokerHelper, self).tear_down(test_case)
 
 
-class ExchangeHelper(FakeRemoteBrokerHelper):
+class LegacyExchangeHelper(FakeRemoteBrokerHelper):
     """
     Backwards compatibility layer for tests that want a bunch of attributes
     jammed on to them instead of having C{self.broker_service}.
     """
 
     def set_up(self, test_case):
-        super(ExchangeHelper, self).set_up(test_case)
+        super(LegacyExchangeHelper, self).set_up(test_case)
 
         service = test_case.broker_service
 
-        test_case.persist_filename = service.persist_filename
-        test_case.message_directory = service.config.message_store_path
         test_case.transport = service.transport
         test_case.reactor = service.reactor
         test_case.persist = service.persist
@@ -359,7 +358,7 @@ class ExchangeHelper(FakeRemoteBrokerHelper):
         test_case.identity = service.identity
 
 
-class MonitorHelper(ExchangeHelper):
+class MonitorHelper(LegacyExchangeHelper):
     """
     Provides everything that L{ExchangeHelper} does plus a
     L{landscape.monitor.monitor.Monitor}.
@@ -501,7 +500,6 @@ class DummyProcess(object):
 
     def closeChildFD(self, fd):
         pass
-
 
 
 class ProcessDataBuilder(object):

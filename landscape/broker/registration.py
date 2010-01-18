@@ -75,7 +75,7 @@ class RegistrationHandler(object):
     """
 
     def __init__(self, config, identity, reactor, exchange, pinger,
-                 message_store, cloud=False, fetch_async=None):
+                 message_store, fetch_async=None):
         self._config = config
         self._identity = identity
         self._reactor = reactor
@@ -90,7 +90,6 @@ class RegistrationHandler(object):
         self._exchange.register_message("registration",
                                         self._handle_registration)
         self._should_register = None
-        self._cloud = cloud
         self._fetch_async = fetch_async
         self._otp = None
         self._ec2_data = None
@@ -98,7 +97,7 @@ class RegistrationHandler(object):
     def should_register(self):
         id = self._identity
         # boolean logic is hard, I'm gonna use an if
-        if self._cloud:
+        if self._config.cloud:
             return bool(not id.secure_id
                         and self._message_store.accepts("register-cloud-vm"))
         return bool(not id.secure_id and id.computer_title and id.account_name
@@ -120,7 +119,7 @@ class RegistrationHandler(object):
 
     def _fetch_ec2_data(self):
         id = self._identity
-        if self._cloud and not id.secure_id:
+        if self._config.cloud and not id.secure_id:
             # Fetch data from the EC2 API, to be used later in the registration
             # process
             registration_data = gather_results([
@@ -213,7 +212,7 @@ class RegistrationHandler(object):
                 tags = None
                 logging.error("Invalid tags provided for cloud "
                               "registration.")
-            if self._cloud and self._ec2_data is not None:
+            if self._config.cloud and self._ec2_data is not None:
                 if self._otp:
                     logging.info("Queueing message to register with OTP")
                     message = {"type": "register-cloud-vm",

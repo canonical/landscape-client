@@ -6,7 +6,7 @@ from landscape.schema import Message, InvalidError, String, List, Dict
 from landscape.broker.remote import (FakeRemoteBroker,
                                      DBusSignalToReactorTransmitter)
 from landscape.tests.helpers import (LandscapeIsolatedTest, LandscapeTest,
-                                     ExchangeHelper, RemoteBrokerHelper)
+                                     LegacyExchangeHelper, RemoteBrokerHelper)
 from landscape.reactor import FakeReactor
 
 
@@ -88,7 +88,7 @@ class RemoteBrokerTestsMixin(object):
 class FakeRemoteBrokerTests(RemoteBrokerTestsMixin, LandscapeTest):
     """Tests for L{FakeRemoteBroker}."""
 
-    helpers = [ExchangeHelper]
+    helpers = [LegacyExchangeHelper]
 
     def get_remote(self):
         return FakeRemoteBroker(self.exchanger, self.mstore)
