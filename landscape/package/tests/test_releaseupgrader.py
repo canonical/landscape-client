@@ -830,7 +830,7 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
 
         message = {"type": "release-upgrade"}
 
-        class FakeTask():
+        class FakeTask(object):
             data = message
 
         task = FakeTask()

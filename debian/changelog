@@ -1,3 +1,9 @@
+landscape-client (1.4.4-0ubuntu0.9.10.0) UNRELEASED; urgency=low
+
+  * New upstream release
+
+ -- Free Ekanayaka <free.ekanayaka@canonical.com>  Sat, 16 Jan 2010 14:11:32 +0100
+
 landscape-client (1.4.0-0ubuntu0.9.10.0) lucid; urgency=low
 
   * New upstream release with several bug fixes:
