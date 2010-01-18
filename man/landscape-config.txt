@@ -29,9 +29,9 @@ OPTIONS
                            override settings from the file). Default is
                            '/etc/landscape/client.conf'.
   --bus=BUS                Which DBUS bus to use. One of 'session' or 'system'.
-                           Default is 'session'.
+                           Default is 'system'.
   -d PATH, --data-path=PATH   The directory to store data files in. Default is
-                           '/var/lib/landscape'.
+                           '/var/lib/landscape/client'.
   -q, --quiet              Do not log to the standard output.
   -l FILE, --log-dir=FILE   The directory to write log files to. Defalt is
                            '/var/log/landscape'.

@@ -34,7 +34,8 @@ class MonitorConfiguration(Configuration):
                           default="ALL")
         parser.add_option("--flush-interval", default=5*60, type="int",
                           metavar="INTERVAL",
-                          help="The number of seconds between flushes.")
+                          help="The number of seconds between flushes "
+                          "(default is 300s).")
         return parser
 
     @property
