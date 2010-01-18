@@ -26,28 +26,34 @@ OPTIONS
   --version                Show program's version number and exit.
   -h, --help               Show this help message and exit.
   -c FILE, --config=FILE   Use config from this file (any command line options
-                           override settings from the file).
-  --bus=BUS                Which DBUS bus to use. One of 'session' or 'system'
-  -d PATH, --data-path=PATH   The directory to store data files in.
+                           override settings from the file). Default is
+                           '/etc/landscape/client.conf'.
+  --bus=BUS                Which DBUS bus to use. One of 'session' or 'system'.
+                           Default is 'session'.
+  -d PATH, --data-path=PATH   The directory to store data files in. Default is
+                           '/var/lib/landscape'.
   -q, --quiet              Do not log to the standard output.
-  -l FILE, --log-dir=FILE   The directory to write log files to.
-  --log-level=LOG_LEVEL    One of debug, info, warning, error or critical.
+  -l FILE, --log-dir=FILE   The directory to write log files to. Defalt is
+                           '/var/log/landscape'.
+  --log-level=LOG_LEVEL    One of 'debug', 'info', 'warning', 'error' or 
+                           'critical'. Default is 'info'.
   --ignore-sigint          Ignore interrupt signals.
   --ignore-sigusr1         Ignore SIGUSR1 signal to rotate logs.
   -a NAME, --account-name=NAME   The account this computer belongs to.
   -p PASSWORD, --registration-password=PASSWORD  The account-wide password 
                            used for registering clients.
   -t TITLE, --computer-title=TITLE   The title of this computer.
-  -u URL, --url=URL        The server URL to connect to.
+  -u URL, --url=URL        The server URL to connect to. Default is
+                           'https://landscape.canonical.com/message-system'.
   -k SSL_PUBLIC_KEY, --ssl-public-key=SSL_PUBLIC_KEY   The SSL CA certificate to 
                            verify the server with. Only used if the server URL
                            to which we connect is https.
   --exchange-interval=INTERVAL   The number of seconds between server
-                           exchanges.
+                           exchanges. Default is 900s (15 minutes).
   --urgent-exchange-interval=INTERVAL   The number of seconds between urgent
-                           server exchanges.
+                           server exchanges. Default is 60s.
   --ping-url=PING_URL      The URL to perform lightweight exchange initiation
-                           with.
+                           with. Default is 'http://landscape.canonical.com/ping'.
   --http-proxy=URL         The URL of the HTTP proxy, if one is needed.
   --https-proxy=URL        The URL of the HTTPS proxy, if one is needed.
   --cloud                  Set this if this computer is a cloud instance in
