@@ -109,8 +109,8 @@ def run(args=sys.argv):
 
     parser = OptionParser(version=VERSION)
     parser.add_option("-b", "--bus", default="system",
-                      help="The DBUS bus to use to send the message. "
-                           "Default is 'system'.")
+                      help="The DBUS bus to use to send the message "
+                           "(default: 'system').")
     options, args = parser.parse_args(args)
 
     try:
