@@ -1313,7 +1313,7 @@ account_name = account
         self.addCleanup(os.remove, key_filename)
 
         print_text_mock = self.mocker.replace(print_text)
-        print_text_mock("Writing SSL public key to %s..." % key_filename)
+        print_text_mock("Writing SSL CA certificate to %s..." % key_filename)
 
         self.mocker.replay()
 
