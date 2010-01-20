@@ -34,7 +34,7 @@ class PackageChangerTest(LandscapeIsolatedTest):
         self.config = PackageChangerConfiguration()
         self.config.data_path = self.makeDir()
         os.mkdir(self.config.package_directory)
-        os.mkdir(self.config.debs_path)
+        os.mkdir(self.config.binaries_path)
         self.changer = PackageChanger(self.store, self.facade, self.remote, self.config)
 
         service = self.broker_service
@@ -269,18 +269,18 @@ class PackageChangerTest(LandscapeIsolatedTest):
                                   "type": "change-packages-result"}])
         return result.addCallback(got_result)
 
-    def test_dependency_error_with_debs(self):
+    def test_dependency_error_with_binaries(self):
         """
-        Simulate a failing operation involving server-generated debs. The
-        extra changes needed to perform the transaction are sent back to
-        the server.
+        Simulate a failing operation involving server-generated binary
+        packages. The extra changes needed to perform the transaction
+        are sent back to the server.
         """
         os.remove(os.path.join(self.repository_dir, PKGNAME2))
         self.store.set_hash_ids({HASH1: 1, HASH3: 3})
         self.store.add_task("changer",
                             {"type": "change-packages",
                              "install": [2],
-                             "debs": [(HASH2, 2, PKGDEB2)],
+                             "binaries": [(HASH2, 2, PKGDEB2)],
                              "operation-id": 123})
 
         self.set_pkg1_installed()
@@ -388,14 +388,15 @@ class PackageChangerTest(LandscapeIsolatedTest):
                                   "type": "change-packages-result"}])
         return result.addCallback(got_result)
 
-    def test_successful_operation_with_debs(self):
+    def test_successful_operation_with_binaries(self):
         """
-        Simulate a successful operation involving server-generated debs.
+        Simulate a successful operation involving server-generated binary
+        packages.
         """
         self.store.set_hash_ids({HASH3: 3})
         self.store.add_task("changer",
                             {"type": "change-packages", "install": [2, 3],
-                             "debs": [(HASH2, 2, PKGDEB2)],
+                             "binaries": [(HASH2, 2, PKGDEB2)],
                              "operation-id": 123})
 
         def return_good_result(self):
@@ -701,29 +702,29 @@ class PackageChangerTest(LandscapeIsolatedTest):
                                   "type": "change-packages-result"}])
         return result.addCallback(got_result)
 
-    def test_debs_path(self):
+    def test_binaries_path(self):
         self.assertEquals(
-            self.config.debs_path,
-            os.path.join(self.config.data_path, "package", "debs"))
+            self.config.binaries_path,
+            os.path.join(self.config.data_path, "package", "binaries"))
 
     def test_wb_create_deb_dir_channel(self):
         """
         The L{PackageChanger._create_deb_dir_channel} method makes the given
         Debian packages available in a C{deb-dir} Smart channel.
         """
-        debs = [(HASH1, 111, PKGDEB1), (HASH2, 222, PKGDEB2)]
+        binaries = [(HASH1, 111, PKGDEB1), (HASH2, 222, PKGDEB2)]
 
         self.facade.reset_channels()
-        self.changer._create_deb_dir_channel(debs)
+        self.changer._create_deb_dir_channel(binaries)
 
-        debs_path = self.config.debs_path
-        self.assertFileContent(os.path.join(debs_path, "111.deb"),
+        binaries_path = self.config.binaries_path
+        self.assertFileContent(os.path.join(binaries_path, "111.deb"),
                                base64.decodestring(PKGDEB1))
-        self.assertFileContent(os.path.join(debs_path, "222.deb"),
+        self.assertFileContent(os.path.join(binaries_path, "222.deb"),
                                base64.decodestring(PKGDEB2))
         self.assertEquals(self.facade.get_channels(),
-                          {debs_path: {"type": "deb-dir",
-                                            "path": debs_path}})
+                          {binaries_path: {"type": "deb-dir",
+                                            "path": binaries_path}})
 
         self.assertEquals(self.store.get_hash_ids(), {HASH1: 111, HASH2: 222})
 
@@ -742,12 +743,12 @@ class PackageChangerTest(LandscapeIsolatedTest):
         self.changer._create_deb_dir_channel([(HASH1, 111, PKGDEB1)])
         self.assertEquals(self.store.get_hash_ids(), {HASH1: 111})
 
-    def test_wb_create_deb_dir_channel_with_existing_debs(self):
+    def test_wb_create_deb_dir_channel_with_existing_binaries(self):
         """
         The L{PackageChanger._create_deb_dir_channel} removes Debian packages
         from previous runs.
         """
-        existing_deb_path = os.path.join(self.config.debs_path, "123.deb")
+        existing_deb_path = os.path.join(self.config.binaries_path, "123.deb")
         self.makeFile(basename=existing_deb_path, content="foo")
         self.changer._create_deb_dir_channel([])
         self.assertFalse(os.path.exists(existing_deb_path))

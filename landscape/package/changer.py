@@ -42,9 +42,9 @@ class PackageChangerConfiguration(PackageTaskHandlerConfiguration):
     """Specialized configuration for the Landscape package-changer."""
 
     @property
-    def debs_path(self):
-        """The path to the directory we store server-generated debs in."""
-        return os.path.join(self.package_directory, "debs")
+    def binaries_path(self):
+        """The path to the directory we store server-generated packages in."""
+        return os.path.join(self.package_directory, "binaries")
 
 
 class PackageChanger(PackageTaskHandler):
@@ -110,23 +110,23 @@ class PackageChanger(PackageTaskHandler):
         else:
             return failure
 
-    def _create_deb_dir_channel(self, debs):
-        """Add a C{deb-dir} channel sporting the given C{debs}.
+    def _create_deb_dir_channel(self, binaries):
+        """Add a C{deb-dir} channel sporting the given C{binaries}.
 
-        @param debs: A list of 3-tuples of the form (hash, id, deb), containing
-            the hash, the id and the content of a Debian package.
+        @param binaries: A list of 3-tuples of the form (hash, id, deb),
+            containing the hash, the id and the content of a Debian package.
         """
 
-        debs_path = self._config.debs_path
+        binaries_path = self._config.binaries_path
 
-        for existing_deb_path in os.listdir(debs_path):
-            # Clean up the debs we wrote in former runs
-            os.remove(os.path.join(debs_path, existing_deb_path))
+        for existing_deb_path in os.listdir(binaries_path):
+            # Clean up the binaries we wrote in former runs
+            os.remove(os.path.join(binaries_path, existing_deb_path))
 
-        for hash, id, deb in debs:
+        for hash, id, deb in binaries:
 
             # Write the deb to disk
-            fd = open(os.path.join(debs_path, "%d.deb" % id), "w")
+            fd = open(os.path.join(binaries_path, "%d.deb" % id), "w")
             fd.write(base64.decodestring(deb))
             fd.close()
 
@@ -134,12 +134,12 @@ class PackageChanger(PackageTaskHandler):
             # be properly installed and reported.
             self._store.set_hash_ids({hash: id})
 
-        self._facade.add_channel_deb_dir(debs_path)
+        self._facade.add_channel_deb_dir(binaries_path)
 
     def _handle_change_packages(self, message):
 
-        if message.get("debs"):
-            self._create_deb_dir_channel(message["debs"])
+        if message.get("binaries"):
+            self._create_deb_dir_channel(message["binaries"])
 
         self.ensure_channels_reloaded()
 
