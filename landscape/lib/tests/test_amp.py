@@ -3,10 +3,14 @@ from twisted.internet.defer import Deferred
 from twisted.internet.protocol import ClientCreator
 
 from landscape.lib.amp import (
-    MethodCallError, MethodCall, MethodCallServerProtocol,
+    MethodCallError, MethodCallServerProtocol,
     MethodCallClientProtocol, MethodCallServerFactory,
     MethodCallClientFactory, RemoteObject, RemoteObjectCreator)
 from landscape.tests.helpers import LandscapeTest
+
+
+class WordsException(Exception):
+    """Test exception."""
 
 
 class Words(object):
@@ -54,6 +58,9 @@ class Words(object):
 
     def guess(self, word, *args, **kwargs):
         return self._check(word, *args, **kwargs)
+
+    def translate(self, word):
+        raise WordsException("Unknown word")
 
     def google(self, word):
         deferred = Deferred()
@@ -211,6 +218,16 @@ class MethodCallProtocolTest(LandscapeTest):
         """
         result = self.protocol.send_method_call(method="meaning_of_life",
                                                 args=[],
+                                                kwargs={})
+        return self.assertFailure(result, MethodCallError)
+
+    def test_translate(self):
+        """
+        If the target object method raises an exception, the remote call fails
+        with a L{MethodCallError}.
+        """
+        result = self.protocol.send_method_call(method="translate",
+                                                args=["hi"],
                                                 kwargs={})
         return self.assertFailure(result, MethodCallError)
 
@@ -393,7 +410,7 @@ class RemoteObjectCreatorTest(LandscapeTest):
 
     def test_connect(self):
         """
-        A L{RemoteObject} can send L{MethodCall}s without arguments and withj
+        A L{RemoteObject} can send L{MethodCall}s without arguments and with
         an empty response.
         """
         return self.assertSuccess(self.words.empty())

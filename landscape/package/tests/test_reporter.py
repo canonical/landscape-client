@@ -3,6 +3,7 @@ import sys
 import os
 import logging
 import unittest
+import time
 
 from twisted.internet.defer import Deferred
 from twisted.internet import reactor
@@ -519,6 +520,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         The L{PackageReporter.run_smart_update} method should run smart-update
         with the proper arguments.
         """
+        self.reporter.sources_list_filename = "/I/Dont/Exist"
         self.reporter.smart_update_filename = self.makeFile(
             "#!/bin/sh\necho -n $@")
         os.chmod(self.reporter.smart_update_filename, 0755)
@@ -565,6 +567,59 @@ class PackageReporterTest(LandscapeIsolatedTest):
             result = self.reporter.run_smart_update()
 
             def callback((out, err, code)):
+                self.assertEquals(out, "")
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
+
+    def test_wb_apt_sources_have_changed(self):
+        """
+        The L{PackageReporter._apt_sources_have_changed} method returns a bool
+        indicating if the APT sources list file has changed recently.
+        """
+        self.reporter.sources_list_filename = "/I/Dont/Exist"
+        self.reporter.sources_list_directory = "/I/Dont/Exist/At/All"
+        self.assertFalse(self.reporter._apt_sources_have_changed())
+        self.reporter.sources_list_filename = self.makeFile("foo")
+        self.assertTrue(self.reporter._apt_sources_have_changed())
+        os.utime(self.reporter.sources_list_filename, (-1, time.time() - 1799));
+        self.assertTrue(self.reporter._apt_sources_have_changed())
+        os.utime(self.reporter.sources_list_filename, (-1, time.time() - 1800));
+        self.assertFalse(self.reporter._apt_sources_have_changed())
+
+    def test_wb_apt_sources_have_changed_with_directory(self):
+        """
+        The L{PackageReporter._apt_sources_have_changed} checks also for
+        possible additional sources files under /etc/apt/sources.d.
+        """
+        self.reporter.sources_list_filename = "/I/Dont/Exist/At/All"
+        self.reporter.sources_list_directory = self.makeDir()
+        self.makeFile(dirname=self.reporter.sources_list_directory,
+                      content="deb http://foo ./")
+        self.assertTrue(self.reporter._apt_sources_have_changed())
+
+    def test_run_smart_update_with_force_smart_update_if_sources_changed(self):
+        """
+        L{PackageReporter.run_smart_update} forces a smart-update run if
+        the APT sources.list file has changed.
+
+        """
+        self.assertEquals(self.reporter.sources_list_filename,
+                          "/etc/apt/sources.list")
+        self.reporter.sources_list_filename = self.makeFile("deb ftp://url ./")
+        self.reporter.smart_update_filename = self.makeFile(
+            "#!/bin/sh\necho -n $@")
+        os.chmod(self.reporter.smart_update_filename, 0755)
+
+        deferred = Deferred()
+
+        def do_test():
+            result = self.reporter.run_smart_update()
+
+            def callback((out, err, code)):
+                # Smart update was called without the --after parameter
                 self.assertEquals(out, "")
             result.addCallback(callback)
             result.chainDeferred(deferred)
