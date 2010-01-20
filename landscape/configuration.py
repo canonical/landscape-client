@@ -9,6 +9,7 @@ import time
 import sys
 import os
 import getpass
+import pwd
 from ConfigParser import ConfigParser, Error as ConfigParserError
 from StringIO import StringIO
 
@@ -41,6 +42,27 @@ def print_text(text, end="\n", error=False):
         stream = sys.stdout
     stream.write(text+end)
     stream.flush()
+
+
+def get_invalid_users(users):
+    """
+    Process a string with a list of comma separated usernames, this returns
+    any usernames not known to the underlying user database.
+    """
+    if users is not None:
+        user_list = [user.strip() for user in users.split(",")]
+        if "ALL" in user_list:
+            if len(user_list) > 1:
+                raise ConfigurationError(
+                    "Extra users specified with ALL users")
+            user_list.remove("ALL")
+        invalid_users = []
+        for user in user_list:
+            try:
+                pwd.getpwnam(user)
+            except KeyError:
+                invalid_users.append(user)
+        return invalid_users
 
 
 class LandscapeSetupConfiguration(BrokerConfiguration):
@@ -286,8 +308,11 @@ class LandscapeSetupScript(object):
     def query_script_plugin(self):
         options = self.config.get_command_line_options()
         if "include_manager_plugins" in options and "script_users" in options:
+            invalid_users = get_invalid_users(options["script_users"])
+            if invalid_users:
+                raise ConfigurationError("Unknown system users: %s" %
+                                         ", ".join(invalid_users))
             return
-
         self.show_help(
             """
             Landscape has a feature which enables administrators to run
@@ -312,8 +337,16 @@ class LandscapeSetupScript(object):
                 that scripts will be restricted to. To allow scripts to be run
                 by any user, enter "ALL".
                 """)
-            if not "script_users" in options:
+            while True:
                 self.prompt("script_users", "Script users")
+                invalid_users = get_invalid_users(
+                    self.config.script_users)
+                if not invalid_users:
+                    break
+                else:
+                    self.show_help("Unknown system users: %s" %
+                                   ",".join(invalid_users))
+                    self.config.script_users = None
         else:
             if "ScriptExecution" in included_plugins:
                 included_plugins.remove("ScriptExecution")
@@ -412,8 +445,13 @@ def setup(config):
         if not config.get("account_name") or not config.get("computer_title"):
             raise ConfigurationError("An account name and computer title are "
                                      "required.")
-        if config.get("script_users") and not config.include_manager_plugins:
-            config.include_manager_plugins = "ScriptExecution"
+        if config.get("script_users"):
+            invalid_users = get_invalid_users(config.get("script_users"))
+            if invalid_users:
+                raise ConfigurationError("Unknown system users: %s" %
+                                         ", ".join(invalid_users))
+            if not config.include_manager_plugins:
+                config.include_manager_plugins = "ScriptExecution"
     else:
         script = LandscapeSetupScript(config)
         script.run()

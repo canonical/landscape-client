@@ -455,6 +455,9 @@ class LandscapeSetupScriptTest(LandscapeTest):
                           "FooPlugin, ScriptExecution")
 
     def test_query_script_users_defined_on_command_line(self):
+        """
+        Confirm with the user for users specified for the ScriptPlugin.
+        """
         self.config.include_manager_plugins = "FooPlugin"
         self.mocker.order()
         script_mock = self.mocker.patch(self.script)
@@ -462,8 +465,8 @@ class LandscapeSetupScriptTest(LandscapeTest):
         script_mock.prompt_yes_no("Enable script execution?", default=False)
         self.mocker.result(True)
         script_mock.show_help(ANY)
-        raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
-        self.expect(raw_input_mock(ANY)).count(0)
+        script_mock.prompt_get_input(
+            "Script users [root, nobody, landscape]: ", False)
         self.mocker.replay()
 
         self.config.load_command_line(
@@ -471,6 +474,80 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.script.query_script_plugin()
         self.assertEquals(self.config.script_users,
                           "root, nobody, landscape")
+
+    def test_query_script_users_defined_on_command_line_with_unknown_user(self):
+        """
+        If several users are provided on the command line, we verify the users
+        and raise a ConfigurationError if any are unknown on this system.
+        """
+        pwnam_mock = self.mocker.replace("pwd.getpwnam")
+        pwnam_mock("root")
+        self.mocker.result(None)
+        pwnam_mock("nobody")
+        self.mocker.result(None)
+        pwnam_mock("landscape")
+        self.mocker.result(None)
+        pwnam_mock("unknown")
+        self.mocker.throw(KeyError())
+        self.mocker.replay()
+
+        self.config.load_command_line(
+            ["--script-users", "root, nobody, landscape, unknown",
+            "--include-manager-plugins", "ScriptPlugin"])
+        self.assertRaises(ConfigurationError, self.script.query_script_plugin)
+
+    def test_query_script_users_defined_on_command_line_with_all_user(self):
+        """
+        We shouldn't accept all as a synonym for ALL
+        """
+        self.config.load_command_line(
+            ["--script-users", "all",
+            "--include-manager-plugins", "ScriptPlugin"])
+        self.assertRaises(ConfigurationError, self.script.query_script_plugin)
+
+    def test_query_script_users_defined_on_command_line_with_ALL_user(self):
+        """
+        ALL is the special marker for all users.
+        """
+        self.config.load_command_line(
+            ["--script-users", "ALL",
+             "--include-manager-plugins", "ScriptPlugin"])
+        self.script.query_script_plugin()
+        self.assertEquals(self.config.script_users,
+                          "ALL")
+
+    def test_query_script_users_defined_on_command_line_with_ALL_and_extra_user(self):
+        """
+        If ALL and additional users are provided as the users on the command
+        line, this should raise an appropriate ConfigurationError.
+        """
+        self.config.load_command_line(
+            ["--script-users", "ALL, kevin",
+            "--include-manager-plugins", "ScriptPlugin"])
+        self.assertRaises(ConfigurationError, self.script.query_script_plugin)
+
+    def test_invalid_user_entered_by_user(self):
+        """
+        If an invalid user is entered on the command line the user should be
+        informed and prompted again.
+        """
+        help_snippet = "Landscape has a feature which enables administrators"
+        self.mocker.order()
+        script_mock = self.mocker.patch(self.script)
+        script_mock.show_help(self.get_matcher(help_snippet))
+        script_mock.prompt_yes_no("Enable script execution?", default=False)
+        self.mocker.result(True)
+        script_mock.show_help(
+            self.get_matcher("By default, scripts are restricted"))
+        script_mock.prompt_get_input("Script users: ", False)
+        self.mocker.result(u"nonexistent")
+        script_mock.show_help("Unknown system users: nonexistent")
+        script_mock.prompt_get_input("Script users: ", False)
+        self.mocker.result(u"root")
+        self.mocker.replay()
+        self.script.query_script_plugin()
+        self.assertEquals(self.config.script_users,
+                          "root")
 
     def test_tags_not_defined_on_command_line(self):
         """
@@ -688,6 +765,23 @@ include_manager_plugins = ScriptExecution
 script_users = root, nobody
 account_name = account
 """)
+
+    def test_silent_script_users_with_all_user(self):
+        """
+        In silent mode, we shouldn't accept invalid users, it should raise a
+        configuration error.
+        """
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        sysvconfig_mock.set_start_on_boot(True)
+        self.mocker.replay()
+
+        config = self.get_config(
+            ["--script-users", "all",
+             "--include-manager-plugins", "ScriptPlugin",
+             "-a", "account",
+             "-t", "rex",
+             "--silent"])
+        self.assertRaises(ConfigurationError, setup, config)
 
     def test_silent_setup_with_ping_url(self):
         sysvconfig_mock = self.mocker.patch(SysVConfig)
