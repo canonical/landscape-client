@@ -1,4 +1,5 @@
 import logging
+import base64
 import time
 import sys
 import os
@@ -8,7 +9,8 @@ import grp
 from twisted.internet.defer import fail
 
 from landscape.package.reporter import find_reporter_command
-from landscape.package.taskhandler import PackageTaskHandler, run_task_handler
+from landscape.package.taskhandler import (
+    PackageTaskHandler, PackageTaskHandlerConfiguration, run_task_handler)
 
 
 SUCCESS_RESULT = 1
@@ -36,8 +38,19 @@ class UnknownPackageData(Exception):
     """Raised when an ID or a hash isn't known."""
 
 
+class PackageChangerConfiguration(PackageTaskHandlerConfiguration):
+    """Specialized configuration for the Landscape package-changer."""
+
+    @property
+    def debs_path(self):
+        """The path to the directory we store server-generated debs in."""
+        return os.path.join(self.package_directory, "debs")
+
+
 class PackageChanger(PackageTaskHandler):
     """Install, remove and upgrade packages."""
+
+    config_factory = PackageChangerConfiguration
 
     queue_name = "changer"
 
@@ -97,7 +110,37 @@ class PackageChanger(PackageTaskHandler):
         else:
             return failure
 
+    def _create_deb_dir_channel(self, debs):
+        """Add a C{deb-dir} channel sporting the given C{debs}.
+
+        @param debs: A list of 3-tuples of the form (hash, id, deb), containing
+            the hash, the id and the content of a Debian package.
+        """
+
+        debs_path = self._config.debs_path
+
+        for existing_deb_path in os.listdir(debs_path):
+            # Clean up the debs we wrote in former runs
+            os.remove(os.path.join(debs_path, existing_deb_path))
+
+        for hash, id, deb in debs:
+
+            # Write the deb to disk
+            fd = open(os.path.join(debs_path, "%d.deb" % id), "w")
+            fd.write(base64.decodestring(deb))
+            fd.close()
+
+            # Add the hash->id mapping for the package, so the packages can
+            # be properly installed and reported.
+            self._store.set_hash_ids({hash: id})
+
+        self._facade.add_channel_deb_dir(debs_path)
+
     def _handle_change_packages(self, message):
+
+        if message.get("debs"):
+            self._create_deb_dir_channel(message["debs"])
+
         self.ensure_channels_reloaded()
 
         self._facade.reset_marks()

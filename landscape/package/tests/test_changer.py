@@ -1,4 +1,5 @@
 # -*- encoding: utf-8 -*-
+import base64
 import time
 import sys
 import os
@@ -12,13 +13,14 @@ from landscape.package.changer import (
 from landscape.package.store import PackageStore
 from landscape.package.facade import (
     DependencyError, TransactionError, SmartError)
-from landscape.deployment import Configuration
+from landscape.package.changer import PackageChangerConfiguration
 
 from landscape.tests.mocker import ANY
 from landscape.tests.helpers import (
     LandscapeIsolatedTest, RemoteBrokerHelper)
 from landscape.package.tests.helpers import (
-    SmartFacadeHelper, HASH1, HASH2, HASH3)
+    SmartFacadeHelper, HASH1, HASH2, HASH3, PKGDEB1, PKGDEB2, PKGDEB3,
+    PKGNAME2)
 
 
 class PackageChangerTest(LandscapeIsolatedTest):
@@ -29,7 +31,10 @@ class PackageChangerTest(LandscapeIsolatedTest):
         super(PackageChangerTest, self).setUp()
 
         self.store = PackageStore(self.makeFile())
-        self.config = Configuration()
+        self.config = PackageChangerConfiguration()
+        self.config.data_path = self.makeDir()
+        os.mkdir(self.config.package_directory)
+        os.mkdir(self.config.debs_path)
         self.changer = PackageChanger(self.store, self.facade, self.remote, self.config)
 
         service = self.broker_service
@@ -264,6 +269,37 @@ class PackageChangerTest(LandscapeIsolatedTest):
                                   "type": "change-packages-result"}])
         return result.addCallback(got_result)
 
+    def test_dependency_error_with_debs(self):
+        """
+        Simulate a failing operation involving server-generated debs. The
+        extra changes needed to perform the transaction are sent back to
+        the server.
+        """
+        os.remove(os.path.join(self.repository_dir, PKGNAME2))
+        self.store.set_hash_ids({HASH1: 1, HASH3: 3})
+        self.store.add_task("changer",
+                            {"type": "change-packages",
+                             "install": [2],
+                             "debs": [(HASH2, 2, PKGDEB2)],
+                             "operation-id": 123})
+
+        self.set_pkg1_installed()
+
+        def raise_dependency_error(self):
+            raise DependencyError(self.get_packages())
+        self.Facade.perform_changes = raise_dependency_error
+
+        result = self.changer.handle_tasks()
+
+        def got_result(result):
+            self.assertMessages(self.get_pending_messages(),
+                                [{"must-install": [2, 3],
+                                  "must-remove": [1],
+                                  "operation-id": 123,
+                                  "result-code": 101,
+                                  "type": "change-packages-result"}])
+        return result.addCallback(got_result)
+
     def test_transaction_error(self):
         """
         In this case, the package we're trying to install declared some
@@ -336,6 +372,31 @@ class PackageChangerTest(LandscapeIsolatedTest):
                              "operation-id": 123})
 
         self.set_pkg1_installed()
+
+        def return_good_result(self):
+            return "Yeah, I did whatever you've asked for!"
+        self.Facade.perform_changes = return_good_result
+
+        result = self.changer.handle_tasks()
+
+        def got_result(result):
+            self.assertMessages(self.get_pending_messages(),
+                                [{"operation-id": 123,
+                                  "result-code": 1,
+                                  "result-text": "Yeah, I did whatever you've "
+                                                 "asked for!",
+                                  "type": "change-packages-result"}])
+        return result.addCallback(got_result)
+
+    def test_successful_operation_with_debs(self):
+        """
+        Simulate a successful operation involving server-generated debs.
+        """
+        self.store.set_hash_ids({HASH3: 3})
+        self.store.add_task("changer",
+                            {"type": "change-packages", "install": [2, 3],
+                             "debs": [(HASH2, 2, PKGDEB2)],
+                             "operation-id": 123})
 
         def return_good_result(self):
             return "Yeah, I did whatever you've asked for!"
@@ -639,3 +700,54 @@ class PackageChangerTest(LandscapeIsolatedTest):
                                   "result-text": u"áéíóú",
                                   "type": "change-packages-result"}])
         return result.addCallback(got_result)
+
+    def test_debs_path(self):
+        self.assertEquals(
+            self.config.debs_path,
+            os.path.join(self.config.data_path, "package", "debs"))
+
+    def test_wb_create_deb_dir_channel(self):
+        """
+        The L{PackageChanger._create_deb_dir_channel} method makes the given
+        Debian packages available in a C{deb-dir} Smart channel.
+        """
+        debs = [(HASH1, 111, PKGDEB1), (HASH2, 222, PKGDEB2)]
+
+        self.facade.reset_channels()
+        self.changer._create_deb_dir_channel(debs)
+
+        debs_path = self.config.debs_path
+        self.assertFileContent(os.path.join(debs_path, "111.deb"),
+                               base64.decodestring(PKGDEB1))
+        self.assertFileContent(os.path.join(debs_path, "222.deb"),
+                               base64.decodestring(PKGDEB2))
+        self.assertEquals(self.facade.get_channels(),
+                          {debs_path: {"type": "deb-dir",
+                                            "path": debs_path}})
+
+        self.assertEquals(self.store.get_hash_ids(), {HASH1: 111, HASH2: 222})
+
+        self.changer.ensure_channels_reloaded()
+        [pkg1, pkg2] = sorted(self.facade.get_packages(),
+                              key=lambda pkg: pkg.name)
+        self.assertEquals(self.facade.get_package_hash(pkg1), HASH1)
+        self.assertEquals(self.facade.get_package_hash(pkg2), HASH2)
+
+    def test_wb_create_deb_dir_channel_with_existing_hash_id_map(self):
+        """
+        The L{PackageChanger._create_deb_dir_channel} behaves well even if the
+        hash->id mapping for a given deb is already in the L{PackageStore}.
+        """
+        self.store.set_hash_ids({HASH1: 111})
+        self.changer._create_deb_dir_channel([(HASH1, 111, PKGDEB1)])
+        self.assertEquals(self.store.get_hash_ids(), {HASH1: 111})
+
+    def test_wb_create_deb_dir_channel_with_existing_debs(self):
+        """
+        The L{PackageChanger._create_deb_dir_channel} removes Debian packages
+        from previous runs.
+        """
+        existing_deb_path = os.path.join(self.config.debs_path, "123.deb")
+        self.makeFile(basename=existing_deb_path, content="foo")
+        self.changer._create_deb_dir_channel([])
+        self.assertFalse(os.path.exists(existing_deb_path))
