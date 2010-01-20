@@ -85,7 +85,7 @@ class MethodCallServerProtocol(AMP):
         except Exception, error:
             raise MethodCallError("Remote exception %s" % str(error))
 
-        # If the method returns a Deferred, register callbacks that will
+        # If the method returns a Deferred, register a callback that will
         # eventually notify the remote peer of its success or failure.
         if isinstance(result, Deferred):
 
@@ -108,7 +108,7 @@ class MethodCallServerProtocol(AMP):
     def send_deferred_response(self, result, uuid):
         """Send a L{DeferredResponse} for the deferred with given C{uuid}.
 
-        This is called when the result of L{Deferred} returned by an
+        This is called when the result of a L{Deferred} returned by an
         object's method becomes available. A L{DeferredResponse} notifying
         such result (either success or failure) is sent to the peer.
         """
@@ -144,17 +144,21 @@ class MethodCallClientProtocol(AMP):
         @param result: The result of the associated deferred if successful.
         @param failure: The failure message of the deferred if it failed.
         """
-        self.fire_deferred(uuid, result, failure)
+        self.fire_pending_response(uuid, result, failure)
         return {}
 
-    def fire_deferred(self, uuid, result, failure):
-        """Fire a pending deferred.
+    def fire_pending_response(self, uuid, result, failure):
+        """Fire the L{Deferred} associated with a pending response.
 
         @param uuid: The id of the L{MethodCall} we're getting the result of.
         @param result: The result of the associated deferred if successful.
         @param failure: The failure message of the deferred if it failed.
         """
-        deferred, call = self._pending_responses.pop(uuid)
+        try:
+            deferred, call = self._pending_responses.pop(uuid)
+        except KeyError:
+            # Late response for a request that has timeout, just ignore it
+            return
         if not call.called:
             call.cancel()
         if failure is None:
@@ -167,13 +171,13 @@ class MethodCallClientProtocol(AMP):
 
         If the response is tagged as deferred, it will be queued as pending,
         and a L{Deferred} is returned, which will be fired as soon as the
-        final response becomes available.
+        final response becomes available, or the timeout is reached.
         """
         if response["deferred"]:
             uuid = response["deferred"]
             deferred = Deferred()
             call = self.factory.reactor.callLater(self.timeout,
-                                                  self.fire_deferred,
+                                                  self.fire_pending_response,
                                                   uuid, None, "timeout")
             self._pending_responses[uuid] = (deferred, call)
             return deferred
@@ -215,11 +219,10 @@ class MethodCallClientFactory(ClientFactory):
 
     def __init__(self, reactor, notifier):
         """
-        @param reactor: The reactor used by the created protocols
-            to schedule notifications and timeouts.
-        @param notifier: A function that will be called when the factory builds
-            a new connected protocol.  It will be passed the new protocol
-            instance as argument.
+        @param reactor: The reactor used by the created protocols to schedule
+            notifications and timeouts.
+        @param notifier: A function that will be called when the connection is
+            established. It will be passed the protocol instance as argument.
         """
         self.reactor = reactor
         self._notifier = notifier

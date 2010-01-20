@@ -75,6 +75,9 @@ class Words(object):
         elif word == "Long query":
             # Do nothing, the deferred won't be fired at all
             pass
+        elif word == "Slowish query":
+            # Fire the result after a while.
+            reactor.callLater(0.05, lambda: deferred.callback("Done!"))
         return deferred
 
 
@@ -385,6 +388,23 @@ class RemoteObjectTest(LandscapeTest):
         self.protocol.timeout = 0.1
         result = self.words.google("Long query")
         return self.assertFailure(result, MethodCallError)
+
+    def test_with_late_response(self):
+        """
+        If the peer protocol sends a late response for a request that has
+        already timeout, that response is ignored.
+        """
+        self.protocol.timeout = 0.01
+        result = self.words.google("Slowish query")
+        self.assertFailure(result, MethodCallError)
+
+        def assert_late_response_is_handled(ignored):
+            deferred = Deferred()
+            # We wait a bit to be sure that the late response gets delivered
+            reactor.callLater(0.1, lambda: deferred.callback(None))
+            return deferred
+
+        return result.addCallback(assert_late_response_is_handled)
 
 
 class RemoteObjectCreatorTest(LandscapeTest):
