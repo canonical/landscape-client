@@ -7,6 +7,10 @@ from landscape.lib.amp import (
 from landscape.tests.helpers import LandscapeTest
 
 
+class WordsException(Exception):
+    """Test exception."""
+
+
 class Words(object):
     """Test class to be used as target object of a L{MethodCallProtocol}."""
 
@@ -52,6 +56,9 @@ class Words(object):
 
     def guess(self, word, *args, **kwargs):
         return self._check(word, *args, **kwargs)
+
+    def translate(self, word):
+        raise WordsException("Unknown word")
 
 
 class WordsProtocol(MethodCallServerProtocol):
@@ -185,6 +192,16 @@ class MethodCallProtocolTest(LandscapeTest):
         """
         result = self.protocol.send_method_call(method="meaning_of_life",
                                                 args=[],
+                                                kwargs={})
+        return self.assertFailure(result, MethodCallError)
+
+    def test_translate(self):
+        """
+        If the target object method raises an exception, the remote call fails
+        with a L{MethodCallError}.
+        """
+        result = self.protocol.send_method_call(method="translate",
+                                                args=["hi"],
                                                 kwargs={})
         return self.assertFailure(result, MethodCallError)
 

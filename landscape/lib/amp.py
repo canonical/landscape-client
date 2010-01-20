@@ -68,7 +68,10 @@ class MethodCallServerProtocol(AMP):
         if not method in self.methods:
             raise MethodCallError("Forbidden method '%s'" % method)
 
-        result = getattr(self.factory.object, method)(*args, **kwargs)
+        try:
+            result = getattr(self.factory.object, method)(*args, **kwargs)
+        except Exception, error:
+            raise MethodCallError("Remote exception %s" % str(error))
         if not MethodCallArgument.check(result):
             raise MethodCallError("Non-serializable result")
         return {"result": result}
@@ -82,7 +85,7 @@ class MethodCallClientProtocol(AMP):
 
         @param method: The name of the remote method to invoke.
         @param args: The positional arguments to pass to the remote method.
-        @param args: The keyword arguments to pass to the remote method.
+        @param kwargs: The keyword arguments to pass to the remote method.
         """
         return self.callRemote(MethodCall,
                                method=method, args=args, kwargs=kwargs)
@@ -147,8 +150,8 @@ class RemoteObject(object):
 
         def send_method_call(*args, **kwargs):
             result = self._protocol.send_method_call(method=method,
-                                                     args=args[:],
-                                                     kwargs=kwargs.copy())
+                                                     args=args,
+                                                     kwargs=kwargs)
             return result.addCallback(lambda response: response["result"])
 
         return send_method_call
