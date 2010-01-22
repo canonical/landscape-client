@@ -1,7 +1,8 @@
 DEBIAN_REVISION = ""
 UPSTREAM_VERSION = "1.4.4"
 VERSION = "%s%s" % (UPSTREAM_VERSION, DEBIAN_REVISION)
-API = "3.2"
+SERVER_API = "3.2"
+CLIENT_API = "3.3"
 
 from twisted.python import util
 
