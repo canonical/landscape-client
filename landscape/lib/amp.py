@@ -1,7 +1,7 @@
 """Expose the methods of a remote object over AMP."""
 
 from uuid import uuid4
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import Deferred, maybeDeferred
 from twisted.internet.protocol import ServerFactory, ClientFactory
 from twisted.protocols.amp import Argument, String, Command, AMP
 from twisted.python.failure import Failure
@@ -80,30 +80,30 @@ class MethodCallServerProtocol(AMP):
         if not method in self.methods:
             raise MethodCallError("Forbidden method '%s'" % method)
 
-        try:
-            result = getattr(self.factory.object, method)(*args, **kwargs)
-        except Exception, error:
-            raise MethodCallError("Remote exception %s" % str(error))
+        method_func = getattr(self.factory.object, method)
+        result = maybeDeferred(method_func, *args, **kwargs)
 
-        # If the method returns a Deferred, register a callback that will
-        # eventually notify the remote peer of its success or failure.
-        if isinstance(result, Deferred):
+        # If the Deferred was already fired, we can return its result
+        if result.called:
+            if isinstance(result.result, Failure):
+                failure = str(result.result.value)
+                result.addErrback(lambda error: None) # Stop propagating
+                raise MethodCallError(failure)
+            return {"result": self._check_result(result.result)}
 
-            # If the Deferred was already fired, we can return its result
-            if result.called:
-                if isinstance(result.result, Failure):
-                    failure = str(result.result.value)
-                    result.addErrback(lambda error: None) # Stop propagating
-                    raise MethodCallError(failure)
-                return {"result": result.result}
+        uuid = str(uuid4())
+        result.addBoth(self.send_deferred_response, uuid)
+        return {"result": None, "deferred": uuid}
 
-            uuid = str(uuid4())
-            result.addBoth(self.send_deferred_response, uuid)
-            return {"result": None, "deferred": uuid}
+    def _check_result(self, result):
+        """Check that the C{result} we're about to return is serializable.
 
+        @return: The C{result} itself if valid.
+        @raises: L{MethodCallError} if C{result} is not serializable.
+        """
         if not MethodCallArgument.check(result):
             raise MethodCallError("Non-serializable result")
-        return {"result": result}
+        return result
 
     def send_deferred_response(self, result, uuid):
         """Send a L{DeferredResponse} for the deferred with given C{uuid}.
@@ -116,7 +116,7 @@ class MethodCallServerProtocol(AMP):
         if isinstance(result, Failure):
             kwargs["failure"] = str(result.value)
         else:
-            kwargs["result"] = result
+            kwargs["result"] = self._check_result(result)
         self.callRemote(DeferredResponse, **kwargs)
 
 
