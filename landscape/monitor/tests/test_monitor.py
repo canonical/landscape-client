@@ -6,8 +6,9 @@ from landscape.monitor.monitor import (
 from landscape.lib.persist import Persist
 from landscape.lib.dbus_util import get_object
 from landscape.tests.test_plugin import ExchangePlugin
-from landscape.tests.helpers import (LandscapeTest, LandscapeIsolatedTest,
-                                     RemoteBrokerHelper, MonitorHelper)
+from landscape.tests.helpers import (
+    LandscapeTest, LandscapeIsolatedTest, RemoteBrokerHelper, MonitorHelper,
+    LogKeeperHelper)
 from landscape.tests.mocker import ANY
 
 
@@ -207,7 +208,7 @@ class StubDataWatchingPlugin(DataWatcher):
 
 class DataWatcherTest(LandscapeTest):
 
-    helpers = [MonitorHelper]
+    helpers = [MonitorHelper, LogKeeperHelper]
 
     def setUp(self):
         LandscapeTest.setUp(self)
@@ -231,6 +232,9 @@ class DataWatcherTest(LandscapeTest):
         messages = self.mstore.get_pending_messages()
         self.assertEquals(messages[0]["type"], "wubble")
         self.assertEquals(messages[0]["wubblestuff"], 1)
+        self.assertIn("Queueing a message with updated data watcher info for "
+                      "landscape.monitor.tests.test_monitor.StubDataWatching"
+                      "Plugin.", self.logfile.getvalue())
 
     def test_unchanging_value(self):
         # Is this really want we want to do?

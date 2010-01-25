@@ -48,6 +48,8 @@ class PackageReporter(PackageTaskHandler):
 
     smart_update_interval = 60
     smart_update_filename = "/usr/lib/landscape/smart-update"
+    sources_list_filename = "/etc/apt/sources.list"
+    sources_list_directory = "/etc/apt/sources.list.d"
 
     def run(self):
         result = Deferred()
@@ -150,12 +152,34 @@ class PackageReporter(PackageTaskHandler):
 
         return base_url.rstrip("/") + "/"
 
+    def _apt_sources_have_changed(self):
+        """Return a boolean indicating if the APT sources were modified."""
+        from landscape.monitor.packagemonitor import PackageMonitor
+
+        filenames = []
+
+        if os.path.exists(self.sources_list_filename):
+            filenames.append(self.sources_list_filename)
+
+        if os.path.exists(self.sources_list_directory):
+            filenames.extend(
+                [os.path.join(self.sources_list_directory, filename) for
+                 filename in os.listdir(self.sources_list_directory)])
+
+        for filename in filenames:
+            seconds_since_last_change = (
+                time.time() - os.path.getmtime(filename))
+            if seconds_since_last_change < PackageMonitor.run_interval:
+                return True
+
+        return False
+
     def run_smart_update(self):
         """Run smart-update and log a warning in case of non-zero exit code.
 
         @return: a deferred returning (out, err, code)
         """
-        if self._config.force_smart_update:
+        if self._config.force_smart_update or self._apt_sources_have_changed():
             args = ()
         else:
             args = ("--after", "%d" % self.smart_update_interval)

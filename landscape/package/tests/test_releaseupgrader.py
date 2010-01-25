@@ -178,52 +178,95 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         result.addCallback(check_result)
         return result
 
-    def test_extract_fixes_broken_dapper_config(self):
+    def test_tweak_fixes_broken_dapper_config(self):
         """
-        The L{ReleaseUpgrader.extract} method fixes a missing section in the
+        The L{ReleaseUpgrader.tweak} method fixes a missing section in the
         dapper config files included in the upgrade tool tarball.
         """
-        original_filename = self.makeFile("[Files]\n"
-                                          "BackupExt=distUpgrade\n"
-                                          "LogDir=/var/log/dist-upgrade\n")
-        tarball_filename = self.makeFile()
-        tarball = tarfile.open(tarball_filename, "w:gz")
-        tarball.add(original_filename, arcname="DistUpgrade.cfg.dapper")
-        tarball.close()
+        config_filename = os.path.join(self.config.upgrade_tool_directory,
+                                       "DistUpgrade.cfg.dapper")
+        self.makeFile(path=config_filename,
+                      content="[Files]\n"
+                              "BackupExt=distUpgrade\n"
+                              "LogDir=/var/log/dist-upgrade\n")
 
-        result = self.upgrader.extract(tarball_filename)
+        result = self.upgrader.tweak("dapper")
 
         def check_result(ignored):
-            dapper_filename = os.path.join(self.config.upgrade_tool_directory,
-                                           "DistUpgrade.cfg.dapper")
             config = ConfigParser.ConfigParser()
-            config.read(dapper_filename)
+            config.read(config_filename)
             self.assertFalse(config.getboolean("NonInteractive",
                                                "ForceOverwrite"))
 
         result.addCallback(check_result)
         return result
 
-    def test_extract_does_not_change_good_dapper_config(self):
+    def test_tweak_does_not_change_good_dapper_config(self):
         """
-        The L{ReleaseUpgrader.extract} method doesn't change the dapper config
+        The L{ReleaseUpgrader.tweak} method doesn't change the dapper config
         file if it's not broken.
         """
-        original_filename = self.makeFile("[NonInteractive]\n"
-                                          "ForceOverwrite=No\n")
-        tarball_filename = self.makeFile()
-        tarball = tarfile.open(tarball_filename, "w:gz")
-        tarball.add(original_filename, arcname="DistUpgrade.cfg.dapper")
-        tarball.close()
+        config_filename = os.path.join(self.config.upgrade_tool_directory,
+                                       "DistUpgrade.cfg.dapper")
+        self.makeFile(path=config_filename,
+                      content="[NonInteractive]\n"
+                              "ForceOverwrite=No\n")
 
-        result = self.upgrader.extract(tarball_filename)
+        result = self.upgrader.tweak("dapper")
 
         def check_result(ignored):
-            dapper_filename = os.path.join(self.config.upgrade_tool_directory,
-                                           "DistUpgrade.cfg.dapper")
-            self.assertFileContent(dapper_filename, "[NonInteractive]\n"
-                                                    "ForceOverwrite=No\n")
+            config = ConfigParser.ConfigParser()
+            config.read(config_filename)
+            self.assertFalse(config.getboolean("NonInteractive",
+                                               "ForceOverwrite"))
 
+        result.addCallback(check_result)
+        return result
+
+    def test_tweak_includes_landscape_ppa_in_mirrors(self):
+        """
+        The L{ReleaseUpgrader.tweak} method adds the Landscape PPA repository
+        to the list of available mirrors.
+        """
+        mirrors_filename = os.path.join(self.config.upgrade_tool_directory,
+                                        "mirrors.cfg")
+        self.makeFile(path=mirrors_filename,
+                      content="ftp://ftp.lug.ro/ubuntu/\n")
+
+        def check_result(ignored):
+            self.assertFileContent(mirrors_filename,
+                                   "ftp://ftp.lug.ro/ubuntu/\n"
+                                   "http://ppa.launchpad.net/landscape/"
+                                   "ppa/ubuntu/\n")
+
+        result = self.upgrader.tweak("hardy")
+        result.addCallback(check_result)
+        return result
+
+    def test_tweak_sets_dbus_start_script(self):
+        """
+        The L{ReleaseUpgrader.tweak} method adds to the upgrade-tool
+        configuration a little script that starts dbus after the upgrade.
+        """
+        config_filename = os.path.join(self.config.upgrade_tool_directory,
+                                       "DistUpgrade.cfg.dapper")
+        self.makeFile(path=config_filename,
+                      content="[Distro]\n"
+                              "PostInstallScripts=/foo.sh\n")
+
+        def check_result(ignored):
+            config = ConfigParser.ConfigParser()
+            config.read(config_filename)
+            self.assertEquals(config.get("Distro", "PostInstallScripts"),
+                              "/foo.sh, ./dbus.sh")
+            dbus_sh = os.path.join(self.config.upgrade_tool_directory,
+                                   "dbus.sh")
+            self.assertFileContent(dbus_sh,
+                                   "#!/bin/sh\n"
+                                   "/etc/init.d/dbus start\n"
+                                   "sleep 10\n")
+
+        result = self.upgrader.tweak("dapper")
         result.addCallback(check_result)
         return result
 
@@ -249,7 +292,7 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
 
         def do_test():
 
-            result = self.upgrader.upgrade("karmic", False, False, 100)
+            result = self.upgrader.upgrade("karmic", 100)
 
             def check_result(ignored):
                 self.assertIn("INFO: Queuing message with release upgrade "
@@ -275,6 +318,40 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
 
         return deferred.addBoth(cleanup)
 
+    def test_upgrade_with_server_mode(self):
+        """
+        The L{ReleaseUpgrader.upgrade} accepts an optional C{mode} parameter
+        which gets passed to the upgrade-tool script as argument for the
+        C{--mode} command line option.
+        """
+        upgrade_tool_directory = self.config.upgrade_tool_directory
+        upgrade_tool_filename = os.path.join(upgrade_tool_directory, "hardy")
+        self.makeFile(path=upgrade_tool_filename,
+                      content="#!/bin/sh\n"
+                                "echo $@\n")
+        os.chmod(upgrade_tool_filename, 0755)
+        deferred = Deferred()
+
+        def do_test():
+
+            result = self.upgrader.upgrade("hardy", 100, mode="server")
+
+            def check_result(ignored):
+                result_text = ("--frontend DistUpgradeViewNonInteractive "
+                               "--mode server\n")
+                self.assertMessages(self.get_pending_messages(),
+                                    [{"type": "operation-result",
+                                      "operation-id": 100,
+                                      "status": SUCCEEDED,
+                                      "result-text": result_text,
+                                      "result-code": 0}])
+
+            result.addCallback(check_result)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
+
     def test_upgrade_with_env_variables(self):
         """
         The L{ReleaseUpgrader.upgrade} method optionally sets environment
@@ -295,7 +372,9 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
 
         def do_test():
 
-            result = self.upgrader.upgrade("karmic", True, True, 100)
+            result = self.upgrader.upgrade("karmic", 100,
+                                           allow_third_party=True,
+                                           debug=True)
 
             def check_result(ignored):
                 result_text = u"DEBUG_UPDATE_MANAGER=True\n" \
@@ -337,7 +416,7 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
 
         def do_test():
 
-            result = self.upgrader.upgrade("karmic", False, False, 100)
+            result = self.upgrader.upgrade("karmic", 100)
 
             def check_result(ignored):
                 self.assertMessages(self.get_pending_messages(),
@@ -390,7 +469,7 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
 
         def do_test():
 
-            result = self.upgrader.upgrade("karmic", False, False, 100)
+            result = self.upgrader.upgrade("karmic", 100)
 
             def kill_child(how):
                 fd = open(child_pid_filename, "r")
@@ -575,11 +654,17 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
                               os.path.join(upgrade_tool_directory, "tarball"))
             calls.append("extract")
 
-        def upgrade(code_name, allow_third_party, debug, operation_id):
+        def tweak(current_code_name):
+            self.assertEquals(current_code_name, "jaunty")
+            calls.append("tweak")
+
+        def upgrade(code_name, operation_id, allow_third_party=False,
+                    debug=False, mode=None):
             self.assertEquals(operation_id, 100)
             self.assertEquals(code_name, "karmic")
             self.assertTrue(allow_third_party)
             self.assertFalse(debug)
+            self.assertIdentical(mode, None)
             calls.append("upgrade")
 
         def finish():
@@ -588,6 +673,7 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         self.upgrader.fetch = fetch
         self.upgrader.verify = verify
         self.upgrader.extract = extract
+        self.upgrader.tweak = tweak
         self.upgrader.upgrade = upgrade
         self.upgrader.finish = finish
 
@@ -604,8 +690,44 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         result = self.upgrader.handle_release_upgrade(message)
 
         def check_result(ignored):
-            self.assertEquals(calls, ["fetch", "verify", "extract",
+            self.assertEquals(calls, ["fetch", "verify", "extract", "tweak",
                                       "upgrade", "finish"])
+
+        result.addCallback(check_result)
+        return result
+
+    def test_handle_release_upgrade_on_dapper_server(self):
+        """
+        On Dapper server, the L{ReleaseUpgrader.handle_release_upgrade}
+        method calls sets the upgrade-tool running mode to "server".
+        """
+        calls = []
+
+        def upgrade(code_name, operation_id, allow_third_party=False,
+                    debug=False, mode=None):
+            self.assertEquals(mode, "server")
+            calls.append("upgrade")
+
+        self.upgrader.fetch = lambda x, y: succeed(None)
+        self.upgrader.verify = lambda x, y: None
+        self.upgrader.extract = lambda x: None
+        self.upgrader.tweak = lambda x: None
+        self.upgrader.upgrade = upgrade
+        self.upgrader.finish = lambda: None
+
+        self.upgrader.lsb_release_filename = self.makeFile(
+            "DISTRIB_CODENAME=dapper\n")
+
+        message = {"type": "release-upgrade",
+                   "code-name": "hardy",
+                   "upgrade-tool-tarball-url": "http://some/tarball",
+                   "upgrade-tool-signature-url": "http://some/sign",
+                   "operation-id": 100}
+
+        result = self.upgrader.handle_release_upgrade(message)
+
+        def check_result(ignored):
+            self.assertEquals(calls, ["upgrade"])
 
         result.addCallback(check_result)
         return result
@@ -660,6 +782,9 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         def extract(tarball_filename):
             calls.append("extract")
 
+        def tweak(current_code_name):
+            calls.append("extract")
+
         def upgrade(code_name, operation_id):
             calls.append("upgrade")
 
@@ -669,6 +794,7 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         self.upgrader.fetch = fetch
         self.upgrader.verify = verify
         self.upgrader.extract = extract
+        self.upgrader.tweak = tweak
         self.upgrader.upgrade = upgrade
         self.upgrader.finish = finish
 
@@ -704,7 +830,7 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
 
         message = {"type": "release-upgrade"}
 
-        class FakeTask():
+        class FakeTask(object):
             data = message
 
         task = FakeTask()

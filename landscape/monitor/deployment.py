@@ -14,8 +14,8 @@ from landscape.broker.remote import (RemoteBroker,
 
 ALL_PLUGINS = ["ActiveProcessInfo", "ComputerInfo", "HardwareInventory",
                "LoadAverage", "MemoryInfo", "MountInfo", "ProcessorInfo",
-               "Temperature", "PackageMonitor",
-               "UserMonitor", "RebootRequired"]
+               "Temperature", "PackageMonitor", "UserMonitor",
+               "RebootRequired", "AptPreferences"]
 
 
 class MonitorConfiguration(Configuration):
@@ -34,7 +34,8 @@ class MonitorConfiguration(Configuration):
                           default="ALL")
         parser.add_option("--flush-interval", default=5*60, type="int",
                           metavar="INTERVAL",
-                          help="The number of seconds between flushes.")
+                          help="The number of seconds between flushes "
+                               "(default is 300s).")
         return parser
 
     @property

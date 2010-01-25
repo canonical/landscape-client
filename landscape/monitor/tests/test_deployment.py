@@ -29,7 +29,7 @@ class DeploymentTest(LandscapeTest):
                             "-d", self.makeFile()])
         monitor = MonitorService(configuration)
         plugins = monitor.plugins
-        self.assertEquals(len(plugins), 11)
+        self.assertEquals(len(plugins), 12)
 
 
 class MonitorServiceTest(LandscapeIsolatedTest):
@@ -70,12 +70,15 @@ class DeploymentBusTest(MonitorServiceTest):
         makes the Monitor plugin register itself again.
         """
         d = Deferred()
+
         def register_plugin(bus_name, object_path):
             d.callback((bus_name, object_path))
+
         def patch(ignore):
             self.monitor.remote_broker.register_plugin = register_plugin
             self.broker_service.dbus_object.broker_started()
             return d
+
         return self.remote.get_registered_plugins(
             ).addCallback(patch
             ).addCallback(self.assertEquals,
@@ -89,14 +92,17 @@ class DeploymentBusTest(MonitorServiceTest):
         """
         self.monitor.registry.register_message("foo", lambda x: None)
         d = Deferred()
+
         def register_client_accepted_message_type(type):
             if type == "foo":
                 d.callback(type)
+
         def patch(ignore):
             self.monitor.remote_broker.register_client_accepted_message_type = \
                 register_client_accepted_message_type
             self.broker_service.dbus_object.broker_started()
             return d
+
         return self.remote.get_registered_plugins(
             ).addCallback(patch
             ).addCallback(self.assertEquals, "foo")
