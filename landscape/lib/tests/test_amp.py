@@ -1,9 +1,11 @@
 from twisted.internet import reactor
+from twisted.internet.defer import Deferred
 from twisted.internet.protocol import ClientCreator
 
 from landscape.lib.amp import (
-    MethodCallError, MethodCallServerProtocol, MethodCallClientProtocol,
-    MethodCallServerFactory, RemoteObject, RemoteObjectCreator)
+    MethodCallError, MethodCallServerProtocol,
+    MethodCallClientProtocol, MethodCallServerFactory,
+    MethodCallClientFactory, RemoteObject, RemoteObjectCreator)
 from landscape.tests.helpers import LandscapeTest
 
 
@@ -60,6 +62,24 @@ class Words(object):
     def translate(self, word):
         raise WordsException("Unknown word")
 
+    def google(self, word):
+        deferred = Deferred()
+        if word == "Landscape":
+            reactor.callLater(0.01, lambda: deferred.callback("Cool!"))
+        elif word == "Easy query":
+            deferred.callback("Done!")
+        elif word == "Weird stuff":
+            reactor.callLater(0.01, lambda: deferred.errback(Exception("bad")))
+        elif word == "Censored":
+            deferred.errback(Exception("very bad"))
+        elif word == "Long query":
+            # Do nothing, the deferred won't be fired at all
+            pass
+        elif word == "Slowish query":
+            # Fire the result after a while.
+            reactor.callLater(0.05, lambda: deferred.callback("Done!"))
+        return deferred
+
 
 class WordsProtocol(MethodCallServerProtocol):
 
@@ -72,7 +92,8 @@ class WordsProtocol(MethodCallServerProtocol):
                "multiply_alphabetically",
                "translate",
                "meaning_of_life",
-               "guess"]
+               "guess",
+               "google"]
 
 
 class MethodCallProtocolTest(LandscapeTest):
@@ -114,7 +135,8 @@ class MethodCallProtocolTest(LandscapeTest):
         result = self.protocol.send_method_call(method="empty",
                                                 args=[],
                                                 kwargs={})
-        return self.assertSuccess(result, {"result": None})
+        return self.assertSuccess(result, {"result": None,
+                                           "deferred": None})
 
     def test_with_return_value(self):
         """
@@ -124,7 +146,8 @@ class MethodCallProtocolTest(LandscapeTest):
         result = self.protocol.send_method_call(method="motd",
                                                 args=[],
                                                 kwargs={})
-        return self.assertSuccess(result, {"result": "Words are cool"})
+        return self.assertSuccess(result, {"result": "Words are cool",
+                                           "deferred": None})
 
     def test_with_one_argument(self):
         """
@@ -134,7 +157,8 @@ class MethodCallProtocolTest(LandscapeTest):
         result = self.protocol.send_method_call(method="capitalize",
                                                 args=["john"],
                                                 kwargs={})
-        return self.assertSuccess(result, {"result": "John"})
+        return self.assertSuccess(result, {"result": "John",
+                                           "deferred": None})
 
     def test_with_boolean_return_value(self):
         """
@@ -143,7 +167,8 @@ class MethodCallProtocolTest(LandscapeTest):
         result = self.protocol.send_method_call(method="is_short",
                                                 args=["hi"],
                                                 kwargs={})
-        return self.assertSuccess(result, {"result": True})
+        return self.assertSuccess(result, {"result": True,
+                                           "deferred": None})
 
     def test_with_many_arguments(self):
         """
@@ -152,7 +177,8 @@ class MethodCallProtocolTest(LandscapeTest):
         result = self.protocol.send_method_call(method="concatenate",
                                                 args=["You ", "rock"],
                                                 kwargs={})
-        return self.assertSuccess(result, {"result": "You rock"})
+        return self.assertSuccess(result, {"result": "You rock",
+                                           "deferred": None})
 
     def test_with_default_arguments(self):
         """
@@ -162,7 +188,8 @@ class MethodCallProtocolTest(LandscapeTest):
         result = self.protocol.send_method_call(method="lower_case",
                                                 args=["OHH"],
                                                 kwargs={})
-        return self.assertSuccess(result, {"result": "ohh"})
+        return self.assertSuccess(result, {"result": "ohh",
+                                           "deferred": None})
 
     def test_with_overriden_default_arguments(self):
         """
@@ -173,7 +200,8 @@ class MethodCallProtocolTest(LandscapeTest):
         result = self.protocol.send_method_call(method="lower_case",
                                                 args=["OHH"],
                                                 kwargs={"index": 2})
-        return self.assertSuccess(result, {"result": "OHh"})
+        return self.assertSuccess(result, {"result": "OHh",
+                                           "deferred": None})
 
     def test_with_dictionary_arguments(self):
         """
@@ -183,7 +211,8 @@ class MethodCallProtocolTest(LandscapeTest):
                                                        "alphabetically",
                                                 args=[{"foo": 2, "bar": 3}],
                                                 kwargs={})
-        return self.assertSuccess(result, {"result": "barbarbarfoofoo"})
+        return self.assertSuccess(result, {"result": "barbarbarfoofoo",
+                                           "deferred": None})
 
     def test_with_non_serializable_return_value(self):
         """
@@ -211,17 +240,19 @@ class RemoteObjectTest(LandscapeTest):
     def setUp(self):
         super(RemoteObjectTest, self).setUp()
         socket = self.mktemp()
-        factory = MethodCallServerFactory(Words())
-        factory.protocol = WordsProtocol
-        self.port = reactor.listenUNIX(socket, factory)
+        server_factory = MethodCallServerFactory(Words())
+        server_factory.protocol = WordsProtocol
+        self.port = reactor.listenUNIX(socket, server_factory)
 
         def set_remote(protocol):
             self.protocol = protocol
             self.words = RemoteObject(protocol)
 
-        connector = ClientCreator(reactor, MethodCallClientProtocol)
-        connected = connector.connectUNIX(socket)
-        return connected.addCallback(set_remote)
+        connected = Deferred()
+        connected.addCallback(set_remote)
+        client_factory = MethodCallClientFactory(reactor, connected.callback)
+        reactor.connectUNIX(socket, client_factory)
+        return connected
 
     def tearDown(self):
         self.protocol.transport.loseConnection()
@@ -318,6 +349,62 @@ class RemoteObjectTest(LandscapeTest):
         """
         result = self.words.guess("word", "cool", value=4)
         return self.assertSuccess(result, "Guessed!")
+
+    def test_with_success_full_deferred(self):
+        """
+        If the target object method returns a L{Deferred}, it is handled
+        transparently.
+        """
+        result = self.words.google("Landscape")
+        return self.assertSuccess(result, "Cool!")
+
+    def test_with_failing_deferred(self):
+        """
+        If the target object method returns a failing L{Deferred}, a
+        L{MethodCallError} is raised.
+        """
+        result = self.words.google("Weird stuff")
+        return self.assertFailure(result, MethodCallError)
+
+    def test_with_already_callback_deferred(self):
+        """
+        The target object method can return an already fired L{Deferred}.
+        """
+        result = self.words.google("Easy query")
+        return self.assertSuccess(result, "Done!")
+
+    def test_with_already_errback_deferred(self):
+        """
+        If the target object method can return an already failed L{Deferred}.
+        """
+        result = self.words.google("Censored")
+        return self.assertFailure(result, MethodCallError)
+
+    def test_with_deferred_timeout(self):
+        """
+        If the peer protocol doesn't send a response for a deferred within
+        the given timeout, the method call fails.
+        """
+        self.protocol.timeout = 0.1
+        result = self.words.google("Long query")
+        return self.assertFailure(result, MethodCallError)
+
+    def test_with_late_response(self):
+        """
+        If the peer protocol sends a late response for a request that has
+        already timeout, that response is ignored.
+        """
+        self.protocol.timeout = 0.01
+        result = self.words.google("Slowish query")
+        self.assertFailure(result, MethodCallError)
+
+        def assert_late_response_is_handled(ignored):
+            deferred = Deferred()
+            # We wait a bit to be sure that the late response gets delivered
+            reactor.callLater(0.1, lambda: deferred.callback(None))
+            return deferred
+
+        return result.addCallback(assert_late_response_is_handled)
 
 
 class RemoteObjectCreatorTest(LandscapeTest):
