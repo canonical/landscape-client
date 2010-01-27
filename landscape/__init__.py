@@ -1,7 +1,17 @@
 DEBIAN_REVISION = ""
 UPSTREAM_VERSION = "1.4.4"
 VERSION = "%s%s" % (UPSTREAM_VERSION, DEBIAN_REVISION)
-API = "3.2"
+
+# The "server-api" field of outgoing messages will be set to this value, and
+# used by the server message system to lookup the correct MessageAPI adapter
+# for handling the messages sent by the client. Bump it when the schema of any
+# of the messages sent by the client changes in a backward-incompatible way.
+SERVER_API = "3.2"
+
+# The "client-api" field of outgoing messages will be set to this value, and
+# used by the server to know which schema do the message types accepted by the
+# client support. Bump it when the schema of an accepted message type changes.
+CLIENT_API = "3.3"
 
 from twisted.python import util
 
