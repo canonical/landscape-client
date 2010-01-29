@@ -240,8 +240,8 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
 
         message = [d for d in messages if d["type"] == "free-space"][0]
         free_space = message["free-space"]
-        for i in range(1, 1):
-            self.assertEquals(free_space[i][0], i * step_size)
+        for i in range(len(free_space)):
+            self.assertEquals(free_space[i][0], (i + 1) * step_size)
             self.assertEquals(free_space[i][1], "/")
             self.assertEquals(free_space[i][2], 409600)
 
@@ -728,3 +728,46 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
         plugin.run()
         message3 = plugin.create_mount_info_message()
         self.assertIdentical(message3, None)
+
+    def test_exchange_limits_exchanged_free_space_messages(self):
+        """
+        In order not to overload the server, the client should stagger the
+        exchange of free-space messages.
+        """
+        def statvfs(path):
+            return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
+
+        filename = self.makeFile("""\
+/dev/hda1 / ext3 rw 0 0
+""")
+        plugin = self.get_mount_info(mounts_file=filename, statvfs=statvfs,
+                                     create_time=self.reactor.time,
+                                     mtab_file=filename)
+        plugin.MAX_FREE_SPACE_ITEMS = 5
+        step_size = self.monitor.step_size
+        self.monitor.add(plugin)
+
+        # Exchange should trigger a flush of the persist database
+        registry_mocker = self.mocker.replace(plugin.registry)
+        registry_mocker.flush()
+        self.mocker.result(None)
+        self.mocker.replay()
+
+        self.reactor.advance(step_size * 10)
+        self.monitor.exchange()
+
+        messages = self.mstore.get_pending_messages()
+        self.assertEquals(len(messages), 3)
+
+        message = [d for d in messages if d["type"] == "free-space"][0]
+        free_space = message["free-space"]
+        free_space_items = len(free_space)
+        self.assertEquals(free_space_items, 5)
+        for i in range(free_space_items):
+            self.assertEquals(free_space[i][0], (i + 1) * step_size)
+            self.assertEquals(free_space[i][1], "/")
+            self.assertEquals(free_space[i][2], 409600)
+
+        self.mstore.delete_all_messages()
+        self.monitor.exchange()
+        self.assertEquals(len(messages), 3)
