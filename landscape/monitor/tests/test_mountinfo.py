@@ -743,6 +743,7 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
         plugin = self.get_mount_info(mounts_file=filename, statvfs=statvfs,
                                      create_time=self.reactor.time,
                                      mtab_file=filename)
+        # Limit the test exchange to 5 items.
         plugin.MAX_FREE_SPACE_ITEMS_TO_EXCHANGE = 5
         step_size = self.monitor.step_size
         self.monitor.add(plugin)

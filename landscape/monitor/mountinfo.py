@@ -220,4 +220,3 @@ class MountInfo(MonitorPlugin):
             if "bind" in options.split(","):
                 bound_points.add(mount_point)
         return bound_points
-
