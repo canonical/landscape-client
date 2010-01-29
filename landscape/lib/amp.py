@@ -234,35 +234,41 @@ class MethodCallClientFactory(ReconnectingClientFactory):
         self.reactor = reactor
         self._notifiers = []
 
-    def add_notifier(self, notifier):
+    def add_notifier(self, callback, errback=None):
         """Call the given function on connection, reconnection or giveup.
 
         @param notifier: A function that will be called when the factory builds
             a new connected protocol or gives up connecting.  It will be passed
             the new protocol instance as argument, or the connectionf failure.
         """
-        self._notifiers.append(notifier)
+        self._notifiers.append((callback, errback))
 
-    def remove_notifier(self, notifier):
+    def remove_notifier(self, callback, errback=None):
         """Remove a notifier."""
-        self._notifiers.remove(notifier)
+        self._notifiers.remove((callback, errback))
 
-    def fire_notifiers(self, *args, **kwargs):
-        """Notify all registered notifiers."""
-        for notifier in self._notifiers:
-            self.reactor.callLater(0, notifier, *args, **kwargs)
+    def notify_success(self, *args, **kwargs):
+        """Notify all registered notifier callbacks."""
+        for callback, _ in self._notifiers:
+            self.reactor.callLater(0, callback, *args, **kwargs)
+
+    def notify_failure(self, failure):
+        """Notify all registered notifier errbacks."""
+        for _, errback in self._notifiers:
+            if errback is not None:
+                self.reactor.callLater(0, errback, failure)
 
     def clientConnectionFailed(self, connector, reason):
         ReconnectingClientFactory.clientConnectionFailed(self, connector,
                                                          reason)
         if self.maxRetries is not None and (self.retries > self.maxRetries):
-            self.fire_notifiers(reason) # Give up
+            self.notify_failure(reason) # Give up
 
     def buildProtocol(self, addr):
         self.resetDelay()
         protocol = self.protocol()
         protocol.factory = self
-        self.fire_notifiers(protocol)
+        self.notify_success(protocol)
         return protocol
 
 
@@ -428,22 +434,22 @@ class RemoteObjectCreator(object):
         self._connected = Deferred()
         self._factory = self.factory(self._reactor)
         self._factory.maxRetries = max_retries
-        self._factory.add_notifier(self._first_connection_established)
+        self._factory.add_notifier(self._success, self._failure)
         self._reactor.connectUNIX(self._socket_path, self._factory)
         return self._connected
 
-    def _first_connection_established(self, result):
+    def _success(self, result):
         """Called when the first connection has been established"""
 
         # We did our job, remove our own notifier and let the remote object
         # handle reconnections.
-        self._factory.remove_notifier(self._first_connection_established)
+        self._factory.remove_notifier(self._success, self._failure)
+        self._remote = self.remote(result, *self._args, **self._kwargs)
+        self._connected.callback(self._remote)
 
-        if isinstance(result, Failure):
-            self._connected.errback(result)
-        else:
-            self._remote = self.remote(result, *self._args, **self._kwargs)
-            self._connected.callback(self._remote)
+    def _failure(self, failure):
+        """Called when the first connection has failed"""
+        self._connected.errback(failure)
 
     def disconnect(self):
         """Disconnect the L{RemoteObject} that we have created."""
