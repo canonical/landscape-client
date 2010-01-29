@@ -357,3 +357,8 @@ class SmartFacade(object):
         self._get_ctrl()
         smart.pkgconf.clearFlag("lock", name=name, relation=relation,
                                 version=version)
+
+    def save_config(self):
+        """Flush the current smart configuration to disk."""
+        control = self._get_ctrl()
+        control.saveSysConf()

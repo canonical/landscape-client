@@ -605,3 +605,13 @@ class SmartFacadeTest(LandscapeTest):
         self.facade.set_package_lock("name1", "<", "version1")
         self.facade.remove_package_lock("name1", "<", "version1")
         self.assertEquals(self.facade.get_locked_packages(), [])
+
+    def test_save_config(self):
+        """
+        It is possible to lock a package by simply specifying its name.
+        """
+        self.facade.set_package_lock("python", "=>", "2.5")
+        self.facade.save_config()
+        self.facade.deinit()
+        self.assertEquals(self.facade.get_package_locks(),
+                          [("python", "=>", "2.5")])
