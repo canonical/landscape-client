@@ -608,9 +608,8 @@ class RemoteObjectCreatorTest(LandscapeTest):
     def test_wb_retry_with_while_still_disconnected(self):
         """
         The L{RemoteObject._retry} method gets called as soon as a new
-        connection is ready, but even in case for whatever reason the
-        connection drops again very quickly, the C{_retry} method will
-        behave as expected.
+        connection is ready. If for whatever reason the connection drops
+        again very quickly, the C{_retry} method will behave as expected.
         """
         self.words._protocol.transport.loseConnection()
         self.port.stopListening()
@@ -619,7 +618,7 @@ class RemoteObjectCreatorTest(LandscapeTest):
             # In this precise moment we have a newly connected protocol
             self.words._protocol = protocol
 
-            # Pretend that the connection is lost very quickly
+            # Pretend that the connection is lost again very quickly
             protocol.transport.loseConnection()
             self.port.stopListening()
 
@@ -637,8 +636,10 @@ class RemoteObjectCreatorTest(LandscapeTest):
         def assert_failure(error):
             self.assertEquals(str(error), "Forbidden method 'secret'")
 
+        # Use our own reconnect handler
         self.connector._factory.remove_notifier(self.words._handle_reconnect)
         self.connector._factory.add_notifier(handle_reconnect)
+
         reactor.callLater(0.2, restart_listening)
         result = self.words.secret()
         self.assertFailure(result, MethodCallError)

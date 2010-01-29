@@ -291,7 +291,6 @@ class RemoteObject(object):
         self._retry_on_reconnect = retry_on_reconnect
         self._timeout = timeout
         self._pending_requests = {}
-        self._retry_call = None
         self._factory.add_notifier(self._handle_reconnect)
 
     def __getattr__(self, method):
@@ -307,9 +306,11 @@ class RemoteObject(object):
             result = self._protocol.send_method_call(method=method,
                                                      args=args,
                                                      kwargs=kwargs)
-            result.addCallback(self._handle_response)
-            result.addErrback(self._handle_failure, method, args, kwargs)
-            return result
+            deferred = Deferred()
+            result.addCallback(self._handle_response, deferred)
+            result.addErrback(self._handle_failure, method, args, kwargs,
+                              deferred)
+            return deferred
 
         return send_method_call
 
@@ -322,24 +323,20 @@ class RemoteObject(object):
         if self._retry_on_reconnect:
             self._retry()
 
-    def _handle_response(self, response, deferred=None, call=None):
+    def _handle_response(self, response, deferred, call=None):
         """Handles a successful L{MethodCall} response.
 
         @param response: The L{MethodCall} response.
-        @param deferred: If not C{None}, the deferred that was returned to
-            the caller when the first attempt failed.
+        @param deferred: The deferred that was returned to the caller.
         @param call: If not C{None}, the scheduled timeout call associated with
             the given deferred.
         """
         result = response["result"]
-        if deferred:
-            if call:
-                call.cancel()
-            deferred.callback(result)
-        else:
-            return result
+        if call is not None:
+            call.cancel()
+        deferred.callback(result)
 
-    def _handle_failure(self, failure, method, args, kwargs, deferred=None,
+    def _handle_failure(self, failure, method, args, kwargs, deferred,
                         call=None):
         """Called when a L{MethodCall} command fails.
 
@@ -352,42 +349,35 @@ class RemoteObject(object):
         @param name: The method name associated with the failed L{MethodCall}
         @param args: The positional arguments of the failed L{MethodCall}.
         @param kwargs: The keyword arguments of the failed L{MethodCall}.
-        @param deferred: If not C{None}, the deferred that was returned to
-            the caller when the first attempt failed.
+        @param deferred: The deferred that was returned to the caller.
         @param call: If not C{None}, the scheduled timeout call associated with
             the given deferred.
         """
-        is_first_failure = deferred is None
         is_method_call_error = failure.type is MethodCallError
         dont_retry = self._retry_on_reconnect == False
 
         if is_method_call_error or dont_retry:
             # This means either that the connection is working, and a
             # MethodCall protocol error occured, or that we gave up
-            # trying to connect. In any case just propagate the error.
-            if is_first_failure:
-                return failure
-            else:
-                if call:
-                    call.cancel()
-                deferred.errback(failure)
-                return
+            # trying and raised a timeout. In any case just propagate
+            # the error.
+            if deferred in self._pending_requests:
+                self._pending_requests.pop(deferred)
+            if call:
+                call.cancel()
+            deferred.errback(failure)
+            return
 
-        if is_first_failure:
-            deferred = Deferred()
-            if self._timeout:
-                failure = Failure(MethodCallError("timeout"))
-                call = self._reactor.callLater(self._timeout,
-                                               self._handle_failure,
-                                               failure, method, args,
-                                               kwargs, deferred=deferred)
+        if self._timeout and call is None:
+            # This is the first failure for this request, let's schedule a
+            # timeout call.
+            timeout = Failure(MethodCallError("timeout"))
+            call = self._reactor.callLater(self._timeout,
+                                           self._handle_failure,
+                                           timeout, method, args,
+                                           kwargs, deferred=deferred)
 
         self._pending_requests[deferred] = (method, args, kwargs, call)
-
-        if is_first_failure:
-            # Return the deferred to the caller, hopefully we'll reconnect,
-            # re-perform the requested MethodCall, and fire it back.
-            return deferred
 
     def _retry(self):
         """Try to perform again requests that failed."""
