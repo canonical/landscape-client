@@ -235,7 +235,7 @@ class MethodCallClientFactory(ReconnectingClientFactory):
         self._notifiers = []
 
     def add_notifier(self, notifier):
-        """Call the given function when on connection, reconnection or giveup.
+        """Call the given function on connection, reconnection or giveup.
 
         @param notifier: A function that will be called when the factory builds
             a new connected protocol or gives up connecting.  It will be passed
@@ -279,11 +279,11 @@ class RemoteObject(object):
         @param protocol: A reference to a connected L{AMP} protocol instance,
             which will be used to send L{MethodCall} commands.
         @param retry_on_reconnect: If C{True}, this L{RemoteObject} will retry
-            to perfom requests that failed due to a lost connection, as soon
-            as a new connection is available.
+            to perfom again requests that failed due to a lost connection, as
+            soon as a new connection is available.
         @param timeout: A timeout for failed requests, if the L{RemoteObject}
             can't perform them again successfully within this amout of seconds,
-            the will errback with a L{MethodCallError}.
+            they will errback with a L{MethodCallError}.
         """
         self._protocol = protocol
         self._factory = protocol.factory
@@ -343,8 +343,8 @@ class RemoteObject(object):
                         call=None):
         """Called when a L{MethodCall} command fails.
 
-        If a failure is due to a connection error and if C{retry_inteval} is
-        not C{None}, we will try to perform the requested L{MethodCall} again
+        If a failure is due to a connection error and if C{retry_on_reconnect}
+        is C{True}, we will try to perform the requested L{MethodCall} again
         as soon as a new connection becomes available, giving up after the
         specified C{timeout}, if any.
 
@@ -359,9 +359,9 @@ class RemoteObject(object):
         """
         is_first_failure = deferred is None
         is_method_call_error = failure.type is MethodCallError
-        no_retry = self._retry_on_reconnect == False
+        dont_retry = self._retry_on_reconnect == False
 
-        if is_method_call_error or no_retry:
+        if is_method_call_error or dont_retry:
             # This means either that the connection is working, and a
             # MethodCall protocol error occured, or that we gave up
             # trying to connect. In any case just propagate the error.
