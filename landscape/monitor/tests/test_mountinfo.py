@@ -754,6 +754,7 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
         self.mocker.result(None)
         self.mocker.replay()
 
+        # Generate 10 data points
         self.reactor.advance(step_size * 10)
         self.monitor.exchange()
 
@@ -785,3 +786,9 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
             self.assertEquals(free_space[i][0], (i + 6) * step_size)
             self.assertEquals(free_space[i][1], "/")
             self.assertEquals(free_space[i][2], 409600)
+
+        # Third exchange should not get any further free-space messages
+        self.mstore.delete_all_messages()
+        self.monitor.exchange()
+        messages = self.mstore.get_pending_messages()
+        self.assertEquals(len(messages), 0)
