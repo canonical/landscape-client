@@ -314,15 +314,6 @@ class RemoteObject(object):
 
         return send_method_call
 
-    def _handle_reconnect(self, protocol):
-        """Handles a reconnection.
-
-        @param protocol: The newly connected protocol instance.
-        """
-        self._protocol = protocol
-        if self._retry_on_reconnect:
-            self._retry()
-
     def _handle_response(self, response, deferred, call=None):
         """Handles a successful L{MethodCall} response.
 
@@ -333,7 +324,7 @@ class RemoteObject(object):
         """
         result = response["result"]
         if call is not None:
-            call.cancel()
+            call.cancel() # This is a successful retry, cancel the timeout.
         deferred.callback(result)
 
     def _handle_failure(self, failure, method, args, kwargs, deferred,
@@ -378,6 +369,15 @@ class RemoteObject(object):
                                            kwargs, deferred=deferred)
 
         self._pending_requests[deferred] = (method, args, kwargs, call)
+
+    def _handle_reconnect(self, protocol):
+        """Handles a reconnection.
+
+        @param protocol: The newly connected protocol instance.
+        """
+        self._protocol = protocol
+        if self._retry_on_reconnect:
+            self._retry()
 
     def _retry(self):
         """Try to perform again requests that failed."""
@@ -428,13 +428,17 @@ class RemoteObjectCreator(object):
         self._connected = Deferred()
         self._factory = self.factory(self._reactor)
         self._factory.maxRetries = max_retries
-        self._factory.add_notifier(self._done)
+        self._factory.add_notifier(self._first_connection_established)
         self._reactor.connectUNIX(self._socket_path, self._factory)
         return self._connected
 
-    def _done(self, result):
-        """Called when the connection has been established"""
-        self._factory.remove_notifier(self._done)
+    def _first_connection_established(self, result):
+        """Called when the first connection has been established"""
+
+        # We did our job, remove our own notifier and let the remote object
+        # handle reconnections.
+        self._factory.remove_notifier(self._first_connection_established)
+
         if isinstance(result, Failure):
             self._connected.errback(result)
         else:
