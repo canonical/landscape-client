@@ -743,7 +743,7 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
         plugin = self.get_mount_info(mounts_file=filename, statvfs=statvfs,
                                      create_time=self.reactor.time,
                                      mtab_file=filename)
-        plugin.MAX_FREE_SPACE_ITEMS = 5
+        plugin.MAX_FREE_SPACE_ITEMS_TO_EXCHANGE = 5
         step_size = self.monitor.step_size
         self.monitor.add(plugin)
 
@@ -768,6 +768,19 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
             self.assertEquals(free_space[i][1], "/")
             self.assertEquals(free_space[i][2], 409600)
 
+        # The second exchange should pick up the remaining items.
         self.mstore.delete_all_messages()
         self.monitor.exchange()
-        self.assertEquals(len(messages), 3)
+
+        messages = self.mstore.get_pending_messages()
+        self.assertEquals(len(messages), 1)
+
+        message = [d for d in messages if d["type"] == "free-space"][0]
+        free_space = message["free-space"]
+        free_space_items = len(free_space)
+        self.assertEquals(free_space_items, 5)
+        for i in range(free_space_items):
+            # Note (i+6) we've already retrieved the first 5 items.
+            self.assertEquals(free_space[i][0], (i + 6) * step_size)
+            self.assertEquals(free_space[i][1], "/")
+            self.assertEquals(free_space[i][2], 409600)
