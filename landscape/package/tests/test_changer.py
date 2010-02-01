@@ -775,10 +775,10 @@ class PackageChangerTest(LandscapeIsolatedTest):
             self.assertMessages(self.get_pending_messages(),
                                 [{"type": "operation-result",
                                   "operation-id": 123,
-                                  "status": 0,
+                                  "status": SUCCEEDED,
                                   "result-text": "Package locks successfully"
                                                  " changed.",
-                                  "result-code": SUCCEEDED}])
+                                  "result-code": 0}])
 
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
@@ -800,10 +800,10 @@ class PackageChangerTest(LandscapeIsolatedTest):
             self.assertMessages(self.get_pending_messages(),
                                 [{"type": "operation-result",
                                   "operation-id": 123,
-                                  "status": 0,
+                                  "status": SUCCEEDED,
                                   "result-text": "Package locks successfully"
                                                  " changed.",
-                                  "result-code": SUCCEEDED}])
+                                  "result-code": 0}])
 
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
@@ -823,10 +823,10 @@ class PackageChangerTest(LandscapeIsolatedTest):
             self.assertMessages(self.get_pending_messages(),
                                 [{"type": "operation-result",
                                   "operation-id": 123,
-                                  "status": 0,
+                                  "status": SUCCEEDED,
                                   "result-text": "Package locks successfully"
                                                  " changed.",
-                                  "result-code": SUCCEEDED}])
+                                  "result-code": 0}])
 
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)

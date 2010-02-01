@@ -226,9 +226,9 @@ class PackageChanger(PackageTaskHandler):
 
         response = {"type": "operation-result",
                     "operation-id": message.get("operation-id"),
-                    "status": 0,
+                    "status": SUCCEEDED,
                     "result-text": "Package locks successfully changed.",
-                    "result-code": SUCCEEDED}
+                    "result-code": 0}
 
         logging.info("Queuing message with change package locks results to "
                      "exchange urgently.")
