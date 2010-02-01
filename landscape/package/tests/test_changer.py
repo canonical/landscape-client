@@ -38,8 +38,8 @@ class PackageChangerTest(LandscapeIsolatedTest):
         self.changer = PackageChanger(self.store, self.facade, self.remote, self.config)
 
         service = self.broker_service
-        service.message_store.set_accepted_types(["change-packages-result"])
-        service.message_store.set_accepted_types(["operation-result"])
+        service.message_store.set_accepted_types(["change-packages-result",
+                                                  "operation-result"])
 
     def get_pending_messages(self):
         return self.broker_service.message_store.get_pending_messages()
