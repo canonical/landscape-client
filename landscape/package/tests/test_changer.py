@@ -770,6 +770,8 @@ class PackageChangerTest(LandscapeIsolatedTest):
             self.facade.deinit()
             self.assertEquals(self.facade.get_package_locks(),
                               [("foo", ">=", "1.0")])
+            self.assertIn("Queuing message with change package locks results "
+                          "to exchange urgently.", self.logfile.getvalue())
             self.assertMessages(self.get_pending_messages(),
                                 [{"type": "operation-result",
                                   "operation-id": 123,

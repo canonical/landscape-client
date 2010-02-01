@@ -230,6 +230,8 @@ class PackageChanger(PackageTaskHandler):
                     "result-text": "Package locks successfully changed.",
                     "result-code": SUCCEEDED}
 
+        logging.info("Queuing message with change package locks results to "
+                     "exchange urgently.")
         return self._broker.send_message(response, True)
 
     @staticmethod
