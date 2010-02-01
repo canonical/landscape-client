@@ -351,7 +351,7 @@ class SmartFacade(object):
         self._get_ctrl()
         smart.pkgconf.setFlag("lock", name, relation, version)
 
-    def remove_package_lock(self, name, relation=(), version=()):
+    def remove_package_lock(self, name, relation=None, version=None):
         """Remove a package lock."""
         self._validate_lock_condition(relation, version)
         self._get_ctrl()

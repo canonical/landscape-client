@@ -11,6 +11,7 @@ from twisted.internet.defer import fail
 from landscape.package.reporter import find_reporter_command
 from landscape.package.taskhandler import (
     PackageTaskHandler, PackageTaskHandlerConfiguration, run_task_handler)
+from landscape.manager.manager import SUCCEEDED
 
 
 SUCCESS_RESULT = 1
@@ -91,6 +92,8 @@ class PackageChanger(PackageTaskHandler):
         if message["type"] == "change-packages":
             result = self._handle_change_packages(message)
             return result.addErrback(self._check_expired_unknown_data, task)
+        if message["type"] == "change-package-locks":
+            return self._handle_change_package_locks(message)
 
     def _warn_about_unknown_data(self, failure):
         failure.trap(UnknownPackageData)
@@ -208,6 +211,26 @@ class PackageChanger(PackageTaskHandler):
         logging.info("Queuing message with change package results to "
                      "exchange urgently.")
         return self._broker.send_message(message, True)
+
+    def _handle_change_package_locks(self, message):
+        """Handle a C{change-package-locks} message.
+
+        Create and delete package locks as requested by the given C{message}.
+        """
+
+        for lock in message.get("create", ()):
+            self._facade.set_package_lock(*lock)
+        for lock in message.get("delete", ()):
+            self._facade.remove_package_lock(*lock)
+        self._facade.save_config()
+
+        response = {"type": "operation-result",
+                    "operation-id": message.get("operation-id"),
+                    "status": 0,
+                    "result-text": "Package locks successfully changed.",
+                    "result-code": SUCCEEDED}
+
+        return self._broker.send_message(response, True)
 
     @staticmethod
     def find_command():
