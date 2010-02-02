@@ -35,8 +35,8 @@ class PackageChangerTest(LandscapeIsolatedTest):
         self.config.data_path = self.makeDir()
         os.mkdir(self.config.package_directory)
         os.mkdir(self.config.binaries_path)
-        self.changer = PackageChanger(self.store, self.facade, self.remote, self.config)
-
+        self.changer = PackageChanger(self.store, self.facade, self.remote,
+                                      self.config)
         service = self.broker_service
         service.message_store.set_accepted_types(["change-packages-result",
                                                   "operation-result"])
@@ -46,6 +46,7 @@ class PackageChangerTest(LandscapeIsolatedTest):
 
     def set_pkg1_installed(self):
         previous = self.Facade.channels_reloaded
+
         def callback(self):
             previous(self)
             self.get_packages_by_name("name1")[0].installed = True
@@ -53,6 +54,7 @@ class PackageChangerTest(LandscapeIsolatedTest):
 
     def set_pkg2_upgrades_pkg1(self):
         previous = self.Facade.channels_reloaded
+
         def callback(self):
             from smart.backends.deb.base import DebUpgrades
             previous(self)
@@ -63,6 +65,7 @@ class PackageChangerTest(LandscapeIsolatedTest):
 
     def set_pkg2_satisfied(self):
         previous = self.Facade.channels_reloaded
+
         def callback(self):
             previous(self)
             pkg2 = self.get_packages_by_name("name2")[0]
@@ -72,6 +75,7 @@ class PackageChangerTest(LandscapeIsolatedTest):
 
     def set_pkg1_and_pkg2_satisfied(self):
         previous = self.Facade.channels_reloaded
+
         def callback(self):
             previous(self)
 
@@ -114,6 +118,7 @@ class PackageChangerTest(LandscapeIsolatedTest):
         # result of our previous message, which got *postponed*.
         self.store.set_hash_ids({HASH2: 2})
         result = self.changer.handle_tasks()
+
         def got_result(result):
             self.assertMessages(self.get_pending_messages(),
                                 [{"must-install": [2],
@@ -363,7 +368,7 @@ class PackageChangerTest(LandscapeIsolatedTest):
 
     def test_successful_operation(self):
         """Simulate a *very* successful operation.
-        
+
         We'll do that by hacking perform_changes(), and returning our
         *very* successful operation result.
         """
@@ -566,7 +571,6 @@ class PackageChangerTest(LandscapeIsolatedTest):
                                         "operation-id": 123})
         return self.changer.run()
 
-
     def test_run(self):
         changer_mock = self.mocker.patch(self.changer)
 
@@ -612,7 +616,7 @@ class PackageChangerTest(LandscapeIsolatedTest):
 
     def test_main(self):
         self.mocker.order()
-        
+
         run_task_handler = self.mocker.replace("landscape.package.taskhandler"
                                                ".run_task_handler",
                                                passthrough=False)
