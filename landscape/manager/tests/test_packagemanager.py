@@ -144,7 +144,6 @@ class PackageManagerTest(LandscapeIsolatedTest):
         self.mocker.replay()
 
         message = {"type": "change-packages"}
-        service = self.broker_service
         self.manager.dispatch_message(message)
         task = self.package_store.get_next_task("changer")
         self.assertTrue(task)
@@ -316,3 +315,21 @@ class PackageManagerTest(LandscapeIsolatedTest):
             os.chmod(dir, 0766)
 
         return result.addCallback(got_result)
+
+    def test_change_package_locks_handling(self):
+        """
+        The L{PackageManager.handle_change_package_locks} method is registered
+        as handler for messages of type C{"change-package-locks"}, and queues
+        a package-changer task in the appropriate queue.
+        """
+        self.manager.add(self.package_manager)
+
+        package_manager_mock = self.mocker.patch(self.package_manager)
+        package_manager_mock.spawn_handler(PackageChanger)
+        self.mocker.replay()
+
+        message = {"type": "change-package-locks"}
+        self.manager.dispatch_message(message)
+        task = self.package_store.get_next_task("changer")
+        self.assertTrue(task)
+        self.assertEquals(task.data, message)

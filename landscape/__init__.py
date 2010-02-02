@@ -14,7 +14,15 @@ API = SERVER_API
 
 # The "client-api" field of outgoing messages will be set to this value, and
 # used by the server to know which schema do the message types accepted by the
-# client support. Bump it when the schema of an accepted message type changes.
+# client support. Bump it when the schema of an accepted message type changes
+# and update the changelog below as needed.
+#
+# Changelog:
+#
+# 3.3:
+#  * Add "binaries" field to "change-packages"
+#  * Add new "change-package-locks" client accepted message type.
+#
 CLIENT_API = "3.3"
 
 from twisted.python import util
