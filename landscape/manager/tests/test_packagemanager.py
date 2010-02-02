@@ -319,7 +319,7 @@ class PackageManagerTest(LandscapeIsolatedTest):
     def test_change_package_locks_handling(self):
         """
         The L{PackageManager.handle_change_package_locks} method is registered
-        has handler for messages of type C{"change-package-locks"}, and queues
+        as handler for messages of type C{"change-package-locks"}, and queues
         a package-changer task in the appropriate queue.
         """
         self.manager.add(self.package_manager)
