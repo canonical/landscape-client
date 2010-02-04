@@ -75,10 +75,12 @@ class EucalyptusCloudManagerTest(LandscapeTest):
         error_message_type = EucalyptusCloudManager.error_message_type
         self.broker_service.message_store.set_accepted_types(
             [message_type, error_message_type])
+        self.service_hub = None
 
     def get_plugin(self, result=None):
+        self.service_hub = FakeServiceHub(result)
         plugin = EucalyptusCloudManager(
-            service_hub_factory=lambda data_path: FakeServiceHub(result),
+            service_hub_factory=lambda data_path: self.service_hub,
             eucalyptus_info_factory=lambda tools: FakeEucalyptusInfo(
                 fake_walrus_output, fake_cluster_controller_output,
                 fake_storage_controller_output, fake_node_controller_output))
@@ -122,6 +124,20 @@ class EucalyptusCloudManagerTest(LandscapeTest):
         deferred.addCallback(check)
         return deferred
 
+    def test_successful_run_stops_service_hub(self):
+        """
+        The C{ServiceHub} is stopped once data has been retrieved and
+        converted into a message to send to the server.
+        """
+        plugin = self.get_plugin(succeed(FakeEucaInfo()))
+
+        def check(ignore):
+            self.assertEqual(1, self.service_hub.stopped)
+
+        deferred = plugin.run()
+        deferred.addCallback(check)
+        return deferred
+
     def test_run_with_failure_message(self):
         """
         If a failure occurs while attempting to retrieve information about
@@ -139,6 +155,20 @@ class EucalyptusCloudManagerTest(LandscapeTest):
                 [expected])
 
         plugin = self.get_plugin(fail(ZeroDivisionError("KABOOM!")))
+        deferred = plugin.run()
+        deferred.addCallback(check)
+        return deferred
+
+    def test_failed_run_stops_service_hub(self):
+        """
+        The C{ServiceHub} is stopped once data has been retrieved and
+        converted into a message to send to the server.
+        """
+        plugin = self.get_plugin(fail(ZeroDivisionError("KABOOM!")))
+
+        def check(ignore):
+            self.assertEqual(1, self.service_hub.stopped)
+
         deferred = plugin.run()
         deferred.addCallback(check)
         return deferred
