@@ -31,7 +31,7 @@ class PluginRegistry(object):
         """
         info("Registering plugin %s.", format_object(plugin))
         self._plugins.append(plugin)
-        if hasattr(plugin, 'plugin_name'):
+        if hasattr(plugin, "plugin_name"):
             self._plugin_names[plugin.plugin_name] = plugin
         plugin.register(self)
 
@@ -42,6 +42,17 @@ class PluginRegistry(object):
     def get_plugin(self, name):
         """Get a particular plugin by name."""
         return self._plugin_names[name]
+
+    def remove(self, plugin):
+        """Remove C{plugin} from the registry."""
+        try:
+            self._plugins.remove(plugin)
+        except:
+            pass
+        else:
+            if hasattr(plugin, "plugin_name"):
+                if plugin.plugin_name in self._plugin_names:
+                    del self._plugin_names[plugin.plugin_name]
 
 
 class BrokerClientPluginRegistry(PluginRegistry):
