@@ -27,6 +27,7 @@ class EucalyptusCloudManager(ManagerPlugin):
 
     plugin_name = "eucalyptus-manager"
     message_type = "eucalyptus-info"
+    error_message_type = "eucalyptus-info-error"
     run_interval = 3600
 
     def __init__(self, service_hub_factory=None, eucalyptus_info_factory=None):
@@ -100,7 +101,7 @@ class EucalyptusCloudManager(ManagerPlugin):
         @return: An errir message to send to the server.
         """
         error = failure.getBriefTraceback()
-        return {"type": self.message_type, "error": error}
+        return {"type": self.error_message_type, "error": error}
 
 
 def start_service_hub(self, data_path):

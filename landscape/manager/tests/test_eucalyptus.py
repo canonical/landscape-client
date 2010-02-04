@@ -1,4 +1,4 @@
-from twisted.internet.defer import succeed
+from twisted.internet.defer import succeed, fail
 
 from imagestore.eucaservice import FakeEucaInfo
 
@@ -72,7 +72,9 @@ class EucalyptusCloudManagerTest(LandscapeTest):
     def setUp(self):
         super(EucalyptusCloudManagerTest, self).setUp()
         message_type = EucalyptusCloudManager.message_type
-        self.broker_service.message_store.set_accepted_types([message_type])
+        error_message_type = EucalyptusCloudManager.error_message_type
+        self.broker_service.message_store.set_accepted_types(
+            [message_type, error_message_type])
 
     def get_plugin(self, result=None):
         plugin = EucalyptusCloudManager(
@@ -93,7 +95,7 @@ class EucalyptusCloudManagerTest(LandscapeTest):
 
     def test_run_with_successful_message(self):
         """
-        If credentials are available and on problems occur while retrieving
+        If credentials are available and no problems occur while retrieving
         information from C{euca_conf}, a message with information about
         Eucalyptus is queued.
         """
@@ -120,6 +122,27 @@ class EucalyptusCloudManagerTest(LandscapeTest):
         deferred.addCallback(check)
         return deferred
 
+    def test_run_with_failure_message(self):
+        """
+        If a failure occurs while attempting to retrieve information about
+        Eucalyptus, such as the C{imagestore} package not being available, an
+        error message is sent to the server.
+        """
+        def check(ignore):
+            error_message = (
+                "Traceback (failure with no frames): "
+                "<type 'exceptions.ZeroDivisionError'>: KABOOM!\n")
+            expected = {"type": "eucalyptus-info-error",
+                        "error": error_message}
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [expected])
+
+        plugin = self.get_plugin(fail(ZeroDivisionError("KABOOM!")))
+        deferred = plugin.run()
+        deferred.addCallback(check)
+        return deferred
+
 
 class EucalyptusCloudManagerWithoutImageStoreTest(LandscapeTest):
 
@@ -129,6 +152,8 @@ class EucalyptusCloudManagerWithoutImageStoreTest(LandscapeTest):
         super(EucalyptusCloudManagerWithoutImageStoreTest, self).setUp()
         message_type = EucalyptusCloudManager.message_type
         self.broker_service.message_store.set_accepted_types([message_type])
+        self.plugin = EucalyptusCloudManager(service_hub_factory=lambda: 1/0)
+        self.manager.add(self.plugin)
 
     def test_plugin_deregisters_on_imagestore_import_fail(self):
         """
@@ -137,9 +162,8 @@ class EucalyptusCloudManagerWithoutImageStoreTest(LandscapeTest):
         exception is raised during this process (such as C{ImportError}, for
         example).
         """
-        plugin = EucalyptusCloudManager(service_hub_factory=lambda: 1/0)
-        self.manager.add(plugin)
-        self.assertIs(plugin, self.manager.get_plugin(plugin.plugin_name))
-        plugin.run()
+        self.assertIs(self.plugin,
+                      self.manager.get_plugin(self.plugin.plugin_name))
+        self.plugin.run()
         self.assertRaises(KeyError, self.manager.get_plugin,
-                          plugin.plugin_name)
+                          self.plugin.plugin_name)

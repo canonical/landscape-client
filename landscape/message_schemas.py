@@ -352,6 +352,10 @@ EUCALYPTUS_INFO = Message(
      "storage_controller_info": String(),
      "node_controller_info": String()})
 
+EUCALYPTUS_INFO_ERROR = Message(
+    "eucalyptus-info-error",
+    {"error": String()})
+
 
 message_schemas = {}
 for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
@@ -362,5 +366,6 @@ for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                USERS, PACKAGES, PACKAGE_LOCKS,
                CHANGE_PACKAGES_RESULT, UNKNOWN_PACKAGE_HASHES,
                ADD_PACKAGES, TEXT_MESSAGE, TEST, CUSTOM_GRAPH,
-               REBOOT_REQUIRED, APT_PREFERENCES, EUCALYPTUS_INFO]:
+               REBOOT_REQUIRED, APT_PREFERENCES, EUCALYPTUS_INFO,
+               EUCALYPTUS_INFO_ERROR]:
     message_schemas[schema.type] = schema
