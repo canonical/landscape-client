@@ -6,7 +6,8 @@ from logging import getLogger
 from twisted.internet.defer import Deferred
 
 from landscape.sysinfo.deployment import (
-    SysInfoConfiguration, ALL_PLUGINS, run, setup_logging)
+    SysInfoConfiguration, ALL_PLUGINS, run, setup_logging,
+    get_landscape_log_directory)
 from landscape.sysinfo.testplugin import TestPlugin
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 from landscape.sysinfo.load import Load
@@ -191,6 +192,25 @@ class RunTest(LandscapeTest):
 
         self.assertEquals(reactor.scheduled_calls, [(0, reactor.stop, (), {})])
         return self.assertFailure(d, ZeroDivisionError)
+
+    def test_get_landscape_log_directory_unprivileged(self):
+        """
+        If landscape-sysinfo is running as a non-privileged user the
+        log directory is stored in their home directory.
+        """
+        self.assertEquals(get_landscape_log_directory(),
+                          os.path.expanduser("~/.landscape"))
+
+    def test_get_landscape_log_directory_privileged(self):
+        """
+        If landscape-sysinfo is running as a privileged user, then the logs
+        should be stored in the system-wide log directory.
+        """
+        uid_mock = self.mocker.replace("os.getuid")
+        uid_mock()
+        self.mocker.result(0)
+        self.mocker.replay()
+        self.assertEquals(get_landscape_log_directory(), "/var/log/landscape")
 
     def test_wb_logging_setup(self):
         """
