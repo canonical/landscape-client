@@ -93,12 +93,12 @@ class PackageChanger(PackageTaskHandler):
         """
         message = task.data
         if message["type"] == "change-packages":
-            result = maybeDeferred(self._handle_change_packages, message)
-            return result.addErrback(self._unknown_package_data_error, task)
+            result = maybeDeferred(self.handle_change_packages, message)
+            return result.addErrback(self.unknown_package_data_error, task)
         if message["type"] == "change-package-locks":
-            return self._handle_change_package_locks(message)
+            return self.handle_change_package_locks(message)
 
-    def _unknown_package_data_error(self, failure, task):
+    def unknown_package_data_error(self, failure, task):
         """Handle L{UnknownPackageData} data errors.
 
         If the task is older than L{UNKNOWN_PACKAGE_DATA_TIMEOUT} seconds,
@@ -121,7 +121,7 @@ class PackageChanger(PackageTaskHandler):
         else:
             raise PackageTaskError()
 
-    def _init_channels(self, binaries):
+    def init_channels(self, binaries):
         """Initialize the Smart channels as needed.
 
         @param binaries: A possibly empty list of 3-tuples of the form
@@ -145,7 +145,7 @@ class PackageChanger(PackageTaskHandler):
 
         self._facade.ensure_channels_reloaded()
 
-    def _mark_packages(self, upgrade_all, install, remove):
+    def mark_packages(self, upgrade_all, install, remove):
         """Mark packages for upgrade, installation or removal.
 
         @param upgrade_all: If C{True} all installed packages will be marked
@@ -171,7 +171,7 @@ class PackageChanger(PackageTaskHandler):
                     raise UnknownPackageData(hash)
                 mark_func(package)
 
-    def _perform_changes(self):
+    def perform_changes(self):
         """Perform the requested changes.
 
         @return: A 4-tuple of the form C{(code, text, installs, removals)},
@@ -179,7 +179,6 @@ class PackageChanger(PackageTaskHandler):
             from Smart, and the possible additional packages that need to be
             installed or removed in order to fulfill the request.
         """
-
         # Delay importing these so that we don't import Smart unless
         # we really need to.
         from landscape.package.facade import (
@@ -213,15 +212,15 @@ class PackageChanger(PackageTaskHandler):
 
         return code, text, installs, removals
 
-    def _handle_change_packages(self, message):
+    def handle_change_packages(self, message):
         """Handle a C{change-packages} message."""
 
-        self._init_channels(message.get("binaries", ()))
-        self._mark_packages(message.get("upgrade-all", False),
+        self.init_channels(message.get("binaries", ()))
+        self.mark_packages(message.get("upgrade-all", False),
                             message.get("install", ()),
                             message.get("remove", ()))
 
-        code, text, installs, removals = self._perform_changes()
+        code, text, installs, removals = self.perform_changes()
 
         response = {"type": "change-packages-result",
                    "operation-id": message.get("operation-id")}
@@ -239,7 +238,7 @@ class PackageChanger(PackageTaskHandler):
                      "exchange urgently.")
         return self._broker.send_message(response, True)
 
-    def _handle_change_package_locks(self, message):
+    def handle_change_package_locks(self, message):
         """Handle a C{change-package-locks} message.
 
         Create and delete package locks as requested by the given C{message}.
