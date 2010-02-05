@@ -145,17 +145,16 @@ class PackageChanger(PackageTaskHandler):
 
         self._facade.ensure_channels_reloaded()
 
-    def mark_packages(self, upgrade_all, install, remove):
+    def mark_packages(self, upgrade=False, install=(), remove=()):
         """Mark packages for upgrade, installation or removal.
 
-        @param upgrade_all: If C{True} all installed packages will be marked
-            for upgrade.
+        @param upgrade_all: If C{True} mark all installed packages for upgrade.
         @param install: A list of package ids to be marked for installation.
         @param remove: A list of package ids to be marked for removal.
         """
         self._facade.reset_marks()
 
-        if upgrade_all:
+        if upgrade:
             for package in self._facade.get_packages():
                 if package.installed:
                     self._facade.mark_upgrade(package)
