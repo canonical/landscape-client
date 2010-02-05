@@ -1,8 +1,53 @@
 import unittest
+import tempfile
+import shutil
+import os
 
 from landscape.tests.helpers import LandscapeTest
 
-from landscape.lib.process import calculate_pcpu
+from landscape.lib.process import calculate_pcpu, ProcessInformation
+
+
+class ProcessInfoTest(LandscapeTest):
+
+    def test_missing_process_race(self):
+        """
+        We use os.listdir("/proc") to get the list of active processes, if a
+        process ends before we attempt to read the process' information, then
+        this should not trigger an error. 
+        """
+        listdir_mock = self.mocker.replace("os.listdir")
+        listdir_mock("/proc")
+        self.mocker.result(["12345"])
+
+        class FakeFile(object):
+
+            def __init__(self, response=""):
+                self._response = response
+
+            def readline(self):
+                return self._response
+
+            def __iter__(self):
+                if self._response is None:
+                    raise IOError("Fake file error")
+                else:
+                    yield self._response
+
+            def close(self):
+                pass
+
+        open_mock = self.mocker.replace("__builtin__.open")
+        open_mock("/proc/12345/cmdline", "r")
+        self.mocker.result(FakeFile("test-binary"))
+
+        open_mock("/proc/12345/status", "r")
+        self.mocker.result(FakeFile(None))
+
+        self.mocker.replay()
+
+        process_info = ProcessInformation("/proc")
+        processes = list(process_info.get_all_process_info())
 
 
 class CalculatePCPUTest(unittest.TestCase):
