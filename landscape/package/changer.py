@@ -19,7 +19,8 @@ from landscape.manager.manager import SUCCEEDED
 SUCCESS_RESULT = 1
 ERROR_RESULT = 100
 DEPENDENCY_ERROR_RESULT = 101
-
+POLICY_STRICT = 0
+POLICY_ALLOW_INSTALLS = 1
 
 # The amount of time to wait while we have unknown package data before
 # reporting an error to the server in response to an operation.
@@ -145,17 +146,18 @@ class PackageChanger(PackageTaskHandler):
 
         self._facade.ensure_channels_reloaded()
 
-    def mark_packages(self, upgrade_all, install, remove):
+    def mark_packages(self, upgrade=False, install=(), remove=(), reset=True):
         """Mark packages for upgrade, installation or removal.
 
-        @param upgrade_all: If C{True} all installed packages will be marked
-            for upgrade.
+        @param upgrade: If C{True} mark all installed packages for upgrade.
         @param install: A list of package ids to be marked for installation.
         @param remove: A list of package ids to be marked for removal.
+        @param reset: iF C{True} all existing marks will be reset.
         """
-        self._facade.reset_marks()
+        if reset:
+            self._facade.reset_marks()
 
-        if upgrade_all:
+        if upgrade:
             for package in self._facade.get_packages():
                 if package.installed:
                     self._facade.mark_upgrade(package)
@@ -171,9 +173,12 @@ class PackageChanger(PackageTaskHandler):
                     raise UnknownPackageData(hash)
                 mark_func(package)
 
-    def perform_changes(self):
+    def perform_changes(self, policy=POLICY_STRICT):
         """Perform the requested changes.
 
+        @param policy: A value indicating what to do in case additional changes
+            beside the ones explicitly requested are needed in order to fulfill
+            the request.
         @return: A 4-tuple of the form C{(code, text, installs, removals)},
             holding respectively the result code of the request, the output
             from Smart, and the possible additional packages that need to be
@@ -209,6 +214,10 @@ class PackageChanger(PackageTaskHandler):
                     installs.append(id)
         else:
             code = SUCCESS_RESULT
+
+        if installs and policy == POLICY_ALLOW_INSTALLS:
+            self._mark_packages(installs=installs, reset=False)
+            return self._perform_changes()
 
         return code, text, installs, removals
 
