@@ -70,18 +70,21 @@ class PackageChanger(PackageTaskHandler):
         """
         Run the L{PackageReporter} if there were successfully completed tasks.
         """
-        if self.handled_tasks_count > 0:
-            # In order to let the reporter run smart-update cleanly,
-            # we have to deinitialize Smart, so that the write lock
-            # gets released
-            self._facade.deinit()
-            if os.getuid() == 0:
-                os.setgid(grp.getgrnam("landscape").gr_gid)
-                os.setuid(pwd.getpwnam("landscape").pw_uid)
-            command = find_reporter_command()
-            if self._config.config is not None:
-                command += " -c %s" % self._config.config
-            os.system(command)
+        if self.handled_tasks_count == 0:
+            # Nothing was done
+            return
+
+        # In order to let the reporter run smart-update cleanly,
+        # we have to deinitialize Smart, so that the write lock
+        # gets released
+        self._facade.deinit()
+        if os.getuid() == 0:
+            os.setgid(grp.getgrnam("landscape").gr_gid)
+            os.setuid(pwd.getpwnam("landscape").pw_uid)
+        command = find_reporter_command()
+        if self._config.config is not None:
+            command += " -c %s" % self._config.config
+        os.system(command)
 
     def handle_task(self, task):
         """
