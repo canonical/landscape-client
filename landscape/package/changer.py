@@ -119,29 +119,37 @@ class PackageChanger(PackageTaskHandler):
             raise PackageTaskError()
 
     def _init_channels(self, binaries):
-        """Add a C{deb-dir} channel sporting the given C{binaries}.
+        """Initialize the Smart channels as needed.
 
-        @param binaries: A list of 3-tuples of the form (hash, id, deb),
-            containing the hash, the id and the content of a Debian package.
+        @param binaries: A possibly empty list of 3-tuples of the form
+            (hash, id, deb), holding the hash, the id and the content of
+            additional Debian packages that should be loaded in the channels.
         """
-
         binaries_path = self._config.binaries_path
 
         for existing_deb_path in os.listdir(binaries_path):
             # Clean up the binaries we wrote in former runs
             os.remove(os.path.join(binaries_path, existing_deb_path))
 
-        for hash, id, deb in binaries:
-            create_file(os.path.join(binaries_path, "%d.deb" % id),
-                        base64.decodestring(deb))
+        if binaries:
+            hash_ids = {}
+            for hash, id, deb in binaries:
+                create_file(os.path.join(binaries_path, "%d.deb" % id),
+                            base64.decodestring(deb))
+                hash_ids[hash] = id
+            self._store.set_hash_ids(hash_ids)
+            self._facade.add_channel_deb_dir(binaries_path)
 
-        hash_ids = dict(map(lambda (hash, id, deb): (hash, id), binaries))
-        self._store.set_hash_ids(hash_ids)
-
-        self._facade.add_channel_deb_dir(binaries_path)
         self._facade.ensure_channels_reloaded()
 
     def _mark_packages(self, upgrade_all, install, remove):
+        """Mark packages for upgrade, installation or removal.
+
+        @param upgrade_all: If C{True} all installed packages will be marked
+            for upgrade.
+        @param install: A list of package ids to be marked for installation.
+        @param remove: A list of package ids to be marked for removal.
+        """
         self._facade.reset_marks()
 
         if upgrade_all:
@@ -161,22 +169,29 @@ class PackageChanger(PackageTaskHandler):
                 mark_func(package)
 
     def _perform_changes(self):
+        """Perform the requested changes.
+
+        @return: A 4-tuple of the form C{(code, text, installs, removals)},
+            holding respectively the result code of the request, the output
+            from Smart, and the possible additional packages that need to be
+            installed or removed in order to fulfill the request.
+        """
 
         # Delay importing these so that we don't import Smart unless
         # we really need to.
         from landscape.package.facade import (
             DependencyError, TransactionError, SmartError)
 
-        result_text = None
+        text = None
         installs = []
         removals = []
         try:
-            result_text = self._facade.perform_changes()
+            text = self._facade.perform_changes()
         except (TransactionError, SmartError), exception:
-            result_code = ERROR_RESULT
-            result_text = exception.args[0]
+            code = ERROR_RESULT
+            text = exception.args[0]
         except DependencyError, exception:
-            result_code = DEPENDENCY_ERROR_RESULT
+            code = DEPENDENCY_ERROR_RESULT
             for package in exception.packages:
                 hash = self._facade.get_package_hash(package)
                 id = self._store.get_hash_id(hash)
@@ -191,25 +206,26 @@ class PackageChanger(PackageTaskHandler):
                     # Package currently available. Must install it.
                     installs.append(id)
         else:
-            result_code = SUCCESS_RESULT
+            code = SUCCESS_RESULT
 
-        return result_code, result_text, installs, removals
+        return code, text, installs, removals
 
     def _handle_change_packages(self, message):
+        """Handle a C{change-packages} message."""
 
         self._init_channels(message.get("binaries", ()))
         self._mark_packages(message.get("upgrade-all", False),
                             message.get("install", ()),
                             message.get("remove", ()))
 
-        result_code, result_text, installs, removals = self._perform_changes()
+        code, text, installs, removals = self._perform_changes()
 
         response = {"type": "change-packages-result",
                    "operation-id": message.get("operation-id")}
 
-        response["result-code"] = result_code
-        if result_text:
-            response["result-text"] = result_text
+        response["result-code"] = code
+        if text:
+            response["result-text"] = text
         if installs:
             response["must-install"] = sorted(installs)
         if removals:
