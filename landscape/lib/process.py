@@ -69,12 +69,6 @@ class ProcessInformation(object):
 
         try:
             file = open(os.path.join(process_dir, "status"), "r")
-        except IOError:
-            # Handle the race that happens when we find a process
-            # which terminates before we open the status file.
-            return None
-
-        try:
             for line in file:
                 parts = line.split(":", 1)
                 if parts[0] == "Name":
@@ -93,6 +87,10 @@ class ProcessInformation(object):
                     value_parts = parts[1].split()
                     process_info["vm-size"] = int(value_parts[0])
                     break
+        except IOError:
+            # Handle the race that happens when we find a process
+            # which terminates before we open the status file.
+            return None
         finally:
             file.close()
 
