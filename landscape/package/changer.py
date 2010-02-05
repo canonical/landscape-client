@@ -56,28 +56,28 @@ class PackageChanger(PackageTaskHandler):
     queue_name = "changer"
 
     def run(self):
-        task1 = self._store.get_next_task(self.queue_name)
-
-        def finished(result):
-            task2 = self._store.get_next_task(self.queue_name)
-            if task1 and task1.id != (task2 and task2.id):
-                # In order to let the reporter run smart-update cleanly,
-                # we have to deinitialize Smart, so that the write lock
-                # gets released
-                self._facade.deinit()
-                if os.getuid() == 0:
-                    os.setgid(grp.getgrnam("landscape").gr_gid)
-                    os.setuid(pwd.getpwnam("landscape").pw_uid)
-                command = find_reporter_command()
-                if self._config.config is not None:
-                    command += " -c %s" % self._config.config
-                os.system(command)
 
         result = self.use_hash_id_db()
         result.addCallback(lambda x: self.handle_tasks())
-        result.addCallback(finished)
-
+        result.addCallback(lambda x: self.run_package_reporter())
         return result
+
+    def run_package_reporter(self):
+        """
+        Run the L{PackageReporter} if there were successfully completed tasks.
+        """
+        if self.handled_tasks_count > 0:
+            # In order to let the reporter run smart-update cleanly,
+            # we have to deinitialize Smart, so that the write lock
+            # gets released
+            self._facade.deinit()
+            if os.getuid() == 0:
+                os.setgid(grp.getgrnam("landscape").gr_gid)
+                os.setuid(pwd.getpwnam("landscape").pw_uid)
+            command = find_reporter_command()
+            if self._config.config is not None:
+                command += " -c %s" % self._config.config
+            os.system(command)
 
     def handle_tasks(self):
         result = super(PackageChanger, self).handle_tasks()
@@ -140,12 +140,10 @@ class PackageChanger(PackageTaskHandler):
         self._facade.add_channel_deb_dir(binaries_path)
 
     def _handle_change_packages(self, message):
-
         if message.get("binaries"):
             self._create_deb_dir_channel(message["binaries"])
 
-        self.ensure_channels_reloaded()
-
+        self._facade.ensure_channels_reloaded()
         self._facade.reset_marks()
 
         if message.get("upgrade-all"):

@@ -3,6 +3,7 @@ import re
 import logging
 
 from twisted.internet.defer import Deferred, succeed
+from twisted.python.failure import Failure
 
 from landscape.lib.lock import lock_path, LockError
 from landscape.lib.log import log_failure
@@ -66,12 +67,7 @@ class PackageTaskHandler(object):
         self._facade = package_facade
         self._broker = remote_broker
         self._config = config
-        self._channels_reloaded = False
-
-    def ensure_channels_reloaded(self):
-        if not self._channels_reloaded:
-            self._channels_reloaded = True
-            self._facade.reload_channels()
+        self._results = []
 
     def run(self):
         return self.handle_tasks()
@@ -80,16 +76,18 @@ class PackageTaskHandler(object):
         return self._handle_next_task(None)
 
     def _handle_next_task(self, result, last_task=None):
+
         if last_task is not None:
             # Last task succeeded.  We can safely kill it now.
             last_task.remove()
+            self._results.append(result)
 
         task = self._store.get_next_task(self.queue_name)
 
         if task:
             # We have another task.  Let's handle it.
             result = self.handle_task(task)
-            result.addCallback(self._handle_next_task, task)
+            result.addCallback(self._handle_next_task, last_task=task)
             return result
 
         else:
@@ -98,6 +96,13 @@ class PackageTaskHandler(object):
 
     def handle_task(self, task):
         return succeed(None)
+
+    @property
+    def handled_tasks_count(self):
+        """
+        Return the number of tasks that have been successfully handled so far.
+        """
+        return len(self._results)
 
     def use_hash_id_db(self):
         """

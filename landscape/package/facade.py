@@ -50,13 +50,11 @@ class SmartFacade(object):
     def _reset(self):
         # This attribute is initialized lazily in the _get_ctrl() method.
         self._ctrl = None
-
         self._pkg2hash = {}
         self._hash2pkg = {}
-
         self._marks = {}
-
         self._caching = ALWAYS
+        self._channels_reloaded = False
 
     def deinit(self):
         """Deinitialize the Facade and the Smart library."""
@@ -86,6 +84,13 @@ class SmartFacade(object):
 
     def smart_initialized(self):
         """Hook called when the Smart library is initialized."""
+
+    def ensure_channels_reloaded(self):
+        """Reload the channels if they haven't been reloaded yet."""
+        if self._channels_reloaded:
+            return
+        self._channels_reloaded = True
+        self.reload_channels()
 
     def reload_channels(self):
         """

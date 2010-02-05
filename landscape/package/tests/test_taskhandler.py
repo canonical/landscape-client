@@ -36,16 +36,6 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         self.handler = PackageTaskHandler(self.store, self.facade, self.remote,
                                           self.config)
 
-    def test_ensure_channels_reloaded(self):
-        self.assertEquals(len(self.facade.get_packages()), 0)
-        self.handler.ensure_channels_reloaded()
-        self.assertEquals(len(self.facade.get_packages()), 3)
-
-        # Calling it once more won't reload channels again.
-        self.facade.get_packages_by_name("name1")[0].installed = True
-        self.handler.ensure_channels_reloaded()
-        self.assertTrue(self.facade.get_packages_by_name("name1")[0].installed)
-
     def test_use_hash_id_db(self):
 
         # We don't have this hash=>id mapping

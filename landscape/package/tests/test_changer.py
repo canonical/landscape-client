@@ -733,7 +733,7 @@ class PackageChangerTest(LandscapeIsolatedTest):
 
         self.assertEquals(self.store.get_hash_ids(), {HASH1: 111, HASH2: 222})
 
-        self.changer.ensure_channels_reloaded()
+        self.facade.ensure_channels_reloaded()
         [pkg1, pkg2] = sorted(self.facade.get_packages(),
                               key=lambda pkg: pkg.name)
         self.assertEquals(self.facade.get_package_hash(pkg1), HASH1)
