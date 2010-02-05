@@ -216,8 +216,8 @@ class PackageChanger(PackageTaskHandler):
 
         self.init_channels(message.get("binaries", ()))
         self.mark_packages(message.get("upgrade-all", False),
-                            message.get("install", ()),
-                            message.get("remove", ()))
+                           message.get("install", ()),
+                           message.get("remove", ()))
 
         code, text, installs, removals = self.perform_changes()
 
