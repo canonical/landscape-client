@@ -1,6 +1,7 @@
 import textwrap
 from logging import getLogger
 import math
+import os
 
 from twisted.python.failure import Failure
 
@@ -110,10 +111,12 @@ class SysInfoPluginRegistry(PluginRegistry):
         log_failure(failure, message, logger=logger)
 
     def _report_error_note(self, result):
+        from landscape.sysinfo.deployment import get_landscape_log_directory
+        path = os.path.join(get_landscape_log_directory(), "sysinfo.log")
         if self._plugin_error:
             self.add_note(
                 "There were exceptions while processing one or more plugins. "
-                "See ~/.landscape/sysinfo.log for more information.")
+                "See %s for more information." % path)
         return result
 
 

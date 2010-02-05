@@ -1,5 +1,6 @@
 from cStringIO import StringIO
 from logging import getLogger, StreamHandler
+import os
 
 from twisted.internet.defer import Deferred, succeed, fail
 
@@ -107,7 +108,7 @@ class SysInfoPluginRegistryTest(LandscapeTest):
 
     plugin_exception_message = (
         "There were exceptions while processing one or more plugins. "
-        "See ~/.landscape/sysinfo.log for more information.")
+        "See %s/sysinfo.log for more information.")
 
     def test_plugins_run_after_synchronous_error(self):
         """
@@ -139,9 +140,11 @@ class SysInfoPluginRegistryTest(LandscapeTest):
         self.assertIn(message, log)
         self.assertIn("1/0", log)
         self.assertIn("ZeroDivisionError", log)
+
+        path = os.path.expanduser("~/.landscape")
         self.assertEquals(
             self.sysinfo.get_notes(),
-            [self.plugin_exception_message])
+            [self.plugin_exception_message % path])
 
     def test_asynchronous_errors_logged(self):
         self.log_helper.ignore_errors(ZeroDivisionError)
@@ -157,9 +160,10 @@ class SysInfoPluginRegistryTest(LandscapeTest):
         message = "BadPlugin plugin raised an exception."
         self.assertIn(message, log)
         self.assertIn("ZeroDivisionError: yay", log)
+        path = os.path.expanduser("~/.landscape")
         self.assertEquals(
             self.sysinfo.get_notes(),
-            [self.plugin_exception_message])
+            [self.plugin_exception_message % path])
 
     def test_multiple_exceptions_get_one_note(self):
         self.log_helper.ignore_errors(ZeroDivisionError)
@@ -181,11 +185,31 @@ class SysInfoPluginRegistryTest(LandscapeTest):
         self.sysinfo.add(plugin2)
         self.sysinfo.run()
 
+        path = os.path.expanduser("~/.landscape")
         self.assertEquals(
             self.sysinfo.get_notes(),
-            [self.plugin_exception_message])
-        
+            [self.plugin_exception_message % path])
 
+    def test_exception_running_as_privileged_user(self):
+        uid_mock = self.mocker.replace("os.getuid")
+        uid_mock()
+        self.mocker.result(0)
+        self.mocker.replay()
+        self.log_helper.ignore_errors(ZeroDivisionError)
+        class AsyncBadPlugin(object):
+            def register(self, registry):
+                pass
+            def run(self):
+                return fail(ZeroDivisionError("Hi"))
+
+        plugin = AsyncBadPlugin()
+        self.sysinfo.add(plugin)
+        self.sysinfo.run()
+
+        path = "/var/log/landscape"
+        self.assertEquals(
+            self.sysinfo.get_notes(),
+            [self.plugin_exception_message % path])
 
 class FormatTest(LandscapeTest):
 
