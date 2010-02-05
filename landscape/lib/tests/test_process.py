@@ -1,7 +1,4 @@
 import unittest
-import tempfile
-import shutil
-import os
 
 from landscape.tests.helpers import LandscapeTest
 
