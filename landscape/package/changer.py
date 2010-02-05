@@ -122,7 +122,7 @@ class PackageChanger(PackageTaskHandler):
         else:
             raise PackageTaskError()
 
-    def init_channels(self, binaries):
+    def init_channels(self, binaries=()):
         """Initialize the Smart channels as needed.
 
         @param binaries: A possibly empty list of 3-tuples of the form
@@ -215,9 +215,10 @@ class PackageChanger(PackageTaskHandler):
         else:
             code = SUCCESS_RESULT
 
-        if installs and policy == POLICY_ALLOW_INSTALLS:
-            self._mark_packages(installs=installs, reset=False)
-            return self._perform_changes()
+        if installs and not removals and policy == POLICY_ALLOW_INSTALLS:
+            # We have just packages to install and the policy allows to go on
+            self.mark_packages(install=installs, reset=False)
+            return self.perform_changes()
 
         return code, text, installs, removals
 
@@ -226,10 +227,11 @@ class PackageChanger(PackageTaskHandler):
 
         self.init_channels(message.get("binaries", ()))
         self.mark_packages(message.get("upgrade-all", False),
-                            message.get("install", ()),
-                            message.get("remove", ()))
+                           message.get("install", ()),
+                           message.get("remove", ()))
 
-        code, text, installs, removals = self.perform_changes()
+        code, text, installs, removals = self.perform_changes(
+            message.get("policy", POLICY_STRICT))
 
         response = {"type": "change-packages-result",
                    "operation-id": message.get("operation-id")}
