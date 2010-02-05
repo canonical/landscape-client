@@ -457,7 +457,8 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         done = Deferred()
         self.expect(reactor_mock.stop()).call(lambda: done.callback(None))
 
-        class MyException(Exception): pass
+        class MyException(Exception):
+            pass
 
         self.log_helper.ignore_errors(MyException)
 
@@ -470,10 +471,9 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
 
         # Ok now for some real stuff
 
-        result = run_task_handler(handler_factory_mock,
-                                  ["--data-path", self.data_path,
-                                   "--bus", "session"],
-                                  reactor=reactor_mock)
+        run_task_handler(handler_factory_mock,
+                         ["--data-path", self.data_path, "--bus", "session"],
+                         reactor=reactor_mock)
 
         def everything_stopped(result):
             self.assertIn("MyException", self.logfile.getvalue())
@@ -482,7 +482,6 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
 
 
 class LazyRemoteBrokerTest(LandscapeTest):
-
 
     def test_wb_is_lazy(self):
         """

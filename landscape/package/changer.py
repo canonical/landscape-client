@@ -10,7 +10,8 @@ from twisted.internet.defer import fail
 
 from landscape.package.reporter import find_reporter_command
 from landscape.package.taskhandler import (
-    PackageTaskHandler, PackageTaskHandlerConfiguration, run_task_handler)
+    PackageTaskHandler, PackageTaskHandlerConfiguration, PackageTaskError,
+    run_task_handler)
 from landscape.manager.manager import SUCCEEDED
 
 
@@ -56,7 +57,9 @@ class PackageChanger(PackageTaskHandler):
     queue_name = "changer"
 
     def run(self):
-
+        """
+        Handle our tasks and spawn the reporter if package data has changed.
+        """
         result = self.use_hash_id_db()
         result.addCallback(lambda x: self.handle_tasks())
         result.addCallback(lambda x: self.run_package_reporter())
@@ -79,10 +82,6 @@ class PackageChanger(PackageTaskHandler):
                 command += " -c %s" % self._config.config
             os.system(command)
 
-    def handle_tasks(self):
-        result = super(PackageChanger, self).handle_tasks()
-        return result.addErrback(self._warn_about_unknown_data)
-
     def handle_task(self, task):
         """
         @param task: A L{PackageTask} carrying a message of
@@ -91,19 +90,24 @@ class PackageChanger(PackageTaskHandler):
         message = task.data
         if message["type"] == "change-packages":
             result = self._handle_change_packages(message)
-            return result.addErrback(self._check_expired_unknown_data, task)
+            return result.addErrback(self._unknown_package_data_error, task)
         if message["type"] == "change-package-locks":
             return self._handle_change_package_locks(message)
 
-    def _warn_about_unknown_data(self, failure):
+    def _unknown_package_data_error(self, failure, task):
+        """Handle L{UnknownPackageData} data errors.
+
+        If the task is older than L{UNKNOWN_PACKAGE_DATA_TIMEOUT} seconds,
+        a message is sent to the server to notify the failure of the associated
+        activity and the task will be removed from the queue.
+
+        Otherwise a L{PackageTaskError} is raised and the task will be picked
+        up again at the next run.
+        """
         failure.trap(UnknownPackageData)
         logging.warning("Package data not yet synchronized with server (%r)" %
                         failure.value.args[0])
-
-    def _check_expired_unknown_data(self, failure, task):
-        failure.trap(UnknownPackageData)
         if task.timestamp < time.time() - UNKNOWN_PACKAGE_DATA_TIMEOUT:
-            self._warn_about_unknown_data(failure)
             message = {"type": "change-packages-result",
                        "operation-id": task.data["operation-id"],
                        "result-code": ERROR_RESULT,
@@ -111,7 +115,7 @@ class PackageChanger(PackageTaskHandler):
                                       "Please retry the operation."}
             return self._broker.send_message(message)
         else:
-            return failure
+            raise PackageTaskError()
 
     def _create_deb_dir_channel(self, binaries):
         """Add a C{deb-dir} channel sporting the given C{binaries}.

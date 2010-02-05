@@ -3,7 +3,6 @@ import re
 import logging
 
 from twisted.internet.defer import Deferred, succeed
-from twisted.python.failure import Failure
 
 from landscape.lib.lock import lock_path, LockError
 from landscape.lib.log import log_failure
@@ -11,6 +10,10 @@ from landscape.lib.lsb_release import LSB_RELEASE_FILENAME, parse_lsb_release
 from landscape.deployment import Configuration, init_logging
 from landscape.package.store import PackageStore, InvalidHashIdDb
 from landscape.broker.remote import RemoteBroker
+
+
+class PackageTaskError(Exception):
+    """Raised when a task hasn't been successfully completed."""
 
 
 class PackageTaskHandlerConfiguration(Configuration):
@@ -67,20 +70,28 @@ class PackageTaskHandler(object):
         self._facade = package_facade
         self._broker = remote_broker
         self._config = config
-        self._results = []
+        self._count = 0
 
     def run(self):
         return self.handle_tasks()
 
     def handle_tasks(self):
+        """Handle the tasks in the queue.
+
+        The tasks will be handed over one by one to L{handle_task} until the
+        queue is empty or a task fails.
+
+        @see: L{handle_tasks}
+        """
         return self._handle_next_task(None)
 
     def _handle_next_task(self, result, last_task=None):
+        """Pick the next task from the queue and pass it to C{handle_task}."""
 
         if last_task is not None:
             # Last task succeeded.  We can safely kill it now.
             last_task.remove()
-            self._results.append(result)
+            self._count += 1
 
         task = self._store.get_next_task(self.queue_name)
 
@@ -88,13 +99,29 @@ class PackageTaskHandler(object):
             # We have another task.  Let's handle it.
             result = self.handle_task(task)
             result.addCallback(self._handle_next_task, last_task=task)
+            result.addErrback(self._handle_task_failure)
             return result
 
         else:
             # No more tasks!  We're done!
             return succeed(None)
 
+    def _handle_task_failure(self, failure):
+        """Gracefully handle a L{PackageTaskError} and stop handling tasks."""
+        failure.trap(PackageTaskError)
+
     def handle_task(self, task):
+        """Handle a sigle task.
+
+        Sub-classes must override this method in order to trigger task-specific
+        actions.
+
+        This method must return a L{Deferred} firing the task result. If the
+        deferred is successful the task will be removed from the queue and the
+        next one will be picked. If the task can't be completed, this method
+        must raise a L{PackageTaskError}, in this case the handler will stop
+        processing tasks and the failed task won't be removed from the queue.
+        """
         return succeed(None)
 
     @property
@@ -102,7 +129,7 @@ class PackageTaskHandler(object):
         """
         Return the number of tasks that have been successfully handled so far.
         """
-        return len(self._results)
+        return self._count
 
     def use_hash_id_db(self):
         """
