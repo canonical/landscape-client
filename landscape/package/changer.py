@@ -50,6 +50,24 @@ class PackageChangerConfiguration(PackageTaskHandlerConfiguration):
         return os.path.join(self.package_directory, "binaries")
 
 
+class ChangePackagesResult(object):
+    """Value object to hold the results of change packages operation.
+
+    @ivar code: The result code of the requested changes.
+    @ivar text: The output from Smart.
+    @ivar installs: Possible additional packages that need to be installed
+        in order to fulfill the request.
+    @ivar removals: Possible additional packages that need to be removed
+        in order to fulfill the request.
+    """
+
+    def __init__(self):
+        self.code = None
+        self.text = None
+        self.installs = []
+        self.removals = []
+
+
 class PackageChanger(PackageTaskHandler):
     """Install, remove and upgrade packages."""
 
@@ -170,29 +188,25 @@ class PackageChanger(PackageTaskHandler):
                     raise UnknownPackageData(hash)
                 mark_func(package)
 
-    def perform_changes(self):
+    def change_packages(self):
         """Perform the requested changes.
 
-        @return: A 4-tuple of the form C{(code, text, installs, removals)},
-            holding respectively the result code of the request, the output
-            from Smart, and the possible additional packages that need to be
-            installed or removed in order to fulfill the request.
+        @return: A L{ChangePackagesResult} holding the details about the
+            outcome of the requested changes.
         """
         # Delay importing these so that we don't import Smart unless
         # we really need to.
         from landscape.package.facade import (
             DependencyError, TransactionError, SmartError)
 
-        text = None
-        installs = []
-        removals = []
+        result = ChangePackagesResult()
         try:
-            text = self._facade.perform_changes()
+            result.text = self._facade.perform_changes()
         except (TransactionError, SmartError), exception:
-            code = ERROR_RESULT
-            text = exception.args[0]
+            result.code = ERROR_RESULT
+            result.text = exception.args[0]
         except DependencyError, exception:
-            code = DEPENDENCY_ERROR_RESULT
+            result.code = DEPENDENCY_ERROR_RESULT
             for package in exception.packages:
                 hash = self._facade.get_package_hash(package)
                 id = self._store.get_hash_id(hash)
@@ -202,14 +216,14 @@ class PackageChanger(PackageTaskHandler):
                     raise UnknownPackageData(hash)
                 if package.installed:
                     # Package currently installed. Must remove it.
-                    removals.append(id)
+                    result.removals.append(id)
                 else:
                     # Package currently available. Must install it.
-                    installs.append(id)
+                    result.installs.append(id)
         else:
-            code = SUCCESS_RESULT
+            result.code = SUCCESS_RESULT
 
-        return code, text, installs, removals
+        return result
 
     def handle_change_packages(self, message):
         """Handle a C{change-packages} message."""
@@ -219,18 +233,18 @@ class PackageChanger(PackageTaskHandler):
                            message.get("install", ()),
                            message.get("remove", ()))
 
-        code, text, installs, removals = self.perform_changes()
+        result = self.change_packages()
 
         response = {"type": "change-packages-result",
                    "operation-id": message.get("operation-id")}
 
-        response["result-code"] = code
-        if text:
-            response["result-text"] = text
-        if installs:
-            response["must-install"] = sorted(installs)
-        if removals:
-            response["must-remove"] = sorted(removals)
+        response["result-code"] = result.code
+        if result.text:
+            response["result-text"] = result.text
+        if result.installs:
+            response["must-install"] = sorted(result.installs)
+        if result.removals:
+            response["must-remove"] = sorted(result.removals)
 
 
         logging.info("Queuing response with change package results to "
