@@ -38,6 +38,7 @@ class EucalyptusCloudManager(ManagerPlugin):
         self._eucalyptus_info_factory = eucalyptus_info_factory
         if self._eucalyptus_info_factory is None:
             self._eucalyptus_info_factory = get_eucalyptus_info
+        self.enabled = True
 
     def run(self):
         """Run the plugin.
@@ -48,13 +49,15 @@ class EucalyptusCloudManager(ManagerPlugin):
         the log and the plugin is disabled.
 
         @return: A C{Deferred} that will fire when the plugin has finished
-            running.
+            running, unless it's disabled in which case None is returned.
         """
+        if not self.enabled:
+            return
         try:
             data_path = self.registry.config.data_path
             service_hub = self._service_hub_factory(data_path)
         except:
-            self.registry.remove(self)
+            self.enabled = False
             logging.info("Couldn't start service hub.  '%s' plugin has been "
                          "disabled." % self.message_type)
         else:

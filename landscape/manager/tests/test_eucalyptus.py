@@ -185,15 +185,13 @@ class EucalyptusCloudManagerWithoutImageStoreTest(LandscapeTest):
         self.plugin = EucalyptusCloudManager(service_hub_factory=lambda: 1/0)
         self.manager.add(self.plugin)
 
-    def test_plugin_deregisters_on_imagestore_import_fail(self):
+    def test_plugin_disabled_on_imagestore_import_fail(self):
         """
         When L{EucalyptusCloudManager.run} is called it tries to import code
         from the C{imagestore} package.  The plugin disables itself if an
         exception is raised during this process (such as C{ImportError}, for
         example).
         """
-        self.assertIs(self.plugin,
-                      self.manager.get_plugin(self.plugin.plugin_name))
+        self.assertTrue(self.plugin.enabled)
         self.plugin.run()
-        self.assertRaises(KeyError, self.manager.get_plugin,
-                          self.plugin.plugin_name)
+        self.assertFalse(self.plugin.enabled)
