@@ -93,7 +93,12 @@ class EucalyptusCloudManagerTest(LandscapeTest):
         when the plugin is registered with the manager plugin registry.
         """
         plugin = self.get_plugin()
-        self.assertIs(plugin, self.manager.get_plugin(plugin.plugin_name))
+        self.assertIs(plugin, self.manager.get_plugin("eucalyptus-manager"))
+
+    def test_runs_every_five_minutes(self):
+        """The L{EucalyptusCloudManager} plugin is run every 5 minutes."""
+        plugin = self.get_plugin()
+        self.assertEqual(300, plugin.run_interval)
 
     def test_run_with_successful_message(self):
         """

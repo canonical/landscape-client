@@ -28,7 +28,7 @@ class EucalyptusCloudManager(ManagerPlugin):
     plugin_name = "eucalyptus-manager"
     message_type = "eucalyptus-info"
     error_message_type = "eucalyptus-info-error"
-    run_interval = 3600
+    run_interval = 5 * 60
 
     def __init__(self, service_hub_factory=None, eucalyptus_info_factory=None):
         super(EucalyptusCloudManager, self).__init__()
