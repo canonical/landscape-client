@@ -228,28 +228,31 @@ class PackageChanger(PackageTaskHandler):
                     else:
                         # Package currently available. Must install it.
                         result.installs.append(id)
-                if count > 1 or not self.complement_changes(result, policy):
+                if count == 1 and self.may_complement_changes(result, policy):
+                    # Mark all missing packages and try one more iteration
+                    self.mark_packages(install=result.installs,
+                                       remove=result.removals, reset=False)
+                else:
                     result.code = DEPENDENCY_ERROR_RESULT
             else:
                 result.code = SUCCESS_RESULT
 
         return result
 
-    def complement_changes(self, result, policy):
-        """Possibly mark additional packages to cope with a dependency error.
+    def may_complement_changes(self, result, policy):
+        """Decide whether or not we should complement the given changes.
 
         @param result: A L{PackagesResultObject} holding the details about the
-            missing dependencies.
+            missing dependencies needed to complement the given changes.
         @param policy: It can be one of the following values:
             - L{POLICY_STRICT}, no additional packages will be marked.
             - L{POLICY_ALLOW_INSTALLS}, if only additional installs are missing
                 they will be marked for installation.
-        @return: A boolean indicating whether additional packages have been
-            marked for installation or removal.
+        @return: A boolean indicating whether the given policy allows to
+            complement the changes and retry.
         """
         if policy == POLICY_ALLOW_INSTALLS:
             if result.installs and not result.removals:
-                self.mark_packages(install=result.installs, reset=False)
                 return True
         return False
 
