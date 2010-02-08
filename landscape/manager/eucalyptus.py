@@ -80,7 +80,8 @@ class EucalyptusCloudManager(ManagerPlugin):
         try:
             data_path = self.registry.config.data_path
             service_hub = self._service_hub_factory(data_path)
-        except:
+        except Exception, e:
+            logging.exception(e)
             self.enabled = False
             logging.info("Couldn't start service hub.  '%s' plugin has been "
                          "disabled." % self.message_type)
@@ -131,7 +132,7 @@ class EucalyptusCloudManager(ManagerPlugin):
 
         @param failure: A C{Failure} instance containing information about an
             error that occurred while trying to retrieve credentials.
-        @return: An errir message to send to the server.
+        @return: An error message to send to the server.
         """
         error = failure.getBriefTraceback()
         return {"type": self.error_message_type, "error": error}

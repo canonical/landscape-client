@@ -187,7 +187,7 @@ class EucalyptusCloudManagerWithoutImageStoreTest(LandscapeTest):
         super(EucalyptusCloudManagerWithoutImageStoreTest, self).setUp()
         message_type = EucalyptusCloudManager.message_type
         self.broker_service.message_store.set_accepted_types([message_type])
-        self.plugin = EucalyptusCloudManager(service_hub_factory=lambda: 1/0)
+        self.plugin = EucalyptusCloudManager(service_hub_factory=lambda x: 1/0)
         self.manager.add(self.plugin)
 
     def test_plugin_disabled_on_imagestore_import_fail(self):
@@ -198,5 +198,6 @@ class EucalyptusCloudManagerWithoutImageStoreTest(LandscapeTest):
         example).
         """
         self.assertTrue(self.plugin.enabled)
+        self.log_helper.ignore_errors(ZeroDivisionError)
         self.plugin.run()
         self.assertFalse(self.plugin.enabled)
