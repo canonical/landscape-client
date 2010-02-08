@@ -47,6 +47,13 @@ class ProcessInformation(object):
                 yield process_info
 
     def get_process_info(self, process_id):
+        """
+        Parse the /proc/<pid>/cmdline and /proc/<pid>/status files for
+        information about the running process with process_id.
+
+        The /proc filesystem doesn't behave like ext2, open files can disappear
+        during the read process.
+        """
         cmd_line_name = ""
         process_dir = os.path.join(self._proc_dir, str(process_id))
         process_info = {"pid": process_id}
