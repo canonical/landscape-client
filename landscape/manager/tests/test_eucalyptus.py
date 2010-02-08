@@ -96,10 +96,10 @@ class EucalyptusCloudManagerTest(LandscapeTest):
         plugin = self.get_plugin()
         self.assertIs(plugin, self.manager.get_plugin("eucalyptus-manager"))
 
-    def test_runs_every_five_minutes(self):
-        """The L{EucalyptusCloudManager} plugin is run every 5 minutes."""
+    def test_run_interval(self):
+        """The L{EucalyptusCloudManager} plugin is run every 15 minutes."""
         plugin = self.get_plugin()
-        self.assertEqual(300, plugin.run_interval)
+        self.assertEqual(900, plugin.run_interval)
 
     def test_run_with_successful_message(self):
         """
