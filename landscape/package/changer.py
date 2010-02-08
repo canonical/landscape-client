@@ -166,7 +166,7 @@ class PackageChanger(PackageTaskHandler):
     def mark_packages(self, upgrade=False, install=(), remove=()):
         """Mark packages for upgrade, installation or removal.
 
-        @param upgrade_all: If C{True} mark all installed packages for upgrade.
+        @param upgrade: If C{True} mark all installed packages for upgrade.
         @param install: A list of package ids to be marked for installation.
         @param remove: A list of package ids to be marked for removal.
         """
