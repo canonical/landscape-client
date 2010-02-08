@@ -21,6 +21,7 @@ class ProcessInfoTest(LandscapeTest):
 
             def __init__(self, response=""):
                 self._response = response
+                self.closed = False
 
             def readline(self):
                 return self._response
@@ -32,19 +33,24 @@ class ProcessInfoTest(LandscapeTest):
                     yield self._response
 
             def close(self):
-                pass
+                self.closed = True
 
         open_mock = self.mocker.replace("__builtin__.open")
         open_mock("/proc/12345/cmdline", "r")
-        self.mocker.result(FakeFile("test-binary"))
+        fakefile1 = FakeFile("test-binary")
+        self.mocker.result(fakefile1)
 
         open_mock("/proc/12345/status", "r")
-        self.mocker.result(FakeFile(None))
+        fakefile2 = FakeFile(None)
+        self.mocker.result(fakefile2)
 
         self.mocker.replay()
 
         process_info = ProcessInformation("/proc")
         processes = list(process_info.get_all_process_info())
+        self.assertEquals(processes, [])
+        self.assertTrue(fakefile1.closed)
+        self.assertTrue(fakefile2.closed)
 
 
 class CalculatePCPUTest(unittest.TestCase):
