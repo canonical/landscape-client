@@ -114,6 +114,7 @@ class EucalyptusCloudManager(ManagerPlugin):
             info.get_cluster_controller_info(),
             info.get_storage_controller_info(),
             info.get_node_controller_info()]
+
         def create_message(result):
             walrus_info, cluster_controller_info, storage_controller_info, \
                 node_controller_info = result

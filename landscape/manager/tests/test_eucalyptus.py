@@ -107,6 +107,7 @@ class EucalyptusCloudManagerTest(LandscapeTest):
         information from C{euca_conf}, a message with information about
         Eucalyptus is queued.
         """
+
         def check(ignore):
             expected = {
                 "type": "eucalyptus-info",
@@ -168,6 +169,7 @@ class EucalyptusCloudManagerTest(LandscapeTest):
         Eucalyptus, such as the C{imagestore} package not being available, an
         error message is sent to the server.
         """
+
         def check(ignore):
             error_message = (
                 "Traceback (failure with no frames): "
