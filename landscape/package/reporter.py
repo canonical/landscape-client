@@ -267,7 +267,7 @@ class PackageReporter(PackageTaskHandler):
 
     def _handle_unknown_packages(self, hashes):
 
-        self.ensure_channels_reloaded()
+        self._facade.ensure_channels_reloaded()
 
         hashes = set(hashes)
         added_hashes = []
@@ -337,7 +337,7 @@ class PackageReporter(PackageTaskHandler):
         Hashes previously requested won't be requested again, unless they
         have already expired and removed from the database.
         """
-        self.ensure_channels_reloaded()
+        self._facade.ensure_channels_reloaded()
 
         unknown_hashes = set()
 
@@ -402,7 +402,7 @@ class PackageReporter(PackageTaskHandler):
         In all cases, the server is notified of the new situation
         with a "packages" message.
         """
-        self.ensure_channels_reloaded()
+        self._facade.ensure_channels_reloaded()
 
         old_installed = set(self._store.get_installed())
         old_available = set(self._store.get_available())
