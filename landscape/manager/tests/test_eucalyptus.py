@@ -40,16 +40,16 @@ class FakeEucalyptusInfo(object):
         self._node_controller_output = node_controller_output
 
     def get_walrus_info(self):
-        return self._walrus_output
+        return succeed(self._walrus_output)
 
     def get_cluster_controller_info(self):
-        return self._cluster_controller_output
+        return succeed(self._cluster_controller_output)
 
     def get_storage_controller_info(self):
-        return self._storage_controller_output
+        return succeed(self._storage_controller_output)
 
     def get_node_controller_info(self):
-        return self._node_controller_output
+        return succeed(self._node_controller_output)
 
 
 class FakeServiceHub(object):

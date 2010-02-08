@@ -1,25 +1,49 @@
 import os
 import logging
 
+from twisted.internet.defer import succeed
+
+from landscape.lib.twisted_util import gather_results
 from landscape.manager.manager import ManagerPlugin
 
 
 class EucalyptusInfo(object):
+    """Provide utility methods to get information about a Eucalyptus cloud."""
 
     def __init__(self, tools):
         self._tools = tools
 
     def get_walrus_info(self):
-        return self._tools._runTool("euca_conf", ["--list-walruses"])
+        """Return information about the registered walruses (S3).
+
+        @return: a L{Deferred} firing with the string output of the
+            C{--list-walruses} command.
+        """
+        return succeed(self._tools._runTool("euca_conf", ["--list-walruses"]))
 
     def get_cluster_controller_info(self):
-        return self._tools._runTool("euca_conf", ["--list-clusters"])
+        """Return information about the registered cluster controllers..
+
+        @return: a L{Deferred} firing with the string output of the
+            C{--list-clusters} command.
+        """
+        return succeed(self._tools._runTool("euca_conf", ["--list-clusters"]))
 
     def get_storage_controller_info(self):
-        return self._tools._runTool("euca_conf", ["--list-scs"])
+        """Return information about the registered storage controllers (EBS).
+
+        @return: a L{Deferred} firing with the string output of the
+            C{--list-scs} command.
+        """
+        return succeed(self._tools._runTool("euca_conf", ["--list-scs"]))
 
     def get_node_controller_info(self):
-        return self._tools._runTool("euca_conf", ["--list-nodes"])
+        """Return information about the registered node controller.
+
+        @return: a L{Deferred} firing with the string output of the
+            C{--list-nodes} command.
+        """
+        return succeed(self._tools._runTool("euca_conf", ["--list-nodes"]))
 
 
 class EucalyptusCloudManager(ManagerPlugin):
@@ -78,23 +102,29 @@ class EucalyptusCloudManager(ManagerPlugin):
         @return: A message with information about Eucalyptus to send to the
             server.
         """
+        deferred_list = []
         info = self._eucalyptus_info_factory(credentials)
-        walrus_info = info.get_walrus_info()
-        cluster_controller_info = info.get_cluster_controller_info()
-        storage_controller_info = info.get_storage_controller_info()
-        node_controller_info = info.get_node_controller_info()
-        data = {"access_key": credentials.accessKey,
-                "secret_key": credentials.secretKey,
-                "private_key_path": credentials.privateKeyPath,
-                "certificate_path": credentials.certificatePath,
-                "cloud_certificate_path": credentials.cloudCertificatePath,
-                "url_for_s3": credentials.urlForS3,
-                "url_for_ec2": credentials.urlForEC2}
-        return {"type": self.message_type, "basic_info": data,
-                "walrus_info": walrus_info,
-                "cluster_controller_info": cluster_controller_info,
-                "storage_controller_info": storage_controller_info,
-                "node_controller_info": node_controller_info}
+        deferred_list = [
+            info.get_walrus_info(),
+            info.get_cluster_controller_info(),
+            info.get_storage_controller_info(),
+            info.get_node_controller_info()]
+        def create_message(result):
+            walrus_info, cluster_controller_info, storage_controller_info, \
+                node_controller_info = result
+            data = {"access_key": credentials.accessKey,
+                    "secret_key": credentials.secretKey,
+                    "private_key_path": credentials.privateKeyPath,
+                    "certificate_path": credentials.certificatePath,
+                    "cloud_certificate_path": credentials.cloudCertificatePath,
+                    "url_for_s3": credentials.urlForS3,
+                    "url_for_ec2": credentials.urlForEC2}
+            return {"type": self.message_type, "basic_info": data,
+                    "walrus_info": walrus_info,
+                    "cluster_controller_info": cluster_controller_info,
+                    "storage_controller_info": storage_controller_info,
+                    "node_controller_info": node_controller_info}
+        return gather_results(deferred_list).addCallback(create_message)
 
     def _get_error_message(self, failure):
         """Create an error message.
