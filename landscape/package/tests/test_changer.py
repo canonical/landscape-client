@@ -14,7 +14,8 @@ from landscape.package.changer import (
 from landscape.package.store import PackageStore
 from landscape.package.facade import (
     DependencyError, TransactionError, SmartError)
-from landscape.package.changer import PackageChangerConfiguration
+from landscape.package.changer import (
+    PackageChangerConfiguration, ChangePackagesResult)
 
 from landscape.tests.mocker import ANY
 from landscape.tests.helpers import (
@@ -383,7 +384,7 @@ class PackageChangerTest(LandscapeIsolatedTest):
         self.assertEquals(result.installs, [1, 2])
         self.assertEquals(result.removals, [])
 
-    def test_handle_change_package_locks_with_policy(self):
+    def test_handle_change_packages_with_policy(self):
         """
         The C{change-packages} message can have an optional C{policy}
         field that will be passed to the C{perform_changes} method.
@@ -394,12 +395,13 @@ class PackageChangerTest(LandscapeIsolatedTest):
                              "install": [1],
                              "policy": POLICY_ALLOW_INSTALLS,
                              "operation-id": 123})
-        self.changer.perform_changes = self.mocker.mock()
-        self.changer.perform_changes(POLICY_ALLOW_INSTALLS)
-        self.mocker.result((SUCCESS_RESULT, "success", [], []))
+        self.changer.change_packages = self.mocker.mock()
+        self.changer.change_packages(POLICY_ALLOW_INSTALLS)
+        result = ChangePackagesResult()
+        result.code = SUCCESS_RESULT
+        self.mocker.result(result)
         self.mocker.replay()
         return self.changer.handle_tasks()
-
 
     def test_transaction_error(self):
         """
