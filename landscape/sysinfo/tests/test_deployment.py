@@ -17,10 +17,13 @@ from landscape.tests.mocker import ARGS, KWARGS
 
 
 class DeploymentTest(LandscapeTest):
+
     def setUp(self):
         super(DeploymentTest, self).setUp()
+
         class TestConfiguration(SysInfoConfiguration):
             default_config_filenames = ()
+
         self.configuration = TestConfiguration()
 
     def test_get_plugins(self):
@@ -64,12 +67,16 @@ class FakeReactor(object):
         self.queued_calls = []
         self.scheduled_calls = []
         self.running = False
+
     def callWhenRunning(self, callable):
         self.queued_calls.append(callable)
+
     def run(self):
         self.running = True
+
     def callLater(self, seconds, callable, *args, **kwargs):
         self.scheduled_calls.append((seconds, callable, args, kwargs))
+
     def stop(self):
         self.running = False
 
@@ -141,9 +148,11 @@ class RunTest(LandscapeTest):
 
     def test_default_arguments_load_default_plugins(self):
         result = run([])
+
         def check_result(result):
             self.assertIn("System load", self.stdout.getvalue())
             self.assertNotIn("Test note", self.stdout.getvalue())
+
         return result.addCallback(check_result)
 
     def test_plugins_called_after_reactor_starts(self):
@@ -258,7 +267,6 @@ class RunTest(LandscapeTest):
         self.assertFalse(os.path.exists(log_dir))
         setup_logging(landscape_dir=log_dir)
         self.assertTrue(os.path.exists(log_dir))
-        
 
     def test_run_sets_up_logging(self):
         setup_logging_mock = self.mocker.replace(

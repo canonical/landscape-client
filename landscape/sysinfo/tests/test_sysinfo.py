@@ -77,11 +77,15 @@ class SysInfoPluginRegistryTest(LandscapeTest):
         self.assertEquals(self.sysinfo.get_notes(), [])
 
     def test_run(self):
+
         class Plugin(object):
+
             def __init__(self, deferred):
                 self._deferred = deferred
+
             def register(self, registry):
                 pass
+
             def run(self):
                 return self._deferred
 
@@ -117,18 +121,25 @@ class SysInfoPluginRegistryTest(LandscapeTest):
         """
         self.log_helper.ignore_errors(ZeroDivisionError)
         plugins_what_run = []
+
         class BadPlugin(object):
+
             def register(self, registry):
                 pass
+
             def run(self):
                 plugins_what_run.append(self)
                 1/0
+
         class GoodPlugin(object):
+
             def register(self, registry):
                 pass
+
             def run(self):
                 plugins_what_run.append(self)
                 return succeed(None)
+
         plugin1 = BadPlugin()
         plugin2 = GoodPlugin()
         self.sysinfo.add(plugin1)
@@ -148,11 +159,15 @@ class SysInfoPluginRegistryTest(LandscapeTest):
 
     def test_asynchronous_errors_logged(self):
         self.log_helper.ignore_errors(ZeroDivisionError)
+
         class BadPlugin(object):
+
             def register(self, registry):
                 pass
+
             def run(self):
                 return fail(ZeroDivisionError("yay"))
+
         plugin = BadPlugin()
         self.sysinfo.add(plugin)
         self.sysinfo.run()
@@ -167,15 +182,20 @@ class SysInfoPluginRegistryTest(LandscapeTest):
 
     def test_multiple_exceptions_get_one_note(self):
         self.log_helper.ignore_errors(ZeroDivisionError)
+
         class RegularBadPlugin(object):
+
             def register(self, registry):
                 pass
+
             def run(self):
                 1/0
 
         class AsyncBadPlugin(object):
+
             def register(self, registry):
                 pass
+
             def run(self):
                 return fail(ZeroDivisionError("Hi"))
 
@@ -196,9 +216,12 @@ class SysInfoPluginRegistryTest(LandscapeTest):
         self.mocker.result(0)
         self.mocker.replay()
         self.log_helper.ignore_errors(ZeroDivisionError)
+
         class AsyncBadPlugin(object):
+
             def register(self, registry):
                 pass
+
             def run(self):
                 return fail(ZeroDivisionError("Hi"))
 
@@ -210,6 +233,7 @@ class SysInfoPluginRegistryTest(LandscapeTest):
         self.assertEquals(
             self.sysinfo.get_notes(),
             [self.plugin_exception_message % path])
+
 
 class FormatTest(LandscapeTest):
 
@@ -364,8 +388,8 @@ class FormatTest(LandscapeTest):
         self.assertEquals(
             format_sysinfo(notes=[
                 "I do believe that a very long note, such as one that is "
-                "longer than about 50 characters, should wrap at the specified "
-                "width."], width=50, indent="Z"),
+                "longer than about 50 characters, should wrap at the "
+                "specified width."], width=50, indent="Z"),
             """\
 Z=> I do believe that a very long note, such as
     one that is longer than about 50 characters,
