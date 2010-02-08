@@ -211,6 +211,11 @@ class SysInfoPluginRegistryTest(LandscapeTest):
             [self.plugin_exception_message % path])
 
     def test_exception_running_as_privileged_user(self):
+        """
+        If a Plugin fails while running and the sysinfo binary is running with
+        a uid of 0, Landscape sysinfo should write to the system logs
+        directory.
+        """
         uid_mock = self.mocker.replace("os.getuid")
         uid_mock()
         self.mocker.result(0)
