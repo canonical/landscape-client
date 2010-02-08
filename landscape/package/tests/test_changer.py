@@ -337,7 +337,7 @@ class PackageChangerTest(LandscapeIsolatedTest):
 
     def test_perform_changes_with_allow_install_policy_and_removals(self):
         """
-        The C{POLICY_ALLOW_INSTALLS} policy doens't allow additional packages
+        The C{POLICY_ALLOW_INSTALLS} policy doesn't allow additional packages
         to be removed.
         """
         self.store.set_hash_ids({HASH1: 1, HASH2: 2})
@@ -718,7 +718,7 @@ class PackageChangerTest(LandscapeIsolatedTest):
                                                ".run_task_handler",
                                                passthrough=False)
         setsid = self.mocker.replace("os.setsid")
-        
+
         setsid()
         run_task_handler(PackageChanger, ["ARGS"])
         self.mocker.result("RESULT")
