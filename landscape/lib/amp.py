@@ -232,6 +232,7 @@ class MethodCallClientFactory(ReconnectingClientFactory):
             to schedule notifications and timeouts.
         """
         self.reactor = reactor
+        self.clock = self.reactor
         self._notifiers = []
 
     def add_notifier(self, callback, errback=None):

@@ -2,12 +2,46 @@ from twisted.internet import reactor
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.internet.protocol import ClientCreator
 from twisted.internet.error import ConnectionDone, ConnectError
+from twisted.internet.task import Clock
+from twisted.internet.unix import Port, Client
+from twisted.internet.posixbase import PosixReactorBase
 
 from landscape.lib.amp import (
     MethodCallError, MethodCallServerProtocol,
     MethodCallClientProtocol, MethodCallServerFactory,
     MethodCallClientFactory, RemoteObject, RemoteObjectCreator)
 from landscape.tests.helpers import LandscapeTest
+
+class FakeReactor(Clock, PosixReactorBase):
+
+    def __init__(self):
+        PosixReactorBase.__init__(self)
+        Clock.__init__(self)
+        self.client = None
+        self.port = None
+
+    def addReader(self, reader):
+        if isinstance(reader, Client):
+            self.client = reader
+        if isinstance(reader, Port):
+            self.port = reader
+
+    def removeReader(self, reader):
+        return
+
+    def addWriter(self, writer):
+        return
+
+    def removeWriter(self, writer):
+        return
+
+    def doIteration(self, delay):
+        self.advance(delay)
+        if self.client:
+            why = getattr(self.client, "doRead")()
+            if why:
+                self._disconnectSelectable(self.client, why, True)
+            self.client = None
 
 
 class WordsException(Exception):
@@ -433,67 +467,61 @@ class MethodCallClientFactoryTest(LandscapeTest):
     def setUp(self):
         super(MethodCallClientFactoryTest, self).setUp()
         self.socket = self.mktemp()
-        self.server_factory = WordsServerFactory(Words())
+        self.reactor = FakeReactor()
+        self.factory = WordsClientFactory(self.reactor)
 
     def test_connect_with_retry(self):
         """
         The L{MethodCallClientFactory} keeps trying connecting till it
         succeeds.
         """
+        # Try to connect a few times
+        self.reactor.connectUNIX(self.socket, self.factory)
+        self.reactor.iterate(0)
+        self.assertEquals(self.factory.retries, 1)
+        self.reactor.iterate(0.5)
+        self.assertTrue(self.factory.retries > 1)
+
+        # Now start listening
         connected = Deferred()
-        client_factory = WordsClientFactory(reactor)
-        client_factory.add_notifier(connected.callback)
-
-        ports = []
-
-        def listen():
-            self.assertTrue(client_factory.retries > 0)
-            ports.append(reactor.listenUNIX(self.socket, self.server_factory))
-
-        def assert_connection(protocol):
-            self.assertTrue(isinstance(protocol, WordsClientProtocol))
-            client_factory.stopTrying()
-            protocol.transport.loseConnection()
-            ports[0].stopListening()
-
-        reactor.callLater(0.2, listen)
-        reactor.connectUNIX(self.socket, client_factory)
-        return connected.addCallback(assert_connection)
+        self.factory.add_notifier(connected.callback)
+        self.reactor.listenUNIX(self.socket, WordsServerFactory(None))
+        self.reactor.iterate(0.1)
+        self.assertEquals(self.factory.retries, 0)
+        self.assertTrue(connected.called)
+        self.assertTrue(isinstance(connected.result, WordsClientProtocol))
 
     def test_reconnect(self):
         """
         The L{MethodCallClientFactory} reconnects automatically if the
         connection drops, and calls the notifier function again.
         """
-        ports = [reactor.listenUNIX(self.socket, self.server_factory)]
         protocols = []
-        reconnected = Deferred()
-
-        def restart_listening():
-            ports.append(reactor.listenUNIX(self.socket, self.server_factory))
+        port = self.reactor.listenUNIX(self.socket, WordsServerFactory(None))
 
         def connection_made(protocol):
-            if len(ports) == 1:
-                # First connection
-                self.assertTrue(client_factory.retries == 0)
-                protocols.append(protocol)
-                protocol.transport.loseConnection()
-                ports[0].stopListening()
-                reactor.callLater(0.1, restart_listening)
-            else:
-                # Second connection
-                self.assertEquals(client_factory.delay,
-                                  client_factory.initialDelay)
-                self.assertIsNot(protocol, protocols[0])
-                client_factory.stopTrying()
-                protocol.transport.loseConnection()
-                ports[1].stopListening()
-                reconnected.callback(None)
+            self.assertTrue(self.factory.retries == 0)
+            if not protocols:
+                # First connection, drop it
+                port.stopListening()
+            protocols.append(protocol)
 
-        client_factory = WordsClientFactory(reactor)
-        client_factory.add_notifier(connection_made)
-        reactor.connectUNIX(self.socket, client_factory)
-        return reconnected
+        # Establish the first connection
+        self.factory.add_notifier(connection_made)
+        self.reactor.connectUNIX(self.socket, self.factory)
+        self.reactor.iterate(0)
+        self.assertEquals(len(protocols), 1)
+
+        # The connection has dropped now, and the factory tries to reconnect
+        self.reactor.iterate(0.5)
+        self.assertTrue(self.factory.retries > 0)
+
+        # A second connection is established
+        self.reactor.listenUNIX(self.socket, WordsServerFactory(None))
+        self.reactor.iterate(0.1)
+        self.assertEquals(len(protocols), 2)
+        self.assertEquals(self.factory.delay, self.factory.initialDelay)
+        self.assertIsNot(protocols[0], protocols[1])
 
 
 class RemoteObjectCreatorTest(LandscapeTest):
