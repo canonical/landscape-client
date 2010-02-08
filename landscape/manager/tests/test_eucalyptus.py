@@ -30,6 +30,7 @@ registered nodes:
   10.1.1.75  canyonedge
 """
 
+
 class FakeEucalyptusInfo(object):
 
     def __init__(self, walrus_output=None, cluster_controller_output=None,
@@ -125,6 +126,24 @@ class EucalyptusCloudManagerTest(LandscapeTest):
                 [expected])
 
         plugin = self.get_plugin(succeed(FakeEucaInfo()))
+        deferred = plugin.run()
+        deferred.addCallback(check)
+        return deferred
+
+    def test_run_not_accepted_types(self):
+        """
+        If the C{eucalyptus-info message type is not accepted, the plugin
+        doesn't even try to run.
+        """
+        self.broker_service.message_store.set_accepted_types([])
+
+        def check(ignore):
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [])
+
+        plugin = EucalyptusCloudManager(lambda x: 1/0, lambda x: 1/0)
+        self.manager.add(plugin)
         deferred = plugin.run()
         deferred.addCallback(check)
         return deferred

@@ -77,6 +77,10 @@ class EucalyptusCloudManager(ManagerPlugin):
         """
         if not self.enabled:
             return
+        return self.registry.broker.call_if_accepted(
+            self.message_type, self.send_message)
+
+    def send_message(self):
         try:
             data_path = self.registry.config.data_path
             service_hub = self._service_hub_factory(data_path)
