@@ -59,66 +59,64 @@ class ProcessInformation(object):
         process_info = {"pid": process_id}
 
         try:
-            try:
-                file = open(os.path.join(process_dir, "cmdline"), "r")
+            file = open(os.path.join(process_dir, "cmdline"), "r")
 
-                # cmdline is a \0 separated list of strings
-                # We take the first, and then strip off the path, leaving us with
-                # the basename.
-                cmd_line = file.readline()
-                cmd_line_name = os.path.basename(cmd_line.split("\0")[0])
+            # cmdline is a \0 separated list of strings
+            # We take the first, and then strip off the path, leaving us with
+            # the basename.
+            cmd_line = file.readline()
+            cmd_line_name = os.path.basename(cmd_line.split("\0")[0])
 
-                file = open(os.path.join(process_dir, "status"), "r")
-                for line in file:
-                    parts = line.split(":", 1)
-                    if parts[0] == "Name":
-                        process_info["name"] = (cmd_line_name.strip() or
-                                                parts[1].strip())
-                    elif parts[0] == "State":
-                        state = parts[1].strip()
-                        process_info["state"] = STATES[state]
-                    elif parts[0] == "Uid":
-                        value_parts = parts[1].split()
-                        process_info["uid"] = int(value_parts[0])
-                    elif parts[0] == "Gid":
-                        value_parts = parts[1].split()
-                        process_info["gid"] = int(value_parts[0])
-                    elif parts[0] == "VmSize":
-                        value_parts = parts[1].split()
-                        process_info["vm-size"] = int(value_parts[0])
-                        break
-
-                file = open(os.path.join(process_dir, "stat"), "r")
-
-                # These variable names are lifted directly from proc(5)
-                # utime: The number of jiffies that this process has been scheduled in
-                # user mode.
-                # stime: The number of jiffies that this process has been scheduled in
-                # kernel mode.
-                # cutime: The number of jiffies that this process's waited-for children
-                # have been scheduled in user mode.
-                # cstime: The number of jiffies that this process's waited-for children
-                # have been scheduled in kernel mode.
-                parts = file.read().split()
-                start_time = int(parts[21])
-                utime = int(parts[13])
-                stime = int(parts[14])
-                uptime = self._uptime or get_uptime()
-                pcpu = calculate_pcpu(utime, stime, uptime,
-                                      start_time, self._jiffies_per_sec)
-                process_info["percent-cpu"] = pcpu
-                delta = timedelta(0, start_time // self._jiffies_per_sec)
-                if self._boot_time is None:
-                    logging.warning("Skipping process (PID %s) without boot time.")
-                    return None
-                process_info["start-time"] = to_timestamp(self._boot_time  + delta)
-
-            except IOError:
-                # Handle the race that happens when we find a process
-                # which terminates before we open the stat file.
-                return None
-        finally:
+            file = open(os.path.join(process_dir, "status"), "r")
+            for line in file:
+                parts = line.split(":", 1)
+                if parts[0] == "Name":
+                    process_info["name"] = (cmd_line_name.strip() or
+                                            parts[1].strip())
+                elif parts[0] == "State":
+                    state = parts[1].strip()
+                    process_info["state"] = STATES[state]
+                elif parts[0] == "Uid":
+                    value_parts = parts[1].split()
+                    process_info["uid"] = int(value_parts[0])
+                elif parts[0] == "Gid":
+                    value_parts = parts[1].split()
+                    process_info["gid"] = int(value_parts[0])
+                elif parts[0] == "VmSize":
+                    value_parts = parts[1].split()
+                    process_info["vm-size"] = int(value_parts[0])
+                    break
             file.close()
+
+            file = open(os.path.join(process_dir, "stat"), "r")
+            # These variable names are lifted directly from proc(5)
+            # utime: The number of jiffies that this process has been scheduled in
+            # user mode.
+            # stime: The number of jiffies that this process has been scheduled in
+            # kernel mode.
+            # cutime: The number of jiffies that this process's waited-for children
+            # have been scheduled in user mode.
+            # cstime: The number of jiffies that this process's waited-for children
+            # have been scheduled in kernel mode.
+            parts = file.read().split()
+            start_time = int(parts[21])
+            utime = int(parts[13])
+            stime = int(parts[14])
+            uptime = self._uptime or get_uptime()
+            pcpu = calculate_pcpu(utime, stime, uptime,
+                                  start_time, self._jiffies_per_sec)
+            process_info["percent-cpu"] = pcpu
+            delta = timedelta(0, start_time // self._jiffies_per_sec)
+            if self._boot_time is None:
+               logging.warning("Skipping process (PID %s) without boot time.")
+               return None
+            process_info["start-time"] = to_timestamp(self._boot_time  + delta)
+            file.close()
+
+        except IOError:
+            # Handle the race that happens when we find a process
+            # which terminates before we open the stat file.
+            return None
 
         assert("pid" in process_info and "state" in process_info
                and "name" in process_info and "uid" in process_info
