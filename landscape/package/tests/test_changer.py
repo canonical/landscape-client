@@ -309,54 +309,79 @@ class PackageChangerTest(LandscapeIsolatedTest):
 
     def test_perform_changes_with_allow_install_policy(self):
         """
-        The C{POLICY_ALLOW_INSTALLS} policy the makes the changer
-        automatically mark the missing packages for installation.
+        The C{POLICY_ALLOW_INSTALLS} policy the makes the changer mark
+        the missing packages for installation.
         """
-        self.store.set_hash_ids({HASH1: 1, HASH2: 2})
-        self.changer.init_channels()
-        self.changer.mark_packages(install=[2])
+        self.store.set_hash_ids({HASH1: 1})
+        self.facade.reload_channels()
+        package1 = self.facade.get_packages_by_name("name1")[0]
 
-        missing = [self.facade.get_packages_by_name("name1")[0]]
+        self.mocker.order()
         self.facade.perform_changes = self.mocker.mock()
         self.facade.perform_changes()
-        self.mocker.throw(DependencyError(missing))
+        self.mocker.throw(DependencyError([package1]))
 
+        self.facade.mark_install = self.mocker.mock()
+        self.facade.mark_install(package1)
         self.facade.perform_changes()
         self.mocker.result("success")
         self.mocker.replay()
 
-        code, text, installs, removals = self.changer.perform_changes(
-            POLICY_ALLOW_INSTALLS)
+        result = self.changer.change_packages(POLICY_ALLOW_INSTALLS)
 
-        self.assertEquals(code, SUCCESS_RESULT)
-        self.assertEquals(text, "success")
-        self.assertEquals(installs, [])
-        self.assertEquals(removals, [])
+        self.assertEquals(result.code, SUCCESS_RESULT)
+        self.assertEquals(result.text, "success")
+        self.assertEquals(result.installs, [1])
+        self.assertEquals(result.removals, [])
 
     def test_perform_changes_with_allow_install_policy_and_removals(self):
         """
-        The C{POLICY_ALLOW_INSTALLS} policy the makes the changer
-        automatically mark the missing packages for installation.
+        The C{POLICY_ALLOW_INSTALLS} policy doens't allow additional packages
+        to be removed.
         """
-        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2})
         self.set_pkg1_installed()
-        self.changer.init_channels()
-        self.changer.mark_packages(install=[3])
+        self.facade.reload_channels()
 
-        missing = [self.facade.get_packages_by_name("name1")[0],
-                   self.facade.get_packages_by_name("name2")[0]]
+        package1 = self.facade.get_packages_by_name("name1")[0]
+        package2 = self.facade.get_packages_by_name("name2")[0]
         self.facade.perform_changes = self.mocker.mock()
         self.facade.perform_changes()
-        self.mocker.throw(DependencyError(missing))
+        self.mocker.throw(DependencyError([package1, package2]))
         self.mocker.replay()
 
-        code, text, installs, removals = self.changer.perform_changes(
-            POLICY_ALLOW_INSTALLS)
+        result = self.changer.change_packages(POLICY_ALLOW_INSTALLS)
 
-        self.assertEquals(code, DEPENDENCY_ERROR_RESULT)
-        self.assertEquals(text, None)
-        self.assertEquals(installs, [2])
-        self.assertEquals(removals, [1])
+        self.assertEquals(result.code, DEPENDENCY_ERROR_RESULT)
+        self.assertEquals(result.text, None)
+        self.assertEquals(result.installs, [2])
+        self.assertEquals(result.removals, [1])
+
+    def test_perform_changes_with_max_retries(self):
+        """
+        After having complemented the requested changes to handle a dependency
+        error, the L{PackageChanger.change_packages} will try to perform the
+        requested changes again only once.
+        """
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2})
+        self.facade.reload_channels()
+
+        package1 = self.facade.get_packages_by_name("name1")[0]
+        package2 = self.facade.get_packages_by_name("name2")[0]
+
+        self.facade.perform_changes = self.mocker.mock()
+        self.facade.perform_changes()
+        self.mocker.throw(DependencyError([package1]))
+        self.facade.perform_changes()
+        self.mocker.throw(DependencyError([package2]))
+        self.mocker.replay()
+
+        result = self.changer.change_packages(POLICY_ALLOW_INSTALLS)
+
+        self.assertEquals(result.code, DEPENDENCY_ERROR_RESULT)
+        self.assertEquals(result.text, None)
+        self.assertEquals(result.installs, [1, 2])
+        self.assertEquals(result.removals, [])
 
     def test_handle_change_package_locks_with_policy(self):
         """

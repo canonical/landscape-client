@@ -51,6 +51,24 @@ class PackageChangerConfiguration(PackageTaskHandlerConfiguration):
         return os.path.join(self.package_directory, "binaries")
 
 
+class ChangePackagesResult(object):
+    """Value object to hold the results of change packages operation.
+
+    @ivar code: The result code of the requested changes.
+    @ivar text: The output from Smart.
+    @ivar installs: Possible additional packages that need to be installed
+        in order to fulfill the request.
+    @ivar removals: Possible additional packages that need to be removed
+        in order to fulfill the request.
+    """
+
+    def __init__(self):
+        self.code = None
+        self.text = None
+        self.installs = []
+        self.removals = []
+
+
 class PackageChanger(PackageTaskHandler):
     """Install, remove and upgrade packages."""
 
@@ -173,54 +191,67 @@ class PackageChanger(PackageTaskHandler):
                     raise UnknownPackageData(hash)
                 mark_func(package)
 
-    def perform_changes(self, policy=POLICY_STRICT):
+    def change_packages(self, policy):
         """Perform the requested changes.
 
         @param policy: A value indicating what to do in case additional changes
             beside the ones explicitly requested are needed in order to fulfill
-            the request.
-        @return: A 4-tuple of the form C{(code, text, installs, removals)},
-            holding respectively the result code of the request, the output
-            from Smart, and the possible additional packages that need to be
-            installed or removed in order to fulfill the request.
+            the request (see L{complement_changes}).
+        @return: A L{ChangePackagesResult} holding the details about the
+            outcome of the requested changes.
         """
         # Delay importing these so that we don't import Smart unless
         # we really need to.
         from landscape.package.facade import (
             DependencyError, TransactionError, SmartError)
 
-        text = None
-        installs = []
-        removals = []
-        try:
-            text = self._facade.perform_changes()
-        except (TransactionError, SmartError), exception:
-            code = ERROR_RESULT
-            text = exception.args[0]
-        except DependencyError, exception:
-            code = DEPENDENCY_ERROR_RESULT
-            for package in exception.packages:
-                hash = self._facade.get_package_hash(package)
-                id = self._store.get_hash_id(hash)
-                if id is None:
-                    # Will have to wait until the server lets us know about
-                    # this id.
-                    raise UnknownPackageData(hash)
-                if package.installed:
-                    # Package currently installed. Must remove it.
-                    removals.append(id)
-                else:
-                    # Package currently available. Must install it.
-                    installs.append(id)
-        else:
-            code = SUCCESS_RESULT
+        result = ChangePackagesResult()
+        count = 0
+        while result.code is None:
+            count += 1
+            try:
+                result.text = self._facade.perform_changes()
+            except (TransactionError, SmartError), exception:
+                result.code = ERROR_RESULT
+                result.text = exception.args[0]
+            except DependencyError, exception:
+                for package in exception.packages:
+                    hash = self._facade.get_package_hash(package)
+                    id = self._store.get_hash_id(hash)
+                    if id is None:
+                        # Will have to wait until the server lets us know about
+                        # this id.
+                        raise UnknownPackageData(hash)
+                    if package.installed:
+                        # Package currently installed. Must remove it.
+                        result.removals.append(id)
+                    else:
+                        # Package currently available. Must install it.
+                        result.installs.append(id)
+                if count > 1 or not self.complement_changes(result, policy):
+                    result.code = DEPENDENCY_ERROR_RESULT
+            else:
+                result.code = SUCCESS_RESULT
 
-        if installs and not removals and policy == POLICY_ALLOW_INSTALLS:
-            # We have just packages to install and the policy allows to go on
-            self.mark_packages(install=installs, reset=False)
-            return self.perform_changes()
+        return result
 
-        return code, text, installs, removals
+    def complement_changes(self, result, policy):
+        """Possibly mark additional packages to cope with a dependency error.
+
+        @param result: A L{PackagesResultObject} holding the details about the
+            missing dependencies.
+        @param policy: It can be one of the following values:
+            - L{POLICY_STRICT}, no additional packages will be marked.
+            - L{POLICY_ALLOW_INSTALLS}, if only additional installs are missing
+                they will be marked for installation.
+        @return: A boolean indicating whether additional packages have been
+            marked for installation or removal.
+        """
+        if policy == POLICY_ALLOW_INSTALLS:
+            if result.installs and not result.removals:
+                self.mark_packages(install=result.installs, reset=False)
+                return True
+        return False
 
     def handle_change_packages(self, message):
         """Handle a C{change-packages} message."""
@@ -230,19 +261,18 @@ class PackageChanger(PackageTaskHandler):
                            message.get("install", ()),
                            message.get("remove", ()))
 
-        code, text, installs, removals = self.perform_changes(
-            message.get("policy", POLICY_STRICT))
+        result = self.change_packages(message.get("policy", POLICY_STRICT))
 
         response = {"type": "change-packages-result",
                    "operation-id": message.get("operation-id")}
 
-        response["result-code"] = code
-        if text:
-            response["result-text"] = text
-        if installs:
-            response["must-install"] = sorted(installs)
-        if removals:
-            response["must-remove"] = sorted(removals)
+        response["result-code"] = result.code
+        if result.text:
+            response["result-text"] = result.text
+        if result.installs:
+            response["must-install"] = sorted(result.installs)
+        if result.removals:
+            response["must-remove"] = sorted(result.removals)
 
 
         logging.info("Queuing response with change package results to "
