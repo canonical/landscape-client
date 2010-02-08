@@ -59,16 +59,18 @@ class ProcessInformation(object):
         process_info = {"pid": process_id}
 
         try:
+            file = open(os.path.join(process_dir, "cmdline"), "r")
             try:
-                file = open(os.path.join(process_dir, "cmdline"), "r")
-
                 # cmdline is a \0 separated list of strings
                 # We take the first, and then strip off the path, leaving us with
                 # the basename.
                 cmd_line = file.readline()
                 cmd_line_name = os.path.basename(cmd_line.split("\0")[0])
+            finally:
+                file.close()
 
-                file = open(os.path.join(process_dir, "status"), "r")
+            file = open(os.path.join(process_dir, "status"), "r")
+            try:
                 for line in file:
                     parts = line.split(":", 1)
                     if parts[0] == "Name":
@@ -87,9 +89,11 @@ class ProcessInformation(object):
                         value_parts = parts[1].split()
                         process_info["vm-size"] = int(value_parts[0])
                         break
+            finally:
                 file.close()
 
-                file = open(os.path.join(process_dir, "stat"), "r")
+            file = open(os.path.join(process_dir, "stat"), "r")
+            try:
                 # These variable names are lifted directly from proc(5)
                 # utime: The number of jiffies that this process has been scheduled in
                 # user mode.
@@ -112,13 +116,13 @@ class ProcessInformation(object):
                    logging.warning("Skipping process (PID %s) without boot time.")
                    return None
                 process_info["start-time"] = to_timestamp(self._boot_time  + delta)
+            finally:
+                file.close()
 
-            except IOError:
-                # Handle the race that happens when we find a process
-                # which terminates before we open the stat file.
-                return None
-        finally:
-            file.close()
+        except IOError:
+            # Handle the race that happens when we find a process
+            # which terminates before we open the stat file.
+            return None
 
         assert("pid" in process_info and "state" in process_info
                and "name" in process_info and "uid" in process_info
