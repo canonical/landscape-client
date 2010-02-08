@@ -712,15 +712,15 @@ class PackageChangerTest(LandscapeIsolatedTest):
             self.config.binaries_path,
             os.path.join(self.config.data_path, "package", "binaries"))
 
-    def test_wb_create_deb_dir_channel(self):
+    def test_init_channels(self):
         """
-        The L{PackageChanger._create_deb_dir_channel} method makes the given
+        The L{PackageChanger.init_channels} method makes the given
         Debian packages available in a C{deb-dir} Smart channel.
         """
         binaries = [(HASH1, 111, PKGDEB1), (HASH2, 222, PKGDEB2)]
 
         self.facade.reset_channels()
-        self.changer._create_deb_dir_channel(binaries)
+        self.changer.init_channels(binaries)
 
         binaries_path = self.config.binaries_path
         self.assertFileContent(os.path.join(binaries_path, "111.deb"),
@@ -733,29 +733,29 @@ class PackageChangerTest(LandscapeIsolatedTest):
 
         self.assertEquals(self.store.get_hash_ids(), {HASH1: 111, HASH2: 222})
 
-        self.changer.ensure_channels_reloaded()
+        self.facade.ensure_channels_reloaded()
         [pkg1, pkg2] = sorted(self.facade.get_packages(),
                               key=lambda pkg: pkg.name)
         self.assertEquals(self.facade.get_package_hash(pkg1), HASH1)
         self.assertEquals(self.facade.get_package_hash(pkg2), HASH2)
 
-    def test_wb_create_deb_dir_channel_with_existing_hash_id_map(self):
+    def test_init_channels_with_existing_hash_id_map(self):
         """
-        The L{PackageChanger._create_deb_dir_channel} behaves well even if the
+        The L{PackageChanger.init_channels} behaves well even if the
         hash->id mapping for a given deb is already in the L{PackageStore}.
         """
         self.store.set_hash_ids({HASH1: 111})
-        self.changer._create_deb_dir_channel([(HASH1, 111, PKGDEB1)])
+        self.changer.init_channels([(HASH1, 111, PKGDEB1)])
         self.assertEquals(self.store.get_hash_ids(), {HASH1: 111})
 
-    def test_wb_create_deb_dir_channel_with_existing_binaries(self):
+    def test_init_channels_with_existing_binaries(self):
         """
-        The L{PackageChanger._create_deb_dir_channel} removes Debian packages
+        The L{PackageChanger.init_channels} removes Debian packages
         from previous runs.
         """
         existing_deb_path = os.path.join(self.config.binaries_path, "123.deb")
         self.makeFile(basename=existing_deb_path, content="foo")
-        self.changer._create_deb_dir_channel([])
+        self.changer.init_channels([])
         self.assertFalse(os.path.exists(existing_deb_path))
 
     def test_change_package_locks(self):

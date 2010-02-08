@@ -155,6 +155,20 @@ class SmartFacadeTest(LandscapeTest):
         self.assertFalse(pkg2 in new_pkgs)
         self.assertFalse(pkg3 in new_pkgs)
 
+    def test_ensure_reload_channels(self):
+        """
+        The L{SmartFacade.ensure_channels_reloaded} can be called more
+        than once, but channels will be reloaded only the first time.
+        """
+        self.assertEquals(len(self.facade.get_packages()), 0)
+        self.facade.ensure_channels_reloaded()
+        self.assertEquals(len(self.facade.get_packages()), 3)
+
+        # Calling it once more won't reload channels again.
+        self.facade.get_packages_by_name("name1")[0].installed = True
+        self.facade.ensure_channels_reloaded()
+        self.assertTrue(self.facade.get_packages_by_name("name1")[0].installed)
+
     def test_perform_changes_with_nothing_to_do(self):
         """perform_changes() should return None when there's nothing to do.
         """

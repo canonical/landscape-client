@@ -6,11 +6,13 @@ import os
 import pwd
 import grp
 
-from twisted.internet.defer import fail
+from twisted.internet.defer import maybeDeferred
 
+from landscape.lib.fs import create_file
 from landscape.package.reporter import find_reporter_command
 from landscape.package.taskhandler import (
-    PackageTaskHandler, PackageTaskHandlerConfiguration, run_task_handler)
+    PackageTaskHandler, PackageTaskHandlerConfiguration, PackageTaskError,
+    run_task_handler)
 from landscape.manager.manager import SUCCEEDED
 
 
@@ -48,6 +50,24 @@ class PackageChangerConfiguration(PackageTaskHandlerConfiguration):
         return os.path.join(self.package_directory, "binaries")
 
 
+class ChangePackagesResult(object):
+    """Value object to hold the results of change packages operation.
+
+    @ivar code: The result code of the requested changes.
+    @ivar text: The output from Smart.
+    @ivar installs: Possible additional packages that need to be installed
+        in order to fulfill the request.
+    @ivar removals: Possible additional packages that need to be removed
+        in order to fulfill the request.
+    """
+
+    def __init__(self):
+        self.code = None
+        self.text = None
+        self.installs = []
+        self.removals = []
+
+
 class PackageChanger(PackageTaskHandler):
     """Install, remove and upgrade packages."""
 
@@ -56,32 +76,33 @@ class PackageChanger(PackageTaskHandler):
     queue_name = "changer"
 
     def run(self):
-        task1 = self._store.get_next_task(self.queue_name)
-
-        def finished(result):
-            task2 = self._store.get_next_task(self.queue_name)
-            if task1 and task1.id != (task2 and task2.id):
-                # In order to let the reporter run smart-update cleanly,
-                # we have to deinitialize Smart, so that the write lock
-                # gets released
-                self._facade.deinit()
-                if os.getuid() == 0:
-                    os.setgid(grp.getgrnam("landscape").gr_gid)
-                    os.setuid(pwd.getpwnam("landscape").pw_uid)
-                command = find_reporter_command()
-                if self._config.config is not None:
-                    command += " -c %s" % self._config.config
-                os.system(command)
-
+        """
+        Handle our tasks and spawn the reporter if package data has changed.
+        """
         result = self.use_hash_id_db()
         result.addCallback(lambda x: self.handle_tasks())
-        result.addCallback(finished)
-
+        result.addCallback(lambda x: self.run_package_reporter())
         return result
 
-    def handle_tasks(self):
-        result = super(PackageChanger, self).handle_tasks()
-        return result.addErrback(self._warn_about_unknown_data)
+    def run_package_reporter(self):
+        """
+        Run the L{PackageReporter} if there were successfully completed tasks.
+        """
+        if self.handled_tasks_count == 0:
+            # Nothing was done
+            return
+
+        # In order to let the reporter run smart-update cleanly,
+        # we have to deinitialize Smart, so that the write lock
+        # gets released
+        self._facade.deinit()
+        if os.getuid() == 0:
+            os.setgid(grp.getgrnam("landscape").gr_gid)
+            os.setuid(pwd.getpwnam("landscape").pw_uid)
+        command = find_reporter_command()
+        if self._config.config is not None:
+            command += " -c %s" % self._config.config
+        os.system(command)
 
     def handle_task(self, task):
         """
@@ -90,20 +111,25 @@ class PackageChanger(PackageTaskHandler):
         """
         message = task.data
         if message["type"] == "change-packages":
-            result = self._handle_change_packages(message)
-            return result.addErrback(self._check_expired_unknown_data, task)
+            result = maybeDeferred(self.handle_change_packages, message)
+            return result.addErrback(self.unknown_package_data_error, task)
         if message["type"] == "change-package-locks":
-            return self._handle_change_package_locks(message)
+            return self.handle_change_package_locks(message)
 
-    def _warn_about_unknown_data(self, failure):
+    def unknown_package_data_error(self, failure, task):
+        """Handle L{UnknownPackageData} data errors.
+
+        If the task is older than L{UNKNOWN_PACKAGE_DATA_TIMEOUT} seconds,
+        a message is sent to the server to notify the failure of the associated
+        activity and the task will be removed from the queue.
+
+        Otherwise a L{PackageTaskError} is raised and the task will be picked
+        up again at the next run.
+        """
         failure.trap(UnknownPackageData)
         logging.warning("Package data not yet synchronized with server (%r)" %
                         failure.value.args[0])
-
-    def _check_expired_unknown_data(self, failure, task):
-        failure.trap(UnknownPackageData)
         if task.timestamp < time.time() - UNKNOWN_PACKAGE_DATA_TIMEOUT:
-            self._warn_about_unknown_data(failure)
             message = {"type": "change-packages-result",
                        "operation-id": task.data["operation-id"],
                        "result-code": ERROR_RESULT,
@@ -111,108 +137,121 @@ class PackageChanger(PackageTaskHandler):
                                       "Please retry the operation."}
             return self._broker.send_message(message)
         else:
-            return failure
+            raise PackageTaskError()
 
-    def _create_deb_dir_channel(self, binaries):
-        """Add a C{deb-dir} channel sporting the given C{binaries}.
+    def init_channels(self, binaries):
+        """Initialize the Smart channels as needed.
 
-        @param binaries: A list of 3-tuples of the form (hash, id, deb),
-            containing the hash, the id and the content of a Debian package.
+        @param binaries: A possibly empty list of 3-tuples of the form
+            (hash, id, deb), holding the hash, the id and the content of
+            additional Debian packages that should be loaded in the channels.
         """
-
         binaries_path = self._config.binaries_path
 
         for existing_deb_path in os.listdir(binaries_path):
             # Clean up the binaries we wrote in former runs
             os.remove(os.path.join(binaries_path, existing_deb_path))
 
-        for hash, id, deb in binaries:
+        if binaries:
+            hash_ids = {}
+            for hash, id, deb in binaries:
+                create_file(os.path.join(binaries_path, "%d.deb" % id),
+                            base64.decodestring(deb))
+                hash_ids[hash] = id
+            self._store.set_hash_ids(hash_ids)
+            self._facade.add_channel_deb_dir(binaries_path)
 
-            # Write the deb to disk
-            fd = open(os.path.join(binaries_path, "%d.deb" % id), "w")
-            fd.write(base64.decodestring(deb))
-            fd.close()
+        self._facade.ensure_channels_reloaded()
 
-            # Add the hash->id mapping for the package, so the packages can
-            # be properly installed and reported.
-            self._store.set_hash_ids({hash: id})
+    def mark_packages(self, upgrade=False, install=(), remove=()):
+        """Mark packages for upgrade, installation or removal.
 
-        self._facade.add_channel_deb_dir(binaries_path)
-
-    def _handle_change_packages(self, message):
-
-        if message.get("binaries"):
-            self._create_deb_dir_channel(message["binaries"])
-
-        self.ensure_channels_reloaded()
-
+        @param upgrade: If C{True} mark all installed packages for upgrade.
+        @param install: A list of package ids to be marked for installation.
+        @param remove: A list of package ids to be marked for removal.
+        """
         self._facade.reset_marks()
 
-        if message.get("upgrade-all"):
+        if upgrade:
             for package in self._facade.get_packages():
                 if package.installed:
                     self._facade.mark_upgrade(package)
 
-        for field, mark_func in [("install", self._facade.mark_install),
-                                 ("remove", self._facade.mark_remove)]:
-            for id in message.get(field, ()):
+        for ids, mark_func in [(install, self._facade.mark_install),
+                                 (remove, self._facade.mark_remove)]:
+            for id in ids:
                 hash = self._store.get_id_hash(id)
                 if hash is None:
-                    return fail(UnknownPackageData(id))
+                    raise UnknownPackageData(id)
                 package = self._facade.get_package_by_hash(hash)
                 if package is None:
-                    return fail(UnknownPackageData(hash))
+                    raise UnknownPackageData(hash)
                 mark_func(package)
 
-        message = {"type": "change-packages-result",
-                   "operation-id": message.get("operation-id")}
+    def change_packages(self):
+        """Perform the requested changes.
 
+        @return: A L{ChangePackagesResult} holding the details about the
+            outcome of the requested changes.
+        """
         # Delay importing these so that we don't import Smart unless
         # we really need to.
         from landscape.package.facade import (
             DependencyError, TransactionError, SmartError)
 
-        result = None
+        result = ChangePackagesResult()
         try:
-            result = self._facade.perform_changes()
+            result.text = self._facade.perform_changes()
         except (TransactionError, SmartError), exception:
-            result_code = ERROR_RESULT
-            result = exception.args[0]
+            result.code = ERROR_RESULT
+            result.text = exception.args[0]
         except DependencyError, exception:
-            result_code = DEPENDENCY_ERROR_RESULT
-            installs = []
-            removals = []
+            result.code = DEPENDENCY_ERROR_RESULT
             for package in exception.packages:
                 hash = self._facade.get_package_hash(package)
                 id = self._store.get_hash_id(hash)
                 if id is None:
                     # Will have to wait until the server lets us know about
                     # this id.
-                    return fail(UnknownPackageData(hash))
+                    raise UnknownPackageData(hash)
                 if package.installed:
                     # Package currently installed. Must remove it.
-                    removals.append(id)
+                    result.removals.append(id)
                 else:
                     # Package currently available. Must install it.
-                    installs.append(id)
-            if installs:
-                installs.sort()
-                message["must-install"] = installs
-            if removals:
-                removals.sort()
-                message["must-remove"] = removals
+                    result.installs.append(id)
         else:
-            result_code = SUCCESS_RESULT
+            result.code = SUCCESS_RESULT
 
-        message["result-code"] = result_code
-        if result is not None:
-            message["result-text"] = result
+        return result
 
-        logging.info("Queuing message with change package results to "
+    def handle_change_packages(self, message):
+        """Handle a C{change-packages} message."""
+
+        self.init_channels(message.get("binaries", ()))
+        self.mark_packages(message.get("upgrade-all", False),
+                           message.get("install", ()),
+                           message.get("remove", ()))
+
+        result = self.change_packages()
+
+        response = {"type": "change-packages-result",
+                   "operation-id": message.get("operation-id")}
+
+        response["result-code"] = result.code
+        if result.text:
+            response["result-text"] = result.text
+        if result.installs:
+            response["must-install"] = sorted(result.installs)
+        if result.removals:
+            response["must-remove"] = sorted(result.removals)
+
+
+        logging.info("Queuing response with change package results to "
                      "exchange urgently.")
-        return self._broker.send_message(message, True)
+        return self._broker.send_message(response, True)
 
-    def _handle_change_package_locks(self, message):
+    def handle_change_package_locks(self, message):
         """Handle a C{change-package-locks} message.
 
         Create and delete package locks as requested by the given C{message}.
