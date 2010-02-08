@@ -220,7 +220,7 @@ class MethodCallClientFactory(ReconnectingClientFactory):
 
     @cvar protocol: The factory used to build protocol instances.
     @cvar factor: The time factor by which the delay between two subsequent
-        connection retries will decrease.
+        connection retries will increase.
     """
 
     protocol = MethodCallClientProtocol
@@ -236,7 +236,7 @@ class MethodCallClientFactory(ReconnectingClientFactory):
         self._notifiers = []
 
     def add_notifier(self, callback, errback=None):
-        """Call the given function on connection, reconnection or giveup.
+        """Call the given function on connection, reconnection or give up.
 
         @param notifier: A function that will be called when the factory builds
             a new connected protocol or gives up connecting.  It will be passed
@@ -286,11 +286,11 @@ class RemoteObject(object):
         @param protocol: A reference to a connected L{AMP} protocol instance,
             which will be used to send L{MethodCall} commands.
         @param retry_on_reconnect: If C{True}, this L{RemoteObject} will retry
-            to perfom again requests that failed due to a lost connection, as
+            to perform again requests that failed due to a lost connection, as
             soon as a new connection is available.
         @param timeout: A timeout for failed requests, if the L{RemoteObject}
-            can't perform them again successfully within this amout of seconds,
-            they will errback with a L{MethodCallError}.
+            can't perform them again successfully within this number of
+            seconds, they will errback with a L{MethodCallError}.
         """
         self._protocol = protocol
         self._factory = protocol.factory
@@ -343,8 +343,8 @@ class RemoteObject(object):
         as soon as a new connection becomes available, giving up after the
         specified C{timeout}, if any.
 
-        @param failure: The L{Failure} raised by the requested L{MethodCall}
-        @param name: The method name associated with the failed L{MethodCall}
+        @param failure: The L{Failure} raised by the requested L{MethodCall}.
+        @param name: The method name associated with the failed L{MethodCall}.
         @param args: The positional arguments of the failed L{MethodCall}.
         @param kwargs: The keyword arguments of the failed L{MethodCall}.
         @param deferred: The deferred that was returned to the caller.
