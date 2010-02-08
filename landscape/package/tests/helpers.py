@@ -8,6 +8,7 @@ class SmartHelper(object):
 
     def set_up(self, test_case):
         test_case.smart_dir = test_case.makeDir()
+        test_case.smart_config = test_case.makeFile("")
         test_case.repository_dir = test_case.makeDir()
         create_simple_repository(test_case.repository_dir)
 
@@ -31,7 +32,8 @@ class SmartFacadeHelper(SmartHelper):
                 self.add_channel_deb_dir(test_case.repository_dir)
 
         test_case.Facade = Facade
-        test_case.facade = Facade({"datadir": test_case.smart_dir})
+        test_case.facade = Facade({"datadir": test_case.smart_dir,
+                                   "configfile": test_case.smart_config})
 
 
 PKGNAME1 = "name1_version1-release1_all.deb"

@@ -36,7 +36,10 @@ class SmartFacadeTest(LandscapeTest):
     def test_get_packages_wont_return_non_debian_packages(self):
         self.facade.reload_channels()
         ctrl_mock = self.mocker.patch(Control)
-        class StubPackage(object): pass
+
+        class StubPackage(object):
+            pass
+
         cache_mock = ctrl_mock.getCache()
         cache_mock.getPackages()
         self.mocker.result([StubPackage(), StubPackage()])
@@ -53,7 +56,10 @@ class SmartFacadeTest(LandscapeTest):
     def test_get_packages_by_name_wont_return_non_debian_packages(self):
         self.facade.reload_channels()
         ctrl_mock = self.mocker.patch(Control)
-        class StubPackage(object): pass
+
+        class StubPackage(object):
+            pass
+
         cache_mock = ctrl_mock.getCache()
         cache_mock.getPackages("name")
         self.mocker.result([StubPackage(), StubPackage()])
@@ -116,7 +122,7 @@ class SmartFacadeTest(LandscapeTest):
         # Forcibly change the mtime of our repository, so that Smart
         # will consider it as changed (if the change is inside the
         # same second the directory's mtime will be the same)
-        mtime = int(time.time()+1)
+        mtime = int(time.time() + 1)
         os.utime(self.repository_dir, (mtime, mtime))
 
         # Reload channels.
@@ -344,6 +350,7 @@ class SmartFacadeTest(LandscapeTest):
         self.facade.mark_install(pkg)
 
         environ = []
+
         def check_environ(self, argv, output):
             environ.append(os.environ.get("DEBIAN_FRONTEND"))
             environ.append(os.environ.get("APT_LISTCHANGES_FRONTEND"))
@@ -393,7 +400,10 @@ class SmartFacadeTest(LandscapeTest):
         self.facade.deinit()
 
     def test_reload_channels_wont_consider_non_debian_packages(self):
-        class StubPackage(object): pass
+
+        class StubPackage(object):
+            pass
+
         pkg = StubPackage()
 
         ctrl_mock = self.mocker.patch(Control)
@@ -453,6 +463,7 @@ class SmartFacadeTest(LandscapeTest):
         def do_test():
             result = getProcessOutputAndValue("/usr/bin/dpkg",
                                               ("--print-architecture",))
+
             def callback((out, err, code)):
                 self.assertEquals(self.facade.get_arch(), out.strip())
             result.addCallback(callback)
@@ -605,3 +616,13 @@ class SmartFacadeTest(LandscapeTest):
         self.facade.set_package_lock("name1", "<", "version1")
         self.facade.remove_package_lock("name1", "<", "version1")
         self.assertEquals(self.facade.get_locked_packages(), [])
+
+    def test_save_config(self):
+        """
+        It is possible to lock a package by simply specifying its name.
+        """
+        self.facade.set_package_lock("python", "=>", "2.5")
+        self.facade.save_config()
+        self.facade.deinit()
+        self.assertEquals(self.facade.get_package_locks(),
+                          [("python", "=>", "2.5")])
