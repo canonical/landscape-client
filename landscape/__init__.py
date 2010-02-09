@@ -21,6 +21,7 @@ API = SERVER_API
 #
 # 3.3:
 #  * Add "binaries" field to "change-packages"
+#  * Add "policy" field to "change-packages"
 #  * Add new "change-package-locks" client accepted message type.
 #
 CLIENT_API = "3.3"
