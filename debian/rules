@@ -96,8 +96,8 @@ ifneq (,$(findstring $(dist_release),"karmic lucid"))
 	echo "extra:Depends=libpam-modules (>= 1.0.1-9ubuntu3), python-smartpm (>= 1.2-4)" >> $(landscape_substvars)
 endif
 ifneq (,$(findstring $(dist_release),"lucid"))
-       # The python-image-store-proxy package is needed for the eucalyptus plugin
-       echo "extra:Suggests=python-image-store-proxy" >> $(landscape_substvars)
+	# The python-image-store-proxy package is needed for the eucalyptus plugin
+	echo "extra:Suggests=python-image-store-proxy" >> $(landscape_substvars)
 endif
 
 ifeq ($(use_pycentral),yes)
