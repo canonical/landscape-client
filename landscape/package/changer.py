@@ -21,6 +21,7 @@ ERROR_RESULT = 100
 DEPENDENCY_ERROR_RESULT = 101
 POLICY_STRICT = 0
 POLICY_ALLOW_INSTALLS = 1
+POLICY_ALLOW_ALL_CHANGES = 2
 
 # The amount of time to wait while we have unknown package data before
 # reporting an error to the server in response to an operation.
@@ -170,7 +171,7 @@ class PackageChanger(PackageTaskHandler):
         @param upgrade: If C{True} mark all installed packages for upgrade.
         @param install: A list of package ids to be marked for installation.
         @param remove: A list of package ids to be marked for removal.
-        @param reset: iF C{True} all existing marks will be reset.
+        @param reset: If C{True} all existing marks will be reset.
         """
         if reset:
             self._facade.reset_marks()
@@ -251,6 +252,8 @@ class PackageChanger(PackageTaskHandler):
         @return: A boolean indicating whether the given policy allows to
             complement the changes and retry.
         """
+        if policy == POLICY_ALLOW_ALL_CHANGES:
+            return True
         if policy == POLICY_ALLOW_INSTALLS:
             if result.installs and not result.removals:
                 return True

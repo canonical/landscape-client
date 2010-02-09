@@ -10,7 +10,8 @@ from smart.cache import Provides
 
 from landscape.package.changer import (
     PackageChanger, main, find_changer_command, UNKNOWN_PACKAGE_DATA_TIMEOUT,
-    SUCCESS_RESULT, DEPENDENCY_ERROR_RESULT, POLICY_ALLOW_INSTALLS)
+    SUCCESS_RESULT, DEPENDENCY_ERROR_RESULT, POLICY_ALLOW_INSTALLS,
+    POLICY_ALLOW_ALL_CHANGES)
 from landscape.package.store import PackageStore
 from landscape.package.facade import (
     DependencyError, TransactionError, SmartError)
@@ -402,6 +403,36 @@ class PackageChangerTest(LandscapeIsolatedTest):
         self.mocker.result(result)
         self.mocker.replay()
         return self.changer.handle_tasks()
+
+    def test_perform_changes_with_policy_allow_all_changes(self):
+        """
+        The C{POLICY_ALLOW_ALL_CHANGES} policy allows any needed additional
+        package to be installed or removed.
+        """
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2})
+        self.set_pkg1_installed()
+        self.facade.reload_channels()
+
+        self.mocker.order()
+        package1 = self.facade.get_packages_by_name("name1")[0]
+        package2 = self.facade.get_packages_by_name("name2")[0]
+        self.facade.perform_changes = self.mocker.mock()
+        self.facade.perform_changes()
+        self.mocker.throw(DependencyError([package1, package2]))
+        self.facade.mark_install = self.mocker.mock()
+        self.facade.mark_remove = self.mocker.mock()
+        self.facade.mark_install(package2)
+        self.facade.mark_remove(package1)
+        self.facade.perform_changes()
+        self.mocker.result("success")
+        self.mocker.replay()
+
+        result = self.changer.change_packages(POLICY_ALLOW_ALL_CHANGES)
+
+        self.assertEquals(result.code, SUCCESS_RESULT)
+        self.assertEquals(result.text, "success")
+        self.assertEquals(result.installs, [2])
+        self.assertEquals(result.removals, [1])
 
     def test_transaction_error(self):
         """
