@@ -1,6 +1,9 @@
 from twisted.internet.defer import succeed, fail
 
-from imagestore.eucaservice import FakeEucaInfo
+try:
+    from imagestore.eucaservice import FakeEucaInfo
+except ImportError:
+    FakeEucaInfo = None
 
 from landscape.manager.eucalyptus import EucalyptusCloudManager
 from landscape.tests.helpers import LandscapeTest, ManagerHelper
@@ -198,6 +201,13 @@ class EucalyptusCloudManagerTest(LandscapeTest):
         deferred = plugin.run()
         deferred.addCallback(check)
         return deferred
+
+    if FakeEucaInfo is None:
+        skip_message = "imagestore module not available"
+        test_failed_run_stops_service_hub.skip = skip_message
+        test_run_with_failure_message.skip = skip_message
+        test_run_with_successful_message.skip = skip_message
+        test_successful_run_stops_service_hub.skip = skip_message
 
 
 class EucalyptusCloudManagerWithoutImageStoreTest(LandscapeTest):
