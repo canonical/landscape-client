@@ -17,7 +17,7 @@ class HTTPTransport(object):
     def __init__(self, url, pubkey=None):
         """
         @param url: URL of the remote Landscape server message system.
-        @param pubkey: SSH pubblic key used for secure communication.
+        @param pubkey: SSH public key used for secure communication.
         """
         self._url = url
         self._pubkey = pubkey
