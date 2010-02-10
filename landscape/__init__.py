@@ -6,6 +6,12 @@ VERSION = "%s%s" % (UPSTREAM_VERSION, DEBIAN_REVISION)
 # used by the server message system to lookup the correct MessageAPI adapter
 # for handling the messages sent by the client. Bump it when the schema of any
 # of the messages sent by the client changes in a backward-incompatible way.
+#
+# Changelog:
+#
+# 3.2:
+#  * Add new "eucalyptus-info" and "eucalyptus-info-error" messages.
+#
 SERVER_API = "3.2"
 
 # XXX This is needed for backward compatibility in the server code importing
@@ -21,6 +27,7 @@ API = SERVER_API
 #
 # 3.3:
 #  * Add "binaries" field to "change-packages"
+#  * Add "policy" field to "change-packages"
 #  * Add new "change-package-locks" client accepted message type.
 #
 CLIENT_API = "3.3"

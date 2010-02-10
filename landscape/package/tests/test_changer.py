@@ -9,11 +9,14 @@ from twisted.internet.defer import Deferred
 from smart.cache import Provides
 
 from landscape.package.changer import (
-    PackageChanger, main, find_changer_command, UNKNOWN_PACKAGE_DATA_TIMEOUT)
+    PackageChanger, main, find_changer_command, UNKNOWN_PACKAGE_DATA_TIMEOUT,
+    SUCCESS_RESULT, DEPENDENCY_ERROR_RESULT, POLICY_ALLOW_INSTALLS,
+    POLICY_ALLOW_ALL_CHANGES)
 from landscape.package.store import PackageStore
 from landscape.package.facade import (
     DependencyError, TransactionError, SmartError)
-from landscape.package.changer import PackageChangerConfiguration
+from landscape.package.changer import (
+    PackageChangerConfiguration, ChangePackagesResult)
 
 from landscape.tests.mocker import ANY
 from landscape.tests.helpers import (
@@ -305,6 +308,131 @@ class PackageChangerTest(LandscapeIsolatedTest):
                                   "result-code": 101,
                                   "type": "change-packages-result"}])
         return result.addCallback(got_result)
+
+    def test_perform_changes_with_allow_install_policy(self):
+        """
+        The C{POLICY_ALLOW_INSTALLS} policy the makes the changer mark
+        the missing packages for installation.
+        """
+        self.store.set_hash_ids({HASH1: 1})
+        self.facade.reload_channels()
+        package1 = self.facade.get_packages_by_name("name1")[0]
+
+        self.mocker.order()
+        self.facade.perform_changes = self.mocker.mock()
+        self.facade.perform_changes()
+        self.mocker.throw(DependencyError([package1]))
+
+        self.facade.mark_install = self.mocker.mock()
+        self.facade.mark_install(package1)
+        self.facade.perform_changes()
+        self.mocker.result("success")
+        self.mocker.replay()
+
+        result = self.changer.change_packages(POLICY_ALLOW_INSTALLS)
+
+        self.assertEquals(result.code, SUCCESS_RESULT)
+        self.assertEquals(result.text, "success")
+        self.assertEquals(result.installs, [1])
+        self.assertEquals(result.removals, [])
+
+    def test_perform_changes_with_allow_install_policy_and_removals(self):
+        """
+        The C{POLICY_ALLOW_INSTALLS} policy doesn't allow additional packages
+        to be removed.
+        """
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2})
+        self.set_pkg1_installed()
+        self.facade.reload_channels()
+
+        package1 = self.facade.get_packages_by_name("name1")[0]
+        package2 = self.facade.get_packages_by_name("name2")[0]
+        self.facade.perform_changes = self.mocker.mock()
+        self.facade.perform_changes()
+        self.mocker.throw(DependencyError([package1, package2]))
+        self.mocker.replay()
+
+        result = self.changer.change_packages(POLICY_ALLOW_INSTALLS)
+
+        self.assertEquals(result.code, DEPENDENCY_ERROR_RESULT)
+        self.assertEquals(result.text, None)
+        self.assertEquals(result.installs, [2])
+        self.assertEquals(result.removals, [1])
+
+    def test_perform_changes_with_max_retries(self):
+        """
+        After having complemented the requested changes to handle a dependency
+        error, the L{PackageChanger.change_packages} will try to perform the
+        requested changes again only once.
+        """
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2})
+        self.facade.reload_channels()
+
+        package1 = self.facade.get_packages_by_name("name1")[0]
+        package2 = self.facade.get_packages_by_name("name2")[0]
+
+        self.facade.perform_changes = self.mocker.mock()
+        self.facade.perform_changes()
+        self.mocker.throw(DependencyError([package1]))
+        self.facade.perform_changes()
+        self.mocker.throw(DependencyError([package2]))
+        self.mocker.replay()
+
+        result = self.changer.change_packages(POLICY_ALLOW_INSTALLS)
+
+        self.assertEquals(result.code, DEPENDENCY_ERROR_RESULT)
+        self.assertEquals(result.text, None)
+        self.assertEquals(result.installs, [1, 2])
+        self.assertEquals(result.removals, [])
+
+    def test_handle_change_packages_with_policy(self):
+        """
+        The C{change-packages} message can have an optional C{policy}
+        field that will be passed to the C{perform_changes} method.
+        """
+        self.store.set_hash_ids({HASH1: 1})
+        self.store.add_task("changer",
+                            {"type": "change-packages",
+                             "install": [1],
+                             "policy": POLICY_ALLOW_INSTALLS,
+                             "operation-id": 123})
+        self.changer.change_packages = self.mocker.mock()
+        self.changer.change_packages(POLICY_ALLOW_INSTALLS)
+        result = ChangePackagesResult()
+        result.code = SUCCESS_RESULT
+        self.mocker.result(result)
+        self.mocker.replay()
+        return self.changer.handle_tasks()
+
+    def test_perform_changes_with_policy_allow_all_changes(self):
+        """
+        The C{POLICY_ALLOW_ALL_CHANGES} policy allows any needed additional
+        package to be installed or removed.
+        """
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2})
+        self.set_pkg1_installed()
+        self.facade.reload_channels()
+
+        self.mocker.order()
+        package1 = self.facade.get_packages_by_name("name1")[0]
+        package2 = self.facade.get_packages_by_name("name2")[0]
+        self.facade.perform_changes = self.mocker.mock()
+        self.facade.perform_changes()
+        self.mocker.throw(DependencyError([package1, package2]))
+        self.facade.mark_install = self.mocker.mock()
+        self.facade.mark_remove = self.mocker.mock()
+        self.facade.mark_install(package2)
+        self.facade.mark_remove(package1)
+        self.facade.perform_changes()
+        self.mocker.result("success")
+        self.mocker.replay()
+
+        result = self.changer.change_packages(POLICY_ALLOW_ALL_CHANGES)
+
+        self.assertEquals(result.code, SUCCESS_RESULT)
+        self.assertEquals(result.text, "success")
+        self.assertEquals(result.installs, [2])
+        self.assertEquals(result.removals, [1])
 
     def test_transaction_error(self):
         """
@@ -621,7 +749,7 @@ class PackageChangerTest(LandscapeIsolatedTest):
                                                ".run_task_handler",
                                                passthrough=False)
         setsid = self.mocker.replace("os.setsid")
-        
+
         setsid()
         run_task_handler(PackageChanger, ["ARGS"])
         self.mocker.result("RESULT")

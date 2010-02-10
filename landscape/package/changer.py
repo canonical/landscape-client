@@ -19,7 +19,9 @@ from landscape.manager.manager import SUCCEEDED
 SUCCESS_RESULT = 1
 ERROR_RESULT = 100
 DEPENDENCY_ERROR_RESULT = 101
-
+POLICY_STRICT = 0
+POLICY_ALLOW_INSTALLS = 1
+POLICY_ALLOW_ALL_CHANGES = 2
 
 # The amount of time to wait while we have unknown package data before
 # reporting an error to the server in response to an operation.
@@ -139,7 +141,7 @@ class PackageChanger(PackageTaskHandler):
         else:
             raise PackageTaskError()
 
-    def init_channels(self, binaries):
+    def init_channels(self, binaries=()):
         """Initialize the Smart channels as needed.
 
         @param binaries: A possibly empty list of 3-tuples of the form
@@ -163,14 +165,16 @@ class PackageChanger(PackageTaskHandler):
 
         self._facade.ensure_channels_reloaded()
 
-    def mark_packages(self, upgrade=False, install=(), remove=()):
+    def mark_packages(self, upgrade=False, install=(), remove=(), reset=True):
         """Mark packages for upgrade, installation or removal.
 
         @param upgrade: If C{True} mark all installed packages for upgrade.
         @param install: A list of package ids to be marked for installation.
         @param remove: A list of package ids to be marked for removal.
+        @param reset: If C{True} all existing marks will be reset.
         """
-        self._facade.reset_marks()
+        if reset:
+            self._facade.reset_marks()
 
         if upgrade:
             for package in self._facade.get_packages():
@@ -188,9 +192,12 @@ class PackageChanger(PackageTaskHandler):
                     raise UnknownPackageData(hash)
                 mark_func(package)
 
-    def change_packages(self):
+    def change_packages(self, policy):
         """Perform the requested changes.
 
+        @param policy: A value indicating what to do in case additional changes
+            beside the ones explicitly requested are needed in order to fulfill
+            the request (see L{complement_changes}).
         @return: A L{ChangePackagesResult} holding the details about the
             outcome of the requested changes.
         """
@@ -200,30 +207,57 @@ class PackageChanger(PackageTaskHandler):
             DependencyError, TransactionError, SmartError)
 
         result = ChangePackagesResult()
-        try:
-            result.text = self._facade.perform_changes()
-        except (TransactionError, SmartError), exception:
-            result.code = ERROR_RESULT
-            result.text = exception.args[0]
-        except DependencyError, exception:
-            result.code = DEPENDENCY_ERROR_RESULT
-            for package in exception.packages:
-                hash = self._facade.get_package_hash(package)
-                id = self._store.get_hash_id(hash)
-                if id is None:
-                    # Will have to wait until the server lets us know about
-                    # this id.
-                    raise UnknownPackageData(hash)
-                if package.installed:
-                    # Package currently installed. Must remove it.
-                    result.removals.append(id)
+        count = 0
+        while result.code is None:
+            count += 1
+            try:
+                result.text = self._facade.perform_changes()
+            except (TransactionError, SmartError), exception:
+                result.code = ERROR_RESULT
+                result.text = exception.args[0]
+            except DependencyError, exception:
+                for package in exception.packages:
+                    hash = self._facade.get_package_hash(package)
+                    id = self._store.get_hash_id(hash)
+                    if id is None:
+                        # Will have to wait until the server lets us know about
+                        # this id.
+                        raise UnknownPackageData(hash)
+                    if package.installed:
+                        # Package currently installed. Must remove it.
+                        result.removals.append(id)
+                    else:
+                        # Package currently available. Must install it.
+                        result.installs.append(id)
+                if count == 1 and self.may_complement_changes(result, policy):
+                    # Mark all missing packages and try one more iteration
+                    self.mark_packages(install=result.installs,
+                                       remove=result.removals, reset=False)
                 else:
-                    # Package currently available. Must install it.
-                    result.installs.append(id)
-        else:
-            result.code = SUCCESS_RESULT
+                    result.code = DEPENDENCY_ERROR_RESULT
+            else:
+                result.code = SUCCESS_RESULT
 
         return result
+
+    def may_complement_changes(self, result, policy):
+        """Decide whether or not we should complement the given changes.
+
+        @param result: A L{PackagesResultObject} holding the details about the
+            missing dependencies needed to complement the given changes.
+        @param policy: It can be one of the following values:
+            - L{POLICY_STRICT}, no additional packages will be marked.
+            - L{POLICY_ALLOW_INSTALLS}, if only additional installs are missing
+                they will be marked for installation.
+        @return: A boolean indicating whether the given policy allows to
+            complement the changes and retry.
+        """
+        if policy == POLICY_ALLOW_ALL_CHANGES:
+            return True
+        if policy == POLICY_ALLOW_INSTALLS:
+            if result.installs and not result.removals:
+                return True
+        return False
 
     def handle_change_packages(self, message):
         """Handle a C{change-packages} message."""
@@ -233,7 +267,7 @@ class PackageChanger(PackageTaskHandler):
                            message.get("install", ()),
                            message.get("remove", ()))
 
-        result = self.change_packages()
+        result = self.change_packages(message.get("policy", POLICY_STRICT))
 
         response = {"type": "change-packages-result",
                    "operation-id": message.get("operation-id")}

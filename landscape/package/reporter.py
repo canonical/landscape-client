@@ -248,6 +248,8 @@ class PackageReporter(PackageTaskHandler):
         self._store.clear_available()
         self._store.clear_available_upgrades()
         self._store.clear_installed()
+        self._store.clear_locked()
+        self._store.clear_package_locks()
 
         # Don't clear the hash_id_requests table because the messages
         # associated with the existing requests might still have to be
