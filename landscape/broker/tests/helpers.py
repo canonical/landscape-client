@@ -105,7 +105,7 @@ class BrokerServerHelper(RegistrationHelper):
     """
     This helper adds a broker server to the L{RegistrationHelper}.  The
     following attributes will be set in your test case:
-      - server: A L{BrokerServer}.
+      - broker: A L{BrokerServer}.
     """
 
     def set_up(self, test_case):
