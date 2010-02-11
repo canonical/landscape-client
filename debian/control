@@ -1,7 +1,8 @@
 Source: landscape-client
 Section: admin
 Priority: optional
-Maintainer: Landscape Team <landscape-team@canonical.com>
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+XSBC-Original-Maintainer: Landscape Team <landscape-team@canonical.com>
 Build-Depends: debhelper (>= 5), po-debconf, python-dev, python-central | python-support, lsb-release, gawk, python-twisted-core
 Standards-Version: 3.8.0
 XS-Python-Version: >= 2.4, << 2.7
