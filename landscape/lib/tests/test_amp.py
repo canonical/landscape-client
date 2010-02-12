@@ -9,6 +9,7 @@ from landscape.lib.amp import (
     MethodCallClientProtocol, MethodCallServerFactory,
     MethodCallClientFactory, RemoteObject, RemoteObjectCreator)
 from landscape.tests.helpers import LandscapeTest
+from landscape.tests.mocker import KWARGS
 
 
 class WordsException(Exception):
@@ -467,13 +468,13 @@ class MethodCallClientFactoryTest(LandscapeTest):
         The L{MethodCallClientFactory} keeps trying to connect if maxRetries
         is not reached.
         """
-        connector = self.mocker.mock()
-        connector.connect()
+        # This is sub-optimal but the ReconnectingFactory in Hardy's Twisted
+        # doesn't support task.Clock
+        self.factory.retry = self.mocker.mock()
+        self.factory.retry(KWARGS)
         self.mocker.replay()
         self.assertEquals(self.factory.retries, 0)
-        self.factory.clientConnectionFailed(connector, None)
-        self.clock.advance(2)
-        self.assertEquals(self.factory.retries, 1)
+        self.factory.clientConnectionFailed(None, None)
 
     def test_client_connection_failed_with_max_retries_reached(self):
         """
