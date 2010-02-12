@@ -3,45 +3,12 @@ from twisted.internet.defer import Deferred, DeferredList
 from twisted.internet.protocol import ClientCreator
 from twisted.internet.error import ConnectionDone, ConnectError
 from twisted.internet.task import Clock
-from twisted.internet.unix import Port, Client
-from twisted.internet.posixbase import PosixReactorBase
 
 from landscape.lib.amp import (
     MethodCallError, MethodCallServerProtocol,
     MethodCallClientProtocol, MethodCallServerFactory,
     MethodCallClientFactory, RemoteObject, RemoteObjectCreator)
 from landscape.tests.helpers import LandscapeTest
-
-class FakeReactor(Clock, PosixReactorBase):
-
-    def __init__(self):
-        PosixReactorBase.__init__(self)
-        Clock.__init__(self)
-        self.client = None
-        self.port = None
-
-    def addReader(self, reader):
-        if isinstance(reader, Client):
-            self.client = reader
-        if isinstance(reader, Port):
-            self.port = reader
-
-    def removeReader(self, reader):
-        return
-
-    def addWriter(self, writer):
-        return
-
-    def removeWriter(self, writer):
-        return
-
-    def doIteration(self, delay):
-        self.advance(delay)
-        if self.client:
-            why = getattr(self.client, "doRead")()
-            if why:
-                self._disconnectSelectable(self.client, why, True)
-            self.client = None
 
 
 class WordsException(Exception):
@@ -466,62 +433,63 @@ class MethodCallClientFactoryTest(LandscapeTest):
 
     def setUp(self):
         super(MethodCallClientFactoryTest, self).setUp()
-        self.socket = self.mktemp()
-        self.reactor = FakeReactor()
-        self.factory = WordsClientFactory(self.reactor)
+        self.clock = Clock()
+        self.factory = WordsClientFactory(self.clock)
 
-    def test_connect_with_retry(self):
+    def test_add_notifier(self):
         """
-        The L{MethodCallClientFactory} keeps trying connecting till it
-        succeeds.
+        The L{MethodCallClientFactory.add_notifier} method can be used to
+        add a callback function to be called when a connection is made and
+        a new protocol instance built.
         """
-        # Try to connect a few times
-        self.reactor.connectUNIX(self.socket, self.factory)
-        self.reactor.iterate(0)
-        self.assertEquals(self.factory.retries, 1)
-        self.reactor.iterate(0.5)
-        self.assertTrue(self.factory.retries > 1)
+        protocol = self.factory.protocol()
+        self.factory.protocol = lambda: protocol
+        callback = self.mocker.mock()
+        callback(protocol)
+        self.mocker.replay()
+        self.factory.add_notifier(callback)
+        self.factory.buildProtocol(None)
+        self.clock.advance(0)
 
-        # Now start listening
-        connected = Deferred()
-        self.factory.add_notifier(connected.callback)
-        self.reactor.listenUNIX(self.socket, WordsServerFactory(None))
-        self.reactor.iterate(0.1)
+    def test_remove_notifier(self):
+        """
+        The L{MethodCallClientFactory.remove_notifier} method can be used to
+        remove a previously added notifier callback.
+        """
+        callback = lambda protocol: 1 / 0
+        self.factory.add_notifier(callback)
+        self.factory.remove_notifier(callback)
+        self.factory.buildProtocol(None)
+        self.clock.advance(0)
+
+    def test_client_connection_failed(self):
+        """
+        The L{MethodCallClientFactory} keeps trying to connect if maxRetries
+        is not reached.
+        """
+        connector = self.mocker.mock()
+        connector.connect()
+        self.mocker.replay()
         self.assertEquals(self.factory.retries, 0)
-        self.assertTrue(connected.called)
-        self.assertTrue(isinstance(connected.result, WordsClientProtocol))
+        self.factory.clientConnectionFailed(connector, None)
+        self.clock.advance(2)
+        self.assertEquals(self.factory.retries, 1)
 
-    def test_reconnect(self):
+    def test_client_connection_failed_with_max_retries_reached(self):
         """
-        The L{MethodCallClientFactory} reconnects automatically if the
-        connection drops, and calls the notifier function again.
+        The L{MethodCallClientFactory} stops trying to connect if maxRetries
+        is reached.
         """
-        protocols = []
-        port = self.reactor.listenUNIX(self.socket, WordsServerFactory(None))
+        callback = lambda protocol: 1 / 0
+        errback = self.mocker.mock()
+        errback("failure")
+        self.mocker.replay()
 
-        def connection_made(protocol):
-            self.assertTrue(self.factory.retries == 0)
-            if not protocols:
-                # First connection, drop it
-                port.stopListening()
-            protocols.append(protocol)
-
-        # Establish the first connection
-        self.factory.add_notifier(connection_made)
-        self.reactor.connectUNIX(self.socket, self.factory)
-        self.reactor.iterate(0)
-        self.assertEquals(len(protocols), 1)
-
-        # The connection has dropped now, and the factory tries to reconnect
-        self.reactor.iterate(0.5)
-        self.assertTrue(self.factory.retries > 0)
-
-        # A second connection is established
-        self.reactor.listenUNIX(self.socket, WordsServerFactory(None))
-        self.reactor.iterate(0.1)
-        self.assertEquals(len(protocols), 2)
-        self.assertEquals(self.factory.delay, self.factory.initialDelay)
-        self.assertIsNot(protocols[0], protocols[1])
+        self.factory.add_notifier(callback, errback)
+        self.factory.maxRetries = 1
+        self.factory.retries = self.factory.maxRetries
+        self.factory.clientConnectionFailed(object(), "failure")
+        self.clock.advance(0)
 
 
 class RemoteObjectCreatorTest(LandscapeTest):
