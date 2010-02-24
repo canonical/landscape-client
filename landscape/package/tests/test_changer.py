@@ -1,4 +1,5 @@
 # -*- encoding: utf-8 -*-
+import base64
 import time
 import sys
 import os
@@ -8,17 +9,21 @@ from twisted.internet.defer import Deferred
 from smart.cache import Provides
 
 from landscape.package.changer import (
-    PackageChanger, main, find_changer_command, UNKNOWN_PACKAGE_DATA_TIMEOUT)
+    PackageChanger, main, find_changer_command, UNKNOWN_PACKAGE_DATA_TIMEOUT,
+    SUCCESS_RESULT, DEPENDENCY_ERROR_RESULT, POLICY_ALLOW_INSTALLS,
+    POLICY_ALLOW_ALL_CHANGES)
 from landscape.package.store import PackageStore
 from landscape.package.facade import (
     DependencyError, TransactionError, SmartError)
-from landscape.deployment import Configuration
+from landscape.package.changer import (
+    PackageChangerConfiguration, ChangePackagesResult)
 
 from landscape.tests.mocker import ANY
 from landscape.tests.helpers import (
     LandscapeIsolatedTest, RemoteBrokerHelper)
 from landscape.package.tests.helpers import (
-    SmartFacadeHelper, HASH1, HASH2, HASH3)
+    SmartFacadeHelper, HASH1, HASH2, HASH3, PKGDEB1, PKGDEB2, PKGNAME2)
+from landscape.manager.manager import SUCCEEDED
 
 
 class PackageChangerTest(LandscapeIsolatedTest):
@@ -29,17 +34,22 @@ class PackageChangerTest(LandscapeIsolatedTest):
         super(PackageChangerTest, self).setUp()
 
         self.store = PackageStore(self.makeFile())
-        self.config = Configuration()
-        self.changer = PackageChanger(self.store, self.facade, self.remote, self.config)
-
+        self.config = PackageChangerConfiguration()
+        self.config.data_path = self.makeDir()
+        os.mkdir(self.config.package_directory)
+        os.mkdir(self.config.binaries_path)
+        self.changer = PackageChanger(self.store, self.facade, self.remote,
+                                      self.config)
         service = self.broker_service
-        service.message_store.set_accepted_types(["change-packages-result"])
+        service.message_store.set_accepted_types(["change-packages-result",
+                                                  "operation-result"])
 
     def get_pending_messages(self):
         return self.broker_service.message_store.get_pending_messages()
 
     def set_pkg1_installed(self):
         previous = self.Facade.channels_reloaded
+
         def callback(self):
             previous(self)
             self.get_packages_by_name("name1")[0].installed = True
@@ -47,6 +57,7 @@ class PackageChangerTest(LandscapeIsolatedTest):
 
     def set_pkg2_upgrades_pkg1(self):
         previous = self.Facade.channels_reloaded
+
         def callback(self):
             from smart.backends.deb.base import DebUpgrades
             previous(self)
@@ -57,6 +68,7 @@ class PackageChangerTest(LandscapeIsolatedTest):
 
     def set_pkg2_satisfied(self):
         previous = self.Facade.channels_reloaded
+
         def callback(self):
             previous(self)
             pkg2 = self.get_packages_by_name("name2")[0]
@@ -66,6 +78,7 @@ class PackageChangerTest(LandscapeIsolatedTest):
 
     def set_pkg1_and_pkg2_satisfied(self):
         previous = self.Facade.channels_reloaded
+
         def callback(self):
             previous(self)
 
@@ -108,6 +121,7 @@ class PackageChangerTest(LandscapeIsolatedTest):
         # result of our previous message, which got *postponed*.
         self.store.set_hash_ids({HASH2: 2})
         result = self.changer.handle_tasks()
+
         def got_result(result):
             self.assertMessages(self.get_pending_messages(),
                                 [{"must-install": [2],
@@ -264,6 +278,162 @@ class PackageChangerTest(LandscapeIsolatedTest):
                                   "type": "change-packages-result"}])
         return result.addCallback(got_result)
 
+    def test_dependency_error_with_binaries(self):
+        """
+        Simulate a failing operation involving server-generated binary
+        packages. The extra changes needed to perform the transaction
+        are sent back to the server.
+        """
+        os.remove(os.path.join(self.repository_dir, PKGNAME2))
+        self.store.set_hash_ids({HASH1: 1, HASH3: 3})
+        self.store.add_task("changer",
+                            {"type": "change-packages",
+                             "install": [2],
+                             "binaries": [(HASH2, 2, PKGDEB2)],
+                             "operation-id": 123})
+
+        self.set_pkg1_installed()
+
+        def raise_dependency_error(self):
+            raise DependencyError(self.get_packages())
+        self.Facade.perform_changes = raise_dependency_error
+
+        result = self.changer.handle_tasks()
+
+        def got_result(result):
+            self.assertMessages(self.get_pending_messages(),
+                                [{"must-install": [2, 3],
+                                  "must-remove": [1],
+                                  "operation-id": 123,
+                                  "result-code": 101,
+                                  "type": "change-packages-result"}])
+        return result.addCallback(got_result)
+
+    def test_perform_changes_with_allow_install_policy(self):
+        """
+        The C{POLICY_ALLOW_INSTALLS} policy the makes the changer mark
+        the missing packages for installation.
+        """
+        self.store.set_hash_ids({HASH1: 1})
+        self.facade.reload_channels()
+        package1 = self.facade.get_packages_by_name("name1")[0]
+
+        self.mocker.order()
+        self.facade.perform_changes = self.mocker.mock()
+        self.facade.perform_changes()
+        self.mocker.throw(DependencyError([package1]))
+
+        self.facade.mark_install = self.mocker.mock()
+        self.facade.mark_install(package1)
+        self.facade.perform_changes()
+        self.mocker.result("success")
+        self.mocker.replay()
+
+        result = self.changer.change_packages(POLICY_ALLOW_INSTALLS)
+
+        self.assertEquals(result.code, SUCCESS_RESULT)
+        self.assertEquals(result.text, "success")
+        self.assertEquals(result.installs, [1])
+        self.assertEquals(result.removals, [])
+
+    def test_perform_changes_with_allow_install_policy_and_removals(self):
+        """
+        The C{POLICY_ALLOW_INSTALLS} policy doesn't allow additional packages
+        to be removed.
+        """
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2})
+        self.set_pkg1_installed()
+        self.facade.reload_channels()
+
+        package1 = self.facade.get_packages_by_name("name1")[0]
+        package2 = self.facade.get_packages_by_name("name2")[0]
+        self.facade.perform_changes = self.mocker.mock()
+        self.facade.perform_changes()
+        self.mocker.throw(DependencyError([package1, package2]))
+        self.mocker.replay()
+
+        result = self.changer.change_packages(POLICY_ALLOW_INSTALLS)
+
+        self.assertEquals(result.code, DEPENDENCY_ERROR_RESULT)
+        self.assertEquals(result.text, None)
+        self.assertEquals(result.installs, [2])
+        self.assertEquals(result.removals, [1])
+
+    def test_perform_changes_with_max_retries(self):
+        """
+        After having complemented the requested changes to handle a dependency
+        error, the L{PackageChanger.change_packages} will try to perform the
+        requested changes again only once.
+        """
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2})
+        self.facade.reload_channels()
+
+        package1 = self.facade.get_packages_by_name("name1")[0]
+        package2 = self.facade.get_packages_by_name("name2")[0]
+
+        self.facade.perform_changes = self.mocker.mock()
+        self.facade.perform_changes()
+        self.mocker.throw(DependencyError([package1]))
+        self.facade.perform_changes()
+        self.mocker.throw(DependencyError([package2]))
+        self.mocker.replay()
+
+        result = self.changer.change_packages(POLICY_ALLOW_INSTALLS)
+
+        self.assertEquals(result.code, DEPENDENCY_ERROR_RESULT)
+        self.assertEquals(result.text, None)
+        self.assertEquals(result.installs, [1, 2])
+        self.assertEquals(result.removals, [])
+
+    def test_handle_change_packages_with_policy(self):
+        """
+        The C{change-packages} message can have an optional C{policy}
+        field that will be passed to the C{perform_changes} method.
+        """
+        self.store.set_hash_ids({HASH1: 1})
+        self.store.add_task("changer",
+                            {"type": "change-packages",
+                             "install": [1],
+                             "policy": POLICY_ALLOW_INSTALLS,
+                             "operation-id": 123})
+        self.changer.change_packages = self.mocker.mock()
+        self.changer.change_packages(POLICY_ALLOW_INSTALLS)
+        result = ChangePackagesResult()
+        result.code = SUCCESS_RESULT
+        self.mocker.result(result)
+        self.mocker.replay()
+        return self.changer.handle_tasks()
+
+    def test_perform_changes_with_policy_allow_all_changes(self):
+        """
+        The C{POLICY_ALLOW_ALL_CHANGES} policy allows any needed additional
+        package to be installed or removed.
+        """
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2})
+        self.set_pkg1_installed()
+        self.facade.reload_channels()
+
+        self.mocker.order()
+        package1 = self.facade.get_packages_by_name("name1")[0]
+        package2 = self.facade.get_packages_by_name("name2")[0]
+        self.facade.perform_changes = self.mocker.mock()
+        self.facade.perform_changes()
+        self.mocker.throw(DependencyError([package1, package2]))
+        self.facade.mark_install = self.mocker.mock()
+        self.facade.mark_remove = self.mocker.mock()
+        self.facade.mark_install(package2)
+        self.facade.mark_remove(package1)
+        self.facade.perform_changes()
+        self.mocker.result("success")
+        self.mocker.replay()
+
+        result = self.changer.change_packages(POLICY_ALLOW_ALL_CHANGES)
+
+        self.assertEquals(result.code, SUCCESS_RESULT)
+        self.assertEquals(result.text, "success")
+        self.assertEquals(result.installs, [2])
+        self.assertEquals(result.removals, [1])
+
     def test_transaction_error(self):
         """
         In this case, the package we're trying to install declared some
@@ -326,7 +496,7 @@ class PackageChangerTest(LandscapeIsolatedTest):
 
     def test_successful_operation(self):
         """Simulate a *very* successful operation.
-        
+
         We'll do that by hacking perform_changes(), and returning our
         *very* successful operation result.
         """
@@ -336,6 +506,32 @@ class PackageChangerTest(LandscapeIsolatedTest):
                              "operation-id": 123})
 
         self.set_pkg1_installed()
+
+        def return_good_result(self):
+            return "Yeah, I did whatever you've asked for!"
+        self.Facade.perform_changes = return_good_result
+
+        result = self.changer.handle_tasks()
+
+        def got_result(result):
+            self.assertMessages(self.get_pending_messages(),
+                                [{"operation-id": 123,
+                                  "result-code": 1,
+                                  "result-text": "Yeah, I did whatever you've "
+                                                 "asked for!",
+                                  "type": "change-packages-result"}])
+        return result.addCallback(got_result)
+
+    def test_successful_operation_with_binaries(self):
+        """
+        Simulate a successful operation involving server-generated binary
+        packages.
+        """
+        self.store.set_hash_ids({HASH3: 3})
+        self.store.add_task("changer",
+                            {"type": "change-packages", "install": [2, 3],
+                             "binaries": [(HASH2, 2, PKGDEB2)],
+                             "operation-id": 123})
 
         def return_good_result(self):
             return "Yeah, I did whatever you've asked for!"
@@ -503,7 +699,6 @@ class PackageChangerTest(LandscapeIsolatedTest):
                                         "operation-id": 123})
         return self.changer.run()
 
-
     def test_run(self):
         changer_mock = self.mocker.patch(self.changer)
 
@@ -549,12 +744,12 @@ class PackageChangerTest(LandscapeIsolatedTest):
 
     def test_main(self):
         self.mocker.order()
-        
+
         run_task_handler = self.mocker.replace("landscape.package.taskhandler"
                                                ".run_task_handler",
                                                passthrough=False)
         setsid = self.mocker.replace("os.setsid")
-        
+
         setsid()
         run_task_handler(PackageChanger, ["ARGS"])
         self.mocker.result("RESULT")
@@ -639,3 +834,131 @@ class PackageChangerTest(LandscapeIsolatedTest):
                                   "result-text": u"áéíóú",
                                   "type": "change-packages-result"}])
         return result.addCallback(got_result)
+
+    def test_binaries_path(self):
+        self.assertEquals(
+            self.config.binaries_path,
+            os.path.join(self.config.data_path, "package", "binaries"))
+
+    def test_init_channels(self):
+        """
+        The L{PackageChanger.init_channels} method makes the given
+        Debian packages available in a C{deb-dir} Smart channel.
+        """
+        binaries = [(HASH1, 111, PKGDEB1), (HASH2, 222, PKGDEB2)]
+
+        self.facade.reset_channels()
+        self.changer.init_channels(binaries)
+
+        binaries_path = self.config.binaries_path
+        self.assertFileContent(os.path.join(binaries_path, "111.deb"),
+                               base64.decodestring(PKGDEB1))
+        self.assertFileContent(os.path.join(binaries_path, "222.deb"),
+                               base64.decodestring(PKGDEB2))
+        self.assertEquals(self.facade.get_channels(),
+                          {binaries_path: {"type": "deb-dir",
+                                            "path": binaries_path}})
+
+        self.assertEquals(self.store.get_hash_ids(), {HASH1: 111, HASH2: 222})
+
+        self.facade.ensure_channels_reloaded()
+        [pkg1, pkg2] = sorted(self.facade.get_packages(),
+                              key=lambda pkg: pkg.name)
+        self.assertEquals(self.facade.get_package_hash(pkg1), HASH1)
+        self.assertEquals(self.facade.get_package_hash(pkg2), HASH2)
+
+    def test_init_channels_with_existing_hash_id_map(self):
+        """
+        The L{PackageChanger.init_channels} behaves well even if the
+        hash->id mapping for a given deb is already in the L{PackageStore}.
+        """
+        self.store.set_hash_ids({HASH1: 111})
+        self.changer.init_channels([(HASH1, 111, PKGDEB1)])
+        self.assertEquals(self.store.get_hash_ids(), {HASH1: 111})
+
+    def test_init_channels_with_existing_binaries(self):
+        """
+        The L{PackageChanger.init_channels} removes Debian packages
+        from previous runs.
+        """
+        existing_deb_path = os.path.join(self.config.binaries_path, "123.deb")
+        self.makeFile(basename=existing_deb_path, content="foo")
+        self.changer.init_channels([])
+        self.assertFalse(os.path.exists(existing_deb_path))
+
+    def test_change_package_locks(self):
+        """
+        The L{PackageChanger.handle_tasks} method appropriately creates and
+        deletes package locks as requested by the C{change-package-locks}
+        message.
+        """
+        self.facade.set_package_lock("bar")
+        self.store.add_task("changer", {"type": "change-package-locks",
+                                        "create": [("foo", ">=", "1.0")],
+                                        "delete": [("bar", None, None)],
+                                        "operation-id": 123})
+
+        def assert_result(result):
+            self.facade.deinit()
+            self.assertEquals(self.facade.get_package_locks(),
+                              [("foo", ">=", "1.0")])
+            self.assertIn("Queuing message with change package locks results "
+                          "to exchange urgently.", self.logfile.getvalue())
+            self.assertMessages(self.get_pending_messages(),
+                                [{"type": "operation-result",
+                                  "operation-id": 123,
+                                  "status": SUCCEEDED,
+                                  "result-text": "Package locks successfully"
+                                                 " changed.",
+                                  "result-code": 0}])
+
+        result = self.changer.handle_tasks()
+        return result.addCallback(assert_result)
+
+    def test_change_package_locks_create_with_already_existing(self):
+        """
+        The L{PackageChanger.handle_tasks} method gracefully handles requests
+        for creating package locks that already exist.
+        """
+        self.facade.set_package_lock("foo")
+        self.store.add_task("changer", {"type": "change-package-locks",
+                                        "create": [("foo", None, None)],
+                                        "operation-id": 123})
+
+        def assert_result(result):
+            self.facade.deinit()
+            self.assertEquals(self.facade.get_package_locks(),
+                              [("foo", "", "")])
+            self.assertMessages(self.get_pending_messages(),
+                                [{"type": "operation-result",
+                                  "operation-id": 123,
+                                  "status": SUCCEEDED,
+                                  "result-text": "Package locks successfully"
+                                                 " changed.",
+                                  "result-code": 0}])
+
+        result = self.changer.handle_tasks()
+        return result.addCallback(assert_result)
+
+    def test_change_package_locks_delete_without_already_existing(self):
+        """
+        The L{PackageChanger.handle_tasks} method gracefully handles requests
+        for deleting package locks that don't exist.
+        """
+        self.store.add_task("changer", {"type": "change-package-locks",
+                                        "delete": [("foo", ">=", "1.0")],
+                                        "operation-id": 123})
+
+        def assert_result(result):
+            self.facade.deinit()
+            self.assertEquals(self.facade.get_package_locks(), [])
+            self.assertMessages(self.get_pending_messages(),
+                                [{"type": "operation-result",
+                                  "operation-id": 123,
+                                  "status": SUCCEEDED,
+                                  "result-text": "Package locks successfully"
+                                                 " changed.",
+                                  "result-code": 0}])
+
+        result = self.changer.handle_tasks()
+        return result.addCallback(assert_result)
