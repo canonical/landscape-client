@@ -1,12 +1,15 @@
 from twisted.internet import reactor
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import Deferred, DeferredList
 from twisted.internet.protocol import ClientCreator
+from twisted.internet.error import ConnectionDone, ConnectError
+from twisted.internet.task import Clock
 
 from landscape.lib.amp import (
     MethodCallError, MethodCallServerProtocol,
     MethodCallClientProtocol, MethodCallServerFactory,
     MethodCallClientFactory, RemoteObject, RemoteObjectCreator)
 from landscape.tests.helpers import LandscapeTest
+from landscape.tests.mocker import KWARGS
 
 
 class WordsException(Exception):
@@ -81,7 +84,7 @@ class Words(object):
         return deferred
 
 
-class WordsProtocol(MethodCallServerProtocol):
+class WordsServerProtocol(MethodCallServerProtocol):
 
     methods = ["empty",
                "motd",
@@ -96,19 +99,39 @@ class WordsProtocol(MethodCallServerProtocol):
                "google"]
 
 
+class WordsClientProtocol(MethodCallClientProtocol):
+
+    timeout = 0.1
+
+
+class WordsServerFactory(MethodCallServerFactory):
+
+    protocol = WordsServerProtocol
+
+
+class WordsClientFactory(MethodCallClientFactory):
+
+    protocol = WordsClientProtocol
+    factor = 0.19
+
+
+class RemoteWordsCreator(RemoteObjectCreator):
+
+    factory = WordsClientFactory
+
+
 class MethodCallProtocolTest(LandscapeTest):
 
     def setUp(self):
         super(MethodCallProtocolTest, self).setUp()
         socket = self.mktemp()
-        factory = MethodCallServerFactory(Words())
-        factory.protocol = WordsProtocol
+        factory = WordsServerFactory(Words())
         self.port = reactor.listenUNIX(socket, factory)
 
         def set_protocol(protocol):
             self.protocol = protocol
 
-        connector = ClientCreator(reactor, MethodCallClientProtocol)
+        connector = ClientCreator(reactor, WordsClientProtocol)
         connected = connector.connectUNIX(socket)
         return connected.addCallback(set_protocol)
 
@@ -240,17 +263,18 @@ class RemoteObjectTest(LandscapeTest):
     def setUp(self):
         super(RemoteObjectTest, self).setUp()
         socket = self.mktemp()
-        server_factory = MethodCallServerFactory(Words())
-        server_factory.protocol = WordsProtocol
+        server_factory = WordsServerFactory(Words())
         self.port = reactor.listenUNIX(socket, server_factory)
 
         def set_remote(protocol):
             self.protocol = protocol
             self.words = RemoteObject(protocol)
+            client_factory.stopTrying()
 
         connected = Deferred()
         connected.addCallback(set_remote)
-        client_factory = MethodCallClientFactory(reactor, connected.callback)
+        client_factory = WordsClientFactory(reactor)
+        client_factory.add_notifier(connected.callback)
         reactor.connectUNIX(socket, client_factory)
         return connected
 
@@ -385,7 +409,6 @@ class RemoteObjectTest(LandscapeTest):
         If the peer protocol doesn't send a response for a deferred within
         the given timeout, the method call fails.
         """
-        self.protocol.timeout = 0.1
         result = self.words.google("Long query")
         return self.assertFailure(result, MethodCallError)
 
@@ -407,19 +430,83 @@ class RemoteObjectTest(LandscapeTest):
         return result.addCallback(assert_late_response_is_handled)
 
 
+class MethodCallClientFactoryTest(LandscapeTest):
+
+    def setUp(self):
+        super(MethodCallClientFactoryTest, self).setUp()
+        self.clock = Clock()
+        self.factory = WordsClientFactory(self.clock)
+
+    def test_add_notifier(self):
+        """
+        The L{MethodCallClientFactory.add_notifier} method can be used to
+        add a callback function to be called when a connection is made and
+        a new protocol instance built.
+        """
+        protocol = self.factory.protocol()
+        self.factory.protocol = lambda: protocol
+        callback = self.mocker.mock()
+        callback(protocol)
+        self.mocker.replay()
+        self.factory.add_notifier(callback)
+        self.factory.buildProtocol(None)
+        self.clock.advance(0)
+
+    def test_remove_notifier(self):
+        """
+        The L{MethodCallClientFactory.remove_notifier} method can be used to
+        remove a previously added notifier callback.
+        """
+        callback = lambda protocol: 1 / 0
+        self.factory.add_notifier(callback)
+        self.factory.remove_notifier(callback)
+        self.factory.buildProtocol(None)
+        self.clock.advance(0)
+
+    def test_client_connection_failed(self):
+        """
+        The L{MethodCallClientFactory} keeps trying to connect if maxRetries
+        is not reached.
+        """
+        # This is sub-optimal but the ReconnectingFactory in Hardy's Twisted
+        # doesn't support task.Clock
+        self.factory.retry = self.mocker.mock()
+        self.factory.retry(KWARGS)
+        self.mocker.replay()
+        self.assertEquals(self.factory.retries, 0)
+        self.factory.clientConnectionFailed(None, None)
+
+    def test_client_connection_failed_with_max_retries_reached(self):
+        """
+        The L{MethodCallClientFactory} stops trying to connect if maxRetries
+        is reached.
+        """
+        callback = lambda protocol: 1 / 0
+        errback = self.mocker.mock()
+        errback("failure")
+        self.mocker.replay()
+
+        self.factory.add_notifier(callback, errback)
+        self.factory.maxRetries = 1
+        self.factory.retries = self.factory.maxRetries
+        self.factory.clientConnectionFailed(object(), "failure")
+        self.clock.advance(0)
+
+
 class RemoteObjectCreatorTest(LandscapeTest):
 
     def setUp(self):
         super(RemoteObjectCreatorTest, self).setUp()
-        socket = self.mktemp()
-        factory = MethodCallServerFactory(Words())
-        factory.protocol = WordsProtocol
-        self.port = reactor.listenUNIX(socket, factory)
+        self.socket = self.mktemp()
+        self.server_factory = WordsServerFactory(Words())
+        self.port = reactor.listenUNIX(self.socket, self.server_factory)
+        self.connector = RemoteWordsCreator(reactor, self.socket,
+                                            retry_on_reconnect=True,
+                                            timeout=0.7)
 
-        def set_remote(remote):
-            self.words = remote
+        def set_remote(words):
+            self.words = words
 
-        self.connector = RemoteObjectCreator(reactor, socket)
         connected = self.connector.connect()
         return connected.addCallback(set_remote)
 
@@ -430,7 +517,206 @@ class RemoteObjectCreatorTest(LandscapeTest):
 
     def test_connect(self):
         """
-        A L{RemoteObject} can send L{MethodCall}s without arguments and with
-        an empty response.
+        The L{RemoteObject} resulting form the deferred returned by
+        L{RemoteObjectCreator.connect} is properly connected to the
+        remote peer.
         """
         return self.assertSuccess(self.words.empty())
+
+    def test_connect_with_max_retries(self):
+        """
+        If C{max_retries} is passed to the L{RemoteObjectCreator} method,
+        then it will give up trying to connect after that amout of times.
+        """
+        self.connector.disconnect()
+        self.port.stopListening()
+
+        def reconnect(ignored):
+            self.port = reactor.listenUNIX(self.socket, self.server_factory)
+            return self.connector.connect()
+
+        result = self.connector.connect(max_retries=0)
+        self.assertFailure(result, ConnectError)
+        return result.addCallback(reconnect)
+
+    def test_reconnect(self):
+        """
+        If the connection is lost, the L{RemoteObject} created by the creator
+        will transparently handle the reconnection.
+        """
+        self.words._protocol.transport.loseConnection()
+        self.port.stopListening()
+
+        def restart_listening():
+            self.port = reactor.listenUNIX(self.socket, self.server_factory)
+            reactor.callLater(0.3, assert_remote)
+
+        def assert_remote():
+            result = self.words.empty()
+            result.addCallback(lambda x: reconnected.callback(None))
+            return result
+
+        reactor.callLater(0.01, restart_listening)
+        reconnected = Deferred()
+        return reconnected
+
+    def test_method_call_error(self):
+        """
+        If a L{MethodCall} fails due to a L{MethodCallError}, the
+        L{RemoteObject} won't try to perform it again.
+        """
+        return self.assertFailure(self.words.secret(), MethodCallError)
+
+    def test_retry(self):
+        """
+        If the connection is lost, the L{RemoteObject} created by the creator
+        will transparently retry to perform the L{MethodCall} requests that
+        failed due to the broken connection.
+        """
+        self.words._protocol.transport.loseConnection()
+        self.port.stopListening()
+
+        def restart_listening():
+            self.port = reactor.listenUNIX(self.socket, self.server_factory)
+
+        reactor.callLater(0.1, restart_listening)
+        return self.words.empty()
+
+    def test_retry_with_method_call_error(self):
+        """
+        If a retried L{MethodCall} request fails due to a L{MethodCallError},
+        the L{RemoteObject} will properly propagate the error to the original
+        caller.
+        """
+        self.words._protocol.transport.loseConnection()
+        self.port.stopListening()
+
+        def restart_listening():
+            self.port = reactor.listenUNIX(self.socket, self.server_factory)
+
+        def assert_failure(error):
+            self.assertEquals(str(error), "Forbidden method 'secret'")
+
+        reactor.callLater(0.5, restart_listening)
+        result = self.words.secret()
+        self.assertFailure(result, MethodCallError)
+        return result.addCallback(assert_failure)
+
+    def test_wb_retry_with_while_still_disconnected(self):
+        """
+        The L{RemoteObject._retry} method gets called as soon as a new
+        connection is ready. If for whatever reason the connection drops
+        again very quickly, the C{_retry} method will behave as expected.
+        """
+        self.words._protocol.transport.loseConnection()
+        self.port.stopListening()
+
+        def handle_reconnect(protocol):
+            # In this precise moment we have a newly connected protocol
+            self.words._protocol = protocol
+
+            # Pretend that the connection is lost again very quickly
+            protocol.transport.loseConnection()
+            self.port.stopListening()
+
+            # Force RemoteObject._retry to run using a disconnected protocol
+            reactor.callLater(0, self.words._retry)
+
+            # Restore the real handler and start listening again very soon
+            self.connector._factory.remove_notifier(handle_reconnect)
+            self.connector._factory.add_notifier(self.words._handle_reconnect)
+            reactor.callLater(0.2, restart_listening)
+
+        def restart_listening():
+            self.port = reactor.listenUNIX(self.socket, self.server_factory)
+
+        def assert_failure(error):
+            self.assertEquals(str(error), "Forbidden method 'secret'")
+
+        # Use our own reconnect handler
+        self.connector._factory.remove_notifier(self.words._handle_reconnect)
+        self.connector._factory.add_notifier(handle_reconnect)
+
+        reactor.callLater(0.2, restart_listening)
+        result = self.words.secret()
+        self.assertFailure(result, MethodCallError)
+        return result.addCallback(assert_failure)
+
+    def test_retry_with_many_method_calls(self):
+        """
+        If several L{MethodCall} requests were issued while disconnected, they
+        will be all eventually completed when the connection gets established
+        again.
+        """
+        self.words._protocol.transport.loseConnection()
+        self.port.stopListening()
+
+        def restart_listening():
+            self.port = reactor.listenUNIX(self.socket, self.server_factory)
+
+        def assert_guess(response):
+            self.assertEquals(response, "Guessed!")
+
+        def assert_secret(failure):
+            self.assertEquals(str(failure.value), "Forbidden method 'secret'")
+
+        def assert_motd(response):
+            self.assertEquals(response, "Words are cool")
+
+        reactor.callLater(0.1, restart_listening)
+
+        results = [self.words.guess("word", "cool", value=4),
+                   self.words.secret(),
+                   self.words.motd()]
+        results[0].addCallback(assert_guess)
+        results[1].addErrback(assert_secret)
+        results[2].addCallback(assert_motd)
+        return DeferredList(results)
+
+    def test_retry_without_retry_on_reconnect(self):
+        """
+        If C{retry_on_reconnect} is C{False}, the L{RemoteObject} object won't
+        retry to perform requests which failed because the connection was
+        lost, however requests made after a reconnection will still succeed.
+        """
+        self.words._protocol.transport.loseConnection()
+        self.port.stopListening()
+
+        def restart_listening():
+            self.port = reactor.listenUNIX(self.socket, self.server_factory)
+            reactor.callLater(0.3, assert_reconnected)
+
+        def assert_reconnected():
+            result = self.words.empty()
+            result.addCallback(lambda x: reconnected.callback(None))
+            return result
+
+        reactor.callLater(0.1, restart_listening)
+        self.words._retry_on_reconnect = False
+        result = self.words.empty()
+        self.assertFailure(result, ConnectionDone)
+        reconnected = Deferred()
+        return result.addCallback(lambda x: reconnected)
+
+    def test_retry_with_timeout(self):
+        """
+        If a C{timeout} is set, the L{RemoteObject} object will errback failed
+        L{MethodCall}s after that amount of seconds, without retrying them when
+        the connection established again.
+        """
+        self.words._protocol.transport.loseConnection()
+        self.port.stopListening()
+
+        def restart_listening():
+            self.port = reactor.listenUNIX(self.socket, self.server_factory)
+            reactor.callLater(0.1, reconnected.callback, None)
+
+        def assert_failure(error):
+            self.assertEquals(str(error), "timeout")
+            return reconnected
+
+        reactor.callLater(0.9, restart_listening)
+        result = self.words.empty()
+        self.assertFailure(result, MethodCallError)
+        reconnected = Deferred()
+        return result.addCallback(assert_failure)
