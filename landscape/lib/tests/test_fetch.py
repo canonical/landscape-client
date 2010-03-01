@@ -93,7 +93,8 @@ class FetchTest(LandscapeTest):
                            pycurl.LOW_SPEED_LIMIT: 1,
                            pycurl.LOW_SPEED_TIME: 600,
                            pycurl.NOSIGNAL: 1,
-                           pycurl.WRITEFUNCTION: Any()})
+                           pycurl.WRITEFUNCTION: Any(),
+                           pycurl.DNS_CACHE_TIMEOUT: 0})
 
     def test_post(self):
         curl = CurlStub("result")
@@ -108,7 +109,8 @@ class FetchTest(LandscapeTest):
                            pycurl.LOW_SPEED_TIME: 600,
                            pycurl.NOSIGNAL: 1,
                            pycurl.WRITEFUNCTION: Any(),
-                           pycurl.POST: True})
+                           pycurl.POST: True,
+                           pycurl.DNS_CACHE_TIMEOUT: 0})
 
     def test_post_data(self):
         curl = CurlStub("result")
@@ -126,7 +128,8 @@ class FetchTest(LandscapeTest):
                            pycurl.WRITEFUNCTION: Any(),
                            pycurl.POST: True,
                            pycurl.POSTFIELDSIZE: 4,
-                           pycurl.READFUNCTION: Any()})
+                           pycurl.READFUNCTION: Any(),
+                           pycurl.DNS_CACHE_TIMEOUT: 0})
 
     def test_cainfo(self):
         curl = CurlStub("result")
@@ -141,7 +144,8 @@ class FetchTest(LandscapeTest):
                            pycurl.LOW_SPEED_TIME: 600,
                            pycurl.NOSIGNAL: 1,
                            pycurl.WRITEFUNCTION: Any(),
-                           pycurl.CAINFO: "cainfo"})
+                           pycurl.CAINFO: "cainfo",
+                           pycurl.DNS_CACHE_TIMEOUT: 0})
 
     def test_cainfo_on_http(self):
         curl = CurlStub("result")
@@ -163,7 +167,8 @@ class FetchTest(LandscapeTest):
                            pycurl.LOW_SPEED_TIME: 600,
                            pycurl.NOSIGNAL: 1,
                            pycurl.WRITEFUNCTION: Any(),
-                           pycurl.HTTPHEADER: ["a: 1", "b: 2"]})
+                           pycurl.HTTPHEADER: ["a: 1", "b: 2"],
+                           pycurl.DNS_CACHE_TIMEOUT: 0})
 
     def test_timeouts(self):
         curl = CurlStub("result")
@@ -178,7 +183,8 @@ class FetchTest(LandscapeTest):
                            pycurl.LOW_SPEED_LIMIT: 1,
                            pycurl.LOW_SPEED_TIME: 30,
                            pycurl.NOSIGNAL: 1,
-                           pycurl.WRITEFUNCTION: Any()})
+                           pycurl.WRITEFUNCTION: Any(),
+                           pycurl.DNS_CACHE_TIMEOUT: 0})
 
     def test_unicode(self):
         """
@@ -247,7 +253,8 @@ class FetchTest(LandscapeTest):
                                pycurl.LOW_SPEED_LIMIT: 1,
                                pycurl.LOW_SPEED_TIME: 600,
                                pycurl.NOSIGNAL: 1,
-                               pycurl.WRITEFUNCTION: Any()})
+                               pycurl.WRITEFUNCTION: Any(),
+                               pycurl.DNS_CACHE_TIMEOUT: 0})
         finally:
             pycurl.Curl = Curl
 
