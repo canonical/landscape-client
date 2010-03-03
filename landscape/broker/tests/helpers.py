@@ -8,6 +8,7 @@ from landscape.broker.store import get_default_message_store
 from landscape.broker.registration import Identity, RegistrationHandler
 from landscape.broker.ping import Pinger
 from landscape.broker.deployment import BrokerConfiguration
+from landscape.broker.server import BrokerServer
 
 
 class BrokerConfigurationHelper(object):
@@ -98,3 +99,17 @@ class RegistrationHelper(ExchangeHelper):
             test_case.config, test_case.identity, test_case.reactor,
             test_case.exchanger, test_case.pinger, test_case.mstore,
             fetch_async=fetch_func)
+
+
+class BrokerServerHelper(RegistrationHelper):
+    """
+    This helper adds a broker server to the L{RegistrationHelper}.  The
+    following attributes will be set in your test case:
+      - broker: A L{BrokerServer}.
+    """
+
+    def set_up(self, test_case):
+        super(BrokerServerHelper, self).set_up(test_case)
+        test_case.broker = BrokerServer(test_case.config, test_case.reactor,
+                                        test_case.exchanger, test_case.handler,
+                                        test_case.mstore)
