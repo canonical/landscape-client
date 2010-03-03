@@ -81,8 +81,7 @@ class RemoteLandscapeComponentCreatorTest(LandscapeTest):
         self.reactor = FakeReactor()
         self.config = Configuration()
         self.config.data_path = self.makeDir()
-        self.connector = RemoteTestComponentCreator(
-            self.reactor, self.config, retry_on_reconnect=True, timeout=2)
+        self.connector = RemoteTestComponentCreator(self.reactor, self.config)
 
     def test_connect_logs_errors(self):
         """

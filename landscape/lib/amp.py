@@ -415,7 +415,7 @@ class RemoteObjectCreator(object):
         """
         @param reactor: A reactor able to connect to Unix sockets.
         @param socket: The path to the socket we want to connect to.
-        @param args: Arguments to passed to the created L{RemoteObject}.
+        @param args: Arguments to be passed to the created L{RemoteObject}.
         @param kwargs: Keyword arguments for the created L{RemoteObject}.
         """
         self._socket_path = socket_path
