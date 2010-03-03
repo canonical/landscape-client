@@ -42,6 +42,10 @@ class RemoteLandscapeComponentCreator(RemoteObjectCreator):
         """
         @param reactor: A L{TwistedReactor} object.
         @param config: A L{LandscapeConfiguration}.
+        @param args: Positional arguments for protocol factory constructor.
+        @param kwargs: Keyword arguments for protocol factory constructor.
+
+        @see: L{MethodCallClientFactory}.
         """
         self._twisted_reactor = reactor
         socket = os.path.join(config.data_path, self.component.name + ".sock")
@@ -49,6 +53,15 @@ class RemoteLandscapeComponentCreator(RemoteObjectCreator):
             self._twisted_reactor._reactor, socket, *args, **kwargs)
 
     def connect(self, max_retries=None):
+        """Connect to the remote Landscape component.
+
+        If the connection is lost after having been established, and then
+        it is established again by the reconnect mechanism, an event will
+        be fired.
+
+        @param max_retries: If given, the connector will keep trying to connect
+            up to that number of times, if the first connection attempt fails.
+        """
 
         def fire_reconnected(remote):
             self._twisted_reactor.fire("%s-reconnected" %
