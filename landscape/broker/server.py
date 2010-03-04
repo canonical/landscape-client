@@ -1,5 +1,4 @@
 from landscape.lib.twisted_util import gather_results
-from landscape.broker.amp import RemoteClient
 
 
 class BrokerServer(object):
@@ -7,6 +6,7 @@ class BrokerServer(object):
     A broker server capable of handling messages from plugins connected using
     the L{BrokerProtocol}.
     """
+    name = "broker"
 
     def __init__(self, config, reactor, exchange, registration,
                  message_store):
@@ -38,6 +38,7 @@ class BrokerServer(object):
 
         @param name: The name of the client, such a C{monitor} or C{manager}.
         """
+        from landscape.broker.amp import RemoteClient
         self._registered_clients[name] = RemoteClient(name)
 
     def get_clients(self):

@@ -3,6 +3,7 @@ from landscape.amp import (
     LandscapeComponentServerProtocol, LandscapeComponentServerFactory,
     LandscapeComponentClientProtocol, LandscapeComponentClientFactory,
     RemoteLandscapeComponentCreator)
+from landscape.broker.server import BrokerServer
 
 
 class BrokerServerProtocol(LandscapeComponentServerProtocol):
@@ -10,15 +11,15 @@ class BrokerServerProtocol(LandscapeComponentServerProtocol):
     Communication protocol between the broker server and its clients.
     """
     methods = (LandscapeComponentServerProtocol.methods +
-               ["register_client",
-                "send_message",
-                "is_message_pending",
-                "stop_clients",
-                "reload_configuration",
-                "register",
-                "get_accepted_message_types",
+               ["get_accepted_message_types",
                 "get_server_uuid",
-                "register_client_accepted_message_type"])
+                "is_message_pending",
+                "register",
+                "register_client",
+                "register_client_accepted_message_type",
+                "reload_configuration",
+                "send_message",
+                "stop_clients"])
 
 
 class BrokerServerFactory(LandscapeComponentServerFactory):
@@ -53,7 +54,7 @@ class RemoteBrokerCreator(RemoteLandscapeComponentCreator):
 
     factory = BrokerClientFactory
     remote = RemoteBroker
-    socket = "broker.sock"
+    component = BrokerServer
 
 
 class RemoteClient(object):
