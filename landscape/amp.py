@@ -10,8 +10,7 @@ class LandscapeComponentServerProtocol(MethodCallServerProtocol):
     """
     Communication protocol between the various Landscape components.
     """
-    methods = ["ping",
-               "exit"]
+    methods = ["ping", "exit"]
 
 
 class LandscapeComponentServerFactory(MethodCallServerFactory):
@@ -32,8 +31,9 @@ class LandscapeComponentClientFactory(MethodCallClientFactory):
 class RemoteLandscapeComponentCreator(RemoteObjectCreator):
     """Utility superclass for creating connections with a Landscape component.
 
-    @cvar socket: The name of the socket to connect to, it must be set
-        by sub-classes.
+    @cvar component: The class of the component to connect to, it is expected
+        to define a C{name} class attribute, which will be used to find out
+        the socket to use. It must be defined by sub-classes.
     """
 
     factory = LandscapeComponentClientFactory
@@ -42,17 +42,41 @@ class RemoteLandscapeComponentCreator(RemoteObjectCreator):
         """
         @param reactor: A L{TwistedReactor} object.
         @param config: A L{LandscapeConfiguration}.
+        @param args: Positional arguments for protocol factory constructor.
+        @param kwargs: Keyword arguments for protocol factory constructor.
+
+        @see: L{MethodCallClientFactory}.
         """
-        socket = os.path.join(config.data_path, self.socket)
+        self._twisted_reactor = reactor
+        socket = os.path.join(config.data_path, self.component.name + ".sock")
         super(RemoteLandscapeComponentCreator, self).__init__(
-            reactor._reactor, socket, *args, **kwargs)
+            self._twisted_reactor._reactor, socket, *args, **kwargs)
 
     def connect(self, max_retries=None):
+        """Connect to the remote Landscape component.
+
+        If the connection is lost after having been established, and then
+        it is established again by the reconnect mechanism, an event will
+        be fired.
+
+        @param max_retries: If given, the connector will keep trying to connect
+            up to that number of times, if the first connection attempt fails.
+        """
+
+        def fire_reconnected(remote):
+            self._twisted_reactor.fire("%s-reconnected" %
+                                       self.component.name)
+
+        def connected(remote):
+            self._factory.add_notifier(fire_reconnected)
+            return remote
 
         def log_error(failure):
-            logging.error("Error while trying to connect %s", self.socket)
+            logging.error("Error while connecting to %s", self.component.name)
             return failure
 
-        connected = super(RemoteLandscapeComponentCreator, self).connect(
+        result = super(RemoteLandscapeComponentCreator, self).connect(
             max_retries=max_retries)
-        return connected.addErrback(log_error)
+        result.addErrback(log_error)
+        result.addCallback(connected)
+        return result
