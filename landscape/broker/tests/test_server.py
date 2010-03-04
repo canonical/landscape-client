@@ -1,6 +1,6 @@
 from twisted.internet.defer import succeed, fail
 
-from landscape.broker.amp import BrokerServerProtocol
+from landscape.broker.amp import RemoteClient
 from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
 from landscape.broker.tests.helpers import BrokerServerHelper
 
@@ -57,6 +57,7 @@ class BrokerServerTest(LandscapeTest):
         self.assertEquals(self.broker.get_clients(), [])
         self.broker.register_client("test")
         [client] = self.broker.get_clients()
+        self.assertTrue(isinstance(client, RemoteClient))
         self.assertEquals(client.name, "test")
 
     def test_stop_clients(self):
