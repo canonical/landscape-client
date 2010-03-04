@@ -122,6 +122,6 @@ class RemoteLandscapeComponentCreatorTest(LandscapeTest):
 
         deferred = Deferred()
         self.reactor.call_on("test-reconnected", reconnected)
-        result = self.connector.connect(max_retries=100)
+        result = self.connector.connect()
         result.addCallback(connected)
         return deferred
