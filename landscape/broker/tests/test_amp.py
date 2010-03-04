@@ -42,8 +42,22 @@ class RemoteBrokerTest(LandscapeTest):
         def assert_response(message_id):
             self.assertTrue(isinstance(message_id, int))
             self.assertTrue(self.mstore.is_pending(message_id))
+            self.assertFalse(self.exchanger.is_urgent())
             self.assertMessages(self.mstore.get_pending_messages(),
                                 [message])
+
+        result = self.remote.send_message(message)
+        return result.addCallback(assert_response)
+
+    def test_send_message_with_urgent(self):
+        """
+        The L{RemoteBroker.send_message} method honors the urget argument.
+        """
+        message = {"type": "test"}
+        self.mstore.set_accepted_types(["test"])
+
+        def assert_response(message_id):
+            self.assertTrue(self.exchanger.is_urgent())
 
         result = self.remote.send_message(message, urgent=True)
         return result.addCallback(assert_response)
