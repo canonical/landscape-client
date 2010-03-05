@@ -7,8 +7,7 @@ from landscape.tests.helpers import LandscapeTest
 from landscape.reactor import FakeReactor
 from landscape.deployment import Configuration
 from landscape.amp import (
-    LandscapeComponentServerFactory, LandscapeComponentClientFactory,
-    RemoteLandscapeComponentCreator)
+    LandscapeComponentFactory, RemoteLandscapeComponentCreator)
 
 
 class TestComponent(object):
@@ -16,7 +15,7 @@ class TestComponent(object):
     name = "test"
 
 
-class TestComponentClientFactory(LandscapeComponentClientFactory):
+class TestComponentFactory(LandscapeComponentFactory):
 
     maxRetries = 0
     initialDelay = 0.01
@@ -24,7 +23,7 @@ class TestComponentClientFactory(LandscapeComponentClientFactory):
 
 class RemoteTestComponentCreator(RemoteLandscapeComponentCreator):
 
-    factory = TestComponentClientFactory
+    factory = TestComponentFactory
     component = TestComponent
 
 
@@ -37,7 +36,7 @@ class RemoteLandscapeComponentTest(LandscapeTest):
         config.data_path = self.makeDir()
         socket = os.path.join(config.data_path, "test.sock")
         self.component = TestComponent()
-        factory = LandscapeComponentServerFactory(self.component)
+        factory = LandscapeComponentFactory(object=self.component)
         self.port = reactor.listen_unix(socket, factory)
 
 
@@ -103,7 +102,7 @@ class RemoteLandscapeComponentCreatorTest(LandscapeTest):
         it has been lost.
         """
         socket = os.path.join(self.config.data_path, "test.sock")
-        factory = LandscapeComponentServerFactory(None)
+        factory = LandscapeComponentFactory()
         ports = []
         ports.append(self.reactor.listen_unix(socket, factory))
 
@@ -121,7 +120,7 @@ class RemoteLandscapeComponentCreatorTest(LandscapeTest):
             deferred.callback(None)
 
         deferred = Deferred()
-        self.reactor.call_on("test-reconnected", reconnected)
+        self.reactor.call_on("test-reconnect", reconnected)
         result = self.connector.connect()
         result.addCallback(connected)
         return deferred

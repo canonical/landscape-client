@@ -5,9 +5,8 @@ from twisted.internet.error import ConnectionDone, ConnectError
 from twisted.internet.task import Clock
 
 from landscape.lib.amp import (
-    MethodCallError, MethodCallServerProtocol,
-    MethodCallClientProtocol, MethodCallServerFactory,
-    MethodCallClientFactory, RemoteObject, RemoteObjectCreator)
+    MethodCallError, MethodCallProtocol, MethodCallFactory, RemoteObject,
+    RemoteObjectCreator)
 from landscape.tests.helpers import LandscapeTest
 from landscape.tests.mocker import KWARGS
 
@@ -84,7 +83,7 @@ class Words(object):
         return deferred
 
 
-class WordsServerProtocol(MethodCallServerProtocol):
+class WordsProtocol(MethodCallProtocol):
 
     methods = ["empty",
                "motd",
@@ -98,26 +97,18 @@ class WordsServerProtocol(MethodCallServerProtocol):
                "guess",
                "google"]
 
-
-class WordsClientProtocol(MethodCallClientProtocol):
-
     timeout = 0.1
 
 
-class WordsServerFactory(MethodCallServerFactory):
+class WordsFactory(MethodCallFactory):
 
-    protocol = WordsServerProtocol
-
-
-class WordsClientFactory(MethodCallClientFactory):
-
-    protocol = WordsClientProtocol
+    protocol = WordsProtocol
     factor = 0.19
 
 
 class RemoteWordsCreator(RemoteObjectCreator):
 
-    factory = WordsClientFactory
+    factory = WordsFactory
 
 
 class MethodCallProtocolTest(LandscapeTest):
@@ -125,13 +116,13 @@ class MethodCallProtocolTest(LandscapeTest):
     def setUp(self):
         super(MethodCallProtocolTest, self).setUp()
         socket = self.mktemp()
-        factory = WordsServerFactory(Words())
+        factory = WordsFactory(object=Words())
         self.port = reactor.listenUNIX(socket, factory)
 
         def set_protocol(protocol):
             self.protocol = protocol
 
-        connector = ClientCreator(reactor, WordsClientProtocol)
+        connector = ClientCreator(reactor, WordsProtocol)
         connected = connector.connectUNIX(socket)
         return connected.addCallback(set_protocol)
 
@@ -263,7 +254,7 @@ class RemoteObjectTest(LandscapeTest):
     def setUp(self):
         super(RemoteObjectTest, self).setUp()
         socket = self.mktemp()
-        server_factory = WordsServerFactory(Words())
+        server_factory = WordsFactory(object=Words())
         self.port = reactor.listenUNIX(socket, server_factory)
 
         def set_remote(protocol):
@@ -273,7 +264,7 @@ class RemoteObjectTest(LandscapeTest):
 
         connected = Deferred()
         connected.addCallback(set_remote)
-        client_factory = WordsClientFactory(reactor)
+        client_factory = WordsFactory(reactor=reactor)
         client_factory.add_notifier(connected.callback)
         reactor.connectUNIX(socket, client_factory)
         return connected
@@ -430,12 +421,12 @@ class RemoteObjectTest(LandscapeTest):
         return result.addCallback(assert_late_response_is_handled)
 
 
-class MethodCallClientFactoryTest(LandscapeTest):
+class MethodCallFactoryTest(LandscapeTest):
 
     def setUp(self):
-        super(MethodCallClientFactoryTest, self).setUp()
+        super(MethodCallFactoryTest, self).setUp()
         self.clock = Clock()
-        self.factory = WordsClientFactory(self.clock)
+        self.factory = WordsFactory(reactor=self.clock)
 
     def test_add_notifier(self):
         """
@@ -498,7 +489,7 @@ class RemoteObjectCreatorTest(LandscapeTest):
     def setUp(self):
         super(RemoteObjectCreatorTest, self).setUp()
         self.socket = self.mktemp()
-        self.server_factory = WordsServerFactory(Words())
+        self.server_factory = WordsFactory(object=Words())
         self.port = reactor.listenUNIX(self.socket, self.server_factory)
         self.connector = RemoteWordsCreator(reactor, self.socket,
                                             retry_on_reconnect=True,
