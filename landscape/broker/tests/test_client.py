@@ -187,15 +187,16 @@ class BrokerClientTest(LandscapeTest):
 
     def test_notify_exchange(self):
         """
-        The L{BrokerClient.notify_exchange} method calls C{exchange} on all
-        plugins and logs the event.
+        The L{BrokerClient.notify_exchange} method is triggered by an
+        impending-exchange event and calls C{exchange} on all plugins,
+        logging the event.
         """
         plugin = BrokerClientPlugin()
         plugin.exchange = self.mocker.mock()
         plugin.exchange()
         self.mocker.replay()
         self.client.add(plugin)
-        self.client.notify_exchange()
+        self.client_reactor.fire("impending-exchange")
         self.assertTrue("Got notification of impending exchange. "
                         "Notifying all plugins." in self.logfile.getvalue())
 
@@ -250,10 +251,11 @@ class BrokerClientTest(LandscapeTest):
         self.client_reactor.call_on((event_type, "test"), callback)
         self.client.fire_event(event_type, "test", False)
 
-    def test_broker_started(self):
+    def test_handle_reconnect(self):
         """
-        When L{BrokerClient.broker_started} is called, any message types
-        previously registered with the broker are registered again.
+        The L{BrokerClient.handle_reconnect} method is triggered by a
+        broker-reconnect event, and it causes any message types previously
+        registered with the broker to be registered again.
         """
         result1 = self.client.register_message("foo", lambda m: None)
         result2 = self.client.register_message("bar", lambda m: None)
@@ -263,7 +265,7 @@ class BrokerClientTest(LandscapeTest):
             self.client.broker.register_client_accepted_message_type("foo")
             self.client.broker.register_client_accepted_message_type("bar")
             self.mocker.replay()
-            self.client.broker_started()
+            self.client_reactor.fire("broker-reconnect")
 
         return gather_results([result1, result2]).addCallback(got_result)
 

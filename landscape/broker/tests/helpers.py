@@ -158,10 +158,6 @@ class BrokerClientHelper(RemoteBrokerHelper):
     The following attributes will be set in your test case:
       - client: A connected L{BrokerClient}
       - client_reactor: The L{FakeReactor} used by the client
-      - remote: The L{RemoteBroker} instance the client uses to communicate
-        with the broker.
-      - remote_client: The L{RemoteObject} instance the broker uses to
-        communicate with the client.
     """
 
     def set_up(self, test_case):

@@ -56,26 +56,7 @@ class BrokerClient(object):
 
         # Register event handlers
         self.reactor.call_on("impending-exchange", self.notify_exchange)
-        self.reactor.call_on("broker-started", self.broker_started)
-
-    def handle_connected(self, broker):
-        """Called upon broker connection.
-        @param broker: A connected L{RemoteBroker}..
-        """
-        # We have a broker!
-        self.broker = broker
-
-        # Expose ourselves to the broker over AMP
-        self.broker.protocol.object = self
-
-        # Register ourselves and possibly re-notify our accepted message types,
-        # in case the connection was lost and we are reconnecting
-        results = [self.broker.register_client(self.name)]
-        for type in self._registered_messages:
-            result = self.broker.register_client_accepted_message_type(type)
-            results.append(result)
-
-        return gather_results(results)
+        self.reactor.call_on("broker-reconnect", self.handle_reconnect)
 
     def ping(self):
         """Return C{True}"""
@@ -173,8 +154,9 @@ class BrokerClient(object):
         return gather_results([
             maybeDeferred(lambda x: x, result) for result in results])
 
-    def broker_started(self):
-        """
+    def handle_reconnect(self):
+        """Called when the connection with the broker is established again.
+
         Re-register any previously registered message types when the broker
         restarts.
         """
