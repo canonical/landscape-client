@@ -18,6 +18,7 @@ from landscape.manager.manager import FAILED
 from landscape.tests.helpers import DEFAULT_ACCEPTED_TYPES
 from landscape.broker.service import BrokerService, run
 from landscape.broker.transport import HTTPTransport
+from landscape.broker.amp import RemoteBrokerCreator
 from landscape.reactor import FakeReactor
 
 
@@ -593,8 +594,6 @@ class BrokerDBusObjectTest(LandscapeIsolatedTest):
                 types,
                 sorted(["type1", "type2"] + DEFAULT_ACCEPTED_TYPES))
         return gather_results([result1, result2]).addCallback(got_result)
-        
-
 
 
 class BrokerServiceTest(LandscapeTest):
@@ -609,8 +608,9 @@ class BrokerServiceTest(LandscapeTest):
         """
         A L{BrokerService} instance has a proper C{persist} attribute.
         """
-        self.assertEquals(self.service.persist.filename,
-                          os.path.join(self.config.data_path, "broker.bpickle"))
+        self.assertEquals(
+            self.service.persist.filename,
+            os.path.join(self.config.data_path, "broker.bpickle"))
 
     def test_transport(self):
         """
@@ -675,7 +675,7 @@ class BrokerServiceTest(LandscapeTest):
         self.mocker.replay()
         self.service.startService()
         reactor = FakeReactor()
-        connector = self.service.connector_factory(reactor, self.config)
+        connector = RemoteBrokerCreator(reactor, self.config)
         connected = connector.connect()
         connected.addCallback(lambda remote: remote.get_server_uuid())
         connected.addCallback(lambda x: connector.disconnect())

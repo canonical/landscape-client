@@ -10,8 +10,7 @@ from landscape.broker.exchange import MessageExchange
 from landscape.broker.ping import Pinger
 from landscape.broker.store import get_default_message_store
 from landscape.broker.server import BrokerServer
-from landscape.broker.amp import BrokerProtocolFactory
-from landscape.broker.amp import RemoteBrokerCreator
+from landscape.broker.amp import BrokerServerFactory
 
 
 class BrokerService(LandscapeService):
@@ -38,8 +37,7 @@ class BrokerService(LandscapeService):
     """
 
     transport_factory = HTTPTransport
-    connector_factory = RemoteBrokerCreator
-    service_name = "broker"
+    service_name = BrokerServer.name
 
     def __init__(self, config):
         """
@@ -64,7 +62,7 @@ class BrokerService(LandscapeService):
         self.reactor.call_on("post-exit", self._exit)
         self.broker = BrokerServer(self.config, self.reactor, self.exchanger,
                                    self.registration, self.message_store)
-        self.factory = BrokerProtocolFactory(self.reactor, self.broker)
+        self.factory = BrokerServerFactory(object=self.broker)
 
     def _exit(self):
         # Our reactor calls the Twisted reactor's crash() method rather
