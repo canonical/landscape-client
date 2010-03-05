@@ -2,30 +2,23 @@ import os
 import logging
 
 from landscape.lib.amp import (
-    MethodCallServerProtocol, MethodCallServerFactory,
-    MethodCallClientProtocol, MethodCallClientFactory, RemoteObjectCreator)
+    MethodCallProtocol, MethodCallFactory, RemoteObjectCreator)
 
 
-class LandscapeComponentServerProtocol(MethodCallServerProtocol):
-    """
-    Communication protocol between the various Landscape components.
+class LandscapeComponentProtocol(MethodCallProtocol):
+    """Communication protocol between the various Landscape components.
+
+    It can be used both as server-side protocol for exposing the methods of a
+    certain Landscape component, or as client-side protocol for connecting to
+    another Landscape component we want to call the methods of.
     """
     methods = ["ping", "exit"]
-
-
-class LandscapeComponentServerFactory(MethodCallServerFactory):
-
-    protocol = LandscapeComponentServerProtocol
-
-
-class LandscapeComponentClientProtocol(MethodCallClientProtocol):
-
     timeout = 60
 
 
-class LandscapeComponentClientFactory(MethodCallClientFactory):
+class LandscapeComponentFactory(MethodCallFactory):
 
-    protocol = MethodCallClientProtocol
+    protocol = LandscapeComponentProtocol
 
 
 class RemoteLandscapeComponentCreator(RemoteObjectCreator):
@@ -36,7 +29,7 @@ class RemoteLandscapeComponentCreator(RemoteObjectCreator):
         the socket to use. It must be defined by sub-classes.
     """
 
-    factory = LandscapeComponentClientFactory
+    factory = LandscapeComponentFactory
 
     def __init__(self, reactor, config, *args, **kwargs):
         """
@@ -63,12 +56,12 @@ class RemoteLandscapeComponentCreator(RemoteObjectCreator):
             up to that number of times, if the first connection attempt fails.
         """
 
-        def fire_reconnected(remote):
-            self._twisted_reactor.fire("%s-reconnected" %
+        def fire_reconnect(remote):
+            self._twisted_reactor.fire("%s-reconnect" %
                                        self.component.name)
 
         def connected(remote):
-            self._factory.add_notifier(fire_reconnected)
+            self._factory.add_notifier(fire_reconnect)
             return remote
 
         def log_error(failure):
