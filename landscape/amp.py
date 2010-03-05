@@ -76,13 +76,26 @@ class RemoteLandscapeComponentCreator(RemoteObjectCreator):
 
 
 class RemoteLandscapeComponentsRegistry(object):
+    """
+    A global registry for looking up Landscape components connectors by name.
+    """
 
     _by_name = {}
 
     @classmethod
     def get(cls, name):
+        """Get the connector class for the given Landscape component.
+
+        @param name: Name of the Landscape component we want to connect to, for
+           instance C{monitor} or C{manager}.
+        """
         return cls._by_name[name]
 
     @classmethod
     def register(cls, creator_class):
+        """Register a connector for a Landscape component.
+
+        @param creator_class: A sub-class of L{RemoteLandscapeComponentCreator}
+            that can be used to connect to a certain component.
+        """
         cls._by_name[creator_class.component.name] = creator_class

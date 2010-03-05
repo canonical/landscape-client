@@ -177,9 +177,10 @@ class BrokerClientHelper(RemoteBrokerHelper):
 
 class RemoteClientHelper(BrokerClientHelper):
     """
-    This helper adds a connected L{RemoteBroker} to a L{BrokerServerHelper}.
+    This helper adds a connected and registered L{RemoteClient} to a
+    L{BrokerClientHelper}.
     The following attributes will be set in your test case:
-      - remote: A C{RemoteObject} connected to the broker server.
+      - remote_client: A C{RemoteClient} connected to a registered client.
     """
 
     def set_up(self, test_case):

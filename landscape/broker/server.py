@@ -54,9 +54,13 @@ class BrokerServer(object):
         """Register a broker client called C{name}.
 
         Various broker clients interact with the broker server, such as the
-        monitor for example, using the L{BrokerProtocol} for communication.
+        monitor for example, using the L{BrokerServerProtocol} for performing
+        remote method calls on the L{BrokerServer}.
+
         They establish connectivity with the broker by connecting and
-        registering themselves.
+        registering themselves, the L{BrokerServer} will in turn connect
+        to them in order to be able to perform remote method calls like
+        broadcasting events and messages.
 
         @param name: The name of the client, such a C{monitor} or C{manager}.
         """
@@ -71,11 +75,14 @@ class BrokerServer(object):
         return connected.addCallback(register)
 
     def get_clients(self):
-        """Get L{BrokerPlugin} instances for registered plugins."""
+        """Get L{RemoteClient} instances for registered clients."""
         return self._registered_clients.values()
 
     def get_connectors(self):
-        """Get L{BrokerPlugin} instances for registered plugins."""
+        """Get connectors for registered clients.
+
+        @see L{RemoteLandscapeComponentCreator}.
+        """
         return self._connectors.values()
 
     def send_message(self, message, urgent=False):

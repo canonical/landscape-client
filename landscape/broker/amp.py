@@ -72,4 +72,5 @@ class RemoteClientCreator(RemoteLandscapeComponentCreator):
     component = BrokerClient
 
 
+RemoteLandscapeComponentsRegistry.register(RemoteBrokerCreator)
 RemoteLandscapeComponentsRegistry.register(RemoteClientCreator)
