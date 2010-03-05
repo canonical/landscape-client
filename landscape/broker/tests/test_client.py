@@ -11,13 +11,6 @@ class BrokerClientTest(LandscapeTest):
 
     helpers = [BrokerClientHelper]
 
-    def test_connected(self):
-        """
-        The L{BrokerClient.connected} method sets the reference to
-        the remote broker, and exposes the client itself via AMP.
-        """
-        self.assertIs(self.client.broker.protocol.object, self.client)
-
     def test_ping(self):
         """
         The L{BrokerClient.ping} method always returns C{True}.

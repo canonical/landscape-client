@@ -1,6 +1,6 @@
 from twisted.internet.defer import succeed, fail
 
-from landscape.broker.amp import BrokerServerProtocol
+from landscape.broker.amp import RemoteClient
 from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
 from landscape.broker.tests.helpers import BrokerServerHelper
 
@@ -54,12 +54,11 @@ class BrokerServerTest(LandscapeTest):
         client components that need to communicate with the server. After
         the registration they can be fetched with L{BrokerServer.get_clients}.
         """
-        protocol = BrokerServerProtocol(None)
         self.assertEquals(self.broker.get_clients(), [])
-        self.broker.register_client("test", protocol)
+        self.broker.register_client("test")
         [client] = self.broker.get_clients()
+        self.assertTrue(isinstance(client, RemoteClient))
         self.assertEquals(client.name, "test")
-        self.assertIs(client, protocol.remote)
 
     def test_stop_clients(self):
         """
@@ -67,8 +66,8 @@ class BrokerServerTest(LandscapeTest):
         of each registered client, and returns a deferred resulting in C{None}
         if all C{exit} calls were successful.
         """
-        self.broker.register_client("foo", BrokerServerProtocol(None))
-        self.broker.register_client("bar", BrokerServerProtocol(None))
+        self.broker.register_client("foo")
+        self.broker.register_client("bar")
         for client in self.broker.get_clients():
             client.exit = self.mocker.mock()
             self.expect(client.exit()).result(succeed(None))
@@ -81,8 +80,8 @@ class BrokerServerTest(LandscapeTest):
         of each registered client, and returns a deferred resulting in C{None}
         if all C{exit} calls were successful.
         """
-        self.broker.register_client("foo", BrokerServerProtocol(None))
-        self.broker.register_client("bar", BrokerServerProtocol(None))
+        self.broker.register_client("foo")
+        self.broker.register_client("bar")
         [client1, client2] = self.broker.get_clients()
         client1.exit = self.mocker.mock()
         client2.exit = self.mocker.mock()
@@ -107,8 +106,8 @@ class BrokerServerTest(LandscapeTest):
         The L{BrokerServer.reload_configuration} method forces the config
         file associated with the broker server to be reloaded.
         """
-        self.broker.register_client("foo", BrokerServerProtocol(None))
-        self.broker.register_client("bar", BrokerServerProtocol(None))
+        self.broker.register_client("foo")
+        self.broker.register_client("bar")
         for client in self.broker.get_clients():
             client.exit = self.mocker.mock()
             self.expect(client.exit()).result(succeed(None))
@@ -172,8 +171,8 @@ class BrokerServerTest(LandscapeTest):
         """
         The L{BrokerServer.exit} method stops all registered clients.
         """
-        self.broker.register_client("foo", BrokerServerProtocol(None))
-        self.broker.register_client("bar", BrokerServerProtocol(None))
+        self.broker.register_client("foo")
+        self.broker.register_client("bar")
         for client in self.broker.get_clients():
             client.exit = self.mocker.mock()
             self.expect(client.exit()).result(succeed(None))
@@ -185,7 +184,7 @@ class BrokerServerTest(LandscapeTest):
         If a broker client blow up in its exit() methods, exit should ignore
         the error and exit anyway.
         """
-        self.broker.register_client("foo",  BrokerServerProtocol(None))
+        self.broker.register_client("foo")
         [client] = self.broker.get_clients()
         client.exit = self.mocker.mock()
         post_exit = self.mocker.mock()
@@ -200,7 +199,7 @@ class BrokerServerTest(LandscapeTest):
         The L{BrokerServer.exit} method fires a C{pre-exit} event before the
         clients are stopped and a C{post-exit} event after.
         """
-        self.broker.register_client("foo", BrokerServerProtocol(None))
+        self.broker.register_client("foo")
         [client] = self.broker.get_clients()
         self.mocker.order()
         pre_exit = self.mocker.mock()
