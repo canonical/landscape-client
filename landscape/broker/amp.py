@@ -1,16 +1,15 @@
 from landscape.lib.amp import RemoteObject
 from landscape.amp import (
-    LandscapeComponentServerProtocol, LandscapeComponentServerFactory,
-    LandscapeComponentClientProtocol, LandscapeComponentClientFactory,
+    LandscapeComponentProtocol, LandscapeComponentFactory,
     RemoteLandscapeComponentCreator)
 from landscape.broker.server import BrokerServer
 
 
-class BrokerServerProtocol(LandscapeComponentServerProtocol):
+class BrokerServerProtocol(LandscapeComponentProtocol):
     """
     Communication protocol between the broker server and its clients.
     """
-    methods = (LandscapeComponentServerProtocol.methods +
+    methods = (LandscapeComponentProtocol.methods +
                ["get_accepted_message_types",
                 "get_server_uuid",
                 "is_message_pending",
@@ -22,7 +21,7 @@ class BrokerServerProtocol(LandscapeComponentServerProtocol):
                 "stop_clients"])
 
 
-class BrokerServerFactory(LandscapeComponentServerFactory):
+class BrokerServerFactory(LandscapeComponentFactory):
 
     protocol = BrokerServerProtocol
 
@@ -40,11 +39,11 @@ class RemoteBroker(RemoteObject):
         return deferred_types
 
 
-class BrokerClientProtocol(LandscapeComponentClientProtocol):
+class BrokerClientProtocol(LandscapeComponentProtocol):
     """Communication protocol between a client and the broker."""
 
 
-class BrokerClientFactory(LandscapeComponentClientFactory):
+class BrokerClientFactory(LandscapeComponentFactory):
 
     protocol = BrokerClientProtocol
 
