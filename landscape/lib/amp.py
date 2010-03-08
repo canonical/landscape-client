@@ -2,7 +2,7 @@
 
 from uuid import uuid4
 from twisted.internet.defer import Deferred, maybeDeferred
-from twisted.internet.protocol import ServerFactory, ReconnectingClientFactory
+from twisted.internet.protocol import ReconnectingClientFactory
 from twisted.protocols.amp import Argument, String, Command, AMP
 from twisted.python.failure import Failure
 
@@ -199,38 +199,38 @@ class MethodCallClientProtocol(AMP):
             return result.addCallback(self.handle_response)
 
 
-class MethodCallServerFactory(ServerFactory):
-    """Factory for building L{MethodCallProtocol}s exposing an object."""
+class MethodCallProtocol(MethodCallServerProtocol, MethodCallClientProtocol):
+    """Can be used both for sending and receiving L{MethodCall}s."""
 
-    protocol = MethodCallServerProtocol
-
-    def __init__(self, object):
-        """
-        @param object: The object exposed by the L{MethodCallProtocol}s
-            instances created by this factory.
-        """
-        self.object = object
+    def __init__(self):
+        MethodCallServerProtocol.__init__(self)
+        MethodCallClientProtocol.__init__(self)
 
 
-class MethodCallClientFactory(ReconnectingClientFactory):
-    """Factory for building L{AMP} connections to L{MethodCall} servers.
+class MethodCallFactory(ReconnectingClientFactory):
+    """
+    Factory for L{MethodCallProtocol}s exposing an object or connecting to
+    to L{MethodCall} servers.
 
-    If the connection fails or is lost the factory will keep retrying to
-    establish it.
+    When used to connect, if the connection fails or is lost the factory
+    will keep retrying to establish it.
 
     @cvar protocol: The factory used to build protocol instances.
     @cvar factor: The time factor by which the delay between two subsequent
         connection retries will increase.
     """
 
-    protocol = MethodCallClientProtocol
+    protocol = MethodCallProtocol
     factor = 1.6180339887498948
 
-    def __init__(self, reactor):
+    def __init__(self, object=None, reactor=None):
         """
+        @param object: The object exposed by the L{MethodCallProtocol}s
+            instances created by this factory.
         @param reactor: The reactor used by the created protocols
             to schedule notifications and timeouts.
         """
+        self.object = object
         self.reactor = reactor
         self.clock = self.reactor
         self._notifiers = []
@@ -408,14 +408,14 @@ class RemoteObject(object):
 class RemoteObjectCreator(object):
     """Connect to remote objects exposed by a L{MethodCallProtocol}."""
 
-    factory = MethodCallClientFactory
+    factory = MethodCallFactory
     remote = RemoteObject
 
     def __init__(self, reactor, socket_path, *args, **kwargs):
         """
         @param reactor: A reactor able to connect to Unix sockets.
         @param socket: The path to the socket we want to connect to.
-        @param args: Arguments to passed to the created L{RemoteObject}.
+        @param args: Arguments to be passed to the created L{RemoteObject}.
         @param kwargs: Keyword arguments for the created L{RemoteObject}.
         """
         self._socket_path = socket_path
@@ -433,7 +433,7 @@ class RemoteObjectCreator(object):
             amount of times.
         """
         self._connected = Deferred()
-        self._factory = self.factory(self._reactor)
+        self._factory = self.factory(reactor=self._reactor)
         self._factory.maxRetries = max_retries
         self._factory.add_notifier(self._success, self._failure)
         self._reactor.connectUNIX(self._socket_path, self._factory)
