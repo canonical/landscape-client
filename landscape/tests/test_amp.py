@@ -6,8 +6,7 @@ from twisted.internet.error import ConnectError
 from landscape.tests.helpers import LandscapeTest
 from landscape.reactor import FakeReactor
 from landscape.deployment import Configuration
-from landscape.amp import (
-    LandscapeComponentFactory, RemoteLandscapeComponentCreator)
+from landscape.amp import ComponentProtocolFactory, RemoteComponentCreator
 
 
 class TestComponent(object):
@@ -15,28 +14,28 @@ class TestComponent(object):
     name = "test"
 
 
-class TestComponentFactory(LandscapeComponentFactory):
+class TestComponentProtocolFactory(ComponentProtocolFactory):
 
     maxRetries = 0
     initialDelay = 0.01
 
 
-class RemoteTestComponentCreator(RemoteLandscapeComponentCreator):
+class RemoteTestComponentCreator(RemoteComponentCreator):
 
-    factory = TestComponentFactory
+    factory = TestComponentProtocolFactory
     component = TestComponent
 
 
-class RemoteLandscapeComponentTest(LandscapeTest):
+class RemoteComponentTest(LandscapeTest):
 
     def setUp(self):
-        super(RemoteLandscapeComponentTest, self).setUp()
+        super(RemoteComponentTest, self).setUp()
         reactor = FakeReactor()
         config = Configuration()
         config.data_path = self.makeDir()
         socket = os.path.join(config.data_path, "test.sock")
         self.component = TestComponent()
-        factory = LandscapeComponentFactory(object=self.component)
+        factory = ComponentProtocolFactory(object=self.component)
         self.port = reactor.listen_unix(socket, factory)
 
 
@@ -48,11 +47,11 @@ class RemoteLandscapeComponentTest(LandscapeTest):
     def tearDown(self):
         self.connector.disconnect()
         self.port.stopListening()
-        super(RemoteLandscapeComponentTest, self).tearDown()
+        super(RemoteComponentTest, self).tearDown()
 
     def test_ping(self):
         """
-        The L{LandscapeComponentProtocol} exposes the C{ping} method of a
+        The L{ComponentProtocol} exposes the C{ping} method of a
         remote Landscape component.
         """
         self.component.ping = self.mocker.mock()
@@ -63,7 +62,7 @@ class RemoteLandscapeComponentTest(LandscapeTest):
 
     def test_exit(self):
         """
-        The L{LandscapeComponentProtocol} exposes the C{exit} method of a
+        The L{ComponentProtocol} exposes the C{exit} method of a
         remote Landscape component.
         """
         self.component.exit = self.mocker.mock()
@@ -73,10 +72,10 @@ class RemoteLandscapeComponentTest(LandscapeTest):
         return self.assertSuccess(result)
 
 
-class RemoteLandscapeComponentCreatorTest(LandscapeTest):
+class RemoteComponentCreatorTest(LandscapeTest):
 
     def setUp(self):
-        super(RemoteLandscapeComponentCreatorTest, self).setUp()
+        super(RemoteComponentCreatorTest, self).setUp()
         self.reactor = FakeReactor()
         self.config = Configuration()
         self.config.data_path = self.makeDir()
@@ -102,7 +101,7 @@ class RemoteLandscapeComponentCreatorTest(LandscapeTest):
         it has been lost.
         """
         socket = os.path.join(self.config.data_path, "test.sock")
-        factory = LandscapeComponentFactory()
+        factory = ComponentProtocolFactory()
         ports = []
         ports.append(self.reactor.listen_unix(socket, factory))
 

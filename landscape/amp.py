@@ -5,7 +5,7 @@ from landscape.lib.amp import (
     MethodCallProtocol, MethodCallFactory, RemoteObjectCreator)
 
 
-class LandscapeComponentProtocol(MethodCallProtocol):
+class ComponentProtocol(MethodCallProtocol):
     """Communication protocol between the various Landscape components.
 
     It can be used both as server-side protocol for exposing the methods of a
@@ -16,12 +16,12 @@ class LandscapeComponentProtocol(MethodCallProtocol):
     timeout = 60
 
 
-class LandscapeComponentFactory(MethodCallFactory):
+class ComponentProtocolFactory(MethodCallFactory):
 
-    protocol = LandscapeComponentProtocol
+    protocol = ComponentProtocol
 
 
-class RemoteLandscapeComponentCreator(RemoteObjectCreator):
+class RemoteComponentCreator(RemoteObjectCreator):
     """Utility superclass for creating connections with a Landscape component.
 
     @cvar component: The class of the component to connect to, it is expected
@@ -29,7 +29,7 @@ class RemoteLandscapeComponentCreator(RemoteObjectCreator):
         the socket to use. It must be defined by sub-classes.
     """
 
-    factory = LandscapeComponentFactory
+    factory = ComponentProtocolFactory
 
     def __init__(self, reactor, config, *args, **kwargs):
         """
@@ -42,7 +42,7 @@ class RemoteLandscapeComponentCreator(RemoteObjectCreator):
         """
         self._twisted_reactor = reactor
         socket = os.path.join(config.data_path, self.component.name + ".sock")
-        super(RemoteLandscapeComponentCreator, self).__init__(
+        super(RemoteComponentCreator, self).__init__(
             self._twisted_reactor._reactor, socket, *args, **kwargs)
 
     def connect(self, max_retries=None):
@@ -68,7 +68,7 @@ class RemoteLandscapeComponentCreator(RemoteObjectCreator):
             logging.error("Error while connecting to %s", self.component.name)
             return failure
 
-        result = super(RemoteLandscapeComponentCreator, self).connect(
+        result = super(RemoteComponentCreator, self).connect(
             max_retries=max_retries)
         result.addErrback(log_error)
         result.addCallback(connected)
