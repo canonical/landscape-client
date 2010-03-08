@@ -1,5 +1,5 @@
 
-from landscape import API
+from landscape import SERVER_API, CLIENT_API
 from landscape.lib.persist import Persist
 from landscape.lib.hashlib import md5
 from landscape.lib.fetch import fetch_async
@@ -50,7 +50,7 @@ class MessageExchangeTest(LandscapeTest):
         messages = self.transport.payloads[0]["messages"]
         self.assertEquals(messages, [{"type": "empty",
                                       "timestamp": 0,
-                                      "api": API}])
+                                      "api": SERVER_API}])
 
     def test_send_urgent(self):
         """
@@ -424,9 +424,9 @@ class MessageExchangeTest(LandscapeTest):
         # the client API.
         payload = self.transport.payloads[-1]
         self.assertMessages(payload["messages"], [])
-        self.assertEquals(payload.get("client-api"), API)
-        self.assertEquals(payload.get("server-api"), API)
-        self.assertEquals(self.transport.message_api, API)
+        self.assertEquals(payload.get("client-api"), CLIENT_API)
+        self.assertEquals(payload.get("server-api"), SERVER_API)
+        self.assertEquals(self.transport.message_api, SERVER_API)
 
         self.mstore.add({"type": "a", "api": "1.0"})
         self.mstore.add({"type": "b", "api": "1.0"})
@@ -443,7 +443,7 @@ class MessageExchangeTest(LandscapeTest):
         self.assertMessages(payload["messages"],
                             [{"type": "a", "api": "1.0"},
                              {"type": "b", "api": "1.0"}])
-        self.assertEquals(payload.get("client-api"), API)
+        self.assertEquals(payload.get("client-api"), CLIENT_API)
         self.assertEquals(payload.get("server-api"), "1.0")
         self.assertEquals(self.transport.message_api, "1.0")
 
@@ -453,7 +453,7 @@ class MessageExchangeTest(LandscapeTest):
         self.assertMessages(payload["messages"],
                             [{"type": "c", "api": "1.1"},
                              {"type": "d", "api": "1.1"}])
-        self.assertEquals(payload.get("client-api"), API)
+        self.assertEquals(payload.get("client-api"), CLIENT_API)
         self.assertEquals(payload.get("server-api"), "1.1")
         self.assertEquals(self.transport.message_api, "1.1")
 
@@ -463,7 +463,7 @@ class MessageExchangeTest(LandscapeTest):
         self.assertMessages(payload["messages"],
                             [{"type": "e", "api": None},
                              {"type": "f", "api": None}])
-        self.assertEquals(payload.get("client-api"), API)
+        self.assertEquals(payload.get("client-api"), CLIENT_API)
         self.assertEquals(payload.get("server-api"), "2.0")
         self.assertEquals(self.transport.message_api, "2.0")
 

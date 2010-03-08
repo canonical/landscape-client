@@ -1,15 +1,14 @@
 from landscape.lib.amp import RemoteObject
 from landscape.amp import (
-    LandscapeComponentProtocol, LandscapeComponentFactory,
-    RemoteLandscapeComponentCreator)
+    ComponentProtocol, ComponentProtocolFactory, RemoteComponentCreator)
 from landscape.broker.server import BrokerServer
 
 
-class BrokerServerProtocol(LandscapeComponentProtocol):
+class BrokerServerProtocol(ComponentProtocol):
     """
     Communication protocol between the broker server and its clients.
     """
-    methods = (LandscapeComponentProtocol.methods +
+    methods = (ComponentProtocol.methods +
                ["get_accepted_message_types",
                 "get_server_uuid",
                 "is_message_pending",
@@ -21,7 +20,7 @@ class BrokerServerProtocol(LandscapeComponentProtocol):
                 "stop_clients"])
 
 
-class BrokerServerFactory(LandscapeComponentFactory):
+class BrokerServerProtocolFactory(ComponentProtocolFactory):
 
     protocol = BrokerServerProtocol
 
@@ -39,19 +38,19 @@ class RemoteBroker(RemoteObject):
         return deferred_types
 
 
-class BrokerClientProtocol(LandscapeComponentProtocol):
+class BrokerClientProtocol(ComponentProtocol):
     """Communication protocol between a client and the broker."""
 
 
-class BrokerClientFactory(LandscapeComponentFactory):
+class BrokerClientProtocolFactory(ComponentProtocolFactory):
 
     protocol = BrokerClientProtocol
 
 
-class RemoteBrokerCreator(RemoteLandscapeComponentCreator):
+class RemoteBrokerCreator(RemoteComponentCreator):
     """Helper to create connections with the L{BrokerServer}."""
 
-    factory = BrokerClientFactory
+    factory = BrokerClientProtocolFactory
     remote = RemoteBroker
     component = BrokerServer
 
@@ -62,7 +61,5 @@ class RemoteClient(object):
     def __init__(self, name):
         """
         @param name: Name of the broker client.
-        @param protocol: A L{BrokerServerProtocol} connection with the broker
-            server.
         """
         self.name = name

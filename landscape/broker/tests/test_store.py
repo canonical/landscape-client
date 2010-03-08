@@ -8,7 +8,7 @@ from landscape.schema import InvalidError, Message, Int, String, UnicodeOrString
 
 from landscape.tests.helpers import LandscapeTest
 from landscape.tests.mocker import ANY
-from landscape import API
+from landscape import SERVER_API
 
 
 class MessageStoreTest(LandscapeTest):
@@ -123,7 +123,7 @@ class MessageStoreTest(LandscapeTest):
         self.assertMessages(messages,
                             [{"type": "data",
                               "data": "A thing",
-                              "api": API}])
+                              "api": SERVER_API}])
 
     def test_max_pending(self):
         for i in range(10):
@@ -260,7 +260,7 @@ class MessageStoreTest(LandscapeTest):
         messages = self.store.get_pending_messages()
 
         self.assertEquals(messages, [{"type": "data", "data": "2",
-                                      "api": API}])
+                                      "api": SERVER_API}])
 
         self.store.set_pending_offset(len(messages))
 
@@ -291,10 +291,10 @@ class MessageStoreTest(LandscapeTest):
         self.mocker.verify()
         self.mocker.reset()
         self.assertEquals(self.store.get_pending_messages(),
-                         [{"type": "data", "data": 1, "api": API}])
+                         [{"type": "data", "data": 1, "api": SERVER_API}])
 
     def test_api_attribute(self):
-        self.assertEquals(self.store.api, API)
+        self.assertEquals(self.store.api, SERVER_API)
         new_api = "New API version!"
         self.store.api = new_api
         self.assertEquals(self.store.api, new_api)
@@ -302,7 +302,7 @@ class MessageStoreTest(LandscapeTest):
     def test_default_api_on_messages(self):
         self.store.add({"type": "empty"})
         self.assertEquals(self.store.get_pending_messages(),
-                          [{"type": "empty", "api": API}])
+                          [{"type": "empty", "api": SERVER_API}])
 
     def test_custom_api_on_store(self):
         self.store.api = "X.Y"
