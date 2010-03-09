@@ -1,3 +1,5 @@
+import os
+
 from landscape.lib.fetch import fetch_async
 from landscape.lib.persist import Persist
 from landscape.watchdog import bootstrap_list
@@ -9,6 +11,8 @@ from landscape.broker.registration import Identity, RegistrationHandler
 from landscape.broker.ping import Pinger
 from landscape.broker.deployment import BrokerConfiguration
 from landscape.broker.server import BrokerServer
+from landscape.broker.amp import (
+    BrokerServerProtocolFactory, RemoteBrokerCreator)
 
 
 class BrokerConfigurationHelper(object):
@@ -113,3 +117,32 @@ class BrokerServerHelper(RegistrationHelper):
         test_case.broker = BrokerServer(test_case.config, test_case.reactor,
                                         test_case.exchanger, test_case.handler,
                                         test_case.mstore)
+
+
+class RemoteBrokerHelper(BrokerServerHelper):
+    """
+    This helper adds a connected L{RemoteBroker} to a L{BrokerServerHelper}.
+    The following attributes will be set in your test case:
+      - remote: A C{RemoteObject} connected to the broker server.
+    """
+
+    def set_up(self, test_case):
+        super(RemoteBrokerHelper, self).set_up(test_case)
+
+        factory = BrokerServerProtocolFactory(test_case.broker)
+        socket = os.path.join(test_case.config.data_path,
+                              BrokerServer.name + ".sock")
+        self._port = test_case.reactor.listen_unix(socket, factory)
+        self._connector = RemoteBrokerCreator(test_case.reactor,
+                                              test_case.config)
+
+        def set_remote(remote):
+            test_case.remote = remote
+
+        connected = self._connector.connect()
+        return connected.addCallback(set_remote)
+
+    def tear_down(self, test_case):
+        self._connector.disconnect()
+        self._port.stopListening()
+        super(RemoteBrokerHelper, self).tear_down(test_case)
