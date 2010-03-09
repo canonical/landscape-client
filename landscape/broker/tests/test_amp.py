@@ -51,7 +51,7 @@ class RemoteBrokerTest(LandscapeTest):
 
     def test_send_message_with_urgent(self):
         """
-        The L{RemoteBroker.send_message} method honors the urget argument.
+        The L{RemoteBroker.send_message} method honors the urgent argument.
         """
         message = {"type": "test"}
         self.mstore.set_accepted_types(["test"])

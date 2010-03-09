@@ -118,9 +118,6 @@ class BrokerServerHelper(RegistrationHelper):
                                         test_case.exchanger, test_case.handler,
                                         test_case.mstore)
 
-    def tear_down(self, test_case):
-        super(BrokerServerHelper, self).tear_down(test_case)
-
 
 class RemoteBrokerHelper(BrokerServerHelper):
     """
