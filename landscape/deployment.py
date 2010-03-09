@@ -239,10 +239,11 @@ class BaseConfiguration(object):
         parser = OptionParser(version=VERSION)
         parser.add_option("-c", "--config", metavar="FILE",
                           help="Use config from this file (any command line "
-                               "options override settings from the file).")
+                               "options override settings from the file) "
+                               "(default: '/etc/landscape/client.conf').")
         parser.add_option("--bus", default="system",
                           help="Which DBUS bus to use. One of 'session' "
-                               "or 'system'.")
+                               "or 'system' (default: 'system').")
         return parser
 
     def get_config_filename(self):
@@ -296,19 +297,21 @@ class Configuration(BaseConfiguration):
         parser = super(Configuration, self).make_parser()
         parser.add_option("-d", "--data-path", metavar="PATH",
                           default="/var/lib/landscape/client/",
-                          help="The directory to store data files in.")
+                          help="The directory to store data files in "
+                               "(default: '/var/lib/landscape/client/').")
         parser.add_option("-q", "--quiet", default=False, action="store_true",
                           help="Do not log to the standard output.")
         parser.add_option("-l", "--log-dir", metavar="FILE",
-                          help="The directory to write log files to.",
+                          help="The directory to write log files to "
+                               "(default: '/var/log/landscape').",
                           default="/var/log/landscape")
         parser.add_option("--log-level", default="info",
                           help="One of debug, info, warning, error or "
                                "critical.")
         parser.add_option("--ignore-sigint", action="store_true", default=False,
-                          help="Ignore interrupt signals. ")
+                          help="Ignore interrupt signals.")
         parser.add_option("--ignore-sigusr1", action="store_true", default=False,
-                          help="Ignore SIGUSR1 signal to rotate logs. ")
+                          help="Ignore SIGUSR1 signal to rotate logs.")
 
         return parser
 

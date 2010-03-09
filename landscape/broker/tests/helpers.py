@@ -11,7 +11,8 @@ from landscape.broker.registration import Identity, RegistrationHandler
 from landscape.broker.ping import Pinger
 from landscape.broker.deployment import BrokerConfiguration
 from landscape.broker.server import BrokerServer
-from landscape.broker.amp import BrokerServerFactory, RemoteBrokerCreator
+from landscape.broker.amp import (
+    BrokerServerProtocolFactory, RemoteBrokerCreator)
 from landscape.broker.client import BrokerClient
 
 
@@ -109,7 +110,7 @@ class BrokerServerHelper(RegistrationHelper):
     """
     This helper adds a broker server to the L{RegistrationHelper}.  The
     following attributes will be set in your test case:
-      - server: A L{BrokerServer}.
+      - broker: A L{BrokerServer}.
     """
 
     def set_up(self, test_case):
@@ -117,9 +118,6 @@ class BrokerServerHelper(RegistrationHelper):
         test_case.broker = BrokerServer(test_case.config, test_case.reactor,
                                         test_case.exchanger, test_case.handler,
                                         test_case.mstore)
-
-    def tear_down(self, test_case):
-        super(BrokerServerHelper, self).tear_down(test_case)
 
 
 class RemoteBrokerHelper(BrokerServerHelper):
@@ -132,7 +130,7 @@ class RemoteBrokerHelper(BrokerServerHelper):
     def set_up(self, test_case):
         super(RemoteBrokerHelper, self).set_up(test_case)
 
-        factory = BrokerServerFactory(test_case.broker)
+        factory = BrokerServerProtocolFactory(test_case.broker)
         socket = os.path.join(test_case.config.data_path,
                               BrokerServer.name + ".sock")
         self._port = test_case.reactor.listen_unix(socket, factory)

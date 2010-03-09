@@ -8,7 +8,7 @@ import os
 from landscape.lib import bpickle
 from landscape.lib.persist import Persist
 from landscape.lib.monitor import Monitor
-from landscape import API
+from landscape import SERVER_API
 
 
 HELD = "h"
@@ -38,7 +38,7 @@ class MessageStore(object):
     and is entirely unrelated to the stored messages.
     """
 
-    api = API
+    api = SERVER_API
 
     def __init__(self, persist, directory, directory_size=1000,
                  monitor_interval=60*60, get_time=time.time):

@@ -41,7 +41,7 @@ class ActiveProcessInfo(DataWatcher):
         if self._first_run:
             message["kill-all-processes"] = True
         message.update(self._detect_process_changes())
-        
+
         if message:
             message["type"] = "active-process-info"
             return message

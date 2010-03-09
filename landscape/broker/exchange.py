@@ -7,7 +7,7 @@ from twisted.internet.defer import succeed
 
 from landscape.lib.message import got_next_expected, ANCIENT
 from landscape.log import format_delta
-from landscape import API
+from landscape import SERVER_API, CLIENT_API
 
 
 class MessageExchange(object):
@@ -266,9 +266,9 @@ class MessageExchange(object):
                 # missing API must be 2.0.
                 server_api = "2.0"
         else:
-            server_api = API
+            server_api = SERVER_API
         payload = {"server-api": server_api,
-                   "client-api": API,
+                   "client-api": CLIENT_API,
                    "sequence": store.get_sequence(),
                    "messages": messages,
                    "total-messages": total_messages,
