@@ -1,5 +1,5 @@
 from landscape.lib.twisted_util import gather_results
-from landscape.amp import RemoteLandscapeComponentsRegistry
+from landscape.amp import RemoteComponentsRegistry
 
 
 def event(method):
@@ -27,7 +27,7 @@ class BrokerServer(object):
     the L{BrokerProtocol}.
     """
     name = "broker"
-    connectors_registry = RemoteLandscapeComponentsRegistry
+    connectors_registry = RemoteComponentsRegistry
 
     def __init__(self, config, reactor, exchange, registration,
                  message_store):

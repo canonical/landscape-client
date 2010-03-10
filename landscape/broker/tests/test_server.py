@@ -142,7 +142,7 @@ class BrokerServerTest(LandscapeTest):
     def test_register(self):
         """
         The L{BrokerServer.register} method attempts to register with the
-        Ladscape server and waits for a C{set-id} message from it.
+        Landscape server and waits for a C{set-id} message from it.
         """
         registered = self.broker.register()
         # This should callback the deferred.

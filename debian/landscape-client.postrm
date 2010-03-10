@@ -21,7 +21,6 @@ case "$1" in
     DATA_DIR=/var/lib/landscape
 
     rm -f "${CONFIG_FILE}"
-    rmdir /etc/landscape || true
     rm -f "/etc/default/landscape-client"
 
     rm -f "${LOG_DIR}/manager.log"*

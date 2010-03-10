@@ -31,7 +31,7 @@ class PluginRegistry(object):
         """
         info("Registering plugin %s.", format_object(plugin))
         self._plugins.append(plugin)
-        if hasattr(plugin, 'plugin_name'):
+        if hasattr(plugin, "plugin_name"):
             self._plugin_names[plugin.plugin_name] = plugin
         plugin.register(self)
 
@@ -123,10 +123,12 @@ class BrokerPlugin(Object):
     A DBus object which exposes the 'plugin' interface that the Broker expects
     of its clients.
     """
+
     def __init__(self, bus, registry):
         """
         @param bus: a DBus connection, typically a C{dbus.SystemBus} object.
-        @param registry: an instance of L{PluginRegistry} or of a subclass of it.
+        @param registry: an instance of L{PluginRegistry} or of a subclass of
+            it.
         """
         Object.__init__(self, bus)
         self.registry = registry

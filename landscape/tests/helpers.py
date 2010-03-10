@@ -617,10 +617,10 @@ CapEff: 0000000000000000
         shutil.rmtree(process_dir)
 
 
-
 from twisted.python import log
 from twisted.python import failure
 from twisted.trial import reporter
+
 
 def install_trial_hack():
     """

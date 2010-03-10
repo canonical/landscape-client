@@ -1329,10 +1329,15 @@ class PackageReporterTest(LandscapeIsolatedTest):
         This is done in the reporter so that we know it happens when
         no other reporter is possibly running at the same time.
         """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["package-locks"])
         self.store.set_hash_ids({HASH1: 3, HASH2: 4})
         self.store.add_available([1])
         self.store.add_available_upgrades([2])
         self.store.add_installed([2])
+        self.store.add_locked([3])
+        self.store.add_package_locks([("name1", None, None)])
+        self.facade.set_package_lock("name1")
         request1 = self.store.add_hash_id_request(["hash3"])
         request2 = self.store.add_hash_id_request(["hash4"])
 
@@ -1345,6 +1350,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
         self.assertEquals(self.store.get_available_upgrades(), [2])
         self.assertEquals(self.store.get_available(), [1])
         self.assertEquals(self.store.get_installed(), [2])
+        self.assertEquals(self.store.get_locked(), [3])
+        self.assertEquals(self.store.get_package_locks(), [("name1", "", "")])
         self.assertEquals(self.store.get_hash_id_request(request1.id).id, request1.id)
 
         self.store.add_task("reporter", {"type": "resynchronize"})
@@ -1352,6 +1359,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         deferred = self.reporter.run()
 
         def check_result(result):
+
             # The hashes should not go away.
             hash1 = self.store.get_hash_id(HASH1)
             hash2 = self.store.get_hash_id(HASH2)
@@ -1359,10 +1367,12 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
             # But the other data should.
             self.assertEquals(self.store.get_available_upgrades(), [])
+
             # After running the resychronize task, detect_changes is called,
             # and the existing known hashes are made available.
             self.assertEquals(self.store.get_available(), [3, 4])
             self.assertEquals(self.store.get_installed(), [])
+            self.assertEquals(self.store.get_locked(), [3])
 
             # The two original hash id requests should be still there, and
             # a new hash id request should also be detected for HASH3.
@@ -1379,6 +1389,10 @@ class PackageReporterTest(LandscapeIsolatedTest):
                 else:
                     self.fail("Unexpected hash-id request!")
             self.assertEquals(requests_count, 3)
+
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "package-locks",
+                                  "created": [("name1", "", "")]}])
 
         deferred.addCallback(check_result)
         return deferred

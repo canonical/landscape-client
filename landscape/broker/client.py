@@ -19,9 +19,8 @@ class BrokerClientPlugin(object):
     If C{run} is defined on subclasses, it will be called every C{run_interval}
     seconds after being registered.
 
-    @cvar run_interval: The interval, in seconds, to execute the
-    C{run} method. If set to C{None}, then C{run} will not be
-    scheduled.
+    @cvar run_interval: The interval, in seconds, to execute the C{run} method.
+        If set to C{None}, then C{run} will not be scheduled.
     """
 
     run_interval = 5
@@ -41,6 +40,8 @@ class BrokerClient(object):
 
     @cvar name: The name used when registering to the broker, it must be
         defined by sub-classes.
+    @ivar broker: A reference to a connected L{RemoteBroker}, it must be set
+        by the connecting machinery at service startup.
     """
     name = "client"
 
