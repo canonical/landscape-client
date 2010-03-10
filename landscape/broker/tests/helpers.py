@@ -13,7 +13,7 @@ from landscape.broker.deployment import BrokerConfiguration
 from landscape.broker.server import BrokerServer
 from landscape.broker.amp import (
     BrokerServerProtocolFactory, BrokerClientProtocolFactory,
-    RemoteBrokerCreator, RemoteClientCreator)
+    RemoteBrokerConnector)
 from landscape.broker.client import BrokerClient
 
 
@@ -135,8 +135,8 @@ class RemoteBrokerHelper(BrokerServerHelper):
         socket = os.path.join(test_case.config.data_path,
                               BrokerServer.name + ".sock")
         self._port = test_case.reactor.listen_unix(socket, factory)
-        self._connector = RemoteBrokerCreator(test_case.reactor,
-                                              test_case.config)
+        self._connector = RemoteBrokerConnector(test_case.reactor,
+                                                test_case.config)
 
         def set_remote(remote):
             test_case.remote = remote

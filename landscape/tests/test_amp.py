@@ -6,7 +6,7 @@ from twisted.internet.error import ConnectError
 from landscape.tests.helpers import LandscapeTest
 from landscape.reactor import FakeReactor
 from landscape.deployment import Configuration
-from landscape.amp import ComponentProtocolFactory, RemoteComponentCreator
+from landscape.amp import ComponentProtocolFactory, RemoteComponentConnector
 
 
 class TestComponent(object):
@@ -20,7 +20,7 @@ class TestComponentProtocolFactory(ComponentProtocolFactory):
     initialDelay = 0.01
 
 
-class RemoteTestComponentCreator(RemoteComponentCreator):
+class RemoteTestComponentConnector(RemoteComponentConnector):
 
     factory = TestComponentProtocolFactory
     component = TestComponent
@@ -39,7 +39,7 @@ class RemoteComponentTest(LandscapeTest):
         self.port = reactor.listen_unix(socket, factory)
 
 
-        self.connector = RemoteTestComponentCreator(reactor, config)
+        self.connector = RemoteTestComponentConnector(reactor, config)
         connected = self.connector.connect()
         connected.addCallback(lambda remote: setattr(self, "remote", remote))
         return connected
@@ -72,14 +72,15 @@ class RemoteComponentTest(LandscapeTest):
         return self.assertSuccess(result)
 
 
-class RemoteComponentCreatorTest(LandscapeTest):
+class RemoteComponentConnectorTest(LandscapeTest):
 
     def setUp(self):
-        super(RemoteComponentCreatorTest, self).setUp()
+        super(RemoteComponentConnectorTest, self).setUp()
         self.reactor = FakeReactor()
         self.config = Configuration()
         self.config.data_path = self.makeDir()
-        self.connector = RemoteTestComponentCreator(self.reactor, self.config)
+        self.connector = RemoteTestComponentConnector(self.reactor,
+                                                      self.config)
 
     def test_connect_logs_errors(self):
         """

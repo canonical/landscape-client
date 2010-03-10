@@ -6,7 +6,7 @@ from twisted.internet.task import Clock
 
 from landscape.lib.amp import (
     MethodCallError, MethodCallProtocol, MethodCallFactory, RemoteObject,
-    RemoteObjectCreator)
+    RemoteObjectConnector)
 from landscape.tests.helpers import LandscapeTest
 from landscape.tests.mocker import KWARGS
 
@@ -106,7 +106,7 @@ class WordsFactory(MethodCallFactory):
     factor = 0.19
 
 
-class RemoteWordsCreator(RemoteObjectCreator):
+class RemoteWordsConnector(RemoteObjectConnector):
 
     factory = WordsFactory
 
@@ -484,16 +484,16 @@ class MethodCallFactoryTest(LandscapeTest):
         self.clock.advance(0)
 
 
-class RemoteObjectCreatorTest(LandscapeTest):
+class RemoteObjectConnectorTest(LandscapeTest):
 
     def setUp(self):
-        super(RemoteObjectCreatorTest, self).setUp()
+        super(RemoteObjectConnectorTest, self).setUp()
         self.socket = self.mktemp()
         self.server_factory = WordsFactory(object=Words())
         self.port = reactor.listenUNIX(self.socket, self.server_factory)
-        self.connector = RemoteWordsCreator(reactor, self.socket,
-                                            retry_on_reconnect=True,
-                                            timeout=0.7)
+        self.connector = RemoteWordsConnector(reactor, self.socket,
+                                              retry_on_reconnect=True,
+                                              timeout=0.7)
 
         def set_remote(words):
             self.words = words
@@ -504,19 +504,19 @@ class RemoteObjectCreatorTest(LandscapeTest):
     def tearDown(self):
         self.connector.disconnect()
         self.port.stopListening()
-        super(RemoteObjectCreatorTest, self).tearDown()
+        super(RemoteObjectConnectorTest, self).tearDown()
 
     def test_connect(self):
         """
         The L{RemoteObject} resulting form the deferred returned by
-        L{RemoteObjectCreator.connect} is properly connected to the
+        L{RemoteObjectConnector.connect} is properly connected to the
         remote peer.
         """
         return self.assertSuccess(self.words.empty())
 
     def test_connect_with_max_retries(self):
         """
-        If C{max_retries} is passed to the L{RemoteObjectCreator} method,
+        If C{max_retries} is passed to the L{RemoteObjectConnector} method,
         then it will give up trying to connect after that amout of times.
         """
         self.connector.disconnect()

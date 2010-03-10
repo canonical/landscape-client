@@ -2,7 +2,7 @@ import os
 import logging
 
 from landscape.lib.amp import (
-    MethodCallProtocol, MethodCallFactory, RemoteObjectCreator)
+    MethodCallProtocol, MethodCallFactory, RemoteObjectConnector)
 
 
 class ComponentProtocol(MethodCallProtocol):
@@ -21,7 +21,7 @@ class ComponentProtocolFactory(MethodCallFactory):
     protocol = ComponentProtocol
 
 
-class RemoteComponentCreator(RemoteObjectCreator):
+class RemoteComponentConnector(RemoteObjectConnector):
     """Utility superclass for creating connections with a Landscape component.
 
     @cvar component: The class of the component to connect to, it is expected
@@ -42,7 +42,7 @@ class RemoteComponentCreator(RemoteObjectCreator):
         """
         self._twisted_reactor = reactor
         socket = os.path.join(config.data_path, self.component.name + ".sock")
-        super(RemoteComponentCreator, self).__init__(
+        super(RemoteComponentConnector, self).__init__(
             self._twisted_reactor._reactor, socket, *args, **kwargs)
 
     def connect(self, max_retries=None):
@@ -68,7 +68,7 @@ class RemoteComponentCreator(RemoteObjectCreator):
             logging.error("Error while connecting to %s", self.component.name)
             return failure
 
-        result = super(RemoteComponentCreator, self).connect(
+        result = super(RemoteComponentConnector, self).connect(
             max_retries=max_retries)
         result.addErrback(log_error)
         result.addCallback(connected)
@@ -92,10 +92,10 @@ class RemoteComponentsRegistry(object):
         return cls._by_name[name]
 
     @classmethod
-    def register(cls, creator_class):
+    def register(cls, connector_class):
         """Register a connector for a Landscape component.
 
-        @param creator_class: A sub-class of L{RemoteLandscapeComponentCreator}
+        @param connector_class: A sub-class of L{RemoteComponentConnector}
             that can be used to connect to a certain component.
         """
-        cls._by_name[creator_class.component.name] = creator_class
+        cls._by_name[connector_class.component.name] = connector_class
