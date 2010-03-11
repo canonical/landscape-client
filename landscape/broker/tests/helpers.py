@@ -13,6 +13,7 @@ from landscape.broker.deployment import BrokerConfiguration
 from landscape.broker.server import BrokerServer
 from landscape.broker.amp import (
     BrokerServerProtocolFactory, RemoteBrokerCreator)
+from landscape.broker.client import BrokerClient
 
 
 class BrokerConfigurationHelper(object):
@@ -138,6 +139,7 @@ class RemoteBrokerHelper(BrokerServerHelper):
 
         def set_remote(remote):
             test_case.remote = remote
+            return remote
 
         connected = self._connector.connect()
         return connected.addCallback(set_remote)
@@ -146,3 +148,25 @@ class RemoteBrokerHelper(BrokerServerHelper):
         self._connector.disconnect()
         self._port.stopListening()
         super(RemoteBrokerHelper, self).tear_down(test_case)
+
+
+class BrokerClientHelper(RemoteBrokerHelper):
+    """
+    This helper adds a L{BrokerClient} connected  to a L{BrokerServerHelper}.
+    The following attributes will be set in your test case:
+      - client: A connected L{BrokerClient}
+      - client_reactor: The L{FakeReactor} used by the client
+    """
+
+    def set_up(self, test_case):
+
+        def set_client(remote):
+            # The client needs its own reactor to avoid infinite loops
+            # when the broker broadcasts and event
+            test_case.client_reactor = FakeReactor()
+            test_case.client = BrokerClient(test_case.client_reactor)
+            test_case.client.name = "test"
+            test_case.client.broker = remote
+
+        connected = super(BrokerClientHelper, self).set_up(test_case)
+        return connected.addCallback(set_client)
