@@ -830,7 +830,7 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
 
         message = {"type": "release-upgrade"}
 
-        class FakeTask():
+        class FakeTask(object):
             data = message
 
         task = FakeTask()
@@ -843,7 +843,7 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         """
         message = {"type": "foo"}
 
-        class FakeTask():
+        class FakeTask(object):
             data = message
 
         self.assertEquals(self.upgrader.handle_task(FakeTask()), None)

@@ -1,6 +1,5 @@
 from landscape.tests.mocker import ANY
-from landscape.tests.helpers import (
-    LandscapeTest, BrokerServiceHelper, RemoteBrokerHelper_)
+from landscape.tests.helpers import LandscapeTest, BrokerServiceHelper
 from landscape.reactor import FakeReactor
 from landscape.monitor.config import MonitorConfiguration, ALL_PLUGINS
 from landscape.monitor.service import MonitorService
@@ -10,18 +9,17 @@ from landscape.monitor.loadaverage import LoadAverage
 
 class MonitorServiceTest(LandscapeTest):
 
-    helpers = [BrokerServiceHelper, RemoteBrokerHelper_]
+    helpers = [BrokerServiceHelper]
 
     def setUp(self):
+        super(MonitorServiceTest, self).setUp()
+        config = MonitorConfiguration()
+        config.load(["-c", self.config_filename])
 
-        def set_service(ignored):
-            config = MonitorConfiguration()
-            config.load(["-c", self.config_filename])
-            MonitorService.reactor_factory = FakeReactor
-            self.service = MonitorService(config)
+        class FakeMonitorService(MonitorService):
+            reactor_factory = FakeReactor
 
-        broker_started = super(MonitorServiceTest, self).setUp()
-        return broker_started.addCallback(set_service)
+        self.service = FakeMonitorService(config)
 
     def test_plugins(self):
         """
@@ -50,24 +48,24 @@ class MonitorServiceTest(LandscapeTest):
         # FIXME: don't actually run the real register method, because at the
         # moment the UserMonitor plugin still depends on DBus. We can probably
         # drop this mocking once the AMP migration is completed.
+        self.broker_service.startService()
+
         for plugin in self.service.plugins:
             plugin.register = self.mocker.mock()
             plugin.register(ANY)
         self.mocker.replay()
 
-        def assert_broker_connection(ignored):
+        def stop_service(ignored):
+            [connector] = self.broker_service.broker.get_connectors()
+            connector.disconnect()
+            self.service.stopService()
+            self.broker_service.stopService()
 
-            self.assertEquals(len(self.service.monitor.get_plugins()),
-                              len(ALL_PLUGINS))
-            [client] = self.broker_service.broker.get_clients()
-            self.assertEquals(client.name, "monitor")
+        def assert_broker_connection(ignored):
+            self.assertEquals(len(self.broker_service.broker.get_clients()), 1)
+            self.assertIs(self.service.broker, self.service.monitor.broker)
             result = self.service.broker.ping()
-            connector = self.service.connector_factory(self.service.reactor,
-                                                       self.service.config)
-            result.addCallback(lambda x: connector.connect())
-            result.addCallback(lambda x: connector.disconnect())
-            result.addCallback(lambda x: self.service.stopService())
-            return result
+            return result.addCallback(stop_service)
 
         started = self.service.startService()
         return started.addCallback(assert_broker_connection)

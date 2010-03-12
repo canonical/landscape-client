@@ -11,7 +11,9 @@ from landscape.broker.registration import Identity, RegistrationHandler
 from landscape.broker.ping import Pinger
 from landscape.broker.deployment import BrokerConfiguration
 from landscape.broker.server import BrokerServer
-from landscape.broker.amp import BrokerProtocolFactory, RemoteBrokerCreator
+from landscape.broker.amp import (
+    BrokerServerProtocolFactory, BrokerClientProtocolFactory,
+    RemoteBrokerConnector)
 from landscape.broker.client import BrokerClient
 
 
@@ -109,7 +111,7 @@ class BrokerServerHelper(RegistrationHelper):
     """
     This helper adds a broker server to the L{RegistrationHelper}.  The
     following attributes will be set in your test case:
-      - server: A L{BrokerServer}.
+      - broker: A L{BrokerServer}.
     """
 
     def set_up(self, test_case):
@@ -117,9 +119,6 @@ class BrokerServerHelper(RegistrationHelper):
         test_case.broker = BrokerServer(test_case.config, test_case.reactor,
                                         test_case.exchanger, test_case.handler,
                                         test_case.mstore)
-
-    def tear_down(self, test_case):
-        super(BrokerServerHelper, self).tear_down(test_case)
 
 
 class RemoteBrokerHelper(BrokerServerHelper):
@@ -132,38 +131,75 @@ class RemoteBrokerHelper(BrokerServerHelper):
     def set_up(self, test_case):
         super(RemoteBrokerHelper, self).set_up(test_case)
 
-        factory = BrokerProtocolFactory(test_case.reactor,
-                                        test_case.broker)
+        factory = BrokerServerProtocolFactory(object=test_case.broker)
         socket = os.path.join(test_case.config.data_path,
-                              RemoteBrokerCreator.socket)
+                              BrokerServer.name + ".sock")
         self._port = test_case.reactor.listen_unix(socket, factory)
-        self._creator = RemoteBrokerCreator(test_case.reactor,
-                                            test_case.config)
+        self._connector = RemoteBrokerConnector(test_case.reactor,
+                                                test_case.config)
 
         def set_remote(remote):
             test_case.remote = remote
+            return remote
 
-        connected = self._creator.connect()
+        connected = self._connector.connect()
         return connected.addCallback(set_remote)
 
     def tear_down(self, test_case):
-        self._creator.disconnect()
+        self._connector.disconnect()
         self._port.stopListening()
         super(RemoteBrokerHelper, self).tear_down(test_case)
 
 
 class BrokerClientHelper(RemoteBrokerHelper):
     """
-    This helper adds a L{BrokerClient} to a L{RemoteBrokerHelper}.
+    This helper adds a L{BrokerClient} connected  to a L{BrokerServerHelper}.
     The following attributes will be set in your test case:
-      - client: A C{BrokerClient} object connected to a remote broker.
+      - client: A connected L{BrokerClient}
+      - client_reactor: The L{FakeReactor} used by the client
     """
 
     def set_up(self, test_case):
 
-        def set_broker_client(ignored):
-            test_case.client = BrokerClient(test_case.reactor)
-            test_case.client.connected(test_case.remote)
+        def set_client(remote):
+            # The client needs its own reactor to avoid infinite loops
+            # when the broker broadcasts and event
+            test_case.client_reactor = FakeReactor()
+            test_case.client = BrokerClient(test_case.client_reactor)
+            test_case.client.broker = remote
 
         connected = super(BrokerClientHelper, self).set_up(test_case)
-        return connected.addCallback(set_broker_client)
+        return connected.addCallback(set_client)
+
+
+class RemoteClientHelper(BrokerClientHelper):
+    """
+    This helper adds a connected and registered L{RemoteClient} to a
+    L{BrokerClientHelper}.
+    The following attributes will be set in your test case:
+      - remote_client: A C{RemoteClient} connected to a registered client.
+    """
+
+    def set_up(self, test_case):
+
+        def set_remote_client(ignored):
+            test_case.remote_client = test_case.broker.get_clients()[0]
+            self._client_connector = test_case.broker.get_connectors()[0]
+
+        def listen(ignored):
+
+            factory = BrokerClientProtocolFactory(object=test_case.client)
+            socket = os.path.join(test_case.config.data_path,
+                                  test_case.client.name + ".sock")
+            self._client_port = test_case.client_reactor.listen_unix(socket,
+                                                                     factory)
+            result = test_case.remote.register_client("client")
+            return result.addCallback(set_remote_client)
+
+        connected = super(RemoteClientHelper, self).set_up(test_case)
+        return connected.addCallback(listen)
+
+    def tear_down(self, test_case):
+        self._client_connector.disconnect()
+        self._client_port.stopListening()
+        super(RemoteClientHelper, self).tear_down(test_case)

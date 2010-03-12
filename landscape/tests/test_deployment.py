@@ -320,7 +320,7 @@ class ConfigurationTest(LandscapeTest):
         os.chmod(default_filename1, 0)
         self.assertEquals(self.config.get_config_filename(),
                           default_filename2)
-        
+
         # If is is readable, than return the first default configuration file.
         os.chmod(default_filename1, 0644)
         self.assertEquals(self.config.get_config_filename(),

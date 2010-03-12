@@ -1,6 +1,7 @@
 import textwrap
 from logging import getLogger
 import math
+import os
 
 from twisted.python.failure import Failure
 
@@ -14,7 +15,7 @@ class SysInfoPluginRegistry(PluginRegistry):
     When the sysinfo plugin registry is run, it will run each of the
     registered plugins so that they get a chance to feed information
     into the registry.
-    
+
     There are three kinds of details collected: headers, notes, and footnotes.
 
     They are presented to the user in a way similar to the following:
@@ -88,7 +89,7 @@ class SysInfoPluginRegistry(PluginRegistry):
 
     def run(self):
         """Run all plugins, and return a deferred aggregating their results.
- 
+
         This will call the run() method on each of the registered plugins,
         and return a deferred which aggregates each resulting deferred.
         """
@@ -110,10 +111,12 @@ class SysInfoPluginRegistry(PluginRegistry):
         log_failure(failure, message, logger=logger)
 
     def _report_error_note(self, result):
+        from landscape.sysinfo.deployment import get_landscape_log_directory
         if self._plugin_error:
+            path = os.path.join(get_landscape_log_directory(), "sysinfo.log")
             self.add_note(
                 "There were exceptions while processing one or more plugins. "
-                "See ~/.landscape/sysinfo.log for more information.")
+                "See %s for more information." % path)
         return result
 
 
@@ -230,7 +233,7 @@ def format_sysinfo(headers=(), notes=(), footnotes=(), width=80, indent="",
                 # If there are more columns in this line, pad it up so
                 # that the next column's header is correctly aligned.
                 if headers_len > (column+1) * headers_per_column + row:
-                     line += " " * (widest_value_len - len(value))
+                    line += " " * (widest_value_len - len(value))
         lines.append(line)
 
     if notes:
