@@ -84,6 +84,7 @@ def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None,
     curl.setopt(pycurl.LOW_SPEED_TIME, total_timeout)
     curl.setopt(pycurl.NOSIGNAL, 1)
     curl.setopt(pycurl.WRITEFUNCTION, input.write)
+    curl.setopt(pycurl.DNS_CACHE_TIMEOUT, 0)
 
     try:
         curl.perform()

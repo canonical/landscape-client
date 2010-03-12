@@ -75,7 +75,9 @@ case "$1" in
         fi
 
         # Ensure primary group is landscape (for <= 1.0.29.1-0ubuntu0.9.04.0)
-        usermod -g landscape landscape
+        if ! usermod -g landscape landscape > /dev/null 2>&1; then
+          echo "ERROR: usermod -g landscape landscape failed."
+        fi
 
         # Fix prior ownerships
         find /var/lib/landscape/ -wholename /var/lib/landscape/client/custom-graph-scripts -prune -or -exec chown landscape {} \;

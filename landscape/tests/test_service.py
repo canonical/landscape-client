@@ -5,15 +5,15 @@ from landscape.reactor import FakeReactor
 from landscape.deployment import Configuration
 from landscape.service import LandscapeService
 from landscape.tests.helpers import LandscapeTest
-from landscape.amp import LandscapeComponentFactory
-from landscape.amp import RemoteLandscapeComponentCreator
+from landscape.amp import ComponentProtocolFactory
+from landscape.amp import RemoteComponentConnector
 
 
 class TestComponent(object):
     name = "monitor"
 
 
-class RemoteTestComponentCreator(RemoteLandscapeComponentCreator):
+class RemoteTestComponentCreator(RemoteComponentConnector):
     component = TestComponent
 
 
@@ -95,7 +95,7 @@ class LandscapeServiceTest(LandscapeTest):
         self.config.data_path = self.makeDir()
         reactor = FakeReactor()
         service = TestService(self.config)
-        service.factory = LandscapeComponentFactory()
+        service.factory = ComponentProtocolFactory()
         service.startService()
         connector = RemoteTestComponentCreator(reactor, self.config)
 

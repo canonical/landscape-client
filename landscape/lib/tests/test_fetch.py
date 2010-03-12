@@ -12,16 +12,18 @@ from landscape.tests.helpers import LandscapeTest
 
 class CurlStub(object):
 
-    def __init__(self, result=None, http_code=200, error=None):
+    def __init__(self, result=None, infos=None, error=None):
         self.result = result
-        self._http_code = http_code
+        self.infos = infos
+        if self.infos is None:
+            self.infos = {pycurl.HTTP_CODE: 200}
         self.options = {}
         self.performed = False
         self.error = error
 
     def getinfo(self, what):
-        if what == pycurl.HTTP_CODE:
-            return self._http_code
+        if what in self.infos:
+            return self.infos[what]
         raise RuntimeError("Stub doesn't know about %d info" % what)
 
     def setopt(self, option, value):
@@ -52,7 +54,7 @@ class CurlManyStub(object):
             else:
                 body = result[0]
                 http_code = result[1]
-            self.curls[url] = CurlStub(body, http_code=http_code)
+            self.curls[url] = CurlStub(body, {pycurl.HTTP_CODE: http_code})
         self.current = None
 
     def getinfo(self, what):
@@ -91,7 +93,8 @@ class FetchTest(LandscapeTest):
                            pycurl.LOW_SPEED_LIMIT: 1,
                            pycurl.LOW_SPEED_TIME: 600,
                            pycurl.NOSIGNAL: 1,
-                           pycurl.WRITEFUNCTION: Any()})
+                           pycurl.WRITEFUNCTION: Any(),
+                           pycurl.DNS_CACHE_TIMEOUT: 0})
 
     def test_post(self):
         curl = CurlStub("result")
@@ -106,7 +109,8 @@ class FetchTest(LandscapeTest):
                            pycurl.LOW_SPEED_TIME: 600,
                            pycurl.NOSIGNAL: 1,
                            pycurl.WRITEFUNCTION: Any(),
-                           pycurl.POST: True})
+                           pycurl.POST: True,
+                           pycurl.DNS_CACHE_TIMEOUT: 0})
 
     def test_post_data(self):
         curl = CurlStub("result")
@@ -124,7 +128,8 @@ class FetchTest(LandscapeTest):
                            pycurl.WRITEFUNCTION: Any(),
                            pycurl.POST: True,
                            pycurl.POSTFIELDSIZE: 4,
-                           pycurl.READFUNCTION: Any()})
+                           pycurl.READFUNCTION: Any(),
+                           pycurl.DNS_CACHE_TIMEOUT: 0})
 
     def test_cainfo(self):
         curl = CurlStub("result")
@@ -139,7 +144,8 @@ class FetchTest(LandscapeTest):
                            pycurl.LOW_SPEED_TIME: 600,
                            pycurl.NOSIGNAL: 1,
                            pycurl.WRITEFUNCTION: Any(),
-                           pycurl.CAINFO: "cainfo"})
+                           pycurl.CAINFO: "cainfo",
+                           pycurl.DNS_CACHE_TIMEOUT: 0})
 
     def test_cainfo_on_http(self):
         curl = CurlStub("result")
@@ -161,7 +167,8 @@ class FetchTest(LandscapeTest):
                            pycurl.LOW_SPEED_TIME: 600,
                            pycurl.NOSIGNAL: 1,
                            pycurl.WRITEFUNCTION: Any(),
-                           pycurl.HTTPHEADER: ["a: 1", "b: 2"]})
+                           pycurl.HTTPHEADER: ["a: 1", "b: 2"],
+                           pycurl.DNS_CACHE_TIMEOUT: 0})
 
     def test_timeouts(self):
         curl = CurlStub("result")
@@ -176,7 +183,8 @@ class FetchTest(LandscapeTest):
                            pycurl.LOW_SPEED_LIMIT: 1,
                            pycurl.LOW_SPEED_TIME: 30,
                            pycurl.NOSIGNAL: 1,
-                           pycurl.WRITEFUNCTION: Any()})
+                           pycurl.WRITEFUNCTION: Any(),
+                           pycurl.DNS_CACHE_TIMEOUT: 0})
 
     def test_unicode(self):
         """
@@ -190,7 +198,7 @@ class FetchTest(LandscapeTest):
         self.assertTrue(isinstance(curl.options[pycurl.URL], str))
 
     def test_non_200_result(self):
-        curl = CurlStub("result", http_code=404)
+        curl = CurlStub("result", {pycurl.HTTP_CODE: 404})
         try:
             fetch("http://example.com", curl=curl)
         except HTTPCodeError, error:
@@ -208,8 +216,7 @@ class FetchTest(LandscapeTest):
                           "<HTTPCodeError http_code=501>")
 
     def test_pycurl_error(self):
-        curl = CurlStub(result=None, http_code=None,
-                        error=pycurl.error(60, "pycurl error"))
+        curl = CurlStub(error=pycurl.error(60, "pycurl error"))
         try:
             fetch("http://example.com", curl=curl)
         except PyCurlError, error:
@@ -246,7 +253,8 @@ class FetchTest(LandscapeTest):
                                pycurl.LOW_SPEED_LIMIT: 1,
                                pycurl.LOW_SPEED_TIME: 600,
                                pycurl.NOSIGNAL: 1,
-                               pycurl.WRITEFUNCTION: Any()})
+                               pycurl.WRITEFUNCTION: Any(),
+                               pycurl.DNS_CACHE_TIMEOUT: 0})
         finally:
             pycurl.Curl = Curl
 
@@ -258,7 +266,7 @@ class FetchTest(LandscapeTest):
         return d.addCallback(got_result)
 
     def test_async_fetch_with_error(self):
-        curl = CurlStub("result", http_code=501)
+        curl = CurlStub("result", {pycurl.HTTP_CODE: 501})
         d = fetch_async("http://example.com/", curl=curl)
         def got_error(failure):
             self.assertEquals(failure.value.http_code, 501)

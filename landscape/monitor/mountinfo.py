@@ -12,6 +12,8 @@ class MountInfo(MonitorPlugin):
 
     persist_name = "mount-info"
 
+    max_free_space_items_to_exchange = 200
+
     def __init__(self, interval=300, monitor_interval=60*60,
                  mounts_file="/proc/mounts", create_time=time.time,
                  statvfs=None, hal_manager=None, mtab_file="/etc/mtab"):
@@ -69,8 +71,12 @@ class MountInfo(MonitorPlugin):
 
     def create_free_space_message(self):
         if self._free_space:
-            message = {"type": "free-space", "free-space": self._free_space}
-            self._free_space = []
+            items_to_exchange = self._free_space[
+                :self.max_free_space_items_to_exchange]
+            message = {"type": "free-space",
+                       "free-space": items_to_exchange}
+            self._free_space = self._free_space[
+                self.max_free_space_items_to_exchange:]
             return message
         return None
 
@@ -214,4 +220,3 @@ class MountInfo(MonitorPlugin):
             if "bind" in options.split(","):
                 bound_points.add(mount_point)
         return bound_points
-
