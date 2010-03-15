@@ -15,6 +15,7 @@ from twisted.internet.process import Process, ProcessReader
 from landscape.lib.fetch import url_to_filename, fetch_to_files
 from landscape.lib.lsb_release import parse_lsb_release, LSB_RELEASE_FILENAME
 from landscape.lib.gpg import gpg_verify
+from landscape.lib.fs import read_file
 from landscape.package.taskhandler import (
     PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler)
 from landscape.manager.manager import SUCCEEDED, FAILED
@@ -39,6 +40,7 @@ class ReleaseUpgrader(PackageTaskHandler):
     queue_name = "release-upgrader"
     lsb_release_filename = LSB_RELEASE_FILENAME
     landscape_ppa_url = "http://ppa.launchpad.net/landscape/ppa/ubuntu/"
+    logs_directory = "/var/log/dist-upgrade"
 
     def make_operation_result_message(self, operation_id, status, text, code):
         """Convenience to create messages of type C{"operation-result"}."""
@@ -210,6 +212,27 @@ class ReleaseUpgrader(PackageTaskHandler):
 
         return succeed(None)
 
+    def make_operation_result_text(self, out, err):
+        """Return the operation result text to be sent to the server.
+
+        @param out: The standard output of the upgrade-tool process.
+        @param err: The standard error of the upgrade-tool process.
+        @return: A text aggregating the process output, error and log files.
+        """
+        text = ""
+        for label, content in [("output", out), ("error", err)]:
+            if content:
+                text += "=== Standard %s ===\n\n%s\n\n" % (label, content)
+
+        for basename in os.listdir(self.logs_directory):
+            if not basename.endswith(".log"):
+                continue
+            filename = os.path.join(self.logs_directory, basename)
+            content = read_file(filename)
+            text += "=== %s ===\n\n%s\n\n" % (basename, content)
+
+        return text
+
     def upgrade(self, code_name, operation_id, allow_third_party=False,
                 debug=False, mode=None):
         """Run the upgrade-tool command and send a report of the results.
@@ -267,8 +290,9 @@ class ReleaseUpgrader(PackageTaskHandler):
                 status = SUCCEEDED
             else:
                 status = FAILED
-            message = self.make_operation_result_message(
-                operation_id, status, "%s%s" % (out, err), code)
+            text = self.make_operation_result_text(out, err)
+            message = self.make_operation_result_message(operation_id, status,
+                                                         text, code)
             logging.info("Queuing message with release upgrade results to "
                          "exchange urgently.")
             return self._broker.send_message(message, True)

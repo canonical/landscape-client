@@ -270,11 +270,68 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         result.addCallback(check_result)
         return result
 
+    def test_default_logs_directory(self):
+        """
+        The default directory for the upgrade-tool logs is the system one.
+        """
+        self.assertEquals(self.upgrader.logs_directory,
+                          "/var/log/dist-upgrade")
+
+    def test_make_operation_result_text(self):
+        """
+        L{ReleaseUpgrade.make_operation_result_text} aggregates the contents of
+        the process standard output, error and log files.
+        """
+        self.upgrader.logs_directory = self.makeDir()
+        self.makeFile(basename="main.log",
+                      dirname=self.upgrader.logs_directory,
+                      content="main log")
+        self.makeFile(basename="apt.log",
+                      dirname=self.upgrader.logs_directory,
+                      content="apt log")
+        text = self.upgrader.make_operation_result_text("stdout", "stderr")
+        self.assertEquals(text,
+                          "=== Standard output ===\n\n"
+                          "stdout\n\n"
+                          "=== Standard error ===\n\n"
+                          "stderr\n\n"
+                          "=== main.log ===\n\n"
+                          "main log\n\n"
+                          "=== apt.log ===\n\n"
+                          "apt log\n\n")
+
+    def test_make_operation_result_text_with_no_stderr(self):
+        """
+        L{ReleaseUpgrade.make_operation_result_text} skips the standard error
+        if it's empty.
+        """
+        self.upgrader.logs_directory = self.makeDir()
+        text = self.upgrader.make_operation_result_text("stdout", "")
+        self.assertEquals(text,
+                          "=== Standard output ===\n\n"
+                          "stdout\n\n")
+
+    def test_make_operation_result_text_only_considers_log_files(self):
+        """
+        L{ReleaseUpgrade.make_operation_result_text} only considers log files
+        from the last upgrade-tool run, directories containing log files from
+        an older run are skipped.
+        """
+        self.upgrader.logs_directory = self.makeDir()
+        self.makeDir(dirname=self.upgrader.logs_directory)
+        text = self.upgrader.make_operation_result_text("stdout", "stderr")
+        self.assertEquals(text,
+                          "=== Standard output ===\n\n"
+                          "stdout\n\n"
+                          "=== Standard error ===\n\n"
+                          "stderr\n\n")
+
     def test_upgrade(self):
         """
         The L{ReleaseUpgrader.upgrade} method spawns the appropropriate
         upgrade-tool script and reports the result.
         """
+        self.upgrader.logs_directory = self.makeDir()
         upgrade_tool_directory = self.config.upgrade_tool_directory
         upgrade_tool_filename = os.path.join(upgrade_tool_directory, "karmic")
         fd = open(upgrade_tool_filename, "w")
@@ -298,8 +355,10 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
                 self.assertIn("INFO: Queuing message with release upgrade "
                               "results to exchange urgently.",
                               self.logfile.getvalue())
-                result_text = u"--frontend DistUpgradeViewNonInteractive\n" \
-                              "FOO=bar\nPWD=%s\nout\n" % upgrade_tool_directory
+                result_text = (u"=== Standard output ===\n\n"
+                               "--frontend DistUpgradeViewNonInteractive\n"
+                               "FOO=bar\n"
+                               "PWD=%s\nout\n\n\n" % upgrade_tool_directory)
                 self.assertMessages(self.get_pending_messages(),
                                     [{"type": "operation-result",
                                       "operation-id": 100,
@@ -324,6 +383,7 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         which gets passed to the upgrade-tool script as argument for the
         C{--mode} command line option.
         """
+        self.upgrader.logs_directory = self.makeDir()
         upgrade_tool_directory = self.config.upgrade_tool_directory
         upgrade_tool_filename = os.path.join(upgrade_tool_directory, "hardy")
         self.makeFile(path=upgrade_tool_filename,
@@ -337,8 +397,9 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
             result = self.upgrader.upgrade("hardy", 100, mode="server")
 
             def check_result(ignored):
-                result_text = ("--frontend DistUpgradeViewNonInteractive "
-                               "--mode server\n")
+                result_text = (u"=== Standard output ===\n\n"
+                               "--frontend DistUpgradeViewNonInteractive "
+                               "--mode server\n\n\n")
                 self.assertMessages(self.get_pending_messages(),
                                     [{"type": "operation-result",
                                       "operation-id": 100,
@@ -357,6 +418,7 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         The L{ReleaseUpgrader.upgrade} method optionally sets environment
         variables to be passed to the upgrade-tool process.
         """
+        self.upgrader.logs_directory = self.makeDir()
         upgrade_tool_directory = self.config.upgrade_tool_directory
         upgrade_tool_filename = os.path.join(upgrade_tool_directory, "karmic")
         fd = open(upgrade_tool_filename, "w")
@@ -377,8 +439,9 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
                                            debug=True)
 
             def check_result(ignored):
-                result_text = u"DEBUG_UPDATE_MANAGER=True\n" \
-                              u"RELEASE_UPRADER_ALLOW_THIRD_PARTY=True\n"
+                result_text = (u"=== Standard output ===\n\n"
+                               "DEBUG_UPDATE_MANAGER=True\n"
+                               "RELEASE_UPRADER_ALLOW_THIRD_PARTY=True\n\n\n")
                 self.assertMessages(self.get_pending_messages(),
                                     [{"type": "operation-result",
                                       "operation-id": 100,
@@ -402,6 +465,7 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         The L{ReleaseUpgrader.upgrade} sends a message with failed status
         field if the upgrade-tool exits with non-zero code.
         """
+        self.upgrader.logs_directory = self.makeDir()
         upgrade_tool_directory = self.config.upgrade_tool_directory
         upgrade_tool_filename = os.path.join(upgrade_tool_directory, "karmic")
         fd = open(upgrade_tool_filename, "w")
@@ -419,11 +483,13 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
             result = self.upgrader.upgrade("karmic", 100)
 
             def check_result(ignored):
+                result_text = (u"=== Standard output ===\n\nout\n\n\n"
+                               "=== Standard error ===\n\nerr\n\n\n")
                 self.assertMessages(self.get_pending_messages(),
                                     [{"type": "operation-result",
                                       "operation-id": 100,
                                       "status": FAILED,
-                                      "result-text": "out\nerr\n",
+                                      "result-text": result_text,
                                       "result-code": 3}])
 
             result.addCallback(check_result)
@@ -439,6 +505,7 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         and passes its files descriptors over to child processes we don't know
         about.
         """
+        self.upgrader.logs_directory = self.makeDir()
         upgrade_tool_directory = self.config.upgrade_tool_directory
         upgrade_tool_filename = os.path.join(upgrade_tool_directory, "karmic")
         child_pid_filename = self.makeFile()

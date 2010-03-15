@@ -10,3 +10,15 @@ def create_file(path, content):
     fd = open(path, "w")
     fd.write(content)
     fd.close()
+
+
+def read_file(path):
+    """Return the content of the given file.
+
+    @param path: The path to the file.
+    @return content: The content of the file.
+    """
+    fd = open(path, "r")
+    content = fd.read()
+    fd.close()
+    return content
