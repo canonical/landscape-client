@@ -78,12 +78,20 @@ class BrokerServer(object):
         """Get L{RemoteClient} instances for registered clients."""
         return self._registered_clients.values()
 
+    def get_client(self, name):
+        """Return the client with the given C{name} or C{None}."""
+        return self._registered_clients.get(name)
+
     def get_connectors(self):
         """Get connectors for registered clients.
 
         @see L{RemoteLandscapeComponentCreator}.
         """
         return self._connectors.values()
+
+    def get_connector(self, name):
+        """Return the connector for the given C{name} or C{None}."""
+        return self._connectors.get(self.get_client(name))
 
     def send_message(self, message, urgent=False):
         """Queue C{message} for delivery to the server at the next exchange.

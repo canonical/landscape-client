@@ -77,7 +77,7 @@ class RemoteComponentConnector(RemoteObjectConnector):
 
 class RemoteComponentsRegistry(object):
     """
-    A global registry for looking up Landscape components connectors by name.
+    A global registry for looking up Landscape component connectors by name.
     """
 
     _by_name = {}

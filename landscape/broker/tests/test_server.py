@@ -3,7 +3,6 @@ from twisted.internet.defer import succeed, fail
 from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
 from landscape.broker.tests.helpers import (
     BrokerServerHelper, RemoteClientHelper)
-from landscape.broker.amp import RemoteClient
 
 
 class FakeClient(object):
@@ -68,14 +67,20 @@ class BrokerServerTest(LandscapeTest):
         client components that need to communicate with the server. After
         the registration they can be fetched with L{BrokerServer.get_clients}.
         """
+        self.assertEquals(self.broker.get_clients(), [])
+        self.assertEquals(self.broker.get_client("test"), None)
+        self.assertEquals(self.broker.get_connectors(), [])
+        self.assertEquals(self.broker.get_connector("test"), None)
+
         def assert_registered(ignored):
+            self.assertEquals(len(self.broker.get_clients()), 1)
+            self.assertEquals(len(self.broker.get_connectors()), 1)
             self.assertTrue(
-                isinstance(self.broker.get_clients()[0], FakeClient))
+                isinstance(self.broker.get_client("test"), FakeClient))
             self.assertTrue(
-                isinstance(self.broker.get_connectors()[0], FakeCreator))
+                isinstance(self.broker.get_connector("test"), FakeCreator))
 
         self.broker.connectors_registry = {"test": FakeCreator}
-        self.assertEquals(self.broker.get_clients(), [])
         result = self.broker.register_client("test")
         return result.addCallback(assert_registered)
 
@@ -340,7 +345,7 @@ class EventTest(LandscapeTest):
         callback = self.mocker.mock()
         callback(True)
         self.mocker.replay()
-        self.client_reactor.call_on(("message-type-acceptance-changed", "type"),
-                                    callback)
-        return self.assertSuccess(
-            self.broker.message_type_acceptance_changed("type", True), [[None]])
+        self.client_reactor.call_on(("message-type-acceptance-changed",
+                                     "type"), callback)
+        result = self.broker.message_type_acceptance_changed("type", True)
+        return self.assertSuccess(result, [[None]])
