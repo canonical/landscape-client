@@ -1,4 +1,23 @@
 from landscape.lib.twisted_util import gather_results
+from landscape.amp import RemoteComponentsRegistry
+
+
+def event(method):
+    """Turns a L{BrokerServer} method into an event broadcaster.
+
+    When the decorated method is called, an event is fired on all connected
+    clients. The event will have the same name as the method being called,
+    except that any underscore in the method name will be replaced with a dash.
+    """
+    event_type = method.__name__.replace("_", "-")
+
+    def broadcast_event(self, *args, **kwargs):
+        fired = []
+        for client in self.get_clients():
+            fired.append(client.fire_event(event_type, *args, **kwargs))
+        return gather_results(fired)
+
+    return broadcast_event
 
 
 class BrokerServer(object):
@@ -7,6 +26,7 @@ class BrokerServer(object):
     the L{BrokerProtocol}.
     """
     name = "broker"
+    connectors_registry = RemoteComponentsRegistry
 
     def __init__(self, config, reactor, exchange, registration,
                  message_store):
@@ -23,6 +43,7 @@ class BrokerServer(object):
         self._registration = registration
         self._message_store = message_store
         self._registered_clients = {}
+        self._connectors = {}
 
     def ping(self):
         """Return C{True}."""
@@ -32,18 +53,44 @@ class BrokerServer(object):
         """Register a broker client called C{name}.
 
         Various broker clients interact with the broker server, such as the
-        monitor for example, using the L{BrokerProtocol} for communication.
+        monitor for example, using the L{BrokerServerProtocol} for performing
+        remote method calls on the L{BrokerServer}.
+
         They establish connectivity with the broker by connecting and
-        registering themselves.
+        registering themselves, the L{BrokerServer} will in turn connect
+        to them in order to be able to perform remote method calls like
+        broadcasting events and messages.
 
         @param name: The name of the client, such a C{monitor} or C{manager}.
         """
-        from landscape.broker.amp import RemoteClient
-        self._registered_clients[name] = RemoteClient(name)
+        connector_class = self.connectors_registry.get(name)
+        connector = connector_class(self._reactor, self._config)
+
+        def register(remote_client):
+            self._registered_clients[name] = remote_client
+            self._connectors[remote_client] = connector
+
+        connected = connector.connect()
+        return connected.addCallback(register)
 
     def get_clients(self):
-        """Get L{BrokerPlugin} instances for registered plugins."""
+        """Get L{RemoteClient} instances for registered clients."""
         return self._registered_clients.values()
+
+    def get_client(self, name):
+        """Return the client with the given C{name} or C{None}."""
+        return self._registered_clients.get(name)
+
+    def get_connectors(self):
+        """Get connectors for registered clients.
+
+        @see L{RemoteLandscapeComponentCreator}.
+        """
+        return self._connectors.values()
+
+    def get_connector(self, name):
+        """Return the connector for the given C{name} or C{None}."""
+        return self._connectors.get(self.get_client(name))
 
     def send_message(self, message, urgent=False):
         """Queue C{message} for delivery to the server at the next exchange.
@@ -123,3 +170,35 @@ class BrokerServer(object):
             self._reactor.fire("post-exit")
 
         return clients_stopped.addBoth(fire_post_exit)
+
+    @event
+    def resynchronize(self):
+        """Broadcast a C{resynchronize} event to the clients."""
+
+    @event
+    def impending_exchange(self):
+        """Broadcast an C{impending-exchange} event to the clients."""
+
+    @event
+    def exchange_failed(self):
+        """Broadcast a C{exchange-failed} event to the clients."""
+
+    @event
+    def registration_done(self):
+        """Broadcast a C{registration-done} event to the clients."""
+
+    @event
+    def registration_failed(self):
+        """Broadcast a C{registration-failed} event to the clients."""
+
+    @event
+    def broker_reconnect(self):
+        """Broadcast a C{broker-reconnect} event to the clients."""
+
+    @event
+    def server_uuid_changed(self, old_uuid, new_uuid):
+        """Broadcast a C{server-uuid-changed} event to the clients."""
+
+    @event
+    def message_type_acceptance_changed(self, type, accepted):
+        pass

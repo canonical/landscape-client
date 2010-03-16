@@ -1,8 +1,21 @@
 from twisted.internet.defer import succeed, fail
 
-from landscape.broker.amp import RemoteClient
 from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
-from landscape.broker.tests.helpers import BrokerServerHelper
+from landscape.broker.tests.helpers import (
+    BrokerServerHelper, RemoteClientHelper)
+
+
+class FakeClient(object):
+    pass
+
+
+class FakeCreator(object):
+
+    def __init__(self, reactor, config):
+        pass
+
+    def connect(self):
+        return succeed(FakeClient())
 
 
 class BrokerServerTest(LandscapeTest):
@@ -55,10 +68,21 @@ class BrokerServerTest(LandscapeTest):
         the registration they can be fetched with L{BrokerServer.get_clients}.
         """
         self.assertEquals(self.broker.get_clients(), [])
-        self.broker.register_client("test")
-        [client] = self.broker.get_clients()
-        self.assertTrue(isinstance(client, RemoteClient))
-        self.assertEquals(client.name, "test")
+        self.assertEquals(self.broker.get_client("test"), None)
+        self.assertEquals(self.broker.get_connectors(), [])
+        self.assertEquals(self.broker.get_connector("test"), None)
+
+        def assert_registered(ignored):
+            self.assertEquals(len(self.broker.get_clients()), 1)
+            self.assertEquals(len(self.broker.get_connectors()), 1)
+            self.assertTrue(
+                isinstance(self.broker.get_client("test"), FakeClient))
+            self.assertTrue(
+                isinstance(self.broker.get_connector("test"), FakeCreator))
+
+        self.broker.connectors_registry = {"test": FakeCreator}
+        result = self.broker.register_client("test")
+        return result.addCallback(assert_registered)
 
     def test_stop_clients(self):
         """
@@ -66,6 +90,8 @@ class BrokerServerTest(LandscapeTest):
         of each registered client, and returns a deferred resulting in C{None}
         if all C{exit} calls were successful.
         """
+        self.broker.connectors_registry = {"foo": FakeCreator,
+                                           "bar": FakeCreator}
         self.broker.register_client("foo")
         self.broker.register_client("bar")
         for client in self.broker.get_clients():
@@ -80,6 +106,8 @@ class BrokerServerTest(LandscapeTest):
         of each registered client, and returns a deferred resulting in C{None}
         if all C{exit} calls were successful.
         """
+        self.broker.connectors_registry = {"foo": FakeCreator,
+                                           "bar": FakeCreator}
         self.broker.register_client("foo")
         self.broker.register_client("bar")
         [client1, client2] = self.broker.get_clients()
@@ -106,6 +134,8 @@ class BrokerServerTest(LandscapeTest):
         The L{BrokerServer.reload_configuration} method forces the config
         file associated with the broker server to be reloaded.
         """
+        self.broker.connectors_registry = {"foo": FakeCreator,
+                                           "bar": FakeCreator}
         self.broker.register_client("foo")
         self.broker.register_client("bar")
         for client in self.broker.get_clients():
@@ -171,6 +201,8 @@ class BrokerServerTest(LandscapeTest):
         """
         The L{BrokerServer.exit} method stops all registered clients.
         """
+        self.broker.connectors_registry = {"foo": FakeCreator,
+                                           "bar": FakeCreator}
         self.broker.register_client("foo")
         self.broker.register_client("bar")
         for client in self.broker.get_clients():
@@ -184,6 +216,7 @@ class BrokerServerTest(LandscapeTest):
         If a broker client blow up in its exit() methods, exit should ignore
         the error and exit anyway.
         """
+        self.broker.connectors_registry = {"foo": FakeCreator}
         self.broker.register_client("foo")
         [client] = self.broker.get_clients()
         client.exit = self.mocker.mock()
@@ -199,6 +232,7 @@ class BrokerServerTest(LandscapeTest):
         The L{BrokerServer.exit} method fires a C{pre-exit} event before the
         clients are stopped and a C{post-exit} event after.
         """
+        self.broker.connectors_registry = {"foo": FakeCreator}
         self.broker.register_client("foo")
         [client] = self.broker.get_clients()
         self.mocker.order()
@@ -212,3 +246,106 @@ class BrokerServerTest(LandscapeTest):
         self.reactor.call_on("pre-exit", pre_exit)
         self.reactor.call_on("post-exit", post_exit)
         return self.assertSuccess(self.broker.exit())
+
+
+class EventTest(LandscapeTest):
+
+    helpers = [RemoteClientHelper]
+
+    def test_resynchronize(self):
+        """
+        The L{BrokerServer.resynchronize} method broadcasts a C{resynchronize}
+        event to all connected clients.
+        """
+        callback = self.mocker.mock()
+        self.expect(callback()).result("foo")
+        self.mocker.replay()
+        self.client_reactor.call_on("resynchronize", callback)
+        return self.assertSuccess(self.broker.resynchronize(), [["foo"]])
+
+    def test_impending_exchange(self):
+        """
+        The L{BrokerServer.impending_exchange} method broadcasts an
+        C{impending-exchange} event to all connected clients.
+        """
+        plugin = self.mocker.mock()
+        plugin.register(self.client)
+        plugin.exchange()
+        self.mocker.replay()
+        self.client.add(plugin)
+        return self.assertSuccess(self.broker.impending_exchange(), [[None]])
+
+    def test_exchange_failed(self):
+        """
+        The L{BrokerServer.exchange_failed} method broadcasts an
+        C{exchange-failed} event to all connected clients.
+        """
+        callback = self.mocker.mock()
+        callback()
+        self.mocker.replay()
+        self.client_reactor.call_on("exchange-failed", callback)
+        return self.assertSuccess(self.broker.exchange_failed(), [[None]])
+
+    def test_registration_done(self):
+        """
+        The L{BrokerServer.registration_done} method broadcasts a
+        C{registration-done} event to all connected clients.
+        """
+        callback = self.mocker.mock()
+        callback()
+        self.mocker.replay()
+        self.client_reactor.call_on("registration-done", callback)
+        return self.assertSuccess(self.broker.registration_done(), [[None]])
+
+    def test_registration_failed(self):
+        """
+        The L{BrokerServer.registration_failed} method broadcasts a
+        C{registration-failed} event to all connected clients.
+        """
+        callback = self.mocker.mock()
+        callback()
+        self.mocker.replay()
+        self.client_reactor.call_on("registration-failed", callback)
+        return self.assertSuccess(self.broker.registration_failed(), [[None]])
+
+    def test_broker_started(self):
+        """
+        The L{BrokerServer.broker_started} method broadcasts a
+        C{broker-started} event to all connected clients, which makes them
+        re-registered any previously registered accepted message type.
+        """
+
+        def assert_broker_started(ignored):
+            self.remote.register_client_accepted_message_type = \
+                                                        self.mocker.mock()
+            self.remote.register_client_accepted_message_type("type")
+            self.mocker.replay()
+            return self.assertSuccess(self.broker.broker_reconnect(), [[None]])
+
+        registered = self.client.register_message("type", lambda x: None)
+        return registered.addCallback(assert_broker_started)
+
+    def test_server_uuid_changed(self):
+        """
+        The L{BrokerServer.server_uuid_changed} method broadcasts a
+        C{server_uuid_changed} event to all connected clients.
+        """
+        callback = self.mocker.mock()
+        callback(None, "abc")
+        self.mocker.replay()
+        self.client_reactor.call_on("server-uuid-changed", callback)
+        return self.assertSuccess(self.broker.server_uuid_changed(None, "abc"),
+                                  [[None]])
+
+    def test_message_type_acceptance_changed(self):
+        """
+        The L{BrokerServer.message_type_acceptance_changed} method broadcasts
+        a C{message-type-acceptance-changed} event to all connected clients.
+        """
+        callback = self.mocker.mock()
+        callback(True)
+        self.mocker.replay()
+        self.client_reactor.call_on(("message-type-acceptance-changed",
+                                     "type"), callback)
+        result = self.broker.message_type_acceptance_changed("type", True)
+        return self.assertSuccess(result, [[None]])

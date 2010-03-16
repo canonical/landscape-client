@@ -2,7 +2,7 @@ import os
 import logging
 
 from landscape.lib.amp import (
-    MethodCallProtocol, MethodCallFactory, RemoteObjectCreator)
+    MethodCallProtocol, MethodCallFactory, RemoteObjectConnector)
 
 
 class ComponentProtocol(MethodCallProtocol):
@@ -21,7 +21,7 @@ class ComponentProtocolFactory(MethodCallFactory):
     protocol = ComponentProtocol
 
 
-class RemoteComponentCreator(RemoteObjectCreator):
+class RemoteComponentConnector(RemoteObjectConnector):
     """Utility superclass for creating connections with a Landscape component.
 
     @cvar component: The class of the component to connect to, it is expected
@@ -42,7 +42,7 @@ class RemoteComponentCreator(RemoteObjectCreator):
         """
         self._twisted_reactor = reactor
         socket = os.path.join(config.data_path, self.component.name + ".sock")
-        super(RemoteComponentCreator, self).__init__(
+        super(RemoteComponentConnector, self).__init__(
             self._twisted_reactor._reactor, socket, *args, **kwargs)
 
     def connect(self, max_retries=None):
@@ -68,8 +68,34 @@ class RemoteComponentCreator(RemoteObjectCreator):
             logging.error("Error while connecting to %s", self.component.name)
             return failure
 
-        result = super(RemoteComponentCreator, self).connect(
+        result = super(RemoteComponentConnector, self).connect(
             max_retries=max_retries)
         result.addErrback(log_error)
         result.addCallback(connected)
         return result
+
+
+class RemoteComponentsRegistry(object):
+    """
+    A global registry for looking up Landscape component connectors by name.
+    """
+
+    _by_name = {}
+
+    @classmethod
+    def get(cls, name):
+        """Get the connector class for the given Landscape component.
+
+        @param name: Name of the Landscape component we want to connect to, for
+           instance C{monitor} or C{manager}.
+        """
+        return cls._by_name[name]
+
+    @classmethod
+    def register(cls, connector_class):
+        """Register a connector for a Landscape component.
+
+        @param connector_class: A sub-class of L{RemoteComponentConnector}
+            that can be used to connect to a certain component.
+        """
+        cls._by_name[connector_class.component.name] = connector_class

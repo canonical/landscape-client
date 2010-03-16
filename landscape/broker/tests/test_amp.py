@@ -1,6 +1,7 @@
 from landscape.lib.amp import MethodCall, MethodCallError
 from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
-from landscape.broker.tests.helpers import RemoteBrokerHelper
+from landscape.broker.tests.helpers import (
+    RemoteBrokerHelper, RemoteClientHelper)
 
 
 class RemoteBrokerTest(LandscapeTest):
@@ -21,14 +22,11 @@ class RemoteBrokerTest(LandscapeTest):
         The L{RemoteBroker.register_client} method forwards a registration
         request to the remote L{BrokerServer} object.
         """
-
-        def assert_result(result):
-            self.assertEquals(result, None)
-            [client] = self.broker.get_clients()
-            self.assertEquals(client.name, "client")
-
-        sent = self.remote.register_client("client")
-        return sent.addCallback(assert_result)
+        self.broker.register_client = self.mocker.mock()
+        self.expect(self.broker.register_client("client"))
+        self.mocker.replay()
+        result = self.remote.register_client("client")
+        return self.assertSuccess(result)
 
     def test_send_message(self):
         """
@@ -173,4 +171,67 @@ class RemoteBrokerTest(LandscapeTest):
                                                   method="get_clients",
                                                   args=[],
                                                   kwargs={})
+        return self.assertFailure(result, MethodCallError)
+
+
+class RemoteClientTest(LandscapeTest):
+
+    helpers = [RemoteClientHelper]
+
+    def test_ping(self):
+        """
+        The L{RemoteClient.ping} method calls the C{ping} method of the
+        remote L{BrokerClient} instance and returns its result with a
+        L{Deferred}.
+        """
+        result = self.remote_client.ping()
+        return self.assertSuccess(result, True)
+
+    def test_message(self):
+        """
+        The L{RemoteClient.message} method calls the C{message} method of
+        the remote L{BrokerClient} instance and returns its result with
+        a L{Deferred}.
+        """
+        handler = self.mocker.mock()
+        handler({"type": "test"})
+        self.client.broker = self.mocker.mock()
+        self.client.broker.register_client_accepted_message_type("test")
+        self.mocker.replay()
+
+        # We need to register a test message handler to let the dispatch
+        # message method call succeed
+        self.client.register_message("test", handler)
+        result = self.remote_client.message({"type": "test"})
+        return self.assertSuccess(result, True)
+
+    def test_fire_event(self):
+        """
+        The L{RemoteClient.fire_event} method calls the C{fire_event} method of
+        the remote L{BrokerClient} instance and returns its result with a
+        L{Deferred}.
+        """
+        callback = self.mocker.mock()
+        callback(True, kwarg=2)
+        self.mocker.replay()
+        self.client_reactor.call_on("event", callback)
+        result = self.remote_client.fire_event("event", True, kwarg=2)
+        return self.assertSuccess(result, [None])
+
+    def test_exit(self):
+        """
+        The L{RemoteClient.exit} method calls the C{exit} method of the remote
+        L{BrokerClient} instance and returns its result with a L{Deferred}.
+        """
+        result = self.remote_client.exit()
+        return self.assertSuccess(result, None)
+
+    def test_method_call_error(self):
+        """
+        Trying to call an non-exposed client method results in a failure.
+        """
+        result = self.remote_client._protocol.callRemote(MethodCall,
+                                                         method="get_plugins",
+                                                         args=[],
+                                                         kwargs={})
         return self.assertFailure(result, MethodCallError)

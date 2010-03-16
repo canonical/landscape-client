@@ -1,7 +1,9 @@
 from landscape.lib.amp import RemoteObject
 from landscape.amp import (
-    ComponentProtocol, ComponentProtocolFactory, RemoteComponentCreator)
+    ComponentProtocol, ComponentProtocolFactory, RemoteComponentConnector,
+    RemoteComponentsRegistry)
 from landscape.broker.server import BrokerServer
+from landscape.broker.client import BrokerClient
 
 
 class BrokerServerProtocol(ComponentProtocol):
@@ -41,13 +43,19 @@ class RemoteBroker(RemoteObject):
 class BrokerClientProtocol(ComponentProtocol):
     """Communication protocol between a client and the broker."""
 
+    methods = (ComponentProtocol.methods + ["fire_event", "message"])
+
 
 class BrokerClientProtocolFactory(ComponentProtocolFactory):
 
     protocol = BrokerClientProtocol
 
 
-class RemoteBrokerCreator(RemoteComponentCreator):
+class RemoteClient(RemoteObject):
+    """A remote L{BrokerClient} connected to a L{BrokerServer}."""
+
+
+class RemoteBrokerConnector(RemoteComponentConnector):
     """Helper to create connections with the L{BrokerServer}."""
 
     factory = BrokerClientProtocolFactory
@@ -55,11 +63,13 @@ class RemoteBrokerCreator(RemoteComponentCreator):
     component = BrokerServer
 
 
-class RemoteClient(object):
-    """A connected client utilizing features provided by a L{BrokerServer}."""
+class RemoteClientConnector(RemoteComponentConnector):
+    """Helper to create connections with the L{BrokerServer}."""
 
-    def __init__(self, name):
-        """
-        @param name: Name of the broker client.
-        """
-        self.name = name
+    factory = BrokerServerProtocolFactory
+    remote = RemoteClient
+    component = BrokerClient
+
+
+RemoteComponentsRegistry.register(RemoteBrokerConnector)
+RemoteComponentsRegistry.register(RemoteClientConnector)

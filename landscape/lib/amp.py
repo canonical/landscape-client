@@ -405,7 +405,7 @@ class RemoteObject(object):
                               deferred=deferred, call=call)
 
 
-class RemoteObjectCreator(object):
+class RemoteObjectConnector(object):
     """Connect to remote objects exposed by a L{MethodCallProtocol}."""
 
     factory = MethodCallFactory

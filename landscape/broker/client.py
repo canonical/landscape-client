@@ -43,6 +43,7 @@ class BrokerClient(object):
     @ivar broker: A reference to a connected L{RemoteBroker}, it must be set
         by the connecting machinery at service startup.
     """
+    name = "client"
 
     def __init__(self, reactor):
         """
