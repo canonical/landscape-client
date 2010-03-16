@@ -183,8 +183,8 @@ class RemoteClientHelper(BrokerClientHelper):
     def set_up(self, test_case):
 
         def set_remote_client(ignored):
-            test_case.remote_client = test_case.broker.get_clients()[0]
-            self._client_connector = test_case.broker.get_connectors()[0]
+            test_case.remote_client = test_case.broker.get_client("client")
+            self._client_connector = test_case.broker.get_connector("client")
 
         def listen(ignored):
 
