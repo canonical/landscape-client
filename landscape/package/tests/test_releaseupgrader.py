@@ -277,6 +277,12 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         self.assertEquals(self.upgrader.logs_directory,
                           "/var/log/dist-upgrade")
 
+    def test_default_logs_limit(self):
+        """
+        The default read limit for the upgrade-tool logs is 100000 bytes.
+        """
+        self.assertEquals(self.upgrader.logs_limit, 100000)
+
     def test_make_operation_result_text(self):
         """
         L{ReleaseUpgrade.make_operation_result_text} aggregates the contents of
@@ -325,6 +331,25 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
                           "stdout\n\n"
                           "=== Standard error ===\n\n"
                           "stderr\n\n")
+
+    def test_make_operation_result_text_trims_long_files(self):
+        """
+        L{ReleaseUpgrade.make_operation_result_text} only reads the last
+        L{logs_limit} lines of a log file.
+        """
+        self.upgrader.logs_directory = self.makeDir()
+        self.upgrader.logs_limit = 8
+        self.makeFile(basename="main.log",
+                      dirname=self.upgrader.logs_directory,
+                      content="very long log")
+        text = self.upgrader.make_operation_result_text("stdout", "stderr")
+        self.assertEquals(text,
+                          "=== Standard output ===\n\n"
+                          "stdout\n\n"
+                          "=== Standard error ===\n\n"
+                          "stderr\n\n"
+                          "=== main.log ===\n\n"
+                          "long log\n\n")
 
     def test_upgrade(self):
         """
