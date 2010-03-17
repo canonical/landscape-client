@@ -488,6 +488,7 @@ class ManagerHelper_(BrokerServiceHelper):
         test_case.reactor = FakeReactor()
         test_case.manager = Manager(test_case.reactor, test_case.config)
         test_case.manager.broker = test_case.remote
+        test_case.mstore = test_case.broker_service.message_store
 
 
 class MockPopen(object):

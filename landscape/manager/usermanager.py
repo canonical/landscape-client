@@ -1,35 +1,19 @@
+import os
 import logging
 
-from landscape.lib.amp import (
-    Method, MethodCallProtocol, MethodCallFactory, RemoteObjectCreator)
 from landscape.lib.twisted_util import gather_results
+from landscape.lib.amp import RemoteObject
+from landscape.amp import (
+    ComponentProtocol, ComponentProtocolFactory, RemoteComponentConnector)
 
 from landscape.user.management import UserManagement
 from landscape.manager.manager import ManagerPlugin
-from landscape.monitor.usermonitor import RemoteUserMonitorCreator
-
-
-class UserManagerProtocol(MethodCallProtocol):
-    """L{AMP}-based protocol for calling L{UserManager}'s methods remotely."""
-
-    methods = [Method("get_locked_usernames")]
-
-
-class UserManagerFactory(MethodCallFactory):
-
-    protocol = UserManagerProtocol
-
-
-class RemoteUserManagerCreator(RemoteObjectCreator):
-
-    protocol = UserManagerProtocol
-
-    def __init__(self, reactor, config):
-        super(RemoteUserManagerCreator, self).__init__(
-            reactor._reactor, config.user_manager_socket_filename)
+from landscape.monitor.usermonitor import RemoteUserMonitorConnector
 
 
 class UserManager(ManagerPlugin):
+
+    name = "usermanager"
 
     def __init__(self, management=None, shadow_file="/etc/shadow"):
         self._management = management or UserManagement()
@@ -55,10 +39,11 @@ class UserManager(ManagerPlugin):
         self._registry = registry
         results = []
 
-        socket = self.registry.config.user_manager_socket_filename
-        factory = UserManagerFactory(self.registry.reactor, self)
-        self._port = self.registry.reactor._reactor.listenUNIX(socket, factory)
-        self._user_monitor_creator = RemoteUserMonitorCreator(
+        factory = UserManagerProtocolFactory(object=self)
+        socket = os.path.join(self.registry.config.data_path,
+                              self.name + ".sock")
+        self._port = self.registry.reactor.listen_unix(socket, factory)
+        self._user_monitor_connector = RemoteUserMonitorConnector(
             self.registry.reactor, self.registry.config)
 
         for message_type in self._message_types:
@@ -66,6 +51,11 @@ class UserManager(ManagerPlugin):
                                                      self._message_dispatch)
             results.append(result)
         return gather_results(results)
+
+    def stop(self):
+        if self._port:
+            self._port.stopListening()
+            self._port = None
 
     def get_locked_usernames(self):
         """Return a list of usernames with locked system accounts."""
@@ -88,13 +78,8 @@ class UserManager(ManagerPlugin):
             self._user_monitor = user_monitor
             return user_monitor.detect_changes()
 
-#        def disconnect(result):
-#            self._user_monitor_creator.disconnect()
-#            return result
-
-        result = self._user_monitor_creator.connect()
+        result = self._user_monitor_connector.connect()
         result.addCallback(detect_changes)
-#        result.addCallback(disconnect)
         result.addCallback(self._perform_operation, message)
         result.addCallback(self._send_changes, message)
         return result
@@ -106,7 +91,7 @@ class UserManager(ManagerPlugin):
 
     def _send_changes(self, result, message):
         result = self._user_monitor.detect_changes(message["operation-id"])
-        result.addCallback(lambda x: self._user_monitor_creator.disconnect())
+        result.addCallback(lambda x: self._user_monitor_connector.disconnect())
         return result
 
     def _add_user(self, message):
@@ -163,3 +148,25 @@ class UserManager(ManagerPlugin):
     def _remove_group(self, message):
         """Run an C{remove-group} operation."""
         return self._management.remove_group(message["groupname"])
+
+
+class UserManagerProtocol(ComponentProtocol):
+    """L{AMP}-based protocol for calling L{UserManager}'s methods remotely."""
+
+    methods = ["get_locked_usernames"]
+
+
+class UserManagerProtocolFactory(ComponentProtocolFactory):
+
+    protocol = UserManagerProtocol
+
+
+class RemoteUserManager(RemoteObject):
+    """A connected remote L{UserManager}."""
+
+
+class RemoteUserManagerConnector(RemoteComponentConnector):
+
+    factory = ComponentProtocolFactory
+    remote = RemoteUserManager
+    component = UserManager

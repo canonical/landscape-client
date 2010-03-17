@@ -164,8 +164,8 @@ class BaseConfiguration(object):
                          "or the '%s' directive in the config file."
                          % (option.replace('_','-'), option))
 
-        if self.bus not in ("session", "system", "amp"):
-            sys.exit("error: bus must be one of 'session', 'system' or 'amp'")
+        if self.bus not in ("session", "system"):
+            sys.exit("error: bus must be one of 'session' or 'system'")
 
     def _load_external_options(self):
         """Hook for loading options from elsewhere (e.g. for --import)."""
@@ -283,16 +283,6 @@ class Configuration(BaseConfiguration):
     def hashdb_filename(self):
         return os.path.join(self.data_path, "hash.db")
 
-    @property
-    def user_manager_socket_filename(self):
-        """Get the path to the user manager plugin Unix socket."""
-        return os.path.join(self.data_path, "usermanager.sock")
-
-    @property
-    def user_monitor_socket_filename(self):
-        """Get the path to the user manager plugin Unix socket."""
-        return os.path.join(self.data_path, "usermonitor.sock")
-
     def make_parser(self):
         """Parser factory for supported options.
 
@@ -371,9 +361,7 @@ class LandscapeService(Service, object):
         save it in the public L{self.bus} instance variable.
         """
         Service.startService(self)
-        # FIXME: this should go away after the AMP migration is completed
-        if self.config.bus != "amp":
-            self.bus = get_bus(self.config.bus)
+        self.bus = get_bus(self.config.bus)
         info("%s started on '%s' bus with config %s" % (
                 self.service_name.capitalize(), self.config.bus,
                 self.config.get_config_filename()))
