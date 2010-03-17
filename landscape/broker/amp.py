@@ -52,6 +52,9 @@ class FakeRemoteBroker(object):
         self.message_store = message_store
         self.protocol = BrokerServerProtocol()
 
+    def ping(self):
+        return succeed(True)
+
     def call_if_accepted(self, type, callable, *args):
         if type in self.message_store.get_accepted_types():
             return maybeDeferred(callable, *args)

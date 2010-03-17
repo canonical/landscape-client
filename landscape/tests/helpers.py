@@ -37,8 +37,7 @@ from landscape.manager.deployment import ManagerConfiguration
 # We can drop the "_" suffix and replace the current classes once the
 # AMP migration is completed
 from landscape.broker.service import BrokerService as BrokerService_
-from landscape.broker.amp import (
-    FakeRemoteBroker as FakeRemoteBroker_, RemoteBrokerConnector)
+from landscape.broker.amp import FakeRemoteBroker as FakeRemoteBroker_
 from landscape.manager.config import (
     ManagerConfiguration as ManagerConfiguration_)
 
@@ -483,19 +482,12 @@ class ManagerHelper_(BrokerServiceHelper):
 
     def set_up(self, test_case):
 
-        def set_manager(ignored):
-            test_case.config = ManagerConfiguration_()
-            test_case.config.load(["-c", test_case.config_filename])
-            test_case.reactor = FakeReactor()
-            test_case.manager = Manager(test_case.reactor, test_case.config)
-            test_case.manager.connected(test_case.remote)
-
-        result = super(ManagerHelper_, self).set_up(test_case)
-        if isinstance(result, Deferred):
-            return result.addCallback(set_manager)
-        else:
-            # Synchronous setUp, we're using a L{FakeRemoteBroker}
-            set_manager(None)
+        super(ManagerHelper_, self).set_up(test_case)
+        test_case.config = ManagerConfiguration_()
+        test_case.config.load(["-c", test_case.config_filename])
+        test_case.reactor = FakeReactor()
+        test_case.manager = Manager(test_case.reactor, test_case.config)
+        test_case.manager.broker = test_case.remote
 
 
 class MockPopen(object):
