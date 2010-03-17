@@ -1,6 +1,7 @@
 import logging
 
 from landscape.lib.twisted_util import gather_results
+from landscape.amp import RemoteComponentsRegistry
 from landscape.manager.manager import FAILED
 
 
@@ -28,6 +29,8 @@ class BrokerServer(object):
     A broker server capable of handling messages from plugins connected using
     the L{BrokerProtocol}.
     """
+    name = "broker"
+    connectors_registry = RemoteComponentsRegistry
 
     def __init__(self, config, reactor, exchange, registration,
                  message_store):
@@ -44,6 +47,7 @@ class BrokerServer(object):
         self._registration = registration
         self._message_store = message_store
         self._registered_clients = {}
+        self._connectors = {}
 
         reactor.call_on("message", self.broadcast_message)
         reactor.call_on("impending-exchange", self.impending_exchange)
@@ -60,25 +64,40 @@ class BrokerServer(object):
         """Return C{True}."""
         return True
 
-    def register_client(self, name, protocol):
-        """Register a broker client called C{name} connected with C{protocol}.
+    def register_client(self, name):
+        """Register a broker client called C{name}.
 
         Various broker clients interact with the broker server, such as the
-        monitor for example, using the L{BrokerProtocol} for communication.
+        monitor for example, using the L{BrokerServerProtocol} for performing
+        remote method calls on the L{BrokerServer}.
+
         They establish connectivity with the broker by connecting and
-        registering themselves.
+        registering themselves, the L{BrokerServer} will in turn connect
+        to them in order to be able to perform remote method calls like
+        broadcasting events and messages.
 
         @param name: The name of the client, such a C{monitor} or C{manager}.
-        @param protocol: The L{BrokerProtocol} over which the client is
-            connected.
         """
-        client = protocol.remote
-        client.name = name
-        self._registered_clients[name] = client
+        connector_class = self.connectors_registry.get(name)
+        connector = connector_class(self._reactor, self._config)
+
+        def register(remote_client):
+            self._registered_clients[name] = remote_client
+            self._connectors[remote_client] = connector
+
+        connected = connector.connect()
+        return connected.addCallback(register)
 
     def get_clients(self):
-        """Get L{BrokerPlugin} instances for registered plugins."""
+        """Get L{RemoteClient} instances for registered clients."""
         return self._registered_clients.values()
+
+    def get_connectors(self):
+        """Get connectors for registered clients.
+
+        @see L{RemoteLandscapeComponentCreator}.
+        """
+        return self._connectors.values()
 
     def send_message(self, message, urgent=False):
         """Queue C{message} for delivery to the server at the next exchange.
@@ -165,27 +184,27 @@ class BrokerServer(object):
 
     @event
     def impending_exchange(self):
-        """Broadcast an C{impending_exchange} event to the clients."""
+        """Broadcast an C{impending-exchange} event to the clients."""
 
     @event
     def exchange_failed(self):
-        """Broadcast a C{exchange_failed} event to the clients."""
+        """Broadcast a C{exchange-failed} event to the clients."""
 
     @event
     def registration_done(self):
-        """Broadcast a C{registration_done} event to the clients."""
+        """Broadcast a C{registration-done} event to the clients."""
 
     @event
     def registration_failed(self):
-        """Broadcast a C{registration_failed} event to the clients."""
+        """Broadcast a C{registration-failed} event to the clients."""
 
     @event
-    def broker_started(self):
-        """Broadcast a C{broker_started} event to the clients."""
+    def broker_reconnect(self):
+        """Broadcast a C{broker-reconnect} event to the clients."""
 
     @event
     def server_uuid_changed(self, old_uuid, new_uuid):
-        """Broadcast a C{server_uuid_changed} event to the clients."""
+        """Broadcast a C{server-uuid-changed} event to the clients."""
 
     @event
     def message_type_acceptance_changed(self, type, accepted):

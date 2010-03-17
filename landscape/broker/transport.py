@@ -8,7 +8,7 @@ import pycurl
 from landscape.lib.fetch import fetch
 from landscape.lib import bpickle
 from landscape.log import format_delta
-from landscape import API, VERSION
+from landscape import SERVER_API, VERSION
 
 
 class HTTPTransport(object):
@@ -17,7 +17,7 @@ class HTTPTransport(object):
     def __init__(self, url, pubkey=None):
         """
         @param url: URL of the remote Landscape server message system.
-        @param pubkey: SSH pubblic key used for secure communication.
+        @param pubkey: SSH public key used for secure communication.
         """
         self._url = url
         self._pubkey = pubkey
@@ -40,7 +40,7 @@ class HTTPTransport(object):
         return (curl, fetch(self._url, post=True, data=payload,
                             headers=headers, cainfo=self._pubkey, curl=curl))
 
-    def exchange(self, payload, computer_id=None, message_api=API):
+    def exchange(self, payload, computer_id=None, message_api=SERVER_API):
         """Exchange message data with the server.
 
         @param payload: The object to send, it must be L{bpickle}-compatible.
@@ -105,7 +105,7 @@ class FakeTransport(object):
     def set_url(self, url):
         self._url = url
 
-    def exchange(self, payload, computer_id=None, message_api=API):
+    def exchange(self, payload, computer_id=None, message_api=SERVER_API):
         self.payloads.append(payload)
         self.computer_id = computer_id
         self.message_api = message_api

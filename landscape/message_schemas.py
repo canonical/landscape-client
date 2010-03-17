@@ -344,6 +344,19 @@ APT_PREFERENCES = Message(
     "apt-preferences",
     {"data": Any(Dict(Unicode(), Unicode()), Constant(None))})
 
+EUCALYPTUS_INFO = Message(
+    "eucalyptus-info",
+    {"basic_info": Dict(String(), Any(String(), Constant(None))),
+     "walrus_info": String(),
+     "cluster_controller_info": String(),
+     "storage_controller_info": String(),
+     "node_controller_info": String()})
+
+EUCALYPTUS_INFO_ERROR = Message(
+    "eucalyptus-info-error",
+    {"error": String()})
+
+
 message_schemas = {}
 for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                OPERATION_RESULT, COMPUTER_INFO, DISTRIBUTION_INFO,
@@ -353,5 +366,6 @@ for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                USERS, PACKAGES, PACKAGE_LOCKS,
                CHANGE_PACKAGES_RESULT, UNKNOWN_PACKAGE_HASHES,
                ADD_PACKAGES, TEXT_MESSAGE, TEST, CUSTOM_GRAPH,
-               REBOOT_REQUIRED, APT_PREFERENCES]:
+               REBOOT_REQUIRED, APT_PREFERENCES, EUCALYPTUS_INFO,
+               EUCALYPTUS_INFO_ERROR]:
     message_schemas[schema.type] = schema

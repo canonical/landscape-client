@@ -2,7 +2,7 @@ NAME
   landscape-message - Send a message to the landscape web interface
 
 SYNOPSIS
-  landscape-message [MESSAGE] ...
+  landscape-message [options] [MESSAGE] ...
 
 DESCRIPTION
 
@@ -14,9 +14,9 @@ will read the message from STDIN until EOF.
 
 
 OPTIONS
- -h, --help                                  Show this help message and exit
- --version                                   show program's version number and exit
-
+  --version           Show program's version number and exit.
+  -h, --help          Show this help message and exit.
+  -b BUS, --bus=BUS   The DBUS bus to use to send the message.
 
 EXAMPLES
 

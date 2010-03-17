@@ -5,17 +5,20 @@ from landscape.reactor import FakeReactor
 from landscape.deployment import Configuration
 from landscape.service import LandscapeService
 from landscape.tests.helpers import LandscapeTest
-from landscape.amp import LandscapeComponentProtocolFactory
-from landscape.amp import RemoteLandscapeComponentCreator
+from landscape.amp import ComponentProtocolFactory
+from landscape.amp import RemoteComponentConnector
 
 
-class RemoteTestComponentCreator(RemoteLandscapeComponentCreator):
-    socket = "monitor.sock"
+class TestComponent(object):
+    name = "monitor"
+
+
+class RemoteTestComponentCreator(RemoteComponentConnector):
+    component = TestComponent
 
 
 class TestService(LandscapeService):
-    service_name = "monitor"
-    connector_factory = RemoteTestComponentCreator
+    service_name = TestComponent.name
 
 
 class LandscapeServiceTest(LandscapeTest):
@@ -92,14 +95,14 @@ class LandscapeServiceTest(LandscapeTest):
         self.config.data_path = self.makeDir()
         reactor = FakeReactor()
         service = TestService(self.config)
-        service.factory = LandscapeComponentProtocolFactory(reactor, None)
+        service.factory = ComponentProtocolFactory()
         service.startService()
-        creator = service.connector_factory(reactor, self.config)
+        connector = RemoteTestComponentCreator(reactor, self.config)
 
         def assert_port(ignored):
             self.assertTrue(service.port.connected)
-            creator.disconnect()
+            connector.disconnect()
             service.stopService()
 
-        connected = creator.connect()
+        connected = connector.connect()
         return connected.addCallback(assert_port)

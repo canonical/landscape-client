@@ -8,8 +8,7 @@ from landscape.manager.store import ManagerStore
 from landscape.lib.dbus_util import get_object
 
 from landscape.tests.helpers import (
-    LandscapeTest, LandscapeIsolatedTest, ManagerHelper, ManagerHelper_,
-    RemoteBrokerHelper_)
+    LandscapeTest, LandscapeIsolatedTest, ManagerHelper, ManagerHelper_)
 
 
 class PluginOperationResultTest(LandscapeTest):
@@ -109,7 +108,7 @@ class ManagerDBusObjectTest(LandscapeIsolatedTest):
 
 class ManagerTest(LandscapeTest):
 
-    helpers = [ManagerHelper_, RemoteBrokerHelper_]
+    helpers = [ManagerHelper_]
 
     def test_reactor(self):
         """

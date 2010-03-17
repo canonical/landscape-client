@@ -1,16 +1,18 @@
+import os
+
 from twisted.internet.defer import fail
 
-from landscape.monitor.usermonitor import UserMonitor, RemoteUserMonitorCreator
-from landscape.manager.usermanager import UserManager, UserManagerFactory
+from landscape.monitor.usermonitor import UserMonitor, RemoteUserMonitorConnector
+from landscape.manager.usermanager import UserManager, UserManagerProtocolFactory
+#, UserManagerFactory
 from landscape.user.tests.helpers import FakeUserProvider
-from landscape.tests.helpers import (
-    LandscapeTest, MonitorHelper_, RemoteBrokerHelper_)
+from landscape.tests.helpers import LandscapeTest, MonitorHelper_
 from landscape.tests.mocker import ANY
 
 
 class UserMonitorNoManagerTest(LandscapeTest):
 
-    helpers = [MonitorHelper_, RemoteBrokerHelper_]
+    helpers = [MonitorHelper_]
 
     def test_no_fetch_users_in_monitor_only_mode(self):
         """
@@ -29,13 +31,13 @@ class UserMonitorNoManagerTest(LandscapeTest):
                                     "primary-gid": 1000, "uid": 1000,
                                     "username": u"jdoe", "work-phone": None}],
                                     "type": "users"}])
+            plugin.stop()
 
         users = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh")]
         groups = [("webdev", "x", 1000, ["jdoe"])]
         provider = FakeUserProvider(users=users, groups=groups)
         plugin = UserMonitor(provider=provider)
         plugin.register(self.monitor)
-        plugin._port.stopListening()
         self.broker_service.message_store.set_accepted_types(["users"])
         result = plugin.run()
         result.addCallback(got_result)
@@ -44,30 +46,25 @@ class UserMonitorNoManagerTest(LandscapeTest):
 
 class UserMonitorTest(LandscapeTest):
 
-    helpers = [MonitorHelper_, RemoteBrokerHelper_]
+    helpers = [MonitorHelper_]
 
     def setUp(self):
-
-        def add(ignored):
-            self.shadow_file = self.makeFile(
-                "jdoe:$1$xFlQvTqe$cBtrNEDOIKMy/BuJoUdeG0:13348:0:99999:7:::\n"
-                "psmith:!:13348:0:99999:7:::\n"
-                "sam:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::\n")
-            self.user_manager = UserManager(shadow_file=self.shadow_file)
-            reactor = self.reactor._reactor
-            factory = UserManagerFactory(reactor, self.user_manager)
-            socket = self.config.user_manager_socket_filename
-            self.port = self.reactor._reactor.listenUNIX(socket, factory)
-            self.provider = FakeUserProvider()
-            self.plugin = UserMonitor(self.provider)
-
-        super_setup = super(UserMonitorTest, self).setUp()
-        return super_setup.addCallback(add)
+        super(UserMonitorTest, self).setUp()
+        self.shadow_file = self.makeFile(
+            "jdoe:$1$xFlQvTqe$cBtrNEDOIKMy/BuJoUdeG0:13348:0:99999:7:::\n"
+            "psmith:!:13348:0:99999:7:::\n"
+            "sam:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::\n")
+        self.user_manager = UserManager(shadow_file=self.shadow_file)
+        factory = UserManagerProtocolFactory(object=self.user_manager)
+        socket = os.path.join(self.config.data_path,
+                              UserManager.name + ".sock")
+        self.port = self.reactor.listen_unix(socket, factory)
+        self.provider = FakeUserProvider()
+        self.plugin = UserMonitor(self.provider)
 
     def tearDown(self):
         self.port.stopListening()
-        if hasattr(self.plugin, "_port"):
-            self.plugin._port.stopListening()
+        self.plugin.stop()
         return super(UserMonitorTest, self).tearDown()
 
     def test_constants(self):
@@ -215,11 +212,11 @@ class UserMonitorTest(LandscapeTest):
         self.provider.groups = [("webdev", "x", 1000, ["jdoe"])]
 
         self.monitor.add(self.plugin)
-        creator = RemoteUserMonitorCreator(self.reactor, self.config)
-        result = creator.connect()
+        connector = RemoteUserMonitorConnector(self.reactor, self.config)
+        result = connector.connect()
         result.addCallback(lambda remote: remote.detect_changes())
         result.addCallback(got_result)
-        result.addCallback(lambda x: creator.disconnect())
+        result.addCallback(lambda x: connector.disconnect())
         return result
 
     def test_detect_changes_with_operation_id(self):
@@ -245,11 +242,11 @@ class UserMonitorTest(LandscapeTest):
                                 "/home/jdoe", "/bin/sh")]
         self.provider.groups = [("webdev", "x", 1000, ["jdoe"])]
         self.monitor.add(self.plugin)
-        creator = RemoteUserMonitorCreator(self.reactor, self.config)
-        result = creator.connect()
+        connector = RemoteUserMonitorConnector(self.reactor, self.config)
+        result = connector.connect()
         result.addCallback(lambda remote: remote.detect_changes(1001))
         result.addCallback(got_result)
-        result.addCallback(lambda x: creator.disconnect())
+        result.addCallback(lambda x: connector.disconnect())
         return result
 
     def test_no_message_if_not_accepted(self):
@@ -269,11 +266,11 @@ class UserMonitorTest(LandscapeTest):
                                 "/home/jdoe", "/bin/sh")]
         self.provider.groups = [("webdev", "x", 1000, ["jdoe"])]
         self.monitor.add(self.plugin)
-        creator = RemoteUserMonitorCreator(self.reactor, self.config)
-        result = creator.connect()
+        connector = RemoteUserMonitorConnector(self.reactor, self.config)
+        result = connector.connect()
         result.addCallback(lambda remote: remote.detect_changes(1001))
         result.addCallback(got_result)
-        result.addCallback(lambda x: creator.disconnect())
+        result.addCallback(lambda x: connector.disconnect())
         return result
 
     def test_call_on_accepted(self):
@@ -327,9 +324,9 @@ class UserMonitorTest(LandscapeTest):
                        "/home/jdoe", "/bin/sh")]
         self.provider.groups = [("webdev", "x", 1000, ["jdoe"])]
         self.monitor.add(self.plugin)
-        creator = RemoteUserMonitorCreator(self.reactor, self.config)
-        result = creator.connect()
+        connector = RemoteUserMonitorConnector(self.reactor, self.config)
+        result = connector.connect()
         result.addCallback(lambda remote: remote.detect_changes(1001))
         result.addCallback(got_result)
-        result.addCallback(lambda x: creator.disconnect())
+        result.addCallback(lambda x: connector.disconnect())
         return result
