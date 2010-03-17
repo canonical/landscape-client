@@ -60,14 +60,21 @@ class SysInfoConfiguration(Configuration):
                            % (plugin_name.lower(), plugin_name))()
                 for plugin_name in plugins]
 
-
-def setup_logging(landscape_dir=None):
+def get_landscape_log_directory(landscape_dir=None):
+    """
+    Work out the correct path to store logs in depending on the effective
+    user id of the current process.
+    """
     if landscape_dir is None:
         if os.getuid() == 0:
             landscape_dir = "/var/log/landscape"
         else:
             landscape_dir = os.path.expanduser("~/.landscape")
+    return landscape_dir
 
+
+def setup_logging(landscape_dir=None):
+    landscape_dir = get_landscape_log_directory(landscape_dir)
     logger = getLogger("landscape-sysinfo")
     logger.propagate = False
     if not os.path.isdir(landscape_dir):

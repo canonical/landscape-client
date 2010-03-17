@@ -6,7 +6,8 @@ from logging import getLogger
 from twisted.internet.defer import Deferred
 
 from landscape.sysinfo.deployment import (
-    SysInfoConfiguration, ALL_PLUGINS, run, setup_logging)
+    SysInfoConfiguration, ALL_PLUGINS, run, setup_logging,
+    get_landscape_log_directory)
 from landscape.sysinfo.testplugin import TestPlugin
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 from landscape.sysinfo.load import Load
@@ -16,10 +17,13 @@ from landscape.tests.mocker import ARGS, KWARGS
 
 
 class DeploymentTest(LandscapeTest):
+
     def setUp(self):
         super(DeploymentTest, self).setUp()
+
         class TestConfiguration(SysInfoConfiguration):
             default_config_filenames = ()
+
         self.configuration = TestConfiguration()
 
     def test_get_plugins(self):
@@ -63,12 +67,16 @@ class FakeReactor(object):
         self.queued_calls = []
         self.scheduled_calls = []
         self.running = False
+
     def callWhenRunning(self, callable):
         self.queued_calls.append(callable)
+
     def run(self):
         self.running = True
+
     def callLater(self, seconds, callable, *args, **kwargs):
         self.scheduled_calls.append((seconds, callable, args, kwargs))
+
     def stop(self):
         self.running = False
 
@@ -140,9 +148,11 @@ class RunTest(LandscapeTest):
 
     def test_default_arguments_load_default_plugins(self):
         result = run([])
+
         def check_result(result):
             self.assertIn("System load", self.stdout.getvalue())
             self.assertNotIn("Test note", self.stdout.getvalue())
+
         return result.addCallback(check_result)
 
     def test_plugins_called_after_reactor_starts(self):
@@ -192,6 +202,25 @@ class RunTest(LandscapeTest):
         self.assertEquals(reactor.scheduled_calls, [(0, reactor.stop, (), {})])
         return self.assertFailure(d, ZeroDivisionError)
 
+    def test_get_landscape_log_directory_unprivileged(self):
+        """
+        If landscape-sysinfo is running as a non-privileged user the
+        log directory is stored in their home directory.
+        """
+        self.assertEquals(get_landscape_log_directory(),
+                          os.path.expanduser("~/.landscape"))
+
+    def test_get_landscape_log_directory_privileged(self):
+        """
+        If landscape-sysinfo is running as a privileged user, then the logs
+        should be stored in the system-wide log directory.
+        """
+        uid_mock = self.mocker.replace("os.getuid")
+        uid_mock()
+        self.mocker.result(0)
+        self.mocker.replay()
+        self.assertEquals(get_landscape_log_directory(), "/var/log/landscape")
+
     def test_wb_logging_setup(self):
         """
         setup_logging sets up a "landscape-sysinfo" logger which rotates every
@@ -238,7 +267,6 @@ class RunTest(LandscapeTest):
         self.assertFalse(os.path.exists(log_dir))
         setup_logging(landscape_dir=log_dir)
         self.assertTrue(os.path.exists(log_dir))
-        
 
     def test_run_sets_up_logging(self):
         setup_logging_mock = self.mocker.replace(

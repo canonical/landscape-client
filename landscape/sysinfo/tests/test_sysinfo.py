@@ -1,5 +1,6 @@
 from cStringIO import StringIO
 from logging import getLogger, StreamHandler
+import os
 
 from twisted.internet.defer import Deferred, succeed, fail
 
@@ -76,11 +77,15 @@ class SysInfoPluginRegistryTest(LandscapeTest):
         self.assertEquals(self.sysinfo.get_notes(), [])
 
     def test_run(self):
+
         class Plugin(object):
+
             def __init__(self, deferred):
                 self._deferred = deferred
+
             def register(self, registry):
                 pass
+
             def run(self):
                 return self._deferred
 
@@ -107,7 +112,7 @@ class SysInfoPluginRegistryTest(LandscapeTest):
 
     plugin_exception_message = (
         "There were exceptions while processing one or more plugins. "
-        "See ~/.landscape/sysinfo.log for more information.")
+        "See %s/sysinfo.log for more information.")
 
     def test_plugins_run_after_synchronous_error(self):
         """
@@ -116,18 +121,25 @@ class SysInfoPluginRegistryTest(LandscapeTest):
         """
         self.log_helper.ignore_errors(ZeroDivisionError)
         plugins_what_run = []
+
         class BadPlugin(object):
+
             def register(self, registry):
                 pass
+
             def run(self):
                 plugins_what_run.append(self)
                 1/0
+
         class GoodPlugin(object):
+
             def register(self, registry):
                 pass
+
             def run(self):
                 plugins_what_run.append(self)
                 return succeed(None)
+
         plugin1 = BadPlugin()
         plugin2 = GoodPlugin()
         self.sysinfo.add(plugin1)
@@ -139,17 +151,23 @@ class SysInfoPluginRegistryTest(LandscapeTest):
         self.assertIn(message, log)
         self.assertIn("1/0", log)
         self.assertIn("ZeroDivisionError", log)
+
+        path = os.path.expanduser("~/.landscape")
         self.assertEquals(
             self.sysinfo.get_notes(),
-            [self.plugin_exception_message])
+            [self.plugin_exception_message % path])
 
     def test_asynchronous_errors_logged(self):
         self.log_helper.ignore_errors(ZeroDivisionError)
+
         class BadPlugin(object):
+
             def register(self, registry):
                 pass
+
             def run(self):
                 return fail(ZeroDivisionError("yay"))
+
         plugin = BadPlugin()
         self.sysinfo.add(plugin)
         self.sysinfo.run()
@@ -157,21 +175,27 @@ class SysInfoPluginRegistryTest(LandscapeTest):
         message = "BadPlugin plugin raised an exception."
         self.assertIn(message, log)
         self.assertIn("ZeroDivisionError: yay", log)
+        path = os.path.expanduser("~/.landscape")
         self.assertEquals(
             self.sysinfo.get_notes(),
-            [self.plugin_exception_message])
+            [self.plugin_exception_message % path])
 
     def test_multiple_exceptions_get_one_note(self):
         self.log_helper.ignore_errors(ZeroDivisionError)
+
         class RegularBadPlugin(object):
+
             def register(self, registry):
                 pass
+
             def run(self):
                 1/0
 
         class AsyncBadPlugin(object):
+
             def register(self, registry):
                 pass
+
             def run(self):
                 return fail(ZeroDivisionError("Hi"))
 
@@ -181,10 +205,39 @@ class SysInfoPluginRegistryTest(LandscapeTest):
         self.sysinfo.add(plugin2)
         self.sysinfo.run()
 
+        path = os.path.expanduser("~/.landscape")
         self.assertEquals(
             self.sysinfo.get_notes(),
-            [self.plugin_exception_message])
-        
+            [self.plugin_exception_message % path])
+
+    def test_exception_running_as_privileged_user(self):
+        """
+        If a Plugin fails while running and the sysinfo binary is running with
+        a uid of 0, Landscape sysinfo should write to the system logs
+        directory.
+        """
+        uid_mock = self.mocker.replace("os.getuid")
+        uid_mock()
+        self.mocker.result(0)
+        self.mocker.replay()
+        self.log_helper.ignore_errors(ZeroDivisionError)
+
+        class AsyncBadPlugin(object):
+
+            def register(self, registry):
+                pass
+
+            def run(self):
+                return fail(ZeroDivisionError("Hi"))
+
+        plugin = AsyncBadPlugin()
+        self.sysinfo.add(plugin)
+        self.sysinfo.run()
+
+        path = "/var/log/landscape"
+        self.assertEquals(
+            self.sysinfo.get_notes(),
+            [self.plugin_exception_message % path])
 
 
 class FormatTest(LandscapeTest):
@@ -340,8 +393,8 @@ class FormatTest(LandscapeTest):
         self.assertEquals(
             format_sysinfo(notes=[
                 "I do believe that a very long note, such as one that is "
-                "longer than about 50 characters, should wrap at the specified "
-                "width."], width=50, indent="Z"),
+                "longer than about 50 characters, should wrap at the "
+                "specified width."], width=50, indent="Z"),
             """\
 Z=> I do believe that a very long note, such as
     one that is longer than about 50 characters,

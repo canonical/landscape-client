@@ -48,6 +48,8 @@ class PackageReporter(PackageTaskHandler):
 
     smart_update_interval = 60
     smart_update_filename = "/usr/lib/landscape/smart-update"
+    sources_list_filename = "/etc/apt/sources.list"
+    sources_list_directory = "/etc/apt/sources.list.d"
 
     def run(self):
         result = Deferred()
@@ -150,12 +152,34 @@ class PackageReporter(PackageTaskHandler):
 
         return base_url.rstrip("/") + "/"
 
+    def _apt_sources_have_changed(self):
+        """Return a boolean indicating if the APT sources were modified."""
+        from landscape.monitor.packagemonitor import PackageMonitor
+
+        filenames = []
+
+        if os.path.exists(self.sources_list_filename):
+            filenames.append(self.sources_list_filename)
+
+        if os.path.exists(self.sources_list_directory):
+            filenames.extend(
+                [os.path.join(self.sources_list_directory, filename) for
+                 filename in os.listdir(self.sources_list_directory)])
+
+        for filename in filenames:
+            seconds_since_last_change = (
+                time.time() - os.path.getmtime(filename))
+            if seconds_since_last_change < PackageMonitor.run_interval:
+                return True
+
+        return False
+
     def run_smart_update(self):
         """Run smart-update and log a warning in case of non-zero exit code.
 
         @return: a deferred returning (out, err, code)
         """
-        if self._config.force_smart_update:
+        if self._config.force_smart_update or self._apt_sources_have_changed():
             args = ()
         else:
             args = ("--after", "%d" % self.smart_update_interval)
@@ -224,6 +248,8 @@ class PackageReporter(PackageTaskHandler):
         self._store.clear_available()
         self._store.clear_available_upgrades()
         self._store.clear_installed()
+        self._store.clear_locked()
+        self._store.clear_package_locks()
 
         # Don't clear the hash_id_requests table because the messages
         # associated with the existing requests might still have to be
@@ -243,7 +269,7 @@ class PackageReporter(PackageTaskHandler):
 
     def _handle_unknown_packages(self, hashes):
 
-        self.ensure_channels_reloaded()
+        self._facade.ensure_channels_reloaded()
 
         hashes = set(hashes)
         added_hashes = []
@@ -313,7 +339,7 @@ class PackageReporter(PackageTaskHandler):
         Hashes previously requested won't be requested again, unless they
         have already expired and removed from the database.
         """
-        self.ensure_channels_reloaded()
+        self._facade.ensure_channels_reloaded()
 
         unknown_hashes = set()
 
@@ -378,7 +404,7 @@ class PackageReporter(PackageTaskHandler):
         In all cases, the server is notified of the new situation
         with a "packages" message.
         """
-        self.ensure_channels_reloaded()
+        self._facade.ensure_channels_reloaded()
 
         old_installed = set(self._store.get_installed())
         old_available = set(self._store.get_available())
