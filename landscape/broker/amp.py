@@ -1,28 +1,32 @@
 from twisted.internet.defer import maybeDeferred, execute, succeed
 
-from landscape.lib.amp import Method, RemoteObject
+from landscape.lib.amp import RemoteObject
 from landscape.amp import (
-    LandscapeComponentProtocol, LandscapeComponentProtocolFactory,
-    RemoteLandscapeComponentCreator)
+    ComponentProtocol, ComponentProtocolFactory, RemoteComponentConnector,
+    RemoteComponentsRegistry)
+from landscape.broker.server import BrokerServer
+from landscape.broker.client import BrokerClient
+from landscape.monitor.monitor import Monitor
+from landscape.manager.manager import Manager
 
 
-class BrokerServerProtocol(LandscapeComponentProtocol):
+class BrokerServerProtocol(ComponentProtocol):
     """
     Communication protocol between the broker server and its clients.
     """
-    methods = (LandscapeComponentProtocol.methods +
-               [Method("register_client", protocol=""),
-                Method("send_message"),
-                Method("is_message_pending"),
-                Method("stop_clients"),
-                Method("reload_configuration"),
-                Method("register"),
-                Method("get_accepted_message_types"),
-                Method("get_server_uuid"),
-                Method("register_client_accepted_message_type")])
+    methods = (ComponentProtocol.methods +
+               ["get_accepted_message_types",
+                "get_server_uuid",
+                "is_message_pending",
+                "register",
+                "register_client",
+                "register_client_accepted_message_type",
+                "reload_configuration",
+                "send_message",
+                "stop_clients"])
 
 
-class BrokerProtocolFactory(LandscapeComponentProtocolFactory):
+class BrokerServerProtocolFactory(ComponentProtocolFactory):
 
     protocol = BrokerServerProtocol
 
@@ -46,7 +50,7 @@ class FakeRemoteBroker(object):
     def __init__(self, exchanger, message_store):
         self.exchanger = exchanger
         self.message_store = message_store
-        self.protocol = BrokerServerProtocol(None)
+        self.protocol = BrokerServerProtocol()
 
     def call_if_accepted(self, type, callable, *args):
         if type in self.message_store.get_accepted_types():
@@ -55,6 +59,11 @@ class FakeRemoteBroker(object):
 
     def send_message(self, message, urgent=False):
         """Send to the previously given L{MessageExchange} object."""
+
+        # Check that the message to be sent is serializable over AMP
+        from landscape.lib.amp import MethodCallArgument
+        assert(MethodCallArgument.check(message))
+
         return execute(self.exchanger.send, message, urgent=urgent)
 
     def register_client_accepted_message_type(self, type):
@@ -62,18 +71,49 @@ class FakeRemoteBroker(object):
                        type)
 
 
-class BrokerClientProtocol(LandscapeComponentProtocol):
+class BrokerClientProtocol(ComponentProtocol):
     """Communication protocol between a client and the broker."""
 
-    methods = (LandscapeComponentProtocol.methods +
-               [Method("message"),
-                Method("fire_event")])
-
-    remote_factory = RemoteBroker
+    methods = (ComponentProtocol.methods + ["fire_event", "message"])
 
 
-class RemoteBrokerCreator(RemoteLandscapeComponentCreator):
-    """Helper for creating connections with the L{BrokerServer}."""
+class BrokerClientProtocolFactory(ComponentProtocolFactory):
 
     protocol = BrokerClientProtocol
-    socket = "broker.sock"
+
+
+class RemoteClient(RemoteObject):
+    """A remote L{BrokerClient} connected to a L{BrokerServer}."""
+
+
+class RemoteBrokerConnector(RemoteComponentConnector):
+    """Helper to create connections with the L{BrokerServer}."""
+
+    factory = BrokerClientProtocolFactory
+    remote = RemoteBroker
+    component = BrokerServer
+
+
+class RemoteClientConnector(RemoteComponentConnector):
+    """Helper to create connections with the L{BrokerServer}."""
+
+    factory = BrokerServerProtocolFactory
+    remote = RemoteClient
+    component = BrokerClient
+
+
+class RemoteMonitorConnector(RemoteClientConnector):
+    """Helper to create connections with the L{Monitor}."""
+
+    component = Monitor
+
+
+class RemoteManagerConnector(RemoteClientConnector):
+    """Helper for creating connections with the L{Monitor}."""
+
+    component = Manager
+
+RemoteComponentsRegistry.register(RemoteBrokerConnector)
+RemoteComponentsRegistry.register(RemoteClientConnector)
+RemoteComponentsRegistry.register(RemoteMonitorConnector)
+RemoteComponentsRegistry.register(RemoteManagerConnector)

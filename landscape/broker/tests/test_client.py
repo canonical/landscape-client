@@ -1,3 +1,6 @@
+from twisted.internet import reactor
+from twisted.internet.defer import Deferred
+
 from landscape.lib.twisted_util import gather_results
 from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
 from landscape.broker.tests.helpers import BrokerClientHelper
@@ -7,13 +10,6 @@ from landscape.broker.client import BrokerClientPlugin, HandlerNotFoundError
 class BrokerClientTest(LandscapeTest):
 
     helpers = [BrokerClientHelper]
-
-    def test_connected(self):
-        """
-        The L{BrokerClient.connected} method sets the reference to
-        the remote broker, and exposes the client itself via AMP.
-        """
-        self.assertIs(self.client.broker.protocol.object, self.client)
 
     def test_ping(self):
         """
@@ -60,8 +56,8 @@ class BrokerClientTest(LandscapeTest):
         self.expect(plugin.run()).count(2)
         self.mocker.replay()
         self.client.add(plugin)
-        self.reactor.advance(plugin.run_interval)
-        self.reactor.advance(plugin.run_interval)
+        self.client_reactor.advance(plugin.run_interval)
+        self.client_reactor.advance(plugin.run_interval)
 
     def test_register_message(self):
         """
@@ -191,15 +187,16 @@ class BrokerClientTest(LandscapeTest):
 
     def test_notify_exchange(self):
         """
-        The L{BrokerClient.notify_exchange} method calls C{exchange} on all
-        plugins and logs the event.
+        The L{BrokerClient.notify_exchange} method is triggered by an
+        impending-exchange event and calls C{exchange} on all plugins,
+        logging the event.
         """
         plugin = BrokerClientPlugin()
         plugin.exchange = self.mocker.mock()
         plugin.exchange()
         self.mocker.replay()
         self.client.add(plugin)
-        self.client.notify_exchange()
+        self.client_reactor.fire("impending-exchange")
         self.assertTrue("Got notification of impending exchange. "
                         "Notifying all plugins." in self.logfile.getvalue())
 
@@ -211,7 +208,7 @@ class BrokerClientTest(LandscapeTest):
         callback = self.mocker.mock()
         callback()
         self.mocker.replay()
-        self.reactor.call_on("event", callback)
+        self.client_reactor.call_on("event", callback)
         self.client.fire_event("event")
 
     def test_fire_event_with_arguments(self):
@@ -222,13 +219,43 @@ class BrokerClientTest(LandscapeTest):
         callback = self.mocker.mock()
         callback(True, kwarg=2)
         self.mocker.replay()
-        self.reactor.call_on("event", callback)
+        self.client_reactor.call_on("event", callback)
         self.client.fire_event("event", True, kwarg=2)
 
-    def test_broker_started(self):
+    def test_fire_event_with_mixed_results(self):
         """
-        When L{BrokerClient.broker_started} is called, any message types
-        previously registered with the broker are registered again.
+        The return values of the fired handlers can be part L{Deferred}s
+        and part not.
+        """
+        deferred = Deferred()
+        callback1 = self.mocker.mock()
+        callback2 = self.mocker.mock()
+        self.expect(callback1()).result(123)
+        self.expect(callback2()).result(deferred)
+        self.mocker.replay()
+        self.client_reactor.call_on("event", callback1)
+        self.client_reactor.call_on("event", callback2)
+        result = self.client.fire_event("event")
+        reactor.callLater(0, lambda: deferred.callback("abc"))
+        return self.assertSuccess(result, [123, "abc"])
+
+    def test_fire_event_with_acceptance_changed(self):
+        """
+        When the given event type is C{message-type-acceptance-changed}, the
+        fired event will be a 2-tuple of the eventy type and the message type.
+        """
+        event_type = "message-type-acceptance-changed"
+        callback = self.mocker.mock()
+        callback(False)
+        self.mocker.replay()
+        self.client_reactor.call_on((event_type, "test"), callback)
+        self.client.fire_event(event_type, "test", False)
+
+    def test_handle_reconnect(self):
+        """
+        The L{BrokerClient.handle_reconnect} method is triggered by a
+        broker-reconnect event, and it causes any message types previously
+        registered with the broker to be registered again.
         """
         result1 = self.client.register_message("foo", lambda m: None)
         result2 = self.client.register_message("bar", lambda m: None)
@@ -238,7 +265,7 @@ class BrokerClientTest(LandscapeTest):
             self.client.broker.register_client_accepted_message_type("foo")
             self.client.broker.register_client_accepted_message_type("bar")
             self.mocker.replay()
-            self.client.broker_started()
+            self.client_reactor.fire("broker-reconnect")
 
         return gather_results([result1, result2]).addCallback(got_result)
 

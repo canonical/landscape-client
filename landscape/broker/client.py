@@ -1,6 +1,9 @@
 from logging import info, exception
 
+from twisted.internet.defer import maybeDeferred
+
 from landscape.log import format_object
+from landscape.lib.twisted_util import gather_results
 
 
 class HandlerNotFoundError(Exception):
@@ -16,9 +19,8 @@ class BrokerClientPlugin(object):
     If C{run} is defined on subclasses, it will be called every C{run_interval}
     seconds after being registered.
 
-    @cvar run_interval: The interval, in seconds, to execute the
-    C{run} method. If set to C{None}, then C{run} will not be
-    scheduled.
+    @cvar run_interval: The interval, in seconds, to execute the C{run} method.
+        If set to C{None}, then C{run} will not be scheduled.
     """
 
     run_interval = 5
@@ -35,7 +37,13 @@ class BrokerClient(object):
     This knows about the needs of a client when dealing with the Landscape
     broker, including interest in messages of a particular type delivered
     by the broker to the client.
+
+    @cvar name: The name used when registering to the broker, it must be
+        defined by sub-classes.
+    @ivar broker: A reference to a connected L{RemoteBroker}, it must be set
+        by the connecting machinery at service startup.
     """
+    name = "client"
 
     def __init__(self, reactor):
         """
@@ -50,15 +58,7 @@ class BrokerClient(object):
 
         # Register event handlers
         self.reactor.call_on("impending-exchange", self.notify_exchange)
-        self.reactor.call_on("broker-started", self.broker_started)
-
-    def connected(self, broker):
-        """Called upon broker connection.
-        @param broker: A connected L{RemoteBroker}..
-        """
-        self.broker = broker
-        # Expose ourselves to the broker over AMP
-        self.broker.protocol.object = self
+        self.reactor.call_on("broker-reconnect", self.handle_reconnect)
 
     def ping(self):
         """Return C{True}"""
@@ -142,11 +142,23 @@ class BrokerClient(object):
         self.exchange()
 
     def fire_event(self, event_type, *args, **kwargs):
-        """Fire an event of a given type."""
-        self.reactor.fire(event_type, *args, **kwargs)
+        """Fire an event of a given type.
 
-    def broker_started(self):
+        @return: A L{Deferred} resulting in a list of returns values of
+            the fired event handlers, in the order they were fired.
         """
+        if event_type == "message-type-acceptance-changed":
+            message_type = args[0]
+            acceptance = args[1]
+            results = self.reactor.fire((event_type, message_type), acceptance)
+        else:
+            results = self.reactor.fire(event_type, *args, **kwargs)
+        return gather_results([
+            maybeDeferred(lambda x: x, result) for result in results])
+
+    def handle_reconnect(self):
+        """Called when the connection with the broker is established again.
+
         Re-register any previously registered message types when the broker
         restarts.
         """

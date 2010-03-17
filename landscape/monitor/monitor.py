@@ -86,6 +86,8 @@ class MonitorPlugin(Plugin):
 class Monitor(BrokerClient):
     """The central point of integration in the Landscape monitor."""
 
+    name = "monitor"
+
     def __init__(self, reactor, config, persist, persist_filename=None,
                  step_size=5*60):
         super(Monitor, self).__init__(reactor)

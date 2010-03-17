@@ -28,6 +28,12 @@ Available options:
 
   -k, --ssl-key <key>        Specify an SSL key to be used in the client config.
 
+  -r, --repository <ppa>     Specify the PPA holding the client packages.
+
+  -b, --build <yes|no>       If yes, the landscape-client packages from this branch
+                             will be built and installed inside the VM, otherwise
+                             they will be pulled from the APT repositories.
+
 For example, this script can be invoked like this:
 
 ./dev/landscape-client-vm --password <LANDSCAPE_DEVEL_ACCOUNT_PW> intrepid
@@ -48,7 +54,7 @@ Once it's booted you can log into it with:
 EOF
 }
 
-OPTS=$(getopt -o hm:s:a:p:P:k: --long help,mirror:,server:,account:,password:,profile:,ssl-key: -- "$@")
+OPTS=$(getopt -o hm:s:a:p:P:k:r:b: --long help,mirror:,server:,account:,password:,profile:,ssl-key:,repository:,build: -- "$@")
 
 if [ $? != 0 ]; then
     exit 1
@@ -62,6 +68,8 @@ ACCOUNT=landscape-devel
 PASSWORD=
 PROFILE=server
 SSL_KEY=
+PPA=landscape/trunk
+BUILD=yes
 
 while true ; do
     case "$1" in
@@ -72,6 +80,8 @@ while true ; do
 	-p|--password) PASSWORD=$2; shift 2;;
 	-P|--profile) PROFILE=$2; shift 2;;
 	-S|--ssl-key) SSL_KEY=$2; shift 2;;
+	-r|--repository) PPA=$2; shift 2;;
+        -b|--build) BUILD=$2; shift 2;;
 	--) shift ; break ;;
 	*) echo "Internal error!" ; exit 1 ;;
     esac
@@ -86,7 +96,6 @@ RELEASE=$1
 TOPDIR=$(pwd)/build/${RELEASE}-${PROFILE}
 SSH_KEY=$TOPDIR/ssh_key
 SSH_PORT=3322
-PPA=landscape/ppa
 ROOTSIZE=8192
 
 rm -fR $TOPDIR
