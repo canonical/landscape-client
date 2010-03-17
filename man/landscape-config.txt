@@ -2,8 +2,7 @@ NAME
   landscape-config - configure the Landscape management client
 
 SYNOPSIS
-  landscape-config [--silent, -a ACCOUNT, -t TITLE, -p PASSWORD, -l LOG,
-                    -k KEY, -d PATH]
+  landscape-config [options]
 
 DESCRIPTION
 
@@ -15,37 +14,92 @@ interaction.
 Running the landscape-config program without arguments will start the
 program, prompting you for the necessary information to run the client.
 Optionally you can provide command-line arguments (detailed below) to
-specify default responses. You will be told if the registration was
-successful or if an error occurred. When registration is successful
-Landscape is configured and running on your system. Errors can occur if
-you provide incorrect registration details.
+specify default responses.
+
+You will be told if the registration was successful or if an error occurred.
+When registration is successful Landscape is configured and running on your
+system. Errors can occur if you provide incorrect registration details or if
+there are network issues. In the latter case, the client will keep trying
+to complete the registration in the background.
 
 OPTIONS
- --version                                   show program's version number and exit
- -h, --help                                  show this help message and exit
- -c FILE, --config=FILE                      Use config from this file (any command line options override settings from the file)
- --bus=BUS                                   The DBUS bus to use. One of 'session' or 'system'
- -d PATH, --data-path=PATH                   The directory to store data files in
- -q, --quiet                                 Do not log to the standard output
- -l FILE, --log-dir=FILE                     The directory to write log files to
- --log-level=LOG_LEVEL                       One of debug, info, warning, error or critical
- --ignore-sigint                             Ignore interrupt signals
- -a NAME, --account-name=NAME                The account this computer belongs to
- -p SECRET, --registration-password=SECRET   The account-wide password used for registering clients
- -t TITLE, --computer-title=TITLE            The title of this computer
- --script-users=USERS                        A comma-separated list of users to allow scripts to run. To allow scripts to be run by any user, enter ALL
- --include-manager-plugins=PLUGINS           A comma-separated list of manager plugins to load
- -u URL, --url=URL                           The server URL to connect to
- -k SSL_KEY, --ssl-public-key=SSL_KEY        The public SSL key to verify the server, only used if the given URL is https
- --exchange-interval=INTERVAL                The number of seconds between server exchanges
- --urgent-exchange-interval=INTERVAL         The number of seconds between urgent server exchanges
- --ping-url=PING_URL                         The URL to perform lightweight exchange initiation with
- --http-proxy=URL                            The URL of the HTTP proxy, if one is needed
- --https-proxy=URL                           The URL of the HTTPS proxy, if one is needed
- -n, --no-start                              Don't start the client automatically
- --silent                                    Run without manual interaction
- --disable                                   Stop running clients and disable start at boot
+  --version                Show program's version number and exit.
+  -h, --help               Show this help message and exit.
+  -c FILE, --config=FILE   Use config from this file (any command line options
+                           override settings from the file) (default:
+                           '/etc/landscape/client.conf').
+  --bus=BUS                Which DBUS bus to use. One of 'session' or 'system'
+                           (default: 'system').
+  -d PATH, --data-path=PATH   The directory to store data files in (default:
+                           '/var/lib/landscape/client').
+  -q, --quiet              Do not log to the standard output.
+  -l FILE, --log-dir=FILE   The directory to write log files to (default:
+                           '/var/log/landscape').
+  --log-level=LOG_LEVEL    One of 'debug', 'info', 'warning', 'error' or 
+                           'critical' (default: 'info').
+  --ignore-sigint          Ignore interrupt signals.
+  --ignore-sigusr1         Ignore SIGUSR1 signal to rotate logs.
+  -a NAME, --account-name=NAME   The account this computer belongs to.
+  -p PASSWORD, --registration-password=PASSWORD  The account-wide password 
+                           used for registering clients.
+  -t TITLE, --computer-title=TITLE   The title of this computer.
+  -u URL, --url=URL        The server URL to connect to (default:
+                           'https://landscape.canonical.com/message-system').
+  -k SSL_PUBLIC_KEY, --ssl-public-key=SSL_PUBLIC_KEY   The SSL CA certificate to 
+                           verify the server with. Only used if the server URL
+                           to which we connect is https.
+  --exchange-interval=INTERVAL   The number of seconds between server
+                           exchanges (default: 900).
+  --urgent-exchange-interval=INTERVAL   The number of seconds between urgent
+                           server exchanges (default: 60).
+  --ping-url=PING_URL      The URL to perform lightweight exchange initiation
+                           with.
+                           (default: 'http://landscape.canonical.com/ping').
+  --http-proxy=URL         The URL of the HTTP proxy, if one is needed.
+  --https-proxy=URL        The URL of the HTTPS proxy, if one is needed.
+  --cloud                  Set this if this computer is a cloud instance in
+                           EC2 or UEC. Read below for details.
+  --tags=TAGS              Comma separated list of tag names to be sent to the
+                           server.
+  --import=FILENAME_OR_URL   Filename or URL to import configuration from.
+                           Imported options behave as if they were passed in
+                           the command line, with precedence being given to
+                           real command line options.
+  --script-users=USERS     A comma-separated list of users to allow scripts to
+                           run. To allow scripts to be run by any user, 
+                           enter: ALL.
+  --include-manager-plugins=PLUGINS   A comma-separated list of manager 
+                           plugins to load.
+  -n, --no-start           Don't start the client automatically.
+  --ok-no-register         Return exit code 0 instead of 2 if the client can't be
+                           registered.
+  --silent                 Run without manual interaction.
+  --disable                Stop running clients and disable start at boot.
 
+CLOUD
+
+Landscape has some cloud features that become available when the EC2 or
+UEC machine instance was started using Landscape and the AMI is one of
+the official ones provided in the Web user interface. We call these 
+instances "Landscape enabled", because they contain a pre-configured
+landscape-client installed in them which will register the running instance
+automatically with Landscape as soon as it starts up.
+
+You can deploy your own AMI, but if you wish the instance to become
+"Landscape managed" you need to take a few steps:
+* make sure the cloud is created in Landscape
+* either add "CLOUD=1" to /etc/default/landscape-client or use the
+--cloud switch in the landscape-config(1) command line
+* make sure the client is configured to start at boot (i.e., the
+/etc/default/landscape-client has the line "RUN=1")
+
+There is no need to further configure the /etc/landscape/client.conf file
+with details such as account or password, because when in cloud mode
+this is all discovered by the client itself.
+
+You can avoid this all if you just rebundle the AMIs we provide.
+landscape-client is already configured and prepared for the cloud in
+them.
 
 EXAMPLES
 
@@ -65,6 +119,10 @@ Register a machine with the script execution plugin enabled, without
 requiring user interaction:
 
   landscape-config --silent -a account-name -p secret -t `hostname` --script-users nobody,landscape,root
+
+Register a machine with some tags:
+
+  landscape-config --silent -a account-name -p secret -t `hostname` --tags=server,www
 
 To disable a client, stopping current instances and disabling start at
 bootup:

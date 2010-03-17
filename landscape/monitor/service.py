@@ -5,11 +5,10 @@ import os
 from twisted.python.reflect import namedClass
 
 from landscape.service import LandscapeService, run_landscape_service
-from landscape.amp import LandscapeComponentProtocolFactory
-from landscape.broker.service import BrokerService
+from landscape.amp import ComponentProtocolFactory
 from landscape.monitor.config import MonitorConfiguration
 from landscape.monitor.monitor import Monitor
-from landscape.monitor.amp import RemoteMonitorCreator
+from landscape.broker.amp import RemoteBrokerConnector
 
 
 class MonitorService(LandscapeService):
@@ -18,18 +17,16 @@ class MonitorService(LandscapeService):
     components when started.
     """
 
-    service_name = "monitor"
-    connector_factory = RemoteMonitorCreator
+    service_name = Monitor.name
 
     def __init__(self, config):
-        self.persist_filename = os.path.join(config.data_path,
-                                             "%s.bpickle" % self.service_name)
+        self.persist_filename = os.path.join(
+            config.data_path, "%s.bpickle" % self.service_name)
         super(MonitorService, self).__init__(config)
         self.plugins = self.get_plugins()
         self.monitor = Monitor(self.reactor, self.config, self.persist,
                                persist_filename=self.persist_filename)
-        self.factory = LandscapeComponentProtocolFactory(self.reactor,
-                                                         self.monitor)
+        self.factory = ComponentProtocolFactory(object=self.monitor)
 
     def get_plugins(self):
         return [namedClass("landscape.monitor.%s.%s"
@@ -42,13 +39,12 @@ class MonitorService(LandscapeService):
 
         def start_plugins(broker):
             self.broker = broker
-            self.monitor.connected(broker)
+            self.monitor.broker = broker
             for plugin in self.plugins:
                 self.monitor.add(plugin)
             return self.broker.register_client(self.service_name)
 
-        self.connector = BrokerService.connector_factory(self.reactor,
-                                                         self.config)
+        self.connector = RemoteBrokerConnector(self.reactor, self.config)
         connected = self.connector.connect()
         return connected.addCallback(start_plugins)
 

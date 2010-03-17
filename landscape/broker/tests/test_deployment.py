@@ -62,8 +62,8 @@ class DeploymentTest(LandscapeIsolatedTest):
 
         self.broker_service.reactor.fire("post-exit")
 
-
     def test_registration_instantiation(self):
+
         class MyBrokerConfiguration(BrokerConfiguration):
             default_config_filenames = [self.config_filename]
 
@@ -77,9 +77,9 @@ class DeploymentTest(LandscapeIsolatedTest):
 
         self.assertFalse(config.cloud)
         service = FakeBrokerService(config)
-        self.assertFalse(service.registration._cloud)
+        self.assertFalse(service.registration._config.cloud)
         self.assertIdentical(service.registration._fetch_async, fetch_async)
 
         config.cloud = True
         service = FakeBrokerService(config)
-        self.assertTrue(service.registration._cloud)
+        self.assertTrue(service.registration._config.cloud)

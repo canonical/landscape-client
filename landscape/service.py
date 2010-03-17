@@ -17,8 +17,6 @@ class LandscapeService(Service, object):
 
     @cvar service_name: The lower-case name of the service. This is used to
         generate the bpickle and the Unix socket filenames.
-    @cvar connector_factory: The factory class that can be used to connect to
-        us, it must be defined by sub-classes.
     @ivar config: A L{Configuration} object.
     @ivar reactor: A L{TwistedReactor} object.
     @ivar persist: A L{Persist} object, if C{persist_filename} is defined.

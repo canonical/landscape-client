@@ -234,8 +234,6 @@ class ConfigurationTest(LandscapeTest):
         self.assertEquals(self.config.bus, "session")
         self.config.load(["--bus", "system"])
         self.assertEquals(self.config.bus, "system")
-        self.config.load(["--bus", "amp"])
-        self.assertEquals(self.config.bus, "amp")
 
     def test_config_option(self):
         opts = self.parser.parse_args(["--config", "hello.cfg"])[0]
@@ -322,7 +320,7 @@ class ConfigurationTest(LandscapeTest):
         os.chmod(default_filename1, 0)
         self.assertEquals(self.config.get_config_filename(),
                           default_filename2)
-        
+
         # If is is readable, than return the first default configuration file.
         os.chmod(default_filename1, 0644)
         self.assertEquals(self.config.get_config_filename(),
@@ -340,26 +338,6 @@ class ConfigurationTest(LandscapeTest):
         self.config.config = explicit_filename
         self.assertEquals(self.config.get_config_filename(),
                           explicit_filename)
-
-    def test_user_manager_socket_filename(self):
-        """
-        The L{UsermanagerConfiguration.user_manager_socket_filename} attribute
-        holds the filename of the Unix socket used to communicate with the
-        L{UserManager}.
-        """
-        self.assertEquals(self.config.user_manager_socket_filename,
-                          os.path.join(self.config.data_path,
-                                       "usermanager.sock"))
-
-    def test_user_monitor_socket_filename(self):
-        """
-        The L{BrokerConfiguration.user_monitor_socket_filename} attribute
-        holds the filename of the Unix socket used to communicate with the
-        L{UserMonitor}.
-        """
-        self.assertEquals(self.config.user_monitor_socket_filename,
-                          os.path.join(self.config.data_path,
-                                       "usermonitor.sock"))
 
 
 class GetVersionedPersistTest(LandscapeTest):

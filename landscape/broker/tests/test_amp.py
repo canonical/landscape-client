@@ -1,7 +1,7 @@
 from landscape.lib.amp import MethodCall, MethodCallError
 from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
 from landscape.broker.tests.helpers import (
-    RemoteBrokerHelper, BrokerClientHelper)
+    RemoteBrokerHelper, RemoteClientHelper)
 
 
 class RemoteBrokerTest(LandscapeTest):
@@ -22,14 +22,11 @@ class RemoteBrokerTest(LandscapeTest):
         The L{RemoteBroker.register_client} method forwards a registration
         request to the remote L{BrokerServer} object.
         """
-
-        def assert_result(result):
-            self.assertEquals(result, None)
-            [client] = self.broker.get_clients()
-            self.assertEquals(client.name, "client")
-
-        sent = self.remote.register_client("client")
-        return sent.addCallback(assert_result)
+        self.broker.register_client = self.mocker.mock()
+        self.expect(self.broker.register_client("client"))
+        self.mocker.replay()
+        result = self.remote.register_client("client")
+        return self.assertSuccess(result)
 
     def test_send_message(self):
         """
@@ -43,8 +40,22 @@ class RemoteBrokerTest(LandscapeTest):
         def assert_response(message_id):
             self.assertTrue(isinstance(message_id, int))
             self.assertTrue(self.mstore.is_pending(message_id))
+            self.assertFalse(self.exchanger.is_urgent())
             self.assertMessages(self.mstore.get_pending_messages(),
                                 [message])
+
+        result = self.remote.send_message(message)
+        return result.addCallback(assert_response)
+
+    def test_send_message_with_urgent(self):
+        """
+        The L{RemoteBroker.send_message} method honors the urgent argument.
+        """
+        message = {"type": "test"}
+        self.mstore.set_accepted_types(["test"])
+
+        def assert_response(message_id):
+            self.assertTrue(self.exchanger.is_urgent())
 
         result = self.remote.send_message(message, urgent=True)
         return result.addCallback(assert_response)
@@ -148,7 +159,7 @@ class RemoteBrokerTest(LandscapeTest):
         The L{RemoteBroker.call_if_accepted} method doesn't do anything if the
         given message type is not accepted.
         """
-        function = lambda: 1/0
+        function = lambda: 1 / 0
         result = self.remote.call_if_accepted("test", function)
         return self.assertSuccess(result, None)
 
@@ -157,7 +168,7 @@ class RemoteBrokerTest(LandscapeTest):
         Trying to call an non-exposed broker method results in a failure.
         """
         result = self.remote._protocol.callRemote(MethodCall,
-                                                  name="get_clients",
+                                                  method="get_clients",
                                                   args=[],
                                                   kwargs={})
         return self.assertFailure(result, MethodCallError)
@@ -165,21 +176,7 @@ class RemoteBrokerTest(LandscapeTest):
 
 class RemoteClientTest(LandscapeTest):
 
-    helpers = [BrokerClientHelper]
-
-    def setUp(self):
-
-        def register_client(ignored):
-
-            def set_remote_client(ignored):
-                [remote_client] = self.broker.get_clients()
-                self.remote_client = remote_client
-
-            registered = self.remote.register_client("test")
-            return registered.addCallback(set_remote_client)
-
-        connected = super(RemoteClientTest, self).setUp()
-        return connected.addCallback(register_client)
+    helpers = [RemoteClientHelper]
 
     def test_ping(self):
         """
@@ -198,17 +195,15 @@ class RemoteClientTest(LandscapeTest):
         """
         handler = self.mocker.mock()
         handler({"type": "test"})
+        self.client.broker = self.mocker.mock()
+        self.client.broker.register_client_accepted_message_type("test")
         self.mocker.replay()
-
-        def message(ignored):
-
-            result = self.remote_client.message({"type": "test"})
-            return self.assertSuccess(result, True)
 
         # We need to register a test message handler to let the dispatch
         # message method call succeed
-        registered = self.client.register_message("test", handler)
-        return registered.addCallback(message)
+        self.client.register_message("test", handler)
+        result = self.remote_client.message({"type": "test"})
+        return self.assertSuccess(result, True)
 
     def test_fire_event(self):
         """
@@ -219,7 +214,7 @@ class RemoteClientTest(LandscapeTest):
         callback = self.mocker.mock()
         callback(True, kwarg=2)
         self.mocker.replay()
-        self.reactor.call_on("event", callback)
+        self.client_reactor.call_on("event", callback)
         result = self.remote_client.fire_event("event", True, kwarg=2)
         return self.assertSuccess(result, [None])
 
@@ -235,8 +230,8 @@ class RemoteClientTest(LandscapeTest):
         """
         Trying to call an non-exposed client method results in a failure.
         """
-        result = self.remote._protocol.callRemote(MethodCall,
-                                                  name="get_plugins",
-                                                  args=[],
-                                                  kwargs={})
+        result = self.remote_client._protocol.callRemote(MethodCall,
+                                                         method="get_plugins",
+                                                         args=[],
+                                                         kwargs={})
         return self.assertFailure(result, MethodCallError)

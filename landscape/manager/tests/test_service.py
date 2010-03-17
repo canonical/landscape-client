@@ -1,6 +1,5 @@
 from landscape.tests.mocker import ANY
-from landscape.tests.helpers import (
-    LandscapeTest, BrokerServiceHelper, RemoteBrokerHelper_)
+from landscape.tests.helpers import LandscapeTest, BrokerServiceHelper
 from landscape.reactor import FakeReactor
 from landscape.manager.config import ManagerConfiguration, ALL_PLUGINS
 from landscape.manager.service import ManagerService
@@ -9,18 +8,17 @@ from landscape.manager.processkiller import ProcessKiller
 
 class ManagerServiceTest(LandscapeTest):
 
-    helpers = [BrokerServiceHelper, RemoteBrokerHelper_]
+    helpers = [BrokerServiceHelper]
 
     def setUp(self):
+        super(ManagerServiceTest, self).setUp()
+        config = ManagerConfiguration()
+        config.load(["-c", self.config_filename])
 
-        def set_service(ignored):
-            config = ManagerConfiguration()
-            config.load(["-c", self.config_filename])
-            ManagerService.reactor_factory = FakeReactor
-            self.service = ManagerService(config)
+        class FakeManagerService(ManagerService):
+            reactor_factory = FakeReactor
 
-        broker_started = super(ManagerServiceTest, self).setUp()
-        return broker_started.addCallback(set_service)
+        self.service = FakeManagerService(config)
 
     def test_plugins(self):
         """
@@ -51,19 +49,18 @@ class ManagerServiceTest(LandscapeTest):
             plugin.register(ANY)
         self.mocker.replay()
 
+        def stop_service(ignored):
+            [connector] = self.broker_service.broker.get_connectors()
+            connector.disconnect()
+            self.service.stopService()
+            self.broker_service.stopService()
+
         def assert_broker_connection(ignored):
-
-            self.assertEquals(len(self.service.manager.get_plugins()),
-                              len(ALL_PLUGINS))
-            [client] = self.broker_service.broker.get_clients()
-            self.assertEquals(client.name, "manager")
+            self.assertEquals(len(self.broker_service.broker.get_clients()), 1)
+            self.assertIs(self.service.broker, self.service.manager.broker)
             result = self.service.broker.ping()
-            connector = self.service.connector_factory(self.service.reactor,
-                                                       self.service.config)
-            result.addCallback(lambda x: connector.connect())
-            result.addCallback(lambda x: connector.disconnect())
-            result.addCallback(lambda x: self.service.stopService())
-            return result
+            return result.addCallback(stop_service)
 
+        self.broker_service.startService()
         started = self.service.startService()
         return started.addCallback(assert_broker_connection)
