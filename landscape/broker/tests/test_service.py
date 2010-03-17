@@ -2,8 +2,6 @@ import os
 
 from twisted.internet.defer import Deferred
 from twisted.internet import reactor
-from twisted.internet.protocol import ClientCreator
-from twisted.protocols.amp import AMP
 
 from landscape.schema import Message
 from landscape.broker.broker import IFACE_NAME
@@ -16,8 +14,9 @@ from landscape.lib.dbus_util import (Object, method,
 from landscape.lib.twisted_util import gather_results
 from landscape.manager.manager import FAILED
 from landscape.tests.helpers import DEFAULT_ACCEPTED_TYPES
-from landscape.broker.service import BrokerService, run
+from landscape.broker.service import BrokerService
 from landscape.broker.transport import HTTPTransport
+from landscape.broker.amp import RemoteBrokerConnector
 from landscape.reactor import FakeReactor
 
 
@@ -36,7 +35,6 @@ class SampleSignalReceiver(object):
         self.bus.add_signal_receiver(handler, name)
         self.signal_waiters[name] = Deferred()
         return self.signal_waiters[name]
-
 
 
 class BrokerDBusObjectTest(LandscapeIsolatedTest):
@@ -593,8 +591,6 @@ class BrokerDBusObjectTest(LandscapeIsolatedTest):
                 types,
                 sorted(["type1", "type2"] + DEFAULT_ACCEPTED_TYPES))
         return gather_results([result1, result2]).addCallback(got_result)
-        
-
 
 
 class BrokerServiceTest(LandscapeTest):
@@ -609,8 +605,9 @@ class BrokerServiceTest(LandscapeTest):
         """
         A L{BrokerService} instance has a proper C{persist} attribute.
         """
-        self.assertEquals(self.service.persist.filename,
-                          os.path.join(self.config.data_path, "broker.bpickle"))
+        self.assertEquals(
+            self.service.persist.filename,
+            os.path.join(self.config.data_path, "broker.bpickle"))
 
     def test_transport(self):
         """
@@ -675,7 +672,7 @@ class BrokerServiceTest(LandscapeTest):
         self.mocker.replay()
         self.service.startService()
         reactor = FakeReactor()
-        connector = self.service.connector_factory(reactor, self.config)
+        connector = RemoteBrokerConnector(reactor, self.config)
         connected = connector.connect()
         connected.addCallback(lambda remote: remote.get_server_uuid())
         connected.addCallback(lambda x: connector.disconnect())

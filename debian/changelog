@@ -1,3 +1,16 @@
+landscape-client (1.4.4-0ubuntu0.10.04.0) lucid; urgency=low
+
+  * New upstream release (LP: #519200):
+    - Add a message for creating package locks (LP: #514334)
+    - Add support for auto-approved change-packages messages (LP: #517175)
+    - Add support for installing server-generated debian packages (LP: #509752)
+    - Add support for reporting Eucalyptus topology information (LP: #518501)
+    - Fix timeout while inserting large free-space message (LP: #218388)
+    - Fix wrong log path in motd (LP: #517454)
+    - Fix race condition in process excecution (LP: #517453)
+  
+ -- Free Ekanayaka <free.ekanayaka@canonical.com>  Sat, 16 Jan 2010 14:11:32 +0100
+
 landscape-client (1.4.0-0ubuntu0.9.10.0) lucid; urgency=low
 
   * New upstream release with several bug fixes:

@@ -53,27 +53,34 @@ class BrokerConfiguration(Configuration):
         parser.add_option("-t", "--computer-title", metavar="TITLE",
                           help="The title of this computer")
         parser.add_option("-u", "--url",
-                          help="The server URL to connect to.")
+                          help="The server URL to connect to (default: "
+                               "https://landscape.canonical.com/"
+                               "message-system).")
         parser.add_option("-k", "--ssl-public-key",
-                          help="The public SSL key to verify the server. "
-                               "Only used if the given URL is https.")
+                          help="The SSL CA certificate to verify the server "
+                               "with. Only used if the server URL to which "
+                               "we connect is https.")
         parser.add_option("--exchange-interval", default=15*60, type="int",
                           metavar="INTERVAL",
                           help="The number of seconds between server "
-                               "exchanges.")
+                               "exchanges (default: 900s).")
         parser.add_option("--urgent-exchange-interval", default=1*60,
                           type="int", metavar="INTERVAL",
                           help="The number of seconds between urgent server "
-                               "exchanges.")
+                               "exchanges (default: 60s).")
         parser.add_option("--ping-url",
                           help="The URL to perform lightweight exchange "
-                               "initiation with.")
+                               "initiation with (default: "
+                               "http://landscape.canonical.com/ping).")
         parser.add_option("--http-proxy", metavar="URL",
                           help="The URL of the HTTP proxy, if one is needed.")
         parser.add_option("--https-proxy", metavar="URL",
                           help="The URL of the HTTPS proxy, if one is needed.")
         parser.add_option("--cloud", action="store_true",
-                          help="Set this if your computer is in an EC2 cloud.")
+                          help="Set this if your computer is a cloud instance "
+                               "(EC2 or UEC) and you want it to be managed by "
+                               "Landscape's cloud features. See the manpage "
+                               "for details.")
         parser.add_option("--tags",
                           help="Comma separated list of tag names to be sent "
                                "to the server.")

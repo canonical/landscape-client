@@ -381,23 +381,12 @@ class LegacyExchangeHelper(FakeRemoteBrokerHelper):
         test_case.identity = service.identity
 
 
-# We can drop the "_" suffic once the AMP migration is completed
-class RemoteBrokerHelper_(object):
-    """Marker class indicating that we want to use a real remote broker."""
-
-
 class BrokerServiceHelper(object):
     """
     The following attributes will be set in your test case:
-      - broker_service: A started C{BrokerService}.
-      - remote: A C{FakeRemoteBroker} behaving like a remote broker
-          but performing all operation synchronously.  Note that the
-          actual L{BrokerService} will still be started, in case you
-          need it.
-
-    If you want to use a real L{RemoteBroker} connected to the broker
-    over AMP, just include L{RemoteBrokerHelper_} among your test case
-    helpers.
+      - broker_service: A C{BrokerService}.
+      - remote: A C{FakeRemoteBroker} behaving like a L{RemoteBroker} connected
+          to the broker serivice but performing all operation synchronously.
     """
 
     def set_up(self, test_case):
@@ -422,27 +411,9 @@ class BrokerServiceHelper(object):
             transport_factory = FakeTransport
 
         test_case.broker_service = FakeBrokerService(config)
-        test_case.broker_service.startService()
-
-        if not RemoteBrokerHelper_ in test_case.helpers:
-            test_case.remote = FakeRemoteBroker_(
-                test_case.broker_service.exchanger,
-                test_case.broker_service.message_store)
-            return
-
-        def set_remote(remote):
-            test_case.remote = remote
-
-        from time import time
-        self.connector = test_case.broker_service.connector_factory(
-            FakeReactor(), config)
-        connected = self.connector.connect()
-        return connected.addCallback(set_remote)
-
-    def tear_down(self, test_case):
-        test_case.broker_service.stopService()
-        if hasattr(self, "connector"):
-            self.connector.disconnect()
+        test_case.remote = FakeRemoteBroker_(
+            test_case.broker_service.exchanger,
+            test_case.broker_service.message_store)
 
 
 class MonitorHelper(LegacyExchangeHelper):
@@ -473,24 +444,17 @@ class MonitorHelper_(BrokerServiceHelper):
 
     def set_up(self, test_case):
 
-        def set_monitor(ignored):
-            persist = Persist()
-            persist_filename = test_case.makePersistFile()
-            test_case.config = MonitorConfiguration()
-            test_case.config.load(["-c", test_case.config_filename])
-            test_case.reactor = FakeReactor()
-            test_case.monitor = Monitor(
-                test_case.reactor, test_case.config,
-                persist, persist_filename)
-            test_case.monitor.connected(test_case.remote)
-            test_case.mstore = test_case.broker_service.message_store
-
-        result = super(MonitorHelper_, self).set_up(test_case)
-        if isinstance(result, Deferred):
-            return result.addCallback(set_monitor)
-        else:
-            # Synchronous setUp, we're using a L{FakeRemoteBroker}
-            set_monitor(None)
+        super(MonitorHelper_, self).set_up(test_case)
+        persist = Persist()
+        persist_filename = test_case.makePersistFile()
+        test_case.config = MonitorConfiguration()
+        test_case.config.load(["-c", test_case.config_filename])
+        test_case.reactor = FakeReactor()
+        test_case.monitor = Monitor(
+            test_case.reactor, test_case.config,
+            persist, persist_filename)
+        test_case.monitor.broker = test_case.remote
+        test_case.mstore = test_case.broker_service.message_store
 
 
 class ManagerHelper(FakeRemoteBrokerHelper):
@@ -518,20 +482,12 @@ class ManagerHelper_(BrokerServiceHelper):
 
     def set_up(self, test_case):
 
-        def set_manager(ignored):
-            test_case.config = ManagerConfiguration_()
-            test_case.config.load(["-c", test_case.config_filename])
-            test_case.reactor = FakeReactor()
-            test_case.manager = Manager(test_case.reactor, test_case.config)
-            test_case.manager.connected(test_case.remote)
-            test_case.mstore = test_case.broker_service.message_store
-
-        result = super(ManagerHelper_, self).set_up(test_case)
-        if isinstance(result, Deferred):
-            return result.addCallback(set_manager)
-        else:
-            # Synchronous setUp, we're using a L{FakeRemoteBroker}
-            set_manager(None)
+        super(ManagerHelper_, self).set_up(test_case)
+        test_case.config = ManagerConfiguration_()
+        test_case.config.load(["-c", test_case.config_filename])
+        test_case.reactor = FakeReactor()
+        test_case.manager = Manager(test_case.reactor, test_case.config)
+        test_case.manager.broker = test_case.remote
 
 
 class MockPopen(object):
@@ -747,10 +703,10 @@ CapEff: 0000000000000000
         shutil.rmtree(process_dir)
 
 
-
 from twisted.python import log
 from twisted.python import failure
 from twisted.trial import reporter
+
 
 def install_trial_hack():
     """
