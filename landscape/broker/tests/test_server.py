@@ -1,9 +1,9 @@
 from twisted.internet.defer import succeed, fail
 
+from landscape.manager.manager import FAILED
 from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
 from landscape.broker.tests.helpers import (
     BrokerServerHelper, RemoteClientHelper)
-from landscape.broker.amp import RemoteClient
 
 
 class FakeClient(object):
@@ -264,10 +264,9 @@ class EventTest(LandscapeTest):
         The L{BrokerServer.impending_exchange} method broadcasts an
         C{impending-exchange} event to all connected clients.
         """
-        [client] = self.broker.get_clients()
-        client.fire_event = self.mocker.mock()
-        client.fire_event("impending-exchange")
-        self.mocker.result(succeed(None))
+        plugin = self.mocker.mock()
+        plugin.register(self.client)
+        plugin.exchange()
         self.mocker.replay()
         self.client.add(plugin)
         return self.assertSuccess(self.broker.impending_exchange(), [[None]])
@@ -277,10 +276,8 @@ class EventTest(LandscapeTest):
         The L{BrokerServer.exchange_failed} method broadcasts an
         C{exchange-failed} event to all connected clients.
         """
-        [client] = self.broker.get_clients()
-        client.fire_event = self.mocker.mock()
-        client.fire_event("exchange-failed")
-        self.mocker.result(succeed(None))
+        callback = self.mocker.mock()
+        callback()
         self.mocker.replay()
         self.client_reactor.call_on("exchange-failed", callback)
         return self.assertSuccess(self.broker.exchange_failed(), [[None]])
@@ -290,10 +287,8 @@ class EventTest(LandscapeTest):
         The L{BrokerServer.registration_done} method broadcasts a
         C{registration-done} event to all connected clients.
         """
-        [client] = self.broker.get_clients()
-        client.fire_event = self.mocker.mock()
-        client.fire_event("registration-done")
-        self.mocker.result(succeed(None))
+        callback = self.mocker.mock()
+        callback()
         self.mocker.replay()
         self.client_reactor.call_on("registration-done", callback)
         return self.assertSuccess(self.broker.registration_done(), [[None]])
@@ -303,10 +298,8 @@ class EventTest(LandscapeTest):
         The L{BrokerServer.registration_failed} method broadcasts a
         C{registration-failed} event to all connected clients.
         """
-        [client] = self.broker.get_clients()
-        client.fire_event = self.mocker.mock()
-        client.fire_event("registration-failed")
-        self.mocker.result(succeed(None))
+        callback = self.mocker.mock()
+        callback()
         self.mocker.replay()
         self.client_reactor.call_on("registration-failed", callback)
         return self.assertSuccess(self.broker.registration_failed(), [[None]])
@@ -333,10 +326,8 @@ class EventTest(LandscapeTest):
         The L{BrokerServer.server_uuid_changed} method broadcasts a
         C{server_uuid_changed} event to all connected clients.
         """
-        [client] = self.broker.get_clients()
-        client.fire_event = self.mocker.mock()
-        client.fire_event("server-uuid-changed", None, "abc")
-        self.mocker.result(succeed(None))
+        callback = self.mocker.mock()
+        callback(None, "abc")
         self.mocker.replay()
         self.client_reactor.call_on("server-uuid-changed", callback)
         return self.assertSuccess(self.broker.server_uuid_changed(None, "abc"),
@@ -350,6 +341,8 @@ class EventTest(LandscapeTest):
         callback = self.mocker.mock()
         callback(True)
         self.mocker.replay()
+        self.client_reactor.call_on(
+            ("message-type-acceptance-changed", "type"), callback)
         result = self.broker.message_type_acceptance_changed("type", True)
         return self.assertSuccess(result, [[None]])
 
@@ -360,9 +353,9 @@ class HandlersTest(LandscapeTest):
 
     def setUp(self):
         super(HandlersTest, self).setUp()
-        protocol = BrokerServerProtocol(None)
-        self.broker.register_client("test", protocol)
-        self.client = protocol.remote
+        self.broker.connectors_registry = {"test": FakeCreator}
+        self.broker.register_client("test")
+        self.client = self.broker.get_clients()[0]
 
     def test_message(self):
         """

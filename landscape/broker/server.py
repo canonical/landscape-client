@@ -58,7 +58,6 @@ class BrokerServer(object):
                         self.message_type_acceptance_changed)
         reactor.call_on("server-uuid-changed", self.server_uuid_changed)
         reactor.call_on("resynchronize-clients", self.resynchronize)
-        self.broker_started()
 
     def ping(self):
         """Return C{True}."""
@@ -216,8 +215,8 @@ class BrokerServer(object):
         @see: L{register_plugin}.
         """
         results = []
-        for plugin in self.get_clients():
-            results.append(plugin.message(message))
+        for client in self.get_clients():
+            results.append(client.message(message))
         return gather_results(results).addCallback(self._message_delivered,
                                                    message)
 
