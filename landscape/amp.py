@@ -2,63 +2,100 @@ import os
 import logging
 
 from landscape.lib.amp import (
-    Method, MethodCallProtocol, MethodCallFactory, RemoteObjectCreator)
+    MethodCallProtocol, MethodCallFactory, RemoteObjectConnector)
 
 
-class LandscapeComponentProtocol(MethodCallProtocol):
+class ComponentProtocol(MethodCallProtocol):
+    """Communication protocol between the various Landscape components.
+
+    It can be used both as server-side protocol for exposing the methods of a
+    certain Landscape component, or as client-side protocol for connecting to
+    another Landscape component we want to call the methods of.
     """
-    Communication protocol between the various Landscape components.
-    """
-    methods = [Method("ping"),
-               Method("exit")]
+    methods = ["ping", "exit"]
+    timeout = 60
 
 
-class LandscapeComponentProtocolFactory(MethodCallFactory):
+class ComponentProtocolFactory(MethodCallFactory):
 
-    protocol = LandscapeComponentProtocol
-
-    def __init__(self, reactor, component):
-        """
-        @param reactor: A L{TwistedReactor} object.
-        @param component: The Landscape component to expose.
-        """
-        MethodCallFactory.__init__(self, reactor._reactor, component)
+    protocol = ComponentProtocol
 
 
-class RemoteLandscapeComponentCreator(RemoteObjectCreator):
+class RemoteComponentConnector(RemoteObjectConnector):
     """Utility superclass for creating connections with a Landscape component.
 
-    @cvar socket: The name of the socket to connect to, it must be set
-        by sub-classes.
+    @cvar component: The class of the component to connect to, it is expected
+        to define a C{name} class attribute, which will be used to find out
+        the socket to use. It must be defined by sub-classes.
     """
 
-    protocol = MethodCallProtocol
+    factory = ComponentProtocolFactory
 
-    def __init__(self, reactor, config):
+    def __init__(self, reactor, config, *args, **kwargs):
         """
         @param reactor: A L{TwistedReactor} object.
         @param config: A L{LandscapeConfiguration}.
-        """
-        socket = os.path.join(config.data_path, self.socket)
-        super(RemoteLandscapeComponentCreator, self).__init__(
-            reactor._reactor, socket)
+        @param args: Positional arguments for protocol factory constructor.
+        @param kwargs: Keyword arguments for protocol factory constructor.
 
-    def connect(self, retry_interval=5, max_retries=None, log_errors=False):
+        @see: L{MethodCallClientFactory}.
+        """
+        self._twisted_reactor = reactor
+        socket = os.path.join(config.data_path, self.component.name + ".sock")
+        super(RemoteComponentConnector, self).__init__(
+            self._twisted_reactor._reactor, socket, *args, **kwargs)
+
+    def connect(self, max_retries=None):
         """Connect to the remote Landscape component.
 
-        @param retry_interval: Retry interval in seconds
-        @param max_retries: Maximum number of retries, C{None} (the default)
-            means keep trying indefinitely.
-        @param log_errors: Whether an error should be logged in case of
-            failure.
+        If the connection is lost after having been established, and then
+        it is established again by the reconnect mechanism, an event will
+        be fired.
+
+        @param max_retries: If given, the connector will keep trying to connect
+            up to that number of times, if the first connection attempt fails.
         """
 
+        def fire_reconnect(remote):
+            self._twisted_reactor.fire("%s-reconnect" %
+                                       self.component.name)
+
+        def connected(remote):
+            self._factory.add_notifier(fire_reconnect)
+            return remote
+
         def log_error(failure):
-            logging.error("Error while trying to connect %s", self.socket)
+            logging.error("Error while connecting to %s", self.component.name)
             return failure
 
-        connected = super(RemoteLandscapeComponentCreator, self).connect(
-            retry_interval=retry_interval, max_retries=max_retries)
-        if log_errors:
-            connected.addErrback(log_error)
-        return connected
+        result = super(RemoteComponentConnector, self).connect(
+            max_retries=max_retries)
+        result.addErrback(log_error)
+        result.addCallback(connected)
+        return result
+
+
+class RemoteComponentsRegistry(object):
+    """
+    A global registry for looking up Landscape component connectors by name.
+    """
+
+    _by_name = {}
+
+    @classmethod
+    def get(cls, name):
+        """Get the connector class for the given Landscape component.
+
+        @param name: Name of the Landscape component we want to connect to, for
+           instance C{monitor} or C{manager}.
+        """
+        return cls._by_name[name]
+
+    @classmethod
+    def register(cls, connector_class):
+        """Register a connector for a Landscape component.
+
+        @param connector_class: A sub-class of L{RemoteComponentConnector}
+            that can be used to connect to a certain component.
+        """
+        cls._by_name[connector_class.component.name] = connector_class

@@ -19,6 +19,7 @@ case "$1" in
         LOG_DIR=/var/log/landscape
         deluser --quiet --system landscape >/dev/null || true
         rm -f "${LOG_DIR}/sysinfo.log"*
+        rmdir /etc/landscape || true
     ;;
 
     remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)

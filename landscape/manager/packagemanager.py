@@ -26,6 +26,8 @@ class PackageManager(ManagerPlugin):
 
         registry.register_message("change-packages",
                                   self.handle_change_packages)
+        registry.register_message("change-package-locks",
+                                  self.handle_change_package_locks)
         registry.register_message("release-upgrade",
                                   self.handle_release_upgrade)
 
@@ -37,6 +39,9 @@ class PackageManager(ManagerPlugin):
         self.spawn_handler(cls)
 
     def handle_change_packages(self, message):
+        return self._handle(PackageChanger, message)
+
+    def handle_change_package_locks(self, message):
         return self._handle(PackageChanger, message)
 
     def handle_release_upgrade(self, message):

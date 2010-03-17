@@ -3,6 +3,7 @@ import sys
 import os
 import logging
 import unittest
+import time
 
 from twisted.internet.defer import Deferred
 from twisted.internet import reactor
@@ -519,6 +520,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         The L{PackageReporter.run_smart_update} method should run smart-update
         with the proper arguments.
         """
+        self.reporter.sources_list_filename = "/I/Dont/Exist"
         self.reporter.smart_update_filename = self.makeFile(
             "#!/bin/sh\necho -n $@")
         os.chmod(self.reporter.smart_update_filename, 0755)
@@ -565,6 +567,59 @@ class PackageReporterTest(LandscapeIsolatedTest):
             result = self.reporter.run_smart_update()
 
             def callback((out, err, code)):
+                self.assertEquals(out, "")
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
+
+    def test_wb_apt_sources_have_changed(self):
+        """
+        The L{PackageReporter._apt_sources_have_changed} method returns a bool
+        indicating if the APT sources list file has changed recently.
+        """
+        self.reporter.sources_list_filename = "/I/Dont/Exist"
+        self.reporter.sources_list_directory = "/I/Dont/Exist/At/All"
+        self.assertFalse(self.reporter._apt_sources_have_changed())
+        self.reporter.sources_list_filename = self.makeFile("foo")
+        self.assertTrue(self.reporter._apt_sources_have_changed())
+        os.utime(self.reporter.sources_list_filename, (-1, time.time() - 1799));
+        self.assertTrue(self.reporter._apt_sources_have_changed())
+        os.utime(self.reporter.sources_list_filename, (-1, time.time() - 1800));
+        self.assertFalse(self.reporter._apt_sources_have_changed())
+
+    def test_wb_apt_sources_have_changed_with_directory(self):
+        """
+        The L{PackageReporter._apt_sources_have_changed} checks also for
+        possible additional sources files under /etc/apt/sources.d.
+        """
+        self.reporter.sources_list_filename = "/I/Dont/Exist/At/All"
+        self.reporter.sources_list_directory = self.makeDir()
+        self.makeFile(dirname=self.reporter.sources_list_directory,
+                      content="deb http://foo ./")
+        self.assertTrue(self.reporter._apt_sources_have_changed())
+
+    def test_run_smart_update_with_force_smart_update_if_sources_changed(self):
+        """
+        L{PackageReporter.run_smart_update} forces a smart-update run if
+        the APT sources.list file has changed.
+
+        """
+        self.assertEquals(self.reporter.sources_list_filename,
+                          "/etc/apt/sources.list")
+        self.reporter.sources_list_filename = self.makeFile("deb ftp://url ./")
+        self.reporter.smart_update_filename = self.makeFile(
+            "#!/bin/sh\necho -n $@")
+        os.chmod(self.reporter.smart_update_filename, 0755)
+
+        deferred = Deferred()
+
+        def do_test():
+            result = self.reporter.run_smart_update()
+
+            def callback((out, err, code)):
+                # Smart update was called without the --after parameter
                 self.assertEquals(out, "")
             result.addCallback(callback)
             result.chainDeferred(deferred)
@@ -1274,10 +1329,15 @@ class PackageReporterTest(LandscapeIsolatedTest):
         This is done in the reporter so that we know it happens when
         no other reporter is possibly running at the same time.
         """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["package-locks"])
         self.store.set_hash_ids({HASH1: 3, HASH2: 4})
         self.store.add_available([1])
         self.store.add_available_upgrades([2])
         self.store.add_installed([2])
+        self.store.add_locked([3])
+        self.store.add_package_locks([("name1", None, None)])
+        self.facade.set_package_lock("name1")
         request1 = self.store.add_hash_id_request(["hash3"])
         request2 = self.store.add_hash_id_request(["hash4"])
 
@@ -1290,6 +1350,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
         self.assertEquals(self.store.get_available_upgrades(), [2])
         self.assertEquals(self.store.get_available(), [1])
         self.assertEquals(self.store.get_installed(), [2])
+        self.assertEquals(self.store.get_locked(), [3])
+        self.assertEquals(self.store.get_package_locks(), [("name1", "", "")])
         self.assertEquals(self.store.get_hash_id_request(request1.id).id, request1.id)
 
         self.store.add_task("reporter", {"type": "resynchronize"})
@@ -1297,6 +1359,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         deferred = self.reporter.run()
 
         def check_result(result):
+
             # The hashes should not go away.
             hash1 = self.store.get_hash_id(HASH1)
             hash2 = self.store.get_hash_id(HASH2)
@@ -1304,10 +1367,12 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
             # But the other data should.
             self.assertEquals(self.store.get_available_upgrades(), [])
+
             # After running the resychronize task, detect_changes is called,
             # and the existing known hashes are made available.
             self.assertEquals(self.store.get_available(), [3, 4])
             self.assertEquals(self.store.get_installed(), [])
+            self.assertEquals(self.store.get_locked(), [3])
 
             # The two original hash id requests should be still there, and
             # a new hash id request should also be detected for HASH3.
@@ -1324,6 +1389,10 @@ class PackageReporterTest(LandscapeIsolatedTest):
                 else:
                     self.fail("Unexpected hash-id request!")
             self.assertEquals(requests_count, 3)
+
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "package-locks",
+                                  "created": [("name1", "", "")]}])
 
         deferred.addCallback(check_result)
         return deferred

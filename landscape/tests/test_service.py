@@ -1,24 +1,25 @@
-import os
 import logging
 import signal
 
 from landscape.reactor import FakeReactor
 from landscape.deployment import Configuration
 from landscape.service import LandscapeService
+from landscape.amp import (
+    ComponentProtocolFactory, RemoteComponentConnector)
 from landscape.tests.helpers import LandscapeTest
-from landscape.amp import LandscapeComponentProtocolFactory
-from landscape.amp import RemoteLandscapeComponentCreator
 from landscape.tests.mocker import ANY
 
 
-class RemoteTestComponentCreator(RemoteLandscapeComponentCreator):
-    socket = "monitor.sock"
+class TestComponent(object):
+    name = "monitor"
+
+
+class RemoteTestComponentCreator(RemoteComponentConnector):
+    component = TestComponent
 
 
 class TestService(LandscapeService):
-
-    service_name = "monitor"
-    connector_factory = RemoteTestComponentCreator
+    service_name = TestComponent.name
 
 
 class LandscapeServiceTest(LandscapeTest):
@@ -95,17 +96,16 @@ class LandscapeServiceTest(LandscapeTest):
         socket for incoming connections.
         """
         service = TestService(self.config)
-        service.factory = LandscapeComponentProtocolFactory(self.reactor,
-                                                            self.config)
+        service.factory = ComponentProtocolFactory()
         service.startService()
-        creator = service.connector_factory(self.reactor, self.config)
+        connector = RemoteTestComponentCreator(self.reactor, self.config)
 
         def assert_port(ignored):
             self.assertTrue(service.port.connected)
-            creator.disconnect()
+            connector.disconnect()
             service.stopService()
 
-        connected = creator.connect()
+        connected = connector.connect()
         return connected.addCallback(assert_port)
 
     def test_start_uses_want_pid(self):
@@ -114,8 +114,7 @@ class LandscapeServiceTest(LandscapeTest):
         in order to remove stale socket files from previous runs.
         """
         service = TestService(self.config)
-        service.factory = LandscapeComponentProtocolFactory(self.reactor,
-                                                            self.config)
+        service.factory = ComponentProtocolFactory(self.reactor, self.config)
         service.reactor.listen_unix = self.mocker.mock()
         service.reactor.listen_unix(ANY, ANY, wantPID=True)
         self.mocker.replay()

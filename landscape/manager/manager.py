@@ -80,6 +80,8 @@ class ManagerPlugin(Plugin):
 class Manager(BrokerClient):
     """Central point of integration for the Landscape Manager."""
 
+    name = "manager"
+
     def __init__(self, reactor, config):
         super(Manager, self).__init__(reactor)
         self.reactor = reactor
