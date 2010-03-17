@@ -48,8 +48,6 @@ class MonitorServiceTest(LandscapeTest):
         # FIXME: don't actually run the real register method, because at the
         # moment the UserMonitor plugin still depends on DBus. We can probably
         # drop this mocking once the AMP migration is completed.
-        self.broker_service.startService()
-
         for plugin in self.service.plugins:
             plugin.register = self.mocker.mock()
             plugin.register(ANY)
@@ -67,6 +65,7 @@ class MonitorServiceTest(LandscapeTest):
             result = self.service.broker.ping()
             return result.addCallback(stop_service)
 
+        self.broker_service.startService()
         started = self.service.startService()
         return started.addCallback(assert_broker_connection)
 
