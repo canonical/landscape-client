@@ -6,12 +6,11 @@ from landscape.manager.manager import FAILED
 
 
 def event(method):
-    """Turns a L{BrokerServer} method into and event broadcaster.
+    """Turns a L{BrokerServer} method into an event broadcaster.
 
-    When the decorated method is called, an event with the same name
-    as the decorated method is fired on all connected clients.
-
-    @note: Any underscore in the method name will be replaced with a dash.
+    When the decorated method is called, an event is fired on all connected
+    clients. The event will have the same name as the method being called,
+    except that any underscore in the method name will be replaced with a dash.
     """
     event_type = method.__name__.replace("_", "-")
 
@@ -91,12 +90,20 @@ class BrokerServer(object):
         """Get L{RemoteClient} instances for registered clients."""
         return self._registered_clients.values()
 
+    def get_client(self, name):
+        """Return the client with the given C{name} or C{None}."""
+        return self._registered_clients.get(name)
+
     def get_connectors(self):
         """Get connectors for registered clients.
 
         @see L{RemoteLandscapeComponentCreator}.
         """
         return self._connectors.values()
+
+    def get_connector(self, name):
+        """Return the connector for the given C{name} or C{None}."""
+        return self._connectors.get(self.get_client(name))
 
     def send_message(self, message, urgent=False):
         """Queue C{message} for delivery to the server at the next exchange.

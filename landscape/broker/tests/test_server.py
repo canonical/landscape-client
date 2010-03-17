@@ -68,15 +68,20 @@ class BrokerServerTest(LandscapeTest):
         client components that need to communicate with the server. After
         the registration they can be fetched with L{BrokerServer.get_clients}.
         """
+        self.assertEquals(self.broker.get_clients(), [])
+        self.assertEquals(self.broker.get_client("test"), None)
+        self.assertEquals(self.broker.get_connectors(), [])
+        self.assertEquals(self.broker.get_connector("test"), None)
 
         def assert_registered(ignored):
+            self.assertEquals(len(self.broker.get_clients()), 1)
+            self.assertEquals(len(self.broker.get_connectors()), 1)
             self.assertTrue(
-                isinstance(self.broker.get_clients()[0], FakeClient))
+                isinstance(self.broker.get_client("test"), FakeClient))
             self.assertTrue(
-                isinstance(self.broker.get_connectors()[0], FakeCreator))
+                isinstance(self.broker.get_connector("test"), FakeCreator))
 
         self.broker.connectors_registry = {"test": FakeCreator}
-        self.assertEquals(self.broker.get_clients(), [])
         result = self.broker.register_client("test")
         return result.addCallback(assert_registered)
 
@@ -355,7 +360,7 @@ class HandlersTest(LandscapeTest):
         super(HandlersTest, self).setUp()
         self.broker.connectors_registry = {"test": FakeCreator}
         self.broker.register_client("test")
-        self.client = self.broker.get_clients()[0]
+        self.client = self.broker.get_client("test")
 
     def test_message(self):
         """
