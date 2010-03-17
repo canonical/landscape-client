@@ -22,12 +22,12 @@ psmith:!:13348:0:99999:7:::
 sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
 """)
         accepted_types = ["operation-result", "users"]
-        self.mstore.set_accepted_types(accepted_types)
+        self.broker_service.message_store.set_accepted_types(accepted_types)
 
     def tearDown(self):
         super(UserGroupTestBase, self).tearDown()
-        for port in self.ports:
-            port.stopListening()
+        for plugin in self.plugins:
+            plugin.stop()
 
     def setup_environment(self, users, groups, shadow_file):
         provider = FakeUserProvider(users=users, groups=groups,
@@ -39,7 +39,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         self.manager.persist = Persist()
         user_monitor.register(self.manager)
         user_manager.register(self.manager)
-        self.ports = [user_monitor._port, user_manager._port]
+        self.plugins = [user_monitor, user_manager]
         return user_monitor
 
 
@@ -235,7 +235,8 @@ class UserOperationsMessagingTest(UserGroupTestBase):
             return result
 
         def handle_callback2(result, messages):
-            new_messages = self.mstore.get_pending_messages()
+            mstore = self.broker_service.message_store
+            new_messages = mstore.get_pending_messages()
             self.assertEquals(messages, new_messages)
             return result
 

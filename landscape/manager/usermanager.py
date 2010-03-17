@@ -1,7 +1,6 @@
 import os
 import logging
 
-from landscape.lib.twisted_util import gather_results
 from landscape.lib.amp import RemoteObject
 from landscape.amp import (
     ComponentProtocol, ComponentProtocolFactory, RemoteComponentConnector)
@@ -18,7 +17,6 @@ class UserManager(ManagerPlugin):
     def __init__(self, management=None, shadow_file="/etc/shadow"):
         self._management = management or UserManagement()
         self._shadow_file = shadow_file
-
         self._message_types = {"add-user": self._add_user,
                                "edit-user": self._edit_user,
                                "lock-user": self._lock_user,
@@ -29,6 +27,7 @@ class UserManager(ManagerPlugin):
                                "remove-group": self._remove_group,
                                "add-group-member": self._add_group_member,
                                "remove-group-member": self._remove_group_member}
+        self._port = None
 
     def register(self, registry):
         """
@@ -37,7 +36,6 @@ class UserManager(ManagerPlugin):
         """
         super(UserManager, self).register(registry)
         self._registry = registry
-        results = []
 
         factory = UserManagerProtocolFactory(object=self)
         socket = os.path.join(self.registry.config.data_path,
@@ -47,12 +45,11 @@ class UserManager(ManagerPlugin):
             self.registry.reactor, self.registry.config)
 
         for message_type in self._message_types:
-            result = self._registry.register_message(message_type,
-                                                     self._message_dispatch)
-            results.append(result)
-        return gather_results(results)
+            self._registry.register_message(message_type,
+                                            self._message_dispatch)
 
     def stop(self):
+        """Stop exposing ourselves over AMP."""
         if self._port:
             self._port.stopListening()
             self._port = None
