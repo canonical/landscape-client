@@ -422,19 +422,25 @@ class RemoteObjectConnector(object):
         self._reactor = reactor
         self._args = args
         self._kwargs = kwargs
+        self._remote = None
 
-    def connect(self, max_retries=None):
+    def connect(self, max_retries=None, factor=None):
         """Connect to a remote object exposed by a L{MethodCallProtocol}.
 
         This method will connect to the socket provided in the constructor
         and return a L{Deferred} resulting in a connected L{RemoteObject}.
 
         @param max_retries: If not C{None} give up try to connect after this
-            amount of times.
+            amount of times, otherwise keep trying to connect forever.
+        @param factor: Optionally a float indicating by which factor the
+            delay between subsequent retries should increase. Smaller values
+            result in a faster reconnection attempts pace.
         """
         self._connected = Deferred()
         self._factory = self.factory(reactor=self._reactor)
         self._factory.maxRetries = max_retries
+        if factor:
+            self._factory.factor = factor
         self._factory.add_notifier(self._success, self._failure)
         self._reactor.connectUNIX(self._socket_path, self._factory)
         return self._connected
@@ -455,4 +461,7 @@ class RemoteObjectConnector(object):
     def disconnect(self):
         """Disconnect the L{RemoteObject} that we have created."""
         self._factory.stopTrying()
-        self._remote._protocol.transport.loseConnection()
+        if self._remote:
+            if self._remote._protocol.transport:
+                self._remote._protocol.transport.loseConnection()
+            self._remote = None
