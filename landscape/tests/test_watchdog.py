@@ -13,14 +13,14 @@ from landscape.broker.broker import BUS_NAME, OBJECT_PATH, IFACE_NAME
 from landscape.tests.mocker import ARGS, KWARGS, ANY
 from landscape.tests.clock import Clock
 from landscape.tests.helpers import (
-    LandscapeTest, EnvironSaverHelper, BrokerServiceHelper,
-    RemoteBrokerHelper_)
+    LandscapeTest, EnvironSaverHelper, BrokerServiceHelper)
 from landscape.watchdog import (
     Daemon, WatchDog, WatchDogService, ExecutableNotFoundError,
     WatchDogConfiguration, bootstrap_list,
     MAXIMUM_CONSECUTIVE_RESTARTS, RESTART_BURST_DELAY, run,
     Broker, Monitor, Manager)
-from landscape.amp import RemoteLandscapeComponentCreator
+from landscape.amp import ComponentProtocolFactory,  RemoteComponentConnector
+from landscape.broker.amp import RemoteBrokerConnector
 
 import landscape.watchdog
 
@@ -76,11 +76,10 @@ class WatchDogTest(LandscapeTest):
         WatchDog(enabled_daemons=[Broker, Monitor], config=self.config)
 
     def test_check_running_one(self):
-        kwargs = {"retry_interval": 0.2, "max_retries": 5}
         self.start_all_daemons()
-        self.expect(self.broker.is_running(**kwargs)).result(succeed(True))
-        self.expect(self.monitor.is_running(**kwargs)).result(succeed(False))
-        self.expect(self.manager.is_running(**kwargs)).result(succeed(False))
+        self.expect(self.broker.is_running()).result(succeed(True))
+        self.expect(self.monitor.is_running()).result(succeed(False))
+        self.expect(self.manager.is_running()).result(succeed(False))
         self.mocker.replay()
         result = WatchDog(config=self.config).check_running()
 
@@ -90,11 +89,10 @@ class WatchDogTest(LandscapeTest):
         return result.addCallback(got_result)
 
     def test_check_running_many(self):
-        kwargs = {"retry_interval": 0.2, "max_retries": 5}
         self.start_all_daemons()
-        self.expect(self.broker.is_running(**kwargs)).result(succeed(True))
-        self.expect(self.monitor.is_running(**kwargs)).result(succeed(True))
-        self.expect(self.manager.is_running(**kwargs)).result(succeed(True))
+        self.expect(self.broker.is_running()).result(succeed(True))
+        self.expect(self.monitor.is_running()).result(succeed(True))
+        self.expect(self.manager.is_running()).result(succeed(True))
         self.mocker.replay()
         result = WatchDog(config=self.config).check_running()
 
@@ -109,10 +107,9 @@ class WatchDogTest(LandscapeTest):
         When the user has explicitly asked not to run some daemons, those
         daemons which are not being run should not checked.
         """
-        kwargs = {"retry_interval": 0.2, "max_retries": 5}
         self.broker = self.broker_factory(ANY, verbose=False, config=None)
         self.expect(self.broker.program).result("landscape-broker")
-        self.expect(self.broker.is_running(**kwargs)).result(succeed(True))
+        self.expect(self.broker.is_running()).result(succeed(True))
         self.mocker.replay()
         result = WatchDog(enabled_daemons=[Broker],
                           config=self.config).check_running()
@@ -188,10 +185,9 @@ class WatchDogTest(LandscapeTest):
         self.manager.start()
 
         monitor_ping_result = Deferred()
-        kwargs = {"retry_interval": 1, "max_retries": 10}
-        self.expect(self.broker.is_running(**kwargs)).result(succeed(True))
-        self.expect(self.monitor.is_running(**kwargs)).result(monitor_ping_result)
-        self.expect(self.manager.is_running(**kwargs)).result(succeed(True))
+        self.expect(self.broker.is_running()).result(succeed(True))
+        self.expect(self.monitor.is_running()).result(monitor_ping_result)
+        self.expect(self.manager.is_running()).result(succeed(True))
 
         self.expect_request_exit()
 
@@ -229,9 +225,7 @@ class BoringDaemon(object):
         self.boots.append(STOP)
         return succeed(None)
 
-    def is_running(self, retry_interval=None, max_retries=None):
-        assert(retry_interval is 1)
-        assert(max_retries is 10)
+    def is_running(self):
         return succeed(True)
 
     def request_exit(self):
@@ -248,9 +242,7 @@ class AsynchronousPingDaemon(BoringDaemon):
     pings = 0
     deferred = None
 
-    def is_running(self, retry_interval=None, max_retries=None):
-        assert(retry_interval is 1)
-        assert(max_retries is 10)
+    def is_running(self):
         self.pings += 1
         if self.deferred is not None:
             raise AssertionError(
@@ -468,48 +460,55 @@ class NonMockerWatchDogTests(LandscapeTest):
         return result
 
 
-class TestComponent(object):
+class Ghost(object):
+    """A non existent component just meant to make connection attempts fail."""
 
-    def ping(self):
-        return True
+    name = "ghost"
 
 
-class RemoteTestComponentCreator(RemoteLandscapeComponentCreator):
-    socket = "test.sock"
-    retry_interval = 0.02
-    max_retries = 2
+class GhostProtocolFactory(ComponentProtocolFactory):
+
+    initialDelay = 0.01
+    factor = 0.19
+
+
+class RemoteGhostConnector(RemoteComponentConnector):
+
+    component = Ghost
+    factory = GhostProtocolFactory
+
 
 
 class DaemonTestBase(LandscapeTest):
 
-    connector_factory = RemoteTestComponentCreator
+    connector_factory = RemoteGhostConnector
 
     def setUp(self):
         result = super(DaemonTestBase, self).setUp()
+        self.exec_dir = self.makeDir()
+        self.exec_name = os.path.join(self.exec_dir, "landscape-broker")
+        self.saved_argv = sys.argv
+        sys.argv = [os.path.join(self.exec_dir, "arv0_execname")]
+        from landscape.reactor import FakeReactor
+        reactor = FakeReactor()
 
-        def setup():
-            self.exec_dir = self.makeDir()
-            self.exec_name = os.path.join(self.exec_dir, "landscape-broker")
-            self.saved_argv = sys.argv
-            sys.argv = [os.path.join(self.exec_dir, "arv0_execname")]
-            from landscape.reactor import FakeReactor
-            reactor = FakeReactor()
-            self.connector = self.connector_factory(reactor, config)
-            self.daemon = self.get_daemon()
-
-        if isinstance(result, Deferred):
+        if hasattr(self, "broker_service"):
             # DaemonBrokerTest
+            self.broker_service.startService()
             config = self.broker_service.config
-            return result.addCallback(lambda x: setup())
         else:
             # DaemonTest
             config = WatchDogConfiguration()
             config.data_path = self.makeDir()
-            setup()
 
+        self.connector = self.connector_factory(reactor, config)
+        self.daemon = self.get_daemon()
 
     def tearDown(self):
         sys.argv = self.saved_argv
+        if hasattr(self, "broker_service"):
+            # DaemonBrokerTest
+            self.broker_service.stopService()
         super(DaemonTestBase, self).tearDown()
 
     def get_daemon(self, **kwargs):
@@ -716,14 +715,14 @@ time.sleep(999)
         If a process has never been started, waiting for it is
         immediately successful.
         """
-        self.log_helper.ignore_errors("Error while trying to connect test")
+        self.log_helper.ignore_errors("Error while connecting to ghost")
         daemon = self.get_daemon()
 
         def assert_wait(is_running):
             self.assertFalse(is_running)
             return daemon.wait()
 
-        result = daemon.is_running(retry_interval=None)
+        result = daemon.is_running()
         result.addCallback(assert_wait)
         return result
 
@@ -824,7 +823,8 @@ time.sleep(999)
         return result
 
     def test_is_not_running(self):
-        result = self.daemon.is_running(retry_interval=None)
+        self.log_helper.ignore_errors("Error while connecting to ghost")
+        result = self.daemon.is_running()
         result.addCallback(self.assertFalse)
         return result
 
@@ -917,17 +917,18 @@ time.sleep(999)
         The request_exit method returns False when the broker can't be
         contacted.
         """
-        result = self.daemon.request_exit(retry_interval=None)
+        self.log_helper.ignore_errors("Error while connecting to ghost")
+        result = self.daemon.request_exit()
         return self.assertSuccess(result, False)
 
 
 class DaemonBrokerTest(DaemonTestBase):
 
-    helpers = [BrokerServiceHelper, RemoteBrokerHelper_]
+    helpers = [BrokerServiceHelper]
 
     @property
     def connector_factory(self):
-        return self.broker_service.connector_factory
+        return RemoteBrokerConnector
 
     def test_is_running(self):
         result = self.daemon.is_running()

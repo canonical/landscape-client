@@ -27,9 +27,8 @@ from landscape.lib.log import log_failure
 from landscape.lib.bootstrap import (BootstrapList, BootstrapFile,
                                      BootstrapDirectory)
 from landscape.log import rotate_logs
-from landscape.broker.service import BrokerService
-from landscape.monitor.service import MonitorService
-from landscape.manager.service import ManagerService
+from landscape.broker.amp import (
+    RemoteBrokerConnector, RemoteMonitorConnector, RemoteManagerConnector)
 from landscape.reactor import TwistedReactor
 
 GRACEFUL_WAIT_PERIOD = 10
@@ -154,21 +153,21 @@ class Daemon(object):
             self._connector.disconnect()
             return True
 
-        connected = self._connector.connect(*args, **kwargs)
+        connected = self._connector.connect(max_retries=5)
         connected.addCallback(lambda remote: getattr(remote, name)())
         connected.addCallback(disconnect)
         connected.addErrback(lambda x: False)
         return connected
 
-    def request_exit(self, *args, **kwargs):
+    def request_exit(self):
         # FIXME: the old D-Bus logic relied on this call being synchronous
-        return self._connect_and_call("exit", *args, **kwargs)
+        return self._connect_and_call("exit")
 
-    def is_running(self, *args, **kwargs):
+    def is_running(self):
         # FIXME Error cases may not be handled in the best possible way
         # here. We're basically return False if any error happens from the
         # dbus ping.
-        return self._connect_and_call("ping", *args, **kwargs)
+        return self._connect_and_call("ping")
 
     def wait(self):
         """
@@ -296,15 +295,15 @@ class WatchDog(object):
             enabled_daemons = [Broker, Monitor, Manager]
         if broker is None and Broker in enabled_daemons:
             broker = Broker(
-                BrokerService.connector_factory(twisted_reactor, config),
+                RemoteBrokerConnector(twisted_reactor, config),
                 verbose=verbose, config=config.config)
         if monitor is None and Monitor in enabled_daemons:
             monitor = Monitor(
-                MonitorService.connector_factory(twisted_reactor, config),
+                RemoteMonitorConnector(twisted_reactor, config),
                 verbose=verbose, config=config.config)
         if manager is None and Manager in enabled_daemons:
             manager = Manager(
-                ManagerService.connector_factory(twisted_reactor, config),
+                RemoteManagerConnector(twisted_reactor, config),
                 verbose=verbose, config=config.config)
 
         self.broker = broker
@@ -322,10 +321,10 @@ class WatchDog(object):
         """Return a list of any daemons that are already running."""
         results = []
         for daemon in self.daemons:
-            # This method is called on startup, we try to connect a few times
-            # in fast sequence, if we don't get a response we assume the
-            # daemon is not running.
-            result = daemon.is_running(retry_interval=0.2, max_retries=5)
+            # This method is called on startup, we basically try to connect
+            # a few times in fast sequence (we exponential decay), if we
+            # don't get a response we assume the daemon is not running.
+            result = daemon.is_running()
             result.addCallback(lambda is_running, d=daemon: (is_running, d))
             results.append(result)
 
@@ -375,8 +374,7 @@ class WatchDog(object):
     def _check(self):
         all_running = []
         for daemon in self.daemons:
-            # We keep trying every second for a few times
-            is_running = daemon.is_running(retry_interval=1, max_retries=10)
+            is_running = daemon.is_running()
             is_running.addCallback(self._restart_if_not_running, daemon)
             all_running.append(is_running)
 
