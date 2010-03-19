@@ -3,8 +3,6 @@ import logging
 from landscape.lib.twisted_util import gather_results
 from landscape.amp import RemoteComponentsRegistry
 from landscape.manager.manager import FAILED
-from landscape.broker.config import BrokerConfiguration
-from landscape.service import run_landscape_service
 
 
 def event(method):
@@ -182,7 +180,9 @@ class BrokerServer(object):
         clients_stopped = self.stop_clients()
 
         def fire_post_exit(ignored):
-            self._reactor.fire("post-exit")
+            # Fire it shortly, to give us a chance to send an AMP reply.
+            self._reactor.call_later(
+                1, lambda: self._reactor.fire("post-exit"))
 
         return clients_stopped.addBoth(fire_post_exit)
 
@@ -257,8 +257,3 @@ Please contact the Landscape team for more information.
                 "result-text": result_text,
                 "operation-id": opid}
             self._exchanger.send(response, urgent=True)
-
-
-def run(args):
-    """Run the application, given some command line arguments."""
-    run_landscape_service(BrokerConfiguration, BrokerService, args)

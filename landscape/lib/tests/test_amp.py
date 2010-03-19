@@ -516,7 +516,7 @@ class RemoteObjectConnectorTest(LandscapeTest):
 
     def test_connect_with_max_retries(self):
         """
-        If C{max_retries} is passed to the L{RemoteObjectConnector} method,
+        If C{max_retries} is passed to L{RemoteObjectConnector.connet},
         then it will give up trying to connect after that amout of times.
         """
         self.connector.disconnect()
@@ -529,6 +529,28 @@ class RemoteObjectConnectorTest(LandscapeTest):
         result = self.connector.connect(max_retries=0)
         self.assertFailure(result, ConnectError)
         return result.addCallback(reconnect)
+
+    def test_connect_with_factor(self):
+        """
+        If C{factor} is passed to L{RemoteObjectConnector.connect} method,
+        then the associated protocol factory will be set to that value.
+        """
+        self.connector.disconnect()
+
+        def assert_factor(ignored):
+            self.assertEquals(self.connector._factory.factor, 1.0)
+
+        result = self.connector.connect(factor=1.0)
+        return result.addCallback(assert_factor)
+
+    def test_disconnect(self):
+        """
+        It is possible to call L{RemoteObjectConnector.disconnect} multiple
+        times, even if the connection has been already closed.
+        """
+        self.connector.disconnect()
+        self.connector.disconnect()
+        self.assertIs(self.connector._remote, None)
 
     def test_reconnect(self):
         """

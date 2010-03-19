@@ -40,8 +40,7 @@ class LandscapeService(Service, object):
         Service.startService(self)
         logging.info("%s started with config %s" % (
             self.service_name.capitalize(), self.config.get_config_filename()))
-        self.port = self.reactor.listen_unix(self.socket, self.factory,
-                                             wantPID=True)
+        self.port = self.reactor.listen_unix(self.socket, self.factory)
 
     def stopService(self):
         self.port.stopListening()

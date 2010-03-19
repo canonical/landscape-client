@@ -19,6 +19,7 @@ class ComponentProtocol(MethodCallProtocol):
 class ComponentProtocolFactory(MethodCallFactory):
 
     protocol = ComponentProtocol
+    initialDelay = 0.05
 
 
 class RemoteComponentConnector(RemoteObjectConnector):
@@ -45,7 +46,7 @@ class RemoteComponentConnector(RemoteObjectConnector):
         super(RemoteComponentConnector, self).__init__(
             self._twisted_reactor._reactor, socket, *args, **kwargs)
 
-    def connect(self, max_retries=None):
+    def connect(self, max_retries=None, factor=None, quiet=False):
         """Connect to the remote Landscape component.
 
         If the connection is lost after having been established, and then
@@ -69,8 +70,9 @@ class RemoteComponentConnector(RemoteObjectConnector):
             return failure
 
         result = super(RemoteComponentConnector, self).connect(
-            max_retries=max_retries)
-        result.addErrback(log_error)
+            max_retries=max_retries, factor=factor)
+        if not quiet:
+            result.addErrback(log_error)
         result.addCallback(connected)
         return result
 

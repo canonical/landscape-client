@@ -115,7 +115,7 @@ class LandscapeServiceTest(LandscapeTest):
         """
         service = TestService(self.config)
         service.factory = ComponentProtocolFactory(self.reactor, self.config)
-        service.reactor.listen_unix = self.mocker.mock()
-        service.reactor.listen_unix(ANY, ANY, wantPID=True)
+        service.reactor._reactor = self.mocker.mock()
+        service.reactor._reactor.listenUNIX(ANY, ANY, wantPID=True)
         self.mocker.replay()
         service.startService()
