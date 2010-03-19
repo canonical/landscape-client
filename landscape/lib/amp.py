@@ -233,6 +233,7 @@ class MethodCallFactory(ReconnectingClientFactory):
         self.object = object
         self.reactor = reactor
         self.clock = self.reactor
+        self.delay = self.initialDelay
         self._notifiers = []
 
     def add_notifier(self, callback, errback=None):

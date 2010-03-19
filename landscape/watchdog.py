@@ -59,10 +59,15 @@ class Daemon(object):
     @cvar username: The name of the user to switch to, by default.
     @cvar service: The DBus service name that the program will be expected to
         listen on.
-    @cvar path: The DBus path that the program will be expected to listen on.
+    @cvar max_retries: The maximum number of retries before giving up when
+        trying to connect to the watched daemon.
+    @cvar factor: The factor by which the delay between subsequent connection
+        attempts will decrease.
     """
 
     username = "landscape"
+    max_retries = 3
+    factor = 1.1
 
     def __init__(self, connector, reactor=reactor, verbose=False,
                  config=None):
@@ -93,6 +98,7 @@ class Daemon(object):
         self._process = None
         self._last_started = 0
         self._quick_starts = 0
+        self._restart_when_ended = True
 
     def find_executable(self):
         """Find the fully-qualified path to the executable.
@@ -153,7 +159,8 @@ class Daemon(object):
             self._connector.disconnect()
             return True
 
-        connected = self._connector.connect(max_retries=5)
+        connected = self._connector.connect(self.max_retries, self.factor,
+                                            quiet=True)
         connected.addCallback(lambda remote: getattr(remote, name)())
         connected.addCallback(disconnect)
         connected.addErrback(lambda x: False)
@@ -186,6 +193,18 @@ class Daemon(object):
         if not self._process:
             return succeed(None)
         return self._process.wait_or_die()
+
+    def be_ready_to_die(self):
+        """Called by the watchdog when starting to shut us down.
+
+        It will prevent our L{WatchedProcessProtocol} to restart the process
+        when it exits.
+        """
+        self._restart_when_ended = False
+
+    def restart_when_ended(self):
+        """Return a boolean indicating if the daemon should be restarted."""
+        return self._restart_when_ended
 
     def rotate_logs(self):
         self._process.rotate_logs()
@@ -253,6 +272,8 @@ class WatchedProcessProtocol(ProcessProtocol):
                 pass
 
     def wait(self):
+        if self.transport.pid is None:
+            return succeed(None)
         self._wait_result = Deferred()
         return self._wait_result
 
@@ -277,7 +298,7 @@ class WatchedProcessProtocol(ProcessProtocol):
             self._delayed_terminate.cancel()
         if self._wait_result is not None:
             self._wait_result.callback(None)
-        else:
+        elif self.daemon.restart_when_ended():
             self.daemon.start()
 
 
@@ -389,14 +410,23 @@ class WatchDog(object):
         # ping has already been sent but not yet responded to.
         self._stopping = True
 
-        # If request_exit fails, we should just kill the daemons immediately.
-        if self.broker.request_exit():
-            results = [x.wait_or_die() for x in self.daemons]
-        else:
-            error("Couldn't request that broker gracefully shut down; "
-                  "killing forcefully.")
-            results = [x.stop() for x in self.daemons]
-        return gather_results(results)
+        # This tells the daemons to no automatically restart when they end
+        for daemon in self.daemons:
+            daemon.be_ready_to_die()
+
+        def terminate_processes(broker_stopped):
+            if broker_stopped:
+                results = [daemon.wait_or_die() for daemon in self.daemons]
+            else:
+                # If request_exit fails, we should just kill the daemons
+                # immediately.
+                error("Couldn't request that broker gracefully shut down; "
+                      "killing forcefully.")
+                results = [x.stop() for x in self.daemons]
+            return gather_results(results)
+
+        result = self.broker.request_exit()
+        return result.addCallback(terminate_processes)
 
     def _notify_rotate_logs(self, signal, frame):
         for daemon in self.daemons:

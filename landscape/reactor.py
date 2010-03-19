@@ -160,9 +160,9 @@ class ThreadedCallsReactorMixin(object):
 
 class UnixReactorMixin(object):
 
-    def listen_unix(self, *args, **kwargs):
+    def listen_unix(self, socket, factory):
         """Start listen on a Unix socket."""
-        return self._reactor.listenUNIX(*args, **kwargs)
+        return self._reactor.listenUNIX(socket, factory, wantPID=True)
 
 
 class ReactorID(object):

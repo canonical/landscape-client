@@ -19,6 +19,7 @@ class ComponentProtocol(MethodCallProtocol):
 class ComponentProtocolFactory(MethodCallFactory):
 
     protocol = ComponentProtocol
+    initialDelay = 0.05
 
 
 class RemoteComponentConnector(RemoteObjectConnector):

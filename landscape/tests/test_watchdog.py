@@ -9,7 +9,6 @@ from twisted.internet.utils import getProcessOutput
 from twisted.internet.defer import Deferred, succeed, fail
 from twisted.internet import reactor
 
-from landscape.broker.broker import BUS_NAME, OBJECT_PATH, IFACE_NAME
 from landscape.tests.mocker import ARGS, KWARGS, ANY
 from landscape.tests.clock import Clock
 from landscape.tests.helpers import (
@@ -19,8 +18,9 @@ from landscape.watchdog import (
     WatchDogConfiguration, bootstrap_list,
     MAXIMUM_CONSECUTIVE_RESTARTS, RESTART_BURST_DELAY, run,
     Broker, Monitor, Manager)
-from landscape.amp import ComponentProtocolFactory,  RemoteComponentConnector
+from landscape.amp import ComponentProtocolFactory, RemoteComponentConnector
 from landscape.broker.amp import RemoteBrokerConnector
+from landscape.reactor import TwistedReactor
 
 import landscape.watchdog
 
@@ -45,12 +45,9 @@ class WatchDogTest(LandscapeTest):
         self.config = WatchDogConfiguration()
 
     def start_all_daemons(self):
-        self.broker = self.broker_factory(ANY, verbose=False,
-                                          config=None)
-        self.monitor = self.monitor_factory(ANY, verbose=False,
-                                            config=None)
-        self.manager = self.manager_factory(ANY, verbose=False,
-                                            config=None)
+        self.broker = self.broker_factory(ANY, verbose=False, config=None)
+        self.monitor = self.monitor_factory(ANY, verbose=False, config=None)
+        self.manager = self.manager_factory(ANY, verbose=False, config=None)
 
         self.expect(self.broker.program).result("landscape-broker")
         self.mocker.count(0, None)
@@ -120,7 +117,10 @@ class WatchDogTest(LandscapeTest):
         return result.addCallback(got_result)
 
     def expect_request_exit(self):
-        self.expect(self.broker.request_exit()).result(succeed(False))
+        self.expect(self.broker.be_ready_to_die())
+        self.expect(self.monitor.be_ready_to_die())
+        self.expect(self.manager.be_ready_to_die())
+        self.expect(self.broker.request_exit()).result(succeed(True))
         self.expect(self.broker.wait_or_die()).result(succeed(None))
         self.expect(self.monitor.wait_or_die()).result(succeed(None))
         self.expect(self.manager.wait_or_die()).result(succeed(None))
@@ -229,13 +229,16 @@ class BoringDaemon(object):
         return succeed(True)
 
     def request_exit(self):
-        return True
+        return succeed(True)
 
     def wait(self):
         return succeed(None)
 
     def wait_or_die(self):
         return self.wait()
+
+    def be_ready_to_die(self):
+        pass
 
 
 class AsynchronousPingDaemon(BoringDaemon):
@@ -445,7 +448,7 @@ class NonMockerWatchDogTests(LandscapeTest):
 
         # request_exit returns False when there's no broker, as tested by
         # DaemonTest.test_request_exit_without_broker
-        dog.broker.request_exit = lambda: False
+        dog.broker.request_exit = lambda: succeed(False)
         # The manager's wait method never fires its deferred because nothing
         # told it to die because the broker is dead!
 
@@ -460,48 +463,43 @@ class NonMockerWatchDogTests(LandscapeTest):
         return result
 
 
-class Ghost(object):
-    """A non existent component just meant to make connection attempts fail."""
+class StubBroker(object):
 
-    name = "ghost"
-
-
-class GhostProtocolFactory(ComponentProtocolFactory):
-
-    initialDelay = 0.01
-    factor = 0.19
+    name = "broker"
 
 
-class RemoteGhostConnector(RemoteComponentConnector):
+class StubBrokerProtocolFactory(ComponentProtocolFactory):
 
-    component = Ghost
-    factory = GhostProtocolFactory
+    initialDelay = 0.1
 
+
+class RemoteStubBrokerConnector(RemoteComponentConnector):
+
+    component = StubBroker
+    factory = StubBrokerProtocolFactory
 
 
 class DaemonTestBase(LandscapeTest):
 
-    connector_factory = RemoteGhostConnector
+    connector_factory = RemoteStubBrokerConnector
 
     def setUp(self):
-        result = super(DaemonTestBase, self).setUp()
+        super(DaemonTestBase, self).setUp()
         self.exec_dir = self.makeDir()
         self.exec_name = os.path.join(self.exec_dir, "landscape-broker")
         self.saved_argv = sys.argv
         sys.argv = [os.path.join(self.exec_dir, "arv0_execname")]
-        from landscape.reactor import FakeReactor
-        reactor = FakeReactor()
 
         if hasattr(self, "broker_service"):
             # DaemonBrokerTest
             self.broker_service.startService()
-            config = self.broker_service.config
+            self.config = self.broker_service.config
         else:
             # DaemonTest
-            config = WatchDogConfiguration()
-            config.data_path = self.makeDir()
+            self.config = WatchDogConfiguration()
+            self.config.data_path = self.makeDir()
 
-        self.connector = self.connector_factory(reactor, config)
+        self.connector = self.connector_factory(TwistedReactor(), self.config)
         self.daemon = self.get_daemon()
 
     def tearDown(self):
@@ -514,6 +512,7 @@ class DaemonTestBase(LandscapeTest):
     def get_daemon(self, **kwargs):
         daemon = Daemon(self.connector, **kwargs)
         daemon.program = os.path.basename(self.exec_name)
+        daemon.factor = 0.01
         return daemon
 
 
@@ -715,7 +714,6 @@ time.sleep(999)
         If a process has never been started, waiting for it is
         immediately successful.
         """
-        self.log_helper.ignore_errors("Error while connecting to ghost")
         daemon = self.get_daemon()
 
         def assert_wait(is_running):
@@ -823,7 +821,6 @@ time.sleep(999)
         return result
 
     def test_is_not_running(self):
-        self.log_helper.ignore_errors("Error while connecting to ghost")
         result = self.daemon.is_running()
         result.addCallback(self.assertFalse)
         return result
@@ -875,36 +872,24 @@ time.sleep(999)
         daemon = self.get_daemon(reactor=reactor)
         daemon.start()
 
-    def FIXME_test_request_exit(self):
-        """The request_exit() method calls exit() on the broker synchronously.
-
-        The method must be synchronous because we don't want the watchdog to
-        do anything else while we're requesting the broker to exit.  This makes
-        testing it a bit wild unfortunately.  We have to spawn the a stub
-        broker into a different process.
-        """
+    def test_request_exit(self):
+        """The request_exit() method calls exit() on the broker process."""
 
         output_filename = self.makeFile("NOT CALLED")
+        socket_filename = os.path.join(self.config.data_path, "broker.sock")
         broker_filename = self.makeFile(STUB_BROKER %
                                         {"executable": sys.executable,
                                          "path": sys.path,
                                          "output_filename": output_filename,
-                                         "bus_name": BUS_NAME,
-                                         "object_path": OBJECT_PATH,
-                                         "iface_name": IFACE_NAME})
+                                         "socket": socket_filename})
 
         os.chmod(broker_filename, 0755)
-
         process_result = getProcessOutput(broker_filename, env=os.environ,
                                           errortoo=True)
 
         # Wait until the process starts up, trying the call a few times.
-        for i in range(50):
-            if self.daemon.request_exit():
-                break
-            time.sleep(0.1)
-        else:
-            self.fail("request_exit() never returned True.")
+        self.daemon.factor = 2.8
+        self.daemon.request_exit()
 
         def got_result(result):
             self.assertEquals(result, "")
@@ -917,7 +902,6 @@ time.sleep(999)
         The request_exit method returns False when the broker can't be
         contacted.
         """
-        self.log_helper.ignore_errors("Error while connecting to ghost")
         result = self.daemon.request_exit()
         return self.assertSuccess(result, False)
 
@@ -1276,31 +1260,23 @@ import warnings
 warnings.filterwarnings("ignore", "Python C API version mismatch",
                         RuntimeWarning)
 
-from dbus import SessionBus
-import dbus.glib
-
-from twisted.internet.glib2reactor import install
-install()
 from twisted.internet import reactor
 
 sys.path = %(path)r
 
-from landscape.lib.dbus_util import Object, method
+from landscape.broker.amp import BrokerServerProtocolFactory
 
+class StubBroker(object):
 
-class StubBroker(Object):
-    bus_name = %(bus_name)r
-    object_path = %(object_path)r
-
-    @method(%(iface_name)r)
     def exit(self):
         file = open(%(output_filename)r, "w")
         file.write("CALLED")
         file.close()
         reactor.callLater(1, reactor.stop)
 
-stub_broker = StubBroker(SessionBus())
-
+stub_broker = StubBroker()
+factory = BrokerServerProtocolFactory(object=stub_broker)
+reactor.listenUNIX(%(socket)r, factory)
 reactor.run()
 """
 
