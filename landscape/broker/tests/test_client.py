@@ -273,6 +273,7 @@ class BrokerClientTest(LandscapeTest):
             self.client.broker = self.mocker.mock()
             self.client.broker.register_client_accepted_message_type("foo")
             self.client.broker.register_client_accepted_message_type("bar")
+            self.client.broker.register_client("client")
             self.mocker.replay()
             self.client_reactor.fire("broker-reconnect")
 
