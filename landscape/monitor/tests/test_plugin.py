@@ -11,7 +11,8 @@ class MonitorPluginTest(LandscapeTest):
         By default a L{MonitorPlugin} doesn't have a C{_persist} attribute.
         """
         plugin = MonitorPlugin()
-        self.assertFalse(hasattr(plugin, "_persist"))
+        plugin.register(self.monitor)
+        self.assertIs(plugin.persist, None)
 
     def test_with_persist_name(self):
         """
@@ -21,8 +22,7 @@ class MonitorPluginTest(LandscapeTest):
         plugin = MonitorPlugin()
         plugin.persist_name = "wubble"
         plugin.register(self.monitor)
-        self.assertTrue(hasattr(plugin, "_persist"))
-        plugin._persist.set("hi", "there")
+        plugin.persist.set("hi", "there")
         self.assertEquals(self.monitor.persist.get("wubble"), {"hi": "there"})
 
     def test_with_no_run_interval(self):
