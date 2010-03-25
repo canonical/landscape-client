@@ -34,7 +34,7 @@ from landscape.manager.manager import ManagerPluginRegistry
 from landscape.manager.manager import Manager
 from landscape.manager.deployment import ManagerConfiguration
 
-# We can drop the "_" suffix and replace the current classes once the
+# FIXME: We can drop the "_" suffix and replace the current classes once the
 # AMP migration is completed
 from landscape.broker.service import BrokerService as BrokerService_
 from landscape.broker.amp import FakeRemoteBroker as FakeRemoteBroker_
@@ -435,7 +435,7 @@ class MonitorHelper(LegacyExchangeHelper):
             persist, persist_filename)
 
 
-# FIXME We can drop the "_" suffic once the AMP migration is completed
+# FIXME: We can drop the "_" suffic once the AMP migration is completed
 class MonitorHelper_(BrokerServiceHelper):
     """
     Provides everything that L{BrokerServiceHelper} does plus a
@@ -473,7 +473,7 @@ class ManagerHelper(FakeRemoteBrokerHelper):
             config)
 
 
-# We can drop the "_" suffic once the AMP migration is completed
+# FIXME: We can drop the "_" suffic once the AMP migration is completed
 class ManagerHelper_(BrokerServiceHelper):
     """
     Provides everything that L{BrokerServiceHelper} does plus a
