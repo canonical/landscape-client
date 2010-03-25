@@ -50,3 +50,12 @@ class DiskUtilitiesTest(LandscapeTest):
         info = get_filesystem_for_path(symlink_path,
                                        self.mount_file, self.statvfs)
         self.assertEquals(info["mount-point"], "/foo")
+
+    def test_whitelist(self):
+        self.set_mount_points(["/"])
+        info = get_filesystem_for_path(
+            "/", self.mount_file, self.statvfs, ["ext3"])
+        self.assertIdentical(info, None)
+        info = get_filesystem_for_path(
+            "/", self.mount_file, self.statvfs, ["ext3", "fsfs"])
+        self.assertNotIdentical(info, None)
