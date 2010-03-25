@@ -28,8 +28,16 @@ from landscape.broker.remote import RemoteBroker, FakeRemoteBroker
 from landscape.broker.transport import FakeTransport
 
 from landscape.monitor.monitor import MonitorPluginRegistry
+from landscape.monitor.config import MonitorConfiguration
+from landscape.monitor.monitor import Monitor
 from landscape.manager.manager import ManagerPluginRegistry
 from landscape.manager.deployment import ManagerConfiguration
+
+# We can drop the "_" suffix and replace the current classes once the
+# AMP migration is completed
+from landscape.broker.service import BrokerService as BrokerService_
+from landscape.broker.amp import (
+    FakeRemoteBroker as FakeRemoteBroker_, RemoteBrokerConnector)
 
 
 DEFAULT_ACCEPTED_TYPES = [
@@ -48,7 +56,8 @@ class HelperTestCase(unittest.TestCase):
         result = None
         for helper_factory in self.helpers:
             helper = helper_factory()
-            result = helper.set_up(self)
+            if hasattr(helper, "set_up"):
+                result = helper.set_up(self)
             self._helper_instances.append(helper)
         # Return the return value of the last helper, which
         # might be a deferred
@@ -56,7 +65,8 @@ class HelperTestCase(unittest.TestCase):
 
     def tearDown(self):
         for helper in reversed(self._helper_instances):
-            helper.tear_down(self)
+            if hasattr(helper, "tear_down"):
+                helper.tear_down(self)
 
 
 class MessageTestCase(unittest.TestCase):
@@ -369,6 +379,41 @@ class LegacyExchangeHelper(FakeRemoteBrokerHelper):
         test_case.identity = service.identity
 
 
+class BrokerServiceHelper(object):
+    """
+    The following attributes will be set in your test case:
+      - broker_service: A C{BrokerService}.
+      - remote: A C{FakeRemoteBroker} behaving like a L{RemoteBroker} connected
+          to the broker serivice but performing all operation synchronously.
+    """
+
+    def set_up(self, test_case):
+        data_path = test_case.makeDir()
+        log_dir = test_case.makeDir()
+        test_case.config_filename = test_case.makeFile(
+            "[client]\n"
+            "url = http://localhost:91919\n"
+            "computer_title = Some Computer\n"
+            "account_name = some_account\n"
+            "ping_url = http://localhost:91910\n"
+            "data_path = %s\n"
+            "log_dir = %s\n" % (data_path, log_dir))
+
+        bootstrap_list.bootstrap(data_path=data_path, log_dir=log_dir)
+
+        config = BrokerConfiguration()
+        config.load(["-c", test_case.config_filename])
+
+        class FakeBrokerService(BrokerService_):
+            reactor_factory = FakeReactor
+            transport_factory = FakeTransport
+
+        test_case.broker_service = FakeBrokerService(config)
+        test_case.remote = FakeRemoteBroker_(
+            test_case.broker_service.exchanger,
+            test_case.broker_service.message_store)
+
+
 class MonitorHelper(LegacyExchangeHelper):
     """
     Provides everything that L{ExchangeHelper} does plus a
@@ -386,6 +431,28 @@ class MonitorHelper(LegacyExchangeHelper):
             # We should get rid of the fake broker service.
             getattr(test_case.broker_service, "bus", None),
             persist, persist_filename)
+
+
+# FIXME We can drop the "_" suffic once the AMP migration is completed
+class MonitorHelper_(BrokerServiceHelper):
+    """
+    Provides everything that L{BrokerServiceHelper} does plus a
+    L{Monitor} instance.
+    """
+
+    def set_up(self, test_case):
+
+        super(MonitorHelper_, self).set_up(test_case)
+        persist = Persist()
+        persist_filename = test_case.makePersistFile()
+        test_case.config = MonitorConfiguration()
+        test_case.config.load(["-c", test_case.config_filename])
+        test_case.reactor = FakeReactor()
+        test_case.monitor = Monitor(
+            test_case.reactor, test_case.config,
+            persist, persist_filename)
+        test_case.monitor.broker = test_case.remote
+        test_case.mstore = test_case.broker_service.message_store
 
 
 class ManagerHelper(FakeRemoteBrokerHelper):

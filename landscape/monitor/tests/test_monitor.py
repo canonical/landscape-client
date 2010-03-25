@@ -2,19 +2,21 @@ from twisted.internet.defer import Deferred, succeed
 
 from landscape.schema import Message, Int
 from landscape.monitor.monitor import (
-    MonitorPluginRegistry, MonitorDBusObject, MonitorPlugin, DataWatcher)
+    MonitorPluginRegistry, MonitorDBusObject, MonitorPlugin, DataWatcher,
+    Monitor)
 from landscape.lib.persist import Persist
 from landscape.lib.dbus_util import get_object
 from landscape.tests.test_plugin import ExchangePlugin
 from landscape.tests.helpers import (
     LandscapeTest, LandscapeIsolatedTest, RemoteBrokerHelper, MonitorHelper,
-    LogKeeperHelper)
+    LogKeeperHelper, MonitorHelper_)
 from landscape.tests.mocker import ANY
+from landscape.broker.client import BrokerClientPlugin
 
 
-class MonitorTest(LandscapeTest):
+class MonitorPluginRegistryTest(LandscapeTest):
 
-    helpers = [MonitorHelper]
+    helpers = [MonitorHelper_]
 
     def test_persist(self):
         self.monitor.persist.set("a", 1)
@@ -268,3 +270,66 @@ class DataWatcherTest(LandscapeTest):
 
         self.mstore.set_accepted_types(["wubble"])
         self.assertMessages(list(self.mstore.get_pending_messages()), [])
+
+
+class MonitorTest(LandscapeTest):
+
+    helpers = [MonitorHelper_]
+
+    def test_persist(self):
+        """
+        A L{Monitor} instance has a C{persist} attribute.
+        """
+        self.monitor.persist.set("a", 1)
+        self.assertEquals(self.monitor.persist.get("a"), 1)
+
+    def test_flush_saves_persist(self):
+        """
+        The L{Monitor.flush} method saves any changes made to the persist
+        database.
+        """
+        self.monitor.persist.set("a", 1)
+        self.monitor.flush()
+
+        persist = Persist()
+        persist.load(self.monitor.persist_filename)
+        self.assertEquals(persist.get("a"), 1)
+
+    def test_flush_after_exchange(self):
+        """
+        The L{Monitor.exchange} method flushes the monitor after
+        C{exchange} on all plugins has been called.
+        """
+        plugin = BrokerClientPlugin()
+        plugin.exchange = lambda: self.monitor.persist.set("a", 1)
+        self.monitor.add(plugin)
+        self.monitor.exchange()
+
+        persist = Persist()
+        persist.load(self.monitor.persist_filename)
+        self.assertEquals(persist.get("a"), 1)
+
+    def test_flush_every_flush_interval(self):
+        """
+        The L{Monitor.flush} method gets called every C{flush_interval}
+        seconds, and perists data to the disk.
+        """
+        self.monitor.persist.save = self.mocker.mock()
+        self.monitor.persist.save(self.monitor.persist_filename)
+        self.mocker.count(3)
+        self.mocker.replay()
+        self.reactor.advance(self.config.flush_interval*3)
+
+    def test_creating_loads_persist(self):
+        """
+        If C{persist_filename} exists, it is loaded by the constructor.
+        """
+        filename = self.makeFile()
+
+        persist = Persist()
+        persist.set("a", "Hi there!")
+        persist.save(filename)
+
+        monitor = Monitor(self.reactor, self.config, persist=Persist(),
+                          persist_filename=filename)
+        self.assertEquals(monitor.persist.get("a"), "Hi there!")
