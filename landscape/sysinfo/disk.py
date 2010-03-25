@@ -7,9 +7,10 @@ from twisted.internet.defer import succeed
 from landscape.lib.disk import get_mount_info, get_filesystem_for_path
 
 
-# List of filesystem types to exclude when generating disk use statistics.
-BORING_FILESYSTEMS = set(["udf", "iso9660", "fuse.gvfs-fuse-daemon",
-                          "squashfs", "ecryptfs"])
+# List of filesystem types authorized when generating disk use statistics.
+STABLE_FILESYSTEMS = set(
+    ["ext", "ext2", "ext3", "ext4", "reiserfs", "ntfs", "msdos", "dos", "vfat",
+     "xfs", "hpfs", "jfs", "ufs", "hfs", "hfsplus"])
 
 
 def format_megabytes(megabytes):
@@ -38,22 +39,28 @@ class Disk(object):
 
     def run(self):
         main_info = get_filesystem_for_path("/home", self._mounts_file,
-                                            self._statvfs)
-        total = main_info["total-space"]
-        if total <= 0:
-            main_info = get_filesystem_for_path("/", self._mounts_file,
-                                                self._statvfs)
+                                            self._statvfs, STABLE_FILESYSTEMS)
+        if main_info is not None:
             total = main_info["total-space"]
-        if total <= 0:
-            main_usage = "unknown"
+            if total <= 0:
+                root_main_info = get_filesystem_for_path(
+                    "/", self._mounts_file, self._statvfs, STABLE_FILESYSTEMS)
+                if root_main_info is not None:
+                    total = root_main_info["total-space"]
+                    main_info = root_main_info
+            if total <= 0:
+                main_usage = "unknown"
+            else:
+                main_usage = usage(main_info)
+            self._sysinfo.add_header("Usage of " + main_info["mount-point"],
+                                     main_usage)
         else:
-            main_usage = usage(main_info)
-        self._sysinfo.add_header("Usage of " + main_info["mount-point"],
-                                 main_usage)
+            self._sysinfo.add_header("Usage of /home", "unknown")
 
         seen_mounts = set()
         seen_devices = set()
-        infos = list(get_mount_info(self._mounts_file, self._statvfs))
+        infos = list(get_mount_info(self._mounts_file, self._statvfs,
+                                    STABLE_FILESYSTEMS))
         infos.sort(key=lambda i: len(i["mount-point"]))
         for info in infos:
             total = info["total-space"]
@@ -64,8 +71,6 @@ class Disk(object):
             if mount_seen or device_seen:
                 continue
 
-            if info["filesystem"] in BORING_FILESYSTEMS:
-                continue
             if total <= 0:
                 # Some "virtual" filesystems have 0 total space. ignore them.
                 continue
