@@ -20,29 +20,33 @@ from landscape.package.changer import (
 
 from landscape.tests.mocker import ANY
 from landscape.tests.helpers import (
-    LandscapeIsolatedTest, RemoteBrokerHelper)
+    LandscapeTest, BrokerServiceHelper)
 from landscape.package.tests.helpers import (
     SmartFacadeHelper, HASH1, HASH2, HASH3, PKGDEB1, PKGDEB2, PKGNAME2)
 from landscape.manager.manager import SUCCEEDED
 
 
-class PackageChangerTest(LandscapeIsolatedTest):
+class PackageChangerTest(LandscapeTest):
 
-    helpers = [SmartFacadeHelper, RemoteBrokerHelper]
+    helpers = [SmartFacadeHelper, BrokerServiceHelper]
 
     def setUp(self):
-        super(PackageChangerTest, self).setUp()
 
-        self.store = PackageStore(self.makeFile())
-        self.config = PackageChangerConfiguration()
-        self.config.data_path = self.makeDir()
-        os.mkdir(self.config.package_directory)
-        os.mkdir(self.config.binaries_path)
-        self.changer = PackageChanger(self.store, self.facade, self.remote,
-                                      self.config)
-        service = self.broker_service
-        service.message_store.set_accepted_types(["change-packages-result",
-                                                  "operation-result"])
+        def set_up(ignored):
+
+            self.store = PackageStore(self.makeFile())
+            self.config = PackageChangerConfiguration()
+            self.config.data_path = self.makeDir()
+            os.mkdir(self.config.package_directory)
+            os.mkdir(self.config.binaries_path)
+            self.changer = PackageChanger(
+                self.store, self.facade, self.remote, self.config)
+            service = self.broker_service
+            service.message_store.set_accepted_types(["change-packages-result",
+                                                      "operation-result"])
+
+        result = super(PackageChangerTest, self).setUp()
+        return result.addCallback(set_up)
 
     def get_pending_messages(self):
         return self.broker_service.message_store.get_pending_messages()
@@ -748,8 +752,9 @@ class PackageChangerTest(LandscapeIsolatedTest):
         run_task_handler = self.mocker.replace("landscape.package.taskhandler"
                                                ".run_task_handler",
                                                passthrough=False)
+        getpgrp = self.mocker.replace("os.getpgrp")
+        self.expect(getpgrp()).result(os.getpid() + 1)
         setsid = self.mocker.replace("os.setsid")
-
         setsid()
         run_task_handler(PackageChanger, ["ARGS"])
         self.mocker.result("RESULT")

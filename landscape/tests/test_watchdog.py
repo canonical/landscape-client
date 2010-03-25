@@ -12,7 +12,7 @@ from twisted.internet import reactor
 from landscape.tests.mocker import ARGS, KWARGS, ANY
 from landscape.tests.clock import Clock
 from landscape.tests.helpers import (
-    LandscapeTest, EnvironSaverHelper, BrokerServiceHelper)
+    LandscapeTest, EnvironSaverHelper, FakeBrokerServiceHelper)
 from landscape.watchdog import (
     Daemon, WatchDog, WatchDogService, ExecutableNotFoundError,
     WatchDogConfiguration, bootstrap_list,
@@ -492,7 +492,6 @@ class DaemonTestBase(LandscapeTest):
 
         if hasattr(self, "broker_service"):
             # DaemonBrokerTest
-            self.broker_service.startService()
             self.config = self.broker_service.config
         else:
             # DaemonTest
@@ -504,9 +503,6 @@ class DaemonTestBase(LandscapeTest):
 
     def tearDown(self):
         sys.argv = self.saved_argv
-        if hasattr(self, "broker_service"):
-            # DaemonBrokerTest
-            self.broker_service.stopService()
         super(DaemonTestBase, self).tearDown()
 
     def get_daemon(self, **kwargs):
@@ -908,7 +904,7 @@ time.sleep(999)
 
 class DaemonBrokerTest(DaemonTestBase):
 
-    helpers = [BrokerServiceHelper]
+    helpers = [FakeBrokerServiceHelper]
 
     @property
     def connector_factory(self):

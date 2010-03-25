@@ -4,16 +4,14 @@ from twisted.internet import reactor
 from twisted.internet.defer import Deferred, fail
 
 from landscape.lib.lock import lock_path
-
+from landscape.reactor import TwistedReactor
+from landscape.broker.amp import RemoteBroker
 from landscape.package.taskhandler import (
-    PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler,
-    LazyRemoteBroker)
+    PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler)
 from landscape.package.facade import SmartFacade
 from landscape.package.store import HashIdStore, PackageStore
 from landscape.package.tests.helpers import SmartFacadeHelper
-
-from landscape.tests.helpers import (
-    LandscapeTest, LandscapeIsolatedTest, RemoteBrokerHelper)
+from landscape.tests.helpers import LandscapeTest, BrokerServiceHelper
 from landscape.tests.mocker import ANY, ARGS, MATCH
 
 
@@ -24,17 +22,20 @@ def ISTYPE(match_type):
 SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
 
 
-class PackageTaskHandlerTest(LandscapeIsolatedTest):
+class PackageTaskHandlerTest(LandscapeTest):
 
-    helpers = [SmartFacadeHelper, RemoteBrokerHelper]
+    helpers = [SmartFacadeHelper, BrokerServiceHelper]
 
     def setUp(self):
-        super(PackageTaskHandlerTest, self).setUp()
 
-        self.config = PackageTaskHandlerConfiguration()
-        self.store = PackageStore(self.makeFile())
-        self.handler = PackageTaskHandler(self.store, self.facade, self.remote,
-                                          self.config)
+        def set_up(ignored):
+            self.config = PackageTaskHandlerConfiguration()
+            self.store = PackageStore(self.makeFile())
+            self.handler = PackageTaskHandler(
+                self.store, self.facade, self.remote, self.config)
+
+        result = super(PackageTaskHandlerTest, self).setUp()
+        return result.addCallback(set_up)
 
     def test_use_hash_id_db(self):
 
@@ -302,34 +303,29 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         self.assertTrue(result.called)
 
     def test_run_task_handler(self):
-
+        """
+        The L{run_task_handler} function creates and runs the given task
+        handler with the proper arguments.
+        """
         # This is a slightly lengthy one, so bear with me.
-
-        data_path = self.makeDir()
 
         # Prepare the mock objects.
         lock_path_mock = self.mocker.replace("landscape.lib.lock.lock_path",
                                              passthrough=False)
-        install_mock = self.mocker.replace("landscape.reactor.install")
-        reactor_mock = self.mocker.replace("twisted.internet.reactor",
-                                           passthrough=False)
         init_logging_mock = self.mocker.replace("landscape.deployment"
                                                 ".init_logging",
                                                 passthrough=False)
+        reactor_mock = self.mocker.patch(TwistedReactor)
         HandlerMock = self.mocker.proxy(PackageTaskHandler)
 
         # The goal of this method is to perform a sequence of tasks
         # where the ordering is important.
         self.mocker.order()
 
-        # As the very first thing, install the twisted glib2 reactor
-        # so that we can use DBUS safely.
-        install_mock()
-
-        # Then, we must acquire a lock as the same task handler should
+        # First, we must acquire a lock as the same task handler should
         # never have two instances running in parallel.  The 'default'
         # below comes from the queue_name attribute.
-        lock_path_mock(os.path.join(data_path, "package", "default.lock"))
+        lock_path_mock(os.path.join(self.data_path, "package", "default.lock"))
 
         # Once locking is done, it's safe to start logging without
         # corrupting the file.  We don't want any output unless it's
@@ -337,105 +333,64 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         init_logging_mock(ISTYPE(PackageTaskHandlerConfiguration),
                           "package-task-handler")
 
-        # Then, it must create an instance of the TaskHandler subclass
-        # passed in as a parameter.  We'll keep track of the arguments
-        # given and verify them later.
-        handler_args = []
-        HandlerMock(ANY, ANY, ANY, ANY)
-        self.mocker.passthrough() # Let the real constructor run for testing.
-        self.mocker.call(lambda *args: handler_args.extend(args))
-
-        to_call = []
-        reactor_mock.callWhenRunning(ANY)
-        self.mocker.call(lambda callback: to_call.append(callback))
-
-        # With all of that done, the Twisted reactor must be run, so that
-        # deferred tasks are correctly performed.
-        reactor_mock.run()
-
-        self.mocker.unorder()
-
-        # The following tasks are hooked in as callbacks of our deferred.
-        # We must use callLater() so that stop() won't happen before run().
-        reactor_mock.callLater(0, "STOP METHOD")
-        reactor_mock.stop
-        self.mocker.result("STOP METHOD")
-
         # We also expect the umask to be set appropriately before running the
         # commands
         umask = self.mocker.replace("os.umask")
         umask(022)
 
+        reactor_mock.run()
+
+        handler_args = []
+        HandlerMock(ANY, ANY, ANY, ANY)
+        self.mocker.passthrough() # Let the real constructor run for testing.
+        self.mocker.call(lambda *args: handler_args.extend(args))
+
+        reactor_mock.call_later(0, reactor.stop)
+
         # Okay, the whole playground is set.
         self.mocker.replay()
 
-        try:
-            # DO IT!
-            run_task_handler(HandlerMock, ["--data-path", data_path,
-                                           "--bus", "session"])
+        def assert_task_handler(ignored):
 
-            # reactor.stop() wasn't run yet, so it must fail right now.
-            self.assertRaises(AssertionError, self.mocker.verify)
+            store, facade, broker, config = handler_args
 
-            # DO THE REST OF IT! :-)
-            to_call[0]()
+            # Verify if the arguments to the reporter constructor were correct.
+            self.assertEquals(type(store), PackageStore)
+            self.assertEquals(type(facade), SmartFacade)
+            self.assertEquals(type(broker), RemoteBroker)
+            self.assertEquals(type(config), PackageTaskHandlerConfiguration)
 
-            # Are we there yet!?
-            self.mocker.verify()
-        finally:
-            # Put reactor back in place before returning.
-            self.mocker.reset()
+            # Let's see if the store path is where it should be.
+            filename = os.path.join(self.data_path, "package", "database")
+            store.add_available([1, 2, 3])
+            other_store = PackageStore(filename)
+            self.assertEquals(other_store.get_available(), [1, 2, 3])
 
-        store, facade, broker, config = handler_args
+            # Check the hash=>id database directory as well
+            self.assertTrue(os.path.exists(
+                os.path.join(self.data_path, "package", "hash-id")))
 
-        # Verify if the arguments to the reporter constructor were correct.
-        self.assertEquals(type(store), PackageStore)
-        self.assertEquals(type(facade), SmartFacade)
-        self.assertEquals(type(broker), LazyRemoteBroker)
-        self.assertEquals(type(config), PackageTaskHandlerConfiguration)
 
-        # Let's see if the store path is where it should be.
-        filename = os.path.join(data_path, "package", "database")
-        store.add_available([1, 2, 3])
-        other_store = PackageStore(filename)
-        self.assertEquals(other_store.get_available(), [1, 2, 3])
-
-        # Check the hash=>id database directory as well
-        self.assertTrue(os.path.exists(os.path.join(data_path,
-                                                    "package", "hash-id")))
+        result = run_task_handler(HandlerMock, ["-c", self.config_filename])
+        return result.addCallback(assert_task_handler)
 
     def test_run_task_handler_when_already_locked(self):
-        data_path = self.makeDir()
 
-        install_mock = self.mocker.replace("landscape.reactor.install")
-        install_mock()
-
-        self.mocker.replay()
-
-        os.mkdir(os.path.join(data_path, "package"))
-        lock_path(os.path.join(data_path, "package", "default.lock"))
+        lock_path(os.path.join(self.data_path, "package", "default.lock"))
 
         try:
-            run_task_handler(PackageTaskHandler, ["--data-path", data_path])
+            run_task_handler(PackageTaskHandler, ["-c", self.config_filename])
         except SystemExit, e:
             self.assertIn("default is already running", str(e))
         else:
             self.fail("SystemExit not raised")
 
     def test_run_task_handler_when_already_locked_and_quiet_option(self):
-        data_path = self.makeDir()
-
-        install_mock = self.mocker.replace("landscape.reactor.install")
-        install_mock()
-
-        self.mocker.replay()
-
-        os.mkdir(os.path.join(data_path, "package"))
-        lock_path(os.path.join(data_path, "package", "default.lock"))
+        lock_path(os.path.join(self.data_path, "package", "default.lock"))
 
         try:
             run_task_handler(PackageTaskHandler,
-                             ["--data-path", data_path, "--quiet"])
+                             ["-c", self.config_filename, "--quiet"])
         except SystemExit, e:
             self.assertEquals(str(e), "")
         else:
@@ -443,19 +398,12 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
 
     def test_errors_in_tasks_are_printed_and_exit_program(self):
         # Ignore a bunch of crap that we don't care about
-        install_mock = self.mocker.replace("landscape.reactor.install")
-        install_mock()
-        reactor_mock = self.mocker.proxy(reactor)
+        reactor_mock = self.mocker.patch(TwistedReactor)
         init_logging_mock = self.mocker.replace("landscape.deployment"
                                                 ".init_logging",
                                                 passthrough=False)
         init_logging_mock(ARGS)
         reactor_mock.run()
-
-        # Get a deferred which will fire when the reactor is stopped, so the
-        # test runs until the reactor is stopped.
-        done = Deferred()
-        self.expect(reactor_mock.stop()).call(lambda: done.callback(None))
 
         class MyException(Exception):
             pass
@@ -467,31 +415,15 @@ class PackageTaskHandlerTest(LandscapeIsolatedTest):
         handler_mock = handler_factory_mock(ARGS)
         self.expect(handler_mock.run()).result(fail(MyException("Hey error")))
 
+        reactor_mock.call_later(0, reactor.stop)
+
         self.mocker.replay()
 
         # Ok now for some real stuff
 
-        run_task_handler(handler_factory_mock,
-                         ["--data-path", self.data_path, "--bus", "session"],
-                         reactor=reactor_mock)
-
-        def everything_stopped(result):
+        def assert_log(ignored):
             self.assertIn("MyException", self.logfile.getvalue())
 
-        return done.addCallback(everything_stopped)
-
-
-class LazyRemoteBrokerTest(LandscapeTest):
-
-    def test_wb_is_lazy(self):
-        """
-        The L{LazyRemoteBroker} class doesn't initialize the actual remote
-        broker until one of its attributes gets actually accessed.
-        """
-        self.broker = LazyRemoteBroker("bus")
-        self.assertIdentical(self.broker._remote, None)
-        get_bus_mock = self.mocker.replace("landscape.lib.dbus_util.get_bus")
-        get_bus_mock("bus")
-        self.mocker.result("bus_object")
-        self.mocker.replay()
-        self.assertEquals(self.broker.bus, "bus_object")
+        result = run_task_handler(handler_factory_mock,
+                                  ["-c", self.config_filename])
+        return result.addCallback(assert_log)

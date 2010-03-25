@@ -2,14 +2,15 @@ import os
 import re
 import logging
 
-from twisted.internet.defer import Deferred, succeed
+from twisted.internet.defer import succeed
 
 from landscape.lib.lock import lock_path, LockError
 from landscape.lib.log import log_failure
 from landscape.lib.lsb_release import LSB_RELEASE_FILENAME, parse_lsb_release
+from landscape.reactor import TwistedReactor
 from landscape.deployment import Configuration, init_logging
 from landscape.package.store import PackageStore, InvalidHashIdDb
-from landscape.broker.remote import RemoteBroker
+from landscape.broker.amp import RemoteBrokerConnector
 
 
 class PackageTaskError(Exception):
@@ -33,29 +34,6 @@ class PackageTaskHandlerConfiguration(Configuration):
     def hash_id_directory(self):
         """Get the path to the directory holding the stock hash-id stores."""
         return os.path.join(self.package_directory, "hash-id")
-
-
-class LazyRemoteBroker(object):
-    """Wrapper class around L{RemoteBroker} providing lazy initialization.
-
-    This class is a wrapper around a regular L{RemoteBroker}. It creates
-    the remote broker object only when one of its attributes is first accessed.
-
-    @note: This behaviour is needed in particular by the ReleaseUpgrader and
-    the PackageChanger, because if the they connect early and DBus gets
-    upgraded while they run, they might crash or not be able to communicate
-    with the broker due to bugs in DBus.
-    """
-
-    def __init__(self, bus):
-        self._remote = None
-        self._bus = bus
-
-    def __getattr__(self, name):
-        if not self._remote:
-            from landscape.lib.dbus_util import get_bus
-            self._remote = RemoteBroker(get_bus(self._bus))
-        return getattr(self._remote, name)
 
 
 class PackageTaskHandler(object):
@@ -206,13 +184,10 @@ class PackageTaskHandler(object):
 
 
 def run_task_handler(cls, args, reactor=None):
-    from landscape.reactor import install
-    install()
-
     # please only pass reactor when you have totally mangled everything with
     # mocker. Otherwise bad things will happen.
     if reactor is None:
-        from twisted.internet import reactor
+        reactor = TwistedReactor()
 
     config = cls.config_factory()
     config.load(args)
@@ -232,7 +207,6 @@ def run_task_handler(cls, args, reactor=None):
         raise SystemExit("error: package %s is already running"
                          % program_name)
 
-
     words = re.findall("[A-Z][a-z]+", cls.__name__)
     init_logging(config, "-".join(word.lower() for word in words))
 
@@ -246,18 +220,25 @@ def run_task_handler(cls, args, reactor=None):
 
     package_store = PackageStore(config.store_filename)
     package_facade = SmartFacade()
-    remote = LazyRemoteBroker(config.bus)
 
-    handler = cls(package_store, package_facade, remote, config)
+    def got_connection(remote):
+        handler = cls(package_store, package_facade, remote, config)
+        return handler.run()
 
-    def got_err(failure):
+    def got_error(failure):
         log_failure(failure)
 
-    result = Deferred()
-    result.addCallback(lambda ignored: handler.run())
-    result.addErrback(got_err)
-    result.addBoth(lambda ignored: reactor.callLater(0, reactor.stop))
-    reactor.callWhenRunning(lambda: result.callback(None))
+    connector = RemoteBrokerConnector(reactor, config)
+    result = connector.connect()
+    result.addCallback(got_connection)
+    result.addErrback(got_error)
+    result.addBoth(lambda x: connector.disconnect())
+
+    # For some obscure reason our TwistedReactor.stop method calls
+    # reactor.crash() instead of reactor.stop(), which doesn't work
+    # here. Maybe TwistedReactor.stop should simply use reactor.stop().
+    result.addBoth(lambda ignored: reactor.call_later(
+        0, reactor._reactor.stop))
 
     reactor.run()
 
