@@ -81,7 +81,7 @@ class BrokerClient(object):
 
     def get_plugins(self):
         """Get the list of plugins."""
-        return self._plugins
+        return self._plugins[:]
 
     def get_plugin(self, name):
         """Get a particular plugin by name."""
@@ -119,7 +119,7 @@ class BrokerClient(object):
     def message(self, message):
         """Call C{dispatch_message} for the given C{message}.
 
-        @return: A boolean indicating if an handler for the message was found.
+        @return: A boolean indicating if a handler for the message was found.
         """
         try:
             self.dispatch_message(message)

@@ -435,7 +435,7 @@ class MonitorHelper(LegacyExchangeHelper):
             persist, persist_filename)
 
 
-# We can drop the "_" suffic once the AMP migration is completed
+# FIXME We can drop the "_" suffic once the AMP migration is completed
 class MonitorHelper_(BrokerServiceHelper):
     """
     Provides everything that L{BrokerServiceHelper} does plus a
