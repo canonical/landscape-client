@@ -4,6 +4,7 @@ from twisted.internet.protocol import ClientCreator
 from twisted.internet.error import ConnectionDone, ConnectError
 from twisted.internet.task import Clock
 
+from landscape.lib.twisted_util import gather_results
 from landscape.lib.amp import (
     MethodCallError, MethodCallProtocol, MethodCallFactory, RemoteObject,
     RemoteObjectConnector)
@@ -237,6 +238,33 @@ class MethodCallProtocolTest(LandscapeTest):
                                                 args=[],
                                                 kwargs={})
         return self.assertFailure(result, MethodCallError)
+
+    def test_with_long_argument(self):
+        """
+        The L{MethodCall} protocol supports sending method calls with arguments
+        bigger than the maximum AMP parameter value size.
+        """
+        result = self.protocol.send_method_call(method="is_short",
+                                                args=["!" * 65535],
+                                                kwargs={})
+        return self.assertSuccess(result, {"result": False,
+                                           "deferred": None})
+
+    def test_with_long_argument_multiple_calls(self):
+        """
+        The L{MethodCall} protocol supports sending method calls with arguments
+        bigger than the
+        """
+        result1 = self.protocol.send_method_call(method="is_short",
+                                                 args=["!" * 80000],
+                                                 kwargs={})
+        result2 = self.protocol.send_method_call(method="is_short",
+                                                 args=["*" * 90000],
+                                                 kwargs={})
+
+        return gather_results(
+            [self.assertSuccess(result1, {"result": False, "deferred": None}),
+             self.assertSuccess(result2, {"result": False, "deferred": None})])
 
     def test_translate(self):
         """
