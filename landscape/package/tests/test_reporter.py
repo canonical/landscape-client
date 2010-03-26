@@ -1,7 +1,6 @@
 import glob
 import sys
 import os
-import logging
 import unittest
 import time
 
