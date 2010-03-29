@@ -237,7 +237,7 @@ class ReleaseUpgrader(PackageTaskHandler):
             if content:
                 buf.write("=== Standard %s ===\n\n%s\n\n" % (label, content))
 
-        for basename in os.listdir(self.logs_directory):
+        for basename in sorted(os.listdir(self.logs_directory)):
             if not basename.endswith(".log"):
                 continue
             filename = os.path.join(self.logs_directory, basename)

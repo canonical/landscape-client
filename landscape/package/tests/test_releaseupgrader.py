@@ -301,10 +301,10 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
                           "stdout\n\n"
                           "=== Standard error ===\n\n"
                           "stderr\n\n"
-                          "=== main.log ===\n\n"
-                          "main log\n\n"
                           "=== apt.log ===\n\n"
-                          "apt log\n\n")
+                          "apt log\n\n"
+                          "=== main.log ===\n\n"
+                          "main log\n\n")
 
     def test_make_operation_result_text_with_no_stderr(self):
         """
