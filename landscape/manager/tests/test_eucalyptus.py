@@ -5,7 +5,7 @@ try:
 except ImportError:
     FakeEucaInfo = None
 
-from landscape.manager.eucalyptus import Eucalyptus as Eucalyptus
+from landscape.manager.eucalyptus import Eucalyptus
 from landscape.tests.helpers import LandscapeTest, ManagerHelper
 
 

@@ -33,7 +33,7 @@ class ManagerConfiguration(Configuration):
         parser.add_option(
             "--script-users", metavar="USERS",
             help="Comma-delimited list of usernames that scripts "
-            "may be run as. Default is to allow all users.")
+                 "may be run as. Default is to allow all users.")
         return parser
 
     @property
@@ -81,8 +81,9 @@ class ManagerService(LandscapeService):
         super(ManagerService, self).startService()
         self.remote_broker = RemoteBroker(self.bus)
         store_name = os.path.join(self.config.data_path, "manager.database")
-        self.registry = ManagerPluginRegistry(self.remote_broker, self.reactor,
-                                              self.config, self.bus, store_name)
+        self.registry = ManagerPluginRegistry(
+            self.remote_broker, self.reactor, self.config, self.bus,
+            store_name)
         self.dbus_service = ManagerDBusObject(self.bus, self.registry)
         DBusSignalToReactorTransmitter(self.bus, self.reactor)
 

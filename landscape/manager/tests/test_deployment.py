@@ -33,8 +33,7 @@ class DeploymentTest(LandscapeTest):
 
     def test_include_script_execution(self):
         configuration = ManagerConfiguration()
-        configuration.load(["--include-manager-plugins", "ScriptExecution",
-                            "-d", self.makeDir()])
+        configuration.load(["--include-manager-plugins", "ScriptExecution"])
         manager_service = ManagerService(configuration)
         self.assertEquals(len(manager_service.plugins), 5)
 
@@ -43,8 +42,7 @@ class DeploymentTest(LandscapeTest):
         The L{Eucalyptus} plugin can be loaded via command line configuration.
         """
         configuration = ManagerConfiguration()
-        configuration.load(["--include-manager-plugins", "Eucalyptus",
-                            "-d", self.makeDir()])
+        configuration.load(["--include-manager-plugins", "Eucalyptus"])
         manager_service = ManagerService(configuration)
         self.assertEquals(len(manager_service.plugins), 5)
         plugin = filter(lambda plugin: isinstance(plugin, Eucalyptus),
