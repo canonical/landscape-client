@@ -29,20 +29,20 @@ class DeploymentTest(LandscapeTest):
         configuration.load(["--manager-plugins", "ALL",
                             "-d", self.makeDir()])
         manager_service = ManagerService(configuration)
-        self.assertEquals(len(manager_service.plugins), 4)
+        self.assertEquals(len(manager_service.plugins), 5)
 
     def test_include_script_execution(self):
         configuration = ManagerConfiguration()
         configuration.load(["--include-manager-plugins", "ScriptExecution"])
         manager_service = ManagerService(configuration)
-        self.assertEquals(len(manager_service.plugins), 5)
+        self.assertEquals(len(manager_service.plugins), 6)
 
-    def test_include_eucalyptus(self):
+    def test_default_includes_eucalyptus(self):
         """
-        The L{Eucalyptus} plugin can be loaded via command line configuration.
+        The L{Eucalyptus} plugin is enabled by default.
         """
         configuration = ManagerConfiguration()
-        configuration.load(["--include-manager-plugins", "Eucalyptus"])
+        configuration.load([])
         manager_service = ManagerService(configuration)
         self.assertEquals(len(manager_service.plugins), 5)
         plugin = filter(lambda plugin: isinstance(plugin, Eucalyptus),
