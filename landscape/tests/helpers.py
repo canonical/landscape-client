@@ -481,7 +481,6 @@ class ManagerHelper_(BrokerServiceHelper):
     """
 
     def set_up(self, test_case):
-
         super(ManagerHelper_, self).set_up(test_case)
         test_case.config = ManagerConfiguration_()
         test_case.config.load(["-c", test_case.config_filename])
