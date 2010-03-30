@@ -10,7 +10,7 @@ from landscape.manager.manager import ManagerPluginRegistry, ManagerDBusObject
 
 
 ALL_PLUGINS = ("ProcessKiller", "PackageManager", "UserManager",
-               "ShutdownManager")
+               "ShutdownManager", "Eucalyptus")
 
 
 class ManagerConfiguration(Configuration):
@@ -84,6 +84,7 @@ class ManagerService(LandscapeService):
         self.registry = ManagerPluginRegistry(
             self.remote_broker, self.reactor, self.config, self.bus,
             store_name)
+
         self.dbus_service = ManagerDBusObject(self.bus, self.registry)
         DBusSignalToReactorTransmitter(self.bus, self.reactor)
 
