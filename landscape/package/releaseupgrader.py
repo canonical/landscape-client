@@ -50,7 +50,7 @@ class ReleaseUpgrader(PackageTaskHandler):
     config_factory = ReleaseUpgraderConfiguration
     queue_name = "release-upgrader"
     lsb_release_filename = LSB_RELEASE_FILENAME
-    landscape_ppa_url = "http://ppa.launchpad.net/landscape/ppa/ubuntu/"
+    landscape_ppa_url = "http://ppa.launchpad.net/landscape/trunk/ubuntu/"
     logs_directory = "/var/log/dist-upgrade"
     logs_limit = 100000
 
