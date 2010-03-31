@@ -31,13 +31,15 @@ from landscape.monitor.monitor import MonitorPluginRegistry
 from landscape.monitor.config import MonitorConfiguration
 from landscape.monitor.monitor import Monitor
 from landscape.manager.manager import ManagerPluginRegistry
+from landscape.manager.manager import Manager
 from landscape.manager.deployment import ManagerConfiguration
 
-# We can drop the "_" suffix and replace the current classes once the
+# FIXME: We can drop the "_" suffix and replace the current classes once the
 # AMP migration is completed
 from landscape.broker.service import BrokerService as BrokerService_
-from landscape.broker.amp import (
-    FakeRemoteBroker as FakeRemoteBroker_, RemoteBrokerConnector)
+from landscape.broker.amp import FakeRemoteBroker as FakeRemoteBroker_
+from landscape.manager.config import (
+    ManagerConfiguration as ManagerConfiguration_)
 
 
 DEFAULT_ACCEPTED_TYPES = [
@@ -433,7 +435,7 @@ class MonitorHelper(LegacyExchangeHelper):
             persist, persist_filename)
 
 
-# FIXME We can drop the "_" suffic once the AMP migration is completed
+# FIXME: We can drop the "_" suffic once the AMP migration is completed
 class MonitorHelper_(BrokerServiceHelper):
     """
     Provides everything that L{BrokerServiceHelper} does plus a
@@ -469,6 +471,22 @@ class ManagerHelper(FakeRemoteBrokerHelper):
         test_case.manager = ManagerPluginRegistry(
             test_case.remote, test_case.broker_service.reactor,
             config)
+
+
+# FIXME: We can drop the "_" suffic once the AMP migration is completed
+class ManagerHelper_(BrokerServiceHelper):
+    """
+    Provides everything that L{BrokerServiceHelper} does plus a
+    L{Manager} instance.
+    """
+
+    def set_up(self, test_case):
+        super(ManagerHelper_, self).set_up(test_case)
+        test_case.config = ManagerConfiguration_()
+        test_case.config.load(["-c", test_case.config_filename])
+        test_case.reactor = FakeReactor()
+        test_case.manager = Manager(test_case.reactor, test_case.config)
+        test_case.manager.broker = test_case.remote
 
 
 class MockPopen(object):

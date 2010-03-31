@@ -7,6 +7,7 @@ from landscape.amp import (
 from landscape.broker.server import BrokerServer
 from landscape.broker.client import BrokerClient
 from landscape.monitor.monitor import Monitor
+from landscape.manager.manager import Manager
 
 
 class BrokerServerProtocol(ComponentProtocol):
@@ -50,6 +51,9 @@ class FakeRemoteBroker(object):
         self.exchanger = exchanger
         self.message_store = message_store
         self.protocol = BrokerServerProtocol()
+
+    def ping(self):
+        return succeed(True)
 
     def call_if_accepted(self, type, callable, *args):
         if type in self.message_store.get_accepted_types():
@@ -107,6 +111,12 @@ class RemoteMonitorConnector(RemoteClientConnector):
     component = Monitor
 
 
+class RemoteManagerConnector(RemoteClientConnector):
+    """Helper for creating connections with the L{Monitor}."""
+
+    component = Manager
+
 RemoteComponentsRegistry.register(RemoteBrokerConnector)
 RemoteComponentsRegistry.register(RemoteClientConnector)
 RemoteComponentsRegistry.register(RemoteMonitorConnector)
+RemoteComponentsRegistry.register(RemoteManagerConnector)
