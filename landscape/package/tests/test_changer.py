@@ -550,21 +550,6 @@ class PackageChangerTest(LandscapeIsolatedTest):
                                   "type": "change-packages-result"}])
         return result.addCallback(got_result)
 
-    def test_change_packages_with_no_smart_update_stamp(self):
-        """
-        If the smart-update stamp file is not there yet, the change-packages
-        tasks are skipped.
-        """
-        os.remove(self.config.smart_update_stamp_filename)
-        self.store.add_task("changer", {"type": "change-packages",
-                                        "install": [456],
-                                        "operation-id": 123})
-        self.changer.handle_tasks()
-        self.assertIn(
-            "Skipping task for now, smart-update stamp is not there yet",
-            self.logfile.getvalue())
-        self.assertTrue(self.store.get_next_task("changer"))
-
     def test_global_upgrade(self):
         """
         Besides asking for individual changes, the server may also request
@@ -607,6 +592,20 @@ class PackageChangerTest(LandscapeIsolatedTest):
                                   "type": "change-packages-result"}])
 
         return result.addCallback(got_result)
+
+    def test_run_with_no_smart_update_stamp(self):
+        """
+        If the smart-update stamp file is not there yet, the package changer
+        just exists.
+        """
+        os.remove(self.config.smart_update_stamp_filename)
+
+        def assert_log(ignored):
+            self.assertIn("The package-reporter hasn't run yet, exiting.",
+                          self.logfile.getvalue())
+
+        result = self.changer.run()
+        return result.addCallback(assert_log)
 
     def test_spawn_reporter_after_running(self):
         output_filename = self.makeFile("REPORTER NOT RUN")
@@ -852,14 +851,14 @@ class PackageChangerTest(LandscapeIsolatedTest):
                                   "type": "change-packages-result"}])
         return result.addCallback(got_result)
 
-    def test_check_smart_update_stamp(self):
+    def test_smart_update_stamp_exists(self):
         """
-        L{PackageChanger.check_smart_update_stamp} raises a L{PackageTaskError}
-        if the smart-update stamp file is not there yet.
+        L{PackageChanger.smart_update_exists} returns C{True} if the
+        smart-update stamp file is there, C{False} otherwise.
         """
+        self.assertTrue(self.changer.smart_update_stamp_exists())
         os.remove(self.config.smart_update_stamp_filename)
-        self.assertRaises(PackageTaskError,
-                          self.changer.check_smart_update_stamp)
+        self.assertFalse(self.changer.smart_update_stamp_exists())
 
     def test_binaries_path(self):
         self.assertEquals(
