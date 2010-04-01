@@ -5,7 +5,7 @@ try:
 except ImportError:
     FakeEucaInfo = None
 
-from landscape.manager.eucalyptus import EucalyptusCloudManager
+from landscape.manager.eucalyptus import Eucalyptus
 from landscape.tests.helpers import LandscapeTest, ManagerHelper
 
 
@@ -69,21 +69,21 @@ class FakeServiceHub(object):
         self.stopped += 1
 
 
-class EucalyptusCloudManagerTest(LandscapeTest):
+class EucalyptusTest(LandscapeTest):
 
     helpers = [ManagerHelper]
 
     def setUp(self):
-        super(EucalyptusCloudManagerTest, self).setUp()
-        message_type = EucalyptusCloudManager.message_type
-        error_message_type = EucalyptusCloudManager.error_message_type
+        super(EucalyptusTest, self).setUp()
+        message_type = Eucalyptus.message_type
+        error_message_type = Eucalyptus.error_message_type
         self.broker_service.message_store.set_accepted_types(
             [message_type, error_message_type])
         self.service_hub = None
 
     def get_plugin(self, result=None):
         self.service_hub = FakeServiceHub(result)
-        plugin = EucalyptusCloudManager(
+        plugin = Eucalyptus(
             service_hub_factory=lambda data_path: self.service_hub,
             eucalyptus_info_factory=lambda tools: FakeEucalyptusInfo(
                 fake_walrus_output, fake_cluster_controller_output,
@@ -93,14 +93,14 @@ class EucalyptusCloudManagerTest(LandscapeTest):
 
     def test_plugin_registers_with_a_name(self):
         """
-        L{EucalyptusCloudManager} provides a C{plugin_name}, which is used
+        L{Eucalyptus} provides a C{plugin_name}, which is used
         when the plugin is registered with the manager plugin registry.
         """
         plugin = self.get_plugin()
         self.assertIs(plugin, self.manager.get_plugin("eucalyptus-manager"))
 
     def test_run_interval(self):
-        """The L{EucalyptusCloudManager} plugin is run every 15 minutes."""
+        """The L{Eucalyptus} plugin is run every 15 minutes."""
         plugin = self.get_plugin()
         self.assertEqual(900, plugin.run_interval)
 
@@ -146,7 +146,7 @@ class EucalyptusCloudManagerTest(LandscapeTest):
                 self.broker_service.message_store.get_pending_messages(),
                 [])
 
-        plugin = EucalyptusCloudManager(lambda x: 1/0, lambda x: 1/0)
+        plugin = Eucalyptus(lambda x: 1/0, lambda x: 1/0)
         self.manager.add(plugin)
         deferred = plugin.run()
         deferred.addCallback(check)
@@ -210,20 +210,20 @@ class EucalyptusCloudManagerTest(LandscapeTest):
         test_successful_run_stops_service_hub.skip = skip_message
 
 
-class EucalyptusCloudManagerWithoutImageStoreTest(LandscapeTest):
+class EucalyptusWithoutImageStoreTest(LandscapeTest):
 
     helpers = [ManagerHelper]
 
     def setUp(self):
-        super(EucalyptusCloudManagerWithoutImageStoreTest, self).setUp()
-        message_type = EucalyptusCloudManager.message_type
+        super(EucalyptusWithoutImageStoreTest, self).setUp()
+        message_type = Eucalyptus.message_type
         self.broker_service.message_store.set_accepted_types([message_type])
-        self.plugin = EucalyptusCloudManager(service_hub_factory=lambda x: 1/0)
+        self.plugin = Eucalyptus(service_hub_factory=lambda x: 1/0)
         self.manager.add(self.plugin)
 
     def test_plugin_disabled_on_imagestore_import_fail(self):
         """
-        When L{EucalyptusCloudManager.run} is called it tries to import code
+        When L{Eucalyptus.run} is called it tries to import code
         from the C{imagestore} package.  The plugin disables itself if an
         exception is raised during this process (such as C{ImportError}, for
         example).

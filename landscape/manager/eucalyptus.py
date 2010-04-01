@@ -46,7 +46,7 @@ class EucalyptusInfo(object):
         return succeed(self._tools._runTool("euca_conf", ["--list-nodes"]))
 
 
-class EucalyptusCloudManager(ManagerPlugin):
+class Eucalyptus(ManagerPlugin):
     """A management plugin for a Eucalyptus cloud."""
 
     plugin_name = "eucalyptus-manager"
@@ -55,7 +55,7 @@ class EucalyptusCloudManager(ManagerPlugin):
     run_interval = 15 * 60
 
     def __init__(self, service_hub_factory=None, eucalyptus_info_factory=None):
-        super(EucalyptusCloudManager, self).__init__()
+        super(Eucalyptus, self).__init__()
         self._service_hub_factory = service_hub_factory
         if self._service_hub_factory is None:
             self._service_hub_factory = start_service_hub
