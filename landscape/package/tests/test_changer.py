@@ -8,6 +8,7 @@ from twisted.internet.defer import Deferred
 
 from smart.cache import Provides
 
+from landscape.lib.fs import touch_file
 from landscape.package.changer import (
     PackageChanger, main, find_changer_command, UNKNOWN_PACKAGE_DATA_TIMEOUT,
     SUCCESS_RESULT, DEPENDENCY_ERROR_RESULT, POLICY_ALLOW_INSTALLS,
@@ -17,7 +18,7 @@ from landscape.package.facade import (
     DependencyError, TransactionError, SmartError)
 from landscape.package.changer import (
     PackageChangerConfiguration, ChangePackagesResult)
-
+from landscape.package.taskhandler import PackageTaskError
 from landscape.tests.mocker import ANY
 from landscape.tests.helpers import (
     LandscapeIsolatedTest, RemoteBrokerHelper)
@@ -38,6 +39,7 @@ class PackageChangerTest(LandscapeIsolatedTest):
         self.config.data_path = self.makeDir()
         os.mkdir(self.config.package_directory)
         os.mkdir(self.config.binaries_path)
+        touch_file(self.config.smart_update_stamp_filename)
         self.changer = PackageChanger(self.store, self.facade, self.remote,
                                       self.config)
         service = self.broker_service
@@ -548,6 +550,21 @@ class PackageChangerTest(LandscapeIsolatedTest):
                                   "type": "change-packages-result"}])
         return result.addCallback(got_result)
 
+    def test_change_packages_with_no_smart_update_stamp(self):
+        """
+        If the smart-update stamp file is not there yet, the change-packages
+        tasks are skipped.
+        """
+        os.remove(self.config.smart_update_stamp_filename)
+        self.store.add_task("changer", {"type": "change-packages",
+                                        "install": [456],
+                                        "operation-id": 123})
+        self.changer.handle_tasks()
+        self.assertIn(
+            "Skipping task for now, smart-update stamp is not there yet",
+            self.logfile.getvalue())
+        self.assertTrue(self.store.get_next_task("changer"))
+
     def test_global_upgrade(self):
         """
         Besides asking for individual changes, the server may also request
@@ -834,6 +851,15 @@ class PackageChangerTest(LandscapeIsolatedTest):
                                   "result-text": u"áéíóú",
                                   "type": "change-packages-result"}])
         return result.addCallback(got_result)
+
+    def test_check_smart_update_stamp(self):
+        """
+        L{PackageChanger.check_smart_update_stamp} raises a L{PackageTaskError}
+        if the smart-update stamp file is not there yet.
+        """
+        os.remove(self.config.smart_update_stamp_filename)
+        self.assertRaises(PackageTaskError,
+                          self.changer.check_smart_update_stamp)
 
     def test_binaries_path(self):
         self.assertEquals(

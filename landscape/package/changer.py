@@ -141,6 +141,20 @@ class PackageChanger(PackageTaskHandler):
         else:
             raise PackageTaskError()
 
+    def check_smart_update_stamp(self):
+        """Check that smart update has been run at least once.
+
+        If the smart-update stamp file doesn't exist a L{PackageTaskError} is
+        raised and the task will be picked up again at the next run.
+
+        This is because we don't want to perform any package changes without
+        the remote APT channels loaded.
+        """
+        if not os.path.exists(self._config.smart_update_stamp_filename):
+            logging.warning("Skipping task for now, smart-update stamp "
+                            "is not there yet")
+            raise PackageTaskError()
+
     def init_channels(self, binaries=()):
         """Initialize the Smart channels as needed.
 
@@ -262,6 +276,7 @@ class PackageChanger(PackageTaskHandler):
     def handle_change_packages(self, message):
         """Handle a C{change-packages} message."""
 
+        self.check_smart_update_stamp()
         self.init_channels(message.get("binaries", ()))
         self.mark_packages(message.get("upgrade-all", False),
                            message.get("install", ()),
