@@ -13,6 +13,14 @@ class EucalyptusInfo(object):
     def __init__(self, tools):
         self._tools = tools
 
+    def get_version_info(self):
+        """Return information about the version of Eucalyptus in use.
+
+        @return: A L{Deferred} firing with the string output of the
+           C{--version} command.
+        """
+        return succeed(self._tools._runTool("euca_conf", ["--version"]))
+
     def get_walrus_info(self):
         """Return information about the registered walruses (S3).
 
@@ -110,21 +118,24 @@ class Eucalyptus(ManagerPlugin):
         deferred_list = []
         info = self._eucalyptus_info_factory(credentials)
         deferred_list = [
+            info.get_version_info(),
             info.get_walrus_info(),
             info.get_cluster_controller_info(),
             info.get_storage_controller_info(),
             info.get_node_controller_info()]
 
         def create_message(result):
-            walrus_info, cluster_controller_info, storage_controller_info, \
-                node_controller_info = result
+            (version_info, walrus_info, cluster_controller_info,
+             storage_controller_info, node_controller_info) = result
+            version = version_info.split()[-1]
             data = {"access_key": credentials.accessKey,
                     "secret_key": credentials.secretKey,
                     "private_key_path": credentials.privateKeyPath,
                     "certificate_path": credentials.certificatePath,
                     "cloud_certificate_path": credentials.cloudCertificatePath,
                     "url_for_s3": credentials.urlForS3,
-                    "url_for_ec2": credentials.urlForEC2}
+                    "url_for_ec2": credentials.urlForEC2,
+                    "eucalyptus_version": version}
             return {"type": self.message_type, "basic_info": data,
                     "walrus_info": walrus_info,
                     "cluster_controller_info": cluster_controller_info,

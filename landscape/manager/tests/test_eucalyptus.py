@@ -9,6 +9,10 @@ from landscape.manager.eucalyptus import Eucalyptus
 from landscape.tests.helpers import LandscapeTest, ManagerHelper
 
 
+fake_version_output = """\
+Eucalyptus version: 1.6.2
+"""
+
 fake_walrus_output = """\
 registered walruses:
   walrus 10.0.1.113
@@ -35,13 +39,19 @@ registered nodes:
 
 
 class FakeEucalyptusInfo(object):
+    """A fake version of L{EucalyptusInfo} for use in tests."""
 
-    def __init__(self, walrus_output=None, cluster_controller_output=None,
+    def __init__(self, version_output=None, walrus_output=None,
+                 cluster_controller_output=None,
                  storage_controller_output=None, node_controller_output=None):
+        self._version_output = version_output
         self._walrus_output = walrus_output
         self._cluster_controller_output = cluster_controller_output
         self._storage_controller_output = storage_controller_output
         self._node_controller_output = node_controller_output
+
+    def get_version_info(self):
+        return succeed(self._version_output)
 
     def get_walrus_info(self):
         return succeed(self._walrus_output)
@@ -86,8 +96,9 @@ class EucalyptusTest(LandscapeTest):
         plugin = Eucalyptus(
             service_hub_factory=lambda data_path: self.service_hub,
             eucalyptus_info_factory=lambda tools: FakeEucalyptusInfo(
-                fake_walrus_output, fake_cluster_controller_output,
-                fake_storage_controller_output, fake_node_controller_output))
+                fake_version_output, fake_walrus_output,
+                fake_cluster_controller_output, fake_storage_controller_output,
+                fake_node_controller_output))
         self.manager.add(plugin)
         return plugin
 
@@ -120,7 +131,8 @@ class EucalyptusTest(LandscapeTest):
                                "private_key_path": "/fake/path",
                                "secret_key": None,
                                "url_for_ec2": "http://fake/url",
-                               "url_for_s3": "http://fake/url"},
+                               "url_for_s3": "http://fake/url",
+                               "eucalyptus_version": "1.6.2"},
                 "cluster_controller_info": fake_cluster_controller_output,
                 "node_controller_info": fake_node_controller_output,
                 "storage_controller_info": fake_storage_controller_output,
