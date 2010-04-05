@@ -237,7 +237,7 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
             self.assertFileContent(mirrors_filename,
                                    "ftp://ftp.lug.ro/ubuntu/\n"
                                    "http://ppa.launchpad.net/landscape/"
-                                   "ppa/ubuntu/\n")
+                                   "trunk/ubuntu/\n")
 
         result = self.upgrader.tweak("hardy")
         result.addCallback(check_result)

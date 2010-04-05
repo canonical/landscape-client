@@ -7,6 +7,7 @@ from landscape.tests.helpers import (
 from landscape.manager.deployment import ManagerService, ManagerConfiguration
 from landscape.manager.processkiller import ProcessKiller
 from landscape.manager.scriptexecution import ALL_USERS
+from landscape.manager.eucalyptus import Eucalyptus
 from landscape.manager.store import ManagerStore
 from landscape.broker.tests.test_remote import assertTransmitterActive
 from landscape.tests.test_plugin import assertReceivesMessages
@@ -28,14 +29,25 @@ class DeploymentTest(LandscapeTest):
         configuration.load(["--manager-plugins", "ALL",
                             "-d", self.makeDir()])
         manager_service = ManagerService(configuration)
-        self.assertEquals(len(manager_service.plugins), 4)
+        self.assertEquals(len(manager_service.plugins), 5)
 
     def test_include_script_execution(self):
         configuration = ManagerConfiguration()
-        configuration.load(["--include-manager-plugins", "ScriptExecution",
-                            "-d", self.makeDir()])
+        configuration.load(["--include-manager-plugins", "ScriptExecution"])
+        manager_service = ManagerService(configuration)
+        self.assertEquals(len(manager_service.plugins), 6)
+
+    def test_default_includes_eucalyptus(self):
+        """
+        The L{Eucalyptus} plugin is enabled by default.
+        """
+        configuration = ManagerConfiguration()
+        configuration.load([])
         manager_service = ManagerService(configuration)
         self.assertEquals(len(manager_service.plugins), 5)
+        plugin = filter(lambda plugin: isinstance(plugin, Eucalyptus),
+                        manager_service.plugins)
+        self.assertTrue(plugin)
 
     def test_get_allowed_script_users_with_users(self):
         """
