@@ -138,7 +138,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
                                      (196610, u"name1 = version1-release1"),
                                      (262148,
                                       u"prerequirename1 = prerequireversion1"),
-                                     (262148, u"requirename1 = requireversion1"),
+                                     (262148,
+                                      u"requirename1 = requireversion1"),
                                      (393224, u"name1 < version1-release1"),
                                      (458768,
                                       u"conflictsname1 = conflictsversion1")],
@@ -259,7 +260,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         # Let's say fetch_async is successful
         hash_id_db_url = self.config.package_hash_id_url + "uuid_codename_arch"
-        fetch_async_mock = self.mocker.replace("landscape.lib.fetch.fetch_async")
+        fetch_async_mock = self.mocker.replace("landscape.lib."
+                                               "fetch.fetch_async")
         fetch_async_mock(hash_id_db_url, cainfo=None)
         fetch_async_result = Deferred()
         fetch_async_result.callback("hash-ids")
@@ -302,7 +304,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
         self.facade.set_arch("arch")
 
         # Intercept any call to fetch_async
-        fetch_async_mock = self.mocker.replace("landscape.lib.fetch.fetch_async")
+        fetch_async_mock = self.mocker.replace("landscape.lib."
+                                               "fetch.fetch_async")
         fetch_async_mock(ANY)
 
         # Go!
@@ -401,7 +404,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
         # Check fetch_async is called with the default url
         hash_id_db_url = "http://fake.url/path/hash-id-databases/" \
                          "uuid_codename_arch"
-        fetch_async_mock = self.mocker.replace("landscape.lib.fetch.fetch_async")
+        fetch_async_mock = self.mocker.replace("landscape.lib."
+                                               "fetch.fetch_async")
         fetch_async_mock(hash_id_db_url, cainfo=None)
         fetch_async_result = Deferred()
         fetch_async_result.callback("hash-ids")
@@ -432,7 +436,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         # Let's say fetch_async fails
         hash_id_db_url = self.config.package_hash_id_url + "uuid_codename_arch"
-        fetch_async_mock = self.mocker.replace("landscape.lib.fetch.fetch_async")
+        fetch_async_mock = self.mocker.replace("landscape.lib."
+                                               "fetch.fetch_async")
         fetch_async_mock(hash_id_db_url, cainfo=None)
         fetch_async_result = Deferred()
         fetch_async_result.errback(FetchError("fetch error"))
@@ -449,8 +454,9 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         # We shouldn't have any hash=>id database
         def callback(ignored):
-            hash_id_db_filename = os.path.join(self.config.data_path, "package",
-                                               "hash-id", "uuid_codename_arch")
+            hash_id_db_filename = os.path.join(
+                self.config.data_path, "package", "hash-id",
+                "uuid_codename_arch")
             self.assertEquals(os.path.exists(hash_id_db_filename), False)
         result.addCallback(callback)
 
@@ -480,8 +486,9 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         # We shouldn't have any hash=>id database
         def callback(ignored):
-            hash_id_db_filename = os.path.join(self.config.data_path, "package",
-                                               "hash-id", "uuid_codename_arch")
+            hash_id_db_filename = os.path.join(
+                self.config.data_path, "package", "hash-id",
+                "uuid_codename_arch")
             self.assertEquals(os.path.exists(hash_id_db_filename), False)
         result.addCallback(callback)
 
@@ -505,7 +512,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
         # Check fetch_async is called with the default url
         hash_id_db_url = "http://fake.url/path/hash-id-databases/" \
                          "uuid_codename_arch"
-        fetch_async_mock = self.mocker.replace("landscape.lib.fetch.fetch_async")
+        fetch_async_mock = self.mocker.replace("landscape.lib."
+                                               "fetch.fetch_async")
         fetch_async_mock(hash_id_db_url, cainfo=self.config.ssl_public_key)
         fetch_async_result = Deferred()
         fetch_async_result.callback("hash-ids")
@@ -1296,7 +1304,6 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
-
 
     def test_detect_changes_considers_packages_and_locks_changes(self):
         """
