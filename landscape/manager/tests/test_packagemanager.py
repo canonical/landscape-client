@@ -118,6 +118,23 @@ class PackageManagerTest(LandscapeIsolatedTest):
 
         return self.package_manager.run()
 
+    def test_run_on_package_data_changed(self):
+        """
+        The L{PackageManager} spawns a L{PackageChanger} run if an event
+        of type C{"package-data-changed"} is fired.
+        """
+        self.manager.add(self.package_manager)
+
+        service = self.broker_service
+        service.message_store.set_accepted_types(["change-packages-result"])
+
+        package_manager_mock = self.mocker.patch(self.package_manager)
+        package_manager_mock.spawn_handler(PackageChanger)
+        self.mocker.count(2) # Once for registration, then again explicitly.
+        self.mocker.replay()
+
+        return self.broker_service.reactor.fire("package-data-changed")[1]
+
     def test_spawn_release_upgrader_on_run_if_message_accepted(self):
         """
         The L{PackageManager} spawns a L{ReleaseUpgrader} run if messages

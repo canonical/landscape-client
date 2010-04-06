@@ -8,6 +8,7 @@ from twisted.internet.defer import Deferred
 
 from smart.cache import Provides
 
+from landscape.lib.fs import touch_file
 from landscape.package.changer import (
     PackageChanger, main, find_changer_command, UNKNOWN_PACKAGE_DATA_TIMEOUT,
     SUCCESS_RESULT, DEPENDENCY_ERROR_RESULT, POLICY_ALLOW_INSTALLS,
@@ -17,7 +18,7 @@ from landscape.package.facade import (
     DependencyError, TransactionError, SmartError)
 from landscape.package.changer import (
     PackageChangerConfiguration, ChangePackagesResult)
-
+from landscape.package.taskhandler import PackageTaskError
 from landscape.tests.mocker import ANY
 from landscape.tests.helpers import (
     LandscapeIsolatedTest, RemoteBrokerHelper)
@@ -38,6 +39,7 @@ class PackageChangerTest(LandscapeIsolatedTest):
         self.config.data_path = self.makeDir()
         os.mkdir(self.config.package_directory)
         os.mkdir(self.config.binaries_path)
+        touch_file(self.config.smart_update_stamp_filename)
         self.changer = PackageChanger(self.store, self.facade, self.remote,
                                       self.config)
         service = self.broker_service
@@ -591,6 +593,20 @@ class PackageChangerTest(LandscapeIsolatedTest):
 
         return result.addCallback(got_result)
 
+    def test_run_with_no_smart_update_stamp(self):
+        """
+        If the smart-update stamp file is not there yet, the package changer
+        just exists.
+        """
+        os.remove(self.config.smart_update_stamp_filename)
+
+        def assert_log(ignored):
+            self.assertIn("The package-reporter hasn't run yet, exiting.",
+                          self.logfile.getvalue())
+
+        result = self.changer.run()
+        return result.addCallback(assert_log)
+
     def test_spawn_reporter_after_running(self):
         output_filename = self.makeFile("REPORTER NOT RUN")
         reporter_filename = self.makeFile("#!/bin/sh\necho REPORTER RUN > %s" %
@@ -834,6 +850,15 @@ class PackageChangerTest(LandscapeIsolatedTest):
                                   "result-text": u"áéíóú",
                                   "type": "change-packages-result"}])
         return result.addCallback(got_result)
+
+    def test_smart_update_stamp_exists(self):
+        """
+        L{PackageChanger.smart_update_exists} returns C{True} if the
+        smart-update stamp file is there, C{False} otherwise.
+        """
+        self.assertTrue(self.changer.smart_update_stamp_exists())
+        os.remove(self.config.smart_update_stamp_filename)
+        self.assertFalse(self.changer.smart_update_stamp_exists())
 
     def test_binaries_path(self):
         self.assertEquals(
