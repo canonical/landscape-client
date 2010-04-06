@@ -36,6 +36,15 @@ class BrokerClientTest(LandscapeTest):
         self.client.add(plugins[1])
         self.assertEquals(self.client.get_plugins(), plugins)
 
+    def test_get_plugins_returns_a_copy(self):
+        """
+        The L{BrokerClient.get_plugins} method returns a copy of the list
+        of registered plugins, so user can't can't modify our internals.
+        """
+        plugins = self.client.get_plugins()
+        plugins.append(BrokerClientPlugin())
+        self.assertEquals(self.client.get_plugins(), [])
+
     def test_get_named_plugin(self):
         """
         If a plugin has a C{plugin_name} attribute, it is possible to look it
