@@ -2,9 +2,10 @@ import os
 
 from twisted.internet.defer import fail
 
-from landscape.monitor.usermonitor import UserMonitor, RemoteUserMonitorConnector
-from landscape.manager.usermanager import UserManager, UserManagerProtocolFactory
-#, UserManagerFactory
+from landscape.monitor.usermonitor import (
+    UserMonitor, RemoteUserMonitorConnector)
+from landscape.manager.usermanager import (
+    UserManager, UserManagerProtocolFactory)
 from landscape.user.tests.helpers import FakeUserProvider
 from landscape.tests.helpers import LandscapeTest, MonitorHelper_
 from landscape.tests.mocker import ANY

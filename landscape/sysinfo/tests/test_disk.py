@@ -4,6 +4,7 @@ from landscape.sysinfo.sysinfo import SysInfoPluginRegistry
 from landscape.sysinfo.disk import Disk, format_megabytes
 from landscape.tests.helpers import LandscapeTest
 
+
 class DiskTest(LandscapeTest):
 
     def setUp(self):
@@ -31,8 +32,10 @@ class DiskTest(LandscapeTest):
         result = self.disk.run()
         self.assertTrue(isinstance(result, Deferred))
         called = []
+
         def callback(result):
             called.append(True)
+
         result.addCallback(callback)
         self.assertTrue(called)
 
@@ -93,11 +96,14 @@ class DiskTest(LandscapeTest):
 
     def test_multiple_notes(self):
         """
-        A note will be displayed for each filesystem using 85% or more capacity.
+        A note will be displayed for each filesystem using 85% or more
+        capacity.
         """
         self.add_mount("/", block_size=1024, capacity=1000000, unused=150000)
-        self.add_mount("/use", block_size=2048, capacity=2000000, unused=200000)
-        self.add_mount("/emp", block_size=4096, capacity=3000000, unused=460000)
+        self.add_mount(
+            "/use", block_size=2048, capacity=2000000, unused=200000)
+        self.add_mount(
+            "/emp", block_size=4096, capacity=3000000, unused=460000)
         self.disk.run()
         self.assertEquals(self.sysinfo.get_notes(),
                           ["/ is using 85.0% of 976MB",
@@ -151,7 +157,7 @@ class DiskTest(LandscapeTest):
         self.assertEquals(self.sysinfo.get_notes(), [])
 
     def test_no_duplicate_roots(self):
-        self.add_mount("/", capacity=0, unused=0, fs="rootfs")
+        self.add_mount("/", capacity=0, unused=0, fs="ext4")
         self.add_mount("/", capacity=1000, unused=1, fs="ext3")
         self.disk.run()
         self.assertEquals(self.sysinfo.get_notes(),
@@ -206,3 +212,35 @@ class DiskTest(LandscapeTest):
         self.disk.run()
         self.assertEquals(self.sysinfo.get_notes(),
                           ["/ is using 100.0% of 3MB"])
+
+    def test_ignore_filesystems(self):
+        """
+        Network filesystems like nfs are ignored, because they can stall
+        randomly in stat.
+        """
+        self.add_mount("/", capacity=1000, unused=1000, fs="ext3")
+        self.add_mount("/mnt/disk1", capacity=1000, unused=0, fs="nfs")
+        self.disk.run()
+        self.assertEquals(self.sysinfo.get_notes(), [])
+
+    def test_nfs_as_root(self):
+        """
+        If / is not a whitelist filesystem, we don't report the usage of /home.
+        """
+        self.add_mount("/", capacity=1000, unused=1000, fs="nfs")
+        self.disk.run()
+        self.assertEquals(self.sysinfo.get_notes(), [])
+        self.assertEquals(self.sysinfo.get_headers(),
+                          [("Usage of /home", "unknown")])
+
+    def test_nfs_as_root_but_not_home(self):
+        """
+        If / is not a whitelist filesystem, but that /home is with a weird stat
+        value, we don't report the usage of /home.
+        """
+        self.add_mount("/", capacity=1000, unused=1000, fs="nfs")
+        self.add_mount("/home", capacity=0, unused=0, fs="ext3")
+        self.disk.run()
+        self.assertEquals(self.sysinfo.get_notes(), [])
+        self.assertEquals(self.sysinfo.get_headers(),
+                          [("Usage of /home", "unknown")])

@@ -22,12 +22,12 @@ class BrokerService(LandscapeService):
 
     @cvar service_name: C{broker}
 
-    @ivar persist_filename: Path to broker-specific persisted data.
+    @ivar persist_filename: Path to broker-specific persistent data.
     @ivar persist: A L{Persist} object saving and loading data from
         C{self.persist_filename}.
     @ivar message_store: A L{MessageStore} used by the C{exchanger} to
         queue outgoing messages.
-    @ivar transport: A L{HTTPTransport} used by the C{exchanger} to deliver
+    @ivar transport: An L{HTTPTransport} used by the C{exchanger} to deliver
         messages.
     @ivar identity: The L{Identity} of the Landscape client the broker runs on.
     @ivar exchanger: The L{MessageExchange} exchanges messages with the server.
