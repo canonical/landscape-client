@@ -194,7 +194,7 @@ class ReleaseUpgrader(PackageTaskHandler):
             if not config.has_section("Distro"):
                 config.add_section("Distro")
             if not config.has_option("Distro", "PostInstallScripts"):
-                config.set("Distro", "PostInstallScripts", "./dbus/sh")
+                config.set("Distro", "PostInstallScripts", "./dbus.sh")
             else:
                 scripts = config.get("Distro", "PostInstallScripts")
                 scripts += ", ./dbus.sh"
