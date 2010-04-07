@@ -1,8 +1,14 @@
-landscape-client (1.5.0-0ubuntu0.10.04) UNRELEASED; urgency=low
+landscape-client (1.5.0-0ubuntu0.10.04) lucid; urgency=low
 
-  * New upstream version
+  * New upstream version (LP: #557244)
+    - Fix package-changer running before smart-update has completed (LP: #542215)
+    - Report the version of Eucalyptus used to generate topology data (LP: #554007)
+    - Enable the Eucalyptus plugin by default, if supported (LP: #546531)
+    - Use a whitelist of allowed filesystem types to instead of a blacklist (LP: #351927)
+    - Report the update-manager logs to the server (LP: #503384)
+    - Turn off Curl's DNS caching for requests. (LP: #522688)
 
- -- Free Ekanayaka <free.ekanayaka@canonical.com>  Mon, 15 Mar 2010 12:58:44 +0100
+  -- Free Ekanayaka <free.ekanayaka@canonical.com>  Mon, 15 Mar 2010 12:58:44 +0100
 
 landscape-client (1.4.4-0ubuntu0.10.04.0) lucid; urgency=low
 
