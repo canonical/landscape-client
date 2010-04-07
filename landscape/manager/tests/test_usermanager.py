@@ -1,71 +1,21 @@
-from landscape.lib.dbus_util import get_object
+import os
 
 from landscape.lib.persist import Persist
-
 from landscape.manager.manager import SUCCEEDED, FAILED
-from landscape.monitor.monitor import MonitorPluginRegistry
-from landscape.manager.manager import ManagerPluginRegistry
 from landscape.monitor.usermonitor import UserMonitor
-from landscape.manager.usermanager import UserManager, UserManagerDBusObject
+from landscape.manager.usermanager import (
+    UserManager, RemoteUserManagerConnector)
 from landscape.user.tests.helpers import FakeUserProvider, FakeUserManagement
-from landscape.tests.helpers import LandscapeIsolatedTest
+from landscape.tests.helpers import LandscapeTest, ManagerHelper_
 from landscape.user.provider import UserManagementError
-from landscape.tests.helpers import RemoteBrokerHelper
 
 
-class ManagerServiceTest(LandscapeIsolatedTest):
+class UserGroupTestBase(LandscapeTest):
 
-    helpers = [RemoteBrokerHelper]
-
-    def setUp(self):
-        super(ManagerServiceTest, self).setUp()
-
-    def test_remote_locked_usernames(self):
-
-        def check_result(result):
-            self.assertEquals(result, ["psmith"])
-
-        self.shadow_file = self.makeFile("""\
-jdoe:$1$xFlQvTqe$cBtrNEDOIKMy/BuJoUdeG0:13348:0:99999:7:::
-psmith:!:13348:0:99999:7:::
-sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
-""")
-        UserManagerDBusObject(self.broker_service.bus,
-                              shadow_file=self.shadow_file)
-        remote_service = get_object(self.broker_service.bus,
-            UserManagerDBusObject.bus_name, UserManagerDBusObject.object_path)
-
-        result = remote_service.get_locked_usernames()
-        result.addCallback(check_result)
-        return result
-
-    def test_remote_empty_shadow_file(self):
-
-        def check_result(result):
-            self.assertEquals(result, [])
-
-        self.shadow_file = self.makeFile("\n")
-        UserManagerDBusObject(self.broker_service.bus,
-                              shadow_file=self.shadow_file)
-        remote_service = get_object(self.broker_service.bus,
-            UserManagerDBusObject.bus_name, UserManagerDBusObject.object_path)
-
-        result = remote_service.get_locked_usernames()
-        result.addCallback(check_result)
-        return result
-
-class UserGroupTestBase(LandscapeIsolatedTest):
-
-    helpers = [RemoteBrokerHelper]
+    helpers = [ManagerHelper_]
 
     def setUp(self):
         super(UserGroupTestBase, self).setUp()
-        self.persist = Persist()
-        self.monitor = MonitorPluginRegistry(
-            self.remote, self.broker_service.reactor,
-            self.broker_service.config, self.broker_service.bus,
-            self.persist)
-
         self.shadow_file = self.makeFile("""\
 jdoe:$1$xFlQvTqe$cBtrNEDOIKMy/BuJoUdeG0:13348:0:99999:7:::
 psmith:!:13348:0:99999:7:::
@@ -73,19 +23,24 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
 """)
         accepted_types = ["operation-result", "users"]
         self.broker_service.message_store.set_accepted_types(accepted_types)
-        self.manager = ManagerPluginRegistry(
-            self.remote, self.broker_service.reactor,
-            self.broker_service.config, self.broker_service.bus)
+
+    def tearDown(self):
+        super(UserGroupTestBase, self).tearDown()
+        for plugin in self.plugins:
+            plugin.stop()
 
     def setup_environment(self, users, groups, shadow_file):
         provider = FakeUserProvider(users=users, groups=groups,
                                     shadow_file=shadow_file)
-        plugin = UserMonitor(provider=provider)
-        self.monitor.add(plugin)
-        manager = UserManager(management=FakeUserManagement(provider=provider),
-                              shadow_file=shadow_file)
-        self.manager.add(manager)
-        return plugin
+        user_monitor = UserMonitor(provider=provider)
+        management = FakeUserManagement(provider=provider)
+        user_manager = UserManager(management=management,
+                                   shadow_file=shadow_file)
+        self.manager.persist = Persist()
+        user_monitor.register(self.manager)
+        user_manager.register(self.manager)
+        self.plugins = [user_monitor, user_manager]
+        return user_monitor
 
 
 class UserOperationsMessagingTest(UserGroupTestBase):
@@ -97,6 +52,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         with details about the change and an C{operation-result} with
         details of the outcome of the operation.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertMessages(messages,
@@ -134,6 +90,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         containing details of the failure.
         """
         self.log_helper.ignore_errors(KeyError)
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertMessages(messages,
@@ -155,6 +112,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         event is received and processed.  In other words, a snapshot
         should have been taken after the operation was handled.
         """
+
         def handle_callback1(result):
             message_store = self.broker_service.message_store
             messages = message_store.get_pending_messages()
@@ -186,6 +144,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         should first detect changes and then perform the operation.
         The results should be reported in separate messages.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 3)
@@ -227,6 +186,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         with details about the change and an C{operation-result} with
         details of the outcome of the operation.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 3)
@@ -247,7 +207,8 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                                     "timestamp": 0, "type": "users",
                                   "operation-id": 99},])
 
-        users = [("jdoe", "x", 1001, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh")]
+        users = [("jdoe", "x", 1001, 1000, "John Doe,,,,",
+                  "/home/bo", "/bin/zsh")]
         groups = [("users", "x", 1001, [])]
         self.setup_environment(users, groups, None)
         result = self.manager.dispatch_message(
@@ -259,13 +220,13 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         result.addCallback(handle_callback)
         return result
 
-
     def test_edit_user_event_in_sync(self):
         """
         The client and server should be in sync after a C{edit-user}
         event is received and processed.  In other words, a snapshot
         should have been taken after the operation was handled.
         """
+
         def handle_callback1(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertTrue(messages)
@@ -274,11 +235,13 @@ class UserOperationsMessagingTest(UserGroupTestBase):
             return result
 
         def handle_callback2(result, messages):
-            new_messages = self.broker_service.message_store.get_pending_messages()
+            mstore = self.broker_service.message_store
+            new_messages = mstore.get_pending_messages()
             self.assertEquals(messages, new_messages)
             return result
 
-        users = [("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh")]
+        users = [("jdoe", "x", 1000, 1000, "John Doe,,,,",
+                  "/home/bo", "/bin/zsh")]
         plugin = self.setup_environment(users, [], None)
         result = self.manager.dispatch_message(
             {"username": "jdoe", "password": "password", "name": "John Doe",
@@ -295,6 +258,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         should first detect changes and then perform the operation.
         The results should be reported in separate messages.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 3)
@@ -342,6 +306,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         and an C{operation-result} with details of the outcome of the
         operation.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 3)
@@ -402,6 +367,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         about the change and an C{operation-result} with details of
         the outcome of the operation.
         """
+
         def handle_callback(result):
                 messages = self.broker_service.message_store.get_pending_messages()
                 self.assertEquals(len(messages), 3)
@@ -430,6 +396,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         event is received and processed.  In other words, a snapshot
         should have been taken after the operation was handled.
         """
+
         def handle_callback1(result):
             message_store = self.broker_service.message_store
             messages = message_store.get_pending_messages()
@@ -498,24 +465,25 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         C{operation-result} with details of the outcome of the
         operation.
         """
+
         def handle_callback(result):
-           messages = self.broker_service.message_store.get_pending_messages()
-           self.assertEquals(len(messages), 3, messages)
-           # Ignore the message created by plugin.run.
-           self.assertMessages([messages[2], messages[1]],
-                               [{"timestamp": 0, "type": "users", "operation-id": 99,
-                                 "update-users": [{"home-phone": None,
-                                                   "username": "jdoe",
-                                                   "uid": 1000,
-                                                   "enabled": False,
-                                                   "location": None,
-                                                   "work-phone": None,
-                                                   "primary-gid": 1000,
-                                                   "name": u"John Doe"}]},
-                                {"type": "operation-result",
-                                 "status": SUCCEEDED,
-                                 "operation-id": 99, "timestamp": 0,
-                                 "result-text": "lock_user succeeded"}])
+            messages = self.broker_service.message_store.get_pending_messages()
+            self.assertEquals(len(messages), 3, messages)
+            # Ignore the message created by plugin.run.
+            self.assertMessages([messages[2], messages[1]],
+                                [{"timestamp": 0, "type": "users", "operation-id": 99,
+                                  "update-users": [{"home-phone": None,
+                                                    "username": "jdoe",
+                                                    "uid": 1000,
+                                                    "enabled": False,
+                                                    "location": None,
+                                                    "work-phone": None,
+                                                    "primary-gid": 1000,
+                                                    "name": u"John Doe"}]},
+                                 {"type": "operation-result",
+                                  "status": SUCCEEDED,
+                                  "operation-id": 99, "timestamp": 0,
+                                  "result-text": "lock_user succeeded"}])
 
         users = [("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh")]
         self.setup_environment(users, [], self.shadow_file)
@@ -533,6 +501,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         we expect only a single failure message to be generated.
         """
         self.log_helper.ignore_errors(UserManagementError)
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 1)
@@ -557,6 +526,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         event is received and processed.  In other words, a snapshot
         should have been taken after the operation was handled.
         """
+
         def handle_callback1(result):
             message_store = self.broker_service.message_store
             messages = message_store.get_pending_messages()
@@ -627,6 +597,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         with details about the change and an C{operation-result} with
         details of the outcome of the operation.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 3)
@@ -664,6 +635,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         error should be generated.
         """
         self.log_helper.ignore_errors(UserManagementError)
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 1)
@@ -689,6 +661,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         words, a snapshot should have been taken after the operation
         was handled.
         """
+
         def handle_callback(result):
             message_store = self.broker_service.message_store
             messages = message_store.get_pending_messages()
@@ -721,6 +694,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         operation.  The results should be reported in separate
         messages.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 3)
@@ -746,7 +720,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
 
         users = [("psmith", "x", 1000, 1000, "Paul Smith,,,,", "/home/psmith",
                   "/bin/zsh")]
-        plugin = self.setup_environment(users, [], self.shadow_file)
+        self.setup_environment(users, [], self.shadow_file)
 
         result = self.manager.dispatch_message(
             {"username": "psmith",
@@ -765,6 +739,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         with details about the change and an C{operation-result} with
         details of the outcome of the operation.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 2)
@@ -793,6 +768,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         event is received and processed.  In other words, a snapshot
         should have been taken after the operation was handled.
         """
+
         def handle_callback1(result):
             message_store = self.broker_service.message_store
             messages = message_store.get_pending_messages()
@@ -822,6 +798,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         should first detect changes and then perform the operation.
         The results should be reported in separate messages.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 3)
@@ -853,6 +830,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         and an C{operation-result} with details of the outcome of the
         operation.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 3)
@@ -891,6 +869,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         event is received and processed.  In other words, a snapshot
         should have been taken after the operation was handled.
         """
+
         def handle_callback1(result):
             message_store = self.broker_service.message_store
             messages = message_store.get_pending_messages()
@@ -923,6 +902,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         operation.  The results should be reported in separate
         messages.
         """
+
         def handle_callback1(result):
             result = self.manager.dispatch_message(
                 {"groupname": "sales", "new-name": "webdev",
@@ -962,6 +942,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         and an C{operation-result} with details of the outcome of the
         operation.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 3)
@@ -1000,6 +981,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         and an C{operation-result} with details of the outcome of the
         operation.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 3)
@@ -1034,6 +1016,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         words, a snapshot should have been taken after the operation
         was handled.
         """
+
         def handle_callback(result):
             message_store = self.broker_service.message_store
             messages = message_store.get_pending_messages()
@@ -1067,6 +1050,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         operation.  The results should be reported in separate
         messages.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 3)
@@ -1088,7 +1072,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         users = [("jdoe", "x", 1000, 1000, "John Doe,,,,", "/bin/sh",
                   "/home/jdoe")]
         groups = [("bizdev", "x", 1001, [])]
-        plugin = self.setup_environment(users, groups, None)
+        self.setup_environment(users, groups, None)
         result = self.manager.dispatch_message(
             {"username": "jdoe",
              "groupname": "bizdev",
@@ -1105,6 +1089,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         and an C{operation-result} with details of the outcome of the
         operation.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 3)
@@ -1136,8 +1121,8 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         other words, a snapshot should have been taken after the
         operation was handled.
         """
+
         def handle_callback1(result):
-            message_store = self.broker_service.message_store
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertTrue(messages)
             result = plugin.run()
@@ -1168,6 +1153,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         operation.  The results should be reported in separate
         messages.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 3)
@@ -1207,6 +1193,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         C{operation-result} with details of the outcome of the
         operation.
         """
+
         def handle_callback1(result):
 
             result = self.manager.dispatch_message(
@@ -1244,6 +1231,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         words, a snapshot should have been taken after the operation
         was handled.
         """
+
         def handle_callback1(result):
             message_store = self.broker_service.message_store
             messages = message_store.get_pending_messages()
@@ -1274,6 +1262,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         operation.  The results should be reported in separate
         messages.
         """
+
         def handle_callback1(result):
             result = self.manager.dispatch_message(
                 {"groupname": "sales", "operation-id": 123,
@@ -1298,3 +1287,79 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         result = plugin.run()
         result.addCallback(handle_callback1)
         return result
+
+
+class UserManagerTest(LandscapeTest):
+
+    def setUp(self):
+        super(UserManagerTest, self).setUp()
+        self.shadow_file = self.makeFile()
+        self.user_manager = UserManager(shadow_file=self.shadow_file)
+
+    def test_get_locked_usernames(self):
+        """
+        The L{UserManager.get_locked_usernames} method returns only user names
+        of locked users.
+        """
+        fd = open(self.shadow_file, "w")
+        fd.write("jdoe:$1$xFlQvTqe$cBtrNEDOIKMy/BuJoUdeG0:13348:0:99999:7:::\n"
+                 "psmith:!:13348:0:99999:7:::\n"
+                 "yo:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::\n")
+        fd.close()
+        self.assertEquals(self.user_manager.get_locked_usernames(), ["psmith"])
+
+    def test_get_locked_usernames_with_empty_shadow_file(self):
+        """
+        The L{UserManager.get_locked_usernames} method returns an empty C{list}
+        if the shadow file is empty.
+        """
+        fd = open(self.shadow_file, "w")
+        fd.write("\n")
+        fd.close()
+        self.assertEquals(self.user_manager.get_locked_usernames(), [])
+
+    def test_get_locked_usernames_with_non_existing_shadow_file(self):
+        """
+        The L{UserManager.get_locked_usernames} method returns an empty C{list}
+        if the shadow file can't be read.  An error message is logged as well.
+        """
+        self.log_helper.ignore_errors("Error reading shadow file.*")
+        self.assertFalse(os.path.exists(self.shadow_file))
+        self.assertEquals(self.user_manager.get_locked_usernames(), [])
+        self.assertIn("Error reading shadow file. [Errno 2] No such file or "
+                      "directory", self.logfile.getvalue())
+
+
+class RemoteUserManagerTest(LandscapeTest):
+
+    helpers = [ManagerHelper_]
+
+    def setUp(self):
+        super(RemoteUserManagerTest, self).setUp()
+
+        def set_remote(remote):
+            self.remote_user_manager = remote
+
+        self.shadow_file = self.makeFile()
+        self.user_manager = UserManager(shadow_file=self.shadow_file)
+        self.user_manager_connector = RemoteUserManagerConnector(self.reactor,
+                                                                 self.config)
+        self.user_manager.register(self.manager)
+        connected = self.user_manager_connector.connect()
+        return connected.addCallback(set_remote)
+
+    def tearDown(self):
+        self.user_manager_connector.disconnect()
+        self.user_manager.stop()
+        return super(RemoteUserManagerTest, self).tearDown()
+
+    def test_get_locked_usernames(self):
+        """
+        The L{get_locked_usernames} method forwards the request to the
+        remote L{UserManager} object.
+        """
+        self.user_manager.get_locked_usernames = self.mocker.mock()
+        self.expect(self.user_manager.get_locked_usernames()).result(["fred"])
+        self.mocker.replay()
+        result = self.remote_user_manager.get_locked_usernames()
+        return self.assertSuccess(result, ["fred"])
