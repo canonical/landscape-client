@@ -5,7 +5,8 @@ try:
 except ImportError:
     FakeEucaInfo = None
 
-from landscape.manager.eucalyptus import Eucalyptus
+from landscape.manager.eucalyptus import (
+    Eucalyptus, EucalyptusInfo, start_service_hub, get_eucalyptus_info)
 from landscape.tests.helpers import LandscapeTest, ManagerHelper
 
 
@@ -244,3 +245,59 @@ class EucalyptusWithoutImageStoreTest(LandscapeTest):
         self.log_helper.ignore_errors(ZeroDivisionError)
         self.plugin.run()
         self.assertFalse(self.plugin.enabled)
+
+
+class StartServiceHubTest(LandscapeTest):
+    """Tests for L{start_service_hub}."""
+
+    def test_start_service_hub(self):
+        """
+        L{start_service_hub} creates and starts the L{ServiceHub} used to
+        retrieve information about Eucalyptus.
+        """
+        from twisted.internet import reactor
+
+        euca_service_factory = self.mocker.replace(
+            "imagestore.eucaservice.EucaService", passthrough=False)
+        service_hub_factory = self.mocker.replace(
+            "imagestore.lib.service.ServiceHub", passthrough=False)
+        euca_service = object()
+
+        euca_service_factory(reactor, "/data/path/eucalyptus")
+        self.mocker.result(euca_service)
+        service_hub = service_hub_factory()
+        self.expect(service_hub.addService(euca_service))
+        self.expect(service_hub.start())
+        self.mocker.replay()
+
+        self.assertNotIdentical(None, start_service_hub("/data/path"))
+
+    if FakeEucaInfo is None:
+        skip_message = "imagestore module not available"
+        test_start_service_hub.skip = skip_message
+
+
+class GetEucalyptusInfoTest(LandscapeTest):
+    """Tests for L{get_eucalyptus_info}."""
+
+    def test_wb_get_eucalyptus_info(self):
+        """
+        L{get_eucalyptus_info} returns a L{EucalyptusInfo} instance.
+        L{EucalyptusInfo} is passed, and stores, a C{EucaTools} instance which
+        is used to retrieved information about Eucalyptus.
+        """
+        euca_tools_factory = self.mocker.replace(
+            "imagestore.eucaservice.EucaTools", passthrough=False)
+        euca_tools = object()
+        credentials = object()
+
+        self.expect(euca_tools_factory(credentials)).result(euca_tools)
+        self.mocker.replay()
+
+        info = get_eucalyptus_info(credentials)
+        self.assertTrue(isinstance(info, EucalyptusInfo))
+        self.assertIdentical(euca_tools, info._tools)
+
+    if FakeEucaInfo is None:
+        skip_message = "imagestore module not available"
+        test_wb_get_eucalyptus_info.skip = skip_message
