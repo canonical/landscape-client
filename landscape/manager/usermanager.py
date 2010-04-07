@@ -26,7 +26,8 @@ class UserManager(ManagerPlugin):
                                "edit-group": self._edit_group,
                                "remove-group": self._remove_group,
                                "add-group-member": self._add_group_member,
-                               "remove-group-member": self._remove_group_member}
+                               "remove-group-member":
+                               self._remove_group_member}
         self._port = None
 
     def register(self, registry):
@@ -84,7 +85,8 @@ class UserManager(ManagerPlugin):
     def _perform_operation(self, result, message):
         message_type = message["type"]
         message_method = self._message_types[message_type]
-        return self.call_with_operation_result(message, message_method, message)
+        return self.call_with_operation_result(message, message_method,
+                                               message)
 
     def _send_changes(self, result, message):
         result = self._user_monitor.detect_changes(message["operation-id"])
