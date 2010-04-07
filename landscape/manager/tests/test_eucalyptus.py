@@ -263,9 +263,8 @@ class StartServiceHubTest(LandscapeTest):
             "imagestore.lib.service.ServiceHub", passthrough=False)
         euca_service = object()
 
-        self.expect(
-            euca_service_factory(reactor,
-                                 "/data/path/eucalyptus")).result(euca_service)
+        euca_service_factory(reactor, "/data/path/eucalyptus")
+        self.mocker.result(euca_service)
         service_hub = service_hub_factory()
         self.expect(service_hub.addService(euca_service))
         self.expect(service_hub.start())
