@@ -154,7 +154,7 @@ class Eucalyptus(ManagerPlugin):
         return {"type": self.error_message_type, "error": error}
 
 
-def start_service_hub(self, data_path):
+def start_service_hub(data_path):
     """Create and start a C{ServiceHub} to use when getting credentials.
 
     @param data_path: The path to Landscape's data directory.

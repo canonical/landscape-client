@@ -5,7 +5,8 @@ try:
 except ImportError:
     FakeEucaInfo = None
 
-from landscape.manager.eucalyptus import Eucalyptus
+from landscape.manager.eucalyptus import Eucalyptus, start_service_hub
+from landscape.tests.mocker import MockerTestCase, ANY
 from landscape.tests.helpers import LandscapeTest, ManagerHelper
 
 
@@ -244,3 +245,33 @@ class EucalyptusWithoutImageStoreTest(LandscapeTest):
         self.log_helper.ignore_errors(ZeroDivisionError)
         self.plugin.run()
         self.assertFalse(self.plugin.enabled)
+
+
+class StartServiceHubTest(MockerTestCase):
+    """Tests for L{start_service_hub}."""
+
+    def test_start_service_hub(self):
+        """
+        L{start_service_hub} creates and starts the L{ServiceHub} used to
+        retrieve information about Eucalyptus.
+        """
+        from twisted.internet import reactor
+
+        euca_service_factory = self.mocker.replace(
+            "imagestore.eucaservice.EucaService", passthrough=False)
+        service_hub_factory = self.mocker.replace(
+            "imagestore.lib.service.ServiceHub", passthrough=False)
+        euca_service = object()
+
+        self.expect(
+            euca_service_factory(reactor,
+                                 "/data/path/eucalyptus")).result(euca_service)
+        service_hub = service_hub_factory()
+        self.expect(service_hub.addService(euca_service))
+        self.expect(service_hub.start())
+        self.mocker.replay()
+        start_service_hub("/data/path")
+
+    if FakeEucaInfo is None:
+        skip_message = "imagestore module not available"
+        test_start_service_hub.skip = skip_message
