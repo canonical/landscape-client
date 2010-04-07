@@ -1,4 +1,4 @@
-landscape-client (1.5.0-0ubuntu0.10.04) lucid; urgency=low
+landscape-client (1.5.0-0ubuntu0.10.04.0) lucid; urgency=low
 
   * New upstream version (LP: #557244)
     - Fix package-changer running before smart-update has completed (LP: #542215)
@@ -8,7 +8,7 @@ landscape-client (1.5.0-0ubuntu0.10.04) lucid; urgency=low
     - Report the update-manager logs to the server (LP: #503384)
     - Turn off Curl's DNS caching for requests. (LP: #522688)
 
-  -- Free Ekanayaka <free.ekanayaka@canonical.com>  Mon, 15 Mar 2010 12:58:44 +0100
+ -- Free Ekanayaka <free.ekanayaka@canonical.com>  Wed, 07 Apr 2010 16:27:45 +0200
 
 landscape-client (1.4.4-0ubuntu0.10.04.0) lucid; urgency=low
 
