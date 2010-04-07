@@ -33,7 +33,7 @@ from landscape.manager.manager import ManagerPluginRegistry
 from landscape.manager.manager import Manager
 from landscape.manager.deployment import ManagerConfiguration
 
-# We can drop the "_" suffix and replace the current classes once the
+# FIXME: We can drop the "_" suffix and replace the current classes once the
 # AMP migration is completed
 from landscape.broker.service import BrokerService as BrokerService_
 from landscape.broker.amp import FakeRemoteBroker as FakeRemoteBroker_
@@ -441,8 +441,10 @@ class LegacyManagerHelper(FakeRemoteBrokerHelper):
     Provides everything that L{FakeRemoteBrokerHelper} does plus a
     L{landscape.manager.manager.Manager}.
     """
+
     def set_up(self, test_case):
         super(LegacyManagerHelper, self).set_up(test_case)
+
         class MyManagerConfiguration(ManagerConfiguration):
             default_config_filenames = [test_case.config_filename]
         config = MyManagerConfiguration()
@@ -452,7 +454,6 @@ class LegacyManagerHelper(FakeRemoteBrokerHelper):
             config)
 
 
-# We can drop the "_" suffic once the AMP migration is completed
 class ManagerHelper(BrokerServiceHelper):
     """
     Provides everything that L{BrokerServiceHelper} does plus a
@@ -460,7 +461,6 @@ class ManagerHelper(BrokerServiceHelper):
     """
 
     def set_up(self, test_case):
-
         super(ManagerHelper, self).set_up(test_case)
         test_case.config = ManagerConfiguration_()
         test_case.config.load(["-c", test_case.config_filename])

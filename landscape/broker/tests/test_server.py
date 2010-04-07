@@ -451,7 +451,7 @@ class HandlersTest(LandscapeTest):
         self.mocker.replay()
         self.reactor.fire("message-type-acceptance-changed", "test", True)
 
-    def test_serger_uuid_changed(self):
+    def test_server_uuid_changed(self):
         """
         When a C{server-uuid-changed} event is fired by the reactor, the
         broker broadcasts it to its clients.

@@ -6,7 +6,6 @@ from landscape.monitor.usermonitor import (
     UserMonitor, RemoteUserMonitorConnector)
 from landscape.manager.usermanager import (
     UserManager, UserManagerProtocolFactory)
-#, UserManagerFactory
 from landscape.user.tests.helpers import FakeUserProvider
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.tests.mocker import ANY
