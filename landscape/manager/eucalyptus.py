@@ -172,7 +172,7 @@ def start_service_hub(data_path):
     return service_hub
 
 
-def get_eucalyptus_info(self, credentials):
+def get_eucalyptus_info(credentials):
     """Create a L{EucalyptusInfo} instance.
 
     @param credentials: An C{imagestore.eucaservice.EucaInfo} instance.
