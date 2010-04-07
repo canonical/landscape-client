@@ -226,8 +226,8 @@ class BrokerServer(object):
         results = []
         for client in self.get_clients():
             results.append(client.message(message))
-        return gather_results(results).addCallback(self._message_delivered,
-                                                   message)
+        result = gather_results(results)
+        return result.addCallback(self._message_delivered, message)
 
     def _message_delivered(self, results, message):
         """

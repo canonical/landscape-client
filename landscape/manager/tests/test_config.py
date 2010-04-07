@@ -31,6 +31,7 @@ class ManagerConfigurationTest(LandscapeTest):
         self.config.load(["--include-manager-plugins", "ScriptExecution"])
         self.assertEquals(len(self.config.plugin_factories),
                           len(ALL_PLUGINS) + 1)
+        self.assertTrue('ScriptExecution' in self.config.plugin_factories)
 
     def test_get_allowed_script_users(self):
         """
