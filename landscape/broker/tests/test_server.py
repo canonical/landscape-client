@@ -428,7 +428,7 @@ class HandlersTest(LandscapeTest):
         self.mocker.replay()
         self.reactor.fire("exchange-failed")
 
-    def test_registartion_done(self):
+    def test_registration_done(self):
         """
         When a C{registration-done} event is fired by the reactor, the
         broker broadcasts it to its clients.
