@@ -372,7 +372,6 @@ class HandlersTest(LandscapeTest):
         self.client.message(message)
         self.mocker.result(succeed(True))
         self.mocker.replay()
-        self.transport
         self.transport.responses.append([{"type": "foobar", "value": 42}])
         self.exchanger.exchange()
 
