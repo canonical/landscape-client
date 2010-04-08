@@ -391,7 +391,7 @@ class HandlersTest(LandscapeTest):
         result = self.reactor.fire("message", message)
         result = [result for result in result if result is not None][0]
 
-        class Startswith(object):
+        class StartsWith(object):
 
             def __eq__(self, other):
                 return other.startswith(
@@ -401,7 +401,7 @@ class HandlersTest(LandscapeTest):
             self.assertMessages(
                 self.mstore.get_pending_messages(),
                 [{"type": "operation-result", "status": FAILED,
-                  "result-text": Startswith(), "operation-id": 4}])
+                  "result-text": StartsWith(), "operation-id": 4}])
 
         result.addCallback(broadcasted)
         return result
