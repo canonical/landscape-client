@@ -1,3 +1,5 @@
+import os
+
 from twisted.internet.defer import succeed, fail
 
 try:
@@ -253,7 +255,8 @@ class StartServiceHubTest(LandscapeTest):
     def test_start_service_hub(self):
         """
         L{start_service_hub} creates and starts the L{ServiceHub} used to
-        retrieve information about Eucalyptus.
+        retrieve information about Eucalyptus.  The data directory is created
+        if it doesn't already exist.
         """
         from twisted.internet import reactor
 
@@ -263,14 +266,19 @@ class StartServiceHubTest(LandscapeTest):
             "imagestore.lib.service.ServiceHub", passthrough=False)
         euca_service = object()
 
-        euca_service_factory(reactor, "/data/path/eucalyptus")
+        base_path = self.makeDir("start-service-hub")
+        data_path = os.path.join(base_path, "eucalyptus")
+
+        euca_service_factory(reactor, data_path)
         self.mocker.result(euca_service)
         service_hub = service_hub_factory()
         self.expect(service_hub.addService(euca_service))
         self.expect(service_hub.start())
         self.mocker.replay()
 
-        self.assertNotIdentical(None, start_service_hub("/data/path"))
+        self.assertFalse(os.path.exists(data_path))
+        self.assertNotIdentical(None, start_service_hub(base_path))
+        self.assertTrue(os.path.exists(data_path))
 
     if FakeEucaInfo is None:
         skip_message = "imagestore module not available"
