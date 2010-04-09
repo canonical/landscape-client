@@ -557,6 +557,7 @@ class StubProcessFactory(object):
     A L{IReactorProcess} provider which records L{spawnProcess} calls and
     allows tests to get at the protocol.
     """
+
     def __init__(self):
         self.spawns = []
 
@@ -568,6 +569,7 @@ class StubProcessFactory(object):
 
 class DummyProcess(object):
     """A process (transport) that doesn't do anything."""
+
     def __init__(self):
         self.signals = []
 
