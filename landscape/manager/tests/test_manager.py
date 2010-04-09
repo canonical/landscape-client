@@ -8,7 +8,7 @@ from landscape.manager.store import ManagerStore
 from landscape.lib.dbus_util import get_object
 
 from landscape.tests.helpers import (
-    LandscapeTest, LandscapeIsolatedTest, ManagerHelper, ManagerHelper_)
+    LandscapeTest, LandscapeIsolatedTest, ManagerHelper, LegacyManagerHelper)
 
 
 class PluginOperationResultTest(LandscapeTest):
@@ -25,6 +25,7 @@ class PluginOperationResultTest(LandscapeTest):
         service = self.broker_service
         service.message_store.set_accepted_types(["operation-result"])
         message = {"operation-id": 12312}
+
         def operation():
             pass
         plugin.call_with_operation_result(message, operation)
@@ -44,6 +45,7 @@ class PluginOperationResultTest(LandscapeTest):
         service = self.broker_service
         service.message_store.set_accepted_types(["operation-result"])
         message = {"operation-id": 12312}
+
         def operation():
             raise RuntimeError("What the crap!")
         plugin.call_with_operation_result(message, operation)
@@ -65,6 +67,7 @@ class PluginOperationResultTest(LandscapeTest):
         service = self.broker_service
         service.message_store.set_accepted_types(["operation-result"])
         message = {"operation-id": 123}
+
         def operation():
             pass
         plugin.call_with_operation_result(message, operation)
@@ -73,7 +76,7 @@ class PluginOperationResultTest(LandscapeTest):
 
 class ManagerDBusObjectTest(LandscapeIsolatedTest):
 
-    helpers = [ManagerHelper]
+    helpers = [LegacyManagerHelper]
 
     def setUp(self):
         super(ManagerDBusObjectTest, self).setUp()
@@ -93,6 +96,7 @@ class ManagerDBusObjectTest(LandscapeIsolatedTest):
 
     def test_ping(self):
         result = self.dbus_object.ping()
+
         def got_result(result):
             self.assertEquals(result, True)
         return result.addCallback(got_result)
@@ -108,7 +112,7 @@ class ManagerDBusObjectTest(LandscapeIsolatedTest):
 
 class ManagerTest(LandscapeTest):
 
-    helpers = [ManagerHelper_]
+    helpers = [ManagerHelper]
 
     def test_reactor(self):
         """

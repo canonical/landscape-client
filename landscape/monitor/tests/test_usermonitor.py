@@ -7,13 +7,13 @@ from landscape.monitor.usermonitor import (
 from landscape.manager.usermanager import (
     UserManager, UserManagerProtocolFactory)
 from landscape.user.tests.helpers import FakeUserProvider
-from landscape.tests.helpers import LandscapeTest, MonitorHelper_
+from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.tests.mocker import ANY
 
 
 class UserMonitorNoManagerTest(LandscapeTest):
 
-    helpers = [MonitorHelper_]
+    helpers = [MonitorHelper]
 
     def test_no_fetch_users_in_monitor_only_mode(self):
         """
@@ -47,7 +47,7 @@ class UserMonitorNoManagerTest(LandscapeTest):
 
 class UserMonitorTest(LandscapeTest):
 
-    helpers = [MonitorHelper_]
+    helpers = [MonitorHelper]
 
     def setUp(self):
         super(UserMonitorTest, self).setUp()

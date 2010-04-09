@@ -9,14 +9,14 @@ from landscape.lib.dbus_util import get_object
 from landscape.tests.test_plugin import ExchangePlugin
 from landscape.tests.helpers import (
     LandscapeTest, LandscapeIsolatedTest, RemoteBrokerHelper, MonitorHelper,
-    LogKeeperHelper, MonitorHelper_)
+    LogKeeperHelper)
 from landscape.tests.mocker import ANY
 from landscape.broker.client import BrokerClientPlugin
 
 
 class MonitorPluginRegistryTest(LandscapeTest):
 
-    helpers = [MonitorHelper_]
+    helpers = [MonitorHelper]
 
     def test_persist(self):
         self.monitor.persist.set("a", 1)
@@ -36,7 +36,9 @@ class MonitorPluginRegistryTest(LandscapeTest):
         The L{Monitor.exchange} method flushes the monitor after
         C{exchange} on all plugins has been called.
         """
+
         class SamplePlugin(ExchangePlugin):
+
             def exchange(myself):
                 self.monitor.persist.set("a", 1)
                 super(SamplePlugin, myself).exchange()
@@ -84,6 +86,7 @@ class MonitorDBusObjectTest(LandscapeIsolatedTest):
 
     def test_ping(self):
         result = self.service.ping()
+
         def got_result(result):
             self.assertEquals(result, True)
         return result.addCallback(got_result)
@@ -179,8 +182,8 @@ class PluginTest(LandscapeTest):
         """
         plugin = StubPluginRespondingToChangedAcceptedTypes()
         plugin.register(self.monitor)
-        self.broker_service.reactor.fire(("message-type-acceptance-changed",
-                                          "some-type"), True)
+        self.monitor.fire_event("message-type-acceptance-changed",
+                                "some-type", True)
         self.assertEquals(plugin.called, [((True,), {"param": 10})])
 
     def test_call_on_accepted_when_unaccepted(self):
@@ -274,7 +277,7 @@ class DataWatcherTest(LandscapeTest):
 
 class MonitorTest(LandscapeTest):
 
-    helpers = [MonitorHelper_]
+    helpers = [MonitorHelper]
 
     def test_persist(self):
         """
@@ -318,7 +321,7 @@ class MonitorTest(LandscapeTest):
         self.monitor.persist.save(self.monitor.persist_filename)
         self.mocker.count(3)
         self.mocker.replay()
-        self.reactor.advance(self.config.flush_interval*3)
+        self.reactor.advance(self.config.flush_interval * 3)
 
     def test_creating_loads_persist(self):
         """
