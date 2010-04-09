@@ -305,7 +305,7 @@ class StartServiceHubTest(LandscapeTest):
         self.expect(service_hub.start())
         self.mocker.replay()
 
-        self.assertFalse(os.path.exists(data_path))
+        self.assertTrue(os.path.exists(data_path))
         self.assertNotIdentical(None, start_service_hub(base_path))
         self.assertTrue(os.path.exists(data_path))
 
