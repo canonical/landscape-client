@@ -312,6 +312,7 @@ class StartServiceHubTest(LandscapeTest):
     if FakeEucaInfo is None:
         skip_message = "imagestore module not available"
         test_start_service_hub.skip = skip_message
+        test_start_service_hub_with_existing_data_dir.skip = skip_message
 
 
 class GetEucalyptusInfoTest(LandscapeTest):
