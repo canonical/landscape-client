@@ -8,7 +8,7 @@ from landscape.broker.registration import (
     InvalidCredentialsError, RegistrationHandler, is_cloud_managed, EC2_HOST,
     EC2_API, Identity)
 
-from landscape.broker.deployment import BrokerConfiguration
+from landscape.broker.config import BrokerConfiguration
 from landscape.tests.helpers import LandscapeTest
 from landscape.broker.tests.helpers import (
     BrokerConfigurationHelper, RegistrationHelper)

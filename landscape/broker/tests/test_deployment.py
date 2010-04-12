@@ -1,12 +1,10 @@
-import os
-
 from landscape.lib.bpickle import dumps
 from landscape.tests.mocker import ANY
 
-from landscape.broker.deployment import BrokerConfiguration, BrokerService
+from landscape.broker.config import BrokerConfiguration
+from landscape.broker.deployment import BrokerService
 from landscape.tests.helpers import (
-    LandscapeTest, LandscapeIsolatedTest, FakeRemoteBrokerHelper,
-    RemoteBrokerHelper, EnvironSaverHelper)
+    LandscapeIsolatedTest, FakeRemoteBrokerHelper, RemoteBrokerHelper)
 from landscape.reactor import FakeReactor
 from landscape.broker.transport import FakeTransport
 from landscape.lib.fetch import fetch_async
@@ -85,63 +83,3 @@ class DeploymentTest(LandscapeIsolatedTest):
         config.cloud = True
         service = FakeBrokerService(config)
         self.assertTrue(service.registration._config.cloud)
-
-
-class ConfigurationTests(LandscapeTest):
-    helpers = [EnvironSaverHelper]
-
-    def test_loading_sets_http_proxies(self):
-        if "http_proxy" in os.environ:
-            del os.environ["http_proxy"]
-        if "https_proxy" in os.environ:
-            del os.environ["https_proxy"]
-
-        configuration = BrokerConfiguration()
-        configuration.load(["--http-proxy", "foo",
-                            "--https-proxy", "bar",
-                            "--url", "whatever"])
-        self.assertEquals(os.environ["http_proxy"], "foo")
-        self.assertEquals(os.environ["https_proxy"], "bar")
-
-    def test_loading_without_http_proxies_does_not_touch_environment(self):
-        os.environ["http_proxy"] = "heyo"
-        os.environ["https_proxy"] = "baroo"
-
-        configuration = BrokerConfiguration()
-        configuration.load(["--url", "whatever"])
-        self.assertEquals(os.environ["http_proxy"], "heyo")
-        self.assertEquals(os.environ["https_proxy"], "baroo")
-
-    def test_loading_resets_http_proxies(self):
-        """
-        User scenario:
-
-        Runs landscape-config, fat-fingers a random character into the
-        http_proxy field when he didn't mean to. runs it again, this time
-        leaving it blank. The proxy should be reset to whatever
-        environment-supplied proxy there was at startup.
-        """
-        os.environ["http_proxy"] = "original"
-        os.environ["https_proxy"] = "originals"
-
-        configuration = BrokerConfiguration()
-        configuration.load(["--http-proxy", "x",
-                            "--https-proxy", "y",
-                            "--url", "whatever"])
-        self.assertEquals(os.environ["http_proxy"], "x")
-        self.assertEquals(os.environ["https_proxy"], "y")
-
-        configuration.load(["--url", "whatever"])
-        self.assertEquals(os.environ["http_proxy"], "original")
-        self.assertEquals(os.environ["https_proxy"], "originals")
-
-    def test_intervals_are_ints(self):
-        filename = self.makeFile("[client]\n"
-                                 "urgent_exchange_interval = 12\n"
-                                 "exchange_interval = 34\n")
-
-        configuration = BrokerConfiguration()
-        configuration.load(["--config", filename, "--url", "whatever"])
-
-        self.assertEquals(configuration.urgent_exchange_interval, 12)
-        self.assertEquals(configuration.exchange_interval, 34)

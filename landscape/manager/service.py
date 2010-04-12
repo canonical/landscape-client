@@ -1,6 +1,7 @@
 from twisted.python.reflect import namedClass
 
-from landscape.service import LandscapeService
+from landscape.service import LandscapeService, run_landscape_service
+from landscape.manager.config import ManagerConfiguration
 from landscape.amp import ComponentProtocolFactory
 from landscape.broker.amp import RemoteBrokerConnector
 from landscape.manager.manager import Manager
@@ -52,3 +53,7 @@ class ManagerService(LandscapeService):
         """Stop the manager and close the connection with the broker."""
         self.connector.disconnect()
         super(ManagerService, self).stopService()
+
+
+def run(args):
+    run_landscape_service(ManagerConfiguration, ManagerService, args)

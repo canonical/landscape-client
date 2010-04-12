@@ -22,8 +22,9 @@ from landscape.lib.persist import Persist
 
 from landscape.reactor import FakeReactor
 
-from landscape.broker.deployment import (BrokerService, BrokerConfiguration)
+from landscape.broker.deployment import BrokerService
 from landscape.deployment import BaseConfiguration
+from landscape.broker.config import BrokerConfiguration
 from landscape.broker.remote import RemoteBroker, FakeRemoteBroker
 from landscape.broker.transport import FakeTransport
 

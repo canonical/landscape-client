@@ -9,7 +9,7 @@ from landscape.broker.exchange import MessageExchange
 from landscape.broker.store import get_default_message_store
 from landscape.broker.registration import Identity, RegistrationHandler
 from landscape.broker.ping import Pinger
-from landscape.broker.deployment import BrokerConfiguration
+from landscape.broker.config import BrokerConfiguration
 from landscape.broker.server import BrokerServer
 from landscape.broker.amp import (
     BrokerServerProtocolFactory, BrokerClientProtocolFactory,

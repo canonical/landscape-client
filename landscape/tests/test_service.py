@@ -4,9 +4,10 @@ import signal
 from landscape.reactor import FakeReactor
 from landscape.deployment import Configuration
 from landscape.service import LandscapeService
+from landscape.amp import (
+    ComponentProtocolFactory, RemoteComponentConnector)
 from landscape.tests.helpers import LandscapeTest
-from landscape.amp import ComponentProtocolFactory
-from landscape.amp import RemoteComponentConnector
+from landscape.tests.mocker import ANY
 
 
 class TestComponent(object):
@@ -26,6 +27,8 @@ class LandscapeServiceTest(LandscapeTest):
     def setUp(self):
         super(LandscapeServiceTest, self).setUp()
         self.config = Configuration()
+        self.config.data_path = self.makeDir()
+        self.reactor = FakeReactor()
         signal.signal(signal.SIGUSR1, signal.SIG_DFL)
 
     def tearDown(self):
@@ -92,12 +95,10 @@ class LandscapeServiceTest(LandscapeTest):
         The L{startService} and makes the service start listening on a
         socket for incoming connections.
         """
-        self.config.data_path = self.makeDir()
-        reactor = FakeReactor()
         service = TestService(self.config)
         service.factory = ComponentProtocolFactory()
         service.startService()
-        connector = RemoteTestComponentCreator(reactor, self.config)
+        connector = RemoteTestComponentCreator(self.reactor, self.config)
 
         def assert_port(ignored):
             self.assertTrue(service.port.connected)
@@ -106,3 +107,15 @@ class LandscapeServiceTest(LandscapeTest):
 
         connected = connector.connect()
         return connected.addCallback(assert_port)
+
+    def test_start_uses_want_pid(self):
+        """
+        The L{startService} method sets the C{wantPID} flag when listening,
+        in order to remove stale socket files from previous runs.
+        """
+        service = TestService(self.config)
+        service.factory = ComponentProtocolFactory(self.reactor, self.config)
+        service.reactor.listen_unix = self.mocker.mock()
+        service.reactor.listen_unix(ANY, ANY, wantPID=True)
+        self.mocker.replay()
+        service.startService()
