@@ -128,6 +128,21 @@ class RemoteBrokerTests(RemoteBrokerTestsMixin, LandscapeIsolatedTest):
         result.addCallback(got_result)
         return result
 
+    def test_fire_event(self):
+        """
+        The L{RemoteBroker.fire_event} method lets clients fire events in the
+        broker reactor.
+        """
+        deferred = Deferred()
+
+        def event_fired():
+            deferred.callback(None)
+        
+        self.broker_service.reactor.call_on("event", event_fired)
+        remote = self.get_remote()
+        remote.fire_event("event")
+        return deferred
+
 
 def assertTransmitterActive(test_case, deployment_broker, target_reactor):
     """
@@ -251,4 +266,21 @@ class MessageDBusSignalToReactorTransmitterTests(LandscapeIsolatedTest):
             waiter.callback((old_uuid, new_uuid))
         reactor.call_on("server-uuid-changed", server_uuid_changed)
         self.broker_service.reactor.fire("server-uuid-changed", None, None)
+        return waiter
+
+    @set_timeout(4)
+    def test_package_data_changed(self):
+        """
+        A 'package-data-changed' DBUS signal is converted into a reactor event
+        with the same name.
+        """
+        reactor = FakeReactor()
+        DBusSignalToReactorTransmitter(self.broker_service.bus, reactor)
+        waiter = Deferred()
+
+        def package_data_changed():
+            waiter.callback(None)
+
+        reactor.call_on("package-data-changed", package_data_changed)
+        self.broker_service.reactor.fire("package-data-changed")
         return waiter

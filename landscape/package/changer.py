@@ -6,7 +6,7 @@ import os
 import pwd
 import grp
 
-from twisted.internet.defer import maybeDeferred
+from twisted.internet.defer import maybeDeferred, succeed
 
 from landscape.lib.fs import create_file
 from landscape.package.reporter import find_reporter_command
@@ -81,6 +81,10 @@ class PackageChanger(PackageTaskHandler):
         """
         Handle our tasks and spawn the reporter if package data has changed.
         """
+        if not self.smart_update_stamp_exists():
+            logging.warning("The package-reporter hasn't run yet, exiting.")
+            return succeed(None)
+
         result = self.use_hash_id_db()
         result.addCallback(lambda x: self.handle_tasks())
         result.addCallback(lambda x: self.run_package_reporter())
@@ -140,6 +144,12 @@ class PackageChanger(PackageTaskHandler):
             return self._broker.send_message(message)
         else:
             raise PackageTaskError()
+
+    def smart_update_stamp_exists(self):
+        """
+        Return a boolean indicating if the smart-update stamp file exists.
+        """
+        return os.path.exists(self._config.smart_update_stamp_filename)
 
     def init_channels(self, binaries=()):
         """Initialize the Smart channels as needed.

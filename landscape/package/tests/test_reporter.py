@@ -5,7 +5,7 @@ import logging
 import unittest
 import time
 
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import Deferred, succeed
 from twisted.internet import reactor
 
 from landscape.lib.fetch import fetch_async, FetchError
@@ -49,6 +49,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
         self.config = PackageReporterConfiguration()
         self.reporter = PackageReporter(self.store, self.facade, self.remote,
                                         self.config)
+        self.config.data_path = self.makeDir()
+        os.mkdir(self.config.package_directory)
 
     def set_pkg2_upgrades_pkg1(self):
         previous = self.Facade.channels_reloaded
@@ -136,7 +138,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
                                      (196610, u"name1 = version1-release1"),
                                      (262148,
                                       u"prerequirename1 = prerequireversion1"),
-                                     (262148, u"requirename1 = requireversion1"),
+                                     (262148,
+                                      u"requirename1 = requireversion1"),
                                      (393224, u"name1 < version1-release1"),
                                      (458768,
                                       u"conflictsname1 = conflictsversion1")],
@@ -257,7 +260,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         # Let's say fetch_async is successful
         hash_id_db_url = self.config.package_hash_id_url + "uuid_codename_arch"
-        fetch_async_mock = self.mocker.replace("landscape.lib.fetch.fetch_async")
+        fetch_async_mock = self.mocker.replace("landscape.lib."
+                                               "fetch.fetch_async")
         fetch_async_mock(hash_id_db_url, cainfo=None)
         fetch_async_result = Deferred()
         fetch_async_result.callback("hash-ids")
@@ -300,7 +304,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
         self.facade.set_arch("arch")
 
         # Intercept any call to fetch_async
-        fetch_async_mock = self.mocker.replace("landscape.lib.fetch.fetch_async")
+        fetch_async_mock = self.mocker.replace("landscape.lib."
+                                               "fetch.fetch_async")
         fetch_async_mock(ANY)
 
         # Go!
@@ -399,7 +404,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
         # Check fetch_async is called with the default url
         hash_id_db_url = "http://fake.url/path/hash-id-databases/" \
                          "uuid_codename_arch"
-        fetch_async_mock = self.mocker.replace("landscape.lib.fetch.fetch_async")
+        fetch_async_mock = self.mocker.replace("landscape.lib."
+                                               "fetch.fetch_async")
         fetch_async_mock(hash_id_db_url, cainfo=None)
         fetch_async_result = Deferred()
         fetch_async_result.callback("hash-ids")
@@ -430,7 +436,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         # Let's say fetch_async fails
         hash_id_db_url = self.config.package_hash_id_url + "uuid_codename_arch"
-        fetch_async_mock = self.mocker.replace("landscape.lib.fetch.fetch_async")
+        fetch_async_mock = self.mocker.replace("landscape.lib."
+                                               "fetch.fetch_async")
         fetch_async_mock(hash_id_db_url, cainfo=None)
         fetch_async_result = Deferred()
         fetch_async_result.errback(FetchError("fetch error"))
@@ -447,8 +454,9 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         # We shouldn't have any hash=>id database
         def callback(ignored):
-            hash_id_db_filename = os.path.join(self.config.data_path, "package",
-                                               "hash-id", "uuid_codename_arch")
+            hash_id_db_filename = os.path.join(
+                self.config.data_path, "package", "hash-id",
+                "uuid_codename_arch")
             self.assertEquals(os.path.exists(hash_id_db_filename), False)
         result.addCallback(callback)
 
@@ -478,8 +486,9 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         # We shouldn't have any hash=>id database
         def callback(ignored):
-            hash_id_db_filename = os.path.join(self.config.data_path, "package",
-                                               "hash-id", "uuid_codename_arch")
+            hash_id_db_filename = os.path.join(
+                self.config.data_path, "package", "hash-id",
+                "uuid_codename_arch")
             self.assertEquals(os.path.exists(hash_id_db_filename), False)
         result.addCallback(callback)
 
@@ -503,7 +512,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
         # Check fetch_async is called with the default url
         hash_id_db_url = "http://fake.url/path/hash-id-databases/" \
                          "uuid_codename_arch"
-        fetch_async_mock = self.mocker.replace("landscape.lib.fetch.fetch_async")
+        fetch_async_mock = self.mocker.replace("landscape.lib."
+                                               "fetch.fetch_async")
         fetch_async_mock(hash_id_db_url, cainfo=self.config.ssl_public_key)
         fetch_async_result = Deferred()
         fetch_async_result.callback("hash-ids")
@@ -584,9 +594,9 @@ class PackageReporterTest(LandscapeIsolatedTest):
         self.assertFalse(self.reporter._apt_sources_have_changed())
         self.reporter.sources_list_filename = self.makeFile("foo")
         self.assertTrue(self.reporter._apt_sources_have_changed())
-        os.utime(self.reporter.sources_list_filename, (-1, time.time() - 1799));
+        os.utime(self.reporter.sources_list_filename, (-1, time.time() - 1799))
         self.assertTrue(self.reporter._apt_sources_have_changed())
-        os.utime(self.reporter.sources_list_filename, (-1, time.time() - 1800));
+        os.utime(self.reporter.sources_list_filename, (-1, time.time() - 1800))
         self.assertFalse(self.reporter._apt_sources_have_changed())
 
     def test_wb_apt_sources_have_changed_with_directory(self):
@@ -703,6 +713,28 @@ class PackageReporterTest(LandscapeIsolatedTest):
                 self.assertEquals(out, "\n")
                 self.assertEquals(err, "")
                 self.assertEquals(code, 1)
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
+
+    def test_run_smart_update_touches_stamp_file(self):
+        """
+        The L{PackageReporter.run_smart_update} method touches a stamp file
+        after running the smart-update wrapper.
+        """
+        self.reporter.sources_list_filename = "/I/Dont/Exist"
+        self.reporter.smart_update_filename = "/bin/true"
+        deferred = Deferred()
+
+        def do_test():
+
+            result = self.reporter.run_smart_update()
+
+            def callback(ignored):
+                self.assertTrue(
+                    os.path.exists(self.config.smart_update_stamp_filename))
             result.addCallback(callback)
             result.chainDeferred(deferred)
 
@@ -885,7 +917,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         return result.addCallback(got_result)
 
-    def test_detect_changes_with_available(self):
+    def test_detect_packages_changes_with_available(self):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["packages"])
 
@@ -897,10 +929,10 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
             self.assertEquals(sorted(self.store.get_available()), [1, 2, 3])
 
-        result = self.reporter.detect_changes()
+        result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
 
-    def test_detect_changes_with_available_and_unknown_hash(self):
+    def test_detect_packages_changes_with_available_and_unknown_hash(self):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["packages"])
 
@@ -912,10 +944,10 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
             self.assertEquals(sorted(self.store.get_available()), [1, 3])
 
-        result = self.reporter.detect_changes()
+        result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
 
-    def test_detect_changes_with_available_and_previously_known(self):
+    def test_detect_packages_changes_with_available_and_previously_known(self):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["packages"])
 
@@ -928,10 +960,10 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
             self.assertEquals(sorted(self.store.get_available()), [1, 2, 3])
 
-        result = self.reporter.detect_changes()
+        result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
 
-    def test_detect_changes_with_not_available(self):
+    def test_detect_packages_changes_with_not_available(self):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["packages"])
 
@@ -948,10 +980,10 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
             self.assertEquals(self.store.get_available(), [])
 
-        result = self.reporter.detect_changes()
+        result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
 
-    def test_detect_changes_with_installed(self):
+    def test_detect_packages_changes_with_installed(self):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["packages"])
 
@@ -966,10 +998,10 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
             self.assertEquals(self.store.get_installed(), [1])
 
-        result = self.reporter.detect_changes()
+        result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
 
-    def test_detect_changes_with_installed_already_known(self):
+    def test_detect_packages_changes_with_installed_already_known(self):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["packages"])
 
@@ -980,12 +1012,13 @@ class PackageReporterTest(LandscapeIsolatedTest):
         self.set_pkg1_installed()
 
         def got_result(result):
+            self.assertFalse(result)
             self.assertMessages(message_store.get_pending_messages(), [])
 
-        result = self.reporter.detect_changes()
+        result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
 
-    def test_detect_changes_with_not_installed(self):
+    def test_detect_packages_changes_with_not_installed(self):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["packages"])
 
@@ -994,15 +1027,16 @@ class PackageReporterTest(LandscapeIsolatedTest):
         self.store.add_installed([1])
 
         def got_result(result):
+            self.assertTrue(result)
             self.assertMessages(message_store.get_pending_messages(),
                                 [{"type": "packages", "not-installed": [1]}])
 
             self.assertEquals(self.store.get_installed(), [])
 
-        result = self.reporter.detect_changes()
+        result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
 
-    def test_detect_changes_with_upgrade_but_not_installed(self):
+    def test_detect_packages_changes_with_upgrade_but_not_installed(self):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["packages"])
 
@@ -1014,10 +1048,10 @@ class PackageReporterTest(LandscapeIsolatedTest):
         def got_result(result):
             self.assertMessages(message_store.get_pending_messages(), [])
 
-        result = self.reporter.detect_changes()
+        result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
 
-    def test_detect_changes_with_upgrade(self):
+    def test_detect_packages_changes_with_upgrade(self):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["packages"])
 
@@ -1035,10 +1069,10 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
             self.assertEquals(self.store.get_available_upgrades(), [2])
 
-        result = self.reporter.detect_changes()
+        result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
 
-    def test_detect_changes_with_not_upgrade(self):
+    def test_detect_packages_changes_with_not_upgrade(self):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["packages"])
 
@@ -1053,10 +1087,10 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
             self.assertEquals(self.store.get_available_upgrades(), [])
 
-        result = self.reporter.detect_changes()
+        result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
 
-    def test_detect_changes_with_locked(self):
+    def test_detect_packages_changes_with_locked(self):
         """
         If Smart indicates locked packages we didn't know about, report
         them to the server.
@@ -1075,10 +1109,10 @@ class PackageReporterTest(LandscapeIsolatedTest):
                                 [{"type": "packages", "locked": [1, 2]}])
             self.assertEquals(sorted(self.store.get_locked()), [1, 2])
 
-        result = self.reporter.detect_changes()
+        result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
 
-    def test_detect_changes_with_locked_and_ranges(self):
+    def test_detect_packages_changes_with_locked_and_ranges(self):
         """
         Ranges are used when reporting changes to 3 or more locked packages
         having consecutive ids.
@@ -1098,10 +1132,10 @@ class PackageReporterTest(LandscapeIsolatedTest):
                                 [{"type": "packages", "locked": [(1, 3)]}])
             self.assertEquals(sorted(self.store.get_locked()), [1, 2, 3])
 
-        result = self.reporter.detect_changes()
+        result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
 
-    def test_detect_changes_with_locked_with_unknown_hash(self):
+    def test_detect_packages_changes_with_locked_with_unknown_hash(self):
         """
         Locked packages whose hashes are unknown don't get reported.
         """
@@ -1110,10 +1144,10 @@ class PackageReporterTest(LandscapeIsolatedTest):
         def got_result(result):
             self.assertEquals(self.store.get_locked(), [])
 
-        result = self.reporter.detect_changes()
+        result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
 
-    def test_detect_changes_with_locked_and_previously_known(self):
+    def test_detect_packages_changes_with_locked_and_previously_known(self):
         """
         We don't report locked packages we already know about.
         """
@@ -1133,10 +1167,10 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
             self.assertEquals(sorted(self.store.get_locked()), [1, 2])
 
-        result = self.reporter.detect_changes()
+        result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
 
-    def test_detect_changes_with_not_locked(self):
+    def test_detect_packages_changes_with_not_locked(self):
         """
         We report when a package was previously locked and isn't anymore.
         """
@@ -1152,10 +1186,10 @@ class PackageReporterTest(LandscapeIsolatedTest):
                                 [{"type": "packages", "not-locked": [1]}])
             self.assertEquals(self.store.get_locked(), [])
 
-        result = self.reporter.detect_changes()
+        result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
 
-    def test_detect_changes_with_not_locked_and_ranges(self):
+    def test_detect_packages_changes_with_not_locked_and_ranges(self):
         """
         Ranges are used when reporting changes to 3 or more not locked packages
         having consecutive ids.
@@ -1173,7 +1207,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
                                 [{"type": "packages", "not-locked": [(1, 3)]}])
             self.assertEquals(sorted(self.store.get_locked()), [])
 
-        result = self.reporter.detect_changes()
+        result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
 
     def test_detect_package_locks_changes_with_create_locks(self):
@@ -1253,12 +1287,67 @@ class PackageReporterTest(LandscapeIsolatedTest):
         result = self.reporter.detect_package_locks_changes()
         return result.addCallback(got_result)
 
+    def test_detect_package_locks_changes_with_locked_already_known(self):
+        """
+        If we didn't detect any change in the package locks, we don't send any
+        message, and we return a deferred resulting in C{False}.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["package-locks"])
+
+        self.facade.set_package_lock("name1")
+        self.store.add_package_locks([("name1", "", "")])
+
+        def got_result(result):
+            self.assertFalse(result)
+            self.assertMessages(message_store.get_pending_messages(), [])
+
+        result = self.reporter.detect_packages_changes()
+        return result.addCallback(got_result)
+
+    def test_detect_changes_considers_packages_and_locks_changes(self):
+        """
+        The L{PackageReporter.detect_changes} method considers both package and
+        package locks changes. It also releases smart locks by calling the
+        L{SmartFacade.deinit} method.
+        """
+        reporter_mock = self.mocker.patch(self.reporter)
+        reporter_mock.detect_packages_changes()
+        self.mocker.result(succeed(True))
+        reporter_mock.detect_package_locks_changes()
+        self.mocker.result(succeed(True))
+
+        facade_mock = self.mocker.patch(self.facade)
+        facade_mock.deinit()
+
+        self.mocker.replay()
+        return self.reporter.detect_changes()
+
+    def test_detect_changes_fires_package_data_changed(self):
+        """
+        The L{PackageReporter.detect_changes} method fires an event of
+        type 'package-data-changed' if we detected something has changed
+        with respect to our previous run.
+        """
+        reporter_mock = self.mocker.patch(self.reporter)
+        reporter_mock.detect_packages_changes()
+        self.mocker.result(succeed(False))
+        reporter_mock.detect_package_locks_changes()
+        self.mocker.result(succeed(True))
+        self.mocker.replay()
+
+        deferred = Deferred()
+        callback = lambda: deferred.callback(None)
+        self.broker_service.reactor.call_on("package-data-changed", callback)
+        self.reporter.detect_changes()
+        return deferred
+
     def test_run(self):
         reporter_mock = self.mocker.patch(self.reporter)
 
         self.mocker.order()
 
-        results = [Deferred() for i in range(8)]
+        results = [Deferred() for i in range(7)]
 
         reporter_mock.run_smart_update()
         self.mocker.result(results[0])
@@ -1280,9 +1369,6 @@ class PackageReporterTest(LandscapeIsolatedTest):
 
         reporter_mock.detect_changes()
         self.mocker.result(results[6])
-
-        reporter_mock.detect_package_locks_changes()
-        self.mocker.result(results[7])
 
         self.mocker.replay()
 
@@ -1352,7 +1438,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
         self.assertEquals(self.store.get_installed(), [2])
         self.assertEquals(self.store.get_locked(), [3])
         self.assertEquals(self.store.get_package_locks(), [("name1", "", "")])
-        self.assertEquals(self.store.get_hash_id_request(request1.id).id, request1.id)
+        self.assertEquals(self.store.get_hash_id_request(request1.id).id,
+                          request1.id)
 
         self.store.add_task("reporter", {"type": "resynchronize"})
 
@@ -1368,8 +1455,8 @@ class PackageReporterTest(LandscapeIsolatedTest):
             # But the other data should.
             self.assertEquals(self.store.get_available_upgrades(), [])
 
-            # After running the resychronize task, detect_changes is called,
-            # and the existing known hashes are made available.
+            # After running the resychronize task, detect_packages_changes is
+            # called, and the existing known hashes are made available.
             self.assertEquals(self.store.get_available(), [3, 4])
             self.assertEquals(self.store.get_installed(), [])
             self.assertEquals(self.store.get_locked(), [3])

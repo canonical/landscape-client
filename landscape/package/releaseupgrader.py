@@ -50,7 +50,7 @@ class ReleaseUpgrader(PackageTaskHandler):
     config_factory = ReleaseUpgraderConfiguration
     queue_name = "release-upgrader"
     lsb_release_filename = LSB_RELEASE_FILENAME
-    landscape_ppa_url = "http://ppa.launchpad.net/landscape/ppa/ubuntu/"
+    landscape_ppa_url = "http://ppa.launchpad.net/landscape/trunk/ubuntu/"
     logs_directory = "/var/log/dist-upgrade"
     logs_limit = 100000
 
@@ -194,7 +194,7 @@ class ReleaseUpgrader(PackageTaskHandler):
             if not config.has_section("Distro"):
                 config.add_section("Distro")
             if not config.has_option("Distro", "PostInstallScripts"):
-                config.set("Distro", "PostInstallScripts", "./dbus/sh")
+                config.set("Distro", "PostInstallScripts", "./dbus.sh")
             else:
                 scripts = config.get("Distro", "PostInstallScripts")
                 scripts += ", ./dbus.sh"

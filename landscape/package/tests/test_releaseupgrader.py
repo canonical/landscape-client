@@ -237,7 +237,7 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
             self.assertFileContent(mirrors_filename,
                                    "ftp://ftp.lug.ro/ubuntu/\n"
                                    "http://ppa.launchpad.net/landscape/"
-                                   "ppa/ubuntu/\n")
+                                   "trunk/ubuntu/\n")
 
         result = self.upgrader.tweak("hardy")
         result.addCallback(check_result)
@@ -259,6 +259,33 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
             config.read(config_filename)
             self.assertEquals(config.get("Distro", "PostInstallScripts"),
                               "/foo.sh, ./dbus.sh")
+            dbus_sh = os.path.join(self.config.upgrade_tool_directory,
+                                   "dbus.sh")
+            self.assertFileContent(dbus_sh,
+                                   "#!/bin/sh\n"
+                                   "/etc/init.d/dbus start\n"
+                                   "sleep 10\n")
+
+        result = self.upgrader.tweak("dapper")
+        result.addCallback(check_result)
+        return result
+
+    def test_tweak_sets_dbus_start_script_with_no_post_install_scripts(self):
+        """
+        The L{ReleaseUpgrader.tweak} method adds to the upgrade-tool
+        configuration a little script that starts dbus after the upgrade. This
+        works even when the config file doesn't have a PostInstallScripts entry
+        yet.
+        """
+        config_filename = os.path.join(self.config.upgrade_tool_directory,
+                                       "DistUpgrade.cfg.dapper")
+        self.makeFile(path=config_filename, content="")
+
+        def check_result(ignored):
+            config = ConfigParser.ConfigParser()
+            config.read(config_filename)
+            self.assertEquals(config.get("Distro", "PostInstallScripts"),
+                              "./dbus.sh")
             dbus_sh = os.path.join(self.config.upgrade_tool_directory,
                                    "dbus.sh")
             self.assertFileContent(dbus_sh,
