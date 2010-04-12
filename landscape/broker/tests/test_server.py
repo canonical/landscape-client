@@ -330,6 +330,8 @@ class EventTest(LandscapeTest):
             self.remote.register_client_accepted_message_type = \
                                                         self.mocker.mock()
             self.remote.register_client_accepted_message_type("type")
+            self.remote.register_client = self.mocker.mock()
+            self.remote.register_client("client")
             self.mocker.replay()
             return self.assertSuccess(self.broker.broker_reconnect(), [[None]])
 
