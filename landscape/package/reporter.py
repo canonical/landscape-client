@@ -10,6 +10,7 @@ from twisted.internet.utils import getProcessOutputAndValue
 from landscape.lib.sequenceranges import sequence_to_ranges
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.fetch import fetch_async
+from landscape.lib.fs import touch_file
 
 from landscape.package.taskhandler import (
     PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler)
@@ -75,7 +76,6 @@ class PackageReporter(PackageTaskHandler):
 
         # Finally, verify if we have anything new to report to the server.
         result.addCallback(lambda x: self.detect_changes())
-        result.addCallback(lambda x: self.detect_package_locks_changes())
 
         result.callback(None)
         return result
@@ -200,6 +200,7 @@ class PackageReporter(PackageTaskHandler):
                     self.smart_update_filename, code, err))
             logging.debug("'%s' exited with status %d (out='%s', err='%s'" % (
                 self.smart_update_filename, code, out, err))
+            touch_file(self._config.smart_update_stamp_filename)
             return (out, err, code)
 
         result.addCallback(callback)
@@ -385,6 +386,25 @@ class PackageReporter(PackageTaskHandler):
         return result.addCallbacks(set_message_id, send_message_failed)
 
     def detect_changes(self):
+        """Detect all changes concerning packages.
+
+        If some changes were detected with respect to our last run, then an
+        event of type 'package-data-changed' will be fired in the broker
+        reactor.
+        """
+
+        def changes_detected(results):
+            # Release all smart locks, in case the changer runs after us.
+            self._facade.deinit()
+            if True in results:
+                # Something has changed, notify the broker.
+                return self._broker.fire_event("package-data-changed")
+
+        result = gather_results([self.detect_packages_changes(),
+                                 self.detect_package_locks_changes()])
+        return result.addCallback(changes_detected)
+
+    def detect_packages_changes(self):
         """Detect changes in the universe of known packages.
 
         This method will verify if there are packages that:
@@ -403,6 +423,9 @@ class PackageReporter(PackageTaskHandler):
 
         In all cases, the server is notified of the new situation
         with a "packages" message.
+
+        @return: A deferred resulting in C{True} if package changes were
+            detected with respect to the previous run, or C{False} otherwise.
         """
         self._facade.ensure_channels_reloaded()
 
@@ -489,20 +512,19 @@ class PackageReporter(PackageTaskHandler):
                 list(sequence_to_ranges(sorted(not_locked)))
 
         if not message:
-            result = succeed(None)
-        else:
-            message["type"] = "packages"
+            return succeed(False)
 
-            result = self._broker.send_message(message, True)
+        message["type"] = "packages"
+        result = self._broker.send_message(message, True)
 
-            logging.info("Queuing message with changes in known packages: "
-                         "%d installed, %d available, %d available upgrades, "
-                         "%d locked, %d not installed, %d not available, "
-                         "%d not available upgrades, %d not locked."
-                         % (len(new_installed), len(new_available),
-                            len(new_upgrades), len(new_locked),
-                            len(not_installed), len(not_available),
-                            len(not_upgrades), len(not_locked)))
+        logging.info("Queuing message with changes in known packages: "
+                     "%d installed, %d available, %d available upgrades, "
+                     "%d locked, %d not installed, %d not available, "
+                     "%d not available upgrades, %d not locked."
+                     % (len(new_installed), len(new_available),
+                        len(new_upgrades), len(new_locked),
+                        len(not_installed), len(not_available),
+                        len(not_upgrades), len(not_locked)))
 
         def update_currently_known(result):
             if new_installed:
@@ -521,6 +543,8 @@ class PackageReporter(PackageTaskHandler):
                 self._store.remove_available_upgrades(not_upgrades)
             if not_locked:
                 self._store.remove_locked(not_locked)
+            # Something has changed wrt the former run, let's return True
+            return True
 
         result.addCallback(update_currently_known)
 
@@ -536,6 +560,9 @@ class PackageReporter(PackageTaskHandler):
 
         In all cases, the server is notified of the new situation
         with a "packages" message.
+
+        @return: A deferred resulting in C{True} if package lock changes were
+            detected with respect to the previous run, or C{False} otherwise.
         """
         old_package_locks = set(self._store.get_package_locks())
         current_package_locks = set(self._facade.get_package_locks())
@@ -550,21 +577,21 @@ class PackageReporter(PackageTaskHandler):
             message["deleted"] = sorted(unset_package_locks)
 
         if not message:
-            result = succeed(None)
-        else:
-            message["type"] = "package-locks"
+            return succeed(False)
 
-            result = self._broker.send_message(message, True)
+        message["type"] = "package-locks"
+        result = self._broker.send_message(message, True)
 
-            logging.info("Queuing message with changes in known package locks:"
-                         " %d created, %d deleted." %
-                         (len(set_package_locks), len(unset_package_locks)))
+        logging.info("Queuing message with changes in known package locks:"
+                     " %d created, %d deleted." %
+                     (len(set_package_locks), len(unset_package_locks)))
 
         def update_currently_known(result):
             if set_package_locks:
                 self._store.add_package_locks(set_package_locks)
             if unset_package_locks:
                 self._store.remove_package_locks(unset_package_locks)
+            return True
 
         result.addCallback(update_currently_known)
 

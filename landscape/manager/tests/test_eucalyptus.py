@@ -1,3 +1,5 @@
+import os
+
 from twisted.internet.defer import succeed, fail
 
 try:
@@ -5,9 +7,14 @@ try:
 except ImportError:
     FakeEucaInfo = None
 
-from landscape.manager.eucalyptus import Eucalyptus
+from landscape.manager.eucalyptus import (
+    Eucalyptus, EucalyptusInfo, start_service_hub, get_eucalyptus_info)
 from landscape.tests.helpers import LandscapeTest, ManagerHelper
 
+
+fake_version_output = """\
+Eucalyptus version: 1.6.2
+"""
 
 fake_walrus_output = """\
 registered walruses:
@@ -35,13 +42,19 @@ registered nodes:
 
 
 class FakeEucalyptusInfo(object):
+    """A fake version of L{EucalyptusInfo} for use in tests."""
 
-    def __init__(self, walrus_output=None, cluster_controller_output=None,
+    def __init__(self, version_output=None, walrus_output=None,
+                 cluster_controller_output=None,
                  storage_controller_output=None, node_controller_output=None):
+        self._version_output = version_output
         self._walrus_output = walrus_output
         self._cluster_controller_output = cluster_controller_output
         self._storage_controller_output = storage_controller_output
         self._node_controller_output = node_controller_output
+
+    def get_version_info(self):
+        return succeed(self._version_output)
 
     def get_walrus_info(self):
         return succeed(self._walrus_output)
@@ -86,8 +99,9 @@ class EucalyptusTest(LandscapeTest):
         plugin = Eucalyptus(
             service_hub_factory=lambda data_path: self.service_hub,
             eucalyptus_info_factory=lambda tools: FakeEucalyptusInfo(
-                fake_walrus_output, fake_cluster_controller_output,
-                fake_storage_controller_output, fake_node_controller_output))
+                fake_version_output, fake_walrus_output,
+                fake_cluster_controller_output, fake_storage_controller_output,
+                fake_node_controller_output))
         self.manager.add(plugin)
         return plugin
 
@@ -120,7 +134,8 @@ class EucalyptusTest(LandscapeTest):
                                "private_key_path": "/fake/path",
                                "secret_key": None,
                                "url_for_ec2": "http://fake/url",
-                               "url_for_s3": "http://fake/url"},
+                               "url_for_s3": "http://fake/url",
+                               "eucalyptus_version": "1.6.2"},
                 "cluster_controller_info": fake_cluster_controller_output,
                 "node_controller_info": fake_node_controller_output,
                 "storage_controller_info": fake_storage_controller_output,
@@ -232,3 +247,95 @@ class EucalyptusWithoutImageStoreTest(LandscapeTest):
         self.log_helper.ignore_errors(ZeroDivisionError)
         self.plugin.run()
         self.assertFalse(self.plugin.enabled)
+
+
+class StartServiceHubTest(LandscapeTest):
+    """Tests for L{start_service_hub}."""
+
+    def test_start_service_hub(self):
+        """
+        L{start_service_hub} creates and starts the L{ServiceHub} used to
+        retrieve information about Eucalyptus.  The data directory is created
+        if it doesn't already exist.
+        """
+        from twisted.internet import reactor
+
+        euca_service_factory = self.mocker.replace(
+            "imagestore.eucaservice.EucaService", passthrough=False)
+        service_hub_factory = self.mocker.replace(
+            "imagestore.lib.service.ServiceHub", passthrough=False)
+        euca_service = object()
+
+        base_path = self.makeDir("start-service-hub")
+        data_path = os.path.join(base_path, "eucalyptus")
+
+        euca_service_factory(reactor, data_path)
+        self.mocker.result(euca_service)
+        service_hub = service_hub_factory()
+        self.expect(service_hub.addService(euca_service))
+        self.expect(service_hub.start())
+        self.mocker.replay()
+
+        self.assertFalse(os.path.exists(data_path))
+        self.assertNotIdentical(None, start_service_hub(base_path))
+        self.assertTrue(os.path.exists(data_path))
+
+    def test_start_service_hub_with_existing_data_dir(self):
+        """
+        L{start_service_hub} creates and starts the L{ServiceHub} used to
+        retrieve information about Eucalyptus. If the directory already
+        exists it is used.
+        """
+        base_path = self.makeDir("start-service-hub")
+        data_path = os.path.join(base_path, "eucalyptus")
+        os.makedirs(data_path)
+
+        from twisted.internet import reactor
+
+        euca_service_factory = self.mocker.replace(
+            "imagestore.eucaservice.EucaService", passthrough=False)
+        service_hub_factory = self.mocker.replace(
+            "imagestore.lib.service.ServiceHub", passthrough=False)
+        euca_service = object()
+
+        euca_service_factory(reactor, data_path)
+        self.mocker.result(euca_service)
+        service_hub = service_hub_factory()
+        self.expect(service_hub.addService(euca_service))
+        self.expect(service_hub.start())
+        self.mocker.replay()
+
+        self.assertTrue(os.path.exists(data_path))
+        self.assertNotIdentical(None, start_service_hub(base_path))
+        self.assertTrue(os.path.exists(data_path))
+
+    if FakeEucaInfo is None:
+        skip_message = "imagestore module not available"
+        test_start_service_hub.skip = skip_message
+        test_start_service_hub_with_existing_data_dir.skip = skip_message
+
+
+class GetEucalyptusInfoTest(LandscapeTest):
+    """Tests for L{get_eucalyptus_info}."""
+
+    def test_wb_get_eucalyptus_info(self):
+        """
+        L{get_eucalyptus_info} returns a L{EucalyptusInfo} instance.
+        L{EucalyptusInfo} is passed, and stores, a C{EucaTools} instance which
+        is used to retrieved information about Eucalyptus.
+        """
+        euca_tools_factory = self.mocker.replace(
+            "imagestore.eucaservice.EucaTools", passthrough=False)
+        euca_tools = object()
+        credentials = object()
+
+        self.expect(euca_tools_factory(credentials)).result(euca_tools)
+        self.mocker.replay()
+
+        info = get_eucalyptus_info(credentials)
+        self.assertTrue(isinstance(info, EucalyptusInfo))
+        self.assertIdentical(euca_tools, info._tools)
+
+    if FakeEucaInfo is None:
+        skip_message = "imagestore module not available"
+        test_wb_get_eucalyptus_info.skip = skip_message
