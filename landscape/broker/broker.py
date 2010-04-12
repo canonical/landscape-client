@@ -70,6 +70,7 @@ class BrokerDBusObject(Object):
             # convert them back to Nones.
             self.server_uuid_changed(old_uuid or "", new_uuid or "")
         reactor.call_on("server-uuid-changed", server_uuid_changed)
+        reactor.call_on("package-data-changed", self.package_data_changed)
         reactor.call_on("resynchronize-clients", self.resynchronize)
         self.broker_started()
 
@@ -149,6 +150,11 @@ Please contact the Landscape team for more information.
         return self.exchange.send(message, urgent=urgent)
 
     @method(IFACE_NAME)
+    def fire_event(self, event_type):
+        """Fire an event in the broker reactor."""
+        self.reactor.fire(event_type)
+
+    @method(IFACE_NAME)
     def is_message_pending(self, message_id):
         return self.message_store.is_pending(message_id)
 
@@ -192,6 +198,10 @@ Please contact the Landscape team for more information.
     @signal(IFACE_NAME)
     def server_uuid_changed(self, old_uuid, new_uuid):
         pass
+
+    @signal(IFACE_NAME)
+    def package_data_changed(self):
+        """Fire a package-data-changed event in the reactor of each client."""
 
     @method(IFACE_NAME)
     def register_client_accepted_message_type(self, type):

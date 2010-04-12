@@ -467,23 +467,23 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         """
 
         def handle_callback(result):
-           messages = self.broker_service.message_store.get_pending_messages()
-           self.assertEquals(len(messages), 3, messages)
-           # Ignore the message created by plugin.run.
-           self.assertMessages([messages[2], messages[1]],
-                               [{"timestamp": 0, "type": "users", "operation-id": 99,
-                                 "update-users": [{"home-phone": None,
-                                                   "username": "jdoe",
-                                                   "uid": 1000,
-                                                   "enabled": False,
-                                                   "location": None,
-                                                   "work-phone": None,
-                                                   "primary-gid": 1000,
-                                                   "name": u"John Doe"}]},
-                                {"type": "operation-result",
-                                 "status": SUCCEEDED,
-                                 "operation-id": 99, "timestamp": 0,
-                                 "result-text": "lock_user succeeded"}])
+            messages = self.broker_service.message_store.get_pending_messages()
+            self.assertEquals(len(messages), 3, messages)
+            # Ignore the message created by plugin.run.
+            self.assertMessages([messages[2], messages[1]],
+                                [{"timestamp": 0, "type": "users", "operation-id": 99,
+                                  "update-users": [{"home-phone": None,
+                                                    "username": "jdoe",
+                                                    "uid": 1000,
+                                                    "enabled": False,
+                                                    "location": None,
+                                                    "work-phone": None,
+                                                    "primary-gid": 1000,
+                                                    "name": u"John Doe"}]},
+                                 {"type": "operation-result",
+                                  "status": SUCCEEDED,
+                                  "operation-id": 99, "timestamp": 0,
+                                  "result-text": "lock_user succeeded"}])
 
         users = [("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh")]
         self.setup_environment(users, [], self.shadow_file)
@@ -720,7 +720,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
 
         users = [("psmith", "x", 1000, 1000, "Paul Smith,,,,", "/home/psmith",
                   "/bin/zsh")]
-        plugin = self.setup_environment(users, [], self.shadow_file)
+        self.setup_environment(users, [], self.shadow_file)
 
         result = self.manager.dispatch_message(
             {"username": "psmith",
@@ -1072,7 +1072,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         users = [("jdoe", "x", 1000, 1000, "John Doe,,,,", "/bin/sh",
                   "/home/jdoe")]
         groups = [("bizdev", "x", 1001, [])]
-        plugin = self.setup_environment(users, groups, None)
+        self.setup_environment(users, groups, None)
         result = self.manager.dispatch_message(
             {"username": "jdoe",
              "groupname": "bizdev",
@@ -1123,7 +1123,6 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
         """
 
         def handle_callback1(result):
-            message_store = self.broker_service.message_store
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertTrue(messages)
             result = plugin.run()

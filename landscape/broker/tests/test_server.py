@@ -382,7 +382,6 @@ class HandlersTest(LandscapeTest):
         self.client.message(message)
         self.mocker.result(succeed(True))
         self.mocker.replay()
-        self.transport
         self.transport.responses.append([{"type": "foobar", "value": 42}])
         self.exchanger.exchange()
 
@@ -402,7 +401,7 @@ class HandlersTest(LandscapeTest):
         result = self.reactor.fire("message", message)
         result = [result for result in result if result is not None][0]
 
-        class Startswith(object):
+        class StartsWith(object):
 
             def __eq__(self, other):
                 return other.startswith(
@@ -412,7 +411,7 @@ class HandlersTest(LandscapeTest):
             self.assertMessages(
                 self.mstore.get_pending_messages(),
                 [{"type": "operation-result", "status": FAILED,
-                  "result-text": Startswith(), "operation-id": 4}])
+                  "result-text": StartsWith(), "operation-id": 4}])
 
         result.addCallback(broadcasted)
         return result
@@ -439,7 +438,7 @@ class HandlersTest(LandscapeTest):
         self.mocker.replay()
         self.reactor.fire("exchange-failed")
 
-    def test_registartion_done(self):
+    def test_registration_done(self):
         """
         When a C{registration-done} event is fired by the reactor, the
         broker broadcasts it to its clients.
@@ -461,7 +460,7 @@ class HandlersTest(LandscapeTest):
         self.mocker.replay()
         self.reactor.fire("message-type-acceptance-changed", "test", True)
 
-    def test_serger_uuid_changed(self):
+    def test_server_uuid_changed(self):
         """
         When a C{server-uuid-changed} event is fired by the reactor, the
         broker broadcasts it to its clients.

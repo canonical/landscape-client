@@ -42,6 +42,7 @@ class UserMonitor(MonitorPlugin):
             self.registry.reactor, self.registry.config)
 
     def stop(self):
+        """Stop listening for incoming AMP connections."""
         if self._port:
             self._port.stopListening()
             self._port = None

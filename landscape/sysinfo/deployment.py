@@ -60,6 +60,7 @@ class SysInfoConfiguration(Configuration):
                            % (plugin_name.lower(), plugin_name))()
                 for plugin_name in plugins]
 
+
 def get_landscape_log_directory(landscape_dir=None):
     """
     Work out the correct path to store logs in depending on the effective
@@ -79,7 +80,7 @@ def setup_logging(landscape_dir=None):
     logger.propagate = False
     if not os.path.isdir(landscape_dir):
         os.mkdir(landscape_dir)
-    log_filename = os.path.join(landscape_dir,  "sysinfo.log")
+    log_filename = os.path.join(landscape_dir, "sysinfo.log")
     handler = RotatingFileHandler(log_filename,
                                   maxBytes=500 * 1024, backupCount=1)
     logger.addHandler(handler)
@@ -113,11 +114,13 @@ def run(args, reactor=None, sysinfo=None):
         done = Deferred()
         reactor.callWhenRunning(
             lambda: maybeDeferred(run_sysinfo).chainDeferred(done))
+
         def stop_reactor(result):
             # We won't need to use callLater here once we use Twisted >8.
             # tm:3011
             reactor.callLater(0, reactor.stop)
             return result
+
         done.addBoth(stop_reactor)
         reactor.run()
     else:

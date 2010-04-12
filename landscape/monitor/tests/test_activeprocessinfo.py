@@ -414,7 +414,6 @@ class ActiveProcessInfoTest(LandscapeTest):
         expected_messages.extend(expected_messages)
         self.assertMessages(messages, expected_messages)
 
-
     def test_do_not_persist_changes_when_send_message_fails(self):
         """
         When the plugin is run it persists data that it uses on
@@ -422,7 +421,10 @@ class ActiveProcessInfoTest(LandscapeTest):
         only persist data when the broker confirms that the message
         sent by the plugin has been sent.
         """
-        class MyException(Exception): pass
+
+        class MyException(Exception):
+            pass
+
         self.log_helper.ignore_errors(MyException)
 
         self.builder.create_data(672, self.builder.RUNNING,
@@ -488,14 +490,16 @@ class ActiveProcessInfoTest(LandscapeTest):
                                        {"timestamp": 0,
                                         "api": SERVER_API,
                                         "type": "active-process-info",
-                                        "update-processes": [{"start-time": 110,
-                                                              "name": u"init",
-                                                              "pid": 1,
-                                                              "percent-cpu": 0.0,
-                                                              "state": "R",
-                                                              "gid": 0,
-                                                              "vm-size": 20000,
-                                                              "uid": 0}]}])
+                                        "update-processes": [
+                                            {"start-time": 110,
+                                             "name": u"init",
+                                             "pid": 1,
+                                             "percent-cpu": 0.0,
+                                             "state": "R",
+                                             "gid": 0,
+                                             "vm-size": 20000,
+                                             "uid": 0}]}])
+
 
 class PluginManagerIntegrationTest(LandscapeTest):
 

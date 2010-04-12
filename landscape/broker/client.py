@@ -144,7 +144,7 @@ class BrokerClient(object):
     def fire_event(self, event_type, *args, **kwargs):
         """Fire an event of a given type.
 
-        @return: A L{Deferred} resulting in a list of return values of
+        @return: A L{Deferred} resulting in a list of returns values of
             the fired event handlers, in the order they were fired.
         """
         if event_type == "message-type-acceptance-changed":
