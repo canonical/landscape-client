@@ -280,9 +280,39 @@ class StartServiceHubTest(LandscapeTest):
         self.assertNotIdentical(None, start_service_hub(base_path))
         self.assertTrue(os.path.exists(data_path))
 
+    def test_start_service_hub_with_existing_data_dir(self):
+        """
+        L{start_service_hub} creates and starts the L{ServiceHub} used to
+        retrieve information about Eucalyptus. If the directory already
+        exists it is used.
+        """
+        base_path = self.makeDir("start-service-hub")
+        data_path = os.path.join(base_path, "eucalyptus")
+        os.makedirs(data_path)
+
+        from twisted.internet import reactor
+
+        euca_service_factory = self.mocker.replace(
+            "imagestore.eucaservice.EucaService", passthrough=False)
+        service_hub_factory = self.mocker.replace(
+            "imagestore.lib.service.ServiceHub", passthrough=False)
+        euca_service = object()
+
+        euca_service_factory(reactor, data_path)
+        self.mocker.result(euca_service)
+        service_hub = service_hub_factory()
+        self.expect(service_hub.addService(euca_service))
+        self.expect(service_hub.start())
+        self.mocker.replay()
+
+        self.assertTrue(os.path.exists(data_path))
+        self.assertNotIdentical(None, start_service_hub(base_path))
+        self.assertTrue(os.path.exists(data_path))
+
     if FakeEucaInfo is None:
         skip_message = "imagestore module not available"
         test_start_service_hub.skip = skip_message
+        test_start_service_hub_with_existing_data_dir.skip = skip_message
 
 
 class GetEucalyptusInfoTest(LandscapeTest):
