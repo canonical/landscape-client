@@ -226,7 +226,12 @@ class BrokerServerTest(LandscapeTest):
         post_exit()
         self.mocker.replay()
         self.reactor.call_on("post-exit", post_exit)
-        return self.assertSuccess(self.broker.exit())
+
+        def assert_event(ignored):
+            self.reactor.advance(1)
+
+        result = self.broker.exit()
+        return result.addCallback(assert_event)
 
     def test_exit_fires_reactor_events(self):
         """
@@ -246,7 +251,12 @@ class BrokerServerTest(LandscapeTest):
         self.mocker.replay()
         self.reactor.call_on("pre-exit", pre_exit)
         self.reactor.call_on("post-exit", post_exit)
-        return self.assertSuccess(self.broker.exit())
+
+        def assert_event(ignored):
+            self.reactor.advance(1)
+
+        result = self.broker.exit()
+        return result.addCallback(assert_event)
 
 
 class EventTest(LandscapeTest):
@@ -320,6 +330,8 @@ class EventTest(LandscapeTest):
             self.remote.register_client_accepted_message_type = \
                                                         self.mocker.mock()
             self.remote.register_client_accepted_message_type("type")
+            self.remote.register_client = self.mocker.mock()
+            self.remote.register_client("client")
             self.mocker.replay()
             return self.assertSuccess(self.broker.broker_reconnect(), [[None]])
 

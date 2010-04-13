@@ -96,6 +96,13 @@ class RemoteComponentConnectorTest(LandscapeTest):
         self.assertFailure(result, ConnectError)
         return result.addCallback(assert_log)
 
+    def test_connect_with_quiet(self):
+        """
+        If the C{quiet} option is passed, no errors will be logged.
+        """
+        result = self.connector.connect(max_retries=0, quiet=True)
+        return self.assertFailure(result, ConnectError)
+
     def test_reconnect_fires_event(self):
         """
         An event is fired whenever the connection is established again after

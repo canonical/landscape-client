@@ -90,4 +90,5 @@ class BrokerService(LandscapeService):
 
 
 def run(args):
+    """Run the application, given some command line arguments."""
     run_landscape_service(BrokerConfiguration, BrokerService, args)
