@@ -117,9 +117,9 @@ class WatchDogTest(LandscapeTest):
         return result.addCallback(got_result)
 
     def expect_request_exit(self):
-        self.expect(self.broker.be_ready_to_die())
-        self.expect(self.monitor.be_ready_to_die())
-        self.expect(self.manager.be_ready_to_die())
+        self.expect(self.broker.prepare_for_shutdown())
+        self.expect(self.monitor.prepare_for_shutdown())
+        self.expect(self.manager.prepare_for_shutdown())
         self.expect(self.broker.request_exit()).result(succeed(True))
         self.expect(self.broker.wait_or_die()).result(succeed(None))
         self.expect(self.monitor.wait_or_die()).result(succeed(None))
@@ -237,7 +237,7 @@ class BoringDaemon(object):
     def wait_or_die(self):
         return self.wait()
 
-    def be_ready_to_die(self):
+    def prepare_for_shutdown(self):
         pass
 
 

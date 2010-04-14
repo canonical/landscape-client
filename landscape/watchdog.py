@@ -98,7 +98,7 @@ class Daemon(object):
         self._process = None
         self._last_started = 0
         self._quick_starts = 0
-        self._restart_when_ended = True
+        self._allow_restart = True
 
     def find_executable(self):
         """Find the fully-qualified path to the executable.
@@ -193,17 +193,17 @@ class Daemon(object):
             return succeed(None)
         return self._process.wait_or_die()
 
-    def be_ready_to_die(self):
+    def prepare_for_shutdown(self):
         """Called by the watchdog when starting to shut us down.
 
         It will prevent our L{WatchedProcessProtocol} to restart the process
         when it exits.
         """
-        self._restart_when_ended = False
+        self._allow_restart = False
 
-    def restart_when_ended(self):
+    def allow_restart(self):
         """Return a boolean indicating if the daemon should be restarted."""
-        return self._restart_when_ended
+        return self._allow_restart
 
     def rotate_logs(self):
         self._process.rotate_logs()
@@ -297,7 +297,7 @@ class WatchedProcessProtocol(ProcessProtocol):
             self._delayed_terminate.cancel()
         if self._wait_result is not None:
             self._wait_result.callback(None)
-        elif self.daemon.restart_when_ended():
+        elif self.daemon.allow_restart():
             self.daemon.start()
 
 
@@ -342,7 +342,7 @@ class WatchDog(object):
         results = []
         for daemon in self.daemons:
             # This method is called on startup, we basically try to connect
-            # a few times in fast sequence (we exponential decay), if we
+            # a few times in fast sequence (with exponential backoff), if we
             # don't get a response we assume the daemon is not running.
             result = daemon.is_running()
             result.addCallback(lambda is_running, d=daemon: (is_running, d))
@@ -409,9 +409,9 @@ class WatchDog(object):
         # ping has already been sent but not yet responded to.
         self._stopping = True
 
-        # This tells the daemons to no automatically restart when they end
+        # This tells the daemons to not automatically restart when they end
         for daemon in self.daemons:
-            daemon.be_ready_to_die()
+            daemon.prepare_for_shutdown()
 
         def terminate_processes(broker_stopped):
             if broker_stopped:
