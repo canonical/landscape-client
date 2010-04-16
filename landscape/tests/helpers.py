@@ -734,6 +734,7 @@ def install_trial_hack():
     if "addError" in IReporter:
         # We have no need for this monkey patch with newer versions of Twisted.
         return
+
     def run(self, result):
         """
         Copied from twisted.trial.unittest.TestCase.run, but some
