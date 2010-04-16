@@ -448,36 +448,6 @@ class PackageTaskHandlerTest(LandscapeTest):
         result = run_task_handler(handler_factory_mock,
                                   ["-c", self.config_filename])
         return result.addCallback(assert_log)
-        # Ignore a bunch of crap that we don't care about
-        reactor_mock = self.mocker.patch(TwistedReactor)
-        init_logging_mock = self.mocker.replace("landscape.deployment"
-                                                ".init_logging",
-                                                passthrough=False)
-        init_logging_mock(ARGS)
-        reactor_mock.run()
-
-        class MyException(Exception):
-            pass
-
-        self.log_helper.ignore_errors(MyException)
-
-        # Simulate a task handler which errors out.
-        handler_factory_mock = self.mocker.proxy(PackageTaskHandler)
-        handler_mock = handler_factory_mock(ARGS)
-        self.expect(handler_mock.run()).result(fail(MyException("Hey error")))
-
-        reactor_mock.call_later(0, reactor.stop)
-
-        self.mocker.replay()
-
-        # Ok now for some real stuff
-
-        def assert_log(ignored):
-            self.assertIn("MyException", self.logfile.getvalue())
-
-        result = run_task_handler(handler_factory_mock,
-                                  ["-c", self.config_filename])
-        return result.addCallback(assert_log)
 
 
 class LazyRemoteBrokerTest(LandscapeTest):
