@@ -552,6 +552,15 @@ class RemoteObjectConnectorTest(LandscapeTest):
         self.connector.disconnect()
         self.assertIs(self.connector._remote, None)
 
+    def test_disconnect_without_connect(self):
+        """
+        It is possible to call L{RemoteObjectConnector.disconnect} even
+        if the connection was never established. In that case the method
+        is effectively a no-op.
+        """
+        connector = RemoteWordsConnector(None, None)
+        connector.disconnect()
+
     def test_reconnect(self):
         """
         If the connection is lost, the L{RemoteObject} created by the creator
