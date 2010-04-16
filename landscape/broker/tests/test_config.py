@@ -9,6 +9,10 @@ class ConfigurationTests(LandscapeTest):
     helpers = [EnvironSaverHelper]
 
     def test_loading_sets_http_proxies(self):
+        """
+        The L{BrokerConfiguration.load} method sets the 'http_proxy' and
+        'https_proxy' enviroment variables to the provided values.
+        """
         if "http_proxy" in os.environ:
             del os.environ["http_proxy"]
         if "https_proxy" in os.environ:
@@ -22,6 +26,11 @@ class ConfigurationTests(LandscapeTest):
         self.assertEquals(os.environ["https_proxy"], "bar")
 
     def test_loading_without_http_proxies_does_not_touch_environment(self):
+        """
+        The L{BrokerConfiguration.load} method doesn't override the
+        'http_proxy' and 'https_proxy' enviroment variables if they
+        are already set and no new value was specified.
+        """
         os.environ["http_proxy"] = "heyo"
         os.environ["https_proxy"] = "baroo"
 
@@ -54,6 +63,10 @@ class ConfigurationTests(LandscapeTest):
         self.assertEquals(os.environ["https_proxy"], "originals")
 
     def test_intervals_are_ints(self):
+        """
+        The 'urgent_exchange_interval and 'exchange_interval' values specified
+        in the configuration file are converted to integers.
+        """
         filename = self.makeFile("[client]\n"
                                  "urgent_exchange_interval = 12\n"
                                  "exchange_interval = 34\n")

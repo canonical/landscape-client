@@ -35,6 +35,11 @@ class PackageTaskHandlerConfiguration(Configuration):
         """Get the path to the directory holding the stock hash-id stores."""
         return os.path.join(self.package_directory, "hash-id")
 
+    @property
+    def smart_update_stamp_filename(self):
+        """Get the path to the smart-update stamp file."""
+        return os.path.join(self.package_directory, "smart-update-stamp")
+
 
 class PackageTaskHandler(object):
 

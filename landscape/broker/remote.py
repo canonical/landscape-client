@@ -36,6 +36,10 @@ class RemoteBroker(object):
         return self._perform_call("send_message",
                                   byte_array(dumps(message)), urgent)
 
+    def fire_event(self, event_type):
+        """Fire an event in the broker reactor."""
+        return self._perform_call("fire_event", event_type)
+
     def reload_configuration(self):
         """Reload the broker configuration.
 
@@ -128,6 +132,8 @@ class DBusSignalToReactorTransmitter(object):
                                 "message_type_acceptance_changed")
         bus.add_signal_receiver(self._broadcast_server_uuid_changed,
                                 "server_uuid_changed")
+        bus.add_signal_receiver(self._broadcast_package_data_changed,
+                                "package_data_changed")
 
 
     def _broadcast_resynchronize(self):
@@ -148,3 +154,5 @@ class DBusSignalToReactorTransmitter(object):
         self.reactor.fire("server-uuid-changed",
                           old_uuid or None, new_uuid or None)
 
+    def _broadcast_package_data_changed(self):
+        self.reactor.fire("package-data-changed")

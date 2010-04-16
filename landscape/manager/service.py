@@ -22,11 +22,20 @@ class ManagerService(LandscapeService):
         self.factory = BrokerClientProtocolFactory(object=self.manager)
 
     def get_plugins(self):
+        """Return instances of all the plugins enabled in the configuration."""
         return [namedClass("landscape.manager.%s.%s"
                            % (plugin_name.lower(), plugin_name))()
                 for plugin_name in self.config.plugin_factories]
 
     def startService(self):
+        """Start the manager service.
+
+        This method does 3 things, in this order:
+
+          - Start listening for connections on the manager socket.
+          - Connect to the broker.
+          - Add all configured plugins, that will in turn register themselves.
+        """
         super(ManagerService, self).startService()
 
         def start_plugins(broker):

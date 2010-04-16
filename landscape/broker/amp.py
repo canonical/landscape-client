@@ -15,7 +15,8 @@ class BrokerServerProtocol(ComponentProtocol):
     Communication protocol between the broker server and its clients.
     """
     methods = (ComponentProtocol.methods +
-               ["get_accepted_message_types",
+               ["fire_event",
+                "get_accepted_message_types",
                 "get_server_uuid",
                 "is_message_pending",
                 "register",

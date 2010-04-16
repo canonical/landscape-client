@@ -13,6 +13,13 @@ class MonitorPlugin(BrokerClientPlugin):
         super(MonitorPlugin, self).register(monitor)
         if self.persist_name is not None:
             self._persist = self.monitor.persist.root_at(self.persist_name)
+        else:
+            self._persist = None
+
+    @property
+    def persist(self):
+        """Return our L{Persist}, if any."""
+        return self._persist
 
     @property
     def monitor(self):

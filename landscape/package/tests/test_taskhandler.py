@@ -22,6 +22,19 @@ def ISTYPE(match_type):
 SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
 
 
+class PackageTaskHandlerConfigurationTest(LandscapeTest):
+
+    def test_force_smart_update_option(self):
+        """
+        L{PackageReporterConfiguration.smart_update_stamp_filename} points
+        to the smart-update stamp file.
+        """
+        config = PackageTaskHandlerConfiguration()
+        self.assertEquals(
+            config.smart_update_stamp_filename,
+            "/var/lib/landscape/client/package/smart-update-stamp")
+
+
 class PackageTaskHandlerTest(LandscapeTest):
 
     helpers = [SmartFacadeHelper, BrokerServiceHelper]

@@ -2,55 +2,45 @@
 
 help () {
     cat <<EOF
-$0 [OPTION] ... <release>: build a landscape-client VM for the specified release
-
-Available options:
+$0 [OPTION] ... <release>: build a landscape-client VM
+for the specified release. Available options:
 
   -m, --mirror <mirror>      The Ubuntu mirror to use to build the VM, and
                              for the APT sources inside the VM itself.
-
-                             If you want to use apt-proxy, you have to modify the
-                             apt-proxy-v2.conf file to make apt-proxy listen to
-                             your actual network interface address, instead of
-                             the loopback one. For example:
-
-                             ;; Server IP to listen on
-                             address = 192.168.1.162
-
+                             If you want to use apt-proxy, you have to
+                             modify the apt-proxy-v2.conf file to make
+                             apt-proxy listen to your actual network
+                             interface address, instead of the loopback one.
+                             For example:
+                                 ;; Server IP to listen on
+                                 address = 192.168.1.162
   -s, --server <host>        The hostname of the Landscape server the client
                              should connect to.
-
   -a, --account <account>    The name of the Landscape account to use.
-
   -p, --password <password>  The password for the Landscape account.
-
-  -P, --profile <profile>    Package profile to use, can be server or desktop.
-
-  -k, --ssl-key <key>        Specify an SSL key to be used in the client config.
-
+  -P, --profile <profile>    Package profile to use, can be server or
+                             desktop.
+  -k, --ssl-key <key>        Specify an SSL key to be used in the client
+                             config.
   -r, --repository <ppa>     Specify the PPA holding the client packages.
-
-  -b, --build <yes|no>       If yes, the landscape-client packages from this branch
-                             will be built and installed inside the VM, otherwise
-                             they will be pulled from the APT repositories.
+  -b, --build <yes|no>       If yes, the landscape-client packages from this
+                             branch will be built and installed inside the
+                             VM, otherwise they will be pulled from the APT
+                             repositories.
 
 For example, this script can be invoked like this:
 
 ./dev/landscape-client-vm --password <LANDSCAPE_DEVEL_ACCOUNT_PW> intrepid
 
-where <LANDSCAPE_DEVEL_ACCOUNT_PW> is the account password of the landscape-devel
-account on the Landscape staging server (or you can specify another account with
-the --account parameter).
+where <LANDSCAPE_DEVEL_ACCOUNT_PW> is the account password of the
+landscape-devel account on the Landscape staging server (or you can specify
+another account with the --account parameter).
 
 The built VM will be stored under ./build/intrepid along with some other
-files. To launch the VM, cd to ./build/intrepid and issue:
-
-./run
-
+files. To launch the VM, cd to ./build/intrepid and issue: 
+$ ./run
 Once it's booted you can log into it with:
-
-./ssh
-
+$ ./ssh
 EOF
 }
 

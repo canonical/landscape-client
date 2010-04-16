@@ -36,7 +36,9 @@ class MonitorPluginRegistryTest(LandscapeTest):
         The L{Monitor.exchange} method flushes the monitor after
         C{exchange} on all plugins has been called.
         """
+
         class SamplePlugin(ExchangePlugin):
+
             def exchange(myself):
                 self.monitor.persist.set("a", 1)
                 super(SamplePlugin, myself).exchange()
@@ -84,6 +86,7 @@ class MonitorDBusObjectTest(LandscapeIsolatedTest):
 
     def test_ping(self):
         result = self.service.ping()
+
         def got_result(result):
             self.assertEquals(result, True)
         return result.addCallback(got_result)
