@@ -492,6 +492,7 @@ class DaemonTestBase(LandscapeTest):
 
         if hasattr(self, "broker_service"):
             # DaemonBrokerTest
+            self.broker_service.startService()
             self.config = self.broker_service.config
         else:
             # DaemonTest
@@ -503,6 +504,9 @@ class DaemonTestBase(LandscapeTest):
 
     def tearDown(self):
         sys.argv = self.saved_argv
+        if hasattr(self, "broker_service"):
+            # DaemonBrokerTest
+            self.broker_service.stopService()
         super(DaemonTestBase, self).tearDown()
 
     def get_daemon(self, **kwargs):
