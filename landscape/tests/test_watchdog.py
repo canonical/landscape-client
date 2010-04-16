@@ -5,23 +5,23 @@ import os
 import signal
 import logging
 
-import dbus
-
 from twisted.internet.utils import getProcessOutput
 from twisted.internet.defer import Deferred, succeed, fail
 from twisted.internet import reactor
 
-from landscape.broker.broker import BUS_NAME, OBJECT_PATH, IFACE_NAME
-from landscape.tests.mocker import ARGS, KWARGS
+from landscape.tests.mocker import ARGS, KWARGS, ANY
 from landscape.tests.clock import Clock
 from landscape.tests.helpers import (
-    LandscapeIsolatedTest, LandscapeTest, DBusHelper, RemoteBrokerHelper,
-    EnvironSaverHelper)
+    LandscapeTest, EnvironSaverHelper, BrokerServiceHelper)
 from landscape.watchdog import (
     Daemon, WatchDog, WatchDogService, ExecutableNotFoundError,
     WatchDogConfiguration, bootstrap_list,
     MAXIMUM_CONSECUTIVE_RESTARTS, RESTART_BURST_DELAY, run,
     Broker, Monitor, Manager)
+from landscape.amp import ComponentProtocolFactory, RemoteComponentConnector
+from landscape.broker.amp import RemoteBrokerConnector
+from landscape.reactor import TwistedReactor
+
 import landscape.watchdog
 
 
@@ -36,21 +36,18 @@ class WatchDogTest(LandscapeTest):
 
     def setUp(self):
         super(WatchDogTest, self).setUp()
-        self.bus = object()
-        self.broker_factory = self.mocker.replace("landscape.watchdog.Broker",
-                                                  passthrough=False)
-        self.monitor_factory = self.mocker.replace("landscape.watchdog.Monitor",
-                                                   passthrough=False)
-        self.manager_factory = self.mocker.replace("landscape.watchdog.Manager",
-                                                   passthrough=False)
+        self.broker_factory = self.mocker.replace(
+            "landscape.watchdog.Broker", passthrough=False)
+        self.monitor_factory = self.mocker.replace(
+            "landscape.watchdog.Monitor", passthrough=False)
+        self.manager_factory = self.mocker.replace(
+            "landscape.watchdog.Manager", passthrough=False)
+        self.config = WatchDogConfiguration()
 
     def start_all_daemons(self):
-        self.broker = self.broker_factory(self.bus, verbose=False,
-                                          config=None)
-        self.monitor = self.monitor_factory(self.bus, verbose=False,
-                                            config=None)
-        self.manager = self.manager_factory(self.bus, verbose=False,
-                                            config=None)
+        self.broker = self.broker_factory(ANY, verbose=False, config=None)
+        self.monitor = self.monitor_factory(ANY, verbose=False, config=None)
+        self.manager = self.manager_factory(ANY, verbose=False, config=None)
 
         self.expect(self.broker.program).result("landscape-broker")
         self.mocker.count(0, None)
@@ -63,18 +60,17 @@ class WatchDogTest(LandscapeTest):
         """The WatchDog sets up some daemons when constructed."""
         self.start_all_daemons()
         self.mocker.replay()
-        WatchDog(self.bus)
+        WatchDog(config=self.config)
 
     def test_limited_daemon_construction(self):
-        broker = self.broker_factory(self.bus, verbose=False, config=None)
-        monitor = self.monitor_factory(self.bus, verbose=False, config=None)
+        self.broker_factory(ANY, verbose=False, config=None)
+        self.monitor_factory(ANY, verbose=False, config=None)
         # The manager should *not* be constructed
-        manager = self.manager_factory(ARGS, KWARGS)
+        self.manager_factory(ARGS, KWARGS)
         self.mocker.count(0)
         self.mocker.replay()
 
-        WatchDog(self.bus, enabled_daemons=[Broker, Monitor])
-
+        WatchDog(enabled_daemons=[Broker, Monitor], config=self.config)
 
     def test_check_running_one(self):
         self.start_all_daemons()
@@ -82,7 +78,8 @@ class WatchDogTest(LandscapeTest):
         self.expect(self.monitor.is_running()).result(succeed(False))
         self.expect(self.manager.is_running()).result(succeed(False))
         self.mocker.replay()
-        result = WatchDog(self.bus).check_running()
+        result = WatchDog(config=self.config).check_running()
+
         def got_result(r):
             self.assertEquals([daemon.program for daemon in r],
                               ["landscape-broker"])
@@ -94,7 +91,8 @@ class WatchDogTest(LandscapeTest):
         self.expect(self.monitor.is_running()).result(succeed(True))
         self.expect(self.manager.is_running()).result(succeed(True))
         self.mocker.replay()
-        result = WatchDog(self.bus).check_running()
+        result = WatchDog(config=self.config).check_running()
+
         def got_result(r):
             self.assertEquals([daemon.program for daemon in r],
                               ["landscape-broker", "landscape-monitor",
@@ -106,19 +104,23 @@ class WatchDogTest(LandscapeTest):
         When the user has explicitly asked not to run some daemons, those
         daemons which are not being run should not checked.
         """
-        self.broker = self.broker_factory(self.bus, verbose=False,
-                                          config=None)
+        self.broker = self.broker_factory(ANY, verbose=False, config=None)
         self.expect(self.broker.program).result("landscape-broker")
         self.expect(self.broker.is_running()).result(succeed(True))
         self.mocker.replay()
-        result = WatchDog(self.bus, enabled_daemons=[Broker]).check_running()
+        result = WatchDog(enabled_daemons=[Broker],
+                          config=self.config).check_running()
+
         def got_result(r):
             self.assertEquals(len(r), 1)
             self.assertEquals(r[0].program, "landscape-broker")
         return result.addCallback(got_result)
 
     def expect_request_exit(self):
-        self.expect(self.broker.request_exit()).result(succeed(False))
+        self.expect(self.broker.prepare_for_shutdown())
+        self.expect(self.monitor.prepare_for_shutdown())
+        self.expect(self.manager.prepare_for_shutdown())
+        self.expect(self.broker.request_exit()).result(succeed(True))
         self.expect(self.broker.wait_or_die()).result(succeed(None))
         self.expect(self.monitor.wait_or_die()).result(succeed(None))
         self.expect(self.manager.wait_or_die()).result(succeed(None))
@@ -137,7 +139,7 @@ class WatchDogTest(LandscapeTest):
         self.mocker.replay()
 
         clock = Clock()
-        dog = WatchDog(self.bus, clock)
+        dog = WatchDog(clock, config=self.config)
         dog.start()
         clock.advance(0)
         return dog.request_exit()
@@ -146,8 +148,7 @@ class WatchDogTest(LandscapeTest):
         """
         start only starts the daemons which are actually enabled.
         """
-        self.broker = self.broker_factory(self.bus, verbose=False,
-                                          config=None)
+        self.broker = self.broker_factory(ANY, verbose=False, config=None)
         self.expect(self.broker.program).result("landscape-broker")
         self.mocker.count(0, None)
         self.broker.start()
@@ -155,7 +156,7 @@ class WatchDogTest(LandscapeTest):
         self.mocker.replay()
 
         clock = Clock()
-        dog = WatchDog(self.bus, clock, enabled_daemons=[Broker])
+        dog = WatchDog(clock, enabled_daemons=[Broker], config=self.config)
         dog.start()
 
     def test_request_exit(self):
@@ -169,7 +170,7 @@ class WatchDogTest(LandscapeTest):
         self.start_all_daemons()
         self.expect_request_exit()
         self.mocker.replay()
-        return WatchDog(self.bus).request_exit()
+        return WatchDog(config=self.config).request_exit()
 
     def test_ping_reply_after_request_exit_should_not_restart_processes(self):
         """
@@ -198,7 +199,7 @@ class WatchDogTest(LandscapeTest):
 
         clock = Clock()
 
-        dog = WatchDog(self.bus, clock)
+        dog = WatchDog(clock, config=self.config)
         dog.start()
         clock.advance(0)
         clock.advance(5)
@@ -210,7 +211,9 @@ class WatchDogTest(LandscapeTest):
 START = "start"
 STOP = "stop"
 
+
 class BoringDaemon(object):
+
     def __init__(self, program):
         self.program = program
         self.boots = []
@@ -226,13 +229,16 @@ class BoringDaemon(object):
         return succeed(True)
 
     def request_exit(self):
-        return True
+        return succeed(True)
 
     def wait(self):
         return succeed(None)
 
     def wait_or_die(self):
         return self.wait()
+
+    def prepare_for_shutdown(self):
+        pass
 
 
 class AsynchronousPingDaemon(BoringDaemon):
@@ -257,7 +263,7 @@ class NonMockerWatchDogTests(LandscapeTest):
 
     def test_ping_is_not_rescheduled_until_pings_complete(self):
         clock = Clock()
-        dog = WatchDog(object(), clock,
+        dog = WatchDog(clock,
                        broker=AsynchronousPingDaemon("test-broker"),
                        monitor=AsynchronousPingDaemon("test-monitor"),
                        manager=AsynchronousPingDaemon("test-manager"))
@@ -281,7 +287,7 @@ class NonMockerWatchDogTests(LandscapeTest):
         checks fail, the daemon will be restarted.
         """
         clock = Clock()
-        dog = WatchDog(object(), clock,
+        dog = WatchDog(clock,
                        broker=AsynchronousPingDaemon("test-broker"),
                        monitor=AsynchronousPingDaemon("test-monitor"),
                        manager=AsynchronousPingDaemon("test-manager"))
@@ -307,7 +313,7 @@ class NonMockerWatchDogTests(LandscapeTest):
         require 5 more ping failures to restart the daemon.
         """
         clock = Clock()
-        dog = WatchDog(object(), clock,
+        dog = WatchDog(clock,
                        broker=AsynchronousPingDaemon("test-broker"),
                        monitor=AsynchronousPingDaemon("test-monitor"),
                        manager=AsynchronousPingDaemon("test-manager"))
@@ -343,7 +349,7 @@ class NonMockerWatchDogTests(LandscapeTest):
         cause the scheduled call to exist but already fired.
         """
         clock = Clock()
-        dog = WatchDog(object(), clock,
+        dog = WatchDog(clock,
                        broker=BoringDaemon("test-broker"),
                        monitor=BoringDaemon("test-monitor"),
                        manager=AsynchronousPingDaemon("test-manager"))
@@ -357,7 +363,7 @@ class NonMockerWatchDogTests(LandscapeTest):
         not be restarted until the process has fully died.
         """
         clock = Clock()
-        dog = WatchDog(object(), clock,
+        dog = WatchDog(clock,
                        broker=AsynchronousPingDaemon("test-broker"),
                        monitor=BoringDaemon("test-monitor"),
                        manager=BoringDaemon("test-manager"))
@@ -379,7 +385,7 @@ class NonMockerWatchDogTests(LandscapeTest):
         pinged until after the restart completes.
         """
         clock = Clock()
-        dog = WatchDog(object(), clock,
+        dog = WatchDog(clock,
                        broker=AsynchronousPingDaemon("test-broker"),
                        monitor=BoringDaemon("test-monitor"),
                        manager=BoringDaemon("test-manager"))
@@ -407,7 +413,7 @@ class NonMockerWatchDogTests(LandscapeTest):
         again.
         """
         clock = Clock()
-        dog = WatchDog(object(), clock,
+        dog = WatchDog(clock,
                        broker=AsynchronousPingDaemon("test-broker"),
                        monitor=BoringDaemon("test-monitor"),
                        manager=BoringDaemon("test-manager"))
@@ -435,19 +441,20 @@ class NonMockerWatchDogTests(LandscapeTest):
             "Couldn't request that broker gracefully shut down; "
             "killing forcefully.")
         clock = Clock()
-        dog = WatchDog(object(), clock,
+        dog = WatchDog(clock,
                        broker=BoringDaemon("test-broker"),
                        monitor=BoringDaemon("test-monitor"),
                        manager=BoringDaemon("test-manager"))
 
         # request_exit returns False when there's no broker, as tested by
         # DaemonTest.test_request_exit_without_broker
-        dog.broker.request_exit = lambda: False
+        dog.broker.request_exit = lambda: succeed(False)
         # The manager's wait method never fires its deferred because nothing
         # told it to die because the broker is dead!
 
         manager_result = Deferred()
         dog.manager.wait = lambda: manager_result
+
         def stop():
             manager_result.callback(True)
             return succeed(True)
@@ -457,29 +464,56 @@ class NonMockerWatchDogTests(LandscapeTest):
         return result
 
 
-class DaemonTestBase(LandscapeIsolatedTest):
-    bus = None
+class StubBroker(object):
+
+    name = "broker"
+
+
+class StubBrokerProtocolFactory(ComponentProtocolFactory):
+
+    initialDelay = 0.1
+
+
+class RemoteStubBrokerConnector(RemoteComponentConnector):
+
+    component = StubBroker
+    factory = StubBrokerProtocolFactory
+
+
+class DaemonTestBase(LandscapeTest):
+
+    connector_factory = RemoteStubBrokerConnector
 
     def setUp(self):
         super(DaemonTestBase, self).setUp()
-
         self.exec_dir = self.makeDir()
         self.exec_name = os.path.join(self.exec_dir, "landscape-broker")
-
-        self.daemon = self.get_daemon()
-
         self.saved_argv = sys.argv
         sys.argv = [os.path.join(self.exec_dir, "arv0_execname")]
 
+        if hasattr(self, "broker_service"):
+            # DaemonBrokerTest
+            self.broker_service.startService()
+            self.config = self.broker_service.config
+        else:
+            # DaemonTest
+            self.config = WatchDogConfiguration()
+            self.config.data_path = self.makeDir()
+
+        self.connector = self.connector_factory(TwistedReactor(), self.config)
+        self.daemon = self.get_daemon()
+
     def tearDown(self):
         sys.argv = self.saved_argv
+        if hasattr(self, "broker_service"):
+            # DaemonBrokerTest
+            self.broker_service.stopService()
         super(DaemonTestBase, self).tearDown()
 
     def get_daemon(self, **kwargs):
-        daemon = Daemon(self.bus, **kwargs)
+        daemon = Daemon(self.connector, **kwargs)
         daemon.program = os.path.basename(self.exec_name)
-        daemon.bus_name = BUS_NAME
-        daemon.object_path = OBJECT_PATH
+        daemon.factor = 0.01
         return daemon
 
 
@@ -497,8 +531,6 @@ class FileChangeWaiter(object):
 
 
 class DaemonTest(DaemonTestBase):
-
-    helpers = [DBusHelper]
 
     def test_find_executable_works(self):
         self.makeFile("I'm the broker.", path=self.exec_name)
@@ -537,7 +569,8 @@ class DaemonTest(DaemonTestBase):
 
         waiter.wait()
 
-        self.assertEquals(open(output_filename).read(), "RUN --ignore-sigint\n")
+        self.assertEquals(open(output_filename).read(),
+                          "RUN --ignore-sigint\n")
 
         return daemon.stop()
 
@@ -599,6 +632,7 @@ class DaemonTest(DaemonTestBase):
         os.chmod(self.exec_name, 0755)
 
         self.daemon.start()
+
         def got_result(result):
             self.assertEquals(open(output_filename).read(), "RUN\n")
         return self.daemon.wait().addCallback(got_result)
@@ -614,6 +648,7 @@ class DaemonTest(DaemonTestBase):
         os.chmod(self.exec_name, 0755)
 
         self.daemon.start()
+
         def got_result(result):
             self.assertEquals(open(output_filename).read(), "RUN\n")
         return self.daemon.wait_or_die().addCallback(got_result)
@@ -643,6 +678,7 @@ time.sleep(999)
                         landscape.watchdog.GRACEFUL_WAIT_PERIOD)
         landscape.watchdog.GRACEFUL_WAIT_PERIOD = 0.2
         self.daemon.start()
+
         def got_result(result):
             self.assertEquals(open(output_filename).read(), "TERMINATED")
         return self.daemon.wait_or_die().addCallback(got_result)
@@ -701,7 +737,6 @@ time.sleep(999)
         l = []
         daemon.wait_or_die().addCallback(l.append)
         self.assertEquals(l, [None])
-
 
     def test_simulate_broker_not_starting_up(self):
         """
@@ -841,35 +876,23 @@ time.sleep(999)
         daemon.start()
 
     def test_request_exit(self):
-        """The request_exit() method calls exit() on the broker synchronously.
-
-        The method must be synchronous because we don't want the watchdog to
-        do anything else while we're requesting the broker to exit.  This makes
-        testing it a bit wild unfortunately.  We have to spawn the a stub
-        broker into a different process.
-        """
+        """The request_exit() method calls exit() on the broker process."""
 
         output_filename = self.makeFile("NOT CALLED")
+        socket_filename = os.path.join(self.config.data_path, "broker.sock")
         broker_filename = self.makeFile(STUB_BROKER %
                                         {"executable": sys.executable,
                                          "path": sys.path,
                                          "output_filename": output_filename,
-                                         "bus_name": BUS_NAME,
-                                         "object_path": OBJECT_PATH,
-                                         "iface_name": IFACE_NAME})
+                                         "socket": socket_filename})
 
         os.chmod(broker_filename, 0755)
-
         process_result = getProcessOutput(broker_filename, env=os.environ,
                                           errortoo=True)
 
         # Wait until the process starts up, trying the call a few times.
-        for i in range(50):
-            if self.daemon.request_exit():
-                break
-            time.sleep(0.1)
-        else:
-            self.fail("request_exit() never returned True.")
+        self.daemon.factor = 2.8
+        self.daemon.request_exit()
 
         def got_result(result):
             self.assertEquals(result, "")
@@ -882,16 +905,17 @@ time.sleep(999)
         The request_exit method returns False when the broker can't be
         contacted.
         """
-        self.assertFalse(self.daemon.request_exit())
+        result = self.daemon.request_exit()
+        return self.assertSuccess(result, False)
 
 
 class DaemonBrokerTest(DaemonTestBase):
 
-    helpers = [RemoteBrokerHelper]
+    helpers = [BrokerServiceHelper]
 
     @property
-    def bus(self):
-        return self.broker_service.bus
+    def connector_factory(self):
+        return RemoteBrokerConnector
 
     def test_is_running(self):
         result = self.daemon.is_running()
@@ -1004,8 +1028,9 @@ class WatchDogServiceTest(LandscapeTest):
         self.mocker.count(0)
 
         reactor = self.mocker.replace("twisted.internet.reactor",
-                                      passthrough=False)
+                                      passthrough=True)
         reactor.crash()
+        self.mocker.result(None)
 
         self.mocker.replay()
 
@@ -1084,10 +1109,6 @@ class WatchDogServiceTest(LandscapeTest):
         open(pid_file, "w").write(str(os.getpid()))
         service.stopService()
         self.assertTrue(os.path.exists(pid_file))
-
-    def test_start_service_uses_right_bus(self):
-        service = WatchDogService(self.configuration)
-        self.assertEquals(type(service.bus), dbus.SystemBus)
 
     def test_start_service_exits_when_already_running(self):
         self.log_helper.ignore_errors(
@@ -1212,7 +1233,7 @@ class WatchDogServiceTest(LandscapeTest):
         SIGUSR1 should cause logs to be reopened.
         """
         logging.getLogger().addHandler(logging.FileHandler(self.makeFile()))
-        service = WatchDogService(self.configuration)
+        WatchDogService(self.configuration)
         # We expect the Watchdog to delegate to each of the sub-processes
         daemon_mock = self.mocker.patch(Daemon)
         daemon_mock.rotate_logs()
@@ -1242,37 +1263,30 @@ import warnings
 warnings.filterwarnings("ignore", "Python C API version mismatch",
                         RuntimeWarning)
 
-from dbus import SessionBus
-import dbus.glib
-
-from twisted.internet.glib2reactor import install
-install()
 from twisted.internet import reactor
 
 sys.path = %(path)r
 
-from landscape.lib.dbus_util import Object, method
+from landscape.broker.amp import BrokerServerProtocolFactory
 
+class StubBroker(object):
 
-class StubBroker(Object):
-    bus_name = %(bus_name)r
-    object_path = %(object_path)r
-
-    @method(%(iface_name)r)
     def exit(self):
         file = open(%(output_filename)r, "w")
         file.write("CALLED")
         file.close()
         reactor.callLater(1, reactor.stop)
 
-stub_broker = StubBroker(SessionBus())
-
+stub_broker = StubBroker()
+factory = BrokerServerProtocolFactory(object=stub_broker)
+reactor.listenUNIX(%(socket)r, factory)
 reactor.run()
 """
 
 
 class FakeReactor(Clock):
     running = False
+
     def run(self):
         self.running = True
 
@@ -1295,7 +1309,7 @@ class WatchDogRunTests(LandscapeTest):
         self.mocker.replace("os.getuid")()
         self.mocker.count(1, None)
         self.mocker.result(1000)
-        getpwnam = mock = self.mocker.replace("pwd.getpwnam")
+        getpwnam = self.mocker.replace("pwd.getpwnam")
         getpwnam("landscape").pw_uid
         self.mocker.result(1001)
         self.mocker.replay()
