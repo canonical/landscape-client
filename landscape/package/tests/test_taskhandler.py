@@ -5,9 +5,10 @@ from twisted.internet.defer import Deferred, fail
 
 from landscape.lib.lock import lock_path
 from landscape.reactor import TwistedReactor
-from landscape.broker.amp import RemoteBroker
+from landscape.broker.amp import RemoteBroker, RemoteBrokerConnector
 from landscape.package.taskhandler import (
-    PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler)
+    PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler,
+    LazyRemoteBroker)
 from landscape.package.facade import SmartFacade
 from landscape.package.store import HashIdStore, PackageStore
 from landscape.package.tests.helpers import SmartFacadeHelper
@@ -329,6 +330,7 @@ class PackageTaskHandlerTest(LandscapeTest):
                                                 ".init_logging",
                                                 passthrough=False)
         reactor_mock = self.mocker.patch(TwistedReactor)
+        connector_mock = self.mocker.patch(RemoteBrokerConnector)
         HandlerMock = self.mocker.proxy(PackageTaskHandler)
 
         # The goal of this method is to perform a sequence of tasks
@@ -351,14 +353,15 @@ class PackageTaskHandlerTest(LandscapeTest):
         umask = self.mocker.replace("os.umask")
         umask(022)
 
-        reactor_mock.run()
-
         handler_args = []
         HandlerMock(ANY, ANY, ANY, ANY)
         self.mocker.passthrough() # Let the real constructor run for testing.
         self.mocker.call(lambda *args: handler_args.extend(args))
 
+        connector_mock.disconnect()
         reactor_mock.call_later(0, reactor.stop)
+        reactor_mock.run()
+
 
         # Okay, the whole playground is set.
         self.mocker.replay()
@@ -367,21 +370,26 @@ class PackageTaskHandlerTest(LandscapeTest):
 
             store, facade, broker, config = handler_args
 
-            # Verify if the arguments to the reporter constructor were correct.
-            self.assertEquals(type(store), PackageStore)
-            self.assertEquals(type(facade), SmartFacade)
-            self.assertEquals(type(broker), RemoteBroker)
-            self.assertEquals(type(config), PackageTaskHandlerConfiguration)
+            try:
+                # Verify the arguments passed to the reporter constructor.
+                self.assertEquals(type(store), PackageStore)
+                self.assertEquals(type(facade), SmartFacade)
+                self.assertEquals(type(broker), LazyRemoteBroker)
+                self.assertEquals(type(config), PackageTaskHandlerConfiguration)
 
-            # Let's see if the store path is where it should be.
-            filename = os.path.join(self.data_path, "package", "database")
-            store.add_available([1, 2, 3])
-            other_store = PackageStore(filename)
-            self.assertEquals(other_store.get_available(), [1, 2, 3])
+                # Let's see if the store path is where it should be.
+                filename = os.path.join(self.data_path, "package", "database")
+                store.add_available([1, 2, 3])
+                other_store = PackageStore(filename)
+                self.assertEquals(other_store.get_available(), [1, 2, 3])
 
-            # Check the hash=>id database directory as well
-            self.assertTrue(os.path.exists(
-                os.path.join(self.data_path, "package", "hash-id")))
+                # Check the hash=>id database directory as well
+                self.assertTrue(os.path.exists(
+                    os.path.join(self.data_path, "package", "hash-id")))
+
+            finally:
+                # Put reactor back in place before returning.
+                self.mocker.reset()
 
 
         result = run_task_handler(HandlerMock, ["-c", self.config_filename])
@@ -440,3 +448,55 @@ class PackageTaskHandlerTest(LandscapeTest):
         result = run_task_handler(handler_factory_mock,
                                   ["-c", self.config_filename])
         return result.addCallback(assert_log)
+        # Ignore a bunch of crap that we don't care about
+        reactor_mock = self.mocker.patch(TwistedReactor)
+        init_logging_mock = self.mocker.replace("landscape.deployment"
+                                                ".init_logging",
+                                                passthrough=False)
+        init_logging_mock(ARGS)
+        reactor_mock.run()
+
+        class MyException(Exception):
+            pass
+
+        self.log_helper.ignore_errors(MyException)
+
+        # Simulate a task handler which errors out.
+        handler_factory_mock = self.mocker.proxy(PackageTaskHandler)
+        handler_mock = handler_factory_mock(ARGS)
+        self.expect(handler_mock.run()).result(fail(MyException("Hey error")))
+
+        reactor_mock.call_later(0, reactor.stop)
+
+        self.mocker.replay()
+
+        # Ok now for some real stuff
+
+        def assert_log(ignored):
+            self.assertIn("MyException", self.logfile.getvalue())
+
+        result = run_task_handler(handler_factory_mock,
+                                  ["-c", self.config_filename])
+        return result.addCallback(assert_log)
+
+
+class LazyRemoteBrokerTest(LandscapeTest):
+
+    helpers = [BrokerServiceHelper]
+
+    def test_wb_is_lazy(self):
+        """
+        The L{LazyRemoteBroker} class doesn't initialize the actual remote
+        broker until one of its attributes gets actually accessed.
+        """
+        reactor = TwistedReactor()
+        connector = RemoteBrokerConnector(reactor, self.broker_service.config)
+        self.broker = LazyRemoteBroker(connector)
+        self.assertIs(self.broker._remote, None)
+
+        def close_connection(result):
+            self.assertTrue(result)
+            connector.disconnect()
+
+        result = self.broker.ping()
+        return result.addCallback(close_connection)

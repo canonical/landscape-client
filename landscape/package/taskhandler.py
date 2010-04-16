@@ -41,6 +41,39 @@ class PackageTaskHandlerConfiguration(Configuration):
         return os.path.join(self.package_directory, "smart-update-stamp")
 
 
+class LazyRemoteBroker(object):
+    """Wrapper class around L{RemoteBroker} providing lazy initialization.
+
+    This class is a wrapper around a regular L{RemoteBroker}. It creates
+    the remote broker object only when one of its attributes is first accessed.
+
+    @note: This behaviour is needed in particular by the ReleaseUpgrader and
+    the PackageChanger, because if the they connect early and DBus gets
+    upgraded while they run, they might crash or not be able to communicate
+    with the broker due to bugs in DBus.
+    """
+
+    def __init__(self, connector):
+        self._connector = connector
+        self._remote = None
+
+    def __getattr__(self, method):
+
+        if self._remote:
+            return getattr(self._remote, method)
+
+        def wrapper(*args, **kwargs):
+
+            def got_connection(remote):
+                self._remote = remote
+                return getattr(self._remote, method)(*args, **kwargs)
+
+            result = self._connector.connect()
+            return result.addCallback(got_connection)
+
+        return wrapper
+
+
 class PackageTaskHandler(object):
 
     config_factory = PackageTaskHandlerConfiguration
@@ -226,24 +259,23 @@ def run_task_handler(cls, args, reactor=None):
     package_store = PackageStore(config.store_filename)
     package_facade = SmartFacade()
 
-    def got_connection(remote):
-        handler = cls(package_store, package_facade, remote, config)
-        return handler.run()
+    def finish():
+        connector.disconnect()
+        # For some obscure reason our TwistedReactor.stop method calls
+        # reactor.crash() instead of reactor.stop(), which doesn't work
+        # here. Maybe TwistedReactor.stop should simply use reactor.stop().
+        reactor.call_later(0, reactor._reactor.stop)
 
     def got_error(failure):
         log_failure(failure)
+        finish()
 
-    connector = RemoteBrokerConnector(reactor, config)
-    result = connector.connect()
-    result.addCallback(got_connection)
+    connector = RemoteBrokerConnector(reactor, config, retry_on_reconnect=True)
+    remote = LazyRemoteBroker(connector)
+    handler = cls(package_store, package_facade, remote, config)
+    result = handler.run()
+    result.addCallback(lambda x: finish())
     result.addErrback(got_error)
-    result.addBoth(lambda x: connector.disconnect())
-
-    # For some obscure reason our TwistedReactor.stop method calls
-    # reactor.crash() instead of reactor.stop(), which doesn't work
-    # here. Maybe TwistedReactor.stop should simply use reactor.stop().
-    result.addBoth(lambda ignored: reactor.call_later(
-        0, reactor._reactor.stop))
 
     reactor.run()
 
