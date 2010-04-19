@@ -1,5 +1,6 @@
 from landscape.tests.mocker import ANY
-from landscape.tests.helpers import LandscapeTest, BrokerServiceHelper
+from landscape.tests.helpers import (
+    LandscapeTest, FakeBrokerServiceHelper)
 from landscape.reactor import FakeReactor
 from landscape.manager.config import ManagerConfiguration, ALL_PLUGINS
 from landscape.manager.service import ManagerService
@@ -8,7 +9,7 @@ from landscape.manager.processkiller import ProcessKiller
 
 class ManagerServiceTest(LandscapeTest):
 
-    helpers = [BrokerServiceHelper]
+    helpers = [FakeBrokerServiceHelper]
 
     def setUp(self):
         super(ManagerServiceTest, self).setUp()

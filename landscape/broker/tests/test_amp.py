@@ -163,6 +163,17 @@ class RemoteBrokerTest(LandscapeTest):
         result = self.remote.call_if_accepted("test", function)
         return self.assertSuccess(result, None)
 
+    def test_fire_event(self):
+        """
+        The L{RemoteBroker.fire_event} method fires an event in the broker
+        reactor.
+        """
+        callback = self.mocker.mock()
+        callback()
+        self.mocker.replay()
+        self.reactor.call_on("event", callback)
+        return self.assertSuccess(self.remote.fire_event("event"))
+
     def test_method_call_error(self):
         """
         Trying to call an non-exposed broker method results in a failure.

@@ -12,7 +12,7 @@ from twisted.internet import reactor
 from landscape.tests.mocker import ARGS, KWARGS, ANY
 from landscape.tests.clock import Clock
 from landscape.tests.helpers import (
-    LandscapeTest, EnvironSaverHelper, BrokerServiceHelper)
+    LandscapeTest, EnvironSaverHelper, FakeBrokerServiceHelper)
 from landscape.watchdog import (
     Daemon, WatchDog, WatchDogService, ExecutableNotFoundError,
     WatchDogConfiguration, bootstrap_list,
@@ -259,7 +259,6 @@ class AsynchronousPingDaemon(BoringDaemon):
 
 
 class NonMockerWatchDogTests(LandscapeTest):
-    # mocker is hard
 
     def test_ping_is_not_rescheduled_until_pings_complete(self):
         clock = Clock()
@@ -518,7 +517,6 @@ class DaemonTestBase(LandscapeTest):
 
 
 class FileChangeWaiter(object):
-    # XXX This should be reimplemented using a named pipe.
 
     def __init__(self, filename):
         os.utime(filename, (0, 0))
@@ -911,7 +909,7 @@ time.sleep(999)
 
 class DaemonBrokerTest(DaemonTestBase):
 
-    helpers = [BrokerServiceHelper]
+    helpers = [FakeBrokerServiceHelper]
 
     @property
     def connector_factory(self):

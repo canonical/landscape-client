@@ -37,7 +37,8 @@ from landscape.manager.deployment import ManagerConfiguration
 # FIXME: We can drop the "_" suffix and replace the current classes once the
 # AMP migration is completed
 from landscape.broker.service import BrokerService as BrokerService_
-from landscape.broker.amp import FakeRemoteBroker as FakeRemoteBroker_
+from landscape.broker.amp import (
+    FakeRemoteBroker as FakeRemoteBroker_, RemoteBrokerConnector)
 from landscape.manager.config import (
     ManagerConfiguration as ManagerConfiguration_)
 
@@ -381,7 +382,7 @@ class LegacyExchangeHelper(FakeRemoteBrokerHelper):
         test_case.identity = service.identity
 
 
-class BrokerServiceHelper(object):
+class FakeBrokerServiceHelper(object):
     """
     The following attributes will be set in your test case:
       - broker_service: A C{BrokerService}.
@@ -390,7 +391,7 @@ class BrokerServiceHelper(object):
     """
 
     def set_up(self, test_case):
-        data_path = test_case.makeDir()
+        test_case.data_path = test_case.makeDir()
         log_dir = test_case.makeDir()
         test_case.config_filename = test_case.makeFile(
             "[client]\n"
@@ -399,9 +400,10 @@ class BrokerServiceHelper(object):
             "account_name = some_account\n"
             "ping_url = http://localhost:91910\n"
             "data_path = %s\n"
-            "log_dir = %s\n" % (data_path, log_dir))
+            "log_dir = %s\n" % (test_case.data_path, log_dir))
 
-        bootstrap_list.bootstrap(data_path=data_path, log_dir=log_dir)
+        bootstrap_list.bootstrap(data_path=test_case.data_path,
+                                 log_dir=log_dir)
 
         config = BrokerConfiguration()
         config.load(["-c", test_case.config_filename])
@@ -416,9 +418,38 @@ class BrokerServiceHelper(object):
             test_case.broker_service.message_store)
 
 
-class MonitorHelper(BrokerServiceHelper):
+class BrokerServiceHelper(FakeBrokerServiceHelper):
     """
-    Provides everything that L{BrokerServiceHelper} does plus a
+    Provides what L{FakeBrokerServiceHelper} does, and makes it a
+    'live' service using a real L{RemoteBroker} connected over AMP.
+
+    This adds the following attributes to your test case:
+     - remote: A connected L{RemoteBroker}.
+    """
+
+    def set_up(self, test_case):
+        super(BrokerServiceHelper, self).set_up(test_case)
+        # Use different reactor to simulate separate processes
+        self._connector = RemoteBrokerConnector(
+            FakeReactor(), test_case.broker_service.config)
+
+        def set_remote(remote):
+            test_case.remote = remote
+            return remote
+
+        test_case.broker_service.startService()
+        connected = self._connector.connect()
+        return connected.addCallback(set_remote)
+
+    def tear_down(self, test_case):
+        self._connector.disconnect()
+        test_case.broker_service.stopService()
+        super(BrokerServiceHelper, self).tear_down(test_case)
+
+
+class MonitorHelper(FakeBrokerServiceHelper):
+    """
+    Provides everything that L{FakeBrokerServiceHelper} does plus a
     L{Monitor} instance.
     """
 
@@ -455,9 +486,9 @@ class LegacyManagerHelper(FakeRemoteBrokerHelper):
             config)
 
 
-class ManagerHelper(BrokerServiceHelper):
+class ManagerHelper(FakeBrokerServiceHelper):
     """
-    Provides everything that L{BrokerServiceHelper} does plus a
+    Provides everything that L{FakeBrokerServiceHelper} does plus a
     L{Manager} instance.
     """
 
@@ -701,6 +732,7 @@ def install_trial_hack():
     if "addError" in IReporter:
         # We have no need for this monkey patch with newer versions of Twisted.
         return
+
     def run(self, result):
         """
         Copied from twisted.trial.unittest.TestCase.run, but some

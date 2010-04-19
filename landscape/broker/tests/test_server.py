@@ -198,6 +198,17 @@ class BrokerServerTest(LandscapeTest):
         self.assertEquals(self.exchanger.get_client_accepted_message_types(),
                           sorted(["type1", "type2"] + DEFAULT_ACCEPTED_TYPES))
 
+    def test_fire_event(self):
+        """
+        The L{BrokerServer.fire_event} method fires an event in the broker
+        reactor.
+        """
+        callback = self.mocker.mock()
+        callback()
+        self.mocker.replay()
+        self.reactor.call_on("event", callback)
+        self.broker.fire_event("event")
+
     def test_exit(self):
         """
         The L{BrokerServer.exit} method stops all registered clients.
@@ -341,7 +352,7 @@ class EventTest(LandscapeTest):
     def test_server_uuid_changed(self):
         """
         The L{BrokerServer.server_uuid_changed} method broadcasts a
-        C{server_uuid_changed} event to all connected clients.
+        C{server-uuid-changed} event to all connected clients.
         """
         callback = self.mocker.mock()
         callback(None, "abc")
@@ -362,6 +373,17 @@ class EventTest(LandscapeTest):
             ("message-type-acceptance-changed", "type"), callback)
         result = self.broker.message_type_acceptance_changed("type", True)
         return self.assertSuccess(result, [[None]])
+
+    def test_package_data_changed(self):
+        """
+        The L{BrokerServer.package_data_changed} method broadcasts a
+        C{package-data-changed} event to all connected clients.
+        """
+        callback = self.mocker.mock()
+        callback()
+        self.mocker.replay()
+        self.client_reactor.call_on("package-data-changed", callback)
+        return self.assertSuccess(self.broker.package_data_changed(), [[None]])
 
 
 class HandlersTest(LandscapeTest):
@@ -472,6 +494,17 @@ class HandlersTest(LandscapeTest):
         self.mocker.result(succeed(None))
         self.mocker.replay()
         self.reactor.fire("server-uuid-changed", None, 123)
+
+    def test_package_data_changed(self):
+        """
+        When a C{package-data-changed} event is fired by the reactor, the
+        broker broadcasts it to its clients.
+        """
+        self.client.fire_event = self.mocker.mock()
+        self.client.fire_event("package-data-changed")
+        self.mocker.result(succeed(None))
+        self.mocker.replay()
+        self.reactor.fire("package-data-changed")
 
     def test_resynchronize_clients(self):
         """

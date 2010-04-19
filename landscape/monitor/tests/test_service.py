@@ -1,5 +1,5 @@
 from landscape.tests.mocker import ANY
-from landscape.tests.helpers import LandscapeTest, BrokerServiceHelper
+from landscape.tests.helpers import LandscapeTest, FakeBrokerServiceHelper
 from landscape.reactor import FakeReactor
 from landscape.monitor.config import MonitorConfiguration, ALL_PLUGINS
 from landscape.monitor.service import MonitorService
@@ -9,7 +9,7 @@ from landscape.monitor.loadaverage import LoadAverage
 
 class MonitorServiceTest(LandscapeTest):
 
-    helpers = [BrokerServiceHelper]
+    helpers = [FakeBrokerServiceHelper]
 
     def setUp(self):
         super(MonitorServiceTest, self).setUp()
