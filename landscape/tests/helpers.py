@@ -413,13 +413,9 @@ class FakeBrokerServiceHelper(object):
             transport_factory = FakeTransport
 
         test_case.broker_service = FakeBrokerService(config)
-        test_case.broker_service.startService()
         test_case.remote = FakeRemoteBroker_(
             test_case.broker_service.exchanger,
             test_case.broker_service.message_store)
-
-    def tear_down(self, test_case):
-        test_case.broker_service.stopService()
 
 
 class BrokerServiceHelper(FakeBrokerServiceHelper):
@@ -441,12 +437,13 @@ class BrokerServiceHelper(FakeBrokerServiceHelper):
             test_case.remote = remote
             return remote
 
+        test_case.broker_service.startService()
         connected = self._connector.connect()
         return connected.addCallback(set_remote)
 
     def tear_down(self, test_case):
         self._connector.disconnect()
-        super(BrokerServiceHelper, self).tear_down(test_case)
+        test_case.broker_service.stopService()
 
 
 class MonitorHelper(FakeBrokerServiceHelper):
@@ -734,6 +731,7 @@ def install_trial_hack():
     if "addError" in IReporter:
         # We have no need for this monkey patch with newer versions of Twisted.
         return
+
     def run(self, result):
         """
         Copied from twisted.trial.unittest.TestCase.run, but some

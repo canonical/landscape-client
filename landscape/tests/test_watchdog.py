@@ -259,7 +259,6 @@ class AsynchronousPingDaemon(BoringDaemon):
 
 
 class NonMockerWatchDogTests(LandscapeTest):
-    # mocker is hard
 
     def test_ping_is_not_rescheduled_until_pings_complete(self):
         clock = Clock()
@@ -493,6 +492,7 @@ class DaemonTestBase(LandscapeTest):
 
         if hasattr(self, "broker_service"):
             # DaemonBrokerTest
+            self.broker_service.startService()
             self.config = self.broker_service.config
         else:
             # DaemonTest
@@ -504,6 +504,9 @@ class DaemonTestBase(LandscapeTest):
 
     def tearDown(self):
         sys.argv = self.saved_argv
+        if hasattr(self, "broker_service"):
+            # DaemonBrokerTest
+            self.broker_service.stopService()
         super(DaemonTestBase, self).tearDown()
 
     def get_daemon(self, **kwargs):
@@ -514,7 +517,6 @@ class DaemonTestBase(LandscapeTest):
 
 
 class FileChangeWaiter(object):
-    # XXX This should be reimplemented using a named pipe.
 
     def __init__(self, filename):
         os.utime(filename, (0, 0))

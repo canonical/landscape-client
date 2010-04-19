@@ -54,6 +54,7 @@ class ManagerServiceTest(LandscapeTest):
             [connector] = self.broker_service.broker.get_connectors()
             connector.disconnect()
             self.service.stopService()
+            self.broker_service.stopService()
 
         def assert_broker_connection(ignored):
             self.assertEquals(len(self.broker_service.broker.get_clients()), 1)
@@ -61,5 +62,6 @@ class ManagerServiceTest(LandscapeTest):
             result = self.service.broker.ping()
             return result.addCallback(stop_service)
 
+        self.broker_service.startService()
         started = self.service.startService()
         return started.addCallback(assert_broker_connection)
