@@ -5,7 +5,7 @@ import sys
 
 from smart.control import Control
 from smart.cache import Provides
-from smart.const import NEVER
+from smart.const import NEVER, ALWAYS
 
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
@@ -428,6 +428,17 @@ class SmartFacadeTest(LandscapeTest):
 
         self.facade.reload_channels()
         self.assertEquals(self.facade.get_package_hash(pkg), None)
+
+    def test_reload_channels_with_channel_error(self):
+        """
+        The L{SmartFacade.reload_channels} method raises a L{ChannelsError} if
+        smart fails to load the configured channels.
+        """
+        ctrl_mock = self.mocker.patch(Control)
+        ctrl_mock.reloadChannels(caching=ALWAYS)
+        self.mocker.throw(smart.Error(u"Channel information is locked"))
+        self.mocker.replay()
+        self.assertRaises(ChannelError, self.facade.reload_channels)
 
     def test_reset_add_get_channels(self):
 

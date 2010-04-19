@@ -1,5 +1,5 @@
 DEBIAN_REVISION = ""
-UPSTREAM_VERSION = "1.4.4"
+UPSTREAM_VERSION = "1.5.0"
 VERSION = "%s%s" % (UPSTREAM_VERSION, DEBIAN_REVISION)
 
 # The "server-api" field of outgoing messages will be set to this value, and

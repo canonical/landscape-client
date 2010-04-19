@@ -100,9 +100,14 @@ class SmartFacade(object):
         """
         ctrl = self._get_ctrl()
 
-        reload_result = ctrl.reloadChannels(caching=self._caching)
-        if not reload_result and self._caching == NEVER:
+        try:
+            reload_result = ctrl.reloadChannels(caching=self._caching)
+        except smart.Error:
+            failed = True
+        else:
             # Raise an error only if we are trying to download remote lists
+            failed = not reload_result and self._caching == NEVER
+        if failed:
             raise ChannelError("Smart failed to reload channels (%s)"
                                % smart.sysconf.get("channels"))
 
