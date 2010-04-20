@@ -95,9 +95,3 @@ class BrokerService(LandscapeService):
         """Stop the broker."""
         self.exchanger.stop()
         super(BrokerService, self).stopService()
-
-
-def run(args):
-    """Run the application, given some command line arguments."""
-    run_landscape_service(BrokerConfiguration, BrokerService, args,
-                          BrokerDBusObject.bus_name)
