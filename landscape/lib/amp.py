@@ -10,7 +10,7 @@ from twisted.python.failure import Failure
 from landscape.lib.bpickle import loads, dumps, dumps_table
 
 
-class BPickle(Argument):
+class MethodCallArgument(Argument):
     """A bpickle-compatible argument."""
 
     def toString(self, inObject):
@@ -38,7 +38,7 @@ class MethodCall(Command):
                  ("method", String()),
                  ("arguments", String())]
 
-    response = [("result", BPickle()),
+    response = [("result", MethodCallArgument()),
                 ("deferred", String(optional=True))]
 
     errors = {MethodCallError: "METHOD_CALL_ERROR"}
@@ -59,7 +59,7 @@ class DeferredResponse(Command):
     """Fire a L{Deferred} associated with an outstanding method call result."""
 
     arguments = [("uuid", String()),
-                 ("result", BPickle(optional=True)),
+                 ("result", MethodCallArgument(optional=True)),
                  ("failure", String(optional=True))]
     requiresAnswer = False
 
@@ -129,7 +129,7 @@ class MethodCallServerProtocol(AMP):
         @return: The C{result} itself if valid.
         @raises: L{MethodCallError} if C{result} is not serializable.
         """
-        if not BPickle.check(result):
+        if not MethodCallArgument.check(result):
             raise MethodCallError("Non-serializable result")
         return result
 
