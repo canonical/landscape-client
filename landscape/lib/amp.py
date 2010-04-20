@@ -45,7 +45,11 @@ class MethodCall(Command):
 
 
 class MethodCallChunk(Command):
-    """Call a method on the object exposed by a L{MethodCallProtocol}."""
+    """Send a chunk of L{MethodCall} containing a portion of the arguments.
+
+    When a the arguments of a L{MethodCall} are bigger than 64k, they get split
+    in several L{MethodCallChunk}s that are buffered on the receiver side.
+    """
 
     arguments = [("sequence", Integer()),
                  ("chunk", String())]
@@ -88,11 +92,16 @@ class MethodCallServerProtocol(AMP):
         will be called with the given C{args} and C{kwargs} and its return
         value delivered back to the client as response to the command.
 
+        @param sequence: The integer that uniquely identifies the L{MethodCall}
+            being received.
         @param method: The name of the object's method to call.
-        @param args: The arguments to pass to the method.
-        @param kwargs: The keywords arguments to pass to the method.
+        @param arguments: A bpickle'd binary tuple of (args, kwargs) to be
+           passed to the method. In case this L{MethodCall} has been preceded
+           by one or more L{MethodCallChunk}s, C{arguments} is the last chunk
+           of data.
         """
         if self._pending.get(sequence):
+            # We got some L{MethodCallChunk}s before, this is the last.
             self._pending[sequence].append(arguments)
             arguments = "".join(self._pending[sequence])
             del self._pending[sequence]
@@ -119,7 +128,11 @@ class MethodCallServerProtocol(AMP):
 
     @MethodCallChunk.responder
     def receive_method_call_chunk(self, sequence, chunk):
-        """Receive a part of a multi-chunk L{MethodCall}."""
+        """Receive a part of a multi-chunk L{MethodCall}.
+
+        Add the received C{chunk} to the buffer of the L{MethodCall} identified
+        by C{sequence}.
+        """
         self._pending.setdefault(sequence, []).append(chunk)
         return {"result": sequence}
 
@@ -228,18 +241,22 @@ class MethodCallClientProtocol(AMP):
         """
         arguments = dumps((args, kwargs))
         sequence = self.create_sequence()
+
+        # Split the given arguments in one or more chunks
         chunks = [arguments[i:i + self.chunk_size]
                   for i in xrange(0, len(arguments), self.chunk_size)]
 
         result = Deferred()
         if len(chunks) > 1:
+            # If we have N chunks, send the first N-1 as MethodCallChunk's
             for chunk in chunks[:-1]:
 
-                def send_chunk(sequence, chunk):
-                    return lambda x: self.callRemote(
+                def create_send_chunk(sequence, chunk):
+                    send_chunk = lambda x: self.callRemote(
                         MethodCallChunk, sequence=sequence, chunk=chunk)
+                    return send_chunk
 
-                result.addCallback(send_chunk(sequence, chunk))
+                result.addCallback(create_send_chunk(sequence, chunk))
 
         result.addCallback(
             lambda x: self.callRemote(MethodCall, sequence=sequence,
