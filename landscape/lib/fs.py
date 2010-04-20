@@ -32,3 +32,10 @@ def read_file(path, limit=None):
     content = fd.read()
     fd.close()
     return content
+
+
+def touch_file(path):
+    """Touch a file, creating it if it doesn't exist."""
+    fd = open(path, "a")
+    fd.close()
+    os.utime(path, None)

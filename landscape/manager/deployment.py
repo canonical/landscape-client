@@ -9,8 +9,8 @@ from landscape.broker.remote import (RemoteBroker,
 from landscape.manager.manager import ManagerPluginRegistry, ManagerDBusObject
 
 
-ALL_PLUGINS = ["ProcessKiller", "PackageManager", "UserManager",
-               "ShutdownManager"]
+ALL_PLUGINS = ("ProcessKiller", "PackageManager", "UserManager",
+               "ShutdownManager", "Eucalyptus")
 
 
 class ManagerConfiguration(Configuration):
@@ -30,16 +30,17 @@ class ManagerConfiguration(Configuration):
         parser.add_option("--include-manager-plugins", metavar="PLUGIN_LIST",
                           help="Comma-delimited list of manager plugins to "
                                "enable, in addition to the defaults.")
-        parser.add_option("--script-users", metavar="USERS",
-                          help="Comma-delimited list of usernames that scripts "
-                               "may be run as. Default is to allow all users.")
+        parser.add_option(
+            "--script-users", metavar="USERS",
+            help="Comma-delimited list of usernames that scripts "
+                 "may be run as. Default is to allow all users.")
         return parser
 
     @property
     def plugin_factories(self):
         plugin_names = []
         if self.manager_plugins == "ALL":
-            plugin_names = ALL_PLUGINS
+            plugin_names = list(ALL_PLUGINS)
         elif self.manager_plugins:
             plugin_names = self.manager_plugins.split(",")
         if self.include_manager_plugins:
@@ -80,8 +81,10 @@ class ManagerService(LandscapeService):
         super(ManagerService, self).startService()
         self.remote_broker = RemoteBroker(self.bus)
         store_name = os.path.join(self.config.data_path, "manager.database")
-        self.registry = ManagerPluginRegistry(self.remote_broker, self.reactor,
-                                              self.config, self.bus, store_name)
+        self.registry = ManagerPluginRegistry(
+            self.remote_broker, self.reactor, self.config, self.bus,
+            store_name)
+
         self.dbus_service = ManagerDBusObject(self.bus, self.registry)
         DBusSignalToReactorTransmitter(self.bus, self.reactor)
 

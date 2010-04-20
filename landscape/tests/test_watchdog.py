@@ -117,9 +117,9 @@ class WatchDogTest(LandscapeTest):
         return result.addCallback(got_result)
 
     def expect_request_exit(self):
-        self.expect(self.broker.be_ready_to_die())
-        self.expect(self.monitor.be_ready_to_die())
-        self.expect(self.manager.be_ready_to_die())
+        self.expect(self.broker.prepare_for_shutdown())
+        self.expect(self.monitor.prepare_for_shutdown())
+        self.expect(self.manager.prepare_for_shutdown())
         self.expect(self.broker.request_exit()).result(succeed(True))
         self.expect(self.broker.wait_or_die()).result(succeed(None))
         self.expect(self.monitor.wait_or_die()).result(succeed(None))
@@ -237,7 +237,7 @@ class BoringDaemon(object):
     def wait_or_die(self):
         return self.wait()
 
-    def be_ready_to_die(self):
+    def prepare_for_shutdown(self):
         pass
 
 
@@ -259,7 +259,6 @@ class AsynchronousPingDaemon(BoringDaemon):
 
 
 class NonMockerWatchDogTests(LandscapeTest):
-    # mocker is hard
 
     def test_ping_is_not_rescheduled_until_pings_complete(self):
         clock = Clock()
@@ -454,6 +453,7 @@ class NonMockerWatchDogTests(LandscapeTest):
 
         manager_result = Deferred()
         dog.manager.wait = lambda: manager_result
+
         def stop():
             manager_result.callback(True)
             return succeed(True)
@@ -492,6 +492,7 @@ class DaemonTestBase(LandscapeTest):
 
         if hasattr(self, "broker_service"):
             # DaemonBrokerTest
+            self.broker_service.startService()
             self.config = self.broker_service.config
         else:
             # DaemonTest
@@ -503,6 +504,9 @@ class DaemonTestBase(LandscapeTest):
 
     def tearDown(self):
         sys.argv = self.saved_argv
+        if hasattr(self, "broker_service"):
+            # DaemonBrokerTest
+            self.broker_service.stopService()
         super(DaemonTestBase, self).tearDown()
 
     def get_daemon(self, **kwargs):
@@ -513,7 +517,6 @@ class DaemonTestBase(LandscapeTest):
 
 
 class FileChangeWaiter(object):
-    # XXX This should be reimplemented using a named pipe.
 
     def __init__(self, filename):
         os.utime(filename, (0, 0))
@@ -627,6 +630,7 @@ class DaemonTest(DaemonTestBase):
         os.chmod(self.exec_name, 0755)
 
         self.daemon.start()
+
         def got_result(result):
             self.assertEquals(open(output_filename).read(), "RUN\n")
         return self.daemon.wait().addCallback(got_result)
@@ -642,6 +646,7 @@ class DaemonTest(DaemonTestBase):
         os.chmod(self.exec_name, 0755)
 
         self.daemon.start()
+
         def got_result(result):
             self.assertEquals(open(output_filename).read(), "RUN\n")
         return self.daemon.wait_or_die().addCallback(got_result)
@@ -671,6 +676,7 @@ time.sleep(999)
                         landscape.watchdog.GRACEFUL_WAIT_PERIOD)
         landscape.watchdog.GRACEFUL_WAIT_PERIOD = 0.2
         self.daemon.start()
+
         def got_result(result):
             self.assertEquals(open(output_filename).read(), "TERMINATED")
         return self.daemon.wait_or_die().addCallback(got_result)
@@ -729,7 +735,6 @@ time.sleep(999)
         l = []
         daemon.wait_or_die().addCallback(l.append)
         self.assertEquals(l, [None])
-
 
     def test_simulate_broker_not_starting_up(self):
         """
@@ -1279,6 +1284,7 @@ reactor.run()
 
 class FakeReactor(Clock):
     running = False
+
     def run(self):
         self.running = True
 

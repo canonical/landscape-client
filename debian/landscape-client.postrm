@@ -16,11 +16,9 @@ set -e
 
 case "$1" in
     purge)
-    CONFIG_FILE=/etc/landscape/client.conf
     LOG_DIR=/var/log/landscape
     DATA_DIR=/var/lib/landscape
 
-    rm -f "${CONFIG_FILE}"
     rm -f "/etc/default/landscape-client"
 
     rm -f "${LOG_DIR}/manager.log"*
@@ -31,6 +29,7 @@ case "$1" in
     rm -f "${LOG_DIR}/package-changer.log"*
 
     rm -rf "${DATA_DIR}/client"
+    rm -rf "${DATA_DIR}/.gnupg"
 
     ;;
 

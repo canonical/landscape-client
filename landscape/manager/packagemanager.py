@@ -31,6 +31,11 @@ class PackageManager(ManagerPlugin):
         registry.register_message("release-upgrade",
                                   self.handle_release_upgrade)
 
+        # When the package reporter notifies us that something has changed,
+        # we want to run again to see if we can now fulfill tasks that were
+        # skipped before.
+        registry.reactor.call_on("package-data-changed", self.run)
+
         self.run()
 
     def _handle(self, cls, message):

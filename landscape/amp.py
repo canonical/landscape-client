@@ -55,6 +55,10 @@ class RemoteComponentConnector(RemoteObjectConnector):
 
         @param max_retries: If given, the connector will keep trying to connect
             up to that number of times, if the first connection attempt fails.
+        @param factor: Optionally a float indicating by which factor the
+            delay between subsequent retries should increase. Smaller values
+            result in a faster reconnection attempts pace.
+        @param quiet: A boolean indicating whether to log errors.
         """
 
         def fire_reconnect(remote):

@@ -25,6 +25,7 @@ class PluginOperationResultTest(LandscapeTest):
         service = self.broker_service
         service.message_store.set_accepted_types(["operation-result"])
         message = {"operation-id": 12312}
+
         def operation():
             pass
         plugin.call_with_operation_result(message, operation)
@@ -44,6 +45,7 @@ class PluginOperationResultTest(LandscapeTest):
         service = self.broker_service
         service.message_store.set_accepted_types(["operation-result"])
         message = {"operation-id": 12312}
+
         def operation():
             raise RuntimeError("What the crap!")
         plugin.call_with_operation_result(message, operation)
@@ -65,6 +67,7 @@ class PluginOperationResultTest(LandscapeTest):
         service = self.broker_service
         service.message_store.set_accepted_types(["operation-result"])
         message = {"operation-id": 123}
+
         def operation():
             pass
         plugin.call_with_operation_result(message, operation)
@@ -93,6 +96,7 @@ class ManagerDBusObjectTest(LandscapeIsolatedTest):
 
     def test_ping(self):
         result = self.dbus_object.ping()
+
         def got_result(result):
             self.assertEquals(result, True)
         return result.addCallback(got_result)

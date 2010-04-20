@@ -34,7 +34,7 @@ from landscape.manager.manager import ManagerPluginRegistry
 from landscape.manager.manager import Manager
 from landscape.manager.deployment import ManagerConfiguration
 
-# We can drop the "_" suffix and replace the current classes once the
+# FIXME: We can drop the "_" suffix and replace the current classes once the
 # AMP migration is completed
 from landscape.broker.service import BrokerService as BrokerService_
 from landscape.broker.amp import (
@@ -413,13 +413,9 @@ class FakeBrokerServiceHelper(object):
             transport_factory = FakeTransport
 
         test_case.broker_service = FakeBrokerService(config)
-        test_case.broker_service.startService()
         test_case.remote = FakeRemoteBroker_(
             test_case.broker_service.exchanger,
             test_case.broker_service.message_store)
-
-    def tear_down(self, test_case):
-        test_case.broker_service.stopService()
 
 
 class BrokerServiceHelper(FakeBrokerServiceHelper):
@@ -441,12 +437,13 @@ class BrokerServiceHelper(FakeBrokerServiceHelper):
             test_case.remote = remote
             return remote
 
+        test_case.broker_service.startService()
         connected = self._connector.connect()
         return connected.addCallback(set_remote)
 
     def tear_down(self, test_case):
         self._connector.disconnect()
-        super(BrokerServiceHelper, self).tear_down(test_case)
+        test_case.broker_service.stopService()
 
 
 class MonitorHelper(FakeBrokerServiceHelper):
@@ -475,8 +472,10 @@ class LegacyManagerHelper(FakeRemoteBrokerHelper):
     Provides everything that L{FakeRemoteBrokerHelper} does plus a
     L{landscape.manager.manager.Manager}.
     """
+
     def set_up(self, test_case):
         super(LegacyManagerHelper, self).set_up(test_case)
+
         class MyManagerConfiguration(ManagerConfiguration):
             default_config_filenames = [test_case.config_filename]
         config = MyManagerConfiguration()
@@ -486,7 +485,6 @@ class LegacyManagerHelper(FakeRemoteBrokerHelper):
             config)
 
 
-# We can drop the "_" suffic once the AMP migration is completed
 class ManagerHelper(FakeBrokerServiceHelper):
     """
     Provides everything that L{FakeBrokerServiceHelper} does plus a
@@ -494,7 +492,6 @@ class ManagerHelper(FakeBrokerServiceHelper):
     """
 
     def set_up(self, test_case):
-
         super(ManagerHelper, self).set_up(test_case)
         test_case.config = ManagerConfiguration_()
         test_case.config.load(["-c", test_case.config_filename])
@@ -591,6 +588,7 @@ class StubProcessFactory(object):
     A L{IReactorProcess} provider which records L{spawnProcess} calls and
     allows tests to get at the protocol.
     """
+
     def __init__(self):
         self.spawns = []
 
@@ -602,6 +600,7 @@ class StubProcessFactory(object):
 
 class DummyProcess(object):
     """A process (transport) that doesn't do anything."""
+
     def __init__(self):
         self.signals = []
 
@@ -732,6 +731,7 @@ def install_trial_hack():
     if "addError" in IReporter:
         # We have no need for this monkey patch with newer versions of Twisted.
         return
+
     def run(self, result):
         """
         Copied from twisted.trial.unittest.TestCase.run, but some

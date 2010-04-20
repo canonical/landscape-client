@@ -385,6 +385,10 @@ class TwistedReactor(EventHandlingReactorMixin,
         lc.start(seconds, now=False)
         return lc
 
+    def call_when_running(self, f):
+        """Schedule a function to be called when the reactor starts running."""
+        self._reactor.callWhenRunning(f)
+
     def cancel_call(self, id):
         """Cancel a scheduled function or event handler.
 

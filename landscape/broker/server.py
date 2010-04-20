@@ -56,6 +56,7 @@ class BrokerServer(object):
         reactor.call_on("message-type-acceptance-changed",
                         self.message_type_acceptance_changed)
         reactor.call_on("server-uuid-changed", self.server_uuid_changed)
+        reactor.call_on("package-data-changed", self.package_data_changed)
         reactor.call_on("resynchronize-clients", self.resynchronize)
 
     def ping(self):
@@ -160,6 +161,10 @@ class BrokerServer(object):
         """
         self._exchanger.register_client_accepted_message_type(type)
 
+    def fire_event(self, event_type):
+        """Fire an event in the broker reactor."""
+        self._reactor.fire(event_type)
+
     def exit(self):
         """Request a graceful exit from the broker server.
 
@@ -218,6 +223,10 @@ class BrokerServer(object):
     def message_type_acceptance_changed(self, type, accepted):
         pass
 
+    @event
+    def package_data_changed(self):
+        """Fire a package-data-changed event in the reactor of each client."""
+
     def broadcast_message(self, message):
         """Call the C{message} method of all the registered plugins.
 
@@ -226,8 +235,8 @@ class BrokerServer(object):
         results = []
         for client in self.get_clients():
             results.append(client.message(message))
-        return gather_results(results).addCallback(self._message_delivered,
-                                                   message)
+        result = gather_results(results)
+        return result.addCallback(self._message_delivered, message)
 
     def _message_delivered(self, results, message):
         """

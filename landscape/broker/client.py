@@ -144,7 +144,7 @@ class BrokerClient(object):
     def fire_event(self, event_type, *args, **kwargs):
         """Fire an event of a given type.
 
-        @return: A L{Deferred} resulting in a list of return values of
+        @return: A L{Deferred} resulting in a list of returns values of
             the fired event handlers, in the order they were fired.
         """
         if event_type == "message-type-acceptance-changed":
@@ -159,11 +159,17 @@ class BrokerClient(object):
     def handle_reconnect(self):
         """Called when the connection with the broker is established again.
 
-        Re-register any previously registered message types when the broker
-        restarts.
+        The following needs to be done:
+
+          - Re-register any previously registered message types, so the broker
+            knows we have interest on them.
+
+          - Re-register ourselves as client, so the broker knows we exist and
+            will talk to us firing events and dispatching messages.
         """
         for type in self._registered_messages:
             self.broker.register_client_accepted_message_type(type)
+        self.broker.register_client(self.name)
 
     def exit(self):
         """Stop the reactor and exit the process."""

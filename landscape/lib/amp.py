@@ -98,6 +98,7 @@ class MethodCallServerProtocol(AMP):
             del self._pending[sequence]
 
         args, kwargs = loads(arguments)
+
         if not method in self.methods:
             raise MethodCallError("Forbidden method '%s'" % method)
 
@@ -473,6 +474,7 @@ class RemoteObjectConnector(object):
         self._args = args
         self._kwargs = kwargs
         self._remote = None
+        self._factory = None
 
     def connect(self, max_retries=None, factor=None):
         """Connect to a remote object exposed by a L{MethodCallProtocol}.
@@ -510,7 +512,8 @@ class RemoteObjectConnector(object):
 
     def disconnect(self):
         """Disconnect the L{RemoteObject} that we have created."""
-        self._factory.stopTrying()
+        if self._factory:
+            self._factory.stopTrying()
         if self._remote:
             if self._remote._protocol.transport:
                 self._remote._protocol.transport.loseConnection()
