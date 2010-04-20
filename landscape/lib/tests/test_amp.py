@@ -252,8 +252,8 @@ class MethodCallProtocolTest(LandscapeTest):
 
     def test_with_long_argument_multiple_calls(self):
         """
-        The L{MethodCall} protocol supports sending method calls with arguments
-        bigger than the
+        The L{MethodCall} protocol supports concurrently sending multiple
+        method calls with arguments bigger than the maximum AMP value size.
         """
         result1 = self.protocol.send_method_call(method="is_short",
                                                  args=["!" * 80000],
