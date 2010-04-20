@@ -1,4 +1,4 @@
-from landscape.lib.amp import MethodCall, MethodCallError
+from landscape.lib.amp import MethodCallError
 from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
 from landscape.broker.tests.helpers import (
     RemoteBrokerHelper, RemoteClientHelper)
@@ -178,10 +178,8 @@ class RemoteBrokerTest(LandscapeTest):
         """
         Trying to call an non-exposed broker method results in a failure.
         """
-        result = self.remote._protocol.callRemote(MethodCall,
-                                                  method="get_clients",
-                                                  args=[],
-                                                  kwargs={})
+        result = self.remote._protocol.send_method_call(
+            method="get_clients", args=[], kwargs={})
         return self.assertFailure(result, MethodCallError)
 
 
@@ -241,8 +239,6 @@ class RemoteClientTest(LandscapeTest):
         """
         Trying to call an non-exposed client method results in a failure.
         """
-        result = self.remote_client._protocol.callRemote(MethodCall,
-                                                         method="get_plugins",
-                                                         args=[],
-                                                         kwargs={})
+        result = self.remote_client._protocol.send_method_call(
+            method="get_plugins", args=[], kwargs={})
         return self.assertFailure(result, MethodCallError)
