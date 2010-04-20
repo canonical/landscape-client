@@ -358,9 +358,13 @@ class PackageTaskHandlerTest(LandscapeTest):
         self.mocker.passthrough() # Let the real constructor run for testing.
         self.mocker.call(lambda *args: handler_args.extend(args))
 
+        call_when_running = []
+        reactor_mock.call_when_running(ANY)
+        self.mocker.call(lambda f: call_when_running.append(f))
+        reactor_mock.run()
+        self.mocker.call(lambda: call_when_running[0]())
         connector_mock.disconnect()
         reactor_mock.call_later(0, reactor.stop)
-        reactor_mock.run()
 
 
         # Okay, the whole playground is set.

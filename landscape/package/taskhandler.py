@@ -2,7 +2,7 @@ import os
 import re
 import logging
 
-from twisted.internet.defer import succeed
+from twisted.internet.defer import succeed, Deferred
 
 from landscape.lib.lock import lock_path, LockError
 from landscape.lib.log import log_failure
@@ -279,10 +279,11 @@ def run_task_handler(cls, args, reactor=None):
     connector = RemoteBrokerConnector(reactor, config, retry_on_reconnect=True)
     remote = LazyRemoteBroker(connector)
     handler = cls(package_store, package_facade, remote, config)
-    result = handler.run()
+    result = Deferred()
+    result.addCallback(lambda x: handler.run())
     result.addCallback(lambda x: finish())
     result.addErrback(got_error)
-
+    reactor.call_when_running(lambda: result.callback(None))
     reactor.run()
 
     return result
