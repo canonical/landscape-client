@@ -13,8 +13,7 @@ from landscape.package.store import PackageStore
 from landscape.package.releaseupgrader import (
     ReleaseUpgrader, ReleaseUpgraderConfiguration, main)
 from landscape.tests.helpers import (
-    LandscapeIsolatedTest, RemoteBrokerHelper, LogKeeperHelper,
-    EnvironSaverHelper)
+    LandscapeTest, BrokerServiceHelper, LogKeeperHelper, EnvironSaverHelper)
 from landscape.package.tests.helpers import SmartFacadeHelper
 from landscape.manager.manager import SUCCEEDED, FAILED
 
@@ -32,22 +31,26 @@ class ReleaseUpgraderConfigurationTest(unittest.TestCase):
                                        "upgrade-tool"))
 
 
-class ReleaseUpgraderTest(LandscapeIsolatedTest):
+class ReleaseUpgraderTest(LandscapeTest):
 
-    helpers = [RemoteBrokerHelper, LogKeeperHelper, SmartFacadeHelper,
-               EnvironSaverHelper]
+    helpers = [LogKeeperHelper, SmartFacadeHelper,
+               EnvironSaverHelper, BrokerServiceHelper]
 
     def setUp(self):
-        super(ReleaseUpgraderTest, self).setUp()
-        self.config = ReleaseUpgraderConfiguration()
-        self.config.data_path = self.makeDir()
-        os.mkdir(self.config.package_directory)
-        os.mkdir(self.config.upgrade_tool_directory)
-        self.store = PackageStore(self.makeFile())
-        self.upgrader = ReleaseUpgrader(self.store, self.facade,
-                                        self.remote, self.config)
-        service = self.broker_service
-        service.message_store.set_accepted_types(["operation-result"])
+
+        def set_up(ignored):
+            self.config = ReleaseUpgraderConfiguration()
+            self.config.data_path = self.makeDir()
+            os.mkdir(self.config.package_directory)
+            os.mkdir(self.config.upgrade_tool_directory)
+            self.store = PackageStore(self.makeFile())
+            self.upgrader = ReleaseUpgrader(self.store, self.facade,
+                                            self.remote, self.config)
+            service = self.broker_service
+            service.message_store.set_accepted_types(["operation-result"])
+
+        result = super(ReleaseUpgraderTest, self).setUp()
+        return result.addCallback(set_up)
 
     def get_pending_messages(self):
         return self.broker_service.message_store.get_pending_messages()
@@ -977,6 +980,8 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         run_task_handler = self.mocker.replace("landscape.package.taskhandler"
                                                ".run_task_handler",
                                                passthrough=False)
+        getpgrp = self.mocker.replace("os.getpgrp")
+        self.expect(getpgrp()).result(os.getpid() + 1)
         setsid = self.mocker.replace("os.setsid")
         setsid()
 

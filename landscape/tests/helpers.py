@@ -444,7 +444,6 @@ class BrokerServiceHelper(FakeBrokerServiceHelper):
     def tear_down(self, test_case):
         self._connector.disconnect()
         test_case.broker_service.stopService()
-        super(BrokerServiceHelper, self).tear_down(test_case)
 
 
 class MonitorHelper(FakeBrokerServiceHelper):
