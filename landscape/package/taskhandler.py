@@ -47,19 +47,18 @@ class LazyRemoteBroker(object):
     This class is a wrapper around a regular L{RemoteBroker}. It connects to
     the remote broker object only when one of its attributes is first accessed.
 
+    @param connector: The L{RemoteBrokerConnector} which will be used
+        to connect to the broker.
+
     @note: This behaviour is needed in particular by the ReleaseUpgrader and
-       the PackageChanger, because if the they connect early and the
-       landscape-client package gets upgraded while they run, they will lose
-       the connection and will not be able to reconnect for a potentially long
-       window of time (till the new landscape-client package version is fully
-       configured and the service is started again).
+        the PackageChanger, because if the they connect early and the
+        landscape-client package gets upgraded while they run, they will lose
+        the connection and will not be able to reconnect for a potentially long
+        window of time (till the new landscape-client package version is fully
+        configured and the service is started again).
     """
 
     def __init__(self, connector):
-        """
-        @param connector: The L{RemoteBrokerConnector} which will be used
-            to connect to the broker
-        """
         self._connector = connector
         self._remote = None
 

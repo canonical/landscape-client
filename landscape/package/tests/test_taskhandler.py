@@ -5,7 +5,7 @@ from twisted.internet.defer import Deferred, fail
 
 from landscape.lib.lock import lock_path
 from landscape.reactor import TwistedReactor
-from landscape.broker.amp import RemoteBroker, RemoteBrokerConnector
+from landscape.broker.amp import RemoteBrokerConnector
 from landscape.package.taskhandler import (
     PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler,
     LazyRemoteBroker)
@@ -379,7 +379,8 @@ class PackageTaskHandlerTest(LandscapeTest):
                 self.assertEquals(type(store), PackageStore)
                 self.assertEquals(type(facade), SmartFacade)
                 self.assertEquals(type(broker), LazyRemoteBroker)
-                self.assertEquals(type(config), PackageTaskHandlerConfiguration)
+                self.assertEquals(type(config),
+                                  PackageTaskHandlerConfiguration)
 
                 # Let's see if the store path is where it should be.
                 filename = os.path.join(self.data_path, "package", "database")

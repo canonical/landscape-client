@@ -2,7 +2,7 @@
 
 import os
 
-from landscape.deployment import LandscapeService, run_landscape_service
+from landscape.deployment import LandscapeService
 from landscape.broker.store import get_default_message_store
 from landscape.broker.transport import HTTPTransport
 from landscape.broker.exchange import MessageExchange
@@ -16,15 +16,16 @@ class BrokerService(LandscapeService):
     """The core C{Service} of the Landscape Broker C{Application}.
 
     The Landscape broker service handles all the communication between the
-    client and server. When started it creates and runs all necessary components
-    to exchange messages with the Landscape server.
+    client and server. When started it creates and runs all necessary
+    components to exchange messages with the Landscape server.
 
     @ivar persist_filename: Path to broker-specific persisted data.
     @ivar persist: A L{Persist} object saving and loading from
         C{self.persist_filename}.
     @ivar message_store: A L{MessageStore} used by the C{exchanger} to
         queue outgoing messages.
-    @ivar transport: A L{HTTPTransport} used by the C{exchanger} to deliver messages.
+    @ivar transport: A L{HTTPTransport} used by the C{exchanger} to deliver
+        messages.
     @ivar identity: The L{Identity} of the Landscape client the broker runs on.
     @ivar exchanger: The L{MessageExchange} exchanges messages with the server.
     @ivar pinger: The L{Pinger} checks if the server has new messages for us.
