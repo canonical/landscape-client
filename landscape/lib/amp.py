@@ -100,11 +100,11 @@ class MethodCallServerProtocol(AMP):
            by one or more L{MethodCallChunk}s, C{arguments} is the last chunk
            of data.
         """
-        if self._pending.get(sequence):
+        pending = self._pending.pop(sequence, None)
+        if pending is not None:
             # We got some L{MethodCallChunk}s before, this is the last.
-            self._pending[sequence].append(arguments)
-            arguments = "".join(self._pending[sequence])
-            del self._pending[sequence]
+            pending.append(arguments)
+            arguments = "".join(pending)
 
         args, kwargs = loads(arguments)
 
