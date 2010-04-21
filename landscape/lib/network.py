@@ -18,6 +18,15 @@ SIOCGIFHWADDR = 0x8927
 
 # struct definition from header /usr/include/net/if.h
 # the struct size varies according to the platform bits
+# a minimal c program was used to determine the size of the
+# struct, standard headers removed for brevity.
+"""
+#include <linux/if.h>
+int main() {
+  printf("Size of struct %lu\n", sizeof(struct ifreq));
+}
+"""
+
 IF_STRUCT_SIZE_32 = 32
 IF_STRUCT_SIZE_64 = 40
 
@@ -30,7 +39,7 @@ def is_64():
     return platform.architecture('/bin/bash')[0] == '64Bit'
 
 
-# initialize the struct size as per the machine's bitsize
+# initialize the struct size as per the machine's archictecture
 IF_STRUCT_SIZE = is_64() and IF_STRUCT_SIZE_64 or IF_STRUCT_SIZE_32
 
 
@@ -116,15 +125,16 @@ def get_active_device_info():
     Returns a dictionary containing information on each active network
     interface present on a machine.
     """
-    info = {}
+    results = []
 
     for interface in get_active_interfaces():
-        interface_info = info[interface] = {}
+        interface_info = {"interface": interface}
         interface_info['ip_address'] = get_ip_address(interface)
         interface_info['mac_address'] = get_mac_address(interface)
         interface_info['broadcast_address'] = get_broadcast_address(interface)
         interface_info['netmask'] = get_netmask(interface)
-    return info
+        results.append(interface_info)
+    return results
 
 
 def get_network_traffic():
@@ -151,3 +161,7 @@ def get_network_traffic():
         devices[device] = dict(zip(columns, map(int, data.split())))
 
     return devices
+
+if __name__ == '__main__':
+    import pprint
+    pprint.pprint(get_active_device_info())
