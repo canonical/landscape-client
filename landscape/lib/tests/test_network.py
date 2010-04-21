@@ -1,4 +1,4 @@
-
+from cStringIO import StringIO
 from subprocess import Popen, PIPE
 from landscape.tests.helpers import LandscapeTest
 
@@ -32,10 +32,55 @@ class NetworkInfoTest(LandscapeTest):
             self.failUnlessIn(device["broadcast_address"], block)
 
     def test_get_network_traffic(self):
-        pass
+        """
+        Network traffic is assessed via reading /proc/net/dev, verify
+        the parsed output against a known sample.
+        """
+        open_mock = self.mocker.replace("__builtin__.open")
+        open_mock("/proc/net/dev", "r")
+        self.mocker.result(StringIO(test_proc_net_dev_output))
+        self.mocker.replay()
+        traffic = get_network_traffic()
+        self.assertEqual(traffic, test_proc_net_dev_parsed)
 
-    def test_get_mac_address(self):
-        pass
 
-    def get_ip_address(self):
-        pass
+test_proc_net_dev_output = """\
+Inter-|   Receive                                                |  Transmit
+ face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed
+    lo:3272627934 3321049    0    0    0     0          0         0 3272627934 3321049    0    0    0     0       0          0
+  eth0: 6063748   12539    0    0    0     0          0        62  2279693   12579    0    0    0    19       0          0
+"""
+
+test_proc_net_dev_parsed = {
+    "lo":{"recv_bytes": 3272627934,
+          "recv_packets": 3321049,
+          "recv_errs": 0,
+          "recv_drop": 0,
+          "recv_fifo": 0,
+          "recv_frame": 0,
+          "recv_compressed": 0,
+          "recv_multicast": 0,
+          "send_bytes": 3272627934,
+          "send_packets": 3321049,
+          "send_errs": 0,
+          "send_drop": 0,
+          "send_fifo": 0,
+          "send_colls": 0,
+          "send_carrier": 0,
+          "send_compressed": 0},
+    "eth0":{"recv_bytes": 6063748,
+            "recv_packets": 12539,
+            "recv_errs": 0,
+            "recv_drop": 0,
+            "recv_fifo": 0,
+            "recv_frame": 0,
+            "recv_compressed": 0,
+            "recv_multicast": 62,
+            "send_bytes": 2279693,
+            "send_packets": 12579,
+            "send_errs": 0,
+            "send_drop": 0,
+            "send_fifo": 0,
+            "send_colls": 19,
+            "send_carrier": 0,
+            "send_compressed": 0}}

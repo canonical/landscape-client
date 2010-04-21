@@ -17,7 +17,7 @@ SIOCGIFHWADDR = 0x8927
 
 
 # struct definition from header /usr/include/net/if.h
-# the struct size varies according to the platform bits
+# the struct size varies according to the platform arch size
 # a minimal c program was used to determine the size of the
 # struct, standard headers removed for brevity.
 """
