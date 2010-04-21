@@ -25,31 +25,34 @@ DAEMON_GROUP=landscape
 . /lib/lsb/init-functions
 [ -f $LANDSCAPE_DEFAULTS ] && . $LANDSCAPE_DEFAULTS
 
-# This $RUN check should match the semantics of
-# l.sysvconfig.SysVConfig.is_configured_to_run.
-if [ $RUN -eq 0 ]; then
-	if [ $CLOUD -eq 1 ]; then
-		if landscape-is-cloud-managed; then
-			# Install the cloud default configuration file
-			cp /usr/share/landscape/cloud-default.conf /etc/landscape/client.conf
-			# Override default file for not going in this conditional again at
-			# next startup
-			sed -i "s/^RUN=.*/RUN=1/" $LANDSCAPE_DEFAULTS
-			if ! grep -q "^RUN=" $LANDSCAPE_DEFAULTS; then
-				echo "RUN=1" >> $LANDSCAPE_DEFAULTS
-			fi
-		else
-			echo "$NAME is not configured, please run landscape-config."
-			exit 0
-		fi
-	else
-		echo "$NAME is not configured, please run landscape-config."
-		exit 0
-	fi
-fi
+check_config () {
+    # This $RUN check should match the semantics of
+    # l.sysvconfig.SysVConfig.is_configured_to_run.
+    if [ $RUN -eq 0 ]; then
+	    if [ $CLOUD -eq 1 ]; then
+		    if landscape-is-cloud-managed; then
+			    # Install the cloud default configuration file
+			    cp /usr/share/landscape/cloud-default.conf /etc/landscape/client.conf
+			    # Override default file for not going in this conditional again at
+			    # next startup
+			    sed -i "s/^RUN=.*/RUN=1/" $LANDSCAPE_DEFAULTS
+			    if ! grep -q "^RUN=" $LANDSCAPE_DEFAULTS; then
+				    echo "RUN=1" >> $LANDSCAPE_DEFAULTS
+			    fi
+		    else
+			    echo "$NAME is not configured, please run landscape-config."
+			    exit 0
+		    fi
+	    else
+		    echo "$NAME is not configured, please run landscape-config."
+		    exit 0
+	    fi
+    fi
+}
 
 case "$1" in
 	start)
+		check_config
 		log_daemon_msg "Starting the $NAME daemon"
 		if [ ! -e $PIDDIR ]; then
 			mkdir $PIDDIR
