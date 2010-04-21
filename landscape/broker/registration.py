@@ -150,7 +150,7 @@ class RegistrationHandler(object):
                 "/meta-data/ramdisk-id",
                 "/meta-data/ami-id"]
             for path in paths:
-                d.addCallback(lambda ignore: self._get_data(path, ec2_data))
+                d.addCallback(lambda ignore, path=path: self._get_data(path, ec2_data))
 
             def record_data(ignore):
                 """Record the instance data returned by the EC2 API."""
