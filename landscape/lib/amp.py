@@ -3,7 +3,8 @@
 from uuid import uuid4
 from twisted.internet.defer import Deferred, maybeDeferred
 from twisted.internet.protocol import ReconnectingClientFactory
-from twisted.protocols.amp import Argument, String, Command, AMP
+from twisted.protocols.amp import (
+    Argument, String, Integer, Command, AMP, MAX_VALUE_LENGTH)
 from twisted.python.failure import Failure
 
 from landscape.lib.bpickle import loads, dumps, dumps_table
@@ -33,12 +34,27 @@ class MethodCallError(Exception):
 class MethodCall(Command):
     """Call a method on the object exposed by a L{MethodCallProtocol}."""
 
-    arguments = [("method", String()),
-                 ("args", MethodCallArgument()),
-                 ("kwargs", MethodCallArgument())]
+    arguments = [("sequence", Integer()),
+                 ("method", String()),
+                 ("arguments", String())]
 
     response = [("result", MethodCallArgument()),
                 ("deferred", String(optional=True))]
+
+    errors = {MethodCallError: "METHOD_CALL_ERROR"}
+
+
+class MethodCallChunk(Command):
+    """Send a chunk of L{MethodCall} containing a portion of the arguments.
+
+    When a the arguments of a L{MethodCall} are bigger than 64k, they get split
+    in several L{MethodCallChunk}s that are buffered on the receiver side.
+    """
+
+    arguments = [("sequence", Integer()),
+                 ("chunk", String())]
+
+    response = [("result", Integer())]
 
     errors = {MethodCallError: "METHOD_CALL_ERROR"}
 
@@ -64,8 +80,11 @@ class MethodCallServerProtocol(AMP):
 
     methods = []
 
+    def __init__(self):
+        self._pending = {}
+
     @MethodCall.responder
-    def receive_method_call(self, method, args, kwargs):
+    def receive_method_call(self, sequence, method, arguments):
         """Call an object's method with the given arguments.
 
         If a connected client sends a L{MethodCall} for method C{foo_bar}, then
@@ -73,10 +92,22 @@ class MethodCallServerProtocol(AMP):
         will be called with the given C{args} and C{kwargs} and its return
         value delivered back to the client as response to the command.
 
+        @param sequence: The integer that uniquely identifies the L{MethodCall}
+            being received.
         @param method: The name of the object's method to call.
-        @param args: The arguments to pass to the method.
-        @param kwargs: The keywords arguments to pass to the method.
+        @param arguments: A bpickle'd binary tuple of (args, kwargs) to be
+           passed to the method. In case this L{MethodCall} has been preceded
+           by one or more L{MethodCallChunk}s, C{arguments} is the last chunk
+           of data.
         """
+        pending = self._pending.pop(sequence, None)
+        if pending is not None:
+            # We got some L{MethodCallChunk}s before, this is the last.
+            pending.append(arguments)
+            arguments = "".join(pending)
+
+        args, kwargs = loads(arguments)
+
         if not method in self.methods:
             raise MethodCallError("Forbidden method '%s'" % method)
 
@@ -94,6 +125,16 @@ class MethodCallServerProtocol(AMP):
         uuid = str(uuid4())
         result.addBoth(self.send_deferred_response, uuid)
         return {"result": None, "deferred": uuid}
+
+    @MethodCallChunk.responder
+    def receive_method_call_chunk(self, sequence, chunk):
+        """Receive a part of a multi-chunk L{MethodCall}.
+
+        Add the received C{chunk} to the buffer of the L{MethodCall} identified
+        by C{sequence}.
+        """
+        self._pending.setdefault(sequence, []).append(chunk)
+        return {"result": sequence}
 
     def _check_result(self, result):
         """Check that the C{result} we're about to return is serializable.
@@ -131,6 +172,8 @@ class MethodCallClientProtocol(AMP):
         seconds, the remote method call will errback with a L{MethodCallError}.
     """
     timeout = 60
+    chunk_size = MAX_VALUE_LENGTH
+    _sequence = 0
 
     def __init__(self):
         AMP.__init__(self)
@@ -184,6 +227,11 @@ class MethodCallClientProtocol(AMP):
 
         return response
 
+    def create_sequence(self):
+        """Return a unique sequence number for a L{MethodCall}."""
+        self._sequence += 1
+        return self._sequence
+
     def send_method_call(self, method, args=[], kwargs={}):
         """Send a L{MethodCall} command with the given arguments.
 
@@ -191,12 +239,31 @@ class MethodCallClientProtocol(AMP):
         @param args: The positional arguments to pass to the remote method.
         @param kwargs: The keyword arguments to pass to the remote method.
         """
-        result = self.callRemote(MethodCall,
-                                 method=method, args=args, kwargs=kwargs)
-        # The result can be C{None} only if the requested command is a
-        # DeferredResponse, which has requiresAnswer set to False
-        if result is not None:
-            return result.addCallback(self.handle_response)
+        arguments = dumps((args, kwargs))
+        sequence = self.create_sequence()
+
+        # Split the given arguments in one or more chunks
+        chunks = [arguments[i:i + self.chunk_size]
+                  for i in xrange(0, len(arguments), self.chunk_size)]
+
+        result = Deferred()
+        if len(chunks) > 1:
+            # If we have N chunks, send the first N-1 as MethodCallChunk's
+            for chunk in chunks[:-1]:
+
+                def create_send_chunk(sequence, chunk):
+                    send_chunk = lambda x: self.callRemote(
+                        MethodCallChunk, sequence=sequence, chunk=chunk)
+                    return send_chunk
+
+                result.addCallback(create_send_chunk(sequence, chunk))
+
+        result.addCallback(
+            lambda x: self.callRemote(MethodCall, sequence=sequence,
+                                      method=method, arguments=chunks[-1]))
+        result.addCallback(self.handle_response)
+        result.callback(None)
+        return result
 
 
 class MethodCallProtocol(MethodCallServerProtocol, MethodCallClientProtocol):
