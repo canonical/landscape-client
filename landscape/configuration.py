@@ -536,12 +536,6 @@ def register(config, reactor=None):
     time.sleep(2)
 
     def got_connection(remote):
-        # This is a bit unfortunate. Every method of remote returns a deferred,
-        # even stuff like connect_to_signal, because the fetching of the DBus
-        # object itself is asynchronous. We can *mostly* fire-and-forget these
-        # things, except that if the object isn't found, *all* of the deferreds
-        # will fail. To prevent unhandled errors, we need to collect them all
-        # up and add an errback.
         handlers = {"registration-done": success,
                     "registration-failed": failure,
                     "exchange-failed": exchange_failure}
