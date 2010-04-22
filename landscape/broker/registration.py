@@ -138,7 +138,7 @@ class RegistrationHandler(object):
             # We ignore errors from user-data because it's common for the
             # URL to return a 404 when the data is unavailable.
             ec2_data = []
-            d = self._fetch_async(EC2_API + "/user-data").addErrback(
+            deferred = self._fetch_async(EC2_API + "/user-data").addErrback(
                 log_failure).addCallback(ec2_data.append)
             paths = [
                 "/meta-data/instance-id",
@@ -149,8 +149,11 @@ class RegistrationHandler(object):
                 "/meta-data/kernel-id",
                 "/meta-data/ramdisk-id",
                 "/meta-data/ami-id"]
+            # We're not using a DeferredList here because we want to keep the
+            # number of connections to the backend minimal. See lp:567515.
             for path in paths:
-                d.addCallback(lambda ignore, path=path: self._get_data(path, ec2_data))
+                deferred.addCallback(
+                    lambda ignore, path=path: self._get_data(path, ec2_data))
 
             def record_data(ignore):
                 """Record the instance data returned by the EC2 API."""
@@ -187,9 +190,8 @@ class RegistrationHandler(object):
                 log_failure(error, msg="Got error while fetching meta-data: %r"
                             % (error.value,))
 
-            # It sucks that this deferred is never returned
-            d.addCallback(record_data)
-            d.addErrback(log_error)
+            deferred.addCallback(record_data)
+            deferred.addErrback(log_error)
 
     def _handle_exchange_done(self):
         """Registered handler for the C{"exchange-done"} event.
