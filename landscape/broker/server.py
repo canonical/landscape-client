@@ -1,5 +1,7 @@
 import logging
 
+from twisted.internet.defer import Deferred
+
 from landscape.lib.twisted_util import gather_results
 from landscape.amp import RemoteComponentsRegistry
 from landscape.manager.manager import FAILED
@@ -210,6 +212,28 @@ class BrokerServer(object):
     @event
     def registration_failed(self):
         """Broadcast a C{registration-failed} event to the clients."""
+
+    def listen_events(self, event_types):
+        """
+        Return a C{Deferred} that fires when the first event occurs among the
+        given ones.
+        """
+        deferred = Deferred()
+        calls = []
+
+        def get_handler(event_type):
+
+            def handler():
+                for call in calls:
+                    self._reactor.cancel_call(call)
+                deferred.callback(event_type)
+
+            return handler
+
+        for event_type in event_types:
+            call = self._reactor.call_on(event_type, get_handler(event_type))
+            calls.append(call)
+        return deferred
 
     @event
     def broker_reconnect(self):

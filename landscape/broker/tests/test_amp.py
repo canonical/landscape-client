@@ -163,6 +163,30 @@ class RemoteBrokerTest(LandscapeTest):
         result = self.remote.call_if_accepted("test", function)
         return self.assertSuccess(result, None)
 
+    def test_listen_events(self):
+        """
+        L{RemoteBroker.listen_events} returns a deferred which fires when
+        the first of the given events occurs in the broker reactor.
+        """
+        result = self.remote.listen_events(["event1", "event2"])
+        self.reactor._reactor.callLater(0.05, self.reactor.fire, "event2")
+        return self.assertSuccess(result, "event2")
+
+    def test_call_on_events(self):
+        """
+        L{RemoteBroker.call_on_evets} fires the given callback when the
+        first of the given events occurs in the broker reactor.
+        """
+        callback1 = self.mocker.mock()
+        self.expect(callback1()).count(0)
+        callback2 = self.mocker.mock()
+        self.expect(callback2()).result(123)
+        self.mocker.replay()
+        result = self.remote.call_on_event({"event1": callback1,
+                                            "event2": callback2})
+        self.reactor._reactor.callLater(0.05, self.reactor.fire, "event2")
+        return self.assertSuccess(result, 123)
+
     def test_fire_event(self):
         """
         The L{RemoteBroker.fire_event} method fires an event in the broker
