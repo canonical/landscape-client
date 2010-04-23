@@ -2,7 +2,7 @@ import os
 from getpass import getpass
 from ConfigParser import ConfigParser
 
-from twisted.internet.defer import Deferred, succeed, fail
+from twisted.internet.defer import succeed, fail
 from twisted.internet import reactor
 
 from landscape.reactor import TwistedReactor
@@ -88,6 +88,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
     def setUp(self):
         super(LandscapeSetupScriptTest, self).setUp()
         self.config_filename = self.makeFile()
+
         class MyLandscapeSetupConfiguration(LandscapeSetupConfiguration):
             default_config_filenames = [self.config_filename]
         self.config = MyLandscapeSetupConfiguration(None)
@@ -129,7 +130,8 @@ class LandscapeSetupScriptTest(LandscapeTest):
         script_mock = self.mocker.patch(self.script)
         raw_input_mock("Message: ")
         self.mocker.result("")
-        script_mock.show_help("This option is required to configure Landscape.")
+        script_mock.show_help("This option is required to "
+                              "configure Landscape.")
         raw_input_mock("Message: ")
         self.mocker.result("Desktop")
         self.mocker.replay()
@@ -141,7 +143,6 @@ class LandscapeSetupScriptTest(LandscapeTest):
     def test_prompt_with_required_and_default(self):
         self.mocker.order()
         raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
-        script_mock = self.mocker.patch(self.script)
         raw_input_mock("Message [Desktop]: ")
         self.mocker.result("")
         self.mocker.replay()
@@ -197,7 +198,8 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.mocker.result("")
 
         script_mock = self.mocker.patch(self.script)
-        script_mock.show_help("This option is required to configure Landscape.")
+        script_mock.show_help("This option is required to "
+                              "configure Landscape.")
 
         mock("Password: ")
         self.mocker.result("password")
@@ -246,6 +248,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.assertFalse(self.script.prompt_yes_no("Foo"))
 
     def get_matcher(self, help_snippet):
+
         def match_help(help):
             return help.strip().startswith(help_snippet)
         return MATCH(match_help)
@@ -297,7 +300,8 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.script.query_registration_password()
 
     def test_query_registration_password_defined_on_command_line(self):
-        getpass_mock = self.mocker.replace("getpass.getpass", passthrough=False)
+        getpass_mock = self.mocker.replace("getpass.getpass",
+                                           passthrough=False)
         self.expect(getpass_mock(ANY)).count(0)
         self.mocker.replay()
 
@@ -475,7 +479,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.assertEquals(self.config.script_users,
                           "root, nobody, landscape")
 
-    def test_query_script_users_defined_on_command_line_with_unknown_user(self):
+    def test_query_script_users_on_command_line_with_unknown_user(self):
         """
         If several users are provided on the command line, we verify the users
         and raise a ConfigurationError if any are unknown on this system.
@@ -516,7 +520,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.assertEquals(self.config.script_users,
                           "ALL")
 
-    def test_query_script_users_defined_on_command_line_with_ALL_and_extra_user(self):
+    def test_query_script_users_command_line_with_ALL_and_extra_user(self):
         """
         If ALL and additional users are provided as the users on the command
         line, this should raise an appropriate ConfigurationError.
@@ -652,8 +656,7 @@ class ConfigurationFunctionsTest(LandscapeTest):
                                  "https_proxy = https://old.proxy\n"
                                  "url = http://url\n"
                                  "include_manager_plugins = ScriptExecution\n"
-                                 "tags = london, server"
-                                 )
+                                 "tags = london, server")
 
         raw_input = self.mocker.replace("__builtin__.raw_input",
                                         name="raw_input")
@@ -954,7 +957,8 @@ account_name = account
         self.mocker.throw(ProcessError)
 
         print_text_mock("Couldn't restart the Landscape client.", error=True)
-        print_text_mock(CONTAINS("This machine will be registered"), error=True)
+        print_text_mock(CONTAINS("This machine will be registered"),
+                        error=True)
 
         self.mocker.replay()
 
@@ -975,7 +979,8 @@ account_name = account
         self.mocker.throw(ProcessError)
 
         print_text_mock("Couldn't restart the Landscape client.", error=True)
-        print_text_mock(CONTAINS("This machine will be registered"), error=True)
+        print_text_mock(CONTAINS("This machine will be registered"),
+                        error=True)
 
         self.mocker.replay()
 
@@ -1088,7 +1093,8 @@ account_name = account
             "https_proxy = https://new.proxy\n"
             "url = http://new.url\n")
 
-        import_filename = self.makeFile(configuration, basename="import_config")
+        import_filename = self.makeFile(configuration,
+                                        basename="import_config")
         config_filename = self.makeFile("", basename="final_config")
 
         config = self.get_config(["--config", config_filename, "--silent",
@@ -1117,7 +1123,7 @@ account_name = account
             self.get_config(["--config", config_filename, "--silent",
                              "--import", import_filename])
         except ImportOptionError, error:
-            self.assertEquals(str(error), 
+            self.assertEquals(str(error),
                               "Nothing to import at %s." % import_filename)
         else:
             self.fail("ImportOptionError not raised")
@@ -1133,7 +1139,7 @@ account_name = account
             self.get_config(["--config", config_filename, "--silent",
                              "--import", import_filename])
         except ImportOptionError, error:
-            self.assertEquals(str(error), 
+            self.assertEquals(str(error),
                               "File %s doesn't exist." % import_filename)
         else:
             self.fail("ImportOptionError not raised")
@@ -1152,7 +1158,7 @@ account_name = account
             self.get_config(["--config", config_filename, "--silent",
                              "--import", import_filename])
         except ImportOptionError, error:
-            self.assertEquals(str(error), 
+            self.assertEquals(str(error),
                               "Nothing to import at %s." % import_filename)
         else:
             self.fail("ImportOptionError not raised")
@@ -1358,7 +1364,7 @@ account_name = account
         try:
             self.get_config(["--silent", "--import", "https://config.url"])
         except ImportOptionError, error:
-            self.assertEquals(str(error), 
+            self.assertEquals(str(error),
                               "Nothing to import at https://config.url.")
         else:
             self.fail("ImportOptionError not raised")
@@ -1454,6 +1460,7 @@ account_name = account
         self.ensure_import_from_url_honors_proxy_options("https_proxy")
 
     def ensure_import_from_url_honors_proxy_options(self, proxy_option):
+
         def check_proxy(url):
             self.assertEquals(os.environ.get(proxy_option), "http://proxy")
 
@@ -1567,6 +1574,7 @@ class RegisterFunctionTest(LandscapeTest):
 
         # The register() method is called.  We fire the "registration-failed"
         # event after it's done, so that it cascades into a deferred errback.
+
         def register_done():
             service.reactor.fire("registration-failed")
         registration_mock.register()
@@ -1622,8 +1630,8 @@ class RegisterFunctionTest(LandscapeTest):
         # The deferred errback finally prints out this message.
         print_text_mock("We were unable to contact the server. "
                         "Your internet connection may be down. "
-                        "The landscape client will continue to try and contact "
-                        "the server periodically.",
+                        "The landscape client will continue to try and "
+                        "contact the server periodically.",
                         error=True)
 
 
@@ -1680,8 +1688,6 @@ class RegisterFunctionTest(LandscapeTest):
 
         self.mocker.replay()
 
-        result = Deferred()
-
         # DO IT!
         return register(service.config)
 
@@ -1703,7 +1709,8 @@ class RegisterFunctionTest(LandscapeTest):
             CONTAINS("There was an error communicating with the "
                      "Landscape client"),
             error=True)
-        print_text_mock(CONTAINS("This machine will be registered"), error=True)
+        print_text_mock(CONTAINS("This machine will be registered"),
+                        error=True)
 
         self.mocker.replay()
 
@@ -1732,7 +1739,8 @@ class RegisterFunctionTest(LandscapeTest):
             CONTAINS("There was an error communicating with the "
                      "Landscape client"),
             error=True)
-        print_text_mock(CONTAINS("This machine will be registered"), error=True)
+        print_text_mock(CONTAINS("This machine will be registered"),
+                        error=True)
 
         self.mocker.replay()
 
@@ -1784,6 +1792,7 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
         self.mocker.result(fail(ZeroDivisionError))
 
         print_text_mock(ANY, error=True)
+
         def check_logged_failure(text, error):
             self.assertTrue("ZeroDivisionError" in text)
         self.mocker.call(check_logged_failure)
