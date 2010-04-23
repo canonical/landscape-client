@@ -1,6 +1,5 @@
 from twisted.internet.defer import fail, succeed
 
-from landscape.lib import bpickle_dbus
 from landscape.monitor.hardwareinventory import HardwareInventory
 from landscape.tests.test_hal import MockHALManager, MockRealHALDevice
 from landscape.tests.helpers import LandscapeTest, MonitorHelper

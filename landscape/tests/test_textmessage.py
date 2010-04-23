@@ -1,16 +1,15 @@
 import sys
 
-from landscape.broker.remote import RemoteBroker
 from landscape.textmessage import (
     AcceptedTypeError, EmptyMessageError, got_accepted_types, get_message,
     send_message)
 from landscape.tests.helpers import (
-    LandscapeTest, FakeRemoteBrokerHelper, StandardIOHelper)
+    LandscapeTest, FakeBrokerServiceHelper, StandardIOHelper)
 
 
 class SendMessageTest(LandscapeTest):
 
-    helpers = [StandardIOHelper, FakeRemoteBrokerHelper]
+    helpers = [StandardIOHelper, FakeBrokerServiceHelper]
 
     def test_send_message(self):
         """
