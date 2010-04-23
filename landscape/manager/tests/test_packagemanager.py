@@ -8,24 +8,18 @@ from landscape.package.releaseupgrader import (
 from landscape.package.store import PackageStore
 
 from landscape.manager.packagemanager import PackageManager
-from landscape.manager.manager import ManagerPluginRegistry
 from landscape.tests.helpers import (
-    LandscapeIsolatedTest, RemoteBrokerHelper, EnvironSaverHelper)
+    LandscapeTest, EnvironSaverHelper, ManagerHelper)
 
 
-class PackageManagerTest(LandscapeIsolatedTest):
+class PackageManagerTest(LandscapeTest):
     """Tests for the temperature plugin."""
 
-    helpers = [RemoteBrokerHelper, EnvironSaverHelper]
+    helpers = [EnvironSaverHelper, ManagerHelper]
 
     def setUp(self):
         """Initialize test helpers and create a sample thermal zone."""
-        LandscapeIsolatedTest.setUp(self)
-
-        self.manager = ManagerPluginRegistry(self.remote,
-                                             self.broker_service.reactor,
-                                             self.broker_service.config)
-
+        super(PackageManagerTest, self).setUp()
         self.package_store = PackageStore(os.path.join(self.data_path,
                                                        "package/database"))
         self.package_manager = PackageManager()
@@ -104,18 +98,16 @@ class PackageManagerTest(LandscapeIsolatedTest):
         """
         The L{PackageManager} spawns a L{PackageChanger} run if messages
         of type C{"change-packages-result"} are accepted.
-        """
-        self.manager.add(self.package_manager)
-
+        """ 
         service = self.broker_service
         service.message_store.set_accepted_types(["change-packages-result"])
 
         package_manager_mock = self.mocker.patch(self.package_manager)
         package_manager_mock.spawn_handler(PackageChanger)
         self.mocker.count(2) # Once for registration, then again explicitly.
-
         self.mocker.replay()
 
+        self.manager.add(self.package_manager)
         return self.package_manager.run()
 
     def test_run_on_package_data_changed(self):
@@ -123,7 +115,6 @@ class PackageManagerTest(LandscapeIsolatedTest):
         The L{PackageManager} spawns a L{PackageChanger} run if an event
         of type C{"package-data-changed"} is fired.
         """
-        self.manager.add(self.package_manager)
 
         service = self.broker_service
         service.message_store.set_accepted_types(["change-packages-result"])
@@ -133,24 +124,23 @@ class PackageManagerTest(LandscapeIsolatedTest):
         self.mocker.count(2) # Once for registration, then again explicitly.
         self.mocker.replay()
 
-        return self.broker_service.reactor.fire("package-data-changed")[1]
+        self.manager.add(self.package_manager)
+        return self.manager.reactor.fire("package-data-changed")[0]
 
     def test_spawn_release_upgrader_on_run_if_message_accepted(self):
         """
         The L{PackageManager} spawns a L{ReleaseUpgrader} run if messages
         of type C{"operation-result"} are accepted.
         """
-        self.manager.add(self.package_manager)
-
         service = self.broker_service
         service.message_store.set_accepted_types(["operation-result"])
 
         package_manager_mock = self.mocker.patch(self.package_manager)
         package_manager_mock.spawn_handler(ReleaseUpgrader)
         self.mocker.count(2) # Once for registration, then again explicitly.
-
         self.mocker.replay()
 
+        self.manager.add(self.package_manager)
         return self.package_manager.run()
 
     def test_change_packages_handling(self):
@@ -310,6 +300,8 @@ class PackageManagerTest(LandscapeIsolatedTest):
     def test_spawn_handler_doesnt_chdir(self):
         command = self.makeFile("#!/bin/sh\necho RUN\n")
         os.chmod(command, 0755)
+        cwd = os.getcwd()
+        self.addCleanup(os.chdir, cwd)
         dir = self.makeDir()
         os.chdir(dir)
         os.chmod(dir, 0)

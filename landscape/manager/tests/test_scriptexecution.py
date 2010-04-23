@@ -13,8 +13,7 @@ from landscape.manager.scriptexecution import (
     UBUNTU_PATH, get_user_info, UnknownInterpreterError, UnknownUserError)
 from landscape.manager.manager import SUCCEEDED, FAILED
 from landscape.tests.helpers import (
-    LandscapeTest, LandscapeIsolatedTest, ManagerHelper,
-    StubProcessFactory, DummyProcess)
+    LandscapeTest, ManagerHelper, StubProcessFactory, DummyProcess)
 from landscape.tests.mocker import ANY, ARGS
 
 
@@ -68,7 +67,9 @@ class RunScriptTests(LandscapeTest):
         return result
 
     def test_concurrent(self):
-        """Scripts run with the ScriptExecutionPlugin plugin are run concurrently."""
+        """
+        Scripts run with the ScriptExecutionPlugin plugin are run concurrently.
+        """
         fifo = self.makeFile()
         os.mkfifo(fifo)
         self.addCleanup(os.remove, fifo)
@@ -410,7 +411,7 @@ class RunScriptTests(LandscapeTest):
         return d.addCallback(cb).addErrback(eb)
 
 
-class ScriptExecutionMessageTests(LandscapeIsolatedTest):
+class ScriptExecutionMessageTests(LandscapeTest):
     helpers = [ManagerHelper]
 
     def setUp(self):

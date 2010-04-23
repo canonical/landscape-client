@@ -8,24 +8,18 @@ from landscape.package.reporter import find_reporter_command
 from landscape.package.store import PackageStore
 
 from landscape.monitor.packagemonitor import PackageMonitor
-from landscape.monitor.monitor import MonitorPluginRegistry
 from landscape.tests.helpers import (
-    LandscapeIsolatedTest, RemoteBrokerHelper, EnvironSaverHelper)
+    LandscapeTest, EnvironSaverHelper, MonitorHelper)
 
 
-class PackageMonitorTest(LandscapeIsolatedTest):
+class PackageMonitorTest(LandscapeTest):
     """Tests for the temperature plugin."""
 
-    helpers = [RemoteBrokerHelper, EnvironSaverHelper]
+    helpers = [EnvironSaverHelper, MonitorHelper]
 
     def setUp(self):
         """Initialize test helpers and create a sample thermal zone."""
         super(PackageMonitorTest, self).setUp()
-        self.monitor = MonitorPluginRegistry(self.remote,
-                                             self.broker_service.reactor,
-                                             self.broker_service.config,
-                                             Persist(), self.makeFile())
-
         self.package_store_filename = self.makeFile()
         self.package_store = PackageStore(self.package_store_filename)
 
@@ -85,16 +79,15 @@ class PackageMonitorTest(LandscapeIsolatedTest):
         return deferred
 
     def test_spawn_reporter_on_run_if_message_accepted(self):
-        self.monitor.add(self.package_monitor)
 
         self.broker_service.message_store.set_accepted_types(["packages"])
 
         package_monitor_mock = self.mocker.patch(self.package_monitor)
         package_monitor_mock.spawn_reporter()
         self.mocker.count(2) # Once for registration, then again explicitly.
-
         self.mocker.replay()
 
+        self.monitor.add(self.package_monitor)
         return self.package_monitor.run()
 
     def test_package_ids_handling(self):
@@ -207,7 +200,7 @@ class PackageMonitorTest(LandscapeIsolatedTest):
         message = {"type": "package-ids", "ids": [None], "request-id": 1}
         self.package_store.add_task("reporter", message)
 
-        self.broker_service.reactor.fire("resynchronize")
+        self.monitor.reactor.fire("resynchronize")
 
         # The next task should be the resynchronize message.
         task = self.package_store.get_next_task("reporter")
@@ -227,11 +220,12 @@ class PackageMonitorTest(LandscapeIsolatedTest):
     def test_spawn_reporter_doesnt_chdir(self):
         command = self.makeFile("#!/bin/sh\necho RUN\n")
         os.chmod(command, 0755)
-        dir = self.makeDir()
         cwd = os.getcwd()
+        self.addCleanup(os.chdir, cwd)
+        dir = self.makeDir()
         os.chdir(dir)
         os.chmod(dir, 0)
- 
+
         find_command_mock = self.mocker.replace(find_reporter_command)
         find_command_mock()
         self.mocker.result(command)
@@ -257,8 +251,7 @@ class PackageMonitorTest(LandscapeIsolatedTest):
         """
         self.package_store.set_hash_ids({"hash1": 1, "hash2": 2})
         self.monitor.add(self.package_monitor)
-        self.broker_service.reactor.fire("server-uuid-changed",
-                                         "old-uuid", "new-uuid")
+        self.monitor.reactor.fire("server-uuid-changed", "old", "new")
 
         self.assertEquals(self.package_store.get_hash_id("hash1"), None)
         self.assertEquals(self.package_store.get_hash_id("hash2"), None)
@@ -271,8 +264,6 @@ class PackageMonitorTest(LandscapeIsolatedTest):
         """
         self.package_store.set_hash_ids({"hash1": 1, "hash2": 2})
         self.monitor.add(self.package_monitor)
-        self.broker_service.reactor.fire("server-uuid-changed",
-                                         None, "new-uuid")
-
+        self.monitor.reactor.fire("server-uuid-changed", None, "new-uuid")
         self.assertEquals(self.package_store.get_hash_id("hash1"), 1)
         self.assertEquals(self.package_store.get_hash_id("hash2"), 2)
