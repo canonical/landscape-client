@@ -48,9 +48,10 @@ class RemoteBroker(RemoteObject):
     def call_on_event(self, handlers):
         """Call a given handler as soon as a certain event occurs.
 
-        @param handlers: A dictionary mapping event types to callables. When
-            the first of the given event types is occurs in the broker reactor,
-            the associated callable will be fired.
+        @param handlers: A dictionary mapping event types to callables, where
+            an event type is string (the name of the event). When the first of
+            the given event types occurs in the broker reactor, the associated
+            callable will be fired.
         """
         result = self.listen_events(handlers.keys())
         return result.addCallback(lambda event_type: handlers[event_type]())

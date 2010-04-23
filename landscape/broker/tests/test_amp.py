@@ -174,7 +174,7 @@ class RemoteBrokerTest(LandscapeTest):
 
     def test_call_on_events(self):
         """
-        L{RemoteBroker.call_on_evets} fires the given callback when the
+        L{RemoteBroker.call_on_events} fires the given callback when the
         first of the given events occurs in the broker reactor.
         """
         callback1 = self.mocker.mock()
