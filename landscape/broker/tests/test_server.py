@@ -269,6 +269,25 @@ class BrokerServerTest(LandscapeTest):
         result = self.broker.exit()
         return result.addCallback(assert_event)
 
+    def test_listen_events(self):
+        """
+        The L{BrokerServer.listen_events} method returns a deferred which is
+        fired when the first of the given events occurs.
+        """
+        result = self.broker.listen_events(["event1", "event2"])
+        self.reactor.fire("event2")
+        return self.assertSuccess(result, "event2")
+
+    def test_listen_event_only_once(self):
+        """
+        The L{BrokerServer.listen_events} listens only to one occurrence of
+        the given events.
+        """
+        result = self.broker.listen_events(["event"])
+        self.assertEquals(self.reactor.fire("event"), [None])
+        self.assertEquals(self.reactor.fire("event"), [])
+        return self.assertSuccess(result, "event")
+
 
 class EventTest(LandscapeTest):
 

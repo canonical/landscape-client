@@ -24,7 +24,8 @@ class BrokerServerProtocol(ComponentProtocol):
                 "register_client_accepted_message_type",
                 "reload_configuration",
                 "send_message",
-                "stop_clients"])
+                "stop_clients",
+                "listen_events"])
 
 
 class BrokerServerProtocolFactory(ComponentProtocolFactory):
@@ -43,6 +44,17 @@ class RemoteBroker(RemoteObject):
                 return callable(*args)
         deferred_types.addCallback(got_accepted_types)
         return deferred_types
+
+    def call_on_event(self, handlers):
+        """Call a given handler as soon as a certain event occurs.
+
+        @param handlers: A dictionary mapping event types to callables, where
+            an event type is string (the name of the event). When the first of
+            the given event types occurs in the broker reactor, the associated
+            callable will be fired.
+        """
+        result = self.listen_events(handlers.keys())
+        return result.addCallback(lambda event_type: handlers[event_type]())
 
 
 class FakeRemoteBroker(object):
