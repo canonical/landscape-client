@@ -5,7 +5,6 @@ import socket
 
 from twisted.internet.defer import Deferred
 
-from landscape.lib.twisted_util import gather_results
 from landscape.lib.bpickle import loads
 from landscape.lib.log import log_failure
 from landscape.lib.fetch import fetch, FetchError
@@ -24,16 +23,21 @@ class InvalidCredentialsError(Exception):
 
 
 def persist_property(name):
+
     def get(self):
         return self._persist.get(name)
+
     def set(self, value):
         self._persist.set(name, value)
+
     return property(get, set)
 
 
 def config_property(name):
+
     def get(self):
         return getattr(self._config, name)
+
     return property(get)
 
 
@@ -117,30 +121,40 @@ class RegistrationHandler(object):
         self._exchange.exchange()
         return result
 
+    def _get_data(self, path, accumulate):
+        """
+        Get data at C{path} on the EC2 API endpoint, and add the result to the
+        C{accumulate} list.
+        """
+        return self._fetch_async(EC2_API + path).addCallback(accumulate.append)
+
     def _fetch_ec2_data(self):
+        """Retrieve available EC2 information, if in a EC2 compatible cloud."""
         id = self._identity
         if self._config.cloud and not id.secure_id:
             # Fetch data from the EC2 API, to be used later in the registration
             # process
-            registration_data = gather_results([
-                # We ignore errors from user-data because it's common for the
-                # URL to return a 404 when the data is unavailable.
-                self._fetch_async(EC2_API + "/user-data")
-                    .addErrback(log_failure),
-                # The rest of the fetches don't get protected because we just
-                # fall back to regular registration if any of them don't work.
-                self._fetch_async(EC2_API + "/meta-data/instance-id"),
-                self._fetch_async(EC2_API + "/meta-data/reservation-id"),
-                self._fetch_async(EC2_API + "/meta-data/local-hostname"),
-                self._fetch_async(EC2_API + "/meta-data/public-hostname"),
-                self._fetch_async(EC2_API + "/meta-data/ami-launch-index"),
-                self._fetch_async(EC2_API + "/meta-data/kernel-id"),
-                self._fetch_async(EC2_API + "/meta-data/ramdisk-id"),
-                self._fetch_async(EC2_API + "/meta-data/ami-id"),
-                ],
-                consume_errors=True)
+            # We ignore errors from user-data because it's common for the
+            # URL to return a 404 when the data is unavailable.
+            ec2_data = []
+            deferred = self._fetch_async(EC2_API + "/user-data").addErrback(
+                log_failure).addCallback(ec2_data.append)
+            paths = [
+                "/meta-data/instance-id",
+                "/meta-data/reservation-id",
+                "/meta-data/local-hostname",
+                "/meta-data/public-hostname",
+                "/meta-data/ami-launch-index",
+                "/meta-data/kernel-id",
+                "/meta-data/ramdisk-id",
+                "/meta-data/ami-id"]
+            # We're not using a DeferredList here because we want to keep the
+            # number of connections to the backend minimal. See lp:567515.
+            for path in paths:
+                deferred.addCallback(
+                    lambda ignore, path=path: self._get_data(path, ec2_data))
 
-            def record_data(ec2_data):
+            def record_data(ignore):
                 """Record the instance data returned by the EC2 API."""
                 (raw_user_data, instance_key, reservation_key,
                  local_hostname, public_hostname, launch_index,
@@ -175,9 +189,8 @@ class RegistrationHandler(object):
                 log_failure(error, msg="Got error while fetching meta-data: %r"
                             % (error.value,))
 
-            # It sucks that this deferred is never returned
-            registration_data.addCallback(record_data)
-            registration_data.addErrback(log_error)
+            deferred.addCallback(record_data)
+            deferred.addErrback(log_error)
 
     def _handle_exchange_done(self):
         """Registered handler for the C{"exchange-done"} event.
@@ -225,9 +238,9 @@ class RegistrationHandler(object):
                     self._exchange.send(message)
                 elif id.account_name:
                     with_tags = ["", u"and tags %s " % tags][bool(tags)]
-                    logging.info(u"Queueing message to register with account %r %s"
-                                 "as an EC2 instance." % (
-                                 id.account_name, with_tags,))
+                    logging.info(
+                        u"Queueing message to register with account %r %s"
+                        u"as an EC2 instance." % (id.account_name, with_tags))
                     message = {"type": "register-cloud-vm",
                                "otp": None,
                                "hostname": socket.getfqdn(),
@@ -364,7 +377,7 @@ def _wait_for_network():
             time.sleep(1)
             if time.time() - start > timeout:
                 break
-                
+
 
 def is_cloud_managed(fetch=fetch):
     """
@@ -379,5 +392,6 @@ def is_cloud_managed(fetch=fetch):
                              connect_timeout=5)
     except FetchError:
         return False
-    instance_data = _extract_ec2_instance_data(raw_user_data, int(launch_index))
+    instance_data = _extract_ec2_instance_data(
+        raw_user_data, int(launch_index))
     return instance_data is not None

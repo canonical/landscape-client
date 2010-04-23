@@ -1,3 +1,17 @@
+landscape-client (1.5.2-0ubuntu0.10.04.0) UNRELEASED; urgency=low
+
+  * New upstream version
+
+ -- Free Ekanayaka <free.ekanayaka@canonical.com>  Wed, 21 Apr 2010 19:58:10 +0200
+
+landscape-client (1.5.0-0ubuntu0.10.04.1) lucid; urgency=low
+
+  * New upstream version
+    - Fix smart-update failing its very first run (LP: 562496)
+    - Depend on pythonX.Y-dbus and pythonX.Y-pycurl (LP: #563063)
+
+ -- Free Ekanayaka <free.ekanayaka@canonical.com>  Wed, 21 Apr 2010 12:31:28 +0200
+
 landscape-client (1.5.0-0ubuntu0.10.04.0) lucid; urgency=low
 
   * New upstream version (LP: #557244)
