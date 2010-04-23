@@ -1,5 +1,3 @@
-
-#import subprocess
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.monitor.networkdevice import NetworkDevice
 
@@ -22,7 +20,7 @@ class NetworkDeviceTest(LandscapeTest):
         self.assertEquals(message["type"], "network-device")
         self.failUnlessIn("devices", message)
         self.assertTrue(len(message["devices"]))
-        # only network we can truly assert is localhost
+        # only network device we can truly assert is localhost
         self.assertTrue(message["devices"][0]["interface"], "lo")
         self.assertTrue(message["devices"][0]["ip_address"], "0.0.0.0")
 

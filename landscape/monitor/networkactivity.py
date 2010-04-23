@@ -4,7 +4,6 @@ A monitor that collects data on network activity.
 
 import time
 
-from landscape.lib.monitor import CoverageMonitor
 from landscape.lib.network import get_network_traffic
 from landscape.accumulate import Accumulator
 
@@ -16,35 +15,26 @@ class NetworkActivity(MonitorPlugin):
     Collect data regarding a machine's network activity.
     """
 
-    persist_name = "network-activity"
+    message_type = "network-activity"
+    persist_name = message_type
 
     # Prevent the Plugin base-class from scheduling looping calls.
     run_interval = None
 
-    def __init__(self, interval=30, monitor_interval=60*60,
-                 create_time=time.time):
+    def __init__(self, interval=30, create_time=time.time):
         self._interval = interval
-        self._monitor_interval = monitor_interval
-        self._network_activity = []
+        self._network_activity = {}
         self._create_time = create_time
 
     def register(self, registry):
         super(NetworkActivity, self).register(registry)
-        self._accumulate = Accumulator(self._persist, registry.step_size)
+        self._accumulator = Accumulator(self._persist, self.registry.step_size)
         self.registry.reactor.call_every(self._interval, self.run)
-
-        self._monitor = CoverageMonitor(self._interval, 0.8,
-                                        "network activity snapshot",
-                                        create_time=self._create_time)
-        self.registry.reactor.call_every(self._monitor_interval,
-                                         self._monitor.log)
-        self.registry.reactor.call_on("stop", self._monitor.log, priority=2000)
-
         self.call_on_accepted("network-activity", self.exchange, True)
 
     def create_message(self):
         network_activity = self._network_activity
-        self._network_activity = []
+        self._network_activity = {}
         return {"type": "network-activity", "activity": network_activity}
 
     def send_message(self, urgent):
@@ -57,11 +47,21 @@ class NetworkActivity(MonitorPlugin):
                                               self.send_message, urgent)
 
     def run(self):
-        self._monitor.ping()
         new_timestamp = int(self._create_time())
         new_traffic = get_network_traffic()
-        activity_step_data = self._accumulate(new_timestamp, new_traffic,
-                                              "accumulate-traffic")
+        for interface in new_traffic:
+            traffic = new_traffic[interface]
+            recv_step_data = self._accumulate(
+                new_timestamp,
+                traffic["recv_bytes"],
+                "traffic-recv-%s"%interface)
+            send_step_data = self._accumulate(
+                new_timestamp,
+                traffic["send_bytes"],
+                "traffic-recv-%s"%interface)
 
-        if activity_step_data:
-            self._network_activity.append(activity_step_data)
+            if interface not in self._network_activity:
+                self._network_activity[interface] = []
+
+            self._network_activity[interface].append((
+                recv_step_data, send_step_data))
