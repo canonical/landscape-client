@@ -4,7 +4,7 @@ from landscape.lib.monitor import CoverageMonitor
 from landscape.lib.sysstats import MemoryStats
 
 from landscape.accumulate import Accumulator
-from landscape.monitor.monitor import MonitorPlugin
+from landscape.monitor.plugin import MonitorPlugin
 
 
 class MemoryInfo(MonitorPlugin):

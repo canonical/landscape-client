@@ -2,7 +2,7 @@ from twisted.python.failure import Failure
 from twisted.internet.error import ProcessTerminated
 
 from landscape import SERVER_API
-from landscape.manager.manager import SUCCEEDED, FAILED
+from landscape.manager.plugin import SUCCEEDED, FAILED
 from landscape.manager.shutdownmanager import (
     ShutdownManager, ShutdownProcessProtocol)
 from landscape.tests.helpers import (

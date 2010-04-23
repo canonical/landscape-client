@@ -14,7 +14,7 @@ from twisted.internet.defer import Deferred, fail, maybeDeferred
 from twisted.internet.error import ProcessDone
 
 from landscape.lib.scriptcontent import build_script
-from landscape.manager.manager import ManagerPlugin, SUCCEEDED, FAILED
+from landscape.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
 
 
 ALL_USERS = object()

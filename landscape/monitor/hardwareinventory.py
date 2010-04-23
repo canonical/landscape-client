@@ -6,7 +6,7 @@ from landscape.lib.log import log_failure
 
 from landscape.diff import diff
 from landscape.hal import HALManager
-from landscape.monitor.monitor import MonitorPlugin
+from landscape.monitor.plugin import MonitorPlugin
 
 
 class HardwareInventory(MonitorPlugin):

@@ -4,7 +4,7 @@ import os
 import struct
 
 from landscape.lib.timestamp import to_timestamp
-from landscape.monitor.monitor import MonitorPlugin
+from landscape.monitor.plugin import MonitorPlugin
 
 
 def get_uptime(uptime_file=u"/proc/uptime"):

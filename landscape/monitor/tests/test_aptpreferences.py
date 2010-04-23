@@ -3,12 +3,12 @@ import os
 from twisted.internet.defer import succeed
 
 from landscape.monitor.aptpreferences import AptPreferences
-from landscape.tests.helpers import LandscapeIsolatedTest
+from landscape.tests.helpers import LandscapeTest
 from landscape.tests.helpers import MonitorHelper
 from landscape.tests.mocker import ANY
 
 
-class AptPreferencesTest(LandscapeIsolatedTest):
+class AptPreferencesTest(LandscapeTest):
 
     helpers = [MonitorHelper]
 

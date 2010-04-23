@@ -7,7 +7,7 @@ from landscape.lib.amp import RemoteObject
 from landscape.amp import (
     ComponentProtocol, ComponentProtocolFactory, RemoteComponentConnector)
 
-from landscape.monitor.monitor import MonitorPlugin
+from landscape.monitor.plugin import MonitorPlugin
 from landscape.user.changes import UserChanges
 from landscape.user.provider import UserProvider
 

@@ -6,7 +6,7 @@ from landscape.tests.helpers import (LandscapeTest, ManagerHelper,
                                      ProcessDataBuilder)
 from landscape.lib.process import ProcessInformation
 
-from landscape.manager.manager import SUCCEEDED, FAILED
+from landscape.manager.plugin import SUCCEEDED, FAILED
 from landscape.manager.processkiller import (
     ProcessKiller, ProcessNotFoundError, ProcessMismatchError,
     SignalProcessError)

@@ -2,7 +2,7 @@ import logging
 import socket
 
 from landscape.lib.lsb_release import LSB_RELEASE_FILENAME, parse_lsb_release
-from landscape.monitor.monitor import MonitorPlugin
+from landscape.monitor.plugin import MonitorPlugin
 
 
 class DistributionInfoError(Exception):

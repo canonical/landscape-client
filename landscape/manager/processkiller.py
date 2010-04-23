@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 
 from landscape.lib.process import ProcessInformation
-from landscape.manager.manager import ManagerPlugin
+from landscape.manager.plugin import ManagerPlugin
 
 
 class ProcessNotFoundError(Exception):

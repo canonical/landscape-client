@@ -1,7 +1,7 @@
 import os
 
 from landscape.lib.persist import Persist
-from landscape.manager.manager import SUCCEEDED, FAILED
+from landscape.manager.plugin import SUCCEEDED, FAILED
 from landscape.monitor.usermonitor import UserMonitor
 from landscape.manager.usermanager import (
     UserManager, RemoteUserManagerConnector)

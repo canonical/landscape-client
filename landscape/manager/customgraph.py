@@ -6,7 +6,7 @@ from twisted.internet.defer import fail, DeferredList, succeed
 
 from landscape.lib.scriptcontent import generate_script_hash
 from landscape.accumulate import Accumulator
-from landscape.manager.manager import ManagerPlugin
+from landscape.manager.plugin import ManagerPlugin
 from landscape.manager.scriptexecution import (
     ProcessFailedError, ScriptRunnerMixin, ProcessTimeLimitReachedError,
     get_user_info, UnknownUserError)
