@@ -158,7 +158,7 @@ def get_network_traffic(source_file="/proc/net/dev"):
             continue
         device, data = line.split(":")
         device = device.strip()
-        devices[device] = dict(zip(columns, map(int, data.split())))
+        devices[device] = dict(zip(columns, map(long, data.split())))
 
     return devices
 
