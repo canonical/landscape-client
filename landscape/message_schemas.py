@@ -357,6 +357,14 @@ EUCALYPTUS_INFO_ERROR = Message(
     {"error": String()})
 
 
+NETWORK_DEVICE = Message(
+    "network-device",
+    {"devices": List(KeyDict({"interface": String(),
+                              "ip_address": String(),
+                              "mac_address": String(),
+                              "broadcast_address": String(),
+                              "netmask": String()}))})
+
 message_schemas = {}
 for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                OPERATION_RESULT, COMPUTER_INFO, DISTRIBUTION_INFO,
@@ -367,5 +375,5 @@ for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                CHANGE_PACKAGES_RESULT, UNKNOWN_PACKAGE_HASHES,
                ADD_PACKAGES, TEXT_MESSAGE, TEST, CUSTOM_GRAPH,
                REBOOT_REQUIRED, APT_PREFERENCES, EUCALYPTUS_INFO,
-               EUCALYPTUS_INFO_ERROR]:
+               EUCALYPTUS_INFO_ERROR, NETWORK_DEVICE]:
     message_schemas[schema.type] = schema

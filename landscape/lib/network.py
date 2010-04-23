@@ -137,12 +137,12 @@ def get_active_device_info():
     return results
 
 
-def get_network_traffic():
+def get_network_traffic(source_file="/proc/net/dev"):
     """
     Retrieves an array of information regarding the network activity per
     network interface.
     """
-    netdev = open("/proc/net/dev", "r")
+    netdev = open(source_file, "r")
     lines = netdev.readlines()
     netdev.close()
 
