@@ -1,4 +1,4 @@
-from landscape.tests.helpers import LandscapeTest, FakeRemoteBrokerHelper
+from landscape.tests.helpers import LandscapeTest, FakeBrokerServiceHelper
 
 from twisted.internet.defer import fail
 
@@ -38,7 +38,7 @@ class FakePageGetter(object):
 
 class PingClientTest(LandscapeTest):
 
-    helpers = [FakeRemoteBrokerHelper]
+    helpers = [FakeBrokerServiceHelper]
 
     def test_default_get_page(self):
         """
@@ -115,7 +115,7 @@ class PingClientTest(LandscapeTest):
 
 class PingerTest(LandscapeTest):
 
-    helpers = [FakeRemoteBrokerHelper]
+    helpers = [FakeBrokerServiceHelper]
 
     # Tell the Plugin helper to not add a MessageExchange plugin, to interfere
     # with our code which asserts stuff about when *our* plugin fires
@@ -172,7 +172,6 @@ class PingerTest(LandscapeTest):
         """
         self.pinger.start()
         self.broker_service.identity.insecure_id = 42
-        exchanged = []
         self.page_getter.response = {"messages": True}
 
         # 70 = ping delay + urgent exchange delay
@@ -186,7 +185,6 @@ class PingerTest(LandscapeTest):
         """
         self.pinger.start()
         self.broker_service.identity.insecure_id = 42
-        exchanged = []
         self.page_getter.response = {"messages": False}
         self.broker_service.reactor.advance(10)
         self.assertEquals(len(self.broker_service.transport.payloads), 0)

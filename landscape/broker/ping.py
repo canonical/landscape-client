@@ -131,3 +131,11 @@ class Pinger(object):
             self._reactor.cancel_call(self._call_id)
             self._call_id = self._reactor.call_every(self._interval, self.ping)
 
+
+class FakePinger():
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def start(self):
+        pass

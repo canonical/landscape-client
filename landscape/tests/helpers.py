@@ -27,6 +27,7 @@ from landscape.deployment import BaseConfiguration
 from landscape.broker.config import BrokerConfiguration
 from landscape.broker.remote import RemoteBroker, FakeRemoteBroker
 from landscape.broker.transport import FakeTransport
+from landscape.broker.ping import FakePinger
 
 from landscape.monitor.config import MonitorConfiguration
 from landscape.monitor.monitor import Monitor
@@ -323,6 +324,7 @@ class FakeRemoteBrokerHelper(object):
             """A broker which uses a fake reactor and fake transport."""
             reactor_factory = self.reactor_factory
             transport_factory = self.transport_factory
+            pinger_factory = FakePinger
 
         test_case.broker_service = service = FakeBrokerService(config)
         test_case.remote = FakeRemoteBroker(service.exchanger,

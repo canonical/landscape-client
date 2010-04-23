@@ -285,10 +285,12 @@ class MethodCallFactory(ReconnectingClientFactory):
     @cvar protocol: The factory used to build protocol instances.
     @cvar factor: The time factor by which the delay between two subsequent
         connection retries will increase.
+    @cvar maxDelay: Maximum number of seconds between connection attempts.
     """
 
     protocol = MethodCallProtocol
     factor = 1.6180339887498948
+    maxDelay = 30
 
     def __init__(self, object=None, reactor=None):
         """

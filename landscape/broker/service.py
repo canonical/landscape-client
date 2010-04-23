@@ -37,6 +37,7 @@ class BrokerService(LandscapeService):
     """
 
     transport_factory = HTTPTransport
+    pinger_factory = Pinger
     service_name = BrokerServer.name
 
     def __init__(self, config):
@@ -54,8 +55,8 @@ class BrokerService(LandscapeService):
         self.exchanger = MessageExchange(
             self.reactor, self.message_store, self.transport, self.identity,
             config.exchange_interval, config.urgent_exchange_interval)
-        self.pinger = Pinger(self.reactor, config.ping_url, self.identity,
-                             self.exchanger)
+        self.pinger = self.pinger_factory(self.reactor, config.ping_url,
+                                          self.identity, self.exchanger)
         self.registration = RegistrationHandler(
             config, self.identity, self.reactor, self.exchanger, self.pinger,
             self.message_store, fetch_async)
