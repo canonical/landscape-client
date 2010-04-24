@@ -1,5 +1,6 @@
 """
-A monitor that collects data on network activity.
+A monitor that collects data on network activity, and sends messages
+with the inbound/outbound traffic per interface per step interval.
 """
 
 import time
@@ -21,47 +22,74 @@ class NetworkActivity(MonitorPlugin):
     # Prevent the Plugin base-class from scheduling looping calls.
     run_interval = None
 
-    def __init__(self, interval=30, create_time=time.time):
+    def __init__(self, interval=30, network_activity_file="/proc/net/dev",
+                 create_time=time.time):
+        self._source_file = network_activity_file
         self._interval = interval
+        # accumulated values for sending out via message
         self._network_activity = {}
+        # our last traffic sample for calculating a traffic delta
+        self._last_activity = {}
         self._create_time = create_time
 
     def register(self, registry):
         super(NetworkActivity, self).register(registry)
-        self._accumulator = Accumulator(self._persist, self.registry.step_size)
+        self._accumulate = Accumulator(self._persist, self.registry.step_size)
         self.registry.reactor.call_every(self._interval, self.run)
         self.call_on_accepted("network-activity", self.exchange, True)
 
     def create_message(self):
         network_activity = self._network_activity
+        if not network_activity:
+            return
         self._network_activity = {}
         return {"type": "network-activity", "activity": network_activity}
 
     def send_message(self, urgent):
         message = self.create_message()
-        if len(message["network-activity"]):
-            self.registry.broker.send_message(message, urgent=urgent)
+        if not message:
+            return
+        self.registry.broker.send_message(message, urgent=urgent)
 
     def exchange(self, urgent=False):
         self.registry.broker.call_if_accepted("network-activity",
                                               self.send_message, urgent)
 
-    def run(self):
-        new_timestamp = int(self._create_time())
-        new_traffic = get_network_traffic()
+    def _traffic_delta(self, new_traffic):
+        """
+        Given network activity metrics across all interfaces, calculate
+        and return the delta data transferred for inbound and outbound
+        traffic. Returns a tuple of interface name, outbound delta,
+        inbound delta.
+        """
         for interface in new_traffic:
             traffic = new_traffic[interface]
-            recv_step_data = self._accumulate(
-                new_timestamp,
-                traffic["recv_bytes"],
-                "traffic-recv-%s"%interface)
-            send_step_data = self._accumulate(
-                new_timestamp,
-                traffic["send_bytes"],
-                "traffic-recv-%s"%interface)
+            if interface in self._last_activity:
+                previous_out, previous_in = self._last_activity[interface]
+                delta_out = traffic["send_bytes"] - previous_out
+                delta_in = traffic["recv_bytes"] - previous_in
+                if not delta_out and not delta_in:
+                    continue
+                yield interface, delta_out, delta_in
+            self._last_activity[interface] = (
+                traffic["send_bytes"], traffic["recv_bytes"])
+
+    def run(self):
+        """
+        Sample network traffic statistics and store them into the
+        accumulator, recording step data.
+        """
+        new_timestamp = int(self._create_time())
+        new_traffic = get_network_traffic(self._source_file)
+        for interface, delta_out, delta_in in self._traffic_delta(new_traffic):
+            out_step_data = self._accumulate(
+                new_timestamp, delta_in, "delta-out-%s"%interface)
+
+            in_step_data = self._accumulate(
+                new_timestamp, delta_out, "delta-in-%s"%interface)
 
             if interface not in self._network_activity:
                 self._network_activity[interface] = []
 
             self._network_activity[interface].append((
-                recv_step_data, send_step_data))
+                in_step_data, out_step_data))

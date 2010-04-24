@@ -365,6 +365,14 @@ NETWORK_DEVICE = Message(
                               "broadcast_address": String(),
                               "netmask": String()}))})
 
+NETWORK_ACTIVITY = Message(
+    "network-activity",
+    {"timestamp": Int(),
+     "activity": Dict(String(),
+                      List(Tuple(Float(), Float())))})
+
+
+
 message_schemas = {}
 for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                OPERATION_RESULT, COMPUTER_INFO, DISTRIBUTION_INFO,
@@ -375,5 +383,5 @@ for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                CHANGE_PACKAGES_RESULT, UNKNOWN_PACKAGE_HASHES,
                ADD_PACKAGES, TEXT_MESSAGE, TEST, CUSTOM_GRAPH,
                REBOOT_REQUIRED, APT_PREFERENCES, EUCALYPTUS_INFO,
-               EUCALYPTUS_INFO_ERROR, NETWORK_DEVICE]:
+               EUCALYPTUS_INFO_ERROR, NETWORK_DEVICE, NETWORK_ACTIVITY]:
     message_schemas[schema.type] = schema
