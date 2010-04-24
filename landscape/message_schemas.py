@@ -369,7 +369,17 @@ NETWORK_ACTIVITY = Message(
     "network-activity",
     {"timestamp": Int(),
      "activity": Dict(String(),
-                      List(Tuple(Float(), Float())))})
+                      List(Tuple(
+                              Tuple( # Step, Bytes Received
+                                  Float(), Float()
+                                  ),
+                              Tuple( # Step, Bytes Sent
+                                  Float(), Float()
+                                  )
+                              )
+                           ))
+     }
+    )
 
 
 

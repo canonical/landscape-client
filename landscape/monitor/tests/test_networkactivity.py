@@ -77,7 +77,7 @@ Inter-|   Receive                           |  Transmit
         self.assertTrue("type" in message)
         self.assertEquals(message["type"], "network-activity")
         self.assertEquals(message["activity"]["lo"],
-                          [((300, 99), (300,10))])
+                          [((300, 99), (300, 10))])
         self.failIfIn("eth0", message["activity"])
 
     def test_no_message_without_traffic_delta(self):
@@ -90,6 +90,17 @@ Inter-|   Receive                           |  Transmit
         message = self.plugin.create_message()
         self.assertFalse(message)
         self.plugin.run()
+        message = self.plugin.create_message()
+        self.assertFalse(message)
+
+    def test_no_message_without_traffic_delta_across_steps(self):
+        """
+        A traffic delta needs to cross step boundaries before a message
+        is generated.
+        """
+        self.plugin.run()
+        self._write_activity(lo_out=1000, eth0_out=1000)
+        self.reactor.advance(self.monitor.step_size)
         message = self.plugin.create_message()
         self.assertFalse(message)
 
@@ -125,13 +136,21 @@ Inter-|   Receive                           |  Transmit
         message = self.plugin.create_message()
         self.assertFalse(message)
 
+    def test_exchange_no_message(self):
+        """
+        No message is sent to the exchange if there isn't a traffic delta.
+        """
+        self.reactor.advance(self.monitor.step_size)
+        self.mstore.set_accepted_types([self.plugin.message_type])
+        self.plugin.exchange()
+        self.assertFalse(self.mstore.count_pending_messages())
+
     def test_exchange_messages(self):
         """
         The network plugin queues message when an exchange happens. Each
         message should be aligned to a step boundary; messages collected
         between exchange periods should be delivered in a single message.
         """
-        self.plugin.run()
         self.reactor.advance(self.monitor.step_size)
         self._write_activity(lo_out=1000, eth0_out=1000)
         self.plugin.run()
@@ -139,7 +158,7 @@ Inter-|   Receive                           |  Transmit
         self.plugin.exchange()
         step_size = self.monitor.step_size
         self.assertMessages(self.mstore.get_pending_messages(),
-                            [{"type": "network-activity",
-                              "activity": {
-                                  'lo': [((step_size, 1000))],
-                                  'eth0': [((step_size, 1000))]}}])
+                        [{"type": "network-activity",
+                          "activity": {
+                              'lo': [((step_size, 1000), (step_size, 0))],
+                              'eth0': [((step_size, 1000), (step_size, 0))]}}])

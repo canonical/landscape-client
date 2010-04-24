@@ -23,6 +23,7 @@ class NetworkDeviceTest(LandscapeTest):
         # only network device we can truly assert is localhost
         self.assertTrue(message["devices"][0]["interface"], "lo")
         self.assertTrue(message["devices"][0]["ip_address"], "0.0.0.0")
+        self.assertTrue(message["devices"][0]["netmask"], "255.0.0.0")
 
     def test_no_message_with_no_changes(self):
         """If no device changes from the last message, no message is sent."""
