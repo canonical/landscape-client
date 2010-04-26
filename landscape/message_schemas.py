@@ -29,8 +29,7 @@ ACTIVE_PROCESS_INFO = Message(
     {"kill-processes": List(Int()),
      "kill-all-processes": Bool(),
      "add-processes": List(process_info),
-     "update-processes": List(process_info)
-     },
+     "update-processes": List(process_info)},
     # XXX Really we don't want all three of these keys to be optional:
     # we always want _something_...
     optional=["add-processes", "update-processes", "kill-processes",
@@ -97,8 +96,7 @@ HARDWARE_INVENTORY = Message("hardware-inventory", {
                         Tuple(Constant("delete"),
                               Unicode()),
                         ),
-                    )
-    })
+                    )})
 
 
 LOAD_AVERAGE = Message("load-average", {
@@ -118,8 +116,8 @@ RESYNCHRONIZE = Message(
     optional=["operation-id"])
 
 MOUNT_ACTIVITY = Message("mount-activity", {
-    "activities": List(Tuple(Float(), utf8, Bool()))
-    })
+    "activities": List(Tuple(Float(), utf8, Bool()))})
+
 
 MOUNT_INFO = Message("mount-info", {
     "mount-info": List(Tuple(Float(),
@@ -131,8 +129,7 @@ MOUNT_INFO = Message("mount-info", {
     })
 
 FREE_SPACE = Message("free-space", {
-    "free-space": List(Tuple(Float(), utf8, Int()))
-    })
+    "free-space": List(Tuple(Float(), utf8, Int()))})
 
 
 REGISTER = Message(
@@ -148,7 +145,7 @@ REGISTER = Message(
 REGISTER_CLOUD_VM = Message(
     "register-cloud-vm",
     {"hostname": utf8,
-     "otp":  Any(String(), Constant(None)),
+     "otp": Any(String(), Constant(None)),
      "instance_key": Unicode(),
      "account_name": Any(utf8, Constant(None)),
      "registration_password": Any(utf8, Constant(None)),
@@ -187,13 +184,11 @@ user_data = KeyDict({
     "work-phone": Any(utf8, Constant(None)),
     "primary-gid": Any(Int(), Constant(None)),
     "primary-groupname": utf8},
-    optional=["primary-groupname", "primary-gid"]
-    )
+    optional=["primary-groupname", "primary-gid"])
 
 group_data = KeyDict({
     "gid": Int(),
-    "name": utf8
-    })
+    "name": utf8})
 
 USERS = Message(
     "users",
@@ -262,8 +257,7 @@ OLD_USERS = Message(
                            optional=["location", "home-phone", "work-phone"])),
      "groups": List(KeyDict({"gid": Int(),
                              "name": utf8,
-                             "members": List(utf8)}))
-     },
+                             "members": List(utf8)}))},
     optional=["groups"])
 
 package_ids_or_ranges = List(Any(Tuple(Int(), Int()), Int()))
@@ -308,8 +302,8 @@ ADD_PACKAGES = Message("add-packages", {
                               "section": Unicode(),
                               "relations": List(Tuple(Int(), utf8)),
                               "summary": Unicode(),
-                              "installed-size":  Any(Int(), Constant(None)),
-                              "size":  Any(Int(), Constant(None)),
+                              "installed-size": Any(Int(), Constant(None)),
+                              "size": Any(Int(), Constant(None)),
                               "version": utf8,
                               "type": Int(),
                               })),
@@ -317,8 +311,7 @@ ADD_PACKAGES = Message("add-packages", {
     })
 
 TEXT_MESSAGE = Message("text-message", {
-    "message": Unicode()
-    })
+    "message": Unicode()})
 
 TEST = Message(
     "test",
@@ -371,16 +364,9 @@ NETWORK_ACTIVITY = Message(
      "activity": Dict(String(),
                       List(Tuple(
                               Tuple( # Step, Bytes Received
-                                  Float(), Float()
-                                  ),
+                                  Float(), Float()),
                               Tuple( # Step, Bytes Sent
-                                  Float(), Float()
-                                  )
-                              )
-                           ))
-     }
-    )
-
+                                  Float(), Float()))))})
 
 
 message_schemas = {}
