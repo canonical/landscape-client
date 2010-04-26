@@ -36,7 +36,7 @@ def is_64():
     Determine if the platform is a 64 bit platform. Assumption
     is that it is 32 bits otherwise.
     """
-    return platform.architecture('/bin/bash')[0] == '64Bit'
+    return struct.calcsize("l") == 8
 
 
 # initialize the struct size as per the machine's archictecture
