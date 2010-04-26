@@ -58,6 +58,7 @@ def get_active_interfaces():
     byte_length = struct.unpack(
         "iL", fcntl.ioctl(sock.fileno(), SIOCGIFCONF, packed_bytes))[0]
 
+    del sock
     result = interfaces.tostring()
 
     # generator over the interface names
@@ -74,10 +75,12 @@ def get_broadcast_address(interface):
     @param interface: The name of the interface.
     """
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    return socket.inet_ntoa(fcntl.ioctl(
+    broadcast_address = socket.inet_ntoa(fcntl.ioctl(
         sock.fileno(),
         SIOCGIFBRDADDR,
         struct.pack("256s", interface[:15]))[20:24])
+    del sock
+    return broadcast_address
 
 
 def get_netmask(interface):
@@ -87,10 +90,12 @@ def get_netmask(interface):
     @param interface: The name of the interface.
     """
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    return socket.inet_ntoa(fcntl.ioctl(
+    netmask = socket.inet_ntoa(fcntl.ioctl(
         sock.fileno(),
         SIOCGIFNETMASK,
         struct.pack("256s", interface[:15]))[20:24])
+    del sock
+    return netmask
 
 
 def get_ip_address(interface):
@@ -100,10 +105,12 @@ def get_ip_address(interface):
     @param interface: The name of the interface.
     """
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    return socket.inet_ntoa(fcntl.ioctl(
+    ip_address = socket.inet_ntoa(fcntl.ioctl(
         sock.fileno(),
         SIOCGIFBRDADDR,
         struct.pack("256s", interface[:15]))[20:24])
+    del sock
+    return ip_address
 
 
 def get_mac_address(interface):
@@ -116,6 +123,7 @@ def get_mac_address(interface):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     mac_address = fcntl.ioctl(
         sock.fileno(), SIOCGIFHWADDR, struct.pack("256s", interface[:15]))
+    del sock
     return "".join(["%02x:" % ord(char) for char in mac_address[18:24]])[:-1]
 
 
