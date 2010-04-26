@@ -44,11 +44,15 @@ class NetworkInfoTest(LandscapeTest):
         self.assertEqual(traffic, test_proc_net_dev_parsed)
 
 
+#exact output of cat /proc/net/dev snapshot with line continuations for pep8
 test_proc_net_dev_output = """\
 Inter-|   Receive                                                |  Transmit
- face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed
-    lo:3272627934 3321049    0    0    0     0          0         0 3272627934 3321049    0    0    0     0       0          0
-  eth0: 6063748   12539    0    0    0     0          0        62  2279693   12579    0    0    0    19       0          0
+ face |bytes    packets errs drop fifo frame compressed multicast|bytes    \
+ packets errs drop fifo colls carrier compressed
+    lo:3272627934 3321049    0    0    0     0          0         0 3272627934\
+    3321049    0    0    0     0       0          0
+  eth0: 6063748   12539    0    0    0     0          0        62  2279693\
+  12579    0    0    0    19       0          0
 """
 
 test_proc_net_dev_parsed = {
