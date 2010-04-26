@@ -6,6 +6,7 @@ import fcntl
 import socket
 import struct
 
+__all__ = ["get_active_device_info", "get_network_traffic"]
 
 # from header /usr/include/bits/ioctls.h
 SIOCGIFCONF = 0x8912
@@ -42,11 +43,13 @@ def is_64():
 IF_STRUCT_SIZE = is_64() and IF_STRUCT_SIZE_64 or IF_STRUCT_SIZE_32
 
 
-def get_active_interfaces():
+def get_active_interfaces(sock):
     """
     Returns a sequence of all active network interface names.
+
+    @param sock: a socket instance.
     """
-    sock = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM, socket.IPPROTO_IP)
+
     max_interfaces = 128
 
     # setup an an array to hold our response, and initialized to null strings.
@@ -58,7 +61,6 @@ def get_active_interfaces():
     byte_length = struct.unpack(
         "iL", fcntl.ioctl(sock.fileno(), SIOCGIFCONF, packed_bytes))[0]
 
-    del sock
     result = interfaces.tostring()
 
     # generator over the interface names
@@ -68,62 +70,56 @@ def get_active_interfaces():
         yield interface_name
 
 
-def get_broadcast_address(interface):
+def get_broadcast_address(sock, interface):
     """
     Return the broadcast address associated to an interface.
 
+    @param sock: a socket instance.
     @param interface: The name of the interface.
     """
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    broadcast_address = socket.inet_ntoa(fcntl.ioctl(
+    return socket.inet_ntoa(fcntl.ioctl(
         sock.fileno(),
         SIOCGIFBRDADDR,
         struct.pack("256s", interface[:15]))[20:24])
-    del sock
-    return broadcast_address
 
 
-def get_netmask(interface):
+def get_netmask(sock, interface):
     """
     Return the network mask associated to an interface.
 
+    @param sock: a socket instance.
     @param interface: The name of the interface.
     """
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    netmask = socket.inet_ntoa(fcntl.ioctl(
+
+    return socket.inet_ntoa(fcntl.ioctl(
         sock.fileno(),
         SIOCGIFNETMASK,
         struct.pack("256s", interface[:15]))[20:24])
-    del sock
-    return netmask
 
 
-def get_ip_address(interface):
+def get_ip_address(sock, interface):
     """
     Return the ip address associated to the interface.
 
+    @param sock: a socket instance.
     @param interface: The name of the interface.
     """
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    ip_address = socket.inet_ntoa(fcntl.ioctl(
+    return socket.inet_ntoa(fcntl.ioctl(
         sock.fileno(),
         SIOCGIFBRDADDR,
         struct.pack("256s", interface[:15]))[20:24])
-    del sock
-    return ip_address
 
 
-def get_mac_address(interface):
+def get_mac_address(sock, interface):
     """
     Return the hardware mac address for an interface in human friendly form,
     ie. six colon separated groups of two hexadecimal digits.
 
+    @param sock: a socket instance.
     @param interface: The name of the interface.
     """
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     mac_address = fcntl.ioctl(
         sock.fileno(), SIOCGIFHWADDR, struct.pack("256s", interface[:15]))
-    del sock
     return "".join(["%02x:" % ord(char) for char in mac_address[18:24]])[:-1]
 
 
@@ -134,13 +130,16 @@ def get_active_device_info():
     """
     results = []
 
-    for interface in get_active_interfaces():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_IP)
+    for interface in get_active_interfaces(sock):
         interface_info = {"interface": interface}
-        interface_info["ip_address"] = get_ip_address(interface)
-        interface_info["mac_address"] = get_mac_address(interface)
-        interface_info["broadcast_address"] = get_broadcast_address(interface)
-        interface_info["netmask"] = get_netmask(interface)
+        interface_info["ip_address"] = get_ip_address(sock, interface)
+        interface_info["mac_address"] = get_mac_address(sock, interface)
+        interface_info["broadcast_address"] = get_broadcast_address(
+            sock, interface)
+        interface_info["netmask"] = get_netmask(sock, interface)
         results.append(interface_info)
+    del sock
     return results
 
 
