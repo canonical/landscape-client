@@ -8,6 +8,7 @@ from twisted.application.app import startApplication
 from landscape.log import rotate_logs
 from landscape.reactor import TwistedReactor
 from landscape.deployment import get_versioned_persist, init_logging
+from landscape.lib import bpickle_dbus
 
 
 class LandscapeService(Service, object):
@@ -28,6 +29,7 @@ class LandscapeService(Service, object):
 
     def __init__(self, config):
         self.config = config
+        bpickle_dbus.install()
         self.reactor = self.reactor_factory()
         if self.persist_filename:
             self.persist = get_versioned_persist(self)

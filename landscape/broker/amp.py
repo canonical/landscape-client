@@ -86,6 +86,13 @@ class FakeRemoteBroker(object):
         return execute(self.exchanger.register_client_accepted_message_type,
                        type)
 
+    def get_accepted_message_types(self):
+        """
+        Return a deferred resulting in the list of message types accepted
+        by the Landscape server.
+        """
+        return execute(self.message_store.get_accepted_types)
+
 
 class BrokerClientProtocol(ComponentProtocol):
     """Communication protocol between a client and the broker."""

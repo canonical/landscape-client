@@ -13,8 +13,7 @@ from landscape.manager.scriptexecution import (
     UBUNTU_PATH, get_user_info, UnknownInterpreterError, UnknownUserError)
 from landscape.manager.manager import SUCCEEDED, FAILED
 from landscape.tests.helpers import (
-    LandscapeTest, LandscapeIsolatedTest, ManagerHelper,
-    StubProcessFactory, DummyProcess)
+    LandscapeTest, ManagerHelper, StubProcessFactory, DummyProcess)
 from landscape.tests.mocker import ANY, ARGS
 
 
@@ -68,7 +67,9 @@ class RunScriptTests(LandscapeTest):
         return result
 
     def test_concurrent(self):
-        """Scripts run with the ScriptExecutionPlugin plugin are run concurrently."""
+        """
+        Scripts run with the ScriptExecutionPlugin plugin are run concurrently.
+        """
         fifo = self.makeFile()
         os.mkfifo(fifo)
         self.addCleanup(os.remove, fifo)
@@ -129,7 +130,8 @@ class RunScriptTests(LandscapeTest):
         mock_umask = self.mocker.replace("os.umask")
         mock_umask(0022)
         self.mocker.result(0077)
-        mock_mkdtemp = self.mocker.replace("tempfile.mkdtemp", passthrough=False)
+        mock_mkdtemp = self.mocker.replace("tempfile.mkdtemp",
+                                           passthrough=False)
         mock_mkdtemp()
         self.mocker.throw(OSError("Fail!"))
         mock_umask(0077)
@@ -220,6 +222,7 @@ class RunScriptTests(LandscapeTest):
         script executes in '/'.
         """
         mock_getpwnam = self.mocker.replace("pwd.getpwnam", passthrough=False)
+
         class pwnam(object):
             pw_uid = 1234
             pw_gid = 5678
@@ -260,6 +263,7 @@ class RunScriptTests(LandscapeTest):
         for fd in (0, 1, 2):
             protocol.childConnectionLost(fd)
         protocol.processEnded(Failure(ProcessDone(0)))
+
         def check(data):
             self.assertEquals(data, "foobar")
             self.assertFalse(os.path.exists(attachment_dir))
@@ -271,10 +275,10 @@ class RunScriptTests(LandscapeTest):
         self.plugin.process_factory = factory
         self.plugin.size_limit = 100
         result = self.plugin.run_script("/bin/sh", "")
-        result.addCallback(self.assertEquals, "x"*100)
+        result.addCallback(self.assertEquals, "x" * 100)
 
         protocol = factory.spawns[0][0]
-        protocol.childDataReceived(1, "x"*200)
+        protocol.childDataReceived(1, "x" * 200)
         for fd in (0, 1, 2):
             protocol.childConnectionLost(fd)
         protocol.processEnded(Failure(ProcessDone(0)))
@@ -303,6 +307,7 @@ class RunScriptTests(LandscapeTest):
         protocol.childDataReceived(1, "hi\n")
         self.manager.reactor.advance(501)
         protocol.processEnded(Failure(ProcessDone(0)))
+
         def got_error(f):
             self.assertTrue(f.check(ProcessTimeLimitReachedError))
             self.assertEquals(f.value.data, "hi\n")
@@ -339,6 +344,7 @@ class RunScriptTests(LandscapeTest):
         protocol.childDataReceived(1, "hi")
         protocol.processEnded(Failure(ProcessDone(0)))
         self.manager.reactor.advance(501)
+
         def got_result(output):
             self.assertEquals(output, "hi")
         result.addCallback(got_result)
@@ -400,8 +406,10 @@ class RunScriptTests(LandscapeTest):
         meaningful error instead of crashing in execvpe.
         """
         d = self.plugin.run_script("/bin/cantpossiblyexist", "stuff")
+
         def cb(ignore):
             self.fail("Should not be there")
+
         def eb(failure):
             failure.trap(UnknownInterpreterError)
             self.assertEquals(
@@ -410,7 +418,7 @@ class RunScriptTests(LandscapeTest):
         return d.addCallback(cb).addErrback(eb)
 
 
-class ScriptExecutionMessageTests(LandscapeIsolatedTest):
+class ScriptExecutionMessageTests(LandscapeTest):
     helpers = [ManagerHelper]
 
     def setUp(self):
@@ -565,6 +573,7 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
         self.manager.add(ScriptExecutionPlugin())
         self.manager.config.script_users = "landscape, nobody"
         result = self._send_script(sys.executable, "bar", user="whatever")
+
         def got_result(r):
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
@@ -596,7 +605,8 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
 
         self.mocker.replay()
 
-        self.manager.add(ScriptExecutionPlugin(process_factory=process_factory))
+        self.manager.add(
+            ScriptExecutionPlugin(process_factory=process_factory))
 
         def got_result(r):
             self.assertTrue(self.broker_service.exchanger.is_urgent())
@@ -635,11 +645,13 @@ class ScriptExecutionMessageTests(LandscapeIsolatedTest):
 
         self.mocker.replay()
 
-        self.manager.add(ScriptExecutionPlugin(process_factory=process_factory))
+        self.manager.add(
+            ScriptExecutionPlugin(process_factory=process_factory))
 
         def got_result(r):
             self.assertTrue(self.broker_service.exchanger.is_urgent())
-            [message] = self.broker_service.message_store.get_pending_messages()
+            [message] = (
+                self.broker_service.message_store.get_pending_messages())
             self.assertEquals(
                 message["result-text"],
                  u"\x7fELF\x01\x01\x01\x00\x00\x00\ufffd\x01")

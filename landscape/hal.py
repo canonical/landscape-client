@@ -1,18 +1,31 @@
+import logging
+
 from dbus import Interface, SystemBus
+from dbus.exceptions import DBusException
 
 
 class HALManager(object):
 
     def __init__(self, bus=None):
         self._bus = bus or SystemBus()
-        manager = self._bus.get_object("org.freedesktop.Hal",
-                                       "/org/freedesktop/Hal/Manager")
-        self._manager = Interface(manager, "org.freedesktop.Hal.Manager")
+        try:
+            manager = self._bus.get_object("org.freedesktop.Hal",
+                                           "/org/freedesktop/Hal/Manager")
+        except DBusException:
+            logging.error("Couldn't to connect to Hal via DBus")
+            self._manager = None
+        else:
+            self._manager = Interface(manager, "org.freedesktop.Hal.Manager")
 
     def get_devices(self):
+        """Returns a list of HAL devices.
+
+        @note: If it wasn't possible to connect to HAL over DBus, then an
+            emtpy list will be returned. This can happen if the HAL or DBus
+            services are not running.
         """
-        Returns a list of HAL devices.
-        """
+        if not self._manager:
+            return []
         devices = []
         for udi in self._manager.GetAllDevices():
             device = self._bus.get_object("org.freedesktop.Hal", udi)

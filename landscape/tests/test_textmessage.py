@@ -1,16 +1,15 @@
 import sys
 
-from landscape.broker.remote import RemoteBroker
 from landscape.textmessage import (
     AcceptedTypeError, EmptyMessageError, got_accepted_types, get_message,
     send_message)
 from landscape.tests.helpers import (
-    LandscapeTest, FakeRemoteBrokerHelper, StandardIOHelper)
+    LandscapeTest, FakeBrokerServiceHelper, StandardIOHelper)
 
 
 class SendMessageTest(LandscapeTest):
 
-    helpers = [StandardIOHelper, FakeRemoteBrokerHelper]
+    helpers = [StandardIOHelper, FakeBrokerServiceHelper]
 
     def test_send_message(self):
         """
@@ -21,6 +20,7 @@ class SendMessageTest(LandscapeTest):
         service.message_store.set_accepted_types(["text-message"])
 
         result = send_message(u"Hi there!", self.remote)
+
         def got_result(result):
             messages = service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 1)
@@ -93,7 +93,8 @@ class ScriptTest(LandscapeTest):
         If no arguments are specified then the message should be read
         from stdin.
         """
-        self.assertRaises(EmptyMessageError, get_message, ["landscape-message"])
+        self.assertRaises(EmptyMessageError,
+                          get_message, ["landscape-message"])
 
     def test_get_message_without_encoding(self):
         """

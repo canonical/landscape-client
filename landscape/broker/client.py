@@ -30,6 +30,11 @@ class BrokerClientPlugin(object):
         if hasattr(self, "run") and self.run_interval is not None:
             self.client.reactor.call_every(self.run_interval, self.run)
 
+    @property
+    def registry(self):
+        """An alias for the C{client} attribute."""
+        return self.client
+
 
 class BrokerClient(object):
     """Basic plugin registry for clients that have to deal with the broker.

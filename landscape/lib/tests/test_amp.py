@@ -456,6 +456,13 @@ class MethodCallFactoryTest(LandscapeTest):
         self.clock = Clock()
         self.factory = WordsFactory(reactor=self.clock)
 
+    def test_max_delay(self):
+        """
+        The L{MethodCallClientFactory} class has a default value of 30 seconds
+        for the maximum reconnection delay.
+        """
+        self.assertEquals(self.factory.maxDelay, 30)
+
     def test_add_notifier(self):
         """
         The L{MethodCallClientFactory.add_notifier} method can be used to
