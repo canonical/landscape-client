@@ -18,7 +18,7 @@ class NetworkInfoTest(LandscapeTest):
         result = Popen(["ifconfig"], stdout=PIPE).communicate()[0]
         interface_blocks = dict(
             [(block.split()[0], block) for block in
-             filter(None, result.split('\n\n'))])
+             filter(None, result.split("\n\n"))])
 
         for device in device_info:
             self.assertTrue(device["interface"] in result)
@@ -56,7 +56,7 @@ Inter-|   Receive                                                |  Transmit
 """
 
 test_proc_net_dev_parsed = {
-    "lo":{"recv_bytes": 3272627934,
+    "lo": {"recv_bytes": 3272627934,
           "recv_packets": 3321049,
           "recv_errs": 0,
           "recv_drop": 0,
@@ -72,7 +72,7 @@ test_proc_net_dev_parsed = {
           "send_colls": 0,
           "send_carrier": 0,
           "send_compressed": 0},
-    "eth0":{"recv_bytes": 6063748,
+    "eth0": {"recv_bytes": 6063748,
             "recv_packets": 12539,
             "recv_errs": 0,
             "recv_drop": 0,

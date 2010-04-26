@@ -3,7 +3,6 @@ Network introspection utilities using ioctl and the /proc filesystem.
 """
 import array
 import fcntl
-import platform
 import socket
 import struct
 
@@ -51,20 +50,20 @@ def get_active_interfaces():
     max_interfaces = 128
 
     # setup an an array to hold our response, and initialized to null strings.
-    interfaces = array.array('B', '\0' * max_interfaces * IF_STRUCT_SIZE)
+    interfaces = array.array("B", "\0" * max_interfaces * IF_STRUCT_SIZE)
     buffer_size = interfaces.buffer_info()[0]
     packed_bytes = struct.pack(
-        'iL', max_interfaces * IF_STRUCT_SIZE, buffer_size)
+        "iL", max_interfaces * IF_STRUCT_SIZE, buffer_size)
 
     byte_length = struct.unpack(
-        'iL', fcntl.ioctl(sock.fileno(), SIOCGIFCONF, packed_bytes))[0]
+        "iL", fcntl.ioctl(sock.fileno(), SIOCGIFCONF, packed_bytes))[0]
 
     result = interfaces.tostring()
 
     # generator over the interface names
     for index in range(0, byte_length, IF_STRUCT_SIZE):
         ifreq_struct = result[index:index+IF_STRUCT_SIZE]
-        interface_name = ifreq_struct[:ifreq_struct.index('\0')]
+        interface_name = ifreq_struct[:ifreq_struct.index("\0")]
         yield interface_name
 
 
@@ -78,7 +77,7 @@ def get_broadcast_address(interface):
     return socket.inet_ntoa(fcntl.ioctl(
         sock.fileno(),
         SIOCGIFBRDADDR,
-        struct.pack('256s', interface[:15]))[20:24])
+        struct.pack("256s", interface[:15]))[20:24])
 
 
 def get_netmask(interface):
@@ -91,7 +90,7 @@ def get_netmask(interface):
     return socket.inet_ntoa(fcntl.ioctl(
         sock.fileno(),
         SIOCGIFNETMASK,
-        struct.pack('256s', interface[:15]))[20:24])
+        struct.pack("256s", interface[:15]))[20:24])
 
 
 def get_ip_address(interface):
@@ -104,7 +103,7 @@ def get_ip_address(interface):
     return socket.inet_ntoa(fcntl.ioctl(
         sock.fileno(),
         SIOCGIFBRDADDR,
-        struct.pack('256s', interface[:15]))[20:24])
+        struct.pack("256s", interface[:15]))[20:24])
 
 
 def get_mac_address(interface):
@@ -116,8 +115,8 @@ def get_mac_address(interface):
     """
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     mac_address = fcntl.ioctl(
-        sock.fileno(), SIOCGIFHWADDR, struct.pack('256s', interface[:15]))
-    return ''.join(['%02x:' % ord(char) for char in mac_address[18:24]])[:-1]
+        sock.fileno(), SIOCGIFHWADDR, struct.pack("256s", interface[:15]))
+    return "".join(["%02x:" % ord(char) for char in mac_address[18:24]])[:-1]
 
 
 def get_active_device_info():
@@ -129,10 +128,10 @@ def get_active_device_info():
 
     for interface in get_active_interfaces():
         interface_info = {"interface": interface}
-        interface_info['ip_address'] = get_ip_address(interface)
-        interface_info['mac_address'] = get_mac_address(interface)
-        interface_info['broadcast_address'] = get_broadcast_address(interface)
-        interface_info['netmask'] = get_netmask(interface)
+        interface_info["ip_address"] = get_ip_address(interface)
+        interface_info["mac_address"] = get_mac_address(interface)
+        interface_info["broadcast_address"] = get_broadcast_address(interface)
+        interface_info["netmask"] = get_netmask(interface)
         results.append(interface_info)
     return results
 
@@ -162,6 +161,6 @@ def get_network_traffic(source_file="/proc/net/dev"):
 
     return devices
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import pprint
     pprint.pprint(get_active_device_info())
