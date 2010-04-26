@@ -650,8 +650,8 @@ class ScriptExecutionMessageTests(LandscapeTest):
 
         def got_result(r):
             self.assertTrue(self.broker_service.exchanger.is_urgent())
-            [message] = \
-                      self.broker_service.message_store.get_pending_messages()
+            [message] = (
+                self.broker_service.message_store.get_pending_messages())
             self.assertEquals(
                 message["result-text"],
                  u"\x7fELF\x01\x01\x01\x00\x00\x00\ufffd\x01")
