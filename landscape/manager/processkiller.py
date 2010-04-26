@@ -24,6 +24,7 @@ class ProcessKiller(ManagerPlugin):
     A management plugin that signals processes upon receiving a message from
     the server.
     """
+
     def __init__(self, process_info=None):
         if process_info is None:
             process_info = ProcessInformation()
@@ -31,7 +32,8 @@ class ProcessKiller(ManagerPlugin):
 
     def register(self, registry):
         super(ProcessKiller, self).register(registry)
-        registry.register_message("signal-process", self._handle_signal_process)
+        registry.register_message("signal-process",
+                                  self._handle_signal_process)
 
     def _handle_signal_process(self, message):
         self.call_with_operation_result(message, self.signal_process,

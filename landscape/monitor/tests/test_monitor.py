@@ -1,16 +1,12 @@
-from twisted.internet.defer import Deferred, succeed
+from twisted.internet.defer import Deferred
 
-from landscape.schema import Message, Int
 from landscape.monitor.monitor import (
     MonitorPluginRegistry, MonitorDBusObject, Monitor)
-from landscape.monitor.plugin import MonitorPlugin, DataWatcher
 from landscape.lib.persist import Persist
 from landscape.lib.dbus_util import get_object
 from landscape.tests.test_plugin import ExchangePlugin
 from landscape.tests.helpers import (
-    LandscapeTest, LandscapeIsolatedTest, RemoteBrokerHelper, MonitorHelper,
-    LogKeeperHelper)
-from landscape.tests.mocker import ANY
+    LandscapeTest, LandscapeIsolatedTest, RemoteBrokerHelper, MonitorHelper)
 from landscape.broker.client import BrokerClientPlugin
 
 

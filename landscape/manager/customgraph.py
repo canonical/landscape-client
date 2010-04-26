@@ -127,8 +127,8 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         try:
             uid, gid = get_user_info(user)[:2]
         except UnknownUserError:
-           logging.error(u"Attempt to add graph with unknown user %s" %
-                         user)
+            logging.error(u"Attempt to add graph with unknown user %s" %
+                          user)
         else:
             script_file = file(filename, "w")
             self.write_script_file(

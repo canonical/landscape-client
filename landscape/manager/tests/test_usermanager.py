@@ -205,7 +205,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                                                     "name": "John Doe",
                                                     "primary-gid": 1001}],
                                     "timestamp": 0, "type": "users",
-                                  "operation-id": 99},])
+                                  "operation-id": 99}])
 
         users = [("jdoe", "x", 1001, 1000, "John Doe,,,,",
                   "/home/bo", "/bin/zsh")]
@@ -264,7 +264,8 @@ class UserOperationsMessagingTest(UserGroupTestBase):
             self.assertEquals(len(messages), 3)
             self.assertMessages([messages[0], messages[2]],
                                 [{"type": "users",
-                                  "create-group-members": {u"users": [u"jdoe"]},
+                                  "create-group-members": {u"users":
+                                                           [u"jdoe"]},
                                   "create-groups": [{"gid": 1001,
                                                      "name": u"users"}],
                                   "create-users": [{"home-phone": None,
@@ -345,8 +346,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
             self.assertMessages(messages,
                                 [{"type": "operation-result", "status": FAILED,
                                   "operation-id": 39, "timestamp": 0,
-                                  "result-text": failure_string}
-                                ])
+                                  "result-text": failure_string}])
 
         self.setup_environment([], [], None)
         result = self.manager.dispatch_message(
@@ -356,7 +356,6 @@ class UserOperationsMessagingTest(UserGroupTestBase):
              "operation-id": 39})
         result.addCallback(handle_callback)
         return result
-
 
     def test_remove_user_event_leave_home(self):
         """
@@ -369,7 +368,8 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         """
 
         def handle_callback(result):
-                messages = self.broker_service.message_store.get_pending_messages()
+                messages = (
+                    self.broker_service.message_store.get_pending_messages())
                 self.assertEquals(len(messages), 3)
                 # Ignore the message created by plugin.run.
                 self.assertMessages([messages[2], messages[1]],
@@ -380,7 +380,8 @@ class UserOperationsMessagingTest(UserGroupTestBase):
                                       "operation-id": 39, "timestamp": 0,
                                       "result-text": "remove_user succeeded"}])
 
-        users = [("jdoe", "x", 1000, 1000, "John Doe,,,,", "/home/bo", "/bin/zsh")]
+        users = [("jdoe", "x", 1000, 1000,
+                  "John Doe,,,,", "/home/bo", "/bin/zsh")]
         self.setup_environment(users, [], None)
         result = self.manager.dispatch_message(
             {"username": "jdoe",
@@ -429,6 +430,7 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         operation.  The results should be reported in separate
         messages.
         """
+
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 3)
@@ -923,8 +925,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
                                   "operation-id": 123,
                                   "delete-groups": ["sales"],
                                   "create-groups": [{"gid": 1001,
-                                                     "name": "webdev"}]
-                                                    }])
+                                                     "name": "webdev"}]}])
 
 
         groups = [("sales", "x", 1001, [])]
@@ -993,8 +994,7 @@ class GroupOperationsMessagingTest(UserGroupTestBase):
                                   "create-group-members": {"bizdev": ["jdoe"]}},
                                  {"type": "operation-result", "timestamp": 0,
                                   "status": SUCCEEDED, "operation-id": 123,
-                                 "result-text": "add_group_member succeeded"}
-                                ])
+                                 "result-text": "add_group_member succeeded"}])
 
 
         users = [("jdoe", "x", 1000, 1000, "John Doe,,,,", "/bin/sh",

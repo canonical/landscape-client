@@ -133,7 +133,6 @@ class ComputerUptime(MonitorPlugin):
         """
         broker = self.registry.broker
         if self._first_run:
-            self_first_run = False
             filename = self._wtmp_file + ".1"
             if os.path.isfile(filename):
                 broker.call_if_accepted("computer-uptime",

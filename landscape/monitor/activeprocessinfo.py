@@ -1,4 +1,3 @@
-import os
 import subprocess
 
 from landscape.diff import diff
