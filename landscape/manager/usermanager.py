@@ -6,7 +6,7 @@ from landscape.amp import (
     ComponentProtocol, ComponentProtocolFactory, RemoteComponentConnector)
 
 from landscape.user.management import UserManagement
-from landscape.manager.manager import ManagerPlugin
+from landscape.manager.plugin import ManagerPlugin
 from landscape.monitor.usermonitor import RemoteUserMonitorConnector
 
 

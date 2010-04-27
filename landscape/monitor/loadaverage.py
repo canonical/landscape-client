@@ -3,7 +3,7 @@ import time
 
 from landscape.accumulate import Accumulator
 from landscape.lib.monitor import CoverageMonitor
-from landscape.monitor.monitor import MonitorPlugin
+from landscape.monitor.plugin import MonitorPlugin
 
 
 class LoadAverage(MonitorPlugin):

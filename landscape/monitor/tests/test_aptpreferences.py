@@ -3,12 +3,12 @@ import os
 from twisted.internet.defer import succeed
 
 from landscape.monitor.aptpreferences import AptPreferences
-from landscape.tests.helpers import LandscapeIsolatedTest
+from landscape.tests.helpers import LandscapeTest
 from landscape.tests.helpers import MonitorHelper
 from landscape.tests.mocker import ANY
 
 
-class AptPreferencesTest(LandscapeIsolatedTest):
+class AptPreferencesTest(LandscapeTest):
 
     helpers = [MonitorHelper]
 
@@ -83,7 +83,7 @@ class AptPreferencesTest(LandscapeIsolatedTest):
         filename1 = self.makeFile(dirname=preferences_directory,
                                   content="a" * (limit / 2))
         filename2 = self.makeFile(dirname=preferences_directory,
-                                  content="b" * (limit /2 ))
+                                  content="b" * (limit / 2))
         self.assertEquals(self.plugin.get_data(),
                           {filename1: "a" * (limit / 2 - len(filename1)),
                            filename2: "b" * (limit / 2 - len(filename2))})

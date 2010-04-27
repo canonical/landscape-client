@@ -7,7 +7,7 @@ from twisted.internet.defer import succeed
 from landscape.package.store import PackageStore
 from landscape.package.changer import PackageChanger
 from landscape.package.releaseupgrader import ReleaseUpgrader
-from landscape.manager.manager import ManagerPlugin
+from landscape.manager.plugin import ManagerPlugin
 
 
 class PackageManager(ManagerPlugin):
