@@ -81,7 +81,7 @@ class PackageMonitor(MonitorPlugin):
         key.
         """
         task = self._package_store.add_task("reporter",
-                                            {"type" : "resynchronize"})
+                                            {"type": "resynchronize"})
         self._package_store.clear_tasks(except_tasks=(task,))
 
     def _server_uuid_changed(self, old_uuid, new_uuid):

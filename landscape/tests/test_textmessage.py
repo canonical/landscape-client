@@ -20,6 +20,7 @@ class SendMessageTest(LandscapeTest):
         service.message_store.set_accepted_types(["text-message"])
 
         result = send_message(u"Hi there!", self.remote)
+
         def got_result(result):
             messages = service.message_store.get_pending_messages()
             self.assertEquals(len(messages), 1)
@@ -92,7 +93,8 @@ class ScriptTest(LandscapeTest):
         If no arguments are specified then the message should be read
         from stdin.
         """
-        self.assertRaises(EmptyMessageError, get_message, ["landscape-message"])
+        self.assertRaises(EmptyMessageError,
+                          get_message, ["landscape-message"])
 
     def test_get_message_without_encoding(self):
         """

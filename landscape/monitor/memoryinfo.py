@@ -14,7 +14,7 @@ class MemoryInfo(MonitorPlugin):
     # Prevent the Plugin base-class from scheduling looping calls.
     run_interval = None
 
-    def __init__(self, interval=15, monitor_interval=60*60,
+    def __init__(self, interval=15, monitor_interval=60 * 60,
                  source_filename="/proc/meminfo", create_time=time.time):
         self._interval = interval
         self._monitor_interval = monitor_interval
@@ -52,10 +52,10 @@ class MemoryInfo(MonitorPlugin):
         self._monitor.ping()
         new_timestamp = int(self._create_time())
         memstats = MemoryStats(self._source_filename)
-        memory_step_data = self._accumulate(new_timestamp, memstats.free_memory,
-                                            "accumulate-memory")
-        swap_step_data = self._accumulate(new_timestamp, memstats.free_swap,
-                                          "accumulate-swap")
+        memory_step_data = self._accumulate(
+            new_timestamp, memstats.free_memory, "accumulate-memory")
+        swap_step_data = self._accumulate(
+            new_timestamp, memstats.free_swap, "accumulate-swap")
 
         if memory_step_data and swap_step_data:
             timestamp = memory_step_data[0]

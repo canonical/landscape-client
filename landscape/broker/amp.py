@@ -87,7 +87,10 @@ class FakeRemoteBroker(object):
                        type)
 
     def get_accepted_message_types(self):
-        """Return the message types accepted by the Landscape server."""
+        """
+        Return a deferred resulting in the list of message types accepted
+        by the Landscape server.
+        """
         return execute(self.message_store.get_accepted_types)
 
 

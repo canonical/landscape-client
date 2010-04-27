@@ -83,7 +83,7 @@ class AptPreferencesTest(LandscapeTest):
         filename1 = self.makeFile(dirname=preferences_directory,
                                   content="a" * (limit / 2))
         filename2 = self.makeFile(dirname=preferences_directory,
-                                  content="b" * (limit /2 ))
+                                  content="b" * (limit / 2))
         self.assertEquals(self.plugin.get_data(),
                           {filename1: "a" * (limit / 2 - len(filename1)),
                            filename2: "b" * (limit / 2 - len(filename2))})

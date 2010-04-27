@@ -138,7 +138,6 @@ class ProcessKillerTests(LandscapeTest):
                               "result-text": expected_text}])
         self.assertTrue("ProcessNotFoundError" in self.logfile.getvalue())
 
-
     def test_signal_process_start_time_mismatch(self):
         """
         When a 'signal-process' message is received with a mismatched

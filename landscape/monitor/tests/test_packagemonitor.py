@@ -2,8 +2,6 @@ import os
 
 from twisted.internet.defer import Deferred
 
-from landscape.lib.persist import Persist
-
 from landscape.package.reporter import find_reporter_command
 from landscape.package.store import PackageStore
 
@@ -65,6 +63,7 @@ class PackageMonitorTest(LandscapeTest):
         # our own deferred, and register a callback for when run()
         # returns, chaining both deferreds at that point.
         deferred = Deferred()
+
         def run_has_run(run_result_deferred):
             return run_result_deferred.chainDeferred(deferred)
 
@@ -204,7 +203,7 @@ class PackageMonitorTest(LandscapeTest):
 
         # The next task should be the resynchronize message.
         task = self.package_store.get_next_task("reporter")
-        self.assertEquals(task.data, {"type" : "resynchronize"})
+        self.assertEquals(task.data, {"type": "resynchronize"})
 
         # We want to make sure it has the correct id of 2 so that we
         # know it's not a new task that the reporter could possibly

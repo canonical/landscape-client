@@ -98,7 +98,7 @@ class PackageManagerTest(LandscapeTest):
         """
         The L{PackageManager} spawns a L{PackageChanger} run if messages
         of type C{"change-packages-result"} are accepted.
-        """ 
+        """
         service = self.broker_service
         service.message_store.set_accepted_types(["change-packages-result"])
 
