@@ -26,7 +26,7 @@ def get_config(self, args):
 [client]
 url = https://landscape.canonical.com/message-system
 """)
-        args.extend(["--config", filename])
+        args.extend(["--config", filename, "--data-path", self.makeDir()])
     config = LandscapeSetupConfiguration(fetch_import_url)
     config.load(args)
     return config
@@ -713,8 +713,9 @@ class ConfigurationFunctionsTest(LandscapeTest):
 [client]
 url = https://landscape.canonical.com/message-system
 computer_title = rex
+data_path = %s
 account_name = account
-""")
+""" % config.data_path)
 
     def test_silent_setup_without_computer_title(self):
         """A computer title is required."""

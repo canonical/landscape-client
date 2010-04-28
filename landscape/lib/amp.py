@@ -189,7 +189,8 @@ class MethodCallClientProtocol(AMP):
     def receive_deferred_response(self, sequence, result, failure):
         """Receive the deferred L{MethodCall} response.
 
-        @param uuid: The id of the L{MethodCall} we're getting the result of.
+        @param sequence: The sequence of the L{MethodCall} we're getting
+            the result of.
         @param result: The result of the associated deferred if successful.
         @param failure: The failure message of the deferred if it failed.
         """
