@@ -332,7 +332,6 @@ class ActiveProcessInfoTest(LandscapeTest):
         self.assertTrue("update-processes" in message)
         self.assertEquals(message["update-processes"][0]["state"], u"Z")
 
-
     def test_call_on_accepted(self):
         """
         L{MonitorPlugin}-based plugins can provide a callable to call
@@ -342,9 +341,14 @@ class ActiveProcessInfoTest(LandscapeTest):
                                    jiffies=10)
         self.monitor.add(plugin)
         self.assertEquals(len(self.mstore.get_pending_messages()), 0)
-        self.broker_service.reactor.fire(("message-type-acceptance-changed",
-                                          "active-process-info"), True)
-        self.assertEquals(len(self.mstore.get_pending_messages()), 1)
+        result = self.monitor.fire_event(
+            "message-type-acceptance-changed", "active-process-info", True)
+
+        def assert_messages(ignored):
+            self.assertEquals(len(self.mstore.get_pending_messages()), 1)
+
+        result.addCallback(assert_messages)
+        return result
 
     def test_resynchronize_event(self):
         """
@@ -410,7 +414,6 @@ class ActiveProcessInfoTest(LandscapeTest):
         expected_messages.extend(expected_messages)
         self.assertMessages(messages, expected_messages)
 
-
     def test_do_not_persist_changes_when_send_message_fails(self):
         """
         When the plugin is run it persists data that it uses on
@@ -418,7 +421,10 @@ class ActiveProcessInfoTest(LandscapeTest):
         only persist data when the broker confirms that the message
         sent by the plugin has been sent.
         """
-        class MyException(Exception): pass
+
+        class MyException(Exception):
+            pass
+
         self.log_helper.ignore_errors(MyException)
 
         self.builder.create_data(672, self.builder.RUNNING,
@@ -484,14 +490,16 @@ class ActiveProcessInfoTest(LandscapeTest):
                                        {"timestamp": 0,
                                         "api": SERVER_API,
                                         "type": "active-process-info",
-                                        "update-processes": [{"start-time": 110,
-                                                              "name": u"init",
-                                                              "pid": 1,
-                                                              "percent-cpu": 0.0,
-                                                              "state": "R",
-                                                              "gid": 0,
-                                                              "vm-size": 20000,
-                                                              "uid": 0}]}])
+                                        "update-processes": [
+                                            {"start-time": 110,
+                                             "name": u"init",
+                                             "pid": 1,
+                                             "percent-cpu": 0.0,
+                                             "state": "R",
+                                             "gid": 0,
+                                             "vm-size": 20000,
+                                             "uid": 0}]}])
+
 
 class PluginManagerIntegrationTest(LandscapeTest):
 

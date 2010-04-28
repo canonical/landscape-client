@@ -1,15 +1,10 @@
 import sys
 import os
 from optparse import OptionParser
-import logging
-import signal
 
-from landscape.lib.dbus_util import Object
-from landscape.deployment import (
-    LandscapeService, Configuration, get_versioned_persist,
-    assert_unowned_bus_name, run_landscape_service)
-from landscape.tests.helpers import (
-    LandscapeTest, LandscapeIsolatedTest, DBusHelper)
+from landscape.deployment import Configuration, get_versioned_persist
+
+from landscape.tests.helpers import LandscapeTest
 from landscape.tests.mocker import ANY
 
 
@@ -320,7 +315,7 @@ class ConfigurationTest(LandscapeTest):
         os.chmod(default_filename1, 0)
         self.assertEquals(self.config.get_config_filename(),
                           default_filename2)
-        
+
         # If is is readable, than return the first default configuration file.
         os.chmod(default_filename1, 0644)
         self.assertEquals(self.config.get_config_filename(),
@@ -338,7 +333,6 @@ class ConfigurationTest(LandscapeTest):
         self.config.config = explicit_filename
         self.assertEquals(self.config.get_config_filename(),
                           explicit_filename)
-
 
 
 class GetVersionedPersistTest(LandscapeTest):
@@ -359,101 +353,3 @@ class GetVersionedPersistTest(LandscapeTest):
 
         persist = get_versioned_persist(FakeService())
         self.assertEquals(stash[0], persist)
-
-
-class LandscapeServiceTest(LandscapeTest):
-
-    def setUp(self):
-        super(LandscapeServiceTest, self).setUp()
-        signal.signal(signal.SIGUSR1, signal.SIG_DFL)
-
-    def tearDown(self):
-        super(LandscapeServiceTest, self).tearDown()
-        signal.signal(signal.SIGUSR1, signal.SIG_DFL)
-
-    def test_create_persist(self):
-        class FakeService(LandscapeService):
-            persist_filename = self.makePersistFile(content="")
-            service_name = "monitor"
-        service = FakeService(None)
-        self.assertEquals(service.persist.filename, service.persist_filename)
-
-    def test_no_persist_without_filename(self):
-        class FakeService(LandscapeService):
-            service_name = "monitor"
-        service = FakeService(None)
-        self.assertFalse(hasattr(service, "persist"))
-
-    def test_usr1_rotates_logs(self):
-        """
-        SIGUSR1 should cause logs to be reopened.
-        """
-        logging.getLogger().addHandler(logging.FileHandler(self.makeFile()))
-        # Store the initial set of handlers
-        original_streams = [handler.stream for handler in
-                            logging.getLogger().handlers if
-                            isinstance(handler, logging.FileHandler)]
-
-        # Instantiating LandscapeService should register the handler
-        LandscapeService(None)
-        # We'll call it directly
-        handler = signal.getsignal(signal.SIGUSR1)
-        self.assertTrue(handler)
-        handler(None, None)
-        new_streams = [handler.stream for handler in
-                       logging.getLogger().handlers if
-                       isinstance(handler, logging.FileHandler)]
-
-        for stream in new_streams:
-            self.assertTrue(stream not in original_streams)
-
-    def test_ignore_sigusr1(self):
-        """
-        SIGUSR1 is ignored if we so request.
-        """
-        class Configuration:
-            ignore_sigusr1 = True
-
-        # Instantiating LandscapeService should not register the
-        # handler if we request to ignore it.
-        config = Configuration()
-        LandscapeService(config)
-
-        handler = signal.getsignal(signal.SIGUSR1)
-        self.assertFalse(handler)
-
-
-class AssertUnownedBusNameTest(LandscapeIsolatedTest):
-
-    helpers = [DBusHelper]
-
-    class BoringService(Object):
-        bus_name = "com.example.BoringService"
-        object_path = "/com/example/BoringService"
-
-    def test_raises_sysexit_when_owned(self):
-        service = self.BoringService(self.bus)
-        self.assertRaises(SystemExit, assert_unowned_bus_name,
-                          self.bus, self.BoringService.bus_name)
-
-    def test_do_nothing_when_unowned(self):
-        assert_unowned_bus_name(self.bus, self.BoringService.bus_name)
-
-
-class RunLandscapeServiceTests(LandscapeTest):
-    def test_wrong_user(self):
-        getuid_mock = self.mocker.replace("os.getuid")
-        reactor_install_mock = self.mocker.replace("landscape.reactor.install")
-        reactor_install_mock()
-        getuid_mock()
-        self.mocker.result(1)
-        self.mocker.replay()
-
-        class MyService(LandscapeService):
-            service_name = "broker"
-
-        sys_exit = self.assertRaises(
-            SystemExit, run_landscape_service, Configuration,
-            MyService, [], "whatever")
-        self.assertIn("landscape-broker must be run as landscape",
-                      str(sys_exit))

@@ -4,7 +4,7 @@ import os
 import struct
 
 from landscape.lib.timestamp import to_timestamp
-from landscape.monitor.monitor import MonitorPlugin
+from landscape.monitor.plugin import MonitorPlugin
 
 
 def get_uptime(uptime_file=u"/proc/uptime"):
@@ -133,7 +133,6 @@ class ComputerUptime(MonitorPlugin):
         """
         broker = self.registry.broker
         if self._first_run:
-            self_first_run = False
             filename = self._wtmp_file + ".1"
             if os.path.isfile(filename):
                 broker.call_if_accepted("computer-uptime",

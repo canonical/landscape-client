@@ -5,18 +5,11 @@ messaging service (see L{landscape.plugins.dbus_message}).
 """
 
 import sys
-from optparse import OptionParser
 
-from twisted.python import log
-from twisted.python.failure import Failure
-from twisted.internet.defer import fail
-
-from landscape.lib.dbus_util import (
-    get_bus, SecurityError, ServiceUnknownError, NoReplyError)
-
-from landscape import VERSION
-from landscape.broker.broker import BUS_NAME
-from landscape.broker.remote import RemoteBroker
+from landscape.lib.log import log_failure
+from landscape.reactor import TwistedReactor
+from landscape.broker.amp import RemoteBrokerConnector
+from landscape.deployment import Configuration
 
 
 class AcceptedTypeError(Exception):
@@ -35,13 +28,9 @@ def send_message(text, broker):
 
     The message is of type C{text-message}.
 
-    @param broker: The L{landscape.broker.remote.RemoteBroker}
-        object to use to send the message.
+    @param broker: A connected L{RemoteBroker} object to use to send
+        the message.
     @return: A L{Deferred} which will fire with the result of the send.
-    @raise ServiceUnknownError: (Deferred) if an
-        org.freedesktop.DBus.Error.ServiceUnknown is raised from DBUS.
-    @raise SecurityError: (Deferred) if a security policy prevents
-        sending the message.
     """
     message = {"type": "text-message", "message": text}
     response = broker.send_message(message, True)
@@ -50,25 +39,6 @@ def send_message(text, broker):
 
 def got_result(result):
     print u"Message sent."
-
-
-def got_error(failure):
-    """
-    An error occurred. Attempt to write a meaningful message if it's
-    an error we know about, otherwise just print the exception value.
-    """
-    print u"Failure sending message."
-    if failure.check(ServiceUnknownError):
-        print "Couldn't find the %s service." % BUS_NAME
-        print "Is the Landscape Client running?"
-    elif failure.check(SecurityError, NoReplyError):
-        print "Couldn't access the %s service." % BUS_NAME
-        print "You may need to run landscape-message as root."
-    elif failure.check(AcceptedTypeError):
-        print ("Server not accepting text messages.  "
-               "Is Landscape Client registered with the server?")
-    else:
-        print "Unknown error:", failure.type, failure.getErrorMessage()
 
 
 def get_message(args):
@@ -85,8 +55,6 @@ def get_message(args):
 
 
 def got_accepted_types(accepted_types, broker, args):
-    from twisted.internet import reactor
-
     if not "text-message" in accepted_types:
         raise AcceptedTypeError("Text messages may not be created.  Is "
                                 "Landscape Client registered with the server?")
@@ -102,25 +70,29 @@ def run(args=sys.argv):
     This function runs a Twisted reactor, prints various status
     messages, and exits the process.
     """
-    import dbus.glib
-    from landscape.reactor import install
-    install()
-    from twisted.internet import reactor
+    reactor = TwistedReactor()
+    config = Configuration()
+    config.load(args)
 
-    parser = OptionParser(version=VERSION)
-    parser.add_option("-b", "--bus", default="system",
-                      help="The DBUS bus to use to send the message "
-                           "(default: 'system').")
-    options, args = parser.parse_args(args)
+    def got_connection(broker):
+        result = broker.get_accepted_message_types()
+        return result.addCallback(got_accepted_types, broker, args)
 
-    try:
-        broker = RemoteBroker(get_bus(options.bus))
-    except:
-        got_error(Failure())
-        return
+    def got_error(failure):
+        log_failure(failure)
 
-    result = broker.get_accepted_message_types()
-    result.addCallback(got_accepted_types, broker, args)
+    connector = RemoteBrokerConnector(reactor, config)
+    result = connector.connect()
+    result.addCallback(got_connection)
     result.addErrback(got_error)
-    result.addBoth(lambda x: reactor.callWhenRunning(reactor.stop))
+    result.addBoth(lambda x: connector.disconnect())
+
+    # For some obscure reason our TwistedReactor.stop method calls
+    # reactor.crash() instead of reactor.stop(), which doesn't work
+    # here. Maybe TwistedReactor.stop should simply use reactor.stop().
+    result.addBoth(lambda ignored: reactor.call_later(
+        0, reactor._reactor.stop))
+
     reactor.run()
+
+    return result

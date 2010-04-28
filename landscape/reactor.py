@@ -5,12 +5,9 @@ import logging
 import bisect
 import socket
 
-import gobject
-
 from twisted.test.proto_helpers import FakeDatagramTransport
 from twisted.internet.defer import succeed, fail
 from twisted.internet.error import DNSLookupError
-from twisted.internet.gtk2reactor import Gtk2Reactor
 
 from landscape.log import format_object
 
@@ -158,53 +155,17 @@ class ThreadedCallsReactorMixin(object):
         self.cancel_call(self._run_threaded_callbacks_id)
 
 
+class UnixReactorMixin(object):
+
+    def listen_unix(self, socket, factory):
+        """Start listen on a Unix socket."""
+        return self._reactor.listenUNIX(socket, factory, wantPID=True)
+
+
 class ReactorID(object):
 
     def __init__(self, timeout):
         self._timeout = timeout
-
-
-class Reactor(EventHandlingReactorMixin,
-              ThreadedCallsReactorMixin):
-
-    def __init__(self):
-        super(Reactor, self).__init__()
-        self._context = gobject.MainContext()
-        self._mainloop = gobject.MainLoop(context=self._context)
-
-    def call_later(self, timeout, function, *args, **kwargs):
-        def fake_function():
-            function(*args, **kwargs)
-            return False
-        timeout = gobject.Timeout(int(timeout*1000))
-        timeout.set_callback(fake_function)
-        timeout.attach(self._context)
-        return ReactorID(timeout)
-
-    def cancel_call(self, id):
-        if type(id) is ReactorID:
-            id._timeout.destroy()
-        else:
-            super(Reactor, self).cancel_call(id)
-
-    def call_every(self, timeout, function, *args, **kwargs):
-        def fake_function():
-            function(*args, **kwargs)
-            return True
-        timeout = gobject.Timeout(int(timeout*1000))
-        timeout.set_callback(fake_function)
-        timeout.attach(self._context)
-        return ReactorID(timeout)
-
-    def run(self):
-        self.fire("run")
-        self._hook_threaded_callbacks()
-        self._mainloop.run()
-        self._unhook_threaded_callbacks()
-        self.fire("stop")
-
-    def stop(self):
-        self._mainloop.quit()
 
 
 class FakeReactorID(object):
@@ -215,18 +176,24 @@ class FakeReactorID(object):
 
 
 class FakeReactor(EventHandlingReactorMixin,
-                  ThreadedCallsReactorMixin):
+                  ThreadedCallsReactorMixin, UnixReactorMixin):
     """
     @ivar udp_transports: dict of {port: (protocol, transport)}
     @ivar hosts: Dict of {hostname: ip}. Users should populate this
         and L{resolve} will use it.
     """
+
     def __init__(self):
         super(FakeReactor, self).__init__()
         self._current_time = 0
         self._calls = []
         self.udp_transports = {}
         self.hosts = {}
+
+        # We need a reference to the Twisted reactor as well to
+        # let Landscape services listen to Unix sockets
+        from twisted.internet import reactor
+        self._reactor = reactor
 
     def time(self):
         return float(self._current_time)
@@ -246,6 +213,7 @@ class FakeReactor(EventHandlingReactorMixin,
             super(FakeReactor, self).cancel_call(id)
 
     def call_every(self, seconds, f, *args, **kwargs):
+
         def fake():
             # update the call so that cancellation will continue
             # working with the same ID. And do it *before* the call
@@ -313,7 +281,6 @@ class FakeReactor(EventHandlingReactorMixin,
         self.udp_transports[port] = (protocol, transport)
         protocol.makeConnection(transport)
 
-
     def resolve(self, hostname):
         """Look up the hostname in C{self.hosts}.
 
@@ -331,9 +298,8 @@ class FakeReactor(EventHandlingReactorMixin,
             return succeed(hostname)
 
 
-
 class TwistedReactor(EventHandlingReactorMixin,
-                     ThreadedCallsReactorMixin):
+                     ThreadedCallsReactorMixin, UnixReactorMixin):
     """Wrap and add functionalities to the Twisted C{reactor}."""
 
     def __init__(self):
@@ -373,6 +339,10 @@ class TwistedReactor(EventHandlingReactorMixin,
         lc = self._LoopingCall(f, *args, **kwargs)
         lc.start(seconds, now=False)
         return lc
+
+    def call_when_running(self, f):
+        """Schedule a function to be called when the reactor starts running."""
+        self._reactor.callWhenRunning(f)
 
     def cancel_call(self, id):
         """Cancel a scheduled function or event handler.
@@ -419,7 +389,6 @@ class TwistedReactor(EventHandlingReactorMixin,
         """
         return time.time()
 
-
     def listen_udp(self, port, protocol):
         """Connect the given protocol with a UDP transport.
 
@@ -436,33 +405,3 @@ class TwistedReactor(EventHandlingReactorMixin,
 
         """
         return self._reactor.resolve(host)
-
-
-class CustomGtk2Reactor(Gtk2Reactor):
-    """
-    This is a custom GTK reactor, but this ought to be a Glib reactor, but old
-    versions of Twisted don't have such a class.
-    """
-
-    _simtag = None
-
-    def simulate(self):
-        """Run simulation loops and reschedule callbacks.
-
-        This particular implementation differs from the L{Gtk2Reactor} one by
-        having a much higher timeout, to wake up less.
-        """
-        if self._simtag is not None:
-            gobject.source_remove(self._simtag)
-        self.runUntilCurrent()
-        timeout = min(self.timeout(), 1)
-        if timeout is None:
-            timeout = 1
-        self._simtag = gobject.timeout_add(int(timeout * 1010), self.simulate)
-
-
-def install():
-    """Configure the Twisted mainloop to use our custom glib reactor."""
-    reactor = CustomGtk2Reactor(useGtk=False)
-    from twisted.internet.main import installReactor
-    installReactor(reactor)

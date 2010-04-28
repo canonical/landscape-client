@@ -2,12 +2,15 @@
 from landscape import SERVER_API, CLIENT_API
 from landscape.lib.persist import Persist
 from landscape.lib.hashlib import md5
+from landscape.lib.fetch import fetch_async
 from landscape.schema import Message, Int
 from landscape.broker.exchange import get_accepted_types_diff, MessageExchange
 from landscape.broker.transport import FakeTransport
 from landscape.broker.store import MessageStore
-from landscape.tests.helpers import (LandscapeTest, ExchangeHelper,
-                                     DEFAULT_ACCEPTED_TYPES)
+from landscape.broker.ping import Pinger
+from landscape.broker.registration import RegistrationHandler
+from landscape.tests.helpers import (LandscapeTest, DEFAULT_ACCEPTED_TYPES)
+from landscape.broker.tests.helpers import ExchangeHelper
 
 
 class MessageExchangeTest(LandscapeTest):
@@ -22,9 +25,9 @@ class MessageExchangeTest(LandscapeTest):
 
     def wait_for_exchange(self, urgent=False, factor=1, delta=0):
         if urgent:
-            seconds = self.broker_service.config.urgent_exchange_interval
+            seconds = self.config.urgent_exchange_interval
         else:
-            seconds = self.broker_service.config.exchange_interval
+            seconds = self.config.exchange_interval
         self.reactor.advance(seconds * factor + delta)
 
     def test_resynchronize_causes_urgent_exchange(self):
@@ -32,9 +35,9 @@ class MessageExchangeTest(LandscapeTest):
         A 'resynchronize-clients' messages causes an urgent exchange
         to be scheduled.
         """
-        self.assertFalse(self.broker_service.exchanger.is_urgent())
+        self.assertFalse(self.exchanger.is_urgent())
         self.reactor.fire("resynchronize-clients")
-        self.assertTrue(self.broker_service.exchanger.is_urgent())
+        self.assertTrue(self.exchanger.is_urgent())
 
     def test_send(self):
         """
@@ -105,6 +108,7 @@ class MessageExchangeTest(LandscapeTest):
 
     def test_message_type_acceptance_changed_event(self):
         stash = []
+
         def callback(type, accepted):
             stash.append((type, accepted))
         self.reactor.call_on("message-type-acceptance-changed", callback)
@@ -165,10 +169,10 @@ class MessageExchangeTest(LandscapeTest):
         self.exchanger.send({"type": "empty"})
 
         handled = []
+
         def handler(message):
-            service = self.broker_service
-            persist = Persist(filename=service.persist_filename)
-            store = MessageStore(persist, service.config.message_store_path)
+            persist = Persist(filename=self.persist_filename)
+            store = MessageStore(persist, self.config.message_store_path)
             self.assertEquals(store.get_pending_offset(), 1)
             self.assertEquals(store.get_sequence(), 1)
             handled.append(True)
@@ -182,21 +186,21 @@ class MessageExchangeTest(LandscapeTest):
         The Exchange should commit the message store after processing each
         message.
         """
-        self.transport.responses.append([{"type": "inbound"}]*3)
+        self.transport.responses.append([{"type": "inbound"}] * 3)
         handled = []
         self.message_counter = 0
 
         def handler(message):
-            service = self.broker_service
-            persist = Persist(filename=service.persist_filename)
-            store = MessageStore(persist, service.config.message_store_path)
-            self.assertEquals(store.get_server_sequence(), self.message_counter)
+            Persist(filename=self.persist_filename)
+            store = MessageStore(self.persist, self.config.message_store_path)
+            self.assertEquals(store.get_server_sequence(),
+                              self.message_counter)
             self.message_counter += 1
             handled.append(True)
 
         self.exchanger.register_message("inbound", handler)
         self.exchanger.exchange()
-        self.assertEquals(handled, [True]*3, self.logfile.getvalue())
+        self.assertEquals(handled, [True] * 3, self.logfile.getvalue())
 
     def test_messages_from_server_causing_urgent_exchanges(self):
         """
@@ -236,6 +240,7 @@ class MessageExchangeTest(LandscapeTest):
         self.mstore.add({"type": "data", "data": 2})
         self.mstore.add({"type": "data", "data": 3})
         # next one, server will respond with 1!
+
         def desynched_send_data(payload, computer_id=None, message_api=None):
             self.transport.next_expected_sequence = 1
             return {"next-expected-sequence": 1}
@@ -246,6 +251,7 @@ class MessageExchangeTest(LandscapeTest):
         del self.transport.exchange
 
         exchanged = []
+
         def exchange_callback():
             exchanged.append(True)
 
@@ -341,6 +347,7 @@ class MessageExchangeTest(LandscapeTest):
         event.
         """
         self.mstore.set_accepted_types(["empty", "resynchronize"])
+
         def resynchronized():
             self.mstore.add({"type": "empty"})
         self.reactor.call_on("resynchronize-clients", resynchronized)
@@ -563,8 +570,7 @@ class MessageExchangeTest(LandscapeTest):
         # been cancelled:
         self.reactor.advance(60 * 60 # time till exchange
                              - 10 # time till notification
-                             - 20 # time that we've already advanced
-                             )
+                             - 20) # time that we've already advanced
         self.assertEquals(events, [True])
         # Ok, so no new events means that the original call was
         # cancelled. great.
@@ -640,7 +646,8 @@ class MessageExchangeTest(LandscapeTest):
 
         self.exchanger.exchange()
 
-        self.assertEquals(self.exchanger.get_exchange_intervals(), (1234, 5678))
+        self.assertEquals(self.exchanger.get_exchange_intervals(),
+                          (1234, 5678))
 
     def test_set_intervals_with_urgent_exchange_only(self):
         server_message = [{"type": "set-intervals", "urgent-exchange": 1234}]
@@ -670,76 +677,6 @@ class MessageExchangeTest(LandscapeTest):
         self.assertEquals(len(self.transport.payloads), 1)
         self.reactor.advance(1)
         self.assertEquals(len(self.transport.payloads), 2)
-
-    def test_register_accepted_message_type(self):
-        self.exchanger.register_client_accepted_message_type("type-B")
-        self.exchanger.register_client_accepted_message_type("type-A")
-        self.exchanger.register_client_accepted_message_type("type-C")
-        self.exchanger.register_client_accepted_message_type("type-A")
-        types = self.exchanger.get_client_accepted_message_types()
-        self.assertEquals(types,
-                          sorted(["type-A", "type-B", "type-C"] +
-                                 DEFAULT_ACCEPTED_TYPES))
-
-    def test_exchange_sends_message_type_when_no_hash(self):
-        self.exchanger.register_client_accepted_message_type("type-A")
-        self.exchanger.register_client_accepted_message_type("type-B")
-        self.exchanger.exchange()
-        self.assertEquals(self.transport.payloads[0]["client-accepted-types"],
-                          sorted(["type-A", "type-B"] + DEFAULT_ACCEPTED_TYPES))
-
-    def test_exchange_does_not_send_message_types_when_hash_matches(self):
-        self.exchanger.register_client_accepted_message_type("type-A")
-        self.exchanger.register_client_accepted_message_type("type-B")
-        types = sorted(["type-A", "type-B"] + DEFAULT_ACCEPTED_TYPES)
-        accepted_types_digest = md5(";".join(types)).digest()
-        self.transport.extra["client-accepted-types-hash"] = \
-            accepted_types_digest
-        self.exchanger.exchange()
-        self.exchanger.exchange()
-        self.assertNotIn("client-accepted-types", self.transport.payloads[1])
-
-    def test_exchange_continues_sending_message_types_on_no_hash(self):
-        """
-        If the server does not respond with a hash of client accepted message
-        types, the client will continue to send the accepted types.
-        """
-        self.exchanger.register_client_accepted_message_type("type-A")
-        self.exchanger.register_client_accepted_message_type("type-B")
-        self.exchanger.exchange()
-        self.exchanger.exchange()
-        self.assertEquals(self.transport.payloads[1]["client-accepted-types"],
-                          sorted(["type-A", "type-B"] + DEFAULT_ACCEPTED_TYPES))
-
-    def test_exchange_sends_new_accepted_types_hash(self):
-        """
-        If the accepted types on the client change between exchanges, the
-        client will send a new list to the server.
-        """
-        self.exchanger.register_client_accepted_message_type("type-A")
-        types_hash = md5("type-A").digest()
-        self.transport.extra["client-accepted-types-hash"] = types_hash
-        self.exchanger.exchange()
-        self.exchanger.register_client_accepted_message_type("type-B")
-        self.exchanger.exchange()
-        self.assertEquals(self.transport.payloads[1]["client-accepted-types"],
-                          sorted(["type-A", "type-B"] + DEFAULT_ACCEPTED_TYPES))
-
-    def test_exchange_sends_new_types_when_server_screws_up(self):
-        """
-        If the server suddenly and without warning changes the hash of
-        accepted client types that it sends to the client, the client will
-        send a new list of types.
-        """
-        self.exchanger.register_client_accepted_message_type("type-A")
-        types_hash = md5("type-A").digest()
-        self.transport.extra["client-accepted-types-hash"] = types_hash
-        self.exchanger.exchange()
-        self.transport.extra["client-accepted-types-hash"] = "lol"
-        self.exchanger.exchange()
-        self.exchanger.exchange()
-        self.assertEquals(self.transport.payloads[2]["client-accepted-types"],
-                          sorted(["type-A"] + DEFAULT_ACCEPTED_TYPES))
 
     def test_register_message(self):
         """
@@ -774,16 +711,6 @@ class MessageExchangeTest(LandscapeTest):
         self.transport.responses.append(server_message)
         self.exchanger.exchange()
         self.assertEquals(messages, [("one", msg), ("two", msg)])
-
-    def test_register_message_adds_accepted_type(self):
-        """
-        Using the C{register_message} method of the exchanger causes
-        the registered message to be included in the accepted types of
-        the client that are sent to the server.
-        """
-        self.exchanger.register_message("typefoo", lambda m: None)
-        types = self.exchanger.get_client_accepted_message_types()
-        self.assertEquals(types, sorted(["typefoo"] + DEFAULT_ACCEPTED_TYPES))
 
     def test_server_uuid_is_stored_on_message_store(self):
         self.transport.extra["server-uuid"] = "first-uuid"
@@ -851,6 +778,106 @@ class MessageExchangeTest(LandscapeTest):
         self.exchanger.exchange()
 
         self.assertNotIn("INFO: Server UUID changed", self.logfile.getvalue())
+
+
+class AcceptedTypesMessageExchangeTest(LandscapeTest):
+
+    helpers = [ExchangeHelper]
+
+    def setUp(self):
+        super(AcceptedTypesMessageExchangeTest, self).setUp()
+        self.pinger = Pinger(self.reactor, self.config.ping_url, self.identity,
+                             self.exchanger)
+        # The __init__ method of RegistrationHandler registers a few default
+        # message types that we want to catch as well
+        self.handler = RegistrationHandler(
+            self.config, self.identity, self.reactor, self.exchanger,
+            self.pinger, self.mstore, fetch_async)
+
+    def test_register_accepted_message_type(self):
+        self.exchanger.register_client_accepted_message_type("type-B")
+        self.exchanger.register_client_accepted_message_type("type-A")
+        self.exchanger.register_client_accepted_message_type("type-C")
+        self.exchanger.register_client_accepted_message_type("type-A")
+        types = self.exchanger.get_client_accepted_message_types()
+        self.assertEquals(types,
+                          sorted(["type-A", "type-B", "type-C"] +
+                                 DEFAULT_ACCEPTED_TYPES))
+
+    def test_exchange_sends_message_type_when_no_hash(self):
+        self.exchanger.register_client_accepted_message_type("type-A")
+        self.exchanger.register_client_accepted_message_type("type-B")
+        self.exchanger.exchange()
+        self.assertEquals(
+            self.transport.payloads[0]["client-accepted-types"],
+            sorted(["type-A", "type-B"] + DEFAULT_ACCEPTED_TYPES))
+
+    def test_exchange_does_not_send_message_types_when_hash_matches(self):
+        self.exchanger.register_client_accepted_message_type("type-A")
+        self.exchanger.register_client_accepted_message_type("type-B")
+        types = sorted(["type-A", "type-B"] + DEFAULT_ACCEPTED_TYPES)
+        accepted_types_digest = md5(";".join(types)).digest()
+        self.transport.extra["client-accepted-types-hash"] = \
+            accepted_types_digest
+        self.exchanger.exchange()
+        self.exchanger.exchange()
+        self.assertNotIn("client-accepted-types", self.transport.payloads[1])
+
+    def test_exchange_continues_sending_message_types_on_no_hash(self):
+        """
+        If the server does not respond with a hash of client accepted message
+        types, the client will continue to send the accepted types.
+        """
+        self.exchanger.register_client_accepted_message_type("type-A")
+        self.exchanger.register_client_accepted_message_type("type-B")
+        self.exchanger.exchange()
+        self.exchanger.exchange()
+        self.assertEquals(
+            self.transport.payloads[1]["client-accepted-types"],
+            sorted(["type-A", "type-B"] + DEFAULT_ACCEPTED_TYPES))
+
+    def test_exchange_sends_new_accepted_types_hash(self):
+        """
+        If the accepted types on the client change between exchanges, the
+        client will send a new list to the server.
+        """
+        self.exchanger.register_client_accepted_message_type("type-A")
+        types_hash = md5("type-A").digest()
+        self.transport.extra["client-accepted-types-hash"] = types_hash
+        self.exchanger.exchange()
+        self.exchanger.register_client_accepted_message_type("type-B")
+        self.exchanger.exchange()
+        self.assertEquals(
+            self.transport.payloads[1]["client-accepted-types"],
+            sorted(["type-A", "type-B"] + DEFAULT_ACCEPTED_TYPES))
+
+    def test_exchange_sends_new_types_when_server_screws_up(self):
+        """
+        If the server suddenly and without warning changes the hash of
+        accepted client types that it sends to the client, the client will
+        send a new list of types.
+        """
+        self.exchanger.register_client_accepted_message_type("type-A")
+        types_hash = md5("type-A").digest()
+        self.transport.extra["client-accepted-types-hash"] = types_hash
+        self.exchanger.exchange()
+        self.transport.extra["client-accepted-types-hash"] = "lol"
+        self.exchanger.exchange()
+        self.exchanger.exchange()
+        self.assertEquals(
+            self.transport.payloads[2]["client-accepted-types"],
+            sorted(["type-A"] + DEFAULT_ACCEPTED_TYPES))
+
+
+    def test_register_message_adds_accepted_type(self):
+        """
+        Using the C{register_message} method of the exchanger causes
+        the registered message to be included in the accepted types of
+        the client that are sent to the server.
+        """
+        self.exchanger.register_message("typefoo", lambda m: None)
+        types = self.exchanger.get_client_accepted_message_types()
+        self.assertEquals(types, sorted(["typefoo"] + DEFAULT_ACCEPTED_TYPES))
 
 
 class GetAcceptedTypesDiffTest(LandscapeTest):

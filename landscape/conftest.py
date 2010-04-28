@@ -32,6 +32,7 @@ class PyTestCase(TestCase):
         super(PyTestCase, self).__init__(methodName)
 
     class Function(py.test.Function):
+
         def execute(self, target, *args):
             __tracebackhide__ = True
             self = target.im_self

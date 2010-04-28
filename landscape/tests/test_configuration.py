@@ -2,11 +2,10 @@ import os
 from getpass import getpass
 from ConfigParser import ConfigParser
 
-from dbus import DBusException
-
-from twisted.internet.defer import Deferred, succeed, fail
+from twisted.internet.defer import succeed, fail
 from twisted.internet import reactor
 
+from landscape.reactor import TwistedReactor
 from landscape.lib.fetch import HTTPCodeError, PyCurlError
 from landscape.configuration import (
     print_text, LandscapeSetupScript, LandscapeSetupConfiguration,
@@ -15,9 +14,10 @@ from landscape.configuration import (
     fetch_import_url, ImportOptionError)
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.sysvconfig import SysVConfig, ProcessError
-from landscape.tests.helpers import (LandscapeTest, LandscapeIsolatedTest,
-                                     RemoteBrokerHelper, EnvironSaverHelper)
-from landscape.tests.mocker import ARGS, KWARGS, ANY, MATCH, CONTAINS, expect
+from landscape.tests.helpers import (
+    LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
+from landscape.tests.mocker import ARGS, ANY, MATCH, CONTAINS, expect
+from landscape.broker.amp import RemoteBroker, BrokerClientProtocol
 
 
 def get_config(self, args):
@@ -88,6 +88,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
     def setUp(self):
         super(LandscapeSetupScriptTest, self).setUp()
         self.config_filename = self.makeFile()
+
         class MyLandscapeSetupConfiguration(LandscapeSetupConfiguration):
             default_config_filenames = [self.config_filename]
         self.config = MyLandscapeSetupConfiguration(None)
@@ -129,7 +130,8 @@ class LandscapeSetupScriptTest(LandscapeTest):
         script_mock = self.mocker.patch(self.script)
         raw_input_mock("Message: ")
         self.mocker.result("")
-        script_mock.show_help("This option is required to configure Landscape.")
+        script_mock.show_help("This option is required to "
+                              "configure Landscape.")
         raw_input_mock("Message: ")
         self.mocker.result("Desktop")
         self.mocker.replay()
@@ -141,7 +143,6 @@ class LandscapeSetupScriptTest(LandscapeTest):
     def test_prompt_with_required_and_default(self):
         self.mocker.order()
         raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
-        script_mock = self.mocker.patch(self.script)
         raw_input_mock("Message [Desktop]: ")
         self.mocker.result("")
         self.mocker.replay()
@@ -197,7 +198,8 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.mocker.result("")
 
         script_mock = self.mocker.patch(self.script)
-        script_mock.show_help("This option is required to configure Landscape.")
+        script_mock.show_help("This option is required to "
+                              "configure Landscape.")
 
         mock("Password: ")
         self.mocker.result("password")
@@ -246,6 +248,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.assertFalse(self.script.prompt_yes_no("Foo"))
 
     def get_matcher(self, help_snippet):
+
         def match_help(help):
             return help.strip().startswith(help_snippet)
         return MATCH(match_help)
@@ -297,7 +300,8 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.script.query_registration_password()
 
     def test_query_registration_password_defined_on_command_line(self):
-        getpass_mock = self.mocker.replace("getpass.getpass", passthrough=False)
+        getpass_mock = self.mocker.replace("getpass.getpass",
+                                           passthrough=False)
         self.expect(getpass_mock(ANY)).count(0)
         self.mocker.replay()
 
@@ -458,13 +462,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         """
         Confirm with the user for users specified for the ScriptPlugin.
         """
-        pwnam_mock = self.mocker.replace("pwd.getpwnam")
-        pwnam_mock("root")
-        self.mocker.result(True)
-        pwnam_mock("nobody")
-        self.mocker.result(True)
-        pwnam_mock("landscape")
-        self.mocker.result(True)
+        self.config.include_manager_plugins = "FooPlugin"
         self.mocker.order()
         script_mock = self.mocker.patch(self.script)
         script_mock.show_help(ANY)
@@ -481,7 +479,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.assertEquals(self.config.script_users,
                           "root, nobody, landscape")
 
-    def test_query_script_users_defined_on_command_line_with_unknown_user(self):
+    def test_query_script_users_on_command_line_with_unknown_user(self):
         """
         If several users are provided on the command line, we verify the users
         and raise a ConfigurationError if any are unknown on this system.
@@ -522,7 +520,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.assertEquals(self.config.script_users,
                           "ALL")
 
-    def test_query_script_users_defined_on_command_line_with_ALL_and_extra_user(self):
+    def test_query_script_users_command_line_with_ALL_and_extra_user(self):
         """
         If ALL and additional users are provided as the users on the command
         line, this should raise an appropriate ConfigurationError.
@@ -658,8 +656,7 @@ class ConfigurationFunctionsTest(LandscapeTest):
                                  "https_proxy = https://old.proxy\n"
                                  "url = http://url\n"
                                  "include_manager_plugins = ScriptExecution\n"
-                                 "tags = london, server"
-                                 )
+                                 "tags = london, server")
 
         raw_input = self.mocker.replace("__builtin__.raw_input",
                                         name="raw_input")
@@ -960,7 +957,8 @@ account_name = account
         self.mocker.throw(ProcessError)
 
         print_text_mock("Couldn't restart the Landscape client.", error=True)
-        print_text_mock(CONTAINS("This machine will be registered"), error=True)
+        print_text_mock(CONTAINS("This machine will be registered"),
+                        error=True)
 
         self.mocker.replay()
 
@@ -981,7 +979,8 @@ account_name = account
         self.mocker.throw(ProcessError)
 
         print_text_mock("Couldn't restart the Landscape client.", error=True)
-        print_text_mock(CONTAINS("This machine will be registered"), error=True)
+        print_text_mock(CONTAINS("This machine will be registered"),
+                        error=True)
 
         self.mocker.replay()
 
@@ -1094,7 +1093,8 @@ account_name = account
             "https_proxy = https://new.proxy\n"
             "url = http://new.url\n")
 
-        import_filename = self.makeFile(configuration, basename="import_config")
+        import_filename = self.makeFile(configuration,
+                                        basename="import_config")
         config_filename = self.makeFile("", basename="final_config")
 
         config = self.get_config(["--config", config_filename, "--silent",
@@ -1123,7 +1123,7 @@ account_name = account
             self.get_config(["--config", config_filename, "--silent",
                              "--import", import_filename])
         except ImportOptionError, error:
-            self.assertEquals(str(error), 
+            self.assertEquals(str(error),
                               "Nothing to import at %s." % import_filename)
         else:
             self.fail("ImportOptionError not raised")
@@ -1139,7 +1139,7 @@ account_name = account
             self.get_config(["--config", config_filename, "--silent",
                              "--import", import_filename])
         except ImportOptionError, error:
-            self.assertEquals(str(error), 
+            self.assertEquals(str(error),
                               "File %s doesn't exist." % import_filename)
         else:
             self.fail("ImportOptionError not raised")
@@ -1158,7 +1158,7 @@ account_name = account
             self.get_config(["--config", config_filename, "--silent",
                              "--import", import_filename])
         except ImportOptionError, error:
-            self.assertEquals(str(error), 
+            self.assertEquals(str(error),
                               "Nothing to import at %s." % import_filename)
         else:
             self.fail("ImportOptionError not raised")
@@ -1364,7 +1364,7 @@ account_name = account
         try:
             self.get_config(["--silent", "--import", "https://config.url"])
         except ImportOptionError, error:
-            self.assertEquals(str(error), 
+            self.assertEquals(str(error),
                               "Nothing to import at https://config.url.")
         else:
             self.fail("ImportOptionError not raised")
@@ -1460,6 +1460,7 @@ account_name = account
         self.ensure_import_from_url_honors_proxy_options("https_proxy")
 
     def ensure_import_from_url_honors_proxy_options(self, proxy_option):
+
         def check_proxy(url):
             self.assertEquals(os.environ.get(proxy_option), "http://proxy")
 
@@ -1488,7 +1489,7 @@ account_name = account
                  # we care about are done.
 
 
-class RegisterFunctionTest(LandscapeIsolatedTest):
+class RegisterFunctionTest(LandscapeTest):
 
     # Due to the way these tests run, the run() method on the reactor is called
     # *before* any of the remote methods (reload, register) are called, because
@@ -1496,7 +1497,7 @@ class RegisterFunctionTest(LandscapeIsolatedTest):
     # reactor is given back control of the process, *then* all the remote calls
     # in the dbus queue are fired.
 
-    helpers = [RemoteBrokerHelper]
+    helpers = [BrokerServiceHelper]
 
     def test_register_success(self):
         service = self.broker_service
@@ -1504,13 +1505,10 @@ class RegisterFunctionTest(LandscapeIsolatedTest):
         registration_mock = self.mocker.replace(service.registration)
         config_mock = self.mocker.replace(service.config)
         print_text_mock = self.mocker.replace(print_text)
-        reactor_mock = self.mocker.proxy("twisted.internet.reactor")
-        install_mock = self.mocker.replace("landscape.reactor.install")
+        reactor_mock = self.mocker.patch(TwistedReactor)
 
         # This must necessarily happen in the following order.
         self.mocker.order()
-
-        install_mock()
 
         # This very informative message is printed out.
         print_text_mock("Please wait... ", "")
@@ -1527,17 +1525,15 @@ class RegisterFunctionTest(LandscapeIsolatedTest):
         # The register() method is called.  We fire the "registration-done"
         # event after it's done, so that it cascades into a deferred callback.
 
-        def register_done(deferred_result):
+        def register_done():
             service.reactor.fire("registration-done")
         registration_mock.register()
-        self.mocker.passthrough(register_done)
+        self.mocker.call(register_done)
 
         # The deferred callback finally prints out this message.
         print_text_mock("System successfully registered.")
 
-        result = Deferred()
-        reactor_mock.stop()
-        self.mocker.call(lambda: result.callback(None))
+        reactor_mock.call_later(0, reactor.stop)
 
         # Nothing else is printed!
         print_text_mock(ANY)
@@ -1546,9 +1542,7 @@ class RegisterFunctionTest(LandscapeIsolatedTest):
         self.mocker.replay()
 
         # DO IT!
-        register(service.config, reactor_mock)
-
-        return result
+        return register(service.config)
 
     def test_register_failure(self):
         """
@@ -1561,13 +1555,10 @@ class RegisterFunctionTest(LandscapeIsolatedTest):
         registration_mock = self.mocker.replace(service.registration)
         config_mock = self.mocker.replace(service.config)
         print_text_mock = self.mocker.replace(print_text)
-        reactor_mock = self.mocker.proxy("twisted.internet.reactor")
-        install_mock = self.mocker.replace("landscape.reactor.install")
+        reactor_mock = self.mocker.patch(TwistedReactor)
 
         # This must necessarily happen in the following order.
         self.mocker.order()
-
-        install_mock()
 
         # This very informative message is printed out.
         print_text_mock("Please wait... ", "")
@@ -1583,18 +1574,17 @@ class RegisterFunctionTest(LandscapeIsolatedTest):
 
         # The register() method is called.  We fire the "registration-failed"
         # event after it's done, so that it cascades into a deferred errback.
-        def register_done(deferred_result):
+
+        def register_done():
             service.reactor.fire("registration-failed")
         registration_mock.register()
-        self.mocker.passthrough(register_done)
+        self.mocker.call(register_done)
 
         # The deferred errback finally prints out this message.
         print_text_mock("Invalid account name or registration password.",
                         error=True)
 
-        result = Deferred()
-        reactor_mock.stop()
-        self.mocker.call(lambda: result.callback(None))
+        reactor_mock.call_later(0, reactor.stop)
 
         # Nothing else is printed!
         print_text_mock(ANY)
@@ -1603,9 +1593,7 @@ class RegisterFunctionTest(LandscapeIsolatedTest):
         self.mocker.replay()
 
         # DO IT!
-        register(service.config, reactor_mock)
-
-        return result
+        return register(service.config)
 
     def test_register_exchange_failure(self):
         """
@@ -1617,13 +1605,10 @@ class RegisterFunctionTest(LandscapeIsolatedTest):
         registration_mock = self.mocker.replace(service.registration)
         config_mock = self.mocker.replace(service.config)
         print_text_mock = self.mocker.replace(print_text)
-        reactor_mock = self.mocker.proxy("twisted.internet.reactor")
-        install_mock = self.mocker.replace("landscape.reactor.install")
+        reactor_mock = self.mocker.patch(TwistedReactor)
 
         # This must necessarily happen in the following order.
         self.mocker.order()
-
-        install_mock()
 
         # This very informative message is printed out.
         print_text_mock("Please wait... ", "")
@@ -1637,22 +1622,20 @@ class RegisterFunctionTest(LandscapeIsolatedTest):
         # After a nice dance the configuration is reloaded.
         config_mock.reload()
 
-        def register_done(deferred_result):
+        def register_done():
             service.reactor.fire("exchange-failed")
         registration_mock.register()
-        self.mocker.passthrough(register_done)
+        self.mocker.call(register_done)
 
         # The deferred errback finally prints out this message.
         print_text_mock("We were unable to contact the server. "
                         "Your internet connection may be down. "
-                        "The landscape client will continue to try and contact "
-                        "the server periodically.",
+                        "The landscape client will continue to try and "
+                        "contact the server periodically.",
                         error=True)
 
 
-        result = Deferred()
-        reactor_mock.stop()
-        self.mocker.call(lambda: result.callback(None))
+        reactor_mock.call_later(0, reactor.stop)
 
         # Nothing else is printed!
         print_text_mock(ANY)
@@ -1661,27 +1644,24 @@ class RegisterFunctionTest(LandscapeIsolatedTest):
         self.mocker.replay()
 
         # DO IT!
-        register(service.config, reactor_mock)
-
-        return result
+        return register(service.config)
 
     def test_register_timeout_failure(self):
-        # XXX This test will take about 30 seconds to run on some versions of
-        # dbus, as it really is waiting for the dbus call to timeout.  We can
-        # remove it after it's possible for us to specify dbus timeouts on all
-        # supported platforms (current problematic ones are edgy through gutsy)
         service = self.broker_service
 
         registration_mock = self.mocker.replace(service.registration)
         config_mock = self.mocker.replace(service.config)
         print_text_mock = self.mocker.replace(print_text)
-        reactor_mock = self.mocker.proxy("twisted.internet.reactor")
-        install_mock = self.mocker.replace("landscape.reactor.install")
+        reactor_mock = self.mocker.patch(TwistedReactor)
+        remote_mock = self.mocker.patch(RemoteBroker)
+
+        protocol_mock = self.mocker.patch(BrokerClientProtocol)
+        protocol_mock.timeout
+        self.mocker.result(0.1)
+        self.mocker.count(0, None)
 
         # This must necessarily happen in the following order.
         self.mocker.order()
-
-        install_mock()
 
         # This very informative message is printed out.
         print_text_mock("Please wait... ", "")
@@ -1692,8 +1672,12 @@ class RegisterFunctionTest(LandscapeIsolatedTest):
 
         reactor_mock.run()
 
+        remote_mock.call_on_event(ANY)
+        self.mocker.result(succeed(None))
+
         # After a nice dance the configuration is reloaded.
         config_mock.reload()
+
 
         registration_mock.register()
         self.mocker.passthrough()
@@ -1704,165 +1688,120 @@ class RegisterFunctionTest(LandscapeIsolatedTest):
 
         self.mocker.replay()
 
-        result = Deferred()
-
-        reactor.addSystemEventTrigger("during",
-                                      "landscape-registration-error",
-                                      result.callback, None)
         # DO IT!
-        register(service.config, reactor_mock)
-
-        return result
+        return register(service.config)
 
     def test_register_bus_connection_failure(self):
         """
-        If the bus can't be connected to, landscape-config will print an
+        If the socket can't be connected to, landscape-config will print an
         explanatory message and exit cleanly.
         """
-        remote_broker_factory = self.mocker.replace(
-            "landscape.broker.remote.RemoteBroker", passthrough=False)
+        # This will make the RemoteBrokerConnector.connect call fail
         print_text_mock = self.mocker.replace(print_text)
-        install_mock = self.mocker.replace("landscape.reactor.install")
         time_mock = self.mocker.replace("time")
+        reactor_mock = self.mocker.patch(TwistedReactor)
 
-        install_mock()
         print_text_mock(ARGS)
         time_mock.sleep(ANY)
-
-        remote_broker_factory(ARGS, KWARGS)
-        self.mocker.throw(DBusException)
+        reactor_mock.run()
 
         print_text_mock(
             CONTAINS("There was an error communicating with the "
                      "Landscape client"),
             error=True)
-        print_text_mock(CONTAINS("This machine will be registered"), error=True)
+        print_text_mock(CONTAINS("This machine will be registered"),
+                        error=True)
 
         self.mocker.replay()
+
+        def assert_exit_code(system_exit):
+            self.assertEquals(system_exit.code, 2)
+
         config = get_config(self, ["-a", "accountname", "--silent"])
-        system_exit = self.assertRaises(SystemExit, register, config)
-        self.assertEquals(system_exit.code, 2)
+        result = register(config)
+        self.assertFailure(result, SystemExit)
+        return result.addCallback(assert_exit_code)
 
     def test_register_bus_connection_failure_ok_no_register(self):
         """
         Exit code 0 will be returned if we can't contact Landscape via DBus and
         --ok-no-register was passed.
         """
-        remote_broker_factory = self.mocker.replace(
-            "landscape.broker.remote.RemoteBroker", passthrough=False)
         print_text_mock = self.mocker.replace(print_text)
-        install_mock = self.mocker.replace("landscape.reactor.install")
         time_mock = self.mocker.replace("time")
+        reactor_mock = self.mocker.patch(TwistedReactor)
 
-        install_mock()
         print_text_mock(ARGS)
         time_mock.sleep(ANY)
-
-        remote_broker_factory(ARGS, KWARGS)
-        self.mocker.throw(DBusException)
+        reactor_mock.run()
 
         print_text_mock(
             CONTAINS("There was an error communicating with the "
                      "Landscape client"),
             error=True)
-        print_text_mock(CONTAINS("This machine will be registered"), error=True)
-
-        self.mocker.replay()
-        config = get_config(self, ["-a", "accountname", "--silent",
-                                   "--ok-no-register"])
-        system_exit = self.assertRaises(SystemExit, register, config)
-        self.assertEquals(system_exit.code, 0)
-
-
-class RegisterFunctionNoServiceTest(LandscapeIsolatedTest):
-
-    def setUp(self):
-        super(RegisterFunctionNoServiceTest, self).setUp()
-        self.configuration = LandscapeSetupConfiguration(None)
-        # Let's not mess about with the system bus
-        self.configuration.load_command_line(["--bus", "session"])
-
-    def test_register_dbus_error(self):
-        """
-        When registration fails because of a DBUS error, a message is printed
-        and the program exits.
-        """
-        print_text_mock = self.mocker.replace(print_text)
-        reactor_mock = self.mocker.proxy("twisted.internet.reactor")
-        install_mock = self.mocker.replace("landscape.reactor.install")
-
-        install_mock()
-        print_text_mock("Please wait... ", "")
-
-        print_text_mock("Error occurred contacting Landscape Client. "
-                        "Is it running?",
+        print_text_mock(CONTAINS("This machine will be registered"),
                         error=True)
 
-        # WHOAH DUDE. This waits for callLater(0, reactor.stop).
-        result = Deferred()
-        reactor_mock.callLater(0, ANY)
-        self.mocker.call(lambda seconds, thingy: thingy())
-        reactor_mock.stop()
-        self.mocker.call(lambda: result.callback(None))
-        reactor_mock.run()
-
         self.mocker.replay()
 
-        # DO IT!
-        register(self.configuration, reactor_mock)
+        def assert_exit_code(system_exit):
+            self.assertEquals(system_exit.code, 0)
 
-        return result
+        config = get_config(self, ["-a", "accountname", "--silent",
+                                   "--ok-no-register"])
+        result = register(config)
+        self.assertFailure(result, SystemExit)
+        return result.addCallback(assert_exit_code)
+
+
+class RegisterFunctionNoServiceTest(LandscapeTest):
 
     def test_register_unknown_error(self):
         """
         When registration fails because of an unknown error, a message is
         printed and the program exits.
         """
+        configuration = LandscapeSetupConfiguration(None)
+
         # We'll just mock the remote here to have it raise an exception.
-        remote_broker_factory = self.mocker.replace(
-            "landscape.broker.remote.RemoteBroker", passthrough=False)
+        connector_factory = self.mocker.replace(
+            "landscape.broker.amp.RemoteBrokerConnector", passthrough=False)
+        remote_broker = self.mocker.mock()
 
         print_text_mock = self.mocker.replace(print_text)
-        reactor_mock = self.mocker.proxy("twisted.internet.reactor")
-        install_mock = self.mocker.replace("landscape.reactor.install")
-        # This is unordered. It's just way too much of a pain.
+        reactor_mock = self.mocker.patch(TwistedReactor)
 
-        install_mock()
+        # This is unordered. It's just way too much of a pain.
         print_text_mock("Please wait... ", "")
         time_mock = self.mocker.replace("time")
         time_mock.sleep(ANY)
         self.mocker.count(1)
+        reactor_mock.run()
 
         # SNORE
-        remote_broker = remote_broker_factory(ANY, retry_timeout=0)
-        self.mocker.result(succeed(None))
+        connector = connector_factory(ANY, configuration)
+        connector.connect(max_retries=0, quiet=True)
+        self.mocker.result(succeed(remote_broker))
         remote_broker.reload_configuration()
         self.mocker.result(succeed(None))
-        remote_broker.connect_to_signal(ARGS, KWARGS)
+        remote_broker.call_on_event(ANY)
         self.mocker.result(succeed(None))
-        self.mocker.count(3)
 
         # here it is!
         remote_broker.register()
         self.mocker.result(fail(ZeroDivisionError))
 
         print_text_mock(ANY, error=True)
+
         def check_logged_failure(text, error):
             self.assertTrue("ZeroDivisionError" in text)
         self.mocker.call(check_logged_failure)
         print_text_mock("Unknown error occurred.", error=True)
 
         # WHOAH DUDE. This waits for callLater(0, reactor.stop).
-        result = Deferred()
-        reactor_mock.callLater(0, ANY)
-        self.mocker.call(lambda seconds, thingy: thingy())
-        reactor_mock.stop()
-        self.mocker.call(lambda: result.callback(None))
-
-        reactor_mock.run()
+        connector.disconnect()
+        reactor_mock.call_later(0, reactor.stop)
 
         self.mocker.replay()
 
-        register(self.configuration, reactor_mock)
-
-        return result
+        return register(configuration)

@@ -1,10 +1,9 @@
-import os
 import subprocess
 
 from landscape.diff import diff
 from landscape.lib.process import ProcessInformation
 from landscape.lib.jiffies import detect_jiffies
-from landscape.monitor.monitor import DataWatcher
+from landscape.monitor.plugin import DataWatcher
 
 
 class ActiveProcessInfo(DataWatcher):

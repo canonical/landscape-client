@@ -17,23 +17,20 @@ class TestUpgraders(LandscapeTest):
         old_user_data = {"users": {
             1001: {"home-phone": None, "username": "testing", "uid": 1001,
                      "enabled": True, "location": None, "primary-gid": 1001,
-                     "work-phone":None, "name": u"Testing"},
-               4: {"home-phone": None, "username":"sync", "uid": 4,
+                     "work-phone": None, "name": u"Testing"},
+               4: {"home-phone": None, "username": "sync", "uid": 4,
                      "enabled": True, "location": None, "primary-gid": 65534,
-                     "work-phone": None, "name": u"sync"}
-             }
-        }
+                     "work-phone": None, "name": u"sync"}}}
         persist.set("users", old_user_data)
         legacy.index_users_on_names_added(persist)
         expected_user_data = {
             "testing": {"home-phone": None, "username": "testing", "uid": 1001,
                         "enabled": True, "location": None, "primary-gid": 1001,
-                        "work-phone":None, "name": u"Testing"},
-            "sync":    {"home-phone": None, "username":"sync", "uid": 4,
-                        "enabled": True, "location": None,
-                        "primary-gid": 65534, "work-phone": None,
-                         "name": u"sync"}
-        }
+                        "work-phone": None, "name": u"Testing"},
+            "sync": {"home-phone": None, "username": "sync", "uid": 4,
+                     "enabled": True, "location": None,
+                     "primary-gid": 65534, "work-phone": None,
+                     "name": u"sync"}}
         self.assertEquals(persist.get("users")["users"],
                           expected_user_data)
 
@@ -52,24 +49,22 @@ class TestUpgraders(LandscapeTest):
             "users": {
                 1001: {"home-phone": None, "username": "testing",
                          "uid": 1001, "enabled": True, "location": None,
-                         "primary-gid": 1001, "work-phone":None,
+                         "primary-gid": 1001, "work-phone": None,
                          "name": u"Testing"},
-                   4: {"home-phone": None, "username":"sync", "uid": 4,
+                   4: {"home-phone": None, "username": "sync", "uid": 4,
                          "enabled": True, "location": None,
                          "primary-gid": 65534,
                          "work-phone": None, "name": u"sync"}},
             "groups": {
                 5: {"gid": 5, "name": "tty", "members": []},
-              104: {"gid": 104,"name": "scanner",
-                    "members": [1001, 4, 9]}}
-        }
+              104: {"gid": 104, "name": "scanner",
+                    "members": [1001, 4, 9]}}}
         persist.set("users", old_user_data)
         legacy.index_users_on_names_added(persist)
         expected_group_data = {
-            "tty":   {"gid": 5, "name": "tty", "members": []},
-            "scanner": {"gid": 104,"name": "scanner",
-                        "members": ["sync", "testing"]},
-        }
+            "tty": {"gid": 5, "name": "tty", "members": []},
+            "scanner": {"gid": 104, "name": "scanner",
+                        "members": ["sync", "testing"]}}
         self.assertEquals(persist.get("users")["groups"],
                           expected_group_data)
 
@@ -188,15 +183,15 @@ class TestMigration(LandscapeTest):
         Make sure the migrater migrates monitor data from the old
         persist file into the monitor persist file.
         """
-        self.persist.set("load-average", {"A" : 1})
-        self.persist.set("memory-info", {"B" : 2})
-        self.persist.set("mount-info", {"C" : 3})
-        self.persist.set("processor-info", {"D" : 4})
-        self.persist.set("temperature", {"E" : 5})
-        self.persist.set("computer-uptime", {"F" : 6})
-        self.persist.set("computer-info", {"G" : 7})
-        self.persist.set("hardware-inventory", {"H" : 8})
-        self.persist.set("users", {"I" : 9})
+        self.persist.set("load-average", {"A": 1})
+        self.persist.set("memory-info", {"B": 2})
+        self.persist.set("mount-info", {"C": 3})
+        self.persist.set("processor-info", {"D": 4})
+        self.persist.set("temperature", {"E": 5})
+        self.persist.set("computer-uptime", {"F": 6})
+        self.persist.set("computer-info", {"G": 7})
+        self.persist.set("hardware-inventory", {"H": 8})
+        self.persist.set("users", {"I": 9})
         self.persist.save()
 
         self.migrate()
@@ -205,15 +200,15 @@ class TestMigration(LandscapeTest):
         self.assertTrue(os.path.exists(monitor_filename))
         monitor_persist = Persist(filename=monitor_filename)
 
-        self.assertEquals(monitor_persist.get("load-average"), {"A" : 1})
-        self.assertEquals(monitor_persist.get("memory-info"), {"B" : 2})
-        self.assertEquals(monitor_persist.get("mount-info"), {"C" : 3})
-        self.assertEquals(monitor_persist.get("processor-info"), {"D" : 4})
-        self.assertEquals(monitor_persist.get("temperature"), {"E" : 5})
-        self.assertEquals(monitor_persist.get("computer-uptime"), {"F" : 6})
-        self.assertEquals(monitor_persist.get("computer-info"), {"G" : 7})
-        self.assertEquals(monitor_persist.get("hardware-inventory"), {"H" : 8})
-        self.assertEquals(monitor_persist.get("users"), {"I" : 9})
+        self.assertEquals(monitor_persist.get("load-average"), {"A": 1})
+        self.assertEquals(monitor_persist.get("memory-info"), {"B": 2})
+        self.assertEquals(monitor_persist.get("mount-info"), {"C": 3})
+        self.assertEquals(monitor_persist.get("processor-info"), {"D": 4})
+        self.assertEquals(monitor_persist.get("temperature"), {"E": 5})
+        self.assertEquals(monitor_persist.get("computer-uptime"), {"F": 6})
+        self.assertEquals(monitor_persist.get("computer-info"), {"G": 7})
+        self.assertEquals(monitor_persist.get("hardware-inventory"), {"H": 8})
+        self.assertEquals(monitor_persist.get("users"), {"I": 9})
 
     def test_migrate_legacy_data_migrates_broker_data(self):
         """
@@ -264,7 +259,7 @@ class TestMigration(LandscapeTest):
 
         persist_filename = join(self.data_dir, self.persist_filename)
         self.assertTrue(os.path.exists(persist_filename))
-        persist = Persist(filename=persist_filename)
+        Persist(filename=persist_filename)
         self.assertEquals(first, [])
         self.assertEquals(second[0].get("system-version"), 2)
 

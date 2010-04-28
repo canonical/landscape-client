@@ -4,12 +4,10 @@ import shutil
 import pprint
 import re
 import os
-import tempfile
 import sys
 import unittest
 
-import dbus
-
+from logging import Handler, ERROR, Formatter
 from twisted.trial.unittest import TestCase
 from twisted.internet.defer import Deferred
 
@@ -17,20 +15,25 @@ from landscape.tests.subunit import run_isolated
 from landscape.tests.mocker import MockerTestCase
 from landscape.watchdog import bootstrap_list
 
-from landscape.lib.dbus_util import get_object
 from landscape.lib import bpickle_dbus
 from landscape.lib.persist import Persist
 
 from landscape.reactor import FakeReactor
 
-from landscape.broker.deployment import (BrokerService, BrokerConfiguration)
 from landscape.deployment import BaseConfiguration
-from landscape.broker.remote import RemoteBroker, FakeRemoteBroker
+from landscape.broker.config import BrokerConfiguration
 from landscape.broker.transport import FakeTransport
+from landscape.monitor.config import MonitorConfiguration
+from landscape.monitor.monitor import Monitor
+from landscape.manager.manager import Manager
 
-from landscape.monitor.monitor import MonitorPluginRegistry
-from landscape.manager.manager import ManagerPluginRegistry
-from landscape.manager.deployment import ManagerConfiguration
+# FIXME: We can drop the "_" suffix and replace the current classes once the
+# AMP migration is completed
+from landscape.broker.service import BrokerService as BrokerService_
+from landscape.broker.amp import (
+    FakeRemoteBroker as FakeRemoteBroker_, RemoteBrokerConnector)
+from landscape.manager.config import (
+    ManagerConfiguration as ManagerConfiguration_)
 
 
 DEFAULT_ACCEPTED_TYPES = [
@@ -46,14 +49,20 @@ class HelperTestCase(unittest.TestCase):
         self._helper_instances = []
         if LogKeeperHelper not in self.helpers:
             self.helpers.insert(0, LogKeeperHelper)
+        result = None
         for helper_factory in self.helpers:
             helper = helper_factory()
-            helper.set_up(self)
+            if hasattr(helper, "set_up"):
+                result = helper.set_up(self)
             self._helper_instances.append(helper)
+        # Return the return value of the last helper, which
+        # might be a deferred
+        return result
 
     def tearDown(self):
         for helper in reversed(self._helper_instances):
-            helper.tear_down(self)
+            if hasattr(helper, "tear_down"):
+                helper.tear_down(self)
 
 
 class MessageTestCase(unittest.TestCase):
@@ -94,8 +103,8 @@ class LandscapeTest(MessageTestCase, MockerTestCase,
         self._old_config_filenames = BaseConfiguration.default_config_filenames
         BaseConfiguration.default_config_filenames = []
         MockerTestCase.setUp(self)
-        HelperTestCase.setUp(self)
         TestCase.setUp(self)
+        return HelperTestCase.setUp(self)
 
     def tearDown(self):
         BaseConfiguration.default_config_filenames = self._old_config_filenames
@@ -106,10 +115,18 @@ class LandscapeTest(MessageTestCase, MockerTestCase,
     def assertDeferredSucceeded(self, deferred):
         self.assertTrue(isinstance(deferred, Deferred))
         called = []
+
         def callback(result):
             called.append(True)
         deferred.addCallback(callback)
         self.assertTrue(called)
+
+    def assertSuccess(self, deferred, result=None):
+        """
+        Assert that the given C{deferred} results in the given C{result}.
+        """
+        self.assertTrue(isinstance(deferred, Deferred))
+        return deferred.addCallback(self.assertEquals, result)
 
     def assertFileContent(self, filename, expected_content):
         fd = open(filename)
@@ -141,6 +158,7 @@ class LandscapeIsolatedTest(LandscapeTest):
     def run(self, result):
         if not getattr(LandscapeTest, "_cleanup_patch", False):
             run_method = LandscapeTest.run
+
             def run_wrapper(oself, *args, **kwargs):
                 try:
                     return run_method(oself, *args, **kwargs)
@@ -166,9 +184,8 @@ class DBusHelper(object):
         bpickle_dbus.uninstall()
 
 
-from logging import Handler, ERROR, Formatter
-
 class ErrorHandler(Handler):
+
     def __init__(self, *args, **kwargs):
         Handler.__init__(self, *args, **kwargs)
         self.errors = []
@@ -179,6 +196,7 @@ class ErrorHandler(Handler):
 
 
 class LoggedErrorsError(Exception):
+
     def __str__(self):
         out = "The following errors were logged\n"
         formatter = Formatter()
@@ -256,142 +274,104 @@ class EnvironSaverHelper(object):
         self._snapshot.restore()
 
 
-class FakeRemoteBrokerHelper(object):
+class FakeBrokerServiceHelper(object):
     """
-    The following attributes will be set on your test case:
-      - broker_service: A L{landscape.broker.deployment.BrokerService}.
-      - config_filename: The name of the configuration file that was used to
-        generate the C{broker}.
-      - data_path: The data path that the broker will use.
+    The following attributes will be set in your test case:
+      - broker_service: A C{BrokerService}.
+      - remote: A C{FakeRemoteBroker} behaving like a L{RemoteBroker} connected
+          to the broker serivice but performing all operation synchronously.
     """
-
-    reactor_factory = FakeReactor
-    transport_factory = FakeTransport
-    needs_bpickle_dbus = True
 
     def set_up(self, test_case):
-        if self.needs_bpickle_dbus:
-            bpickle_dbus.install()
-
+        test_case.data_path = test_case.makeDir()
+        log_dir = test_case.makeDir()
         test_case.config_filename = test_case.makeFile(
             "[client]\n"
             "url = http://localhost:91919\n"
-            "computer_title = Default Computer Title\n"
-            "account_name = default_account_name\n"
-            "ping_url = http://localhost:91910/\n")
-
-        test_case.data_path = test_case.makeDir()
-        test_case.log_dir = test_case.makeDir()
+            "computer_title = Some Computer\n"
+            "account_name = some_account\n"
+            "ping_url = http://localhost:91910\n"
+            "data_path = %s\n"
+            "log_dir = %s\n" % (test_case.data_path, log_dir))
 
         bootstrap_list.bootstrap(data_path=test_case.data_path,
-                                 log_dir=test_case.log_dir)
+                                 log_dir=log_dir)
 
-        class MyBrokerConfiguration(BrokerConfiguration):
-            default_config_filenames = [test_case.config_filename]
+        config = BrokerConfiguration()
+        config.load(["-c", test_case.config_filename])
 
-        config = MyBrokerConfiguration()
-        config.load(["--bus", "session",
-                     "--data-path", test_case.data_path,
-                     "--ignore-sigusr1"])
+        class FakeBrokerService(BrokerService_):
+            reactor_factory = FakeReactor
+            transport_factory = FakeTransport
 
-        class FakeBrokerService(BrokerService):
-            """A broker which uses a fake reactor and fake transport."""
-            reactor_factory = self.reactor_factory
-            transport_factory = self.transport_factory
-
-        test_case.broker_service = service = FakeBrokerService(config)
-        test_case.remote = FakeRemoteBroker(service.exchanger,
-                                            service.message_store)
-
-    def tear_down(self, test_case):
-        if self.needs_bpickle_dbus:
-            bpickle_dbus.uninstall()
+        test_case.broker_service = FakeBrokerService(config)
+        test_case.remote = FakeRemoteBroker_(
+            test_case.broker_service.exchanger,
+            test_case.broker_service.message_store)
 
 
-class RemoteBrokerHelper(FakeRemoteBrokerHelper):
+class BrokerServiceHelper(FakeBrokerServiceHelper):
     """
-    Provides what L{FakeRemoteBrokerHelper} does, and makes it a
-    'live' service. Since it uses DBUS, your test case must be a
-    subclass of L{LandscapeIsolatedTest}.
+    Provides what L{FakeBrokerServiceHelper} does, and makes it a
+    'live' service using a real L{RemoteBroker} connected over AMP.
 
     This adds the following attributes to your test case:
-     - remote: A L{landscape.broker.remote.RemoteBroker}.
-     - remote_service: The low level DBUS object that refers to the
-       L{landscape.broker.broker.BrokerDBusObject}.
+     - remote: A connected L{RemoteBroker}.
     """
 
     def set_up(self, test_case):
-        if not getattr(test_case, "I_KNOW", False):
-            test_case.assertTrue(isinstance(test_case, LandscapeIsolatedTest),
-                                 "RemoteBrokerHelper must only be used on "
-                                 "LandscapeIsolatedTests")
-        super(RemoteBrokerHelper, self).set_up(test_case)
-        service = test_case.broker_service
-        service.startService()
-        test_case.remote = RemoteBroker(service.bus)
-        test_case.remote_service = get_object(service.bus,
-                                              service.dbus_object.bus_name,
-                                              service.dbus_object.object_path)
+        super(BrokerServiceHelper, self).set_up(test_case)
+        # Use different reactor to simulate separate processes
+        self._connector = RemoteBrokerConnector(
+            FakeReactor(), test_case.broker_service.config)
+
+        def set_remote(remote):
+            test_case.remote = remote
+            return remote
+
+        test_case.broker_service.startService()
+        connected = self._connector.connect()
+        return connected.addCallback(set_remote)
 
     def tear_down(self, test_case):
+        self._connector.disconnect()
         test_case.broker_service.stopService()
-        super(RemoteBrokerHelper, self).tear_down(test_case)
 
 
-class ExchangeHelper(FakeRemoteBrokerHelper):
+class MonitorHelper(FakeBrokerServiceHelper):
     """
-    Backwards compatibility layer for tests that want a bunch of attributes
-    jammed on to them instead of having C{self.broker_service}.
-    """
-
-    def set_up(self, test_case):
-        super(ExchangeHelper, self).set_up(test_case)
-
-        service = test_case.broker_service
-
-        test_case.persist_filename = service.persist_filename
-        test_case.message_directory = service.config.message_store_path
-        test_case.transport = service.transport
-        test_case.reactor = service.reactor
-        test_case.persist = service.persist
-        test_case.mstore = service.message_store
-        test_case.exchanger = service.exchanger
-        test_case.identity = service.identity
-
-
-class MonitorHelper(ExchangeHelper):
-    """
-    Provides everything that L{ExchangeHelper} does plus a
-    L{landscape.monitor.monitor.Monitor}.
+    Provides everything that L{FakeBrokerServiceHelper} does plus a
+    L{Monitor} instance.
     """
 
     def set_up(self, test_case):
+
         super(MonitorHelper, self).set_up(test_case)
         persist = Persist()
         persist_filename = test_case.makePersistFile()
-        test_case.monitor = MonitorPluginRegistry(
-            test_case.remote, test_case.broker_service.reactor,
-            test_case.broker_service.config,
-            # XXX Ugh, the fake broker service doesn't have a bus.
-            # We should get rid of the fake broker service.
-            getattr(test_case.broker_service, "bus", None),
+        test_case.config = MonitorConfiguration()
+        test_case.config.load(["-c", test_case.config_filename])
+        test_case.reactor = FakeReactor()
+        test_case.monitor = Monitor(
+            test_case.reactor, test_case.config,
             persist, persist_filename)
+        test_case.monitor.broker = test_case.remote
+        test_case.mstore = test_case.broker_service.message_store
 
 
-class ManagerHelper(FakeRemoteBrokerHelper):
+class ManagerHelper(FakeBrokerServiceHelper):
     """
-    Provides everything that L{FakeRemoteBrokerHelper} does plus a
-    L{landscape.manager.manager.Manager}.
+    Provides everything that L{FakeBrokerServiceHelper} does plus a
+    L{Manager} instance.
     """
+
     def set_up(self, test_case):
         super(ManagerHelper, self).set_up(test_case)
-        class MyManagerConfiguration(ManagerConfiguration):
-            default_config_filenames = [test_case.config_filename]
-        config = MyManagerConfiguration()
-        config.load(["--data-path", test_case.data_path])
-        test_case.manager = ManagerPluginRegistry(
-            test_case.remote, test_case.broker_service.reactor,
-            config)
+        test_case.config = ManagerConfiguration_()
+        test_case.config.load(["-c", test_case.config_filename])
+        test_case.reactor = FakeReactor()
+        test_case.manager = Manager(test_case.reactor, test_case.config)
+        test_case.manager.broker = test_case.remote
 
 
 class MockPopen(object):
@@ -482,6 +462,7 @@ class StubProcessFactory(object):
     A L{IReactorProcess} provider which records L{spawnProcess} calls and
     allows tests to get at the protocol.
     """
+
     def __init__(self):
         self.spawns = []
 
@@ -493,6 +474,7 @@ class StubProcessFactory(object):
 
 class DummyProcess(object):
     """A process (transport) that doesn't do anything."""
+
     def __init__(self):
         self.signals = []
 
@@ -501,7 +483,6 @@ class DummyProcess(object):
 
     def closeChildFD(self, fd):
         pass
-
 
 
 class ProcessDataBuilder(object):
@@ -608,10 +589,10 @@ CapEff: 0000000000000000
         shutil.rmtree(process_dir)
 
 
-
 from twisted.python import log
 from twisted.python import failure
 from twisted.trial import reporter
+
 
 def install_trial_hack():
     """
@@ -624,6 +605,7 @@ def install_trial_hack():
     if "addError" in IReporter:
         # We have no need for this monkey patch with newer versions of Twisted.
         return
+
     def run(self, result):
         """
         Copied from twisted.trial.unittest.TestCase.run, but some
