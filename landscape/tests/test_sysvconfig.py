@@ -1,6 +1,3 @@
-import time
-import os
-
 from landscape.tests.helpers import LandscapeTest
 
 from landscape.sysvconfig import SysVConfig, ProcessError
@@ -80,7 +77,7 @@ class SysVConfigTest(LandscapeTest):
         sysvconfig = SysVConfig(filename)
         sysvconfig.stop_landscape()
 
-    def test_stop_landscape(self):
+    def test_stop_landscape_with_error(self):
         system = self.mocker.replace("os.system")
         system("/etc/init.d/landscape-client stop")
         self.mocker.result(-1)

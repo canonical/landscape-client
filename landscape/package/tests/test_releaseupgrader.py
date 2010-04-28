@@ -612,7 +612,7 @@ class ReleaseUpgraderTest(LandscapeTest):
                 self.assertIn("INFO: Queuing message with release upgrade "
                               "results to exchange urgently.",
                               self.logfile.getvalue())
-                child_pid = kill_child("cleanly")
+                kill_child("cleanly")
                 result_text = self.get_pending_messages()[0]["result-text"]
                 self.assertIn("First parent\n", result_text)
 

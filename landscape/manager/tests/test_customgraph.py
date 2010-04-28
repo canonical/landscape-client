@@ -89,6 +89,7 @@ class CustomGraphManagerTests(LandscapeTest):
         mock_chmod(ANY, 0700)
 
         mock_getpwnam = self.mocker.replace("pwd.getpwnam", passthrough=False)
+
         class pwnam(object):
             pw_uid = 1234
             pw_gid = 5678
@@ -131,16 +132,15 @@ class CustomGraphManagerTests(LandscapeTest):
         tempfile.close()
         os.chmod(filename, 0777)
         self.store.add_graph(123, filename, None)
+
         def check(ignore):
             self.graph_manager.exchange()
+            script_hash = "483f2304b49063680c75e3c9e09cf6d0"
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
-                [{"data":
-                      {123: {"error": u"",
-                             "values": [(300, 1.0)],
-                             "script-hash": "483f2304b49063680c75e3c9e09cf6d0"
-                            }
-                      },
+                [{"data": {123: {"error": u"",
+                                 "values": [(300, 1.0)],
+                                 "script-hash": script_hash}},
                   "type": "custom-graph"}])
         return self.graph_manager.run().addCallback(check)
 
@@ -158,6 +158,7 @@ class CustomGraphManagerTests(LandscapeTest):
         tempfile.close()
         os.chmod(filename, 0777)
         self.store.add_graph(124, filename, None)
+
         def check(ignore):
             self.graph_manager.exchange()
             self.assertMessages(

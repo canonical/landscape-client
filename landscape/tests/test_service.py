@@ -62,7 +62,7 @@ class LandscapeServiceTest(LandscapeTest):
         dbus_mock = self.mocker.replace("landscape.lib.bpickle_dbus.install")
         dbus_mock()
         self.mocker.replay()
-        service = TestService(self.config)
+        TestService(self.config)
 
     def test_usr1_rotates_logs(self):
         """

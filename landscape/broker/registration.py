@@ -363,7 +363,7 @@ def _wait_for_network():
     asynchronous; the network may not actually be up by the time the
     landscape-client init script is invoked.
     """
-    timeout = 5*60
+    timeout = 5 * 60
     port = 80
 
     start = time.time()
@@ -373,7 +373,7 @@ def _wait_for_network():
             s.connect((EC2_HOST, port))
             s.close()
             return
-        except socket.error, e:
+        except socket.error:
             time.sleep(1)
             if time.time() - start > timeout:
                 break

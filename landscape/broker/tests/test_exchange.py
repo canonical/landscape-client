@@ -108,6 +108,7 @@ class MessageExchangeTest(LandscapeTest):
 
     def test_message_type_acceptance_changed_event(self):
         stash = []
+
         def callback(type, accepted):
             stash.append((type, accepted))
         self.reactor.call_on("message-type-acceptance-changed", callback)
@@ -168,6 +169,7 @@ class MessageExchangeTest(LandscapeTest):
         self.exchanger.send({"type": "empty"})
 
         handled = []
+
         def handler(message):
             persist = Persist(filename=self.persist_filename)
             store = MessageStore(persist, self.config.message_store_path)
@@ -184,20 +186,21 @@ class MessageExchangeTest(LandscapeTest):
         The Exchange should commit the message store after processing each
         message.
         """
-        self.transport.responses.append([{"type": "inbound"}]*3)
+        self.transport.responses.append([{"type": "inbound"}] * 3)
         handled = []
         self.message_counter = 0
 
         def handler(message):
-            persist = Persist(filename=self.persist_filename)
+            Persist(filename=self.persist_filename)
             store = MessageStore(self.persist, self.config.message_store_path)
-            self.assertEquals(store.get_server_sequence(), self.message_counter)
+            self.assertEquals(store.get_server_sequence(),
+                              self.message_counter)
             self.message_counter += 1
             handled.append(True)
 
         self.exchanger.register_message("inbound", handler)
         self.exchanger.exchange()
-        self.assertEquals(handled, [True]*3, self.logfile.getvalue())
+        self.assertEquals(handled, [True] * 3, self.logfile.getvalue())
 
     def test_messages_from_server_causing_urgent_exchanges(self):
         """
@@ -237,6 +240,7 @@ class MessageExchangeTest(LandscapeTest):
         self.mstore.add({"type": "data", "data": 2})
         self.mstore.add({"type": "data", "data": 3})
         # next one, server will respond with 1!
+
         def desynched_send_data(payload, computer_id=None, message_api=None):
             self.transport.next_expected_sequence = 1
             return {"next-expected-sequence": 1}
@@ -247,6 +251,7 @@ class MessageExchangeTest(LandscapeTest):
         del self.transport.exchange
 
         exchanged = []
+
         def exchange_callback():
             exchanged.append(True)
 
@@ -342,6 +347,7 @@ class MessageExchangeTest(LandscapeTest):
         event.
         """
         self.mstore.set_accepted_types(["empty", "resynchronize"])
+
         def resynchronized():
             self.mstore.add({"type": "empty"})
         self.reactor.call_on("resynchronize-clients", resynchronized)
@@ -564,8 +570,7 @@ class MessageExchangeTest(LandscapeTest):
         # been cancelled:
         self.reactor.advance(60 * 60 # time till exchange
                              - 10 # time till notification
-                             - 20 # time that we've already advanced
-                             )
+                             - 20) # time that we've already advanced
         self.assertEquals(events, [True])
         # Ok, so no new events means that the original call was
         # cancelled. great.
@@ -641,7 +646,8 @@ class MessageExchangeTest(LandscapeTest):
 
         self.exchanger.exchange()
 
-        self.assertEquals(self.exchanger.get_exchange_intervals(), (1234, 5678))
+        self.assertEquals(self.exchanger.get_exchange_intervals(),
+                          (1234, 5678))
 
     def test_set_intervals_with_urgent_exchange_only(self):
         server_message = [{"type": "set-intervals", "urgent-exchange": 1234}]
@@ -802,8 +808,9 @@ class AcceptedTypesMessageExchangeTest(LandscapeTest):
         self.exchanger.register_client_accepted_message_type("type-A")
         self.exchanger.register_client_accepted_message_type("type-B")
         self.exchanger.exchange()
-        self.assertEquals(self.transport.payloads[0]["client-accepted-types"],
-                          sorted(["type-A", "type-B"] + DEFAULT_ACCEPTED_TYPES))
+        self.assertEquals(
+            self.transport.payloads[0]["client-accepted-types"],
+            sorted(["type-A", "type-B"] + DEFAULT_ACCEPTED_TYPES))
 
     def test_exchange_does_not_send_message_types_when_hash_matches(self):
         self.exchanger.register_client_accepted_message_type("type-A")
@@ -825,8 +832,9 @@ class AcceptedTypesMessageExchangeTest(LandscapeTest):
         self.exchanger.register_client_accepted_message_type("type-B")
         self.exchanger.exchange()
         self.exchanger.exchange()
-        self.assertEquals(self.transport.payloads[1]["client-accepted-types"],
-                          sorted(["type-A", "type-B"] + DEFAULT_ACCEPTED_TYPES))
+        self.assertEquals(
+            self.transport.payloads[1]["client-accepted-types"],
+            sorted(["type-A", "type-B"] + DEFAULT_ACCEPTED_TYPES))
 
     def test_exchange_sends_new_accepted_types_hash(self):
         """
@@ -839,8 +847,9 @@ class AcceptedTypesMessageExchangeTest(LandscapeTest):
         self.exchanger.exchange()
         self.exchanger.register_client_accepted_message_type("type-B")
         self.exchanger.exchange()
-        self.assertEquals(self.transport.payloads[1]["client-accepted-types"],
-                          sorted(["type-A", "type-B"] + DEFAULT_ACCEPTED_TYPES))
+        self.assertEquals(
+            self.transport.payloads[1]["client-accepted-types"],
+            sorted(["type-A", "type-B"] + DEFAULT_ACCEPTED_TYPES))
 
     def test_exchange_sends_new_types_when_server_screws_up(self):
         """
@@ -855,8 +864,9 @@ class AcceptedTypesMessageExchangeTest(LandscapeTest):
         self.transport.extra["client-accepted-types-hash"] = "lol"
         self.exchanger.exchange()
         self.exchanger.exchange()
-        self.assertEquals(self.transport.payloads[2]["client-accepted-types"],
-                          sorted(["type-A"] + DEFAULT_ACCEPTED_TYPES))
+        self.assertEquals(
+            self.transport.payloads[2]["client-accepted-types"],
+            sorted(["type-A"] + DEFAULT_ACCEPTED_TYPES))
 
 
     def test_register_message_adds_accepted_type(self):

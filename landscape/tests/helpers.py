@@ -6,7 +6,6 @@ import re
 import os
 import sys
 import unittest
-import dbus
 
 from logging import Handler, ERROR, Formatter
 from twisted.trial.unittest import TestCase
@@ -16,24 +15,17 @@ from landscape.tests.subunit import run_isolated
 from landscape.tests.mocker import MockerTestCase
 from landscape.watchdog import bootstrap_list
 
-from landscape.lib.dbus_util import get_object
 from landscape.lib import bpickle_dbus
 from landscape.lib.persist import Persist
 
 from landscape.reactor import FakeReactor
 
-from landscape.broker.deployment import BrokerService
 from landscape.deployment import BaseConfiguration
 from landscape.broker.config import BrokerConfiguration
-from landscape.broker.remote import RemoteBroker, FakeRemoteBroker
 from landscape.broker.transport import FakeTransport
-from landscape.broker.ping import FakePinger
-
 from landscape.monitor.config import MonitorConfiguration
 from landscape.monitor.monitor import Monitor
-from landscape.manager.manager import ManagerPluginRegistry
 from landscape.manager.manager import Manager
-from landscape.manager.deployment import ManagerConfiguration
 
 # FIXME: We can drop the "_" suffix and replace the current classes once the
 # AMP migration is completed
@@ -282,108 +274,6 @@ class EnvironSaverHelper(object):
         self._snapshot.restore()
 
 
-class FakeRemoteBrokerHelper(object):
-    """
-    The following attributes will be set on your test case:
-      - broker_service: A L{landscape.broker.deployment.BrokerService}.
-      - config_filename: The name of the configuration file that was used to
-        generate the C{broker}.
-      - data_path: The data path that the broker will use.
-    """
-
-    reactor_factory = FakeReactor
-    transport_factory = FakeTransport
-    needs_bpickle_dbus = True
-
-    def set_up(self, test_case):
-        if self.needs_bpickle_dbus:
-            bpickle_dbus.install()
-
-        test_case.config_filename = test_case.makeFile(
-            "[client]\n"
-            "url = http://localhost:91919\n"
-            "computer_title = Default Computer Title\n"
-            "account_name = default_account_name\n"
-            "ping_url = http://localhost:91910/\n")
-
-        test_case.data_path = test_case.makeDir()
-        test_case.log_dir = test_case.makeDir()
-
-        bootstrap_list.bootstrap(data_path=test_case.data_path,
-                                 log_dir=test_case.log_dir)
-
-        class MyBrokerConfiguration(BrokerConfiguration):
-            default_config_filenames = [test_case.config_filename]
-
-        config = MyBrokerConfiguration()
-        config.load(["--bus", "session",
-                     "--data-path", test_case.data_path,
-                     "--ignore-sigusr1"])
-
-        class FakeBrokerService(BrokerService):
-            """A broker which uses a fake reactor and fake transport."""
-            reactor_factory = self.reactor_factory
-            transport_factory = self.transport_factory
-            pinger_factory = FakePinger
-
-        test_case.broker_service = service = FakeBrokerService(config)
-        test_case.remote = FakeRemoteBroker(service.exchanger,
-                                            service.message_store)
-
-    def tear_down(self, test_case):
-        if self.needs_bpickle_dbus:
-            bpickle_dbus.uninstall()
-
-
-class RemoteBrokerHelper(FakeRemoteBrokerHelper):
-    """
-    Provides what L{FakeRemoteBrokerHelper} does, and makes it a
-    'live' service. Since it uses DBUS, your test case must be a
-    subclass of L{LandscapeIsolatedTest}.
-
-    This adds the following attributes to your test case:
-     - remote: A L{landscape.broker.remote.RemoteBroker}.
-     - remote_service: The low level DBUS object that refers to the
-       L{landscape.broker.broker.BrokerDBusObject}.
-    """
-
-    def set_up(self, test_case):
-        if not getattr(test_case, "I_KNOW", False):
-            test_case.assertTrue(isinstance(test_case, LandscapeIsolatedTest),
-                                 "RemoteBrokerHelper must only be used on "
-                                 "LandscapeIsolatedTests")
-        super(RemoteBrokerHelper, self).set_up(test_case)
-        service = test_case.broker_service
-        service.startService()
-        test_case.remote = RemoteBroker(service.bus)
-        test_case.remote_service = get_object(service.bus,
-                                              service.dbus_object.bus_name,
-                                              service.dbus_object.object_path)
-
-    def tear_down(self, test_case):
-        test_case.broker_service.stopService()
-        super(RemoteBrokerHelper, self).tear_down(test_case)
-
-
-class LegacyExchangeHelper(FakeRemoteBrokerHelper):
-    """
-    Backwards compatibility layer for tests that want a bunch of attributes
-    jammed on to them instead of having C{self.broker_service}.
-    """
-
-    def set_up(self, test_case):
-        super(LegacyExchangeHelper, self).set_up(test_case)
-
-        service = test_case.broker_service
-
-        test_case.transport = service.transport
-        test_case.reactor = service.reactor
-        test_case.persist = service.persist
-        test_case.mstore = service.message_store
-        test_case.exchanger = service.exchanger
-        test_case.identity = service.identity
-
-
 class FakeBrokerServiceHelper(object):
     """
     The following attributes will be set in your test case:
@@ -467,24 +357,6 @@ class MonitorHelper(FakeBrokerServiceHelper):
             persist, persist_filename)
         test_case.monitor.broker = test_case.remote
         test_case.mstore = test_case.broker_service.message_store
-
-
-class LegacyManagerHelper(FakeRemoteBrokerHelper):
-    """
-    Provides everything that L{FakeRemoteBrokerHelper} does plus a
-    L{landscape.manager.manager.Manager}.
-    """
-
-    def set_up(self, test_case):
-        super(LegacyManagerHelper, self).set_up(test_case)
-
-        class MyManagerConfiguration(ManagerConfiguration):
-            default_config_filenames = [test_case.config_filename]
-        config = MyManagerConfiguration()
-        config.load(["--data-path", test_case.data_path])
-        test_case.manager = ManagerPluginRegistry(
-            test_case.remote, test_case.broker_service.reactor,
-            config)
 
 
 class ManagerHelper(FakeBrokerServiceHelper):

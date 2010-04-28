@@ -66,8 +66,8 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         L{UserManagement.add_user} should raise an L{UserManagementError} if
         C{passwd} fails.
         """
-        provider = FakeUserProvider(popen=MockPopen("",
-                                                    return_codes=[0, 0,1]))
+        provider = FakeUserProvider(
+            popen=MockPopen("", return_codes=[0, 0, 1]))
         management = UserManagement(provider=provider)
         self.assertRaises(UserManagementError, management.add_user,
                           "jdoe", u"John Doe", "password", True, None, None,
@@ -300,7 +300,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         provider = FakeUserProvider(users=data, shadow_file=self.shadow_file,
                                     popen=MockPopen("no output"))
         management = UserManagement(provider=provider)
-        result = management.unlock_user("jdoe")
+        management.unlock_user("jdoe")
         self.assertEquals(provider.popen.popen_inputs,
                           [["usermod", "-U", "jdoe"]])
 
@@ -375,7 +375,6 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
                           [["deluser", "jdoe", "--remove-home"]])
 
 
-
 class GroupWriteTest(LandscapeTest):
 
     def setUp(self):
@@ -394,7 +393,8 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         provider = FakeUserProvider(popen=MockPopen("Result"))
         management = UserManagement(provider=provider)
         result = management.add_group("webdev")
-        self.assertEquals(provider.popen.popen_inputs, [["addgroup", "webdev"]])
+        self.assertEquals(provider.popen.popen_inputs,
+                          [["addgroup", "webdev"]])
         self.assertEquals(result, "Result")
 
     def test_add_group_handles_errors(self):
@@ -413,8 +413,9 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         """
         users = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/zsh")]
         groups = [("bizdev", "x", 1001, [])]
-        provider = FakeUserProvider(users=users, shadow_file=self.shadow_file,
-                                    groups=groups, popen=MockPopen("no output"))
+        provider = FakeUserProvider(
+            users=users, shadow_file=self.shadow_file,
+            groups=groups, popen=MockPopen("no output"))
         management = UserManagement(provider=provider)
         management.set_group_details("bizdev", "sales")
 
@@ -573,8 +574,9 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         provider = FakeUserProvider(users=users, shadow_file=self.shadow_file,
                                     groups=groups, popen=popen)
         management = UserManagement(provider=provider)
-        output = management.remove_group("bizdev")
-        self.assertEquals(provider.popen.popen_inputs, [["groupdel", "bizdev"]])
+        management.remove_group("bizdev")
+        self.assertEquals(provider.popen.popen_inputs,
+                          [["groupdel", "bizdev"]])
 
     def test_remove_group_with_unknown_groupname(self):
         """
@@ -583,7 +585,8 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         """
         provider = FakeUserProvider(popen=MockPopen(""))
         management = UserManagement(provider=provider)
-        self.assertRaises(GroupNotFoundError, management.remove_group, "ubuntu")
+        self.assertRaises(
+            GroupNotFoundError, management.remove_group, "ubuntu")
 
     def test_remove_group_fails(self):
         """
@@ -597,5 +600,5 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         provider = FakeUserProvider(users=users, shadow_file=self.shadow_file,
                                     groups=groups, popen=popen)
         management = UserManagement(provider=provider)
-        self.assertRaises(GroupNotFoundError, management.remove_group,
-                          "ubuntu")
+        self.assertRaises(
+            GroupNotFoundError, management.remove_group, "ubuntu")
