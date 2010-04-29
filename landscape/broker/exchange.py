@@ -1,10 +1,12 @@
 """The part of the broker which deals with communications with the server."""
+import os
 import time
 import logging
 from landscape.lib.hashlib import md5
 
 from twisted.internet.defer import succeed
 
+from landscape.broker.exchangestore import ExchangeStore
 from landscape.lib.message import got_next_expected, ANCIENT
 from landscape.log import format_delta
 from landscape import SERVER_API, CLIENT_API
@@ -21,7 +23,7 @@ class MessageExchange(object):
 
     plugin_name = "message-exchange"
 
-    def __init__(self, reactor, store, transport, registration_info,
+    def __init__(self, reactor, store, transport, registration_info, data_path,
                  exchange_interval=60*60,
                  urgent_exchange_interval=10,
                  monitor_interval=None,
@@ -52,6 +54,8 @@ class MessageExchange(object):
         self._client_accepted_types = set()
         self._client_accepted_types_hash = None
         self._message_handlers = {}
+        self._store = ExchangeStore(
+            os.path.join(data_path, "exchange.database"))
 
         self.register_message("accepted-types", self._handle_accepted_types)
         self.register_message("resynchronize", self._handle_resynchronize)
@@ -63,6 +67,27 @@ class MessageExchange(object):
         """Return a binary tuple with urgent and normal exchange intervals."""
         return (self._urgent_exchange_interval, self._exchange_interval)
 
+    def _message_is_obsolete(self, message):
+        """True if message is obsolete.
+
+        A message is considered obsolete if the secure ID changed since it was
+        received.
+        """
+        if 'operation-id' not in message:
+            return False
+
+        operation_id = message['operation-id']
+        context = self._store.get_message_context(operation_id)
+        if context is None:
+            logging.warning(
+                "No message context for message with operation-id: %s"
+                % operation_id)
+            return False
+
+        # Compare the current secure ID with the one that was in effect when
+        # the request message was received.
+        return self._registration_info.secure_id == context.secure_id
+            
     def send(self, message, urgent=False):
         """Include a message to be sent in an exchange.
 
@@ -71,12 +96,15 @@ class MessageExchange(object):
 
         @param message: Same as in L{MessageStore.add}.
         """
-        if "timestamp" not in message:
-            message["timestamp"] = int(self._reactor.time())
-        message_id = self._message_store.add(message)
-        if urgent:
-            self.schedule_exchange(urgent=True)
-        return message_id
+        if not self._message_is_obsolete(message):
+            if "timestamp" not in message:
+                message["timestamp"] = int(self._reactor.time())
+            message_id = self._message_store.add(message)
+            if urgent:
+                self.schedule_exchange(urgent=True)
+            return message_id
+        else:
+            return 0
 
     def start(self):
         """Start scheduling exchanges. The first one will be urgent."""
@@ -363,6 +391,13 @@ class MessageExchange(object):
         Any message handlers registered with L{register_message} will
         be called.
         """
+        if 'operation-id' in message:
+            # This is a message that requires a response. Store the secure ID
+            # so we can check for obsolete results later.
+            self._store.add_message_context(
+                message['operation-id'], self._registration_info.secure_id,
+                message['type'])
+
         self._reactor.fire("message", message)
         # This has plan interference! but whatever.
         if message["type"] in self._message_handlers:

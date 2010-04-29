@@ -22,6 +22,7 @@ class MessageExchangeTest(LandscapeTest):
         self.mstore.add_schema(Message("empty", {}))
         self.mstore.add_schema(Message("data", {"data": Int()}))
         self.mstore.add_schema(Message("holdme", {}))
+        self.identity.secure_id = 'needs-to-be-set-for-tests-to-pass'
 
     def wait_for_exchange(self, urgent=False, factor=1, delta=0):
         if urgent:
@@ -273,7 +274,7 @@ class MessageExchangeTest(LandscapeTest):
         """
         transport = FakeTransport()
         exchanger = MessageExchange(self.reactor, self.mstore, transport,
-                                    self.identity)
+                                    self.identity, self.config.data_path)
         exchanger.start()
         self.wait_for_exchange(urgent=True)
         self.assertEquals(len(transport.payloads), 1)
@@ -500,7 +501,8 @@ class MessageExchangeTest(LandscapeTest):
         pending.
         """
         exchanger = MessageExchange(self.reactor, self.mstore, self.transport,
-                                    self.identity, max_messages=1)
+                                    self.identity, self.config.data_path,
+                                    max_messages=1)
         self.mstore.set_accepted_types(["empty"])
         self.mstore.add({"type": "empty"})
         self.mstore.add({"type": "empty"})
@@ -530,7 +532,8 @@ class MessageExchangeTest(LandscapeTest):
         # fixture has an urgent exchange interval of 10 seconds, which makes
         # testing this awkward.
         exchanger = MessageExchange(self.reactor, self.mstore, self.transport,
-                                    self.identity, urgent_exchange_interval=20)
+                                    self.identity, self.config.data_path,
+                                    urgent_exchange_interval=20)
         exchanger.schedule_exchange(urgent=True)
         events = []
         self.reactor.call_on("impending-exchange", lambda: events.append(True))
@@ -547,7 +550,8 @@ class MessageExchangeTest(LandscapeTest):
         before the new urgent exchange.
         """
         exchanger = MessageExchange(self.reactor, self.mstore, self.transport,
-                                    self.identity, urgent_exchange_interval=20)
+                                    self.identity, self.config.data_path,
+                                    urgent_exchange_interval=20)
         events = []
         self.reactor.call_on("impending-exchange", lambda: events.append(True))
         # This call will:

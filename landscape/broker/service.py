@@ -54,7 +54,8 @@ class BrokerService(LandscapeService):
         self.identity = Identity(self.config, self.persist)
         self.exchanger = MessageExchange(
             self.reactor, self.message_store, self.transport, self.identity,
-            config.exchange_interval, config.urgent_exchange_interval)
+            config.data_path, config.exchange_interval,
+            config.urgent_exchange_interval)
         self.pinger = self.pinger_factory(self.reactor, config.ping_url,
                                           self.identity, self.exchanger)
         self.registration = RegistrationHandler(
