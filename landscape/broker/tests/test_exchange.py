@@ -1,4 +1,3 @@
-
 from landscape import SERVER_API, CLIENT_API
 from landscape.lib.persist import Persist
 from landscape.lib.hashlib import md5
@@ -782,6 +781,61 @@ class MessageExchangeTest(LandscapeTest):
         self.exchanger.exchange()
 
         self.assertNotIn("INFO: Server UUID changed", self.logfile.getvalue())
+
+    def test_return_messages_have_their_context_stored(self):
+        """
+        Incoming messages with an 'operation-id' key will have the secure id
+        stored in the L{ExchangeStore}.
+        """
+        messages = []
+        self.exchanger.register_message("type-R", messages.append)
+        msg = {"type": "type-R", "whatever": 5678, "operation-id": 123456}
+        server_message = [msg]
+        self.transport.responses.append(server_message)
+        self.exchanger.exchange()
+        [message] = messages
+        self.assertIsNot(
+            None,
+            self.exchanger._store.get_message_context(message['operation-id']))
+
+    def test_one_way_messages_do_not_have_their_context_stored(self):
+        """
+        Incoming messages without an 'operation-id' key will *not* have the
+        secure id stored in the L{ExchangeStore}.
+        """
+        ids_before = self.exchanger._store.all_operation_ids()
+        messages = []
+        self.exchanger.register_message("type-R", messages.append)
+        msg = {"type": "type-R", "whatever": 5678}
+        server_message = [msg]
+        self.transport.responses.append(server_message)
+        self.exchanger.exchange()
+        ids_after = self.exchanger._store.all_operation_ids()
+        self.assertEquals(ids_before, ids_after)
+
+    def test_obsolete_response_messages_are_discarded(self):
+        """
+        An obsolete response message will be discarded as opposed to being
+        sent to the server.
+
+        A response message is considered obsolete if the secure ID changed
+        since the request message was received.
+        """
+        # Receive the message below from the server.
+        msg = {"type": "type-R", "whatever": 5678, "operation-id": 234567}
+        server_message = [msg]
+        self.transport.responses.append(server_message)
+        self.exchanger.exchange()
+
+        # Change the secure ID so that the response message gets discarded.
+        self.identity.secure_id = 'brand-new'
+
+        self.mstore.set_accepted_types(["resynchronize"])
+        self.exchanger.send({"type": "resynchronize", "operation-id": 234567})
+        self.exchanger.exchange()
+        self.assertEquals(2, len(self.transport.payloads))
+        messages = self.transport.payloads[1]["messages"]
+        self.assertEquals([], messages)
 
 
 class AcceptedTypesMessageExchangeTest(LandscapeTest):

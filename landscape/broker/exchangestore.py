@@ -78,6 +78,13 @@ class ExchangeStore(object):
         result = cursor.fetchone()
         return MessageContext(self._db, result[0]) if result else None
 
+    @with_cursor
+    def all_operation_ids(self, cursor):
+        """Return all operation IDs currently stored in C{message_context}."""
+        cursor.execute("SELECT operation_id FROM message_context")
+        result = cursor.fetchall()
+        return [row[0] for row in result]
+
 
 def ensure_exchange_schema(db):
     """Create all tables needed by a L{ExchangeStore}.

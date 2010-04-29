@@ -67,3 +67,15 @@ class ExchangeStoreTest(LandscapeTest):
             345, 'opq', 'change-packages')
         context.remove()
         self.assertIs(None, self.store1.get_message_context(345))
+
+    def test_all_operation_ids_for_empty_database(self):
+        """Calling C{all_operation_ids} on an empty database returns an empty
+        list."""
+        self.assertEquals([], self.store1.all_operation_ids())
+
+    def test_all_operation_ids(self):
+        """C{all_operation_ids} works correctly."""
+        self.store1.add_message_context(456, 'cde', 'change-packages')
+        self.assertEquals([456], self.store2.all_operation_ids())
+        self.store2.add_message_context(567, 'def', 'change-packages')
+        self.assertEquals([456, 567], self.store1.all_operation_ids())

@@ -86,7 +86,7 @@ class MessageExchange(object):
 
         # Compare the current secure ID with the one that was in effect when
         # the request message was received.
-        return self._registration_info.secure_id == context.secure_id
+        return self._registration_info.secure_id != context.secure_id
             
     def send(self, message, urgent=False):
         """Include a message to be sent in an exchange.
@@ -104,6 +104,10 @@ class MessageExchange(object):
                 self.schedule_exchange(urgent=True)
             return message_id
         else:
+            logging.info(
+                "Response message with operation-id %s was discarded "
+                "because the client's secure ID has changed in the meantime"
+                % message.get('operation-id'))
             return 0
 
     def start(self):
