@@ -87,7 +87,7 @@ class MessageExchange(object):
         # Compare the current secure ID with the one that was in effect when
         # the request message was received.
         return self._registration_info.secure_id != context.secure_id
-            
+
     def send(self, message, urgent=False):
         """Include a message to be sent in an exchange.
 
@@ -332,7 +332,8 @@ class MessageExchange(object):
         @param result: The response got in reply to the C{payload}.
         """
         message_store = self._message_store
-        self._client_accepted_types_hash = result.get("client-accepted-types-hash")
+        self._client_accepted_types_hash = result.get(
+            "client-accepted-types-hash")
         next_expected = result.get("next-expected-sequence")
         old_sequence = message_store.get_sequence()
         if next_expected is None:

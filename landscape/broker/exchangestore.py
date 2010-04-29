@@ -17,6 +17,7 @@ class MessageContext(object):
     If the secure ID did change the result message is obolete and will not be
     sent to the server.
     """
+
     def __init__(self, db, id):
         self._db = db
         self.id = id

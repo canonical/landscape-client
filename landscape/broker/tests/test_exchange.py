@@ -240,7 +240,6 @@ class MessageExchangeTest(LandscapeTest):
         self.mstore.add({"type": "data", "data": 2})
         self.mstore.add({"type": "data", "data": 3})
         # next one, server will respond with 1!
-
         def desynched_send_data(payload, computer_id=None, message_api=None):
             self.transport.next_expected_sequence = 1
             return {"next-expected-sequence": 1}
@@ -390,6 +389,7 @@ class MessageExchangeTest(LandscapeTest):
         del self.transport.exchange
 
         exchanged = []
+
         def exchange_callback():
             exchanged.append(True)
 
@@ -473,7 +473,6 @@ class MessageExchangeTest(LandscapeTest):
         self.assertEquals(payload.get("server-api"), "2.0")
         self.assertEquals(self.transport.message_api, "2.0")
 
-
     def test_include_total_messages_none(self):
         """
         The payload includes the total number of messages that the client has
@@ -507,7 +506,6 @@ class MessageExchangeTest(LandscapeTest):
         self.mstore.add({"type": "empty"})
         exchanger.exchange()
         self.assertEquals(self.transport.payloads[0]["total-messages"], 2)
-
 
     def test_impending_exchange(self):
         """
@@ -613,6 +611,7 @@ class MessageExchangeTest(LandscapeTest):
         self.transport.exchange = failed_send_data
 
         exchanged = []
+
         def exchange_failed_callback():
             exchanged.append(True)
 
@@ -703,6 +702,7 @@ class MessageExchangeTest(LandscapeTest):
 
         def handler1(message):
             messages.append(("one", message))
+
         def handler2(message):
             messages.append(("two", message))
 
@@ -725,6 +725,7 @@ class MessageExchangeTest(LandscapeTest):
 
     def test_server_uuid_change_cause_event(self):
         called = []
+
         def server_uuid_changed(old_uuid, new_uuid):
             called.append((old_uuid, new_uuid))
         self.reactor.call_on("server-uuid-changed", server_uuid_changed)
@@ -759,6 +760,7 @@ class MessageExchangeTest(LandscapeTest):
         the event is not emitted.
         """
         called = []
+
         def server_uuid_changed(old_uuid, new_uuid):
             called.append((old_uuid, new_uuid))
         self.reactor.call_on("server-uuid-changed", server_uuid_changed)
@@ -925,7 +927,6 @@ class AcceptedTypesMessageExchangeTest(LandscapeTest):
         self.assertEquals(
             self.transport.payloads[2]["client-accepted-types"],
             sorted(["type-A"] + DEFAULT_ACCEPTED_TYPES))
-
 
     def test_register_message_adds_accepted_type(self):
         """
