@@ -117,11 +117,12 @@ class MethodCallProtocolTest(LandscapeTest):
     def setUp(self):
         super(MethodCallProtocolTest, self).setUp()
         socket = self.mktemp()
-        factory = WordsFactory(object=Words())
+        factory = WordsFactory(object=Words(), reactor=reactor)
         self.port = reactor.listenUNIX(socket, factory)
 
         def set_protocol(protocol):
             self.protocol = protocol
+            self.protocol.factory = factory
 
         connector = ClientCreator(reactor, WordsProtocol)
         connected = connector.connectUNIX(socket)
@@ -150,8 +151,7 @@ class MethodCallProtocolTest(LandscapeTest):
         result = self.protocol.send_method_call(method="empty",
                                                 args=[],
                                                 kwargs={})
-        return self.assertSuccess(result, {"result": None,
-                                           "deferred": None})
+        return self.assertSuccess(result, {"result": None})
 
     def test_with_return_value(self):
         """
@@ -161,8 +161,7 @@ class MethodCallProtocolTest(LandscapeTest):
         result = self.protocol.send_method_call(method="motd",
                                                 args=[],
                                                 kwargs={})
-        return self.assertSuccess(result, {"result": "Words are cool",
-                                           "deferred": None})
+        return self.assertSuccess(result, {"result": "Words are cool"})
 
     def test_with_one_argument(self):
         """
@@ -172,8 +171,7 @@ class MethodCallProtocolTest(LandscapeTest):
         result = self.protocol.send_method_call(method="capitalize",
                                                 args=["john"],
                                                 kwargs={})
-        return self.assertSuccess(result, {"result": "John",
-                                           "deferred": None})
+        return self.assertSuccess(result, {"result": "John"})
 
     def test_with_boolean_return_value(self):
         """
@@ -182,8 +180,7 @@ class MethodCallProtocolTest(LandscapeTest):
         result = self.protocol.send_method_call(method="is_short",
                                                 args=["hi"],
                                                 kwargs={})
-        return self.assertSuccess(result, {"result": True,
-                                           "deferred": None})
+        return self.assertSuccess(result, {"result": True})
 
     def test_with_many_arguments(self):
         """
@@ -192,8 +189,7 @@ class MethodCallProtocolTest(LandscapeTest):
         result = self.protocol.send_method_call(method="concatenate",
                                                 args=["You ", "rock"],
                                                 kwargs={})
-        return self.assertSuccess(result, {"result": "You rock",
-                                           "deferred": None})
+        return self.assertSuccess(result, {"result": "You rock"})
 
     def test_with_default_arguments(self):
         """
@@ -203,8 +199,7 @@ class MethodCallProtocolTest(LandscapeTest):
         result = self.protocol.send_method_call(method="lower_case",
                                                 args=["OHH"],
                                                 kwargs={})
-        return self.assertSuccess(result, {"result": "ohh",
-                                           "deferred": None})
+        return self.assertSuccess(result, {"result": "ohh"})
 
     def test_with_overriden_default_arguments(self):
         """
@@ -215,8 +210,7 @@ class MethodCallProtocolTest(LandscapeTest):
         result = self.protocol.send_method_call(method="lower_case",
                                                 args=["OHH"],
                                                 kwargs={"index": 2})
-        return self.assertSuccess(result, {"result": "OHh",
-                                           "deferred": None})
+        return self.assertSuccess(result, {"result": "OHh"})
 
     def test_with_dictionary_arguments(self):
         """
@@ -226,8 +220,7 @@ class MethodCallProtocolTest(LandscapeTest):
                                                        "alphabetically",
                                                 args=[{"foo": 2, "bar": 3}],
                                                 kwargs={})
-        return self.assertSuccess(result, {"result": "barbarbarfoofoo",
-                                           "deferred": None})
+        return self.assertSuccess(result, {"result": "barbarbarfoofoo"})
 
     def test_with_non_serializable_return_value(self):
         """
@@ -247,8 +240,7 @@ class MethodCallProtocolTest(LandscapeTest):
         result = self.protocol.send_method_call(method="is_short",
                                                 args=["!" * 65535],
                                                 kwargs={})
-        return self.assertSuccess(result, {"result": False,
-                                           "deferred": None})
+        return self.assertSuccess(result, {"result": False})
 
     def test_with_long_argument_multiple_calls(self):
         """
@@ -263,8 +255,8 @@ class MethodCallProtocolTest(LandscapeTest):
                                                  kwargs={})
 
         return gather_results(
-            [self.assertSuccess(result1, {"result": False, "deferred": None}),
-             self.assertSuccess(result2, {"result": False, "deferred": None})])
+            [self.assertSuccess(result1, {"result": False}),
+             self.assertSuccess(result2, {"result": False})])
 
     def test_translate(self):
         """
