@@ -38,14 +38,14 @@ class ExchangeStoreTest(LandscapeTest):
         self.assertEquals('change-packages', row[2])
         self.assertTrue(row[3] > now)
 
-    def test_add_operationid_is_unique(self):
+    def test_add_message_context_with_duplicate_operation_id(self):
         """Only one message context with a given operation-id is permitted."""
         self.store1.add_message_context(123, 'abc', 'change-packages')
         self.assertRaises(
             sqlite3.IntegrityError,
             self.store1.add_message_context, 123, 'def', 'change-packages')
 
-    def test_get_message_context_works(self):
+    def test_get_message_context(self):
         """Accessing a C{MessageContext} with an existing
         C{operation-id} works."""
         now = time.time()
@@ -61,7 +61,7 @@ class ExchangeStoreTest(LandscapeTest):
         C{operation-id} result in C{None}."""
         self.assertIs(None, self.store1.get_message_context(999))
 
-    def test_deleting_message_contexts_works(self):
+    def test_message_context_remove(self):
         """C{MessageContext}s are deleted correctly."""
         context = self.store1.add_message_context(
             345, 'opq', 'change-packages')

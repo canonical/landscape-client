@@ -1,12 +1,10 @@
 """The part of the broker which deals with communications with the server."""
-import os
 import time
 import logging
 from landscape.lib.hashlib import md5
 
 from twisted.internet.defer import succeed
 
-from landscape.broker.exchangestore import ExchangeStore
 from landscape.lib.message import got_next_expected, ANCIENT
 from landscape.log import format_delta
 from landscape import SERVER_API, CLIENT_API
@@ -23,7 +21,8 @@ class MessageExchange(object):
 
     plugin_name = "message-exchange"
 
-    def __init__(self, reactor, store, transport, registration_info, data_path,
+    def __init__(self, reactor, store, transport, registration_info,
+                 message_context_store,
                  exchange_interval=60*60,
                  urgent_exchange_interval=10,
                  monitor_interval=None,
@@ -54,8 +53,7 @@ class MessageExchange(object):
         self._client_accepted_types = set()
         self._client_accepted_types_hash = None
         self._message_handlers = {}
-        self._store = ExchangeStore(
-            os.path.join(data_path, "exchange.database"))
+        self._store = message_context_store
 
         self.register_message("accepted-types", self._handle_accepted_types)
         self.register_message("resynchronize", self._handle_resynchronize)
@@ -101,7 +99,7 @@ class MessageExchange(object):
                 "Response message with operation-id %s was discarded "
                 "because the client's secure ID has changed in the meantime"
                 % message.get('operation-id'))
-            return 0
+            return None
         else:
             if "timestamp" not in message:
                 message["timestamp"] = int(self._reactor.time())

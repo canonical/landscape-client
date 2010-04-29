@@ -16,6 +16,9 @@ class MessageContext(object):
     which the request message came in and the completion of the request.
     If the secure ID did change the result message is obolete and will not be
     sent to the server.
+
+    @param db: the sqlite database handle.
+    @param id: the database key value for this instance.
     """
 
     def __init__(self, db, id):
@@ -47,13 +50,12 @@ class ExchangeStore(object):
     The implementation uses a SQLite database as backend, with a single table
     called "message_context", whose schema is defined in
     L{ensure_exchange_schema}.
+
+    @param filename: The name of the file that contains the sqlite database.
     """
     _db = None
 
     def __init__(self, filename):
-        """
-        @param filename: The file that contains the sqlite database.
-        """
         self._filename = filename
 
     def _ensure_schema(self):

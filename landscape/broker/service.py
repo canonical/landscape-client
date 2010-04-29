@@ -7,6 +7,7 @@ from landscape.broker.registration import RegistrationHandler, Identity
 from landscape.broker.config import BrokerConfiguration
 from landscape.broker.transport import HTTPTransport
 from landscape.broker.exchange import MessageExchange
+from landscape.broker.exchangestore import ExchangeStore
 from landscape.broker.ping import Pinger
 from landscape.broker.store import get_default_message_store
 from landscape.broker.server import BrokerServer
@@ -52,9 +53,11 @@ class BrokerService(LandscapeService):
         self.message_store = get_default_message_store(
             self.persist, config.message_store_path)
         self.identity = Identity(self.config, self.persist)
+        exchange_store = ExchangeStore(
+            os.path.join(config.data_path, "exchange.database"))
         self.exchanger = MessageExchange(
             self.reactor, self.message_store, self.transport, self.identity,
-            config.data_path, config.exchange_interval,
+            exchange_store, config.exchange_interval,
             config.urgent_exchange_interval)
         self.pinger = self.pinger_factory(self.reactor, config.ping_url,
                                           self.identity, self.exchanger)

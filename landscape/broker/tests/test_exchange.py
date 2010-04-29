@@ -1,9 +1,11 @@
+import os
 from landscape import SERVER_API, CLIENT_API
 from landscape.lib.persist import Persist
 from landscape.lib.hashlib import md5
 from landscape.lib.fetch import fetch_async
 from landscape.schema import Message, Int
 from landscape.broker.exchange import get_accepted_types_diff, MessageExchange
+from landscape.broker.exchangestore import ExchangeStore
 from landscape.broker.transport import FakeTransport
 from landscape.broker.store import MessageStore
 from landscape.broker.ping import Pinger
@@ -271,8 +273,10 @@ class MessageExchangeTest(LandscapeTest):
         Immediately after registration, an urgent exchange should be scheduled.
         """
         transport = FakeTransport()
+        exchange_store = ExchangeStore(
+            os.path.join(self.config.data_path, "exchange.database"))
         exchanger = MessageExchange(self.reactor, self.mstore, transport,
-                                    self.identity, self.config.data_path)
+                                    self.identity, exchange_store)
         exchanger.start()
         self.wait_for_exchange(urgent=True)
         self.assertEquals(len(transport.payloads), 1)
@@ -498,8 +502,10 @@ class MessageExchangeTest(LandscapeTest):
         the total-messages is equivalent to the total number of messages
         pending.
         """
+        exchange_store = ExchangeStore(
+            os.path.join(self.config.data_path, "exchange.database"))
         exchanger = MessageExchange(self.reactor, self.mstore, self.transport,
-                                    self.identity, self.config.data_path,
+                                    self.identity, exchange_store,
                                     max_messages=1)
         self.mstore.set_accepted_types(["empty"])
         self.mstore.add({"type": "empty"})
@@ -528,8 +534,10 @@ class MessageExchangeTest(LandscapeTest):
         # We create our own MessageExchange because the one set up by the text
         # fixture has an urgent exchange interval of 10 seconds, which makes
         # testing this awkward.
+        exchange_store = ExchangeStore(
+            os.path.join(self.config.data_path, "exchange.database"))
         exchanger = MessageExchange(self.reactor, self.mstore, self.transport,
-                                    self.identity, self.config.data_path,
+                                    self.identity, exchange_store,
                                     urgent_exchange_interval=20)
         exchanger.schedule_exchange(urgent=True)
         events = []
@@ -546,8 +554,10 @@ class MessageExchangeTest(LandscapeTest):
         should be cancelled and a new one should be scheduled for 10 seconds
         before the new urgent exchange.
         """
+        exchange_store = ExchangeStore(
+            os.path.join(self.config.data_path, "exchange.database"))
         exchanger = MessageExchange(self.reactor, self.mstore, self.transport,
-                                    self.identity, self.config.data_path,
+                                    self.identity, exchange_store,
                                     urgent_exchange_interval=20)
         events = []
         self.reactor.call_on("impending-exchange", lambda: events.append(True))
