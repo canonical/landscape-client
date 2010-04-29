@@ -846,11 +846,13 @@ class MessageExchangeTest(LandscapeTest):
         self.identity.secure_id = 'brand-new'
 
         self.mstore.set_accepted_types(["resynchronize"])
-        self.exchanger.send({"type": "resynchronize", "operation-id": 234567})
+        message_id = self.exchanger.send(
+            {"type": "resynchronize", "operation-id": 234567})
         self.exchanger.exchange()
         self.assertEquals(2, len(self.transport.payloads))
         messages = self.transport.payloads[1]["messages"]
         self.assertEquals([], messages)
+        self.assertIs(None, message_id)
 
 
 class AcceptedTypesMessageExchangeTest(LandscapeTest):
