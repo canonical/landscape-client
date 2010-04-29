@@ -52,7 +52,7 @@ class ExchangeStore(object):
 
     def __init__(self, filename):
         """
-        @param filename: The file where the mappings are persisted to.
+        @param filename: The file that contains the sqlite database.
         """
         self._filename = filename
 
