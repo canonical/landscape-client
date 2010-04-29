@@ -809,6 +809,9 @@ class MessageExchangeTest(LandscapeTest):
         self.assertIsNot(
             None,
             self.exchanger._store.get_message_context(message['operation-id']))
+        message_context = self.exchanger._store.get_message_context(message['operation-id'])
+        self.assertEquals(message_context.operation_id, 123456)
+        self.assertEquals(message_context.message_type, "type-R")
 
     def test_one_way_messages_do_not_have_their_context_stored(self):
         """
