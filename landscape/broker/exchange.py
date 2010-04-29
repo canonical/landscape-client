@@ -96,19 +96,19 @@ class MessageExchange(object):
 
         @param message: Same as in L{MessageStore.add}.
         """
-        if not self._message_is_obsolete(message):
+        if self._message_is_obsolete(message):
+            logging.info(
+                "Response message with operation-id %s was discarded "
+                "because the client's secure ID has changed in the meantime"
+                % message.get('operation-id'))
+            return 0
+        else:
             if "timestamp" not in message:
                 message["timestamp"] = int(self._reactor.time())
             message_id = self._message_store.add(message)
             if urgent:
                 self.schedule_exchange(urgent=True)
             return message_id
-        else:
-            logging.info(
-                "Response message with operation-id %s was discarded "
-                "because the client's secure ID has changed in the meantime"
-                % message.get('operation-id'))
-            return 0
 
     def start(self):
         """Start scheduling exchanges. The first one will be urgent."""
