@@ -853,6 +853,7 @@ class MessageExchangeTest(LandscapeTest):
         messages = self.transport.payloads[1]["messages"]
         self.assertEquals([], messages)
         self.assertIs(None, message_id)
+        self.assertEquals("", self.logfile.getvalue())
 
 
 class AcceptedTypesMessageExchangeTest(LandscapeTest):
