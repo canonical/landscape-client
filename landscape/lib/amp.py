@@ -221,7 +221,6 @@ class MethodCallClientProtocol(AMP):
 
         result.addCallback(send_last_chunk)
         result.callback(None)
-
         return result
 
 
