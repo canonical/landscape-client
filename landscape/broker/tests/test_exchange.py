@@ -806,12 +806,12 @@ class MessageExchangeTest(LandscapeTest):
         secure id stored in the L{ExchangeStore}.
         """
         ids_before = self.exchanger._store.all_operation_ids()
-        messages = []
-        self.exchanger.register_message("type-R", messages.append)
+
         msg = {"type": "type-R", "whatever": 5678}
         server_message = [msg]
         self.transport.responses.append(server_message)
         self.exchanger.exchange()
+
         ids_after = self.exchanger._store.all_operation_ids()
         self.assertEquals(ids_before, ids_after)
 
