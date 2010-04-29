@@ -853,7 +853,10 @@ class MessageExchangeTest(LandscapeTest):
         messages = self.transport.payloads[1]["messages"]
         self.assertEquals([], messages)
         self.assertIs(None, message_id)
-        self.assertEquals("", self.logfile.getvalue())
+        expected_log_entry = (
+            "Response message with operation-id 234567 was discarded because "
+            "the client's secure ID has changed in the meantime")
+        self.assertTrue(expected_log_entry in self.logfile.getvalue())
 
 
 class AcceptedTypesMessageExchangeTest(LandscapeTest):
