@@ -273,10 +273,8 @@ class MessageExchangeTest(LandscapeTest):
         Immediately after registration, an urgent exchange should be scheduled.
         """
         transport = FakeTransport()
-        exchange_store = ExchangeStore(
-            os.path.join(self.config.data_path, "exchange.database"))
         exchanger = MessageExchange(self.reactor, self.mstore, transport,
-                                    self.identity, exchange_store)
+                                    self.identity, self.exchange_store)
         exchanger.start()
         self.wait_for_exchange(urgent=True)
         self.assertEquals(len(transport.payloads), 1)
@@ -502,10 +500,8 @@ class MessageExchangeTest(LandscapeTest):
         the total-messages is equivalent to the total number of messages
         pending.
         """
-        exchange_store = ExchangeStore(
-            os.path.join(self.config.data_path, "exchange.database"))
         exchanger = MessageExchange(self.reactor, self.mstore, self.transport,
-                                    self.identity, exchange_store,
+                                    self.identity, self.exchange_store,
                                     max_messages=1)
         self.mstore.set_accepted_types(["empty"])
         self.mstore.add({"type": "empty"})
@@ -534,10 +530,8 @@ class MessageExchangeTest(LandscapeTest):
         # We create our own MessageExchange because the one set up by the text
         # fixture has an urgent exchange interval of 10 seconds, which makes
         # testing this awkward.
-        exchange_store = ExchangeStore(
-            os.path.join(self.config.data_path, "exchange.database"))
         exchanger = MessageExchange(self.reactor, self.mstore, self.transport,
-                                    self.identity, exchange_store,
+                                    self.identity, self.exchange_store,
                                     urgent_exchange_interval=20)
         exchanger.schedule_exchange(urgent=True)
         events = []
@@ -554,10 +548,8 @@ class MessageExchangeTest(LandscapeTest):
         should be cancelled and a new one should be scheduled for 10 seconds
         before the new urgent exchange.
         """
-        exchange_store = ExchangeStore(
-            os.path.join(self.config.data_path, "exchange.database"))
         exchanger = MessageExchange(self.reactor, self.mstore, self.transport,
-                                    self.identity, exchange_store,
+                                    self.identity, self.exchange_store,
                                     urgent_exchange_interval=20)
         events = []
         self.reactor.call_on("impending-exchange", lambda: events.append(True))
@@ -806,11 +798,10 @@ class MessageExchangeTest(LandscapeTest):
         self.transport.responses.append(server_message)
         self.exchanger.exchange()
         [message] = messages
-        exchange_store = self.exchanger._exchange_store
         self.assertIsNot(
             None,
-            exchange_store.get_message_context(message['operation-id']))
-        message_context = exchange_store.get_message_context(
+            self.exchange_store.get_message_context(message['operation-id']))
+        message_context = self.exchange_store.get_message_context(
             message['operation-id'])
         self.assertEquals(message_context.operation_id, 123456)
         self.assertEquals(message_context.message_type, "type-R")
@@ -820,14 +811,14 @@ class MessageExchangeTest(LandscapeTest):
         Incoming messages without an 'operation-id' key will *not* have the
         secure id stored in the L{ExchangeStore}.
         """
-        ids_before = self.exchanger._exchange_store.all_operation_ids()
+        ids_before = self.exchange_store.all_operation_ids()
 
         msg = {"type": "type-R", "whatever": 5678}
         server_message = [msg]
         self.transport.responses.append(server_message)
         self.exchanger.exchange()
 
-        ids_after = self.exchanger._exchange_store.all_operation_ids()
+        ids_after = self.exchange_store.all_operation_ids()
         self.assertEquals(ids_before, ids_after)
 
     def test_obsolete_response_messages_are_discarded(self):
@@ -846,7 +837,7 @@ class MessageExchangeTest(LandscapeTest):
 
         # Change the secure ID so that the response message gets discarded.
         self.identity.secure_id = 'brand-new'
-        ids_before = self.exchanger._exchange_store.all_operation_ids()
+        ids_before = self.exchange_store.all_operation_ids()
 
         self.mstore.set_accepted_types(["resynchronize"])
         message_id = self.exchanger.send(
@@ -862,7 +853,7 @@ class MessageExchangeTest(LandscapeTest):
         self.assertTrue(expected_log_entry in self.logfile.getvalue())
 
         # The MessageContext was removed after utilisation.
-        ids_after = self.exchanger._exchange_store.all_operation_ids()
+        ids_after = self.exchange_store.all_operation_ids()
         self.assertTrue(len(ids_after) == len(ids_before) - 1)
         self.assertFalse('234567' in ids_after)
 

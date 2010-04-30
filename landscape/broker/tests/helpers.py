@@ -75,11 +75,11 @@ class ExchangeHelper(BrokerConfigurationHelper):
         test_case.transport = FakeTransport(test_case.config.url,
                                             test_case.config.ssl_public_key)
         test_case.reactor = FakeReactor()
-        exchange_store = ExchangeStore(
+        test_case.exchange_store = ExchangeStore(
             os.path.join(test_case.config.data_path, "exchange.database"))
         test_case.exchanger = MessageExchange(
             test_case.reactor, test_case.mstore, test_case.transport,
-            test_case.identity, exchange_store,
+            test_case.identity, test_case.exchange_store,
             test_case.config.exchange_interval,
             test_case.config.urgent_exchange_interval)
 
