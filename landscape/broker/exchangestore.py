@@ -28,27 +28,18 @@ class MessageContext(object):
     @param id: the database key value for this instance.
     """
 
-    def __init__(self, db, id):
+    def __init__(self, db, operation_id, secure_id, message_type, timestamp):
         self._db = db
-        self.id = id
-
-        cursor = db.cursor()
-        try:
-            cursor.execute(
-                "SELECT operation_id, secure_id, message_type, timestamp "
-                "FROM message_context WHERE id=?", (id,))
-            row = cursor.fetchone()
-        finally:
-            cursor.close()
-
-        self.operation_id = row[0]
-        self.secure_id = row[1]
-        self.message_type = row[2]
-        self.timestamp = row[3]
+        self.operation_id = operation_id
+        self.secure_id = secure_id
+        self.message_type = message_type
+        self.timestamp = timestamp
 
     @with_cursor
     def remove(self, cursor):
-        cursor.execute("DELETE FROM message_context WHERE id=?", (self.id,))
+        cursor.execute(
+            "DELETE FROM message_context WHERE operation_id=?",
+            (self.operation_id,))
 
 
 class ExchangeStore(object):
@@ -72,21 +63,23 @@ class ExchangeStore(object):
     def add_message_context(
         self, cursor, operation_id, secure_id, message_type):
         """Add a L{MessageContext} with the given data."""
+        now = time.time()
         cursor.execute(
             "INSERT INTO message_context "
             "   (operation_id, secure_id, message_type, timestamp) "
             "   VALUES (?,?,?,?)",
-            (operation_id, secure_id, message_type, time.time()))
-        return MessageContext(self._db, cursor.lastrowid)
+            (operation_id, secure_id, message_type, now))
+        return MessageContext(
+            self._db, operation_id, secure_id, message_type, now)
 
     @with_cursor
     def get_message_context(self, cursor, operation_id):
         """The L{MessageContext} for the given C{operation_id} or C{None}."""
         cursor.execute(
-            "SELECT id FROM message_context WHERE operation_id=?",
-            (operation_id,))
-        result = cursor.fetchone()
-        return MessageContext(self._db, result[0]) if result else None
+            "SELECT operation_id, secure_id, message_type, timestamp "
+            "FROM message_context WHERE operation_id=?", (operation_id,))
+        row = cursor.fetchone()
+        return MessageContext(self._db, *row) if row else None
 
     @with_cursor
     def all_operation_ids(self, cursor):
