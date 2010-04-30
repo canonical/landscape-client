@@ -18,6 +18,10 @@ class BrokerConfiguration(Configuration):
         self._original_http_proxy = os.environ.get("http_proxy")
         self._original_https_proxy = os.environ.get("https_proxy")
 
+    @property
+    def exchange_store_path(self):
+        return os.path.join(self.data_path, "exchange.database")
+
     def make_parser(self):
         """Parser factory for broker-specific options.
 

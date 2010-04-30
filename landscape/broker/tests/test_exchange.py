@@ -1,4 +1,3 @@
-
 from landscape import SERVER_API, CLIENT_API
 from landscape.lib.persist import Persist
 from landscape.lib.hashlib import md5
@@ -22,6 +21,7 @@ class MessageExchangeTest(LandscapeTest):
         self.mstore.add_schema(Message("empty", {}))
         self.mstore.add_schema(Message("data", {"data": Int()}))
         self.mstore.add_schema(Message("holdme", {}))
+        self.identity.secure_id = 'needs-to-be-set-for-tests-to-pass'
 
     def wait_for_exchange(self, urgent=False, factor=1, delta=0):
         if urgent:
@@ -240,7 +240,6 @@ class MessageExchangeTest(LandscapeTest):
         self.mstore.add({"type": "data", "data": 2})
         self.mstore.add({"type": "data", "data": 3})
         # next one, server will respond with 1!
-
         def desynched_send_data(payload, computer_id=None, message_api=None):
             self.transport.next_expected_sequence = 1
             return {"next-expected-sequence": 1}
@@ -273,7 +272,7 @@ class MessageExchangeTest(LandscapeTest):
         """
         transport = FakeTransport()
         exchanger = MessageExchange(self.reactor, self.mstore, transport,
-                                    self.identity)
+                                    self.identity, self.exchange_store)
         exchanger.start()
         self.wait_for_exchange(urgent=True)
         self.assertEquals(len(transport.payloads), 1)
@@ -390,6 +389,7 @@ class MessageExchangeTest(LandscapeTest):
         del self.transport.exchange
 
         exchanged = []
+
         def exchange_callback():
             exchanged.append(True)
 
@@ -473,7 +473,6 @@ class MessageExchangeTest(LandscapeTest):
         self.assertEquals(payload.get("server-api"), "2.0")
         self.assertEquals(self.transport.message_api, "2.0")
 
-
     def test_include_total_messages_none(self):
         """
         The payload includes the total number of messages that the client has
@@ -500,13 +499,13 @@ class MessageExchangeTest(LandscapeTest):
         pending.
         """
         exchanger = MessageExchange(self.reactor, self.mstore, self.transport,
-                                    self.identity, max_messages=1)
+                                    self.identity, self.exchange_store,
+                                    max_messages=1)
         self.mstore.set_accepted_types(["empty"])
         self.mstore.add({"type": "empty"})
         self.mstore.add({"type": "empty"})
         exchanger.exchange()
         self.assertEquals(self.transport.payloads[0]["total-messages"], 2)
-
 
     def test_impending_exchange(self):
         """
@@ -530,7 +529,8 @@ class MessageExchangeTest(LandscapeTest):
         # fixture has an urgent exchange interval of 10 seconds, which makes
         # testing this awkward.
         exchanger = MessageExchange(self.reactor, self.mstore, self.transport,
-                                    self.identity, urgent_exchange_interval=20)
+                                    self.identity, self.exchange_store,
+                                    urgent_exchange_interval=20)
         exchanger.schedule_exchange(urgent=True)
         events = []
         self.reactor.call_on("impending-exchange", lambda: events.append(True))
@@ -547,7 +547,8 @@ class MessageExchangeTest(LandscapeTest):
         before the new urgent exchange.
         """
         exchanger = MessageExchange(self.reactor, self.mstore, self.transport,
-                                    self.identity, urgent_exchange_interval=20)
+                                    self.identity, self.exchange_store,
+                                    urgent_exchange_interval=20)
         events = []
         self.reactor.call_on("impending-exchange", lambda: events.append(True))
         # This call will:
@@ -610,6 +611,7 @@ class MessageExchangeTest(LandscapeTest):
         self.transport.exchange = failed_send_data
 
         exchanged = []
+
         def exchange_failed_callback():
             exchanged.append(True)
 
@@ -700,6 +702,7 @@ class MessageExchangeTest(LandscapeTest):
 
         def handler1(message):
             messages.append(("one", message))
+
         def handler2(message):
             messages.append(("two", message))
 
@@ -722,6 +725,7 @@ class MessageExchangeTest(LandscapeTest):
 
     def test_server_uuid_change_cause_event(self):
         called = []
+
         def server_uuid_changed(old_uuid, new_uuid):
             called.append((old_uuid, new_uuid))
         self.reactor.call_on("server-uuid-changed", server_uuid_changed)
@@ -756,6 +760,7 @@ class MessageExchangeTest(LandscapeTest):
         the event is not emitted.
         """
         called = []
+
         def server_uuid_changed(old_uuid, new_uuid):
             called.append((old_uuid, new_uuid))
         self.reactor.call_on("server-uuid-changed", server_uuid_changed)
@@ -778,6 +783,77 @@ class MessageExchangeTest(LandscapeTest):
         self.exchanger.exchange()
 
         self.assertNotIn("INFO: Server UUID changed", self.logfile.getvalue())
+
+    def test_return_messages_have_their_context_stored(self):
+        """
+        Incoming messages with an 'operation-id' key will have the secure id
+        stored in the L{ExchangeStore}.
+        """
+        messages = []
+        self.exchanger.register_message("type-R", messages.append)
+        msg = {"type": "type-R", "whatever": 5678, "operation-id": 123456}
+        server_message = [msg]
+        self.transport.responses.append(server_message)
+        self.exchanger.exchange()
+        [message] = messages
+        self.assertIsNot(
+            None,
+            self.exchange_store.get_message_context(message['operation-id']))
+        message_context = self.exchange_store.get_message_context(
+            message['operation-id'])
+        self.assertEquals(message_context.operation_id, 123456)
+        self.assertEquals(message_context.message_type, "type-R")
+
+    def test_one_way_messages_do_not_have_their_context_stored(self):
+        """
+        Incoming messages without an 'operation-id' key will *not* have the
+        secure id stored in the L{ExchangeStore}.
+        """
+        ids_before = self.exchange_store.all_operation_ids()
+
+        msg = {"type": "type-R", "whatever": 5678}
+        server_message = [msg]
+        self.transport.responses.append(server_message)
+        self.exchanger.exchange()
+
+        ids_after = self.exchange_store.all_operation_ids()
+        self.assertEquals(ids_before, ids_after)
+
+    def test_obsolete_response_messages_are_discarded(self):
+        """
+        An obsolete response message will be discarded as opposed to being
+        sent to the server.
+
+        A response message is considered obsolete if the secure ID changed
+        since the request message was received.
+        """
+        # Receive the message below from the server.
+        msg = {"type": "type-R", "whatever": 5678, "operation-id": 234567}
+        server_message = [msg]
+        self.transport.responses.append(server_message)
+        self.exchanger.exchange()
+
+        # Change the secure ID so that the response message gets discarded.
+        self.identity.secure_id = 'brand-new'
+        ids_before = self.exchange_store.all_operation_ids()
+
+        self.mstore.set_accepted_types(["resynchronize"])
+        message_id = self.exchanger.send(
+            {"type": "resynchronize", "operation-id": 234567})
+        self.exchanger.exchange()
+        self.assertEquals(2, len(self.transport.payloads))
+        messages = self.transport.payloads[1]["messages"]
+        self.assertEquals([], messages)
+        self.assertIs(None, message_id)
+        expected_log_entry = (
+            "Response message with operation-id 234567 was discarded because "
+            "the client's secure ID has changed in the meantime")
+        self.assertTrue(expected_log_entry in self.logfile.getvalue())
+
+        # The MessageContext was removed after utilisation.
+        ids_after = self.exchange_store.all_operation_ids()
+        self.assertTrue(len(ids_after) == len(ids_before) - 1)
+        self.assertFalse('234567' in ids_after)
 
 
 class AcceptedTypesMessageExchangeTest(LandscapeTest):
@@ -867,7 +943,6 @@ class AcceptedTypesMessageExchangeTest(LandscapeTest):
         self.assertEquals(
             self.transport.payloads[2]["client-accepted-types"],
             sorted(["type-A"] + DEFAULT_ACCEPTED_TYPES))
-
 
     def test_register_message_adds_accepted_type(self):
         """
