@@ -22,7 +22,7 @@ class MessageExchange(object):
     plugin_name = "message-exchange"
 
     def __init__(self, reactor, store, transport, registration_info,
-                 message_context_store,
+                 exchange_store,
                  exchange_interval=60*60,
                  urgent_exchange_interval=10,
                  monitor_interval=None,
@@ -53,7 +53,7 @@ class MessageExchange(object):
         self._client_accepted_types = set()
         self._client_accepted_types_hash = None
         self._message_handlers = {}
-        self._store = message_context_store
+        self._exchange_store = exchange_store
 
         self.register_message("accepted-types", self._handle_accepted_types)
         self.register_message("resynchronize", self._handle_resynchronize)
@@ -75,7 +75,7 @@ class MessageExchange(object):
             return False
 
         operation_id = message['operation-id']
-        context = self._store.get_message_context(operation_id)
+        context = self._exchange_store.get_message_context(operation_id)
         if context is None:
             logging.warning(
                 "No message context for message with operation-id: %s"
@@ -103,13 +103,13 @@ class MessageExchange(object):
                 "because the client's secure ID has changed in the meantime"
                 % message.get('operation-id'))
             return None
-        else:
-            if "timestamp" not in message:
-                message["timestamp"] = int(self._reactor.time())
-            message_id = self._message_store.add(message)
-            if urgent:
-                self.schedule_exchange(urgent=True)
-            return message_id
+
+        if "timestamp" not in message:
+            message["timestamp"] = int(self._reactor.time())
+        message_id = self._message_store.add(message)
+        if urgent:
+            self.schedule_exchange(urgent=True)
+        return message_id
 
     def start(self):
         """Start scheduling exchanges. The first one will be urgent."""
@@ -400,7 +400,7 @@ class MessageExchange(object):
         if 'operation-id' in message:
             # This is a message that requires a response. Store the secure ID
             # so we can check for obsolete results later.
-            self._store.add_message_context(
+            self._exchange_store.add_message_context(
                 message['operation-id'], self._registration_info.secure_id,
                 message['type'])
 

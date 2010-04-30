@@ -806,10 +806,12 @@ class MessageExchangeTest(LandscapeTest):
         self.transport.responses.append(server_message)
         self.exchanger.exchange()
         [message] = messages
+        exchange_store = self.exchanger._exchange_store
         self.assertIsNot(
             None,
-            self.exchanger._store.get_message_context(message['operation-id']))
-        message_context = self.exchanger._store.get_message_context(message['operation-id'])
+            exchange_store.get_message_context(message['operation-id']))
+        message_context = exchange_store.get_message_context(
+            message['operation-id'])
         self.assertEquals(message_context.operation_id, 123456)
         self.assertEquals(message_context.message_type, "type-R")
 
@@ -818,14 +820,14 @@ class MessageExchangeTest(LandscapeTest):
         Incoming messages without an 'operation-id' key will *not* have the
         secure id stored in the L{ExchangeStore}.
         """
-        ids_before = self.exchanger._store.all_operation_ids()
+        ids_before = self.exchanger._exchange_store.all_operation_ids()
 
         msg = {"type": "type-R", "whatever": 5678}
         server_message = [msg]
         self.transport.responses.append(server_message)
         self.exchanger.exchange()
 
-        ids_after = self.exchanger._store.all_operation_ids()
+        ids_after = self.exchanger._exchange_store.all_operation_ids()
         self.assertEquals(ids_before, ids_after)
 
     def test_obsolete_response_messages_are_discarded(self):
@@ -844,7 +846,7 @@ class MessageExchangeTest(LandscapeTest):
 
         # Change the secure ID so that the response message gets discarded.
         self.identity.secure_id = 'brand-new'
-        ids_before = self.exchanger._store.all_operation_ids()
+        ids_before = self.exchanger._exchange_store.all_operation_ids()
 
         self.mstore.set_accepted_types(["resynchronize"])
         message_id = self.exchanger.send(
@@ -860,7 +862,7 @@ class MessageExchangeTest(LandscapeTest):
         self.assertTrue(expected_log_entry in self.logfile.getvalue())
 
         # The MessageContext was removed after utilisation.
-        ids_after = self.exchanger._store.all_operation_ids()
+        ids_after = self.exchanger._exchange_store.all_operation_ids()
         self.assertTrue(len(ids_after) == len(ids_before) - 1)
         self.assertFalse('234567' in ids_after)
 
