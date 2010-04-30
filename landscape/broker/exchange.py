@@ -84,7 +84,10 @@ class MessageExchange(object):
 
         # Compare the current secure ID with the one that was in effect when
         # the request message was received.
-        return self._registration_info.secure_id != context.secure_id
+        result = self._registration_info.secure_id != context.secure_id
+        context.remove()
+
+        return result
 
     def send(self, message, urgent=False):
         """Include a message to be sent in an exchange.

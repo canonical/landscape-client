@@ -844,6 +844,7 @@ class MessageExchangeTest(LandscapeTest):
 
         # Change the secure ID so that the response message gets discarded.
         self.identity.secure_id = 'brand-new'
+        ids_before = self.exchanger._store.all_operation_ids()
 
         self.mstore.set_accepted_types(["resynchronize"])
         message_id = self.exchanger.send(
@@ -857,6 +858,11 @@ class MessageExchangeTest(LandscapeTest):
             "Response message with operation-id 234567 was discarded because "
             "the client's secure ID has changed in the meantime")
         self.assertTrue(expected_log_entry in self.logfile.getvalue())
+
+        # The MessageContext was removed after utilisation.
+        ids_after = self.exchanger._store.all_operation_ids()
+        self.assertTrue(len(ids_after) == len(ids_before) - 1)
+        self.assertFalse('234567' in ids_after)
 
 
 class AcceptedTypesMessageExchangeTest(LandscapeTest):
