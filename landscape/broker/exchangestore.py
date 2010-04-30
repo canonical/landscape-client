@@ -10,7 +10,14 @@ from landscape.lib.store import with_cursor
 
 
 class MessageContext(object):
-    """Stores the secure ID for incoming messages that require a response.
+    """Stores a context for incoming messages that require a response.
+
+    The context consists of
+
+      - the "operation-id" value
+      - the secure ID that was in effect when the message was received
+      - the message type
+      - the time when the message was received
 
     This data will be used to detect secure ID changes between the time at
     which the request message came in and the completion of the request.
