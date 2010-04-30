@@ -173,10 +173,7 @@ class MethodCallClientProtocol(AMP):
                 # just ignore it.
                 return
             call.cancel()
-            if isinstance(response, Failure):
-                deferred.errback(response.value)
-            else:
-                deferred.callback(response)
+            deferred.callback(response)
 
         def handle_timeout():
             # The peer didn't respond on time, raise an error.
