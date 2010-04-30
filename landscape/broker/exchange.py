@@ -66,7 +66,7 @@ class MessageExchange(object):
         return (self._urgent_exchange_interval, self._exchange_interval)
 
     def _message_is_obsolete(self, message):
-        """True if message is obsolete.
+        """Returns C{True} if message is obsolete.
 
         A message is considered obsolete if the secure ID changed since it was
         received.
