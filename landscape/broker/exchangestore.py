@@ -63,14 +63,12 @@ class ExchangeStore(object):
     def add_message_context(
         self, cursor, operation_id, secure_id, message_type):
         """Add a L{MessageContext} with the given data."""
-        now = time.time()
+        params = (operation_id, secure_id, message_type, time.time())
         cursor.execute(
             "INSERT INTO message_context "
             "   (operation_id, secure_id, message_type, timestamp) "
-            "   VALUES (?,?,?,?)",
-            (operation_id, secure_id, message_type, now))
-        return MessageContext(
-            self._db, operation_id, secure_id, message_type, now)
+            "   VALUES (?,?,?,?)", params)
+        return MessageContext(self._db, *params)
 
     @with_cursor
     def get_message_context(self, cursor, operation_id):
