@@ -1,11 +1,9 @@
-import os
 from landscape import SERVER_API, CLIENT_API
 from landscape.lib.persist import Persist
 from landscape.lib.hashlib import md5
 from landscape.lib.fetch import fetch_async
 from landscape.schema import Message, Int
 from landscape.broker.exchange import get_accepted_types_diff, MessageExchange
-from landscape.broker.exchangestore import ExchangeStore
 from landscape.broker.transport import FakeTransport
 from landscape.broker.store import MessageStore
 from landscape.broker.ping import Pinger
