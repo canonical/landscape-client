@@ -53,8 +53,7 @@ class BrokerService(LandscapeService):
         self.message_store = get_default_message_store(
             self.persist, config.message_store_path)
         self.identity = Identity(self.config, self.persist)
-        exchange_store = ExchangeStore(
-            os.path.join(config.data_path, "exchange.database"))
+        exchange_store = ExchangeStore(self.config.exchange_store_path)
         self.exchanger = MessageExchange(
             self.reactor, self.message_store, self.transport, self.identity,
             exchange_store, config.exchange_interval,
