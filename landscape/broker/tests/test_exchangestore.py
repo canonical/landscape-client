@@ -46,8 +46,9 @@ class ExchangeStoreTest(LandscapeTest):
             self.store1.add_message_context, 123, 'def', 'change-packages')
 
     def test_get_message_context(self):
-        """Accessing a C{MessageContext} with an existing
-        C{operation-id} works."""
+        """
+        Accessing a C{MessageContext} with an existing C{operation-id} works.
+        """
         now = time.time()
         self.store1.add_message_context(234, 'bcd', 'change-packages')
         context = self.store2.get_message_context(234)
@@ -69,8 +70,10 @@ class ExchangeStoreTest(LandscapeTest):
         self.assertIs(None, self.store1.get_message_context(345))
 
     def test_all_operation_ids_for_empty_database(self):
-        """Calling C{all_operation_ids} on an empty database returns an empty
-        list."""
+        """
+        Calling C{all_operation_ids} on an empty database returns an empty
+        list.
+        """
         self.assertEquals([], self.store1.all_operation_ids())
 
     def test_all_operation_ids(self):
