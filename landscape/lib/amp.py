@@ -1,6 +1,5 @@
 """Expose the methods of a remote object over AMP."""
 
-from uuid import uuid4
 from twisted.internet.defer import Deferred, maybeDeferred
 from twisted.internet.protocol import ReconnectingClientFactory
 from twisted.protocols.amp import (
@@ -38,8 +37,7 @@ class MethodCall(Command):
                  ("method", String()),
                  ("arguments", String())]
 
-    response = [("result", MethodCallArgument()),
-                ("deferred", String(optional=True))]
+    response = [("result", MethodCallArgument())]
 
     errors = {MethodCallError: "METHOD_CALL_ERROR"}
 
@@ -59,15 +57,6 @@ class MethodCallChunk(Command):
     errors = {MethodCallError: "METHOD_CALL_ERROR"}
 
 
-class DeferredResponse(Command):
-    """Fire a L{Deferred} associated with an outstanding method call result."""
-
-    arguments = [("uuid", String()),
-                 ("result", MethodCallArgument(optional=True)),
-                 ("failure", String(optional=True))]
-    requiresAnswer = False
-
-
 class MethodCallServerProtocol(AMP):
     """Expose methods of a local object over AMP.
 
@@ -81,7 +70,8 @@ class MethodCallServerProtocol(AMP):
     methods = []
 
     def __init__(self):
-        self._pending = {}
+        AMP.__init__(self)
+        self._pending_chunks = {}
 
     @MethodCall.responder
     def receive_method_call(self, sequence, method, arguments):
@@ -100,11 +90,11 @@ class MethodCallServerProtocol(AMP):
            by one or more L{MethodCallChunk}s, C{arguments} is the last chunk
            of data.
         """
-        pending = self._pending.pop(sequence, None)
-        if pending is not None:
+        chunks = self._pending_chunks.pop(sequence, None)
+        if chunks is not None:
             # We got some L{MethodCallChunk}s before, this is the last.
-            pending.append(arguments)
-            arguments = "".join(pending)
+            chunks.append(arguments)
+            arguments = "".join(chunks)
 
         args, kwargs = loads(arguments)
 
@@ -112,19 +102,17 @@ class MethodCallServerProtocol(AMP):
             raise MethodCallError("Forbidden method '%s'" % method)
 
         method_func = getattr(self.factory.object, method)
-        result = maybeDeferred(method_func, *args, **kwargs)
 
-        # If the Deferred was already fired, we can return its result
-        if result.called:
-            if isinstance(result.result, Failure):
-                failure = str(result.result.value)
-                result.addErrback(lambda error: None) # Stop propagating
-                raise MethodCallError(failure)
-            return {"result": self._check_result(result.result)}
+        def handle_result(result):
+            return {"result": self._check_result(result)}
 
-        uuid = str(uuid4())
-        result.addBoth(self.send_deferred_response, uuid)
-        return {"result": None, "deferred": uuid}
+        def handle_failure(failure):
+            raise MethodCallError(failure.value)
+
+        deferred = maybeDeferred(method_func, *args, **kwargs)
+        deferred.addCallback(handle_result)
+        deferred.addErrback(handle_failure)
+        return deferred
 
     @MethodCallChunk.responder
     def receive_method_call_chunk(self, sequence, chunk):
@@ -133,7 +121,7 @@ class MethodCallServerProtocol(AMP):
         Add the received C{chunk} to the buffer of the L{MethodCall} identified
         by C{sequence}.
         """
-        self._pending.setdefault(sequence, []).append(chunk)
+        self._pending_chunks.setdefault(sequence, []).append(chunk)
         return {"result": sequence}
 
     def _check_result(self, result):
@@ -145,20 +133,6 @@ class MethodCallServerProtocol(AMP):
         if not MethodCallArgument.check(result):
             raise MethodCallError("Non-serializable result")
         return result
-
-    def send_deferred_response(self, result, uuid):
-        """Send a L{DeferredResponse} for the deferred with given C{uuid}.
-
-        This is called when the result of a L{Deferred} returned by an
-        object's method becomes available. A L{DeferredResponse} notifying
-        such result (either success or failure) is sent to the peer.
-        """
-        kwargs = {"uuid": uuid}
-        if isinstance(result, Failure):
-            kwargs["failure"] = str(result.value)
-        else:
-            kwargs["result"] = self._check_result(result)
-        self.callRemote(DeferredResponse, **kwargs)
 
 
 class MethodCallClientProtocol(AMP):
@@ -173,64 +147,43 @@ class MethodCallClientProtocol(AMP):
     """
     timeout = 60
     chunk_size = MAX_VALUE_LENGTH
-    _sequence = 0
 
     def __init__(self):
         AMP.__init__(self)
-        self._pending_responses = {}
+        self._pending_responses = []
+        self._sequence = 0
 
-    @DeferredResponse.responder
-    def receive_deferred_response(self, uuid, result, failure):
-        """Receive the deferred L{MethodCall} response.
-
-        @param uuid: The id of the L{MethodCall} we're getting the result of.
-        @param result: The result of the associated deferred if successful.
-        @param failure: The failure message of the deferred if it failed.
-        """
-        self.fire_pending_response(uuid, result, failure)
-        return {}
-
-    def fire_pending_response(self, uuid, result, failure):
-        """Fire the L{Deferred} associated with a pending response.
-
-        @param uuid: The id of the L{MethodCall} we're getting the result of.
-        @param result: The result of the associated deferred if successful.
-        @param failure: The failure message of the deferred if it failed.
-        """
-        try:
-            deferred, call = self._pending_responses.pop(uuid)
-        except KeyError:
-            # Late response for a request that has timeout, just ignore it
-            return
-        if not call.called:
-            call.cancel()
-        if failure is None:
-            deferred.callback({"result": result})
-        else:
-            deferred.errback(MethodCallError(failure))
-
-    def handle_response(self, response):
-        """Handle a L{MethodCall} response.
-
-        If the response is tagged as deferred, it will be queued as pending,
-        and a L{Deferred} is returned, which will be fired as soon as the
-        final response becomes available, or the timeout is reached.
-        """
-        if response["deferred"]:
-            uuid = response["deferred"]
-            deferred = Deferred()
-            call = self.factory.reactor.callLater(self.timeout,
-                                                  self.fire_pending_response,
-                                                  uuid, None, "timeout")
-            self._pending_responses[uuid] = (deferred, call)
-            return deferred
-
-        return response
-
-    def create_sequence(self):
+    def _create_sequence(self):
         """Return a unique sequence number for a L{MethodCall}."""
         self._sequence += 1
         return self._sequence
+
+    def _call_remote_with_timeout(self, command, **kwargs):
+        """Send an L{AMP} command that will errback in case of a timeout.
+
+        @return: A deferred resulting in the command's response (or failure) if
+            the peer responds within L{MethodClientProtocol.timeout} seconds,
+            or that errbacks with a L{MethodCallError} otherwise.
+        """
+        deferred = Deferred()
+
+        def handle_response(response):
+            if call.called:
+                # Late response for a request that has timeout,
+                # just ignore it.
+                return
+            call.cancel()
+            deferred.callback(response)
+
+        def handle_timeout():
+            # The peer didn't respond on time, raise an error.
+            deferred.errback(MethodCallError("timeout"))
+
+        call = self.factory.reactor.callLater(self.timeout, handle_timeout)
+
+        result = self.callRemote(command, **kwargs)
+        result.addBoth(handle_response)
+        return deferred
 
     def send_method_call(self, method, args=[], kwargs={}):
         """Send a L{MethodCall} command with the given arguments.
@@ -240,7 +193,7 @@ class MethodCallClientProtocol(AMP):
         @param kwargs: The keyword arguments to pass to the remote method.
         """
         arguments = dumps((args, kwargs))
-        sequence = self.create_sequence()
+        sequence = self._create_sequence()
 
         # Split the given arguments in one or more chunks
         chunks = [arguments[i:i + self.chunk_size]
@@ -258,10 +211,12 @@ class MethodCallClientProtocol(AMP):
 
                 result.addCallback(create_send_chunk(sequence, chunk))
 
-        result.addCallback(
-            lambda x: self.callRemote(MethodCall, sequence=sequence,
-                                      method=method, arguments=chunks[-1]))
-        result.addCallback(self.handle_response)
+        def send_last_chunk(ignored):
+            chunk = chunks[-1]
+            return self._call_remote_with_timeout(
+                MethodCall, sequence=sequence, method=method, arguments=chunk)
+
+        result.addCallback(send_last_chunk)
         result.callback(None)
         return result
 
