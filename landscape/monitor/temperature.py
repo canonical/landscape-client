@@ -4,7 +4,7 @@ from landscape.lib.monitor import CoverageMonitor
 from landscape.lib.sysstats import get_thermal_zones
 
 from landscape.accumulate import Accumulator
-from landscape.monitor.monitor import MonitorPlugin
+from landscape.monitor.plugin import MonitorPlugin
 
 
 class Temperature(MonitorPlugin):
@@ -30,7 +30,6 @@ class Temperature(MonitorPlugin):
     def register(self, registry):
         super(Temperature, self).register(registry)
         if self._thermal_zones:
-            self.registry = registry
             self._accumulate = Accumulator(self._persist,
                                            self.registry.step_size)
 

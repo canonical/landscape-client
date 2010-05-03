@@ -4,7 +4,7 @@ import logging
 from twisted.internet.defer import succeed
 
 from landscape.lib.twisted_util import gather_results
-from landscape.manager.manager import ManagerPlugin
+from landscape.manager.plugin import ManagerPlugin
 
 
 class EucalyptusInfo(object):

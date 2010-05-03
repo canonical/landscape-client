@@ -1,5 +1,4 @@
 from twisted.internet.utils import getProcessOutputAndValue
-import commands
 import os
 
 
@@ -53,9 +52,9 @@ class MemoryStats(object):
             return 100 - self.free_swap_percentage
 
 
-
 def get_logged_in_users():
     result = getProcessOutputAndValue("who", ["-q"], env=os.environ)
+
     def parse_output((stdout_data, stderr_data, status)):
         if status != 0:
             raise CommandError(stderr_data)

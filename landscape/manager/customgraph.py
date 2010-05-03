@@ -6,7 +6,7 @@ from twisted.internet.defer import fail, DeferredList, succeed
 
 from landscape.lib.scriptcontent import generate_script_hash
 from landscape.accumulate import Accumulator
-from landscape.manager.manager import ManagerPlugin
+from landscape.manager.plugin import ManagerPlugin
 from landscape.manager.scriptexecution import (
     ProcessFailedError, ScriptRunnerMixin, ProcessTimeLimitReachedError,
     get_user_info, UnknownUserError)
@@ -127,8 +127,8 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
         try:
             uid, gid = get_user_info(user)[:2]
         except UnknownUserError:
-           logging.error(u"Attempt to add graph with unknown user %s" %
-                         user)
+            logging.error(u"Attempt to add graph with unknown user %s" %
+                          user)
         else:
             script_file = file(filename, "w")
             self.write_script_file(

@@ -116,7 +116,7 @@ VmallocChunk:   107432 kB
 
     def test_get_real_total_memory(self):
         self.mstore.set_accepted_types(["computer-info"])
-        meminfo_filename = self.makeFile(self.sample_memory_info)
+        self.makeFile(self.sample_memory_info)
         plugin = ComputerInfo()
         self.monitor.add(plugin)
         plugin.exchange()

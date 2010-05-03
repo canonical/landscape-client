@@ -5,7 +5,7 @@ from landscape.lib.disk import get_mount_info
 from landscape.lib.monitor import CoverageMonitor
 from landscape.accumulate import Accumulator
 from landscape.hal import HALManager
-from landscape.monitor.monitor import MonitorPlugin
+from landscape.monitor.plugin import MonitorPlugin
 
 
 class MountInfo(MonitorPlugin):

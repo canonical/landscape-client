@@ -1,4 +1,3 @@
-from landscape.lib.persist import Persist
 from landscape.tests.helpers import LandscapeTest
 from landscape.patch import UpgradeManager
 

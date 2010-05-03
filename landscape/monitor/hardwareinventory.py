@@ -6,7 +6,7 @@ from landscape.lib.log import log_failure
 
 from landscape.diff import diff
 from landscape.hal import HALManager
-from landscape.monitor.monitor import MonitorPlugin
+from landscape.monitor.plugin import MonitorPlugin
 
 
 class HardwareInventory(MonitorPlugin):
@@ -82,9 +82,9 @@ class HardwareInventory(MonitorPlugin):
 
         items_with_parents = {}
         deleted_devices = set()
-        for udi,value in previous_devices.iteritems():
+        for udi, value in previous_devices.iteritems():
             if udi not in current_devices:
-                if value.has_key("info.parent"):
+                if "info.parent" in value:
                     items_with_parents[udi] = value["info.parent"]
                 deleted_devices.add(udi)
 

@@ -5,7 +5,7 @@ from twisted.internet.utils import getProcessOutput
 
 from landscape.package.store import PackageStore
 from landscape.package.reporter import find_reporter_command
-from landscape.monitor.monitor import MonitorPlugin
+from landscape.monitor.plugin import MonitorPlugin
 
 
 class PackageMonitor(MonitorPlugin):
@@ -81,7 +81,7 @@ class PackageMonitor(MonitorPlugin):
         key.
         """
         task = self._package_store.add_task("reporter",
-                                            {"type" : "resynchronize"})
+                                            {"type": "resynchronize"})
         self._package_store.clear_tasks(except_tasks=(task,))
 
     def _server_uuid_changed(self, old_uuid, new_uuid):
