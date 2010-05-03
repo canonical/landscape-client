@@ -77,7 +77,10 @@ class ExchangeStore(object):
             "SELECT operation_id, secure_id, message_type, timestamp "
             "FROM message_context WHERE operation_id=?", (operation_id,))
         row = cursor.fetchone()
-        return MessageContext(self._db, *row) if row else None
+        if row:
+            return MessageContext(self._db, *row)
+        else:
+            return None
 
     @with_cursor
     def all_operation_ids(self, cursor):
