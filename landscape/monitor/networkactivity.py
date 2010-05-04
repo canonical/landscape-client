@@ -83,17 +83,14 @@ class NetworkActivity(MonitorPlugin):
         new_traffic = get_network_traffic(self._source_file)
         for interface, delta_out, delta_in in self._traffic_delta(new_traffic):
             out_step_data = self._accumulate(
-                new_timestamp, delta_in, "delta-out-%s"%interface)
+                new_timestamp, delta_out, "delta-out-%s"%interface)
 
             in_step_data = self._accumulate(
-                new_timestamp, delta_out, "delta-in-%s"%interface)
+                new_timestamp, delta_in, "delta-in-%s"%interface)
 
             # there's only data when we cross a step boundary
             if not (in_step_data and out_step_data):
                 continue
 
-            if interface not in self._network_activity:
-                self._network_activity[interface] = []
-
-            self._network_activity[interface].append((
-                in_step_data, out_step_data))
+            steps = self._network_activity.setdefault(interface, [])
+            steps.append((in_step_data, out_step_data))

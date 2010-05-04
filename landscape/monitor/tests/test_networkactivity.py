@@ -18,7 +18,7 @@ Inter-|   Receive                           |  Transmit
     def setUp(self):
         super(NetworkActivityTest, self).setUp()
         self.activity_file = open(self.makeFile(), "w+")
-        self._write_activity()
+        self.write_activity()
         self.plugin = NetworkActivity(
             network_activity_file = self.activity_file.name,
             create_time = self.reactor.time)
@@ -28,7 +28,7 @@ Inter-|   Receive                           |  Transmit
         self.activity_file.close()
         super(NetworkActivityTest, self).tearDown()
 
-    def _write_activity(self, lo_in=0, lo_out=0, eth0_in=0, eth0_out=0,
+    def write_activity(self, lo_in=0, lo_out=0, eth0_in=0, eth0_out=0,
                         extra="", **kw):
         kw.update(dict(
             lo_in = lo_in,
@@ -67,18 +67,18 @@ Inter-|   Receive                           |  Transmit
         step per network interface. Only interfaces which have deltas are
         present in the message.
         """
-        self._write_activity(lo_in=2000, lo_out=1900)
+        self.write_activity(lo_in=2000, lo_out=1900)
         self.plugin.run()
         self.reactor.advance(self.monitor.step_size)
-        self._write_activity(lo_in=2010, lo_out=1999)
+        self.write_activity(lo_in=2010, lo_out=1999)
         self.plugin.run()
         message = self.plugin.create_message()
         self.assertTrue(message)
         self.assertTrue("type" in message)
         self.assertEquals(message["type"], "network-activity")
         self.assertEquals(message["activity"]["lo"],
-                          [((300, 99), (300, 10))])
-        self.failIfIn("eth0", message["activity"])
+                          [((300, 10), (300, 99))])
+        self.assertNotIn("eth0", message["activity"])
 
     def test_no_message_without_traffic_delta(self):
         """
@@ -99,7 +99,7 @@ Inter-|   Receive                           |  Transmit
         is generated.
         """
         self.plugin.run()
-        self._write_activity(lo_out=1000, eth0_out=1000)
+        self.write_activity(lo_out=1000, eth0_out=1000)
         self.reactor.advance(self.monitor.step_size)
         message = self.plugin.create_message()
         self.assertFalse(message)
@@ -109,14 +109,14 @@ Inter-|   Receive                           |  Transmit
         When an interface is removed (ie usb hotplug) and then activated again
         its delta will be retained.
         """
-        self._write_activity(extra="wlan0: 2222 0 0 0 2222 0 0 0 0")
+        self.write_activity(extra="wlan0: 2222 0 0 0 2222 0 0 0 0")
         self.plugin.run()
         self.reactor.advance(self.monitor.step_size)
-        self._write_activity()
+        self.write_activity()
         self.plugin.run()
         message = self.plugin.create_message()
         self.assertFalse(message)
-        self._write_activity(extra="wlan0: 3333 0 0 0 3333 0 0 0 0")
+        self.write_activity(extra="wlan0: 3333 0 0 0 3333 0 0 0 0")
         self.reactor.advance(self.monitor.step_size)
         self.plugin.run()
         message = self.plugin.create_message()
@@ -129,7 +129,7 @@ Inter-|   Receive                           |  Transmit
         """
         self.plugin.run()
         self.reactor.advance(self.monitor.step_size)
-        self._write_activity(eth0_out=1111)
+        self.write_activity(eth0_out=1111)
         self.plugin.run()
         message = self.plugin.create_message()
         self.assertTrue(message)
@@ -152,7 +152,7 @@ Inter-|   Receive                           |  Transmit
         between exchange periods should be delivered in a single message.
         """
         self.reactor.advance(self.monitor.step_size)
-        self._write_activity(lo_out=1000, eth0_out=1000)
+        self.write_activity(lo_out=1000, eth0_out=1000)
         self.plugin.run()
         self.mstore.set_accepted_types([self.plugin.message_type])
         self.plugin.exchange()
@@ -160,5 +160,5 @@ Inter-|   Receive                           |  Transmit
         self.assertMessages(self.mstore.get_pending_messages(),
                         [{"type": "network-activity",
                           "activity": {
-                              'lo': [((step_size, 1000), (step_size, 0))],
-                              'eth0': [((step_size, 1000), (step_size, 0))]}}])
+                              'lo': [((step_size, 0), (step_size, 1000))],
+                              'eth0': [((step_size, 0), (step_size, 1000))]}}])
