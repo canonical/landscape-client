@@ -8,7 +8,7 @@ build:
 	$(PYTHON) setup.py build_ext -i
 
 check: build
-	-./test
+	-trial landscape
 	-pyflakes landscape
 
 checkcertificate:

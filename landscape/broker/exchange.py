@@ -22,6 +22,7 @@ class MessageExchange(object):
     plugin_name = "message-exchange"
 
     def __init__(self, reactor, store, transport, registration_info,
+                 exchange_store,
                  exchange_interval=60*60,
                  urgent_exchange_interval=10,
                  monitor_interval=None,
@@ -52,6 +53,7 @@ class MessageExchange(object):
         self._client_accepted_types = set()
         self._client_accepted_types_hash = None
         self._message_handlers = {}
+        self._exchange_store = exchange_store
 
         self.register_message("accepted-types", self._handle_accepted_types)
         self.register_message("resynchronize", self._handle_resynchronize)
@@ -63,6 +65,30 @@ class MessageExchange(object):
         """Return a binary tuple with urgent and normal exchange intervals."""
         return (self._urgent_exchange_interval, self._exchange_interval)
 
+    def _message_is_obsolete(self, message):
+        """Returns C{True} if message is obsolete.
+
+        A message is considered obsolete if the secure ID changed since it was
+        received.
+        """
+        if 'operation-id' not in message:
+            return False
+
+        operation_id = message['operation-id']
+        context = self._exchange_store.get_message_context(operation_id)
+        if context is None:
+            logging.warning(
+                "No message context for message with operation-id: %s"
+                % operation_id)
+            return False
+
+        # Compare the current secure ID with the one that was in effect when
+        # the request message was received.
+        result = self._registration_info.secure_id != context.secure_id
+        context.remove()
+
+        return result
+
     def send(self, message, urgent=False):
         """Include a message to be sent in an exchange.
 
@@ -71,6 +97,13 @@ class MessageExchange(object):
 
         @param message: Same as in L{MessageStore.add}.
         """
+        if self._message_is_obsolete(message):
+            logging.info(
+                "Response message with operation-id %s was discarded "
+                "because the client's secure ID has changed in the meantime"
+                % message.get('operation-id'))
+            return None
+
         if "timestamp" not in message:
             message["timestamp"] = int(self._reactor.time())
         message_id = self._message_store.add(message)
@@ -300,7 +333,8 @@ class MessageExchange(object):
         @param result: The response got in reply to the C{payload}.
         """
         message_store = self._message_store
-        self._client_accepted_types_hash = result.get("client-accepted-types-hash")
+        self._client_accepted_types_hash = result.get(
+            "client-accepted-types-hash")
         next_expected = result.get("next-expected-sequence")
         old_sequence = message_store.get_sequence()
         if next_expected is None:
@@ -363,6 +397,13 @@ class MessageExchange(object):
         Any message handlers registered with L{register_message} will
         be called.
         """
+        if 'operation-id' in message:
+            # This is a message that requires a response. Store the secure ID
+            # so we can check for obsolete results later.
+            self._exchange_store.add_message_context(
+                message['operation-id'], self._registration_info.secure_id,
+                message['type'])
+
         self._reactor.fire("message", message)
         # This has plan interference! but whatever.
         if message["type"] in self._message_handlers:

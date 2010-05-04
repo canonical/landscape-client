@@ -3,7 +3,7 @@ import os
 import re
 
 from landscape.plugin import PluginConfigError
-from landscape.monitor.monitor import MonitorPlugin
+from landscape.monitor.plugin import MonitorPlugin
 
 
 class ProcessorInfo(MonitorPlugin):
@@ -174,7 +174,7 @@ class ARMMessageFactory:
                         # ARM doesn't support SMP, thus no processor-id in
                         # the cpuinfo
                         current["processor-id"] = 0
-                        current["model"] =  value
+                        current["model"] = value
                     elif key == "Cache size":
                         current["cache-size"] = int(value)
 
@@ -184,6 +184,7 @@ class ARMMessageFactory:
             file.close()
 
         return processors
+
 
 class SparcMessageFactory:
     """Factory for sparc-based processors provides processor information."""

@@ -13,23 +13,21 @@ import pwd
 from ConfigParser import ConfigParser, Error as ConfigParserError
 from StringIO import StringIO
 
-from dbus.exceptions import DBusException
-
 from landscape.lib.tag import is_valid_tag
 
 from landscape.sysvconfig import SysVConfig, ProcessError
-from landscape.lib.dbus_util import (
-    get_bus, NoReplyError, ServiceUnknownError, SecurityError)
+from landscape.lib.amp import MethodCallError
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.fetch import fetch, FetchError
-
+from landscape.reactor import TwistedReactor
 from landscape.broker.registration import InvalidCredentialsError
-from landscape.broker.deployment import BrokerConfiguration
-from landscape.broker.remote import RemoteBroker
+from landscape.broker.config import BrokerConfiguration
+from landscape.broker.amp import RemoteBrokerConnector
 
 
 class ConfigurationError(Exception):
     """Raised when required configuration values are missing."""
+
 
 class ImportOptionError(ConfigurationError):
     """Raised when there are issues with handling the --import option."""
@@ -40,7 +38,7 @@ def print_text(text, end="\n", error=False):
         stream = sys.stderr
     else:
         stream = sys.stdout
-    stream.write(text+end)
+    stream.write(text + end)
     stream.flush()
 
 
@@ -120,9 +118,9 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
         parser.add_option("--import", dest="import_from",
                           metavar="FILENAME_OR_URL",
                           help="Filename or URL to import configuration from. "
-                               "Imported options behave as if they were passed "
-                               "in the command line, with precedence being "
-                               "given to real command line options.")
+                               "Imported options behave as if they were "
+                               "passed in the command line, with precedence "
+                               "being given to real command line options.")
         parser.add_option("--script-users", metavar="USERS",
                           help="A comma-separated list of users to allow "
                                "scripts to run.  To allow scripts to be run "
@@ -161,7 +159,7 @@ class LandscapeSetupScript(object):
 
     def show_help(self, text):
         lines = text.strip().splitlines()
-        print_text("\n"+"".join([line.strip()+"\n" for line in lines]))
+        print_text("\n" + "".join([line.strip() + "\n" for line in lines]))
 
     def prompt_get_input(self, msg, required):
         """Prompt the user on the terminal for a value
@@ -215,7 +213,7 @@ class LandscapeSetupScript(object):
                 value2 = getpass.getpass("Please confirm: ")
             if value:
                 if value != value2:
-                   self.show_help("Passwords must match.")
+                    self.show_help("Passwords must match.")
                 else:
                     setattr(self.config, option, value)
                     break
@@ -359,8 +357,8 @@ class LandscapeSetupScript(object):
         """
         invalid_tags = []
         if tagnames:
-           tags  = [tag.strip() for tag in tagnames.split(",")]
-           invalid_tags = [tag for tag in tags if not is_valid_tag(tag)]
+            tags = [tag.strip() for tag in tagnames.split(",")]
+            invalid_tags = [tag for tag in tags if not is_valid_tag(tag)]
         return invalid_tags
 
     def query_tags(self):
@@ -378,9 +376,9 @@ class LandscapeSetupScript(object):
         while True:
             self.prompt("tags", "Tags", False)
             if self._get_invalid_tags(self.config.tags):
-               self.show_help("Tag names may only contain alphanumeric "
+                self.show_help("Tag names may only contain alphanumeric "
                               "characters.")
-               self.config.tags = None # Reset for the next prompt
+                self.config.tags = None # Reset for the next prompt
             else:
                 break
 
@@ -490,22 +488,26 @@ def register(config, reactor=None):
         have totally mangled everything with mocker.  Otherwise bad things
         will happen.
     """
-    from landscape.reactor import install
-    install()
-    if reactor is None:
-        from twisted.internet import reactor
+    reactor = TwistedReactor()
 
     # XXX: many of these reactor.stop() calls should also specify a non-0 exit
     # code, unless ok-no-register is passed.
 
+    def stop():
+        connector.disconnect()
+        # For some obscure reason our TwistedReactor.stop method calls
+        # reactor.crash() instead of reactor.stop(), which doesn't work
+        # here. Maybe TwistedReactor.stop should simply use reactor.stop().
+        reactor.call_later(0, reactor._reactor.stop)
+
     def failure():
         print_text("Invalid account name or "
                    "registration password.", error=True)
-        reactor.stop()
+        stop()
 
     def success():
         print_text("System successfully registered.")
-        reactor.stop()
+        stop()
 
     def exchange_failure():
         print_text("We were unable to contact the server. "
@@ -513,60 +515,58 @@ def register(config, reactor=None):
                    "The landscape client will continue to try and contact "
                    "the server periodically.",
                    error=True)
-        reactor.stop()
+        stop()
 
     def handle_registration_errors(failure):
         # We'll get invalid credentials through the signal.
-        error = failure.trap(InvalidCredentialsError, NoReplyError)
-        # This event is fired here so we can catch this case where
-        # there is no reply in a test.  In the normal case when
-        # running the client there is no trigger added for this event
-        # and it is essentially a noop.
-        reactor.fireSystemEvent("landscape-registration-error")
+        failure.trap(InvalidCredentialsError, MethodCallError)
+        connector.disconnect()
 
     def catch_all(failure):
         # We catch SecurityError here too, because on some DBUS configurations
         # if you try to connect to a dbus name that doesn't have a listener,
         # it'll try auto-starting the service, but then the StartServiceByName
         # call can raise a SecurityError.
-        if failure.check(ServiceUnknownError, SecurityError):
-            print_text("Error occurred contacting Landscape Client. "
-                       "Is it running?", error=True)
-        else:
-            print_text(failure.getTraceback(), error=True)
-            print_text("Unknown error occurred.", error=True)
-        reactor.callLater(0, reactor.stop)
+        print_text(failure.getTraceback(), error=True)
+        print_text("Unknown error occurred.", error=True)
+        stop()
 
     print_text("Please wait... ", "")
 
     time.sleep(2)
-    try:
-        remote = RemoteBroker(get_bus(config.bus), retry_timeout=0)
-    except DBusException:
-        print_text("There was an error communicating with the Landscape client "
-                   "via DBus.", error=True)
+
+    def got_connection(remote):
+        handlers = {"registration-done": success,
+                    "registration-failed": failure,
+                    "exchange-failed": exchange_failure}
+        deferreds = [
+            remote.reload_configuration(),
+            remote.call_on_event(handlers),
+            remote.register().addErrback(handle_registration_errors)]
+        # We consume errors here to ignore errors after the first one.
+        # catch_all will be called for the very first deferred that fails.
+
+        results = gather_results(deferreds, consume_errors=True)
+        return results.addErrback(catch_all)
+
+    def got_error(failure):
+        print_text("There was an error communicating with the Landscape "
+                   "client.", error=True)
         print_text("This machine will be registered with the provided "
                    "details when the client runs.", error=True)
         exit_code = 2
         if config.ok_no_register:
             exit_code = 0
         sys.exit(exit_code)
-    # This is a bit unfortunate. Every method of remote returns a deferred,
-    # even stuff like connect_to_signal, because the fetching of the DBus
-    # object itself is asynchronous. We can *mostly* fire-and-forget these
-    # things, except that if the object isn't found, *all* of the deferreds
-    # will fail. To prevent unhandled errors, we need to collect them all up
-    # and add an errback.
-    deferreds = [
-        remote.reload_configuration(),
-        remote.connect_to_signal("registration_done", success),
-        remote.connect_to_signal("registration_failed", failure),
-        remote.connect_to_signal("exchange_failed", exchange_failure),
-        remote.register().addErrback(handle_registration_errors)]
-    # We consume errors here to ignore errors after the first one. catch_all
-    # will be called for the very first deferred that fails.
-    gather_results(deferreds, consume_errors=True).addErrback(catch_all)
+
+    connector = RemoteBrokerConnector(reactor, config)
+    result = connector.connect(max_retries=0, quiet=True)
+    result.addCallback(got_connection)
+    result.addErrback(got_error)
+
     reactor.run()
+
+    return result
 
 
 def fetch_import_url(url):

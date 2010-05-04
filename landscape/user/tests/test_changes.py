@@ -27,7 +27,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         users = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh")]
         groups = [("webdev", "x", 1000, ["jdoe"])]
         provider = FakeUserProvider(users=users, groups=groups)
-        userinfo = FakeUserInfo(provider=provider)
+        FakeUserInfo(provider=provider)
 
         changes = UserChanges(self.persist, provider)
         self.assertEquals(changes.create_diff(),
@@ -51,7 +51,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         users = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh")]
         groups = [("webdev", "x", 1000, ["jdoe"])]
         provider = FakeUserProvider(users=users, groups=groups)
-        userinfo = FakeUserInfo(provider=provider)
+        FakeUserInfo(provider=provider)
 
         changes1 = UserChanges(self.persist, provider)
         self.assertTrue(changes1.create_diff())
@@ -69,7 +69,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         users = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh")]
         groups = [("webdev", "x", 1000, ["jdoe"])]
         provider = FakeUserProvider(users=users, groups=groups)
-        userinfo = FakeUserInfo(provider=provider)
+        FakeUserInfo(provider=provider)
         changes = UserChanges(self.persist, provider)
         changes.snapshot()
         self.assertFalse(changes.create_diff())
@@ -82,7 +82,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         users = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh")]
         groups = [("webdev", "x", 1000, ["jdoe"])]
         provider = FakeUserProvider(users=users, groups=groups)
-        userinfo = FakeUserInfo(provider=provider)
+        FakeUserInfo(provider=provider)
 
         changes = UserChanges(self.persist, provider)
         self.assertTrue(changes.create_diff())
@@ -98,7 +98,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         """
         users = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh")]
         provider = FakeUserProvider(users=users)
-        userinfo = FakeUserInfo(provider=provider)
+        FakeUserInfo(provider=provider)
 
         changes = UserChanges(self.persist, provider)
         changes.create_diff()
@@ -112,7 +112,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         """
         users = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh")]
         provider = FakeUserProvider(users=users)
-        userinfo = FakeUserInfo(provider=provider)
+        FakeUserInfo(provider=provider)
 
         changes = UserChanges(self.persist, provider)
         changes.create_diff()
@@ -135,7 +135,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         """
         users = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh")]
         provider = FakeUserProvider(users=users)
-        userinfo = FakeUserInfo(provider=provider)
+        FakeUserInfo(provider=provider)
         changes = UserChanges(self.persist, provider)
         changes.create_diff()
         changes.snapshot()
@@ -159,7 +159,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         users = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh"),
                  ("bo", "x", 1001, 1001, "Bo,,,,", "/home/bo", "/bin/sh")]
         provider = FakeUserProvider(users=users)
-        userinfo = FakeUserInfo(provider=provider)
+        FakeUserInfo(provider=provider)
 
         changes = UserChanges(self.persist, provider)
         changes.create_diff()
@@ -175,7 +175,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         users = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh")]
         groups = [("webdev", "x", 50, ["jdoe"])]
         provider = FakeUserProvider(users=users, groups=groups)
-        userinfo = FakeUserInfo(provider=provider)
+        FakeUserInfo(provider=provider)
 
         changes = UserChanges(self.persist, provider)
         changes.create_diff()
@@ -192,7 +192,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         users = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh")]
         groups = [("webdev", "x", 50, ["jdoe"])]
         provider = FakeUserProvider(users=users, groups=groups)
-        userinfo = FakeUserInfo(provider=provider)
+        FakeUserInfo(provider=provider)
 
         changes = UserChanges(self.persist, provider)
         changes.create_diff()
@@ -209,7 +209,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         """
         groups = [("webdev", "x", 1000, [])]
         provider = FakeUserProvider(groups=groups)
-        userinfo = FakeUserInfo(provider=provider)
+        FakeUserInfo(provider=provider)
 
         changes = UserChanges(self.persist, provider)
         changes.create_diff()
@@ -227,7 +227,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
                  ("bo", "x", 1001, 1001, "Bo,,,,", "/home/bo", "/bin/sh")]
         groups = [("webdev", "x", 50, ["jdoe"])]
         provider = FakeUserProvider(users=users, groups=groups)
-        userinfo = FakeUserInfo(provider=provider)
+        FakeUserInfo(provider=provider)
 
         changes = UserChanges(self.persist, provider)
         changes.create_diff()
@@ -244,7 +244,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         users = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh")]
         groups = [("webdev", "x", 50, ["jdoe"])]
         provider = FakeUserProvider(users=users, groups=groups)
-        userinfo = FakeUserInfo(provider=provider)
+        FakeUserInfo(provider=provider)
 
         changes = UserChanges(self.persist, provider)
         changes.create_diff()
@@ -261,7 +261,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         users = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/sh")]
         groups = [("webdev", "x", 50, ["jdoe"]), ("sales", "x", 60, [])]
         provider = FakeUserProvider(users=users, groups=groups)
-        userinfo = FakeUserInfo(provider=provider)
+        FakeUserInfo(provider=provider)
 
         changes = UserChanges(self.persist, provider)
         changes.create_diff()
@@ -279,7 +279,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         groups = [("webdev", "x", 50, ["jdoe"]),
                   ("bizdev", "x", 60, ["bo"])]
         provider = FakeUserProvider(users=users, groups=groups)
-        userinfo = FakeUserInfo(provider=provider)
+        FakeUserInfo(provider=provider)
         changes = UserChanges(self.persist, provider)
         changes.create_diff()
         changes.snapshot()

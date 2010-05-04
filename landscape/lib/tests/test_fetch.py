@@ -156,7 +156,7 @@ class FetchTest(LandscapeTest):
     def test_headers(self):
         curl = CurlStub("result")
         result = fetch("http://example.com",
-                       headers={"a":"1", "b":"2"}, curl=curl)
+                       headers={"a": "1", "b": "2"}, curl=curl)
         self.assertEquals(result, "result")
         self.assertEquals(curl.options,
                           {pycurl.URL: "http://example.com",
@@ -235,6 +235,7 @@ class FetchTest(LandscapeTest):
 
     def test_create_curl(self):
         curls = []
+
         def pycurl_Curl():
             curl = CurlStub("result")
             curls.append(curl)
@@ -388,7 +389,6 @@ class FetchTest(LandscapeTest):
         messages = []
         logger = lambda message: messages.append(message)
         curl = CurlManyStub(url_results)
-        failed_urls = []
 
         result = fetch_to_files(url_results.keys(), directory, logger=logger,
                                 curl=curl)

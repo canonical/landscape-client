@@ -1,4 +1,5 @@
 from dbus import SystemBus, Interface
+from dbus.exceptions import DBusException
 
 from landscape.hal import HALDevice, HALManager
 from landscape.tests.helpers import LandscapeTest
@@ -9,20 +10,32 @@ class HALManagerTest(LandscapeTest):
     def setUp(self):
         super(HALManagerTest, self).setUp()
         self.bus = SystemBus()
-        self.manager = HALManager()
 
     def test_get_devices(self):
         """
         A HALManager can return a flat list of devices.  All available
         devices should be included in the returned list.
         """
-        devices = self.manager.get_devices()
+        devices = HALManager().get_devices()
         manager = self.bus.get_object("org.freedesktop.Hal",
                                       "/org/freedesktop/Hal/Manager")
         manager = Interface(manager, "org.freedesktop.Hal.Manager")
         expected_devices = manager.GetAllDevices()
         actual_devices = [device.udi for device in devices]
         self.assertEquals(set(expected_devices), set(actual_devices))
+
+    def test_get_devices_with_dbus_error(self):
+        """
+        If the L{HALManager} fails connecting to HAL over D-Bus, then the
+        L{HALManager.get_devices} method returns an empty list.
+        """
+        self.log_helper.ignore_errors("Couldn't to connect to Hal via DBus")
+        bus = self.mocker.mock()
+        bus.get_object("org.freedesktop.Hal", "/org/freedesktop/Hal/Manager")
+        self.mocker.throw(DBusException())
+        self.mocker.replay()
+        devices = HALManager(bus=bus).get_devices()
+        self.assertEquals(devices, [])
 
 
 class MockHALManager(object):

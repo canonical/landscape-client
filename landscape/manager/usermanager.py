@@ -1,48 +1,22 @@
-from twisted.python import log
+import os
+import logging
 
-from landscape.lib.dbus_util import get_object, method, Object
+from landscape.lib.amp import RemoteObject
+from landscape.amp import (
+    ComponentProtocol, ComponentProtocolFactory, RemoteComponentConnector)
 
 from landscape.user.management import UserManagement
-from landscape.manager.manager import ManagerPlugin
-from landscape.manager.manager import BUS_NAME, OBJECT_PATH, IFACE_NAME
-from landscape.monitor.usermonitor import UserMonitorDBusObject
-
-
-class UserManagerDBusObject(Object):
-    """
-    A DBUS object which provides an privileged read-only interface to the
-    system shadow file.
-    """
-    object_path = OBJECT_PATH + "/UserManager"
-    iface_name = IFACE_NAME + ".UserManager"
-    bus_name = BUS_NAME
-
-    def __init__(self, bus, shadow_file):
-        super(UserManagerDBusObject, self).__init__(bus)
-        self._shadow_file = shadow_file
-
-    @method(iface_name, out_signature="as")
-    def get_locked_usernames(self):
-        locked_users = []
-        if self._shadow_file:
-            try:
-                shadow_file = open(self._shadow_file, "r")
-                for line in shadow_file:
-                    parts = line.split(":")
-                    if len(parts)>1:
-                        if parts[1].startswith("!"):
-                            locked_users.append(parts[0].strip())
-            except IOError, e:
-                log.err("Error reading shadow file. %s" % e)
-        return locked_users
+from landscape.manager.plugin import ManagerPlugin
+from landscape.monitor.usermonitor import RemoteUserMonitorConnector
 
 
 class UserManager(ManagerPlugin):
 
+    name = "usermanager"
+
     def __init__(self, management=None, shadow_file="/etc/shadow"):
         self._management = management or UserManagement()
         self._shadow_file = shadow_file
-
         self._message_types = {"add-user": self._add_user,
                                "edit-user": self._edit_user,
                                "lock-user": self._lock_user,
@@ -52,7 +26,9 @@ class UserManager(ManagerPlugin):
                                "edit-group": self._edit_group,
                                "remove-group": self._remove_group,
                                "add-group-member": self._add_group_member,
-                               "remove-group-member": self._remove_group_member}
+                               "remove-group-member":
+                               self._remove_group_member}
+        self._port = None
 
     def register(self, registry):
         """
@@ -61,18 +37,47 @@ class UserManager(ManagerPlugin):
         """
         super(UserManager, self).register(registry)
         self._registry = registry
-        # Register user management operation handlers.
-        self._user_service = get_object(registry.bus,
-                                        UserMonitorDBusObject.bus_name,
-                                        UserMonitorDBusObject.object_path)
+
+        factory = UserManagerProtocolFactory(object=self)
+        socket = os.path.join(self.registry.config.data_path,
+                              self.name + ".sock")
+        self._port = self.registry.reactor.listen_unix(socket, factory)
+        self._user_monitor_connector = RemoteUserMonitorConnector(
+            self.registry.reactor, self.registry.config)
+
         for message_type in self._message_types:
             self._registry.register_message(message_type,
                                             self._message_dispatch)
-        self._dbus_object = UserManagerDBusObject(registry.bus,
-                                                  self._shadow_file)
+
+    def stop(self):
+        """Stop listening for incoming AMP connections."""
+        if self._port:
+            self._port.stopListening()
+            self._port = None
+
+    def get_locked_usernames(self):
+        """Return a list of usernames with locked system accounts."""
+        locked_users = []
+        if self._shadow_file:
+            try:
+                shadow_file = open(self._shadow_file, "r")
+                for line in shadow_file:
+                    parts = line.split(":")
+                    if len(parts) > 1:
+                        if parts[1].startswith("!"):
+                            locked_users.append(parts[0].strip())
+            except IOError, e:
+                logging.error("Error reading shadow file. %s" % e)
+        return locked_users
 
     def _message_dispatch(self, message):
-        result = self._user_service.detect_changes()
+
+        def detect_changes(user_monitor):
+            self._user_monitor = user_monitor
+            return user_monitor.detect_changes()
+
+        result = self._user_monitor_connector.connect()
+        result.addCallback(detect_changes)
         result.addCallback(self._perform_operation, message)
         result.addCallback(self._send_changes, message)
         return result
@@ -80,10 +85,13 @@ class UserManager(ManagerPlugin):
     def _perform_operation(self, result, message):
         message_type = message["type"]
         message_method = self._message_types[message_type]
-        return self.call_with_operation_result(message, message_method, message)
+        return self.call_with_operation_result(message, message_method,
+                                               message)
 
     def _send_changes(self, result, message):
-        return self._user_service.detect_changes(message["operation-id"])
+        result = self._user_monitor.detect_changes(message["operation-id"])
+        result.addCallback(lambda x: self._user_monitor_connector.disconnect())
+        return result
 
     def _add_user(self, message):
         """Run an C{add-user} operation."""
@@ -139,3 +147,25 @@ class UserManager(ManagerPlugin):
     def _remove_group(self, message):
         """Run an C{remove-group} operation."""
         return self._management.remove_group(message["groupname"])
+
+
+class UserManagerProtocol(ComponentProtocol):
+    """L{AMP}-based protocol for calling L{UserManager}'s methods remotely."""
+
+    methods = ["get_locked_usernames"]
+
+
+class UserManagerProtocolFactory(ComponentProtocolFactory):
+
+    protocol = UserManagerProtocol
+
+
+class RemoteUserManager(RemoteObject):
+    """A connected remote L{UserManager}."""
+
+
+class RemoteUserManagerConnector(RemoteComponentConnector):
+
+    factory = ComponentProtocolFactory
+    remote = RemoteUserManager
+    component = UserManager

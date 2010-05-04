@@ -4,7 +4,7 @@ import logging
 from twisted.internet.defer import succeed
 
 from landscape.lib.twisted_util import gather_results
-from landscape.manager.manager import ManagerPlugin
+from landscape.manager.plugin import ManagerPlugin
 
 
 class EucalyptusInfo(object):
@@ -166,7 +166,8 @@ def start_service_hub(data_path):
     from imagestore.eucaservice import EucaService
 
     base_path = os.path.join(data_path, "eucalyptus")
-    os.makedirs(base_path)
+    if not os.path.exists(base_path):
+        os.makedirs(base_path)
     service_hub = ServiceHub()
     service_hub.addService(EucaService(reactor, base_path))
     service_hub.start()
