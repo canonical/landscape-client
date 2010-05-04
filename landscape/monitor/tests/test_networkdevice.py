@@ -42,3 +42,7 @@ class NetworkDeviceTest(LandscapeTest):
         self.mocker.replay()
         self.plugin.exchange()
         self.assertTrue(self.mstore.count_pending_messages())
+
+    def test_config(self):
+        """The network device plugin is enabled by default."""
+        self.assertIn("NetworkDevice", self.config.plugin_factories)

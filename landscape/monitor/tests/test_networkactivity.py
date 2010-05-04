@@ -54,7 +54,7 @@ Inter-|   Receive                           |  Transmit
         self.reactor.advance(self.monitor.step_size)
         # hmmm. try to connect anywhere to advance the net stats
         try:
-            socket.socket().connect(('localhost', 9999))
+            socket.socket().connect(("localhost", 9999))
         except socket.error:
             pass
         plugin.run()
@@ -160,5 +160,9 @@ Inter-|   Receive                           |  Transmit
         self.assertMessages(self.mstore.get_pending_messages(),
                         [{"type": "network-activity",
                           "activity": {
-                              'lo': [((step_size, 0), (step_size, 1000))],
-                              'eth0': [((step_size, 0), (step_size, 1000))]}}])
+                              "lo": [((step_size, 0), (step_size, 1000))],
+                              "eth0": [((step_size, 0), (step_size, 1000))]}}])
+
+    def test_config(self):
+        """The network activity plugin is enabled by default."""
+        self.assertIn("NetworkActivity", self.config.plugin_factories)
