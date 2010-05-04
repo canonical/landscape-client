@@ -8,7 +8,7 @@ import time
 from landscape.lib.network import get_network_traffic
 from landscape.accumulate import Accumulator
 
-from landscape.monitor.monitor import MonitorPlugin
+from landscape.monitor.plugin import MonitorPlugin
 
 
 class NetworkActivity(MonitorPlugin):

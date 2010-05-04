@@ -2,7 +2,7 @@
 A monitor plugin that collects data on a machine's network devices.
 """
 
-from landscape.monitor.monitor import DataWatcher
+from landscape.monitor.plugin import DataWatcher
 from landscape.lib.network import get_active_device_info
 
 
