@@ -19,13 +19,10 @@ class NetworkActivity(MonitorPlugin):
     message_type = "network-activity"
     persist_name = message_type
 
-    # Prevent the Plugin base-class from scheduling looping calls.
-    run_interval = None
-
     def __init__(self, interval=30, network_activity_file="/proc/net/dev",
                  create_time=time.time):
         self._source_file = network_activity_file
-        self._interval = interval
+        self.run_interval = interval
         # accumulated values for sending out via message
         self._network_activity = {}
         # our last traffic sample for calculating a traffic delta
@@ -35,7 +32,6 @@ class NetworkActivity(MonitorPlugin):
     def register(self, registry):
         super(NetworkActivity, self).register(registry)
         self._accumulate = Accumulator(self._persist, self.registry.step_size)
-        self.registry.reactor.call_every(self._interval, self.run)
         self.call_on_accepted("network-activity", self.exchange, True)
 
     def create_message(self):
