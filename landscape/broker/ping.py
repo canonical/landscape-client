@@ -132,7 +132,7 @@ class Pinger(object):
             self._call_id = self._reactor.call_every(self._interval, self.ping)
 
 
-class FakePinger():
+class FakePinger(object):
 
     def __init__(self, *args, **kwargs):
         pass
