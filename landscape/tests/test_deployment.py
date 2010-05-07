@@ -334,6 +334,14 @@ class ConfigurationTest(LandscapeTest):
         self.assertEquals(self.config.get_config_filename(),
                           explicit_filename)
 
+    def test_sockets_path(self):
+        """
+        The L{Configuration.socket_path} property returns the path to the
+        socket directory.
+        """
+        self.assertEquals(self.config.sockets_path,
+                          "/var/lib/landscape/client/sockets")
+
 
 class GetVersionedPersistTest(LandscapeTest):
 

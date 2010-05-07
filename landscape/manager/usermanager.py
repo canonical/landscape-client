@@ -39,7 +39,7 @@ class UserManager(ManagerPlugin):
         self._registry = registry
 
         factory = UserManagerProtocolFactory(object=self)
-        socket = os.path.join(self.registry.config.data_path,
+        socket = os.path.join(self.registry.config.sockets_path,
                               self.name + ".sock")
         self._port = self.registry.reactor.listen_unix(socket, factory)
         self._user_monitor_connector = RemoteUserMonitorConnector(

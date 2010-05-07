@@ -547,6 +547,7 @@ bootstrap_list = BootstrapList([
     BootstrapDirectory(
         "$data_path/package/upgrade-tool", "landscape", "root", 0755),
     BootstrapDirectory("$data_path/messages", "landscape", "root", 0755),
+    BootstrapDirectory("$data_path/sockets", "landscape", "root", 0750),
     BootstrapDirectory(
         "$data_path/custom-graph-scripts", "landscape", "root", 0755),
     BootstrapDirectory("$log_dir", "landscape", "root", 0755),

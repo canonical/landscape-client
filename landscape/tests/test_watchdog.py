@@ -498,6 +498,7 @@ class DaemonTestBase(LandscapeTest):
             # DaemonTest
             self.config = WatchDogConfiguration()
             self.config.data_path = self.makeDir()
+            self.makeDir(path=self.config.sockets_path)
 
         self.connector = self.connector_factory(TwistedReactor(), self.config)
         self.daemon = self.get_daemon()
@@ -877,7 +878,7 @@ time.sleep(999)
         """The request_exit() method calls exit() on the broker process."""
 
         output_filename = self.makeFile("NOT CALLED")
-        socket_filename = os.path.join(self.config.data_path, "broker.sock")
+        socket_filename = os.path.join(self.config.sockets_path, "broker.sock")
         broker_filename = self.makeFile(STUB_BROKER %
                                         {"executable": sys.executable,
                                          "path": sys.path,
@@ -1197,6 +1198,7 @@ class WatchDogServiceTest(LandscapeTest):
         chown = self.mocker.replace("os.chown")
         chown(path(), 1234, 5678)
         chown(path("messages"), 1234, 5678)
+        chown(path("sockets"), 1234, 5678)
         chown(path("package"), 1234, 5678)
         chown(path("package/hash-id"), 1234, 5678)
         chown(path("package/binaries"), 1234, 5678)
@@ -1223,6 +1225,9 @@ class WatchDogServiceTest(LandscapeTest):
         self.assertEquals(mode(), 0755)
         self.assertEquals(mode("messages"), 0755)
         self.assertEquals(mode("package"), 0755)
+        self.assertEquals(mode("package/hash-id"), 0755)
+        self.assertEquals(mode("package/binaries"), 0755)
+        self.assertEquals(mode("sockets"), 0750)
         self.assertEquals(mode("custom-graph-scripts"), 0755)
         self.assertEquals(mode("package/database"), 0644)
 

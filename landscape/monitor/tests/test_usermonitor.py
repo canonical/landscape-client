@@ -57,7 +57,7 @@ class UserMonitorTest(LandscapeTest):
             "sam:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::\n")
         self.user_manager = UserManager(shadow_file=self.shadow_file)
         factory = UserManagerProtocolFactory(object=self.user_manager)
-        socket = os.path.join(self.config.data_path,
+        socket = os.path.join(self.config.sockets_path,
                               UserManager.name + ".sock")
         self.port = self.reactor.listen_unix(socket, factory)
         self.provider = FakeUserProvider()

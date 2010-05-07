@@ -33,7 +33,8 @@ class RemoteComponentTest(LandscapeTest):
         reactor = FakeReactor()
         config = Configuration()
         config.data_path = self.makeDir()
-        socket = os.path.join(config.data_path, "test.sock")
+        self.makeDir(path=config.sockets_path)
+        socket = os.path.join(config.sockets_path, "test.sock")
         self.component = TestComponent()
         factory = ComponentProtocolFactory(object=self.component)
         self.port = reactor.listen_unix(socket, factory)
@@ -79,6 +80,7 @@ class RemoteComponentConnectorTest(LandscapeTest):
         self.reactor = FakeReactor()
         self.config = Configuration()
         self.config.data_path = self.makeDir()
+        self.makeDir(path=self.config.sockets_path)
         self.connector = RemoteTestComponentConnector(self.reactor,
                                                       self.config)
 
@@ -108,7 +110,7 @@ class RemoteComponentConnectorTest(LandscapeTest):
         An event is fired whenever the connection is established again after
         it has been lost.
         """
-        socket = os.path.join(self.config.data_path, "test.sock")
+        socket = os.path.join(self.config.sockets_path, "test.sock")
         factory = ComponentProtocolFactory()
         ports = []
         ports.append(self.reactor.listen_unix(socket, factory))

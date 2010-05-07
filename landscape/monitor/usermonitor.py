@@ -34,7 +34,7 @@ class UserMonitor(MonitorPlugin):
         self.call_on_accepted("users", self._run_detect_changes, None)
 
         factory = UserMonitorProtocolFactory(object=self)
-        socket = os.path.join(self.registry.config.data_path,
+        socket = os.path.join(self.registry.config.sockets_path,
                               self.name + ".sock")
         self._port = self.registry.reactor.listen_unix(socket, factory)
         from landscape.manager.usermanager import RemoteUserManagerConnector
