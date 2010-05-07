@@ -151,7 +151,7 @@ class BaseConfiguration(object):
             if not getattr(self, option):
                 sys.exit("error: must specify --%s "
                          "or the '%s' directive in the config file."
-                         % (option.replace('_','-'), option))
+                         % (option.replace('_', '-'), option))
 
         if self.bus not in ("session", "system"):
             sys.exit("error: bus must be one of 'session' or 'system'")
