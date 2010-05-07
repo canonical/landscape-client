@@ -316,39 +316,6 @@ class EventTest(LandscapeTest):
         self.client.add(plugin)
         return self.assertSuccess(self.broker.impending_exchange(), [[None]])
 
-    def test_exchange_failed(self):
-        """
-        The L{BrokerServer.exchange_failed} method broadcasts an
-        C{exchange-failed} event to all connected clients.
-        """
-        callback = self.mocker.mock()
-        callback()
-        self.mocker.replay()
-        self.client_reactor.call_on("exchange-failed", callback)
-        return self.assertSuccess(self.broker.exchange_failed(), [[None]])
-
-    def test_registration_done(self):
-        """
-        The L{BrokerServer.registration_done} method broadcasts a
-        C{registration-done} event to all connected clients.
-        """
-        callback = self.mocker.mock()
-        callback()
-        self.mocker.replay()
-        self.client_reactor.call_on("registration-done", callback)
-        return self.assertSuccess(self.broker.registration_done(), [[None]])
-
-    def test_registration_failed(self):
-        """
-        The L{BrokerServer.registration_failed} method broadcasts a
-        C{registration-failed} event to all connected clients.
-        """
-        callback = self.mocker.mock()
-        callback()
-        self.mocker.replay()
-        self.client_reactor.call_on("registration-failed", callback)
-        return self.assertSuccess(self.broker.registration_failed(), [[None]])
-
     def test_broker_started(self):
         """
         The L{BrokerServer.broker_started} method broadcasts a
@@ -469,28 +436,6 @@ class HandlersTest(LandscapeTest):
         self.mocker.result(succeed(None))
         self.mocker.replay()
         self.reactor.fire("impending-exchange")
-
-    def test_exchange_failed(self):
-        """
-        When an C{exchange-failed} event is fired by the reactor, the
-        broker broadcasts it to its clients.
-        """
-        self.client.fire_event = self.mocker.mock()
-        self.client.fire_event("exchange-failed")
-        self.mocker.result(succeed(None))
-        self.mocker.replay()
-        self.reactor.fire("exchange-failed")
-
-    def test_registration_done(self):
-        """
-        When a C{registration-done} event is fired by the reactor, the
-        broker broadcasts it to its clients.
-        """
-        self.client.fire_event = self.mocker.mock()
-        self.client.fire_event("registration-done")
-        self.mocker.result(succeed(None))
-        self.mocker.replay()
-        self.reactor.fire("registration-done")
 
     def test_message_type_acceptance_changed(self):
         """

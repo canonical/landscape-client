@@ -1534,7 +1534,7 @@ class RegisterFunctionTest(LandscapeTest):
         # The deferred callback finally prints out this message.
         print_text_mock("System successfully registered.")
 
-        reactor_mock.call_later(0, reactor.stop)
+        reactor_mock.stop()
 
         # Nothing else is printed!
         print_text_mock(ANY)
@@ -1585,7 +1585,7 @@ class RegisterFunctionTest(LandscapeTest):
         print_text_mock("Invalid account name or registration password.",
                         error=True)
 
-        reactor_mock.call_later(0, reactor.stop)
+        reactor_mock.stop()
 
         # Nothing else is printed!
         print_text_mock(ANY)
@@ -1636,7 +1636,7 @@ class RegisterFunctionTest(LandscapeTest):
                         error=True)
 
 
-        reactor_mock.call_later(0, reactor.stop)
+        reactor_mock.stop()
 
         # Nothing else is printed!
         print_text_mock(ANY)
@@ -1700,7 +1700,14 @@ class RegisterFunctionTest(LandscapeTest):
         # This will make the RemoteBrokerConnector.connect call fail
         print_text_mock = self.mocker.replace(print_text)
         time_mock = self.mocker.replace("time")
+        sys_mock = self.mocker.replace("sys")
         reactor_mock = self.mocker.patch(TwistedReactor)
+
+        connector_factory = self.mocker.replace(
+            "landscape.broker.amp.RemoteBrokerConnector", passthrough=False)
+        connector = connector_factory(ANY, ANY)
+        connector.connect(max_retries=0, quiet=True)
+        self.mocker.result(fail(ZeroDivisionError))
 
         print_text_mock(ARGS)
         time_mock.sleep(ANY)
@@ -1713,15 +1720,14 @@ class RegisterFunctionTest(LandscapeTest):
         print_text_mock(CONTAINS("This machine will be registered"),
                         error=True)
 
+        sys_mock.exit(2)
+        connector.disconnect()
+        reactor_mock.stop()
+
         self.mocker.replay()
 
-        def assert_exit_code(system_exit):
-            self.assertEquals(system_exit.code, 2)
-
         config = get_config(self, ["-a", "accountname", "--silent"])
-        result = register(config)
-        self.assertFailure(result, SystemExit)
-        return result.addCallback(assert_exit_code)
+        return register(config)
 
     def test_register_bus_connection_failure_ok_no_register(self):
         """
@@ -1735,6 +1741,7 @@ class RegisterFunctionTest(LandscapeTest):
         print_text_mock(ARGS)
         time_mock.sleep(ANY)
         reactor_mock.run()
+        reactor_mock.stop()
 
         print_text_mock(
             CONTAINS("There was an error communicating with the "
@@ -1745,14 +1752,9 @@ class RegisterFunctionTest(LandscapeTest):
 
         self.mocker.replay()
 
-        def assert_exit_code(system_exit):
-            self.assertEquals(system_exit.code, 0)
-
         config = get_config(self, ["-a", "accountname", "--silent",
                                    "--ok-no-register"])
-        result = register(config)
-        self.assertFailure(result, SystemExit)
-        return result.addCallback(assert_exit_code)
+        return self.assertSuccess(register(config))
 
 
 class RegisterFunctionNoServiceTest(LandscapeTest):
@@ -1801,7 +1803,7 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
 
         # WHOAH DUDE. This waits for callLater(0, reactor.stop).
         connector.disconnect()
-        reactor_mock.call_later(0, reactor.stop)
+        reactor_mock.stop()
 
         self.mocker.replay()
 
