@@ -18,11 +18,11 @@ class NetworkActivity(MonitorPlugin):
 
     message_type = "network-activity"
     persist_name = message_type
+    run_interval = 30
 
-    def __init__(self, interval=30, network_activity_file="/proc/net/dev",
+    def __init__(self, network_activity_file="/proc/net/dev",
                  create_time=time.time):
         self._source_file = network_activity_file
-        self.run_interval = interval
         # accumulated values for sending out via message
         self._network_activity = {}
         # our last traffic sample for calculating a traffic delta
