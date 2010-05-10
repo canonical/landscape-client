@@ -489,6 +489,7 @@ def register(config, reactor=None):
         will happen.
     """
     reactor = TwistedReactor()
+    exit_with_error = []
 
     # XXX: many of these reactor.stop() calls should also specify a non-0 exit
     # code, unless ok-no-register is passed.
@@ -554,7 +555,6 @@ def register(config, reactor=None):
             exit_with_error.append(2)
         stop()
 
-    exit_with_error = []
     connector = RemoteBrokerConnector(reactor, config)
     result = connector.connect(max_retries=0, quiet=True)
     result.addCallback(got_connection)

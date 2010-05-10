@@ -3,7 +3,6 @@ from getpass import getpass
 from ConfigParser import ConfigParser
 
 from twisted.internet.defer import succeed, fail
-from twisted.internet import reactor
 
 from landscape.reactor import TwistedReactor
 from landscape.lib.fetch import HTTPCodeError, PyCurlError
@@ -1491,12 +1490,6 @@ account_name = account
 
 
 class RegisterFunctionTest(LandscapeTest):
-
-    # Due to the way these tests run, the run() method on the reactor is called
-    # *before* any of the remote methods (reload, register) are called, because
-    # these tests "hold" the reactor until after the tests runs, then the
-    # reactor is given back control of the process, *then* all the remote calls
-    # in the dbus queue are fired.
 
     helpers = [BrokerServiceHelper]
 
