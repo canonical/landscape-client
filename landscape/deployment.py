@@ -151,7 +151,7 @@ class BaseConfiguration(object):
             if not getattr(self, option):
                 sys.exit("error: must specify --%s "
                          "or the '%s' directive in the config file."
-                         % (option.replace('_','-'), option))
+                         % (option.replace('_', '-'), option))
 
         if self.bus not in ("session", "system"):
             sys.exit("error: bus must be one of 'session' or 'system'")
@@ -268,10 +268,6 @@ class Configuration(BaseConfiguration):
     This contains all simple data, some of it calculated.
     """
 
-    @property
-    def hashdb_filename(self):
-        return os.path.join(self.data_path, "hash.db")
-
     def make_parser(self):
         """Parser factory for supported options.
 
@@ -297,12 +293,18 @@ class Configuration(BaseConfiguration):
         parser.add_option("--log-level", default="info",
                           help="One of debug, info, warning, error or "
                                "critical.")
-        parser.add_option("--ignore-sigint", action="store_true", default=False,
-                          help="Ignore interrupt signals.")
-        parser.add_option("--ignore-sigusr1", action="store_true", default=False,
-                          help="Ignore SIGUSR1 signal to rotate logs.")
+        parser.add_option("--ignore-sigint", action="store_true",
+                          default=False, help="Ignore interrupt signals.")
+        parser.add_option("--ignore-sigusr1", action="store_true",
+                          default=False, help="Ignore SIGUSR1 signal to "
+                                              "rotate logs.")
 
         return parser
+
+    @property
+    def sockets_path(self):
+        """Return the path to the directory where Unix sockets are created."""
+        return os.path.join(self.data_path, "sockets")
 
 
 def get_versioned_persist(service):

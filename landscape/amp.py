@@ -42,7 +42,8 @@ class RemoteComponentConnector(RemoteObjectConnector):
         @see: L{MethodCallClientFactory}.
         """
         self._twisted_reactor = reactor
-        socket = os.path.join(config.data_path, self.component.name + ".sock")
+        socket = os.path.join(config.sockets_path,
+                              self.component.name + ".sock")
         super(RemoteComponentConnector, self).__init__(
             self._twisted_reactor._reactor, socket, *args, **kwargs)
 

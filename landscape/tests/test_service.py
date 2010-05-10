@@ -28,6 +28,7 @@ class LandscapeServiceTest(LandscapeTest):
         super(LandscapeServiceTest, self).setUp()
         self.config = Configuration()
         self.config.data_path = self.makeDir()
+        self.makeDir(path=self.config.sockets_path)
         self.reactor = FakeReactor()
         signal.signal(signal.SIGUSR1, signal.SIG_DFL)
 
