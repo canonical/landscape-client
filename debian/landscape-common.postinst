@@ -79,8 +79,10 @@ case "$1" in
           echo "ERROR: usermod -g landscape landscape failed."
         fi
 
-        # Fix prior ownerships
-        find /var/lib/landscape/ -wholename /var/lib/landscape/client/custom-graph-scripts -prune -or -exec chown landscape {} \;
+        # Fix prior ownerships, we exclude the custom-graph-scripts directory
+        # because there might script-generated files that we want to preserve
+        # the ownership of.
+        find /var/lib/landscape/ -wholename /var/lib/landscape/client/custom-graph-scripts -prune -or -exec chown landscape {} \; > /dev/null 2>&1
         chown -R landscape /var/log/landscape
 
     ;;
