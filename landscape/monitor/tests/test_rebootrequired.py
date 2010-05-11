@@ -12,27 +12,63 @@ class RebootRequiredTest(LandscapeTest):
 
     def setUp(self):
         super(RebootRequiredTest, self).setUp()
-        self.reboot_required_filename = self.makeFile("")
+        self.reboot_required_filename = self.makeFile()
         self.plugin = RebootRequired(self.reboot_required_filename)
         self.monitor.add(self.plugin)
         self.mstore.set_accepted_types(["reboot-required"])
 
-    def test_wb_check_reboot_required(self):
+    def test_wb_get_flag(self):
         """
-        L{RebootRequired.check_reboot_required} should return C{True} if the
-        reboot-required flag file is present, C{False} otherwise.
+        L{RebootRequired._get_flag} returns C{True} if the reboot-required
+        flag file is present, C{False} otherwise.
         """
-        self.assertTrue(self.plugin._check_reboot_required())
-        os.remove(self.reboot_required_filename)
-        self.assertFalse(self.plugin._check_reboot_required())
+        self.assertFalse(self.plugin._get_flag())
+        self.makeFile(path=self.reboot_required_filename, content="")
+        self.assertTrue(self.plugin._get_flag())
+
+    def test_wb_get_packages(self):
+        """
+        L{RebootRequired._get_packages} returns the packages listed in the
+        reboot-required packages file if present, or an empty list otherwise.
+        """
+        self.assertEqual([], self.plugin._get_packages())
+        self.makeFile(path=self.reboot_required_filename + ".pkgs",
+                      content="foo\nbar\n")
+        self.assertEqual(["bar", "foo"], self.plugin._get_packages())
+
+    def test_wb_get_packages_with_duplicates(self):
+        """
+        The list of packages returned by L{RebootRequired._get_packages}  does
+        not contain duplicate values.
+        """
+        self.assertEqual([], self.plugin._get_packages())
+        self.makeFile(path=self.reboot_required_filename + ".pkgs",
+                      content="foo\nfoo\n")
+        self.assertEqual(["foo"], self.plugin._get_packages())
+
+    def test_wb_get_packages_with_blank_lines(self):
+        """
+        Blank lines are ignored by L{RebootRequired._get_packages}.
+        """
+        self.assertEqual([], self.plugin._get_packages())
+        self.makeFile(path=self.reboot_required_filename + ".pkgs",
+                      content="bar\n\nfoo\n")
+        self.assertEqual(["bar", "foo"], self.plugin._get_packages())
 
     def test_wb_create_message(self):
         """
         A message should be created if and only if the reboot-required status
         of the system has changed.
         """
-        self.assertEquals(self.plugin._create_message(), {"flag": True})
-        self.assertEquals(self.plugin._create_message(), {})
+        self.assertEquals({"flag": False, "packages": []},
+                          self.plugin._create_message())
+        self.makeFile(path=self.reboot_required_filename, content="")
+        self.assertEquals({"flag": True},
+                          self.plugin._create_message())
+        self.makeFile(path=self.reboot_required_filename + ".pkgs",
+                      content="foo\n")
+        self.assertEquals({"packages": ["foo"]},
+                          self.plugin._create_message())
 
     def test_send_message(self):
         """
@@ -43,7 +79,9 @@ class RebootRequiredTest(LandscapeTest):
         self.assertIn("Queueing message with updated reboot-required status.",
                       self.logfile.getvalue())
         self.assertMessages(self.mstore.get_pending_messages(),
-                            [{"type": "reboot-required", "flag": True}])
+                            [{"type": "reboot-required",
+                              "flag": False,
+                              "packages": []}])
         self.mstore.delete_all_messages()
         self.plugin.send_message()
         self.assertMessages(self.mstore.get_pending_messages(), [])

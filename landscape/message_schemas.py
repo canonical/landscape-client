@@ -331,7 +331,9 @@ CUSTOM_GRAPH = Message("custom-graph", {
 
 REBOOT_REQUIRED = Message(
     "reboot-required",
-    {"flag": Bool()})
+    {"flag": Bool(),
+     "packages": List(Unicode())},
+    optional=["flag", "packages"])
 
 APT_PREFERENCES = Message(
     "apt-preferences",
