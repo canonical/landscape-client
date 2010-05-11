@@ -2,8 +2,8 @@
 
 ### BEGIN INIT INFO
 # Provides: landscape-client
-# Required-Start: $local_fs $remote_fs hal dbus
-# Required-Stop: $local_fs $remote_fs hal dbus
+# Required-Start: $local_fs $remote_fs hal
+# Required-Stop: $local_fs $remote_fs hal
 # Default-Start: 2 3 4 5
 # Default-Stop: 0 1 6
 # Short-Description: Landscape client daemons
