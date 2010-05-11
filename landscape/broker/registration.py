@@ -152,6 +152,7 @@ class RegistrationHandler(object):
             for path in paths:
                 deferred.addCallback(
                     lambda ignore, path=path: self._get_data(path, ec2_data))
+            # Special case the ramdisk retrieval, because it may not be present
             deferred.addCallback(
                 lambda ignore: self._fetch_async(
                     EC2_API + "/meta-data/ramdisk-id").addErrback(log_failure))
