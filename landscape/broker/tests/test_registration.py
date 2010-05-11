@@ -35,8 +35,9 @@ class IdentityTest(LandscapeTest):
         self.assertEquals(getattr(self.identity, attr), value,
                           "%r attribute should be %r, not %r" %
                           (attr, value, getattr(self.identity, attr)))
-        self.assertEquals(self.persist.get(persist_name), value,
-                          "%r not set to %r in persist" % (persist_name, value))
+        self.assertEquals(
+            self.persist.get(persist_name), value,
+            "%r not set to %r in persist" % (persist_name, value))
 
     def check_config_property(self, attr):
         value = "VALUE"
@@ -151,8 +152,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                               "account_name": "account_name",
                               "registration_password": None,
                               "hostname": "ooga.local",
-                              "tags": None,}
-                            ])
+                              "tags": None}])
         self.assertEquals(self.logfile.getvalue().strip(),
                           "INFO: Queueing message to register with account "
                           "'account_name' without a password.")
@@ -170,8 +170,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                               "account_name": "account_name",
                               "registration_password": "SEKRET",
                               "hostname": "ooga.local",
-                              "tags": None,}
-                            ])
+                              "tags": None}])
         self.assertEquals(self.logfile.getvalue().strip(),
                           "INFO: Queueing message to register with account "
                           "'account_name' with a password.")
@@ -193,8 +192,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                               "account_name": "account_name",
                               "registration_password": "SEKRET",
                               "hostname": "ooga.local",
-                              "tags": u"computer,tag"}
-                            ])
+                              "tags": u"computer,tag"}])
         self.assertEquals(self.logfile.getvalue().strip(),
                           "INFO: Queueing message to register with account "
                           "'account_name' and tags computer,tag "
@@ -219,8 +217,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                               "account_name": "account_name",
                               "registration_password": "SEKRET",
                               "hostname": "ooga.local",
-                              "tags": None}
-                            ])
+                              "tags": None}])
         self.assertEquals(self.logfile.getvalue().strip(),
                           "ERROR: Invalid tags provided for cloud "
                           "registration.\n    "
@@ -238,14 +235,14 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.config.registration_password = "SEKRET"
         self.config.tags = u"prova\N{LATIN SMALL LETTER J WITH CIRCUMFLEX}o"
         self.reactor.fire("pre-exchange")
-        self.assertMessages(self.mstore.get_pending_messages(),
-                            [{"type": "register",
-                              "computer_title": "Computer Title",
-                              "account_name": "account_name",
-                              "registration_password": "SEKRET",
-                              "hostname": "ooga.local",
-                              "tags": u"prova\N{LATIN SMALL LETTER J WITH CIRCUMFLEX}o"}
-                            ])
+        self.assertMessages(
+            self.mstore.get_pending_messages(),
+            [{"type": "register",
+              "computer_title": "Computer Title",
+              "account_name": "account_name",
+              "registration_password": "SEKRET",
+              "hostname": "ooga.local",
+              "tags": u"prova\N{LATIN SMALL LETTER J WITH CIRCUMFLEX}o"}])
         self.assertEquals(self.logfile.getvalue().strip(),
                           "INFO: Queueing message to register with account "
                           "'account_name' and tags prova\xc4\xb5o "
@@ -333,9 +330,11 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
 
         calls = [0]
         d = self.handler.register()
+
         def add_call(result):
             self.assertEquals(result, None)
             calls[0] += 1
+
         d.addCallback(add_call)
 
         # This should somehow callback the deferred.
@@ -355,8 +354,10 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
     def test_resynchronize_fired_when_registration_done(self):
 
         results = []
+
         def append():
             results.append(True)
+
         self.reactor.call_on("resynchronize-clients", append)
 
         self.handler.register()
@@ -373,10 +374,12 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
 
         calls = [0]
         d = self.handler.register()
+
         def add_call(failure):
             exception = failure.value
             self.assertTrue(isinstance(exception, InvalidCredentialsError))
             calls[0] += 1
+
         d.addErrback(add_call)
 
         # This should somehow callback the deferred.
@@ -428,8 +431,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                               "account_name": "account_name",
                               "registration_password": "SEKRET",
                               "hostname": socket.getfqdn(),
-                              "tags": None,}
-                             ])
+                              "tags": None}])
 
 
 class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
@@ -550,9 +552,10 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         # This *should* be asynchronous, but I think a billion tests are
         # written like this
         self.assertEquals(len(self.transport.payloads), 1)
-        self.assertMessages(self.transport.payloads[0]["messages"],
-                            [self.get_expected_cloud_message(tags=u"server,london")])
- 
+        self.assertMessages(
+            self.transport.payloads[0]["messages"],
+            [self.get_expected_cloud_message(tags=u"server,london")])
+
     def test_cloud_registration_with_invalid_tags(self):
         """
         Invalid tags in the configuration should result in the tags not being
@@ -694,7 +697,8 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         self.prepare_cloud_registration()
 
         failed = []
-        self.reactor.call_on("registration-failed", lambda: failed.append(True))
+        self.reactor.call_on(
+            "registration-failed", lambda: failed.append(True))
 
         self.log_helper.ignore_errors("Got error while fetching meta-data")
         self.reactor.fire("run")
@@ -724,6 +728,24 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
                                 account_name=u"onward",
                                 registration_password=u"password")])
 
+    def test_cloud_registration_continues_without_ramdisk(self):
+        """
+        If the instance doesn't have a ramdisk (ie, the query for ramdisk
+        returns a 404), then register-cloud-vm still occurs.
+        """
+        self.log_helper.ignore_errors(HTTPCodeError)
+        self.prepare_query_results(ramdisk_key=HTTPCodeError(404, "ohno"))
+        self.prepare_cloud_registration()
+
+        self.reactor.fire("run")
+        self.exchanger.exchange()
+        self.assertIn("HTTPCodeError: Server returned HTTP code 404",
+                      self.logfile.getvalue())
+        self.assertEquals(len(self.transport.payloads), 1)
+        self.assertMessages(self.transport.payloads[0]["messages"],
+                            [self.get_expected_cloud_message(
+                                ramdisk_key=None)])
+
     def test_fall_back_to_normal_registration_when_metadata_fetch_fails(self):
         """
         If fetching metadata fails, but we do have an account name, then we
@@ -747,7 +769,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
                               "account_name": u"onward",
                               "registration_password": u"password",
                               "hostname": socket.getfqdn(),
-                              "tags": None,}])
+                              "tags": None}])
 
     def test_should_register_in_cloud(self):
         """
@@ -830,8 +852,9 @@ class IsCloudManagedTests(LandscapeTest):
 
     def test_is_managed(self):
         """
-        L{is_cloud_managed} returns True if the EC2 user-data contains Landscape
-        instance information.  It fetches the EC2 data with low timeouts.
+        L{is_cloud_managed} returns True if the EC2 user-data contains
+        Landscape instance information.  It fetches the EC2 data with low
+        timeouts.
         """
         user_data = {"otps": ["otp1"], "exchange-url": "http://exchange",
                      "ping-url": "http://ping"}
@@ -890,15 +913,19 @@ class IsCloudManagedTests(LandscapeTest):
         self.assertFalse(is_cloud_managed(self.fake_fetch))
 
     def test_is_managed_fetch_not_found(self):
+
         def fake_fetch(url, connect_timeout=None):
             raise HTTPCodeError(404, "ohnoes")
+
         self.mock_socket()
         self.mocker.replay()
         self.assertFalse(is_cloud_managed(fake_fetch))
 
     def test_is_managed_fetch_error(self):
+
         def fake_fetch(url, connect_timeout=None):
             raise FetchError(7, "couldn't connect to host")
+
         self.mock_socket()
         self.mocker.replay()
         self.assertFalse(is_cloud_managed(fake_fetch))
@@ -930,6 +957,7 @@ class IsCloudManagedTests(LandscapeTest):
         """
         We'll only wait five minutes for the network to come up.
         """
+
         def fake_fetch(url, connect_timeout=None):
             raise FetchError(7, "couldn't connect to host")
 
