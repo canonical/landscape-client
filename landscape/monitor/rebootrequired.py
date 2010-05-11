@@ -15,6 +15,7 @@ class RebootRequired(MonitorPlugin):
 
     persist_name = "reboot-required"
     run_interval = 900 # 15 minutes
+    run_immediately = True
 
     def __init__(self, reboot_required_filename="/var/run/reboot-required"):
         self._flag_filename = reboot_required_filename

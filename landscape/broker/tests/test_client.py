@@ -68,6 +68,18 @@ class BrokerClientTest(LandscapeTest):
         self.client_reactor.advance(plugin.run_interval)
         self.client_reactor.advance(plugin.run_interval)
 
+    def test_run_immediatelyl(self):
+        """
+        If a plugin has a C{run} method and C{run_immediately} is C{True},
+        the plugin will be run immediately at registration.
+        """
+        plugin = BrokerClientPlugin()
+        plugin.run = self.mocker.mock()
+        plugin.run_immediately = True
+        self.expect(plugin.run()).count(1)
+        self.mocker.replay()
+        self.client.add(plugin)
+
     def test_register_message(self):
         """
         When L{BrokerClient.register_message} is called, the broker is notified

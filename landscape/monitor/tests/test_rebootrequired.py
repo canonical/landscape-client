@@ -86,6 +86,19 @@ class RebootRequiredTest(LandscapeTest):
         self.plugin.send_message()
         self.assertMessages(self.mstore.get_pending_messages(), [])
 
+
+    def test_run_interval(self):
+        """
+        The L{RebootRequired} plugin will be scheduled to run every 15 minutes.
+        """
+        self.assertEqual(900, self.plugin.run_interval)
+
+    def test_run_immediately(self):
+        """
+        The L{RebootRequired} plugin will be run immediately at startup.
+        """
+        self.assertEqual(True, self.plugin.run_immediately)
+
     def test_run(self):
         """
         If the server can accept them, the plugin should send
