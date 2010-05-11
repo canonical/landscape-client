@@ -283,7 +283,8 @@ class BrokerClientTest(LandscapeTest):
         """
         The L{BrokerClient.exit} method causes the reactor to be stopped.
         """
-        self.client.reactor = self.mocker.mock()
+        self.client.reactor.stop = self.mocker.mock()
         self.client.reactor.stop()
         self.mocker.replay()
         self.client.exit()
+        self.client.reactor.advance(0.1)

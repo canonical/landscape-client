@@ -489,16 +489,14 @@ def register(config, reactor=None):
         will happen.
     """
     reactor = TwistedReactor()
+    exit_with_error = []
 
     # XXX: many of these reactor.stop() calls should also specify a non-0 exit
     # code, unless ok-no-register is passed.
 
     def stop():
         connector.disconnect()
-        # For some obscure reason our TwistedReactor.stop method calls
-        # reactor.crash() instead of reactor.stop(), which doesn't work
-        # here. Maybe TwistedReactor.stop should simply use reactor.stop().
-        reactor.call_later(0, reactor._reactor.stop)
+        reactor.stop()
 
     def failure():
         print_text("Invalid account name or "
@@ -545,7 +543,6 @@ def register(config, reactor=None):
             remote.register().addErrback(handle_registration_errors)]
         # We consume errors here to ignore errors after the first one.
         # catch_all will be called for the very first deferred that fails.
-
         results = gather_results(deferreds, consume_errors=True)
         return results.addErrback(catch_all)
 
@@ -554,10 +551,9 @@ def register(config, reactor=None):
                    "client.", error=True)
         print_text("This machine will be registered with the provided "
                    "details when the client runs.", error=True)
-        exit_code = 2
-        if config.ok_no_register:
-            exit_code = 0
-        sys.exit(exit_code)
+        if not config.ok_no_register:
+            exit_with_error.append(2)
+        stop()
 
     connector = RemoteBrokerConnector(reactor, config)
     result = connector.connect(max_retries=0, quiet=True)
@@ -565,6 +561,9 @@ def register(config, reactor=None):
     result.addErrback(got_error)
 
     reactor.run()
+
+    if exit_with_error:
+        sys.exit(exit_with_error[0])
 
     return result
 

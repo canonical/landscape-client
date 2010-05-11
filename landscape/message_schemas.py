@@ -153,7 +153,7 @@ REGISTER_CLOUD_VM = Message(
      "public_hostname": Unicode(),
      "local_hostname": Unicode(),
      "kernel_key": Unicode(),
-     "ramdisk_key": Unicode(),
+     "ramdisk_key": Any(Unicode(), Constant(None)),
      "launch_index": Int(),
      "image_key": Unicode(),
      "tags": Any(utf8, Constant(None))},

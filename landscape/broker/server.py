@@ -52,9 +52,6 @@ class BrokerServer(object):
 
         reactor.call_on("message", self.broadcast_message)
         reactor.call_on("impending-exchange", self.impending_exchange)
-        reactor.call_on("exchange-failed", self.exchange_failed)
-        reactor.call_on("registration-done", self.registration_done)
-        reactor.call_on("registration-failed", self.registration_failed)
         reactor.call_on("message-type-acceptance-changed",
                         self.message_type_acceptance_changed)
         reactor.call_on("server-uuid-changed", self.server_uuid_changed)
@@ -200,18 +197,6 @@ class BrokerServer(object):
     @event
     def impending_exchange(self):
         """Broadcast an C{impending-exchange} event to the clients."""
-
-    @event
-    def exchange_failed(self):
-        """Broadcast a C{exchange-failed} event to the clients."""
-
-    @event
-    def registration_done(self):
-        """Broadcast a C{registration-done} event to the clients."""
-
-    @event
-    def registration_failed(self):
-        """Broadcast a C{registration-failed} event to the clients."""
 
     def listen_events(self, event_types):
         """

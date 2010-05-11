@@ -146,19 +146,23 @@ class RegistrationHandler(object):
                 "/meta-data/public-hostname",
                 "/meta-data/ami-launch-index",
                 "/meta-data/kernel-id",
-                "/meta-data/ramdisk-id",
                 "/meta-data/ami-id"]
             # We're not using a DeferredList here because we want to keep the
             # number of connections to the backend minimal. See lp:567515.
             for path in paths:
                 deferred.addCallback(
                     lambda ignore, path=path: self._get_data(path, ec2_data))
+            # Special case the ramdisk retrieval, because it may not be present
+            deferred.addCallback(
+                lambda ignore: self._fetch_async(
+                    EC2_API + "/meta-data/ramdisk-id").addErrback(log_failure))
+            deferred.addCallback(ec2_data.append)
 
             def record_data(ignore):
                 """Record the instance data returned by the EC2 API."""
                 (raw_user_data, instance_key, reservation_key,
                  local_hostname, public_hostname, launch_index,
-                 kernel_key, ramdisk_key, ami_key) = ec2_data
+                 kernel_key, ami_key, ramdisk_key) = ec2_data
                 self._ec2_data = {
                     "instance_key": instance_key,
                     "reservation_key": reservation_key,
@@ -169,6 +173,8 @@ class RegistrationHandler(object):
                     "ramdisk_key": ramdisk_key,
                     "image_key": ami_key}
                 for k, v in self._ec2_data.items():
+                    if v is None and k == "ramdisk_key":
+                        continue
                     self._ec2_data[k] = v.decode("utf-8")
                 self._ec2_data["launch_index"] = int(
                     self._ec2_data["launch_index"])

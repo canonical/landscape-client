@@ -178,4 +178,6 @@ class BrokerClient(object):
 
     def exit(self):
         """Stop the reactor and exit the process."""
-        self.reactor.stop()
+        # Stop with a short delay to give a chance to reply to the
+        # caller over AMP.
+        self.reactor.call_later(0.1, self.reactor.stop)
