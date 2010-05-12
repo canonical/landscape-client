@@ -68,7 +68,7 @@ class BrokerClientTest(LandscapeTest):
         self.client_reactor.advance(plugin.run_interval)
         self.client_reactor.advance(plugin.run_interval)
 
-    def test_run_immediatelyl(self):
+    def test_run_immediately(self):
         """
         If a plugin has a C{run} method and C{run_immediately} is C{True},
         the plugin will be run immediately at registration.

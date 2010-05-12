@@ -29,10 +29,9 @@ class RebootRequired(MonitorPlugin):
         """Return the list of packages that required a reboot, if any."""
         if not os.path.exists(self._packages_filename):
             return []
-        packages = []
-        for package in read_file(self._packages_filename).split("\n"):
-            if package and package not in packages:
-                packages.append(package)
+
+        lines = read_file(self._packages_filename).splitlines()
+        packages = set(line.strip() for line in lines if line)
         return sorted(packages)
 
     def _create_message(self):

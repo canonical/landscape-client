@@ -30,7 +30,7 @@ class BrokerClientPlugin(object):
 
     def register(self, client):
         self.client = client
-        if hasattr(self, "run"):
+        if getattr(self, "run", None) is not None:
             if self.run_immediately:
                 self.run()
             if self.run_interval is not None:
