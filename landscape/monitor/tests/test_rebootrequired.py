@@ -1,5 +1,3 @@
-import os
-
 from landscape.monitor.rebootrequired import RebootRequired
 from landscape.tests.helpers import (
     LandscapeTest, MonitorHelper, LogKeeperHelper)
@@ -15,7 +13,7 @@ class RebootRequiredTest(LandscapeTest):
         self.reboot_required_filename = self.makeFile()
         self.plugin = RebootRequired(self.reboot_required_filename)
         self.monitor.add(self.plugin)
-        self.mstore.set_accepted_types(["reboot-required"])
+        self.mstore.set_accepted_types(["reboot-required-info"])
 
     def test_wb_get_flag(self):
         """
@@ -38,7 +36,7 @@ class RebootRequiredTest(LandscapeTest):
 
     def test_wb_get_packages_with_duplicates(self):
         """
-        The list of packages returned by L{RebootRequired._get_packages}  does
+        The list of packages returned by L{RebootRequired._get_packages} does
         not contain duplicate values.
         """
         self.assertEqual([], self.plugin._get_packages())
@@ -72,14 +70,14 @@ class RebootRequiredTest(LandscapeTest):
 
     def test_send_message(self):
         """
-        A new C{"reboot-required"} message should be enqueued if and only
+        A new C{"reboot-required-info"} message should be enqueued if and only
         if the reboot-required status of the system has changed.
         """
         self.plugin.send_message()
         self.assertIn("Queueing message with updated reboot-required status.",
                       self.logfile.getvalue())
         self.assertMessages(self.mstore.get_pending_messages(),
-                            [{"type": "reboot-required",
+                            [{"type": "reboot-required-info",
                               "flag": False,
                               "packages": []}])
         self.mstore.delete_all_messages()

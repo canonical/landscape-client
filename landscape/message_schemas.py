@@ -330,7 +330,7 @@ CUSTOM_GRAPH = Message("custom-graph", {
     "data": Dict(Int(), GRAPH_DATA)})
 
 REBOOT_REQUIRED = Message(
-    "reboot-required",
+    "reboot-required-info",
     {"flag": Bool(),
      "packages": List(Unicode())},
     optional=["flag", "packages"])

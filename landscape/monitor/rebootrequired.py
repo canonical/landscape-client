@@ -55,7 +55,7 @@ class RebootRequired(MonitorPlugin):
         """
         message = self._create_message()
         if message:
-            message["type"] = "reboot-required"
+            message["type"] = "reboot-required-info"
             logging.info("Queueing message with updated "
                          "reboot-required status.")
             self.registry.broker.send_message(message, urgent=True)
@@ -63,4 +63,4 @@ class RebootRequired(MonitorPlugin):
     def run(self):
         """Send reboot-required messages if the server accepts them."""
         return self.registry.broker.call_if_accepted(
-            "reboot-required", self.send_message)
+            "reboot-required-info", self.send_message)
