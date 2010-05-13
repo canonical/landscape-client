@@ -329,7 +329,7 @@ GRAPH_DATA = KeyDict({"values": List(Tuple(Float(), Float())),
 CUSTOM_GRAPH = Message("custom-graph", {
     "data": Dict(Int(), GRAPH_DATA)})
 
-# XXX This kept for backward compatibility, it can eventually be removed
+# XXX This is kept for backward compatibility, it can eventually be removed
 # when all clients will support REBOOT_REQUIRED_INFO
 REBOOT_REQUIRED = Message(
     "reboot-required",
