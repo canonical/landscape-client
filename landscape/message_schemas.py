@@ -329,7 +329,13 @@ GRAPH_DATA = KeyDict({"values": List(Tuple(Float(), Float())),
 CUSTOM_GRAPH = Message("custom-graph", {
     "data": Dict(Int(), GRAPH_DATA)})
 
+# XXX This kept for backward compatibility, it can eventually be removed
+# when all clients will support REBOOT_REQUIRED_INFO
 REBOOT_REQUIRED = Message(
+    "reboot-required",
+    {"flag": Bool()})
+
+REBOOT_REQUIRED_INFO = Message(
     "reboot-required-info",
     {"flag": Bool(),
      "packages": List(Unicode())},
@@ -381,5 +387,6 @@ for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                CHANGE_PACKAGES_RESULT, UNKNOWN_PACKAGE_HASHES,
                ADD_PACKAGES, TEXT_MESSAGE, TEST, CUSTOM_GRAPH,
                REBOOT_REQUIRED, APT_PREFERENCES, EUCALYPTUS_INFO,
-               EUCALYPTUS_INFO_ERROR, NETWORK_DEVICE, NETWORK_ACTIVITY]:
+               EUCALYPTUS_INFO_ERROR, NETWORK_DEVICE, NETWORK_ACTIVITY,
+               REBOOT_REQUIRED_INFO]:
     message_schemas[schema.type] = schema
