@@ -1,6 +1,5 @@
 from twisted.internet.defer import fail, succeed
 
-from landscape.lib import bpickle_dbus
 from landscape.monitor.hardwareinventory import HardwareInventory
 from landscape.tests.test_hal import MockHALManager, MockRealHALDevice
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
@@ -16,16 +15,17 @@ class HardwareInventoryTest(LandscapeTest):
         super(HardwareInventoryTest, self).setUp()
         self.mstore.set_accepted_types(["hardware-inventory"])
         devices = [MockRealHALDevice({u"info.udi": u"wubble",
-                                      u"info.product": u"Wubble",}),
+                                      u"info.product": u"Wubble"}),
                    MockRealHALDevice({u"info.udi": u"ooga",
-                                      u"info.product": u"Ooga",})]
+                                      u"info.product": u"Ooga"})]
         self.hal_manager = MockHALManager(devices)
         self.plugin = HardwareInventory(hal_manager=self.hal_manager)
         self.monitor.add(self.plugin)
 
     def assertSchema(self, devices):
         full_message = {"type": "hardware-inventory", "devices": devices}
-        self.assertEquals(HARDWARE_INVENTORY.coerce(full_message), full_message)
+        self.assertEquals(HARDWARE_INVENTORY.coerce(full_message),
+                          full_message)
 
     def test_hal_devices(self):
         """
@@ -71,7 +71,7 @@ class HardwareInventoryTest(LandscapeTest):
         """
         self.hal_manager.devices = [
             MockRealHALDevice({u"info.udi": u"wubble",
-                               u"info.product": u"Wubble",}),]
+                               u"info.product": u"Wubble"})]
         registry_mocker = self.mocker.replace(self.plugin.registry)
         registry_mocker.flush()
         self.mocker.count(2)
@@ -80,14 +80,14 @@ class HardwareInventoryTest(LandscapeTest):
         message = self.plugin.create_message()
         self.plugin.persist_data(None)
         self.assertEquals(message, [("create", {u"info.udi": u"wubble",
-                                                u"info.product": u"Wubble"}),])
+                                                u"info.product": u"Wubble"})])
 
         self.hal_manager.devices[0] = MockRealHALDevice(
-            {u"info.udi": u"wubble", u"info.product": u"Ooga",})
+            {u"info.udi": u"wubble", u"info.product": u"Ooga"})
         message = self.plugin.create_message()
         self.plugin.persist_data(None)
         self.assertEquals(message, [("update", u"wubble",
-                                     {}, {u"info.product": u"Ooga"}, {}),])
+                                     {}, {u"info.product": u"Ooga"}, {})])
         self.assertSchema(message)
         self.assertEquals(self.plugin.create_message(), [])
 
@@ -100,7 +100,7 @@ class HardwareInventoryTest(LandscapeTest):
         self.hal_manager.devices = [
             MockRealHALDevice({u"info.udi": u"wubble",
                                u"info.product": u"Wubble",
-                               u"info.capabilities": [u"foo", u"bar"]}),]
+                               u"info.capabilities": [u"foo", u"bar"]})]
 
         message = self.plugin.create_message()
         self.plugin.persist_data(None)
@@ -132,13 +132,13 @@ class HardwareInventoryTest(LandscapeTest):
         self.hal_manager.devices = [
             MockRealHALDevice({u"info.udi": u"wubble",
                                u"info.product": u"Wubble",
-                               u"linux.acpi_type": 11}),]
+                               u"linux.acpi_type": 11})]
 
         message = self.plugin.create_message()
         self.plugin.persist_data(None)
         self.assertEquals(message, [("create", {u"info.udi": u"wubble",
                                                 u"info.product": u"Wubble",
-                                                u"linux.acpi_type": 11}),])
+                                                u"linux.acpi_type": 11})])
 
         self.hal_manager.devices[0] = MockRealHALDevice(
             {u"info.udi": u"wubble", u"info.product": u"Ooga",
@@ -148,7 +148,7 @@ class HardwareInventoryTest(LandscapeTest):
         self.assertEquals(message, [("update", u"wubble",
                                      {u"info.category": u"unittest"},
                                      {u"info.product": u"Ooga"},
-                                     {u"linux.acpi_type": 11}),])
+                                     {u"linux.acpi_type": 11})])
         self.assertSchema(message)
 
         self.assertEquals(self.plugin.create_message(), [])
@@ -161,22 +161,22 @@ class HardwareInventoryTest(LandscapeTest):
         """
         self.hal_manager.devices = [
             MockRealHALDevice({u"info.udi": u"wubble",
-                               u"info.product": u"Wubble",}),
+                               u"info.product": u"Wubble"}),
             MockRealHALDevice({u"info.udi": u"ooga",
-                               u"info.product": u"Ooga",})]
+                               u"info.product": u"Ooga"})]
 
         message = self.plugin.create_message()
         self.plugin.persist_data(None)
         self.assertEquals(message, [("create", {u"info.udi": u"wubble",
                                                 u"info.product": u"Wubble"}),
                                     ("create", {u"info.udi": u"ooga",
-                                                u"info.product": u"Ooga"}),])
+                                                u"info.product": u"Ooga"})])
         self.assertSchema(message)
 
         self.hal_manager.devices.pop(1)
         message = self.plugin.create_message()
         self.plugin.persist_data(None)
-        self.assertEquals(message, [("delete", u"ooga"),])
+        self.assertEquals(message, [("delete", u"ooga")])
         self.assertSchema(message)
         self.assertEquals(self.plugin.create_message(), [])
 
@@ -196,7 +196,7 @@ class HardwareInventoryTest(LandscapeTest):
                                u"info.parent": u"wubble0"}),
             MockRealHALDevice({u"info.udi": u"wubble3",
                                u"block.device": u"/dev/scd1",
-                               u"info.parent": u"wubble2"}),]
+                               u"info.parent": u"wubble2"})]
 
         message = self.plugin.create_message()
         self.plugin.persist_data(None)
@@ -206,7 +206,7 @@ class HardwareInventoryTest(LandscapeTest):
         message = self.plugin.create_message()
         self.plugin.persist_data(None)
 
-        self.assertEquals(message, [("delete", u"wubble"),])
+        self.assertEquals(message, [("delete", u"wubble")])
         self.assertEquals(self.plugin.create_message(), [])
 
     def test_resynchronize(self):
@@ -252,7 +252,10 @@ class HardwareInventoryTest(LandscapeTest):
         only persist data when the broker confirms that the message
         sent by the plugin has been sent.
         """
-        class MyException(Exception): pass
+
+        class MyException(Exception):
+            pass
+
         self.log_helper.ignore_errors(MyException)
 
         broker_mock = self.mocker.replace(self.monitor.broker)

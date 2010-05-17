@@ -14,9 +14,6 @@ import time
 
 from logging import warning, info, error
 
-from dbus import DBusException
-import dbus.glib # Side-effects rule!
-
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, succeed
 from twisted.internet.protocol import ProcessProtocol
@@ -25,12 +22,14 @@ from twisted.application.service import Service, Application
 from twisted.application.app import startApplication
 
 from landscape.deployment import Configuration, init_logging
-from landscape.lib.dbus_util import get_bus
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.log import log_failure
 from landscape.lib.bootstrap import (BootstrapList, BootstrapFile,
                                      BootstrapDirectory)
 from landscape.log import rotate_logs
+from landscape.broker.amp import (
+    RemoteBrokerConnector, RemoteMonitorConnector, RemoteManagerConnector)
+from landscape.reactor import TwistedReactor
 
 GRACEFUL_WAIT_PERIOD = 10
 MAXIMUM_CONSECUTIVE_RESTARTS = 5
@@ -60,21 +59,26 @@ class Daemon(object):
     @cvar username: The name of the user to switch to, by default.
     @cvar service: The DBus service name that the program will be expected to
         listen on.
-    @cvar path: The DBus path that the program will be expected to listen on.
+    @cvar max_retries: The maximum number of retries before giving up when
+        trying to connect to the watched daemon.
+    @cvar factor: The factor by which the delay between subsequent connection
+        attempts will increase.
     """
 
     username = "landscape"
+    max_retries = 3
+    factor = 1.1
 
-    def __init__(self, bus, reactor=reactor, verbose=False, config=None):
+    def __init__(self, connector, reactor=reactor, verbose=False,
+                 config=None):
         """
-        @param bus: The bus which this program will listen and respond to pings
-            on.
-        @param reactor: The reactor with which to spawn the process and
-            schedule timed calls.
+        @param connector: The L{RemoteComponentConnector} of the daemon.
+        @param reactor: The reactor used to spawn the process and schedule
+            timed calls.
         @param verbose: Optionally, report more information when
             running this program.  Defaults to False.
         """
-        self._bus = bus
+        self._connector = connector
         self._reactor = reactor
         self._env = os.environ.copy()
         if os.getuid() == 0:
@@ -94,6 +98,7 @@ class Daemon(object):
         self._process = None
         self._last_started = 0
         self._quick_starts = 0
+        self._allow_restart = True
 
     def find_executable(self):
         """Find the fully-qualified path to the executable.
@@ -139,29 +144,36 @@ class Daemon(object):
             return succeed(None)
         return self._process.kill()
 
+    def _connect_and_call(self, name, *args, **kwargs):
+        """Connect to the remote daemon over AMP and perform the given command.
+
+        @param name: The name of the command to perform.
+        @param args: Arguments list to be passed to the connect method
+        @param kwargs: Keywords arguments to pass to the connect method.
+        @return: A L{Deferred} resulting in C{True} if the command was
+            successful or C{False} otherwise.
+        @see: L{RemoteLandscapeComponentCreator.connect}.
+        """
+
+        def disconnect(ignored):
+            self._connector.disconnect()
+            return True
+
+        connected = self._connector.connect(self.max_retries, self.factor,
+                                            quiet=True)
+        connected.addCallback(lambda remote: getattr(remote, name)())
+        connected.addCallback(disconnect)
+        connected.addErrback(lambda x: False)
+        return connected
+
     def request_exit(self):
-        try:
-            object = self._bus.get_object(self.bus_name, self.object_path,
-                                          introspect=False)
-            object.exit(dbus_interface=self.bus_name)
-        except DBusException, e:
-            return False
-        return True
+        return self._connect_and_call("exit")
 
     def is_running(self):
         # FIXME Error cases may not be handled in the best possible way
         # here. We're basically return False if any error happens from the
         # dbus ping.
-        result = Deferred()
-        try:
-            object = self._bus.get_object(self.bus_name, self.object_path,
-                                          introspect=False)
-            object.ping(reply_handler=result.callback,
-                        error_handler=lambda f: result.callback(False),
-                        dbus_interface=self.bus_name)
-        except DBusException, e:
-            result.callback(False)
-        return result
+        return self._connect_and_call("ping")
 
     def wait(self):
         """
@@ -181,6 +193,18 @@ class Daemon(object):
             return succeed(None)
         return self._process.wait_or_die()
 
+    def prepare_for_shutdown(self):
+        """Called by the watchdog when starting to shut us down.
+
+        It will prevent our L{WatchedProcessProtocol} to restart the process
+        when it exits.
+        """
+        self._allow_restart = False
+
+    def allow_restart(self):
+        """Return a boolean indicating if the daemon should be restarted."""
+        return self._allow_restart
+
     def rotate_logs(self):
         self._process.rotate_logs()
 
@@ -188,23 +212,14 @@ class Daemon(object):
 class Broker(Daemon):
     program = "landscape-broker"
 
-    from landscape.broker.broker import BUS_NAME as bus_name
-    from landscape.broker.broker import OBJECT_PATH as object_path
-
 
 class Monitor(Daemon):
     program = "landscape-monitor"
-
-    from landscape.monitor.monitor import BUS_NAME as bus_name
-    from landscape.monitor.monitor import OBJECT_PATH as object_path
 
 
 class Manager(Daemon):
     program = "landscape-manager"
     username = "root"
-
-    from landscape.manager.manager import BUS_NAME as bus_name
-    from landscape.manager.manager import OBJECT_PATH as object_path
 
 
 class WatchedProcessProtocol(ProcessProtocol):
@@ -256,6 +271,8 @@ class WatchedProcessProtocol(ProcessProtocol):
                 pass
 
     def wait(self):
+        if self.transport.pid is None:
+            return succeed(None)
         self._wait_result = Deferred()
         return self._wait_result
 
@@ -280,7 +297,7 @@ class WatchedProcessProtocol(ProcessProtocol):
             self._delayed_terminate.cancel()
         if self._wait_result is not None:
             self._wait_result.callback(None)
-        else:
+        elif self.daemon.allow_restart():
             self.daemon.start()
 
 
@@ -290,17 +307,24 @@ class WatchDog(object):
     they are working.
     """
 
-    def __init__(self, bus, reactor=reactor, verbose=False, config=None,
-                 broker=None, monitor=None, manager=None, enabled_daemons=None):
-        self.bus = bus
+    def __init__(self, reactor=reactor, verbose=False, config=None,
+                 broker=None, monitor=None, manager=None,
+                 enabled_daemons=None):
+        twisted_reactor = TwistedReactor()
         if enabled_daemons is None:
             enabled_daemons = [Broker, Monitor, Manager]
         if broker is None and Broker in enabled_daemons:
-            broker = Broker(self.bus, verbose=verbose, config=config)
+            broker = Broker(
+                RemoteBrokerConnector(twisted_reactor, config),
+                verbose=verbose, config=config.config)
         if monitor is None and Monitor in enabled_daemons:
-            monitor = Monitor(self.bus, verbose=verbose, config=config)
+            monitor = Monitor(
+                RemoteMonitorConnector(twisted_reactor, config),
+                verbose=verbose, config=config.config)
         if manager is None and Manager in enabled_daemons:
-            manager = Manager(self.bus, verbose=verbose, config=config)
+            manager = Manager(
+                RemoteManagerConnector(twisted_reactor, config),
+                verbose=verbose, config=config.config)
 
         self.broker = broker
         self.monitor = monitor
@@ -317,9 +341,13 @@ class WatchDog(object):
         """Return a list of any daemons that are already running."""
         results = []
         for daemon in self.daemons:
+            # This method is called on startup, we basically try to connect
+            # a few times in fast sequence (with exponential backoff), if we
+            # don't get a response we assume the daemon is not running.
             result = daemon.is_running()
             result.addCallback(lambda is_running, d=daemon: (is_running, d))
             results.append(result)
+
         def got_all_results(r):
             return [x[1] for x in r if x[0]]
         return gather_results(results).addCallback(got_all_results)
@@ -354,6 +382,7 @@ class WatchDog(object):
             if self._ping_failures[daemon] == 5:
                 warning("%s died! Restarting." % (daemon.program,))
                 stopping = daemon.stop()
+
                 def stopped(ignored):
                     daemon.start()
                     self._ping_failures[daemon] = 0
@@ -368,6 +397,7 @@ class WatchDog(object):
             is_running = daemon.is_running()
             is_running.addCallback(self._restart_if_not_running, daemon)
             all_running.append(is_running)
+
         def reschedule(ignored):
             self._checking = self.reactor.callLater(5, self._check)
         gather_results(all_running).addBoth(reschedule)
@@ -379,14 +409,23 @@ class WatchDog(object):
         # ping has already been sent but not yet responded to.
         self._stopping = True
 
-        # If request_exit fails, we should just kill the daemons immediately.
-        if self.broker.request_exit():
-            results = [x.wait_or_die() for x in self.daemons]
-        else:
-            error("Couldn't request that broker gracefully shut down; "
-                  "killing forcefully.")
-            results = [x.stop() for x in self.daemons]
-        return gather_results(results)
+        # This tells the daemons to not automatically restart when they end
+        for daemon in self.daemons:
+            daemon.prepare_for_shutdown()
+
+        def terminate_processes(broker_stopped):
+            if broker_stopped:
+                results = [daemon.wait_or_die() for daemon in self.daemons]
+            else:
+                # If request_exit fails, we should just kill the daemons
+                # immediately.
+                error("Couldn't request that broker gracefully shut down; "
+                      "killing forcefully.")
+                results = [x.stop() for x in self.daemons]
+            return gather_results(results)
+
+        result = self.broker.request_exit()
+        return result.addCallback(terminate_processes)
 
     def _notify_rotate_logs(self, signal, frame):
         for daemon in self.daemons:
@@ -424,7 +463,7 @@ def daemonize():
         os._exit(0) # kill off parent again.
     # some argue that this umask should be 0, but that's annoying.
     os.umask(077)
-    null=os.open('/dev/null', os.O_RDWR)
+    null = os.open('/dev/null', os.O_RDWR)
     for i in range(3):
         try:
             os.dup2(null, i)
@@ -438,10 +477,8 @@ class WatchDogService(Service):
 
     def __init__(self, config):
         self._config = config
-        self.bus = get_bus(config.bus)
-        self.watchdog = WatchDog(self.bus,
-                                 verbose=not config.daemon,
-                                 config=config.config,
+        self.watchdog = WatchDog(verbose=not config.daemon,
+                                 config=config,
                                  enabled_daemons=config.get_enabled_daemons())
         self.exit_code = 0
 
@@ -449,7 +486,6 @@ class WatchDogService(Service):
         Service.startService(self)
         bootstrap_list.bootstrap(data_path=self._config.data_path,
                                  log_dir=self._config.log_dir)
-
         result = self.watchdog.check_running()
 
         def start_if_not_running(running_daemons):
@@ -462,6 +498,7 @@ class WatchDogService(Service):
             self._daemonize()
             info("Watchdog watching for daemons on %r bus." % self._config.bus)
             return self.watchdog.start()
+
         def die(failure):
             log_failure(failure, "Unknown error occurred!")
             self.exit_code = 2
@@ -503,11 +540,14 @@ class WatchDogService(Service):
 bootstrap_list = BootstrapList([
     BootstrapDirectory("$data_path", "landscape", "root", 0755),
     BootstrapDirectory("$data_path/package", "landscape", "root", 0755),
-    BootstrapDirectory("$data_path/package/hash-id", "landscape", "root", 0755),
-    BootstrapDirectory("$data_path/package/binaries", "landscape", "root", 0755),
+    BootstrapDirectory(
+        "$data_path/package/hash-id", "landscape", "root", 0755),
+    BootstrapDirectory(
+        "$data_path/package/binaries", "landscape", "root", 0755),
     BootstrapDirectory(
         "$data_path/package/upgrade-tool", "landscape", "root", 0755),
     BootstrapDirectory("$data_path/messages", "landscape", "root", 0755),
+    BootstrapDirectory("$data_path/sockets", "landscape", "root", 0750),
     BootstrapDirectory(
         "$data_path/custom-graph-scripts", "landscape", "root", 0755),
     BootstrapDirectory("$log_dir", "landscape", "root", 0755),
@@ -533,8 +573,9 @@ def clean_environment():
 def run(args=sys.argv, reactor=None):
     """Start the watchdog.
 
-    This is the topmost function that kicks off the Landscape client.  It cleans
-    up the environment, loads the configuration, and starts the reactor.
+    This is the topmost function that kicks off the Landscape client.  It
+    cleans up the environment, loads the configuration, and starts the
+    reactor.
 
     @param args: Command line arguments, including the program name as the
         first element.

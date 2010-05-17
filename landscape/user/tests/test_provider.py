@@ -88,7 +88,8 @@ kevin:x:1000:
         will be written as a comment.  The client must be resilient to
         this situation.
         """
-        data = [("jdoe", "x", 1000, 1000, "John Doe", "/home/jdoe", "/bin/zsh")]
+        data = [("jdoe", "x", 1000, 1000, "John Doe",
+                 "/home/jdoe", "/bin/zsh")]
         provider = FakeUserProvider(users=data, shadow_file=self.shadow_file)
         users = provider.get_users()
         self.assertEquals(users, [{"username": "jdoe", "uid": 1000,
@@ -147,7 +148,6 @@ kevin:x:1000:
         If a GECOS field contains non-UTF8 data, it should be replaced
         with question marks.
         """
-        invalid = '\255'
         unicode_unknown = u'\N{REPLACEMENT CHARACTER}'
         data = [("jdoe", "x", 1000, 1000, "\255,\255,\255,\255", "/home/jdoe",
                  "/bin/zsh")]
@@ -185,13 +185,13 @@ kevin:x:1000:
                 self.assertEquals(user["name"], user_0_name)
                 break
         else:
-            self.fail("The user %s (uid=1000) was not found in the get_data "
-                      "result." % (user_1000.pw_name,))
+            self.fail("The user %s (uid=0) was not found in the get_data "
+                      "result." % (user_0.pw_name))
 
     def test_get_users_duplicate_usernames(self):
         """
         Get users should return data for all users found on the system, but it
-        should exclude duplicate usernames, 
+        should exclude duplicate usernames.
         """
         data = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/zsh"),
                 ("jdoe", "x", 1001, 1001, "JD,,,,", "/home/jdoe", "/bin/zsh")]
@@ -226,11 +226,12 @@ kevin:x:1000:
         UserProvider error rather than a KeyError.
         raises a L{UserProviderError} if a match isn't found.
         """
-        data = [("johndoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/zsh")]
+        data = [("johndoe", "x", 1000, 1000,
+                 "JD,,,,", "/home/jdoe", "/bin/zsh")]
         provider = FakeUserProvider(users=data, shadow_file=self.shadow_file)
         users = provider.get_users()
         self.assertEquals(len(users), 1)
-        self.assertEquals(sorted([x[0] for x in data]),["johndoe"])
+        self.assertEquals(sorted([x[0] for x in data]), ["johndoe"])
 
     def test_get_gid(self):
         """
@@ -261,7 +262,7 @@ kevin:x:1000:
 
     def test_group_with_unknown_members(self):
         """L{UserProvider.get_groups} should include groups with members.
-        
+
         If a member's userid isn't known to the system, it shouldn't be
         returned.
         """
@@ -271,7 +272,6 @@ kevin:x:1000:
                                     groups=groups)
         self.assertEquals(provider.get_groups(),
                           [{"name": "sales", "gid": 50, "members": ["jdoe"]}])
-
 
     def test_group_with_duplicate_members(self):
         """
@@ -318,29 +318,29 @@ kevin:x:1000:
                 self.assertEquals(group["members"], group_0.gr_mem)
                 break
         else:
-            self.fail("The group %s (gid=1000) was not found in the get_data "
-                      "result." % (group_1000.gr_name,))
+            self.fail("The group %s (gid=0) was not found in the get_data "
+                      "result." % (group_0.gr_name,))
 
     def test_get_user_data(self):
         """This tests the functionality for parsing /etc/passwd style files."""
-        provider =  UserProvider(passwd_file=self.passwd_file,
-                                 group_file=self.group_file)
+        provider = UserProvider(passwd_file=self.passwd_file,
+                                group_file=self.group_file)
         users = provider.get_user_data()
         self.assertEquals(users[0], ("root", "x", 0, 0, "root", "/root",
                                      "/bin/bash"))
-        self.assertEquals(users[1], ("haldaemon", "x", 107, 116, 
-                                     "Hardware abstraction layer,,,", 
+        self.assertEquals(users[1], ("haldaemon", "x", 107, 116,
+                                     "Hardware abstraction layer,,,",
                                      "/home/haldaemon", "/bin/false"))
-        self.assertEquals(users[2], ("kevin", "x", 1001, 65534, 
+        self.assertEquals(users[2], ("kevin", "x", 1001, 65534,
                                      "Kevin,101,+44123123,+44123124",
                                      "/home/kevin", "/bin/bash"))
 
-    def test_get_users(self):
+    def test_get_users_with_many(self):
         """
         The method get_users is responsible for translating tuples of
         information from the underlying user database into dictionaries.
         """
-        provider =  UserProvider(passwd_file=self.passwd_file,
+        provider = UserProvider(passwd_file=self.passwd_file,
                                  group_file=self.group_file)
         users = provider.get_users()
         self.assertEquals(users[0], {"username": "root",
@@ -369,8 +369,8 @@ kevin:x:1000:
 
     def test_get_group_data(self):
         """This tests the functionality for parsing /etc/group style files."""
-        provider =  UserProvider(passwd_file=self.passwd_file,
-                                 group_file=self.group_file)
+        provider = UserProvider(passwd_file=self.passwd_file,
+                                group_file=self.group_file)
         groups = provider.get_group_data()
         self.assertEquals(groups[0], (u"root", u"x", 0, [u""]))
         self.assertEquals(groups[1], (u"cdrom", u"x", 24,
@@ -382,8 +382,8 @@ kevin:x:1000:
         The method get_groups is responsible for translating tuples of data
         from the underlying userdatabase into dictionaries.
         """
-        provider =  UserProvider(passwd_file=self.passwd_file,
-                                 group_file=self.group_file)
+        provider = UserProvider(passwd_file=self.passwd_file,
+                                group_file=self.group_file)
         groups = provider.get_groups()
         self.assertEquals(groups[0], {"name": u"root",
                                       "gid": 0,
@@ -411,8 +411,8 @@ kevin:x:1001:65534:Kevin,101,+44123123,+44123124:/home/kevin:/bin/bash
 broken2
 """)
 
-        provider =  UserProvider(passwd_file=passwd_file,
-                                 group_file=self.group_file)
+        provider = UserProvider(passwd_file=passwd_file,
+                                group_file=self.group_file)
         users = provider.get_users()
         self.assertEquals(users[0], {"username": "root",
                                      "name": u"root",
@@ -454,8 +454,8 @@ kevin:x:1001:65534:Kevin,101,+44123123,+44123124:/home/kevin:/bin/bash
 +::::::
 """)
 
-        provider =  UserProvider(passwd_file=passwd_file,
-                                 group_file=self.group_file)
+        provider = UserProvider(passwd_file=passwd_file,
+                                group_file=self.group_file)
         users = provider.get_users()
         self.assertTrue(len(users), 2)
         self.assertEquals(users[0], {"username": "root",
@@ -489,22 +489,23 @@ root:x:0:
 cdrom:x:24:
 kevin:x:kevin:
 """)
-        provider =  UserProvider(passwd_file=self.passwd_file,
-                                 group_file=group_file)
+        provider = UserProvider(passwd_file=self.passwd_file,
+                                group_file=group_file)
         groups = provider.get_groups()
         self.assertEquals(groups[0], {"name": u"root", "gid": 0,
                                       "members": []})
         self.assertEquals(groups[1], {"name": u"cdrom", "gid": 24,
                                       "members": []})
-        log = ("WARNING: group file %s is incorrectly formatted: line 3." % group_file)
+        log = ("WARNING: group file %s is incorrectly "
+               "formatted: line 3." % group_file)
         self.assertIn(log, self.logfile.getvalue())
 
     def test_get_groups_nis_line(self):
         """
         This tests the functionality for parsing /etc/group style files.
 
-        We should ignore the specific pattern for NIS user-extensions in group 
-        files.
+        We should ignore the specific pattern for NIS user-extensions in
+        group files.
         """
         group_file = self.makeFile("""\
 root:x:0:
@@ -513,8 +514,8 @@ cdrom:x:24:
 -radix:::
 +:::
 """)
-        provider =  UserProvider(passwd_file=self.passwd_file,
-                                 group_file=group_file)
+        provider = UserProvider(passwd_file=self.passwd_file,
+                                group_file=group_file)
         groups = provider.get_groups()
         self.assertEquals(groups[0], {"name": u"root", "gid": 0,
                                       "members": []})

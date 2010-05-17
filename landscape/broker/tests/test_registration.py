@@ -6,27 +6,25 @@ from twisted.internet.defer import succeed, fail
 
 from landscape.broker.registration import (
     InvalidCredentialsError, RegistrationHandler, is_cloud_managed, EC2_HOST,
-    EC2_API)
+    EC2_API, Identity)
 
-from landscape.broker.deployment import BrokerConfiguration
-from landscape.tests.helpers import LandscapeTest, ExchangeHelper
+from landscape.broker.config import BrokerConfiguration
+from landscape.tests.helpers import LandscapeTest
+from landscape.broker.tests.helpers import (
+    BrokerConfigurationHelper, RegistrationHelper)
 from landscape.lib.bpickle import dumps
 from landscape.lib.fetch import HTTPCodeError, FetchError
+from landscape.lib.persist import Persist
 
 
-class RegistrationTest(LandscapeTest):
+class IdentityTest(LandscapeTest):
 
-    helpers = [ExchangeHelper]
+    helpers = [BrokerConfigurationHelper]
 
     def setUp(self):
-        super(RegistrationTest, self).setUp()
-        self.config = self.broker_service.config
-        self.identity = self.broker_service.identity
-        self.handler = self.broker_service.registration
-        logging.getLogger().setLevel(logging.INFO)
-        self.hostname = "ooga.local"
-        self.addCleanup(setattr, socket, "getfqdn", socket.getfqdn)
-        socket.getfqdn = lambda: self.hostname
+        super(IdentityTest, self).setUp()
+        self.persist = Persist(filename=self.makePersistFile())
+        self.identity = Identity(self.config, self.persist)
 
     def check_persist_property(self, attr, persist_name):
         value = "VALUE"
@@ -37,8 +35,9 @@ class RegistrationTest(LandscapeTest):
         self.assertEquals(getattr(self.identity, attr), value,
                           "%r attribute should be %r, not %r" %
                           (attr, value, getattr(self.identity, attr)))
-        self.assertEquals(self.persist.get(persist_name), value,
-                          "%r not set to %r in persist" % (persist_name, value))
+        self.assertEquals(
+            self.persist.get(persist_name), value,
+            "%r not set to %r in persist" % (persist_name, value))
 
     def check_config_property(self, attr):
         value = "VALUE"
@@ -46,14 +45,6 @@ class RegistrationTest(LandscapeTest):
         self.assertEquals(getattr(self.identity, attr), value,
                           "%r attribute should be %r, not %r" %
                           (attr, value, getattr(self.identity, attr)))
-
-    def get_user_data(self, otps=None,
-                      exchange_url="https://example.com/message-system",
-                      ping_url="http://example.com/ping"):
-        if otps is None:
-            otps = ["otp1"]
-        return {"otps": otps, "exchange-url": exchange_url,
-                "ping-url": ping_url}
 
     def test_secure_id(self):
         self.check_persist_property("secure_id",
@@ -74,6 +65,21 @@ class RegistrationTest(LandscapeTest):
 
     def test_client_tags(self):
         self.check_config_property("tags")
+
+
+class RegistrationHandlerTestBase(LandscapeTest):
+
+    helpers = [RegistrationHelper]
+
+    def setUp(self):
+        super(RegistrationHandlerTestBase, self).setUp()
+        logging.getLogger().setLevel(logging.INFO)
+        self.hostname = "ooga.local"
+        self.addCleanup(setattr, socket, "getfqdn", socket.getfqdn)
+        socket.getfqdn = lambda: self.hostname
+
+
+class RegistrationHandlerTest(RegistrationHandlerTestBase):
 
     def test_server_initiated_id_changing(self):
         """
@@ -146,8 +152,7 @@ class RegistrationTest(LandscapeTest):
                               "account_name": "account_name",
                               "registration_password": None,
                               "hostname": "ooga.local",
-                              "tags": None,}
-                            ])
+                              "tags": None}])
         self.assertEquals(self.logfile.getvalue().strip(),
                           "INFO: Queueing message to register with account "
                           "'account_name' without a password.")
@@ -165,8 +170,7 @@ class RegistrationTest(LandscapeTest):
                               "account_name": "account_name",
                               "registration_password": "SEKRET",
                               "hostname": "ooga.local",
-                              "tags": None,}
-                            ])
+                              "tags": None}])
         self.assertEquals(self.logfile.getvalue().strip(),
                           "INFO: Queueing message to register with account "
                           "'account_name' with a password.")
@@ -188,8 +192,7 @@ class RegistrationTest(LandscapeTest):
                               "account_name": "account_name",
                               "registration_password": "SEKRET",
                               "hostname": "ooga.local",
-                              "tags": u"computer,tag"}
-                            ])
+                              "tags": u"computer,tag"}])
         self.assertEquals(self.logfile.getvalue().strip(),
                           "INFO: Queueing message to register with account "
                           "'account_name' and tags computer,tag "
@@ -214,8 +217,7 @@ class RegistrationTest(LandscapeTest):
                               "account_name": "account_name",
                               "registration_password": "SEKRET",
                               "hostname": "ooga.local",
-                              "tags": None}
-                            ])
+                              "tags": None}])
         self.assertEquals(self.logfile.getvalue().strip(),
                           "ERROR: Invalid tags provided for cloud "
                           "registration.\n    "
@@ -233,14 +235,14 @@ class RegistrationTest(LandscapeTest):
         self.config.registration_password = "SEKRET"
         self.config.tags = u"prova\N{LATIN SMALL LETTER J WITH CIRCUMFLEX}o"
         self.reactor.fire("pre-exchange")
-        self.assertMessages(self.mstore.get_pending_messages(),
-                            [{"type": "register",
-                              "computer_title": "Computer Title",
-                              "account_name": "account_name",
-                              "registration_password": "SEKRET",
-                              "hostname": "ooga.local",
-                              "tags": u"prova\N{LATIN SMALL LETTER J WITH CIRCUMFLEX}o"}
-                            ])
+        self.assertMessages(
+            self.mstore.get_pending_messages(),
+            [{"type": "register",
+              "computer_title": "Computer Title",
+              "account_name": "account_name",
+              "registration_password": "SEKRET",
+              "hostname": "ooga.local",
+              "tags": u"prova\N{LATIN SMALL LETTER J WITH CIRCUMFLEX}o"}])
         self.assertEquals(self.logfile.getvalue().strip(),
                           "INFO: Queueing message to register with account "
                           "'account_name' and tags prova\xc4\xb5o "
@@ -328,9 +330,11 @@ class RegistrationTest(LandscapeTest):
 
         calls = [0]
         d = self.handler.register()
+
         def add_call(result):
             self.assertEquals(result, None)
             calls[0] += 1
+
         d.addCallback(add_call)
 
         # This should somehow callback the deferred.
@@ -350,8 +354,10 @@ class RegistrationTest(LandscapeTest):
     def test_resynchronize_fired_when_registration_done(self):
 
         results = []
+
         def append():
             results.append(True)
+
         self.reactor.call_on("resynchronize-clients", append)
 
         self.handler.register()
@@ -368,10 +374,12 @@ class RegistrationTest(LandscapeTest):
 
         calls = [0]
         d = self.handler.register()
+
         def add_call(failure):
             exception = failure.value
             self.assertTrue(isinstance(exception, InvalidCredentialsError))
             calls[0] += 1
+
         d.addErrback(add_call)
 
         # This should somehow callback the deferred.
@@ -423,10 +431,35 @@ class RegistrationTest(LandscapeTest):
                               "account_name": "account_name",
                               "registration_password": "SEKRET",
                               "hostname": socket.getfqdn(),
-                              "tags": None,}
-                             ])
+                              "tags": None}])
 
-    def get_registration_handler_for_cloud(
+
+class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
+
+    cloud = True
+
+    def setUp(self):
+        super(CloudRegistrationHandlerTest, self).setUp()
+        self.query_results = {}
+
+        def fetch_stub(url):
+            value = self.query_results[url]
+            if isinstance(value, Exception):
+                return fail(value)
+            else:
+                return succeed(value)
+
+        self.fetch_func = fetch_stub
+
+    def get_user_data(self, otps=None,
+                      exchange_url="https://example.com/message-system",
+                      ping_url="http://example.com/ping"):
+        if otps is None:
+            otps = ["otp1"]
+        return {"otps": otps, "exchange-url": exchange_url,
+                "ping-url": ping_url}
+
+    def prepare_query_results(
         self, user_data=None, instance_key="key1", launch_index=0,
         local_hostname="ooga.local", public_hostname="ooga.amazon.com",
         reservation_key=u"res1", ramdisk_key=u"ram1", kernel_key=u"kernel1",
@@ -436,7 +469,7 @@ class RegistrationTest(LandscapeTest):
         if not isinstance(user_data, Exception):
             user_data = dumps(user_data)
         api_base = "http://169.254.169.254/latest"
-        query_results = {}
+        self.query_results.clear()
         for url_suffix, value in [
             ("/user-data", user_data),
             ("/meta-data/instance-id", instance_key),
@@ -448,39 +481,19 @@ class RegistrationTest(LandscapeTest):
             ("/meta-data/ramdisk-id", ramdisk_key),
             ("/meta-data/ami-id", image_key),
             ]:
-            query_results[api_base + url_suffix] = value
+            self.query_results[api_base + url_suffix] = value
 
-        def fetch_stub(url):
-            value = query_results[url]
-            if isinstance(value, Exception):
-                return fail(value)
-            else:
-                return succeed(value)
-
-        exchanger = self.broker_service.exchanger
-        handler = RegistrationHandler(self.broker_service.config,
-                                      self.broker_service.identity,
-                                      self.broker_service.reactor,
-                                      exchanger,
-                                      self.broker_service.pinger,
-                                      self.broker_service.message_store,
-                                      cloud=True,
-                                      fetch_async=fetch_stub)
-        return handler
-
-    def prepare_cloud_registration(self, handler, account_name=None,
+    def prepare_cloud_registration(self, account_name=None,
                                    registration_password=None, tags=None):
         # Set things up so that the client thinks it should register
-        mstore = self.broker_service.message_store
-        mstore.set_accepted_types(list(mstore.get_accepted_types())
-                                  + ["register-cloud-vm"])
-        config = self.broker_service.config
-        config.account_name = account_name
-        config.registration_password = registration_password
-        config.computer_title = None
-        config.tags = tags
-        self.broker_service.identity.secure_id = None
-        self.assertTrue(handler.should_register())
+        self.mstore.set_accepted_types(list(self.mstore.get_accepted_types())
+                                       + ["register-cloud-vm"])
+        self.config.account_name = account_name
+        self.config.registration_password = registration_password
+        self.config.computer_title = None
+        self.config.tags = tags
+        self.identity.secure_id = None
+        self.assertTrue(self.handler.should_register())
 
     def get_expected_cloud_message(self, **kwargs):
         """
@@ -516,10 +529,9 @@ class RegistrationTest(LandscapeTest):
           immediately accepting the computer, instead of going through the
           pending computer stage.
         """
-        handler = self.get_registration_handler_for_cloud()
+        self.prepare_query_results()
 
-        config = self.broker_service.config
-        self.prepare_cloud_registration(handler, tags=u"server,london")
+        self.prepare_cloud_registration(tags=u"server,london")
 
         # metadata is fetched and stored at reactor startup:
         self.reactor.fire("run")
@@ -527,7 +539,7 @@ class RegistrationTest(LandscapeTest):
         # And the metadata returned determines the URLs that are used
         self.assertEquals(self.transport.get_url(),
                           "https://example.com/message-system")
-        self.assertEquals(self.broker_service.pinger.get_url(),
+        self.assertEquals(self.pinger.get_url(),
                           "http://example.com/ping")
         # Let's make sure those values were written back to the config file
         new_config = BrokerConfiguration()
@@ -536,13 +548,14 @@ class RegistrationTest(LandscapeTest):
         self.assertEquals(new_config.ping_url, "http://example.com/ping")
 
         # Okay! Exchange should cause the registration to happen.
-        self.broker_service.exchanger.exchange()
+        self.exchanger.exchange()
         # This *should* be asynchronous, but I think a billion tests are
         # written like this
         self.assertEquals(len(self.transport.payloads), 1)
-        self.assertMessages(self.transport.payloads[0]["messages"],
-                            [self.get_expected_cloud_message(tags=u"server,london")])
- 
+        self.assertMessages(
+            self.transport.payloads[0]["messages"],
+            [self.get_expected_cloud_message(tags=u"server,london")])
+
     def test_cloud_registration_with_invalid_tags(self):
         """
         Invalid tags in the configuration should result in the tags not being
@@ -550,14 +563,12 @@ class RegistrationTest(LandscapeTest):
         """
         self.log_helper.ignore_errors("Invalid tags provided for cloud "
                                       "registration")
-        handler = self.get_registration_handler_for_cloud()
-        config = self.broker_service.config
-        self.prepare_cloud_registration(handler,
-            tags=u"<script>alert()</script>,hardy")
+        self.prepare_query_results()
+        self.prepare_cloud_registration(tags=u"<script>alert()</script>,hardy")
 
         # metadata is fetched and stored at reactor startup:
         self.reactor.fire("run")
-        self.broker_service.exchanger.exchange()
+        self.exchanger.exchange()
         self.assertEquals(len(self.transport.payloads), 1)
         self.assertMessages(self.transport.payloads[0]["messages"],
                             [self.get_expected_cloud_message(tags=None)])
@@ -570,13 +581,8 @@ class RegistrationTest(LandscapeTest):
                           "INFO: Message exchange completed in 0.00s.")
 
     def test_wrong_user_data(self):
-        handler = self.get_registration_handler_for_cloud(
-            user_data="other stuff, not a bpickle")
-        config = self.broker_service.config
-
-        exchanger = self.broker_service.exchanger
-
-        self.prepare_cloud_registration(handler)
+        self.prepare_query_results(user_data="other stuff, not a bpickle")
+        self.prepare_cloud_registration()
 
         # Mock registration-failed call
         reactor_mock = self.mocker.patch(self.reactor)
@@ -584,16 +590,11 @@ class RegistrationTest(LandscapeTest):
         self.mocker.replay()
 
         self.reactor.fire("run")
-        exchanger.exchange()
+        self.exchanger.exchange()
 
     def test_wrong_object_type_in_user_data(self):
-        handler = self.get_registration_handler_for_cloud(
-            user_data=True)
-        config = self.broker_service.config
-
-        exchanger = self.broker_service.exchanger
-
-        self.prepare_cloud_registration(handler)
+        self.prepare_query_results(user_data=True)
+        self.prepare_cloud_registration()
 
         # Mock registration-failed call
         reactor_mock = self.mocker.patch(self.reactor)
@@ -601,16 +602,15 @@ class RegistrationTest(LandscapeTest):
         self.mocker.replay()
 
         self.reactor.fire("run")
-        exchanger.exchange()
+        self.exchanger.exchange()
 
     def test_user_data_with_not_enough_elements(self):
         """
         If the AMI launch index isn't represented in the list of OTPs in the
         user data then BOOM.
         """
-        handler = self.get_registration_handler_for_cloud(launch_index=1)
-
-        self.prepare_cloud_registration(handler)
+        self.prepare_query_results(launch_index=1)
+        self.prepare_cloud_registration()
 
         # Mock registration-failed call
         reactor_mock = self.mocker.patch(self.reactor)
@@ -618,12 +618,11 @@ class RegistrationTest(LandscapeTest):
         self.mocker.replay()
 
         self.reactor.fire("run")
-        self.broker_service.exchanger.exchange()
+        self.exchanger.exchange()
 
     def test_user_data_bpickle_without_otp(self):
-        handler = self.get_registration_handler_for_cloud(
-            user_data={"foo": "bar"})
-        self.prepare_cloud_registration(handler)
+        self.prepare_query_results(user_data={"foo": "bar"})
+        self.prepare_cloud_registration()
 
         # Mock registration-failed call
         reactor_mock = self.mocker.patch(self.reactor)
@@ -631,19 +630,17 @@ class RegistrationTest(LandscapeTest):
         self.mocker.replay()
 
         self.reactor.fire("run")
-        self.broker_service.exchanger.exchange()
+        self.exchanger.exchange()
 
     def test_no_otp_fallback_to_account(self):
-        handler = self.get_registration_handler_for_cloud(
-            user_data="other stuff, not a bpickle",
-            instance_key=u"key1")
-        self.prepare_cloud_registration(handler,
-                                        account_name=u"onward",
+        self.prepare_query_results(user_data="other stuff, not a bpickle",
+                                   instance_key=u"key1")
+        self.prepare_cloud_registration(account_name=u"onward",
                                         registration_password=u"password",
                                         tags=u"london,server")
 
         self.reactor.fire("run")
-        self.broker_service.exchanger.exchange()
+        self.exchanger.exchange()
 
         self.assertEquals(len(self.transport.payloads), 1)
         self.assertMessages(self.transport.payloads[0]["messages"],
@@ -668,9 +665,9 @@ class RegistrationTest(LandscapeTest):
 
         self.mstore.add({"type": "test"})
 
-        handler = self.get_registration_handler_for_cloud()
+        self.prepare_query_results()
 
-        self.prepare_cloud_registration(handler)
+        self.prepare_cloud_registration()
 
         self.reactor.fire("run")
         self.reactor.fire("pre-exchange")
@@ -685,29 +682,27 @@ class RegistrationTest(LandscapeTest):
         back to, we fire 'registration-failed'.
         """
         self.log_helper.ignore_errors(pycurl.error)
-        config = self.broker_service.config
 
         def fetch_stub(url):
             return fail(pycurl.error(7, "couldn't connect to host"))
 
-        exchanger = self.broker_service.exchanger
-        handler = RegistrationHandler(self.broker_service.config,
-                                      self.broker_service.identity,
-                                      self.broker_service.reactor,
-                                      exchanger,
-                                      self.broker_service.pinger,
-                                      self.broker_service.message_store,
-                                      cloud=True,
-                                      fetch_async=fetch_stub)
+        self.handler = RegistrationHandler(
+            self.config, self.identity, self.reactor, self.exchanger,
+            self.pinger, self.mstore, fetch_async=fetch_stub)
 
-        self.prepare_cloud_registration(handler)
+        self.fetch_stub = fetch_stub
+        self.prepare_query_results()
+        self.fetch_stub = fetch_stub
+
+        self.prepare_cloud_registration()
 
         failed = []
-        self.reactor.call_on("registration-failed", lambda: failed.append(True))
+        self.reactor.call_on(
+            "registration-failed", lambda: failed.append(True))
 
         self.log_helper.ignore_errors("Got error while fetching meta-data")
         self.reactor.fire("run")
-        exchanger.exchange()
+        self.exchanger.exchange()
         self.assertEquals(failed, [True])
         self.assertIn('error: (7, "couldn\'t connect to host")',
                       self.logfile.getvalue())
@@ -718,14 +713,12 @@ class RegistrationTest(LandscapeTest):
         register-cloud-vm still occurs.
         """
         self.log_helper.ignore_errors(HTTPCodeError)
-        handler = self.get_registration_handler_for_cloud(
-            user_data=HTTPCodeError(404, "ohno"))
-        self.prepare_cloud_registration(handler,
-                                        account_name="onward",
+        self.prepare_query_results(user_data=HTTPCodeError(404, "ohno"))
+        self.prepare_cloud_registration(account_name="onward",
                                         registration_password="password")
 
         self.reactor.fire("run")
-        self.broker_service.exchanger.exchange()
+        self.exchanger.exchange()
         self.assertIn("HTTPCodeError: Server returned HTTP code 404",
                       self.logfile.getvalue())
         self.assertEquals(len(self.transport.payloads), 1)
@@ -735,6 +728,24 @@ class RegistrationTest(LandscapeTest):
                                 account_name=u"onward",
                                 registration_password=u"password")])
 
+    def test_cloud_registration_continues_without_ramdisk(self):
+        """
+        If the instance doesn't have a ramdisk (ie, the query for ramdisk
+        returns a 404), then register-cloud-vm still occurs.
+        """
+        self.log_helper.ignore_errors(HTTPCodeError)
+        self.prepare_query_results(ramdisk_key=HTTPCodeError(404, "ohno"))
+        self.prepare_cloud_registration()
+
+        self.reactor.fire("run")
+        self.exchanger.exchange()
+        self.assertIn("HTTPCodeError: Server returned HTTP code 404",
+                      self.logfile.getvalue())
+        self.assertEquals(len(self.transport.payloads), 1)
+        self.assertMessages(self.transport.payloads[0]["messages"],
+                            [self.get_expected_cloud_message(
+                                ramdisk_key=None)])
+
     def test_fall_back_to_normal_registration_when_metadata_fetch_fails(self):
         """
         If fetching metadata fails, but we do have an account name, then we
@@ -742,14 +753,13 @@ class RegistrationTest(LandscapeTest):
         """
         self.mstore.set_accepted_types(["register"])
         self.log_helper.ignore_errors(HTTPCodeError)
-        handler = self.get_registration_handler_for_cloud(
+        self.prepare_query_results(
             public_hostname=HTTPCodeError(404, "ohnoes"))
-        self.prepare_cloud_registration(handler,
-                                        account_name="onward",
+        self.prepare_cloud_registration(account_name="onward",
                                         registration_password="password")
-        self.broker_service.config.computer_title = "whatever"
+        self.config.computer_title = "whatever"
         self.reactor.fire("run")
-        self.broker_service.exchanger.exchange()
+        self.exchanger.exchange()
         self.assertIn("HTTPCodeError: Server returned HTTP code 404",
                       self.logfile.getvalue())
         self.assertEquals(len(self.transport.payloads), 1)
@@ -759,30 +769,20 @@ class RegistrationTest(LandscapeTest):
                               "account_name": u"onward",
                               "registration_password": u"password",
                               "hostname": socket.getfqdn(),
-                              "tags": None,}])
+                              "tags": None}])
 
     def test_should_register_in_cloud(self):
         """
         The client should register when it's in the cloud even though
         it doesn't have the normal account details.
         """
-        config = self.broker_service.config
-        handler = RegistrationHandler(self.broker_service.config,
-                                      self.broker_service.identity,
-                                      self.broker_service.reactor,
-                                      self.broker_service.exchanger,
-                                      self.broker_service.pinger,
-                                      self.broker_service.message_store,
-                                      cloud=True)
-
-        mstore = self.broker_service.message_store
-        mstore.set_accepted_types(mstore.get_accepted_types()
-                                  + ("register-cloud-vm",))
-        config.account_name = None
-        config.registration_password = None
-        config.computer_title = None
-        self.broker_service.identity.secure_id = None
-        self.assertTrue(handler.should_register())
+        self.mstore.set_accepted_types(self.mstore.get_accepted_types()
+                                       + ("register-cloud-vm",))
+        self.config.account_name = None
+        self.config.registration_password = None
+        self.config.computer_title = None
+        self.identity.secure_id = None
+        self.assertTrue(self.handler.should_register())
 
     def test_launch_index(self):
         """
@@ -790,17 +790,16 @@ class RegistrationTest(LandscapeTest):
         appropriate OTP in the user data.
         """
         otp = "correct otp for launch index"
-        handler = self.get_registration_handler_for_cloud(
-            user_data=self.get_user_data(otps=["wrong index",
-                                               otp,
+        self.prepare_query_results(
+            user_data=self.get_user_data(otps=["wrong index", otp,
                                                "wrong again"],),
             instance_key="key1",
             launch_index=1)
 
-        self.prepare_cloud_registration(handler)
+        self.prepare_cloud_registration()
 
         self.reactor.fire("run")
-        self.broker_service.exchanger.exchange()
+        self.exchanger.exchange()
         self.assertEquals(len(self.transport.payloads), 1)
         self.assertMessages(self.transport.payloads[0]["messages"],
                             [self.get_expected_cloud_message(otp=otp,
@@ -810,43 +809,24 @@ class RegistrationTest(LandscapeTest):
         """
         Having a secure ID means we shouldn't register, even in the cloud.
         """
-        config = self.broker_service.config
-        handler = RegistrationHandler(self.broker_service.config,
-                                      self.broker_service.identity,
-                                      self.broker_service.reactor,
-                                      self.broker_service.exchanger,
-                                      self.broker_service.pinger,
-                                      self.broker_service.message_store,
-                                      cloud=True)
-
-        mstore = self.broker_service.message_store
-        mstore.set_accepted_types(mstore.get_accepted_types()
-                                  + ("register-cloud-vm",))
-        config.account_name = None
-        config.registration_password = None
-        config.computer_title = None
-        self.broker_service.identity.secure_id = "hello"
-        self.assertFalse(handler.should_register())
+        self.mstore.set_accepted_types(self.mstore.get_accepted_types()
+                                       + ("register-cloud-vm",))
+        self.config.account_name = None
+        self.config.registration_password = None
+        self.config.computer_title = None
+        self.identity.secure_id = "hello"
+        self.assertFalse(self.handler.should_register())
 
     def test_should_not_register_without_register_cloud_vm(self):
         """
         If the server isn't accepting a 'register-cloud-vm' message,
         we shouldn't register.
         """
-        config = self.broker_service.config
-        handler = RegistrationHandler(self.broker_service.config,
-                                      self.broker_service.identity,
-                                      self.broker_service.reactor,
-                                      self.broker_service.exchanger,
-                                      self.broker_service.pinger,
-                                      self.broker_service.message_store,
-                                      cloud=True)
-
-        config.account_name = None
-        config.registration_password = None
-        config.computer_title = None
-        self.broker_service.identity.secure_id = None
-        self.assertFalse(handler.should_register())
+        self.config.account_name = None
+        self.config.registration_password = None
+        self.config.computer_title = None
+        self.identity.secure_id = None
+        self.assertFalse(self.handler.should_register())
 
 
 class IsCloudManagedTests(LandscapeTest):
@@ -872,8 +852,9 @@ class IsCloudManagedTests(LandscapeTest):
 
     def test_is_managed(self):
         """
-        L{is_cloud_managed} returns True if the EC2 user-data contains Landscape
-        instance information.  It fetches the EC2 data with low timeouts.
+        L{is_cloud_managed} returns True if the EC2 user-data contains
+        Landscape instance information.  It fetches the EC2 data with low
+        timeouts.
         """
         user_data = {"otps": ["otp1"], "exchange-url": "http://exchange",
                      "ping-url": "http://ping"}
@@ -932,15 +913,19 @@ class IsCloudManagedTests(LandscapeTest):
         self.assertFalse(is_cloud_managed(self.fake_fetch))
 
     def test_is_managed_fetch_not_found(self):
+
         def fake_fetch(url, connect_timeout=None):
             raise HTTPCodeError(404, "ohnoes")
+
         self.mock_socket()
         self.mocker.replay()
         self.assertFalse(is_cloud_managed(fake_fetch))
 
     def test_is_managed_fetch_error(self):
+
         def fake_fetch(url, connect_timeout=None):
             raise FetchError(7, "couldn't connect to host")
+
         self.mock_socket()
         self.mocker.replay()
         self.assertFalse(is_cloud_managed(fake_fetch))
@@ -972,6 +957,7 @@ class IsCloudManagedTests(LandscapeTest):
         """
         We'll only wait five minutes for the network to come up.
         """
+
         def fake_fetch(url, connect_timeout=None):
             raise FetchError(7, "couldn't connect to host")
 

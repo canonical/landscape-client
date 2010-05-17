@@ -2,15 +2,11 @@ import thread
 import types
 import time
 
-from landscape.reactor import Reactor, FakeReactor, TwistedReactor
-
+from landscape.reactor import FakeReactor, TwistedReactor
 from landscape.tests.helpers import LandscapeTest
 
 
-class ReactorTest(LandscapeTest):
-
-    def get_reactor(self):
-        return Reactor()
+class ReactorTestMixin(object):
 
     def test_call_later(self):
         reactor = self.get_reactor()
@@ -363,7 +359,7 @@ class ReactorTest(LandscapeTest):
         self.assertEquals(called[3], thread.get_ident())
 
 
-class FakeReactorTest(ReactorTest):
+class FakeReactorTest(LandscapeTest, ReactorTestMixin):
 
     def get_reactor(self):
         return FakeReactor()
@@ -396,7 +392,7 @@ class FakeReactorTest(ReactorTest):
         self.assertEquals(reactor.time(), 13.5)
 
 
-class TwistedReactorTest(ReactorTest):
+class TwistedReactorTest(LandscapeTest, ReactorTestMixin):
 
     def get_reactor(self):
         return TwistedReactor()
@@ -404,8 +400,3 @@ class TwistedReactorTest(ReactorTest):
     def test_real_time(self):
         reactor = self.get_reactor()
         self.assertTrue(reactor.time() - time.time() < 3)
-
-
-# FIXME This is here because the GObject reactor frequently causes the
-# test suite to segfault.  When it becomes stable this can be removed.
-del ReactorTest

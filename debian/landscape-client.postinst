@@ -26,10 +26,6 @@ PYTHON=/usr/bin/python
 case "$1" in
     configure)
 
-        # Tell dbus to reload its configuration since we've installed a conf
-        # to its system.d. We must do this before invoking landscape-config.
-        invoke-rc.d dbus reload || true
-
         CONFIG_FILE=/etc/landscape/client.conf
         if [ ! -f $CONFIG_FILE ]; then
             # Create new configuration, with private mode
@@ -93,6 +89,8 @@ END
             rm $very_old_cron_job
         fi
 
+        # Remove obsolete D-Bus configuration file
+        rm -f /etc/dbus-1/system.d/landscape.conf
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

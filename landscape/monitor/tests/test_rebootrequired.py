@@ -1,12 +1,12 @@
 import os
 
 from landscape.monitor.rebootrequired import RebootRequired
-from landscape.tests.helpers import LandscapeIsolatedTest
-from landscape.tests.helpers import MonitorHelper, LogKeeperHelper
+from landscape.tests.helpers import (
+    LandscapeTest, MonitorHelper, LogKeeperHelper)
 from landscape.tests.mocker import ANY
 
 
-class RebootRequiredTest(LandscapeIsolatedTest):
+class RebootRequiredTest(LandscapeTest):
 
     helpers = [MonitorHelper, LogKeeperHelper]
 

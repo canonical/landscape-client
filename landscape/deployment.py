@@ -1,25 +1,14 @@
-import signal
 import os
 import sys
-import pwd
 
 from logging import (getLevelName, getLogger,
-                     FileHandler, StreamHandler, Formatter, info)
+                     FileHandler, StreamHandler, Formatter)
 
 from optparse import OptionParser
 from ConfigParser import ConfigParser, NoSectionError
 
-import dbus.glib # Side-effects rule!
-
-from twisted.application.service import Application, Service
-from twisted.application.app import startApplication
-
 from landscape import VERSION
 from landscape.lib.persist import Persist
-from landscape.lib.dbus_util import get_bus
-from landscape.lib import bpickle_dbus
-from landscape.log import rotate_logs
-from landscape.reactor import TwistedReactor
 
 from landscape.upgraders import UPGRADE_MANAGERS
 
@@ -162,7 +151,7 @@ class BaseConfiguration(object):
             if not getattr(self, option):
                 sys.exit("error: must specify --%s "
                          "or the '%s' directive in the config file."
-                         % (option.replace('_','-'), option))
+                         % (option.replace('_', '-'), option))
 
         if self.bus not in ("session", "system"):
             sys.exit("error: bus must be one of 'session' or 'system'")
@@ -279,10 +268,6 @@ class Configuration(BaseConfiguration):
     This contains all simple data, some of it calculated.
     """
 
-    @property
-    def hashdb_filename(self):
-        return os.path.join(self.data_path, "hash.db")
-
     def make_parser(self):
         """Parser factory for supported options.
 
@@ -308,12 +293,18 @@ class Configuration(BaseConfiguration):
         parser.add_option("--log-level", default="info",
                           help="One of debug, info, warning, error or "
                                "critical.")
-        parser.add_option("--ignore-sigint", action="store_true", default=False,
-                          help="Ignore interrupt signals.")
-        parser.add_option("--ignore-sigusr1", action="store_true", default=False,
-                          help="Ignore SIGUSR1 signal to rotate logs.")
+        parser.add_option("--ignore-sigint", action="store_true",
+                          default=False, help="Ignore interrupt signals.")
+        parser.add_option("--ignore-sigusr1", action="store_true",
+                          default=False, help="Ignore SIGUSR1 signal to "
+                                              "rotate logs.")
 
         return parser
+
+    @property
+    def sockets_path(self):
+        """Return the path to the directory where Unix sockets are created."""
+        return os.path.join(self.data_path, "sockets")
 
 
 def get_versioned_persist(service):
@@ -330,108 +321,3 @@ def get_versioned_persist(service):
         upgrade_manager.initialize(persist)
     persist.save(service.persist_filename)
     return persist
-
-
-class LandscapeService(Service, object):
-    """Utility superclass for defining Landscape services.
-
-    This sets up the reactor, bpickle/dbus integration, a Persist object, and
-    connects to the bus when started.
-
-    @ivar reactor: a L{TwistedReactor} object.
-    @cvar service_name: The lower-case name of the service. This is used to
-        generate the bpickle filename.
-    """
-    reactor_factory = TwistedReactor
-    persist_filename = None
-
-    def __init__(self, config):
-        self.config = config
-        bpickle_dbus.install()
-        self.reactor = self.reactor_factory()
-        if self.persist_filename:
-            self.persist = get_versioned_persist(self)
-        if not (self.config is not None and self.config.ignore_sigusr1):
-            signal.signal(signal.SIGUSR1, lambda signal, frame: rotate_logs())
-
-    def startService(self):
-        """Extend L{twisted.application.service.IService.startService}.
-
-        Create a a new DBus connection (normally using a C{SystemBus}) and
-        save it in the public L{self.bus} instance variable.
-        """
-        Service.startService(self)
-        self.bus = get_bus(self.config.bus)
-        info("%s started on '%s' bus with config %s" % (
-                self.service_name.capitalize(), self.config.bus,
-                self.config.get_config_filename()))
-
-    def stopService(self):
-        Service.stopService(self)
-        info("%s stopped on '%s' bus with config %s" % (
-                self.service_name.capitalize(), self.config.bus,
-                self.config.get_config_filename()))
-
-
-def assert_unowned_bus_name(bus, bus_name):
-    dbus_object = bus.get_object("org.freedesktop.DBus",
-                                 "/org/freedesktop/DBus")
-    if dbus_object.NameHasOwner(bus_name,
-                                dbus_interface="org.freedesktop.DBus"):
-        sys.exit("error: DBus name %s is owned. "
-                 "Is the process already running?" % bus_name)
-
-
-_required_users = {
-    "broker": "landscape",
-    "monitor": "landscape",
-    "manager": "root"}
-
-
-def run_landscape_service(configuration_class, service_class, args, bus_name):
-    """Run a Landscape service.
-
-    The function will instantiate the given L{LandscapeService} subclass
-    and attach the resulting service object to a Twisted C{Application}.
-
-    After that it will start the Twisted L{Application} and call the
-    L{TwistedReactor.run} method of the L{LandscapeService}'s reactor.
-
-    @param configuration_class: The service-specific subclass of L{Configuration} used
-        to parse C{args} and build the C{service_class} object.
-    @param service_class: The L{LandscapeService} subclass to create and start.
-    @param args: Command line arguments.
-    @param bus_name: A bus name used to verify if the service is already
-        running.
-    """
-    from landscape.reactor import install
-    install()
-
-    # Let's consider adding this:
-#     from twisted.python.log import startLoggingWithObserver, PythonLoggingObserver
-#     startLoggingWithObserver(PythonLoggingObserver().emit, setStdout=False)
-
-    configuration = configuration_class()
-    configuration.load(args)
-
-    if configuration.bus == "system":
-        required_user = _required_users[service_class.service_name]
-        if required_user != pwd.getpwuid(os.getuid())[0]:
-            sys.exit(
-                "When using the system bus, landscape-%s must be run as %s."
-                % (service_class.service_name, required_user))
-
-    init_logging(configuration, service_class.service_name)
-
-    assert_unowned_bus_name(get_bus(configuration.bus), bus_name)
-
-    application = Application("landscape-%s" % (service_class.service_name,))
-    service = service_class(configuration)
-    service.setServiceParent(application)
-
-    startApplication(application, False)
-
-    if configuration.ignore_sigint:
-        signal.signal(signal.SIGINT, signal.SIG_IGN)
-
-    service.reactor.run()

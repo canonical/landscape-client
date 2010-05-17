@@ -38,7 +38,8 @@ INTP_VER = sys.version_info[:2]
 if INTP_VER < (2, 2):
     raise RuntimeError("Python v.2.2 or later needed")
 
-import os, re
+import os
+import re
 import compiler
 from types import StringTypes
 from warnings import warn
@@ -80,8 +81,7 @@ BOM_SET = {
     'utf_16': BOM_UTF16,
     'utf16_be': BOM_UTF16_BE,
     'utf16_le': BOM_UTF16_LE,
-    None: BOM_UTF8
-    }
+    None: BOM_UTF8}
 
 try:
     from validate import VdtMissingValue
@@ -91,6 +91,7 @@ except ImportError:
 try:
     enumerate
 except NameError:
+
     def enumerate(obj):
         """enumerate for Python 2.2."""
         i = -1
@@ -154,13 +155,16 @@ OPTION_DEFAULTS = {
     'write_empty_values': False,
 }
 
+
 def getObj(s):
     s = "a=" + s
     p = compiler.parse(s)
     return p.getChildren()[1].getChildren()[0].getChildren()[1]
 
+
 class UnknownType(Exception):
     pass
+
 
 class Builder:
 
@@ -205,16 +209,18 @@ class Builder:
             raise UnknownType('Add')
         if not isinstance(imag, complex) or imag.real != 0.0:
             raise UnknownType('Add')
-        return real+imag
+        return real + imag
 
     def build_Getattr(self, o):
         parent = self.build(o.expr)
         return getattr(parent, o.attrname)
 
+
 def unrepr(s):
     if not s:
         return s
     return Builder().build(getObj(s))
+
 
 class ConfigObjError(SyntaxError):
     """
@@ -225,11 +231,13 @@ class ConfigObjError(SyntaxError):
     Traceback (most recent call last):
     ConfigObjError
     """
+
     def __init__(self, message='', line_number=None, line=''):
         self.line = line
         self.line_number = line_number
         self.message = message
         SyntaxError.__init__(self, message)
+
 
 class NestingError(ConfigObjError):
     """
@@ -239,6 +247,7 @@ class NestingError(ConfigObjError):
     Traceback (most recent call last):
     NestingError
     """
+
 
 class ParseError(ConfigObjError):
     """
@@ -251,6 +260,7 @@ class ParseError(ConfigObjError):
     ParseError
     """
 
+
 class DuplicateError(ConfigObjError):
     """
     The keyword or section specified already exists.
@@ -259,6 +269,7 @@ class DuplicateError(ConfigObjError):
     Traceback (most recent call last):
     DuplicateError
     """
+
 
 class ConfigspecError(ConfigObjError):
     """
@@ -269,8 +280,10 @@ class ConfigspecError(ConfigObjError):
     ConfigspecError
     """
 
+
 class InterpolationError(ConfigObjError):
     """Base class for the two interpolation errors."""
+
 
 class InterpolationDepthError(InterpolationError):
     """Maximum interpolation depth exceeded in string interpolation."""
@@ -285,6 +298,7 @@ class InterpolationDepthError(InterpolationError):
             self,
             'max interpolation depth exceeded in value "%s".' % option)
 
+
 class RepeatSectionError(ConfigObjError):
     """
     This error indicates additional sections in a section with a
@@ -294,6 +308,7 @@ class RepeatSectionError(ConfigObjError):
     Traceback (most recent call last):
     RepeatSectionError
     """
+
 
 class MissingInterpolationOption(InterpolationError):
     """A value specified for interpolation was missing."""
@@ -307,6 +322,7 @@ class MissingInterpolationOption(InterpolationError):
         InterpolationError.__init__(
             self,
             'missing option "%s" in interpolation.' % option)
+
 
 class Section(dict):
     """
@@ -426,7 +442,7 @@ class Section(dict):
         if not isinstance(key, StringTypes):
             raise ValueError, 'The key "%s" is not a string.' % key
         # add the comment
-        if not self.comments.has_key(key):
+        if not key in self.comments:
             self.comments[key] = []
             self.inline_comments[key] = ''
         # remove the entry from defaults
@@ -512,7 +528,7 @@ class Section(dict):
         if not sequence:
             raise KeyError, ": 'popitem(): dictionary is empty'"
         key = sequence[0]
-        val =  self[key]
+        val = self[key]
         del self[key]
         return key, val
 
@@ -764,6 +780,7 @@ class Section(dict):
         1
         """
         warn('use of ``decode`` is deprecated.', DeprecationWarning)
+
         def decode(section, key, encoding=encoding, warn=True):
             """ """
             val = section[key]
@@ -2101,8 +2118,7 @@ class ConfigObj(Section):
             return out
         #
         # Turn the list to a string, joined with correct newlines
-        output = (self._a_to_u(self.newlines or os.linesep)
-            ).join(out)
+        output = (self._a_to_u(self.newlines or os.linesep)).join(out)
         if self.encoding:
             output = output.encode(self.encoding)
         if (self.BOM and ((self.encoding is None) or
@@ -2634,6 +2650,7 @@ class ConfigObj(Section):
             return False
         else:
             return out
+
 
 class SimpleVal(object):
     """
@@ -3709,4 +3726,3 @@ if __name__ == '__main__':
 
     *A programming language is a medium of expression.* - Paul Graham
 """
-

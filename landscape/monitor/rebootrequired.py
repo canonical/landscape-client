@@ -1,7 +1,7 @@
 import os
 import logging
 
-from landscape.monitor.monitor import MonitorPlugin
+from landscape.monitor.plugin import MonitorPlugin
 
 
 class RebootRequired(MonitorPlugin):

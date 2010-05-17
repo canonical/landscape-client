@@ -1,105 +1,33 @@
-from twisted.internet.defer import Deferred
+from landscape.manager.store import ManagerStore
 
-from landscape.manager.deployment import ManagerService, ManagerConfiguration
-from landscape.manager.manager import (
-    ManagerPlugin, ManagerDBusObject, SUCCEEDED, FAILED)
-
-from landscape.lib.dbus_util import get_object
-
-from landscape.tests.helpers import (
-    LandscapeTest, LandscapeIsolatedTest, ManagerHelper)
+from landscape.tests.helpers import LandscapeTest, ManagerHelper
 
 
-class PluginOperationResultTest(LandscapeTest):
+class ManagerTest(LandscapeTest):
 
     helpers = [ManagerHelper]
 
-    def test_call_with_operation_result_success(self):
+    def test_reactor(self):
         """
-        A helper method exists which calls a function and sends an
-        operation-result message based on the success of that method.
+        A L{Manager} instance has a proper C{reactor} attribute.
         """
-        plugin = ManagerPlugin()
-        plugin.register(self.manager)
-        service = self.broker_service
-        service.message_store.set_accepted_types(["operation-result"])
-        message = {"operation-id": 12312}
-        def operation():
-            pass
-        plugin.call_with_operation_result(message, operation)
-        messages = self.broker_service.message_store.get_pending_messages()
-        self.assertMessages(messages,
-                            [{"type": "operation-result", "status": SUCCEEDED,
-                              "operation-id": 12312}])
+        self.assertIs(self.manager.reactor, self.reactor)
 
-    def test_call_with_operation_result_error(self):
+    def test_broker(self):
         """
-        The helper for operation-results sends an appropriate message when an
-        exception is raised from the given method.
+        A L{Manager} instance has a proper C{broker} attribute referencing
+        a connected L{RemoteBroker}.
         """
-        self.log_helper.ignore_errors(RuntimeError)
-        plugin = ManagerPlugin()
-        plugin.register(self.manager)
-        service = self.broker_service
-        service.message_store.set_accepted_types(["operation-result"])
-        message = {"operation-id": 12312}
-        def operation():
-            raise RuntimeError("What the crap!")
-        plugin.call_with_operation_result(message, operation)
-        messages = self.broker_service.message_store.get_pending_messages()
-        self.assertMessages(messages,
-                            [{"type": "operation-result", "status": FAILED,
-                              "result-text": "RuntimeError: What the crap!",
-                              "operation-id": 12312}])
+        return self.assertSuccess(self.manager.broker.ping(), True)
 
-        logdata = self.logfile.getvalue()
-        self.assertTrue("RuntimeError: What the crap!" in logdata, logdata)
-
-    def test_call_with_operation_result_exchanges_urgently(self):
+    def test_config(self):
         """
-        Operation results are reported to the server as quickly as possible.
+        A L{Manager} instance has a proper C{config} attribute.
         """
-        plugin = ManagerPlugin()
-        plugin.register(self.manager)
-        service = self.broker_service
-        service.message_store.set_accepted_types(["operation-result"])
-        message = {"operation-id": 123}
-        def operation():
-            pass
-        plugin.call_with_operation_result(message, operation)
-        self.assertTrue(service.exchanger.is_urgent())
+        self.assertIs(self.manager.config, self.config)
 
-
-class ManagerDBusObjectTest(LandscapeIsolatedTest):
-
-    helpers = [ManagerHelper]
-
-    def setUp(self):
-        super(ManagerDBusObjectTest, self).setUp()
-        configuration = ManagerConfiguration()
-        configuration.load(["-d", self.makeDir(), "--bus", "session",
-                            "--manager-plugins", "ProcessKiller"])
-        self.manager_service = ManagerService(configuration)
-        self.broker_service.startService()
-        self.manager_service.startService()
-        self.dbus_object = get_object(self.broker_service.bus,
-                                      ManagerDBusObject.bus_name,
-                                      ManagerDBusObject.object_path)
-
-    def tearDown(self):
-        super(ManagerDBusObjectTest, self).tearDown()
-        self.broker_service.stopService()
-
-    def test_ping(self):
-        result = self.dbus_object.ping()
-        def got_result(result):
-            self.assertEquals(result, True)
-        return result.addCallback(got_result)
-
-    def test_exit(self):
-        result = Deferred()
-        reactor = self.mocker.replace("twisted.internet.reactor")
-        self.expect(reactor.stop()).call(lambda: result.callback(None))
-        self.mocker.replay()
-        self.dbus_object.exit()
-        return result
+    def test_store(self):
+        """
+        A L{Manager} instance has a proper C{store} attribute.
+        """
+        self.assertTrue(isinstance(self.manager.store, ManagerStore))

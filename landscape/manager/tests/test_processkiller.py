@@ -6,7 +6,7 @@ from landscape.tests.helpers import (LandscapeTest, ManagerHelper,
                                      ProcessDataBuilder)
 from landscape.lib.process import ProcessInformation
 
-from landscape.manager.manager import SUCCEEDED, FAILED
+from landscape.manager.plugin import SUCCEEDED, FAILED
 from landscape.manager.processkiller import (
     ProcessKiller, ProcessNotFoundError, ProcessMismatchError,
     SignalProcessError)
@@ -137,7 +137,6 @@ class ProcessKillerTests(LandscapeTest):
                               "status": FAILED,
                               "result-text": expected_text}])
         self.assertTrue("ProcessNotFoundError" in self.logfile.getvalue())
-
 
     def test_signal_process_start_time_mismatch(self):
         """

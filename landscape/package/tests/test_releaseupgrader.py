@@ -13,8 +13,7 @@ from landscape.package.store import PackageStore
 from landscape.package.releaseupgrader import (
     ReleaseUpgrader, ReleaseUpgraderConfiguration, main)
 from landscape.tests.helpers import (
-    LandscapeIsolatedTest, RemoteBrokerHelper, LogKeeperHelper,
-    EnvironSaverHelper)
+    LandscapeTest, BrokerServiceHelper, LogKeeperHelper, EnvironSaverHelper)
 from landscape.package.tests.helpers import SmartFacadeHelper
 from landscape.manager.manager import SUCCEEDED, FAILED
 
@@ -32,22 +31,26 @@ class ReleaseUpgraderConfigurationTest(unittest.TestCase):
                                        "upgrade-tool"))
 
 
-class ReleaseUpgraderTest(LandscapeIsolatedTest):
+class ReleaseUpgraderTest(LandscapeTest):
 
-    helpers = [RemoteBrokerHelper, LogKeeperHelper, SmartFacadeHelper,
-               EnvironSaverHelper]
+    helpers = [LogKeeperHelper, SmartFacadeHelper,
+               EnvironSaverHelper, BrokerServiceHelper]
 
     def setUp(self):
-        super(ReleaseUpgraderTest, self).setUp()
-        self.config = ReleaseUpgraderConfiguration()
-        self.config.data_path = self.makeDir()
-        os.mkdir(self.config.package_directory)
-        os.mkdir(self.config.upgrade_tool_directory)
-        self.store = PackageStore(self.makeFile())
-        self.upgrader = ReleaseUpgrader(self.store, self.facade,
-                                        self.remote, self.config)
-        service = self.broker_service
-        service.message_store.set_accepted_types(["operation-result"])
+
+        def set_up(ignored):
+            self.config = ReleaseUpgraderConfiguration()
+            self.config.data_path = self.makeDir()
+            os.mkdir(self.config.package_directory)
+            os.mkdir(self.config.upgrade_tool_directory)
+            self.store = PackageStore(self.makeFile())
+            self.upgrader = ReleaseUpgrader(self.store, self.facade,
+                                            self.remote, self.config)
+            service = self.broker_service
+            service.message_store.set_accepted_types(["operation-result"])
+
+        result = super(ReleaseUpgraderTest, self).setUp()
+        return result.addCallback(set_up)
 
     def get_pending_messages(self):
         return self.broker_service.message_store.get_pending_messages()
@@ -240,60 +243,6 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
                                    "trunk/ubuntu/\n")
 
         result = self.upgrader.tweak("hardy")
-        result.addCallback(check_result)
-        return result
-
-    def test_tweak_sets_dbus_start_script(self):
-        """
-        The L{ReleaseUpgrader.tweak} method adds to the upgrade-tool
-        configuration a little script that starts dbus after the upgrade.
-        """
-        config_filename = os.path.join(self.config.upgrade_tool_directory,
-                                       "DistUpgrade.cfg.dapper")
-        self.makeFile(path=config_filename,
-                      content="[Distro]\n"
-                              "PostInstallScripts=/foo.sh\n")
-
-        def check_result(ignored):
-            config = ConfigParser.ConfigParser()
-            config.read(config_filename)
-            self.assertEquals(config.get("Distro", "PostInstallScripts"),
-                              "/foo.sh, ./dbus.sh")
-            dbus_sh = os.path.join(self.config.upgrade_tool_directory,
-                                   "dbus.sh")
-            self.assertFileContent(dbus_sh,
-                                   "#!/bin/sh\n"
-                                   "/etc/init.d/dbus start\n"
-                                   "sleep 10\n")
-
-        result = self.upgrader.tweak("dapper")
-        result.addCallback(check_result)
-        return result
-
-    def test_tweak_sets_dbus_start_script_with_no_post_install_scripts(self):
-        """
-        The L{ReleaseUpgrader.tweak} method adds to the upgrade-tool
-        configuration a little script that starts dbus after the upgrade. This
-        works even when the config file doesn't have a PostInstallScripts entry
-        yet.
-        """
-        config_filename = os.path.join(self.config.upgrade_tool_directory,
-                                       "DistUpgrade.cfg.dapper")
-        self.makeFile(path=config_filename, content="")
-
-        def check_result(ignored):
-            config = ConfigParser.ConfigParser()
-            config.read(config_filename)
-            self.assertEquals(config.get("Distro", "PostInstallScripts"),
-                              "./dbus.sh")
-            dbus_sh = os.path.join(self.config.upgrade_tool_directory,
-                                   "dbus.sh")
-            self.assertFileContent(dbus_sh,
-                                   "#!/bin/sh\n"
-                                   "/etc/init.d/dbus start\n"
-                                   "sleep 10\n")
-
-        result = self.upgrader.tweak("dapper")
         result.addCallback(check_result)
         return result
 
@@ -609,7 +558,7 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
                 self.assertIn("INFO: Queuing message with release upgrade "
                               "results to exchange urgently.",
                               self.logfile.getvalue())
-                child_pid = kill_child("cleanly")
+                kill_child("cleanly")
                 result_text = self.get_pending_messages()[0]["result-text"]
                 self.assertIn("First parent\n", result_text)
 
@@ -977,6 +926,8 @@ class ReleaseUpgraderTest(LandscapeIsolatedTest):
         run_task_handler = self.mocker.replace("landscape.package.taskhandler"
                                                ".run_task_handler",
                                                passthrough=False)
+        getpgrp = self.mocker.replace("os.getpgrp")
+        self.expect(getpgrp()).result(os.getpid() + 1)
         setsid = self.mocker.replace("os.setsid")
         setsid()
 

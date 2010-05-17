@@ -4,7 +4,7 @@ small HTTP requests asking if we should do a full exchange.
 """
 
 import urllib
-from logging import info, debug
+from logging import info
 
 from twisted.python.failure import Failure
 from twisted.internet import defer
@@ -45,6 +45,7 @@ class PingClient(object):
             headers = {"Content-Type": "application/x-www-form-urlencoded"}
             data = urllib.urlencode({"insecure_id": insecure_id})
             page_deferred = defer.Deferred()
+
             def errback(type, value, tb):
                 page_deferred.errback(Failure(value, type, tb))
             self._reactor.call_in_thread(page_deferred.callback, errback,
@@ -53,7 +54,6 @@ class PingClient(object):
             page_deferred.addCallback(self._got_result)
             return page_deferred
         return defer.succeed(False)
-
 
     def _got_result(self, webtext):
         """
@@ -131,3 +131,11 @@ class Pinger(object):
             self._reactor.cancel_call(self._call_id)
             self._call_id = self._reactor.call_every(self._interval, self.ping)
 
+
+class FakePinger(object):
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def start(self):
+        pass

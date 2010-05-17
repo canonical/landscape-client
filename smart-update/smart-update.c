@@ -35,6 +35,8 @@
 #include <stdio.h>
 #include <pwd.h>
 
+#define GNUPG_HOME "/root/.gnupg"
+
 int main(int argc, char *argv[], char *envp[])
 {
     char *smart_argv[] = {"/usr/share/smart/smart", "update", NULL, NULL};
@@ -110,6 +112,12 @@ int main(int argc, char *argv[], char *envp[])
         perror("error: Unable to change working directory");
         exit(1);
     }
+
+    // XXX This is a workaround for Bug #562496, that makes the gpg command
+    // invoked by smart fail if the data directory doesn't exist yet
+    struct stat st;
+    if (stat(GNUPG_HOME, &st) != 0)
+      mkdir(GNUPG_HOME, S_IRWXU);
 
     // Run smart update
     execve(smart_argv[0], smart_argv, smart_envp);

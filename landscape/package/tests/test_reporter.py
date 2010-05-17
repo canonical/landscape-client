@@ -1,7 +1,6 @@
 import glob
 import sys
 import os
-import logging
 import unittest
 import time
 
@@ -15,11 +14,9 @@ from landscape.package.reporter import (
     PackageReporterConfiguration)
 from landscape.package import reporter
 from landscape.package.facade import SmartFacade
-from landscape.broker.remote import RemoteBroker
 from landscape.package.tests.helpers import (
     SmartFacadeHelper, HASH1, HASH2, HASH3)
-from landscape.tests.helpers import (
-    LandscapeIsolatedTest, RemoteBrokerHelper)
+from landscape.tests.helpers import LandscapeTest, BrokerServiceHelper
 from landscape.tests.mocker import ANY
 
 SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
@@ -38,19 +35,22 @@ class PackageReporterConfigurationTest(unittest.TestCase):
         self.assertTrue(config.force_smart_update)
 
 
-class PackageReporterTest(LandscapeIsolatedTest):
+class PackageReporterTest(LandscapeTest):
 
-    helpers = [SmartFacadeHelper, RemoteBrokerHelper]
+    helpers = [SmartFacadeHelper, BrokerServiceHelper]
 
     def setUp(self):
-        super(PackageReporterTest, self).setUp()
 
-        self.store = PackageStore(self.makeFile())
-        self.config = PackageReporterConfiguration()
-        self.reporter = PackageReporter(self.store, self.facade, self.remote,
-                                        self.config)
-        self.config.data_path = self.makeDir()
-        os.mkdir(self.config.package_directory)
+        def set_up(ignored):
+            self.store = PackageStore(self.makeFile())
+            self.config = PackageReporterConfiguration()
+            self.reporter = PackageReporter(
+                self.store, self.facade, self.remote, self.config)
+            self.config.data_path = self.makeDir()
+            os.mkdir(self.config.package_directory)
+
+        result = super(PackageReporterTest, self).setUp()
+        return result.addCallback(set_up)
 
     def set_pkg2_upgrades_pkg1(self):
         previous = self.Facade.channels_reloaded
@@ -210,7 +210,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         deferred = Deferred()
         deferred.errback(Boom())
 
-        remote_mock = self.mocker.patch(RemoteBroker)
+        remote_mock = self.mocker.patch(self.reporter._broker)
         remote_mock.send_message(ANY, True)
         self.mocker.result(deferred)
         self.mocker.replay()
@@ -534,19 +534,17 @@ class PackageReporterTest(LandscapeIsolatedTest):
         self.reporter.smart_update_filename = self.makeFile(
             "#!/bin/sh\necho -n $@")
         os.chmod(self.reporter.smart_update_filename, 0755)
-        logging_mock = self.mocker.replace("logging.debug")
-        logging_mock("'%s' exited with status 0 (out='--after %d', err=''" % (
+        debug_mock = self.mocker.replace("logging.debug")
+        debug_mock("'%s' exited with status 0 (out='--after %d', err=''" % (
             self.reporter.smart_update_filename,
             self.reporter.smart_update_interval))
+        warning_mock = self.mocker.replace("logging.warning")
+        self.expect(warning_mock(ANY)).count(0)
         self.mocker.replay()
         deferred = Deferred()
 
         def do_test():
 
-            def raiseme(x):
-                raise Exception
-
-            logging.warning = raiseme
             result = self.reporter.run_smart_update()
 
             def callback((out, err, code)):
@@ -700,13 +698,13 @@ class PackageReporterTest(LandscapeIsolatedTest):
         self.reporter.smart_update_filename = self.makeFile(
             "#!/bin/sh\necho\nexit 1")
         os.chmod(self.reporter.smart_update_filename, 0755)
+        logging_mock = self.mocker.replace("logging.warning")
+        self.expect(logging_mock(ANY)).count(0)
+        self.mocker.replay()
         deferred = Deferred()
 
         def do_test():
 
-            def raiseme(x):
-                raise Exception
-            logging.warning = raiseme
             result = self.reporter.run_smart_update()
 
             def callback((out, err, code)):
@@ -902,7 +900,7 @@ class PackageReporterTest(LandscapeIsolatedTest):
         deferred = Deferred()
         deferred.errback(Boom())
 
-        remote_mock = self.mocker.patch(RemoteBroker)
+        remote_mock = self.mocker.patch(self.reporter._broker)
         remote_mock.send_message(ANY, True)
         self.mocker.result(deferred)
         self.mocker.replay()
@@ -1334,13 +1332,12 @@ class PackageReporterTest(LandscapeIsolatedTest):
         self.mocker.result(succeed(False))
         reporter_mock.detect_package_locks_changes()
         self.mocker.result(succeed(True))
+        callback = self.mocker.mock()
+        callback()
         self.mocker.replay()
 
-        deferred = Deferred()
-        callback = lambda: deferred.callback(None)
         self.broker_service.reactor.call_on("package-data-changed", callback)
-        self.reporter.detect_changes()
-        return deferred
+        return self.reporter.detect_changes()
 
     def test_run(self):
         reporter_mock = self.mocker.patch(self.reporter)
