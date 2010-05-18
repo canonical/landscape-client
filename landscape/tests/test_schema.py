@@ -253,3 +253,11 @@ class BasicTypesTest(LandscapeTest):
         """The C{type} should be introspectable on L{Message} objects."""
         schema = Message("foo", {})
         self.assertEquals(schema.type, "foo")
+
+    def test_message_with_unknown_fields(self):
+        """
+        The L{Message} schema discards unknown fields when coercing values.
+        """
+        schema = Message("foo", {})
+        self.assertEqual({"type": "foo"},
+                         schema.coerce({"type": "foo", "crap": 123}))
