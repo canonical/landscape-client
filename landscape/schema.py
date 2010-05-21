@@ -224,3 +224,13 @@ class Message(KeyDict):
         else:
             optional = ["timestamp", "api"]
         super(Message, self).__init__(schema, optional=optional)
+
+    def coerce(self, value):
+        for k in value.keys():
+            if k not in self.schema:
+                # We don't know about this field, just discard it. This
+                # is useful when a client that introduced some new field
+                # in a message talks to an older server, that don't understand
+                # the new field yet.
+                value.pop(k)
+        return super(Message, self).coerce(value)
