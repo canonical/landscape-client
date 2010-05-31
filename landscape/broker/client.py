@@ -21,14 +21,20 @@ class BrokerClientPlugin(object):
 
     @cvar run_interval: The interval, in seconds, to execute the C{run} method.
         If set to C{None}, then C{run} will not be scheduled.
+    @cvar run_immediately: If C{True} the plugin will be run immediately after
+        it is registered.
     """
 
     run_interval = 5
+    run_immediately = False
 
     def register(self, client):
         self.client = client
-        if hasattr(self, "run") and self.run_interval is not None:
-            self.client.reactor.call_every(self.run_interval, self.run)
+        if getattr(self, "run", None) is not None:
+            if self.run_immediately:
+                self.run()
+            if self.run_interval is not None:
+                self.client.reactor.call_every(self.run_interval, self.run)
 
     @property
     def registry(self):
