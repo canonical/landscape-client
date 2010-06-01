@@ -3,7 +3,7 @@ import os
 from twisted.internet.defer import succeed, fail
 
 try:
-    from imagestore.eucaservice import FakeEucaInfo
+    from imagestore.eucaservice import FakeEucaInfo, EucaToolsError
 except ImportError:
     FakeEucaInfo = None
 
@@ -185,10 +185,13 @@ class EucalyptusTest(LandscapeTest):
         """
         If a failure occurs while attempting to retrieve information about
         Eucalyptus, such as the C{imagestore} package not being available, an
-        error message is sent to the server.
+        error message is sent to the server.  When an error occurs, the plugin
+        is disabled.
         """
+        plugin = self.get_plugin(fail(ZeroDivisionError("KABOOM!")))
 
         def check(ignore):
+            self.assertFalse(plugin.enabled)
             error_message = (
                 "Traceback (failure with no frames): "
                 "<type 'exceptions.ZeroDivisionError'>: KABOOM!\n")
@@ -198,7 +201,7 @@ class EucalyptusTest(LandscapeTest):
                 self.broker_service.message_store.get_pending_messages(),
                 [expected])
 
-        plugin = self.get_plugin(fail(ZeroDivisionError("KABOOM!")))
+        self.assertTrue(plugin.enabled)
         deferred = plugin.run()
         deferred.addCallback(check)
         return deferred

@@ -150,6 +150,7 @@ class Eucalyptus(ManagerPlugin):
             error that occurred while trying to retrieve credentials.
         @return: An error message to send to the server.
         """
+        self.enabled = False
         error = failure.getBriefTraceback()
         return {"type": self.error_message_type, "error": error}
 
@@ -181,4 +182,5 @@ def get_eucalyptus_info(credentials):
     @return: A L{EucalyptusInfo} instance.
     """
     from imagestore.eucaservice import EucaTools
+
     return EucalyptusInfo(EucaTools(credentials))
