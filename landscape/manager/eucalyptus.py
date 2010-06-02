@@ -89,8 +89,8 @@ class Eucalyptus(ManagerPlugin):
             self.message_type, self.send_message)
 
     def send_message(self):
+        data_path = self.registry.config.data_path
         try:
-            data_path = self.registry.config.data_path
             service_hub = self._service_hub_factory(data_path)
         except Exception, e:
             logging.exception(e)
