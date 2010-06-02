@@ -185,16 +185,38 @@ class EucalyptusTest(LandscapeTest):
         """
         If a failure occurs while attempting to retrieve information about
         Eucalyptus, such as the C{imagestore} package not being available, an
-        error message is sent to the server.  When an error occurs, the plugin
-        is disabled.
+        error message is sent to the server.
         """
         plugin = self.get_plugin(fail(ZeroDivisionError("KABOOM!")))
+
+        def check(ignore):
+            self.assertTrue(plugin.enabled)
+            error_message = (
+                "Traceback (failure with no frames): "
+                "<type 'exceptions.ZeroDivisionError'>: KABOOM!\n")
+            expected = {"type": "eucalyptus-info-error",
+                        "error": error_message}
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [expected])
+
+        self.assertTrue(plugin.enabled)
+        deferred = plugin.run()
+        deferred.addCallback(check)
+        return deferred
+
+    def test_run_with_euca_tools_failure_message(self):
+        """
+        If a L{EucaToolsError} is raised when the plugin is run, it is
+        disabled.
+        """
+        plugin = self.get_plugin(fail(EucaToolsError("KABOOM!")))
 
         def check(ignore):
             self.assertFalse(plugin.enabled)
             error_message = (
                 "Traceback (failure with no frames): "
-                "<type 'exceptions.ZeroDivisionError'>: KABOOM!\n")
+                "<class 'imagestore.eucaservice.EucaToolsError'>: KABOOM!\n")
             expected = {"type": "eucalyptus-info-error",
                         "error": error_message}
             self.assertMessages(
@@ -224,6 +246,7 @@ class EucalyptusTest(LandscapeTest):
         skip_message = "imagestore module not available"
         test_failed_run_stops_service_hub.skip = skip_message
         test_run_with_failure_message.skip = skip_message
+        test_run_with_euca_tools_failure_message = skip_message
         test_run_with_successful_message.skip = skip_message
         test_successful_run_stops_service_hub.skip = skip_message
 
