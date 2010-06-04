@@ -28,7 +28,10 @@ def get_mount_info(mounts_file, statvfs_, filesystems_whitelist=None):
             filesystem not in filesystems_whitelist):
             continue
         megabytes = 1024 * 1024
-        stats = statvfs_(mount_point)
+        try:
+            stats = statvfs_(mount_point)
+        except OSError:
+            continue
         block_size = stats[statvfs.F_BSIZE]
         total_space = (stats[statvfs.F_BLOCKS] * block_size) // megabytes
         free_space = (stats[statvfs.F_BFREE] * block_size) // megabytes

@@ -10,9 +10,16 @@ class DiskUtilitiesTest(LandscapeTest):
         super(DiskUtilitiesTest, self).setUp()
         self.mount_file = self.makeFile("")
         self.stat_results = {}
-        self.statvfs = self.stat_results.get
+        self.statvfs = self.get_stat_results
 
-    def set_mount_points(self, points):
+    def get_stat_results(self, point):
+        if self.read_access:
+            return self.stat_results[point]
+        else:
+            raise OSError("Permission denied")
+
+    def set_mount_points(self, points, read_access=True):
+        self.read_access = read_access
         content = "\n".join("/dev/sda%d %s fsfs rw 0 0" % (i, point)
                             for i, point in enumerate(points))
         f = open(self.mount_file, "w")
@@ -59,3 +66,9 @@ class DiskUtilitiesTest(LandscapeTest):
         info = get_filesystem_for_path(
             "/", self.mount_file, self.statvfs, ["ext3", "fsfs"])
         self.assertNotIdentical(info, None)
+
+    def test_ignore_unreadable_mount_point(self):
+        self.set_mount_points(["/secret"], read_access=False)
+        info = get_filesystem_for_path(
+            "/secret", self.mount_file, self.statvfs)
+        self.assertIdentical(info, None)
