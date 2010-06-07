@@ -48,10 +48,15 @@ def get_filesystem_for_path(path, mounts_file, statvfs_,
     couldn't be determined.
 
     @param path: The path we want filesystem information about.
-    @param mounts_file: Same as for L{get_mount_info}.
-    @param statvfs_: Same as for L{get_mount_info}.
-    @param filesystems_whitelist: Same as for L{get_mount_info}.
-    @return: Same as for L{get_mount_info}.
+    @param mounts_file: A file with information about mounted filesystems,
+        such as C{/proc/mounts}.
+    @param statvfs_: A function to get file status information.
+    @param filesystems_whitelist: Optionally, a list of which filesystems to
+        stat.
+    @return: A C{dict} with C{device}, C{mount-point}, C{filesystem},
+        C{total-space} and C{free-space} keys. If the filesystem information
+        is not available, C{None} is returned. Both C{total-space} and
+        C{free-space} are in megabytes.
     """
     candidate = None
     path = os.path.realpath(path)
