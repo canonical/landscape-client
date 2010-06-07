@@ -89,8 +89,8 @@ class Eucalyptus(ManagerPlugin):
             self.message_type, self.send_message)
 
     def send_message(self):
+        data_path = self.registry.config.data_path
         try:
-            data_path = self.registry.config.data_path
             service_hub = self._service_hub_factory(data_path)
         except Exception, e:
             logging.exception(e)
@@ -150,6 +150,10 @@ class Eucalyptus(ManagerPlugin):
             error that occurred while trying to retrieve credentials.
         @return: An error message to send to the server.
         """
+        from imagestore.eucaservice import EucaToolsError
+
+        if failure.check(EucaToolsError):
+            self.enabled = False
         error = failure.getBriefTraceback()
         return {"type": self.error_message_type, "error": error}
 
@@ -181,4 +185,5 @@ def get_eucalyptus_info(credentials):
     @return: A L{EucalyptusInfo} instance.
     """
     from imagestore.eucaservice import EucaTools
+
     return EucalyptusInfo(EucaTools(credentials))
