@@ -6,17 +6,17 @@ import statvfs
 
 def get_mount_info(mounts_file, statvfs_, filesystems_whitelist=None):
     """
-    Given a mounts file (e.g., /proc/mounts), generate dicts with the following
-    keys:
+    This is a generator that yields information about mounted filesystems.
 
-    @param filesystems_whitelist: if provided, the list of file systems which
-        we're allowed to stat.
-
-     - device: The device file which is mounted.
-     - mount-point: The path at which the filesystem is mounted.
-     - filesystem: The filesystem type.
-     - total-space: The capacity of the filesystem in megabytes.
-     - free-space: The amount of space available in megabytes.
+    @param mounts_file: A file with information about mounted filesystems,
+        such as C{/proc/mounts}.
+    @param statvfs_: A function to get file status information.
+    @param filesystems_whitelist: Optionally, a list of which filesystems to
+        stat.
+    @return: A C{dict} with C{device}, C{mount-point}, C{filesystem},
+        C{total-space} and C{free-space} keys. If the filesystem information
+        is not available, C{None} is returned. Both C{total-space} and
+        C{free-space} are in megabytes.
     """
     for line in open(mounts_file):
         try:
@@ -42,6 +42,17 @@ def get_mount_info(mounts_file, statvfs_, filesystems_whitelist=None):
 
 def get_filesystem_for_path(path, mounts_file, statvfs_,
                             filesystems_whitelist=None):
+    """
+    Tries to determine to which of the mounted filesystem C{path} belongs to,
+    and then returns information about that filesystem or C{None} if it
+    couldn't be determined.
+
+    @param path: The path we want filesystem information about.
+    @param mounts_file: Same as for L{get_mount_info}.
+    @param statvfs_: Same as for L{get_mount_info}.
+    @param filesystems_whitelist: Same as for L{get_mount_info}.
+    @return: Same as for L{get_mount_info}.
+    """
     candidate = None
     path = os.path.realpath(path)
     path_segments = path.split("/")

@@ -10,15 +10,27 @@ class DiskUtilitiesTest(LandscapeTest):
         super(DiskUtilitiesTest, self).setUp()
         self.mount_file = self.makeFile("")
         self.stat_results = {}
-        self.statvfs = self.get_stat_results
 
-    def get_stat_results(self, point):
+    def statvfs(self, point):
+        """
+        Return the requested mount point information. If C{read_access} was
+        set to C{False} when this mount point was created, then we raise an
+        exception to simulate a permission denied error.
+        """
         if self.read_access:
             return self.stat_results[point]
         else:
             raise OSError("Permission denied")
 
     def set_mount_points(self, points, read_access=True):
+        """
+        This method prepares a fake mounts file containing the
+        mount points specified in the C{points} list of strings. This file
+        can then be used by referencing C{self.mount_file}.
+
+        If C{read_access} is set to C{False}, then all mount points will
+        yield a permission denied error when inspected.
+        """
         self.read_access = read_access
         content = "\n".join("/dev/sda%d %s fsfs rw 0 0" % (i, point)
                             for i, point in enumerate(points))
@@ -68,6 +80,10 @@ class DiskUtilitiesTest(LandscapeTest):
         self.assertNotIdentical(info, None)
 
     def test_ignore_unreadable_mount_point(self):
+        """
+        We should ignore mountpoints which are unreadable by the user who
+        is logging in.
+        """
         self.set_mount_points(["/secret"], read_access=False)
         info = get_filesystem_for_path(
             "/secret", self.mount_file, self.statvfs)
