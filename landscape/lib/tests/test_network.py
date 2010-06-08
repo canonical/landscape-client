@@ -17,7 +17,7 @@ class NetworkInfoTest(LandscapeTest):
         device_info = get_active_device_info()
         result = Popen(["ifconfig"], stdout=PIPE).communicate()[0]
         interface_blocks = dict(
-            [(block.split()[0], block) for block in
+            [(block.split()[0], block.upper()) for block in
              filter(None, result.split("\n\n"))])
 
         for device in device_info:
@@ -28,7 +28,7 @@ class NetworkInfoTest(LandscapeTest):
             if device["ip_address"] == "0.0.0.0": # skip local host
                 continue
             self.failUnlessIn(device["ip_address"], block)
-            self.failUnlessIn(device["mac_address"], block)
+            self.failUnlessIn(device["mac_address"].upper(), block)
             self.failUnlessIn(device["broadcast_address"], block)
 
     def test_get_network_traffic(self):
