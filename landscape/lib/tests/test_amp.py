@@ -2,7 +2,10 @@ from twisted.internet import reactor
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.internet.protocol import ClientCreator
 from twisted.internet.error import ConnectionDone, ConnectError
-from twisted.internet.task import Clock
+try:
+    from twisted.internet.task import Clock
+except ImportError:
+    Clock = None # Dapper doesn't have it
 
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.amp import (
@@ -98,7 +101,7 @@ class WordsProtocol(MethodCallProtocol):
                "guess",
                "google"]
 
-    timeout = 0.1
+    timeout = 0.2
 
 
 class WordsFactory(MethodCallFactory):
@@ -509,6 +512,9 @@ class MethodCallFactoryTest(LandscapeTest):
         self.factory.retries = self.factory.maxRetries
         self.factory.clientConnectionFailed(object(), "failure")
         self.clock.advance(0)
+
+    if Clock is None:
+        skip = "task module not available"
 
 
 class RemoteObjectConnectorTest(LandscapeTest):

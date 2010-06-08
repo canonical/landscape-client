@@ -229,7 +229,7 @@ class RunTest(LandscapeTest):
         # This hecka whiteboxes but there aren't any underscores!
         logger = getLogger("landscape-sysinfo")
         self.assertEquals(logger.handlers, [])
-        setup_logging()
+        setup_logging(landscape_dir=self.makeDir())
         logger = getLogger("landscape-sysinfo")
         self.assertEquals(len(logger.handlers), 1)
         handler = logger.handlers[0]
