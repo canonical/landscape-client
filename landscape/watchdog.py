@@ -496,7 +496,7 @@ class WatchDogService(Service):
                 reactor.crash() # so stopService isn't called.
                 return
             self._daemonize()
-            info("Watchdog watching for daemons on %r bus." % self._config.bus)
+            info("Watchdog watching for daemons")
             return self.watchdog.start()
 
         def die(failure):
@@ -590,9 +590,8 @@ def run(args=sys.argv, reactor=None):
     config = WatchDogConfiguration()
     config.load(args)
 
-    if (config.bus == "system"
-        and not (os.getuid() == 0
-                 or pwd.getpwnam("landscape").pw_uid == os.getuid())):
+    if not (os.getuid() == 0 or
+            pwd.getpwnam("landscape").pw_uid == os.getuid()):
         sys.exit("When using the system bus, landscape-client must be run as "
                  "root.")
 

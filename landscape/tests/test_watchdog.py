@@ -963,8 +963,7 @@ class WatchDogServiceTest(LandscapeTest):
         self.configuration = WatchDogConfiguration()
         self.data_path = self.makeDir()
         self.log_dir = self.makeDir()
-        self.configuration.load(["--bus", "system",
-                                 "--data-path", self.data_path,
+        self.configuration.load(["--data-path", self.data_path,
                                  "--log-dir", self.log_dir])
 
     def test_daemonize(self):
@@ -1316,7 +1315,7 @@ class WatchDogRunTests(LandscapeTest):
         getpwnam("landscape").pw_uid
         self.mocker.result(1001)
         self.mocker.replay()
-        sys_exit = self.assertRaises(SystemExit, run, ["--bus", "system"])
+        sys_exit = self.assertRaises(SystemExit, run)
         self.assertIn("landscape-client must be run as root", str(sys_exit))
 
     def test_landscape_user(self):
@@ -1328,11 +1327,15 @@ class WatchDogRunTests(LandscapeTest):
         self.mocker.result(os.getuid())
         self.mocker.replay()
         reactor = FakeReactor()
-        run(["--bus", "system", "--log-dir", self.makeFile()],
-            reactor=reactor)
+        run(["--log-dir", self.makeFile()], reactor=reactor)
         self.assertTrue(reactor.running)
 
     def test_clean_environment(self):
+        getpwnam = self.mocker.replace("pwd.getpwnam")
+        getpwnam("landscape").pw_uid
+        self.mocker.result(os.getuid())
+        self.mocker.replay()
+
         os.environ["DEBIAN_YO"] = "yo"
         os.environ["DEBCONF_YO"] = "yo"
         os.environ["LANDSCAPE_ATTACHMENTS"] = "some attachments"
@@ -1340,8 +1343,7 @@ class WatchDogRunTests(LandscapeTest):
         os.environ["UNRELATED"] = "unrelated"
 
         reactor = FakeReactor()
-        run(["--bus", "session", "--log-dir", self.makeFile()],
-            reactor=reactor)
+        run(["--log-dir", self.makeFile()], reactor=reactor)
         self.assertNotIn("DEBIAN_YO", os.environ)
         self.assertNotIn("DEBCONF_YO", os.environ)
         self.assertNotIn("LANDSCAPE_ATTACHMENTS", os.environ)

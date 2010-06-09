@@ -153,9 +153,6 @@ class BaseConfiguration(object):
                          "or the '%s' directive in the config file."
                          % (option.replace('_', '-'), option))
 
-        if self.bus not in ("session", "system"):
-            sys.exit("error: bus must be one of 'session' or 'system'")
-
     def _load_external_options(self):
         """Hook for loading options from elsewhere (e.g. for --import)."""
 
@@ -223,16 +220,12 @@ class BaseConfiguration(object):
         @return: An L{OptionParser} preset with options that all
             landscape-related programs accept. These include
               - C{config} (C{None})
-              - C{bus} (C{system})
         """
         parser = OptionParser(version=VERSION)
         parser.add_option("-c", "--config", metavar="FILE",
                           help="Use config from this file (any command line "
                                "options override settings from the file) "
                                "(default: '/etc/landscape/client.conf').")
-        parser.add_option("--bus", default="system",
-                          help="Which DBUS bus to use. One of 'session' "
-                               "or 'system' (default: 'system').")
         return parser
 
     def get_config_filename(self):
