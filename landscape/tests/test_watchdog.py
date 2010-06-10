@@ -1316,7 +1316,8 @@ class WatchDogRunTests(LandscapeTest):
         self.mocker.result(1001)
         self.mocker.replay()
         sys_exit = self.assertRaises(SystemExit, run)
-        self.assertIn("landscape-client must be run as root", str(sys_exit))
+        self.assertIn("landscape-client can only be run"
+                      " as 'root' or 'landscape'.", str(sys_exit))
 
     def test_landscape_user(self):
         """
@@ -1329,6 +1330,18 @@ class WatchDogRunTests(LandscapeTest):
         reactor = FakeReactor()
         run(["--log-dir", self.makeFile()], reactor=reactor)
         self.assertTrue(reactor.running)
+
+    def test_non_root(self):
+        """
+        The watchdog should print an error message and exit if the
+        'landscape' user doesn't exist.
+        """
+        getpwnam = self.mocker.replace("pwd.getpwnam")
+        getpwnam("landscape")
+        self.mocker.throw(KeyError())
+        self.mocker.replay()
+        sys_exit = self.assertRaises(SystemExit, run)
+        self.assertIn("The 'landscape' user doesn't exist!", str(sys_exit))
 
     def test_clean_environment(self):
         getpwnam = self.mocker.replace("pwd.getpwnam")
