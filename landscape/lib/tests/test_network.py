@@ -26,9 +26,18 @@ class NetworkInfoTest(LandscapeTest):
             self.assertTrue(device["interface"] in result)
             block = interface_blocks[device["interface"]]
             self.assertTrue(device["netmask"] in block)
-            self.failUnlessIn(device["ip_address"], block)
-            self.failUnlessIn(device["mac_address"].upper(), block)
-            self.failUnlessIn(device["broadcast_address"], block)
+            self.assertIn(device["ip_address"], block)
+            self.assertIn(device["mac_address"].upper(), block)
+            self.assertIn(device["broadcast_address"], block)
+            flags = device["flags"]
+            if flags & 1:
+                self.assertIn("UP", block)
+            if flags & 2:
+                self.assertIn("BROADCAST", block)
+            if flags & 64:
+                self.assertIn("RUNNING", block)
+            if flags & 4096:
+                self.assertIn("MULTICAST", block)
 
     def test_get_network_traffic(self):
         """

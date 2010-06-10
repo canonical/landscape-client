@@ -10,6 +10,7 @@ __all__ = ["get_active_device_info", "get_network_traffic"]
 
 # from header /usr/include/bits/ioctls.h
 SIOCGIFCONF = 0x8912
+SIOCGIFFLAGS = 0x8913
 SIOCGIFNETMASK = 0x891b
 SIOCGIFBRDADDR = 0x8919
 SIOCGIFADDR = 0x8915
@@ -114,6 +115,18 @@ def get_mac_address(sock, interface):
     return "".join(["%02x:" % ord(char) for char in mac_address[18:24]])[:-1]
 
 
+def get_flags(sock, interface):
+    """Return the integer value of the interface flags for the given interface.
+
+    @param sock: a socket instance.
+    @param interface: The name of the interface.
+    @see /usr/include/linux/if.h for the meaning of the flags.
+    """
+    data = fcntl.ioctl(
+        sock.fileno(), SIOCGIFFLAGS, struct.pack("256s", interface[:15]))
+    return struct.unpack("H", data[16:18])[0]
+
+
 def get_active_device_info():
     """
     Returns a dictionary containing information on each active network
@@ -128,6 +141,7 @@ def get_active_device_info():
         interface_info["broadcast_address"] = get_broadcast_address(sock,
                                                                     interface)
         interface_info["netmask"] = get_netmask(sock, interface)
+        interface_info["flags"] = get_flags(sock, interface)
         results.append(interface_info)
     del sock
     return results
