@@ -117,8 +117,7 @@ def get_mac_address(sock, interface):
 def get_active_device_info():
     """
     Returns a dictionary containing information on each active network
-    interface present on a machine.  Interfaces with an IP or broadcast
-    address of 0.0.0.0 are not included in results.
+    interface present on a machine.
     """
     results = []
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_IP)
@@ -129,9 +128,6 @@ def get_active_device_info():
         interface_info["broadcast_address"] = get_broadcast_address(sock,
                                                                     interface)
         interface_info["netmask"] = get_netmask(sock, interface)
-        if (interface_info["ip_address"] == "0.0.0.0"
-            or interface_info["broadcast_address"] == "0.0.0.0"):
-            continue
         results.append(interface_info)
     del sock
     return results

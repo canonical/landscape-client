@@ -21,6 +21,8 @@ class NetworkInfoTest(LandscapeTest):
              filter(None, result.split("\n\n"))])
 
         for device in device_info:
+            if device["mac_address"] == "00:00:00:00:00:00":
+                continue
             self.assertTrue(device["interface"] in result)
             block = interface_blocks[device["interface"]]
             self.assertTrue(device["netmask"] in block)
