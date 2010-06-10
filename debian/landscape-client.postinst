@@ -92,8 +92,11 @@ END
         # Check if we're upgrading from a D-Bus version
         if ! [ -z $2 ]; then
             if dpkg --compare-versions $2 lt 1.5.1; then
+                # Launch a proxy service that will forward requests over DBus
+                # from the old package-changer to the new AMP-based broker. This
+                # is a one-off only needed for the DBus->AMP upgrade
                 start-stop-daemon -x /usr/bin/landscape-dbus-proxy -b -c landscape -u landscape -S
-             fi
+            fi
          fi
 
     ;;
