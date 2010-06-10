@@ -29,7 +29,8 @@ setup(name="Landscape Client",
                "scripts/landscape-package-reporter",
                "scripts/landscape-release-upgrader",
                "scripts/landscape-sysinfo",
-               "scripts/landscape-is-cloud-managed"],
+               "scripts/landscape-is-cloud-managed",
+               "scripts/landscape-dbus-proxy"],
       ext_modules=[Extension("landscape.lib.initgroups",
                              ["landscape/lib/initgroups.c"])]
      )
