@@ -21,11 +21,9 @@ class NetworkTest(LandscapeTest):
         A header is written to sysinfo output for each network device reported
         by L{get_active_device_info}.
         """
-        self.result = [{"interface": "eth0", "ip_address": "192.168.0.50"},
-                       {"interface": "lo", "ip_address": "0.0.0.0"}]
+        self.result = [{"interface": "eth0", "ip_address": "192.168.0.50"}]
         self.network.run()
-        self.assertEquals([("IP for eth0", "192.168.0.50"),
-                           ("IP for lo", "0.0.0.0")],
+        self.assertEquals([("IP address for eth0", "192.168.0.50")],
                           self.sysinfo.get_headers())
 
     def test_run_without_network_devices(self):

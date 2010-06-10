@@ -32,5 +32,6 @@ class Network(object):
         for info in self._get_device_info():
             interface = info["interface"]
             ip_address = info["ip_address"]
-            self._sysinfo.add_header("IP for %s" % interface, ip_address)
+            self._sysinfo.add_header("IP address for %s" % interface,
+                                     ip_address)
         return succeed(None)
