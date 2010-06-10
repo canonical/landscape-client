@@ -32,10 +32,7 @@ IF_STRUCT_SIZE_64 = 40
 
 
 def is_64():
-    """
-    Determine if the platform is a 64 bit platform. Assumption
-    is that it is 32 bits otherwise.
-    """
+    """Returns C{True} if the platform is 64-bit, otherwise C{False}."""
     return struct.calcsize("l") == 8
 
 
@@ -44,12 +41,10 @@ IF_STRUCT_SIZE = is_64() and IF_STRUCT_SIZE_64 or IF_STRUCT_SIZE_32
 
 
 def get_active_interfaces(sock):
-    """
-    Returns a sequence of all active network interface names.
+    """Generator yields active network interface names.
 
     @param sock: a socket instance.
     """
-
     max_interfaces = 128
 
     # setup an an array to hold our response, and initialized to null strings.
@@ -71,8 +66,7 @@ def get_active_interfaces(sock):
 
 
 def get_broadcast_address(sock, interface):
-    """
-    Return the broadcast address associated to an interface.
+    """Return the broadcast address associated to an interface.
 
     @param sock: a socket instance.
     @param interface: The name of the interface.
@@ -84,13 +78,11 @@ def get_broadcast_address(sock, interface):
 
 
 def get_netmask(sock, interface):
-    """
-    Return the network mask associated to an interface.
+    """Return the network mask associated to an interface.
 
     @param sock: a socket instance.
     @param interface: The name of the interface.
     """
-
     return socket.inet_ntoa(fcntl.ioctl(
         sock.fileno(),
         SIOCGIFNETMASK,
@@ -98,21 +90,20 @@ def get_netmask(sock, interface):
 
 
 def get_ip_address(sock, interface):
-    """
-    Return the ip address associated to the interface.
+    """Return the IP address associated to the interface.
 
     @param sock: a socket instance.
     @param interface: The name of the interface.
     """
     return socket.inet_ntoa(fcntl.ioctl(
         sock.fileno(),
-        SIOCGIFBRDADDR,
+        SIOCGIFADDR,
         struct.pack("256s", interface[:15]))[20:24])
 
 
 def get_mac_address(sock, interface):
     """
-    Return the hardware mac address for an interface in human friendly form,
+    Return the hardware MAC address for an interface in human friendly form,
     ie. six colon separated groups of two hexadecimal digits.
 
     @param sock: a socket instance.
@@ -129,14 +120,13 @@ def get_active_device_info():
     interface present on a machine.
     """
     results = []
-
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_IP)
     for interface in get_active_interfaces(sock):
         interface_info = {"interface": interface}
         interface_info["ip_address"] = get_ip_address(sock, interface)
         interface_info["mac_address"] = get_mac_address(sock, interface)
-        interface_info["broadcast_address"] = get_broadcast_address(
-            sock, interface)
+        interface_info["broadcast_address"] = get_broadcast_address(sock,
+                                                                    interface)
         interface_info["netmask"] = get_netmask(sock, interface)
         results.append(interface_info)
     del sock
@@ -152,12 +142,12 @@ def get_network_traffic(source_file="/proc/net/dev"):
     lines = netdev.readlines()
     netdev.close()
 
-    # parse out the column headers as keys
+    # Parse out the column headers as keys.
     _, receive_columns, transmit_columns = lines[1].split("|")
     columns = ["recv_%s" % column for column in receive_columns.split()]
     columns.extend(["send_%s" % column for column in transmit_columns.split()])
 
-    # parse out the network devices
+    # Parse out the network devices.
     devices = {}
     for line in lines[2:]:
         if not ":" in line:
@@ -165,8 +155,8 @@ def get_network_traffic(source_file="/proc/net/dev"):
         device, data = line.split(":")
         device = device.strip()
         devices[device] = dict(zip(columns, map(long, data.split())))
-
     return devices
+
 
 if __name__ == "__main__":
     import pprint
