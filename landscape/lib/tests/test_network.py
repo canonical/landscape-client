@@ -24,9 +24,6 @@ class NetworkInfoTest(LandscapeTest):
             self.assertTrue(device["interface"] in result)
             block = interface_blocks[device["interface"]]
             self.assertTrue(device["netmask"] in block)
-
-            if device["ip_address"] == "0.0.0.0": # skip local host
-                continue
             self.failUnlessIn(device["ip_address"], block)
             self.failUnlessIn(device["mac_address"].upper(), block)
             self.failUnlessIn(device["broadcast_address"], block)
