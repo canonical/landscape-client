@@ -357,7 +357,6 @@ EUCALYPTUS_INFO_ERROR = Message(
     "eucalyptus-info-error",
     {"error": String()})
 
-
 NETWORK_DEVICE = Message(
     "network-device",
     {"devices": List(KeyDict({"interface": String(),
@@ -369,13 +368,11 @@ NETWORK_DEVICE = Message(
 
 NETWORK_ACTIVITY = Message(
     "network-activity",
-    {"timestamp": Int(),
-     "activity": Dict(String(),
-                      List(Tuple(
-                              Tuple( # Step, Bytes Received
-                                  Float(), Float()),
-                              Tuple( # Step, Bytes Sent
-                                  Float(), Float()))))})
+    # Dict maps interfaces to their network activity. The network activity of
+    # an interface a is a list of 3-tuples (step, in, out), where 'step' is the
+    # time interval and 'in'/'out' are number of bytes received/sent over the
+    # interval.
+    {"activities": Dict(String(), List(Tuple(Int(), Int(), Int())))})
 
 
 message_schemas = {}
