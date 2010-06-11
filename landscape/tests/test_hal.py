@@ -37,6 +37,19 @@ class HALManagerTest(LandscapeTest):
         devices = HALManager(bus=bus).get_devices()
         self.assertEquals(devices, [])
 
+    def test_get_devices_with_no_server_(self):
+        """
+        If the L{HALManager} fails connecting to HAL over D-Bus, then the
+        L{HALManager.get_devices} method returns an empty list.
+        """
+        self.log_helper.ignore_errors("Couldn't to connect to Hal via DBus")
+        bus_mock = self.mocker.replace("dbus.SystemBus")
+        bus_mock()
+        self.mocker.throw(DBusException())
+        self.mocker.replay()
+        devices = HALManager().get_devices()
+        self.assertEquals(devices, [])
+
 
 class MockHALManager(object):
 
