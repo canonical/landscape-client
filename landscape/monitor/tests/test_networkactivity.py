@@ -76,9 +76,9 @@ Inter-|   Receive                           |  Transmit
         self.assertTrue(message)
         self.assertTrue("type" in message)
         self.assertEquals(message["type"], "network-activity")
-        self.assertEquals(message["activity"]["lo"],
-                          [((300, 10), (300, 99))])
-        self.assertNotIn("eth0", message["activity"])
+        self.assertEquals(message["activities"]["lo"],
+                          [(300, 10, 99)])
+        self.assertNotIn("eth0", message["activities"])
 
     def test_no_message_without_traffic_delta(self):
         """
@@ -159,9 +159,9 @@ Inter-|   Receive                           |  Transmit
         step_size = self.monitor.step_size
         self.assertMessages(self.mstore.get_pending_messages(),
                         [{"type": "network-activity",
-                          "activity": {
-                              "lo": [((step_size, 0), (step_size, 1000))],
-                              "eth0": [((step_size, 0), (step_size, 1000))]}}])
+                          "activities": {
+                              "lo": [(step_size, 0, 1000)],
+                              "eth0": [(step_size, 0, 1000)]}}])
 
     def test_config(self):
         """The network activity plugin is enabled by default."""

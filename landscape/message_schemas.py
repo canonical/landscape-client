@@ -369,13 +369,7 @@ NETWORK_DEVICE = Message(
 
 NETWORK_ACTIVITY = Message(
     "network-activity",
-    {"timestamp": Int(),
-     "activity": Dict(String(),
-                      List(Tuple(
-                              Tuple( # Step, Bytes Received
-                                  Float(), Float()),
-                              Tuple( # Step, Bytes Sent
-                                  Float(), Float()))))})
+    {"activities": Dict(String(), List(Tuple(Int(), Int(), Int())))})
 
 
 message_schemas = {}
