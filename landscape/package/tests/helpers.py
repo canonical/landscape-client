@@ -346,18 +346,14 @@ Description: build daemon aiming at rebuilding Debian packages
 
 
 def create_deb(target_dir, pkg_name, pkg_data):
-    """
-    Create a Debian package in the specified C{target_dir}.
-    """
+    """Create a Debian package in the specified C{target_dir}."""
     path = os.path.join(target_dir, pkg_name)
     data = base64.decodestring(pkg_data)
     create_file(path, data)
 
 
 def create_simple_repository(target_dir):
-    """
-    Create a simple deb-dir repository with in C{target_dir}.
-    """
+    """Create a simple deb-dir repository with in C{target_dir}."""
     create_deb(target_dir, PKGNAME1, PKGDEB1)
     create_deb(target_dir, PKGNAME2, PKGDEB2)
     create_deb(target_dir, PKGNAME3, PKGDEB3)
