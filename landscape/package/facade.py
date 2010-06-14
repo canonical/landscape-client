@@ -1,4 +1,5 @@
-from smart.transaction import Transaction, PolicyInstall, PolicyUpgrade, Failed
+from smart.transaction import (
+    Transaction, PolicyInstall, PolicyUpgrade, PolicyRemove, Failed)
 from smart.const import INSTALL, REMOVE, UPGRADE, ALWAYS, NEVER
 
 import smart
@@ -199,10 +200,16 @@ class SmartFacade(object):
 
         policy = PolicyInstall
 
+        only_remove = True
         for pkg, oper in self._marks.items():
             if oper == UPGRADE:
                 policy = PolicyUpgrade
+            if oper != REMOVE:
+                only_remove = False
             transaction.enqueue(pkg, oper)
+
+        if only_remove:
+            policy = PolicyRemove
 
         transaction.setPolicy(policy)
 
