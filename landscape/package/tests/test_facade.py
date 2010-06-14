@@ -376,17 +376,20 @@ class SmartFacadeTest(LandscapeTest):
                                     "noninteractive", "none"])
 
     def test_perform_changes_with_policy_remove(self):
-
+        """
+        When requested changes are only about removing packages, we set
+        the Smart transaction policy to C{PolicyRemove}.
+        """
         create_deb(self.repository_dir, PKGNAME4, PKGDEB4)
         self.facade.reload_channels()
 
         # Importing these modules fail if Smart is not initialized
-        from smart.backends.deb.base import DebRequires, DebUpgrades
+        from smart.backends.deb.base import DebRequires
 
-        pkg1 = self.facade.get_packages_by_name("name1")[0]
+        pkg1 = self.facade.get_package_by_hash(HASH1)
         pkg1.requires.append(DebRequires("name3", ">=", "version3-release3"))
 
-        pkg3 = self.facade.get_packages_by_name("name3")[0]
+        pkg3 = self.facade.get_package_by_hash(HASH3)
 
         # Ask Smart to reprocess relationships.
         self.facade.reload_cache()
@@ -398,7 +401,6 @@ class SmartFacadeTest(LandscapeTest):
         error = self.assertRaises(DependencyError, self.facade.perform_changes)
         [missing] = error.packages
         self.assertIdentical(pkg1, missing)
-
 
     def test_perform_changes_with_commit_change_set_errors(self):
 
