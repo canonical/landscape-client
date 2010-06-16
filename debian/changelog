@@ -1,4 +1,4 @@
-landscape-client (1.5.2-0ubuntu0.10.04.0) maverick; urgency=low
+landscape-client (1.5.2-0ubuntu0.10.10.0) maverick; urgency=low
 
   * New upstream version (LP: #594594):
     - A new includes information about active network devices and their
