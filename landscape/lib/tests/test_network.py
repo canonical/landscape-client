@@ -17,19 +17,27 @@ class NetworkInfoTest(LandscapeTest):
         device_info = get_active_device_info()
         result = Popen(["ifconfig"], stdout=PIPE).communicate()[0]
         interface_blocks = dict(
-            [(block.split()[0], block) for block in
+            [(block.split()[0], block.upper()) for block in
              filter(None, result.split("\n\n"))])
 
         for device in device_info:
+            if device["mac_address"] == "00:00:00:00:00:00":
+                continue
             self.assertTrue(device["interface"] in result)
             block = interface_blocks[device["interface"]]
             self.assertTrue(device["netmask"] in block)
-
-            if device["ip_address"] == "0.0.0.0": # skip local host
-                continue
-            self.failUnlessIn(device["ip_address"], block)
-            self.failUnlessIn(device["mac_address"], block)
-            self.failUnlessIn(device["broadcast_address"], block)
+            self.assertIn(device["ip_address"], block)
+            self.assertIn(device["mac_address"].upper(), block)
+            self.assertIn(device["broadcast_address"], block)
+            flags = device["flags"]
+            if flags & 1:
+                self.assertIn("UP", block)
+            if flags & 2:
+                self.assertIn("BROADCAST", block)
+            if flags & 64:
+                self.assertIn("RUNNING", block)
+            if flags & 4096:
+                self.assertIn("MULTICAST", block)
 
     def test_get_network_traffic(self):
         """

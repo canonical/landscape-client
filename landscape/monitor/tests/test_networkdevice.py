@@ -24,6 +24,10 @@ class NetworkDeviceTest(LandscapeTest):
         self.assertTrue(message["devices"][0]["interface"], "lo")
         self.assertTrue(message["devices"][0]["ip_address"], "0.0.0.0")
         self.assertTrue(message["devices"][0]["netmask"], "255.0.0.0")
+        flags = message["devices"][0]["flags"]
+        self.assertEqual(1, flags & 1) # UP
+        self.assertEqual(8, flags & 8) # LOOPBACK
+        self.assertEqual(64, flags & 64) # RUNNING
 
     def test_no_message_with_no_changes(self):
         """If no device changes from the last message, no message is sent."""

@@ -65,7 +65,7 @@ class RebootRequiredTest(LandscapeTest):
                           self.plugin._create_message())
         self.makeFile(path=self.reboot_required_filename + ".pkgs",
                       content="foo\n")
-        self.assertEquals({"packages": ["foo"]},
+        self.assertEquals({"packages": [u"foo"]},
                           self.plugin._create_message())
 
     def test_send_message(self):
@@ -73,13 +73,16 @@ class RebootRequiredTest(LandscapeTest):
         A new C{"reboot-required-info"} message should be enqueued if and only
         if the reboot-required status of the system has changed.
         """
+        self.makeFile(path=self.reboot_required_filename + ".pkgs",
+                      content="foo\n")
+        self.makeFile(path=self.reboot_required_filename, content="")
         self.plugin.send_message()
         self.assertIn("Queueing message with updated reboot-required status.",
                       self.logfile.getvalue())
         self.assertMessages(self.mstore.get_pending_messages(),
                             [{"type": "reboot-required-info",
-                              "flag": False,
-                              "packages": []}])
+                              "flag": True,
+                              "packages": [u"foo"]}])
         self.mstore.delete_all_messages()
         self.plugin.send_message()
         self.assertMessages(self.mstore.get_pending_messages(), [])
