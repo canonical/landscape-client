@@ -8,7 +8,7 @@ landscape-client (1.5.2-0ubuntu0.10.10.0) maverick; urgency=low
     - Fix breakage on Lucid AMIs having no ramdisk (LP: #574810).
     - Migrate the inter-process communication system from DBus to Twisted AMP.
 
- -- Free Ekanayaka <free.ekanayaka@canonical.com>  Wed, 21 Apr 2010 19:58:10 +0200
+ -- Free Ekanayaka <free.ekanayaka@canonical.com>  Wed, 16 Jun 2010 12:03:50 +0200
 
 landscape-client (1.5.0-0ubuntu0.10.04.1) lucid; urgency=low
 
