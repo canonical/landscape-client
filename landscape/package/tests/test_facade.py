@@ -19,8 +19,8 @@ from landscape.package.facade import (
 from landscape.tests.mocker import ANY
 from landscape.tests.helpers import LandscapeTest
 from landscape.package.tests.helpers import (
-    SmartFacadeHelper, HASH1, HASH2, HASH3, PKGNAME1,
-    create_full_repository)
+    SmartFacadeHelper, HASH1, HASH2, HASH3, PKGNAME1, PKGNAME4, PKGDEB4,
+    create_full_repository, create_deb)
 
 
 class SmartFacadeTest(LandscapeTest):
@@ -193,13 +193,8 @@ class SmartFacadeTest(LandscapeTest):
 
         pkg = self.facade.get_packages_by_name("name1")[0]
         self.facade.mark_install(pkg)
-        try:
-            self.facade.perform_changes()
-        except TransactionError, exception:
-            pass
-        else:
-            exception = None
-        self.assertTrue(exception, "TransactionError not raised")
+        exception = self.assertRaises(TransactionError,
+                                      self.facade.perform_changes)
         self.assertIn("requirename", exception.args[0])
 
     def test_mark_install_dependency_error(self):
@@ -379,6 +374,33 @@ class SmartFacadeTest(LandscapeTest):
 
         self.assertEquals(environ, ["noninteractive", "none",
                                     "noninteractive", "none"])
+
+    def test_perform_changes_with_policy_remove(self):
+        """
+        When requested changes are only about removing packages, we set
+        the Smart transaction policy to C{PolicyRemove}.
+        """
+        create_deb(self.repository_dir, PKGNAME4, PKGDEB4)
+        self.facade.reload_channels()
+
+        # Importing these modules fail if Smart is not initialized
+        from smart.backends.deb.base import DebRequires
+
+        pkg1 = self.facade.get_package_by_hash(HASH1)
+        pkg1.requires.append(DebRequires("name3", ">=", "version3-release3"))
+
+        pkg3 = self.facade.get_package_by_hash(HASH3)
+
+        # Ask Smart to reprocess relationships.
+        self.facade.reload_cache()
+
+        pkg1.installed = True
+        pkg3.installed = True
+
+        self.facade.mark_remove(pkg3)
+        error = self.assertRaises(DependencyError, self.facade.perform_changes)
+        [missing] = error.packages
+        self.assertIdentical(pkg1, missing)
 
     def test_perform_changes_with_commit_change_set_errors(self):
 
