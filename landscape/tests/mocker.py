@@ -1,7 +1,35 @@
 """
-Copyright (c) 2007  Gustavo Niemeyer <gustavo@niemeyer.net>
+Mocker
 
-Graceful platform for test doubles in Python (mocks, stubs, fakes, and dummies).
+Graceful platform for test doubles in Python: mocks, stubs, fakes, and dummies.
+
+Copyright (c) 2007-2010, Gustavo Niemeyer <gustavo@niemeyer.net>
+
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+    * Neither the name of the copyright holder nor the names of its
+      contributors may be used to endorse or promote products derived from
+      this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 import __builtin__
 import tempfile
@@ -18,13 +46,13 @@ if sys.version_info < (2, 4):
     from sets import Set as set # pragma: nocover
 
 
-__all__ = ["Mocker", "expect", "IS", "CONTAINS", "IN", "MATCH",
-           "ANY", "ARGS", "KWARGS"]
+__all__ = ["Mocker", "Expect", "expect", "IS", "CONTAINS", "IN", "MATCH",
+           "ANY", "ARGS", "KWARGS", "MockerTestCase"]
 
 
 __author__ = "Gustavo Niemeyer <gustavo@niemeyer.net>"
-__license__ = "PSF License"
-__version__ = "0.10.1"
+__license__ = "BSD"
+__version__ = "1.0"
 
 
 ERROR_PREFIX = "[Mocker] "
@@ -56,6 +84,8 @@ class expect(object):
 
     """
 
+    __mocker__ = None
+
     def __init__(self, mock, attr=None):
         self._mock = mock
         self._attr = attr
@@ -64,8 +94,24 @@ class expect(object):
         return self.__class__(self._mock, attr)
 
     def __call__(self, *args, **kwargs):
-        getattr(self._mock.__mocker__, self._attr)(*args, **kwargs)
+        mocker = self.__mocker__
+        if not mocker:
+            mocker = self._mock.__mocker__
+        getattr(mocker, self._attr)(*args, **kwargs)
         return self
+
+
+def Expect(mocker):
+    """Create an expect() "function" using the given Mocker instance.
+
+    This helper allows defining an expect() "function" which works even
+    in trickier cases such as:
+
+        expect = Expect(mymocker)
+        expect(iter(mock)).generate([1, 2, 3])
+
+    """
+    return type("Expect", (expect,), {"__mocker__": mocker})
 
 
 # --------------------------------------------------------------------
@@ -87,8 +133,6 @@ class MockerTestCase(unittest.TestCase):
     In addition to the integration with Mocker, this class provides
     a few additional helper methods.
     """
-
-    expect = expect
 
     def __init__(self, methodName="runTest"):
         # So here is the trick: we take the real test method, wrap it on
@@ -115,6 +159,7 @@ class MockerTestCase(unittest.TestCase):
                         result.addCallback(verify)
                     else:
                         self.mocker.verify()
+                        self.mocker.restore()
                     return result
             # Copy all attributes from the original method..
             for attr in dir(test_method):
@@ -137,11 +182,21 @@ class MockerTestCase(unittest.TestCase):
         self.run = run_wrapper
 
         self.mocker = Mocker()
+        self.expect = Expect(self.mocker)
 
         self.__cleanup_funcs = []
         self.__cleanup_paths = []
 
         super(MockerTestCase, self).__init__(methodName)
+
+    def __call__(self, *args, **kwargs):
+        # This is necessary for Python 2.3 only, because it didn't use run(),
+        # which is supported above.
+        try:
+            super(MockerTestCase, self).__call__(*args, **kwargs)
+        finally:
+            if sys.version_info < (2, 4):
+                self.__cleanup()
 
     def __cleanup(self):
         for path in self.__cleanup_paths:
@@ -274,7 +329,7 @@ class MockerTestCase(unittest.TestCase):
         """
         first_methods = dict(inspect.getmembers(first, inspect.ismethod))
         second_methods = dict(inspect.getmembers(second, inspect.ismethod))
-        for name, first_method in first_methods.items():
+        for name, first_method in first_methods.iteritems():
             first_argspec = inspect.getargspec(first_method)
             first_formatted = inspect.formatargspec(*first_argspec)
 
@@ -292,6 +347,26 @@ class MockerTestCase(unittest.TestCase):
                     (first.__name__, name, first_formatted,
                      second.__name__, name, second_formatted))
 
+    def failUnlessRaises(self, excClass, callableObj, *args, **kwargs):
+        """
+        Fail unless an exception of class excClass is thrown by callableObj
+        when invoked with arguments args and keyword arguments kwargs. If a
+        different type of exception is thrown, it will not be caught, and the
+        test case will be deemed to have suffered an error, exactly as for an
+        unexpected exception. It returns the exception instance if it matches
+        the given exception class.
+        """
+        try:
+            result = callableObj(*args, **kwargs)
+        except excClass, e:
+            return e
+        else:
+            excName = excClass
+            if hasattr(excClass, "__name__"):
+                excName = excClass.__name__
+            raise self.failureException(
+                "%s not raised (%r returned)" % (excName, result))
+
 
     assertIs = failUnlessIs
     assertIsNot = failIfIs
@@ -304,6 +379,7 @@ class MockerTestCase(unittest.TestCase):
     assertApproximates = failUnlessApproximates
     assertNotApproximates = failIfApproximates
     assertMethodsMatch = failUnlessMethodsMatch
+    assertRaises = failUnlessRaises
 
     # The following are missing in Python < 2.4.
     assertTrue = unittest.TestCase.failUnless
@@ -570,16 +646,19 @@ class MockerBase(object):
             while import_stack:
                 module_path = ".".join(import_stack)
                 try:
-                    object = __import__(module_path, {}, {}, [""])
+                    __import__(module_path)
                 except ImportError:
                     attr_stack.insert(0, import_stack.pop())
                     if not import_stack:
                         raise
                     continue
                 else:
+                    object = sys.modules[module_path]
                     for attr in attr_stack:
                         object = getattr(object, attr)
                     break
+        if isinstance(object, types.UnboundMethodType):
+            object = object.im_func
         if spec is True:
             spec = object
         if type is True:
@@ -669,7 +748,7 @@ class MockerBase(object):
         event.add_task(patcher)
         mock = Mock(self, object=object, patcher=patcher,
                     passthrough=True, spec=spec)
-        object.__mocker_mock__ = mock
+        patcher.patch_attr(object, '__mocker_mock__', mock)
         return mock
 
     def act(self, path):
@@ -1052,6 +1131,10 @@ class Mock(object):
             if self.__mocker__.is_recording() or self.__mocker_type__ is None:
                 return type(self)
             return self.__mocker_type__
+        if name == "__length_hint__":
+            # This is used by Python 2.6+ to optimize the allocation
+            # of arrays in certain cases.  Pretend it doesn't exist.
+            raise AttributeError("No __length_hint__ here!")
         return self.__mocker_act__("getattr", (name,))
 
     def __setattr__(self, name, value):
@@ -1091,9 +1174,12 @@ class Mock(object):
 
     def __nonzero__(self):
         try:
-            return self.__mocker_act__("nonzero")
+            result = self.__mocker_act__("nonzero")
         except MatchError, e:
             return True
+        if type(result) is Mock:
+            return True
+        return result
 
     def __iter__(self):
         # XXX On py3k, when next() becomes __next__(), we'll be able
@@ -1920,7 +2006,7 @@ def global_replace(remove, install):
     for referrer in gc.get_referrers(remove):
         if (type(referrer) is dict and
             referrer.get("__mocker_replace__", True)):
-            for key, value in referrer.items():
+            for key, value in list(referrer.iteritems()):
                 if value is remove:
                     referrer[key] = install
 
@@ -2019,6 +2105,7 @@ class Patcher(Task):
         try:
             return unpatched(*action.args, **action.kwargs)
         except AttributeError:
+            type, value, traceback = sys.exc_info()
             if action.kind == "getattr":
                 # The normal behavior of Python is to try __getattribute__,
                 # and if it raises AttributeError, try __getattr__.   We've
@@ -2030,7 +2117,7 @@ class Patcher(Task):
                     pass
                 else:
                     return __getattr__(*action.args, **action.kwargs)
-            raise
+            raise type, value, traceback
 
 
 class PatchedMethod(object):
