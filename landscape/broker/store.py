@@ -6,8 +6,6 @@ import logging
 import os
 
 from landscape.lib import bpickle
-from landscape.lib.persist import Persist
-from landscape.lib.monitor import Monitor
 from landscape import SERVER_API
 
 
@@ -162,7 +160,6 @@ class MessageStore(object):
 
     def delete_old_messages(self):
         """Delete messages which are unlikely to be needed in the future."""
-        filenames = self._get_sorted_filenames()
         for fn in itertools.islice(self._walk_messages(exclude=HELD+BROKEN),
                                    self.get_pending_offset()):
             os.unlink(fn)
