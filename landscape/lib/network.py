@@ -48,7 +48,7 @@ def get_active_interfaces(sock):
     """
     max_interfaces = 128
 
-    # setup an an array to hold our response, and initialized to null strings.
+    # Setup an an array to hold our response, and initialized to null strings.
     interfaces = array.array("B", "\0" * max_interfaces * IF_STRUCT_SIZE)
     buffer_size = interfaces.buffer_info()[0]
     packed_bytes = struct.pack(
@@ -59,11 +59,14 @@ def get_active_interfaces(sock):
 
     result = interfaces.tostring()
 
-    # generator over the interface names
+    # Generator over the interface names
+    already_found = set()
     for index in range(0, byte_length, IF_STRUCT_SIZE):
         ifreq_struct = result[index:index+IF_STRUCT_SIZE]
         interface_name = ifreq_struct[:ifreq_struct.index("\0")]
-        yield interface_name
+        if interface_name not in already_found:
+            already_found.add(interface_name)
+            yield interface_name
 
 
 def get_broadcast_address(sock, interface):
