@@ -1,3 +1,5 @@
+import sys
+
 DEBIAN_REVISION = ""
 UPSTREAM_VERSION = "1.5.2"
 VERSION = "%s%s" % (UPSTREAM_VERSION, DEBIAN_REVISION)
@@ -46,6 +48,10 @@ def initgroups(uid, gid):
     from landscape.lib.initgroups import initgroups as cinitgroups
     return cinitgroups(pwd.getpwuid(uid).pw_name, gid)
 
-# Patch twisted initgroups implementation, which can result in very long calls
-# to grp.getrlall(). See http://twistedmatrix.com/trac/ticket/3226
-util.initgroups = initgroups
+
+if "twisted.python._initgroups" not in sys.modules:
+    # Patch twisted initgroups implementation, which can result in very long
+    # calls to grp.getrlall(). See http://twistedmatrix.com/trac/ticket/3226
+    # We can remove that bit when Lucid is our oldest supported version
+    # (May 2013).
+    util.initgroups = initgroups

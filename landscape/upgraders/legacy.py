@@ -1,5 +1,4 @@
 import os
-import gdbm
 
 from landscape.patch import UpgradeManager
 from landscape.lib.persist import Persist
@@ -56,6 +55,7 @@ def migrate_data_file(data_dir,
 
     # package data needs to be migrated to a sqlite db
     if os.path.exists(hashdb_filename):
+        import gdbm
         hashdb = gdbm.open(hashdb_filename, "r")
         store = PackageStore(sqlite_filename)
 
