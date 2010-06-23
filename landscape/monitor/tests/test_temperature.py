@@ -101,7 +101,6 @@ class TemperatureTestWithSampleData(ThermalZoneTest):
         self.write_thermal_zone("ZONE2", "50 C")
         plugin = Temperature(thermal_zone_path=self.thermal_zone_path,
                              create_time=self.reactor.time)
-        step_size = self.monitor.step_size
         self.monitor.add(plugin)
         self.assertEquals(len(self.mstore.get_pending_messages()), 0)
 

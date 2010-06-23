@@ -487,8 +487,8 @@ class PackageStoreTest(LandscapeTest):
     def test_iter_hash_id_requests(self):
         hashes1 = ["ha\x00sh1", "ha\x00sh2"]
         hashes2 = ["ha\x00sh3", "ha\x00sh4"]
-        request1 = self.store1.add_hash_id_request(hashes1)
-        request2 = self.store1.add_hash_id_request(hashes2)
+        self.store1.add_hash_id_request(hashes1)
+        self.store1.add_hash_id_request(hashes2)
         hashes = [hash for request in self.store2.iter_hash_id_requests()
                        for hash in request.hashes]
         self.assertEquals(hashes, hashes1 + hashes2)
@@ -603,8 +603,8 @@ class PackageStoreTest(LandscapeTest):
         self.mocker.replay()
 
         try:
-            task1 = self.store1.add_task("reporter", [1])
-            task2 = self.store1.add_task("reporter", [2])
+            self.store1.add_task("reporter", [1])
+            self.store1.add_task("reporter", [2])
 
             task = self.store2.get_next_task("reporter")
             self.assertEquals(task.timestamp, 111)
