@@ -40,18 +40,30 @@ registered nodes:
   10.1.1.75  canyonedge
 """
 
+fake_capacity_output = """\
+AVAILABILITYZONE	bruterobe	10.0.1.113
+AVAILABILITYZONE	|- vm types	free / max   cpu   ram  disk
+AVAILABILITYZONE	|- m1.small	0008 / 0008   1    128     2
+AVAILABILITYZONE	|- c1.medium	0008 / 0008   1    256     5
+AVAILABILITYZONE	|- m1.large	0004 / 0004   2    512    10
+AVAILABILITYZONE	|- m1.xlarge	0004 / 0004   2   1024    20
+AVAILABILITYZONE	|- c1.xlarge	0002 / 0002   4   2048    20
+"""
+
 
 class FakeEucalyptusInfo(object):
     """A fake version of L{EucalyptusInfo} for use in tests."""
 
     def __init__(self, version_output=None, walrus_output=None,
                  cluster_controller_output=None,
-                 storage_controller_output=None, node_controller_output=None):
+                 storage_controller_output=None, node_controller_output=None,
+                 capacity_output=None):
         self._version_output = version_output
         self._walrus_output = walrus_output
         self._cluster_controller_output = cluster_controller_output
         self._storage_controller_output = storage_controller_output
         self._node_controller_output = node_controller_output
+        self._capacity_output = capacity_output
 
     def get_version_info(self):
         return succeed(self._version_output)
@@ -67,6 +79,9 @@ class FakeEucalyptusInfo(object):
 
     def get_node_controller_info(self):
         return succeed(self._node_controller_output)
+
+    def get_capacity_info(self):
+        return succeed(self._capacity_output)
 
 
 class FakeServiceHub(object):
@@ -101,7 +116,7 @@ class EucalyptusTest(LandscapeTest):
             eucalyptus_info_factory=lambda tools: FakeEucalyptusInfo(
                 fake_version_output, fake_walrus_output,
                 fake_cluster_controller_output, fake_storage_controller_output,
-                fake_node_controller_output))
+                fake_node_controller_output, fake_capacity_output))
         self.manager.add(plugin)
         return plugin
 
@@ -139,7 +154,8 @@ class EucalyptusTest(LandscapeTest):
                 "cluster_controller_info": fake_cluster_controller_output,
                 "node_controller_info": fake_node_controller_output,
                 "storage_controller_info": fake_storage_controller_output,
-                "walrus_info": fake_walrus_output}
+                "walrus_info": fake_walrus_output,
+                "capacity_info": fake_capacity_output}
             self.assertMessages(
                 self.broker_service.message_store.get_pending_messages(),
                 [expected])

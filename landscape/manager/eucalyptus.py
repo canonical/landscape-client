@@ -14,7 +14,11 @@ class EucalyptusInfo(object):
         self._tools = tools
 
     def get_version_info(self):
-        """Return information about the version of Eucalyptus in use.
+        """Get information about the version of Eucalyptus in use.
+
+        A string matching the following format is returned::
+
+          Eucalyptus version: 1.6.2
 
         @return: A L{Deferred} firing with the string output of the
            C{--version} command.
@@ -22,36 +26,79 @@ class EucalyptusInfo(object):
         return succeed(self._tools._runTool("euca_conf", ["--version"]))
 
     def get_walrus_info(self):
-        """Return information about the registered walruses (S3).
+        """Get information about the registered walruses (S3).
 
-        @return: a L{Deferred} firing with the string output of the
+        A string matching the following format is returned::
+
+          registered walruses:
+            walrus 10.0.1.113
+
+        @return: A L{Deferred} firing with the string output of the
             C{--list-walruses} command.
         """
         return succeed(self._tools._runTool("euca_conf", ["--list-walruses"]))
 
     def get_cluster_controller_info(self):
-        """Return information about the registered cluster controllers..
+        """Get information about the registered cluster controllers..
 
-        @return: a L{Deferred} firing with the string output of the
+        A string matching the following format is returned::
+
+          registered clusters:
+            dynamite 10.0.1.113
+
+        @return: A L{Deferred} firing with the string output of the
             C{--list-clusters} command.
         """
         return succeed(self._tools._runTool("euca_conf", ["--list-clusters"]))
 
     def get_storage_controller_info(self):
-        """Return information about the registered storage controllers (EBS).
+        """Get information about the registered storage controllers (EBS).
 
-        @return: a L{Deferred} firing with the string output of the
+        A string matching the following format is returned::
+
+          registered storage controllers:
+            dynamite 10.0.1.113
+
+        @return: A L{Deferred} firing with the string output of the
             C{--list-scs} command.
         """
         return succeed(self._tools._runTool("euca_conf", ["--list-scs"]))
 
     def get_node_controller_info(self):
-        """Return information about the registered node controller.
+        """Get information about the registered node controller.
 
-        @return: a L{Deferred} firing with the string output of the
+        A string matching the following format is returned::
+
+          registered nodes:
+            10.1.1.71  canyonedge   i-2DC5056F i-5DE5176D
+            10.1.1.72  canyonedge
+            10.1.1.73  canyonedge
+            10.1.1.74  canyonedge
+            10.1.1.75  canyonedge
+
+        @return: A L{Deferred} firing with the string output of the
             C{--list-nodes} command.
         """
         return succeed(self._tools._runTool("euca_conf", ["--list-nodes"]))
+
+    def get_capacity_info(self):
+        """Get information about the capacity of the cloud.
+
+        A string matching the following format is returned::
+
+          AVAILABILITYZONE	bruterobe	10.0.1.113
+          AVAILABILITYZONE	|- vm types	free / max   cpu   ram  disk
+          AVAILABILITYZONE	|- m1.small	0008 / 0008   1    128     2
+          AVAILABILITYZONE	|- c1.medium	0008 / 0008   1    256     5
+          AVAILABILITYZONE	|- m1.large	0004 / 0004   2    512    10
+          AVAILABILITYZONE	|- m1.xlarge	0004 / 0004   2   1024    20
+          AVAILABILITYZONE	|- c1.xlarge	0002 / 0002   4   2048    20
+
+        @return: A L{Deferred} firing with the string output of the
+            C{euca-describe-availability-zones verbose} command.
+        """
+        return succeed(self._tools._runTool("euca-describe-availability-zones",
+                                            ["verbose"]))
 
 
 class Eucalyptus(ManagerPlugin):
@@ -122,11 +169,13 @@ class Eucalyptus(ManagerPlugin):
             info.get_walrus_info(),
             info.get_cluster_controller_info(),
             info.get_storage_controller_info(),
-            info.get_node_controller_info()]
+            info.get_node_controller_info(),
+            info.get_capacity_info()]
 
         def create_message(result):
             (version_info, walrus_info, cluster_controller_info,
-             storage_controller_info, node_controller_info) = result
+             storage_controller_info, node_controller_info,
+             capacity_info) = result
             version = version_info.split()[-1]
             data = {"access_key": credentials.accessKey,
                     "secret_key": credentials.secretKey,
@@ -140,7 +189,8 @@ class Eucalyptus(ManagerPlugin):
                     "walrus_info": walrus_info,
                     "cluster_controller_info": cluster_controller_info,
                     "storage_controller_info": storage_controller_info,
-                    "node_controller_info": node_controller_info}
+                    "node_controller_info": node_controller_info,
+                    "capacity_info": capacity_info}
         return gather_results(deferred_list).addCallback(create_message)
 
     def _get_error_message(self, failure):
