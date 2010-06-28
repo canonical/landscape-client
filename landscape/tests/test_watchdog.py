@@ -1331,7 +1331,7 @@ class WatchDogRunTests(LandscapeTest):
         run(["--log-dir", self.makeFile()], reactor=reactor)
         self.assertTrue(reactor.running)
 
-    def test_non_root(self):
+    def test_no_landscape_user(self):
         """
         The watchdog should print an error message and exit if the
         'landscape' user doesn't exist.

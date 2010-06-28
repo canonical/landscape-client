@@ -15,7 +15,6 @@ from landscape.tests.subunit import run_isolated
 from landscape.tests.mocker import MockerTestCase
 from landscape.watchdog import bootstrap_list
 
-from landscape.lib import bpickle_dbus
 from landscape.lib.persist import Persist
 
 from landscape.reactor import FakeReactor
@@ -167,21 +166,6 @@ class LandscapeIsolatedTest(LandscapeTest):
             LandscapeTest.run = run_wrapper
             LandscapeTest._cleanup_patch = True
         run_isolated(LandscapeTest, self, result)
-
-
-class DBusHelper(object):
-    """Create a temporary D-Bus."""
-
-    def set_up(self, test_case):
-        if not getattr(test_case, "I_KNOW", False):
-            test_case.assertTrue(isinstance(test_case, LandscapeIsolatedTest),
-                                 "DBusHelper must only be used on "
-                                 "LandscapeIsolatedTests")
-        bpickle_dbus.install()
-        test_case.bus = dbus.SessionBus()
-
-    def tear_down(self, test_case):
-        bpickle_dbus.uninstall()
 
 
 class ErrorHandler(Handler):

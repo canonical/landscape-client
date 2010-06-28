@@ -188,7 +188,6 @@ class MountInfo(MonitorPlugin):
 
     def _get_mount_info(self):
         """Generator yields local mount points worth recording data for."""
-        file = open(self._mounts_file, "r")
         removable_devices = self._get_removable_devices()
         bound_mount_points = self._get_bound_mount_points()
 

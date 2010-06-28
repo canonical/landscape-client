@@ -88,7 +88,7 @@ class BasicTypesTest(LandscapeTest):
         self.assertEquals(UnicodeOrString("utf-8").coerce(u"foo"), u"foo")
 
     def test_unicode_or_str_bad(self):
-        self.assertRaises(InvalidError, Unicode().coerce, 32)
+        self.assertRaises(InvalidError, UnicodeOrString("utf-8").coerce, 32)
 
     def test_unicode_or_str_accepts_str(self):
         self.assertEquals(UnicodeOrString("utf-8").coerce("foo"), u"foo")

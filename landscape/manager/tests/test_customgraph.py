@@ -430,7 +430,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.store.add_graph(123, "/nonexistent", None)
         factory = StubProcessFactory()
         self.graph_manager.process_factory = factory
-        result = self.graph_manager.run()
+        self.graph_manager.run()
 
         self.assertEquals(len(factory.spawns), 0)
 
