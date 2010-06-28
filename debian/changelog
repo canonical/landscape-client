@@ -1,3 +1,10 @@
+landscape-client (1.5.2.1-0ubuntu0.10.10.0) maverick; urgency=low
+
+  * Include maverick in debian/rules substvars (LP: #596062)
+  * Filter duplicate network interfaces in get_active_interfaces (LP: #597000)
+
+ -- Free Ekanayaka <free.ekanayaka@canonical.com>  Mon, 28 Jun 2010 18:07:18 +0200
+
 landscape-client (1.5.2-0ubuntu0.10.10.0) maverick; urgency=low
 
   * New upstream version (LP: #594594):
