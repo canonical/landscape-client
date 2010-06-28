@@ -1,8 +1,8 @@
 import os
 
-from landscape.monitor.plugin import DataWatcher
+from landscape.constants import APT_PREFERENCES_SIZE_LIMIT
 
-APT_PREFERENCES_SIZE_LIMIT = 1048576 # 1 MByte
+from landscape.monitor.plugin import DataWatcher
 
 
 class AptPreferences(DataWatcher):

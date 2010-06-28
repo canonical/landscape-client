@@ -4,8 +4,6 @@ import sys
 from optparse import OptionParser
 from StringIO import StringIO
 
-import pycurl
-
 from twisted.internet.threads import deferToThread
 from twisted.internet.defer import DeferredList
 
@@ -56,6 +54,7 @@ def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None,
                     on the request.
     @param cainfo: Path to the file with CA certificates.
     """
+    import pycurl
     output = StringIO(data)
     input = StringIO()
 
