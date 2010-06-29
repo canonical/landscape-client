@@ -351,7 +351,9 @@ EUCALYPTUS_INFO = Message(
      "walrus_info": String(),
      "cluster_controller_info": String(),
      "storage_controller_info": String(),
-     "node_controller_info": String()})
+     "node_controller_info": String(),
+     "capacity_info": String()},
+    optional=["capacity_info"])
 
 EUCALYPTUS_INFO_ERROR = Message(
     "eucalyptus-info-error",
