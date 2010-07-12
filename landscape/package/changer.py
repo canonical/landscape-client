@@ -8,35 +8,17 @@ import grp
 
 from twisted.internet.defer import maybeDeferred, succeed
 
+from landscape.constants import (
+    SUCCESS_RESULT, ERROR_RESULT, DEPENDENCY_ERROR_RESULT, POLICY_STRICT,
+    POLICY_ALLOW_INSTALLS, POLICY_ALLOW_ALL_CHANGES,
+    UNKNOWN_PACKAGE_DATA_TIMEOUT)
+
 from landscape.lib.fs import create_file
 from landscape.package.reporter import find_reporter_command
 from landscape.package.taskhandler import (
     PackageTaskHandler, PackageTaskHandlerConfiguration, PackageTaskError,
     run_task_handler)
 from landscape.manager.manager import SUCCEEDED
-
-
-SUCCESS_RESULT = 1
-ERROR_RESULT = 100
-DEPENDENCY_ERROR_RESULT = 101
-POLICY_STRICT = 0
-POLICY_ALLOW_INSTALLS = 1
-POLICY_ALLOW_ALL_CHANGES = 2
-
-# The amount of time to wait while we have unknown package data before
-# reporting an error to the server in response to an operation.
-# The two common cases of this are:
-# 1.  The server requested an operation that we've decided requires some
-# dependencies, but we don't know the package ID of those dependencies.  It
-# should only take a bit more than 10 minutes for that to be resolved by the
-# package reporter.
-# 2.  We lost some package data, for example by a deb archive becoming
-# inaccessible for a while.  The earliest we can reasonably assume that to be
-# resolved is in 60 minutes, when the smart cronjob runs again.
-
-# So we'll give the problem one chance to resolve itself, by only waiting for
-# one run of smart update.
-UNKNOWN_PACKAGE_DATA_TIMEOUT = 70 * 60
 
 
 class UnknownPackageData(Exception):

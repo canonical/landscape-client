@@ -2,9 +2,14 @@
 
 from twisted.internet.defer import Deferred, maybeDeferred
 from twisted.internet.protocol import ReconnectingClientFactory
-from twisted.protocols.amp import (
-    Argument, String, Integer, Command, AMP, MAX_VALUE_LENGTH)
 from twisted.python.failure import Failure
+
+try:
+    from twisted.protocols.amp import (
+        Argument, String, Integer, Command, AMP, MAX_VALUE_LENGTH)
+except ImportError:
+    from landscape.lib.twisted_amp import (
+        Argument, String, Integer, Command, AMP, MAX_VALUE_LENGTH)
 
 from landscape.lib.bpickle import loads, dumps, dumps_table
 

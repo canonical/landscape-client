@@ -7,8 +7,8 @@ from dbus.exceptions import DBusException
 class HALManager(object):
 
     def __init__(self, bus=None):
-        self._bus = bus or SystemBus()
         try:
+            self._bus = bus or SystemBus()
             manager = self._bus.get_object("org.freedesktop.Hal",
                                            "/org/freedesktop/Hal/Manager")
         except DBusException:

@@ -39,7 +39,7 @@ class NetworkActivity(MonitorPlugin):
         if not network_activity:
             return
         self._network_activity = {}
-        return {"type": "network-activity", "activity": network_activity}
+        return {"type": "network-activity", "activities": network_activity}
 
     def send_message(self, urgent):
         message = self.create_message()
@@ -89,4 +89,5 @@ class NetworkActivity(MonitorPlugin):
                 continue
 
             steps = self._network_activity.setdefault(interface, [])
-            steps.append((in_step_data, out_step_data))
+            steps.append(
+                (in_step_data[0], int(in_step_data[1]), int(out_step_data[1])))

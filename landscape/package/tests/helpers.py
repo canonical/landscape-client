@@ -3,6 +3,8 @@ import os
 
 import smart
 
+from landscape.lib.fs import create_file
+
 
 class SmartHelper(object):
 
@@ -39,6 +41,7 @@ class SmartFacadeHelper(SmartHelper):
 PKGNAME1 = "name1_version1-release1_all.deb"
 PKGNAME2 = "name2_version2-release2_all.deb"
 PKGNAME3 = "name3_version3-release3_all.deb"
+PKGNAME4 = "name3_version3-release4_all.deb"
 
 PKGDEB1 = ("ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTE2NjExNDQ5MyAgMCAgICAgMCAgICAgMT"
            "AwNjQ0ICA0ICAgICAgICAgYAoyLjAKY29udHJvbC50YXIuZ3ogIDExNjYxMTQ0OTMg"
@@ -106,6 +109,21 @@ PKGDEB3 = ("ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTE2OTE0ODIwMyAgMCAgICAgMCAgICAgMT"
            "pXaZ4t+zkfi5/zY57qTy3Yw7B+XU7g+8L07rmG7Fe2bVxmyHZLZ+0V8Sl2Xj8mMIyC"
            "UTAKRsEoGAWjYBSMglEwCkbBKBgFo2AUjIJRMApGwSgYBaNgFIyCUTAKSAIAY/FOKA"
            "AoAAAK")
+
+PKGDEB4 = ("ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTI3NjUxMTU3OC41MCAgICAgMCAgICAgNj"
+           "Q0ICAgICA0\nICAgICAgICAgYAoyLjAKY29udHJvbC50YXIuZ3ogIDEyNzY1MTE1Nz"
+           "guNTAgICAgIDAgICAgIDY0\nNCAgICAgMjk1ICAgICAgIGAKH4sIAFoFFkwC/+3TwU"
+           "6EMBAGYM48RV9goS0dqnszMSbeTEy8F6iE\nCJS04MGnt2GzBzHqiVWT/7u0yVCm8G"
+           "eyPNkdjzTRukbbdd0LoTgpLqmQCRdCckoYJRewhNn4eBXv\n3Pzdcz/Vtx/3T2R57c"
+           "bZu37n/EulvsxfqnKTvyyFTBhH/rt7MPWLae2RjWawIn2yPnRuPLLX00Zk\n4uBtb0"
+           "2Ixfsx/qu+t83hsXuLRwRPb22ofTfN65kbFsww9ZYtU+tNY9l0ennK7pxnsw1zN7bn"
+           "YsjS\nD72LT72Lc2eVJrDb/A8NhWUIvzj/nMR2/kkKzP8lNERFJZWOGWiqiF89ayVt"
+           "qbWhSlfimrEsD26w\nGEEAAAAAAAAAAAAAAAAAAIC/6x1piYqhACgAAApkYXRhLnRh"
+           "ci5neiAgICAgMTI3NjUxMTU3OC41\nMCAgICAgMCAgICAgNjQ0ICAgICAxNDUgICAg"
+           "ICAgYAofiwgAWgUWTAL/7dFBCsMgEEDRWfcUniCZ\nsU57kJ5ASJdFSOz9K9kULLQr"
+           "C4H/NiPqQvnTLMNpc3XfZ9PPfW2W1JOae9s3i5okuPzBc6t5bU9Z\nS6nf7v067z93"
+           "ENO8lcd9fP/LZ/d3f4td/6h+lqD0H+7W6ocl13wSAAAAAAAAAAAAAAAAAAfzAqr5\n"
+           "GFYAKAAACg==\n")
 
 HASH1 = base64.decodestring("/ezv4AefpJJ8DuYFSq4RiEHJYP4=")
 HASH2 = base64.decodestring("glP4DwWOfMULm0AkRXYsH/exehc=")
@@ -327,24 +345,18 @@ Description: build daemon aiming at rebuilding Debian packages
 """}}}
 
 
+def create_deb(target_dir, pkg_name, pkg_data):
+    """Create a Debian package in the specified C{target_dir}."""
+    path = os.path.join(target_dir, pkg_name)
+    data = base64.decodestring(pkg_data)
+    create_file(path, data)
+
+
 def create_simple_repository(target_dir):
-    """
-    Create a simple deb-dir repository with in C{target_dir}.
-    """
-    filename = os.path.join(target_dir, PKGNAME1)
-    file = open(filename, "w")
-    file.write(base64.decodestring(PKGDEB1))
-    file.close()
-
-    filename = os.path.join(target_dir, PKGNAME2)
-    file = open(filename, "w")
-    file.write(base64.decodestring(PKGDEB2))
-    file.close()
-
-    filename = os.path.join(target_dir, PKGNAME3)
-    file = open(filename, "w")
-    file.write(base64.decodestring(PKGDEB3))
-    file.close()
+    """Create a simple deb-dir repository with in C{target_dir}."""
+    create_deb(target_dir, PKGNAME1, PKGDEB1)
+    create_deb(target_dir, PKGNAME2, PKGDEB2)
+    create_deb(target_dir, PKGNAME3, PKGDEB3)
 
 
 def create_full_repository(target_dir):

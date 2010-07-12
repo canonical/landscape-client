@@ -40,10 +40,10 @@ class ExchangeStoreTest(LandscapeTest):
 
     def test_add_message_context_with_duplicate_operation_id(self):
         """Only one message context with a given operation-id is permitted."""
-        self.store1.add_message_context(123, 'abc', 'change-packages')
+        self.store1.add_message_context(123, "abc", "change-packages")
         self.assertRaises(
-            sqlite3.IntegrityError,
-            self.store1.add_message_context, 123, 'def', 'change-packages')
+            (sqlite3.IntegrityError, sqlite3.OperationalError),
+            self.store1.add_message_context, 123, "def", "change-packages")
 
     def test_get_message_context(self):
         """

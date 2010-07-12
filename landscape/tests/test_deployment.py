@@ -11,6 +11,7 @@ from landscape.tests.mocker import ANY
 class BabbleConfiguration(Configuration):
     config_section = "babble"
     default_config_filenames = []
+
     def make_parser(self):
         parser = super(BabbleConfiguration, self).make_parser()
         parser.add_option("--whatever", metavar="STUFF")
@@ -25,9 +26,11 @@ class ConfigurationTest(LandscapeTest):
 
     def reset_config(self, configuration_class=None):
         if not configuration_class:
+
             class MyConfiguration(Configuration):
                 default_config_filenames = []
             configuration_class = MyConfiguration
+
         self.config_class = configuration_class
         self.config = configuration_class()
         self.parser = self.config.make_parser()
@@ -51,18 +54,23 @@ class ConfigurationTest(LandscapeTest):
         self.assertEquals(self.config.log_level, "command line")
 
     def test_command_line_option_without_default(self):
+
         class MyConfiguration(Configuration):
+
             def make_parser(self):
                 parser = OptionParser()
                 # Keep the dash in the option name to ensure it works.
                 parser.add_option("--foo-bar")
                 return parser
+
         self.assertEquals(MyConfiguration().foo_bar, None)
 
     def test_command_line_with_required_options(self):
+
         class MyConfiguration(Configuration):
             required_options = ("foo_bar",)
             config = None
+
             def make_parser(self):
                 parser = super(MyConfiguration, self).make_parser()
                 # Keep the dash in the option name to ensure it works.
@@ -81,14 +89,17 @@ class ConfigurationTest(LandscapeTest):
         self.assertEquals(self.config.foo_bar, "ooga")
 
     def test_command_line_with_unsaved_options(self):
+
         class MyConfiguration(Configuration):
             unsaved_options = ("foo_bar",)
             config = None
+
             def make_parser(self):
                 parser = super(MyConfiguration, self).make_parser()
                 # Keep the dash in the option name to ensure it works.
                 parser.add_option("--foo-bar", metavar="NAME")
                 return parser
+
         self.reset_config(configuration_class=MyConfiguration)
         self.write_config_file()
 
@@ -112,9 +123,11 @@ class ConfigurationTest(LandscapeTest):
 
     def test_no_section_available(self):
         config_filename = self.makeFile("")
+
         class MyConfiguration(Configuration):
             config_section = "nonexistent"
             default_config_filenames = (config_filename,)
+
         self.reset_config(configuration_class=MyConfiguration)
         self.config.load([])
 
@@ -220,16 +233,6 @@ class ConfigurationTest(LandscapeTest):
         data = open(filename).read()
         self.assertEquals(data.strip(), "[client]\nlog_level = error")
 
-    def test_bus_option(self):
-        """The bus option must be specified as 'system' or 'session'."""
-        self.assertRaises(SystemExit,
-                          self.config.load,
-                          ["--bus", "foobar"])
-        self.config.load(["--bus", "session"])
-        self.assertEquals(self.config.bus, "session")
-        self.config.load(["--bus", "system"])
-        self.assertEquals(self.config.bus, "system")
-
     def test_config_option(self):
         opts = self.parser.parse_args(["--config", "hello.cfg"])[0]
         self.assertEquals(opts.config, "hello.cfg")
@@ -240,22 +243,28 @@ class ConfigurationTest(LandscapeTest):
         self.assertEquals(self.config.hello, "world")
 
     def test_load_typed_option_from_file(self):
+
         class MyConfiguration(self.config_class):
+
             def make_parser(self):
                 parser = super(MyConfiguration, self).make_parser()
                 parser.add_option("--year", default=1, type="int")
                 return parser
+
         filename = self.makeFile("[client]\nyear = 2008\n")
         config = MyConfiguration()
         config.load(["--config", filename])
         self.assertEquals(config.year, 2008)
 
     def test_load_typed_option_from_command_line(self):
+
         class MyConfiguration(self.config_class):
+
             def make_parser(self):
                 parser = super(MyConfiguration, self).make_parser()
                 parser.add_option("--year", default=1, type="int")
                 return parser
+
         config = MyConfiguration()
         config.load(["--year", "2008"])
         self.assertEquals(config.year, 2008)
@@ -346,6 +355,7 @@ class ConfigurationTest(LandscapeTest):
 class GetVersionedPersistTest(LandscapeTest):
 
     def test_upgrade_service(self):
+
         class FakeService(object):
             persist_filename = self.makePersistFile(content="")
             service_name = "monitor"
