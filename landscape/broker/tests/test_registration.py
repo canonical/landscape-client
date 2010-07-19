@@ -15,6 +15,7 @@ from landscape.broker.tests.helpers import (
 from landscape.lib.bpickle import dumps
 from landscape.lib.fetch import HTTPCodeError, FetchError
 from landscape.lib.persist import Persist
+from landscape.configuration import print_text
 
 
 class IdentityTest(LandscapeTest):
@@ -590,14 +591,19 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         If we have an SSL certificate CA included in the user-data, this should
         be written out, and the configuration updated to reflect this.
         """
+        expected_filename = "%s.ssl_public_key" % self.config_filename
+        print_text_mock = self.mocker.replace(print_text)
+        print_text_mock("Writing SSL CA certificate to %s..." %
+                        expected_filename)
+        self.mocker.replay()
         self.prepare_query_results(ssl_certificate_ca=u"1234567890")
         self.prepare_cloud_registration(tags=u"server,london")
         # metadata is fetched and stored at reactor startup:
         self.reactor.fire("run")
-
         # And the metadata returned determines the URLs that are used
         self.assertEqual(self.transport.get_url(),
                           "https://example.com/message-system")
+        self.assertEqual(expected_filename, self.transport.pubkey)
         self.assertEqual(self.pinger.get_url(),
                           "http://example.com/ping")
         # Let's make sure those values were written back to the config file
@@ -605,8 +611,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         new_config.load_configuration_file(self.config_filename)
         self.assertEqual(new_config.url, "https://example.com/message-system")
         self.assertEqual(new_config.ping_url, "http://example.com/ping")
-        self.assertEqual(new_config.get_config_filename() + ".ssl_public_key",
-                         new_config.ssl_public_key)
+        self.assertEqual(expected_filename, new_config.ssl_public_key)
 
         # Okay! Exchange should cause the registration to happen.
         self.exchanger.exchange()
@@ -616,7 +621,6 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertMessages(
             self.transport.payloads[0]["messages"],
             [self.get_expected_cloud_message(tags=u"server,london")])
-
 
     def test_wrong_user_data(self):
         self.prepare_query_results(user_data="other stuff, not a bpickle")

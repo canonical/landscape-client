@@ -458,7 +458,8 @@ def setup(config):
     # but the actual certificate itself.
     if config.ssl_public_key and config.ssl_public_key.startswith("base64:"):
         decoded_cert = base64.decodestring(config.ssl_public_key[7:])
-        config = store_public_key_data(config, decoded_cert)
+        config.ssl_public_key = store_public_key_data(
+            config.get_config_filename(), decoded_cert)
 
     config.write()
     # Restart the client to ensure that it's using the new configuration.
@@ -475,7 +476,7 @@ def setup(config):
             sys.exit(exit_code)
 
 
-def store_public_key_data(config, certificate_data):
+def store_public_key_data(config_filename, certificate_data):
     """
     Write out the data from the SSL certificate provided to us, either from a
     bootstrap.conf file, or from EC2-style user-data.
@@ -487,13 +488,12 @@ def store_public_key_data(config, certificate_data):
     @return the L{BrokerConfiguration} object that was passed in, updated to
     reflect the path of the ssl_public_key file.
     """
-    key_filename = config.get_config_filename() + ".ssl_public_key"
+    key_filename = config_filename + ".ssl_public_key"
     print_text("Writing SSL CA certificate to %s..." % key_filename)
     key_file = open(key_filename, "w")
     key_file.write(certificate_data)
     key_file.close()
-    config.ssl_public_key = key_filename
-    return config
+    return key_filename
 
 
 def register(config, reactor=None):
