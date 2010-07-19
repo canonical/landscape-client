@@ -1,3 +1,4 @@
+import os
 import logging
 import pycurl
 import socket
@@ -612,15 +613,8 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertEqual(new_config.url, "https://example.com/message-system")
         self.assertEqual(new_config.ping_url, "http://example.com/ping")
         self.assertEqual(expected_filename, new_config.ssl_public_key)
-
-        # Okay! Exchange should cause the registration to happen.
-        self.exchanger.exchange()
-        # This *should* be asynchronous, but I think a billion tests are
-        # written like this
-        self.assertEqual(len(self.transport.payloads), 1)
-        self.assertMessages(
-            self.transport.payloads[0]["messages"],
-            [self.get_expected_cloud_message(tags=u"server,london")])
+        self.assertEquals(open(expected_filename, "r").read(),
+                          "1234567890")
 
     def test_wrong_user_data(self):
         self.prepare_query_results(user_data="other stuff, not a bpickle")

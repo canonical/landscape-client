@@ -481,8 +481,8 @@ def store_public_key_data(config_filename, certificate_data):
     Write out the data from the SSL certificate provided to us, either from a
     bootstrap.conf file, or from EC2-style user-data.
 
-    @param config: The L{BrokerConfiguration} object which will have the
-    filename that we write the certificate to set.
+    @param config_filename:  This filename is used to generate the filename
+        we write the certificate data to.
     @param certificate_data: a string of data that represents the contents of
     the file to be written.
     @return the L{BrokerConfiguration} object that was passed in, updated to

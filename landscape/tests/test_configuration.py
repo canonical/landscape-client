@@ -10,7 +10,7 @@ from landscape.configuration import (
     print_text, LandscapeSetupScript, LandscapeSetupConfiguration,
     register, setup, main, setup_init_script_and_start_client,
     stop_client_and_disable_init_script, ConfigurationError,
-    fetch_import_url, ImportOptionError)
+    fetch_import_url, ImportOptionError, store_public_key_data)
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.tests.helpers import (
@@ -1801,3 +1801,20 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
         self.mocker.replay()
 
         return register(configuration)
+
+
+class StoreSSLCertificateDataTest(LandscapeTest):
+
+    def test_store_public_key_data(self):
+        config_filename = os.path.join(self.makeDir(), "client.conf")
+        expected_filename = "%s.ssl_public_key" % config_filename
+        print_text_mock = self.mocker.replace(print_text)
+        print_text_mock("Writing SSL CA certificate to %s..." %
+                        expected_filename)
+        self.mocker.replay()
+        expected_filename = config_filename + ".ssl_public_key"
+        self.assertEqual(expected_filename,
+                          store_public_key_data(config_filename, "123456789"))
+        self.assertEqual("123456789",
+                         open(expected_filename, "r").read())
+
