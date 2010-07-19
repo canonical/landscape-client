@@ -30,12 +30,12 @@ class IdentityTest(LandscapeTest):
     def check_persist_property(self, attr, persist_name):
         value = "VALUE"
         self.assertEqual(getattr(self.identity, attr), None,
-                          "%r attribute should default to None, not %r" %
-                          (attr, getattr(self.identity, attr)))
+                         "%r attribute should default to None, not %r" %
+                         (attr, getattr(self.identity, attr)))
         setattr(self.identity, attr, value)
         self.assertEqual(getattr(self.identity, attr), value,
-                          "%r attribute should be %r, not %r" %
-                          (attr, value, getattr(self.identity, attr)))
+                         "%r attribute should be %r, not %r" %
+                         (attr, value, getattr(self.identity, attr)))
         self.assertEqual(
             self.persist.get(persist_name), value,
             "%r not set to %r in persist" % (persist_name, value))
@@ -44,8 +44,8 @@ class IdentityTest(LandscapeTest):
         value = "VALUE"
         setattr(self.config, attr, value)
         self.assertEqual(getattr(self.identity, attr), value,
-                          "%r attribute should be %r, not %r" %
-                          (attr, value, getattr(self.identity, attr)))
+                         "%r attribute should be %r, not %r" %
+                         (attr, value, getattr(self.identity, attr)))
 
     def test_secure_id(self):
         self.check_persist_property("secure_id",
@@ -155,8 +155,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                               "hostname": "ooga.local",
                               "tags": None}])
         self.assertEqual(self.logfile.getvalue().strip(),
-                          "INFO: Queueing message to register with account "
-                          "'account_name' without a password.")
+                         "INFO: Queueing message to register with account "
+                         "'account_name' without a password.")
 
     def test_queue_message_on_exchange_with_password(self):
         """If a registration password is available, we pass it on!"""
@@ -173,8 +173,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                               "hostname": "ooga.local",
                               "tags": None}])
         self.assertEqual(self.logfile.getvalue().strip(),
-                          "INFO: Queueing message to register with account "
-                          "'account_name' with a password.")
+                         "INFO: Queueing message to register with account "
+                         "'account_name' with a password.")
 
     def test_queue_message_on_exchange_with_tags(self):
         """
@@ -195,9 +195,9 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                               "hostname": "ooga.local",
                               "tags": u"computer,tag"}])
         self.assertEqual(self.logfile.getvalue().strip(),
-                          "INFO: Queueing message to register with account "
-                          "'account_name' and tags computer,tag "
-                          "with a password.")
+                         "INFO: Queueing message to register with account "
+                         "'account_name' and tags computer,tag "
+                         "with a password.")
 
     def test_queue_message_on_exchange_with_invalid_tags(self):
         """
@@ -220,10 +220,10 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                               "hostname": "ooga.local",
                               "tags": None}])
         self.assertEqual(self.logfile.getvalue().strip(),
-                          "ERROR: Invalid tags provided for cloud "
-                          "registration.\n    "
-                          "INFO: Queueing message to register with account "
-                          "'account_name' with a password.")
+                         "ERROR: Invalid tags provided for cloud "
+                         "registration.\n    "
+                         "INFO: Queueing message to register with account "
+                         "'account_name' with a password.")
 
     def test_queue_message_on_exchange_with_unicode_tags(self):
         """
@@ -245,9 +245,9 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
               "hostname": "ooga.local",
               "tags": u"prova\N{LATIN SMALL LETTER J WITH CIRCUMFLEX}o"}])
         self.assertEqual(self.logfile.getvalue().strip(),
-                          "INFO: Queueing message to register with account "
-                          "'account_name' and tags prova\xc4\xb5o "
-                          "with a password.")
+                         "INFO: Queueing message to register with account "
+                         "'account_name' and tags prova\xc4\xb5o "
+                         "with a password.")
 
     def test_queueing_registration_message_resets_message_store(self):
         """
@@ -544,10 +544,10 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
 
         # And the metadata returned determines the URLs that are used
         self.assertEqual(self.transport.get_url(),
-                          "https://example.com/message-system")
+                         "https://example.com/message-system")
         self.assertEqual(self.pinger.get_url(),
-                          "http://example.com/ping")
-        # Let's make sure those values were written back to the config file
+                         "http://example.com/ping")
+        # Lets make sure those values were written back to the config file
         new_config = BrokerConfiguration()
         new_config.load_configuration_file(self.config_filename)
         self.assertEqual(new_config.url, "https://example.com/message-system")
@@ -579,12 +579,12 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertMessages(self.transport.payloads[0]["messages"],
                             [self.get_expected_cloud_message(tags=None)])
         self.assertEqual(self.logfile.getvalue().strip(),
-                          "ERROR: Invalid tags provided for cloud "
-                          "registration.\n    "
-                          "INFO: Queueing message to register with OTP\n    "
-                          "INFO: Starting message exchange with "
-                          "https://example.com/message-system.\n    "
-                          "INFO: Message exchange completed in 0.00s.")
+                         "ERROR: Invalid tags provided for cloud "
+                         "registration.\n    "
+                         "INFO: Queueing message to register with OTP\n    "
+                         "INFO: Starting message exchange with "
+                         "https://example.com/message-system.\n    "
+                         "INFO: Message exchange completed in 0.00s.")
 
     def test_cloud_registration_with_ssl_ca_certificate(self):
         """
@@ -613,7 +613,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertEqual("http://example.com/ping", new_config.ping_url)
         self.assertEqual(expected_filename, new_config.ssl_public_key)
         self.assertEqual(open(expected_filename, "r").read(),
-                          "1234567890")
+                         "1234567890")
 
     def test_wrong_user_data(self):
         self.prepare_query_results(user_data="other stuff, not a bpickle")
