@@ -66,14 +66,17 @@ class BrokerDBusObject(Object):
         connected.addCallback(cb_connected)
 
 
-config = Configuration()
-lock_filename = os.path.join(config.data_path, "package", "changer.lock")
-try:
-    lock_path(lock_filename)
-except LockError:
-    # The package-changer is running, this means that we're upgrading from
-    # a non-AMP version and that the upgrade is Landscape driven, so let's
-    # expose the DBus broker proxy to give a chance to the package-changer
-    # to send its result message.
-    remote = BrokerDBusObject(config)
-    reactor.run()
+if __name__ == "__main__":
+    config = Configuration()
+    lock_dir = os.path.join(config.data_path, "package")
+    if os.path.isdir(lock_dir):
+        lock_filename = os.path.join(lock_dir, "changer.lock")
+        try:
+            lock_path(lock_filename)
+        except LockError:
+            # The package-changer is running, this means that we're upgrading from
+            # a non-AMP version and that the upgrade is Landscape driven, so let's
+            # expose the DBus broker proxy to give a chance to the package-changer
+            # to send its result message.
+            remote = BrokerDBusObject(config)
+            reactor.run()
