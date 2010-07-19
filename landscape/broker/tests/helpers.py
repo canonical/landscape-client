@@ -29,7 +29,9 @@ class BrokerConfigurationHelper(object):
     def set_up(self, test_case):
         data_path = test_case.makeDir()
         log_dir = test_case.makeDir()
-        test_case.config_filename = test_case.makeFile(
+        test_case.config_filename = os.path.join(test_case.makeDir(),
+                                                 "client.conf")
+        open(test_case.config_filename, "w").write(
             "[client]\n"
             "url = http://localhost:91919\n"
             "computer_title = Some Computer\n"
