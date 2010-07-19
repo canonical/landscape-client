@@ -1,4 +1,3 @@
-import os
 import logging
 import pycurl
 import socket
@@ -456,23 +455,23 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
     def get_user_data(self, otps=None,
                       exchange_url="https://example.com/message-system",
                       ping_url="http://example.com/ping",
-                      ssl_certificate_ca=None):
+                      ssl_ca_certificate=None):
         if otps is None:
             otps = ["otp1"]
         user_data = {"otps": otps, "exchange-url": exchange_url,
                      "ping-url": ping_url}
-        if ssl_certificate_ca is not None:
-            user_data["ssl-certificate-ca"] = ssl_certificate_ca
+        if ssl_ca_certificate is not None:
+            user_data["ssl-ca-certificate"] = ssl_ca_certificate
         return user_data
 
     def prepare_query_results(
         self, user_data=None, instance_key="key1", launch_index=0,
         local_hostname="ooga.local", public_hostname="ooga.amazon.com",
         reservation_key=u"res1", ramdisk_key=u"ram1", kernel_key=u"kernel1",
-        image_key=u"image1", ssl_certificate_ca=None):
+        image_key=u"image1", ssl_ca_certificate=None):
         if user_data is None:
             user_data = self.get_user_data(
-                ssl_certificate_ca=ssl_certificate_ca)
+                ssl_ca_certificate=ssl_ca_certificate)
         if not isinstance(user_data, Exception):
             user_data = dumps(user_data)
         api_base = "http://169.254.169.254/latest"
@@ -587,7 +586,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
                           "https://example.com/message-system.\n    "
                           "INFO: Message exchange completed in 0.00s.")
 
-    def test_cloud_registration_with_ssl_certificate_ca(self):
+    def test_cloud_registration_with_ssl_ca_certificate(self):
         """
         If we have an SSL certificate CA included in the user-data, this should
         be written out, and the configuration updated to reflect this.
@@ -597,23 +596,23 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         print_text_mock("Writing SSL CA certificate to %s..." %
                         expected_filename)
         self.mocker.replay()
-        self.prepare_query_results(ssl_certificate_ca=u"1234567890")
+        self.prepare_query_results(ssl_ca_certificate=u"1234567890")
         self.prepare_cloud_registration(tags=u"server,london")
         # metadata is fetched and stored at reactor startup:
         self.reactor.fire("run")
         # And the metadata returned determines the URLs that are used
-        self.assertEqual(self.transport.get_url(),
-                          "https://example.com/message-system")
+        self.assertEqual("https://example.com/message-system",
+                         self.transport.get_url())
         self.assertEqual(expected_filename, self.transport.pubkey)
-        self.assertEqual(self.pinger.get_url(),
-                          "http://example.com/ping")
+        self.assertEqual("http://example.com/ping",
+                         self.pinger.get_url())
         # Let's make sure those values were written back to the config file
         new_config = BrokerConfiguration()
         new_config.load_configuration_file(self.config_filename)
-        self.assertEqual(new_config.url, "https://example.com/message-system")
-        self.assertEqual(new_config.ping_url, "http://example.com/ping")
+        self.assertEqual("https://example.com/message-system", new_config.url)
+        self.assertEqual("http://example.com/ping", new_config.ping_url)
         self.assertEqual(expected_filename, new_config.ssl_public_key)
-        self.assertEquals(open(expected_filename, "r").read(),
+        self.assertEqual(open(expected_filename, "r").read(),
                           "1234567890")
 
     def test_wrong_user_data(self):

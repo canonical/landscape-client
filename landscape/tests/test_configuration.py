@@ -1521,6 +1521,7 @@ class RegisterFunctionTest(LandscapeTest):
 
         def register_done():
             service.reactor.fire("registration-done")
+
         registration_mock.register()
         self.mocker.call(register_done)
 
@@ -1571,6 +1572,7 @@ class RegisterFunctionTest(LandscapeTest):
 
         def register_done():
             service.reactor.fire("registration-failed")
+
         registration_mock.register()
         self.mocker.call(register_done)
 
@@ -1806,6 +1808,11 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
 class StoreSSLCertificateDataTest(LandscapeTest):
 
     def test_store_public_key_data(self):
+        """
+        L{store_public_key_data} writes the SSL CA supplied by the server to a
+        file for later use, this file is called after the name of the
+        configuration file with .ssl_public_key.
+        """
         config_filename = os.path.join(self.makeDir(), "client.conf")
         expected_filename = "%s.ssl_public_key" % config_filename
         print_text_mock = self.mocker.replace(print_text)
@@ -1817,4 +1824,3 @@ class StoreSSLCertificateDataTest(LandscapeTest):
                           store_public_key_data(config_filename, "123456789"))
         self.assertEqual("123456789",
                          open(expected_filename, "r").read())
-
