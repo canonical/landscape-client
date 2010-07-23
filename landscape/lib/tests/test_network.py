@@ -42,6 +42,12 @@ class NetworkInfoTest(LandscapeTest):
             if flags & 4096:
                 self.assertIn("MULTICAST", block)
 
+    def test_skip_loopback(self):
+        """The C{lo} interface is reported by L{get_active_device_info}."""
+        device_info = get_active_device_info()
+        interfaces = [i["interface"] for i in device_info]
+        self.assertNotIn("lo", interfaces)
+
     def test_duplicate_network_interfaces(self):
         """
         L{get_active_interfaces} doesn't return duplicate network interfaces.
