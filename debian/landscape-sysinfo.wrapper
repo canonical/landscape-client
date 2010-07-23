@@ -1,7 +1,11 @@
 #!/bin/sh
-echo
-echo -n "  System information as of "
-/bin/date
-echo
-/usr/bin/landscape-sysinfo
-
+if [ $(echo "`cut -f1 -d ' ' /proc/loadavg` < 1.0" | bc) -eq 1 ]; then
+    echo
+    echo -n "  System information as of "
+    /bin/date
+    echo
+    /usr/bin/landscape-sysinfo
+else
+    echo
+    echo " System information disabled due to load higher than 1"
+fi
