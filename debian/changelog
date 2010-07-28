@@ -1,3 +1,26 @@
+landscape-client (1.5.4-0ubuntu0.10.10.0) maverick; urgency=low
+
+  * New upstream version (LP: #610744):
+
+    - The Eucalyptus management plugin reports the output of the
+      'euca-describe-availability-zones verbose' command, which includes
+      information about the available instance types and the maximum
+      number of each instance type that the cloud can support (LP: #599338)
+
+    - Check if the package directory exists before trying to check the
+      package changer lock in the dbus-proxy. This fixes a bug when upgrading
+      a dbus-landscape which never registered (LP: #603514).
+
+    - Allow an LDS server to bootstrap new cloud instances with its own CA,
+      which is picked up by the client, written to a file on the instance, and
+      used in subsequent exchanges with the server (LP: #605079).
+
+    - Skip loopback interface when reporting device info (LP: #608314)
+
+    - Disable landscape-sysinfo when load is more than 1 (LP: #608278)
+
+ -- Free Ekanayaka <free.ekanayaka@canonical.com>  Wed, 28 Jul 2010 08:14:02 +0200
+
 landscape-client (1.5.2.1-0ubuntu0.10.10.0) maverick; urgency=low
 
   * Include maverick in debian/rules substvars (LP: #596062)
