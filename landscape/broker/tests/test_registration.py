@@ -1,3 +1,4 @@
+import os
 import logging
 import pycurl
 import socket
@@ -591,7 +592,8 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         If we have an SSL certificate CA included in the user-data, this should
         be written out, and the configuration updated to reflect this.
         """
-        expected_filename = "%s.ssl_public_key" % self.config_filename
+        expected_filename = "/var/lib/landscape/%s.ssl_public_key" % \
+            os.path.basename(self.config_filename)
         print_text_mock = self.mocker.replace(print_text)
         print_text_mock("Writing SSL CA certificate to %s..." %
                         expected_filename)
