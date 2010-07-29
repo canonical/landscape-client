@@ -1403,14 +1403,26 @@ account_name = account
         self.assertEqual(system_exit.code, 1)
 
     def test_base64_ssl_public_key_is_exported_to_file(self):
+
+        class FakeFile:
+            def write(self, content):
+                self.content = content
+
+            def close(self):
+                self.closed = True
+
         sysvconfig_mock = self.mocker.patch(SysVConfig)
         sysvconfig_mock.set_start_on_boot(True)
         sysvconfig_mock.restart_landscape()
         self.mocker.result(True)
 
         config_filename = self.makeFile("")
-        key_filename = config_filename + ".ssl_public_key"
-        self.addCleanup(os.remove, key_filename)
+        key_filename = os.path.join("/var/lib/landscape/client",
+            os.path.basename(config_filename) + ".ssl_public_key")
+        open_mock = self.mocker.replace("__builtin__.open")
+        open_mock(key_filename, "w")
+        fake_file = FakeFile()
+        self.mocker.result(fake_file)
 
         print_text_mock = self.mocker.replace(print_text)
         print_text_mock("Writing SSL CA certificate to %s..." % key_filename)
@@ -1422,8 +1434,8 @@ account_name = account
                                   "--ssl-public-key", "base64:SGkgdGhlcmUh"])
         setup(config)
 
-        self.assertTrue(os.path.isfile(key_filename))
-        self.assertEqual(open(key_filename).read(), "Hi there!")
+        self.assertEquals(fake_file.content, "Hi there!")
+        self.assertTrue(fake_file.closed)
 
         options = ConfigParser()
         options.read(config_filename)

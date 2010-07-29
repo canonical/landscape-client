@@ -488,7 +488,7 @@ def store_public_key_data(config_filename, certificate_data):
     @return the L{BrokerConfiguration} object that was passed in, updated to
     reflect the path of the ssl_public_key file.
     """
-    key_filename = os.path.join("/var/lib/landscape",
+    key_filename = os.path.join("/var/lib/landscape/client",
         os.path.basename(config_filename) + ".ssl_public_key")
     print_text("Writing SSL CA certificate to %s..." % key_filename)
     key_file = open(key_filename, "w")
