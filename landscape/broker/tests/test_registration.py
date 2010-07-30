@@ -592,13 +592,8 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         If we have an SSL certificate CA included in the user-data, this should
         be written out, and the configuration updated to reflect this.
         """
-        key_filename = "/var/lib/landscape/client/%s.ssl_public_key" % \
-            os.path.basename(self.config_filename)
-
-        open_mock = self.mocker.replace("__builtin__.open")
-        open_mock(key_filename, "w")
-        fake_file = FakeFile()
-        self.mocker.result(fake_file)
+        key_filename = os.path.join(self.config.data_path,
+            "%s.ssl_public_key" % os.path.basename(self.config_filename))
 
         print_text_mock = self.mocker.replace(print_text)
         print_text_mock("Writing SSL CA certificate to %s..." %
@@ -620,7 +615,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertEqual("https://example.com/message-system", new_config.url)
         self.assertEqual("http://example.com/ping", new_config.ping_url)
         self.assertEqual(key_filename, new_config.ssl_public_key)
-        self.assertEqual("1234567890", fake_file.content)
+        self.assertEqual("1234567890", open(key_filename, "r").read())
 
     def test_wrong_user_data(self):
         self.prepare_query_results(user_data="other stuff, not a bpickle")
