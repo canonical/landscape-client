@@ -10,7 +10,7 @@ from landscape.broker.registration import (
     EC2_API, Identity)
 
 from landscape.broker.config import BrokerConfiguration
-from landscape.tests.helpers import LandscapeTest, FakeFile
+from landscape.tests.helpers import LandscapeTest
 from landscape.broker.tests.helpers import (
     BrokerConfigurationHelper, RegistrationHelper)
 from landscape.lib.bpickle import dumps

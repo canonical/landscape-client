@@ -14,7 +14,7 @@ from landscape.configuration import (
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.tests.helpers import (
-    LandscapeTest, BrokerServiceHelper, EnvironSaverHelper, FakeFile)
+    LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
 from landscape.tests.mocker import ARGS, ANY, MATCH, CONTAINS, expect
 from landscape.broker.amp import RemoteBroker, BrokerClientProtocol
 
