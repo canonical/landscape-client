@@ -14,7 +14,7 @@ from landscape.configuration import (
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.tests.helpers import (
-    LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
+    LandscapeTest, BrokerServiceHelper, EnvironSaverHelper, FakeFile)
 from landscape.tests.mocker import ARGS, ANY, MATCH, CONTAINS, expect
 from landscape.broker.amp import RemoteBroker, BrokerClientProtocol
 
@@ -1404,13 +1404,6 @@ account_name = account
 
     def test_base64_ssl_public_key_is_exported_to_file(self):
 
-        class FakeFile:
-            def write(self, content):
-                self.content = content
-
-            def close(self):
-                self.closed = True
-
         sysvconfig_mock = self.mocker.patch(SysVConfig)
         sysvconfig_mock.set_start_on_boot(True)
         sysvconfig_mock.restart_landscape()
@@ -1826,13 +1819,19 @@ class StoreSSLCertificateDataTest(LandscapeTest):
         configuration file with .ssl_public_key.
         """
         config_filename = os.path.join(self.makeDir(), "client.conf")
-        expected_filename = "%s.ssl_public_key" % config_filename
+        key_filename = os.path.join("/var/lib/landscape/client",
+            os.path.basename(config_filename) + ".ssl_public_key")
+
+        open_mock = self.mocker.replace("__builtin__.open")
+        open_mock(key_filename, "w")
+        fake_file = FakeFile()
+        self.mocker.result(fake_file)
+
         print_text_mock = self.mocker.replace(print_text)
         print_text_mock("Writing SSL CA certificate to %s..." %
-                        expected_filename)
+                        key_filename)
         self.mocker.replay()
-        expected_filename = config_filename + ".ssl_public_key"
-        self.assertEqual(expected_filename,
+
+        self.assertEqual(key_filename,
                          store_public_key_data(config_filename, "123456789"))
-        self.assertEqual("123456789",
-                         open(expected_filename, "r").read())
+        self.assertEqual("123456789", fake_file.content)

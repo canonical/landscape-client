@@ -379,6 +379,14 @@ class MockPopen(object):
         return self.return_codes.pop(0)
 
 
+class FakeFile:
+    def write(self, content):
+        self.content = content
+
+    def close(self):
+        self.closed = True
+
+
 class StandardIOHelper(object):
 
     def set_up(self, test_case):
