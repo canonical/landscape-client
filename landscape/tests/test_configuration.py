@@ -1409,13 +1409,10 @@ account_name = account
         sysvconfig_mock.restart_landscape()
         self.mocker.result(True)
 
-        config_filename = self.makeFile("")
-        key_filename = os.path.join("/var/lib/landscape/client",
+        data_path = self.makeDir()
+        config_filename = self.makeFile("[client]\ndata_path=%s" % data_path)
+        key_filename = os.path.join(data_path,
             os.path.basename(config_filename) + ".ssl_public_key")
-        open_mock = self.mocker.replace("__builtin__.open")
-        open_mock(key_filename, "w")
-        fake_file = FakeFile()
-        self.mocker.result(fake_file)
 
         print_text_mock = self.mocker.replace(print_text)
         print_text_mock("Writing SSL CA certificate to %s..." % key_filename)
@@ -1425,10 +1422,10 @@ account_name = account
         config = self.get_config(["--silent", "-c", config_filename,
                                   "-u", "url", "-a", "account", "-t", "title",
                                   "--ssl-public-key", "base64:SGkgdGhlcmUh"])
+        config.data_path = data_path
         setup(config)
 
-        self.assertEquals(fake_file.content, "Hi there!")
-        self.assertTrue(fake_file.closed)
+        self.assertEquals("Hi there!", open(key_filename, "r").read())
 
         options = ConfigParser()
         options.read(config_filename)
