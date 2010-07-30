@@ -1818,14 +1818,9 @@ class StoreSSLCertificateDataTest(LandscapeTest):
         file for later use, this file is called after the name of the
         configuration file with .ssl_public_key.
         """
-        config_filename = os.path.join(self.makeDir(), "client.conf")
-        key_filename = os.path.join("/var/lib/landscape/client",
-            os.path.basename(config_filename) + ".ssl_public_key")
-
-        open_mock = self.mocker.replace("__builtin__.open")
-        open_mock(key_filename, "w")
-        fake_file = FakeFile()
-        self.mocker.result(fake_file)
+        config = get_config(self, [])
+        key_filename = os.path.join(config.data_path,
+            os.path.basename(config.get_config_filename()) + ".ssl_public_key")
 
         print_text_mock = self.mocker.replace(print_text)
         print_text_mock("Writing SSL CA certificate to %s..." %
@@ -1833,5 +1828,5 @@ class StoreSSLCertificateDataTest(LandscapeTest):
         self.mocker.replay()
 
         self.assertEqual(key_filename,
-                         store_public_key_data(config_filename, "123456789"))
-        self.assertEqual("123456789", fake_file.content)
+                         store_public_key_data(config, "123456789"))
+        self.assertEqual("123456789", open(key_filename, "r").read())
