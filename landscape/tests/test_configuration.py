@@ -1403,14 +1403,16 @@ account_name = account
         self.assertEqual(system_exit.code, 1)
 
     def test_base64_ssl_public_key_is_exported_to_file(self):
+
         sysvconfig_mock = self.mocker.patch(SysVConfig)
         sysvconfig_mock.set_start_on_boot(True)
         sysvconfig_mock.restart_landscape()
         self.mocker.result(True)
 
-        config_filename = self.makeFile("")
-        key_filename = config_filename + ".ssl_public_key"
-        self.addCleanup(os.remove, key_filename)
+        data_path = self.makeDir()
+        config_filename = self.makeFile("[client]\ndata_path=%s" % data_path)
+        key_filename = os.path.join(data_path,
+            os.path.basename(config_filename) + ".ssl_public_key")
 
         print_text_mock = self.mocker.replace(print_text)
         print_text_mock("Writing SSL CA certificate to %s..." % key_filename)
@@ -1420,10 +1422,10 @@ account_name = account
         config = self.get_config(["--silent", "-c", config_filename,
                                   "-u", "url", "-a", "account", "-t", "title",
                                   "--ssl-public-key", "base64:SGkgdGhlcmUh"])
+        config.data_path = data_path
         setup(config)
 
-        self.assertTrue(os.path.isfile(key_filename))
-        self.assertEqual(open(key_filename).read(), "Hi there!")
+        self.assertEquals("Hi there!", open(key_filename, "r").read())
 
         options = ConfigParser()
         options.read(config_filename)
@@ -1813,14 +1815,15 @@ class StoreSSLCertificateDataTest(LandscapeTest):
         file for later use, this file is called after the name of the
         configuration file with .ssl_public_key.
         """
-        config_filename = os.path.join(self.makeDir(), "client.conf")
-        expected_filename = "%s.ssl_public_key" % config_filename
+        config = get_config(self, [])
+        key_filename = os.path.join(config.data_path,
+            os.path.basename(config.get_config_filename()) + ".ssl_public_key")
+
         print_text_mock = self.mocker.replace(print_text)
         print_text_mock("Writing SSL CA certificate to %s..." %
-                        expected_filename)
+                        key_filename)
         self.mocker.replay()
-        expected_filename = config_filename + ".ssl_public_key"
-        self.assertEqual(expected_filename,
-                         store_public_key_data(config_filename, "123456789"))
-        self.assertEqual("123456789",
-                         open(expected_filename, "r").read())
+
+        self.assertEqual(key_filename,
+                         store_public_key_data(config, "123456789"))
+        self.assertEqual("123456789", open(key_filename, "r").read())
