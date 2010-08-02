@@ -1,3 +1,4 @@
+import os
 import logging
 import pycurl
 import socket
@@ -591,10 +592,12 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         If we have an SSL certificate CA included in the user-data, this should
         be written out, and the configuration updated to reflect this.
         """
-        expected_filename = "%s.ssl_public_key" % self.config_filename
+        key_filename = os.path.join(self.config.data_path,
+            "%s.ssl_public_key" % os.path.basename(self.config_filename))
+
         print_text_mock = self.mocker.replace(print_text)
         print_text_mock("Writing SSL CA certificate to %s..." %
-                        expected_filename)
+                        key_filename)
         self.mocker.replay()
         self.prepare_query_results(ssl_ca_certificate=u"1234567890")
         self.prepare_cloud_registration(tags=u"server,london")
@@ -603,7 +606,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         # And the metadata returned determines the URLs that are used
         self.assertEqual("https://example.com/message-system",
                          self.transport.get_url())
-        self.assertEqual(expected_filename, self.transport.pubkey)
+        self.assertEqual(key_filename, self.transport.pubkey)
         self.assertEqual("http://example.com/ping",
                          self.pinger.get_url())
         # Let's make sure those values were written back to the config file
@@ -611,9 +614,8 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         new_config.load_configuration_file(self.config_filename)
         self.assertEqual("https://example.com/message-system", new_config.url)
         self.assertEqual("http://example.com/ping", new_config.ping_url)
-        self.assertEqual(expected_filename, new_config.ssl_public_key)
-        self.assertEqual(open(expected_filename, "r").read(),
-                         "1234567890")
+        self.assertEqual(key_filename, new_config.ssl_public_key)
+        self.assertEqual("1234567890", open(key_filename, "r").read())
 
     def test_wrong_user_data(self):
         self.prepare_query_results(user_data="other stuff, not a bpickle")
