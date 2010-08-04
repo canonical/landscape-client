@@ -608,7 +608,7 @@ def fetch_import_url(url):
 
 def main(args):
     config = LandscapeSetupConfiguration(fetch_import_url)
-    if args == ["--help"]:
+    if args in (["-h"], ["--help"]):
         # We let landscape-config --help to be run as normal user
         config.load(args)
 
