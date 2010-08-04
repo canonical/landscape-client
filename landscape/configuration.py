@@ -607,15 +607,20 @@ def fetch_import_url(url):
 
 
 def main(args):
+    config = LandscapeSetupConfiguration(fetch_import_url)
+    if args == ["--help"]:
+        # We let landscape-config --help to be run as normal user
+        config.load(args)
+
     if os.getuid() != 0:
         sys.exit("landscape-config must be run as root.")
 
-    config = LandscapeSetupConfiguration(fetch_import_url)
     try:
         config.load(args)
     except ImportOptionError, error:
         print_text(str(error), error=True)
         sys.exit(1)
+
 
     # Disable startup on boot and stop the client, if one is running.
     if config.disable:
