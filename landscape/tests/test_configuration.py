@@ -1,6 +1,7 @@
 import os
 from getpass import getpass
 from ConfigParser import ConfigParser
+from cStringIO import StringIO
 
 from twisted.internet.defer import succeed, fail
 
@@ -1076,6 +1077,26 @@ account_name = account
         sys_exit = self.assertRaises(SystemExit,
                                      main, ["-c", self.make_working_config()])
         self.assertIn("landscape-config must be run as root", str(sys_exit))
+
+    def test_main_with_help_and_non_root(self):
+        """It's possible to call 'landscape-config --help' as normal user."""
+        self.mocker.reset() # Forget the thing done in setUp
+        output = StringIO()
+        self.mocker.replace("sys.stdout").write(ANY)
+        self.mocker.call(output.write)
+        self.mocker.replay()
+        self.assertRaises(SystemExit, main, ["--help"])
+        self.assertIn("show this help message and exit", output.getvalue())
+
+    def test_main_with_help_and_non_root_short(self):
+        """It's possible to call 'landscape-config -h' as normal user."""
+        self.mocker.reset() # Forget the thing done in setUp
+        output = StringIO()
+        self.mocker.replace("sys.stdout").write(ANY)
+        self.mocker.call(output.write)
+        self.mocker.replay()
+        self.assertRaises(SystemExit, main, ["-h"])
+        self.assertIn("show this help message and exit", output.getvalue())
 
     def test_import_from_file(self):
         sysvconfig_mock = self.mocker.patch(SysVConfig)
