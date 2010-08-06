@@ -1079,9 +1079,7 @@ account_name = account
         self.assertIn("landscape-config must be run as root", str(sys_exit))
 
     def test_main_with_help_and_non_root(self):
-        """
-        It's possible to call 'landscape-config --help' as normal user.
-        """
+        """It's possible to call 'landscape-config --help' as normal user."""
         self.mocker.reset() # Forget the thing done in setUp
         output = StringIO()
         self.mocker.replace("sys.stdout").write(ANY)
@@ -1091,9 +1089,7 @@ account_name = account
         self.assertIn("show this help message and exit", output.getvalue())
 
     def test_main_with_help_and_non_root_short(self):
-        """
-        It's possible to call 'landscape-config -h' as normal user.
-        """
+        """It's possible to call 'landscape-config -h' as normal user."""
         self.mocker.reset() # Forget the thing done in setUp
         output = StringIO()
         self.mocker.replace("sys.stdout").write(ANY)
