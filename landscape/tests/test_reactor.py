@@ -395,7 +395,11 @@ class FakeReactorTest(LandscapeTest, ReactorTestMixin):
 class TwistedReactorTest(LandscapeTest, ReactorTestMixin):
 
     def get_reactor(self):
-        return TwistedReactor()
+        reactor = TwistedReactor()
+        # It's not possible to stop the reactor in a Trial test, calling
+        # reactor.crash instead
+        reactor._reactor.stop = reactor._reactor.crash
+        return reactor
 
     def test_real_time(self):
         reactor = self.get_reactor()
