@@ -114,6 +114,7 @@ class LandscapeServiceTest(LandscapeTest):
             self.assertTrue(service.port.connected)
             connector.disconnect()
             service.stopService()
+            return service.port.stopListening()
 
         connected = connector.connect()
         return connected.addCallback(assert_port)
