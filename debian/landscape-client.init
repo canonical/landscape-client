@@ -59,7 +59,7 @@ case "$1" in
 			mkdir $PIDDIR
 			chown landscape $PIDDIR
 		fi
-		# Cleanup leftover sockets there's no other landscape process
+		# Cleanup leftover sockets if there's no other landscape process
 		# running. This shouldn't be usually necessary, but it can
 		# happen in case the client crashed badly and the socket points
 		# to a process with the same PID.
