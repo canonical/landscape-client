@@ -63,6 +63,11 @@ case "$1" in
 		# running. This shouldn't be usually necessary, but it can
 		# happen in case the client crashed badly and the socket points
 		# to a process with the same PID.
+		if ! pidofproc -p "$PIDFILE" "$DAEMON" > /dev/null; then
+			find "${SOCKETDIR:?}" -type s -print0 | xargs -r0 rm -f
+			find "${SOCKETDIR:?}" -type l -print0 | xargs -r0 rm -f
+		fi
+
 		if ls $SOCKETDIR/* > /dev/null 2>&1; then
 			if ! pidofproc -p $PIDFILE $DAEMON > /dev/null; then
                 		rm -f $SOCKETDIR/*
