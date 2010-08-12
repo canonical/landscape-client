@@ -68,11 +68,6 @@ case "$1" in
 			find "${SOCKETDIR:?}" -type l -print0 | xargs -r0 rm -f
 		fi
 
-		if ls $SOCKETDIR/* > /dev/null 2>&1; then
-			if ! pidofproc -p $PIDFILE $DAEMON > /dev/null; then
-                		rm -f $SOCKETDIR/*
-			fi
-		fi
 		FULL_COMMAND="start-stop-daemon --start --quiet --oknodo --startas $DAEMON --pidfile $PIDFILE -g $DAEMON_GROUP -- --daemon --pid-file $PIDFILE"
 		if [ x"$DAEMON_USER" != x ]; then
 			sudo -u $DAEMON_USER $FULL_COMMAND
