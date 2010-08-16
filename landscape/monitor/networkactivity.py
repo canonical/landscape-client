@@ -68,9 +68,14 @@ class NetworkActivity(MonitorPlugin):
                 if not delta_out and not delta_in:
                     continue
                 if delta_out < 0:
-                    delta_out = self._rolloverunit + delta_out
+                    delta_out += self._rolloverunit
                 if delta_in < 0:
-                    delta_in = self._rolloverunit + delta_in
+                    delta_in += self._rolloverunit
+                # 28 bytes is the minimum packet size, roughly
+                if traffic["send_packets"] * 28 > delta_out:
+                    delta_out += self._rolloverunit
+                if traffic["recv_packets"] * 28 > delta_in:
+                    delta_in += self._rolloverunit
 
                 yield interface, delta_out, delta_in
             self._last_activity[interface] = (

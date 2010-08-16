@@ -10,7 +10,7 @@ class NetworkActivityTest(LandscapeTest):
     stats_template = """\
 Inter-|   Receive                           |  Transmit
  face |bytes    packets compressed multicast|bytes    packets errs drop fifo
-    lo:%(lo_in)d   0       0         0       %(lo_out)d 3321049    0    0    0
+    lo:%(lo_in)d   %(lo_in_p)d       0         0       %(lo_out)d %(lo_out_p)d    0    0    0
     eth0: %(eth0_in)d   12539      0     62  %(eth0_out)d   12579    0    0   0
     %(extra)s
 """
@@ -29,10 +29,12 @@ Inter-|   Receive                           |  Transmit
         super(NetworkActivityTest, self).tearDown()
 
     def write_activity(self, lo_in=0, lo_out=0, eth0_in=0, eth0_out=0,
-                        extra="", **kw):
+                        extra="", lo_in_p=0, lo_out_p=0, **kw):
         kw.update(dict(
             lo_in = lo_in,
             lo_out = lo_out,
+            lo_in_p = lo_in_p,
+            lo_out_p = lo_out_p,
             eth0_in = eth0_in,
             eth0_out = eth0_out,
             extra=extra))
@@ -97,6 +99,27 @@ Inter-|   Receive                           |  Transmit
         self.assertEquals(message["type"], "network-activity")
         self.assertEquals(message["activities"]["lo"],
                           [(300, 9010, 9099)])
+        self.assertNotIn("eth0", message["activities"])
+
+    def test_proc_huge_rollover(self):
+        """
+        If /proc/net/dev rollovers *and* that we pass the previous measured
+        value (so, more than 4GB in 30 seconds on 32 bits), we use the number
+        of packets to check if the number makes sense. It doesn't solve
+        everything, but it helps in some cases.
+        """
+        self.plugin._rolloverunit = 10000
+        self.write_activity(lo_in=2000, lo_out=1900)
+        self.plugin.run()
+        self.reactor.advance(self.monitor.step_size)
+        self.write_activity(lo_in=3000, lo_out=1999, lo_in_p=100, lo_out_p=50)
+        self.plugin.run()
+        message = self.plugin.create_message()
+        self.assertTrue(message)
+        self.assertTrue("type" in message)
+        self.assertEquals(message["type"], "network-activity")
+        self.assertEquals(message["activities"]["lo"],
+                          [(300, 11000, 10099)])
         self.assertNotIn("eth0", message["activities"])
 
     def test_no_message_without_traffic_delta(self):
