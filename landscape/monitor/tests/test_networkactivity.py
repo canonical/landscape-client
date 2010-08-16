@@ -80,6 +80,25 @@ Inter-|   Receive                           |  Transmit
                           [(300, 10, 99)])
         self.assertNotIn("eth0", message["activities"])
 
+    def test_proc_rollover(self):
+        """
+        If /proc/net/dev rollovers, the network plugin handles the value and
+        gives a positive value instead.
+        """
+        self.plugin._rolloverunit = 10000
+        self.write_activity(lo_in=2000, lo_out=1900)
+        self.plugin.run()
+        self.reactor.advance(self.monitor.step_size)
+        self.write_activity(lo_in=1010, lo_out=999)
+        self.plugin.run()
+        message = self.plugin.create_message()
+        self.assertTrue(message)
+        self.assertTrue("type" in message)
+        self.assertEquals(message["type"], "network-activity")
+        self.assertEquals(message["activities"]["lo"],
+                          [(300, 9010, 9099)])
+        self.assertNotIn("eth0", message["activities"])
+
     def test_no_message_without_traffic_delta(self):
         """
         If no traffic delta is detected between runs, no message will be

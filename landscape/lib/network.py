@@ -6,7 +6,7 @@ import fcntl
 import socket
 import struct
 
-__all__ = ["get_active_device_info", "get_network_traffic"]
+__all__ = ["get_active_device_info", "get_network_traffic", "is_64"]
 
 # from header /usr/include/bits/ioctls.h
 SIOCGIFCONF = 0x8912

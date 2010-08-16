@@ -5,7 +5,7 @@ with the inbound/outbound traffic per interface per step interval.
 
 import time
 
-from landscape.lib.network import get_network_traffic
+from landscape.lib.network import get_network_traffic, is_64
 from landscape.accumulate import Accumulator
 
 from landscape.monitor.plugin import MonitorPlugin
@@ -28,6 +28,7 @@ class NetworkActivity(MonitorPlugin):
         # our last traffic sample for calculating a traffic delta
         self._last_activity = {}
         self._create_time = create_time
+        self._rolloverunit = pow(2, 64) if is_64() else pow(2, 32)
 
     def register(self, registry):
         super(NetworkActivity, self).register(registry)
@@ -66,6 +67,11 @@ class NetworkActivity(MonitorPlugin):
                 delta_in = traffic["recv_bytes"] - previous_in
                 if not delta_out and not delta_in:
                     continue
+                if delta_out < 0:
+                    delta_out = self._rolloverunit + delta_out
+                if delta_in < 0:
+                    delta_in = self._rolloverunit + delta_in
+
                 yield interface, delta_out, delta_in
             self._last_activity[interface] = (
                 traffic["send_bytes"], traffic["recv_bytes"])
@@ -79,10 +85,10 @@ class NetworkActivity(MonitorPlugin):
         new_traffic = get_network_traffic(self._source_file)
         for interface, delta_out, delta_in in self._traffic_delta(new_traffic):
             out_step_data = self._accumulate(
-                new_timestamp, delta_out, "delta-out-%s"%interface)
+                new_timestamp, delta_out, "delta-out-%s" % interface)
 
             in_step_data = self._accumulate(
-                new_timestamp, delta_in, "delta-in-%s"%interface)
+                new_timestamp, delta_in, "delta-in-%s" % interface)
 
             # there's only data when we cross a step boundary
             if not (in_step_data and out_step_data):
