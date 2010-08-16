@@ -1,3 +1,4 @@
+import os
 import logging
 import pycurl
 import socket
@@ -15,6 +16,7 @@ from landscape.broker.tests.helpers import (
 from landscape.lib.bpickle import dumps
 from landscape.lib.fetch import HTTPCodeError, FetchError
 from landscape.lib.persist import Persist
+from landscape.configuration import print_text
 
 
 class IdentityTest(LandscapeTest):
@@ -28,23 +30,23 @@ class IdentityTest(LandscapeTest):
 
     def check_persist_property(self, attr, persist_name):
         value = "VALUE"
-        self.assertEquals(getattr(self.identity, attr), None,
-                          "%r attribute should default to None, not %r" %
-                          (attr, getattr(self.identity, attr)))
+        self.assertEqual(getattr(self.identity, attr), None,
+                         "%r attribute should default to None, not %r" %
+                         (attr, getattr(self.identity, attr)))
         setattr(self.identity, attr, value)
-        self.assertEquals(getattr(self.identity, attr), value,
-                          "%r attribute should be %r, not %r" %
-                          (attr, value, getattr(self.identity, attr)))
-        self.assertEquals(
+        self.assertEqual(getattr(self.identity, attr), value,
+                         "%r attribute should be %r, not %r" %
+                         (attr, value, getattr(self.identity, attr)))
+        self.assertEqual(
             self.persist.get(persist_name), value,
             "%r not set to %r in persist" % (persist_name, value))
 
     def check_config_property(self, attr):
         value = "VALUE"
         setattr(self.config, attr, value)
-        self.assertEquals(getattr(self.identity, attr), value,
-                          "%r attribute should be %r, not %r" %
-                          (attr, value, getattr(self.identity, attr)))
+        self.assertEqual(getattr(self.identity, attr), value,
+                         "%r attribute should be %r, not %r" %
+                         (attr, value, getattr(self.identity, attr)))
 
     def test_secure_id(self):
         self.check_persist_property("secure_id",
@@ -88,8 +90,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         """
         self.exchanger.handle_message(
             {"type": "set-id", "id": "abc", "insecure-id": "def"})
-        self.assertEquals(self.identity.secure_id, "abc")
-        self.assertEquals(self.identity.insecure_id, "def")
+        self.assertEqual(self.identity.secure_id, "abc")
+        self.assertEqual(self.identity.insecure_id, "def")
 
     def test_registration_done_event(self):
         """
@@ -107,8 +109,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.identity.insecure_id = "old_id"
         self.mstore.set_accepted_types(["register"])
         self.exchanger.handle_message({"type": "unknown-id"})
-        self.assertEquals(self.identity.secure_id, None)
-        self.assertEquals(self.identity.insecure_id, None)
+        self.assertEqual(self.identity.secure_id, None)
+        self.assertEqual(self.identity.insecure_id, None)
 
     def test_should_register(self):
         self.mstore.set_accepted_types(["register"])
@@ -153,9 +155,9 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                               "registration_password": None,
                               "hostname": "ooga.local",
                               "tags": None}])
-        self.assertEquals(self.logfile.getvalue().strip(),
-                          "INFO: Queueing message to register with account "
-                          "'account_name' without a password.")
+        self.assertEqual(self.logfile.getvalue().strip(),
+                         "INFO: Queueing message to register with account "
+                         "'account_name' without a password.")
 
     def test_queue_message_on_exchange_with_password(self):
         """If a registration password is available, we pass it on!"""
@@ -171,9 +173,9 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                               "registration_password": "SEKRET",
                               "hostname": "ooga.local",
                               "tags": None}])
-        self.assertEquals(self.logfile.getvalue().strip(),
-                          "INFO: Queueing message to register with account "
-                          "'account_name' with a password.")
+        self.assertEqual(self.logfile.getvalue().strip(),
+                         "INFO: Queueing message to register with account "
+                         "'account_name' with a password.")
 
     def test_queue_message_on_exchange_with_tags(self):
         """
@@ -193,10 +195,10 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                               "registration_password": "SEKRET",
                               "hostname": "ooga.local",
                               "tags": u"computer,tag"}])
-        self.assertEquals(self.logfile.getvalue().strip(),
-                          "INFO: Queueing message to register with account "
-                          "'account_name' and tags computer,tag "
-                          "with a password.")
+        self.assertEqual(self.logfile.getvalue().strip(),
+                         "INFO: Queueing message to register with account "
+                         "'account_name' and tags computer,tag "
+                         "with a password.")
 
     def test_queue_message_on_exchange_with_invalid_tags(self):
         """
@@ -218,11 +220,11 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                               "registration_password": "SEKRET",
                               "hostname": "ooga.local",
                               "tags": None}])
-        self.assertEquals(self.logfile.getvalue().strip(),
-                          "ERROR: Invalid tags provided for cloud "
-                          "registration.\n    "
-                          "INFO: Queueing message to register with account "
-                          "'account_name' with a password.")
+        self.assertEqual(self.logfile.getvalue().strip(),
+                         "ERROR: Invalid tags provided for cloud "
+                         "registration.\n    "
+                         "INFO: Queueing message to register with account "
+                         "'account_name' with a password.")
 
     def test_queue_message_on_exchange_with_unicode_tags(self):
         """
@@ -243,10 +245,10 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
               "registration_password": "SEKRET",
               "hostname": "ooga.local",
               "tags": u"prova\N{LATIN SMALL LETTER J WITH CIRCUMFLEX}o"}])
-        self.assertEquals(self.logfile.getvalue().strip(),
-                          "INFO: Queueing message to register with account "
-                          "'account_name' and tags prova\xc4\xb5o "
-                          "with a password.")
+        self.assertEqual(self.logfile.getvalue().strip(),
+                         "INFO: Queueing message to register with account "
+                         "'account_name' and tags prova\xc4\xb5o "
+                         "with a password.")
 
     def test_queueing_registration_message_resets_message_store(self):
         """
@@ -260,8 +262,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.config.account_name = "account_name"
         self.reactor.fire("pre-exchange")
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 1)
-        self.assertEquals(messages[0]["type"], "register")
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(messages[0]["type"], "register")
 
     def test_no_message_when_should_register_is_false(self):
         """If we already have a secure id, do not queue a register message.
@@ -314,8 +316,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.identity.secure_id = "foo"
         self.identity.insecure_id = "bar"
         self.handler.register()
-        self.assertEquals(self.identity.secure_id, None)
-        self.assertEquals(self.identity.insecure_id, None)
+        self.assertEqual(self.identity.secure_id, None)
+        self.assertEqual(self.identity.insecure_id, None)
 
     def test_register_calls_urgent_exchange(self):
         exchanger_mock = self.mocker.patch(self.exchanger)
@@ -332,7 +334,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         d = self.handler.register()
 
         def add_call(result):
-            self.assertEquals(result, None)
+            self.assertEqual(result, None)
             calls[0] += 1
 
         d.addCallback(add_call)
@@ -341,15 +343,15 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.exchanger.handle_message(
             {"type": "set-id", "id": "abc", "insecure-id": "def"})
 
-        self.assertEquals(calls, [1])
+        self.assertEqual(calls, [1])
 
         # Doing it again to ensure that the deferred isn't called twice.
         self.exchanger.handle_message(
             {"type": "set-id", "id": "abc", "insecure-id": "def"})
 
-        self.assertEquals(calls, [1])
+        self.assertEqual(calls, [1])
 
-        self.assertEquals(self.logfile.getvalue(), "")
+        self.assertEqual(self.logfile.getvalue(), "")
 
     def test_resynchronize_fired_when_registration_done(self):
 
@@ -366,7 +368,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.exchanger.handle_message(
             {"type": "set-id", "id": "abc", "insecure-id": "def"})
 
-        self.assertEquals(results, [True])
+        self.assertEqual(results, [True])
 
     def test_register_deferred_called_on_failed(self):
         # We don't want informational messages.
@@ -386,15 +388,15 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.exchanger.handle_message(
             {"type": "registration", "info": "unknown-account"})
 
-        self.assertEquals(calls, [1])
+        self.assertEqual(calls, [1])
 
         # Doing it again to ensure that the deferred isn't called twice.
         self.exchanger.handle_message(
             {"type": "registration", "info": "unknown-account"})
 
-        self.assertEquals(calls, [1])
+        self.assertEqual(calls, [1])
 
-        self.assertEquals(self.logfile.getvalue(), "")
+        self.assertEqual(self.logfile.getvalue(), "")
 
     def test_exchange_done_calls_exchange(self):
         exchanger_mock = self.mocker.patch(self.exchanger)
@@ -453,19 +455,24 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
 
     def get_user_data(self, otps=None,
                       exchange_url="https://example.com/message-system",
-                      ping_url="http://example.com/ping"):
+                      ping_url="http://example.com/ping",
+                      ssl_ca_certificate=None):
         if otps is None:
             otps = ["otp1"]
-        return {"otps": otps, "exchange-url": exchange_url,
-                "ping-url": ping_url}
+        user_data = {"otps": otps, "exchange-url": exchange_url,
+                     "ping-url": ping_url}
+        if ssl_ca_certificate is not None:
+            user_data["ssl-ca-certificate"] = ssl_ca_certificate
+        return user_data
 
     def prepare_query_results(
         self, user_data=None, instance_key="key1", launch_index=0,
         local_hostname="ooga.local", public_hostname="ooga.amazon.com",
         reservation_key=u"res1", ramdisk_key=u"ram1", kernel_key=u"kernel1",
-        image_key=u"image1"):
+        image_key=u"image1", ssl_ca_certificate=None):
         if user_data is None:
-            user_data = self.get_user_data()
+            user_data = self.get_user_data(
+                ssl_ca_certificate=ssl_ca_certificate)
         if not isinstance(user_data, Exception):
             user_data = dumps(user_data)
         api_base = "http://169.254.169.254/latest"
@@ -537,21 +544,21 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         self.reactor.fire("run")
 
         # And the metadata returned determines the URLs that are used
-        self.assertEquals(self.transport.get_url(),
-                          "https://example.com/message-system")
-        self.assertEquals(self.pinger.get_url(),
-                          "http://example.com/ping")
-        # Let's make sure those values were written back to the config file
+        self.assertEqual(self.transport.get_url(),
+                         "https://example.com/message-system")
+        self.assertEqual(self.pinger.get_url(),
+                         "http://example.com/ping")
+        # Lets make sure those values were written back to the config file
         new_config = BrokerConfiguration()
         new_config.load_configuration_file(self.config_filename)
-        self.assertEquals(new_config.url, "https://example.com/message-system")
-        self.assertEquals(new_config.ping_url, "http://example.com/ping")
+        self.assertEqual(new_config.url, "https://example.com/message-system")
+        self.assertEqual(new_config.ping_url, "http://example.com/ping")
 
         # Okay! Exchange should cause the registration to happen.
         self.exchanger.exchange()
         # This *should* be asynchronous, but I think a billion tests are
         # written like this
-        self.assertEquals(len(self.transport.payloads), 1)
+        self.assertEqual(len(self.transport.payloads), 1)
         self.assertMessages(
             self.transport.payloads[0]["messages"],
             [self.get_expected_cloud_message(tags=u"server,london")])
@@ -569,16 +576,46 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         # metadata is fetched and stored at reactor startup:
         self.reactor.fire("run")
         self.exchanger.exchange()
-        self.assertEquals(len(self.transport.payloads), 1)
+        self.assertEqual(len(self.transport.payloads), 1)
         self.assertMessages(self.transport.payloads[0]["messages"],
                             [self.get_expected_cloud_message(tags=None)])
-        self.assertEquals(self.logfile.getvalue().strip(),
-                          "ERROR: Invalid tags provided for cloud "
-                          "registration.\n    "
-                          "INFO: Queueing message to register with OTP\n    "
-                          "INFO: Starting message exchange with "
-                          "https://example.com/message-system.\n    "
-                          "INFO: Message exchange completed in 0.00s.")
+        self.assertEqual(self.logfile.getvalue().strip(),
+                         "ERROR: Invalid tags provided for cloud "
+                         "registration.\n    "
+                         "INFO: Queueing message to register with OTP\n    "
+                         "INFO: Starting message exchange with "
+                         "https://example.com/message-system.\n    "
+                         "INFO: Message exchange completed in 0.00s.")
+
+    def test_cloud_registration_with_ssl_ca_certificate(self):
+        """
+        If we have an SSL certificate CA included in the user-data, this should
+        be written out, and the configuration updated to reflect this.
+        """
+        key_filename = os.path.join(self.config.data_path,
+            "%s.ssl_public_key" % os.path.basename(self.config_filename))
+
+        print_text_mock = self.mocker.replace(print_text)
+        print_text_mock("Writing SSL CA certificate to %s..." %
+                        key_filename)
+        self.mocker.replay()
+        self.prepare_query_results(ssl_ca_certificate=u"1234567890")
+        self.prepare_cloud_registration(tags=u"server,london")
+        # metadata is fetched and stored at reactor startup:
+        self.reactor.fire("run")
+        # And the metadata returned determines the URLs that are used
+        self.assertEqual("https://example.com/message-system",
+                         self.transport.get_url())
+        self.assertEqual(key_filename, self.transport.pubkey)
+        self.assertEqual("http://example.com/ping",
+                         self.pinger.get_url())
+        # Let's make sure those values were written back to the config file
+        new_config = BrokerConfiguration()
+        new_config.load_configuration_file(self.config_filename)
+        self.assertEqual("https://example.com/message-system", new_config.url)
+        self.assertEqual("http://example.com/ping", new_config.ping_url)
+        self.assertEqual(key_filename, new_config.ssl_public_key)
+        self.assertEqual("1234567890", open(key_filename, "r").read())
 
     def test_wrong_user_data(self):
         self.prepare_query_results(user_data="other stuff, not a bpickle")
@@ -642,14 +679,14 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         self.reactor.fire("run")
         self.exchanger.exchange()
 
-        self.assertEquals(len(self.transport.payloads), 1)
+        self.assertEqual(len(self.transport.payloads), 1)
         self.assertMessages(self.transport.payloads[0]["messages"],
                             [self.get_expected_cloud_message(
                                 otp=None,
                                 account_name=u"onward",
                                 registration_password=u"password",
                                 tags=u"london,server")])
-        self.assertEquals(self.logfile.getvalue().strip(),
+        self.assertEqual(self.logfile.getvalue().strip(),
            "INFO: Queueing message to register with account u'onward' and "
            "tags london,server as an EC2 instance.\n    "
            "INFO: Starting message exchange with http://localhost:91919.\n    "
@@ -673,8 +710,8 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         self.reactor.fire("pre-exchange")
 
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 1)
-        self.assertEquals(messages[0]["type"], "register-cloud-vm")
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(messages[0]["type"], "register-cloud-vm")
 
     def test_cloud_registration_fetch_errors(self):
         """
@@ -703,7 +740,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         self.log_helper.ignore_errors("Got error while fetching meta-data")
         self.reactor.fire("run")
         self.exchanger.exchange()
-        self.assertEquals(failed, [True])
+        self.assertEqual(failed, [True])
         self.assertIn('error: (7, "couldn\'t connect to host")',
                       self.logfile.getvalue())
 
@@ -721,7 +758,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         self.exchanger.exchange()
         self.assertIn("HTTPCodeError: Server returned HTTP code 404",
                       self.logfile.getvalue())
-        self.assertEquals(len(self.transport.payloads), 1)
+        self.assertEqual(len(self.transport.payloads), 1)
         self.assertMessages(self.transport.payloads[0]["messages"],
                             [self.get_expected_cloud_message(
                                 otp=None,
@@ -741,7 +778,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         self.exchanger.exchange()
         self.assertIn("HTTPCodeError: Server returned HTTP code 404",
                       self.logfile.getvalue())
-        self.assertEquals(len(self.transport.payloads), 1)
+        self.assertEqual(len(self.transport.payloads), 1)
         self.assertMessages(self.transport.payloads[0]["messages"],
                             [self.get_expected_cloud_message(
                                 ramdisk_key=None)])
@@ -762,7 +799,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         self.exchanger.exchange()
         self.assertIn("HTTPCodeError: Server returned HTTP code 404",
                       self.logfile.getvalue())
-        self.assertEquals(len(self.transport.payloads), 1)
+        self.assertEqual(len(self.transport.payloads), 1)
         self.assertMessages(self.transport.payloads[0]["messages"],
                             [{"type": "register",
                               "computer_title": u"whatever",
@@ -800,7 +837,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
 
         self.reactor.fire("run")
         self.exchanger.exchange()
-        self.assertEquals(len(self.transport.payloads), 1)
+        self.assertEqual(len(self.transport.payloads), 1)
         self.assertMessages(self.transport.payloads[0]["messages"],
                             [self.get_expected_cloud_message(otp=otp,
                                                              launch_index=1)])
@@ -864,7 +901,7 @@ class IsCloudManagedTests(LandscapeTest):
         self.mocker.replay()
 
         self.assertTrue(is_cloud_managed(self.fake_fetch))
-        self.assertEquals(
+        self.assertEqual(
             self.urls,
             [(EC2_API + "/user-data", 5),
              (EC2_API + "/meta-data/ami-launch-index", 5)])

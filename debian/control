@@ -19,7 +19,8 @@ Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          python-gdbm,
          lsb-release,
          lsb-base,
-         adduser
+         adduser,
+         bc
 Suggests: ${extra:Suggests}
 Replaces: landscape-client (<= 1.0.23-0ubuntu0.8.10)
 Description: The Landscape administration system client

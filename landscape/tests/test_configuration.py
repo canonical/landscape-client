@@ -10,7 +10,7 @@ from landscape.configuration import (
     print_text, LandscapeSetupScript, LandscapeSetupConfiguration,
     register, setup, main, setup_init_script_and_start_client,
     stop_client_and_disable_init_script, ConfigurationError,
-    fetch_import_url, ImportOptionError)
+    fetch_import_url, ImportOptionError, store_public_key_data)
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.tests.helpers import (
@@ -110,7 +110,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
 
         self.script.prompt("computer_title", "Message")
 
-        self.assertEquals(self.config.computer_title, "Desktop")
+        self.assertEqual(self.config.computer_title, "Desktop")
 
     def test_prompt_with_default(self):
         mock = self.mocker.replace(raw_input, passthrough=False)
@@ -121,7 +121,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.config.computer_title = "default"
         self.script.prompt("computer_title", "Message")
 
-        self.assertEquals(self.config.computer_title, "default")
+        self.assertEqual(self.config.computer_title, "default")
 
     def test_prompt_with_required(self):
         self.mocker.order()
@@ -137,7 +137,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
 
         self.script.prompt("computer_title", "Message", True)
 
-        self.assertEquals(self.config.computer_title, "Desktop")
+        self.assertEqual(self.config.computer_title, "Desktop")
 
     def test_prompt_with_required_and_default(self):
         self.mocker.order()
@@ -147,7 +147,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.mocker.replay()
         self.config.computer_title = "Desktop"
         self.script.prompt("computer_title", "Message", True)
-        self.assertEquals(self.config.computer_title, "Desktop")
+        self.assertEqual(self.config.computer_title, "Desktop")
 
     def test_prompt_for_unknown_variable(self):
         """
@@ -160,7 +160,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.expect(raw_input_mock("Variable: ")).result("Yay")
         self.mocker.replay()
         self.script.prompt("variable", "Variable")
-        self.assertEquals(self.config.variable, "Yay")
+        self.assertEqual(self.config.variable, "Yay")
 
     def test_password_prompt_simple_matching(self):
         mock = self.mocker.replace(getpass, passthrough=False)
@@ -171,7 +171,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.mocker.replay()
 
         self.script.password_prompt("registration_password", "Password")
-        self.assertEquals(self.config.registration_password, "password")
+        self.assertEqual(self.config.registration_password, "password")
 
     def test_password_prompt_simple_non_matching(self):
         mock = self.mocker.replace(getpass, passthrough=False)
@@ -189,7 +189,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.mocker.result("password")
         self.mocker.replay()
         self.script.password_prompt("registration_password", "Password")
-        self.assertEquals(self.config.registration_password, "password")
+        self.assertEqual(self.config.registration_password, "password")
 
     def test_password_prompt_simple_matching_required(self):
         mock = self.mocker.replace(getpass, passthrough=False)
@@ -208,7 +208,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.mocker.replay()
 
         self.script.password_prompt("registration_password", "Password", True)
-        self.assertEquals(self.config.registration_password, "password")
+        self.assertEqual(self.config.registration_password, "password")
 
     def test_prompt_yes_no(self):
         comparisons = [("Y", True),
@@ -227,7 +227,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
             self.expect(raw_input_mock("Foo [Y/n]")).result(comparison[0])
         self.mocker.replay()
         for comparison in comparisons:
-            self.assertEquals(self.script.prompt_yes_no("Foo"), comparison[1])
+            self.assertEqual(self.script.prompt_yes_no("Foo"), comparison[1])
 
     def test_prompt_yes_no_default(self):
         self.mocker.order()
@@ -357,7 +357,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.mocker.result(False)
         self.mocker.replay()
         self.script.query_script_plugin()
-        self.assertEquals(self.config.include_manager_plugins, "")
+        self.assertEqual(self.config.include_manager_plugins, "")
 
     def test_query_script_plugin_yes(self):
         """
@@ -375,8 +375,8 @@ class LandscapeSetupScriptTest(LandscapeTest):
         script_mock.prompt("script_users", "Script users")
         self.mocker.replay()
         self.script.query_script_plugin()
-        self.assertEquals(self.config.include_manager_plugins,
-                          "ScriptExecution")
+        self.assertEqual(self.config.include_manager_plugins,
+                         "ScriptExecution")
 
     def test_disable_script_plugin(self):
         """
@@ -392,7 +392,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.mocker.result(False)
         self.mocker.replay()
         self.script.query_script_plugin()
-        self.assertEquals(self.config.include_manager_plugins, "")
+        self.assertEqual(self.config.include_manager_plugins, "")
 
     def test_disabling_script_plugin_leaves_existing_inclusions(self):
         """
@@ -407,7 +407,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.mocker.result(False)
         self.mocker.replay()
         self.script.query_script_plugin()
-        self.assertEquals(self.config.include_manager_plugins, "FooPlugin")
+        self.assertEqual(self.config.include_manager_plugins, "FooPlugin")
 
     def test_enabling_script_plugin_leaves_existing_inclusions(self):
         """
@@ -424,8 +424,8 @@ class LandscapeSetupScriptTest(LandscapeTest):
         script_mock.prompt("script_users", "Script users")
         self.mocker.replay()
         self.script.query_script_plugin()
-        self.assertEquals(self.config.include_manager_plugins,
-                          "FooPlugin, ScriptExecution")
+        self.assertEqual(self.config.include_manager_plugins,
+                         "FooPlugin, ScriptExecution")
 
     def test_query_script_plugin_defined_on_command_line(self):
         raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
@@ -436,9 +436,9 @@ class LandscapeSetupScriptTest(LandscapeTest):
             ["--include-manager-plugins", "ScriptExecution",
              "--script-users", "root, nobody"])
         self.script.query_script_plugin()
-        self.assertEquals(self.config.include_manager_plugins,
-                          "ScriptExecution")
-        self.assertEquals(self.config.script_users, "root, nobody")
+        self.assertEqual(self.config.include_manager_plugins,
+                         "ScriptExecution")
+        self.assertEqual(self.config.script_users, "root, nobody")
 
     def test_query_script_manager_plugins_defined_on_command_line(self):
         self.config.include_manager_plugins = "FooPlugin"
@@ -454,8 +454,8 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.config.load_command_line(
             ["--include-manager-plugins", "FooPlugin, ScriptExecution"])
         self.script.query_script_plugin()
-        self.assertEquals(self.config.include_manager_plugins,
-                          "FooPlugin, ScriptExecution")
+        self.assertEqual(self.config.include_manager_plugins,
+                         "FooPlugin, ScriptExecution")
 
     def test_query_script_users_defined_on_command_line(self):
         """
@@ -475,8 +475,8 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.config.load_command_line(
             ["--script-users", "root, nobody, landscape"])
         self.script.query_script_plugin()
-        self.assertEquals(self.config.script_users,
-                          "root, nobody, landscape")
+        self.assertEqual(self.config.script_users,
+                         "root, nobody, landscape")
 
     def test_query_script_users_on_command_line_with_unknown_user(self):
         """
@@ -516,8 +516,8 @@ class LandscapeSetupScriptTest(LandscapeTest):
             ["--script-users", "ALL",
              "--include-manager-plugins", "ScriptPlugin"])
         self.script.query_script_plugin()
-        self.assertEquals(self.config.script_users,
-                          "ALL")
+        self.assertEqual(self.config.script_users,
+                         "ALL")
 
     def test_query_script_users_command_line_with_ALL_and_extra_user(self):
         """
@@ -549,8 +549,8 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.mocker.result(u"root")
         self.mocker.replay()
         self.script.query_script_plugin()
-        self.assertEquals(self.config.script_users,
-                          "root")
+        self.assertEqual(self.config.script_users,
+                         "root")
 
     def test_tags_not_defined_on_command_line(self):
         """
@@ -591,7 +591,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.mocker.replay()
         self.config.load_command_line(["--tags", u"server,london"])
         self.script.query_tags()
-        self.assertEquals(self.config.tags, u"server,london")
+        self.assertEqual(self.config.tags, u"server,london")
 
     def test_invalid_tags_defined_on_command_line_raises_error(self):
         raw_input_mock = self.mocker.replace(raw_input, passthrough=False)
@@ -683,18 +683,18 @@ class ConfigurationFunctionsTest(LandscapeTest):
         self.mocker.replay()
         config = self.get_config(["--no-start", "--config", filename])
         setup(config)
-        self.assertEquals(type(config), LandscapeSetupConfiguration)
+        self.assertEqual(type(config), LandscapeSetupConfiguration)
 
         # Reload it to ensure it was written down.
         config.reload()
 
-        self.assertEquals(config.computer_title, "New Title")
-        self.assertEquals(config.account_name, "New Name")
-        self.assertEquals(config.registration_password, "New Password")
-        self.assertEquals(config.http_proxy, "http://new.proxy")
-        self.assertEquals(config.https_proxy, "https://new.proxy")
-        self.assertEquals(config.include_manager_plugins, "")
-        self.assertEquals(config.tags, u"glasgow, laptop")
+        self.assertEqual(config.computer_title, "New Title")
+        self.assertEqual(config.account_name, "New Name")
+        self.assertEqual(config.registration_password, "New Password")
+        self.assertEqual(config.http_proxy, "http://new.proxy")
+        self.assertEqual(config.https_proxy, "https://new.proxy")
+        self.assertEqual(config.include_manager_plugins, "")
+        self.assertEqual(config.tags, u"glasgow, laptop")
 
     def test_silent_setup(self):
         """
@@ -708,7 +708,7 @@ class ConfigurationFunctionsTest(LandscapeTest):
 
         config = self.get_config(["--silent", "-a", "account", "-t", "rex"])
         setup(config)
-        self.assertEquals(self.get_content(config), """\
+        self.assertEqual(self.get_content(config), """\
 [client]
 url = https://landscape.canonical.com/message-system
 computer_title = rex
@@ -759,7 +759,7 @@ bus = session
                                   "--script-users", "root, nobody"])
         setup(config)
         contents = open(filename, "r").read().strip() + "\n"
-        self.assertEquals(contents, """\
+        self.assertEqual(contents, """\
 [client]
 url = https://localhost:8080/message-system
 bus = session
@@ -805,7 +805,7 @@ random_key = random_value
                                   "-a", "account", "-t", "rex",
                                   "--ping-url", "http://localhost/ping"])
         setup(config)
-        self.assertEquals(self.get_content(config), """\
+        self.assertEqual(self.get_content(config), """\
 [client]
 log_level = debug
 registration_password = shared-secret
@@ -834,8 +834,8 @@ account_name = account
         # Reload it to ensure it was written down.
         config.reload()
 
-        self.assertEquals(config.http_proxy, "http://environ")
-        self.assertEquals(config.https_proxy, "https://environ")
+        self.assertEqual(config.http_proxy, "http://environ")
+        self.assertEqual(config.https_proxy, "https://environ")
 
     def test_silent_setup_with_proxies_from_environment(self):
         """
@@ -857,7 +857,7 @@ registration_password = shared-secret
         config = self.get_config(["--config", filename, "--silent",
                                   "-a", "account", "-t", "rex"])
         setup(config)
-        self.assertEquals(self.get_content(config), """\
+        self.assertEqual(self.get_content(config), """\
 [client]
 registration_password = shared-secret
 computer_title = rex
@@ -887,8 +887,8 @@ account_name = account
         # Reload it to enusre it was written down.
         config.reload()
 
-        self.assertEquals(config.http_proxy, "http://config")
-        self.assertEquals(config.https_proxy, "https://config")
+        self.assertEqual(config.http_proxy, "http://config")
+        self.assertEqual(config.https_proxy, "https://config")
 
     def test_main_no_registration(self):
         setup_mock = self.mocker.replace(setup)
@@ -964,7 +964,7 @@ account_name = account
 
         config = self.get_config(["--silent", "-a", "account", "-t", "rex"])
         system_exit = self.assertRaises(SystemExit, setup, config)
-        self.assertEquals(system_exit.code, 2)
+        self.assertEqual(system_exit.code, 2)
 
     def test_errors_from_restart_landscape_ok_no_register(self):
         """
@@ -987,7 +987,7 @@ account_name = account
         config = self.get_config(["--silent", "-a", "account", "-t", "rex",
                                   "--ok-no-register"])
         system_exit = self.assertRaises(SystemExit, setup, config)
-        self.assertEquals(system_exit.code, 0)
+        self.assertEqual(system_exit.code, 0)
 
     def test_main_with_register(self):
         setup_mock = self.mocker.replace(setup)
@@ -1104,7 +1104,7 @@ account_name = account
         options = ConfigParser()
         options.read(config_filename)
 
-        self.assertEquals(dict(options.items("client")),
+        self.assertEqual(dict(options.items("client")),
                           {"computer_title": "New Title",
                            "account_name": "New Name",
                            "registration_password": "New Password",
@@ -1123,8 +1123,8 @@ account_name = account
             self.get_config(["--config", config_filename, "--silent",
                              "--import", import_filename])
         except ImportOptionError, error:
-            self.assertEquals(str(error),
-                              "Nothing to import at %s." % import_filename)
+            self.assertEqual(str(error),
+                             "Nothing to import at %s." % import_filename)
         else:
             self.fail("ImportOptionError not raised")
 
@@ -1139,8 +1139,8 @@ account_name = account
             self.get_config(["--config", config_filename, "--silent",
                              "--import", import_filename])
         except ImportOptionError, error:
-            self.assertEquals(str(error),
-                              "File %s doesn't exist." % import_filename)
+            self.assertEqual(str(error),
+                             "File %s doesn't exist." % import_filename)
         else:
             self.fail("ImportOptionError not raised")
 
@@ -1158,8 +1158,8 @@ account_name = account
             self.get_config(["--config", config_filename, "--silent",
                              "--import", import_filename])
         except ImportOptionError, error:
-            self.assertEquals(str(error),
-                              "Nothing to import at %s." % import_filename)
+            self.assertEqual(str(error),
+                             "Nothing to import at %s." % import_filename)
         else:
             self.fail("ImportOptionError not raised")
 
@@ -1215,13 +1215,13 @@ account_name = account
         options = ConfigParser()
         options.read(config_filename)
 
-        self.assertEquals(dict(options.items("client")),
-                          {"computer_title": "Old Title",
-                           "account_name": "New Name",
-                           "registration_password": "Command Line Password",
-                           "http_proxy": "http://old.proxy",
-                           "https_proxy": "https://old.proxy",
-                           "url": "http://new.url"})
+        self.assertEqual(dict(options.items("client")),
+                         {"computer_title": "Old Title",
+                          "account_name": "New Name",
+                          "registration_password": "Command Line Password",
+                          "http_proxy": "http://old.proxy",
+                          "https_proxy": "https://old.proxy",
+                          "url": "http://new.url"})
 
     def test_import_from_file_may_reset_old_options(self):
         """
@@ -1258,11 +1258,11 @@ account_name = account
         options = ConfigParser()
         options.read(config_filename)
 
-        self.assertEquals(dict(options.items("client")),
-                          {"computer_title": "Old Title",
-                           "account_name": "Old Name",
-                           "registration_password": "", # <==
-                           "url": "http://old.url"})
+        self.assertEqual(dict(options.items("client")),
+                         {"computer_title": "Old Title",
+                          "account_name": "Old Name",
+                          "registration_password": "", # <==
+                          "url": "http://old.url"})
 
     def test_import_from_url(self):
         sysvconfig_mock = self.mocker.patch(SysVConfig)
@@ -1297,13 +1297,13 @@ account_name = account
         options = ConfigParser()
         options.read(config_filename)
 
-        self.assertEquals(dict(options.items("client")),
-                          {"computer_title": "New Title",
-                           "account_name": "New Name",
-                           "registration_password": "New Password",
-                           "http_proxy": "http://new.proxy",
-                           "https_proxy": "https://new.proxy",
-                           "url": "http://new.url"})
+        self.assertEqual(dict(options.items("client")),
+                         {"computer_title": "New Title",
+                          "account_name": "New Name",
+                          "registration_password": "New Password",
+                          "http_proxy": "http://new.proxy",
+                          "https_proxy": "https://new.proxy",
+                          "url": "http://new.url"})
 
     def test_import_from_url_with_http_code_fetch_error(self):
         fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
@@ -1321,10 +1321,10 @@ account_name = account
             self.get_config(["--config", config_filename, "--silent",
                              "--import", "https://config.url"])
         except ImportOptionError, error:
-            self.assertEquals(str(error),
-                              "Couldn't download configuration from "
-                              "https://config.url: Server "
-                              "returned HTTP code 501")
+            self.assertEqual(str(error),
+                             "Couldn't download configuration from "
+                             "https://config.url: Server "
+                             "returned HTTP code 501")
         else:
             self.fail("ImportOptionError not raised")
 
@@ -1344,9 +1344,9 @@ account_name = account
             self.get_config(["--config", config_filename, "--silent",
                              "--import", "https://config.url"])
         except ImportOptionError, error:
-            self.assertEquals(str(error),
-                              "Couldn't download configuration from "
-                              "https://config.url: Error 60: pycurl message")
+            self.assertEqual(str(error),
+                             "Couldn't download configuration from "
+                             "https://config.url: Error 60: pycurl message")
         else:
             self.fail("ImportOptionError not raised")
 
@@ -1364,8 +1364,8 @@ account_name = account
         try:
             self.get_config(["--silent", "--import", "https://config.url"])
         except ImportOptionError, error:
-            self.assertEquals(str(error),
-                              "Nothing to import at https://config.url.")
+            self.assertEqual(str(error),
+                             "Nothing to import at https://config.url.")
         else:
             self.fail("ImportOptionError not raised")
 
@@ -1400,17 +1400,19 @@ account_name = account
 
         system_exit = self.assertRaises(
             SystemExit, main, ["--import", "https://config.url"])
-        self.assertEquals(system_exit.code, 1)
+        self.assertEqual(system_exit.code, 1)
 
     def test_base64_ssl_public_key_is_exported_to_file(self):
+
         sysvconfig_mock = self.mocker.patch(SysVConfig)
         sysvconfig_mock.set_start_on_boot(True)
         sysvconfig_mock.restart_landscape()
         self.mocker.result(True)
 
-        config_filename = self.makeFile("")
-        key_filename = config_filename + ".ssl_public_key"
-        self.addCleanup(os.remove, key_filename)
+        data_path = self.makeDir()
+        config_filename = self.makeFile("[client]\ndata_path=%s" % data_path)
+        key_filename = os.path.join(data_path,
+            os.path.basename(config_filename) + ".ssl_public_key")
 
         print_text_mock = self.mocker.replace(print_text)
         print_text_mock("Writing SSL CA certificate to %s..." % key_filename)
@@ -1420,15 +1422,15 @@ account_name = account
         config = self.get_config(["--silent", "-c", config_filename,
                                   "-u", "url", "-a", "account", "-t", "title",
                                   "--ssl-public-key", "base64:SGkgdGhlcmUh"])
+        config.data_path = data_path
         setup(config)
 
-        self.assertTrue(os.path.isfile(key_filename))
-        self.assertEquals(open(key_filename).read(), "Hi there!")
+        self.assertEquals("Hi there!", open(key_filename, "r").read())
 
         options = ConfigParser()
         options.read(config_filename)
-        self.assertEquals(options.get("client", "ssl_public_key"),
-                          key_filename)
+        self.assertEqual(options.get("client", "ssl_public_key"),
+                         key_filename)
 
     def test_normal_ssl_public_key_is_not_exported_to_file(self):
         sysvconfig_mock = self.mocker.patch(SysVConfig)
@@ -1449,8 +1451,8 @@ account_name = account
 
         options = ConfigParser()
         options.read(config_filename)
-        self.assertEquals(options.get("client", "ssl_public_key"),
-                          "/some/filename")
+        self.assertEqual(options.get("client", "ssl_public_key"),
+                        "/some/filename")
 
     # We test them individually since they must work individually.
     def test_import_from_url_honors_http_proxy(self):
@@ -1462,7 +1464,7 @@ account_name = account
     def ensure_import_from_url_honors_proxy_options(self, proxy_option):
 
         def check_proxy(url):
-            self.assertEquals(os.environ.get(proxy_option), "http://proxy")
+            self.assertEqual(os.environ.get(proxy_option), "http://proxy")
 
         fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
         fetch_mock("https://config.url")
@@ -1521,6 +1523,7 @@ class RegisterFunctionTest(LandscapeTest):
 
         def register_done():
             service.reactor.fire("registration-done")
+
         registration_mock.register()
         self.mocker.call(register_done)
 
@@ -1571,6 +1574,7 @@ class RegisterFunctionTest(LandscapeTest):
 
         def register_done():
             service.reactor.fire("registration-failed")
+
         registration_mock.register()
         self.mocker.call(register_done)
 
@@ -1801,3 +1805,25 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
         self.mocker.replay()
 
         return register(configuration)
+
+
+class StoreSSLCertificateDataTest(LandscapeTest):
+
+    def test_store_public_key_data(self):
+        """
+        L{store_public_key_data} writes the SSL CA supplied by the server to a
+        file for later use, this file is called after the name of the
+        configuration file with .ssl_public_key.
+        """
+        config = get_config(self, [])
+        key_filename = os.path.join(config.data_path,
+            os.path.basename(config.get_config_filename()) + ".ssl_public_key")
+
+        print_text_mock = self.mocker.replace(print_text)
+        print_text_mock("Writing SSL CA certificate to %s..." %
+                        key_filename)
+        self.mocker.replay()
+
+        self.assertEqual(key_filename,
+                         store_public_key_data(config, "123456789"))
+        self.assertEqual("123456789", open(key_filename, "r").read())

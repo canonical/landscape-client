@@ -1,4 +1,3 @@
-
 import time
 import logging
 import socket
@@ -189,6 +188,13 @@ class RegistrationHandler(object):
                     self._pinger.set_url(ping_url)
                     self._config.url = exchange_url
                     self._config.ping_url = ping_url
+                    if "ssl-ca-certificate" in instance_data:
+                        from landscape.configuration import \
+                            store_public_key_data
+                        public_key_file = store_public_key_data(
+                            self._config, instance_data["ssl-ca-certificate"])
+                        self._config.ssl_public_key = public_key_file
+                        self._exchange._transport.pubkey = public_key_file
                     self._config.write()
 
             def log_error(error):
@@ -355,9 +361,12 @@ def _extract_ec2_instance_data(raw_user_data, launch_index):
         logging.debug("user-data %r doesn't have OTP for launch index %d"
                       % (user_data, launch_index))
         return
-    return {"otp": user_data["otps"][launch_index],
-            "exchange-url": user_data["exchange-url"],
-            "ping-url": user_data["ping-url"]}
+    instance_data = {"otp": user_data["otps"][launch_index],
+                     "exchange-url": user_data["exchange-url"],
+                     "ping-url": user_data["ping-url"]}
+    if "ssl-ca-certificate" in user_data:
+        instance_data["ssl-ca-certificate"] = user_data["ssl-ca-certificate"]
+    return instance_data
 
 
 def _wait_for_network():
