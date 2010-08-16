@@ -57,7 +57,9 @@ class MonitorServiceTest(LandscapeTest):
             [connector] = self.broker_service.broker.get_connectors()
             connector.disconnect()
             self.service.stopService()
+            self.service.port.stopListening()
             self.broker_service.stopService()
+            self.broker_service.port.stopListening()
 
         def assert_broker_connection(ignored):
             self.assertEquals(len(self.broker_service.broker.get_clients()), 1)
@@ -82,3 +84,4 @@ class MonitorServiceTest(LandscapeTest):
         self.service.port.stopListening()
         self.mocker.replay()
         self.service.stopService()
+        self.service.port.stopListening()

@@ -1,3 +1,9 @@
+landscape-client (1.5.5-0ubuntu0.10.10.0) UNRELEASED; urgency=low
+
+  * New upstream version
+
+ -- Free Ekanayaka <free.ekanayaka@canonical.com>  Wed, 11 Aug 2010 12:41:16 +0200
+
 landscape-client (1.5.4-0ubuntu0.10.10.0) maverick; urgency=low
 
   * New upstream version (LP: #610744):

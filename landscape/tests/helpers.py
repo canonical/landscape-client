@@ -26,13 +26,9 @@ from landscape.monitor.config import MonitorConfiguration
 from landscape.monitor.monitor import Monitor
 from landscape.manager.manager import Manager
 
-# FIXME: We can drop the "_" suffix and replace the current classes once the
-# AMP migration is completed
-from landscape.broker.service import BrokerService as BrokerService_
-from landscape.broker.amp import (
-    FakeRemoteBroker as FakeRemoteBroker_, RemoteBrokerConnector)
-from landscape.manager.config import (
-    ManagerConfiguration as ManagerConfiguration_)
+from landscape.broker.service import BrokerService
+from landscape.broker.amp import FakeRemoteBroker, RemoteBrokerConnector
+from landscape.manager.config import ManagerConfiguration
 
 
 DEFAULT_ACCEPTED_TYPES = [
@@ -284,12 +280,20 @@ class FakeBrokerServiceHelper(object):
         config = BrokerConfiguration()
         config.load(["-c", test_case.config_filename])
 
-        class FakeBrokerService(BrokerService_):
+        class FakeBrokerService(BrokerService):
             reactor_factory = FakeReactor
             transport_factory = FakeTransport
 
+            def stopService(service):
+                # We need to explictely stop listening to the socket
+                # because the reactor would still have active selectables
+                # at the end of the test otherwise
+                if os.path.exists(service.port.port):
+                    service.port.connectionLost(None)
+                super(FakeBrokerService, service).stopService()
+
         test_case.broker_service = FakeBrokerService(config)
-        test_case.remote = FakeRemoteBroker_(
+        test_case.remote = FakeRemoteBroker(
             test_case.broker_service.exchanger,
             test_case.broker_service.message_store)
 
@@ -351,7 +355,7 @@ class ManagerHelper(FakeBrokerServiceHelper):
 
     def set_up(self, test_case):
         super(ManagerHelper, self).set_up(test_case)
-        test_case.config = ManagerConfiguration_()
+        test_case.config = ManagerConfiguration()
         test_case.config.load(["-c", test_case.config_filename])
         test_case.reactor = FakeReactor()
         test_case.manager = Manager(test_case.reactor, test_case.config)
