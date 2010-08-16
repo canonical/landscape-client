@@ -68,10 +68,6 @@ class NetworkActivity(MonitorPlugin):
                 delta_in = traffic["recv_bytes"] - previous_in
                 if not delta_out and not delta_in:
                     continue
-                if delta_out < 0:
-                    delta_out += self._rolloverunit
-                if delta_in < 0:
-                    delta_in += self._rolloverunit
                 packets_delta_out = (
                     traffic["send_packets"] - previous_packet_out)
                 # 28 bytes is the minimum packet size, roughly
