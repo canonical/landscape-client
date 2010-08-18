@@ -87,7 +87,7 @@ Inter-|   Receive                           |  Transmit
         If /proc/net/dev rollovers, the network plugin handles the value and
         gives a positive value instead.
         """
-        self.plugin._rolloverunit = 10000
+        self.plugin._rollover_maxint = 10000
         self.write_activity(lo_in=2000, lo_out=1900)
         self.plugin.run()
         self.reactor.advance(self.monitor.step_size)
@@ -108,7 +108,7 @@ Inter-|   Receive                           |  Transmit
         of packets to check if the number makes sense. It doesn't solve
         everything, but it helps in some cases.
         """
-        self.plugin._rolloverunit = 10000
+        self.plugin._rollover_maxint = 10000
         self.write_activity(lo_in=2000, lo_out=1900)
         self.plugin.run()
         self.reactor.advance(self.monitor.step_size)
@@ -127,7 +127,7 @@ Inter-|   Receive                           |  Transmit
         The value of packets can rollover, too, even if it's unlikely at the
         same time as bytes, let's handle the case.
         """
-        self.plugin._rolloverunit = 10000
+        self.plugin._rollover_maxint = 10000
         self.write_activity(lo_in=2000, lo_out=1900, lo_in_p=600, lo_out_p=500)
         self.plugin.run()
         self.reactor.advance(self.monitor.step_size)
