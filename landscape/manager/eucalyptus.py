@@ -140,7 +140,7 @@ class Eucalyptus(ManagerPlugin):
         try:
             service_hub = self._service_hub_factory(data_path)
         except Exception, e:
-            logging.exception(e)
+            logging.debug(e)
             self.enabled = False
             logging.info("Couldn't start service hub.  '%s' plugin has been "
                          "disabled." % self.message_type)
