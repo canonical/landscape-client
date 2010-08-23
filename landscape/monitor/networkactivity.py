@@ -5,7 +5,7 @@ with the inbound/outbound traffic per interface per step interval.
 
 import time
 
-from landscape.lib.network import get_network_traffic
+from landscape.lib.network import get_network_traffic, is_64
 from landscape.accumulate import Accumulator
 
 from landscape.monitor.plugin import MonitorPlugin
@@ -28,6 +28,7 @@ class NetworkActivity(MonitorPlugin):
         # our last traffic sample for calculating a traffic delta
         self._last_activity = {}
         self._create_time = create_time
+        self._rollover_maxint = pow(2, 64) if is_64() else pow(2, 32)
 
     def register(self, registry):
         super(NetworkActivity, self).register(registry)
@@ -61,14 +62,34 @@ class NetworkActivity(MonitorPlugin):
         for interface in new_traffic:
             traffic = new_traffic[interface]
             if interface in self._last_activity:
-                previous_out, previous_in = self._last_activity[interface]
+                (previous_out, previous_in, previous_packet_out,
+                 previous_packet_in) = self._last_activity[interface]
                 delta_out = traffic["send_bytes"] - previous_out
                 delta_in = traffic["recv_bytes"] - previous_in
                 if not delta_out and not delta_in:
                     continue
+                if delta_out < 0:
+                    delta_out += self._rollover_maxint
+                if delta_in < 0:
+                    delta_in += self._rollover_maxint
+                packets_delta_out = (
+                    traffic["send_packets"] - previous_packet_out)
+                if packets_delta_out < 0:
+                    packets_delta_out += self._rollover_maxint
+                # 28 bytes is the minimum packet size, roughly
+                if packets_delta_out * 28 > delta_out:
+                    delta_out += self._rollover_maxint
+                packets_delta_in = (
+                    traffic["recv_packets"] - previous_packet_in)
+                if packets_delta_in < 0:
+                    packets_delta_in += self._rollover_maxint
+                if packets_delta_in * 28 > delta_in:
+                    delta_in += self._rollover_maxint
+
                 yield interface, delta_out, delta_in
             self._last_activity[interface] = (
-                traffic["send_bytes"], traffic["recv_bytes"])
+                traffic["send_bytes"], traffic["recv_bytes"],
+                traffic["send_packets"], traffic["recv_packets"])
 
     def run(self):
         """
@@ -79,10 +100,10 @@ class NetworkActivity(MonitorPlugin):
         new_traffic = get_network_traffic(self._source_file)
         for interface, delta_out, delta_in in self._traffic_delta(new_traffic):
             out_step_data = self._accumulate(
-                new_timestamp, delta_out, "delta-out-%s"%interface)
+                new_timestamp, delta_out, "delta-out-%s" % interface)
 
             in_step_data = self._accumulate(
-                new_timestamp, delta_in, "delta-in-%s"%interface)
+                new_timestamp, delta_in, "delta-in-%s" % interface)
 
             # there's only data when we cross a step boundary
             if not (in_step_data and out_step_data):

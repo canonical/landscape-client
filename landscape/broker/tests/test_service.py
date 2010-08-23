@@ -94,4 +94,5 @@ class BrokerServiceTest(LandscapeTest):
         connected.addCallback(lambda remote: remote.get_server_uuid())
         connected.addCallback(lambda x: connector.disconnect())
         connected.addCallback(lambda x: self.service.stopService())
+        connected.addCallback(lambda x: self.service.port.stopListening())
         return connected
