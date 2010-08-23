@@ -69,7 +69,10 @@ class UserManager(ManagerPlugin):
         return locked_users
 
     def _message_dispatch(self, message):
+        """Dispatch the given user-change request to the correct handler.
 
+        @param message: The request we got from the server.
+        """
         user_monitor_connector = RemoteUserMonitorConnector(
             self.registry.reactor, self.registry.config)
 
