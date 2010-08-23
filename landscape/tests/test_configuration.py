@@ -462,6 +462,9 @@ class LandscapeSetupScriptTest(LandscapeTest):
         """
         Confirm with the user for users specified for the ScriptPlugin.
         """
+        pwnam_mock = self.mocker.replace("pwd.getpwnam")
+        pwnam_mock("landscape")
+        self.mocker.result(None)
         self.config.include_manager_plugins = "FooPlugin"
         self.mocker.order()
         script_mock = self.mocker.patch(self.script)

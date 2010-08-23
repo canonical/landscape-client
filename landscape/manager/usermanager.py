@@ -42,8 +42,6 @@ class UserManager(ManagerPlugin):
         socket = os.path.join(self.registry.config.sockets_path,
                               self.name + ".sock")
         self._port = self.registry.reactor.listen_unix(socket, factory)
-        self._user_monitor_connector = RemoteUserMonitorConnector(
-            self.registry.reactor, self.registry.config)
 
         for message_type in self._message_types:
             self._registry.register_message(message_type,
@@ -71,15 +69,22 @@ class UserManager(ManagerPlugin):
         return locked_users
 
     def _message_dispatch(self, message):
+        """Dispatch the given user-change request to the correct handler.
+
+        @param message: The request we got from the server.
+        """
+        user_monitor_connector = RemoteUserMonitorConnector(
+            self.registry.reactor, self.registry.config)
 
         def detect_changes(user_monitor):
             self._user_monitor = user_monitor
             return user_monitor.detect_changes()
 
-        result = self._user_monitor_connector.connect()
+        result = user_monitor_connector.connect()
         result.addCallback(detect_changes)
         result.addCallback(self._perform_operation, message)
         result.addCallback(self._send_changes, message)
+        result.addCallback(lambda x: user_monitor_connector.disconnect())
         return result
 
     def _perform_operation(self, result, message):
@@ -89,9 +94,7 @@ class UserManager(ManagerPlugin):
                                                message)
 
     def _send_changes(self, result, message):
-        result = self._user_monitor.detect_changes(message["operation-id"])
-        result.addCallback(lambda x: self._user_monitor_connector.disconnect())
-        return result
+        return self._user_monitor.detect_changes(message["operation-id"])
 
     def _add_user(self, message):
         """Run an C{add-user} operation."""
