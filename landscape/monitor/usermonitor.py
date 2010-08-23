@@ -37,9 +37,6 @@ class UserMonitor(MonitorPlugin):
         socket = os.path.join(self.registry.config.sockets_path,
                               self.name + ".sock")
         self._port = self.registry.reactor.listen_unix(socket, factory)
-        from landscape.manager.usermanager import RemoteUserManagerConnector
-        self._user_manager_connector = RemoteUserManagerConnector(
-            self.registry.reactor, self.registry.config)
 
     def stop(self):
         """Stop listening for incoming AMP connections."""
@@ -67,6 +64,10 @@ class UserMonitor(MonitorPlugin):
         @param operation_id: When present it will be included in the
             C{operation-id} field.
         """
+        from landscape.manager.usermanager import RemoteUserManagerConnector
+        user_manager_connector = RemoteUserManagerConnector(
+            self.registry.reactor, self.registry.config)
+
         # We'll skip checking the locked users if we're in monitor-only mode.
         if getattr(self.registry.config, "monitor_only", False):
             result = maybeDeferred(self._detect_changes,
@@ -77,10 +78,10 @@ class UserMonitor(MonitorPlugin):
                 return user_manager.get_locked_usernames()
 
             def disconnect(locked_usernames):
-                self._user_manager_connector.disconnect()
+                user_manager_connector.disconnect()
                 return locked_usernames
 
-            result = self._user_manager_connector.connect()
+            result = user_manager_connector.connect()
             result.addCallback(get_locked_usernames)
             result.addCallback(disconnect)
             result.addCallback(self._detect_changes, operation_id)
