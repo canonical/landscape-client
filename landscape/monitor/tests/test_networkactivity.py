@@ -101,47 +101,6 @@ Inter-|   Receive                           |  Transmit
                           [(300, 9010, 9099)])
         self.assertNotIn("eth0", message["activities"])
 
-    def test_proc_huge_rollover(self):
-        """
-        If /proc/net/dev rollovers *and* that we pass the previous measured
-        value (so, more than 4GB in 30 seconds on 32 bits), we use the number
-        of packets to check if the number makes sense. It doesn't solve
-        everything, but it helps in some cases.
-        """
-        self.plugin._rollover_maxint = 10000
-        self.write_activity(lo_in=2000, lo_out=1900)
-        self.plugin.run()
-        self.reactor.advance(self.monitor.step_size)
-        self.write_activity(lo_in=3000, lo_out=1999, lo_in_p=100, lo_out_p=50)
-        self.plugin.run()
-        message = self.plugin.create_message()
-        self.assertTrue(message)
-        self.assertTrue("type" in message)
-        self.assertEquals(message["type"], "network-activity")
-        self.assertEquals(message["activities"]["lo"],
-                          [(300, 11000, 10099)])
-        self.assertNotIn("eth0", message["activities"])
-
-    def test_proc_huge_packets_rollover(self):
-        """
-        The value of packets can rollover, too, even if it's unlikely at the
-        same time as bytes, let's handle the case.
-        """
-        self.plugin._rollover_maxint = 10000
-        self.write_activity(lo_in=2000, lo_out=1900, lo_in_p=600, lo_out_p=500)
-        self.plugin.run()
-        self.reactor.advance(self.monitor.step_size)
-        self.write_activity(lo_in=3000, lo_out=1999, lo_in_p=500, lo_out_p=200)
-        self.plugin.run()
-        message = self.plugin.create_message()
-        self.assertTrue(message)
-        self.assertTrue("type" in message)
-        self.assertEquals(message["type"], "network-activity")
-        self.assertEquals(message["activities"]["lo"],
-                          [(300, 11000, 10099)])
-        self.assertNotIn("eth0", message["activities"])
-
-
     def test_no_message_without_traffic_delta(self):
         """
         If no traffic delta is detected between runs, no message will be

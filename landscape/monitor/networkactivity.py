@@ -62,8 +62,7 @@ class NetworkActivity(MonitorPlugin):
         for interface in new_traffic:
             traffic = new_traffic[interface]
             if interface in self._last_activity:
-                (previous_out, previous_in, previous_packet_out,
-                 previous_packet_in) = self._last_activity[interface]
+                previous_out, previous_in = self._last_activity[interface]
                 delta_out = traffic["send_bytes"] - previous_out
                 delta_in = traffic["recv_bytes"] - previous_in
                 if not delta_out and not delta_in:
@@ -72,24 +71,10 @@ class NetworkActivity(MonitorPlugin):
                     delta_out += self._rollover_maxint
                 if delta_in < 0:
                     delta_in += self._rollover_maxint
-                packets_delta_out = (
-                    traffic["send_packets"] - previous_packet_out)
-                if packets_delta_out < 0:
-                    packets_delta_out += self._rollover_maxint
-                # 28 bytes is the minimum packet size, roughly
-                if packets_delta_out * 28 > delta_out:
-                    delta_out += self._rollover_maxint
-                packets_delta_in = (
-                    traffic["recv_packets"] - previous_packet_in)
-                if packets_delta_in < 0:
-                    packets_delta_in += self._rollover_maxint
-                if packets_delta_in * 28 > delta_in:
-                    delta_in += self._rollover_maxint
 
                 yield interface, delta_out, delta_in
             self._last_activity[interface] = (
-                traffic["send_bytes"], traffic["recv_bytes"],
-                traffic["send_packets"], traffic["recv_packets"])
+                traffic["send_bytes"], traffic["recv_bytes"])
 
     def run(self):
         """
