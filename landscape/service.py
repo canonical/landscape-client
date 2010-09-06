@@ -45,7 +45,8 @@ class LandscapeService(Service, object):
         self.port = self.reactor.listen_unix(self.socket, self.factory)
 
     def stopService(self):
-        self.port.stopListening()
+        # We don't need to call port.stopListening(), because the reactor
+        # shutdown sequence will do that for us.
         Service.stopService(self)
         logging.info("%s stopped with config %s" % (
             self.service_name.capitalize(), self.config.get_config_filename()))

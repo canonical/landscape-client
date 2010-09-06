@@ -10,10 +10,11 @@ class ManagerConfigurationTest(LandscapeTest):
         self.config = ManagerConfiguration()
 
     def test_plugin_factories(self):
-        """
-        By default all plugins are enabled.
-        """
-        self.assertEquals(self.config.plugin_factories, ALL_PLUGINS)
+        """By default all plugins are enabled."""
+        self.assertEqual(["ProcessKiller", "PackageManager", "UserManager",
+                          "ShutdownManager", "Eucalyptus"],
+                         ALL_PLUGINS)
+        self.assertEqual(ALL_PLUGINS, self.config.plugin_factories)
 
     def test_plugin_factories_with_manager_plugins(self):
         """
