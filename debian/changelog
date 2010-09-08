@@ -1,8 +1,25 @@
-landscape-client (1.5.5-0ubuntu0.10.10.0) UNRELEASED; urgency=low
+landscape-client (1.5.5-0ubuntu0.10.10.0) maverick; urgency=low
 
-  * New upstream version
+  * New upstream version (LP: #633468)
 
- -- Free Ekanayaka <free.ekanayaka@canonical.com>  Wed, 11 Aug 2010 12:41:16 +0200
+    - The --help command line option can now be used without being
+      root (LP: #613256).
+
+    - The client Unix sockets and symlinks are now cleaned up at shutdown.
+      Without this cleaning, the client could refuse to start because of a PID
+      collision (LP: #607747).
+
+    - The network traffic plugin didn't use to take into account integer
+      overflows. This would cause the plugin to send negative values
+      sometimes (LP: #615371).
+
+    - If a payload had many user activities in it, only the last one would be
+      carried out (LP: #617624).
+
+    - The Eucalyptus plugin was not enabled by default, which means the Cloud
+      Topology feature of Landscape was not available (LP: #614493).
+
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 08 Sep 2010 15:34:09 -0400
 
 landscape-client (1.5.4-0ubuntu0.10.10.0) maverick; urgency=low
 
