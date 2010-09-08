@@ -65,8 +65,8 @@ case "$1" in
 		# to a process with the same PID.
                 if [ -d "${SOCKETDIR:?}" ]; then
 			if ! pidofproc -p "$PIDFILE" "$DAEMON" > /dev/null; then
-				find "${SOCKETDIR:?}" -maxdepth 0 -type s -print0 | xargs -r0 rm -f
-				find "${SOCKETDIR:?}" -maxdepth 0 -type l -print0 | xargs -r0 rm -f
+				find "${SOCKETDIR:?}" -maxdepth 1 -type s -print0 | xargs -r0 rm -f
+				find "${SOCKETDIR:?}" -maxdepth 1 -type l -print0 | xargs -r0 rm -f
 			fi
 		fi
 
