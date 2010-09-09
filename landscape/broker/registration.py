@@ -194,7 +194,7 @@ class RegistrationHandler(object):
                         public_key_file = store_public_key_data(
                             self._config, instance_data["ssl-ca-certificate"])
                         self._config.ssl_public_key = public_key_file
-                        self._exchange._transport.pubkey = public_key_file
+                        self._exchange._transport._pubkey = public_key_file
                     self._config.write()
 
             def log_error(error):
