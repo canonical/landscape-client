@@ -89,7 +89,7 @@ class FakeTransport(object):
     """Fake transport for testing purposes."""
 
     def __init__(self, url=None, pubkey=None):
-        self.pubkey = pubkey
+        self._pubkey = pubkey
         self.payloads = []
         self.responses = []
         self._current_response = 0

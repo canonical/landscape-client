@@ -606,7 +606,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         # And the metadata returned determines the URLs that are used
         self.assertEqual("https://example.com/message-system",
                          self.transport.get_url())
-        self.assertEqual(key_filename, self.transport.pubkey)
+        self.assertEqual(key_filename, self.transport._pubkey)
         self.assertEqual("http://example.com/ping",
                          self.pinger.get_url())
         # Let's make sure those values were written back to the config file
