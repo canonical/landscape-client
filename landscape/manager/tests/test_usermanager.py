@@ -345,14 +345,16 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         def handle_callback(ignored):
             messages = self.broker_service.message_store.get_pending_messages()
             # Ignore the message created by plugin.run.
-            self.assertMessages([messages[2], messages[1]],
+            messages = sorted(messages[1:3],
+                              key=lambda message: message["operation-id"])
+            self.assertMessages(messages,
                                 [{"type": "operation-result",
                                   "status": SUCCEEDED,
-                                  "operation-id": 40, "timestamp": 0,
+                                  "operation-id": 39, "timestamp": 0,
                                   "result-text": "remove_user succeeded"},
                                  {"type": "operation-result",
                                   "status": SUCCEEDED,
-                                  "operation-id": 39, "timestamp": 0,
+                                  "operation-id": 40, "timestamp": 0,
                                   "result-text": "remove_user succeeded"}])
 
 
