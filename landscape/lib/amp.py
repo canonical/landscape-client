@@ -173,7 +173,7 @@ class MethodCallClientProtocol(AMP):
         deferred = Deferred()
 
         def handle_response(response):
-            if call.called:
+            if not call.active():
                 # Late response for a request that has timeout,
                 # just ignore it.
                 return
