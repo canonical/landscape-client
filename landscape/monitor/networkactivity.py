@@ -75,6 +75,9 @@ class NetworkActivity(MonitorPlugin):
                 yield interface, delta_out, delta_in
             self._last_activity[interface] = (
                 traffic["send_bytes"], traffic["recv_bytes"])
+        for interface in self._last_activity.keys():
+            if interface not in new_traffic:
+                del self._last_activity[interface]
 
     def run(self):
         """

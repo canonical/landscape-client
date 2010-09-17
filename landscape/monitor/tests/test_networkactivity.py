@@ -20,8 +20,8 @@ Inter-|   Receive                           |  Transmit
         self.activity_file = open(self.makeFile(), "w+")
         self.write_activity()
         self.plugin = NetworkActivity(
-            network_activity_file = self.activity_file.name,
-            create_time = self.reactor.time)
+            network_activity_file=self.activity_file.name,
+            create_time=self.reactor.time)
         self.monitor.add(self.plugin)
 
     def tearDown(self):
@@ -38,6 +38,7 @@ Inter-|   Receive                           |  Transmit
             eth0_in = eth0_in,
             eth0_out = eth0_out,
             extra=extra))
+        self.activity_file.seek(0, 0)
         self.activity_file.truncate()
         self.activity_file.write(self.stats_template % kw)
         self.activity_file.flush()
@@ -50,7 +51,7 @@ Inter-|   Receive                           |  Transmit
         that messages are in the expected format and contain data with
         expected datatypes.
         """
-        plugin = NetworkActivity(create_time = self.reactor.time)
+        plugin = NetworkActivity(create_time=self.reactor.time)
         self.monitor.add(plugin)
         plugin.run()
         self.reactor.advance(self.monitor.step_size)
@@ -128,7 +129,7 @@ Inter-|   Receive                           |  Transmit
     def test_interface_temporarily_disappears(self):
         """
         When an interface is removed (ie usb hotplug) and then activated again
-        its delta will be retained.
+        its delta will not be retained, because the values may have been reset.
         """
         self.write_activity(extra="wlan0: 2222 0 0 0 2222 0 0 0 0")
         self.plugin.run()
@@ -137,11 +138,11 @@ Inter-|   Receive                           |  Transmit
         self.plugin.run()
         message = self.plugin.create_message()
         self.assertFalse(message)
-        self.write_activity(extra="wlan0: 3333 0 0 0 3333 0 0 0 0")
+        self.write_activity(extra="wlan0: 1000 0 0 0 1000 0 0 0 0")
         self.reactor.advance(self.monitor.step_size)
         self.plugin.run()
         message = self.plugin.create_message()
-        self.assertTrue(message)
+        self.assertFalse(message)
 
     def test_messaging_flushes(self):
         """
