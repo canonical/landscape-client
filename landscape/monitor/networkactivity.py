@@ -28,7 +28,7 @@ class NetworkActivity(MonitorPlugin):
         # our last traffic sample for calculating a traffic delta
         self._last_activity = {}
         self._create_time = create_time
-        self._rollover_maxint = pow(2, 64) if is_64() else pow(2, 32)
+        self._rollover_maxint = 0 if is_64() else pow(2, 32)
 
     def register(self, registry):
         super(NetworkActivity, self).register(registry)
@@ -65,12 +65,12 @@ class NetworkActivity(MonitorPlugin):
                 previous_out, previous_in = self._last_activity[interface]
                 delta_out = traffic["send_bytes"] - previous_out
                 delta_in = traffic["recv_bytes"] - previous_in
-                if not delta_out and not delta_in:
-                    continue
                 if delta_out < 0:
                     delta_out += self._rollover_maxint
                 if delta_in < 0:
                     delta_in += self._rollover_maxint
+                if delta_out <= 0 and delta_in <= 0:
+                    continue
 
                 yield interface, delta_out, delta_in
             self._last_activity[interface] = (
