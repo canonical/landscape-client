@@ -1,3 +1,11 @@
+landscape-client (1.5.5.1-0ubuntu0.10.10.0) maverick; urgency=low
+
+  * The client network plugin would send erroneous data if a network
+    interface was removed (and its kernel module removed as well) and
+    then readded (LP: #641264).
+
+ -- Andreas Hasenack <andreas@canonical.com>  Mon, 20 Sep 2010 13:52:49 -0300
+
 landscape-client (1.5.5-0ubuntu0.10.10.0) maverick; urgency=low
 
   * New upstream version (LP: #633468)
