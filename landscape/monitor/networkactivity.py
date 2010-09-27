@@ -19,6 +19,7 @@ class NetworkActivity(MonitorPlugin):
     message_type = "network-activity"
     persist_name = message_type
     run_interval = 30
+    _rollover_maxint = 0
 
     def __init__(self, network_activity_file="/proc/net/dev",
                  create_time=time.time):
@@ -29,7 +30,8 @@ class NetworkActivity(MonitorPlugin):
         self._last_activity = {}
         self._create_time = create_time
         # We don't rollover on 64 bits, as 16 exabytes is a lot.
-        self._rollover_maxint = 0 if is_64() else pow(2, 32)
+        if not is_64():
+            self._rollover_maxint = pow(2, 32)
 
     def register(self, registry):
         super(NetworkActivity, self).register(registry)
