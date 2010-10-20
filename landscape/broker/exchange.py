@@ -99,8 +99,7 @@ class MessageExchange(object):
         """
         if self._message_is_obsolete(message):
             logging.info(
-                "Response message with operation-id %s was discarded "
-                "because the client's secure ID has changed in the meantime"
+                "Obsolete response message with operation-id %s was discarded."
                 % message.get('operation-id'))
             return None
 

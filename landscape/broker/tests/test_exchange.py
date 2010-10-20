@@ -846,14 +846,44 @@ class MessageExchangeTest(LandscapeTest):
         self.assertEquals([], messages)
         self.assertIs(None, message_id)
         expected_log_entry = (
-            "Response message with operation-id 234567 was discarded because "
-            "the client's secure ID has changed in the meantime")
+            "Obsolete response message with operation-id 234567 was "
+            "discarded.")
         self.assertTrue(expected_log_entry in self.logfile.getvalue())
 
         # The MessageContext was removed after utilisation.
         ids_after = self.exchange_store.all_operation_ids()
         self.assertTrue(len(ids_after) == len(ids_before) - 1)
         self.assertFalse('234567' in ids_after)
+
+
+    def test_response_messages_without_context_are_discarded(self):
+        """
+        A response message for which no incoming message context could be
+        found will be discarded as opposed to being sent to the server.
+        """
+        # Receive the message below from the server.
+        msg = {"type": "type-R", "whatever": 5678, "operation-id": 234567}
+        server_message = [msg]
+        self.transport.responses.append(server_message)
+        self.exchanger.exchange()
+
+        # Remove the message context so that the response message gets
+        # discarded.
+        self.exchange_store.get_message_context(msg['operation-id']).remove()
+        self.assertFalse('234567' in self.exchange_store.all_operation_ids())
+
+        self.mstore.set_accepted_types(["resynchronize"])
+        message_id = self.exchanger.send(
+            {"type": "resynchronize", "operation-id": 234567})
+        self.exchanger.exchange()
+        self.assertEquals(2, len(self.transport.payloads))
+        messages = self.transport.payloads[1]["messages"]
+        self.assertEquals([], messages)
+        self.assertIs(None, message_id)
+        expected_log_entry = (
+            "Obsolete response message with operation-id 234567 was "
+            "discarded.")
+        self.assertTrue(expected_log_entry in self.logfile.getvalue())
 
 
 class AcceptedTypesMessageExchangeTest(LandscapeTest):
