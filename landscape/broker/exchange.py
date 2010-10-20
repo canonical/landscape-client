@@ -23,7 +23,7 @@ class MessageExchange(object):
 
     def __init__(self, reactor, store, transport, registration_info,
                  exchange_store,
-                 exchange_interval=60*60,
+                 exchange_interval=60 * 60,
                  urgent_exchange_interval=10,
                  monitor_interval=None,
                  max_messages=100,

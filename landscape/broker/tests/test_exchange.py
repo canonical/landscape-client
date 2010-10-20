@@ -240,6 +240,7 @@ class MessageExchangeTest(LandscapeTest):
         self.mstore.add({"type": "data", "data": 2})
         self.mstore.add({"type": "data", "data": 3})
         # next one, server will respond with 1!
+
         def desynched_send_data(payload, computer_id=None, message_api=None):
             self.transport.next_expected_sequence = 1
             return {"next-expected-sequence": 1}
@@ -303,7 +304,7 @@ class MessageExchangeTest(LandscapeTest):
         self.wait_for_exchange(urgent=True)
         self.assertEquals(len(self.transport.payloads), 1)
         self.wait_for_exchange(urgent=True)
-        self.assertEquals(len(self.transport.payloads), 1) # no change
+        self.assertEquals(len(self.transport.payloads), 1)  # no change
 
     def test_ancient_causes_resynchronize(self):
         """
@@ -569,9 +570,9 @@ class MessageExchangeTest(LandscapeTest):
         # schedule a regular exchange.
         # Let's make sure that that *original* impending-exchange event has
         # been cancelled:
-        self.reactor.advance(60 * 60 # time till exchange
-                             - 10 # time till notification
-                             - 20) # time that we've already advanced
+        self.reactor.advance(60 * 60  # time till exchange
+                             - 10  # time till notification
+                             - 20)  # time that we've already advanced
         self.assertEquals(events, [True])
         # Ok, so no new events means that the original call was
         # cancelled. great.
@@ -854,7 +855,6 @@ class MessageExchangeTest(LandscapeTest):
         ids_after = self.exchange_store.all_operation_ids()
         self.assertTrue(len(ids_after) == len(ids_before) - 1)
         self.assertFalse('234567' in ids_after)
-
 
     def test_response_messages_without_context_are_discarded(self):
         """
