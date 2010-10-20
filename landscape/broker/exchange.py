@@ -80,7 +80,7 @@ class MessageExchange(object):
             logging.warning(
                 "No message context for message with operation-id: %s"
                 % operation_id)
-            return False
+            return True
 
         # Compare the current secure ID with the one that was in effect when
         # the request message was received.
