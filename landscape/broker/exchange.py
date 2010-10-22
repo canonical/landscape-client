@@ -23,7 +23,7 @@ class MessageExchange(object):
 
     def __init__(self, reactor, store, transport, registration_info,
                  exchange_store,
-                 exchange_interval=60*60,
+                 exchange_interval=60 * 60,
                  urgent_exchange_interval=10,
                  monitor_interval=None,
                  max_messages=100,
@@ -80,7 +80,7 @@ class MessageExchange(object):
             logging.warning(
                 "No message context for message with operation-id: %s"
                 % operation_id)
-            return False
+            return True
 
         # Compare the current secure ID with the one that was in effect when
         # the request message was received.
@@ -99,8 +99,7 @@ class MessageExchange(object):
         """
         if self._message_is_obsolete(message):
             logging.info(
-                "Response message with operation-id %s was discarded "
-                "because the client's secure ID has changed in the meantime"
+                "Obsolete response message with operation-id %s was discarded."
                 % message.get('operation-id'))
             return None
 
