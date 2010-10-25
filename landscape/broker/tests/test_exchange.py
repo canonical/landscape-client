@@ -240,7 +240,6 @@ class MessageExchangeTest(LandscapeTest):
         self.mstore.add({"type": "data", "data": 2})
         self.mstore.add({"type": "data", "data": 3})
         # next one, server will respond with 1!
-
         def desynched_send_data(payload, computer_id=None, message_api=None):
             self.transport.next_expected_sequence = 1
             return {"next-expected-sequence": 1}
@@ -304,7 +303,7 @@ class MessageExchangeTest(LandscapeTest):
         self.wait_for_exchange(urgent=True)
         self.assertEquals(len(self.transport.payloads), 1)
         self.wait_for_exchange(urgent=True)
-        self.assertEquals(len(self.transport.payloads), 1)  # no change
+        self.assertEquals(len(self.transport.payloads), 1) # no change
 
     def test_ancient_causes_resynchronize(self):
         """
@@ -570,9 +569,9 @@ class MessageExchangeTest(LandscapeTest):
         # schedule a regular exchange.
         # Let's make sure that that *original* impending-exchange event has
         # been cancelled:
-        self.reactor.advance(60 * 60  # time till exchange
-                             - 10  # time till notification
-                             - 20)  # time that we've already advanced
+        self.reactor.advance(60 * 60 # time till exchange
+                             - 10 # time till notification
+                             - 20) # time that we've already advanced
         self.assertEquals(events, [True])
         # Ok, so no new events means that the original call was
         # cancelled. great.
@@ -847,43 +846,14 @@ class MessageExchangeTest(LandscapeTest):
         self.assertEquals([], messages)
         self.assertIs(None, message_id)
         expected_log_entry = (
-            "Obsolete response message with operation-id 234567 was "
-            "discarded.")
+            "Response message with operation-id 234567 was discarded because "
+            "the client's secure ID has changed in the meantime")
         self.assertTrue(expected_log_entry in self.logfile.getvalue())
 
         # The MessageContext was removed after utilisation.
         ids_after = self.exchange_store.all_operation_ids()
         self.assertTrue(len(ids_after) == len(ids_before) - 1)
         self.assertFalse('234567' in ids_after)
-
-    def test_response_messages_without_context_are_discarded(self):
-        """
-        A response message for which no incoming message context could be
-        found will be discarded as opposed to being sent to the server.
-        """
-        # Receive the message below from the server.
-        msg = {"type": "type-R", "whatever": 5678, "operation-id": 234567}
-        server_message = [msg]
-        self.transport.responses.append(server_message)
-        self.exchanger.exchange()
-
-        # Remove the message context so that the response message gets
-        # discarded.
-        self.exchange_store.get_message_context(msg['operation-id']).remove()
-        self.assertFalse('234567' in self.exchange_store.all_operation_ids())
-
-        self.mstore.set_accepted_types(["resynchronize"])
-        message_id = self.exchanger.send(
-            {"type": "resynchronize", "operation-id": 234567})
-        self.exchanger.exchange()
-        self.assertEquals(2, len(self.transport.payloads))
-        messages = self.transport.payloads[1]["messages"]
-        self.assertEquals([], messages)
-        self.assertIs(None, message_id)
-        expected_log_entry = (
-            "Obsolete response message with operation-id 234567 was "
-            "discarded.")
-        self.assertTrue(expected_log_entry in self.logfile.getvalue())
 
 
 class AcceptedTypesMessageExchangeTest(LandscapeTest):
