@@ -172,8 +172,8 @@ class FQDNTest(LandscapeTest):
 
     def test_getaddrinfo_fallback(self):
         """
-        C{get_fqdn} fallbacks to C{socket.getaddrinfo} with C{AI_CANONNAME}
-        flags if C{socket.getfqdn} returns a local hostname.
+        C{get_fqdn} falls back to C{socket.getaddrinfo} with the
+        C{AI_CANONNAME} flag if C{socket.getfqdn} returns a local hostname.
         """
         self.addCleanup(setattr, socket, "getfqdn", socket.getfqdn)
         socket.getfqdn = lambda: "localhost6.localdomain6"

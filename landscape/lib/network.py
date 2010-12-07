@@ -179,7 +179,7 @@ def get_network_traffic(source_file="/proc/net/dev"):
 
 def get_fqdn():
     """
-    Return the current fqdn of the machine, trying hard to return a meaninful
+    Return the current fqdn of the machine, trying hard to return a meaningful
     name.
 
     In particular, it means working against a NetworkManager bug which seems to
