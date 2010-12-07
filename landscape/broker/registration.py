@@ -8,6 +8,7 @@ from landscape.lib.bpickle import loads
 from landscape.lib.log import log_failure
 from landscape.lib.fetch import fetch, FetchError
 from landscape.lib.tag import is_valid_tag_list
+from landscape.lib.network import get_fqdn
 
 
 EC2_HOST = "169.254.169.254"
@@ -242,7 +243,7 @@ class RegistrationHandler(object):
                     logging.info("Queueing message to register with OTP")
                     message = {"type": "register-cloud-vm",
                                "otp": self._otp,
-                               "hostname": socket.getfqdn(),
+                               "hostname": get_fqdn(),
                                "account_name": None,
                                "registration_password": None,
                                "tags": tags}
@@ -255,7 +256,7 @@ class RegistrationHandler(object):
                         u"as an EC2 instance." % (id.account_name, with_tags))
                     message = {"type": "register-cloud-vm",
                                "otp": None,
-                               "hostname": socket.getfqdn(),
+                               "hostname": get_fqdn(),
                                "account_name": id.account_name,
                                "registration_password": \
                                    id.registration_password,
@@ -274,7 +275,7 @@ class RegistrationHandler(object):
                            "computer_title": id.computer_title,
                            "account_name": id.account_name,
                            "registration_password": id.registration_password,
-                           "hostname": socket.getfqdn(),
+                           "hostname": get_fqdn(),
                            "tags": tags}
                 self._exchange.send(message)
             else:
