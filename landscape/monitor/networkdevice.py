@@ -19,11 +19,6 @@ class NetworkDevice(DataWatcher):
     def register(self, registry):
         super(NetworkDevice, self).register(registry)
         self.call_on_accepted(self.message_type, self.exchange, True)
-        self.registry.reactor.call_on("resynchronize", self._resynchronize)
-
-    def _resynchronize(self):
-        """Resynchronize active network device information."""
-        self._persist.set("data", [])
 
     def get_data(self):
         return self._device_info()

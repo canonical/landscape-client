@@ -19,14 +19,6 @@ class AptPreferences(DataWatcher):
     def __init__(self, etc_apt_directory="/etc/apt"):
         self._etc_apt_directory = etc_apt_directory
 
-    def register(self, registry):
-        """Register this plugin with the specified plugin registry."""
-        super(AptPreferences, self).register(registry)
-        self.registry.reactor.call_on("resynchronize", self._resynchronize)
-
-    def _resynchronize(self):
-        self.registry.persist.remove(self.persist_name)
-
     def get_data(self):
         """Return a C{dict} mapping APT preferences files to their contents.
 

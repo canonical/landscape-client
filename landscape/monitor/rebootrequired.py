@@ -21,14 +21,6 @@ class RebootRequired(MonitorPlugin):
         self._flag_filename = reboot_required_filename
         self._packages_filename = reboot_required_filename + ".pkgs"
 
-    def register(self, registry):
-        """Register this plugin with the specified plugin registry."""
-        super(RebootRequired, self).register(registry)
-        self.registry.reactor.call_on("resynchronize", self._resynchronize)
-
-    def _resynchronize(self):
-        self.registry.persist.remove(self.persist_name)
-
     def _get_flag(self):
         """Return a boolean indicating whether the computer needs a reboot."""
         return os.path.exists(self._flag_filename)

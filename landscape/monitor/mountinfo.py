@@ -14,7 +14,7 @@ class MountInfo(MonitorPlugin):
 
     max_free_space_items_to_exchange = 200
 
-    def __init__(self, interval=300, monitor_interval=60*60,
+    def __init__(self, interval=300, monitor_interval=60 * 60,
                  mounts_file="/proc/mounts", create_time=time.time,
                  statvfs=None, hal_manager=None, mtab_file="/etc/mtab"):
         self.run_interval = interval
@@ -42,11 +42,7 @@ class MountInfo(MonitorPlugin):
         self.registry.reactor.call_every(self._monitor_interval,
                                          self._monitor.log)
         self.registry.reactor.call_on("stop", self._monitor.log, priority=2000)
-        self.registry.reactor.call_on("resynchronize", self._resynchronize)
         self.call_on_accepted("mount-info", self.send_messages, True)
-
-    def _resynchronize(self):
-        self.registry.persist.remove(self.persist_name)
 
     def create_messages(self):
         return filter(None, [self.create_mount_info_message(),
@@ -132,8 +128,8 @@ class MountInfo(MonitorPlugin):
                 self._prev_mount_activity[mount_point] = False
 
     def _get_removable_devices(self):
-        block_devices = {} # {udi: [device, ...]}
-        children = {} # {parent_udi: [child_udi, ...]}
+        block_devices = {}  # {udi: [device, ...]}
+        children = {}  # {parent_udi: [child_udi, ...]}
         removable = set()
 
         # We walk the list of devices building up a dictionary of all removable
