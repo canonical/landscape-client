@@ -18,14 +18,13 @@ class MountInfoTest(LandscapeTest):
 
     def setUp(self):
         LandscapeTest.setUp(self)
-        self.mstore.set_accepted_types(["mount-info", "mount-activity",
-                                        "free-space"])
+        self.mstore.set_accepted_types(["mount-info", "free-space"])
 
     def get_mount_info(self, *args, **kwargs):
         hal_devices = kwargs.pop("hal_devices", [])
         kwargs["hal_manager"] = MockHALManager(hal_devices)
         if "statvfs" not in kwargs:
-            kwargs["statvfs"] = lambda path: (0,)*10
+            kwargs["statvfs"] = lambda path: (0,) * 10
         return MountInfo(*args, **kwargs)
 
     def test_read_proc_mounts(self):
@@ -121,9 +120,10 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
                           {"device": "/dev/hde1", "mount-point": "/mnt/hde1",
                            "filesystem": "reiserfs", "total-space": 40960000})
 
-        self.assertEquals(mount_info[2][1],
-                          {"device": "/dev/sdb2", "mount-point": "/media/Boot OSX",
-                           "filesystem": "hfsplus", "total-space": 40960000})
+        self.assertEquals(
+            mount_info[2][1],
+            {"device": "/dev/sdb2", "mount-point": "/media/Boot OSX",
+             "filesystem": "hfsplus", "total-space": 40960000})
 
     def test_read_changing_total_space(self):
         """
@@ -154,7 +154,8 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         self.assertEquals(len(mount_info), 2)
 
         for i, total_space in enumerate([4096000, 8192000]):
-            self.assertEquals(mount_info[i][0], (i+1) * self.monitor.step_size)
+            self.assertEquals(mount_info[i][0],
+                              (i + 1) * self.monitor.step_size)
             self.assertEquals(mount_info[i][1],
                               {"device": "/dev/hda1", "filesystem": "ext3",
                                "mount-point": "/", "total-space": total_space})
@@ -236,7 +237,7 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         self.monitor.exchange()
 
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 3)
+        self.assertEquals(len(messages), 2)
 
         message = [d for d in messages if d["type"] == "free-space"][0]
         free_space = message["free-space"]
@@ -264,7 +265,7 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         self.reactor.advance(self.monitor.step_size)
 
         messages = plugin.create_messages()
-        self.assertEquals(len(messages), 3)
+        self.assertEquals(len(messages), 2)
 
         messages = plugin.create_messages()
         self.assertEquals(len(messages), 0)
@@ -311,7 +312,8 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         """
 
         filename = self.makeFile("""\
-ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=ennui 0 0
+ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,\
+addr=ennui 0 0
 """)
         plugin = self.get_mount_info(mounts_file=filename, mtab_file=filename)
         self.monitor.add(plugin)
@@ -331,7 +333,7 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
                                       "storage.removable": True}),
                    MockRealHALDevice({"info.udi": "wubble0",
                                       "block.device": "/dev/scd0",
-                                      "info.parent": "wubble"}),]
+                                      "info.parent": "wubble"})]
 
         filename = self.makeFile("""\
 /dev/scd0 /media/Xerox_M750 iso9660 ro,nosuid,nodev,uid=1000,utf8 0 0
@@ -351,7 +353,7 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
         """
         devices = [MockRealHALDevice({"info.udi": "wubble",
                                       "block.device": "/dev/scd0",
-                                      "storage.removable": True}),]
+                                      "storage.removable": True})]
         filename = self.makeFile("""\
 /dev/scd0 /media/Xerox_M750 iso9660 ro,nosuid,nodev,uid=1000,utf8 0 0
 """)
@@ -379,8 +381,7 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
                                       "info.parent": "wubble0"}),
                    MockRealHALDevice({"info.udi": "wubble0b",
                                       "block.device": "/dev/scd0b",
-                                      "info.parent": "wubble0"}),]
-
+                                      "info.parent": "wubble0"})]
 
         filename = self.makeFile("""\
 /dev/scd0a /media/Xerox_M750 iso9660 ro,nosuid,nodev,uid=1000,utf8 0 0
@@ -451,7 +452,7 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
         self.monitor.exchange()
 
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 3)
+        self.assertEquals(len(messages), 2)
         self.assertEquals(messages[0].get("mount-info"),
                           [(step_size,
                             {"device": "/dev/hda2", "mount-point": "/",
@@ -460,83 +461,6 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
                           [(step_size, "/", 409600)])
         self.assertTrue(isinstance(messages[1]["free-space"][0][2],
                                    (int, long)))
-        self.assertEquals(messages[2].get("activities"),
-                          [(step_size, "/", True)])
-
-    def test_first_mount_activity_message(self):
-        """
-        Mount activity is only reported when a change from the
-        previous known state is detected.  If mount activity has never
-        been reported, it should be.
-        """
-        filename = self.makeFile("""\
-/dev/hda2 / xfs rw 0 0
-""")
-        plugin = self.get_mount_info(mounts_file=filename,
-                                     create_time=self.reactor.time,
-                                     mtab_file=filename)
-        step_size = self.monitor.step_size
-        self.monitor.add(plugin)
-
-        self.reactor.advance(step_size)
-        message = plugin.create_mount_activity_message()
-        self.assertEquals(message.get("type"), "mount-activity")
-        self.assertEquals(message.get("activities"), [(300, "/", True)])
-
-        self.reactor.advance(step_size)
-        self.assertEquals(plugin.create_mount_activity_message(), None)
-
-    def test_wb_umount_activity(self):
-        """Test ensures the plugin reports new umounts."""
-        filename = self.makeFile("""\
-/dev/hda2 / xfs rw 0 0
-""")
-        plugin = self.get_mount_info(mounts_file=filename,
-                                     create_time=self.reactor.time,
-                                     mtab_file=filename)
-        step_size = self.monitor.step_size
-        self.monitor.add(plugin)
-
-        self.reactor.advance(step_size)
-        message = plugin.create_mount_activity_message()
-        self.assertEquals(message.get("type"), "mount-activity")
-        self.assertEquals(message.get("activities"), [(step_size, "/", True)])
-
-        plugin._mounts_file = self.makeFile("""\
-""")
-        self.reactor.advance(step_size)
-        message = plugin.create_mount_activity_message()
-        self.assertEquals(message.get("type"), "mount-activity")
-        self.assertEquals(message.get("activities"),
-                          [(step_size * 2, "/", False)])
-
-    def test_wb_mount_activity(self):
-        """Test ensures the plugin reports new mounts."""
-        filename = self.makeFile("""\
-/dev/hda2 / xfs rw 0 0
-""")
-        plugin = self.get_mount_info(mounts_file=filename,
-                                     create_time=self.reactor.time,
-                                     mtab_file=filename)
-        step_size = self.monitor.step_size
-        self.monitor.add(plugin)
-
-        self.reactor.advance(step_size)
-        message = plugin.create_mount_activity_message()
-        self.assertEquals(message.get("type"), "mount-activity")
-        self.assertEquals(message.get("activities"), [(step_size, "/", True)])
-
-        mount_dir = self.makeDir()
-        plugin._mounts_file = self.makeFile("""\
-/dev/hda2 / xfs rw 0 0
-/dev/hdb5 %s xfs rw 0 0
-""" % mount_dir)
-        self.reactor.advance(step_size)
-        message = plugin.create_mount_activity_message()
-        self.assertEquals(message.get("type"), "mount-activity")
-        self.assertEquals(message.get("activities"),
-                          [(step_size * 2, mount_dir, True)])
-
 
     def test_resynchronize(self):
         """
@@ -562,9 +486,10 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
         messages = [message for message in messages
                     if message["type"] == "mount-info"]
         expected_message = {
-            'type': 'mount-info',
-            'mount-info': [(0, {'device': '/dev/hda1', 'mount-point': '/',
-                                'total-space': 4096000, 'filesystem': 'ext3'})]}
+            "type": "mount-info",
+            "mount-info": [(0, {"device": "/dev/hda1", "mount-point": "/",
+                                "total-space": 4096000,
+                                "filesystem": "ext3"})]}
         self.assertMessages(messages, [expected_message, expected_message])
 
     def test_bind_mounts(self):
@@ -577,7 +502,8 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
             return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
 
         # From this test data, we expect only two mount points to be returned,
-        # and the other two to be ignored (the rebound /dev/hda2 -> /mnt mounting)
+        # and the other two to be ignored (the rebound /dev/hda2 -> /mnt
+        # mounting)
         filename = self.makeFile("""\
 /dev/devices/by-uuid/12345567 / ext3 rw 0 0
 /dev/hda2 /usr ext3 rw 0 0
@@ -600,7 +526,7 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
             [(0, {"device": "/dev/devices/by-uuid/12345567",
                   "mount-point": "/", "total-space": 4096000L,
                   "filesystem": "ext3"}),
-             (0 ,{"device": "/dev/hda2",
+             (0, {"device": "/dev/hda2",
                   "mount-point": "/usr",
                   "total-space": 4096000L,
                   "filesystem": "ext3"}),
@@ -634,14 +560,14 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
             [(0, {"device": "/dev/devices/by-uuid/12345567",
                   "mount-point": "/", "total-space": 4096000L,
                   "filesystem": "ext3"}),
-             (0,{"device": "/dev/hda2",
-                 "mount-point": "/usr",
-                 "total-space": 4096000L,
-                 "filesystem": "ext3"}),
-             (0,{"device": "/dev/devices/by-uuid/12345567",
-                 "mount-point": "/mnt",
-                 "total-space": 4096000L,
-                 "filesystem": "ext3"}),])
+             (0, {"device": "/dev/hda2",
+                  "mount-point": "/usr",
+                  "total-space": 4096000L,
+                  "filesystem": "ext3"}),
+             (0, {"device": "/dev/devices/by-uuid/12345567",
+                  "mount-point": "/mnt",
+                  "total-space": 4096000L,
+                  "filesystem": "ext3"})])
 
     def test_no_message_if_not_accepted(self):
         """
@@ -649,6 +575,7 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
         accepting their type.
         """
         self.mstore.set_accepted_types([])
+
         def statvfs(path):
             return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
 
@@ -683,7 +610,7 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
         remote_broker_mock = self.mocker.replace(self.remote)
         remote_broker_mock.send_message(ANY, urgent=True)
         self.mocker.result(succeed(None))
-        self.mocker.count(3)
+        self.mocker.count(2)
         self.mocker.replay()
 
         self.reactor.fire(("message-type-acceptance-changed", "mount-info"),
@@ -759,7 +686,7 @@ ennui:/data /data nfs rw,v3,rsize=32768,wsize=32768,hard,lock,proto=udp,addr=enn
         self.monitor.exchange()
 
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 3)
+        self.assertEquals(len(messages), 2)
 
         message = [d for d in messages if d["type"] == "free-space"][0]
         free_space = message["free-space"]
