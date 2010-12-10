@@ -14,12 +14,20 @@ class RebootRequired(MonitorPlugin):
     """
 
     persist_name = "reboot-required"
-    run_interval = 900 # 15 minutes
+    run_interval = 900  # 15 minutes
     run_immediately = True
 
     def __init__(self, reboot_required_filename="/var/run/reboot-required"):
         self._flag_filename = reboot_required_filename
         self._packages_filename = reboot_required_filename + ".pkgs"
+
+    def register(self, registry):
+        """Register this plugin with the specified plugin registry."""
+        super(RebootRequired, self).register(registry)
+        self.registry.reactor.call_on("resynchronize", self._resynchronize)
+
+    def _resynchronize(self):
+        self.registry.persist.remove(self.persist_name)
 
     def _get_flag(self):
         """Return a boolean indicating whether the computer needs a reboot."""
