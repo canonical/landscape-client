@@ -13,7 +13,7 @@ class AptPreferences(DataWatcher):
     persist_name = "apt-preferences"
     message_type = "apt-preferences"
     message_key = "data"
-    run_interval = 900 # 15 minutes
+    run_interval = 900  # 15 minutes
     size_limit = APT_PREFERENCES_SIZE_LIMIT
 
     def __init__(self, etc_apt_directory="/etc/apt"):

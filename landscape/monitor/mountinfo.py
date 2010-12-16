@@ -40,11 +40,7 @@ class MountInfo(MonitorPlugin):
         self.registry.reactor.call_every(self._monitor_interval,
                                          self._monitor.log)
         self.registry.reactor.call_on("stop", self._monitor.log, priority=2000)
-        self.registry.reactor.call_on("resynchronize", self._resynchronize)
         self.call_on_accepted("mount-info", self.send_messages, True)
-
-    def _resynchronize(self):
-        self.registry.persist.remove(self.persist_name)
 
     def create_messages(self):
         return filter(None, [self.create_mount_info_message(),

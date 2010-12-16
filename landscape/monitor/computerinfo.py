@@ -23,14 +23,10 @@ class ComputerInfo(MonitorPlugin):
 
     def register(self, registry):
         super(ComputerInfo, self).register(registry)
-        self.registry.reactor.call_on("resynchronize", self._resynchronize)
         self.call_on_accepted("computer-info",
                               self.send_computer_message, True)
         self.call_on_accepted("distribution-info",
                               self.send_distribution_message, True)
-
-    def _resynchronize(self):
-        self.registry.persist.remove(self.persist_name)
 
     def send_computer_message(self, urgent=False):
         message = self._create_computer_info_message()
