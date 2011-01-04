@@ -5,7 +5,8 @@ from subprocess import Popen, PIPE
 from landscape.tests.helpers import LandscapeTest
 
 from landscape.lib.network import (
-    get_network_traffic, get_active_device_info, get_active_interfaces)
+    get_network_traffic, get_active_device_info, get_active_interfaces,
+    get_fqdn)
 from landscape.tests.mocker import ANY
 
 
@@ -156,3 +157,24 @@ test_proc_net_dev_parsed = {
             "send_colls": 19,
             "send_carrier": 0,
             "send_compressed": 0}}
+
+
+class FQDNTest(LandscapeTest):
+
+    def test_default_fqdn(self):
+        """
+        C{get_fqdn} returns the output of C{socket.getfqdn} if it returns
+        something sensible.
+        """
+        self.addCleanup(setattr, socket, "getfqdn", socket.getfqdn)
+        socket.getfqdn = lambda: "foo.bar"
+        self.assertEqual("foo.bar", get_fqdn())
+
+    def test_getaddrinfo_fallback(self):
+        """
+        C{get_fqdn} falls back to C{socket.getaddrinfo} with the
+        C{AI_CANONNAME} flag if C{socket.getfqdn} returns a local hostname.
+        """
+        self.addCleanup(setattr, socket, "getfqdn", socket.getfqdn)
+        socket.getfqdn = lambda: "localhost6.localdomain6"
+        self.assertNotIn("localhost", get_fqdn())

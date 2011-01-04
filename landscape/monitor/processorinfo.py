@@ -59,11 +59,7 @@ class ProcessorInfo(MonitorPlugin):
         """Register this plugin with the specified plugin registry."""
         super(ProcessorInfo, self).register(registry)
         self.registry.reactor.call_later(self._delay, self.run)
-        self.registry.reactor.call_on("resynchronize", self._resynchronize)
         self.call_on_accepted("processor-info", self.send_message, True)
-
-    def _resynchronize(self):
-        self.registry.persist.remove(self.persist_name)
 
     def create_message(self):
         """Retrieve processor information and generate a message."""
