@@ -440,7 +440,8 @@ def setup(config):
         config.https_proxy = os.environ["https_proxy"]
 
     if config.silent:
-        if not config.get("account_name") or not config.get("computer_title"):
+        if not config.get("otp") and (not config.get("account_name") or not
+                                          config.get("computer_title")):
             raise ConfigurationError("An account name and computer title are "
                                      "required.")
         if config.get("script_users"):
@@ -463,7 +464,7 @@ def setup(config):
 
     config.write()
     # Restart the client to ensure that it's using the new configuration.
-    if not config.no_start:
+    if not config.no_start and not config.otp:
         try:
             sysvconfig.restart_landscape()
         except ProcessError:

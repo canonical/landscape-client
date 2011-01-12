@@ -179,6 +179,9 @@ class RegistrationHandler(object):
                 self._ec2_data["launch_index"] = int(
                     self._ec2_data["launch_index"])
 
+                if self._config.otp:
+                    self._otp = self._config.otp
+                    return
                 instance_data = _extract_ec2_instance_data(
                     raw_user_data, int(launch_index))
                 if instance_data is not None:
