@@ -464,7 +464,7 @@ def setup(config):
 
     config.write()
     # Restart the client to ensure that it's using the new configuration.
-    if not config.no_start:
+    if not config.no_start and not config.otp:
         try:
             sysvconfig.restart_landscape()
         except ProcessError:
