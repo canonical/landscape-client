@@ -738,6 +738,21 @@ account_name = account
         config = self.get_config(["--silent", "-t", "rex"])
         self.assertRaises(ConfigurationError, setup, config)
 
+    def test_silent_setup_with_otp(self):
+        """
+        If the OTP is specified, there is not need to pass the account name and
+        the computer title.
+        """
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        sysvconfig_mock.set_start_on_boot(True)
+        sysvconfig_mock.restart_landscape()
+        self.mocker.replay()
+
+        config = self.get_config(["--silent", "--otp", "otp1"])
+        setup(config)
+
+        self.assertEqual("otp1", config.otp)
+
     def test_silent_script_users_imply_script_execution_plugin(self):
         """
         If C{--script-users} is specified, without C{ScriptExecution} in the
