@@ -740,7 +740,7 @@ account_name = account
 
     def test_silent_setup_with_otp(self):
         """
-        If the OTP is specified, there is not need to pass the account name and
+        If the OTP is specified, there is no need to pass the account name and
         the computer title.
         """
         sysvconfig_mock = self.mocker.patch(SysVConfig)
