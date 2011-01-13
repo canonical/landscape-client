@@ -1,7 +1,7 @@
 #!/bin/sh
 cores=$(grep -c ^processor /proc/cpuinfo 2>/dev/null)
 threshold="${cores:-1}.0"
-if [ $(echo "`cut -f1 -d ' ' /proc/loadavg` < $cores" | bc) -eq 1 ]; then
+if [ $(echo "`cut -f1 -d ' ' /proc/loadavg` < $threshold" | bc) -eq 1 ]; then
     echo
     echo -n "  System information as of "
     /bin/date
