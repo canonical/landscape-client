@@ -30,7 +30,6 @@ class UserMonitor(MonitorPlugin):
     def register(self, registry):
         super(UserMonitor, self).register(registry)
 
-        self.registry.reactor.call_on("resynchronize", self._resynchronize)
         self.call_on_accepted("users", self._run_detect_changes, None)
 
         factory = UserMonitorProtocolFactory(object=self)
