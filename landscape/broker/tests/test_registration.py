@@ -563,6 +563,28 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
             self.transport.payloads[0]["messages"],
             [self.get_expected_cloud_message(tags=u"server,london")])
 
+    def test_cloud_registration_with_otp(self):
+        """
+        If the OTP is present in the configuration, it's used to trigger the
+        registration instead of using the user data.
+        """
+        self.config.otp = "otp1"
+        self.prepare_query_results(user_data=None)
+
+        self.prepare_cloud_registration()
+
+        # metadata is fetched and stored at reactor startup:
+        self.reactor.fire("run")
+
+        # Okay! Exchange should cause the registration to happen.
+        self.exchanger.exchange()
+        # This *should* be asynchronous, but I think a billion tests are
+        # written like this
+        self.assertEqual(len(self.transport.payloads), 1)
+        self.assertMessages(
+            self.transport.payloads[0]["messages"],
+            [self.get_expected_cloud_message()])
+
     def test_cloud_registration_with_invalid_tags(self):
         """
         Invalid tags in the configuration should result in the tags not being
