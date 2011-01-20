@@ -21,11 +21,7 @@ class HardwareInventory(MonitorPlugin):
 
     def register(self, manager):
         super(HardwareInventory, self).register(manager)
-        manager.reactor.call_on("resynchronize", self._resynchronize)
         self.call_on_accepted("hardware-inventory", self.exchange, True)
-
-    def _resynchronize(self):
-        self._persist.remove("devices")
 
     def send_message(self, urgent):
         devices = self.create_message()

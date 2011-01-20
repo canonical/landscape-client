@@ -14,7 +14,7 @@ class MountInfo(MonitorPlugin):
 
     max_free_space_items_to_exchange = 200
 
-    def __init__(self, interval=300, monitor_interval=60*60,
+    def __init__(self, interval=300, monitor_interval=60 * 60,
                  mounts_file="/proc/mounts", create_time=time.time,
                  statvfs=None, hal_manager=None, mtab_file="/etc/mtab"):
         self.run_interval = interval
@@ -29,8 +29,6 @@ class MountInfo(MonitorPlugin):
         self._free_space = []
         self._mount_info = []
         self._mount_info_to_persist = None
-        self._mount_activity = []
-        self._prev_mount_activity = {}
         self._hal_manager = hal_manager or HALManager()
 
     def register(self, registry):
@@ -42,24 +40,11 @@ class MountInfo(MonitorPlugin):
         self.registry.reactor.call_every(self._monitor_interval,
                                          self._monitor.log)
         self.registry.reactor.call_on("stop", self._monitor.log, priority=2000)
-        self.registry.reactor.call_on("resynchronize", self._resynchronize)
         self.call_on_accepted("mount-info", self.send_messages, True)
-
-    def _resynchronize(self):
-        self.registry.persist.remove(self.persist_name)
 
     def create_messages(self):
         return filter(None, [self.create_mount_info_message(),
-                             self.create_free_space_message(),
-                             self.create_mount_activity_message()])
-
-    def create_mount_activity_message(self):
-        if self._mount_activity:
-            message = {"type": "mount-activity",
-                       "activities": self._mount_activity}
-            self._mount_activity = []
-            return message
-        return None
+                             self.create_free_space_message()])
 
     def create_mount_info_message(self):
         if self._mount_info:
@@ -120,20 +105,11 @@ class MountInfo(MonitorPlugin):
                 if mount_info not in [m for t, m in self._mount_info]:
                     self._mount_info.append((now, mount_info))
 
-            if not self._prev_mount_activity.get(mount_point, False):
-                self._mount_activity.append((now, mount_point, True))
-                self._prev_mount_activity[mount_point] = True
-
             current_mount_points.add(mount_point)
 
-        for mount_point in self._prev_mount_activity:
-            if mount_point not in current_mount_points:
-                self._mount_activity.append((now, mount_point, False))
-                self._prev_mount_activity[mount_point] = False
-
     def _get_removable_devices(self):
-        block_devices = {} # {udi: [device, ...]}
-        children = {} # {parent_udi: [child_udi, ...]}
+        block_devices = {}  # {udi: [device, ...]}
+        children = {}  # {parent_udi: [child_udi, ...]}
         removable = set()
 
         # We walk the list of devices building up a dictionary of all removable

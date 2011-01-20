@@ -8,6 +8,7 @@ from landscape.lib.bpickle import loads
 from landscape.lib.log import log_failure
 from landscape.lib.fetch import fetch, FetchError
 from landscape.lib.tag import is_valid_tag_list
+from landscape.lib.network import get_fqdn
 
 
 EC2_HOST = "169.254.169.254"
@@ -178,6 +179,9 @@ class RegistrationHandler(object):
                 self._ec2_data["launch_index"] = int(
                     self._ec2_data["launch_index"])
 
+                if self._config.otp:
+                    self._otp = self._config.otp
+                    return
                 instance_data = _extract_ec2_instance_data(
                     raw_user_data, int(launch_index))
                 if instance_data is not None:
@@ -194,7 +198,7 @@ class RegistrationHandler(object):
                         public_key_file = store_public_key_data(
                             self._config, instance_data["ssl-ca-certificate"])
                         self._config.ssl_public_key = public_key_file
-                        self._exchange._transport.pubkey = public_key_file
+                        self._exchange._transport._pubkey = public_key_file
                     self._config.write()
 
             def log_error(error):
@@ -242,7 +246,7 @@ class RegistrationHandler(object):
                     logging.info("Queueing message to register with OTP")
                     message = {"type": "register-cloud-vm",
                                "otp": self._otp,
-                               "hostname": socket.getfqdn(),
+                               "hostname": get_fqdn(),
                                "account_name": None,
                                "registration_password": None,
                                "tags": tags}
@@ -255,7 +259,7 @@ class RegistrationHandler(object):
                         u"as an EC2 instance." % (id.account_name, with_tags))
                     message = {"type": "register-cloud-vm",
                                "otp": None,
-                               "hostname": socket.getfqdn(),
+                               "hostname": get_fqdn(),
                                "account_name": id.account_name,
                                "registration_password": \
                                    id.registration_password,
@@ -274,7 +278,7 @@ class RegistrationHandler(object):
                            "computer_title": id.computer_title,
                            "account_name": id.account_name,
                            "registration_password": id.registration_password,
-                           "hostname": socket.getfqdn(),
+                           "hostname": get_fqdn(),
                            "tags": tags}
                 self._exchange.send(message)
             else:

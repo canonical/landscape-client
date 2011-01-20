@@ -462,6 +462,9 @@ class LandscapeSetupScriptTest(LandscapeTest):
         """
         Confirm with the user for users specified for the ScriptPlugin.
         """
+        pwnam_mock = self.mocker.replace("pwd.getpwnam")
+        pwnam_mock("landscape")
+        self.mocker.result(None)
         self.config.include_manager_plugins = "FooPlugin"
         self.mocker.order()
         script_mock = self.mocker.patch(self.script)
@@ -734,6 +737,20 @@ account_name = account
 
         config = self.get_config(["--silent", "-t", "rex"])
         self.assertRaises(ConfigurationError, setup, config)
+
+    def test_silent_setup_with_otp(self):
+        """
+        If the OTP is specified, there is no need to pass the account name and
+        the computer title.
+        """
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        sysvconfig_mock.set_start_on_boot(True)
+        self.mocker.replay()
+
+        config = self.get_config(["--silent", "--otp", "otp1"])
+        setup(config)
+
+        self.assertEqual("otp1", config.otp)
 
     def test_silent_script_users_imply_script_execution_plugin(self):
         """

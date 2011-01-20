@@ -10,7 +10,7 @@ class NetworkActivityTest(LandscapeTest):
     stats_template = """\
 Inter-|   Receive                           |  Transmit
  face |bytes    packets compressed multicast|bytes    packets errs drop fifo
-    lo:%(lo_in)d   0       0         0       %(lo_out)d 3321049    0    0    0
+    lo:%(lo_in)d   %(lo_in_p)d       0         0       %(lo_out)d %(lo_out_p)d    0    0    0
     eth0: %(eth0_in)d   12539      0     62  %(eth0_out)d   12579    0    0   0
     %(extra)s
 """
@@ -20,8 +20,8 @@ Inter-|   Receive                           |  Transmit
         self.activity_file = open(self.makeFile(), "w+")
         self.write_activity()
         self.plugin = NetworkActivity(
-            network_activity_file = self.activity_file.name,
-            create_time = self.reactor.time)
+            network_activity_file=self.activity_file.name,
+            create_time=self.reactor.time)
         self.monitor.add(self.plugin)
 
     def tearDown(self):
@@ -29,13 +29,16 @@ Inter-|   Receive                           |  Transmit
         super(NetworkActivityTest, self).tearDown()
 
     def write_activity(self, lo_in=0, lo_out=0, eth0_in=0, eth0_out=0,
-                        extra="", **kw):
+                        extra="", lo_in_p=0, lo_out_p=0, **kw):
         kw.update(dict(
             lo_in = lo_in,
             lo_out = lo_out,
+            lo_in_p = lo_in_p,
+            lo_out_p = lo_out_p,
             eth0_in = eth0_in,
             eth0_out = eth0_out,
             extra=extra))
+        self.activity_file.seek(0, 0)
         self.activity_file.truncate()
         self.activity_file.write(self.stats_template % kw)
         self.activity_file.flush()
@@ -48,7 +51,7 @@ Inter-|   Receive                           |  Transmit
         that messages are in the expected format and contain data with
         expected datatypes.
         """
-        plugin = NetworkActivity(create_time = self.reactor.time)
+        plugin = NetworkActivity(create_time=self.reactor.time)
         self.monitor.add(plugin)
         plugin.run()
         self.reactor.advance(self.monitor.step_size)
@@ -80,6 +83,25 @@ Inter-|   Receive                           |  Transmit
                           [(300, 10, 99)])
         self.assertNotIn("eth0", message["activities"])
 
+    def test_proc_rollover(self):
+        """
+        If /proc/net/dev rollovers, the network plugin handles the value and
+        gives a positive value instead.
+        """
+        self.plugin._rollover_maxint = 10000
+        self.write_activity(lo_in=2000, lo_out=1900)
+        self.plugin.run()
+        self.reactor.advance(self.monitor.step_size)
+        self.write_activity(lo_in=1010, lo_out=999)
+        self.plugin.run()
+        message = self.plugin.create_message()
+        self.assertTrue(message)
+        self.assertTrue("type" in message)
+        self.assertEquals(message["type"], "network-activity")
+        self.assertEquals(message["activities"]["lo"],
+                          [(300, 9010, 9099)])
+        self.assertNotIn("eth0", message["activities"])
+
     def test_no_message_without_traffic_delta(self):
         """
         If no traffic delta is detected between runs, no message will be
@@ -107,7 +129,7 @@ Inter-|   Receive                           |  Transmit
     def test_interface_temporarily_disappears(self):
         """
         When an interface is removed (ie usb hotplug) and then activated again
-        its delta will be retained.
+        its delta will not be retained, because the values may have been reset.
         """
         self.write_activity(extra="wlan0: 2222 0 0 0 2222 0 0 0 0")
         self.plugin.run()
@@ -116,11 +138,11 @@ Inter-|   Receive                           |  Transmit
         self.plugin.run()
         message = self.plugin.create_message()
         self.assertFalse(message)
-        self.write_activity(extra="wlan0: 3333 0 0 0 3333 0 0 0 0")
+        self.write_activity(extra="wlan0: 1000 0 0 0 1000 0 0 0 0")
         self.reactor.advance(self.monitor.step_size)
         self.plugin.run()
         message = self.plugin.create_message()
-        self.assertTrue(message)
+        self.assertFalse(message)
 
     def test_messaging_flushes(self):
         """

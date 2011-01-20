@@ -6,7 +6,7 @@ import fcntl
 import socket
 import struct
 
-__all__ = ["get_active_device_info", "get_network_traffic"]
+__all__ = ["get_active_device_info", "get_network_traffic", "is_64"]
 
 # from header /usr/include/bits/ioctls.h
 SIOCGIFCONF = 0x8912
@@ -62,7 +62,7 @@ def get_active_interfaces(sock):
     # Generator over the interface names
     already_found = set()
     for index in range(0, byte_length, IF_STRUCT_SIZE):
-        ifreq_struct = result[index:index+IF_STRUCT_SIZE]
+        ifreq_struct = result[index:index + IF_STRUCT_SIZE]
         interface_name = ifreq_struct[:ifreq_struct.index("\0")]
         if interface_name not in already_found:
             already_found.add(interface_name)
@@ -175,6 +175,24 @@ def get_network_traffic(source_file="/proc/net/dev"):
         device = device.strip()
         devices[device] = dict(zip(columns, map(long, data.split())))
     return devices
+
+
+def get_fqdn():
+    """
+    Return the current fqdn of the machine, trying hard to return a meaningful
+    name.
+
+    In particular, it means working against a NetworkManager bug which seems to
+    make C{getfqdn} return localhost6.localdomain6 for machine without a domain
+    since Maverick.
+    """
+    fqdn = socket.getfqdn()
+    if "localhost" in fqdn:
+        # Try the heavy artillery
+        fqdn = socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET,
+                                  socket.SOCK_DGRAM, socket.IPPROTO_IP,
+                                  socket.AI_CANONNAME)[0][3]
+    return fqdn
 
 
 if __name__ == "__main__":

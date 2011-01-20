@@ -18,7 +18,7 @@ class UserMonitor(MonitorPlugin):
     """
 
     persist_name = "users"
-    run_interval = 3600 # 1 hour
+    run_interval = 3600  # 1 hour
     name = "usermonitor"
 
     def __init__(self, provider=None):
@@ -30,16 +30,12 @@ class UserMonitor(MonitorPlugin):
     def register(self, registry):
         super(UserMonitor, self).register(registry)
 
-        self.registry.reactor.call_on("resynchronize", self._resynchronize)
         self.call_on_accepted("users", self._run_detect_changes, None)
 
         factory = UserMonitorProtocolFactory(object=self)
         socket = os.path.join(self.registry.config.sockets_path,
                               self.name + ".sock")
         self._port = self.registry.reactor.listen_unix(socket, factory)
-        from landscape.manager.usermanager import RemoteUserManagerConnector
-        self._user_manager_connector = RemoteUserManagerConnector(
-            self.registry.reactor, self.registry.config)
 
     def stop(self):
         """Stop listening for incoming AMP connections."""
@@ -49,8 +45,7 @@ class UserMonitor(MonitorPlugin):
 
     def _resynchronize(self):
         """Resynchronize user and group data."""
-        changes = UserChanges(self._persist, self._provider)
-        changes.clear()
+        super(UserMonitor, self)._resynchronize()
         return self._run_detect_changes()
 
     def run(self, operation_id=None):
@@ -67,6 +62,10 @@ class UserMonitor(MonitorPlugin):
         @param operation_id: When present it will be included in the
             C{operation-id} field.
         """
+        from landscape.manager.usermanager import RemoteUserManagerConnector
+        user_manager_connector = RemoteUserManagerConnector(
+            self.registry.reactor, self.registry.config)
+
         # We'll skip checking the locked users if we're in monitor-only mode.
         if getattr(self.registry.config, "monitor_only", False):
             result = maybeDeferred(self._detect_changes,
@@ -77,10 +76,10 @@ class UserMonitor(MonitorPlugin):
                 return user_manager.get_locked_usernames()
 
             def disconnect(locked_usernames):
-                self._user_manager_connector.disconnect()
+                user_manager_connector.disconnect()
                 return locked_usernames
 
-            result = self._user_manager_connector.connect()
+            result = user_manager_connector.connect()
             result.addCallback(get_locked_usernames)
             result.addCallback(disconnect)
             result.addCallback(self._detect_changes, operation_id)

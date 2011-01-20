@@ -303,8 +303,7 @@ class PackageStore(HashIdStore):
     @with_cursor
     def iter_hash_id_requests(self, cursor):
         cursor.execute("SELECT id FROM hash_id_request")
-        for row in cursor.fetchall():
-            yield HashIDRequest(self._db, row[0])
+        return [HashIDRequest(self._db, row[0]) for row in cursor.fetchall()]
 
     @with_cursor
     def clear_hash_id_requests(self, cursor):

@@ -1,7 +1,7 @@
 import logging
-import socket
 
 from landscape.lib.lsb_release import LSB_RELEASE_FILENAME, parse_lsb_release
+from landscape.lib.network import get_fqdn
 from landscape.monitor.plugin import MonitorPlugin
 
 
@@ -14,7 +14,7 @@ class ComputerInfo(MonitorPlugin):
 
     persist_name = "computer-info"
 
-    def __init__(self, get_fqdn=socket.getfqdn,
+    def __init__(self, get_fqdn=get_fqdn,
                  meminfo_file="/proc/meminfo",
                  lsb_release_filename=LSB_RELEASE_FILENAME):
         self._get_fqdn = get_fqdn
@@ -23,14 +23,10 @@ class ComputerInfo(MonitorPlugin):
 
     def register(self, registry):
         super(ComputerInfo, self).register(registry)
-        self.registry.reactor.call_on("resynchronize", self._resynchronize)
         self.call_on_accepted("computer-info",
                               self.send_computer_message, True)
         self.call_on_accepted("distribution-info",
                               self.send_distribution_message, True)
-
-    def _resynchronize(self):
-        self.registry.persist.remove(self.persist_name)
 
     def send_computer_message(self, urgent=False):
         message = self._create_computer_info_message()

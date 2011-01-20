@@ -110,3 +110,14 @@ class RebootRequiredTest(LandscapeTest):
         self.plugin.run()
         self.mstore.set_accepted_types([])
         self.plugin.run()
+
+    def test_resynchronize(self):
+        """
+        The "resynchronize" reactor message cause the plugin to send fresh
+        data.
+        """
+        self.plugin.run()
+        self.reactor.fire("resynchronize")
+        self.plugin.run()
+        messages = self.mstore.get_pending_messages()
+        self.assertEquals(len(messages), 2)

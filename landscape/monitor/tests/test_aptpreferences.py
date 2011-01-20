@@ -160,3 +160,18 @@ class AptPreferencesTest(LandscapeTest):
         self.plugin.run()
         self.mstore.set_accepted_types([])
         self.plugin.run()
+
+    def test_resynchronize(self):
+        """
+        The "resynchronize" reactor message cause the plugin to send fresh
+        data.
+        """
+        preferences_filename = os.path.join(self.etc_apt_directory,
+                                            "preferences")
+        self.makeFile(path=preferences_filename, content="crap")
+        self.mstore.set_accepted_types(["apt-preferences"])
+        self.plugin.run()
+        self.reactor.fire("resynchronize")
+        self.plugin.run()
+        messages = self.mstore.get_pending_messages()
+        self.assertEquals(len(messages), 2)

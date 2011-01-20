@@ -1,6 +1,7 @@
 import os
 
 from landscape.lib.persist import Persist
+from landscape.lib.twisted_util import gather_results
 from landscape.manager.plugin import SUCCEEDED, FAILED
 from landscape.monitor.usermonitor import UserMonitor
 from landscape.manager.usermanager import (
@@ -331,6 +332,42 @@ class UserOperationsMessagingTest(UserGroupTestBase):
              "operation-id": 39})
         result.addCallback(handle_callback)
         return result
+
+    def test_many_remove_user_events(self):
+        """
+        The L{UserManager} can handle multiple remove-user events at the same
+        time.
+        """
+        users = [("foo", "x", 1000, 1000, "Foo,,,,", "/home/foo", "/bin/zsh"),
+                 ("bar", "x", 1001, 1001, "Bar,,,,", "/home/bar", "/bin/zsh")]
+        self.setup_environment(users, [], None)
+
+        def handle_callback(ignored):
+            messages = self.broker_service.message_store.get_pending_messages()
+            # Ignore the message created by plugin.run.
+            messages = sorted(messages[1:3],
+                              key=lambda message: message["operation-id"])
+            self.assertMessages(messages,
+                                [{"type": "operation-result",
+                                  "status": SUCCEEDED,
+                                  "operation-id": 39, "timestamp": 0,
+                                  "result-text": "remove_user succeeded"},
+                                 {"type": "operation-result",
+                                  "status": SUCCEEDED,
+                                  "operation-id": 40, "timestamp": 0,
+                                  "result-text": "remove_user succeeded"}])
+
+
+        results = []
+        results.append(self.manager.dispatch_message({"username": "foo",
+                                                      "delete-home": True,
+                                                      "type": "remove-user",
+                                                      "operation-id": 39}))
+        results.append(self.manager.dispatch_message({"username": "bar",
+                                                      "delete-home": True,
+                                                      "type": "remove-user",
+                                                      "operation-id": 40}))
+        return gather_results(results).addCallback(handle_callback)
 
     def test_failing_remove_user_event(self):
         """

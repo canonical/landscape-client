@@ -1,7 +1,7 @@
 import sys
 
 DEBIAN_REVISION = ""
-UPSTREAM_VERSION = "1.5.4"
+UPSTREAM_VERSION = "11.01"
 VERSION = "%s%s" % (UPSTREAM_VERSION, DEBIAN_REVISION)
 
 # The "server-api" field of outgoing messages will be set to this value, and

@@ -1,5 +1,8 @@
 #!/bin/sh
-if [ $(echo "`cut -f1 -d ' ' /proc/loadavg` < 1.0" | bc) -eq 1 ]; then
+cores=$(grep -c ^processor /proc/cpuinfo 2>/dev/null)
+[ "$cores" -eq "0" ] && cores=1
+threshold="${cores:-1}.0"
+if [ $(echo "`cut -f1 -d ' ' /proc/loadavg` < $threshold" | bc) -eq 1 ]; then
     echo
     echo -n "  System information as of "
     /bin/date
@@ -7,5 +10,5 @@ if [ $(echo "`cut -f1 -d ' ' /proc/loadavg` < 1.0" | bc) -eq 1 ]; then
     /usr/bin/landscape-sysinfo
 else
     echo
-    echo " System information disabled due to load higher than 1"
+    echo " System information disabled due to load higher than $threshold"
 fi

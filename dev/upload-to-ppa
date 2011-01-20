@@ -85,12 +85,12 @@ cd ${package}-${upstream}
 #
 # Build source packages and upload them
 #
-releases="dapper_6.06 hardy_8.04 intrepid_8.10 jaunty_9.04 karmic_9.10"
+releases="dapper_6.06 hardy_8.04 karmic_9.10 lucid_10.04 maverick_10.10"
 
 if [ "$snapshot" = "yes" ]; then
     # Snapshot, we'll add a dummy changelog entry like for all releases
     source_opt="-sa"
-    releases="$releases lucid_10.04"
+    releases="$releases natty_11.04"
 else
     # Actual release, use the latest changelog entry and upload now
     dpkg-buildpackage -S -sa -k$key
