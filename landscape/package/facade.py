@@ -39,13 +39,14 @@ class SmartFacade(object):
 
     _deb_package_type = None
 
-    def __init__(self, smart_init_kwargs={}):
+    def __init__(self, smart_init_kwargs={}, sysconf_args=None):
         """
         @param smart_init_kwargs: A dictionary that can be used to pass
             specific keyword parameters to to L{smart.init}.
         """
         self._smart_init_kwargs = smart_init_kwargs.copy()
         self._smart_init_kwargs.setdefault("interface", "landscape")
+        self._sysconfig_args = sysconf_args or {}
         self._reset()
 
     def _reset(self):
@@ -70,6 +71,8 @@ class SmartFacade(object):
                     install_landscape_interface)
                 install_landscape_interface()
             self._ctrl = smart.init(**self._smart_init_kwargs)
+            for key, value in self._sysconfig_args.items():
+                smart.sysconf.set(key, value, soft=True)
             smart.initDistro(self._ctrl)
             smart.initPlugins()
             smart.sysconf.set("pm-iface-output", True, soft=True)
@@ -220,7 +223,7 @@ class SmartFacade(object):
         changeset = transaction.getChangeSet()
 
         if not changeset:
-            return None # Nothing to do.
+            return None  # Nothing to do.
 
         missing = []
         for pkg, op in changeset.items():

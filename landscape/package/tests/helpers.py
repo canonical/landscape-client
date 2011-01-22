@@ -35,7 +35,8 @@ class SmartFacadeHelper(SmartHelper):
 
         test_case.Facade = Facade
         test_case.facade = Facade({"datadir": test_case.smart_dir,
-                                   "configfile": test_case.smart_config})
+                                   "configfile": test_case.smart_config},
+                                  {"sync-apt-sources": False})
 
 
 PKGNAME1 = "name1_version1-release1_all.deb"
