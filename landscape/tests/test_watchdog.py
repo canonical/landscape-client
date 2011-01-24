@@ -1315,7 +1315,7 @@ class WatchDogRunTests(LandscapeTest):
         getpwnam("landscape").pw_uid
         self.mocker.result(1001)
         self.mocker.replay()
-        sys_exit = self.assertRaises(SystemExit, run)
+        sys_exit = self.assertRaises(SystemExit, run, ["landscape-client"])
         self.assertIn("landscape-client can only be run"
                       " as 'root' or 'landscape'.", str(sys_exit))
 
@@ -1340,7 +1340,7 @@ class WatchDogRunTests(LandscapeTest):
         getpwnam("landscape")
         self.mocker.throw(KeyError())
         self.mocker.replay()
-        sys_exit = self.assertRaises(SystemExit, run)
+        sys_exit = self.assertRaises(SystemExit, run, ["landscape-client"])
         self.assertIn("The 'landscape' user doesn't exist!", str(sys_exit))
 
     def test_clean_environment(self):
