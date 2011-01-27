@@ -35,11 +35,11 @@ class MountInfo(MonitorPlugin):
         else:
             self._hal_manager = hal_manager or HALManager()
         try:
-            import gudev
+            from gi.repository import GUdev
         except ImportError:
             self._gudev_client = None
         else:
-            self._gudev_client = gudev.Client(None)
+            self._gudev_client = GUdev.Client.new([])
 
     def register(self, registry):
         super(MountInfo, self).register(registry)
