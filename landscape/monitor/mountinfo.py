@@ -4,7 +4,6 @@ import os
 from landscape.lib.disk import get_mount_info
 from landscape.lib.monitor import CoverageMonitor
 from landscape.accumulate import Accumulator
-from landscape.hal import HALManager
 from landscape.monitor.plugin import MonitorPlugin
 
 
@@ -29,7 +28,18 @@ class MountInfo(MonitorPlugin):
         self._free_space = []
         self._mount_info = []
         self._mount_info_to_persist = None
-        self._hal_manager = hal_manager or HALManager()
+        try:
+            from landscape.hal import HALManager
+        except ImportError:
+            self._hal_manager = hal_manager
+        else:
+            self._hal_manager = hal_manager or HALManager()
+        try:
+            import gudev
+        except ImportError:
+            self._gudev_client = None
+        else:
+            self._gudev_client = gudev.Client(None)
 
     def register(self, registry):
         super(MountInfo, self).register(registry)
@@ -108,6 +118,23 @@ class MountInfo(MonitorPlugin):
             current_mount_points.add(mount_point)
 
     def _get_removable_devices(self):
+        if self._hal_manager is not None:
+            return self._get_hal_removable_devices()
+        elif self._gudev_client is not None:
+            return self._get_udev_removable_devices()
+        else:
+            return set()
+
+    def _get_udev_removable_devices(self):
+        class is_removable(object):
+            def __contains__(oself, device_name):
+                device = self._gudev_client.query_by_device_file(device_name)
+                if device:
+                    return device.get_sysfs_attr_as_boolean("removable")
+                return False
+        return is_removable()
+
+    def _get_hal_removable_devices(self):
         block_devices = {}  # {udi: [device, ...]}
         children = {}  # {parent_udi: [child_udi, ...]}
         removable = set()

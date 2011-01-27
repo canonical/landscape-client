@@ -5,7 +5,6 @@ from twisted.internet.defer import succeed
 from landscape.lib.log import log_failure
 
 from landscape.diff import diff
-from landscape.hal import HALManager
 from landscape.monitor.plugin import MonitorPlugin
 
 
@@ -17,9 +16,17 @@ class HardwareInventory(MonitorPlugin):
         super(HardwareInventory, self).__init__()
         self._persist_sets = []
         self._persist_removes = []
-        self._hal_manager = hal_manager or HALManager()
+        self.enabled = True
+        try:
+            from landscape.hal import HALManager
+        except ImportError:
+            self.enabled = False
+        else:
+            self._hal_manager = hal_manager or HALManager()
 
     def register(self, manager):
+        if not self.enabled:
+            return
         super(HardwareInventory, self).register(manager)
         self.call_on_accepted("hardware-inventory", self.exchange, True)
 
