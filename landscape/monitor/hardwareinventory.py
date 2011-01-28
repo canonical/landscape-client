@@ -44,6 +44,8 @@ class HardwareInventory(MonitorPlugin):
         return result
 
     def exchange(self, urgent=False):
+        if not self.enabled:
+            return
         return self.registry.broker.call_if_accepted("hardware-inventory",
                                                      self.send_message, urgent)
 

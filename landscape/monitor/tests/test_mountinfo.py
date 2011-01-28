@@ -19,6 +19,7 @@ class MountInfoTest(LandscapeTest):
     def setUp(self):
         LandscapeTest.setUp(self)
         self.mstore.set_accepted_types(["mount-info", "free-space"])
+        self.log_helper.ignore_errors("Typelib file for namespace")
 
     def get_mount_info(self, *args, **kwargs):
         hal_devices = kwargs.pop("hal_devices", [])
