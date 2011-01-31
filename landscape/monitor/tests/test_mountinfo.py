@@ -19,6 +19,7 @@ class MountInfoTest(LandscapeTest):
     def setUp(self):
         LandscapeTest.setUp(self)
         self.mstore.set_accepted_types(["mount-info", "free-space"])
+        self.log_helper.ignore_errors("Typelib file for namespace")
 
     def get_mount_info(self, *args, **kwargs):
         hal_devices = kwargs.pop("hal_devices", [])
@@ -359,6 +360,35 @@ addr=ennui 0 0
 """)
         plugin = self.get_mount_info(mounts_file=filename, hal_devices=devices,
                                      mtab_file=filename)
+        self.monitor.add(plugin)
+        plugin.run()
+
+        message = plugin.create_mount_info_message()
+        self.assertEquals(message, None)
+
+    def test_ignore_removable_devices_gudev(self):
+        """
+        The mount info plugin uses gudev to retrieve removable information
+        about devices.
+        """
+        filename = self.makeFile("""\
+/dev/scd0 /media/Xerox_M750 iso9660 ro,nosuid,nodev,uid=1000,utf8 0 0
+""")
+        plugin = self.get_mount_info(mounts_file=filename,
+                                     mtab_file=filename)
+        plugin._hal_manager = None
+
+        class MockDevice(object):
+            def get_sysfs_attr_as_boolean(self, attr):
+                if attr == "removable":
+                    return True
+
+        class MockGudevClient(object):
+            def query_by_device_file(self, name):
+                if name == "/dev/scd0":
+                    return MockDevice()
+
+        plugin._gudev_client = MockGudevClient()
         self.monitor.add(plugin)
         plugin.run()
 
