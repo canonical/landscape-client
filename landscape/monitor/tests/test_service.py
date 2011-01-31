@@ -20,6 +20,7 @@ class MonitorServiceTest(LandscapeTest):
             reactor_factory = FakeReactor
 
         self.service = FakeMonitorService(config)
+        self.log_helper.ignore_errors("Typelib file for namespace")
 
     def test_plugins(self):
         """
