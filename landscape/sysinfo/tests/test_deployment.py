@@ -275,3 +275,11 @@ class RunTest(LandscapeTest):
         self.mocker.replay()
 
         run(["--sysinfo-plugins", "TestPlugin"])
+
+    def test_run_setup_logging_exits_gracefully(self):
+        setup_logging_mock = self.mocker.replace(
+            "landscape.sysinfo.deployment.setup_logging")
+        setup_logging_mock()
+        self.mocker.throw(IOError("Read-only filesystem."))
+        self.mocker.replay()
+        self.assertRaises(SystemExit, run, ["--sysinfo-plugins", "TestPlugin"])
