@@ -94,8 +94,8 @@ def run(args, reactor=None, sysinfo=None):
     """
     try:
         setup_logging()
-    except IOError:
-        sys.exit("Unable to write to setup logging.")
+    except IOError, e:
+        sys.exit("Unable to setup logging. %s" % e)
 
     if sysinfo is None:
         sysinfo = SysInfoPluginRegistry()

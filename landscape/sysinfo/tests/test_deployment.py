@@ -282,4 +282,6 @@ class RunTest(LandscapeTest):
         setup_logging_mock()
         self.mocker.throw(IOError("Read-only filesystem."))
         self.mocker.replay()
-        self.assertRaises(SystemExit, run, ["--sysinfo-plugins", "TestPlugin"])
+        error = self.assertRaises(SystemExit, run, ["--sysinfo-plugins", "TestPlugin"])
+        self.assertEqual(error.message,
+                         "Unable to setup logging. Read-only filesystem.")
