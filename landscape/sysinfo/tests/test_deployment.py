@@ -30,21 +30,21 @@ class DeploymentTest(LandscapeTest):
         self.configuration.load(["--sysinfo-plugins", "Load,TestPlugin",
                                  "-d", self.makeFile()])
         plugins = self.configuration.get_plugins()
-        self.assertEquals(len(plugins), 2)
+        self.assertEqual(len(plugins), 2)
         self.assertTrue(isinstance(plugins[0], Load))
         self.assertTrue(isinstance(plugins[1], TestPlugin))
 
     def test_get_all_plugins(self):
         self.configuration.load(["-d", self.makeFile()])
         plugins = self.configuration.get_plugins()
-        self.assertEquals(len(plugins), len(ALL_PLUGINS))
+        self.assertEqual(len(plugins), len(ALL_PLUGINS))
 
     def test_exclude_plugins(self):
         exclude = ",".join(x for x in ALL_PLUGINS if x != "Load")
         self.configuration.load(["--exclude-sysinfo-plugins", exclude,
                                  "-d", self.makeFile()])
         plugins = self.configuration.get_plugins()
-        self.assertEquals(len(plugins), 1)
+        self.assertEqual(len(plugins), 1)
         self.assertTrue(isinstance(plugins[0], Load))
 
     def test_config_file(self):
@@ -54,7 +54,7 @@ class DeploymentTest(LandscapeTest):
         f.close()
         self.configuration.load(["--config", filename, "-d", self.makeFile()])
         plugins = self.configuration.get_plugins()
-        self.assertEquals(len(plugins), 1)
+        self.assertEqual(len(plugins), 1)
         self.assertTrue(isinstance(plugins[0], TestPlugin))
 
 
@@ -102,12 +102,12 @@ class RunTest(LandscapeTest):
 
         from landscape.sysinfo.testplugin import current_instance
 
-        self.assertEquals(current_instance.has_run, True)
+        self.assertEqual(current_instance.has_run, True)
         sysinfo = current_instance.sysinfo
-        self.assertEquals(sysinfo.get_headers(),
+        self.assertEqual(sysinfo.get_headers(),
                           [("Test header", "Test value")])
-        self.assertEquals(sysinfo.get_notes(), ["Test note"])
-        self.assertEquals(sysinfo.get_footnotes(), ["Test footnote"])
+        self.assertEqual(sysinfo.get_notes(), ["Test note"])
+        self.assertEqual(sysinfo.get_footnotes(), ["Test footnote"])
 
     def test_format_sysinfo_gets_correct_information(self):
         format_sysinfo = self.mocker.replace("landscape.sysinfo.sysinfo."
@@ -130,7 +130,7 @@ class RunTest(LandscapeTest):
 
         run(["--sysinfo-plugins", "TestPlugin"])
 
-        self.assertEquals(self.stdout.getvalue(), "Hello there!\n")
+        self.assertEqual(self.stdout.getvalue(), "Hello there!\n")
 
     def test_output_is_only_displayed_once_deferred_fires(self):
         deferred = Deferred()
@@ -162,13 +162,13 @@ class RunTest(LandscapeTest):
         """
         reactor = FakeReactor()
         d = run(["--sysinfo-plugins", "TestPlugin"], reactor=reactor)
-        self.assertEquals(self.stdout.getvalue(), "")
+        self.assertEqual(self.stdout.getvalue(), "")
 
         self.assertTrue(reactor.running)
         for x in reactor.queued_calls:
             x()
 
-        self.assertEquals(
+        self.assertEqual(
             self.stdout.getvalue(),
             "  Test header: Test value\n\n  => Test note\n\n  Test footnote\n")
         return d
@@ -181,7 +181,7 @@ class RunTest(LandscapeTest):
         d = run(["--sysinfo-plugins", "TestPlugin"], reactor=reactor)
         for x in reactor.queued_calls:
             x()
-        self.assertEquals(reactor.scheduled_calls, [(0, reactor.stop, (), {})])
+        self.assertEqual(reactor.scheduled_calls, [(0, reactor.stop, (), {})])
         return d
 
     def test_stop_reactor_even_when_sync_exception_from_sysinfo_run(self):
@@ -199,7 +199,7 @@ class RunTest(LandscapeTest):
         for x in reactor.queued_calls:
             x()
 
-        self.assertEquals(reactor.scheduled_calls, [(0, reactor.stop, (), {})])
+        self.assertEqual(reactor.scheduled_calls, [(0, reactor.stop, (), {})])
         return self.assertFailure(d, ZeroDivisionError)
 
     def test_get_landscape_log_directory_unprivileged(self):
@@ -207,7 +207,7 @@ class RunTest(LandscapeTest):
         If landscape-sysinfo is running as a non-privileged user the
         log directory is stored in their home directory.
         """
-        self.assertEquals(get_landscape_log_directory(),
+        self.assertEqual(get_landscape_log_directory(),
                           os.path.expanduser("~/.landscape"))
 
     def test_get_landscape_log_directory_privileged(self):
@@ -219,7 +219,7 @@ class RunTest(LandscapeTest):
         uid_mock()
         self.mocker.result(0)
         self.mocker.replay()
-        self.assertEquals(get_landscape_log_directory(), "/var/log/landscape")
+        self.assertEqual(get_landscape_log_directory(), "/var/log/landscape")
 
     def test_wb_logging_setup(self):
         """
@@ -228,14 +228,14 @@ class RunTest(LandscapeTest):
         """
         # This hecka whiteboxes but there aren't any underscores!
         logger = getLogger("landscape-sysinfo")
-        self.assertEquals(logger.handlers, [])
+        self.assertEqual(logger.handlers, [])
         setup_logging(landscape_dir=self.makeDir())
         logger = getLogger("landscape-sysinfo")
-        self.assertEquals(len(logger.handlers), 1)
+        self.assertEqual(len(logger.handlers), 1)
         handler = logger.handlers[0]
         self.assertTrue(isinstance(handler, RotatingFileHandler))
-        self.assertEquals(handler.maxBytes, 500*1024)
-        self.assertEquals(handler.backupCount, 1)
+        self.assertEqual(handler.maxBytes, 500 * 1024)
+        self.assertEqual(handler.backupCount, 1)
         self.assertFalse(logger.propagate)
 
     def test_setup_logging_logs_to_var_log_if_run_as_root(self):
@@ -254,12 +254,12 @@ class RunTest(LandscapeTest):
         self.mocker.replay()
 
         logger = getLogger("landscape-sysinfo")
-        self.assertEquals(logger.handlers, [])
+        self.assertEqual(logger.handlers, [])
 
         setup_logging()
         handler = logger.handlers[0]
         self.assertTrue(isinstance(handler, RotatingFileHandler))
-        self.assertEquals(handler.baseFilename,
+        self.assertEqual(handler.baseFilename,
                           "/var/log/landscape/sysinfo.log")
 
     def test_create_log_dir(self):
@@ -282,6 +282,7 @@ class RunTest(LandscapeTest):
         setup_logging_mock()
         self.mocker.throw(IOError("Read-only filesystem."))
         self.mocker.replay()
-        error = self.assertRaises(SystemExit, run, ["--sysinfo-plugins", "TestPlugin"])
+        error = self.assertRaises(SystemExit, run,
+                                  ["--sysinfo-plugins", "TestPlugin"])
         self.assertEqual(error.message,
                          "Unable to setup logging. Read-only filesystem.")
