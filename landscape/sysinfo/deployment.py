@@ -1,5 +1,6 @@
 """Deployment code for the sysinfo tool."""
 import os
+import sys
 from logging import getLogger, Formatter
 from logging.handlers import RotatingFileHandler
 
@@ -91,7 +92,10 @@ def run(args, reactor=None, sysinfo=None):
     """
     @param reactor: The reactor to (optionally) run the sysinfo plugins in.
     """
-    setup_logging()
+    try:
+        setup_logging()
+    except IOError, e:
+        sys.exit("Unable to setup logging. %s" % e)
 
     if sysinfo is None:
         sysinfo = SysInfoPluginRegistry()
