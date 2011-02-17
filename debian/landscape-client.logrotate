@@ -1,4 +1,4 @@
-/var/log/landscape/*.log {
+/var/log/landscape/watchdog.log /var/log/landscape/monitor.log /var/log/landscape/broker.log /var/log/landscape/manager.log {
     weekly
     rotate 4
     missingok
@@ -8,4 +8,13 @@
     postrotate
         [ -f /var/run/landscape/landscape-client.pid ] && kill -s USR1 `cat /var/run/landscape/landscape-client.pid` > /dev/null 2>&1 || :
     endscript
+}
+
+/var/log/landscape/package-changer.log /var/log/landscape/package-reporter.log /var/log/landscape/sysinfo.log {
+    weekly
+    rotate 4
+    missingok
+    notifempty
+    compress
+    nocreate
 }
