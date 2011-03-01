@@ -10,7 +10,7 @@
     endscript
 }
 
-/var/log/landscape/package-changer.log /var/log/landscape/package-reporter.log /var/log/landscape/sysinfo.log {
+/var/log/landscape/package-changer.log /var/log/landscape/package-reporter.log /var/log/landscape/sysinfo.log /var/log/landscape/release-upgrader.log {
     weekly
     rotate 4
     missingok
