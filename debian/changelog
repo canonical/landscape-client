@@ -1,9 +1,43 @@
-landscape-client (11.01-0ubuntu0.10.10.0) maverick; urgency=low
+landscape-client (11.02-0ubuntu0.11.04.0) natty; urgency=low
 
-  * New upstream version. Please update this entry with the real
-    changes when the release time comes.
+  * New upstream version (LP: #727324)
 
- -- Andreas Hasenack <andreas@canonical.com>  Mon, 24 Jan 2011 16:25:18 -0200
+    - Exit gracefully instead of crashing when the filesystem is
+      read-only (LP: #649997).
+
+    - Drop hal requirement (LP: #708502).
+
+    - Enable HTTP compression in Curl (LP: #297623).
+
+    - Explicitly name log files that need to be rotated (LP: #634236).
+
+    - Assorted test suite fixes
+
+ -- Andreas Hasenack <andreas@canonical.com>  Tue, 01 Mar 2011 15:38:11 -0300
+
+landscape-client (11.01-0ubuntu0.11.04.0) natty; urgency=low
+
+  * New upstream version (LP: #702928)
+
+    - Use a better load check for the sysinfo wrapper, taking into account the
+      number of cores (LP: #643565).
+
+    - Add an option to bootstrap cloud instances using cloud-init
+      (LP: #701972).
+
+    - Fix packaging for Natty (LP: #688115).
+
+    - Force deletion of all the persist data for the monitoring plugins at
+      resynchronization, instead of relying each one of them to do
+      (LP: #688161).
+
+    - Don't send the mount-activity message to the server anymore
+      (LP: #688514).
+
+    - Workaround a new behavior in NetworkManager where getfqdn would report
+      localhost instead of useful hostname (LP: #649142).
+
+ -- Thomas Hervé <thomas.herve@canonical.com>  Fri, 14 Jan 2011 10:11:04 -0600
 
 landscape-client (1.5.5.1-0ubuntu0.10.10.0) maverick; urgency=low
 
