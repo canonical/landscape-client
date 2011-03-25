@@ -81,9 +81,7 @@ class ExchangeHelper(BrokerConfigurationHelper):
             test_case.config.exchange_store_path)
         test_case.exchanger = MessageExchange(
             test_case.reactor, test_case.mstore, test_case.transport,
-            test_case.identity, test_case.exchange_store,
-            test_case.config.exchange_interval,
-            test_case.config.urgent_exchange_interval)
+            test_case.identity, test_case.exchange_store, test_case.config)
 
 
 class RegistrationHelper(ExchangeHelper):

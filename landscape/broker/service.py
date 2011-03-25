@@ -56,8 +56,7 @@ class BrokerService(LandscapeService):
         exchange_store = ExchangeStore(self.config.exchange_store_path)
         self.exchanger = MessageExchange(
             self.reactor, self.message_store, self.transport, self.identity,
-            exchange_store, config.exchange_interval,
-            config.urgent_exchange_interval)
+            exchange_store, config)
         self.pinger = self.pinger_factory(self.reactor, config.ping_url,
                                           self.identity, self.exchanger)
         self.registration = RegistrationHandler(
