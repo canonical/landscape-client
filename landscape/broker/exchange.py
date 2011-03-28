@@ -23,8 +23,7 @@ class MessageExchange(object):
 
     def __init__(self, reactor, store, transport, registration_info,
                  exchange_store,
-                 exchange_interval=60*60,
-                 urgent_exchange_interval=10,
+                 config,
                  monitor_interval=None,
                  max_messages=100,
                  create_time=time.time):
@@ -35,7 +34,7 @@ class MessageExchange(object):
         @param transport: A L{HTTPTransport} used to deliver messages.
         @param exchange_interval: time interval between subsequent
             exchanges of non-urgent messages.
-        @param urgent_exachange_interval: time interval between subsequent
+        @param urgent_exchange_interval: time interval between subsequent
             exchanges of urgent messages.
         """
         self._reactor = reactor
@@ -43,8 +42,9 @@ class MessageExchange(object):
         self._create_time = create_time
         self._transport = transport
         self._registration_info = registration_info
-        self._exchange_interval = exchange_interval
-        self._urgent_exchange_interval = urgent_exchange_interval
+        self._config = config
+        self._exchange_interval = config.exchange_interval
+        self._urgent_exchange_interval = config.urgent_exchange_interval
         self._max_messages = max_messages
         self._notification_id = None
         self._exchange_id = None
@@ -159,12 +159,16 @@ class MessageExchange(object):
     def _handle_set_intervals(self, message):
         if "exchange" in message:
             self._exchange_interval = message["exchange"]
+            self._config.exchange_interval = self._exchange_interval
             logging.info("Exchange interval set to %d seconds." %
                          self._exchange_interval)
         if "urgent-exchange" in message:
             self._urgent_exchange_interval = message["urgent-exchange"]
+            self._config.urgent_exchange_interval = \
+                self._urgent_exchange_interval
             logging.info("Urgent exchange interval set to %d seconds." %
                          self._urgent_exchange_interval)
+        self._config.write()
 
     def exchange(self):
         """Send pending messages to the server and process responses.
