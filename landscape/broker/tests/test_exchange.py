@@ -3,6 +3,7 @@ from landscape.lib.persist import Persist
 from landscape.lib.hashlib import md5
 from landscape.lib.fetch import fetch_async
 from landscape.schema import Message, Int
+from landscape.broker.config import BrokerConfiguration
 from landscape.broker.exchange import get_accepted_types_diff, MessageExchange
 from landscape.broker.transport import FakeTransport
 from landscape.broker.store import MessageStore
@@ -239,6 +240,7 @@ class MessageExchangeTest(LandscapeTest):
 
         self.mstore.add({"type": "data", "data": 2})
         self.mstore.add({"type": "data", "data": 3})
+
         # next one, server will respond with 1!
         def desynched_send_data(payload, computer_id=None, message_api=None):
             self.transport.next_expected_sequence = 1
@@ -272,7 +274,8 @@ class MessageExchangeTest(LandscapeTest):
         """
         transport = FakeTransport()
         exchanger = MessageExchange(self.reactor, self.mstore, transport,
-                                    self.identity, self.exchange_store)
+                                    self.identity, self.exchange_store,
+                                    self.config)
         exchanger.start()
         self.wait_for_exchange(urgent=True)
         self.assertEquals(len(transport.payloads), 1)
@@ -303,7 +306,7 @@ class MessageExchangeTest(LandscapeTest):
         self.wait_for_exchange(urgent=True)
         self.assertEquals(len(self.transport.payloads), 1)
         self.wait_for_exchange(urgent=True)
-        self.assertEquals(len(self.transport.payloads), 1) # no change
+        self.assertEquals(len(self.transport.payloads), 1)  # no change
 
     def test_ancient_causes_resynchronize(self):
         """
@@ -500,7 +503,7 @@ class MessageExchangeTest(LandscapeTest):
         """
         exchanger = MessageExchange(self.reactor, self.mstore, self.transport,
                                     self.identity, self.exchange_store,
-                                    max_messages=1)
+                                    self.config, max_messages=1)
         self.mstore.set_accepted_types(["empty"])
         self.mstore.add({"type": "empty"})
         self.mstore.add({"type": "empty"})
@@ -528,9 +531,10 @@ class MessageExchangeTest(LandscapeTest):
         # We create our own MessageExchange because the one set up by the text
         # fixture has an urgent exchange interval of 10 seconds, which makes
         # testing this awkward.
+        self.config.urgent_exchange_interval = 20
         exchanger = MessageExchange(self.reactor, self.mstore, self.transport,
                                     self.identity, self.exchange_store,
-                                    urgent_exchange_interval=20)
+                                    self.config)
         exchanger.schedule_exchange(urgent=True)
         events = []
         self.reactor.call_on("impending-exchange", lambda: events.append(True))
@@ -546,9 +550,11 @@ class MessageExchangeTest(LandscapeTest):
         should be cancelled and a new one should be scheduled for 10 seconds
         before the new urgent exchange.
         """
+        self.config.exchange_interval = 60 * 60
+        self.config.urgent_exchange_interval = 20
         exchanger = MessageExchange(self.reactor, self.mstore, self.transport,
                                     self.identity, self.exchange_store,
-                                    urgent_exchange_interval=20)
+                                    self.config)
         events = []
         self.reactor.call_on("impending-exchange", lambda: events.append(True))
         # This call will:
@@ -569,9 +575,9 @@ class MessageExchangeTest(LandscapeTest):
         # schedule a regular exchange.
         # Let's make sure that that *original* impending-exchange event has
         # been cancelled:
-        self.reactor.advance(60 * 60 # time till exchange
-                             - 10 # time till notification
-                             - 20) # time that we've already advanced
+        self.reactor.advance(60 * 60  # time till exchange
+                             - 10  # time till notification
+                             - 20)  # time that we've already advanced
         self.assertEquals(events, [True])
         # Ok, so no new events means that the original call was
         # cancelled. great.
@@ -642,6 +648,11 @@ class MessageExchangeTest(LandscapeTest):
         self.assertEquals(self.exchanger.get_exchange_intervals(), (60, 900))
 
     def test_set_intervals(self):
+        """
+        When a C{set-intervals} message is received, the runtime attributes of
+        the L{MessageExchange} are changed, the configuration values as well,
+        and the configuration is written to disk to be persisted.
+        """
         server_message = [{"type": "set-intervals",
                            "urgent-exchange": 1234, "exchange": 5678}]
         self.transport.responses.append(server_message)
@@ -650,6 +661,13 @@ class MessageExchangeTest(LandscapeTest):
 
         self.assertEquals(self.exchanger.get_exchange_intervals(),
                           (1234, 5678))
+        self.assertEquals(self.config.exchange_interval, 5678)
+        self.assertEquals(self.config.urgent_exchange_interval, 1234)
+
+        new_config = BrokerConfiguration()
+        new_config.load_configuration_file(self.config_filename)
+        self.assertEquals(new_config.exchange_interval, 5678)
+        self.assertEquals(new_config.urgent_exchange_interval, 1234)
 
     def test_set_intervals_with_urgent_exchange_only(self):
         server_message = [{"type": "set-intervals", "urgent-exchange": 1234}]
