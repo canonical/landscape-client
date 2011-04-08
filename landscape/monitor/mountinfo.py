@@ -39,7 +39,11 @@ class MountInfo(MonitorPlugin):
         except ImportError:
             self._gudev_client = None
         else:
-            self._gudev_client = GUdev.Client.new([])
+            try:
+                self._gudev_client = GUdev.Client.new([])
+            except AttributeError:
+                # gudev < 1.2 uses a different unsupported interface
+                self._gudev_client = None
 
     def register(self, registry):
         super(MountInfo, self).register(registry)
