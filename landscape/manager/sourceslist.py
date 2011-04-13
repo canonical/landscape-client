@@ -101,9 +101,10 @@ class SourcesList(ManagerPlugin):
             key_file.write(key)
             key_file.close()
             deferred.addCallback(
-                lambda ignore:
+                lambda ignore, path=path:
                     self.run_process("/usr/bin/apt-key", ["add", path]))
             deferred.addCallback(self._handle_process_error)
+            deferred.addCallback(lambda ignore, path=path: os.unlink(path))
         deferred.addErrback(self._handle_process_failure)
         return deferred.addCallback(
             self._handle_sources, message["sources"])
