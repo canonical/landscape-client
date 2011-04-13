@@ -2,7 +2,15 @@ import glob
 import os
 import tempfile
 
-from landscape.manager.plugin import ManagerPlugin
+from twisted.internet.defer import maybeDeferred
+from twisted.internet.utils import getProcessOutputAndValue
+
+from landscape.lib.twisted_util import gather_results
+from landscape.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
+
+
+class ProcessError(Exception):
+    """Exception raised when running a process fails."""
 
 
 class SourcesList(ManagerPlugin):
@@ -14,7 +22,52 @@ class SourcesList(ManagerPlugin):
     def register(self, registry):
         super(SourcesList, self).register(registry)
         registry.register_message(
-            "repositories", self._handle_repositories)
+            "repositories", self._wrap_handle_repositories)
+
+    def run_process(self, command, args):
+        """
+        Run the process in an asynchronous fashion, to be overriden in tests.
+        """
+        return getProcessOutputAndValue(command, args)
+
+    def _wrap_handle_repositories(self, message):
+        """
+        Wrap C{_handle_repositories} to generate an activity result based on
+        the returned value.
+        """
+        deferred = maybeDeferred(self._handle_repositories, message)
+
+        operation_result = {"type": "operation-result",
+                            "operation-id": message["operation-id"]}
+
+        def success(ignored):
+            operation_result["status"] = SUCCEEDED
+            return operation_result
+
+        def fail(failure):
+            operation_result["status"] = FAILED
+            text = "%s: %s" % (failure.type.__name__, failure.value)
+            operation_result["result-text"] = text
+            return operation_result
+
+        deferred.addCallbacks(success, fail)
+        deferred.addBoth(lambda result:
+                         self.manager.broker.send_message(result, urgent=True))
+
+    def _handle_process_error(self, result):
+        """
+        Turn a failed process command (code != 0) to a C{ProcessError}.
+        """
+        out, err, code = result
+        if code:
+            raise ProcessError("%s\n%s" % (out, err))
+
+    def _handle_process_failure(self, failure):
+        """
+        Turn a signaled process command to a C{ProcessError}.
+        """
+        out, err, signal = failure.value
+        raise ProcessError("%s\n%s" % (out, err))
 
     def _handle_repositories(self, message):
         """
@@ -58,3 +111,16 @@ class SourcesList(ManagerPlugin):
             sources_file = file(filename, "w")
             sources_file.write(source["content"])
             sources_file.close()
+
+        deferreds = []
+        for key in message["gpg-keys"]:
+            fd, path = tempfile.mkstemp()
+            os.close(fd)
+            key_file = file(path, "w")
+            key_file.write(key)
+            key_file.close()
+            deferred = self.run_process("/usr/bin/apt-key", ["add", path])
+            deferred.addCallbacks(self._handle_process_error,
+                                  self._handle_process_failure)
+            deferreds.append(deferred)
+        return gather_results(deferreds, consume_errors=True)

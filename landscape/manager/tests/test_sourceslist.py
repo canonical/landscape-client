@@ -1,6 +1,9 @@
 import os
 
+from twisted.internet.defer import Deferred
+
 from landscape.manager.sourceslist import SourcesList
+from landscape.manager.plugin import SUCCEEDED, FAILED
 
 from landscape.tests.helpers import LandscapeTest, ManagerHelper
 
@@ -23,6 +26,9 @@ class SourcesListTests(LandscapeTest):
         sources.write("\n")
         sources.close()
 
+        service = self.broker_service
+        service.message_store.set_accepted_types(["operation-result"])
+
     def test_comment_sources_list(self):
         """
         When getting a repository message, L{SourcesList} comments the whole
@@ -33,11 +39,35 @@ class SourcesListTests(LandscapeTest):
         sources.close()
 
         self.manager.dispatch_message(
-            {"type": "repositories", "sources": [], "gpg-keys": []})
+            {"type": "repositories", "sources": [], "gpg-keys": [],
+             "operation-id": 1})
 
         self.assertEqual(
             "#oki\n\n#doki\n#comment\n",
             file(self.sourceslist.SOURCES_LIST).read())
+
+        service = self.broker_service
+        self.assertMessages(service.message_store.get_pending_messages(),
+                            [{"type": "operation-result",
+                              "status": SUCCEEDED, "operation-id": 1}])
+
+    def test_random_failures(self):
+        """
+        If a failure happens during the manipulation of sources, the activity
+        is reported as FAILED with the error message.
+        """
+        self.sourceslist.SOURCES_LIST = "/doesntexist"
+
+        self.manager.dispatch_message(
+            {"type": "repositories", "sources": [], "gpg-keys": [],
+             "operation-id": 1})
+
+        msg = "IOError: [Errno 2] No such file or directory: '/doesntexist'"
+        service = self.broker_service
+        self.assertMessages(service.message_store.get_pending_messages(),
+                            [{"type": "operation-result",
+                              "result-text": msg, "status": FAILED,
+                              "operation-id": 1}])
 
     def test_rename_sources_list_d(self):
         """
@@ -56,7 +86,8 @@ class SourcesListTests(LandscapeTest):
         sources2.close()
 
         self.manager.dispatch_message(
-            {"type": "repositories", "sources": [], "gpg-keys": []})
+            {"type": "repositories", "sources": [], "gpg-keys": [],
+             "operation-id": 1})
 
         self.assertFalse(
             os.path.exists(
@@ -80,7 +111,8 @@ class SourcesListTests(LandscapeTest):
         sources = [{"name": "dev", "content": "oki\n"},
                    {"name": "lucid", "content": "doki\n"}]
         self.manager.dispatch_message(
-            {"type": "repositories", "sources": sources, "gpg-keys": []})
+            {"type": "repositories", "sources": sources, "gpg-keys": [],
+             "operation-id": 1})
 
         dev_file = os.path.join(self.sourceslist.SOURCES_LIST_D,
                                 "landscape-dev.list")
@@ -91,3 +123,76 @@ class SourcesListTests(LandscapeTest):
                                   "landscape-lucid.list")
         self.assertTrue(os.path.exists(lucid_file))
         self.assertEqual("doki\n", file(lucid_file).read())
+
+    def test_import_gpg_keys(self):
+        """
+        C{SourcesList} runs a process with apt-key for every keys in the
+        message.
+        """
+        deferred = Deferred()
+
+        def run_process(command, args):
+            self.assertEqual("/usr/bin/apt-key", command)
+            self.assertEqual("add", args[0])
+            filename = args[1]
+            self.assertEqual("Some key content", file(filename).read())
+            deferred.callback(("ok", "", 0))
+            return deferred
+
+        self.sourceslist.run_process = run_process
+
+        self.manager.dispatch_message(
+            {"type": "repositories", "sources": [],
+             "gpg-keys": ["Some key content"], "operation-id": 1})
+
+        return deferred
+
+    def test_failed_import_reported(self):
+        """
+        If the C{apt-key} command failed for some reasons, the output of the
+        command is reported and the activity fails.
+        """
+        deferred = Deferred()
+
+        def run_process(command, args):
+            deferred.callback(("nok", "some error", 1))
+            return deferred
+
+        self.sourceslist.run_process = run_process
+
+        self.manager.dispatch_message(
+            {"type": "repositories", "sources": [], "gpg-keys": ["key"],
+             "operation-id": 1})
+
+        service = self.broker_service
+        msg = "ProcessError: nok\nsome error"
+        self.assertMessages(service.message_store.get_pending_messages(),
+                            [{"type": "operation-result",
+                              "result-text": msg, "status": FAILED,
+                              "operation-id": 1}])
+        return deferred
+
+    def test_signaled_import_reported(self):
+        """
+        If the C{apt-key} fails with a signal, the output of the command is
+        reported and the activity fails.
+        """
+        deferred = Deferred()
+
+        def run_process(command, args):
+            deferred.errback(("nok", "some error", 1))
+            return deferred
+
+        self.sourceslist.run_process = run_process
+
+        self.manager.dispatch_message(
+            {"type": "repositories", "sources": [], "gpg-keys": ["key"],
+             "operation-id": 1})
+
+        service = self.broker_service
+        msg = "ProcessError: nok\nsome error"
+        self.assertMessages(service.message_store.get_pending_messages(),
+                            [{"type": "operation-result",
+                              "result-text": msg, "status": FAILED,
+                              "operation-id": 1}])
+        return deferred
