@@ -1,3 +1,4 @@
+import glob
 import os
 import tempfile
 
@@ -21,7 +22,7 @@ class SourcesList(ManagerPlugin):
 
         The format is the following:
 
-        {"repositories": [
+        {"sources": [
           {"name": "repository-name",
            "content":
               "deb http://archive.ubuntu.com/ubuntu/ maverick main\n\
@@ -37,7 +38,6 @@ class SourcesList(ManagerPlugin):
                       YYY
                       -----END PGP PUBLIC KEY BLOCK-----"]}
         """
-        names = [repository["name"] for repository in message["repositories"]]
         fd, path = tempfile.mkstemp()
         os.close(fd)
         new_sources = file(path, "w")
@@ -48,3 +48,13 @@ class SourcesList(ManagerPlugin):
                 new_sources.write("#%s" % line)
         new_sources.close()
         os.rename(path, self.SOURCES_LIST)
+
+        for filename in glob.glob(os.path.join(self.SOURCES_LIST_D, "*.list")):
+            os.rename(filename, "%s.save" % filename)
+
+        for source in message["sources"]:
+            filename = os.path.join(self.SOURCES_LIST_D,
+                                    "landscape-%s.list" % source["name"])
+            sources_file = file(filename, "w")
+            sources_file.write(source["content"])
+            sources_file.close()
