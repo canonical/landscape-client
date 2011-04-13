@@ -196,3 +196,30 @@ class SourcesListTests(LandscapeTest):
                               "result-text": msg, "status": FAILED,
                               "operation-id": 1}])
         return deferred
+
+    def test_failed_import_no_changes(self):
+        """
+        If the C{apt-key} command failed for some reasons, the current
+        repositories aren't changed.
+        """
+        deferred = Deferred()
+
+        def run_process(command, args):
+            deferred.callback(("nok", "some error", 1))
+            return deferred
+
+        self.sourceslist.run_process = run_process
+
+        sources = file(self.sourceslist.SOURCES_LIST, "w")
+        sources.write("oki\n\ndoki\n#comment\n")
+        sources.close()
+
+        self.manager.dispatch_message(
+            {"type": "repositories", "sources": [], "gpg-keys": ["key"],
+             "operation-id": 1})
+
+        self.assertEqual(
+            "oki\n\ndoki\n#comment\n",
+            file(self.sourceslist.SOURCES_LIST).read())
+
+        return deferred

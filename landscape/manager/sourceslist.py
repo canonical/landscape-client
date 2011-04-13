@@ -91,6 +91,22 @@ class SourcesList(ManagerPlugin):
                       YYY
                       -----END PGP PUBLIC KEY BLOCK-----"]}
         """
+        deferreds = []
+        for key in message["gpg-keys"]:
+            fd, path = tempfile.mkstemp()
+            os.close(fd)
+            key_file = file(path, "w")
+            key_file.write(key)
+            key_file.close()
+            deferred = self.run_process("/usr/bin/apt-key", ["add", path])
+            deferred.addCallbacks(self._handle_process_error,
+                                  self._handle_process_failure)
+            deferreds.append(deferred)
+        return gather_results(
+            deferreds, consume_errors=True).addCallback(
+                self._handle_sources, message["sources"])
+
+    def _handle_sources(self, ignored, sources):
         fd, path = tempfile.mkstemp()
         os.close(fd)
         new_sources = file(path, "w")
@@ -105,22 +121,9 @@ class SourcesList(ManagerPlugin):
         for filename in glob.glob(os.path.join(self.SOURCES_LIST_D, "*.list")):
             os.rename(filename, "%s.save" % filename)
 
-        for source in message["sources"]:
+        for source in sources:
             filename = os.path.join(self.SOURCES_LIST_D,
                                     "landscape-%s.list" % source["name"])
             sources_file = file(filename, "w")
             sources_file.write(source["content"])
             sources_file.close()
-
-        deferreds = []
-        for key in message["gpg-keys"]:
-            fd, path = tempfile.mkstemp()
-            os.close(fd)
-            key_file = file(path, "w")
-            key_file.write(key)
-            key_file.close()
-            deferred = self.run_process("/usr/bin/apt-key", ["add", path])
-            deferred.addCallbacks(self._handle_process_error,
-                                  self._handle_process_failure)
-            deferreds.append(deferred)
-        return gather_results(deferreds, consume_errors=True)
