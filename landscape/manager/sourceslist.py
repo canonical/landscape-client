@@ -65,8 +65,11 @@ class SourcesList(ManagerPlugin):
         """
         Turn a signaled process command to a C{ProcessError}.
         """
-        out, err, signal = failure.value
-        raise ProcessError("%s\n%s" % (out, err))
+        if not failure.check(ProcessError):
+            out, err, signal = failure.value
+            raise ProcessError("%s\n%s" % (out, err))
+        else:
+            return failure
 
     def _handle_repositories(self, message):
         """
@@ -100,8 +103,8 @@ class SourcesList(ManagerPlugin):
             deferred.addCallback(
                 lambda ignore:
                     self.run_process("/usr/bin/apt-key", ["add", path]))
-            deferred.addCallbacks(self._handle_process_error,
-                                  self._handle_process_failure)
+            deferred.addCallback(self._handle_process_error)
+        deferred.addErrback(self._handle_process_failure)
         return deferred.addCallback(
             self._handle_sources, message["sources"])
 

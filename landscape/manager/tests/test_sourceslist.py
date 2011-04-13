@@ -254,3 +254,32 @@ class SourcesListTests(LandscapeTest):
                             [{"type": "operation-result",
                               "status": SUCCEEDED, "operation-id": 1}])
         return gather_results(deferreds)
+
+    def test_multiple_import_failure(self):
+        """
+        If multiple keys are specified, and that the first one fails, the error
+        is correctly reported.
+        """
+        deferred1 = Deferred()
+        deferred2 = Deferred()
+        deferreds = [deferred1, deferred2]
+
+        def run_process(command, args):
+            return deferreds.pop(0)
+
+        self.sourceslist.run_process = run_process
+
+        self.manager.dispatch_message(
+            {"type": "repositories", "sources": [],
+             "gpg-keys": ["key1", "key2"], "operation-id": 1})
+
+        deferred1.callback(("error", "", 1))
+        deferred2.callback(("error", "", 1))
+
+        msg = "ProcessError: error\n"
+        service = self.broker_service
+        self.assertMessages(service.message_store.get_pending_messages(),
+                            [{"type": "operation-result",
+                              "result-text": msg, "status": FAILED,
+                              "operation-id": 1}])
+        return gather_results(deferreds)
