@@ -5,6 +5,7 @@ from twisted.internet.defer import Deferred
 from landscape.manager.sourceslist import SourcesList
 from landscape.manager.plugin import SUCCEEDED, FAILED
 
+from landscape.lib.twisted_util import gather_results
 from landscape.tests.helpers import LandscapeTest, ManagerHelper
 
 
@@ -223,3 +224,33 @@ class SourcesListTests(LandscapeTest):
             file(self.sourceslist.SOURCES_LIST).read())
 
         return deferred
+
+    def test_multiple_import_sequential(self):
+        """
+        If multiple keys are specified, the imports run sequentially, not in
+        parallel.
+        """
+        deferred1 = Deferred()
+        deferred2 = Deferred()
+        deferreds = [deferred1, deferred2]
+
+        def run_process(command, args):
+            return deferreds.pop(0)
+
+        self.sourceslist.run_process = run_process
+
+        self.manager.dispatch_message(
+            {"type": "repositories", "sources": [],
+             "gpg-keys": ["key1", "key2"], "operation-id": 1})
+
+        self.assertEqual(1, len(deferreds))
+        deferred1.callback(("ok", "", 0))
+
+        self.assertEqual(0, len(deferreds))
+        deferred2.callback(("ok", "", 0))
+
+        service = self.broker_service
+        self.assertMessages(service.message_store.get_pending_messages(),
+                            [{"type": "operation-result",
+                              "status": SUCCEEDED, "operation-id": 1}])
+        return gather_results(deferreds)

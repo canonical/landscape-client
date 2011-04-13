@@ -2,10 +2,9 @@ import glob
 import os
 import tempfile
 
-from twisted.internet.defer import maybeDeferred
+from twisted.internet.defer import succeed
 from twisted.internet.utils import getProcessOutputAndValue
 
-from landscape.lib.twisted_util import gather_results
 from landscape.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
 
 
@@ -35,7 +34,7 @@ class SourcesList(ManagerPlugin):
         Wrap C{_handle_repositories} to generate an activity result based on
         the returned value.
         """
-        deferred = maybeDeferred(self._handle_repositories, message)
+        deferred = self._handle_repositories(message)
 
         operation_result = {"type": "operation-result",
                             "operation-id": message["operation-id"]}
@@ -91,22 +90,23 @@ class SourcesList(ManagerPlugin):
                       YYY
                       -----END PGP PUBLIC KEY BLOCK-----"]}
         """
-        deferreds = []
+        deferred = succeed(None)
         for key in message["gpg-keys"]:
             fd, path = tempfile.mkstemp()
             os.close(fd)
             key_file = file(path, "w")
             key_file.write(key)
             key_file.close()
-            deferred = self.run_process("/usr/bin/apt-key", ["add", path])
+            deferred.addCallback(
+                lambda ignore:
+                    self.run_process("/usr/bin/apt-key", ["add", path]))
             deferred.addCallbacks(self._handle_process_error,
                                   self._handle_process_failure)
-            deferreds.append(deferred)
-        return gather_results(
-            deferreds, consume_errors=True).addCallback(
-                self._handle_sources, message["sources"])
+        return deferred.addCallback(
+            self._handle_sources, message["sources"])
 
     def _handle_sources(self, ignored, sources):
+        """Handle sources repositories."""
         fd, path = tempfile.mkstemp()
         os.close(fd)
         new_sources = file(path, "w")
