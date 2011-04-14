@@ -10,8 +10,8 @@ class NetworkActivityTest(LandscapeTest):
     stats_template = """\
 Inter-|   Receive                           |  Transmit
  face |bytes    packets compressed multicast|bytes    packets errs drop fifo
-    lo:%(lo_in)d   %(lo_in_p)d       0         0       %(lo_out)d %(lo_out_p)d    0    0    0
-    eth0: %(eth0_in)d   12539      0     62  %(eth0_out)d   12579    0    0   0
+    lo:%(lo_in)d   %(lo_in_p)d   0     0   %(lo_out)d %(lo_out_p)d  0  0  0
+    eth0: %(eth0_in)d   12539    0     62  %(eth0_out)d   12579  0  0  0
     %(extra)s
 """
 
@@ -31,12 +31,12 @@ Inter-|   Receive                           |  Transmit
     def write_activity(self, lo_in=0, lo_out=0, eth0_in=0, eth0_out=0,
                         extra="", lo_in_p=0, lo_out_p=0, **kw):
         kw.update(dict(
-            lo_in = lo_in,
-            lo_out = lo_out,
-            lo_in_p = lo_in_p,
-            lo_out_p = lo_out_p,
-            eth0_in = eth0_in,
-            eth0_out = eth0_out,
+            lo_in=lo_in,
+            lo_out=lo_out,
+            lo_in_p=lo_in_p,
+            lo_out_p=lo_out_p,
+            eth0_in=eth0_in,
+            eth0_out=eth0_out,
             extra=extra))
         self.activity_file.seek(0, 0)
         self.activity_file.truncate()
