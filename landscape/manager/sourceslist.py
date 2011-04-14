@@ -123,7 +123,8 @@ class SourcesList(ManagerPlugin):
         os.close(fd)
         new_sources = file(path, "w")
         for line in file(self.SOURCES_LIST):
-            if not line.strip() or line.startswith("#"):
+            stripped_line = line.strip()
+            if not stripped_line or stripped_line.startswith("#"):
                 new_sources.write(line)
             else:
                 new_sources.write("#%s" % line)

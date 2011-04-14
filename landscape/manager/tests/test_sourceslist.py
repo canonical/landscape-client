@@ -36,7 +36,7 @@ class SourcesListTests(LandscapeTest):
         sources.list file.
         """
         sources = file(self.sourceslist.SOURCES_LIST, "w")
-        sources.write("oki\n\ndoki\n#comment\n")
+        sources.write("oki\n\ndoki\n#comment\n # other comment\n")
         sources.close()
 
         self.manager.dispatch_message(
@@ -44,7 +44,7 @@ class SourcesListTests(LandscapeTest):
              "operation-id": 1})
 
         self.assertEqual(
-            "#oki\n\n#doki\n#comment\n",
+            "#oki\n\n#doki\n#comment\n # other comment\n",
             file(self.sourceslist.SOURCES_LIST).read())
 
         service = self.broker_service
