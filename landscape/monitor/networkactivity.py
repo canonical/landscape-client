@@ -21,7 +21,7 @@ class NetworkActivity(MonitorPlugin):
     run_interval = 30
     _rollover_maxint = 0
 
-    max_free_space_items_to_exchange = 200
+    max_network_items_to_exchange = 200
 
     def __init__(self, network_activity_file="/proc/net/dev",
                  create_time=time.time):
@@ -46,11 +46,11 @@ class NetworkActivity(MonitorPlugin):
         for interface, data in list(self._network_activity.items()):
             if data:
                 network_activity[interface] = []
-                while data and items < self.max_free_space_items_to_exchange:
+                while data and items < self.max_network_items_to_exchange:
                     item = data.pop(0)
                     network_activity[interface].append(item)
                     items += 1
-                if items >= self.max_free_space_items_to_exchange:
+                if items >= self.max_network_items_to_exchange:
                     break
         if not network_activity:
             return
