@@ -188,3 +188,31 @@ Inter-|   Receive                           |  Transmit
     def test_config(self):
         """The network activity plugin is enabled by default."""
         self.assertIn("NetworkActivity", self.config.plugin_factories)
+
+    def test_limit_amount_of_items(self):
+        """
+        The network plugin doesn't send too many items at once in a single
+        network message, to not crush the server.
+        """
+        def extra(data):
+            result = ""
+            for i in range(50):
+                result += (
+"""eth%d: %d   12539      0     62  %d   12579    0    0   0\n    """
+                    % (i, data, data))
+            return result
+        for i in range(1, 10):
+            data = i * 1000
+            self.write_activity(lo_out=data, eth0_out=data, extra=extra(data))
+            self.plugin.run()
+            self.reactor.advance(self.monitor.step_size)
+        # We have created 408 items. It should be sent in 3 messages.
+        message = self.plugin.create_message()
+        items = sum(len(i) for i in message["activities"].values())
+        self.assertEqual(200, items)
+        message = self.plugin.create_message()
+        items = sum(len(i) for i in message["activities"].values())
+        self.assertEqual(200, items)
+        message = self.plugin.create_message()
+        items = sum(len(i) for i in message["activities"].values())
+        self.assertEqual(8, items)

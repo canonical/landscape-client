@@ -21,6 +21,8 @@ class NetworkActivity(MonitorPlugin):
     run_interval = 30
     _rollover_maxint = 0
 
+    max_free_space_items_to_exchange = 200
+
     def __init__(self, network_activity_file="/proc/net/dev",
                  create_time=time.time):
         self._source_file = network_activity_file
@@ -39,10 +41,19 @@ class NetworkActivity(MonitorPlugin):
         self.call_on_accepted("network-activity", self.exchange, True)
 
     def create_message(self):
-        network_activity = self._network_activity
+        network_activity = {}
+        items = 0
+        for interface, data in list(self._network_activity.items()):
+            if data:
+                network_activity[interface] = []
+                while data and items < self.max_free_space_items_to_exchange:
+                    item = data.pop(0)
+                    network_activity[interface].append(item)
+                    items += 1
+                if items >= self.max_free_space_items_to_exchange:
+                    break
         if not network_activity:
             return
-        self._network_activity = {}
         return {"type": "network-activity", "activities": network_activity}
 
     def send_message(self, urgent):
