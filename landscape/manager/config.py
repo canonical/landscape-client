@@ -5,7 +5,7 @@ from landscape.manager.scriptexecution import ALL_USERS
 
 
 ALL_PLUGINS = ["ProcessKiller", "PackageManager", "UserManager",
-               "ShutdownManager", "Eucalyptus", "SourcesList"]
+               "ShutdownManager", "Eucalyptus", "AptSources"]
 
 
 class ManagerConfiguration(Configuration):

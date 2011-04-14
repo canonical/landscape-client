@@ -2,19 +2,19 @@ import os
 
 from twisted.internet.defer import Deferred
 
-from landscape.manager.sourceslist import SourcesList
+from landscape.manager.aptsources import AptSources
 from landscape.manager.plugin import SUCCEEDED, FAILED
 
 from landscape.lib.twisted_util import gather_results
 from landscape.tests.helpers import LandscapeTest, ManagerHelper
 
 
-class SourcesListTests(LandscapeTest):
+class AptSourcesTests(LandscapeTest):
     helpers = [ManagerHelper]
 
     def setUp(self):
-        super(SourcesListTests, self).setUp()
-        self.sourceslist = SourcesList()
+        super(AptSourcesTests, self).setUp()
+        self.sourceslist = AptSources()
         self.sources_path = self.makeDir()
         self.sourceslist.SOURCES_LIST = os.path.join(self.sources_path,
                                                      "sources.list")
@@ -32,7 +32,7 @@ class SourcesListTests(LandscapeTest):
 
     def test_comment_sources_list(self):
         """
-        When getting a repository message, L{SourcesList} comments the whole
+        When getting a repository message, L{AptSources} comments the whole
         sources.list file.
         """
         sources = file(self.sourceslist.SOURCES_LIST, "w")
@@ -107,7 +107,7 @@ class SourcesListTests(LandscapeTest):
     def test_create_landscape_sources(self):
         """
         For every sources listed in the sources field of the message,
-        C{SourcesList} creates a file with the content in sources.list.d.
+        C{AptSources} creates a file with the content in sources.list.d.
         """
         sources = [{"name": "dev", "content": "oki\n"},
                    {"name": "lucid", "content": "doki\n"}]
@@ -127,7 +127,7 @@ class SourcesListTests(LandscapeTest):
 
     def test_import_gpg_keys(self):
         """
-        C{SourcesList} runs a process with apt-key for every keys in the
+        C{AptSources} runs a process with apt-key for every keys in the
         message.
         """
         deferred = Deferred()

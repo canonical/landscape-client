@@ -12,14 +12,14 @@ class ProcessError(Exception):
     """Exception raised when running a process fails."""
 
 
-class SourcesList(ManagerPlugin):
+class AptSources(ManagerPlugin):
     """A plugin managing sources.list content."""
 
     SOURCES_LIST = "/etc/apt/sources.list"
     SOURCES_LIST_D = "/etc/apt/sources.list.d"
 
     def register(self, registry):
-        super(SourcesList, self).register(registry)
+        super(AptSources, self).register(registry)
         registry.register_message(
             "apt-sources-replace", self._wrap_handle_repositories)
 
