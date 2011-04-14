@@ -71,6 +71,14 @@ class SourcesList(ManagerPlugin):
         else:
             return failure
 
+    def _remove_and_continue(self, passthrough, path):
+        """
+        Remove the temporary file created for the process, and forward the
+        result.
+        """
+        os.unlink(path)
+        return passthrough
+
     def _handle_repositories(self, message):
         """
         Handle a list of repositories to set on the machine.
@@ -104,7 +112,7 @@ class SourcesList(ManagerPlugin):
                 lambda ignore, path=path:
                     self.run_process("/usr/bin/apt-key", ["add", path]))
             deferred.addCallback(self._handle_process_error)
-            deferred.addCallback(lambda ignore, path=path: os.unlink(path))
+            deferred.addBoth(self._remove_and_continue, path)
         deferred.addErrback(self._handle_process_failure)
         return deferred.addCallback(
             self._handle_sources, message["sources"])

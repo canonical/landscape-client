@@ -171,6 +171,29 @@ class SourcesListTests(LandscapeTest):
 
         return deferred
 
+    def test_failed_import_delete_temporary_files(self):
+        """
+        The files created to be imported by C{apt-key} are removed after the
+        import, even if there is a failure.
+        """
+        deferred = Deferred()
+        filenames = []
+
+        def run_process(command, args):
+            filenames.append(args[1])
+            deferred.callback(("error", "", 1))
+            return deferred
+
+        self.sourceslist.run_process = run_process
+
+        self.manager.dispatch_message(
+            {"type": "repositories", "sources": [],
+             "gpg-keys": ["Some key content"], "operation-id": 1})
+
+        self.assertFalse(os.path.exists(filenames[0]))
+
+        return deferred
+
     def test_failed_import_reported(self):
         """
         If the C{apt-key} command failed for some reasons, the output of the
