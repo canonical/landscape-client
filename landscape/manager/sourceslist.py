@@ -21,7 +21,7 @@ class SourcesList(ManagerPlugin):
     def register(self, registry):
         super(SourcesList, self).register(registry)
         registry.register_message(
-            "repositories", self._wrap_handle_repositories)
+            "apt-sources-replace", self._wrap_handle_repositories)
 
     def run_process(self, command, args):
         """

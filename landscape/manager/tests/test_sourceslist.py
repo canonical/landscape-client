@@ -40,7 +40,7 @@ class SourcesListTests(LandscapeTest):
         sources.close()
 
         self.manager.dispatch_message(
-            {"type": "repositories", "sources": [], "gpg-keys": [],
+            {"type": "apt-sources-replace", "sources": [], "gpg-keys": [],
              "operation-id": 1})
 
         self.assertEqual(
@@ -60,7 +60,7 @@ class SourcesListTests(LandscapeTest):
         self.sourceslist.SOURCES_LIST = "/doesntexist"
 
         self.manager.dispatch_message(
-            {"type": "repositories", "sources": [], "gpg-keys": [],
+            {"type": "apt-sources-replace", "sources": [], "gpg-keys": [],
              "operation-id": 1})
 
         msg = "IOError: [Errno 2] No such file or directory: '/doesntexist'"
@@ -87,7 +87,7 @@ class SourcesListTests(LandscapeTest):
         sources2.close()
 
         self.manager.dispatch_message(
-            {"type": "repositories", "sources": [], "gpg-keys": [],
+            {"type": "apt-sources-replace", "sources": [], "gpg-keys": [],
              "operation-id": 1})
 
         self.assertFalse(
@@ -112,7 +112,7 @@ class SourcesListTests(LandscapeTest):
         sources = [{"name": "dev", "content": "oki\n"},
                    {"name": "lucid", "content": "doki\n"}]
         self.manager.dispatch_message(
-            {"type": "repositories", "sources": sources, "gpg-keys": [],
+            {"type": "apt-sources-replace", "sources": sources, "gpg-keys": [],
              "operation-id": 1})
 
         dev_file = os.path.join(self.sourceslist.SOURCES_LIST_D,
@@ -143,7 +143,7 @@ class SourcesListTests(LandscapeTest):
         self.sourceslist.run_process = run_process
 
         self.manager.dispatch_message(
-            {"type": "repositories", "sources": [],
+            {"type": "apt-sources-replace", "sources": [],
              "gpg-keys": ["Some key content"], "operation-id": 1})
 
         return deferred
@@ -164,7 +164,7 @@ class SourcesListTests(LandscapeTest):
         self.sourceslist.run_process = run_process
 
         self.manager.dispatch_message(
-            {"type": "repositories", "sources": [],
+            {"type": "apt-sources-replace", "sources": [],
              "gpg-keys": ["Some key content"], "operation-id": 1})
 
         self.assertFalse(os.path.exists(filenames[0]))
@@ -187,7 +187,7 @@ class SourcesListTests(LandscapeTest):
         self.sourceslist.run_process = run_process
 
         self.manager.dispatch_message(
-            {"type": "repositories", "sources": [],
+            {"type": "apt-sources-replace", "sources": [],
              "gpg-keys": ["Some key content"], "operation-id": 1})
 
         self.assertFalse(os.path.exists(filenames[0]))
@@ -208,7 +208,7 @@ class SourcesListTests(LandscapeTest):
         self.sourceslist.run_process = run_process
 
         self.manager.dispatch_message(
-            {"type": "repositories", "sources": [], "gpg-keys": ["key"],
+            {"type": "apt-sources-replace", "sources": [], "gpg-keys": ["key"],
              "operation-id": 1})
 
         service = self.broker_service
@@ -233,7 +233,7 @@ class SourcesListTests(LandscapeTest):
         self.sourceslist.run_process = run_process
 
         self.manager.dispatch_message(
-            {"type": "repositories", "sources": [], "gpg-keys": ["key"],
+            {"type": "apt-sources-replace", "sources": [], "gpg-keys": ["key"],
              "operation-id": 1})
 
         service = self.broker_service
@@ -262,7 +262,7 @@ class SourcesListTests(LandscapeTest):
         sources.close()
 
         self.manager.dispatch_message(
-            {"type": "repositories", "sources": [], "gpg-keys": ["key"],
+            {"type": "apt-sources-replace", "sources": [], "gpg-keys": ["key"],
              "operation-id": 1})
 
         self.assertEqual(
@@ -286,7 +286,7 @@ class SourcesListTests(LandscapeTest):
         self.sourceslist.run_process = run_process
 
         self.manager.dispatch_message(
-            {"type": "repositories", "sources": [],
+            {"type": "apt-sources-replace", "sources": [],
              "gpg-keys": ["key1", "key2"], "operation-id": 1})
 
         self.assertEqual(1, len(deferreds))
@@ -316,7 +316,7 @@ class SourcesListTests(LandscapeTest):
         self.sourceslist.run_process = run_process
 
         self.manager.dispatch_message(
-            {"type": "repositories", "sources": [],
+            {"type": "apt-sources-replace", "sources": [],
              "gpg-keys": ["key1", "key2"], "operation-id": 1})
 
         deferred1.callback(("error", "", 1))
