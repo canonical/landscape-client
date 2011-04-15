@@ -7,6 +7,7 @@ from landscape.manager.plugin import SUCCEEDED, FAILED
 
 from landscape.lib.twisted_util import gather_results
 from landscape.tests.helpers import LandscapeTest, ManagerHelper
+from landscape.package.reporter import find_reporter_command
 
 
 class AptSourcesTests(LandscapeTest):
@@ -29,6 +30,8 @@ class AptSourcesTests(LandscapeTest):
 
         service = self.broker_service
         service.message_store.set_accepted_types(["operation-result"])
+
+        self.sourceslist.run_process = lambda cmd, args: None
 
     def test_comment_sources_list(self):
         """
@@ -157,9 +160,10 @@ class AptSourcesTests(LandscapeTest):
         filenames = []
 
         def run_process(command, args):
-            filenames.append(args[1])
-            deferred.callback(("ok", "", 0))
-            return deferred
+            if not filenames:
+                filenames.append(args[1])
+                deferred.callback(("ok", "", 0))
+                return deferred
 
         self.sourceslist.run_process = run_process
 
@@ -281,6 +285,8 @@ class AptSourcesTests(LandscapeTest):
         deferreds = [deferred1, deferred2]
 
         def run_process(command, args):
+            if not deferreds:
+                return None
             return deferreds.pop(0)
 
         self.sourceslist.run_process = run_process
@@ -329,3 +335,25 @@ class AptSourcesTests(LandscapeTest):
                               "result-text": msg, "status": FAILED,
                               "operation-id": 1}])
         return gather_results(deferreds)
+
+    def test_run_reporter(self):
+        """
+        After receiving a message, L{AptSources} triggers a reporter run to
+        have the new packages reported to the server.
+        """
+        deferred = Deferred()
+
+        def run_process(command, args):
+            self.assertEqual(find_reporter_command(), command)
+            self.assertEqual(["--force-smart-update", "--config=%s" %
+                              self.manager.config.config], args)
+            deferred.callback(("ok", "", 0))
+            return deferred
+
+        self.sourceslist.run_process = run_process
+
+        self.manager.dispatch_message(
+            {"type": "apt-sources-replace", "sources": [], "gpg-keys": [],
+             "operation-id": 1})
+
+        return deferred

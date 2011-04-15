@@ -6,6 +6,7 @@ from twisted.internet.defer import succeed
 from twisted.internet.utils import getProcessOutputAndValue
 
 from landscape.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
+from landscape.package.reporter import find_reporter_command
 
 
 class ProcessError(Exception):
@@ -140,3 +141,15 @@ class AptSources(ManagerPlugin):
             sources_file = file(filename, "w")
             sources_file.write(source["content"])
             sources_file.close()
+        return self._run_reporter()
+
+    def _run_reporter(self):
+        """Once the repositories are modified, trigger a reporter run."""
+        reporter = find_reporter_command()
+
+        # Force a smart-update run, because the sources.list has changed
+        args = ["--force-smart-update"]
+
+        if self.registry.config.config is not None:
+            args.append("--config=%s" % self.registry.config.config)
+        return self.run_process(reporter, args)
