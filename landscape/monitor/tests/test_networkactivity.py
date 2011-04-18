@@ -10,8 +10,8 @@ class NetworkActivityTest(LandscapeTest):
     stats_template = """\
 Inter-|   Receive                           |  Transmit
  face |bytes    packets compressed multicast|bytes    packets errs drop fifo
-    lo:%(lo_in)d   %(lo_in_p)d       0         0       %(lo_out)d %(lo_out_p)d    0    0    0
-    eth0: %(eth0_in)d   12539      0     62  %(eth0_out)d   12579    0    0   0
+    lo:%(lo_in)d   %(lo_in_p)d   0     0   %(lo_out)d %(lo_out_p)d  0  0  0
+    eth0: %(eth0_in)d   12539    0     62  %(eth0_out)d   12579  0  0  0
     %(extra)s
 """
 
@@ -31,12 +31,12 @@ Inter-|   Receive                           |  Transmit
     def write_activity(self, lo_in=0, lo_out=0, eth0_in=0, eth0_out=0,
                         extra="", lo_in_p=0, lo_out_p=0, **kw):
         kw.update(dict(
-            lo_in = lo_in,
-            lo_out = lo_out,
-            lo_in_p = lo_in_p,
-            lo_out_p = lo_out_p,
-            eth0_in = eth0_in,
-            eth0_out = eth0_out,
+            lo_in=lo_in,
+            lo_out=lo_out,
+            lo_in_p=lo_in_p,
+            lo_out_p=lo_out_p,
+            eth0_in=eth0_in,
+            eth0_out=eth0_out,
             extra=extra))
         self.activity_file.seek(0, 0)
         self.activity_file.truncate()
@@ -188,3 +188,31 @@ Inter-|   Receive                           |  Transmit
     def test_config(self):
         """The network activity plugin is enabled by default."""
         self.assertIn("NetworkActivity", self.config.plugin_factories)
+
+    def test_limit_amount_of_items(self):
+        """
+        The network plugin doesn't send too many items at once in a single
+        network message, to not crush the server.
+        """
+        def extra(data):
+            result = ""
+            for i in range(50):
+                result += (
+"""eth%d: %d   12539      0     62  %d   12579    0    0   0\n    """
+                    % (i, data, data))
+            return result
+        for i in range(1, 10):
+            data = i * 1000
+            self.write_activity(lo_out=data, eth0_out=data, extra=extra(data))
+            self.plugin.run()
+            self.reactor.advance(self.monitor.step_size)
+        # We have created 408 items. It should be sent in 3 messages.
+        message = self.plugin.create_message()
+        items = sum(len(i) for i in message["activities"].values())
+        self.assertEqual(200, items)
+        message = self.plugin.create_message()
+        items = sum(len(i) for i in message["activities"].values())
+        self.assertEqual(200, items)
+        message = self.plugin.create_message()
+        items = sum(len(i) for i in message["activities"].values())
+        self.assertEqual(8, items)
