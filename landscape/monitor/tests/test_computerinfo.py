@@ -1,4 +1,5 @@
 import re
+import os
 
 from landscape.monitor.computerinfo import ComputerInfo
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
@@ -42,6 +43,27 @@ PageTables:       2748 kB
 VmallocTotal:   114680 kB
 VmallocUsed:      6912 kB
 VmallocChunk:   107432 kB
+"""
+
+    sample_kvm_cpuinfo = """
+processor	: 0
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 2
+model name	: QEMU Virtual CPU version 0.14.0
+stepping	: 3
+cpu MHz		: 2653.112
+cache size	: 4096 KB
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 4
+wp		: yes
+flags		: fpu de pse tsc msr pae mce cx8 apic sep mtrr pge mca
+bogomips	: 5306.22
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 40 bits physical, 48 bits virtual
+power management:
 """
 
     def setUp(self):
@@ -272,14 +294,15 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         meminfo_filename = self.makeFile(self.sample_memory_info)
         plugin = ComputerInfo(get_fqdn=get_fqdn,
                               meminfo_file=meminfo_filename,
-                              lsb_release_filename=self.lsb_release_filename)
+                              lsb_release_filename=self.lsb_release_filename,
+                              root_path=self.makeDir())
         self.monitor.add(plugin)
         plugin.exchange()
         self.reactor.fire("resynchronize")
         plugin.exchange()
         computer_info = {"type": "computer-info", "hostname": "ooga.local",
                          "timestamp": 0, "total-memory": 1510,
-                         "total-swap": 1584}
+                         "total-swap": 1584, "vm-info": ""}
         dist_info = {"type": "distribution-info",
                      "code-name": "dapper", "description": "Ubuntu 6.06.1 LTS",
                      "distributor-id": "Ubuntu", "release": "6.06"}
@@ -324,3 +347,146 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
 
         self.mstore.set_accepted_types(["distribution-info", "computer-info"])
         self.assertMessages(list(self.mstore.get_pending_messages()), [])
+
+    def test_vminfo_empty_when_no_virtualization_is_found(self):
+        """
+        L{ComputerInfo} should always have the vm-info key even when no
+        virtualization is used.
+
+        And it should be an empty string.
+        """
+        self.mstore.set_accepted_types(["computer-info"])
+        root_path = self.makeDir()
+        plugin = ComputerInfo(root_path=root_path)
+        self.monitor.add(plugin)
+
+        plugin.exchange()
+        message = self.mstore.get_pending_messages()[0]
+        self.assertTrue("vm-info" in message)
+        self.assertEqual("", message["vm-info"])
+
+    def test_vminfo_is_openvz_when_proc_vz_exists(self):
+        """
+        L{ComputerInfo} should have 'openvz' as the value of vm-info when
+        /proc/vz exists.
+        """
+        root_path = self.makeDir()
+        proc_path = os.path.join(root_path, "proc")
+        self.makeDir(path=proc_path)
+
+        proc_vz_path = os.path.join(proc_path, "vz")
+        self.makeFile(path=proc_vz_path, content="foo")
+
+        self.mstore.set_accepted_types(["computer-info"])
+        plugin = ComputerInfo(root_path=root_path)
+        self.monitor.add(plugin)
+
+        plugin.exchange()
+        message = self.mstore.get_pending_messages()[0]
+        self.assertEquals('openvz', message["vm-info"])
+
+    def test_vminfo_is_xen_when_proc_sys_xen_exists(self):
+        """
+        L{ComputerInfo} should have 'xen' as the value of vm-info when
+        /proc/sys/xen exists.
+        """
+        root_path = self.makeDir()
+        proc_path = os.path.join(root_path, "proc")
+        self.makeDir(path=proc_path)
+
+        proc_sys_path = os.path.join(proc_path, "sys")
+        self.makeDir(path=proc_sys_path)
+
+        proc_sys_xen_path = os.path.join(proc_sys_path, "xen")
+        self.makeFile(path=proc_sys_xen_path, content="foo")
+
+        self.mstore.set_accepted_types(["computer-info"])
+        plugin = ComputerInfo(root_path=root_path)
+        self.monitor.add(plugin)
+
+        plugin.exchange()
+        message = self.mstore.get_pending_messages()[0]
+        self.assertEquals('xen', message["vm-info"])
+
+    def test_vminfo_is_xen_when_sys_bus_xen_exists(self):
+        """
+        L{ComputerInfo} should have 'xen' as value of vm-info when
+        /sys/bus/xen exists
+        """
+        root_path = self.makeDir()
+        sys_path = os.path.join(root_path, "sys")
+        self.makeDir(path=sys_path)
+
+        sys_bus_path = os.path.join(sys_path, "bus")
+        self.makeDir(path=sys_bus_path)
+
+        sys_bus_xen_path = os.path.join(sys_bus_path, "xen")
+        self.makeFile(path=sys_bus_xen_path, content="foo")
+
+        self.mstore.set_accepted_types(["computer-info"])
+        plugin = ComputerInfo(root_path=root_path)
+        self.monitor.add(plugin)
+
+        plugin.exchange()
+        message = self.mstore.get_pending_messages()[0]
+        self.assertEquals('xen', message["vm-info"])
+
+    def test_vminfo_is_xen_when_proc_xen_exists(self):
+        """
+        L{ComputerInfo} should have 'xen' as value of vm-info when
+        /proc/xen exists.
+        """
+        root_path = self.makeDir()
+        proc_path = os.path.join(root_path, "proc")
+        self.makeDir(path=proc_path)
+
+        proc_xen_path = os.path.join(proc_path, "xen")
+        self.makeFile(path=proc_xen_path, content="foo")
+
+        self.mstore.set_accepted_types(["computer-info"])
+        plugin = ComputerInfo(root_path=root_path)
+        self.monitor.add(plugin)
+
+        plugin.exchange()
+        message = self.mstore.get_pending_messages()[0]
+        self.assertEquals('xen', message["vm-info"])
+
+    def test_vminfo_is_kvm_when_qemu_is_found_in_proc_cpuinfo(self):
+        """
+        L{ComputerInfo} should have 'kvm' as value of vm-info when
+        QEMU Virtual CPU is found in /proc/cpuinfo.
+        """
+        root_path = self.makeDir()
+        proc_path = os.path.join(root_path, "proc")
+        self.makeDir(path=proc_path)
+
+        cpuinfo_path = os.path.join(proc_path, "cpuinfo")
+        self.makeFile(path=cpuinfo_path, content=self.sample_kvm_cpuinfo)
+
+        self.mstore.set_accepted_types(["computer-info"])
+        plugin = ComputerInfo(root_path=root_path)
+        self.monitor.add(plugin)
+
+        plugin.exchange()
+        message = self.mstore.get_pending_messages()[0]
+        self.assertEqual("kvm", message["vm-info"])
+
+    def test_vminfo_is_empty_when_qemu_is_not_found_in_proc_cpuinfo(self):
+        """
+        L{ComputerInfo} should have an empty string as value of vm-info when
+        QEMU Virtual CPU is not found in /proc/cpuinfo.
+        """
+        root_path = self.makeDir()
+        proc_path = os.path.join(root_path, "proc")
+        self.makeDir(path=proc_path)
+
+        cpuinfo_path = os.path.join(proc_path, "cpuinfo")
+        self.makeFile(path=cpuinfo_path, content="foo")
+
+        self.mstore.set_accepted_types(["computer-info"])
+        plugin = ComputerInfo(root_path=root_path)
+        self.monitor.add(plugin)
+
+        plugin.exchange()
+        message = self.mstore.get_pending_messages()[0]
+        self.assertEqual("", message["vm-info"])
