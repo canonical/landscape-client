@@ -46,7 +46,7 @@ CLIENT_UPTIME = Message(
     "client-uptime",
     {"period": Tuple(Float(), Float()),
      "components": List(Int())},
-    optional=["components"]) # just for backwards compatibility
+    optional=["components"])  # just for backwards compatibility
 
 OPERATION_RESULT = Message(
     "operation-result",
@@ -90,10 +90,10 @@ hal_data = Dict(Unicode(),
 HARDWARE_INVENTORY = Message("hardware-inventory", {
     "devices": List(Any(Tuple(Constant("create"), hal_data),
                         Tuple(Constant("update"),
-                              Unicode(), # udi,
-                              hal_data, # creates,
-                              hal_data, # updates,
-                              hal_data), # deletes
+                              Unicode(),  # udi,
+                              hal_data,  # creates,
+                              hal_data,  # updates,
+                              hal_data),  # deletes
                         Tuple(Constant("delete"),
                               Unicode()),
                         ),
@@ -297,6 +297,10 @@ UNKNOWN_PACKAGE_HASHES = Message("unknown-package-hashes", {
     "request-id": Int(),
     })
 
+PACKAGE_REPORTER_ERROR = Message("package-reporter-error", {
+    "error-code": Int(),
+    "error-text": utf8})
+
 ADD_PACKAGES = Message("add-packages", {
     "packages": List(KeyDict({"name": utf8,
                               "description": Unicode(),
@@ -386,8 +390,8 @@ for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                REGISTER, REGISTER_CLOUD_VM, TEMPERATURE, PROCESSOR_INFO,
                USERS, PACKAGES, PACKAGE_LOCKS,
                CHANGE_PACKAGES_RESULT, UNKNOWN_PACKAGE_HASHES,
-               ADD_PACKAGES, TEXT_MESSAGE, TEST, CUSTOM_GRAPH,
-               REBOOT_REQUIRED, APT_PREFERENCES, EUCALYPTUS_INFO,
+               ADD_PACKAGES, PACKAGE_REPORTER_ERROR, TEXT_MESSAGE, TEST,
+               CUSTOM_GRAPH, REBOOT_REQUIRED, APT_PREFERENCES, EUCALYPTUS_INFO,
                EUCALYPTUS_INFO_ERROR, NETWORK_DEVICE, NETWORK_ACTIVITY,
                REBOOT_REQUIRED_INFO]:
     message_schemas[schema.type] = schema
