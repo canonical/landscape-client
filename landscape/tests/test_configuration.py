@@ -776,16 +776,16 @@ bus = session
                                   "-a", "account", "-t", "rex",
                                   "--script-users", "root, nobody"])
         setup(config)
-        contents = open(filename, "r").read().strip() + "\n"
-        self.assertEqual(contents, """\
-[client]
-url = https://localhost:8080/message-system
-bus = session
-computer_title = rex
-include_manager_plugins = ScriptExecution
-script_users = root, nobody
-account_name = account
-""")
+        parser = ConfigParser()
+        parser.read(filename)
+        self.assertEquals(
+            {"url": "https://localhost:8080/message-system",
+             "bus": "session",
+             "computer_title": "rex",
+             "include_manager_plugins": "ScriptExecution",
+             "script_users": "root, nobody",
+             "account_name": "account"},
+            dict(parser.items("client")))
 
     def test_silent_script_users_with_all_user(self):
         """
@@ -823,16 +823,17 @@ random_key = random_value
                                   "-a", "account", "-t", "rex",
                                   "--ping-url", "http://localhost/ping"])
         setup(config)
-        self.assertEqual(self.get_content(config), """\
-[client]
-log_level = debug
-registration_password = shared-secret
-computer_title = rex
-url = https://landscape.canonical.com/message-system
-ping_url = http://localhost/ping
-random_key = random_value
-account_name = account
-""")
+        parser = ConfigParser()
+        parser.read(filename)
+        self.assertEquals(
+            {"log_level": "debug",
+             "registration_password": "shared-secret",
+             "url": "https://landscape.canonical.com/message-system",
+             "ping_url": "http://localhost/ping",
+             "random_key": "random_value",
+             "computer_title": "rex",
+             "account_name": "account"},
+            dict(parser.items("client")))
 
     def test_setup_with_proxies_from_environment(self):
         os.environ["http_proxy"] = "http://environ"
@@ -875,15 +876,16 @@ registration_password = shared-secret
         config = self.get_config(["--config", filename, "--silent",
                                   "-a", "account", "-t", "rex"])
         setup(config)
-        self.assertEqual(self.get_content(config), """\
-[client]
-registration_password = shared-secret
-computer_title = rex
-http_proxy = http://environ
-https_proxy = https://environ
-url = https://landscape.canonical.com/message-system
-account_name = account
-""")
+        parser = ConfigParser()
+        parser.read(filename)
+        self.assertEquals(
+            {"registration_password": "shared-secret",
+             "url": "https://landscape.canonical.com/message-system",
+             "http_proxy": "http://environ",
+             "https_proxy": "https://environ",
+             "computer_title": "rex",
+             "account_name": "account"},
+            dict(parser.items("client")))
 
     def test_setup_prefers_proxies_from_config_over_environment(self):
         os.environ["http_proxy"] = "http://environ"

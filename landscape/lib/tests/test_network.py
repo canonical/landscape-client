@@ -81,17 +81,18 @@ class NetworkInfoTest(LandscapeTest):
             "\x00\xac\x13\x02A")
 
         fake_array = array.array("B", response + "\0" * 4855)
-        mock_array = self.mocker.replace("array.array")
-        mock_array("B", ANY)
+        mock_array = self.mocker.replace("array")
+        mock_array.array("B", ANY)
         self.mocker.result(fake_array)
 
-        mock_ioctl = self.mocker.replace("fcntl.ioctl")
-        mock_ioctl(ANY, ANY, ANY)
+        mock_ioctl = self.mocker.replace("fcntl")
+        mock_ioctl.ioctl(ANY, ANY, ANY)
         self.mocker.result(0)
 
-        mock_unpack = self.mocker.replace("struct.unpack")
-        mock_unpack("iL", ANY)
+        mock_unpack = self.mocker.replace("struct")
+        mock_unpack.unpack("iL", ANY)
         self.mocker.result((280, 38643456))
+
         self.mocker.replay()
 
         sock = socket.socket(
