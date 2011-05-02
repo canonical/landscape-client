@@ -86,8 +86,8 @@ ifneq (,$(findstring $(dist_release),"dapper"))
 endif
 ifneq (,$(findstring $(dist_release),"hardy"))
 	# We want the smart 1.1.1 from the Landscape repository on hardy
-	echo "extra:Depends=python-smartpm (>= 1.1.1~bzr20081010-0ubuntu1.8.04.1), python2.4-dbus" >> $(landscape_common_substvars)
-	echo "extra:Depends=python2.4-pycurl, hal" >> $(landscape_client_substvars)
+	echo "extra:Depends=python-smartpm (>= 1.1.1~bzr20081010-0ubuntu1.8.04.1), python-dbus" >> $(landscape_common_substvars)
+	echo "extra:Depends=python-pycurl, hal" >> $(landscape_client_substvars)
 endif
 ifneq (,$(filter $(dist_release),karmic lucid maverick))
 	# We want libpam-modules in karmic, and smart 1.2

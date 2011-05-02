@@ -42,18 +42,46 @@ class HashIdStoreTest(LandscapeTest):
         self.assertTrue(isinstance(self.store1._db, sqlite3.Connection))
 
     def test_wb_transactional_commits(self):
-        self.store1._db = sqlite3.connect(self.store1._filename)
-        mock_db = self.mocker.replace(self.store1._db)
-        mock_db.commit()
-        self.mocker.replay()
+        """
+        If the operation run by the store succeeds, C{commit} is called once on
+        the connection.
+        """
+        db = sqlite3.connect(self.store1._filename)
+        commits = []
+
+        class FakeDb(object):
+            def __getattr__(self, name):
+                if name == "commit":
+                    return self.commit
+                return getattr(db, name)
+
+            def commit(self):
+                commits.append(None)
+
+        self.store1._db = FakeDb()
         self.store1.set_hash_ids({})
+        self.assertEqual([None], commits)
 
     def test_wb_transactional_rolls_back(self):
-        self.store1._db = sqlite3.connect(self.store1._filename)
-        mock_db = self.mocker.replace(self.store1._db)
-        mock_db.rollback()
-        self.mocker.replay()
+        """
+        If the operation run by the store fails, C{rollback} is called once on
+        the connection.
+        """
+        db = sqlite3.connect(self.store1._filename)
+        rollbacks = []
+
+        class FakeDb(object):
+            def __getattr__(self, name):
+                if name == "rollback":
+                    return self.rollback
+                return getattr(db, name)
+
+            def rollback(self):
+                rollbacks.append(None)
+
+        self.store1._db = FakeDb()
         self.assertRaises(Exception, self.store1.set_hash_ids, None)
+        self.assertEqual([None], rollbacks)
 
     def test_get_id_hash(self):
         self.store1.set_hash_ids({"hash1": 123, "hash2": 456})
