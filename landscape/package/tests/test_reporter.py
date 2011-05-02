@@ -60,7 +60,7 @@ class PackageReporterTest(LandscapeTest):
             previous(self)
             pkg2 = self.get_packages_by_name("name2")[0]
             pkg2.upgrades += (DebUpgrades("name1", "=", "version1-release1"),)
-            self.reload_cache() # Relink relations.
+            self.reload_cache()  # Relink relations.
         self.Facade.channels_reloaded = callback
 
     def set_pkg1_installed(self):
@@ -656,6 +656,31 @@ class PackageReporterTest(LandscapeTest):
                 self.assertEquals(out, "output")
                 self.assertEquals(err, "error")
                 self.assertEquals(code, 2)
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
+
+    def test_run_smart_update_report_failures(self):
+        """
+        If L{PackageReporter.run_smart_update} fails, a message is sent to the
+        server reporting the error, to be able to fix the problem centrally.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["package-reporter-error"])
+        self.reporter.smart_update_filename = self.makeFile(
+            "#!/bin/sh\necho -n error >&2\necho -n output\nexit 2")
+        os.chmod(self.reporter.smart_update_filename, 0755)
+        deferred = Deferred()
+
+        def do_test():
+            result = self.reporter.run_smart_update()
+
+            def callback(ignore):
+                self.assertMessages(message_store.get_pending_messages(),
+                    [{"type": "package-reporter-error",
+                      "error-code": 2, "error-text": "error"}])
             result.addCallback(callback)
             result.chainDeferred(deferred)
 
