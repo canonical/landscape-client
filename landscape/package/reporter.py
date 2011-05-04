@@ -201,10 +201,27 @@ class PackageReporter(PackageTaskHandler):
             logging.debug("'%s' exited with status %d (out='%s', err='%s'" % (
                 self.smart_update_filename, code, out, err))
             touch_file(self._config.smart_update_stamp_filename)
-            return (out, err, code)
+            if smart_failed:
+                deferred = self._broker.call_if_accepted(
+                    "package-reporter-error", self.send_error, code, err)
+            else:
+                deferred = succeed(None)
+            deferred.addCallback(lambda ignore: (out, err, code))
+            return deferred
 
         result.addCallback(callback)
         return result
+
+    def send_error(self, code, err):
+        """
+        If an error happened in smart update, reports it to the server in a
+        message.
+        """
+        message = {
+            "type": "package-reporter-error",
+            "error-code": code,
+            "error-text": err}
+        return self._broker.send_message(message, True)
 
     def handle_task(self, task):
         message = task.data
