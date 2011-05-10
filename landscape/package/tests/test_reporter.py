@@ -687,6 +687,31 @@ class PackageReporterTest(LandscapeTest):
         reactor.callWhenRunning(do_test)
         return deferred
 
+    def test_run_smart_update_report_success(self):
+        """
+        L{PackageReporter.run_smart_update} also reports success to be able to
+        know the proper state of the client.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["package-reporter-result"])
+        self.reporter.smart_update_filename = self.makeFile(
+            "#!/bin/sh\necho -n error >&2\necho -n output\nexit 0")
+        os.chmod(self.reporter.smart_update_filename, 0755)
+        deferred = Deferred()
+
+        def do_test():
+            result = self.reporter.run_smart_update()
+
+            def callback(ignore):
+                self.assertMessages(message_store.get_pending_messages(),
+                    [{"type": "package-reporter-result",
+                      "code": 0, "out": u"output", "err": u"error"}])
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
+
     def test_run_smart_update_warns_exit_code_1_and_non_empty_stderr(self):
         """
         The L{PackageReporter.run_smart_update} method should log a warning
