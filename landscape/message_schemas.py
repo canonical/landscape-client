@@ -299,7 +299,6 @@ UNKNOWN_PACKAGE_HASHES = Message("unknown-package-hashes", {
 
 PACKAGE_REPORTER_RESULT = Message("package-reporter-result", {
     "code": Int(),
-    "out": utf8,
     "err": utf8})
 
 ADD_PACKAGES = Message("add-packages", {

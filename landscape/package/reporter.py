@@ -202,21 +202,20 @@ class PackageReporter(PackageTaskHandler):
                 self.smart_update_filename, code, out, err))
             touch_file(self._config.smart_update_stamp_filename)
             deferred = self._broker.call_if_accepted(
-                "package-reporter-result", self.send_result, code, out, err)
+                "package-reporter-result", self.send_result, code, err)
             deferred.addCallback(lambda ignore: (out, err, code))
             return deferred
 
         result.addCallback(callback)
         return result
 
-    def send_result(self, code, out, err):
+    def send_result(self, code, err):
         """
         Report the package reporter result to the server in a message.
         """
         message = {
             "type": "package-reporter-result",
             "code": code,
-            "out": out,
             "err": err}
         return self._broker.send_message(message, True)
 

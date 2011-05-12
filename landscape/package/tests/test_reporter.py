@@ -680,7 +680,7 @@ class PackageReporterTest(LandscapeTest):
             def callback(ignore):
                 self.assertMessages(message_store.get_pending_messages(),
                     [{"type": "package-reporter-result",
-                      "code": 2, "out": u"output", "err": u"error"}])
+                      "code": 2, "err": u"error"}])
             result.addCallback(callback)
             result.chainDeferred(deferred)
 
@@ -705,7 +705,7 @@ class PackageReporterTest(LandscapeTest):
             def callback(ignore):
                 self.assertMessages(message_store.get_pending_messages(),
                     [{"type": "package-reporter-result",
-                      "code": 0, "out": u"output", "err": u"error"}])
+                      "code": 0, "err": u"error"}])
             result.addCallback(callback)
             result.chainDeferred(deferred)
 
