@@ -1,3 +1,9 @@
+landscape-client (11.06-0ubuntu0.11.04.0) natty; urgency=low
+
+  * Placeholder for new release 
+
+ -- Andreas Hasenack <andreas@canonical.com>  Mon, 23 May 2011 14:53:18 -0300
+
 landscape-client (11.02-0ubuntu0.11.04.0) natty; urgency=low
 
   * New upstream version (LP: #727324)
