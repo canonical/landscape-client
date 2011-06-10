@@ -1,6 +1,6 @@
 import os
 
-def get_vm_info(root_path):
+def get_vm_info(root_path="/"):
     """
     This is a utility that returns the virtualization type
 

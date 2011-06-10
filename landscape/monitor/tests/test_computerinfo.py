@@ -1,7 +1,7 @@
 import re
-import os
 
 from landscape.monitor.computerinfo import ComputerInfo
+from landscape.lib.vm_info import get_vm_info
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.tests.mocker import ANY
 
@@ -45,7 +45,7 @@ VmallocUsed:      6912 kB
 VmallocChunk:   107432 kB
 """
 
-   def setUp(self):
+    def setUp(self):
         LandscapeTest.setUp(self)
         self.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
 
@@ -326,3 +326,22 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
 
         self.mstore.set_accepted_types(["distribution-info", "computer-info"])
         self.assertMessages(list(self.mstore.get_pending_messages()), [])
+
+    def test_vminfo_message_uses_get_vm_info(self):
+        """
+        L{ComputerInfo} should send the value of get_vm_info in the message.
+        """
+        get_vm_info_mock = self.mocker.replace(get_vm_info)
+        get_vm_info_mock()
+        self.mocker.result("fake-vm-info")
+        self.mocker.replay()
+
+        self.mstore.set_accepted_types(["computer-info"])
+        root_path = self.makeDir()
+        plugin = ComputerInfo(root_path=root_path)
+        self.monitor.add(plugin)
+
+        plugin.exchange()
+        message = self.mstore.get_pending_messages()[0]
+        self.assertTrue("vm-info" in message)
+        self.assertEqual("fake-vm-info", message["vm-info"])
