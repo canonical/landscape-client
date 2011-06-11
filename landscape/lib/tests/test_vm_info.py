@@ -3,7 +3,6 @@ import os
 from landscape.tests.helpers import LandscapeTest
 
 from landscape.lib.vm_info import get_vm_info
-from landscape.tests.mocker import ANY
 
 
 class VMInfoTest(LandscapeTest):

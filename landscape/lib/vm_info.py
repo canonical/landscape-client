@@ -1,4 +1,8 @@
+"""
+Network introspection utilities using ioctl and the /proc filesystem.
+"""
 import os
+
 
 def get_vm_info(root_path="/"):
     """

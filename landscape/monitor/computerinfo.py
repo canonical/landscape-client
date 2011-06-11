@@ -1,5 +1,4 @@
 import logging
-import os
 
 from landscape.lib.lsb_release import LSB_RELEASE_FILENAME, parse_lsb_release
 from landscape.lib.network import get_fqdn
