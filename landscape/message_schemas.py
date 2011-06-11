@@ -139,9 +139,10 @@ REGISTER = Message(
      "computer_title": utf8,
      "hostname": utf8,
      "account_name": utf8,
-     "tags": Any(utf8, Constant(None))},
+     "tags": Any(utf8, Constant(None)),
+     "vm-info": String()},
     # hostname wasn't around in old versions
-    optional=["registration_password", "hostname", "tags"])
+    optional=["registration_password", "hostname", "tags", "vm-info"])
 
 REGISTER_CLOUD_VM = Message(
     "register-cloud-vm",
