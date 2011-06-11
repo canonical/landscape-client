@@ -2,7 +2,6 @@ import logging
 
 from landscape.lib.lsb_release import LSB_RELEASE_FILENAME, parse_lsb_release
 from landscape.lib.network import get_fqdn
-from landscape.lib.vm_info import get_vm_info
 from landscape.monitor.plugin import MonitorPlugin
 
 

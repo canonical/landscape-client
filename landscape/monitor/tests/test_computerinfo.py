@@ -1,7 +1,6 @@
 import re
 
 from landscape.monitor.computerinfo import ComputerInfo
-from landscape.lib.vm_info import get_vm_info
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.tests.mocker import ANY
 
