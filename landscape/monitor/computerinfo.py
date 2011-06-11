@@ -60,7 +60,6 @@ class ComputerInfo(MonitorPlugin):
         self._add_if_new(message, "total-memory",
                          total_memory)
         self._add_if_new(message, "total-swap", total_swap)
-        self._add_if_new(message, "vm-info", get_vm_info())
         return message
 
     def _add_if_new(self, message, key, value):

@@ -68,11 +68,10 @@ COMPUTER_INFO = Message(
     "computer-info",
     {"hostname": utf8,
      "total-memory": Int(),
-     "total-swap": Int(),
-     "vm-info": String()},
+     "total-swap": Int()},
     # Not sure why these are all optional, but it's explicitly tested
     # in the server
-    optional=["hostname", "total-memory", "total-swap", "vm-info"])
+    optional=["hostname", "total-memory", "total-swap"])
 
 DISTRIBUTION_INFO = Message(
     "distribution-info",
