@@ -9,6 +9,7 @@ from landscape.lib.log import log_failure
 from landscape.lib.fetch import fetch, FetchError
 from landscape.lib.tag import is_valid_tag_list
 from landscape.lib.network import get_fqdn
+from landscape.lib.vm_info import get_vm_info
 
 
 EC2_HOST = "169.254.169.254"
@@ -279,7 +280,8 @@ class RegistrationHandler(object):
                            "account_name": id.account_name,
                            "registration_password": id.registration_password,
                            "hostname": get_fqdn(),
-                           "tags": tags}
+                           "tags": tags,
+                           "vm-info": get_vm_info()}
                 self._exchange.send(message)
             else:
                 self._reactor.fire("registration-failed")

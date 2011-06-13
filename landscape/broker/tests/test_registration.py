@@ -16,6 +16,7 @@ from landscape.broker.tests.helpers import (
 from landscape.lib.bpickle import dumps
 from landscape.lib.fetch import HTTPCodeError, FetchError
 from landscape.lib.persist import Persist
+from landscape.lib.vm_info import get_vm_info
 from landscape.configuration import print_text
 
 
@@ -154,7 +155,34 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                               "account_name": "account_name",
                               "registration_password": None,
                               "hostname": "ooga.local",
-                              "tags": None}])
+                              "tags": None,
+                              "vm-info": get_vm_info()}])
+        self.assertEqual(self.logfile.getvalue().strip(),
+                         "INFO: Queueing message to register with account "
+                         "'account_name' without a password.")
+
+    def test_queue_message_on_exchange_with_vm_info(self):
+        """
+        When a computer_title and account_name are available, no
+        secure_id is set, and an exchange is about to happen,
+        queue a registration message.
+        """
+        get_vm_info_mock = self.mocker.replace(get_vm_info)
+        get_vm_info_mock()
+        self.mocker.result("vmware")
+        self.mocker.replay()
+        self.mstore.set_accepted_types(["register"])
+        self.config.computer_title = "Computer Title"
+        self.config.account_name = "account_name"
+        self.reactor.fire("pre-exchange")
+        self.assertMessages(self.mstore.get_pending_messages(),
+                            [{"type": "register",
+                              "computer_title": "Computer Title",
+                              "account_name": "account_name",
+                              "registration_password": None,
+                              "hostname": "ooga.local",
+                              "tags": None,
+                              "vm-info": u"vmware"}])
         self.assertEqual(self.logfile.getvalue().strip(),
                          "INFO: Queueing message to register with account "
                          "'account_name' without a password.")
@@ -172,7 +200,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                               "account_name": "account_name",
                               "registration_password": "SEKRET",
                               "hostname": "ooga.local",
-                              "tags": None}])
+                              "tags": None,
+                              "vm-info": get_vm_info()}])
         self.assertEqual(self.logfile.getvalue().strip(),
                          "INFO: Queueing message to register with account "
                          "'account_name' with a password.")
@@ -194,7 +223,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                               "account_name": "account_name",
                               "registration_password": "SEKRET",
                               "hostname": "ooga.local",
-                              "tags": u"computer,tag"}])
+                              "tags": u"computer,tag",
+                              "vm-info": get_vm_info()}])
         self.assertEqual(self.logfile.getvalue().strip(),
                          "INFO: Queueing message to register with account "
                          "'account_name' and tags computer,tag "
@@ -219,7 +249,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                               "account_name": "account_name",
                               "registration_password": "SEKRET",
                               "hostname": "ooga.local",
-                              "tags": None}])
+                              "tags": None,
+                              "vm-info": get_vm_info()}])
         self.assertEqual(self.logfile.getvalue().strip(),
                          "ERROR: Invalid tags provided for cloud "
                          "registration.\n    "
@@ -244,7 +275,8 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
               "account_name": "account_name",
               "registration_password": "SEKRET",
               "hostname": "ooga.local",
-              "tags": u"prova\N{LATIN SMALL LETTER J WITH CIRCUMFLEX}o"}])
+              "tags": u"prova\N{LATIN SMALL LETTER J WITH CIRCUMFLEX}o",
+              "vm-info": get_vm_info()}])
         self.assertEqual(self.logfile.getvalue().strip(),
                          "INFO: Queueing message to register with account "
                          "'account_name' and tags prova\xc4\xb5o "
@@ -433,6 +465,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                               "account_name": "account_name",
                               "registration_password": "SEKRET",
                               "hostname": socket.getfqdn(),
+                              "vm-info": get_vm_info(),
                               "tags": None}])
 
 
@@ -828,6 +861,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
                               "account_name": u"onward",
                               "registration_password": u"password",
                               "hostname": socket.getfqdn(),
+                              "vm-info": get_vm_info(),
                               "tags": None}])
 
     def test_should_register_in_cloud(self):
