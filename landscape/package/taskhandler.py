@@ -132,7 +132,7 @@ class PackageTaskHandler(object):
         failure.trap(PackageTaskError)
 
     def handle_task(self, task):
-        """Handle a sigle task.
+        """Handle a single task.
 
         Sub-classes must override this method in order to trigger task-specific
         actions.
