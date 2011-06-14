@@ -157,7 +157,8 @@ REGISTER_CLOUD_VM = Message(
      "ramdisk_key": Any(Unicode(), Constant(None)),
      "launch_index": Int(),
      "image_key": Unicode(),
-     "tags": Any(utf8, Constant(None))},
+     "tags": Any(utf8, Constant(None)),
+     "vm-info": String()},
      optional=["tags"])
 
 TEMPERATURE = Message("temperature", {

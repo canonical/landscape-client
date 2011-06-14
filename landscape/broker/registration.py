@@ -250,7 +250,8 @@ class RegistrationHandler(object):
                                "hostname": get_fqdn(),
                                "account_name": None,
                                "registration_password": None,
-                               "tags": tags}
+                               "tags": tags,
+                               "vm-info": get_vm_info()}
                     message.update(self._ec2_data)
                     self._exchange.send(message)
                 elif id.account_name:
@@ -264,7 +265,8 @@ class RegistrationHandler(object):
                                "account_name": id.account_name,
                                "registration_password": \
                                    id.registration_password,
-                               "tags": tags}
+                               "tags": tags,
+                               "vm-info": get_vm_info()}
                     message.update(self._ec2_data)
                     self._exchange.send(message)
                 else:

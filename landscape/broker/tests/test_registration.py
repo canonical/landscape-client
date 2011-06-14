@@ -554,6 +554,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
                        account_name=None,
                        registration_password=None,
                        tags=None)
+        message["vm-info"] = kwargs.pop("vm_info", "")
         message.update(kwargs)
         return message
 
@@ -569,8 +570,11 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
           immediately accepting the computer, instead of going through the
           pending computer stage.
         """
+        get_vm_info_mock = self.mocker.replace(get_vm_info)
+        get_vm_info_mock()
+        self.mocker.result("xen")
+        self.mocker.replay()
         self.prepare_query_results()
-
         self.prepare_cloud_registration(tags=u"server,london")
 
         # metadata is fetched and stored at reactor startup:
@@ -594,7 +598,8 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertEqual(len(self.transport.payloads), 1)
         self.assertMessages(
             self.transport.payloads[0]["messages"],
-            [self.get_expected_cloud_message(tags=u"server,london")])
+            [self.get_expected_cloud_message(tags=u"server,london",
+                                             vm_info="xen")])
 
     def test_cloud_registration_with_otp(self):
         """
@@ -861,7 +866,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
                               "account_name": u"onward",
                               "registration_password": u"password",
                               "hostname": socket.getfqdn(),
-                              "vm-info": get_vm_info(),
+                              "vm-info": "",
                               "tags": None}])
 
     def test_should_register_in_cloud(self):
