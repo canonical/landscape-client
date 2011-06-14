@@ -159,7 +159,7 @@ REGISTER_CLOUD_VM = Message(
      "image_key": Unicode(),
      "tags": Any(utf8, Constant(None)),
      "vm-info": String()},
-     optional=["tags"])
+     optional=["tags", "vm-info"])
 
 TEMPERATURE = Message("temperature", {
     "thermal-zone": utf8,
