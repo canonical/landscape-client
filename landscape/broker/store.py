@@ -160,12 +160,12 @@ class MessageStore(object):
 
     def delete_old_messages(self):
         """Delete messages which are unlikely to be needed in the future."""
-        for fn in itertools.islice(self._walk_messages(exclude=HELD+BROKEN),
-                                   self.get_pending_offset()):
-            os.unlink(fn)
-            containing_dir = os.path.split(fn)[0]
-            if not os.listdir(containing_dir):
-                os.rmdir(containing_dir)
+        #for fn in itertools.islice(self._walk_messages(exclude=HELD+BROKEN),
+        #                           self.get_pending_offset()):
+        #    os.unlink(fn)
+        #    containing_dir = os.path.split(fn)[0]
+        #    if not os.listdir(containing_dir):
+        #        os.rmdir(containing_dir)
 
     def delete_all_messages(self):
         """Remove ALL stored messages."""
