@@ -639,13 +639,13 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertEqual(len(self.transport.payloads), 1)
         self.assertMessages(self.transport.payloads[0]["messages"],
                             [self.get_expected_cloud_message(tags=None)])
-        self.assertEqual(self.logfile.getvalue().strip(),
+        self.assertEqual(self.logfile.getvalue().strip()[:-7],
                          "ERROR: Invalid tags provided for cloud "
                          "registration.\n    "
                          "INFO: Queueing message to register with OTP\n    "
                          "INFO: Starting message exchange with "
                          "https://example.com/message-system.\n    "
-                         "INFO: Message exchange completed in 0.00s.")
+                         "INFO: Message exchange completed in")
 
     def test_cloud_registration_with_ssl_ca_certificate(self):
         """
@@ -746,11 +746,11 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
                                 account_name=u"onward",
                                 registration_password=u"password",
                                 tags=u"london,server")])
-        self.assertEqual(self.logfile.getvalue().strip(),
+        self.assertEqual(self.logfile.getvalue().strip()[:-7],
            "INFO: Queueing message to register with account u'onward' and "
            "tags london,server as an EC2 instance.\n    "
            "INFO: Starting message exchange with http://localhost:91919.\n    "
-           "INFO: Message exchange completed in 0.00s.")
+           "INFO: Message exchange completed in")
 
     def test_queueing_cloud_registration_message_resets_message_store(self):
         """
