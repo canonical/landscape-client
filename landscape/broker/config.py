@@ -54,11 +54,11 @@ class BrokerConfiguration(Configuration):
         parser.add_option("-k", "--ssl-public-key",
                           help="The public SSL key to verify the server. "
                                "Only used if the given URL is https.")
-        parser.add_option("--exchange-interval", default=15 * 60, type="int",
+        parser.add_option("--exchange-interval", default=20, type="int",
                           metavar="INTERVAL",
                           help="The number of seconds between server "
                                "exchanges.")
-        parser.add_option("--urgent-exchange-interval", default=1 * 60,
+        parser.add_option("--urgent-exchange-interval", default=10,
                           type="int", metavar="INTERVAL",
                           help="The number of seconds between urgent server "
                                "exchanges.")
