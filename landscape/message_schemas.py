@@ -68,11 +68,10 @@ COMPUTER_INFO = Message(
     "computer-info",
     {"hostname": utf8,
      "total-memory": Int(),
-     "total-swap": Int(),
-     "vm-info": String()},
+     "total-swap": Int()},
     # Not sure why these are all optional, but it's explicitly tested
     # in the server
-    optional=["hostname", "total-memory", "total-swap", "vm-info"])
+    optional=["hostname", "total-memory", "total-swap"])
 
 DISTRIBUTION_INFO = Message(
     "distribution-info",
@@ -139,9 +138,10 @@ REGISTER = Message(
      "computer_title": utf8,
      "hostname": utf8,
      "account_name": utf8,
-     "tags": Any(utf8, Constant(None))},
+     "tags": Any(utf8, Constant(None)),
+     "vm-info": String()},
     # hostname wasn't around in old versions
-    optional=["registration_password", "hostname", "tags"])
+    optional=["registration_password", "hostname", "tags", "vm-info"])
 
 REGISTER_CLOUD_VM = Message(
     "register-cloud-vm",
@@ -157,8 +157,9 @@ REGISTER_CLOUD_VM = Message(
      "ramdisk_key": Any(Unicode(), Constant(None)),
      "launch_index": Int(),
      "image_key": Unicode(),
-     "tags": Any(utf8, Constant(None))},
-     optional=["tags"])
+     "tags": Any(utf8, Constant(None)),
+     "vm-info": String()},
+     optional=["tags", "vm-info"])
 
 TEMPERATURE = Message("temperature", {
     "thermal-zone": utf8,
