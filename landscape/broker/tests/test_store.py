@@ -18,7 +18,6 @@ class MessageStoreTest(LandscapeTest):
         self.time = 0
         self.temp_dir = tempfile.mkdtemp()
         self.persist_filename = tempfile.mktemp()
-        self.persist = Persist(filename=self.persist_filename)
         self.store = self.create_store()
 
     def create_store(self):
