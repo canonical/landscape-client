@@ -160,12 +160,12 @@ class MessageStore(object):
 
     def delete_old_messages(self):
         """Delete messages which are unlikely to be needed in the future."""
-        #for fn in itertools.islice(self._walk_messages(exclude=HELD+BROKEN),
-        #                           self.get_pending_offset()):
-        #    os.unlink(fn)
-        #    containing_dir = os.path.split(fn)[0]
-        #    if not os.listdir(containing_dir):
-        #        os.rmdir(containing_dir)
+        for fn in itertools.islice(self._walk_messages(exclude=HELD+BROKEN),
+                                   self.get_pending_offset()):
+            os.unlink(fn)
+            containing_dir = os.path.split(fn)[0]
+            if not os.listdir(containing_dir):
+                os.rmdir(containing_dir)
 
     def delete_all_messages(self):
         """Remove ALL stored messages."""
@@ -329,6 +329,79 @@ class MessageStore(object):
 
     def _add_flags(self, path, flags):
         self._set_flags(path, self._get_flags(path)+flags)
+
+
+class MessageDoubleStore(object):
+    def __init__(self, real_message_store, record_message_store):
+        self.real_store = real_message_store
+        self.record_store = record_message_store
+
+    def commit(self):
+        self.real_store.commit()
+
+    def set_accepted_types(self, types):
+        self.record_store.set_accepted_types(types)
+        return self.real_store.set_accepted_types(types)
+
+    def get_accepted_types(self):
+        return self.real_store.get_accepted_types()
+
+    def accepts(self, type):
+        return self.real_store.accepts(type)
+
+    def get_sequence(self):
+        return self.real_store.get_sequence()
+
+    def set_sequence(self, number):
+        self.record_store.set_sequence(number)
+        return self.real_store.set_sequence(number)
+
+    def get_server_sequence(self):
+        return self.real_store.get_server_sequence()
+
+    def set_server_sequence(self, number):
+        self.record_store.set_server_sequence(number)
+        return self.real_store.set_server_sequence(number)
+
+    def get_server_uuid(self):
+        return self.real_store.get_server_uuid()
+
+    def set_server_uuid(self, uuid):
+        self.record_store.set_server_uuid(uuid)
+        return self.real_store.set_server_uuid(uuid)
+
+    def get_pending_offset(self):
+        return self.real_store.get_pending_offset()
+
+    def set_pending_offset(self, val):
+        self.record_store.set_pending_offset(val)
+        return self.real_store.set_pending_offset(val)
+
+    def add_pending_offset(self, val):
+        self.record_store.add_pending_offset(val)
+        return self.real_store.add_pending_offset(val)
+
+    def count_pending_messages(self):
+        return self.real_store.count_pending_messages()
+
+    def get_pending_messages(self, max=None):
+        return self.real_store.get_pending_messages(max)
+
+    def delete_old_messages(self):
+        return self.real_store.delete_old_messages()
+
+    def delete_all_messages(self):
+        return self.real_store.delete_all_messages()
+
+    def add_schema(self, schema):
+        return self.real_store.add_schema(schema)
+
+    def is_pending(self, message_id):
+        return self.real_store.is_pending(message_id)
+
+    def add(self, message):
+        self.record_store.add(message)
+        return self.real_store.add(message)
 
 
 def get_default_message_store(*args, **kwargs):

@@ -43,7 +43,7 @@ class Persist(object):
 
     """Persist a hierarchical database of key=>value pairs.
 
-    There are three different kinds of opition maps, regarding the
+    There are three different kinds of option maps, regarding the
     persistence and priority that maps are queried.
 
       - hard - Options are persistent.
@@ -610,4 +610,3 @@ class ConfigObjBackend(Backend):
         return Backend.copy(self, value)
 
 # vim:ts=4:sw=4:et
-
