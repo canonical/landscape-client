@@ -11,31 +11,7 @@ from landscape.tests.mocker import ANY
 from landscape import SERVER_API
 
 
-class MessageStoreTest(LandscapeTest):
-
-    def setUp(self):
-        super(MessageStoreTest, self).setUp()
-        self.time = 0
-        self.temp_dir = tempfile.mkdtemp()
-        self.persist_filename = tempfile.mktemp()
-        self.persist = Persist(filename=self.persist_filename)
-        self.store = self.create_store()
-
-    def create_store(self):
-        persist = Persist(filename=self.persist_filename)
-        store = MessageStore(persist, self.temp_dir, 20, get_time=self.get_time)
-        store.set_accepted_types(["empty", "data"])
-        store.add_schema(Message("empty", {}))
-        store.add_schema(Message("empty2", {}))
-        store.add_schema(Message("data", {"data": String()}))
-        store.add_schema(Message("unaccepted", {"data": String()}))
-        return store
-
-    def tearDown(self):
-        super(MessageStoreTest, self).tearDown()
-        shutil.rmtree(self.temp_dir)
-        if os.path.isfile(self.persist_filename):
-            os.unlink(self.persist_filename)
+class MessageStoreTBase(object):
 
     def get_time(self):
         return self.time
@@ -436,3 +412,30 @@ class MessageStoreTest(LandscapeTest):
         self.assertEquals(self.store.get_pending_messages(), [])
 
         self.assertFalse(self.store.is_pending(id))
+
+
+class MessageStoreTest(LandscapeTest, MessageStoreTBase):
+
+    def setUp(self):
+        super(MessageStoreTest, self).setUp()
+        self.time = 0
+        self.temp_dir = tempfile.mkdtemp()
+        self.persist_filename = tempfile.mktemp()
+        self.persist = Persist(filename=self.persist_filename)
+        self.store = self.create_store()
+
+    def tearDown(self):
+        super(MessageStoreTest, self).tearDown()
+        shutil.rmtree(self.temp_dir)
+        if os.path.isfile(self.persist_filename):
+            os.unlink(self.persist_filename)
+
+    def create_store(self):
+        persist = Persist(filename=self.persist_filename)
+        store = MessageStore(persist, self.temp_dir, 20, get_time=self.get_time)
+        store.set_accepted_types(["empty", "data"])
+        store.add_schema(Message("empty", {}))
+        store.add_schema(Message("empty2", {}))
+        store.add_schema(Message("data", {"data": String()}))
+        store.add_schema(Message("unaccepted", {"data": String()}))
+        return store
