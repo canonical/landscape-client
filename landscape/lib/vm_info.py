@@ -36,4 +36,11 @@ def get_vm_info(root_path="/"):
         finally:
             fd.close()
 
+    sys_vendor_path = os.path.join(root_path, "sys", "class", "dmi", "id",
+                                   "sys_vendor")
+    if os.path.exists(sys_vendor_path):
+        file_content = open(sys_vendor_path).read()
+        if "VMware, Inc." in file_content:
+            virt_info = "vmware"
+
     return virt_info
