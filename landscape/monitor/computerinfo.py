@@ -1,5 +1,4 @@
 import logging
-import os
 
 from landscape.lib.lsb_release import LSB_RELEASE_FILENAME, parse_lsb_release
 from landscape.lib.network import get_fqdn
@@ -60,8 +59,6 @@ class ComputerInfo(MonitorPlugin):
         self._add_if_new(message, "total-memory",
                          total_memory)
         self._add_if_new(message, "total-swap", total_swap)
-        vm_info = self._get_vm_info()
-        self._add_if_new(message, "vm-info", vm_info)
         return message
 
     def _add_if_new(self, message, key, value):
@@ -95,37 +92,3 @@ class ComputerInfo(MonitorPlugin):
         message = {}
         message.update(parse_lsb_release(self._lsb_release_filename))
         return message
-
-    def _get_vm_info(self):
-        """
-        This is a utility that returns the virtualization type
-
-        It loops through some possible configurations and return a string with
-        the name of the technology being used or None if there's no match
-        """
-        virt_info = ""
-
-        def join_root_path(path):
-            return os.path.join(self._root_path, path)
-
-        xen_paths = ["proc/sys/xen", "sys/bus/xen", "proc/xen"]
-        xen_paths = map(join_root_path, xen_paths)
-
-        vz_path = os.path.join(self._root_path, "proc/vz")
-        if os.path.exists(vz_path):
-            virt_info = "openvz"
-
-        elif filter(os.path.exists, xen_paths):
-            virt_info = "xen"
-
-        cpu_info_path = os.path.join(self._root_path, "proc/cpuinfo")
-        if os.path.exists(cpu_info_path):
-            try:
-                fd = open(cpu_info_path)
-                cpuinfo = fd.read()
-                if "QEMU Virtual CPU" in cpuinfo:
-                    virt_info = "kvm"
-            finally:
-                fd.close()
-
-        return virt_info

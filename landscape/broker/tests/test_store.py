@@ -3,39 +3,16 @@ import shutil
 import os
 
 from landscape.lib.persist import Persist
-from landscape.broker.store import MessageStore
-from landscape.schema import InvalidError, Message, Int, String, UnicodeOrString
+from landscape.broker.store import MessageStore, MessageDoubleStore
+from landscape.schema import (InvalidError, Message, Int, String,
+                              UnicodeOrString)
 
 from landscape.tests.helpers import LandscapeTest
 from landscape.tests.mocker import ANY
 from landscape import SERVER_API
 
 
-class MessageStoreTest(LandscapeTest):
-
-    def setUp(self):
-        super(MessageStoreTest, self).setUp()
-        self.time = 0
-        self.temp_dir = tempfile.mkdtemp()
-        self.persist_filename = tempfile.mktemp()
-        self.persist = Persist(filename=self.persist_filename)
-        self.store = self.create_store()
-
-    def create_store(self):
-        persist = Persist(filename=self.persist_filename)
-        store = MessageStore(persist, self.temp_dir, 20, get_time=self.get_time)
-        store.set_accepted_types(["empty", "data"])
-        store.add_schema(Message("empty", {}))
-        store.add_schema(Message("empty2", {}))
-        store.add_schema(Message("data", {"data": String()}))
-        store.add_schema(Message("unaccepted", {"data": String()}))
-        return store
-
-    def tearDown(self):
-        super(MessageStoreTest, self).tearDown()
-        shutil.rmtree(self.temp_dir)
-        if os.path.isfile(self.persist_filename):
-            os.unlink(self.persist_filename)
+class MessageStoreTestBase(object):
 
     def get_time(self):
         return self.time
@@ -157,20 +134,23 @@ class MessageStoreTest(LandscapeTest):
 
     def test_unaccepted(self):
         for i in range(10):
-            self.store.add(dict(type=["data", "unaccepted"][i%2], data=str(i)))
+            self.store.add(dict(type=["data", "unaccepted"][i % 2],
+                                data=str(i)))
         il = [m["data"] for m in self.store.get_pending_messages(20)]
         self.assertEquals(il, map(str, [0, 2, 4, 6, 8]))
 
     def test_unaccepted_with_offset(self):
         for i in range(10):
-            self.store.add(dict(type=["data", "unaccepted"][i%2], data=str(i)))
+            self.store.add(dict(type=["data", "unaccepted"][i % 2],
+                                data=str(i)))
         self.store.set_pending_offset(2)
         il = [m["data"] for m in self.store.get_pending_messages(20)]
         self.assertEquals(il, map(str, [4, 6, 8]))
 
     def test_unaccepted_reaccepted(self):
         for i in range(10):
-            self.store.add(dict(type=["data", "unaccepted"][i%2], data=str(i)))
+            self.store.add(dict(type=["data", "unaccepted"][i % 2],
+                                data=str(i)))
         self.store.set_pending_offset(2)
         il = [m["data"] for m in self.store.get_pending_messages(2)]
         self.store.set_accepted_types(["data", "unaccepted"])
@@ -179,7 +159,8 @@ class MessageStoreTest(LandscapeTest):
 
     def test_accepted_unaccepted(self):
         for i in range(10):
-            self.store.add(dict(type=["data", "unaccepted"][i%2], data=str(i)))
+            self.store.add(dict(type=["data", "unaccepted"][i % 2],
+                                data=str(i)))
         # Setting pending offset here means that the first two
         # messages, even though becoming unaccepted now, were already
         # accepted before, so they shouldn't be marked for hold.
@@ -193,7 +174,8 @@ class MessageStoreTest(LandscapeTest):
 
     def test_accepted_unaccepted_old(self):
         for i in range(10):
-            self.store.add(dict(type=["data", "unaccepted"][i%2], data=str(i)))
+            self.store.add(dict(type=["data", "unaccepted"][i % 2],
+                                data=str(i)))
         self.store.set_pending_offset(2)
         self.store.set_accepted_types(["unaccepted"])
         il = [m["data"] for m in self.store.get_pending_messages(20)]
@@ -324,7 +306,6 @@ class MessageStoreTest(LandscapeTest):
         self.assertRaises(InvalidError,
                           self.store.add, {"type": "data", "data": 3})
 
-
     def test_coercion_ignores_custom_api(self):
         """
         If a custom 'api' key is specified in the message, it should
@@ -436,3 +417,71 @@ class MessageStoreTest(LandscapeTest):
         self.assertEquals(self.store.get_pending_messages(), [])
 
         self.assertFalse(self.store.is_pending(id))
+
+
+class MessageStoreTest(LandscapeTest, MessageStoreTestBase):
+
+    def setUp(self):
+        super(MessageStoreTest, self).setUp()
+        self.time = 0
+        self.temp_dir = tempfile.mkdtemp()
+        self.persist_filename = tempfile.mktemp()
+        self.store = self.create_store()
+
+    def tearDown(self):
+        super(MessageStoreTest, self).tearDown()
+        shutil.rmtree(self.temp_dir)
+        if os.path.isfile(self.persist_filename):
+            os.unlink(self.persist_filename)
+
+    def create_store(self):
+        persist = Persist(filename=self.persist_filename)
+        store = MessageStore(persist, self.temp_dir, 20,
+                             get_time=self.get_time)
+        store.set_accepted_types(["empty", "data"])
+        store.add_schema(Message("empty", {}))
+        store.add_schema(Message("empty2", {}))
+        store.add_schema(Message("data", {"data": String()}))
+        store.add_schema(Message("unaccepted", {"data": String()}))
+        return store
+
+
+class MessageDoubleStoreTest(LandscapeTest, MessageStoreTestBase):
+
+    def setUp(self):
+        super(MessageDoubleStoreTest, self).setUp()
+        self.time = 0
+        self.temp_dir = tempfile.mkdtemp()
+        self.persist_filename = tempfile.mktemp()
+        self.persist = Persist(filename=self.persist_filename)
+        self.persist_filename2 = tempfile.mktemp()
+        self.persist2 = Persist(filename=self.persist_filename2)
+        self.store = self.create_store()
+
+    def tearDown(self):
+        super(MessageDoubleStoreTest, self).tearDown()
+        shutil.rmtree(self.temp_dir)
+        if os.path.isfile(self.persist_filename):
+            os.unlink(self.persist_filename)
+
+    def create_store(self):
+        persist = Persist(filename=self.persist_filename)
+        store = MessageStore(persist, self.temp_dir, 20,
+                             get_time=self.get_time)
+        store.set_accepted_types(["empty", "data"])
+        store.add_schema(Message("empty", {}))
+        store.add_schema(Message("empty2", {}))
+        store.add_schema(Message("data", {"data": String()}))
+        store.add_schema(Message("unaccepted", {"data": String()}))
+
+        persist2 = Persist(filename=self.persist_filename)
+        store2 = MessageStore(persist2, self.temp_dir, 20,
+                              get_time=self.get_time)
+        store2.set_accepted_types(["empty", "data"])
+        store2.add_schema(Message("empty", {}))
+        store2.add_schema(Message("empty2", {}))
+        store2.add_schema(Message("data", {"data": String()}))
+        store2.add_schema(Message("unaccepted", {"data": String()}))
+
+        double = MessageDoubleStore(store, store2)
+        return store

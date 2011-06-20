@@ -394,14 +394,16 @@ class MessageDoubleStore(object):
         return self.real_store.delete_all_messages()
 
     def add_schema(self, schema):
+        self.record_store.add_schema(schema)
         return self.real_store.add_schema(schema)
 
     def is_pending(self, message_id):
         return self.real_store.is_pending(message_id)
 
     def add(self, message):
+        result = self.real_store.add(message)
         self.record_store.add(message)
-        return self.real_store.add(message)
+        return result
 
 
 def get_default_message_store(*args, **kwargs):
