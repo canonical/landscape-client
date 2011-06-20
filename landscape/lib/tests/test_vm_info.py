@@ -118,7 +118,7 @@ power management:
 
         cpuinfo_path = os.path.join(proc_path, "cpuinfo")
         self.makeFile(path=cpuinfo_path, content="foo")
-        self.assertEqual(u"", get_vm_info(root_path=root_path))
+        self.assertEqual("", get_vm_info(root_path=root_path))
 
     def test_get_vm_info_with_vmware_sys_vendor(self):
         """
@@ -129,4 +129,4 @@ power management:
         dmi_path = os.path.join(root_path, "sys", "class", "dmi", "id")
         os.makedirs(dmi_path)
         file(os.path.join(dmi_path, "sys_vendor"), "w+").write("VMware, Inc.")
-        self.assertEqual(u"vmware", get_vm_info(root_path=root_path))
+        self.assertEqual("vmware", get_vm_info(root_path=root_path))
