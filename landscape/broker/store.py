@@ -338,6 +338,7 @@ class MessageDoubleStore(object):
 
     def commit(self):
         self.real_store.commit()
+        self.record_store.commit()
 
     def set_accepted_types(self, types):
         self.record_store.set_accepted_types(types)

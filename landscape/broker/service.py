@@ -54,13 +54,15 @@ class BrokerService(LandscapeService):
                                                 config.ssl_public_key)
 
 
-        self.persist2 = Persist(filename="/tmp/landscape_replay/broker.bpickle")
+        self.persist2 = Persist(
+            filename="/tmp/landscape_replay/broker.bpickle")
         self.persist2.save()
         self.real_message_store = get_default_message_store(
             self.persist, config.message_store_path)
         self.record_message_store = get_default_message_store(
             self.persist2, "/tmp/landscape_replay/messages")
-        self.message_store = MessageDoubleStore(self.real_message_store, self.record_message_store)
+        self.message_store = MessageDoubleStore(
+            self.real_message_store, self.record_message_store)
         #self.message_store = get_default_message_store(
         #    self.persist, config.message_store_path)
 

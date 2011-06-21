@@ -8,7 +8,7 @@ from landscape.schema import (InvalidError, Message, Int, String,
                               UnicodeOrString)
 
 from landscape.tests.helpers import LandscapeTest
-from landscape.tests.mocker import ANY
+from landscape.tests.mocker import ANY, MockerTestCase
 from landscape import SERVER_API
 
 
@@ -485,3 +485,228 @@ class MessageDoubleStoreTest(LandscapeTest, MessageStoreTestBase):
 
         double = MessageDoubleStore(store, store2)
         return store
+
+
+class MessageDoubleStoreFunctionalityTest(MockerTestCase):
+    def setUp(self):
+        self.real = self.mocker.mock()
+        self.record = self.mocker.mock()
+        self.store = MessageDoubleStore(self.real, self.record)
+
+    def test_commit(self):
+        """C{MessageDoubleStore.commit} should apply to both stores."""
+        self.real.commit()
+        self.record.commit()
+        self.mocker.replay()
+
+        self.store.commit()
+    
+    def test_set_accepted_types(self):
+        """
+        C{MessageDoubleStore.set_accepted_types} should apply to both stores.
+        """
+        self.real.set_accepted_types([])
+        self.record.set_accepted_types([])
+        self.mocker.replay()
+
+        self.store.set_accepted_types([])
+
+    def test_get_accepted_types(self):
+        """
+        C{MessageDoubleStore.set_accepted_types} should only return information
+        from the real store.
+        """
+        self.real.get_accepted_types()
+        self.mocker.result(['a type'])
+        self.mocker.replay()
+
+        result = self.store.get_accepted_types()
+
+        self.assertEquals(['a type'], result)
+
+    def test_accepts(self):
+        """
+        C{MessageDoubleStore.accepts} should only return information from the
+        real store.
+        """
+        self.real.accepts('a type')
+        self.mocker.result(True)
+        self.mocker.replay()
+
+        self.assertTrue(self.store.accepts('a type'))
+
+    def test_get_sequence(self):
+        """
+        C{MessageDoubleStore.get_sequence} should only return information from
+        the real store.
+        """
+        self.real.get_sequence()
+        self.mocker.result(42)
+        self.mocker.replay()
+
+        self.assertEquals(42, self.store.get_sequence())
+
+    def test_set_sequence(self):
+        """
+        C{MessageDoubleStore.set_sequence} should apply to both stores.
+        """
+        self.real.set_sequence(15)
+        self.record.set_sequence(15)
+        self.mocker.replay()
+
+        self.store.set_sequence(15)
+
+    def test_get_server_sequence(self):
+        """
+        C{MessageDoubleStore.get_server_sequence} should only return
+        information from the real store.
+        """
+        self.real.get_server_sequence()
+        self.mocker.result(43)
+        self.mocker.replay()
+
+        self.assertEquals(43, self.store.get_server_sequence())
+
+    def test_set_server_sequence(self):
+        """
+        C{MessageDoubleStore.set_server_sequence} should apply to both stores.
+        """
+        self.real.set_server_sequence(25)
+        self.record.set_server_sequence(25)
+        self.mocker.replay()
+
+        self.store.set_server_sequence(25)
+
+    def test_get_server_uuid(self):
+        """
+        C{MessageDoubleStore.get_server_uuid} should only return information
+        from the real store.
+        """
+        self.real.get_server_uuid()
+        self.mocker.result('abc123')
+        self.mocker.replay()
+
+        self.assertEquals('abc123', self.store.get_server_uuid())
+        
+    def test_set_server_uuid(self):
+        """
+        C{MessageDoubleStore.set_server_uuid} should apply to both stores.
+        """
+        self.real.set_server_uuid(78)
+        self.record.set_server_uuid(78)
+        self.mocker.replay()
+
+        self.store.set_server_uuid(78)
+
+    def test_get_pending_offset(self):
+        """
+        C{MessageDoubleStore.get_pending_offset} should only return information
+        from the real store.
+        """
+        self.real.get_pending_offset()
+        self.mocker.result(15)
+        self.mocker.replay()
+
+        self.assertEquals(15, self.store.get_pending_offset())
+
+    def test_set_pending_offset(self):
+        """
+        C{MessageDoubleStore.set_pending_offset} should apply to both stores.
+        """
+        self.real.set_pending_offset(13)
+        self.record.set_pending_offset(13)
+        self.mocker.replay()
+
+        self.store.set_pending_offset(13)
+
+    def test_add_pending_offset(self):
+        """
+        C{MessageDoubleStore.add_pending_offset} should apply to both stores.
+        """
+        self.real.add_pending_offset(17)
+        self.record.add_pending_offset(17)
+        self.mocker.replay()
+
+        self.store.add_pending_offset(17)
+
+    def test_count_pending_messages(self):
+        """
+        C{MessageDoubleStore.count_pending_messages} should only return
+        information from the real store.
+        """
+        self.real.count_pending_messages()
+        self.mocker.result(19)
+        self.mocker.replay()
+
+        self.assertEquals(19, self.store.count_pending_messages())
+
+    def test_get_pending_messages(self):
+        """
+        C{MessageDoubleStore.get_pending_messages} should only return
+        information from the real store.
+        """
+        self.real.get_pending_messages(None)
+        self.mocker.result(23)
+        self.mocker.replay()
+
+        self.assertEquals(23, self.store.get_pending_messages())
+
+    def test_get_pending_messages_2(self):
+        """
+        C{MessageDoubleStore.get_pending_messages} should pass the max
+        parameter to the real store.
+        """
+        self.real.get_pending_messages(100)
+        self.mocker.result(23)
+        self.mocker.replay()
+
+        self.assertEquals(23, self.store.get_pending_messages(100))
+        
+    def test_delete_old_messages(self):
+        """
+        C{MessageDoubleStore.delete_old_messages} should only return
+        information from the real store.
+        """
+        self.real.delete_old_messages()
+        self.mocker.replay()
+
+        self.store.delete_old_messages()
+
+    def test_delete_all_messages(self):
+        """
+        C{MessageDoubleStore.delete_all_messages} should only return
+        information from the real store.
+        """
+        self.real.delete_all_messages()
+        self.mocker.replay()
+
+        self.store.delete_all_messages()
+
+    def test_add_schema(self):
+        """C{MessageDoubleStore.add_schema} should apply to both stores."""
+        self.real.add_schema('schema!!!')
+        self.record.add_schema('schema!!!')
+        self.mocker.replay()
+
+        self.store.add_schema('schema!!!')
+        
+    def test_is_pending(self):
+        """
+        C{MessageDoubleStore.is_pending} should only return information from
+        the real store.
+        """
+        self.real.is_pending(1)
+        self.mocker.result(False)
+        self.mocker.replay()
+
+        self.assertFalse(self.store.is_pending(1))
+
+    def test_add(self):
+        """C{MessageDoubleStore.add} should apply to both stores."""
+        self.real.add('message in a bottle.')
+        self.record.add('message in a bottle.')
+        self.mocker.replay()
+
+        self.store.add('message in a bottle.')
+    
+        
