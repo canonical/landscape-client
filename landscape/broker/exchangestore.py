@@ -37,7 +37,6 @@ class MessageContext(object):
 
     @with_cursor
     def remove(self, cursor):
-        pass
         cursor.execute(
             "DELETE FROM message_context WHERE operation_id=?",
             (self.operation_id,))

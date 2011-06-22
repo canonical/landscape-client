@@ -2,7 +2,6 @@
 
 import os
 from landscape.lib.fetch import fetch_async
-from landscape.lib.persist import Persist
 from landscape.service import LandscapeService, run_landscape_service
 from landscape.broker.registration import RegistrationHandler, Identity
 from landscape.broker.config import BrokerConfiguration
@@ -10,11 +9,10 @@ from landscape.broker.transport import HTTPTransport
 from landscape.broker.exchange import MessageExchange
 from landscape.broker.exchangestore import ExchangeStore
 from landscape.broker.ping import Pinger
-from landscape.broker.store import get_default_message_store, MessageDoubleStore
+from landscape.broker.store import get_default_message_store
 from landscape.broker.server import BrokerServer
 from landscape.broker.amp import BrokerServerProtocolFactory
 
-from landscape.deployment import get_versioned_persist
 
 class BrokerService(LandscapeService):
     """The core C{Service} of the Landscape Broker C{Application}.
@@ -52,21 +50,8 @@ class BrokerService(LandscapeService):
         super(BrokerService, self).__init__(config)
         self.transport = self.transport_factory(config.url,
                                                 config.ssl_public_key)
-
-
-        self.persist2 = Persist(
-            filename="/tmp/landscape_replay/broker.bpickle")
-        self.persist2.save()
-        self.real_message_store = get_default_message_store(
+        self.message_store = get_default_message_store(
             self.persist, config.message_store_path)
-        self.record_message_store = get_default_message_store(
-            self.persist2, "/tmp/landscape_replay/messages")
-        self.message_store = MessageDoubleStore(
-            self.real_message_store, self.record_message_store)
-        #self.message_store = get_default_message_store(
-        #    self.persist, config.message_store_path)
-
-
         self.identity = Identity(self.config, self.persist)
         exchange_store = ExchangeStore(self.config.exchange_store_path)
         self.exchanger = MessageExchange(
