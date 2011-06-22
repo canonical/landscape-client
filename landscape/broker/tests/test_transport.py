@@ -1,11 +1,12 @@
 import os
 
 from landscape import VERSION
-from landscape.broker.transport import HTTPTransport
+from landscape.broker.transport import HTTPTransport, PayloadRecorder
 from landscape.lib.fetch import PyCurlError
 from landscape.lib import bpickle
 
-from landscape.tests.helpers import LandscapeTest, LogKeeperHelper
+from landscape.tests.helpers import (
+    LandscapeTest, LogKeeperHelper, MockerTestCase)
 
 from twisted.web import server, resource
 from twisted.internet import reactor
@@ -137,3 +138,37 @@ class HTTPTransportTest(LandscapeTest):
                             in self.logfile.getvalue())
         result.addCallback(got_result)
         return result
+
+
+class PayloadRecorderTest(MockerTestCase):
+    def stub_time(self, payload_recorder):
+        def same_time():
+            return 12.345
+        payload_recorder._time = same_time
+        payload_recorder._time_offset = 0
+        return payload_recorder
+        
+    def test_get_payload_name(self):
+        """
+        L{PayloadRecorder.get_payload_name} should return a filename that
+        is equal to the number of seconds since it was created.
+        """
+        recorder = self.stub_time(PayloadRecorder(None))
+        
+        payload_name = recorder.get_payload_name()
+        
+        self.assertEquals("12.345", payload_name)
+                      
+    def test_get_payload_name_no_duplicates(self):
+        """
+        L{PayloadRecorder.get_payload_name} should not generate duplicate
+        payload names.
+        """
+        recorder = self.stub_time(PayloadRecorder(None))
+
+        payload_name_1 = recorder.get_payload_name()
+        payload_name_2 = recorder.get_payload_name()
+        
+        self.assertEquals("12.345", payload_name_1)
+        self.assertEquals("12.346", payload_name_2)
+        

@@ -1,4 +1,5 @@
 """Low-level server communication."""
+import os
 import time
 import logging
 import pprint
@@ -21,6 +22,8 @@ class HTTPTransport(object):
         """
         self._url = url
         self._pubkey = pubkey
+        self._exchange_recorder = PayloadRecorder('/tmp/landscape-replay')
+
 
     def get_url(self):
         """Get the URL of the remote message system."""
@@ -55,6 +58,7 @@ class HTTPTransport(object):
 
         """
         spayload = bpickle.dumps(payload)
+        self._exchange_recorder.save(spayload)
         try:
             start_time = time.time()
             if logging.getLogger().getEffectiveLevel() <= logging.DEBUG:
@@ -83,6 +87,62 @@ class HTTPTransport(object):
             return None
 
         return response
+
+
+class PayloadRecorder(object):
+    """
+    L{PayloadRecorder} records client exchanges with the server to disk for
+    later playback.
+
+    Exchange payloads will be stored one per file, where the file name is
+    the elapsed time since the client was started.
+    """
+    
+    def __init__(self, destination_dir):
+        """
+        @param destination_dir - The directory to record exchanges in.
+        """
+        self._time = time.time
+        self._time_offset = self._time()
+        self.destination_dir = destination_dir
+        self.last_payload_time = -1
+        if self.destination_dir != None:
+            self._create_destination_dir(self.destination_dir)
+            self._delete_old_payloads()
+
+    def _create_destination_dir(self, destination_dir):
+        """Create the destination directory if it does not exist.
+
+        @param destination_dir: The directory to be created.
+        """
+        if not os.path.exists(destination_dir):
+            os.mkdir(destination_dir)
+        
+    def _delete_old_payloads(self):
+        """Delete payloads lying around from a previous session."""
+        for file in os.listdir(self.destination_dir):
+            if os.path.isfile(self.destination_dir + '/' + file):
+                os.unlink(self.destination_dir + '/' + file)
+
+    def save(self, payload):
+        """Persist the given payload to disk.
+
+        @param payload: The payload to be persisted.
+        """
+        
+        payload_name = self.get_payload_name()
+        file(self.destination_dir + '/' + payload_name, 'w').write(payload)
+
+    def get_payload_name(self):
+        """
+        Generate a payload filename.  This method ensures that payloads
+        will have a unique name.
+        """
+        payload_time = self._time() - self._time_offset
+        if self.last_payload_time == payload_time:
+            payload_time = payload_time + .001
+        self.last_payload_time = payload_time
+        return str(payload_time)
 
 
 class FakeTransport(object):
