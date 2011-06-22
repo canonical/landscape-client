@@ -12,7 +12,30 @@ from landscape.tests.mocker import ANY, MockerTestCase
 from landscape import SERVER_API
 
 
-class MessageStoreTestBase(object):
+class MessageStoreTest(LandscapeTest):
+
+    def setUp(self):
+        super(MessageStoreTest, self).setUp()
+        self.time = 0
+        self.temp_dir = tempfile.mkdtemp()
+        self.persist_filename = tempfile.mktemp()
+        self.store = self.create_store()
+
+    def create_store(self):
+        persist = Persist(filename=self.persist_filename)
+        store = MessageStore(persist, self.temp_dir, 20, get_time=self.get_time)
+        store.set_accepted_types(["empty", "data"])
+        store.add_schema(Message("empty", {}))
+        store.add_schema(Message("empty2", {}))
+        store.add_schema(Message("data", {"data": String()}))
+        store.add_schema(Message("unaccepted", {"data": String()}))
+        return store
+
+    def tearDown(self):
+        super(MessageStoreTest, self).tearDown()
+        shutil.rmtree(self.temp_dir)
+        if os.path.isfile(self.persist_filename):
+            os.unlink(self.persist_filename)
 
     def get_time(self):
         return self.time

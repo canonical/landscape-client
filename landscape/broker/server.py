@@ -266,8 +266,6 @@ plugin which should handle it isn't available.  This could mean that the
 plugin has been intentionally disabled, or that the client isn't running
 properly, or you may be running an older version of the client that doesn't
 support this feature.
-
-Please contact the Landscape team for more information.
 """ % (mtype,)
             response = {
                 "type": "operation-result",
