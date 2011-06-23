@@ -39,6 +39,9 @@ class BrokerConfiguration(Configuration):
               - C{https_proxy}
               - C{cloud}
               - C{otp}
+              - C{record}
+              - C{replay}
+              - C{record-dir}
         """
         parser = super(BrokerConfiguration, self).make_parser()
 
@@ -76,6 +79,15 @@ class BrokerConfiguration(Configuration):
         parser.add_option("--tags",
                           help="Comma separated list of tag names to be sent "
                                "to the server.")
+        parser.add_option("--record", action="store_true",
+                          help="Record data sent to the server on disk (see "
+                               "--record-dir).")
+        parser.add_option("--replay", action="store_true",
+                          help="Replay previously saved data (see "
+                               "--record-dir).")
+        parser.add_option("--record-dir", metavar="record_dir",
+                          help="Directory used to store server exchanges ("
+                               "use with --record/--replay).")
         return parser
 
     @property

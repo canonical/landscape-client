@@ -15,15 +15,14 @@ from landscape import SERVER_API, VERSION
 class HTTPTransport(object):
     """Transport makes a request to exchange message data over HTTP."""
 
-    def __init__(self, url, pubkey=None):
+    def __init__(self, url, pubkey=None, payload_recorder=None):
         """
         @param url: URL of the remote Landscape server message system.
         @param pubkey: SSH public key used for secure communication.
         """
         self._url = url
         self._pubkey = pubkey
-        self._exchange_recorder = PayloadRecorder('/tmp/landscape-replay')
-
+        self._payload_recorder = payload_recorder
 
     def get_url(self):
         """Get the URL of the remote message system."""
@@ -34,9 +33,9 @@ class HTTPTransport(object):
         self._url = url
 
     def _curl(self, payload, computer_id, message_api):
-        headers= {"X-Message-API": message_api,
-                  "User-Agent": "landscape-client/%s" % VERSION,
-                  "Content-Type": "application/octet-stream"}
+        headers = {"X-Message-API": message_api,
+                   "User-Agent": "landscape-client/%s" % VERSION,
+                   "Content-Type": "application/octet-stream"}
         if computer_id:
             headers["X-Computer-ID"] = computer_id
         curl = pycurl.Curl()
@@ -58,7 +57,8 @@ class HTTPTransport(object):
 
         """
         spayload = bpickle.dumps(payload)
-        self._exchange_recorder.save(spayload)
+        if self._payload_recorder:
+            self._payload_recorder.save(spayload)
         try:
             start_time = time.time()
             if logging.getLogger().getEffectiveLevel() <= logging.DEBUG:
@@ -97,8 +97,8 @@ class PayloadRecorder(object):
     Exchange payloads will be stored one per file, where the file name is
     the elapsed time since the client was started.
     """
-    
-    def __init__(self, destination_dir):
+
+    def __init__(self, recording, destination_dir):
         """
         @param destination_dir - The directory to record exchanges in.
         """
@@ -106,7 +106,8 @@ class PayloadRecorder(object):
         self._time_offset = self._time()
         self.destination_dir = destination_dir
         self.last_payload_time = -1
-        if self.destination_dir != None:
+        self.recording = recording
+        if self.recording and self.destination_dir != None:
             self._create_destination_dir(self.destination_dir)
             self._delete_old_payloads()
 
@@ -117,7 +118,7 @@ class PayloadRecorder(object):
         """
         if not os.path.exists(destination_dir):
             os.mkdir(destination_dir)
-        
+
     def _delete_old_payloads(self):
         """Delete payloads lying around from a previous session."""
         for file in os.listdir(self.destination_dir):
@@ -129,9 +130,9 @@ class PayloadRecorder(object):
 
         @param payload: The payload to be persisted.
         """
-        
-        payload_name = self.get_payload_filename()
-        file(self.destination_dir + '/' + payload_name, 'w').write(payload)
+        if self.recording:
+            payload_name = self.get_payload_filename()
+            file(self.destination_dir + '/' + payload_name, 'w').write(payload)
 
     def get_payload_filename(self):
         """
@@ -148,8 +149,9 @@ class PayloadRecorder(object):
 class FakeTransport(object):
     """Fake transport for testing purposes."""
 
-    def __init__(self, url=None, pubkey=None):
+    def __init__(self, url=None, pubkey=None, payload_recorder=None):
         self._pubkey = pubkey
+        self._payload_recorder = payload_recorder
         self.payloads = []
         self.responses = []
         self._current_response = 0
@@ -161,7 +163,7 @@ class FakeTransport(object):
 
     def get_url(self):
         return self._url
-    
+
     def set_url(self, url):
         self._url = url
 

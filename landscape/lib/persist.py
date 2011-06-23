@@ -18,7 +18,8 @@
 # along with this Python module; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-import sys, os
+import os
+import sys
 import copy
 import re
 
@@ -113,7 +114,7 @@ class Persist(object):
         try:
             self._hardmap = self._backend.load(filepath)
         except:
-            filepathold = filepath+".old"
+            filepathold = filepath + ".old"
             if (os.path.isfile(filepathold) and
                 os.path.getsize(filepathold) > 0):
                 # warning("Broken configuration file at %s" % filepath)
@@ -139,7 +140,7 @@ class Persist(object):
             filepath = self.filename
         filepath = os.path.expanduser(filepath)
         if os.path.isfile(filepath):
-            os.rename(filepath, filepath+".old")
+            os.rename(filepath, filepath + ".old")
         dirname = os.path.dirname(filepath)
         if dirname and not os.path.isdir(dirname):
             os.makedirs(dirname)
@@ -263,7 +264,7 @@ class Persist(object):
             current = self._traverse(map, path)
             if type(current) is list and value in current:
                 return
-        path = path+(sys.maxint,)
+        path = path + (sys.maxint,)
         self._traverse(map, path, setvalue=value)
 
     def remove(self, path, value=NOTHING, soft=False, weak=False):
@@ -360,48 +361,49 @@ class RootedPersist(object):
     def has(self, path, value=NOTHING, soft=False, hard=False, weak=False):
         if type(path) is str:
             path = path_string_to_tuple(path)
-        return self.parent.has(self.root+path, value, soft, hard, weak)
+        return self.parent.has(self.root + path, value, soft, hard, weak)
 
     def keys(self, path, soft=False, hard=False, weak=False):
         if type(path) is str:
             path = path_string_to_tuple(path)
-        return self.parent.keys(self.root+path, soft, hard, weak)
+        return self.parent.keys(self.root + path, soft, hard, weak)
 
     def get(self, path, default=None, soft=False, hard=False, weak=False):
         if type(path) is str:
             path = path_string_to_tuple(path)
-        return self.parent.get(self.root+path, default, soft, hard, weak)
+        return self.parent.get(self.root + path, default, soft, hard, weak)
 
     def set(self, path, value, soft=False, weak=False):
         if type(path) is str:
             path = path_string_to_tuple(path)
-        return self.parent.set(self.root+path, value, soft, weak)
+        return self.parent.set(self.root + path, value, soft, weak)
 
     def add(self, path, value, unique=False, soft=False, weak=False):
         if type(path) is str:
             path = path_string_to_tuple(path)
-        return self.parent.add(self.root+path, value, unique, soft, weak)
+        return self.parent.add(self.root + path, value, unique, soft, weak)
 
     def remove(self, path, value=NOTHING, soft=False, weak=False):
         if type(path) is str:
             path = path_string_to_tuple(path)
-        return self.parent.remove(self.root+path, value, soft, weak)
+        return self.parent.remove(self.root + path, value, soft, weak)
 
     def move(self, oldpath, newpath, soft=False, weak=False):
         if type(oldpath) is str:
             oldpath = path_string_to_tuple(oldpath)
         if type(newpath) is str:
             newpath = path_string_to_tuple(newpath)
-        return self.parent.move(self.root+oldpath, self.root+newpath,
+        return self.parent.move(self.root + oldpath, self.root + newpath,
                                 soft, weak)
 
     def root_at(self, path):
         if type(path) is str:
             path = path_string_to_tuple(path)
-        return self.parent.root_at(self.root+path)
+        return self.parent.root_at(self.root + path)
 
 
 _splitpath = re.compile(r"(\[-?\d+\])|(?<!\\)\.").split
+
 
 def path_string_to_tuple(path):
     if "." not in path and "[" not in path:

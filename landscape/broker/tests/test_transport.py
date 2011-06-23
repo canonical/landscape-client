@@ -26,6 +26,7 @@ BADPUBKEY = sibpath("badpublic.ssl")
 
 class DataCollectingResource(resource.Resource):
     request = content = None
+
     def getChild(self, request, name):
         return self
 
@@ -68,13 +69,14 @@ class HTTPTransportTest(LandscapeTest):
         r = DataCollectingResource()
         port = reactor.listenTCP(0, server.Site(r), interface="127.0.0.1")
         self.ports.append(port)
-        transport = HTTPTransport("http://localhost:%d/"
-                                  % (port.getHost().port,))
+        transport = HTTPTransport(
+            "http://localhost:%d/" % (port.getHost().port,))
         result = deferToThread(transport.exchange, "HI", computer_id="34",
                                message_api="X.Y")
 
         def got_result(ignored):
-            self.assertEquals(r.request.received_headers["x-computer-id"], "34")
+            self.assertEquals(r.request.received_headers["x-computer-id"],
+                              "34")
             self.assertEquals(r.request.received_headers["user-agent"],
                               "landscape-client/%s" % (VERSION,))
             self.assertEquals(r.request.received_headers["x-message-api"],
@@ -90,19 +92,18 @@ class HTTPTransportTest(LandscapeTest):
         public key specified.
         """
         r = DataCollectingResource()
-        context_factory = DefaultOpenSSLContextFactory(PRIVKEY,
-                                                       PUBKEY)
+        context_factory = DefaultOpenSSLContextFactory(PRIVKEY, PUBKEY)
         port = reactor.listenSSL(0, server.Site(r), context_factory,
                                  interface="127.0.0.1")
         self.ports.append(port)
-        transport = HTTPTransport("https://localhost:%d/"
-                                  % (port.getHost().port,),
-                                  pubkey=PUBKEY)
+        transport = HTTPTransport(
+            "https://localhost:%d/" % (port.getHost().port,), PUBKEY)
         result = deferToThread(transport.exchange, "HI", computer_id="34",
                                message_api="X.Y")
 
         def got_result(ignored):
-            self.assertEquals(r.request.received_headers["x-computer-id"], "34")
+            self.assertEquals(r.request.received_headers["x-computer-id"],
+                              "34")
             self.assertEquals(r.request.received_headers["user-agent"],
                               "landscape-client/%s" % (VERSION,))
             self.assertEquals(r.request.received_headers["x-message-api"],
@@ -110,7 +111,6 @@ class HTTPTransportTest(LandscapeTest):
             self.assertEquals(bpickle.loads(r.content), "HI")
         result.addCallback(got_result)
         return result
-
 
     def test_ssl_verification_negative(self):
         """
@@ -131,6 +131,7 @@ class HTTPTransportTest(LandscapeTest):
 
         result = deferToThread(transport.exchange, "HI", computer_id="34",
                                message_api="X.Y")
+
         def got_result(ignored):
             self.assertEquals(r.request, None)
             self.assertEquals(r.content, None)
@@ -147,28 +148,37 @@ class PayloadRecorderTest(MockerTestCase):
         payload_recorder._time = same_time
         payload_recorder._time_offset = 0
         return payload_recorder
-        
+
     def test_get_payload_filename(self):
         """
         L{PayloadRecorder.get_payload_filename} should return a filename that
         is equal to the number of seconds since it was created.
         """
-        recorder = self.stub_time(PayloadRecorder(None))
-        
+        recorder = self.stub_time(PayloadRecorder(True, None))
+
         payload_name = recorder.get_payload_filename()
-        
+
         self.assertEquals("12.345", payload_name)
-                      
+
     def test_get_payload_filename_no_duplicates(self):
         """
         L{PayloadRecorder.get_payload_filename} should not generate duplicate
         payload names.
         """
-        recorder = self.stub_time(PayloadRecorder(None))
+        recorder = self.stub_time(PayloadRecorder(True, None))
 
         payload_name_1 = recorder.get_payload_filename()
         payload_name_2 = recorder.get_payload_filename()
-        
+
         self.assertEquals("12.345", payload_name_1)
         self.assertEquals("12.346", payload_name_2)
-        
+
+    def test_save_should_do_nothing_when_not_recording(self):
+        """
+        L{PayloadRecorder.save} should do nothing when recording is not
+        enabled.
+        """
+        recorder = PayloadRecorder(False, None)
+        recorder.get_payload_filename = self.fail
+
+        recorder.save("the whales")
