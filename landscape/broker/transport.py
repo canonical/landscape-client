@@ -130,10 +130,10 @@ class PayloadRecorder(object):
         @param payload: The payload to be persisted.
         """
         
-        payload_name = self.get_payload_name()
+        payload_name = self.get_payload_filename()
         file(self.destination_dir + '/' + payload_name, 'w').write(payload)
 
-    def get_payload_name(self):
+    def get_payload_filename(self):
         """
         Generate a payload filename.  This method ensures that payloads
         will have a unique name.

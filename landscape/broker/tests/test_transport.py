@@ -148,26 +148,26 @@ class PayloadRecorderTest(MockerTestCase):
         payload_recorder._time_offset = 0
         return payload_recorder
         
-    def test_get_payload_name(self):
+    def test_get_payload_filename(self):
         """
-        L{PayloadRecorder.get_payload_name} should return a filename that
+        L{PayloadRecorder.get_payload_filename} should return a filename that
         is equal to the number of seconds since it was created.
         """
         recorder = self.stub_time(PayloadRecorder(None))
         
-        payload_name = recorder.get_payload_name()
+        payload_name = recorder.get_payload_filename()
         
         self.assertEquals("12.345", payload_name)
                       
-    def test_get_payload_name_no_duplicates(self):
+    def test_get_payload_filename_no_duplicates(self):
         """
-        L{PayloadRecorder.get_payload_name} should not generate duplicate
+        L{PayloadRecorder.get_payload_filename} should not generate duplicate
         payload names.
         """
         recorder = self.stub_time(PayloadRecorder(None))
 
-        payload_name_1 = recorder.get_payload_name()
-        payload_name_2 = recorder.get_payload_name()
+        payload_name_1 = recorder.get_payload_filename()
+        payload_name_2 = recorder.get_payload_filename()
         
         self.assertEquals("12.345", payload_name_1)
         self.assertEquals("12.346", payload_name_2)
