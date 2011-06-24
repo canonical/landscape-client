@@ -40,7 +40,6 @@ class BrokerConfiguration(Configuration):
               - C{cloud}
               - C{otp}
               - C{record}
-              - C{replay}
               - C{record-dir}
         """
         parser = super(BrokerConfiguration, self).make_parser()
