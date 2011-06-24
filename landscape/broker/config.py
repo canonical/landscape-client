@@ -82,12 +82,9 @@ class BrokerConfiguration(Configuration):
         parser.add_option("--record", action="store_true",
                           help="Record data sent to the server on disk (see "
                                "--record-dir).")
-        parser.add_option("--replay", action="store_true",
-                          help="Replay previously saved data (see "
-                               "--record-dir).")
         parser.add_option("--record-dir", metavar="record_dir",
                           help="Directory used to store server exchanges ("
-                               "use with --record/--replay).")
+                               "use with --record).")
         return parser
 
     @property
