@@ -79,8 +79,8 @@ class BrokerConfiguration(Configuration):
                           help="Comma separated list of tag names to be sent "
                                "to the server.")
         parser.add_option("--record", action="store_true",
-                          help="Record data sent to the server on disk (see "
-                               "--record-dir).")
+                          help="Record data sent to the server on filesystem "
+                               "(use with --record-dir).")
         parser.add_option("--record-dir", metavar="record_dir",
                           help="Directory used to store server exchanges ("
                                "use with --record).")

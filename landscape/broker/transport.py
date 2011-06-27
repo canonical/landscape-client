@@ -102,8 +102,7 @@ class PayloadRecorder(object):
         """
         @param destination_dir - The directory to record exchanges in.
         """
-        self._time = time.time
-        self._time_offset = self._time()
+        self._time_offset = time.time()
         self.destination_dir = destination_dir
         self.last_payload_time = -1
         self.recording = recording
@@ -139,11 +138,13 @@ class PayloadRecorder(object):
         Generate a payload filename.  This method ensures that payloads
         will have a unique name.
         """
-        payload_time = self._time() - self._time_offset
-        if self.last_payload_time == payload_time:
-            payload_time = payload_time + .001
+        payload_time = time.time() - self._time_offset
+        last_payload_time = '%.3f' % self.last_payload_time
+        this_payload_time = '%.3f' % payload_time
+        if last_payload_time == this_payload_time:
+            payload_time = payload_time + 0.001
         self.last_payload_time = payload_time
-        return str(payload_time)
+        return '%.3f' % payload_time
 
 
 class FakeTransport(object):

@@ -1,4 +1,5 @@
 import os
+import shutil
 
 from landscape import VERSION
 from landscape.broker.transport import HTTPTransport, PayloadRecorder
@@ -142,30 +143,38 @@ class HTTPTransportTest(LandscapeTest):
 
 
 class PayloadRecorderTest(MockerTestCase):
-    def stub_time(self, payload_recorder):
-        def same_time():
-            return 12.345
-        payload_recorder._time = same_time
-        payload_recorder._time_offset = 0
-        return payload_recorder
-
     def test_get_payload_filename(self):
         """
         L{PayloadRecorder.get_payload_filename} should return a filename that
         is equal to the number of seconds since it was created.
         """
-        recorder = self.stub_time(PayloadRecorder(True, None))
+        mock = self.mocker.replace("time.time")
+        mock()
+        self.mocker.result(0.0)
+        mock()
+        self.mocker.result(12.3456)
+        self.mocker.replay()
+        recorder = PayloadRecorder(False, None)
 
         payload_name = recorder.get_payload_filename()
 
-        self.assertEquals("12.345", payload_name)
+        self.assertEquals("12.346", payload_name)
 
     def test_get_payload_filename_no_duplicates(self):
         """
         L{PayloadRecorder.get_payload_filename} should not generate duplicate
         payload names.
         """
-        recorder = self.stub_time(PayloadRecorder(True, None))
+        mock = self.mocker.replace("time.time")
+        mock()
+        self.mocker.result(0.0)
+        mock()
+        self.mocker.result(12.345)
+        mock()
+        self.mocker.result(12.345)
+        self.mocker.replay()
+
+        recorder = PayloadRecorder(False, None)
 
         payload_name_1 = recorder.get_payload_filename()
         payload_name_2 = recorder.get_payload_filename()
@@ -182,3 +191,76 @@ class PayloadRecorderTest(MockerTestCase):
         recorder.get_payload_filename = self.fail
 
         recorder.save("the whales")
+
+    def test_save(self):
+        """L{PayloadRecorder.save} should save the payload to the filesystem.
+        """
+        recorder = PayloadRecorder(True, "./tmp")
+
+        def static_filename():
+            return "filename"
+        recorder.get_payload_filename = static_filename
+
+        recorder.save("payload data")
+
+        self.assertEquals("payload data", file("./tmp/filename").read())
+        shutil.rmtree("./tmp")
+
+    def test_create_destination_dir(self):
+        """
+        L{PayloadRecorder._create_destination_dir} should create the
+        destination directory.
+        """
+        mock = self.mocker.replace("os.path.exists")
+        mock("/tmp/foo")
+        self.mocker.result(False)
+
+        mock = self.mocker.replace("os.mkdir")
+        mock("/tmp/foo")
+        self.mocker.result(True)
+
+        self.mocker.replay()
+
+        recorder = PayloadRecorder(False, None)
+
+        recorder._create_destination_dir("/tmp/foo")
+
+    def test_create_destination_dir_existing(self):
+        """
+        L{PayloadRecorder._create_destination_dir} should do nothing when the
+        destination directory exists.
+        """
+
+        mock = self.mocker.replace("os.path.exists")
+        mock("/")
+        self.mocker.result(True)
+        self.mocker.replay()
+
+        recorder = PayloadRecorder(False, None)
+
+        recorder._create_destination_dir("/")
+
+    def test_delete_old_payloads(self):
+        """
+        L{PayloadRecorder._delete_old_payloads} should remove all files from
+        the destination directory.
+        """
+        mock = self.mocker.replace("os.listdir")
+        mock("/tmp/somedir")
+        self.mocker.result(["one", "two"])
+
+        mock = self.mocker.replace("os.path.isfile")
+        mock("/tmp/somedir/one")
+        self.mocker.result(True)
+
+        mock("/tmp/somedir/two")
+        self.mocker.result(False)
+
+        mock = self.mocker.replace("os.unlink")
+        mock("/tmp/somedir/one")
+
+        self.mocker.replay()
+
+        recorder = PayloadRecorder(False, "/tmp/somedir")
+
+        recorder._delete_old_payloads()
