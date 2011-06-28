@@ -21,7 +21,7 @@ class BrokerConfiguration(Configuration):
     @property
     def exchange_store_path(self):
         return os.path.join(self.data_path, "exchange.database")
-    
+
     def record_directory(self):
         return os.path.join(self.data_path, "exchanges")
 
@@ -43,7 +43,6 @@ class BrokerConfiguration(Configuration):
               - C{cloud}
               - C{otp}
               - C{record}
-              - C{record-dir}
         """
         parser = super(BrokerConfiguration, self).make_parser()
 
