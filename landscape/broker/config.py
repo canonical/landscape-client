@@ -21,6 +21,9 @@ class BrokerConfiguration(Configuration):
     @property
     def exchange_store_path(self):
         return os.path.join(self.data_path, "exchange.database")
+    
+    def record_directory(self):
+        return os.path.join(self.data_path, "exchanges")
 
     def make_parser(self):
         """Parser factory for broker-specific options.
@@ -79,11 +82,7 @@ class BrokerConfiguration(Configuration):
                           help="Comma separated list of tag names to be sent "
                                "to the server.")
         parser.add_option("--record", action="store_true",
-                          help="Record data sent to the server on filesystem "
-                               "(use with --record-dir).")
-        parser.add_option("--record-dir", metavar="record_dir",
-                          help="Directory used to store server exchanges ("
-                               "use with --record).")
+                          help="Record data sent to the server on filesystem ")
         return parser
 
     @property

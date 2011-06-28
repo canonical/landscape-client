@@ -4,6 +4,7 @@ import shutil
 from landscape import VERSION
 from landscape.broker.transport import HTTPTransport, PayloadRecorder
 from landscape.lib.fetch import PyCurlError
+from landscape.lib.fs import create_file
 from landscape.lib import bpickle
 
 from landscape.tests.helpers import (
@@ -143,6 +144,7 @@ class HTTPTransportTest(LandscapeTest):
 
 
 class PayloadRecorderTest(MockerTestCase):
+
     def test_get_payload_filename(self):
         """
         L{PayloadRecorder.get_payload_filename} should return a filename that
@@ -154,7 +156,7 @@ class PayloadRecorderTest(MockerTestCase):
         mock()
         self.mocker.result(12.3456)
         self.mocker.replay()
-        recorder = PayloadRecorder(False, None)
+        recorder = PayloadRecorder(None)
 
         payload_name = recorder.get_payload_filename()
 
@@ -174,7 +176,7 @@ class PayloadRecorderTest(MockerTestCase):
         self.mocker.result(12.345)
         self.mocker.replay()
 
-        recorder = PayloadRecorder(False, None)
+        recorder = PayloadRecorder(None)
 
         payload_name_1 = recorder.get_payload_filename()
         payload_name_2 = recorder.get_payload_filename()
@@ -182,85 +184,36 @@ class PayloadRecorderTest(MockerTestCase):
         self.assertEquals("12.345", payload_name_1)
         self.assertEquals("12.346", payload_name_2)
 
-    def test_save_should_do_nothing_when_not_recording(self):
-        """
-        L{PayloadRecorder.save} should do nothing when recording is not
-        enabled.
-        """
-        recorder = PayloadRecorder(False, None)
-        recorder.get_payload_filename = self.fail
-
-        recorder.save("the whales")
-
     def test_save(self):
         """L{PayloadRecorder.save} should save the payload to the filesystem.
         """
-        recorder = PayloadRecorder(True, "./tmp")
+        path = self.makeDir()
+        recorder = PayloadRecorder(path)
 
         def static_filename():
             return "filename"
         recorder.get_payload_filename = static_filename
-
         recorder.save("payload data")
-
-        self.assertEquals("payload data", file("./tmp/filename").read())
-        shutil.rmtree("./tmp")
+        file_path = os.path.join(path, static_filename())
+        self.assertEquals("payload data", file(file_path).read())
 
     def test_create_destination_dir(self):
         """
-        L{PayloadRecorder._create_destination_dir} should create the
-        destination directory.
+        L{PayloadRecorder} should create the destination directory if it does
+        not exist.
         """
-        mock = self.mocker.replace("os.path.exists")
-        mock("/tmp/foo")
-        self.mocker.result(False)
-
-        mock = self.mocker.replace("os.mkdir")
-        mock("/tmp/foo")
-        self.mocker.result(True)
-
-        self.mocker.replay()
-
-        recorder = PayloadRecorder(False, None)
-
-        recorder._create_destination_dir("/tmp/foo")
-
-    def test_create_destination_dir_existing(self):
-        """
-        L{PayloadRecorder._create_destination_dir} should do nothing when the
-        destination directory exists.
-        """
-
-        mock = self.mocker.replace("os.path.exists")
-        mock("/")
-        self.mocker.result(True)
-        self.mocker.replay()
-
-        recorder = PayloadRecorder(False, None)
-
-        recorder._create_destination_dir("/")
+        path = self.makeDir()
+        os.rmdir(path)
+        recorder = PayloadRecorder(path)
+        self.assertTrue(os.path.isdir(path))
 
     def test_delete_old_payloads(self):
         """
-        L{PayloadRecorder._delete_old_payloads} should remove all files from
-        the destination directory.
+        L{PayloadRecorder} should remove all files from the destination
+        directory before writing new files.
         """
-        mock = self.mocker.replace("os.listdir")
-        mock("/tmp/somedir")
-        self.mocker.result(["one", "two"])
-
-        mock = self.mocker.replace("os.path.isfile")
-        mock("/tmp/somedir/one")
-        self.mocker.result(True)
-
-        mock("/tmp/somedir/two")
-        self.mocker.result(False)
-
-        mock = self.mocker.replace("os.unlink")
-        mock("/tmp/somedir/one")
-
-        self.mocker.replay()
-
-        recorder = PayloadRecorder(False, "/tmp/somedir")
-
-        recorder._delete_old_payloads()
+        path = self.makeDir()
+        create_file(os.path.join(path, "one"), "one")
+        create_file(os.path.join(path, "two"), "two")
+        recorder = PayloadRecorder(path)
+        self.assertEquals([], os.listdir(path))

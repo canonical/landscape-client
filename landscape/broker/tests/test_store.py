@@ -23,7 +23,6 @@ class MessageStoreTest(LandscapeTest):
         self.store = self.create_store()
 
     def create_store(self):
-        persist = Persist(filename=self.persist_filename)
         store = MessageStore(persist, self.temp_dir, 20,
                              get_time=self.get_time)
         store.set_accepted_types(["empty", "data"])

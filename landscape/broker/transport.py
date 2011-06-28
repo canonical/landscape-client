@@ -7,6 +7,7 @@ import pprint
 import pycurl
 
 from landscape.lib.fetch import fetch
+from landscape.lib.fs import create_file
 from landscape.lib import bpickle
 from landscape.log import format_delta
 from landscape import SERVER_API, VERSION
@@ -19,6 +20,8 @@ class HTTPTransport(object):
         """
         @param url: URL of the remote Landscape server message system.
         @param pubkey: SSH public key used for secure communication.
+        @param payload_recorder: PayloadRecorder used for recording exchanges
+            with the server.
         """
         self._url = url
         self._pubkey = pubkey
@@ -57,7 +60,7 @@ class HTTPTransport(object):
 
         """
         spayload = bpickle.dumps(payload)
-        if self._payload_recorder:
+        if self._payload_recorder is not None:
             self._payload_recorder.save(spayload)
         try:
             start_time = time.time()
@@ -98,16 +101,15 @@ class PayloadRecorder(object):
     the elapsed time since the client was started.
     """
 
-    def __init__(self, recording, destination_dir):
+    def __init__(self, destination_dir):
         """
         @param destination_dir - The directory to record exchanges in.
         """
         self._time_offset = time.time()
-        self.destination_dir = destination_dir
-        self.last_payload_time = -1
-        self.recording = recording
-        if self.recording and self.destination_dir != None:
-            self._create_destination_dir(self.destination_dir)
+        self._destination_dir = destination_dir
+        self._last_payload_time = -1
+        if self._destination_dir is not None:
+            self._create_destination_dir(self._destination_dir)
             self._delete_old_payloads()
 
     def _create_destination_dir(self, destination_dir):
@@ -120,18 +122,19 @@ class PayloadRecorder(object):
 
     def _delete_old_payloads(self):
         """Delete payloads lying around from a previous session."""
-        for file in os.listdir(self.destination_dir):
-            if os.path.isfile(self.destination_dir + '/' + file):
-                os.unlink(self.destination_dir + '/' + file)
+        for filename in os.listdir(self._destination_dir):
+            file_path = os.path.join(self._destination_dir, filename)
+            if os.path.isfile(file_path):
+                os.unlink(file_path)
 
     def save(self, payload):
         """Persist the given payload to disk.
 
         @param payload: The payload to be persisted.
         """
-        if self.recording:
-            payload_name = self.get_payload_filename()
-            file(self.destination_dir + '/' + payload_name, 'w').write(payload)
+        payload_name = self.get_payload_filename()
+        create_file(os.path.join(self._destination_dir, payload_name),
+                    payload)
 
     def get_payload_filename(self):
         """
@@ -139,11 +142,11 @@ class PayloadRecorder(object):
         will have a unique name.
         """
         payload_time = time.time() - self._time_offset
-        last_payload_time = '%.3f' % self.last_payload_time
+        last_payload_time = '%.3f' % self._last_payload_time
         this_payload_time = '%.3f' % payload_time
         if last_payload_time == this_payload_time:
             payload_time = payload_time + 0.001
-        self.last_payload_time = payload_time
+        self._last_payload_time = payload_time
         return '%.3f' % payload_time
 
 

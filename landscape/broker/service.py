@@ -49,8 +49,10 @@ class BrokerService(LandscapeService):
             config.data_path, "%s.bpickle" % (self.service_name,))
         super(BrokerService, self).__init__(config)
 
-        self.payload_recorder = PayloadRecorder(config.record,
-                                                config.record_dir)
+        if config.record is not None:
+            self.payload_recorder = PayloadRecorder(config.record_dir)
+        else:
+            self.payload_recorder = None
         self.transport = self.transport_factory(config.url,
                                                 config.ssl_public_key,
                                                 self.payload_recorder)
