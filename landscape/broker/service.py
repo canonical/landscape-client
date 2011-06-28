@@ -53,9 +53,8 @@ class BrokerService(LandscapeService):
             self.payload_recorder = PayloadRecorder(config.record_dir)
         else:
             self.payload_recorder = None
-        self.transport = self.transport_factory(config.url,
-                                                config.ssl_public_key,
-                                                self.payload_recorder)
+        self.transport = self.transport_factory(
+            config.url, config.ssl_public_key, self.payload_recorder)
         self.message_store = get_default_message_store(
             self.persist, config.message_store_path)
         self.identity = Identity(self.config, self.persist)
