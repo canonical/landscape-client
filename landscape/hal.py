@@ -21,7 +21,7 @@ class HALManager(object):
         """Returns a list of HAL devices.
 
         @note: If it wasn't possible to connect to HAL over DBus, then an
-            emtpy list will be returned. This can happen if the HAL or DBus
+            empty list will be returned. This can happen if the HAL or DBus
             services are not running.
         """
         if not self._manager:

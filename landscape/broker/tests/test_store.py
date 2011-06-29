@@ -4,7 +4,8 @@ import os
 
 from landscape.lib.persist import Persist
 from landscape.broker.store import MessageStore
-from landscape.schema import InvalidError, Message, Int, String, UnicodeOrString
+from landscape.schema import (
+    InvalidError, Message, Int, String, UnicodeOrString)
 
 from landscape.tests.helpers import LandscapeTest
 from landscape.tests.mocker import ANY
@@ -22,7 +23,8 @@ class MessageStoreTest(LandscapeTest):
 
     def create_store(self):
         persist = Persist(filename=self.persist_filename)
-        store = MessageStore(persist, self.temp_dir, 20, get_time=self.get_time)
+        store = MessageStore(persist, self.temp_dir, 20,
+                             get_time=self.get_time)
         store.set_accepted_types(["empty", "data"])
         store.add_schema(Message("empty", {}))
         store.add_schema(Message("empty2", {}))
@@ -156,20 +158,23 @@ class MessageStoreTest(LandscapeTest):
 
     def test_unaccepted(self):
         for i in range(10):
-            self.store.add(dict(type=["data", "unaccepted"][i%2], data=str(i)))
+            self.store.add(dict(type=["data", "unaccepted"][i % 2],
+                                data=str(i)))
         il = [m["data"] for m in self.store.get_pending_messages(20)]
         self.assertEquals(il, map(str, [0, 2, 4, 6, 8]))
 
     def test_unaccepted_with_offset(self):
         for i in range(10):
-            self.store.add(dict(type=["data", "unaccepted"][i%2], data=str(i)))
+            self.store.add(dict(type=["data", "unaccepted"][i % 2],
+                                data=str(i)))
         self.store.set_pending_offset(2)
         il = [m["data"] for m in self.store.get_pending_messages(20)]
         self.assertEquals(il, map(str, [4, 6, 8]))
 
     def test_unaccepted_reaccepted(self):
         for i in range(10):
-            self.store.add(dict(type=["data", "unaccepted"][i%2], data=str(i)))
+            self.store.add(dict(type=["data", "unaccepted"][i % 2],
+                                data=str(i)))
         self.store.set_pending_offset(2)
         il = [m["data"] for m in self.store.get_pending_messages(2)]
         self.store.set_accepted_types(["data", "unaccepted"])
@@ -178,7 +183,8 @@ class MessageStoreTest(LandscapeTest):
 
     def test_accepted_unaccepted(self):
         for i in range(10):
-            self.store.add(dict(type=["data", "unaccepted"][i%2], data=str(i)))
+            self.store.add(dict(type=["data", "unaccepted"][i % 2],
+                                data=str(i)))
         # Setting pending offset here means that the first two
         # messages, even though becoming unaccepted now, were already
         # accepted before, so they shouldn't be marked for hold.
@@ -192,7 +198,8 @@ class MessageStoreTest(LandscapeTest):
 
     def test_accepted_unaccepted_old(self):
         for i in range(10):
-            self.store.add(dict(type=["data", "unaccepted"][i%2], data=str(i)))
+            self.store.add(dict(type=["data", "unaccepted"][i % 2],
+                                data=str(i)))
         self.store.set_pending_offset(2)
         self.store.set_accepted_types(["unaccepted"])
         il = [m["data"] for m in self.store.get_pending_messages(20)]
@@ -322,7 +329,6 @@ class MessageStoreTest(LandscapeTest):
         """
         self.assertRaises(InvalidError,
                           self.store.add, {"type": "data", "data": 3})
-
 
     def test_coercion_ignores_custom_api(self):
         """
