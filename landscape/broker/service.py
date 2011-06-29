@@ -50,7 +50,7 @@ class BrokerService(LandscapeService):
         super(BrokerService, self).__init__(config)
 
         if config.record is not None:
-            self.payload_recorder = PayloadRecorder(config.record_dir)
+            self.payload_recorder = PayloadRecorder(config.record_directory)
         else:
             self.payload_recorder = None
         self.transport = self.transport_factory(

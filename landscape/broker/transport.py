@@ -21,7 +21,7 @@ class HTTPTransport(object):
         @param url: URL of the remote Landscape server message system.
         @param pubkey: SSH public key used for secure communication.
         @param payload_recorder: PayloadRecorder used for recording exchanges
-            with the server.
+            with the server.  If C{None}, exchanges will not be recorded.
         """
         self._url = url
         self._pubkey = pubkey

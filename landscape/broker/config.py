@@ -22,6 +22,7 @@ class BrokerConfiguration(Configuration):
     def exchange_store_path(self):
         return os.path.join(self.data_path, "exchange.database")
 
+    @property
     def record_directory(self):
         return os.path.join(self.data_path, "exchanges")
 

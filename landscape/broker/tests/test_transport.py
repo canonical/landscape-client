@@ -1,10 +1,9 @@
 import os
-import shutil
 
 from landscape import VERSION
 from landscape.broker.transport import HTTPTransport, PayloadRecorder
 from landscape.lib.fetch import PyCurlError
-from landscape.lib.fs import create_file
+from landscape.lib.fs import create_file, read_file
 from landscape.lib import bpickle
 
 from landscape.tests.helpers import (
@@ -142,6 +141,54 @@ class HTTPTransportTest(LandscapeTest):
         result.addCallback(got_result)
         return result
 
+    def test_payload_recording_works(self):
+        """
+        When C{HTTPTransport} is configured with a payload recorder, exchanges
+        with the server should be saved to the filesystem.
+        """
+        path = self.makeDir()
+        recorder = PayloadRecorder(path)
+
+        def static_filename():
+            return "filename"
+        recorder.get_payload_filename = static_filename
+
+        transport = HTTPTransport("http://localhost",
+                                  payload_recorder=recorder)
+
+        def fake_curl(param1, param2, param3):
+            """Stub out the curl network call."""
+            class Curly(object):
+                def getinfo(self, param1):
+                    return 200
+            return (Curly(), bpickle.dumps("pay load response"))
+        transport._curl = fake_curl
+
+        transport.exchange("pay load")
+
+        file_path = os.path.join(path, static_filename())
+        self.assertEquals("pay load", bpickle.loads(read_file(file_path)))
+
+    def test_exchange_works_without_payload_recording(self):
+        """
+        When C{HTTPTransport} is configured without a payload recorder,
+        exchanges with the server should still complete.
+        """
+        transport = HTTPTransport("http://localhost")
+        self.called = False
+                
+        def fake_curl(param1, param2, param3):
+            """Stub out the curl network call."""
+            self.called = True
+            class Curly(object):
+                def getinfo(self, param1):
+                    return 200
+            return (Curly(), bpickle.dumps("pay load response"))
+        transport._curl = fake_curl
+
+        transport.exchange("pay load")
+
+        self.assertTrue(self.called)
 
 class PayloadRecorderTest(MockerTestCase):
 
@@ -195,7 +242,7 @@ class PayloadRecorderTest(MockerTestCase):
         recorder.get_payload_filename = static_filename
         recorder.save("payload data")
         file_path = os.path.join(path, static_filename())
-        self.assertEquals("payload data", file(file_path).read())
+        self.assertEquals("payload data", read_file(file_path))
 
     def test_create_destination_dir(self):
         """
@@ -204,7 +251,7 @@ class PayloadRecorderTest(MockerTestCase):
         """
         path = self.makeDir()
         os.rmdir(path)
-        recorder = PayloadRecorder(path)
+        PayloadRecorder(path)
         self.assertTrue(os.path.isdir(path))
 
     def test_delete_old_payloads(self):
@@ -215,5 +262,5 @@ class PayloadRecorderTest(MockerTestCase):
         path = self.makeDir()
         create_file(os.path.join(path, "one"), "one")
         create_file(os.path.join(path, "two"), "two")
-        recorder = PayloadRecorder(path)
+        PayloadRecorder(path)
         self.assertEquals([], os.listdir(path))
