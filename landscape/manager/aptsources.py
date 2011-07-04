@@ -132,9 +132,7 @@ class AptSources(ManagerPlugin):
                 new_sources.write("#%s" % line)
         new_sources.close()
 
-        stat = os.stat(self.SOURCES_LIST)
-        os.chmod(path, stat.st_mode)
-
+        os.chmod(path, os.stat(self.SOURCES_LIST).st_mode)
         shutil.move(path, self.SOURCES_LIST)
 
         for filename in glob.glob(os.path.join(self.SOURCES_LIST_D, "*.list")):
