@@ -55,6 +55,28 @@ class AptSourcesTests(LandscapeTest):
                             [{"type": "operation-result",
                               "status": SUCCEEDED, "operation-id": 1}])
 
+    def test_sources_list_permissions(self):
+        """
+        When getting a repository message, L{AptSources} keeps sources.list
+        permissions.
+        """
+        sources = file(self.sourceslist.SOURCES_LIST, "w")
+        sources.write("oki\n\ndoki\n#comment\n # other comment\n")
+        sources.close()
+        sources_stat_orig = os.stat(self.sourceslist.SOURCES_LIST)
+
+        self.manager.dispatch_message(
+            {"type": "apt-sources-replace", "sources": [], "gpg-keys": [],
+             "operation-id": 1})
+
+        service = self.broker_service
+        self.assertMessages(service.message_store.get_pending_messages(),
+                            [{"type": "operation-result",
+                              "status": SUCCEEDED, "operation-id": 1}])
+
+        sources_stat_after = os.stat(self.sourceslist.SOURCES_LIST)
+        self.assertEqual(sources_stat_orig.st_mode, sources_stat_after.st_mode)
+
     def test_random_failures(self):
         """
         If a failure happens during the manipulation of sources, the activity
