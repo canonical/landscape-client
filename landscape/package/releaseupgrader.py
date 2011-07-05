@@ -8,8 +8,7 @@ import tarfile
 import cStringIO
 import ConfigParser
 
-from twisted.internet.protocol import ProcessProtocol
-from twisted.internet.defer import succeed, Deferred
+from twisted.internet.defer import succeed
 from twisted.internet.process import Process, ProcessReader
 
 from landscape.lib.fetch import url_to_filename, fetch_to_files
@@ -18,6 +17,7 @@ from landscape.lib.gpg import gpg_verify
 from landscape.lib.fs import read_file
 from landscape.package.taskhandler import (
     PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler)
+from landscape.lib.twisted_util import spawn_process
 from landscape.manager.manager import SUCCEEDED, FAILED
 from landscape.package.reporter import find_reporter_command
 
@@ -272,12 +272,8 @@ class ReleaseUpgrader(PackageTaskHandler):
         if debug:
             env["DEBUG_UPDATE_MANAGER"] = "True"
 
-        from twisted.internet import reactor
-        result = Deferred()
-        process_protocol = AllOutputProcessProtocol(result)
-        process = reactor.spawnProcess(process_protocol, upgrade_tool_filename,
-                                       args=args, env=env,
-                                       path=upgrade_tool_directory)
+        process, result = spawn_process(upgrade_tool_filename, args=args,
+                                        env=env, path=upgrade_tool_directory)
 
         def maybeCallProcessEnded():
             """A less strict version of Process.maybeCallProcessEnded.
@@ -335,11 +331,8 @@ class ReleaseUpgrader(PackageTaskHandler):
         if self._config.config is not None:
             args.append("--config=%s" % self._config.config)
 
-        result = Deferred()
-        process_protocol = AllOutputProcessProtocol(result)
-        from twisted.internet import reactor
-        reactor.spawnProcess(process_protocol, reporter, args=args, uid=uid,
-                             gid=gid, path=os.getcwd(), env=os.environ)
+        process, result = spawn_process(reporter, args=args, uid=uid, gid=gid,
+                                        path=os.getcwd(), env=os.environ)
         return result
 
     def abort(self, failure, operation_id):
@@ -356,27 +349,6 @@ class ReleaseUpgrader(PackageTaskHandler):
     @staticmethod
     def find_command():
         return find_release_upgrader_command()
-
-
-class AllOutputProcessProtocol(ProcessProtocol):
-    """A process protocoll for getting stdout, stderr and exit code."""
-
-    def __init__(self, deferred):
-        self.deferred = deferred
-        self.outBuf = cStringIO.StringIO()
-        self.errBuf = cStringIO.StringIO()
-        self.outReceived = self.outBuf.write
-        self.errReceived = self.errBuf.write
-
-    def processEnded(self, reason):
-        out = self.outBuf.getvalue()
-        err = self.errBuf.getvalue()
-        e = reason.value
-        code = e.exitCode
-        if e.signal:
-            self.deferred.errback((out, err, e.signal))
-        else:
-            self.deferred.callback((out, err, code))
 
 
 def find_release_upgrader_command():
