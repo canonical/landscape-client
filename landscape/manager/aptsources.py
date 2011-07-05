@@ -31,9 +31,7 @@ class AptSources(ManagerPlugin):
         """
         Run the process in an asynchronous fashion, to be overriden in tests.
         """
-        process, result = spawn_process(command, args, env=env, path=path,
-                                        uid=uid, gid=gid)
-        return result
+        return spawn_process(command, args, env=env, path=path, uid=uid, gid=gid)
 
     def _wrap_handle_repositories(self, message):
         """

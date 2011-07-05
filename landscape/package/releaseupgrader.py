@@ -9,7 +9,6 @@ import cStringIO
 import ConfigParser
 
 from twisted.internet.defer import succeed
-from twisted.internet.process import Process, ProcessReader
 
 from landscape.lib.fetch import url_to_filename, fetch_to_files
 from landscape.lib.lsb_release import parse_lsb_release, LSB_RELEASE_FILENAME
@@ -272,30 +271,8 @@ class ReleaseUpgrader(PackageTaskHandler):
         if debug:
             env["DEBUG_UPDATE_MANAGER"] = "True"
 
-        process, result = spawn_process(upgrade_tool_filename, args=args,
-                                        env=env, path=upgrade_tool_directory)
-
-        def maybeCallProcessEnded():
-            """A less strict version of Process.maybeCallProcessEnded.
-
-            This behaves exactly like the original method, but in case the
-            process has ended already and sent us a SIGCHLD, it doesn't wait
-            for the stdin/stdout pipes to close, because the child process
-            itself might have passed them to its own child processes.
-
-            @note: Twisted 8.2 now has a processExited hook that could
-                be used in place of this workaround.
-            """
-            if process.pipes and not process.pid:
-                for pipe in process.pipes.itervalues():
-                    if isinstance(pipe, ProcessReader):
-                        # Read whatever is left
-                        pipe.doRead()
-                    pipe.stopReading()
-                process.pipes = {}
-            Process.maybeCallProcessEnded(process)
-
-        process.maybeCallProcessEnded = maybeCallProcessEnded
+        result = spawn_process(upgrade_tool_filename, args=args, env=env,
+                               path=upgrade_tool_directory, wait_pipes=False)
 
         def send_operation_result((out, err, code)):
             if code == 0:
@@ -331,9 +308,8 @@ class ReleaseUpgrader(PackageTaskHandler):
         if self._config.config is not None:
             args.append("--config=%s" % self._config.config)
 
-        process, result = spawn_process(reporter, args=args, uid=uid, gid=gid,
-                                        path=os.getcwd(), env=os.environ)
-        return result
+        return spawn_process(reporter, args=args, uid=uid, gid=gid,
+                             path=os.getcwd(), env=os.environ)
 
     def abort(self, failure, operation_id):
         """Abort the task reporting details about the failure."""
