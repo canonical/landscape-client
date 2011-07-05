@@ -1,11 +1,10 @@
 from unittest import TestCase
 
-from landscape.tests.helpers import MockerTestCase
-
 from landscape.broker.transport import PayloadRecorder
 from landscape.player.reader import PayloadReader
 
-class PayloadReaderTest(MockerTestCase):
+
+class PayloadReaderTest(TestCase):
 
     def test_load_returns_filename(self):
         path = self.makeDir()
