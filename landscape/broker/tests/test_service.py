@@ -22,7 +22,7 @@ class BrokerServiceTest(LandscapeTest):
         """
         A L{BrokerService} instance has a proper C{persist} attribute.
         """
-        self.assertEquals(
+        self.assertEqual(
             self.service.persist.filename,
             os.path.join(self.config.data_path, "broker.bpickle"))
 
@@ -31,38 +31,38 @@ class BrokerServiceTest(LandscapeTest):
         A L{BrokerService} instance has a proper C{transport} attribute.
         """
         self.assertTrue(isinstance(self.service.transport, HTTPTransport))
-        self.assertEquals(self.service.transport.get_url(), self.config.url)
+        self.assertEqual(self.service.transport.get_url(), self.config.url)
 
     def test_message_store(self):
         """
         A L{BrokerService} instance has a proper C{message_store} attribute.
         """
-        self.assertEquals(self.service.message_store.get_accepted_types(), ())
+        self.assertEqual(self.service.message_store.get_accepted_types(), ())
 
     def test_identity(self):
         """
         A L{BrokerService} instance has a proper C{identity} attribute.
         """
-        self.assertEquals(self.service.identity.account_name, "some_account")
+        self.assertEqual(self.service.identity.account_name, "some_account")
 
     def test_exchanger(self):
         """
         A L{BrokerService} instance has a proper C{exchanger} attribute.
         """
-        self.assertEquals(self.service.exchanger.get_exchange_intervals(),
-                          (60, 900))
+        self.assertEqual(self.service.exchanger.get_exchange_intervals(),
+                         (60, 900))
 
     def test_pinger(self):
         """
         A L{BrokerService} instance has a proper C{pinger} attribute.
         """
-        self.assertEquals(self.service.pinger.get_url(), self.config.ping_url)
+        self.assertEqual(self.service.pinger.get_url(), self.config.ping_url)
 
     def test_registration(self):
         """
         A L{BrokerService} instance has a proper C{registration} attribute.
         """
-        self.assertEquals(self.service.registration.should_register(), False)
+        self.assertEqual(self.service.registration.should_register(), False)
 
     def test_wb_exit(self):
         """

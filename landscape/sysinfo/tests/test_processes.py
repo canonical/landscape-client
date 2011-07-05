@@ -19,6 +19,7 @@ class ProcessesTest(LandscapeTest):
         result = self.processes.run()
         self.assertTrue(isinstance(result, Deferred))
         called = []
+
         def callback(result):
             called.append(True)
         result.addCallback(callback)
@@ -30,20 +31,20 @@ class ProcessesTest(LandscapeTest):
             self.builder.create_data(i, self.builder.RUNNING, uid=0, gid=0,
                                      process_name="foo%d" % (i,))
         self.processes.run()
-        self.assertEquals(self.sysinfo.get_headers(),
-                          [("Processes", "3")])
+        self.assertEqual(self.sysinfo.get_headers(),
+                         [("Processes", "3")])
 
     def test_no_zombies(self):
         self.processes.run()
-        self.assertEquals(self.sysinfo.get_notes(), [])
+        self.assertEqual(self.sysinfo.get_notes(), [])
 
     def test_number_of_zombies(self):
         """The number of zombies is added as a note."""
         self.builder.create_data(99, self.builder.ZOMBIE, uid=0, gid=0,
                                  process_name="ZOMBERS")
         self.processes.run()
-        self.assertEquals(self.sysinfo.get_notes(),
-                          ["There is 1 zombie process."])
+        self.assertEqual(self.sysinfo.get_notes(),
+                         ["There is 1 zombie process."])
 
     def test_multiple_zombies(self):
         """Stupid English, and its plurality"""
@@ -51,5 +52,5 @@ class ProcessesTest(LandscapeTest):
             self.builder.create_data(i, self.builder.ZOMBIE, uid=0, gid=0,
                                      process_name="ZOMBERS%d" % (i,))
         self.processes.run()
-        self.assertEquals(self.sysinfo.get_notes(),
-                          ["There are 2 zombie processes."])
+        self.assertEqual(self.sysinfo.get_notes(),
+                         ["There are 2 zombie processes."])

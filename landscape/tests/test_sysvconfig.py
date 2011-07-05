@@ -9,13 +9,13 @@ class SysVConfigTest(LandscapeTest):
         filename = self.makeFile("RUN=0\n")
         sysvconfig = SysVConfig(filename)
         sysvconfig.set_start_on_boot(True)
-        self.assertEquals(file(filename, "r").read(), "RUN=1\n")
+        self.assertEqual(file(filename, "r").read(), "RUN=1\n")
 
     def test_set_to_not_run_on_boot(self):
         filename = self.makeFile("RUN=1\n")
         sysvconfig = SysVConfig(filename)
         sysvconfig.set_start_on_boot(False)
-        self.assertEquals(file(filename, "r").read(), "RUN=0\n")
+        self.assertEqual(file(filename, "r").read(), "RUN=0\n")
 
     def test_configured_to_run(self):
         filename = self.makeFile("RUN=1\n")

@@ -126,8 +126,8 @@ class RemoteBrokerTest(LandscapeTest):
         """
 
         def assert_response(response):
-            self.assertEquals(response, None)
-            self.assertEquals(
+            self.assertEqual(response, None)
+            self.assertEqual(
                 self.exchanger.get_client_accepted_message_types(),
                 sorted(["type"] + DEFAULT_ACCEPTED_TYPES))
 

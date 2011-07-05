@@ -38,8 +38,8 @@ class ConfigurationTest(LandscapeTest):
     def test_get(self):
         self.write_config_file(log_level="file")
         self.config.load([])
-        self.assertEquals(self.config.get("log_level"), "file")
-        self.assertEquals(self.config.get("random_key"), None)
+        self.assertEqual(self.config.get("log_level"), "file")
+        self.assertEqual(self.config.get("random_key"), None)
 
     def write_config_file(self, **kwargs):
         section_name = kwargs.pop("section_name", "client")
@@ -51,7 +51,7 @@ class ConfigurationTest(LandscapeTest):
     def test_command_line_has_precedence(self):
         self.write_config_file(log_level="file")
         self.config.load(["--log-level", "command line"])
-        self.assertEquals(self.config.log_level, "command line")
+        self.assertEqual(self.config.log_level, "command line")
 
     def test_command_line_option_without_default(self):
 
@@ -63,7 +63,7 @@ class ConfigurationTest(LandscapeTest):
                 parser.add_option("--foo-bar")
                 return parser
 
-        self.assertEquals(MyConfiguration().foo_bar, None)
+        self.assertEqual(MyConfiguration().foo_bar, None)
 
     def test_command_line_with_required_options(self):
 
@@ -84,9 +84,9 @@ class ConfigurationTest(LandscapeTest):
         self.mocker.count(1)
         self.mocker.replay()
 
-        self.config.load([]) # This will call our mocked sys.exit.
+        self.config.load([])  # This will call our mocked sys.exit.
         self.config.load(["--foo-bar", "ooga"])
-        self.assertEquals(self.config.foo_bar, "ooga")
+        self.assertEqual(self.config.foo_bar, "ooga")
 
     def test_command_line_with_unsaved_options(self):
 
@@ -104,22 +104,22 @@ class ConfigurationTest(LandscapeTest):
         self.write_config_file()
 
         self.config.load(["--foo-bar", "ooga"])
-        self.assertEquals(self.config.foo_bar, "ooga")
+        self.assertEqual(self.config.foo_bar, "ooga")
         self.config.write()
 
         self.config.load([])
-        self.assertEquals(self.config.foo_bar, None)
+        self.assertEqual(self.config.foo_bar, None)
 
     def test_config_file_has_precedence_over_default(self):
         self.write_config_file(log_level="file")
         self.config.load([])
-        self.assertEquals(self.config.log_level, "file")
+        self.assertEqual(self.config.log_level, "file")
 
     def test_different_config_file_section(self):
         self.reset_config(configuration_class=BabbleConfiguration)
         self.write_config_file(section_name="babble", whatever="yay")
         self.config.load([])
-        self.assertEquals(self.config.whatever, "yay")
+        self.assertEqual(self.config.whatever, "yay")
 
     def test_no_section_available(self):
         config_filename = self.makeFile("")
@@ -136,7 +136,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.log_level = "warning"
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEquals(data.strip(), "[client]\nlog_level = warning")
+        self.assertEqual(data.strip(), "[client]\nlog_level = warning")
 
     def test_write_configuration_with_section(self):
         self.reset_config(configuration_class=BabbleConfiguration)
@@ -144,7 +144,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.whatever = "boo"
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEquals(data.strip(), "[babble]\nwhatever = boo")
+        self.assertEqual(data.strip(), "[babble]\nwhatever = boo")
 
     def test_write_unrelated_configuration_back(self):
         """
@@ -159,7 +159,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.whatever = "boo"
         self.config.write()
         data = open(config_filename).read()
-        self.assertEquals(
+        self.assertEqual(
             data.strip(),
             "[babble]\nwhatever = boo\n\n[goojy]\nunrelated = yes")
 
@@ -171,14 +171,14 @@ class ConfigurationTest(LandscapeTest):
         self.config.log_level = "warning"
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEquals(data.strip(), "[client]\nlog_level = warning")
+        self.assertEqual(data.strip(), "[client]\nlog_level = warning")
 
     def test_dont_write_default_options(self):
         self.write_config_file(log_level="debug")
         self.config.log_level = "info"
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEquals(data.strip(), "[client]")
+        self.assertEqual(data.strip(), "[client]")
 
     def test_dont_delete_explicitly_set_default_options(self):
         """
@@ -189,21 +189,21 @@ class ConfigurationTest(LandscapeTest):
         self.write_config_file(log_level="info")
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEquals(data.strip(), "[client]\nlog_level = info")
+        self.assertEqual(data.strip(), "[client]\nlog_level = info")
 
     def test_dont_write_config_option(self):
         self.write_config_file()
         self.config.config = self.config_filename
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEquals(data.strip(), "[client]")
+        self.assertEqual(data.strip(), "[client]")
 
     def test_write_command_line_options(self):
         self.write_config_file()
         self.config.load(["--log-level", "warning"])
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEquals(data.strip(), "[client]\nlog_level = warning")
+        self.assertEqual(data.strip(), "[client]\nlog_level = warning")
 
     def test_write_command_line_precedence(self):
         """Command line options take precedence over config file when writing.
@@ -212,7 +212,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.load(["--log-level", "warning"])
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEquals(data.strip(), "[client]\nlog_level = warning")
+        self.assertEqual(data.strip(), "[client]\nlog_level = warning")
 
     def test_write_manually_set_precedence(self):
         """Manually set options take precedence over command line when writing.
@@ -222,7 +222,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.log_level = "error"
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEquals(data.strip(), "[client]\nlog_level = error")
+        self.assertEqual(data.strip(), "[client]\nlog_level = error")
 
     def test_write_to_given_config_file(self):
         filename = self.makeFile()
@@ -231,16 +231,16 @@ class ConfigurationTest(LandscapeTest):
         self.config.log_level = "error"
         self.config.write()
         data = open(filename).read()
-        self.assertEquals(data.strip(), "[client]\nlog_level = error")
+        self.assertEqual(data.strip(), "[client]\nlog_level = error")
 
     def test_config_option(self):
         opts = self.parser.parse_args(["--config", "hello.cfg"])[0]
-        self.assertEquals(opts.config, "hello.cfg")
+        self.assertEqual(opts.config, "hello.cfg")
 
     def test_load_config_from_option(self):
         filename = self.makeFile("[client]\nhello = world\n")
         self.config.load(["--config", filename])
-        self.assertEquals(self.config.hello, "world")
+        self.assertEqual(self.config.hello, "world")
 
     def test_load_typed_option_from_file(self):
 
@@ -254,7 +254,7 @@ class ConfigurationTest(LandscapeTest):
         filename = self.makeFile("[client]\nyear = 2008\n")
         config = MyConfiguration()
         config.load(["--config", filename])
-        self.assertEquals(config.year, 2008)
+        self.assertEqual(config.year, 2008)
 
     def test_load_typed_option_from_command_line(self):
 
@@ -267,49 +267,49 @@ class ConfigurationTest(LandscapeTest):
 
         config = MyConfiguration()
         config.load(["--year", "2008"])
-        self.assertEquals(config.year, 2008)
+        self.assertEqual(config.year, 2008)
 
     def test_reload(self):
         filename = self.makeFile("[client]\nhello = world1\n")
         self.config.load(["--config", filename])
         open(filename, "w").write("[client]\nhello = world2\n")
         self.config.reload()
-        self.assertEquals(self.config.hello, "world2")
+        self.assertEqual(self.config.hello, "world2")
 
     def test_data_directory_option(self):
         opts = self.parser.parse_args(["--data-path", "/opt/hoojy/var/run"])[0]
-        self.assertEquals(opts.data_path, "/opt/hoojy/var/run")
+        self.assertEqual(opts.data_path, "/opt/hoojy/var/run")
 
     def test_data_directory_default(self):
         opts = self.parser.parse_args([])[0]
-        self.assertEquals(opts.data_path, "/var/lib/landscape/client/")
+        self.assertEqual(opts.data_path, "/var/lib/landscape/client/")
 
     def test_log_file_option(self):
         opts = self.parser.parse_args(["--log-dir",
                                        "/var/log/my-awesome-log"])[0]
-        self.assertEquals(opts.log_dir, "/var/log/my-awesome-log")
+        self.assertEqual(opts.log_dir, "/var/log/my-awesome-log")
 
     def test_log_level_option(self):
         opts = self.parser.parse_args([])[0]
-        self.assertEquals(opts.log_level, "info")
+        self.assertEqual(opts.log_level, "info")
         opts = self.parser.parse_args(["--log-level", "debug"])[0]
-        self.assertEquals(opts.log_level, "debug")
+        self.assertEqual(opts.log_level, "debug")
 
     def test_quiet_option(self):
         opts = self.parser.parse_args(["--quiet"])[0]
-        self.assertEquals(opts.quiet, True)
+        self.assertEqual(opts.quiet, True)
 
     def test_quiet_default(self):
         opts = self.parser.parse_args([])[0]
-        self.assertEquals(opts.quiet, False)
+        self.assertEqual(opts.quiet, False)
 
     def test_ignore_sigint_option(self):
         opts = self.parser.parse_args(["--ignore-sigint"])[0]
-        self.assertEquals(opts.ignore_sigint, True)
+        self.assertEqual(opts.ignore_sigint, True)
 
     def test_ignore_sigint_default(self):
         opts = self.parser.parse_args([])[0]
-        self.assertEquals(opts.ignore_sigint, False)
+        self.assertEqual(opts.ignore_sigint, False)
 
     def test_get_config_filename_precedence(self):
         default_filename1 = self.makeFile("")
@@ -322,34 +322,34 @@ class ConfigurationTest(LandscapeTest):
         # If nothing else is set, and the first configuration file
         # isn't readable, return the second default file.
         os.chmod(default_filename1, 0)
-        self.assertEquals(self.config.get_config_filename(),
-                          default_filename2)
+        self.assertEqual(self.config.get_config_filename(),
+                         default_filename2)
 
         # If is is readable, than return the first default configuration file.
         os.chmod(default_filename1, 0644)
-        self.assertEquals(self.config.get_config_filename(),
-                          default_filename1)
+        self.assertEqual(self.config.get_config_filename(),
+                         default_filename1)
 
         # Unless another file was explicitly loaded before, in which
         # case return the loaded filename.
         self.config.load_configuration_file(loaded_filename)
-        self.assertEquals(self.config.get_config_filename(),
-                          loaded_filename)
+        self.assertEqual(self.config.get_config_filename(),
+                         loaded_filename)
 
         # Except in the case where a configuration file was explicitly
         # requested through the command line or something.  In this case,
         # this is the highest precedence.
         self.config.config = explicit_filename
-        self.assertEquals(self.config.get_config_filename(),
-                          explicit_filename)
+        self.assertEqual(self.config.get_config_filename(),
+                         explicit_filename)
 
     def test_sockets_path(self):
         """
         The L{Configuration.socket_path} property returns the path to the
         socket directory.
         """
-        self.assertEquals(self.config.sockets_path,
-                          "/var/lib/landscape/client/sockets")
+        self.assertEqual(self.config.sockets_path,
+                         "/var/lib/landscape/client/sockets")
 
 
 class GetVersionedPersistTest(LandscapeTest):
@@ -370,4 +370,4 @@ class GetVersionedPersistTest(LandscapeTest):
         self.mocker.replay()
 
         persist = get_versioned_persist(FakeService())
-        self.assertEquals(stash[0], persist)
+        self.assertEqual(stash[0], persist)

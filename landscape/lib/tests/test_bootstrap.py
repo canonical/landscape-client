@@ -117,7 +117,7 @@ class BootstrapFileTest(BootstrapCreationTest):
         filename = self.makeFile("CONTENT")
         file = self.bootstrap_class(filename)
         file.bootstrap()
-        self.assertEquals(open(filename).read(), "CONTENT")
+        self.assertEqual(open(filename).read(), "CONTENT")
 
 
 class BootstrapDirectoryTest(BootstrapCreationTest):

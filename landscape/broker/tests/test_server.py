@@ -68,14 +68,14 @@ class BrokerServerTest(LandscapeTest):
         client components that need to communicate with the server. After
         the registration they can be fetched with L{BrokerServer.get_clients}.
         """
-        self.assertEquals(self.broker.get_clients(), [])
-        self.assertEquals(self.broker.get_client("test"), None)
-        self.assertEquals(self.broker.get_connectors(), [])
-        self.assertEquals(self.broker.get_connector("test"), None)
+        self.assertEqual(self.broker.get_clients(), [])
+        self.assertEqual(self.broker.get_client("test"), None)
+        self.assertEqual(self.broker.get_connectors(), [])
+        self.assertEqual(self.broker.get_connector("test"), None)
 
         def assert_registered(ignored):
-            self.assertEquals(len(self.broker.get_clients()), 1)
-            self.assertEquals(len(self.broker.get_connectors()), 1)
+            self.assertEqual(len(self.broker.get_clients()), 1)
+            self.assertEqual(len(self.broker.get_connectors()), 1)
             self.assertTrue(
                 isinstance(self.broker.get_client("test"), FakeClient))
             self.assertTrue(
@@ -126,7 +126,7 @@ class BrokerServerTest(LandscapeTest):
         """
         open(self.config_filename, "a").write("computer_title = New Title")
         result = self.broker.reload_configuration()
-        result.addCallback(lambda x: self.assertEquals(
+        result.addCallback(lambda x: self.assertEqual(
             self.config.computer_title, "New Title"))
         return result
 
@@ -162,7 +162,7 @@ class BrokerServerTest(LandscapeTest):
         if no message types are accepted by the Landscape server.
         """
         self.mstore.set_accepted_types([])
-        self.assertEquals(self.broker.get_accepted_message_types(), [])
+        self.assertEqual(self.broker.get_accepted_message_types(), [])
 
     def test_get_accepted_message_types(self):
         """
@@ -170,15 +170,15 @@ class BrokerServerTest(LandscapeTest):
         message types accepted by the Landscape server.
         """
         self.mstore.set_accepted_types(["foo", "bar"])
-        self.assertEquals(sorted(self.broker.get_accepted_message_types()),
-                          ["bar", "foo"])
+        self.assertEqual(sorted(self.broker.get_accepted_message_types()),
+                         ["bar", "foo"])
 
     def test_get_server_uuid_with_unset_uuid(self):
         """
         The L{BrokerServer.get_server_uuid} method returns C{None} if the uuid
         of the Landscape server we're pointing at is unknown.
         """
-        self.assertEquals(self.broker.get_server_uuid(), None)
+        self.assertEqual(self.broker.get_server_uuid(), None)
 
     def test_get_server_uuid(self):
         """
@@ -186,7 +186,7 @@ class BrokerServerTest(LandscapeTest):
         Landscape server we're pointing at.
         """
         self.mstore.set_server_uuid("the-uuid")
-        self.assertEquals(self.broker.get_server_uuid(), "the-uuid")
+        self.assertEqual(self.broker.get_server_uuid(), "the-uuid")
 
     def test_register_client_accepted_message_type(self):
         """
@@ -195,8 +195,8 @@ class BrokerServerTest(LandscapeTest):
         """
         self.broker.register_client_accepted_message_type("type1")
         self.broker.register_client_accepted_message_type("type2")
-        self.assertEquals(self.exchanger.get_client_accepted_message_types(),
-                          sorted(["type1", "type2"] + DEFAULT_ACCEPTED_TYPES))
+        self.assertEqual(self.exchanger.get_client_accepted_message_types(),
+                         sorted(["type1", "type2"] + DEFAULT_ACCEPTED_TYPES))
 
     def test_fire_event(self):
         """
@@ -284,8 +284,8 @@ class BrokerServerTest(LandscapeTest):
         the given events.
         """
         result = self.broker.listen_events(["event"])
-        self.assertEquals(self.reactor.fire("event"), [None])
-        self.assertEquals(self.reactor.fire("event"), [])
+        self.assertEqual(self.reactor.fire("event"), [None])
+        self.assertEqual(self.reactor.fire("event"), [])
         return self.assertSuccess(result, "event")
 
 

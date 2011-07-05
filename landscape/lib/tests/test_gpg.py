@@ -32,7 +32,8 @@ class GPGTest(LandscapeTest):
             result = gpg_verify("/some/file", "/some/signature", gpg=gpg)
 
             def check_result(ignored):
-                self.assertEquals(open(gpg_options).read(),
+                self.assertEqual(
+                    open(gpg_options).read(),
                     "--no-options --homedir %s --no-default-keyring "
                     "--ignore-time-conflict --keyring /etc/apt/trusted.gpg "
                     "--verify /some/signature /some/file" % gpg_home)
@@ -64,9 +65,9 @@ class GPGTest(LandscapeTest):
             result = gpg_verify("/some/file", "/some/signature", gpg=gpg)
 
             def check_failure(failure):
-                self.assertEquals(str(failure.value),
-                                  "%s failed (out='out\n', err='err\n', "
-                                  "code='1')" % gpg)
+                self.assertEqual(str(failure.value),
+                                 "%s failed (out='out\n', err='err\n', "
+                                 "code='1')" % gpg)
                 self.assertFalse(os.path.exists(gpg_home))
 
             result.addCallback(self.fail)

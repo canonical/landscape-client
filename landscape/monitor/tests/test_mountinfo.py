@@ -44,13 +44,13 @@ class MountInfoTest(LandscapeTest):
 
         message = plugin.create_mount_info_message()
         self.assertTrue(message)
-        self.assertEquals(message["type"], "mount-info")
+        self.assertEqual(message["type"], "mount-info")
         self.assertTrue("mount-info" in message)
         self.assertTrue(len(message["mount-info"]) > 0)
 
         keys = set(["filesystem", "total-space", "device", "mount-point"])
         for now, mount_info in message["mount-info"]:
-            self.assertEquals(set(mount_info.keys()), keys)
+            self.assertEqual(set(mount_info.keys()), keys)
             self.assertTrue(isinstance(mount_info["filesystem"], basestring))
             self.assertTrue(isinstance(mount_info["device"], basestring))
             self.assertTrue(isinstance(mount_info["total-space"], (int, long)))
@@ -107,21 +107,21 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
 
         message = plugin.create_mount_info_message()
         self.assertTrue(message)
-        self.assertEquals(message["type"], "mount-info")
+        self.assertEqual(message["type"], "mount-info")
 
         mount_info = message.get("mount-info", ())
 
-        self.assertEquals(len(mount_info), 3)
+        self.assertEqual(len(mount_info), 3)
 
-        self.assertEquals(mount_info[0][1],
-                          {"device": "/dev/hda1", "mount-point": "/",
-                           "filesystem": "ext3", "total-space": 4096000})
+        self.assertEqual(mount_info[0][1],
+                         {"device": "/dev/hda1", "mount-point": "/",
+                          "filesystem": "ext3", "total-space": 4096000})
 
-        self.assertEquals(mount_info[1][1],
-                          {"device": "/dev/hde1", "mount-point": "/mnt/hde1",
-                           "filesystem": "reiserfs", "total-space": 40960000})
+        self.assertEqual(mount_info[1][1],
+                         {"device": "/dev/hde1", "mount-point": "/mnt/hde1",
+                          "filesystem": "reiserfs", "total-space": 40960000})
 
-        self.assertEquals(
+        self.assertEqual(
             mount_info[2][1],
             {"device": "/dev/sdb2", "mount-point": "/media/Boot OSX",
              "filesystem": "hfsplus", "total-space": 40960000})
@@ -152,14 +152,14 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
 
         message = plugin.create_mount_info_message()
         mount_info = message["mount-info"]
-        self.assertEquals(len(mount_info), 2)
+        self.assertEqual(len(mount_info), 2)
 
         for i, total_space in enumerate([4096000, 8192000]):
-            self.assertEquals(mount_info[i][0],
-                              (i + 1) * self.monitor.step_size)
-            self.assertEquals(mount_info[i][1],
-                              {"device": "/dev/hda1", "filesystem": "ext3",
-                               "mount-point": "/", "total-space": total_space})
+            self.assertEqual(mount_info[i][0],
+                             (i + 1) * self.monitor.step_size)
+            self.assertEqual(mount_info[i][1],
+                             {"device": "/dev/hda1", "filesystem": "ext3",
+                              "mount-point": "/", "total-space": total_space})
 
     def test_read_disjointed_changing_total_space(self):
         """
@@ -192,22 +192,22 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         self.assertTrue(message)
 
         mount_info = message.get("mount-info", ())
-        self.assertEquals(len(mount_info), 3)
+        self.assertEqual(len(mount_info), 3)
 
-        self.assertEquals(mount_info[0][0], self.monitor.step_size)
-        self.assertEquals(mount_info[0][1],
-                          {"device": "/dev/hda1", "mount-point": "/",
-                           "filesystem": "ext3", "total-space": 4096000})
+        self.assertEqual(mount_info[0][0], self.monitor.step_size)
+        self.assertEqual(mount_info[0][1],
+                         {"device": "/dev/hda1", "mount-point": "/",
+                          "filesystem": "ext3", "total-space": 4096000})
 
-        self.assertEquals(mount_info[1][0], self.monitor.step_size)
-        self.assertEquals(mount_info[1][1],
-                          {"device": "/dev/hde1", "mount-point": "/mnt/hde1",
-                           "filesystem": "ext3", "total-space": 4096000})
+        self.assertEqual(mount_info[1][0], self.monitor.step_size)
+        self.assertEqual(mount_info[1][1],
+                         {"device": "/dev/hde1", "mount-point": "/mnt/hde1",
+                          "filesystem": "ext3", "total-space": 4096000})
 
-        self.assertEquals(mount_info[2][0], self.monitor.step_size * 2)
-        self.assertEquals(mount_info[2][1],
-                          {"device": "/dev/hde1", "mount-point": "/mnt/hde1",
-                           "filesystem": "ext3", "total-space": 8192000})
+        self.assertEqual(mount_info[2][0], self.monitor.step_size * 2)
+        self.assertEqual(mount_info[2][1],
+                         {"device": "/dev/hde1", "mount-point": "/mnt/hde1",
+                          "filesystem": "ext3", "total-space": 8192000})
 
     def test_exchange_messages(self):
         """
@@ -238,14 +238,14 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         self.monitor.exchange()
 
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 2)
+        self.assertEqual(len(messages), 2)
 
         message = [d for d in messages if d["type"] == "free-space"][0]
         free_space = message["free-space"]
         for i in range(len(free_space)):
-            self.assertEquals(free_space[i][0], (i + 1) * step_size)
-            self.assertEquals(free_space[i][1], "/")
-            self.assertEquals(free_space[i][2], 409600)
+            self.assertEqual(free_space[i][0], (i + 1) * step_size)
+            self.assertEqual(free_space[i][1], "/")
+            self.assertEqual(free_space[i][2], 409600)
 
     def test_messaging_flushes(self):
         """
@@ -266,10 +266,10 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         self.reactor.advance(self.monitor.step_size)
 
         messages = plugin.create_messages()
-        self.assertEquals(len(messages), 2)
+        self.assertEqual(len(messages), 2)
 
         messages = plugin.create_messages()
-        self.assertEquals(len(messages), 0)
+        self.assertEqual(len(messages), 0)
 
     def test_read_multi_bound_mounts(self):
         """
@@ -299,12 +299,12 @@ tmpfs /lib/modules/2.6.12-10-386/volatile tmpfs rw 0 0
         self.assertTrue(message)
 
         mount_info = message.get("mount-info", ())
-        self.assertEquals(len(mount_info), 1)
+        self.assertEqual(len(mount_info), 1)
 
-        self.assertEquals(mount_info[0][0], step_size)
-        self.assertEquals(mount_info[0][1],
-                          {"device": "/dev/hdc4", "mount-point": "/mm",
-                           "filesystem": "xfs", "total-space": 4096000})
+        self.assertEqual(mount_info[0][0], step_size)
+        self.assertEqual(mount_info[0][1],
+                         {"device": "/dev/hdc4", "mount-point": "/mm",
+                          "filesystem": "xfs", "total-space": 4096000})
 
     def test_ignore_nfs_mounts(self):
         """
@@ -321,7 +321,7 @@ addr=ennui 0 0
         plugin.run()
 
         message = plugin.create_mount_info_message()
-        self.assertEquals(message, None)
+        self.assertEqual(message, None)
 
     def test_ignore_removable_partitions(self):
         """
@@ -345,7 +345,7 @@ addr=ennui 0 0
         plugin.run()
 
         message = plugin.create_mount_info_message()
-        self.assertEquals(message, None)
+        self.assertEqual(message, None)
 
     def test_ignore_removable_devices(self):
         """
@@ -364,7 +364,7 @@ addr=ennui 0 0
         plugin.run()
 
         message = plugin.create_mount_info_message()
-        self.assertEquals(message, None)
+        self.assertEqual(message, None)
 
     def test_ignore_removable_devices_gudev(self):
         """
@@ -393,7 +393,7 @@ addr=ennui 0 0
         plugin.run()
 
         message = plugin.create_mount_info_message()
-        self.assertEquals(message, None)
+        self.assertEqual(message, None)
 
     def test_ignore_multiparented_removable_devices(self):
         """
@@ -422,7 +422,7 @@ addr=ennui 0 0
         plugin.run()
 
         message = plugin.create_mount_info_message()
-        self.assertEquals(message, None)
+        self.assertEqual(message, None)
 
     def test_sample_free_space(self):
         """Test collecting information about free space."""
@@ -442,10 +442,10 @@ addr=ennui 0 0
 
         message = plugin.create_free_space_message()
         self.assertTrue(message)
-        self.assertEquals(message.get("type"), "free-space")
+        self.assertEqual(message.get("type"), "free-space")
         free_space = message.get("free-space", ())
-        self.assertEquals(len(free_space), 1)
-        self.assertEquals(free_space[0], (step_size, "/", 409600))
+        self.assertEqual(len(free_space), 1)
+        self.assertEqual(free_space[0], (step_size, "/", 409600))
 
     def test_never_exchange_empty_messages(self):
         """
@@ -459,7 +459,7 @@ addr=ennui 0 0
         plugin = self.get_mount_info(mounts_file=filename, mtab_file=filename)
         self.monitor.add(plugin)
         self.monitor.exchange()
-        self.assertEquals(len(self.mstore.get_pending_messages()), 0)
+        self.assertEqual(len(self.mstore.get_pending_messages()), 0)
 
     def test_messages(self):
         """
@@ -482,13 +482,13 @@ addr=ennui 0 0
         self.monitor.exchange()
 
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 2)
-        self.assertEquals(messages[0].get("mount-info"),
-                          [(step_size,
-                            {"device": "/dev/hda2", "mount-point": "/",
-                             "filesystem": "xfs", "total-space": 4096000})])
-        self.assertEquals(messages[1].get("free-space"),
-                          [(step_size, "/", 409600)])
+        self.assertEqual(len(messages), 2)
+        self.assertEqual(messages[0].get("mount-info"),
+                         [(step_size,
+                           {"device": "/dev/hda2", "mount-point": "/",
+                            "filesystem": "xfs", "total-space": 4096000})])
+        self.assertEqual(messages[1].get("free-space"),
+                         [(step_size, "/", 409600)])
         self.assertTrue(isinstance(messages[1]["free-space"][0][2],
                                    (int, long)))
 
@@ -552,15 +552,15 @@ addr=ennui 0 0
         self.monitor.add(plugin)
         plugin.run()
         message = plugin.create_mount_info_message()
-        self.assertEquals(message.get("mount-info"),
-            [(0, {"device": "/dev/devices/by-uuid/12345567",
-                  "mount-point": "/", "total-space": 4096000L,
-                  "filesystem": "ext3"}),
-             (0, {"device": "/dev/hda2",
-                  "mount-point": "/usr",
-                  "total-space": 4096000L,
-                  "filesystem": "ext3"}),
-             ])
+        self.assertEqual(message.get("mount-info"),
+                         [(0, {"device": "/dev/devices/by-uuid/12345567",
+                               "mount-point": "/", "total-space": 4096000L,
+                               "filesystem": "ext3"}),
+                          (0, {"device": "/dev/hda2",
+                               "mount-point": "/usr",
+                               "total-space": 4096000L,
+                               "filesystem": "ext3"}),
+                          ])
 
     def test_no_mtab_file(self):
         """
@@ -586,18 +586,18 @@ addr=ennui 0 0
         self.monitor.add(plugin)
         plugin.run()
         message = plugin.create_mount_info_message()
-        self.assertEquals(message.get("mount-info"),
-            [(0, {"device": "/dev/devices/by-uuid/12345567",
-                  "mount-point": "/", "total-space": 4096000L,
-                  "filesystem": "ext3"}),
-             (0, {"device": "/dev/hda2",
-                  "mount-point": "/usr",
-                  "total-space": 4096000L,
-                  "filesystem": "ext3"}),
-             (0, {"device": "/dev/devices/by-uuid/12345567",
-                  "mount-point": "/mnt",
-                  "total-space": 4096000L,
-                  "filesystem": "ext3"})])
+        self.assertEqual(message.get("mount-info"),
+                         [(0, {"device": "/dev/devices/by-uuid/12345567",
+                               "mount-point": "/", "total-space": 4096000L,
+                               "filesystem": "ext3"}),
+                          (0, {"device": "/dev/hda2",
+                               "mount-point": "/usr",
+                               "total-space": 4096000L,
+                               "filesystem": "ext3"}),
+                          (0, {"device": "/dev/devices/by-uuid/12345567",
+                               "mount-point": "/mnt",
+                               "total-space": 4096000L,
+                               "filesystem": "ext3"})])
 
     def test_no_message_if_not_accepted(self):
         """
@@ -665,7 +665,7 @@ addr=ennui 0 0
         self.monitor.add(plugin)
         plugin.run()
         message1 = plugin.create_mount_info_message()
-        self.assertEquals(
+        self.assertEqual(
             message1.get("mount-info"),
             [(0, {"device": "/dev/hda1",
                   "filesystem": "ext3",
@@ -673,7 +673,7 @@ addr=ennui 0 0
                   "total-space": 4096000L})])
         plugin.run()
         message2 = plugin.create_mount_info_message()
-        self.assertEquals(
+        self.assertEqual(
             message2.get("mount-info"),
             [(0, {"device": "/dev/hda1",
                   "filesystem": "ext3",
@@ -716,36 +716,36 @@ addr=ennui 0 0
         self.monitor.exchange()
 
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 2)
+        self.assertEqual(len(messages), 2)
 
         message = [d for d in messages if d["type"] == "free-space"][0]
         free_space = message["free-space"]
         free_space_items = len(free_space)
-        self.assertEquals(free_space_items, 5)
+        self.assertEqual(free_space_items, 5)
         for i in range(free_space_items):
-            self.assertEquals(free_space[i][0], (i + 1) * step_size)
-            self.assertEquals(free_space[i][1], "/")
-            self.assertEquals(free_space[i][2], 409600)
+            self.assertEqual(free_space[i][0], (i + 1) * step_size)
+            self.assertEqual(free_space[i][1], "/")
+            self.assertEqual(free_space[i][2], 409600)
 
         # The second exchange should pick up the remaining items.
         self.mstore.delete_all_messages()
         self.monitor.exchange()
 
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 1)
+        self.assertEqual(len(messages), 1)
 
         message = [d for d in messages if d["type"] == "free-space"][0]
         free_space = message["free-space"]
         free_space_items = len(free_space)
-        self.assertEquals(free_space_items, 5)
+        self.assertEqual(free_space_items, 5)
         for i in range(free_space_items):
             # Note (i+6) we've already retrieved the first 5 items.
-            self.assertEquals(free_space[i][0], (i + 6) * step_size)
-            self.assertEquals(free_space[i][1], "/")
-            self.assertEquals(free_space[i][2], 409600)
+            self.assertEqual(free_space[i][0], (i + 6) * step_size)
+            self.assertEqual(free_space[i][1], "/")
+            self.assertEqual(free_space[i][2], 409600)
 
         # Third exchange should not get any further free-space messages
         self.mstore.delete_all_messages()
         self.monitor.exchange()
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 0)
+        self.assertEqual(len(messages), 0)

@@ -100,7 +100,7 @@ class ProcessKillerTests(LandscapeTest):
         # a signal.
         self.assertTrue(return_code < 0)
         process_info = process_info_factory.get_process_info(popen.pid)
-        self.assertEquals(process_info, None)
+        self.assertEqual(process_info, None)
 
         service = self.broker_service
         self.assertMessages(service.message_store.get_pending_messages(),

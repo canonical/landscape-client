@@ -24,8 +24,8 @@ class HardwareInventoryTest(LandscapeTest):
 
     def assertSchema(self, devices):
         full_message = {"type": "hardware-inventory", "devices": devices}
-        self.assertEquals(HARDWARE_INVENTORY.coerce(full_message),
-                          full_message)
+        self.assertEqual(HARDWARE_INVENTORY.coerce(full_message),
+                         full_message)
 
     def test_hal_devices(self):
         """
@@ -37,7 +37,7 @@ class HardwareInventoryTest(LandscapeTest):
         actual_udis = [part[1][u"info.udi"] for part in message]
         expected_udis = [device.udi for device
                          in self.hal_manager.get_devices()]
-        self.assertEquals(set(actual_udis), set(expected_udis))
+        self.assertEqual(set(actual_udis), set(expected_udis))
 
     def test_first_message(self):
         """
@@ -47,7 +47,7 @@ class HardwareInventoryTest(LandscapeTest):
         """
         message = self.plugin.create_message()
         actions = [part[0] for part in message]
-        self.assertEquals(set(actions), set(["create"]))
+        self.assertEqual(set(actions), set(["create"]))
         self.assertSchema(message)
 
     def test_no_changes(self):
@@ -60,7 +60,7 @@ class HardwareInventoryTest(LandscapeTest):
 
         messages = self.mstore.get_pending_messages()
         self.plugin.exchange()
-        self.assertEquals(self.mstore.get_pending_messages(), messages)
+        self.assertEqual(self.mstore.get_pending_messages(), messages)
 
     def test_update(self):
         """
@@ -79,17 +79,17 @@ class HardwareInventoryTest(LandscapeTest):
         self.mocker.replay()
         message = self.plugin.create_message()
         self.plugin.persist_data(None)
-        self.assertEquals(message, [("create", {u"info.udi": u"wubble",
-                                                u"info.product": u"Wubble"})])
+        self.assertEqual(message, [("create", {u"info.udi": u"wubble",
+                                               u"info.product": u"Wubble"})])
 
         self.hal_manager.devices[0] = MockRealHALDevice(
             {u"info.udi": u"wubble", u"info.product": u"Ooga"})
         message = self.plugin.create_message()
         self.plugin.persist_data(None)
-        self.assertEquals(message, [("update", u"wubble",
-                                     {}, {u"info.product": u"Ooga"}, {})])
+        self.assertEqual(message, [("update", u"wubble",
+                                    {}, {u"info.product": u"Ooga"}, {})])
         self.assertSchema(message)
-        self.assertEquals(self.plugin.create_message(), [])
+        self.assertEqual(self.plugin.create_message(), [])
 
     def test_update_list(self):
         """
@@ -104,11 +104,11 @@ class HardwareInventoryTest(LandscapeTest):
 
         message = self.plugin.create_message()
         self.plugin.persist_data(None)
-        self.assertEquals(message, [("create",
-                                     {u"info.udi": u"wubble",
-                                      u"info.product": u"Wubble",
-                                      u"info.capabilities": [u"foo", u"bar"]}),
-                                    ])
+        self.assertEqual(message, [("create",
+                                    {u"info.udi": u"wubble",
+                                     u"info.product": u"Wubble",
+                                     u"info.capabilities": [u"foo", u"bar"]}),
+                                   ])
 
         self.assertSchema(message)
 
@@ -117,12 +117,12 @@ class HardwareInventoryTest(LandscapeTest):
              u"info.capabilities": [u"foo"]})
         message = self.plugin.create_message()
         self.plugin.persist_data(None)
-        self.assertEquals(message, [("update", u"wubble",
-                                     {}, {u"info.capabilities": [u"foo"]}, {}),
-                                    ])
+        self.assertEqual(message, [("update", u"wubble",
+                                    {}, {u"info.capabilities": [u"foo"]}, {}),
+                                   ])
         self.assertSchema(message)
 
-        self.assertEquals(self.plugin.create_message(), [])
+        self.assertEqual(self.plugin.create_message(), [])
 
     def test_update_complex(self):
         """
@@ -136,22 +136,22 @@ class HardwareInventoryTest(LandscapeTest):
 
         message = self.plugin.create_message()
         self.plugin.persist_data(None)
-        self.assertEquals(message, [("create", {u"info.udi": u"wubble",
-                                                u"info.product": u"Wubble",
-                                                u"linux.acpi_type": 11})])
+        self.assertEqual(message, [("create", {u"info.udi": u"wubble",
+                                               u"info.product": u"Wubble",
+                                               u"linux.acpi_type": 11})])
 
         self.hal_manager.devices[0] = MockRealHALDevice(
             {u"info.udi": u"wubble", u"info.product": u"Ooga",
              u"info.category": u"unittest"})
         message = self.plugin.create_message()
         self.plugin.persist_data(None)
-        self.assertEquals(message, [("update", u"wubble",
-                                     {u"info.category": u"unittest"},
-                                     {u"info.product": u"Ooga"},
-                                     {u"linux.acpi_type": 11})])
+        self.assertEqual(message, [("update", u"wubble",
+                                    {u"info.category": u"unittest"},
+                                    {u"info.product": u"Ooga"},
+                                    {u"linux.acpi_type": 11})])
         self.assertSchema(message)
 
-        self.assertEquals(self.plugin.create_message(), [])
+        self.assertEqual(self.plugin.create_message(), [])
 
     def test_delete(self):
         """
@@ -167,18 +167,18 @@ class HardwareInventoryTest(LandscapeTest):
 
         message = self.plugin.create_message()
         self.plugin.persist_data(None)
-        self.assertEquals(message, [("create", {u"info.udi": u"wubble",
-                                                u"info.product": u"Wubble"}),
-                                    ("create", {u"info.udi": u"ooga",
-                                                u"info.product": u"Ooga"})])
+        self.assertEqual(message, [("create", {u"info.udi": u"wubble",
+                                               u"info.product": u"Wubble"}),
+                                   ("create", {u"info.udi": u"ooga",
+                                               u"info.product": u"Ooga"})])
         self.assertSchema(message)
 
         self.hal_manager.devices.pop(1)
         message = self.plugin.create_message()
         self.plugin.persist_data(None)
-        self.assertEquals(message, [("delete", u"ooga")])
+        self.assertEqual(message, [("delete", u"ooga")])
         self.assertSchema(message)
-        self.assertEquals(self.plugin.create_message(), [])
+        self.assertEqual(self.plugin.create_message(), [])
 
     def test_minimal_delete(self):
         self.hal_manager.devices = [
@@ -206,8 +206,8 @@ class HardwareInventoryTest(LandscapeTest):
         message = self.plugin.create_message()
         self.plugin.persist_data(None)
 
-        self.assertEquals(message, [("delete", u"wubble")])
-        self.assertEquals(self.plugin.create_message(), [])
+        self.assertEqual(message, [("delete", u"wubble")])
+        self.assertEqual(self.plugin.create_message(), [])
 
     def test_resynchronize(self):
         """
@@ -220,8 +220,8 @@ class HardwareInventoryTest(LandscapeTest):
         self.plugin.exchange()
 
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 2)
-        self.assertEquals(messages[0]["devices"], messages[1]["devices"])
+        self.assertEqual(len(messages), 2)
+        self.assertEqual(messages[0]["devices"], messages[1]["devices"])
 
     def test_call_on_accepted(self):
         remote_broker_mock = self.mocker.replace(self.remote)
@@ -266,7 +266,7 @@ class HardwareInventoryTest(LandscapeTest):
         message = self.plugin.create_message()
 
         def assert_message(message_id):
-            self.assertEquals(message, self.plugin.create_message())
+            self.assertEqual(message, self.plugin.create_message())
 
         result = self.plugin.exchange()
         result.addCallback(assert_message)

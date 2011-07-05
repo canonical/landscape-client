@@ -46,7 +46,7 @@ class LandscapeServiceTest(LandscapeTest):
             persist_filename = self.makeFile(content="")
 
         service = PersistService(self.config)
-        self.assertEquals(service.persist.filename, service.persist_filename)
+        self.assertEqual(service.persist.filename, service.persist_filename)
 
     def test_no_persist_without_filename(self):
         """

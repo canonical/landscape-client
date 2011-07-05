@@ -38,29 +38,29 @@ class MemoryStatsTest(LandscapeTest):
     def test_get_memory_info(self):
         filename = self.makeFile(SAMPLE_MEMORY_INFO)
         memstats = MemoryStats(filename)
-        self.assertEquals(memstats.total_memory, 1510)
-        self.assertEquals(memstats.free_memory, 503)
-        self.assertEquals(memstats.used_memory, 1007)
-        self.assertEquals(memstats.total_swap, 1584)
-        self.assertEquals(memstats.free_swap, 1567)
-        self.assertEquals(memstats.used_swap, 17)
-        self.assertEquals("%.2f" % memstats.free_memory_percentage, "33.31")
-        self.assertEquals("%.2f" % memstats.free_swap_percentage, "98.93")
-        self.assertEquals("%.2f" % memstats.used_memory_percentage, "66.69")
-        self.assertEquals("%.2f" % memstats.used_swap_percentage, "1.07")
+        self.assertEqual(memstats.total_memory, 1510)
+        self.assertEqual(memstats.free_memory, 503)
+        self.assertEqual(memstats.used_memory, 1007)
+        self.assertEqual(memstats.total_swap, 1584)
+        self.assertEqual(memstats.free_swap, 1567)
+        self.assertEqual(memstats.used_swap, 17)
+        self.assertEqual("%.2f" % memstats.free_memory_percentage, "33.31")
+        self.assertEqual("%.2f" % memstats.free_swap_percentage, "98.93")
+        self.assertEqual("%.2f" % memstats.used_memory_percentage, "66.69")
+        self.assertEqual("%.2f" % memstats.used_swap_percentage, "1.07")
 
     def test_get_memory_info_without_swap(self):
         sample = re.subn(r"Swap(Free|Total): *\d+ kB", r"Swap\1:       0",
                          SAMPLE_MEMORY_INFO)[0]
         filename = self.makeFile(sample)
         memstats = MemoryStats(filename)
-        self.assertEquals(memstats.total_swap, 0)
-        self.assertEquals(memstats.free_swap, 0)
-        self.assertEquals(memstats.used_swap, 0)
-        self.assertEquals(memstats.used_swap_percentage, 0)
-        self.assertEquals(memstats.free_swap_percentage, 0)
-        self.assertEquals(type(memstats.used_swap_percentage), float)
-        self.assertEquals(type(memstats.free_swap_percentage), float)
+        self.assertEqual(memstats.total_swap, 0)
+        self.assertEqual(memstats.free_swap, 0)
+        self.assertEqual(memstats.used_swap, 0)
+        self.assertEqual(memstats.used_swap_percentage, 0)
+        self.assertEqual(memstats.free_swap_percentage, 0)
+        self.assertEqual(type(memstats.used_swap_percentage), float)
+        self.assertEqual(type(memstats.free_swap_percentage), float)
 
 
 class FakeWhoQTest(LandscapeTest):
@@ -68,7 +68,7 @@ class FakeWhoQTest(LandscapeTest):
     helpers = [EnvironSaverHelper]
 
     def fake_who(self, users):
-        dirname = self.makeDir() 
+        dirname = self.makeDir()
         os.environ["PATH"] = "%s:%s" % (dirname, os.environ["PATH"])
 
         self.who_path = os.path.join(dirname, "who")
@@ -87,19 +87,19 @@ class LoggedInUsersTest(FakeWhoQTest):
     def test_one_user(self):
         self.fake_who("joe")
         result = get_logged_in_users()
-        result.addCallback(self.assertEquals, ["joe"])
+        result.addCallback(self.assertEqual, ["joe"])
         return result
 
     def test_one_user_multiple_times(self):
         self.fake_who("joe joe joe joe")
         result = get_logged_in_users()
-        result.addCallback(self.assertEquals, ["joe"])
+        result.addCallback(self.assertEqual, ["joe"])
         return result
 
     def test_many_users(self):
         self.fake_who("joe moe boe doe")
         result = get_logged_in_users()
-        result.addCallback(self.assertEquals, ["boe", "doe", "joe", "moe"])
+        result.addCallback(self.assertEqual, ["boe", "doe", "joe", "moe"])
         return result
 
     def test_command_error(self):
@@ -108,9 +108,10 @@ class LoggedInUsersTest(FakeWhoQTest):
         who.write("#!/bin/sh\necho ERROR 1>&2\nexit 1\n")
         who.close()
         result = get_logged_in_users()
+
         def assert_failure(failure):
             failure.trap(CommandError)
-            self.assertEquals(str(failure.value), "ERROR\n")
+            self.assertEqual(str(failure.value), "ERROR\n")
         result.addErrback(assert_failure)
         return result
 
@@ -137,50 +138,50 @@ class GetThermalZonesTest(ThermalZoneTest):
 
     def test_non_existent_thermal_zone_directory(self):
         thermal_zones = list(get_thermal_zones("/non-existent/thermal_zone"))
-        self.assertEquals(thermal_zones, [])
+        self.assertEqual(thermal_zones, [])
 
     def test_empty_thermal_zone_directory(self):
-        self.assertEquals(self.get_thermal_zones(), [])
+        self.assertEqual(self.get_thermal_zones(), [])
 
     def test_one_thermal_zone(self):
         self.write_thermal_zone("THM0", "50 C")
         thermal_zones = self.get_thermal_zones()
-        self.assertEquals(len(thermal_zones), 1)
+        self.assertEqual(len(thermal_zones), 1)
 
-        self.assertEquals(thermal_zones[0].name, "THM0")
-        self.assertEquals(thermal_zones[0].temperature, "50 C")
-        self.assertEquals(thermal_zones[0].temperature_value, 50)
-        self.assertEquals(thermal_zones[0].temperature_unit, "C")
-        self.assertEquals(thermal_zones[0].path,
-                          os.path.join(self.thermal_zone_path, "THM0"))
+        self.assertEqual(thermal_zones[0].name, "THM0")
+        self.assertEqual(thermal_zones[0].temperature, "50 C")
+        self.assertEqual(thermal_zones[0].temperature_value, 50)
+        self.assertEqual(thermal_zones[0].temperature_unit, "C")
+        self.assertEqual(thermal_zones[0].path,
+                         os.path.join(self.thermal_zone_path, "THM0"))
 
     def test_two_thermal_zones(self):
         self.write_thermal_zone("THM0", "50 C")
         self.write_thermal_zone("THM1", "51 C")
         thermal_zones = self.get_thermal_zones()
-        self.assertEquals(len(thermal_zones), 2)
-        self.assertEquals(thermal_zones[0].temperature, "50 C")
-        self.assertEquals(thermal_zones[0].temperature_value, 50)
-        self.assertEquals(thermal_zones[0].temperature_unit, "C")
-        self.assertEquals(thermal_zones[1].temperature, "51 C")
-        self.assertEquals(thermal_zones[1].temperature_value, 51)
-        self.assertEquals(thermal_zones[1].temperature_unit, "C")
+        self.assertEqual(len(thermal_zones), 2)
+        self.assertEqual(thermal_zones[0].temperature, "50 C")
+        self.assertEqual(thermal_zones[0].temperature_value, 50)
+        self.assertEqual(thermal_zones[0].temperature_unit, "C")
+        self.assertEqual(thermal_zones[1].temperature, "51 C")
+        self.assertEqual(thermal_zones[1].temperature_value, 51)
+        self.assertEqual(thermal_zones[1].temperature_unit, "C")
 
     def test_badly_formatted_temperature(self):
         self.write_thermal_zone("THM0", "SOMETHING BAD")
         thermal_zones = self.get_thermal_zones()
-        self.assertEquals(len(thermal_zones), 1)
-        self.assertEquals(thermal_zones[0].temperature, "SOMETHING BAD")
-        self.assertEquals(thermal_zones[0].temperature_value, None)
-        self.assertEquals(thermal_zones[0].temperature_unit, None)
+        self.assertEqual(len(thermal_zones), 1)
+        self.assertEqual(thermal_zones[0].temperature, "SOMETHING BAD")
+        self.assertEqual(thermal_zones[0].temperature_value, None)
+        self.assertEqual(thermal_zones[0].temperature_unit, None)
 
     def test_badly_formatted_with_missing_space(self):
         self.write_thermal_zone("THM0", "SOMETHINGBAD")
         thermal_zones = self.get_thermal_zones()
-        self.assertEquals(len(thermal_zones), 1)
-        self.assertEquals(thermal_zones[0].temperature, "SOMETHINGBAD")
-        self.assertEquals(thermal_zones[0].temperature_value, None)
-        self.assertEquals(thermal_zones[0].temperature_unit, None)
+        self.assertEqual(len(thermal_zones), 1)
+        self.assertEqual(thermal_zones[0].temperature, "SOMETHINGBAD")
+        self.assertEqual(thermal_zones[0].temperature_value, None)
+        self.assertEqual(thermal_zones[0].temperature_unit, None)
 
     def test_temperature_file_with_missing_label(self):
         self.write_thermal_zone("THM0", "SOMETHINGBAD")
@@ -190,7 +191,7 @@ class GetThermalZonesTest(ThermalZoneTest):
         file.write("bad-label: foo bar\n")
         file.close()
         thermal_zones = self.get_thermal_zones()
-        self.assertEquals(len(thermal_zones), 1)
-        self.assertEquals(thermal_zones[0].temperature, None)
-        self.assertEquals(thermal_zones[0].temperature_value, None)
-        self.assertEquals(thermal_zones[0].temperature_unit, None)
+        self.assertEqual(len(thermal_zones), 1)
+        self.assertEqual(thermal_zones[0].temperature, None)
+        self.assertEqual(thermal_zones[0].temperature_value, None)
+        self.assertEqual(thermal_zones[0].temperature_unit, None)

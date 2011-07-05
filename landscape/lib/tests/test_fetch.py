@@ -84,113 +84,113 @@ class FetchTest(LandscapeTest):
     def test_basic(self):
         curl = CurlStub("result")
         result = fetch("http://example.com", curl=curl)
-        self.assertEquals(result, "result")
-        self.assertEquals(curl.options,
-                          {pycurl.URL: "http://example.com",
-                           pycurl.FOLLOWLOCATION: True,
-                           pycurl.MAXREDIRS: 5,
-                           pycurl.CONNECTTIMEOUT: 30,
-                           pycurl.LOW_SPEED_LIMIT: 1,
-                           pycurl.LOW_SPEED_TIME: 600,
-                           pycurl.NOSIGNAL: 1,
-                           pycurl.WRITEFUNCTION: Any(),
-                           pycurl.DNS_CACHE_TIMEOUT: 0,
-                           pycurl.ENCODING: "gzip,deflate"})
+        self.assertEqual(result, "result")
+        self.assertEqual(curl.options,
+                         {pycurl.URL: "http://example.com",
+                          pycurl.FOLLOWLOCATION: True,
+                          pycurl.MAXREDIRS: 5,
+                          pycurl.CONNECTTIMEOUT: 30,
+                          pycurl.LOW_SPEED_LIMIT: 1,
+                          pycurl.LOW_SPEED_TIME: 600,
+                          pycurl.NOSIGNAL: 1,
+                          pycurl.WRITEFUNCTION: Any(),
+                          pycurl.DNS_CACHE_TIMEOUT: 0,
+                          pycurl.ENCODING: "gzip,deflate"})
 
     def test_post(self):
         curl = CurlStub("result")
         result = fetch("http://example.com", post=True, curl=curl)
-        self.assertEquals(result, "result")
-        self.assertEquals(curl.options,
-                          {pycurl.URL: "http://example.com",
-                           pycurl.FOLLOWLOCATION: True,
-                           pycurl.MAXREDIRS: 5,
-                           pycurl.CONNECTTIMEOUT: 30,
-                           pycurl.LOW_SPEED_LIMIT: 1,
-                           pycurl.LOW_SPEED_TIME: 600,
-                           pycurl.NOSIGNAL: 1,
-                           pycurl.WRITEFUNCTION: Any(),
-                           pycurl.POST: True,
-                           pycurl.DNS_CACHE_TIMEOUT: 0,
-                           pycurl.ENCODING: "gzip,deflate"})
+        self.assertEqual(result, "result")
+        self.assertEqual(curl.options,
+                         {pycurl.URL: "http://example.com",
+                          pycurl.FOLLOWLOCATION: True,
+                          pycurl.MAXREDIRS: 5,
+                          pycurl.CONNECTTIMEOUT: 30,
+                          pycurl.LOW_SPEED_LIMIT: 1,
+                          pycurl.LOW_SPEED_TIME: 600,
+                          pycurl.NOSIGNAL: 1,
+                          pycurl.WRITEFUNCTION: Any(),
+                          pycurl.POST: True,
+                          pycurl.DNS_CACHE_TIMEOUT: 0,
+                          pycurl.ENCODING: "gzip,deflate"})
 
     def test_post_data(self):
         curl = CurlStub("result")
         result = fetch("http://example.com", post=True, data="data", curl=curl)
-        self.assertEquals(result, "result")
-        self.assertEquals(curl.options[pycurl.READFUNCTION](), "data")
-        self.assertEquals(curl.options,
-                          {pycurl.URL: "http://example.com",
-                           pycurl.FOLLOWLOCATION: True,
-                           pycurl.MAXREDIRS: 5,
-                           pycurl.CONNECTTIMEOUT: 30,
-                           pycurl.LOW_SPEED_LIMIT: 1,
-                           pycurl.LOW_SPEED_TIME: 600,
-                           pycurl.NOSIGNAL: 1,
-                           pycurl.WRITEFUNCTION: Any(),
-                           pycurl.POST: True,
-                           pycurl.POSTFIELDSIZE: 4,
-                           pycurl.READFUNCTION: Any(),
-                           pycurl.DNS_CACHE_TIMEOUT: 0,
-                           pycurl.ENCODING: "gzip,deflate"})
+        self.assertEqual(result, "result")
+        self.assertEqual(curl.options[pycurl.READFUNCTION](), "data")
+        self.assertEqual(curl.options,
+                         {pycurl.URL: "http://example.com",
+                          pycurl.FOLLOWLOCATION: True,
+                          pycurl.MAXREDIRS: 5,
+                          pycurl.CONNECTTIMEOUT: 30,
+                          pycurl.LOW_SPEED_LIMIT: 1,
+                          pycurl.LOW_SPEED_TIME: 600,
+                          pycurl.NOSIGNAL: 1,
+                          pycurl.WRITEFUNCTION: Any(),
+                          pycurl.POST: True,
+                          pycurl.POSTFIELDSIZE: 4,
+                          pycurl.READFUNCTION: Any(),
+                          pycurl.DNS_CACHE_TIMEOUT: 0,
+                          pycurl.ENCODING: "gzip,deflate"})
 
     def test_cainfo(self):
         curl = CurlStub("result")
         result = fetch("https://example.com", cainfo="cainfo", curl=curl)
-        self.assertEquals(result, "result")
-        self.assertEquals(curl.options,
-                          {pycurl.URL: "https://example.com",
-                           pycurl.FOLLOWLOCATION: True,
-                           pycurl.MAXREDIRS: 5,
-                           pycurl.CONNECTTIMEOUT: 30,
-                           pycurl.LOW_SPEED_LIMIT: 1,
-                           pycurl.LOW_SPEED_TIME: 600,
-                           pycurl.NOSIGNAL: 1,
-                           pycurl.WRITEFUNCTION: Any(),
-                           pycurl.CAINFO: "cainfo",
-                           pycurl.DNS_CACHE_TIMEOUT: 0,
-                           pycurl.ENCODING: "gzip,deflate"})
+        self.assertEqual(result, "result")
+        self.assertEqual(curl.options,
+                         {pycurl.URL: "https://example.com",
+                          pycurl.FOLLOWLOCATION: True,
+                          pycurl.MAXREDIRS: 5,
+                          pycurl.CONNECTTIMEOUT: 30,
+                          pycurl.LOW_SPEED_LIMIT: 1,
+                          pycurl.LOW_SPEED_TIME: 600,
+                          pycurl.NOSIGNAL: 1,
+                          pycurl.WRITEFUNCTION: Any(),
+                          pycurl.CAINFO: "cainfo",
+                          pycurl.DNS_CACHE_TIMEOUT: 0,
+                          pycurl.ENCODING: "gzip,deflate"})
 
     def test_cainfo_on_http(self):
         curl = CurlStub("result")
         result = fetch("http://example.com", cainfo="cainfo", curl=curl)
-        self.assertEquals(result, "result")
+        self.assertEqual(result, "result")
         self.assertTrue(pycurl.CAINFO not in curl.options)
 
     def test_headers(self):
         curl = CurlStub("result")
         result = fetch("http://example.com",
                        headers={"a": "1", "b": "2"}, curl=curl)
-        self.assertEquals(result, "result")
-        self.assertEquals(curl.options,
-                          {pycurl.URL: "http://example.com",
-                           pycurl.FOLLOWLOCATION: True,
-                           pycurl.MAXREDIRS: 5,
-                           pycurl.CONNECTTIMEOUT: 30,
-                           pycurl.LOW_SPEED_LIMIT: 1,
-                           pycurl.LOW_SPEED_TIME: 600,
-                           pycurl.NOSIGNAL: 1,
-                           pycurl.WRITEFUNCTION: Any(),
-                           pycurl.HTTPHEADER: ["a: 1", "b: 2"],
-                           pycurl.DNS_CACHE_TIMEOUT: 0,
-                           pycurl.ENCODING: "gzip,deflate"})
+        self.assertEqual(result, "result")
+        self.assertEqual(curl.options,
+                         {pycurl.URL: "http://example.com",
+                          pycurl.FOLLOWLOCATION: True,
+                          pycurl.MAXREDIRS: 5,
+                          pycurl.CONNECTTIMEOUT: 30,
+                          pycurl.LOW_SPEED_LIMIT: 1,
+                          pycurl.LOW_SPEED_TIME: 600,
+                          pycurl.NOSIGNAL: 1,
+                          pycurl.WRITEFUNCTION: Any(),
+                          pycurl.HTTPHEADER: ["a: 1", "b: 2"],
+                          pycurl.DNS_CACHE_TIMEOUT: 0,
+                          pycurl.ENCODING: "gzip,deflate"})
 
     def test_timeouts(self):
         curl = CurlStub("result")
         result = fetch("http://example.com", connect_timeout=5,
                        total_timeout=30, curl=curl)
-        self.assertEquals(result, "result")
-        self.assertEquals(curl.options,
-                          {pycurl.URL: "http://example.com",
-                           pycurl.FOLLOWLOCATION: True,
-                           pycurl.MAXREDIRS: 5,
-                           pycurl.CONNECTTIMEOUT: 5,
-                           pycurl.LOW_SPEED_LIMIT: 1,
-                           pycurl.LOW_SPEED_TIME: 30,
-                           pycurl.NOSIGNAL: 1,
-                           pycurl.WRITEFUNCTION: Any(),
-                           pycurl.DNS_CACHE_TIMEOUT: 0,
-                           pycurl.ENCODING: "gzip,deflate"})
+        self.assertEqual(result, "result")
+        self.assertEqual(curl.options,
+                         {pycurl.URL: "http://example.com",
+                          pycurl.FOLLOWLOCATION: True,
+                          pycurl.MAXREDIRS: 5,
+                          pycurl.CONNECTTIMEOUT: 5,
+                          pycurl.LOW_SPEED_LIMIT: 1,
+                          pycurl.LOW_SPEED_TIME: 30,
+                          pycurl.NOSIGNAL: 1,
+                          pycurl.WRITEFUNCTION: Any(),
+                          pycurl.DNS_CACHE_TIMEOUT: 0,
+                          pycurl.ENCODING: "gzip,deflate"})
 
     def test_unicode(self):
         """
@@ -199,8 +199,8 @@ class FetchTest(LandscapeTest):
         """
         curl = CurlStub("result")
         result = fetch(u"http://example.com", curl=curl)
-        self.assertEquals(result, "result")
-        self.assertEquals(curl.options[pycurl.URL], "http://example.com")
+        self.assertEqual(result, "result")
+        self.assertEqual(curl.options[pycurl.URL], "http://example.com")
         self.assertTrue(isinstance(curl.options[pycurl.URL], str))
 
     def test_non_200_result(self):
@@ -208,36 +208,36 @@ class FetchTest(LandscapeTest):
         try:
             fetch("http://example.com", curl=curl)
         except HTTPCodeError, error:
-            self.assertEquals(error.http_code, 404)
-            self.assertEquals(error.body, "result")
+            self.assertEqual(error.http_code, 404)
+            self.assertEqual(error.body, "result")
         else:
             self.fail("HTTPCodeError not raised")
 
     def test_http_error_str(self):
-        self.assertEquals(str(HTTPCodeError(501, "")),
-                          "Server returned HTTP code 501")
+        self.assertEqual(str(HTTPCodeError(501, "")),
+                         "Server returned HTTP code 501")
 
     def test_http_error_repr(self):
-        self.assertEquals(repr(HTTPCodeError(501, "")),
-                          "<HTTPCodeError http_code=501>")
+        self.assertEqual(repr(HTTPCodeError(501, "")),
+                         "<HTTPCodeError http_code=501>")
 
     def test_pycurl_error(self):
         curl = CurlStub(error=pycurl.error(60, "pycurl error"))
         try:
             fetch("http://example.com", curl=curl)
         except PyCurlError, error:
-            self.assertEquals(error.error_code, 60)
-            self.assertEquals(error.message, "pycurl error")
+            self.assertEqual(error.error_code, 60)
+            self.assertEqual(error.message, "pycurl error")
         else:
             self.fail("PyCurlError not raised")
 
     def test_pycurl_error_str(self):
-        self.assertEquals(str(PyCurlError(60, "pycurl error")),
-                          "Error 60: pycurl error")
+        self.assertEqual(str(PyCurlError(60, "pycurl error")),
+                         "Error 60: pycurl error")
 
     def test_pycurl_error_repr(self):
-        self.assertEquals(repr(PyCurlError(60, "pycurl error")),
-                          "<PyCurlError args=(60, 'pycurl error')>")
+        self.assertEqual(repr(PyCurlError(60, "pycurl error")),
+                         "<PyCurlError args=(60, 'pycurl error')>")
 
     def test_create_curl(self):
         curls = []
@@ -251,34 +251,36 @@ class FetchTest(LandscapeTest):
             pycurl.Curl = pycurl_Curl
             result = fetch("http://example.com")
             curl = curls[0]
-            self.assertEquals(result, "result")
-            self.assertEquals(curl.options,
-                              {pycurl.URL: "http://example.com",
-                               pycurl.FOLLOWLOCATION: True,
-                               pycurl.MAXREDIRS: 5,
-                               pycurl.CONNECTTIMEOUT: 30,
-                               pycurl.LOW_SPEED_LIMIT: 1,
-                               pycurl.LOW_SPEED_TIME: 600,
-                               pycurl.NOSIGNAL: 1,
-                               pycurl.WRITEFUNCTION: Any(),
-                               pycurl.DNS_CACHE_TIMEOUT: 0,
-                               pycurl.ENCODING: "gzip,deflate"})
+            self.assertEqual(result, "result")
+            self.assertEqual(curl.options,
+                             {pycurl.URL: "http://example.com",
+                              pycurl.FOLLOWLOCATION: True,
+                              pycurl.MAXREDIRS: 5,
+                              pycurl.CONNECTTIMEOUT: 30,
+                              pycurl.LOW_SPEED_LIMIT: 1,
+                              pycurl.LOW_SPEED_TIME: 600,
+                              pycurl.NOSIGNAL: 1,
+                              pycurl.WRITEFUNCTION: Any(),
+                              pycurl.DNS_CACHE_TIMEOUT: 0,
+                              pycurl.ENCODING: "gzip,deflate"})
         finally:
             pycurl.Curl = Curl
 
     def test_async_fetch(self):
         curl = CurlStub("result")
         d = fetch_async("http://example.com/", curl=curl)
+
         def got_result(result):
-            self.assertEquals(result, "result")
+            self.assertEqual(result, "result")
         return d.addCallback(got_result)
 
     def test_async_fetch_with_error(self):
         curl = CurlStub("result", {pycurl.HTTP_CODE: 501})
         d = fetch_async("http://example.com/", curl=curl)
+
         def got_error(failure):
-            self.assertEquals(failure.value.http_code, 501)
-            self.assertEquals(failure.value.body, "result")
+            self.assertEqual(failure.value.http_code, 501)
+            self.assertEqual(failure.value.body, "result")
             return failure
         d.addErrback(got_error)
         self.assertFailure(d, HTTPCodeError)
@@ -306,7 +308,7 @@ class FetchTest(LandscapeTest):
                              errback=errback, curl=curl)
 
         def completed(result):
-            self.assertEquals(url_results, {})
+            self.assertEqual(url_results, {})
 
         return d.addCallback(completed)
 
@@ -321,8 +323,8 @@ class FetchTest(LandscapeTest):
 
         def errback(failure, url):
             failed_urls.append(url)
-            self.assertEquals(failure.value.body, "wrong")
-            self.assertEquals(failure.value.http_code, 501)
+            self.assertEqual(failure.value.body, "wrong")
+            self.assertEqual(failure.value.http_code, 501)
             return failure
 
         curl = CurlManyStub(url_results)
@@ -332,7 +334,7 @@ class FetchTest(LandscapeTest):
         def check_failure(failure):
             self.assertTrue(isinstance(failure.subFailure.value,
                                        HTTPCodeError))
-            self.assertEquals(failed_urls, ["http://wrong/"])
+            self.assertEqual(failed_urls, ["http://wrong/"])
 
         self.assertFailure(result, FirstError)
         return result.addCallback(check_failure)
@@ -342,10 +344,10 @@ class FetchTest(LandscapeTest):
         L{url_to_filename} extracts the filename part of an URL, optionally
         prepending a directory path to it.
         """
-        self.assertEquals(url_to_filename("http://some/file"), "file")
-        self.assertEquals(url_to_filename("http://some/file/"), "file")
-        self.assertEquals(url_to_filename("http://some/file", directory="dir"),
-                          os.path.join("dir", "file"))
+        self.assertEqual(url_to_filename("http://some/file"), "file")
+        self.assertEqual(url_to_filename("http://some/file/"), "file")
+        self.assertEqual(url_to_filename("http://some/file", directory="dir"),
+                         os.path.join("dir", "file"))
 
     def test_fetch_to_files(self):
         """
@@ -362,7 +364,7 @@ class FetchTest(LandscapeTest):
         def check_files(ignored):
             for result in url_results.itervalues():
                 fd = open(os.path.join(directory, result))
-                self.assertEquals(fd.read(), result)
+                self.assertEqual(fd.read(), result)
                 fd.close()
 
         result.addCallback(check_files)
@@ -401,14 +403,14 @@ class FetchTest(LandscapeTest):
                                 curl=curl)
 
         def check_messages(failure):
-            self.assertEquals(len(messages), 1)
-            self.assertEquals(messages[0],
-                              "Couldn't fetch file from http://im/wrong "
-                              "(Server returned HTTP code 404)")
+            self.assertEqual(len(messages), 1)
+            self.assertEqual(messages[0],
+                             "Couldn't fetch file from http://im/wrong "
+                             "(Server returned HTTP code 404)")
             messages.pop()
 
         def check_files(ignored):
-            self.assertEquals(messages, [])
+            self.assertEqual(messages, [])
             self.assertFalse(os.path.exists(os.path.join(directory, "wrong")))
 
         result.addErrback(check_messages)
@@ -428,7 +430,7 @@ class FetchTest(LandscapeTest):
 
         def check_error(failure):
             error = str(failure.value.subFailure.value)
-            self.assertEquals(error, "[Errno 2] No such file or directory: "
+            self.assertEqual(error, "[Errno 2] No such file or directory: "
                               "'i/dont/exist/right'")
             self.assertFalse(os.path.exists(os.path.join(directory, "right")))
 

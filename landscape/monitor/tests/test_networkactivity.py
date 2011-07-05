@@ -78,9 +78,9 @@ Inter-|   Receive                           |  Transmit
         message = self.plugin.create_message()
         self.assertTrue(message)
         self.assertTrue("type" in message)
-        self.assertEquals(message["type"], "network-activity")
-        self.assertEquals(message["activities"]["lo"],
-                          [(300, 10, 99)])
+        self.assertEqual(message["type"], "network-activity")
+        self.assertEqual(message["activities"]["lo"],
+                         [(300, 10, 99)])
         self.assertNotIn("eth0", message["activities"])
 
     def test_proc_rollover(self):
@@ -97,9 +97,9 @@ Inter-|   Receive                           |  Transmit
         message = self.plugin.create_message()
         self.assertTrue(message)
         self.assertTrue("type" in message)
-        self.assertEquals(message["type"], "network-activity")
-        self.assertEquals(message["activities"]["lo"],
-                          [(300, 9010, 9099)])
+        self.assertEqual(message["type"], "network-activity")
+        self.assertEqual(message["activities"]["lo"],
+                         [(300, 9010, 9099)])
         self.assertNotIn("eth0", message["activities"])
 
     def test_no_message_without_traffic_delta(self):

@@ -22,14 +22,14 @@ class PersistHelpersTest(LandscapeTest):
 
     def test_path_string_to_tuple(self):
         for path_string, path_tuple in self.paths:
-            self.assertEquals(path_string_to_tuple(path_string), path_tuple)
+            self.assertEqual(path_string_to_tuple(path_string), path_tuple)
 
     def test_path_string_to_tuple_error(self):
         self.assertRaises(PersistError, path_string_to_tuple, "ab[0][c]")
 
     def test_path_tuple_to_string(self):
         for path_string, path_tuple in self.paths:
-            self.assertEquals(path_tuple_to_string(path_tuple), path_string)
+            self.assertEqual(path_tuple_to_string(path_tuple), path_string)
 
 
 class BasePersistTest(LandscapeTest):
@@ -125,60 +125,60 @@ class GeneralPersistTest(BasePersistTest):
         for path, value in self.set_items:
             self.persist.set(path, value)
         result = self.persist.get((), hard=True)
-        self.assertEquals(result, self.set_result,
-                          self.format(result, self.set_result))
+        self.assertEqual(result, self.set_result,
+                         self.format(result, self.set_result))
 
     def test_set_tuple_paths(self):
         for path, value in self.set_items:
             self.persist.set(path_string_to_tuple(path), value)
         result = self.persist.get((), hard=True)
-        self.assertEquals(result, self.set_result,
-                          self.format(result, self.set_result))
+        self.assertEqual(result, self.set_result,
+                         self.format(result, self.set_result))
 
     def test_set_from_result(self):
         for path in self.set_result:
             self.persist.set(path, self.set_result[path])
         result = self.persist.get((), hard=True)
-        self.assertEquals(result, self.set_result,
-                          self.format(result, self.set_result))
+        self.assertEqual(result, self.set_result,
+                         self.format(result, self.set_result))
 
     def test_get(self):
         for path in self.set_result:
             self.persist.set(path, self.set_result[path])
         for path, value in self.get_items:
-            self.assertEquals(self.persist.get(path), value)
+            self.assertEqual(self.persist.get(path), value)
 
     def test_get_tuple_paths(self):
         for path in self.set_result:
             self.persist.set(path_string_to_tuple(path), self.set_result[path])
         for path, value in self.get_items:
-            self.assertEquals(self.persist.get(path), value)
+            self.assertEqual(self.persist.get(path), value)
 
     def test_add(self):
         for path, value in self.add_items:
             self.persist.add(path, value)
         result = self.persist.get((), hard=True)
-        self.assertEquals(result, self.add_result,
-                          self.format(result, self.add_result))
+        self.assertEqual(result, self.add_result,
+                         self.format(result, self.add_result))
 
     def test_add_unique(self):
         self.persist.add("a", "b")
-        self.assertEquals(self.persist.get("a"), ["b"])
+        self.assertEqual(self.persist.get("a"), ["b"])
         self.persist.add("a", "b")
-        self.assertEquals(self.persist.get("a"), ["b", "b"])
+        self.assertEqual(self.persist.get("a"), ["b", "b"])
         self.persist.add("a", "b", unique=True)
-        self.assertEquals(self.persist.get("a"), ["b", "b"])
+        self.assertEqual(self.persist.get("a"), ["b", "b"])
         self.persist.add("a", "c", unique=True)
-        self.assertEquals(self.persist.get("a"), ["b", "b", "c"])
+        self.assertEqual(self.persist.get("a"), ["b", "b", "c"])
 
     def test_keys(self):
         self.persist.set("a", {"b": 1, "c": {"d": 2}, "e": list("foo")})
         keys = self.persist.keys
-        self.assertEquals(set(keys((), hard=True)), set(["a"]))
-        self.assertEquals(set(keys("a")), set(["b", "c", "e"]))
-        self.assertEquals(set(keys("a.d")), set([]))
-        self.assertEquals(set(keys("a.e")), set([0, 1, 2]))
-        self.assertEquals(set(keys("a.f")), set([]))
+        self.assertEqual(set(keys((), hard=True)), set(["a"]))
+        self.assertEqual(set(keys("a")), set(["b", "c", "e"]))
+        self.assertEqual(set(keys("a.d")), set([]))
+        self.assertEqual(set(keys("a.e")), set([0, 1, 2]))
+        self.assertEqual(set(keys("a.f")), set([]))
         self.assertRaises(PersistError, keys, "a.b")
 
     def test_has(self):
@@ -211,19 +211,19 @@ class GeneralPersistTest(BasePersistTest):
         self.assertRaises(PersistError, remove, "a.c.d.e")
 
         self.assertTrue(remove(("a", "e", "o")))
-        self.assertEquals(get("a.e"), ["f", "t"])
+        self.assertEqual(get("a.e"), ["f", "t"])
 
         self.assertFalse(remove("a.e[2]"))
-        self.assertEquals(get("a.e"), ["f", "t"])
+        self.assertEqual(get("a.e"), ["f", "t"])
 
         self.assertTrue(remove("a.e[1]"))
-        self.assertEquals(get("a.e"), ["f"])
+        self.assertEqual(get("a.e"), ["f"])
 
         self.assertTrue(remove("a.e", "f"))
         self.assertFalse(has("a.e"))
 
         self.assertFalse(remove("a.b[1]"))
-        self.assertEquals(get("a.b"), [1])
+        self.assertEqual(get("a.b"), [1])
 
         self.assertTrue(remove("a.b", 1))
         self.assertFalse(has("a.b"))
@@ -240,43 +240,43 @@ class GeneralPersistTest(BasePersistTest):
         get = self.persist.get
 
         self.assertTrue(move("a.b", "a.c.b"))
-        self.assertEquals(get("a"), {"c": {"b": [1], "d": 2}})
+        self.assertEqual(get("a"), {"c": {"b": [1], "d": 2}})
 
         self.assertTrue(move("a.c.b[0]", "a.c.b"))
-        self.assertEquals(get("a"), {"c": {"b": 1, "d": 2}})
+        self.assertEqual(get("a"), {"c": {"b": 1, "d": 2}})
 
         self.assertTrue(move(("a", "c", "b"), ("a", "c", "b", 0)))
-        self.assertEquals(get("a"), {"c": {"b": [1], "d": 2}})
+        self.assertEqual(get("a"), {"c": {"b": [1], "d": 2}})
 
     def test_copy_values_on_set(self):
         d = {"b": 1}
         d_orig = d.copy()
         self.persist.set("a", d)
         d["c"] = 2
-        self.assertEquals(self.persist.get("a"), d_orig)
+        self.assertEqual(self.persist.get("a"), d_orig)
 
     def test_copy_values_on_add(self):
         d = {"b": 1}
         d_orig = d.copy()
         self.persist.add("a", d)
         d["c"] = 2
-        self.assertEquals(self.persist.get("a[0]"), d_orig)
+        self.assertEqual(self.persist.get("a[0]"), d_orig)
 
     def test_copy_values_on_get(self):
         self.persist.set("a", {"b": 1})
         d = self.persist.get("a")
         d_orig = d.copy()
         d["c"] = 2
-        self.assertEquals(self.persist.get("a"), d_orig)
+        self.assertEqual(self.persist.get("a"), d_orig)
 
     def test_root_at(self):
         rooted = self.persist.root_at("my-module")
         rooted.set("option", 1)
-        self.assertEquals(self.persist.get("my-module.option"), 1)
+        self.assertEqual(self.persist.get("my-module.option"), 1)
 
 
 class SaveLoadPersistTest(BasePersistTest):
-        
+
     def test_readonly(self):
         self.assertFalse(self.persist.readonly)
         self.persist.readonly = True
@@ -331,8 +331,8 @@ class SaveLoadPersistTest(BasePersistTest):
         persist.load(filename)
 
         result = persist.get((), hard=True)
-        self.assertEquals(result, self.set_result,
-                          self.format(result, self.set_result))
+        self.assertEqual(result, self.set_result,
+                         self.format(result, self.set_result))
 
     def test_save_on_unexistent_dir(self):
         dirname = self.makeFile()
@@ -379,7 +379,7 @@ class SaveLoadPersistTest(BasePersistTest):
         persist.save()
 
         persist = self.build_persist(filename=filename)
-        self.assertEquals(persist.get("foo"), "bar")
+        self.assertEqual(persist.get("foo"), "bar")
 
     def test_load_restores_backup(self):
         filename = self.makePersistFile("foobar")
@@ -391,7 +391,7 @@ class SaveLoadPersistTest(BasePersistTest):
         persist = self.build_persist()
         persist.load(filename)
 
-        self.assertEquals(persist.get("a"), 1)
+        self.assertEqual(persist.get("a"), 1)
 
     def test_load_empty_files_wont_break(self):
         filename = self.makeFile("")

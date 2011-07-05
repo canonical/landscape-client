@@ -83,7 +83,7 @@ class PackageMonitorTest(LandscapeTest):
 
         package_monitor_mock = self.mocker.patch(self.package_monitor)
         package_monitor_mock.spawn_reporter()
-        self.mocker.count(2) # Once for registration, then again explicitly.
+        self.mocker.count(2)  # Once for registration, then again explicitly.
         self.mocker.replay()
 
         self.monitor.add(self.package_monitor)
@@ -100,7 +100,7 @@ class PackageMonitorTest(LandscapeTest):
         self.monitor.dispatch_message(message)
         task = self.package_store.get_next_task("reporter")
         self.assertTrue(task)
-        self.assertEquals(task.data, message)
+        self.assertEqual(task.data, message)
 
     def test_spawn_reporter(self):
         command = self.makeFile("#!/bin/sh\necho 'I am the reporter!' >&2\n")
@@ -203,18 +203,18 @@ class PackageMonitorTest(LandscapeTest):
 
         # The next task should be the resynchronize message.
         task = self.package_store.get_next_task("reporter")
-        self.assertEquals(task.data, {"type": "resynchronize"})
+        self.assertEqual(task.data, {"type": "resynchronize"})
 
         # We want to make sure it has the correct id of 2 so that we
         # know it's not a new task that the reporter could possibly
         # remove by accident.
-        self.assertEquals(task.id, 2)
+        self.assertEqual(task.id, 2)
 
         # Let's remove that task and make sure there are no more tasks
         # in the queue.
         task.remove()
         task = self.package_store.get_next_task("reporter")
-        self.assertEquals(task, None)
+        self.assertEqual(task, None)
 
     def test_spawn_reporter_doesnt_chdir(self):
         command = self.makeFile("#!/bin/sh\necho RUN\n")
@@ -252,8 +252,8 @@ class PackageMonitorTest(LandscapeTest):
         self.monitor.add(self.package_monitor)
         self.monitor.reactor.fire("server-uuid-changed", "old", "new")
 
-        self.assertEquals(self.package_store.get_hash_id("hash1"), None)
-        self.assertEquals(self.package_store.get_hash_id("hash2"), None)
+        self.assertEqual(self.package_store.get_hash_id("hash1"), None)
+        self.assertEqual(self.package_store.get_hash_id("hash2"), None)
 
     def test_changing_server_uuid_wont_clear_hash_ids_with_old_uuid_none(self):
         """
@@ -264,5 +264,5 @@ class PackageMonitorTest(LandscapeTest):
         self.package_store.set_hash_ids({"hash1": 1, "hash2": 2})
         self.monitor.add(self.package_monitor)
         self.monitor.reactor.fire("server-uuid-changed", None, "new-uuid")
-        self.assertEquals(self.package_store.get_hash_id("hash1"), 1)
-        self.assertEquals(self.package_store.get_hash_id("hash2"), 2)
+        self.assertEqual(self.package_store.get_hash_id("hash1"), 1)
+        self.assertEqual(self.package_store.get_hash_id("hash2"), 2)
