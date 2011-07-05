@@ -1,9 +1,12 @@
 import glob
 import os
+import pwd
+import grp
 import tempfile
 
 from twisted.internet.defer import succeed
-from twisted.internet.utils import getProcessOutputAndValue
+
+from landscape.lib.twisted_util import spawn_process
 
 from landscape.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
 from landscape.package.reporter import find_reporter_command
@@ -24,11 +27,13 @@ class AptSources(ManagerPlugin):
         registry.register_message(
             "apt-sources-replace", self._wrap_handle_repositories)
 
-    def run_process(self, command, args):
+    def _run_process(self, command, args, env={}, path=None, uid=None, gid=None):
         """
         Run the process in an asynchronous fashion, to be overriden in tests.
         """
-        return getProcessOutputAndValue(command, args)
+        process, result = spawn_process(command, args, env=env, path=path,
+                                        uid=uid, gid=gid)
+        return result
 
     def _wrap_handle_repositories(self, message):
         """
@@ -111,7 +116,7 @@ class AptSources(ManagerPlugin):
             key_file.close()
             deferred.addCallback(
                 lambda ignore, path=path:
-                    self.run_process("/usr/bin/apt-key", ["add", path]))
+                    self._run_process("/usr/bin/apt-key", ["add", path]))
             deferred.addCallback(self._handle_process_error)
             deferred.addBoth(self._remove_and_continue, path)
         deferred.addErrback(self._handle_process_failure)
@@ -152,4 +157,11 @@ class AptSources(ManagerPlugin):
 
         if self.registry.config.config is not None:
             args.append("--config=%s" % self.registry.config.config)
-        return self.run_process(reporter, args)
+
+        if os.getuid() == 0:
+            uid = pwd.getpwnam("landscape").pw_uid
+            gid = grp.getgrnam("landscape").gr_gid
+        else:
+            uid = None
+            gid = None
+        return self._run_process(reporter, args, uid=uid, gid=gid)
