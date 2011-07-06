@@ -1,5 +1,6 @@
 import glob
 import os
+import shutil
 import tempfile
 
 from twisted.internet.defer import succeed
@@ -130,10 +131,12 @@ class AptSources(ManagerPlugin):
             else:
                 new_sources.write("#%s" % line)
         new_sources.close()
-        os.rename(path, self.SOURCES_LIST)
+
+        os.chmod(path, os.stat(self.SOURCES_LIST).st_mode)
+        shutil.move(path, self.SOURCES_LIST)
 
         for filename in glob.glob(os.path.join(self.SOURCES_LIST_D, "*.list")):
-            os.rename(filename, "%s.save" % filename)
+            shutil.move(filename, "%s.save" % filename)
 
         for source in sources:
             filename = os.path.join(self.SOURCES_LIST_D,
@@ -141,6 +144,7 @@ class AptSources(ManagerPlugin):
             sources_file = file(filename, "w")
             sources_file.write(source["content"])
             sources_file.close()
+            os.chmod(filename, 0644)
         return self._run_reporter()
 
     def _run_reporter(self):
