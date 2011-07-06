@@ -136,7 +136,7 @@ class AptSources(ManagerPlugin):
         shutil.move(path, self.SOURCES_LIST)
 
         for filename in glob.glob(os.path.join(self.SOURCES_LIST_D, "*.list")):
-            os.rename(filename, "%s.save" % filename)
+            shutil.move(filename, "%s.save" % filename)
 
         for source in sources:
             filename = os.path.join(self.SOURCES_LIST_D,
@@ -144,6 +144,7 @@ class AptSources(ManagerPlugin):
             sources_file = file(filename, "w")
             sources_file.write(source["content"])
             sources_file.close()
+            os.chmod(filename, 0644)
         return self._run_reporter()
 
     def _run_reporter(self):
