@@ -2,10 +2,7 @@ from twisted.internet import reactor
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.internet.protocol import ClientCreator
 from twisted.internet.error import ConnectionDone, ConnectError
-try:
-    from twisted.internet.task import Clock
-except ImportError:
-    Clock = None  # Dapper doesn't have it
+from twisted.internet.task import Clock
 
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.amp import (

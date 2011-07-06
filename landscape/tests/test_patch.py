@@ -1,7 +1,4 @@
-try:
-    from pysqlite2 import dbapi2 as sqlite3
-except:
-    import sqlite3
+import sqlite3
 
 from landscape.lib.persist import Persist
 from landscape.patch import UpgradeManager, SQLiteUpgradeManager

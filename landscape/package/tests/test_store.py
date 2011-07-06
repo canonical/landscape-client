@@ -2,11 +2,7 @@ import threading
 import time
 import sys
 
-try:
-    import sqlite3
-except ImportError:
-    from pysqlite2 import dbapi2 as sqlite3
-
+import sqlite3
 from landscape.tests.helpers import LandscapeTest
 
 from landscape.package.store import (HashIdStore, PackageStore,
