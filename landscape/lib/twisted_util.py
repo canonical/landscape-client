@@ -42,10 +42,17 @@ def spawn_process(executable, args=(), env={}, path=None, uid=None, gid=None,
 
     Return a deferred which will be called with process stdout, stderr and exit
     code.
+
+    NOTE: compared to reactor.spawnProcess, this version does NOT require the
+    executable name as first element of args.
     """
+
+    list_args = [executable]
+    list_args.extend(args)
+
     result = Deferred()
     protocol = AllOutputProcessProtocol(result)
-    process = reactor.spawnProcess(protocol, executable, args=args, env=env,
+    process = reactor.spawnProcess(protocol, executable, args=list_args, env=env,
                                    path=path, uid=uid, gid=gid)
 
     if not wait_pipes:

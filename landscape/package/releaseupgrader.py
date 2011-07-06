@@ -261,8 +261,7 @@ class ReleaseUpgrader(PackageTaskHandler):
         """
         upgrade_tool_directory = self._config.upgrade_tool_directory
         upgrade_tool_filename = os.path.join(upgrade_tool_directory, code_name)
-        args = [upgrade_tool_filename, "--frontend",
-                "DistUpgradeViewNonInteractive"]
+        args = ["--frontend", "DistUpgradeViewNonInteractive"]
         if mode:
             args.extend(["--mode", mode])
         env = os.environ.copy()
@@ -303,7 +302,7 @@ class ReleaseUpgrader(PackageTaskHandler):
         reporter = find_reporter_command()
 
         # Force a smart-update run, because the sources.list has changed
-        args = [reporter, "--force-smart-update"]
+        args = ["--force-smart-update"]
 
         if self._config.config is not None:
             args.append("--config=%s" % self._config.config)
