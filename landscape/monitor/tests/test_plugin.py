@@ -28,7 +28,7 @@ class MonitorPluginTest(LandscapeTest):
         plugin.persist_name = "wubble"
         plugin.register(self.monitor)
         plugin.persist.set("hi", "there")
-        self.assertEquals(self.monitor.persist.get("wubble"), {"hi": "there"})
+        self.assertEqual(self.monitor.persist.get("wubble"), {"hi": "there"})
 
     def test_with_no_run_interval(self):
         """
@@ -90,21 +90,21 @@ class DataWatcherTest(LandscapeTest):
         self.mstore.add_schema(Message("wubble", {"wubblestuff": Int()}))
 
     def test_get_message(self):
-        self.assertEquals(self.plugin.get_message(),
-                          {"type": "wubble", "wubblestuff": 1})
+        self.assertEqual(self.plugin.get_message(),
+                         {"type": "wubble", "wubblestuff": 1})
 
     def test_get_message_unchanging(self):
-        self.assertEquals(self.plugin.get_message(),
-                          {"type": "wubble", "wubblestuff": 1})
-        self.assertEquals(self.plugin.get_message(), None)
+        self.assertEqual(self.plugin.get_message(),
+                         {"type": "wubble", "wubblestuff": 1})
+        self.assertEqual(self.plugin.get_message(), None)
 
     def test_basic_exchange(self):
         # Is this really want we want to do?
         self.mstore.set_accepted_types(["wubble"])
         self.plugin.exchange()
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(messages[0]["type"], "wubble")
-        self.assertEquals(messages[0]["wubblestuff"], 1)
+        self.assertEqual(messages[0]["type"], "wubble")
+        self.assertEqual(messages[0]["wubblestuff"], 1)
         self.assertIn("Queueing a message with updated data watcher info for "
                       "landscape.monitor.tests.test_plugin.StubDataWatching"
                       "Plugin.", self.logfile.getvalue())
@@ -115,7 +115,7 @@ class DataWatcherTest(LandscapeTest):
         self.plugin.exchange()
         self.plugin.exchange()
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 1)
+        self.assertEqual(len(messages), 1)
 
     def test_urgent_exchange(self):
         """

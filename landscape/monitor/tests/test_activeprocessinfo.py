@@ -36,9 +36,9 @@ class ActiveProcessInfoTest(LandscapeTest):
         self.monitor.add(plugin)
         plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
-        self.assertEquals(message["type"], "active-process-info")
+        self.assertEqual(message["type"], "active-process-info")
         self.assertTrue("kill-all-processes" in message)
-        self.assertEquals(message["kill-all-processes"], True)
+        self.assertEqual(message["kill-all-processes"], True)
         self.assertTrue("add-processes" in message)
 
     def test_only_first_run_includes_kill_message(self):
@@ -56,14 +56,14 @@ class ActiveProcessInfoTest(LandscapeTest):
                                  process_name="blargh")
         self.monitor.exchange()
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 2)
+        self.assertEqual(len(messages), 2)
         message = messages[0]
-        self.assertEquals(message["type"], "active-process-info")
+        self.assertEqual(message["type"], "active-process-info")
         self.assertTrue("kill-all-processes" in message)
         self.assertTrue("add-processes" in message)
 
         message = messages[1]
-        self.assertEquals(message["type"], "active-process-info")
+        self.assertEqual(message["type"], "active-process-info")
         self.assertTrue("add-processes" in message)
 
     def test_terminating_process_race(self):
@@ -113,7 +113,7 @@ class ActiveProcessInfoTest(LandscapeTest):
         self.monitor.add(plugin)
         plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
-        self.assertEquals(message["type"], "active-process-info")
+        self.assertEqual(message["type"], "active-process-info")
         self.assertTrue("kill-all-processes" in message)
         self.assertTrue("add-processes" in message)
         expected_process_0 = {"state": "R", "gid": 0, "pid": 1,
@@ -127,8 +127,8 @@ class ActiveProcessInfoTest(LandscapeTest):
                               "start-time": 112, "percent-cpu": 0.0}
         processes = message["add-processes"]
         processes.sort(key=operator.itemgetter("pid"))
-        self.assertEquals(processes, [expected_process_0, expected_process_1,
-                                      expected_process_2])
+        self.assertEqual(processes, [expected_process_0, expected_process_1,
+                                     expected_process_2])
 
     def test_skip_non_numeric_subdirs(self):
         """Test ensures the plugin doesn't touch non-process dirs in /proc."""
@@ -144,14 +144,14 @@ class ActiveProcessInfoTest(LandscapeTest):
         self.monitor.add(plugin)
         plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
-        self.assertEquals(message["type"], "active-process-info")
+        self.assertEqual(message["type"], "active-process-info")
         self.assertTrue("kill-all-processes" in message)
         self.assertTrue("add-processes" in message)
 
         expected_process = {"pid": 1, "state": "R", "name": "init",
                             "vm-size": 11676, "uid": 0, "gid": 0,
                             "start-time": 112, "percent-cpu": 0.0}
-        self.assertEquals(message["add-processes"], [expected_process])
+        self.assertEqual(message["add-processes"], [expected_process])
 
     def test_plugin_manager(self):
         """Test plugin manager integration."""
@@ -196,48 +196,48 @@ class ActiveProcessInfoTest(LandscapeTest):
 
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 2)
+        self.assertEqual(len(messages), 2)
 
         # The first time the plugin runs we expect all known processes
         # to be killed.
         message = messages[0]
-        self.assertEquals(message["type"], "active-process-info")
+        self.assertEqual(message["type"], "active-process-info")
         self.assertTrue("kill-all-processes" in message)
-        self.assertEquals(message["kill-all-processes"], True)
+        self.assertEqual(message["kill-all-processes"], True)
         self.assertTrue("add-processes" in message)
         expected_process_0 = {"state": "R", "gid": 0, "pid": 1,
-                              "vm-size": 11676, "name": "init", 
+                              "vm-size": 11676, "name": "init",
                               "uid": 0, "start-time": 101,
                               "percent-cpu": 0.0}
         expected_process_1 = {"state": "T", "gid": 1000, "pid": 671,
-                              "vm-size": 11676, "name": "blargh", 
+                              "vm-size": 11676, "name": "blargh",
                               "uid": 1000, "start-time": 102,
                               "percent-cpu": 0.0}
         expected_process_2 = {"state": "I", "gid": 1000, "pid": 672,
-                              "vm-size": 11676, "name": "blarpy", 
+                              "vm-size": 11676, "name": "blarpy",
                               "uid": 1000, "start-time": 104,
                               "percent-cpu": 0.0}
         processes = message["add-processes"]
         processes.sort(key=operator.itemgetter("pid"))
-        self.assertEquals(processes, [expected_process_0, expected_process_1,
-                                      expected_process_2])
+        self.assertEqual(processes, [expected_process_0, expected_process_1,
+                                     expected_process_2])
 
         # Report diff-like changes to processes, such as terminated
         # processes and new processes.
         message = messages[1]
-        self.assertEquals(message["type"], "active-process-info")
+        self.assertEqual(message["type"], "active-process-info")
 
         self.assertTrue("add-processes" in message)
-        self.assertEquals(len(message["add-processes"]), 1)
+        self.assertEqual(len(message["add-processes"]), 1)
         expected_process = {"state": "R", "gid": 0, "pid": 12753,
                             "vm-size": 11676, "name": "wubble",
                             "uid": 0, "start-time": 107,
                             "percent-cpu": 0.0}
-        self.assertEquals(message["add-processes"], [expected_process])
+        self.assertEqual(message["add-processes"], [expected_process])
 
         self.assertTrue("kill-processes" in message)
-        self.assertEquals(len(message["kill-processes"]), 1)
-        self.assertEquals(message["kill-processes"], [671])
+        self.assertEqual(len(message["kill-processes"]), 1)
+        self.assertEqual(message["kill-processes"], [671])
 
     def test_only_queue_message_when_process_data_is_available(self):
         """Test ensures that messages are only queued when data changes."""
@@ -249,10 +249,10 @@ class ActiveProcessInfoTest(LandscapeTest):
         self.monitor.add(plugin)
 
         plugin.exchange()
-        self.assertEquals(len(self.mstore.get_pending_messages()), 1)
+        self.assertEqual(len(self.mstore.get_pending_messages()), 1)
 
         plugin.exchange()
-        self.assertEquals(len(self.mstore.get_pending_messages()), 1)
+        self.assertEqual(len(self.mstore.get_pending_messages()), 1)
 
     def test_only_report_active_processes(self):
         """Test ensures the plugin only reports active processes."""
@@ -283,7 +283,7 @@ class ActiveProcessInfoTest(LandscapeTest):
 
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 1)
+        self.assertEqual(len(messages), 1)
 
         message = messages[0]
         self.assertTrue("kill-all-processes" in message)
@@ -292,7 +292,7 @@ class ActiveProcessInfoTest(LandscapeTest):
 
         pids = [process["pid"] for process in message["add-processes"]]
         pids.sort()
-        self.assertEquals(pids, [673, 674, 675, 676, 677, 678])
+        self.assertEqual(pids, [673, 674, 675, 676, 677, 678])
 
     def test_report_interesting_state_changes(self):
         """Test ensures that interesting state changes are reported."""
@@ -307,14 +307,14 @@ class ActiveProcessInfoTest(LandscapeTest):
         plugin.exchange()
 
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 1)
+        self.assertEqual(len(messages), 1)
         message = messages[0]
 
         self.assertTrue("kill-all-processes" in message)
         self.assertTrue("kill-processes" not in message)
         self.assertTrue("add-processes" in message)
-        self.assertEquals(message["add-processes"][0]["pid"], 672)
-        self.assertEquals(message["add-processes"][0]["state"], u"R")
+        self.assertEqual(message["add-processes"][0]["pid"], 672)
+        self.assertEqual(message["add-processes"][0]["state"], u"R")
 
         # Convert the process to a zombie and ensure it gets reported.
         self.builder.remove_data(672)
@@ -325,12 +325,12 @@ class ActiveProcessInfoTest(LandscapeTest):
         plugin.exchange()
 
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 2)
+        self.assertEqual(len(messages), 2)
         message = messages[1]
 
         self.assertTrue("kill-all-processes" not in message)
         self.assertTrue("update-processes" in message)
-        self.assertEquals(message["update-processes"][0]["state"], u"Z")
+        self.assertEqual(message["update-processes"][0]["state"], u"Z")
 
     def test_call_on_accepted(self):
         """
@@ -340,12 +340,12 @@ class ActiveProcessInfoTest(LandscapeTest):
         plugin = ActiveProcessInfo(proc_dir=self.sample_dir, uptime=100,
                                    jiffies=10)
         self.monitor.add(plugin)
-        self.assertEquals(len(self.mstore.get_pending_messages()), 0)
+        self.assertEqual(len(self.mstore.get_pending_messages()), 0)
         result = self.monitor.fire_event(
             "message-type-acceptance-changed", "active-process-info", True)
 
         def assert_messages(ignored):
-            self.assertEquals(len(self.mstore.get_pending_messages()), 1)
+            self.assertEqual(len(self.mstore.get_pending_messages()), 1)
 
         result.addCallback(assert_messages)
         return result
@@ -441,7 +441,7 @@ class ActiveProcessInfoTest(LandscapeTest):
         message = plugin.get_message()
 
         def assert_message(message_id):
-            self.assertEquals(message, plugin.get_message())
+            self.assertEqual(message, plugin.get_message())
 
         result = plugin.exchange()
         result.addCallback(assert_message)
@@ -465,7 +465,7 @@ class ActiveProcessInfoTest(LandscapeTest):
         plugin.exchange()
 
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 1)
+        self.assertEqual(len(messages), 1)
 
         self.builder.remove_data(1)
         self.builder.create_data(1, self.builder.RUNNING, uid=0, gid=0,
@@ -474,7 +474,7 @@ class ActiveProcessInfoTest(LandscapeTest):
         plugin.exchange()
 
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 2)
+        self.assertEqual(len(messages), 2)
         self.assertMessages(messages, [{"timestamp": 0,
                                         "api": SERVER_API,
                                         "type": "active-process-info",
@@ -534,14 +534,14 @@ class PluginManagerIntegrationTest(LandscapeTest):
         self.monitor.add(plugin)
         plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
-        self.assertEquals(message["type"], "active-process-info")
+        self.assertEqual(message["type"], "active-process-info")
         self.assertTrue("kill-all-processes" in message)
         self.assertTrue("add-processes" in message)
         expected_process_0 = {"state": "R", "gid": 0, "pid": 1,
                               "vm-size": 11676, "name": "NetworkManagerDaemon",
                               "uid": 0, "start-time": 103, "percent-cpu": 0.0}
         processes = message["add-processes"]
-        self.assertEquals(processes, [expected_process_0])
+        self.assertEqual(processes, [expected_process_0])
 
     def test_strip_command_line_name_whitespace(self):
         """Whitespace should be stripped from command-line names."""
@@ -553,8 +553,8 @@ class PluginManagerIntegrationTest(LandscapeTest):
         self.monitor.add(plugin)
         plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
-        self.assertEquals(message["add-processes"][0]["name"],
-                          u"postgres: writer process")
+        self.assertEqual(message["add-processes"][0]["name"],
+                         u"postgres: writer process")
 
     def test_read_process_with_no_cmdline(self):
         """Test reading a process without a cmdline file."""
@@ -568,14 +568,14 @@ class PluginManagerIntegrationTest(LandscapeTest):
         self.monitor.add(plugin)
         plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
-        self.assertEquals(message["type"], "active-process-info")
+        self.assertEqual(message["type"], "active-process-info")
         self.assertTrue("kill-all-processes" in message)
         self.assertTrue("add-processes" in message)
         expected_process_0 = {"state": "R", "gid": 0, "pid": 1,
                               "vm-size": 11676, "name": "ProcessWithLong",
                               "uid": 0, "start-time": 103, "percent-cpu": 0.0}
         processes = message["add-processes"]
-        self.assertEquals(processes, [expected_process_0])
+        self.assertEqual(processes, [expected_process_0])
 
     def test_generate_cpu_usage(self):
         """
@@ -596,7 +596,7 @@ class PluginManagerIntegrationTest(LandscapeTest):
         self.monitor.add(plugin)
         plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
-        self.assertEquals(message["type"], "active-process-info")
+        self.assertEqual(message["type"], "active-process-info")
         self.assertTrue("kill-all-processes" in message)
         self.assertTrue("add-processes" in message)
         processes = message["add-processes"]
@@ -605,7 +605,7 @@ class PluginManagerIntegrationTest(LandscapeTest):
                               "uid": 0, "start-time": 300,
                               "percent-cpu": 4.00}
         processes = message["add-processes"]
-        self.assertEquals(processes, [expected_process_0])
+        self.assertEqual(processes, [expected_process_0])
 
     def test_generate_cpu_usage_capped(self):
         """
@@ -627,7 +627,7 @@ class PluginManagerIntegrationTest(LandscapeTest):
         self.monitor.add(plugin)
         plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
-        self.assertEquals(message["type"], "active-process-info")
+        self.assertEqual(message["type"], "active-process-info")
         self.assertTrue("kill-all-processes" in message)
         self.assertTrue("add-processes" in message)
         processes = message["add-processes"]
@@ -636,4 +636,4 @@ class PluginManagerIntegrationTest(LandscapeTest):
                               "uid": 0, "start-time": 300,
                               "percent-cpu": 99.00}
         processes = message["add-processes"]
-        self.assertEquals(processes, [expected_process_0])
+        self.assertEqual(processes, [expected_process_0])

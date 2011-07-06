@@ -60,7 +60,7 @@ class PingClientTest(LandscapeTest):
                             self.broker_service.identity,
                             get_page=client.get_page)
         pinger.ping()
-        self.assertEquals(
+        self.assertEqual(
             client.fetches,
             [(url, True, {"Content-Type": "application/x-www-form-urlencoded"},
               "insecure_id=10")])
@@ -77,7 +77,7 @@ class PingClientTest(LandscapeTest):
                             get_page=client.get_page)
         d = pinger.ping()
         d.addCallback(self.assertEqual, False)
-        self.assertEquals(client.fetches, [])
+        self.assertEqual(client.fetches, [])
 
     def test_respond(self):
         """
@@ -105,12 +105,13 @@ class PingClientTest(LandscapeTest):
                             get_page=client.failing_get_page)
         d = pinger.ping()
         failures = []
+
         def errback(failure):
             failures.append(failure)
         d.addErrback(errback)
-        self.assertEquals(len(failures), 1)
-        self.assertEquals(failures[0].getErrorMessage(), "That's a failure!")
-        self.assertEquals(failures[0].type, AssertionError)
+        self.assertEqual(len(failures), 1)
+        self.assertEqual(failures[0].getErrorMessage(), "That's a failure!")
+        self.assertEqual(failures[0].type, AssertionError)
 
 
 class PingerTest(LandscapeTest):
@@ -126,6 +127,7 @@ class PingerTest(LandscapeTest):
         super(PingerTest, self).setUp()
         self.url = "http://localhost:8081/whatever"
         self.page_getter = FakePageGetter(None)
+
         def factory(reactor, url, insecure_id):
             return PingClient(reactor, url, insecure_id,
                               get_page=self.page_getter.get_page)
@@ -152,9 +154,9 @@ class PingerTest(LandscapeTest):
         self.pinger.start()
         self.broker_service.identity.insecure_id = 23
         self.broker_service.reactor.advance(9)
-        self.assertEquals(len(self.page_getter.fetches), 0)
+        self.assertEqual(len(self.page_getter.fetches), 0)
         self.broker_service.reactor.advance(1)
-        self.assertEquals(len(self.page_getter.fetches), 1)
+        self.assertEqual(len(self.page_getter.fetches), 1)
 
     def test_load_insecure_id(self):
         """
@@ -177,7 +179,7 @@ class PingerTest(LandscapeTest):
         # 70 = ping delay + urgent exchange delay
         self.broker_service.reactor.advance(70)
 
-        self.assertEquals(len(self.broker_service.transport.payloads), 1)
+        self.assertEqual(len(self.broker_service.transport.payloads), 1)
 
     def test_negative_response(self):
         """
@@ -187,7 +189,7 @@ class PingerTest(LandscapeTest):
         self.broker_service.identity.insecure_id = 42
         self.page_getter.response = {"messages": False}
         self.broker_service.reactor.advance(10)
-        self.assertEquals(len(self.broker_service.transport.payloads), 0)
+        self.assertEqual(len(self.broker_service.transport.payloads), 0)
 
     def test_ping_error(self):
         """
@@ -200,8 +202,10 @@ class PingerTest(LandscapeTest):
         class BadPingClient(object):
             def __init__(self, *args, **kwargs):
                 pass
+
             def ping(self):
                 return fail(ZeroDivisionError("Couldn't fetch page"))
+
         pinger = Pinger(self.broker_service.reactor, "http://foo.com/",
                         self.broker_service.identity,
                         self.broker_service.exchanger,
@@ -218,28 +222,28 @@ class PingerTest(LandscapeTest):
         self.assertTrue("Couldn't fetch page" in log)
 
     def test_get_interval(self):
-        self.assertEquals(self.pinger.get_interval(), 10)
+        self.assertEqual(self.pinger.get_interval(), 10)
 
     def test_set_intervals_handling(self):
         self.pinger.start()
 
         self.broker_service.reactor.fire("message",
                                          {"type": "set-intervals", "ping": 73})
-        self.assertEquals(self.pinger.get_interval(), 73)
+        self.assertEqual(self.pinger.get_interval(), 73)
 
         # The server may set specific intervals only, not including the ping.
         self.broker_service.reactor.fire("message", {"type": "set-intervals"})
-        self.assertEquals(self.pinger.get_interval(), 73)
+        self.assertEqual(self.pinger.get_interval(), 73)
 
         self.broker_service.identity.insecure_id = 23
         self.broker_service.reactor.advance(72)
-        self.assertEquals(len(self.page_getter.fetches), 0)
+        self.assertEqual(len(self.page_getter.fetches), 0)
         self.broker_service.reactor.advance(1)
-        self.assertEquals(len(self.page_getter.fetches), 1)
+        self.assertEqual(len(self.page_getter.fetches), 1)
 
     def test_get_url(self):
-        self.assertEquals(self.pinger.get_url(),
-                          "http://localhost:8081/whatever")
+        self.assertEqual(self.pinger.get_url(),
+                         "http://localhost:8081/whatever")
 
     def test_set_url(self):
         url = "http://example.com/mysuperping"
@@ -247,7 +251,7 @@ class PingerTest(LandscapeTest):
         self.pinger.start()
         self.broker_service.identity.insecure_id = 23
         self.broker_service.reactor.advance(10)
-        self.assertEquals(self.page_getter.fetches[0][0], url)
+        self.assertEqual(self.page_getter.fetches[0][0], url)
 
     def test_set_url_after_start(self):
         url = "http://example.com/mysuperping"
@@ -255,4 +259,4 @@ class PingerTest(LandscapeTest):
         self.pinger.set_url(url)
         self.broker_service.identity.insecure_id = 23
         self.broker_service.reactor.advance(10)
-        self.assertEquals(self.page_getter.fetches[0][0], url)
+        self.assertEqual(self.page_getter.fetches[0][0], url)

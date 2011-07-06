@@ -13,7 +13,7 @@ class MonitorTest(LandscapeTest):
         A L{Monitor} instance has a C{persist} attribute.
         """
         self.monitor.persist.set("a", 1)
-        self.assertEquals(self.monitor.persist.get("a"), 1)
+        self.assertEqual(self.monitor.persist.get("a"), 1)
 
     def test_flush_saves_persist(self):
         """
@@ -25,7 +25,7 @@ class MonitorTest(LandscapeTest):
 
         persist = Persist()
         persist.load(self.monitor.persist_filename)
-        self.assertEquals(persist.get("a"), 1)
+        self.assertEqual(persist.get("a"), 1)
 
     def test_flush_after_exchange(self):
         """
@@ -39,7 +39,7 @@ class MonitorTest(LandscapeTest):
 
         persist = Persist()
         persist.load(self.monitor.persist_filename)
-        self.assertEquals(persist.get("a"), 1)
+        self.assertEqual(persist.get("a"), 1)
 
     def test_flush_every_flush_interval(self):
         """
@@ -64,4 +64,4 @@ class MonitorTest(LandscapeTest):
 
         monitor = Monitor(self.reactor, self.config, persist=Persist(),
                           persist_filename=filename)
-        self.assertEquals(monitor.persist.get("a"), "Hi there!")
+        self.assertEqual(monitor.persist.get("a"), "Hi there!")

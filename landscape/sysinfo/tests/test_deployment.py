@@ -105,7 +105,7 @@ class RunTest(LandscapeTest):
         self.assertEqual(current_instance.has_run, True)
         sysinfo = current_instance.sysinfo
         self.assertEqual(sysinfo.get_headers(),
-                          [("Test header", "Test value")])
+                         [("Test header", "Test value")])
         self.assertEqual(sysinfo.get_notes(), ["Test note"])
         self.assertEqual(sysinfo.get_footnotes(), ["Test footnote"])
 
@@ -208,7 +208,7 @@ class RunTest(LandscapeTest):
         log directory is stored in their home directory.
         """
         self.assertEqual(get_landscape_log_directory(),
-                          os.path.expanduser("~/.landscape"))
+                         os.path.expanduser("~/.landscape"))
 
     def test_get_landscape_log_directory_privileged(self):
         """
@@ -260,7 +260,7 @@ class RunTest(LandscapeTest):
         handler = logger.handlers[0]
         self.assertTrue(isinstance(handler, RotatingFileHandler))
         self.assertEqual(handler.baseFilename,
-                          "/var/log/landscape/sysinfo.log")
+                         "/var/log/landscape/sysinfo.log")
 
     def test_create_log_dir(self):
         log_dir = self.makeFile()

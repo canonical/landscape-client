@@ -32,8 +32,8 @@ class UptimeTest(LandscapeTest):
     def test_valid_uptime_file(self):
         """Test ensures that we can read a valid /proc/uptime file."""
         proc_file = self.makeFile("17608.24 16179.25")
-        self.assertEquals("%0.2f" % get_uptime(proc_file),
-                          "17608.24")
+        self.assertEqual("%0.2f" % get_uptime(proc_file),
+                         "17608.24")
 
 
 class LoginInfoReaderTest(LandscapeTest):
@@ -46,7 +46,7 @@ class LoginInfoReaderTest(LandscapeTest):
         file = open(filename, "rb")
         try:
             reader = LoginInfoReader(file)
-            self.assertEquals(reader.read_next(), None)
+            self.assertEqual(reader.read_next(), None)
         finally:
             file.close()
 
@@ -69,33 +69,33 @@ class LoginInfoReaderTest(LandscapeTest):
             reader = LoginInfoReader(file)
 
             info = reader.read_next()
-            self.assertEquals(info.login_type, 1)
-            self.assertEquals(info.pid, 100)
-            self.assertEquals(info.tty_device, "/dev/")
-            self.assertEquals(info.id, "1")
-            self.assertEquals(info.username, "jkakar")
-            self.assertEquals(info.hostname, "localhost")
-            self.assertEquals(info.termination_status, 0)
-            self.assertEquals(info.exit_status, 0)
-            self.assertEquals(info.session_id, 1)
-            self.assertEquals(info.entry_time, datetime.utcfromtimestamp(105))
+            self.assertEqual(info.login_type, 1)
+            self.assertEqual(info.pid, 100)
+            self.assertEqual(info.tty_device, "/dev/")
+            self.assertEqual(info.id, "1")
+            self.assertEqual(info.username, "jkakar")
+            self.assertEqual(info.hostname, "localhost")
+            self.assertEqual(info.termination_status, 0)
+            self.assertEqual(info.exit_status, 0)
+            self.assertEqual(info.session_id, 1)
+            self.assertEqual(info.entry_time, datetime.utcfromtimestamp(105))
             # FIXME Test IP address handling. -jk
 
             info = reader.read_next()
-            self.assertEquals(info.login_type, 1)
-            self.assertEquals(info.pid, 101)
-            self.assertEquals(info.tty_device, "/dev/")
-            self.assertEquals(info.id, "1")
-            self.assertEquals(info.username, "root")
-            self.assertEquals(info.hostname, "localhost")
-            self.assertEquals(info.termination_status, 0)
-            self.assertEquals(info.exit_status, 0)
-            self.assertEquals(info.session_id, 2)
-            self.assertEquals(info.entry_time, datetime.utcfromtimestamp(235))
+            self.assertEqual(info.login_type, 1)
+            self.assertEqual(info.pid, 101)
+            self.assertEqual(info.tty_device, "/dev/")
+            self.assertEqual(info.id, "1")
+            self.assertEqual(info.username, "root")
+            self.assertEqual(info.hostname, "localhost")
+            self.assertEqual(info.termination_status, 0)
+            self.assertEqual(info.exit_status, 0)
+            self.assertEqual(info.session_id, 2)
+            self.assertEqual(info.entry_time, datetime.utcfromtimestamp(235))
             # FIXME Test IP address handling. -jk
 
             info = reader.read_next()
-            self.assertEquals(info, None)
+            self.assertEqual(info, None)
         finally:
             file.close()
 
@@ -113,7 +113,7 @@ class LoginInfoReaderTest(LandscapeTest):
             for info in reader.login_info():
                 count += 1
 
-            self.assertEquals(count, 2)
+            self.assertEqual(count, 2)
         finally:
             file.close()
 
@@ -138,9 +138,9 @@ class ComputerUptimeTest(LandscapeTest):
 
         message = self.mstore.get_pending_messages()[0]
         self.assertTrue("type" in message)
-        self.assertEquals(message["type"], "computer-uptime")
+        self.assertEqual(message["type"], "computer-uptime")
         self.assertTrue("shutdown-times" in message)
-        self.assertEquals(message["shutdown-times"], [535])
+        self.assertEqual(message["shutdown-times"], [535])
 
     def test_only_deliver_unique_shutdown_messages(self):
         """Test that only unique shutdown messages are generated."""
@@ -154,9 +154,9 @@ class ComputerUptimeTest(LandscapeTest):
         plugin.run()
         message = self.mstore.get_pending_messages()[0]
         self.assertTrue("type" in message)
-        self.assertEquals(message["type"], "computer-uptime")
+        self.assertEqual(message["type"], "computer-uptime")
         self.assertTrue("shutdown-times" in message)
-        self.assertEquals(message["shutdown-times"], [535])
+        self.assertEqual(message["shutdown-times"], [535])
 
         append_login_data(wtmp_filename, tty_device="~", username="shutdown",
                           entry_time_seconds=3212)
@@ -164,9 +164,9 @@ class ComputerUptimeTest(LandscapeTest):
         plugin.run()
         message = self.mstore.get_pending_messages()[1]
         self.assertTrue("type" in message)
-        self.assertEquals(message["type"], "computer-uptime")
+        self.assertEqual(message["type"], "computer-uptime")
         self.assertTrue("shutdown-times" in message)
-        self.assertEquals(message["shutdown-times"], [3212])
+        self.assertEqual(message["shutdown-times"], [3212])
 
     def test_only_queue_messages_with_data(self):
         """Test ensures that messages without data are not queued."""
@@ -179,17 +179,17 @@ class ComputerUptimeTest(LandscapeTest):
         self.monitor.add(plugin)
 
         plugin.run()
-        self.assertEquals(len(self.mstore.get_pending_messages()), 1)
+        self.assertEqual(len(self.mstore.get_pending_messages()), 1)
 
         plugin.run()
-        self.assertEquals(len(self.mstore.get_pending_messages()), 1)
+        self.assertEqual(len(self.mstore.get_pending_messages()), 1)
 
     def test_missing_wtmp_file(self):
         wtmp_filename = self.makeFile()
         plugin = ComputerUptime(wtmp_file=wtmp_filename)
         self.monitor.add(plugin)
         plugin.run()
-        self.assertEquals(len(self.mstore.get_pending_messages()), 0)
+        self.assertEqual(len(self.mstore.get_pending_messages()), 0)
 
     def test_boot_time_same_as_last_known_startup_time(self):
         """Ensure one message is queued for duplicate startup times."""
@@ -201,9 +201,9 @@ class ComputerUptimeTest(LandscapeTest):
         plugin.run()
         plugin.run()
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 1)
-        self.assertEquals(messages[0]["type"], "computer-uptime")
-        self.assertEquals(messages[0]["startup-times"], [3212])
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(messages[0]["type"], "computer-uptime")
+        self.assertEqual(messages[0]["startup-times"], [3212])
 
     def test_new_startup_time_replaces_old_startup_time(self):
         """
@@ -226,11 +226,11 @@ class ComputerUptimeTest(LandscapeTest):
         plugin2.run()
 
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 2)
-        self.assertEquals(messages[0]["type"], "computer-uptime")
-        self.assertEquals(messages[0]["startup-times"], [3212])
-        self.assertEquals(messages[1]["type"], "computer-uptime")
-        self.assertEquals(messages[1]["startup-times"], [4657])
+        self.assertEqual(len(messages), 2)
+        self.assertEqual(messages[0]["type"], "computer-uptime")
+        self.assertEqual(messages[0]["startup-times"], [3212])
+        self.assertEqual(messages[1]["type"], "computer-uptime")
+        self.assertEqual(messages[1]["startup-times"], [4657])
 
     def test_check_last_logrotated_file(self):
         """Test ensures reading falls back to logrotated files."""
@@ -247,11 +247,11 @@ class ComputerUptimeTest(LandscapeTest):
         plugin.run()
         message = self.mstore.get_pending_messages()[0]
         self.assertTrue("type" in message)
-        self.assertEquals(message["type"], "computer-uptime")
+        self.assertEqual(message["type"], "computer-uptime")
         self.assertTrue("startup-times" in message)
-        self.assertEquals(message["startup-times"], [125])
+        self.assertEqual(message["startup-times"], [125])
         self.assertTrue("shutdown-times" in message)
-        self.assertEquals(message["shutdown-times"], [535])
+        self.assertEqual(message["shutdown-times"], [535])
 
     def test_check_logrotate_spillover(self):
         """Test ensures reading falls back to logrotated files."""
@@ -271,23 +271,23 @@ class ComputerUptimeTest(LandscapeTest):
 
         plugin.run()
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 2)
+        self.assertEqual(len(messages), 2)
 
         message = messages[0]
         self.assertTrue("type" in message)
-        self.assertEquals(message["type"], "computer-uptime")
+        self.assertEqual(message["type"], "computer-uptime")
         self.assertTrue("startup-times" in message)
-        self.assertEquals(message["startup-times"], [125])
+        self.assertEqual(message["startup-times"], [125])
         self.assertTrue("shutdown-times" in message)
-        self.assertEquals(message["shutdown-times"], [535])
+        self.assertEqual(message["shutdown-times"], [535])
 
         message = messages[1]
         self.assertTrue("type" in message)
-        self.assertEquals(message["type"], "computer-uptime")
+        self.assertEqual(message["type"], "computer-uptime")
         self.assertTrue("startup-times" in message)
-        self.assertEquals(message["startup-times"], [1025])
+        self.assertEqual(message["startup-times"], [1025])
         self.assertTrue("shutdown-times" in message)
-        self.assertEquals(message["shutdown-times"], [1150])
+        self.assertEqual(message["shutdown-times"], [1150])
 
     def test_call_on_accepted(self):
         wtmp_filename = self.makeFile("")

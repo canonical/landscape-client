@@ -30,17 +30,17 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         FakeUserInfo(provider=provider)
 
         changes = UserChanges(self.persist, provider)
-        self.assertEquals(changes.create_diff(),
-                          {"create-users": [{"username": "jdoe",
-                                             "home-phone": None,
-                                             "name": u"JD",
-                                             "enabled": True,
-                                             "location": None,
-                                             "work-phone": None,
-                                             "uid": 1000,
-                                             "primary-gid": 1000}],
-                           "create-groups": [{"gid": 1000, "name": "webdev"}],
-                           "create-group-members": {"webdev": ["jdoe"]}})
+        self.assertEqual(changes.create_diff(),
+                         {"create-users": [{"username": "jdoe",
+                                            "home-phone": None,
+                                            "name": u"JD",
+                                            "enabled": True,
+                                            "location": None,
+                                            "work-phone": None,
+                                            "uid": 1000,
+                                            "primary-gid": 1000}],
+                          "create-groups": [{"gid": 1000, "name": "webdev"}],
+                          "create-group-members": {"webdev": ["jdoe"]}})
 
     def test_snapshot(self):
         """
@@ -103,7 +103,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         changes = UserChanges(self.persist, provider)
         changes.create_diff()
         changes.snapshot()
-        self.assertEquals(changes.create_diff(), {})
+        self.assertEqual(changes.create_diff(), {})
 
     def test_add_user(self):
         """
@@ -118,15 +118,15 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         changes.create_diff()
         changes.snapshot()
         users.append(("bo", "x", 1001, 1001, "Bo,,,,", "/home/bo", "/bin/sh"))
-        self.assertEquals(changes.create_diff(),
-                          {"create-users": [{"username": "bo",
-                                             "home-phone": None,
-                                             "name": u"Bo",
-                                             "enabled": True,
-                                             "location": None,
-                                             "work-phone": None,
-                                             "uid": 1001,
-                                             "primary-gid": 1001}]})
+        self.assertEqual(changes.create_diff(),
+                         {"create-users": [{"username": "bo",
+                                            "home-phone": None,
+                                            "name": u"Bo",
+                                            "enabled": True,
+                                            "location": None,
+                                            "work-phone": None,
+                                            "uid": 1001,
+                                            "primary-gid": 1001}]})
 
     def test_update_user(self):
         """
@@ -141,15 +141,15 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         changes.snapshot()
         users[0] = ("jdoe", "x", 1000, 1001, "John Doe,Here,789WORK,321HOME",
                     "/home/john", "/bin/zsh")
-        self.assertEquals(changes.create_diff(),
-                          {"update-users": [{"username": "jdoe",
-                                             "home-phone": u"321HOME",
-                                             "name": u"John Doe",
-                                             "enabled": True,
-                                             "location": "Here",
-                                             "work-phone": "789WORK",
-                                             "uid": 1000,
-                                             "primary-gid": 1001}]})
+        self.assertEqual(changes.create_diff(),
+                         {"update-users": [{"username": "jdoe",
+                                            "home-phone": u"321HOME",
+                                            "name": u"John Doe",
+                                            "enabled": True,
+                                            "location": "Here",
+                                            "work-phone": "789WORK",
+                                            "uid": 1000,
+                                            "primary-gid": 1001}]})
 
     def test_delete_user(self):
         """
@@ -165,7 +165,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         changes.create_diff()
         changes.snapshot()
         users.pop()
-        self.assertEquals(changes.create_diff(), {"delete-users": ["bo"]})
+        self.assertEqual(changes.create_diff(), {"delete-users": ["bo"]})
 
     def test_add_group(self):
         """
@@ -181,8 +181,8 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         changes.create_diff()
         changes.snapshot()
         groups.append(("bizdev", "x", 60, []))
-        self.assertEquals(changes.create_diff(),
-                          {"create-groups": [{"gid": 60, "name": "bizdev"}]})
+        self.assertEqual(changes.create_diff(),
+                         {"create-groups": [{"gid": 60, "name": "bizdev"}]})
 
     def test_add_group_with_members(self):
         """
@@ -198,9 +198,9 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         changes.create_diff()
         changes.snapshot()
         groups.append(("bizdev", "x", 60, ["jdoe"]))
-        self.assertEquals(changes.create_diff(),
-                          {"create-groups": [{"gid": 60, "name": "bizdev"}],
-                           "create-group-members": {"bizdev": ["jdoe"]}})
+        self.assertEqual(changes.create_diff(),
+                         {"create-groups": [{"gid": 60, "name": "bizdev"}],
+                          "create-group-members": {"bizdev": ["jdoe"]}})
 
     def test_update_group(self):
         """
@@ -215,8 +215,8 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         changes.create_diff()
         changes.snapshot()
         groups[0] = ("webdev", "x", 1001, [])
-        self.assertEquals(changes.create_diff(),
-                          {"update-groups": [{"gid": 1001, "name": "webdev"}]})
+        self.assertEqual(changes.create_diff(),
+                         {"update-groups": [{"gid": 1001, "name": "webdev"}]})
 
     def test_add_group_members(self):
         """
@@ -233,8 +233,8 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         changes.create_diff()
         changes.snapshot()
         groups[0] = ("webdev", "x", 50, ["jdoe", "bo"])
-        self.assertEquals(changes.create_diff(),
-                          {"create-group-members": {"webdev": ["bo"]}})
+        self.assertEqual(changes.create_diff(),
+                         {"create-group-members": {"webdev": ["bo"]}})
 
     def test_delete_group_members(self):
         """
@@ -250,8 +250,8 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         changes.create_diff()
         changes.snapshot()
         groups[0] = ("webdev", "x", 50, [])
-        self.assertEquals(changes.create_diff(),
-                          {"delete-group-members": {"webdev": ["jdoe"]}})
+        self.assertEqual(changes.create_diff(),
+                         {"delete-group-members": {"webdev": ["jdoe"]}})
 
     def test_delete_group(self):
         """
@@ -267,7 +267,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         changes.create_diff()
         changes.snapshot()
         groups.pop()
-        self.assertEquals(changes.create_diff(), {"delete-groups": ["sales"]})
+        self.assertEqual(changes.create_diff(), {"delete-groups": ["sales"]})
 
     def test_complex_changes(self):
         """
@@ -290,10 +290,10 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         groups.append(("sales", "x", 70, ["bo"]))
         # Remove user "jdoe"
         users.pop(0)
-        self.assertEquals(changes.create_diff(),
-                          {"create-groups": [{"gid": 50, "name": "developers"},
-                                             {"gid": 70, "name": "sales"}],
-                           "delete-users": ["jdoe"],
-                           "delete-groups": ["webdev"],
-                           "create-group-members": {"developers": ["bo"],
-                                                    "sales": ["bo"]}})
+        self.assertEqual(changes.create_diff(),
+                         {"create-groups": [{"gid": 50, "name": "developers"},
+                                            {"gid": 70, "name": "sales"}],
+                          "delete-users": ["jdoe"],
+                          "delete-groups": ["webdev"],
+                          "create-group-members": {"developers": ["bo"],
+                                                   "sales": ["bo"]}})

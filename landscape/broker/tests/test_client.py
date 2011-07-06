@@ -34,7 +34,7 @@ class BrokerClientTest(LandscapeTest):
         plugins = [BrokerClientPlugin(), BrokerClientPlugin()]
         self.client.add(plugins[0])
         self.client.add(plugins[1])
-        self.assertEquals(self.client.get_plugins(), plugins)
+        self.assertEqual(self.client.get_plugins(), plugins)
 
     def test_get_plugins_returns_a_copy(self):
         """
@@ -43,7 +43,7 @@ class BrokerClientTest(LandscapeTest):
         """
         plugins = self.client.get_plugins()
         plugins.append(BrokerClientPlugin())
-        self.assertEquals(self.client.get_plugins(), [])
+        self.assertEqual(self.client.get_plugins(), [])
 
     def test_get_named_plugin(self):
         """
@@ -53,7 +53,7 @@ class BrokerClientTest(LandscapeTest):
         plugin = BrokerClientPlugin()
         plugin.plugin_name = "foo"
         self.client.add(plugin)
-        self.assertEquals(self.client.get_plugin("foo"), plugin)
+        self.assertEqual(self.client.get_plugin("foo"), plugin)
 
     def test_run_interval(self):
         """
@@ -89,7 +89,7 @@ class BrokerClientTest(LandscapeTest):
         result2 = self.client.register_message("bar", lambda m: None)
 
         def got_result(result):
-            self.assertEquals(
+            self.assertEqual(
                 self.exchanger.get_client_accepted_message_types(),
                 sorted(["bar", "foo"] + DEFAULT_ACCEPTED_TYPES))
 
@@ -106,7 +106,7 @@ class BrokerClientTest(LandscapeTest):
         self.mocker.replay()
 
         def dispatch_message(result):
-            self.assertEquals(self.client.dispatch_message(message), 123)
+            self.assertEqual(self.client.dispatch_message(message), 123)
 
         result = self.client.register_message("foo", handle_message)
         return result.addCallback(dispatch_message)
@@ -138,7 +138,7 @@ class BrokerClientTest(LandscapeTest):
         """
         error = self.assertRaises(HandlerNotFoundError,
                                   self.client.dispatch_message, {"type": "x"})
-        self.assertEquals(str(error), "x")
+        self.assertEqual(str(error), "x")
 
     def test_message(self):
         """
@@ -152,7 +152,7 @@ class BrokerClientTest(LandscapeTest):
         self.mocker.replay()
 
         def dispatch_message(result):
-            self.assertEquals(self.client.message(message), True)
+            self.assertEqual(self.client.message(message), True)
 
         result = self.client.register_message("foo", handle_message)
         return result.addCallback(dispatch_message)
@@ -163,7 +163,7 @@ class BrokerClientTest(LandscapeTest):
         handler was found.
         """
         message = {"type": "foo"}
-        self.assertEquals(self.client.message(message), False)
+        self.assertEqual(self.client.message(message), False)
 
     def test_exchange(self):
         """

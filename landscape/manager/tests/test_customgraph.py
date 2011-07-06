@@ -49,7 +49,7 @@ class CustomGraphManagerTests(LandscapeTest):
                      "username": username,
                      "graph-id": 123})
 
-        self.assertEquals(
+        self.assertEqual(
             self.store.get_graphs(),
             [(123,
               os.path.join(self.data_path, "custom-graph-scripts",
@@ -77,8 +77,8 @@ class CustomGraphManagerTests(LandscapeTest):
                      "username": "foo",
                      "graph-id": 123})
         graph = self.store.get_graph(123)
-        self.assertEquals(graph[0], 123)
-        self.assertEquals(graph[2], u"foo")
+        self.assertEqual(graph[0], 123)
+        self.assertEqual(graph[2], u"foo")
         self.assertTrue(error_message in self.logfile.getvalue())
 
     def test_add_graph_for_user(self):
@@ -103,7 +103,7 @@ class CustomGraphManagerTests(LandscapeTest):
                      "code": "echo hi!",
                      "username": "bar",
                      "graph-id": 123})
-        self.assertEquals(
+        self.assertEqual(
             self.store.get_graphs(),
             [(123, os.path.join(self.data_path, "custom-graph-scripts",
                                 "graph-123"),
@@ -176,7 +176,6 @@ class CustomGraphManagerTests(LandscapeTest):
                   "type": "custom-graph"}])
         return self.graph_manager.run().addCallback(check)
 
-
     def test_run_with_nonzero_exit_code(self):
         filename = self.makeFile()
         tempfile = file(filename, "w")
@@ -184,6 +183,7 @@ class CustomGraphManagerTests(LandscapeTest):
         tempfile.close()
         os.chmod(filename, 0777)
         self.store.add_graph(123, filename, None)
+
         def check(ignore):
             self.graph_manager.exchange()
             self.assertMessages(
@@ -204,9 +204,9 @@ class CustomGraphManagerTests(LandscapeTest):
         self.graph_manager.process_factory = factory
         result = self.graph_manager.run()
 
-        self.assertEquals(len(factory.spawns), 1)
+        self.assertEqual(len(factory.spawns), 1)
         spawn = factory.spawns[0]
-        self.assertEquals(spawn[1], filename)
+        self.assertEqual(spawn[1], filename)
 
         self._exit_process_protocol(spawn[0], "foobar")
 
@@ -230,9 +230,9 @@ class CustomGraphManagerTests(LandscapeTest):
         self.graph_manager.process_factory = factory
         result = self.graph_manager.run()
 
-        self.assertEquals(len(factory.spawns), 1)
+        self.assertEqual(len(factory.spawns), 1)
         spawn = factory.spawns[0]
-        self.assertEquals(spawn[1], filename)
+        self.assertEqual(spawn[1], filename)
 
         self._exit_process_protocol(spawn[0], "")
 
@@ -257,7 +257,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.graph_manager.process_factory = factory
         result = self.graph_manager.run()
 
-        self.assertEquals(len(factory.spawns), 2)
+        self.assertEqual(len(factory.spawns), 2)
         spawn = factory.spawns[0]
         self._exit_process_protocol(spawn[0], "")
         spawn = factory.spawns[1]
@@ -287,7 +287,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.graph_manager.process_factory = factory
         result = self.graph_manager.run()
 
-        self.assertEquals(len(factory.spawns), 2)
+        self.assertEqual(len(factory.spawns), 2)
         spawn = factory.spawns[0]
         self._exit_process_protocol(spawn[0], "foo")
         spawn = factory.spawns[1]
@@ -316,6 +316,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.graph_manager.process_factory = factory
 
         mock_getpwnam = self.mocker.replace("pwd.getpwnam", passthrough=False)
+
         class pwnam(object):
             pw_uid = 1234
             pw_gid = 5678
@@ -326,14 +327,14 @@ class CustomGraphManagerTests(LandscapeTest):
 
         result = self.graph_manager.run()
 
-        self.assertEquals(len(factory.spawns), 1)
+        self.assertEqual(len(factory.spawns), 1)
         spawn = factory.spawns[0]
-        self.assertEquals(spawn[1], filename)
-        self.assertEquals(spawn[2], ())
-        self.assertEquals(spawn[3], {})
-        self.assertEquals(spawn[4], "/")
-        self.assertEquals(spawn[5], 1234)
-        self.assertEquals(spawn[6], 5678)
+        self.assertEqual(spawn[1], filename)
+        self.assertEqual(spawn[2], ())
+        self.assertEqual(spawn[3], {})
+        self.assertEqual(spawn[4], "/")
+        self.assertEqual(spawn[5], 1234)
+        self.assertEqual(spawn[6], 5678)
 
         self._exit_process_protocol(spawn[0], "spam")
 
@@ -350,7 +351,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.graph_manager.process_factory = factory
         result = self.graph_manager.run()
 
-        self.assertEquals(len(factory.spawns), 0)
+        self.assertEqual(len(factory.spawns), 0)
 
         def check(ignore):
             self.graph_manager.exchange()
@@ -379,7 +380,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.graph_manager.process_factory = factory
         result = self.graph_manager.run()
 
-        self.assertEquals(len(factory.spawns), 0)
+        self.assertEqual(len(factory.spawns), 0)
 
         def check(ignore):
             self.graph_manager.exchange()
@@ -400,11 +401,11 @@ class CustomGraphManagerTests(LandscapeTest):
         self.graph_manager.process_factory = factory
         result = self.graph_manager.run()
 
-        self.assertEquals(len(factory.spawns), 1)
+        self.assertEqual(len(factory.spawns), 1)
         spawn = factory.spawns[0]
         protocol = spawn[0]
         protocol.makeConnection(DummyProcess())
-        self.assertEquals(spawn[1], filename)
+        self.assertEqual(spawn[1], filename)
 
         self.manager.reactor.advance(110)
         protocol.processEnded(Failure(ProcessDone(0)))
@@ -432,7 +433,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.graph_manager.process_factory = factory
         self.graph_manager.run()
 
-        self.assertEquals(len(factory.spawns), 0)
+        self.assertEqual(len(factory.spawns), 0)
 
         self.graph_manager.exchange()
         self.assertMessages(
@@ -500,7 +501,7 @@ class CustomGraphManagerTests(LandscapeTest):
                      "username": username,
                      "graph-id": 123})
         self.graph_manager.exchange()
-        self.graph_manager._get_script_hash = lambda x: 1/0
+        self.graph_manager._get_script_hash = lambda x: 1 / 0
         self.graph_manager.do_send = True
         self.graph_manager.exchange()
         self.assertMessages(
@@ -572,7 +573,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.graph_manager.process_factory = factory
         result = self.graph_manager.run()
 
-        self.assertEquals(len(factory.spawns), 1)
+        self.assertEqual(len(factory.spawns), 1)
         spawn = factory.spawns[0]
 
         self.manager.dispatch_message(
@@ -617,7 +618,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.graph_manager.process_factory = factory
         result = self.graph_manager.run()
 
-        self.assertEquals(len(factory.spawns), 1)
+        self.assertEqual(len(factory.spawns), 1)
         spawn = factory.spawns[0]
 
         self.manager.dispatch_message(
@@ -655,7 +656,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.graph_manager.process_factory = factory
         result = self.graph_manager.run()
 
-        self.assertEquals(len(factory.spawns), 0)
+        self.assertEqual(len(factory.spawns), 0)
 
         return result.addCallback(self.assertIdentical, None)
 
@@ -666,14 +667,14 @@ class CustomGraphManagerTests(LandscapeTest):
         of results.
         """
         self.graph_manager.registry.broker.call_if_accepted = (
-            lambda *args: 1/0)
+            lambda *args: 1 / 0)
         factory = StubProcessFactory()
         self.graph_manager.process_factory = factory
         result = self.graph_manager.run()
 
-        self.assertEquals(len(factory.spawns), 0)
+        self.assertEqual(len(factory.spawns), 0)
 
-        return result.addCallback(self.assertEquals, [])
+        return result.addCallback(self.assertEqual, [])
 
     def test_run_unknown_user_with_unicode(self):
         """
@@ -690,7 +691,7 @@ class CustomGraphManagerTests(LandscapeTest):
         self.graph_manager.process_factory = factory
         result = self.graph_manager.run()
 
-        self.assertEquals(len(factory.spawns), 0)
+        self.assertEqual(len(factory.spawns), 0)
 
         def check(ignore):
             self.graph_manager.exchange()

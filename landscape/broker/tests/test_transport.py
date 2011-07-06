@@ -53,12 +53,12 @@ class HTTPTransportTest(LandscapeTest):
     def test_get_url(self):
         url = "http://example/ooga"
         transport = HTTPTransport(url)
-        self.assertEquals(transport.get_url(), url)
+        self.assertEqual(transport.get_url(), url)
 
     def test_set_url(self):
         transport = HTTPTransport("http://example/ooga")
         transport.set_url("http://example/message-system")
-        self.assertEquals(transport.get_url(), "http://example/message-system")
+        self.assertEqual(transport.get_url(), "http://example/message-system")
 
     def test_request_data(self):
         """
@@ -76,13 +76,13 @@ class HTTPTransportTest(LandscapeTest):
                                message_api="X.Y")
 
         def got_result(ignored):
-            self.assertEquals(r.request.received_headers["x-computer-id"],
-                              "34")
-            self.assertEquals(r.request.received_headers["user-agent"],
-                              "landscape-client/%s" % (VERSION,))
-            self.assertEquals(r.request.received_headers["x-message-api"],
-                              "X.Y")
-            self.assertEquals(bpickle.loads(r.content), "HI")
+            self.assertEqual(r.request.received_headers["x-computer-id"],
+                             "34")
+            self.assertEqual(r.request.received_headers["user-agent"],
+                             "landscape-client/%s" % (VERSION,))
+            self.assertEqual(r.request.received_headers["x-message-api"],
+                             "X.Y")
+            self.assertEqual(bpickle.loads(r.content), "HI")
         result.addCallback(got_result)
         return result
 
@@ -103,13 +103,13 @@ class HTTPTransportTest(LandscapeTest):
                                message_api="X.Y")
 
         def got_result(ignored):
-            self.assertEquals(r.request.received_headers["x-computer-id"],
-                              "34")
-            self.assertEquals(r.request.received_headers["user-agent"],
-                              "landscape-client/%s" % (VERSION,))
-            self.assertEquals(r.request.received_headers["x-message-api"],
-                              "X.Y")
-            self.assertEquals(bpickle.loads(r.content), "HI")
+            self.assertEqual(r.request.received_headers["x-computer-id"],
+                             "34")
+            self.assertEqual(r.request.received_headers["user-agent"],
+                             "landscape-client/%s" % (VERSION,))
+            self.assertEqual(r.request.received_headers["x-message-api"],
+                             "X.Y")
+            self.assertEqual(bpickle.loads(r.content), "HI")
         result.addCallback(got_result)
         return result
 
@@ -134,8 +134,8 @@ class HTTPTransportTest(LandscapeTest):
                                message_api="X.Y")
 
         def got_result(ignored):
-            self.assertEquals(r.request, None)
-            self.assertEquals(r.content, None)
+            self.assertEqual(r.request, None)
+            self.assertEqual(r.content, None)
             self.assertTrue("server certificate verification failed"
                             in self.logfile.getvalue())
         result.addCallback(got_result)
@@ -167,7 +167,7 @@ class HTTPTransportTest(LandscapeTest):
         transport.exchange("pay load")
 
         file_path = os.path.join(path, static_filename())
-        self.assertEquals("pay load", bpickle.loads(read_file(file_path)))
+        self.assertEqual("pay load", bpickle.loads(read_file(file_path)))
 
     def test_exchange_works_without_payload_recording(self):
         """
@@ -176,10 +176,11 @@ class HTTPTransportTest(LandscapeTest):
         """
         transport = HTTPTransport("http://localhost")
         self.called = False
-                
+
         def fake_curl(param1, param2, param3):
             """Stub out the curl network call."""
             self.called = True
+
             class Curly(object):
                 def getinfo(self, param1):
                     return 200
@@ -189,6 +190,7 @@ class HTTPTransportTest(LandscapeTest):
         transport.exchange("pay load")
 
         self.assertTrue(self.called)
+
 
 class PayloadRecorderTest(MockerTestCase):
 
@@ -207,7 +209,7 @@ class PayloadRecorderTest(MockerTestCase):
 
         payload_name = recorder.get_payload_filename()
 
-        self.assertEquals("12.346", payload_name)
+        self.assertEqual("12.346", payload_name)
 
     def test_get_payload_filename_no_duplicates(self):
         """
@@ -228,8 +230,8 @@ class PayloadRecorderTest(MockerTestCase):
         payload_name_1 = recorder.get_payload_filename()
         payload_name_2 = recorder.get_payload_filename()
 
-        self.assertEquals("12.345", payload_name_1)
-        self.assertEquals("12.346", payload_name_2)
+        self.assertEqual("12.345", payload_name_1)
+        self.assertEqual("12.346", payload_name_2)
 
     def test_save(self):
         """L{PayloadRecorder.save} should save the payload to the filesystem.
@@ -242,7 +244,7 @@ class PayloadRecorderTest(MockerTestCase):
         recorder.get_payload_filename = static_filename
         recorder.save("payload data")
         file_path = os.path.join(path, static_filename())
-        self.assertEquals("payload data", read_file(file_path))
+        self.assertEqual("payload data", read_file(file_path))
 
     def test_create_destination_dir(self):
         """
@@ -263,4 +265,4 @@ class PayloadRecorderTest(MockerTestCase):
         create_file(os.path.join(path, "one"), "one")
         create_file(os.path.join(path, "two"), "two")
         PayloadRecorder(path)
-        self.assertEquals([], os.listdir(path))
+        self.assertEqual([], os.listdir(path))

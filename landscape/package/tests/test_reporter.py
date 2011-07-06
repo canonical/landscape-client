@@ -81,12 +81,12 @@ class PackageReporterTest(LandscapeTest):
                              "request-id": request2.id})
 
         def got_result(result):
-            self.assertEquals(self.store.get_hash_id("hash1"), None)
-            self.assertEquals(self.store.get_hash_id("hash2"), None)
-            self.assertEquals(self.store.get_hash_id("hash3"), 123)
-            self.assertEquals(self.store.get_hash_id("hash4"), 456)
-            self.assertEquals(self.store.get_hash_id("hash5"), None)
-            self.assertEquals(self.store.get_hash_id("hash6"), None)
+            self.assertEqual(self.store.get_hash_id("hash1"), None)
+            self.assertEqual(self.store.get_hash_id("hash2"), None)
+            self.assertEqual(self.store.get_hash_id("hash3"), 123)
+            self.assertEqual(self.store.get_hash_id("hash4"), 456)
+            self.assertEqual(self.store.get_hash_id("hash5"), None)
+            self.assertEqual(self.store.get_hash_id("hash6"), None)
 
         deferred = self.reporter.handle_tasks()
         return deferred.addCallback(got_result)
@@ -119,13 +119,13 @@ class PackageReporterTest(LandscapeTest):
             # "package-ids" message, so we must keep track of the hashes
             # for packages sent.
             request2 = self.store.get_hash_id_request(message["request-id"])
-            self.assertEquals(request2.hashes, [HASH1])
+            self.assertEqual(request2.hashes, [HASH1])
 
             # Keeping track of the message id for the message with the
             # package data allows us to tell if we should consider our
             # request as lost for some reason, and thus re-request it.
             message_id = request2.message_id
-            self.assertEquals(type(message_id), int)
+            self.assertEqual(type(message_id), int)
 
             self.assertTrue(message_store.is_pending(message_id))
 
@@ -223,7 +223,7 @@ class PackageReporterTest(LandscapeTest):
 
         def got_result(result):
             self.assertMessages(message_store.get_pending_messages(), [])
-            self.assertEquals([request.id for request in
+            self.assertEqual([request.id for request in
                                self.store.iter_hash_id_requests()],
                               [request_id])
 
@@ -282,7 +282,7 @@ class PackageReporterTest(LandscapeTest):
         # Check the database
         def callback(ignored):
             self.assertTrue(os.path.exists(hash_id_db_filename))
-            self.assertEquals(open(hash_id_db_filename).read(), "hash-ids")
+            self.assertEqual(open(hash_id_db_filename).read(), "hash-ids")
         result.addCallback(callback)
 
         return result
@@ -318,7 +318,7 @@ class PackageReporterTest(LandscapeTest):
             fetch_async(None)
 
             # The hash=>id database is still there
-            self.assertEquals(open(hash_id_db_filename).read(), "test")
+            self.assertEqual(open(hash_id_db_filename).read(), "test")
 
         result.addCallback(callback)
 
@@ -418,7 +418,7 @@ class PackageReporterTest(LandscapeTest):
         # Check the database
         def callback(ignored):
             self.assertTrue(os.path.exists(hash_id_db_filename))
-            self.assertEquals(open(hash_id_db_filename).read(), "hash-ids")
+            self.assertEqual(open(hash_id_db_filename).read(), "hash-ids")
         result.addCallback(callback)
         return result
 
@@ -457,7 +457,7 @@ class PackageReporterTest(LandscapeTest):
             hash_id_db_filename = os.path.join(
                 self.config.data_path, "package", "hash-id",
                 "uuid_codename_arch")
-            self.assertEquals(os.path.exists(hash_id_db_filename), False)
+            self.assertEqual(os.path.exists(hash_id_db_filename), False)
         result.addCallback(callback)
 
         return result
@@ -489,7 +489,7 @@ class PackageReporterTest(LandscapeTest):
             hash_id_db_filename = os.path.join(
                 self.config.data_path, "package", "hash-id",
                 "uuid_codename_arch")
-            self.assertEquals(os.path.exists(hash_id_db_filename), False)
+            self.assertEqual(os.path.exists(hash_id_db_filename), False)
         result.addCallback(callback)
 
         return result
@@ -549,9 +549,9 @@ class PackageReporterTest(LandscapeTest):
 
             def callback((out, err, code)):
                 interval = self.reporter.smart_update_interval
-                self.assertEquals(out, "--after %d" % interval)
-                self.assertEquals(err, "")
-                self.assertEquals(code, 0)
+                self.assertEqual(out, "--after %d" % interval)
+                self.assertEqual(err, "")
+                self.assertEqual(code, 0)
             result.addCallback(callback)
             result.chainDeferred(deferred)
 
@@ -575,7 +575,7 @@ class PackageReporterTest(LandscapeTest):
             result = self.reporter.run_smart_update()
 
             def callback((out, err, code)):
-                self.assertEquals(out, "")
+                self.assertEqual(out, "")
             result.addCallback(callback)
             result.chainDeferred(deferred)
 
@@ -614,8 +614,8 @@ class PackageReporterTest(LandscapeTest):
         the APT sources.list file has changed.
 
         """
-        self.assertEquals(self.reporter.sources_list_filename,
-                          "/etc/apt/sources.list")
+        self.assertEqual(self.reporter.sources_list_filename,
+                         "/etc/apt/sources.list")
         self.reporter.sources_list_filename = self.makeFile("deb ftp://url ./")
         self.reporter.smart_update_filename = self.makeFile(
             "#!/bin/sh\necho -n $@")
@@ -628,7 +628,7 @@ class PackageReporterTest(LandscapeTest):
 
             def callback((out, err, code)):
                 # Smart update was called without the --after parameter
-                self.assertEquals(out, "")
+                self.assertEqual(out, "")
             result.addCallback(callback)
             result.chainDeferred(deferred)
 
@@ -653,9 +653,9 @@ class PackageReporterTest(LandscapeTest):
             result = self.reporter.run_smart_update()
 
             def callback((out, err, code)):
-                self.assertEquals(out, "output")
-                self.assertEquals(err, "error")
-                self.assertEquals(code, 2)
+                self.assertEqual(out, "output")
+                self.assertEqual(err, "error")
+                self.assertEqual(code, 2)
             result.addCallback(callback)
             result.chainDeferred(deferred)
 
@@ -730,9 +730,9 @@ class PackageReporterTest(LandscapeTest):
             result = self.reporter.run_smart_update()
 
             def callback((out, err, code)):
-                self.assertEquals(out, "")
-                self.assertEquals(err, "error  ")
-                self.assertEquals(code, 1)
+                self.assertEqual(out, "")
+                self.assertEqual(err, "error  ")
+                self.assertEqual(code, 1)
             result.addCallback(callback)
             result.chainDeferred(deferred)
 
@@ -758,9 +758,9 @@ class PackageReporterTest(LandscapeTest):
             result = self.reporter.run_smart_update()
 
             def callback((out, err, code)):
-                self.assertEquals(out, "\n")
-                self.assertEquals(err, "")
-                self.assertEquals(code, 1)
+                self.assertEqual(out, "\n")
+                self.assertEqual(err, "")
+                self.assertEqual(code, 1)
             result.addCallback(callback)
             result.chainDeferred(deferred)
 
@@ -814,7 +814,7 @@ class PackageReporterTest(LandscapeTest):
             self.assertTrue(request2)
 
             # Shouldn't update timestamp when already delivered.
-            self.assertEquals(request2.timestamp, initial_timestamp)
+            self.assertEqual(request2.timestamp, initial_timestamp)
 
         result = self.reporter.remove_expired_hash_id_requests()
         return result.addCallback(got_result)
@@ -859,7 +859,7 @@ class PackageReporterTest(LandscapeTest):
             message = message_store.get_pending_messages()[0]
 
             request = self.store.get_hash_id_request(1)
-            self.assertEquals(request.hashes, message["hashes"])
+            self.assertEqual(request.hashes, message["hashes"])
 
             self.assertTrue(message_store.is_pending(request.message_id))
 
@@ -877,9 +877,9 @@ class PackageReporterTest(LandscapeTest):
 
         def got_result1(result):
             # The first message sent should send any 2 of the 3 hashes.
-            self.assertEquals(len(message_store.get_pending_messages()), 1)
+            self.assertEqual(len(message_store.get_pending_messages()), 1)
             message = message_store.get_pending_messages()[-1]
-            self.assertEquals(len(message["hashes"]), 2)
+            self.assertEqual(len(message["hashes"]), 2)
 
             result2 = self.reporter.request_unknown_hashes()
             result2.addCallback(got_result2, message["hashes"])
@@ -888,9 +888,9 @@ class PackageReporterTest(LandscapeTest):
 
         def got_result2(result, hashes):
             # The second message sent should send the missing hash.
-            self.assertEquals(len(message_store.get_pending_messages()), 2)
+            self.assertEqual(len(message_store.get_pending_messages()), 2)
             message = message_store.get_pending_messages()[-1]
-            self.assertEquals(len(message["hashes"]), 1)
+            self.assertEqual(len(message["hashes"]), 1)
             self.assertNotIn(message["hashes"][0], hashes)
 
         result1 = self.reporter.request_unknown_hashes()
@@ -917,7 +917,7 @@ class PackageReporterTest(LandscapeTest):
             message = message_store.get_pending_messages()[0]
 
             request = self.store.get_hash_id_request(2)
-            self.assertEquals(request.hashes, message["hashes"])
+            self.assertEqual(request.hashes, message["hashes"])
 
             self.assertTrue(message_store.is_pending(request.message_id))
 
@@ -957,7 +957,7 @@ class PackageReporterTest(LandscapeTest):
 
         def got_result(result):
             self.assertMessages(message_store.get_pending_messages(), [])
-            self.assertEquals(list(self.store.iter_hash_id_requests()), [])
+            self.assertEqual(list(self.store.iter_hash_id_requests()), [])
 
         result = self.reporter.request_unknown_hashes()
 
@@ -975,7 +975,7 @@ class PackageReporterTest(LandscapeTest):
             self.assertMessages(message_store.get_pending_messages(),
                                 [{"type": "packages", "available": [(1, 3)]}])
 
-            self.assertEquals(sorted(self.store.get_available()), [1, 2, 3])
+            self.assertEqual(sorted(self.store.get_available()), [1, 2, 3])
 
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
@@ -990,7 +990,7 @@ class PackageReporterTest(LandscapeTest):
             self.assertMessages(message_store.get_pending_messages(),
                                 [{"type": "packages", "available": [1, 3]}])
 
-            self.assertEquals(sorted(self.store.get_available()), [1, 3])
+            self.assertEqual(sorted(self.store.get_available()), [1, 3])
 
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
@@ -1006,7 +1006,7 @@ class PackageReporterTest(LandscapeTest):
             self.assertMessages(message_store.get_pending_messages(),
                                 [{"type": "packages", "available": [2]}])
 
-            self.assertEquals(sorted(self.store.get_available()), [1, 2, 3])
+            self.assertEqual(sorted(self.store.get_available()), [1, 2, 3])
 
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
@@ -1026,7 +1026,7 @@ class PackageReporterTest(LandscapeTest):
                                 [{"type": "packages",
                                   "not-available": [(1, 3)]}])
 
-            self.assertEquals(self.store.get_available(), [])
+            self.assertEqual(self.store.get_available(), [])
 
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
@@ -1044,7 +1044,7 @@ class PackageReporterTest(LandscapeTest):
             self.assertMessages(message_store.get_pending_messages(),
                                 [{"type": "packages", "installed": [1]}])
 
-            self.assertEquals(self.store.get_installed(), [1])
+            self.assertEqual(self.store.get_installed(), [1])
 
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
@@ -1079,7 +1079,7 @@ class PackageReporterTest(LandscapeTest):
             self.assertMessages(message_store.get_pending_messages(),
                                 [{"type": "packages", "not-installed": [1]}])
 
-            self.assertEquals(self.store.get_installed(), [])
+            self.assertEqual(self.store.get_installed(), [])
 
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
@@ -1115,7 +1115,7 @@ class PackageReporterTest(LandscapeTest):
                                 [{"type": "packages",
                                   "available-upgrades": [2]}])
 
-            self.assertEquals(self.store.get_available_upgrades(), [2])
+            self.assertEqual(self.store.get_available_upgrades(), [2])
 
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
@@ -1133,7 +1133,7 @@ class PackageReporterTest(LandscapeTest):
                                 [{"type": "packages",
                                   "not-available-upgrades": [2]}])
 
-            self.assertEquals(self.store.get_available_upgrades(), [])
+            self.assertEqual(self.store.get_available_upgrades(), [])
 
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
@@ -1155,7 +1155,7 @@ class PackageReporterTest(LandscapeTest):
         def got_result(result):
             self.assertMessages(message_store.get_pending_messages(),
                                 [{"type": "packages", "locked": [1, 2]}])
-            self.assertEquals(sorted(self.store.get_locked()), [1, 2])
+            self.assertEqual(sorted(self.store.get_locked()), [1, 2])
 
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
@@ -1178,7 +1178,7 @@ class PackageReporterTest(LandscapeTest):
         def got_result(result):
             self.assertMessages(message_store.get_pending_messages(),
                                 [{"type": "packages", "locked": [(1, 3)]}])
-            self.assertEquals(sorted(self.store.get_locked()), [1, 2, 3])
+            self.assertEqual(sorted(self.store.get_locked()), [1, 2, 3])
 
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
@@ -1190,7 +1190,7 @@ class PackageReporterTest(LandscapeTest):
         self.facade.set_package_lock("name1")
 
         def got_result(result):
-            self.assertEquals(self.store.get_locked(), [])
+            self.assertEqual(self.store.get_locked(), [])
 
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
@@ -1213,7 +1213,7 @@ class PackageReporterTest(LandscapeTest):
             self.assertMessages(message_store.get_pending_messages(),
                                 [{"type": "packages", "locked": [2]}])
 
-            self.assertEquals(sorted(self.store.get_locked()), [1, 2])
+            self.assertEqual(sorted(self.store.get_locked()), [1, 2])
 
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
@@ -1232,7 +1232,7 @@ class PackageReporterTest(LandscapeTest):
         def got_result(result):
             self.assertMessages(message_store.get_pending_messages(),
                                 [{"type": "packages", "not-locked": [1]}])
-            self.assertEquals(self.store.get_locked(), [])
+            self.assertEqual(self.store.get_locked(), [])
 
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
@@ -1253,7 +1253,7 @@ class PackageReporterTest(LandscapeTest):
         def got_result(result):
             self.assertMessages(message_store.get_pending_messages(),
                                 [{"type": "packages", "not-locked": [(1, 3)]}])
-            self.assertEquals(sorted(self.store.get_locked()), [])
+            self.assertEqual(sorted(self.store.get_locked()), [])
 
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
@@ -1277,8 +1277,8 @@ class PackageReporterTest(LandscapeTest):
             self.assertMessages(message_store.get_pending_messages(),
                                 [{"type": "package-locks",
                                   "created": [("name", "", "")]}])
-            self.assertEquals(self.store.get_package_locks(),
-                              [("name", "", "")])
+            self.assertEqual(self.store.get_package_locks(),
+                             [("name", "", "")])
 
         result = self.reporter.detect_package_locks_changes()
         return result.addCallback(got_result)
@@ -1304,9 +1304,9 @@ class PackageReporterTest(LandscapeTest):
             self.assertMessages(message_store.get_pending_messages(),
                                 [{"type": "package-locks",
                                   "created": [("name2", "<", "1.2")]}])
-            self.assertEquals(sorted(self.store.get_package_locks()),
-                              [("name1", "", ""),
-                               ("name2", "<", "1.2")])
+            self.assertEqual(sorted(self.store.get_package_locks()),
+                             [("name1", "", ""),
+                              ("name2", "<", "1.2")])
 
         result = self.reporter.detect_package_locks_changes()
         return result.addCallback(got_result)
@@ -1330,7 +1330,7 @@ class PackageReporterTest(LandscapeTest):
             self.assertMessages(message_store.get_pending_messages(),
                                 [{"type": "package-locks",
                                   "deleted": [("name1", "", "")]}])
-            self.assertEquals(self.store.get_package_locks(), [])
+            self.assertEqual(self.store.get_package_locks(), [])
 
         result = self.reporter.detect_package_locks_changes()
         return result.addCallback(got_result)
@@ -1437,7 +1437,7 @@ class PackageReporterTest(LandscapeTest):
         self.mocker.result("RESULT")
         self.mocker.replay()
 
-        self.assertEquals(main(["ARGS"]), "RESULT")
+        self.assertEqual(main(["ARGS"]), "RESULT")
 
     def test_find_reporter_command(self):
         dirname = self.makeDir()
@@ -1450,7 +1450,7 @@ class PackageReporterTest(LandscapeTest):
 
             command = find_reporter_command()
 
-            self.assertEquals(command, filename)
+            self.assertEqual(command, filename)
         finally:
             sys.argv = saved_argv
 
@@ -1480,13 +1480,13 @@ class PackageReporterTest(LandscapeTest):
         request2.message_id = 2
 
         # Let's make sure the data is there.
-        self.assertEquals(self.store.get_available_upgrades(), [2])
-        self.assertEquals(self.store.get_available(), [1])
-        self.assertEquals(self.store.get_installed(), [2])
-        self.assertEquals(self.store.get_locked(), [3])
-        self.assertEquals(self.store.get_package_locks(), [("name1", "", "")])
-        self.assertEquals(self.store.get_hash_id_request(request1.id).id,
-                          request1.id)
+        self.assertEqual(self.store.get_available_upgrades(), [2])
+        self.assertEqual(self.store.get_available(), [1])
+        self.assertEqual(self.store.get_installed(), [2])
+        self.assertEqual(self.store.get_locked(), [3])
+        self.assertEqual(self.store.get_package_locks(), [("name1", "", "")])
+        self.assertEqual(self.store.get_hash_id_request(request1.id).id,
+                         request1.id)
 
         self.store.add_task("reporter", {"type": "resynchronize"})
 
@@ -1497,16 +1497,16 @@ class PackageReporterTest(LandscapeTest):
             # The hashes should not go away.
             hash1 = self.store.get_hash_id(HASH1)
             hash2 = self.store.get_hash_id(HASH2)
-            self.assertEquals([hash1, hash2], [3, 4])
+            self.assertEqual([hash1, hash2], [3, 4])
 
             # But the other data should.
-            self.assertEquals(self.store.get_available_upgrades(), [])
+            self.assertEqual(self.store.get_available_upgrades(), [])
 
             # After running the resychronize task, detect_packages_changes is
             # called, and the existing known hashes are made available.
-            self.assertEquals(self.store.get_available(), [3, 4])
-            self.assertEquals(self.store.get_installed(), [])
-            self.assertEquals(self.store.get_locked(), [3])
+            self.assertEqual(self.store.get_available(), [3, 4])
+            self.assertEqual(self.store.get_installed(), [])
+            self.assertEqual(self.store.get_locked(), [3])
 
             # The two original hash id requests should be still there, and
             # a new hash id request should also be detected for HASH3.
@@ -1515,14 +1515,14 @@ class PackageReporterTest(LandscapeTest):
             for request in self.store.iter_hash_id_requests():
                 requests_count += 1
                 if request.id == request1.id:
-                    self.assertEquals(request.hashes, ["hash3"])
+                    self.assertEqual(request.hashes, ["hash3"])
                 elif request.id == request2.id:
-                    self.assertEquals(request.hashes, ["hash4"])
+                    self.assertEqual(request.hashes, ["hash4"])
                 elif not new_request_found:
-                    self.assertEquals(request.hashes, [HASH3])
+                    self.assertEqual(request.hashes, [HASH3])
                 else:
                     self.fail("Unexpected hash-id request!")
-            self.assertEquals(requests_count, 3)
+            self.assertEqual(requests_count, 3)
 
             self.assertMessages(message_store.get_pending_messages(),
                                 [{"type": "package-locks",

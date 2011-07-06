@@ -26,9 +26,9 @@ class ReleaseUpgraderConfigurationTest(unittest.TestCase):
         path to the directory holding the fetched upgrade-tool files.
         """
         config = ReleaseUpgraderConfiguration()
-        self.assertEquals(config.upgrade_tool_directory,
-                          os.path.join(config.package_directory,
-                                       "upgrade-tool"))
+        self.assertEqual(config.upgrade_tool_directory,
+                         os.path.join(config.package_directory,
+                                      "upgrade-tool"))
 
 
 class ReleaseUpgraderTest(LandscapeTest):
@@ -260,8 +260,8 @@ class ReleaseUpgraderTest(LandscapeTest):
         def check_result(ignored):
             config = ConfigParser.ConfigParser()
             config.read(config_filename)
-            self.assertEquals(config.get("Distro", "PostInstallScripts"),
-                              "/foo.sh, ./dbus.sh")
+            self.assertEqual(config.get("Distro", "PostInstallScripts"),
+                             "/foo.sh, ./dbus.sh")
             dbus_sh = os.path.join(self.config.upgrade_tool_directory,
                                    "dbus.sh")
             self.assertFileContent(dbus_sh,
@@ -287,8 +287,8 @@ class ReleaseUpgraderTest(LandscapeTest):
         def check_result(ignored):
             config = ConfigParser.ConfigParser()
             config.read(config_filename)
-            self.assertEquals(config.get("Distro", "PostInstallScripts"),
-                              "./dbus.sh")
+            self.assertEqual(config.get("Distro", "PostInstallScripts"),
+                             "./dbus.sh")
             dbus_sh = os.path.join(self.config.upgrade_tool_directory,
                                    "dbus.sh")
             self.assertFileContent(dbus_sh,
@@ -304,14 +304,14 @@ class ReleaseUpgraderTest(LandscapeTest):
         """
         The default directory for the upgrade-tool logs is the system one.
         """
-        self.assertEquals(self.upgrader.logs_directory,
-                          "/var/log/dist-upgrade")
+        self.assertEqual(self.upgrader.logs_directory,
+                         "/var/log/dist-upgrade")
 
     def test_default_logs_limit(self):
         """
         The default read limit for the upgrade-tool logs is 100000 bytes.
         """
-        self.assertEquals(self.upgrader.logs_limit, 100000)
+        self.assertEqual(self.upgrader.logs_limit, 100000)
 
     def test_make_operation_result_text(self):
         """
@@ -326,15 +326,15 @@ class ReleaseUpgraderTest(LandscapeTest):
                       dirname=self.upgrader.logs_directory,
                       content="apt log")
         text = self.upgrader.make_operation_result_text("stdout", "stderr")
-        self.assertEquals(text,
-                          "=== Standard output ===\n\n"
-                          "stdout\n\n"
-                          "=== Standard error ===\n\n"
-                          "stderr\n\n"
-                          "=== apt.log ===\n\n"
-                          "apt log\n\n"
-                          "=== main.log ===\n\n"
-                          "main log\n\n")
+        self.assertEqual(text,
+                         "=== Standard output ===\n\n"
+                         "stdout\n\n"
+                         "=== Standard error ===\n\n"
+                         "stderr\n\n"
+                         "=== apt.log ===\n\n"
+                         "apt log\n\n"
+                         "=== main.log ===\n\n"
+                         "main log\n\n")
 
     def test_make_operation_result_text_with_no_stderr(self):
         """
@@ -343,9 +343,9 @@ class ReleaseUpgraderTest(LandscapeTest):
         """
         self.upgrader.logs_directory = self.makeDir()
         text = self.upgrader.make_operation_result_text("stdout", "")
-        self.assertEquals(text,
-                          "=== Standard output ===\n\n"
-                          "stdout\n\n")
+        self.assertEqual(text,
+                         "=== Standard output ===\n\n"
+                         "stdout\n\n")
 
     def test_make_operation_result_text_only_considers_log_files(self):
         """
@@ -356,11 +356,11 @@ class ReleaseUpgraderTest(LandscapeTest):
         self.upgrader.logs_directory = self.makeDir()
         self.makeDir(dirname=self.upgrader.logs_directory)
         text = self.upgrader.make_operation_result_text("stdout", "stderr")
-        self.assertEquals(text,
-                          "=== Standard output ===\n\n"
-                          "stdout\n\n"
-                          "=== Standard error ===\n\n"
-                          "stderr\n\n")
+        self.assertEqual(text,
+                         "=== Standard output ===\n\n"
+                         "stdout\n\n"
+                         "=== Standard error ===\n\n"
+                         "stderr\n\n")
 
     def test_make_operation_result_text_trims_long_files(self):
         """
@@ -373,13 +373,13 @@ class ReleaseUpgraderTest(LandscapeTest):
                       dirname=self.upgrader.logs_directory,
                       content="very long log")
         text = self.upgrader.make_operation_result_text("stdout", "stderr")
-        self.assertEquals(text,
-                          "=== Standard output ===\n\n"
-                          "stdout\n\n"
-                          "=== Standard error ===\n\n"
-                          "stderr\n\n"
-                          "=== main.log ===\n\n"
-                          "long log\n\n")
+        self.assertEqual(text,
+                         "=== Standard output ===\n\n"
+                         "stdout\n\n"
+                         "=== Standard error ===\n\n"
+                         "stderr\n\n"
+                         "=== main.log ===\n\n"
+                         "long log\n\n")
 
     def test_upgrade(self):
         """
@@ -600,7 +600,7 @@ class ReleaseUpgraderTest(LandscapeTest):
                 os.remove(child_pid_filename)
                 try:
                     os.kill(child_pid, signal.SIGKILL)
-                    self.assertEquals(how, "cleanly")
+                    self.assertEqual(how, "cleanly")
                     return child_pid
                 except OSError:
                     pass
@@ -656,10 +656,10 @@ class ReleaseUpgraderTest(LandscapeTest):
 
             def check_result((out, err, code)):
                 self.assertFalse(os.path.exists(upgrade_tool_directory))
-                self.assertEquals(out, "--force-smart-update\n%s\n"
+                self.assertEqual(out, "--force-smart-update\n%s\n"
                                   % os.getcwd())
-                self.assertEquals(err, "")
-                self.assertEquals(code, 0)
+                self.assertEqual(err, "")
+                self.assertEqual(code, 0)
 
             result.addCallback(check_result)
             result.chainDeferred(deferred)
@@ -703,8 +703,8 @@ class ReleaseUpgraderTest(LandscapeTest):
 
         def spawn_process(pp, reporter, args=None, uid=None, gid=None,
                           path=None, env=None):
-            self.assertEquals(uid, 1234)
-            self.assertEquals(gid, 5678)
+            self.assertEqual(uid, 1234)
+            self.assertEqual(gid, 5678)
             spawn_process_calls.append(True)
 
         saved_spawn_process = reactor.spawnProcess
@@ -716,7 +716,7 @@ class ReleaseUpgraderTest(LandscapeTest):
             self.upgrader.finish()
         finally:
             reactor.spawnProcess = saved_spawn_process
-        self.assertEquals(spawn_process_calls, [True])
+        self.assertEqual(spawn_process_calls, [True])
 
     def test_finish_with_config_file(self):
         """
@@ -739,10 +739,10 @@ class ReleaseUpgraderTest(LandscapeTest):
             result = self.upgrader.finish()
 
             def check_result((out, err, code)):
-                self.assertEquals(out, "--force-smart-update "
+                self.assertEqual(out, "--force-smart-update "
                                        "--config=/some/config\n")
-                self.assertEquals(err, "")
-                self.assertEquals(code, 0)
+                self.assertEqual(err, "")
+                self.assertEqual(code, 0)
 
             result.addCallback(check_result)
             result.chainDeferred(deferred)
@@ -759,31 +759,31 @@ class ReleaseUpgraderTest(LandscapeTest):
         upgrade_tool_directory = self.config.upgrade_tool_directory
 
         def fetch(tarball_url, signature_url):
-            self.assertEquals(tarball_url, "http://some/tarball")
-            self.assertEquals(signature_url, "http://some/sign")
+            self.assertEqual(tarball_url, "http://some/tarball")
+            self.assertEqual(signature_url, "http://some/sign")
             calls.append("fetch")
             return succeed(None)
 
         def verify(tarball_filename, signature_filename):
-            self.assertEquals(tarball_filename,
-                              os.path.join(upgrade_tool_directory, "tarball"))
-            self.assertEquals(signature_filename,
-                              os.path.join(upgrade_tool_directory, "sign"))
+            self.assertEqual(tarball_filename,
+                             os.path.join(upgrade_tool_directory, "tarball"))
+            self.assertEqual(signature_filename,
+                             os.path.join(upgrade_tool_directory, "sign"))
             calls.append("verify")
 
         def extract(filename_tarball):
-            self.assertEquals(filename_tarball,
-                              os.path.join(upgrade_tool_directory, "tarball"))
+            self.assertEqual(filename_tarball,
+                             os.path.join(upgrade_tool_directory, "tarball"))
             calls.append("extract")
 
         def tweak(current_code_name):
-            self.assertEquals(current_code_name, "jaunty")
+            self.assertEqual(current_code_name, "jaunty")
             calls.append("tweak")
 
         def upgrade(code_name, operation_id, allow_third_party=False,
                     debug=False, mode=None):
-            self.assertEquals(operation_id, 100)
-            self.assertEquals(code_name, "karmic")
+            self.assertEqual(operation_id, 100)
+            self.assertEqual(code_name, "karmic")
             self.assertTrue(allow_third_party)
             self.assertFalse(debug)
             self.assertIdentical(mode, None)
@@ -812,8 +812,8 @@ class ReleaseUpgraderTest(LandscapeTest):
         result = self.upgrader.handle_release_upgrade(message)
 
         def check_result(ignored):
-            self.assertEquals(calls, ["fetch", "verify", "extract", "tweak",
-                                      "upgrade", "finish"])
+            self.assertEqual(calls, ["fetch", "verify", "extract", "tweak",
+                                     "upgrade", "finish"])
 
         result.addCallback(check_result)
         return result
@@ -827,7 +827,7 @@ class ReleaseUpgraderTest(LandscapeTest):
 
         def upgrade(code_name, operation_id, allow_third_party=False,
                     debug=False, mode=None):
-            self.assertEquals(mode, "server")
+            self.assertEqual(mode, "server")
             calls.append("upgrade")
 
         self.upgrader.fetch = lambda x, y: succeed(None)
@@ -849,7 +849,7 @@ class ReleaseUpgraderTest(LandscapeTest):
         result = self.upgrader.handle_release_upgrade(message)
 
         def check_result(ignored):
-            self.assertEquals(calls, ["upgrade"])
+            self.assertEqual(calls, ["upgrade"])
 
         result.addCallback(check_result)
         return result
@@ -938,7 +938,7 @@ class ReleaseUpgraderTest(LandscapeTest):
                                   "status": FAILED,
                                   "result-text": "failure",
                                   "result-code": 1}])
-            self.assertEquals(calls, ["fetch", "verify"])
+            self.assertEqual(calls, ["fetch", "verify"])
 
         result.addCallback(check_result)
         return result
@@ -956,7 +956,7 @@ class ReleaseUpgraderTest(LandscapeTest):
             data = message
 
         task = FakeTask()
-        self.assertEquals(self.upgrader.handle_task(task), task.data)
+        self.assertEqual(self.upgrader.handle_task(task), task.data)
 
     def test_handle_task_with_wrong_type(self):
         """
@@ -968,7 +968,7 @@ class ReleaseUpgraderTest(LandscapeTest):
         class FakeTask(object):
             data = message
 
-        self.assertEquals(self.upgrader.handle_task(FakeTask()), None)
+        self.assertEqual(self.upgrader.handle_task(FakeTask()), None)
 
     def test_main(self):
         """
@@ -990,4 +990,4 @@ class ReleaseUpgraderTest(LandscapeTest):
 
         self.mocker.replay()
 
-        self.assertEquals(main(["ARGS"]), "RESULT")
+        self.assertEqual(main(["ARGS"]), "RESULT")

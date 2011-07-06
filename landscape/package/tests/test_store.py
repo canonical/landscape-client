@@ -2,11 +2,7 @@ import threading
 import time
 import sys
 
-try:
-    import sqlite3
-except ImportError:
-    from pysqlite2 import dbapi2 as sqlite3
-
+import sqlite3
 from landscape.tests.helpers import LandscapeTest
 
 from landscape.package.store import (HashIdStore, PackageStore,
@@ -24,20 +20,20 @@ class HashIdStoreTest(LandscapeTest):
 
     def test_set_and_get_hash_id(self):
         self.store1.set_hash_ids({"ha\x00sh1": 123, "ha\x00sh2": 456})
-        self.assertEquals(self.store1.get_hash_id("ha\x00sh1"), 123)
-        self.assertEquals(self.store1.get_hash_id("ha\x00sh2"), 456)
+        self.assertEqual(self.store1.get_hash_id("ha\x00sh1"), 123)
+        self.assertEqual(self.store1.get_hash_id("ha\x00sh2"), 456)
 
     def test_get_hash_ids(self):
         hash_ids = {"hash1": 123, "hash2": 456}
         self.store1.set_hash_ids(hash_ids)
-        self.assertEquals(self.store1.get_hash_ids(), hash_ids)
+        self.assertEqual(self.store1.get_hash_ids(), hash_ids)
 
     def test_wb_lazy_connection(self):
         """
         The connection to the sqlite database is created only when some query
         gets actually requsted.
         """
-        self.assertEquals(self.store1._db, None)
+        self.assertEqual(self.store1._db, None)
         self.store1.get_hash_ids()
         self.assertTrue(isinstance(self.store1._db, sqlite3.Connection))
 
@@ -85,39 +81,39 @@ class HashIdStoreTest(LandscapeTest):
 
     def test_get_id_hash(self):
         self.store1.set_hash_ids({"hash1": 123, "hash2": 456})
-        self.assertEquals(self.store2.get_id_hash(123), "hash1")
-        self.assertEquals(self.store2.get_id_hash(456), "hash2")
+        self.assertEqual(self.store2.get_id_hash(123), "hash1")
+        self.assertEqual(self.store2.get_id_hash(456), "hash2")
 
     def test_clear_hash_ids(self):
         self.store1.set_hash_ids({"ha\x00sh1": 123, "ha\x00sh2": 456})
         self.store1.clear_hash_ids()
-        self.assertEquals(self.store2.get_hash_id("ha\x00sh1"), None)
-        self.assertEquals(self.store2.get_hash_id("ha\x00sh2"), None)
+        self.assertEqual(self.store2.get_hash_id("ha\x00sh1"), None)
+        self.assertEqual(self.store2.get_hash_id("ha\x00sh2"), None)
 
     def test_get_unexistent_hash(self):
-        self.assertEquals(self.store1.get_hash_id("hash1"), None)
+        self.assertEqual(self.store1.get_hash_id("hash1"), None)
 
     def test_get_unexistent_id(self):
-        self.assertEquals(self.store1.get_id_hash(123), None)
+        self.assertEqual(self.store1.get_id_hash(123), None)
 
     def test_overwrite_id_hash(self):
         self.store1.set_hash_ids({"hash1": 123})
         self.store2.set_hash_ids({"hash2": 123})
-        self.assertEquals(self.store1.get_hash_id("hash1"), None)
-        self.assertEquals(self.store1.get_hash_id("hash2"), 123)
+        self.assertEqual(self.store1.get_hash_id("hash1"), None)
+        self.assertEqual(self.store1.get_hash_id("hash2"), 123)
 
     def test_overwrite_hash_id(self):
         self.store1.set_hash_ids({"hash1": 123})
         self.store2.set_hash_ids({"hash1": 456})
-        self.assertEquals(self.store1.get_id_hash(123), None)
-        self.assertEquals(self.store1.get_id_hash(456), "hash1")
+        self.assertEqual(self.store1.get_id_hash(123), None)
+        self.assertEqual(self.store1.get_id_hash(456), "hash1")
 
     def test_set_hash_ids_timing(self):
         """Setting 20k hashes must take less than 5 seconds."""
         hashes = dict((str(i), i) for i in range(20000))
         started = time.time()
         self.store1.set_hash_ids(hashes)
-        self.assertTrue(time.time()-started < 5,
+        self.assertTrue(time.time() - started < 5,
                         "Setting 20k hashes took more than 5 seconds.")
 
     def test_check_sanity(self):
@@ -195,11 +191,9 @@ class PackageStoreTest(LandscapeTest):
         return filename
 
     def test_get_hash_id_using_hash_id_dbs(self):
-
-
         # Without hash=>id dbs
-        self.assertEquals(self.store1.get_hash_id("hash1"), None)
-        self.assertEquals(self.store1.get_hash_id("hash2"), None)
+        self.assertEqual(self.store1.get_hash_id("hash1"), None)
+        self.assertEqual(self.store1.get_hash_id("hash2"), None)
 
         # This hash=>id will be overriden
         self.store1.set_hash_ids({"hash1": 1})
@@ -211,9 +205,9 @@ class PackageStoreTest(LandscapeTest):
                                                             "ha\x00sh1": 5}))
 
         # Check look-up priorities and binary hashes
-        self.assertEquals(self.store1.get_hash_id("hash1"), 2)
-        self.assertEquals(self.store1.get_hash_id("hash2"), 3)
-        self.assertEquals(self.store1.get_hash_id("ha\x00sh1"), 5)
+        self.assertEqual(self.store1.get_hash_id("hash1"), 2)
+        self.assertEqual(self.store1.get_hash_id("hash2"), 3)
+        self.assertEqual(self.store1.get_hash_id("ha\x00sh1"), 5)
 
     def test_get_id_hash_using_hash_id_db(self):
         """
@@ -225,113 +219,113 @@ class PackageStoreTest(LandscapeTest):
         self.store1.add_hash_id_db(self.hash_id_db_factory({"hash1": 999,
                                                             "hash2": 456}))
         self.store1.set_hash_ids({"hash3": 789})
-        self.assertEquals(self.store1.get_id_hash(123), "hash1")
-        self.assertEquals(self.store1.get_id_hash(456), "hash2")
-        self.assertEquals(self.store1.get_id_hash(789), "hash3")
+        self.assertEqual(self.store1.get_id_hash(123), "hash1")
+        self.assertEqual(self.store1.get_id_hash(456), "hash2")
+        self.assertEqual(self.store1.get_id_hash(789), "hash3")
 
     def test_add_and_get_available_packages(self):
         self.store1.add_available([1, 2])
-        self.assertEquals(self.store2.get_available(), [1, 2])
+        self.assertEqual(self.store2.get_available(), [1, 2])
 
     def test_add_available_conflicting(self):
         """Adding the same available pacakge id twice is fine."""
         self.store1.add_available([1])
         self.store1.add_available([1])
-        self.assertEquals(self.store2.get_available(), [1])
+        self.assertEqual(self.store2.get_available(), [1])
 
     def test_add_available_timing(self):
         """Adding 20k ids must take less than 5 seconds."""
         started = time.time()
         self.store1.add_available(range(20000))
-        self.assertTrue(time.time()-started < 5,
+        self.assertTrue(time.time() - started < 5,
                         "Adding 20k available ids took more than 5 seconds.")
 
     def test_remove_available(self):
         self.store1.add_available([1, 2, 3, 4])
         self.store1.remove_available([2, 3])
-        self.assertEquals(self.store2.get_available(), [1, 4])
+        self.assertEqual(self.store2.get_available(), [1, 4])
 
     def test_remove_available_timing(self):
         self.store1.add_available(range(20000))
         started = time.time()
         self.store1.remove_available(range(20000))
-        self.assertTrue(time.time()-started < 5,
+        self.assertTrue(time.time() - started < 5,
                         "Removing 20k available ids took more than 5 seconds.")
 
     def test_clear_available(self):
         self.store1.add_available([1, 2, 3, 4])
         self.store1.clear_available()
-        self.assertEquals(self.store2.get_available(), [])
+        self.assertEqual(self.store2.get_available(), [])
 
     def test_add_and_get_available_upgrades_packages(self):
         self.store1.add_available_upgrades([1, 2])
-        self.assertEquals(self.store2.get_available_upgrades(), [1, 2])
+        self.assertEqual(self.store2.get_available_upgrades(), [1, 2])
 
     def test_add_available_upgrades_conflicting(self):
         """Adding the same available_upgrades pacakge id twice is fine."""
         self.store1.add_available_upgrades([1])
         self.store1.add_available_upgrades([1])
-        self.assertEquals(self.store2.get_available_upgrades(), [1])
+        self.assertEqual(self.store2.get_available_upgrades(), [1])
 
     def test_add_available_upgrades_timing(self):
         """Adding 20k ids must take less than 5 seconds."""
         started = time.time()
         self.store1.add_available_upgrades(range(20000))
-        self.assertTrue(time.time()-started < 5,
+        self.assertTrue(time.time() - started < 5,
                         "Adding 20k available upgrades ids took "
                         "more than 5 seconds.")
 
     def test_remove_available_upgrades(self):
         self.store1.add_available_upgrades([1, 2, 3, 4])
         self.store1.remove_available_upgrades([2, 3])
-        self.assertEquals(self.store2.get_available_upgrades(), [1, 4])
+        self.assertEqual(self.store2.get_available_upgrades(), [1, 4])
 
     def test_remove_available_upgrades_timing(self):
         self.store1.add_available_upgrades(range(20000))
         started = time.time()
         self.store1.remove_available_upgrades(range(20000))
-        self.assertTrue(time.time()-started < 5,
+        self.assertTrue(time.time() - started < 5,
                         "Removing 20k available upgrades ids took "
                         "more than 5 seconds.")
 
     def test_clear_available_upgrades(self):
         self.store1.add_available_upgrades([1, 2, 3, 4])
         self.store1.clear_available_upgrades()
-        self.assertEquals(self.store2.get_available_upgrades(), [])
+        self.assertEqual(self.store2.get_available_upgrades(), [])
 
     def test_add_and_get_installed_packages(self):
         self.store1.add_installed([1, 2])
-        self.assertEquals(self.store2.get_installed(), [1, 2])
+        self.assertEqual(self.store2.get_installed(), [1, 2])
 
     def test_add_installed_conflicting(self):
         """Adding the same installed pacakge id twice is fine."""
         self.store1.add_installed([1])
         self.store1.add_installed([1])
-        self.assertEquals(self.store2.get_installed(), [1])
+        self.assertEqual(self.store2.get_installed(), [1])
 
     def test_add_installed_timing(self):
         """Adding 20k ids must take less than 5 seconds."""
         started = time.time()
         self.store1.add_installed(range(20000))
-        self.assertTrue(time.time()-started < 5,
+        self.assertTrue(time.time() - started < 5,
                         "Adding 20k installed ids took more than 5 seconds.")
 
     def test_remove_installed(self):
         self.store1.add_installed([1, 2, 3, 4])
         self.store1.remove_installed([2, 3])
-        self.assertEquals(self.store2.get_installed(), [1, 4])
+        self.assertEqual(self.store2.get_installed(), [1, 4])
 
     def test_remove_installed_timing(self):
         self.store1.add_installed(range(20000))
         started = time.time()
         self.store1.remove_installed(range(20000))
-        self.assertTrue(time.time()-started < 5,
+        self.assertTrue(time.time() - started < 5,
                         "Removing 20k installed ids took more than 5 seconds.")
 
     def test_clear_installed(self):
         self.store1.add_installed([1, 2, 3, 4])
         self.store1.clear_installed()
-        self.assertEquals(self.store2.get_installed(), [])
+        self.assertEqual(self.store2.get_installed(), [])
 
     def test_ensure_package_schema_with_new_tables(self):
         """
@@ -374,13 +368,13 @@ class PackageStoreTest(LandscapeTest):
         packages and commits the changes.
         """
         self.store1.add_locked([1])
-        self.assertEquals(self.store2.get_locked(), [1])
+        self.assertEqual(self.store2.get_locked(), [1])
 
     def test_add_locked_conflicting(self):
         """Adding the same locked pacakge id twice is fine."""
         self.store1.add_locked([1])
         self.store1.add_locked([1])
-        self.assertEquals(self.store2.get_locked(), [1])
+        self.assertEqual(self.store2.get_locked(), [1])
 
     def test_remove_locked(self):
         """
@@ -389,14 +383,14 @@ class PackageStoreTest(LandscapeTest):
         """
         self.store1.add_locked([1, 2, 3, 4])
         self.store1.remove_locked([2, 3])
-        self.assertEquals(self.store2.get_locked(), [1, 4])
+        self.assertEqual(self.store2.get_locked(), [1, 4])
 
     def test_remove_locked_non_existing(self):
         """
         Removing non-existing locked packages is fine.
         """
         self.store1.remove_locked([1])
-        self.assertEquals(self.store2.get_locked(), [])
+        self.assertEqual(self.store2.get_locked(), [])
 
     def test_clear_locked(self):
         """
@@ -405,22 +399,22 @@ class PackageStoreTest(LandscapeTest):
         """
         self.store1.add_locked([1, 2, 3, 4])
         self.store1.clear_locked()
-        self.assertEquals(self.store2.get_locked(), [])
+        self.assertEqual(self.store2.get_locked(), [])
 
     def test_get_package_locks_with_no_lock(self):
         """
         L{PackageStore.get_package_locks} returns an empty list if no package
         locks are stored.
         """
-        self.assertEquals(self.store1.get_package_locks(), [])
+        self.assertEqual(self.store1.get_package_locks(), [])
 
     def test_add_package_locks(self):
         """
         L{PackageStore.add_package_locks} adds a package lock to the store.
         """
         self.store1.add_package_locks([("name", "", "")])
-        self.assertEquals(self.store2.get_package_locks(),
-                          [("name", "", "")])
+        self.assertEqual(self.store2.get_package_locks(),
+                         [("name", "", "")])
 
     def test_add_package_locks_idempotence(self):
         """
@@ -428,8 +422,8 @@ class PackageStoreTest(LandscapeTest):
         """
         self.store1.add_package_locks([("name", "", "")])
         self.store1.add_package_locks([("name", "", "")])
-        self.assertEquals(self.store2.get_package_locks(),
-                          [("name", "", "")])
+        self.assertEqual(self.store2.get_package_locks(),
+                         [("name", "", "")])
 
     def test_add_package_locks_with_none(self):
         """
@@ -437,8 +431,8 @@ class PackageStoreTest(LandscapeTest):
         converted to empty strings.
         """
         self.store1.add_package_locks([("name", None, None)])
-        self.assertEquals(self.store2.get_package_locks(),
-                          [("name", "", "")])
+        self.assertEqual(self.store2.get_package_locks(),
+                         [("name", "", "")])
 
     def test_add_package_locks_multiple_times(self):
         """
@@ -448,10 +442,10 @@ class PackageStoreTest(LandscapeTest):
         self.store1.add_package_locks([("name1", "", "")])
         self.store1.add_package_locks([("name2", "<", "0.2"),
                                        ("name3", "", "")])
-        self.assertEquals(sorted(self.store2.get_package_locks()),
-                          sorted([("name1", "", ""),
-                                  ("name2", "<", "0.2"),
-                                  ("name3", "", "")]))
+        self.assertEqual(sorted(self.store2.get_package_locks()),
+                         sorted([("name1", "", ""),
+                                 ("name2", "<", "0.2"),
+                                 ("name3", "", "")]))
 
     def test_add_package_locks_without_name(self):
         """
@@ -472,7 +466,7 @@ class PackageStoreTest(LandscapeTest):
         """
         self.store1.add_package_locks([("name1", "", "")])
         self.store1.remove_package_locks([("name1", "", "")])
-        self.assertEquals(self.store2.get_package_locks(), [])
+        self.assertEqual(self.store2.get_package_locks(), [])
 
     def test_remove_package_locks_multiple_times(self):
         """
@@ -485,14 +479,14 @@ class PackageStoreTest(LandscapeTest):
         self.store1.remove_package_locks([("name1", "", "")])
         self.store1.remove_package_locks([("name2", "<", "0.2"),
                                           ("name3", "", "")])
-        self.assertEquals(self.store2.get_package_locks(), [])
+        self.assertEqual(self.store2.get_package_locks(), [])
 
     def test_remove_package_locks_without_matching_lock(self):
         """
         It's fine to remove a non-existent lock.
         """
         self.store1.remove_package_locks([("name", "", "")])
-        self.assertEquals(self.store2.get_package_locks(), [])
+        self.assertEqual(self.store2.get_package_locks(), [])
 
     def test_clear_package_locks(self):
         """
@@ -502,15 +496,15 @@ class PackageStoreTest(LandscapeTest):
         self.store1.add_package_locks([("name1", "", ""),
                                        ("name2", "<", "0.2")])
         self.store1.clear_package_locks()
-        self.assertEquals(self.store2.get_package_locks(), [])
+        self.assertEqual(self.store2.get_package_locks(), [])
 
     def test_add_hash_id_request(self):
         hashes = ("ha\x00sh1", "ha\x00sh2")
         request1 = self.store1.add_hash_id_request(hashes)
         request2 = self.store2.get_hash_id_request(request1.id)
-        self.assertEquals(request1.id, request2.id)
-        self.assertEquals(request1.hashes, list(hashes))
-        self.assertEquals(request2.hashes, list(hashes))
+        self.assertEqual(request1.id, request2.id)
+        self.assertEqual(request1.hashes, list(hashes))
+        self.assertEqual(request2.hashes, list(hashes))
 
     def test_iter_hash_id_requests(self):
         hashes1 = ["ha\x00sh1", "ha\x00sh2"]
@@ -519,7 +513,7 @@ class PackageStoreTest(LandscapeTest):
         self.store1.add_hash_id_request(hashes2)
         hashes = [hash for request in self.store2.iter_hash_id_requests()
                        for hash in request.hashes]
-        self.assertEquals(hashes, hashes1 + hashes2)
+        self.assertEqual(hashes, hashes1 + hashes2)
 
     def test_get_initial_hash_id_request_timestamp(self):
         time_mock = self.mocker.replace("time.time")
@@ -531,7 +525,7 @@ class PackageStoreTest(LandscapeTest):
             request1 = self.store1.add_hash_id_request(["hash1"])
             request2 = self.store2.get_hash_id_request(request1.id)
 
-            self.assertEquals(request2.timestamp, 123)
+            self.assertEqual(request2.timestamp, 123)
 
             # We handle mocker explicitly so that our hacked time()
             # won't break Twisted's internals.
@@ -545,11 +539,11 @@ class PackageStoreTest(LandscapeTest):
 
         request1.timestamp = 456
 
-        self.assertEquals(request2.timestamp, 456)
+        self.assertEqual(request2.timestamp, 456)
 
     def test_default_hash_id_request_message_id(self):
         request = self.store1.add_hash_id_request(["hash1"])
-        self.assertEquals(request.message_id, None)
+        self.assertEqual(request.message_id, None)
 
     def test_update_hash_id_request_message_id(self):
         request1 = self.store1.add_hash_id_request(["hash1"])
@@ -557,7 +551,7 @@ class PackageStoreTest(LandscapeTest):
 
         request1.message_id = 456
 
-        self.assertEquals(request2.message_id, 456)
+        self.assertEqual(request2.message_id, 456)
 
     def test_get_hash_id_request_with_unknown_request_id(self):
         self.assertRaises(UnknownHashIDRequest,
@@ -572,9 +566,9 @@ class PackageStoreTest(LandscapeTest):
     def test_add_task(self):
         data = {"answer": 42}
         task = self.store1.add_task("reporter", data)
-        self.assertEquals(type(task.id), int)
-        self.assertEquals(task.queue, "reporter")
-        self.assertEquals(task.data, data)
+        self.assertEqual(type(task.id), int)
+        self.assertEqual(task.queue, "reporter")
+        self.assertEqual(task.data, data)
 
     def test_get_next_task(self):
         task1 = self.store1.add_task("reporter", [1])
@@ -582,27 +576,27 @@ class PackageStoreTest(LandscapeTest):
         task3 = self.store1.add_task("changer", [3])
 
         task = self.store2.get_next_task("reporter")
-        self.assertEquals(task.id, task1.id)
-        self.assertEquals(task.data, [1])
+        self.assertEqual(task.id, task1.id)
+        self.assertEqual(task.data, [1])
 
         task = self.store2.get_next_task("changer")
-        self.assertEquals(task.id, task3.id)
-        self.assertEquals(task.data, [3])
+        self.assertEqual(task.id, task3.id)
+        self.assertEqual(task.data, [3])
 
         task = self.store2.get_next_task("reporter")
-        self.assertEquals(task.id, task1.id)
-        self.assertEquals(task.data, [1])
+        self.assertEqual(task.id, task1.id)
+        self.assertEqual(task.data, [1])
 
         task.remove()
 
         task = self.store2.get_next_task("reporter")
-        self.assertEquals(task.id, task2.id)
-        self.assertEquals(task.data, [2])
+        self.assertEqual(task.id, task2.id)
+        self.assertEqual(task.data, [2])
 
         task.remove()
 
         task = self.store2.get_next_task("reporter")
-        self.assertEquals(task, None)
+        self.assertEqual(task, None)
 
     def test_get_task_timestamp(self):
         time_mock = self.mocker.replace("time.time")
@@ -614,7 +608,7 @@ class PackageStoreTest(LandscapeTest):
             self.store1.add_task("reporter", [1])
             task = self.store2.get_next_task("reporter")
 
-            self.assertEquals(task.timestamp, 123)
+            self.assertEqual(task.timestamp, 123)
 
             # We handle mocker explicitly so that our hacked time()
             # won't break Twisted's internals.
@@ -635,12 +629,12 @@ class PackageStoreTest(LandscapeTest):
             self.store1.add_task("reporter", [2])
 
             task = self.store2.get_next_task("reporter")
-            self.assertEquals(task.timestamp, 111)
+            self.assertEqual(task.timestamp, 111)
 
             task.remove()
 
             task = self.store2.get_next_task("reporter")
-            self.assertEquals(task.timestamp, 222)
+            self.assertEqual(task.timestamp, 222)
 
             # We handle mocker explicitly so that our hacked time()
             # won't break Twisted's internals.
@@ -660,12 +654,12 @@ class PackageStoreTest(LandscapeTest):
     def test_clear_tasks(self):
         data = {"answer": 42}
         task = self.store1.add_task("reporter", data)
-        self.assertEquals(type(task.id), int)
-        self.assertEquals(task.queue, "reporter")
-        self.assertEquals(task.data, data)
+        self.assertEqual(type(task.id), int)
+        self.assertEqual(task.queue, "reporter")
+        self.assertEqual(task.data, data)
         self.store1.clear_tasks()
         task = self.store2.get_next_task("reporter")
-        self.assertEquals(task, None)
+        self.assertEqual(task, None)
 
     def test_clear_tasks_except_1_task(self):
         data = {"answer": 42}
@@ -674,10 +668,10 @@ class PackageStoreTest(LandscapeTest):
         task2 = self.store1.add_task("reporter", data)
         self.store1.clear_tasks(except_tasks=(task2,))
         task = self.store2.get_next_task("reporter")
-        self.assertEquals(task.id, task2.id)
+        self.assertEqual(task.id, task2.id)
         task.remove()
         task = self.store2.get_next_task("reporter")
-        self.assertEquals(task, None)
+        self.assertEqual(task, None)
 
     def test_clear_tasks_except_2_tasks(self):
         data = {"answer": 42}
@@ -688,13 +682,13 @@ class PackageStoreTest(LandscapeTest):
         task3 = self.store1.add_task("reporter", data)
         self.store1.clear_tasks(except_tasks=(task2, task3))
         task = self.store2.get_next_task("reporter")
-        self.assertEquals(task.id, task2.id)
+        self.assertEqual(task.id, task2.id)
         task.remove()
         task = self.store2.get_next_task("reporter")
-        self.assertEquals(task.id, task3.id)
+        self.assertEqual(task.id, task3.id)
         task.remove()
         task = self.store2.get_next_task("reporter")
-        self.assertEquals(task, None)
+        self.assertEqual(task, None)
 
     def test_parallel_database_access(self):
         error = []
@@ -717,4 +711,4 @@ class PackageStoreTest(LandscapeTest):
             thread.start()
             thread.join()
 
-        self.assertEquals(error, [])
+        self.assertEqual(error, [])

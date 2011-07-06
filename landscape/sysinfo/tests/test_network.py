@@ -23,7 +23,7 @@ class NetworkTest(LandscapeTest):
         """
         self.result = [{"interface": "eth0", "ip_address": "192.168.0.50"}]
         self.network.run()
-        self.assertEquals([("IP address for eth0", "192.168.0.50")],
+        self.assertEqual([("IP address for eth0", "192.168.0.50")],
                           self.sysinfo.get_headers())
 
     def test_run_without_network_devices(self):

@@ -34,14 +34,14 @@ class ShutdownManagerTest(LandscapeTest):
         [arguments] = self.process_factory.spawns
         protocol = arguments[0]
         self.assertTrue(isinstance(protocol, ShutdownProcessProtocol))
-        self.assertEquals(
+        self.assertEqual(
             arguments[1:3],
             ("/sbin/shutdown", ["/sbin/shutdown", "-r", "+4",
                                 "Landscape is rebooting the system"]))
 
         def restart_performed(ignore):
             self.assertTrue(self.broker_service.exchanger.is_urgent())
-            self.assertEquals(
+            self.assertEqual(
                 self.broker_service.message_store.get_pending_messages(),
                 [{"type": "operation-result", "api": SERVER_API,
                   "operation-id": 100, "timestamp": 10, "status": SUCCEEDED,
@@ -65,7 +65,7 @@ class ShutdownManagerTest(LandscapeTest):
         message = {"type": "shutdown", "reboot": False, "operation-id": 100}
         self.plugin.perform_shutdown(message)
         [arguments] = self.process_factory.spawns
-        self.assertEquals(
+        self.assertEqual(
             arguments[1:3],
             ("/sbin/shutdown", ["/sbin/shutdown", "-h", "+4",
                                 "Landscape is shutting down the system"]))
@@ -81,7 +81,7 @@ class ShutdownManagerTest(LandscapeTest):
 
         def restart_failed(message_id):
             self.assertTrue(self.broker_service.exchanger.is_urgent())
-            self.assertEquals(
+            self.assertEqual(
                 self.broker_service.message_store.get_pending_messages(),
                 [{"type": "operation-result", "api": SERVER_API,
                   "operation-id": 100, "timestamp": 0, "status": FAILED,
@@ -105,7 +105,7 @@ class ShutdownManagerTest(LandscapeTest):
         stash = []
 
         def restart_performed(ignore):
-            self.assertEquals(stash, [])
+            self.assertEqual(stash, [])
             stash.append(True)
 
         [arguments] = self.process_factory.spawns
@@ -128,6 +128,6 @@ class ShutdownManagerTest(LandscapeTest):
         protocol.childDataReceived(0, "Data may arrive ")
         protocol.childDataReceived(0, "in batches.")
         self.manager.reactor.advance(10)
-        self.assertEquals(protocol.get_data(), "Data may arrive in batches.")
+        self.assertEqual(protocol.get_data(), "Data may arrive in batches.")
         protocol.childDataReceived(0, "Even when you least expect it.")
-        self.assertEquals(protocol.get_data(), "Data may arrive in batches.")
+        self.assertEqual(protocol.get_data(), "Data may arrive in batches.")

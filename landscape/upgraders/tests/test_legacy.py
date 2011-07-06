@@ -31,8 +31,8 @@ class TestUpgraders(LandscapeTest):
                      "enabled": True, "location": None,
                      "primary-gid": 65534, "work-phone": None,
                      "name": u"sync"}}
-        self.assertEquals(persist.get("users")["users"],
-                          expected_user_data)
+        self.assertEqual(persist.get("users")["users"],
+                         expected_user_data)
 
     def test_v8_upgrade_group_data(self):
         """
@@ -65,8 +65,8 @@ class TestUpgraders(LandscapeTest):
             "tty": {"gid": 5, "name": "tty", "members": []},
             "scanner": {"gid": 104, "name": "scanner",
                         "members": ["sync", "testing"]}}
-        self.assertEquals(persist.get("users")["groups"],
-                          expected_group_data)
+        self.assertEqual(persist.get("users")["groups"],
+                         expected_group_data)
 
     def test_v7_move_registration_data(self):
         """
@@ -78,8 +78,8 @@ class TestUpgraders(LandscapeTest):
         legacy.move_registration_data(persist)
         self.assertFalse(persist.has("message-store.secure_id"))
         self.assertFalse(persist.has("http-ping.insecure-id"))
-        self.assertEquals(persist.get("registration.secure-id"), "SECURE")
-        self.assertEquals(persist.get("registration.insecure-id"), "INSECURE")
+        self.assertEqual(persist.get("registration.secure-id"), "SECURE")
+        self.assertEqual(persist.get("registration.insecure-id"), "INSECURE")
 
     def test_v6_rename_message_queue(self):
         """
@@ -89,12 +89,12 @@ class TestUpgraders(LandscapeTest):
         persist.set("message-store", "DATA")
         legacy.rename_message_queue(persist)
         self.assertFalse(persist.has("message-queue"))
-        self.assertEquals(persist.get("message-store"), "DATA")
+        self.assertEqual(persist.get("message-store"), "DATA")
 
         # Shouldn't break or overwrite if nothing to do.
         legacy.rename_message_queue(persist)
         self.assertFalse(persist.has("message-queue"))
-        self.assertEquals(persist.get("message-store"), "DATA")
+        self.assertEqual(persist.get("message-store"), "DATA")
 
     def test_v5_update_user_data(self):
         """
@@ -140,12 +140,12 @@ class TestUpgraders(LandscapeTest):
 
         legacy.delete_old_resource_data(persist)
 
-        self.assertEquals(persist.get("load-average"), None)
-        self.assertEquals(persist.get("memory-info"), None)
-        self.assertEquals(persist.get("mount-info"), None)
-        self.assertEquals(persist.get("processor-info"), None)
-        self.assertEquals(persist.get("temperature"), None)
-        self.assertEquals(persist.get("trip-points"), None)
+        self.assertEqual(persist.get("load-average"), None)
+        self.assertEqual(persist.get("memory-info"), None)
+        self.assertEqual(persist.get("mount-info"), None)
+        self.assertEqual(persist.get("processor-info"), None)
+        self.assertEqual(persist.get("temperature"), None)
+        self.assertEqual(persist.get("trip-points"), None)
 
     def test_v1_delete_user_data(self):
         persist = Persist()
@@ -200,15 +200,15 @@ class TestMigration(LandscapeTest):
         self.assertTrue(os.path.exists(monitor_filename))
         monitor_persist = Persist(filename=monitor_filename)
 
-        self.assertEquals(monitor_persist.get("load-average"), {"A": 1})
-        self.assertEquals(monitor_persist.get("memory-info"), {"B": 2})
-        self.assertEquals(monitor_persist.get("mount-info"), {"C": 3})
-        self.assertEquals(monitor_persist.get("processor-info"), {"D": 4})
-        self.assertEquals(monitor_persist.get("temperature"), {"E": 5})
-        self.assertEquals(monitor_persist.get("computer-uptime"), {"F": 6})
-        self.assertEquals(monitor_persist.get("computer-info"), {"G": 7})
-        self.assertEquals(monitor_persist.get("hardware-inventory"), {"H": 8})
-        self.assertEquals(monitor_persist.get("users"), {"I": 9})
+        self.assertEqual(monitor_persist.get("load-average"), {"A": 1})
+        self.assertEqual(monitor_persist.get("memory-info"), {"B": 2})
+        self.assertEqual(monitor_persist.get("mount-info"), {"C": 3})
+        self.assertEqual(monitor_persist.get("processor-info"), {"D": 4})
+        self.assertEqual(monitor_persist.get("temperature"), {"E": 5})
+        self.assertEqual(monitor_persist.get("computer-uptime"), {"F": 6})
+        self.assertEqual(monitor_persist.get("computer-info"), {"G": 7})
+        self.assertEqual(monitor_persist.get("hardware-inventory"), {"H": 8})
+        self.assertEqual(monitor_persist.get("users"), {"I": 9})
 
     def test_migrate_legacy_data_migrates_broker_data(self):
         """
@@ -227,9 +227,9 @@ class TestMigration(LandscapeTest):
         self.assertTrue(os.path.exists(broker_filename))
 
         broker_persist = Persist(filename=broker_filename)
-        self.assertEquals(broker_persist.get("message-store.foo"), 33)
-        self.assertEquals(broker_persist.get("message-exchange.bar"), 66)
-        self.assertEquals(broker_persist.get("registration.baz"), 99)
+        self.assertEqual(broker_persist.get("message-store.foo"), 33)
+        self.assertEqual(broker_persist.get("message-exchange.bar"), 66)
+        self.assertEqual(broker_persist.get("registration.baz"), 99)
 
     def test_migrate_upgrades_existing_persist_first(self):
         """
@@ -243,8 +243,8 @@ class TestMigration(LandscapeTest):
         persist_filename = join(self.data_dir, self.persist_filename)
         self.assertTrue(os.path.exists(persist_filename))
         persist = Persist(filename=persist_filename)
-        self.assertEquals(persist.get("system-version"), 1)
-        self.assertEquals(l[0].get("system-version"), 1)
+        self.assertEqual(persist.get("system-version"), 1)
+        self.assertEqual(l[0].get("system-version"), 1)
 
     def test_migrate_partially_upgraded_persist(self):
         """Unapplied patches are applied before migration occurs."""
@@ -260,8 +260,8 @@ class TestMigration(LandscapeTest):
         persist_filename = join(self.data_dir, self.persist_filename)
         self.assertTrue(os.path.exists(persist_filename))
         Persist(filename=persist_filename)
-        self.assertEquals(first, [])
-        self.assertEquals(second[0].get("system-version"), 2)
+        self.assertEqual(first, [])
+        self.assertEqual(second[0].get("system-version"), 2)
 
     def test_migrate_creates_new_persist_first(self):
         """
@@ -278,11 +278,11 @@ class TestMigration(LandscapeTest):
 
         self.assertTrue(os.path.exists(persist_filename))
         persist = Persist(filename=persist_filename)
-        self.assertEquals(persist.get("system-version"), 1)
+        self.assertEqual(persist.get("system-version"), 1)
 
         # the upgrader is never called because the persist is created
         # fresh and just marked as the most recent version.
-        self.assertEquals(l, [])
+        self.assertEqual(l, [])
 
     def test_package_migrates_hash_db_to_sqlite(self):
         """
@@ -298,8 +298,8 @@ class TestMigration(LandscapeTest):
         self.migrate()
 
         store = PackageStore(join(self.data_dir, self.sqlite_filename))
-        self.assertEquals(store.get_hash_id("HASH"), 33)
-        self.assertEquals(store.get_id_hash(33), "HASH")
+        self.assertEqual(store.get_hash_id("HASH"), 33)
+        self.assertEqual(store.get_id_hash(33), "HASH")
 
     def test_package_migrates_package_statistics_to_sqlite(self):
         """
@@ -320,6 +320,6 @@ class TestMigration(LandscapeTest):
         self.migrate()
 
         store = PackageStore(join(self.data_dir, self.sqlite_filename))
-        self.assertEquals(store.get_installed(), [33])
-        self.assertEquals(store.get_available(), [34])
-        self.assertEquals(store.get_available_upgrades(), [35])
+        self.assertEqual(store.get_installed(), [33])
+        self.assertEqual(store.get_available(), [34])
+        self.assertEqual(store.get_available_upgrades(), [35])
