@@ -43,7 +43,10 @@ def spawn_process(executable, args=(), env={}, path=None, uid=None, gid=None,
     Return a deferred which will be called with process stdout, stderr and exit
     code.
 
-    NOTE: compared to reactor.spawnProcess, this version does NOT require the
+    @param wait_pipes: if set to False, don't wait for stdin/stdout pipes to
+        close when process ends.
+
+    @note: compared to reactor.spawnProcess, this version does NOT require the
     executable name as first element of args.
     """
 

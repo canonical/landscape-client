@@ -2,27 +2,21 @@ import os
 
 from landscape.tests.helpers import LandscapeTest
 from landscape.lib.twisted_util import spawn_process
+from landscape.lib.fs import create_file
 
 
 class SpawnProcessTest(LandscapeTest):
 
     def setUp(self):
+        super(SpawnProcessTest, self).setUp()
         self.command = self.makeFile("#!/bin/sh\necho -n $@")
         os.chmod(self.command, 0755)
-
-    def tearDown(self):
-        os.unlink(self.command)
-
-    def _write_command(self, command):
-        command_file = open(self.command, "w")
-        command_file.write(command)
-        command_file.close()
 
     def test_spawn_process_return_value(self):
         """
         The process is executed and returns the expected exit code.
         """
-        self._write_command("#!/bin/sh\nexit 2")
+        create_file(self.command, "#!/bin/sh\nexit 2")
 
         def callback((out, err, code)):
             self.assertEqual(out, "")
@@ -50,8 +44,7 @@ class SpawnProcessTest(LandscapeTest):
         """
         The process returns the expected standard error.
         """
-
-        self._write_command("#!/bin/sh\necho -n $@ >&2")
+        create_file(self.command, "#!/bin/sh\necho -n $@ >&2")
 
         def callback((out, err, code)):
             self.assertEqual(out, "")

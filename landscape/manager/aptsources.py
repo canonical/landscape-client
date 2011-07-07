@@ -28,11 +28,11 @@ class AptSources(ManagerPlugin):
         registry.register_message(
             "apt-sources-replace", self._wrap_handle_repositories)
 
-    def _run_process(self, command, args, env={}, path=None, uid=None, gid=None):
+    def _run_process(self, command, args, uid=None, gid=None):
         """
         Run the process in an asynchronous fashion, to be overriden in tests.
         """
-        return spawn_process(command, args, env=env, path=path, uid=uid, gid=gid)
+        return spawn_process(command, args, uid=uid, gid=gid)
 
     def _wrap_handle_repositories(self, message):
         """
