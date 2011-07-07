@@ -42,7 +42,7 @@ class DiskTest(LandscapeTest):
     def test_everything_is_cool(self):
         self.add_mount("/")
         self.disk.run()
-        self.assertEquals(self.sysinfo.get_notes(), [])
+        self.assertEqual(self.sysinfo.get_notes(), [])
 
     def test_zero_total_space(self):
         """
@@ -54,7 +54,7 @@ class DiskTest(LandscapeTest):
         self.add_mount("/sys", capacity=0, unused=0)
         self.add_mount("/")
         self.disk.run()
-        self.assertEquals(self.sysinfo.get_notes(), [])
+        self.assertEqual(self.sysinfo.get_notes(), [])
 
     def test_zero_total_space_for_home(self):
         """
@@ -63,8 +63,8 @@ class DiskTest(LandscapeTest):
         self.add_mount("/home", capacity=0, unused=0)
         self.add_mount("/", capacity=1000, unused=1000)
         self.disk.run()
-        self.assertEquals(self.sysinfo.get_headers(),
-                          [("Usage of /", "0.0% of 3MB")])
+        self.assertEqual(self.sysinfo.get_headers(),
+                         [("Usage of /", "0.0% of 3MB")])
 
     def test_zero_total_space_for_home_and_root(self):
         """
@@ -74,8 +74,8 @@ class DiskTest(LandscapeTest):
         self.add_mount("/home", capacity=0, unused=0)
         self.add_mount("/", capacity=0, unused=0)
         self.disk.run()
-        self.assertEquals(self.sysinfo.get_headers(),
-                          [("Usage of /", "unknown")])
+        self.assertEqual(self.sysinfo.get_headers(),
+                         [("Usage of /", "unknown")])
 
     def test_over_85_percent(self):
         """
@@ -84,15 +84,15 @@ class DiskTest(LandscapeTest):
         """
         self.add_mount("/", capacity=1000000, unused=150000)
         self.disk.run()
-        self.assertEquals(self.sysinfo.get_notes(),
-                          ["/ is using 85.0% of 3.81GB"])
+        self.assertEqual(self.sysinfo.get_notes(),
+                         ["/ is using 85.0% of 3.81GB"])
 
     def test_under_85_percent(self):
         """No note is displayed for a filesystem using less than 85% capacity.
         """
         self.add_mount("/", block_size=1024, capacity=1000000, unused=151000)
         self.disk.run()
-        self.assertEquals(self.sysinfo.get_notes(), [])
+        self.assertEqual(self.sysinfo.get_notes(), [])
 
     def test_multiple_notes(self):
         """
@@ -105,16 +105,16 @@ class DiskTest(LandscapeTest):
         self.add_mount(
             "/emp", block_size=4096, capacity=3000000, unused=460000)
         self.disk.run()
-        self.assertEquals(self.sysinfo.get_notes(),
-                          ["/ is using 85.0% of 976MB",
-                           "/use is using 90.0% of 3.81GB"])
+        self.assertEqual(self.sysinfo.get_notes(),
+                         ["/ is using 85.0% of 976MB",
+                          "/use is using 90.0% of 3.81GB"])
 
     def test_format_megabytes(self):
-        self.assertEquals(format_megabytes(100), "100MB")
-        self.assertEquals(format_megabytes(1023), "1023MB")
-        self.assertEquals(format_megabytes(1024), "1.00GB")
-        self.assertEquals(format_megabytes(1024*1024-1), "1024.00GB")
-        self.assertEquals(format_megabytes(1024*1024), "1.00TB")
+        self.assertEqual(format_megabytes(100), "100MB")
+        self.assertEqual(format_megabytes(1023), "1023MB")
+        self.assertEqual(format_megabytes(1024), "1.00GB")
+        self.assertEqual(format_megabytes(1024 * 1024 - 1), "1024.00GB")
+        self.assertEqual(format_megabytes(1024 * 1024), "1.00TB")
 
     def test_header(self):
         """
@@ -124,8 +124,8 @@ class DiskTest(LandscapeTest):
         self.add_mount("/")
         self.add_mount("/home", capacity=1024, unused=512)
         self.disk.run()
-        self.assertEquals(self.sysinfo.get_headers(),
-                          [("Usage of /home", "50.0% of 4MB")])
+        self.assertEqual(self.sysinfo.get_headers(),
+                         [("Usage of /home", "50.0% of 4MB")])
 
     def test_header_shows_actual_filesystem(self):
         """
@@ -134,8 +134,8 @@ class DiskTest(LandscapeTest):
         """
         self.add_mount("/", capacity=1024, unused=512)
         self.disk.run()
-        self.assertEquals(self.sysinfo.get_headers(),
-                          [("Usage of /", "50.0% of 4MB")])
+        self.assertEqual(self.sysinfo.get_headers(),
+                         [("Usage of /", "50.0% of 4MB")])
 
     def test_ignore_boring_filesystem_types(self):
         """
@@ -154,30 +154,30 @@ class DiskTest(LandscapeTest):
         self.add_mount("/home/mg/.Private", capacity=1000, unused=0,
                        fs="ecryptfs")
         self.disk.run()
-        self.assertEquals(self.sysinfo.get_notes(), [])
+        self.assertEqual(self.sysinfo.get_notes(), [])
 
     def test_no_duplicate_roots(self):
         self.add_mount("/", capacity=0, unused=0, fs="ext4")
         self.add_mount("/", capacity=1000, unused=1, fs="ext3")
         self.disk.run()
-        self.assertEquals(self.sysinfo.get_notes(),
-                          ["/ is using 100.0% of 3MB"])
+        self.assertEqual(self.sysinfo.get_notes(),
+                         ["/ is using 100.0% of 3MB"])
 
     def test_no_duplicate_devices(self):
         self.add_mount("/", capacity=1000, unused=1, device="/dev/horgle")
         self.add_mount("/dev/.static/dev", capacity=1000, unused=1,
                        device="/dev/horgle")
         self.disk.run()
-        self.assertEquals(self.sysinfo.get_notes(),
-                          ["/ is using 100.0% of 3MB"])
+        self.assertEqual(self.sysinfo.get_notes(),
+                         ["/ is using 100.0% of 3MB"])
 
     def test_shorter_mount_point_in_case_of_duplicate_devices(self):
         self.add_mount("/dev/.static/dev", capacity=1000, unused=1,
                        device="/dev/horgle")
         self.add_mount("/", capacity=1000, unused=1, device="/dev/horgle")
         self.disk.run()
-        self.assertEquals(self.sysinfo.get_notes(),
-                          ["/ is using 100.0% of 3MB"])
+        self.assertEqual(self.sysinfo.get_notes(),
+                         ["/ is using 100.0% of 3MB"])
 
     def test_shorter_not_lexical(self):
         """
@@ -188,8 +188,8 @@ class DiskTest(LandscapeTest):
         self.add_mount("/abc", capacity=1000, unused=1, device="/dev/horgle")
         self.add_mount("/b", capacity=1000, unused=1, device="/dev/horgle")
         self.disk.run()
-        self.assertEquals(self.sysinfo.get_notes(),
-                          ["/b is using 100.0% of 3MB"])
+        self.assertEqual(self.sysinfo.get_notes(),
+                         ["/b is using 100.0% of 3MB"])
 
     def test_duplicate_device_and_duplicate_mountpoint_horribleness(self):
         """
@@ -210,8 +210,8 @@ class DiskTest(LandscapeTest):
         self.add_mount("/dev/.static/dev", capacity=1000, unused=1,
                        device="/dev/horgle")
         self.disk.run()
-        self.assertEquals(self.sysinfo.get_notes(),
-                          ["/ is using 100.0% of 3MB"])
+        self.assertEqual(self.sysinfo.get_notes(),
+                         ["/ is using 100.0% of 3MB"])
 
     def test_ignore_filesystems(self):
         """
@@ -221,7 +221,7 @@ class DiskTest(LandscapeTest):
         self.add_mount("/", capacity=1000, unused=1000, fs="ext3")
         self.add_mount("/mnt/disk1", capacity=1000, unused=0, fs="nfs")
         self.disk.run()
-        self.assertEquals(self.sysinfo.get_notes(), [])
+        self.assertEqual(self.sysinfo.get_notes(), [])
 
     def test_nfs_as_root(self):
         """
@@ -229,9 +229,9 @@ class DiskTest(LandscapeTest):
         """
         self.add_mount("/", capacity=1000, unused=1000, fs="nfs")
         self.disk.run()
-        self.assertEquals(self.sysinfo.get_notes(), [])
-        self.assertEquals(self.sysinfo.get_headers(),
-                          [("Usage of /home", "unknown")])
+        self.assertEqual(self.sysinfo.get_notes(), [])
+        self.assertEqual(self.sysinfo.get_headers(),
+                         [("Usage of /home", "unknown")])
 
     def test_nfs_as_root_but_not_home(self):
         """
@@ -241,6 +241,6 @@ class DiskTest(LandscapeTest):
         self.add_mount("/", capacity=1000, unused=1000, fs="nfs")
         self.add_mount("/home", capacity=0, unused=0, fs="ext3")
         self.disk.run()
-        self.assertEquals(self.sysinfo.get_notes(), [])
-        self.assertEquals(self.sysinfo.get_headers(),
-                          [("Usage of /home", "unknown")])
+        self.assertEqual(self.sysinfo.get_notes(), [])
+        self.assertEqual(self.sysinfo.get_headers(),
+                         [("Usage of /home", "unknown")])

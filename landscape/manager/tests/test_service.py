@@ -26,7 +26,7 @@ class ManagerServiceTest(LandscapeTest):
         By default the L{ManagerService.plugins} list holds an instance of
         every enabled manager plugin.
         """
-        self.assertEquals(len(self.service.plugins), len(ALL_PLUGINS))
+        self.assertEqual(len(self.service.plugins), len(ALL_PLUGINS))
 
     def test_get_plugins(self):
         """
@@ -59,7 +59,7 @@ class ManagerServiceTest(LandscapeTest):
             self.broker_service.port.stopListening()
 
         def assert_broker_connection(ignored):
-            self.assertEquals(len(self.broker_service.broker.get_clients()), 1)
+            self.assertEqual(len(self.broker_service.broker.get_clients()), 1)
             self.assertIs(self.service.broker, self.service.manager.broker)
             result = self.service.broker.ping()
             return result.addCallback(stop_service)

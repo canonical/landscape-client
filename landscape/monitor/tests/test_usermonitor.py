@@ -74,8 +74,8 @@ class UserMonitorTest(LandscapeTest):
         L{UserMonitor.run_interval} need to be present for
         L{Plugin} to work properly.
         """
-        self.assertEquals(self.plugin.persist_name, "users")
-        self.assertEquals(self.plugin.run_interval, 3600)
+        self.assertEqual(self.plugin.persist_name, "users")
+        self.assertEqual(self.plugin.run_interval, 3600)
 
     def test_wb_resynchronize_event(self):
         """
@@ -183,7 +183,6 @@ class UserMonitorTest(LandscapeTest):
                                     "username": u"jdoe", "work-phone": None}],
                                     "operation-id": 1001,
                                     "type": "users"}])
-
 
         self.provider.users = [("jdoe", "x", 1000, 1000, "JD,,,,",
                                 "/home/jdoe", "/bin/sh")]

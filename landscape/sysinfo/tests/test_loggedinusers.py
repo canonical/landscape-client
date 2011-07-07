@@ -14,9 +14,10 @@ class LoggedInUsersTest(FakeWhoQTest):
     def test_run_adds_header(self):
         self.fake_who("one two three")
         result = self.logged_users.run()
+
         def check_headers(result):
-            self.assertEquals(self.sysinfo.get_headers(),
-                              [("Users logged in", "3")])
+            self.assertEqual(self.sysinfo.get_headers(),
+                             [("Users logged in", "3")])
         return result.addCallback(check_headers)
 
     def test_order_is_preserved_even_if_asynchronous(self):
@@ -24,11 +25,12 @@ class LoggedInUsersTest(FakeWhoQTest):
         self.sysinfo.add_header("Before", "1")
         result = self.logged_users.run()
         self.sysinfo.add_header("After", "2")
+
         def check_headers(result):
-            self.assertEquals(self.sysinfo.get_headers(),
-                              [("Before", "1"),
-                               ("Users logged in", "3"),
-                               ("After", "2")])
+            self.assertEqual(self.sysinfo.get_headers(),
+                             [("Before", "1"),
+                              ("Users logged in", "3"),
+                              ("After", "2")])
         return result.addCallback(check_headers)
 
     def test_ignore_errors_on_command(self):
@@ -39,6 +41,7 @@ class LoggedInUsersTest(FakeWhoQTest):
         # Nothing bad should happen if who isn't installed, or
         # if anything else happens with the command execution.
         result = self.logged_users.run()
+
         def check_headers(result):
-            self.assertEquals(self.sysinfo.get_headers(), [])
+            self.assertEqual(self.sysinfo.get_headers(), [])
         return result.addCallback(check_headers)

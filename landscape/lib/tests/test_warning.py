@@ -20,8 +20,8 @@ class WarningTest(TestCase):
 
         # Warning filters are processed beginning to end, and the first filter
         # which matches a particular warning is used.
-        
-        self.assertEquals(
+
+        self.assertEqual(
             filters,
             # The frontmost should "default" (i.e.  print) on UserWarnings
             [("default", None, UserWarning, None, 0),

@@ -68,7 +68,7 @@ class PackageChangerTest(LandscapeTest):
             previous(self)
             pkg2 = self.get_packages_by_name("name2")[0]
             pkg2.upgrades += (DebUpgrades("name1", "=", "version1-release1"),)
-            self.reload_cache() # Relink relations.
+            self.reload_cache()  # Relink relations.
         self.Facade.channels_reloaded = callback
 
     def set_pkg2_satisfied(self):
@@ -78,7 +78,7 @@ class PackageChangerTest(LandscapeTest):
             previous(self)
             pkg2 = self.get_packages_by_name("name2")[0]
             pkg2.requires = ()
-            self.reload_cache() # Relink relations.
+            self.reload_cache()  # Relink relations.
         self.Facade.channels_reloaded = callback
 
     def set_pkg1_and_pkg2_satisfied(self):
@@ -115,7 +115,7 @@ class PackageChangerTest(LandscapeTest):
         # dependency (HASH2) isn't known.
         self.store.set_hash_ids({HASH1: 1})
         result = self.changer.handle_tasks()
-        self.assertEquals(result.called, True)
+        self.assertEqual(result.called, True)
         self.assertMessages(self.get_pending_messages(), [])
 
         self.assertIn("Package data not yet synchronized with server (%r)"
@@ -213,7 +213,7 @@ class PackageChangerTest(LandscapeTest):
                        "result-text": "Package data has changed. "
                                       "Please retry the operation."}
             self.assertMessages(self.get_pending_messages(), [message])
-            self.assertEquals(self.store.get_next_task("changer"), None)
+            self.assertEqual(self.store.get_next_task("changer"), None)
         return result.addCallback(got_result)
 
     def test_dpkg_error(self):
@@ -234,11 +234,11 @@ class PackageChangerTest(LandscapeTest):
 
         def got_result(result):
             messages = self.get_pending_messages()
-            self.assertEquals(len(messages), 1, "Too many messages")
+            self.assertEqual(len(messages), 1, "Too many messages")
             message = messages[0]
-            self.assertEquals(message["operation-id"], 123)
-            self.assertEquals(message["result-code"], 100)
-            self.assertEquals(message["type"], "change-packages-result")
+            self.assertEqual(message["operation-id"], 123)
+            self.assertEqual(message["result-code"], 100)
+            self.assertEqual(message["type"], "change-packages-result")
             text = message["result-text"]
             # We can't test the actual content of the message because the dpkg
             # error can be localized
@@ -336,10 +336,10 @@ class PackageChangerTest(LandscapeTest):
 
         result = self.changer.change_packages(POLICY_ALLOW_INSTALLS)
 
-        self.assertEquals(result.code, SUCCESS_RESULT)
-        self.assertEquals(result.text, "success")
-        self.assertEquals(result.installs, [1])
-        self.assertEquals(result.removals, [])
+        self.assertEqual(result.code, SUCCESS_RESULT)
+        self.assertEqual(result.text, "success")
+        self.assertEqual(result.installs, [1])
+        self.assertEqual(result.removals, [])
 
     def test_perform_changes_with_allow_install_policy_and_removals(self):
         """
@@ -359,10 +359,10 @@ class PackageChangerTest(LandscapeTest):
 
         result = self.changer.change_packages(POLICY_ALLOW_INSTALLS)
 
-        self.assertEquals(result.code, DEPENDENCY_ERROR_RESULT)
-        self.assertEquals(result.text, None)
-        self.assertEquals(result.installs, [2])
-        self.assertEquals(result.removals, [1])
+        self.assertEqual(result.code, DEPENDENCY_ERROR_RESULT)
+        self.assertEqual(result.text, None)
+        self.assertEqual(result.installs, [2])
+        self.assertEqual(result.removals, [1])
 
     def test_perform_changes_with_max_retries(self):
         """
@@ -385,10 +385,10 @@ class PackageChangerTest(LandscapeTest):
 
         result = self.changer.change_packages(POLICY_ALLOW_INSTALLS)
 
-        self.assertEquals(result.code, DEPENDENCY_ERROR_RESULT)
-        self.assertEquals(result.text, None)
-        self.assertEquals(result.installs, [1, 2])
-        self.assertEquals(result.removals, [])
+        self.assertEqual(result.code, DEPENDENCY_ERROR_RESULT)
+        self.assertEqual(result.text, None)
+        self.assertEqual(result.installs, [1, 2])
+        self.assertEqual(result.removals, [])
 
     def test_handle_change_packages_with_policy(self):
         """
@@ -434,10 +434,10 @@ class PackageChangerTest(LandscapeTest):
 
         result = self.changer.change_packages(POLICY_ALLOW_ALL_CHANGES)
 
-        self.assertEquals(result.code, SUCCESS_RESULT)
-        self.assertEquals(result.text, "success")
-        self.assertEquals(result.installs, [2])
-        self.assertEquals(result.removals, [1])
+        self.assertEqual(result.code, SUCCESS_RESULT)
+        self.assertEqual(result.text, "success")
+        self.assertEqual(result.installs, [2])
+        self.assertEqual(result.removals, [1])
 
     def test_transaction_error(self):
         """
@@ -456,12 +456,12 @@ class PackageChangerTest(LandscapeTest):
         def got_result(result):
             result_text = ("requirename1 = requireversion1")
             messages = self.get_pending_messages()
-            self.assertEquals(len(messages), 1)
+            self.assertEqual(len(messages), 1)
             message = messages[0]
-            self.assertEquals(message["operation-id"], 123)
-            self.assertEquals(message["result-code"], 100)
+            self.assertEqual(message["operation-id"], 123)
+            self.assertEqual(message["result-code"], 100)
             self.assertIn(result_text, message["result-text"])
-            self.assertEquals(message["type"], "change-packages-result")
+            self.assertEqual(message["type"], "change-packages-result")
         return result.addCallback(got_result)
 
     def test_tasks_are_isolated(self):
@@ -630,8 +630,8 @@ class PackageChangerTest(LandscapeTest):
         result = self.changer.run()
 
         def got_result(result):
-            self.assertEquals(open(output_filename).read().strip(),
-                              "REPORTER RUN")
+            self.assertEqual(open(output_filename).read().strip(),
+                             "REPORTER RUN")
         return result.addCallback(got_result)
 
     def test_spawn_reporter_after_running_with_config(self):
@@ -656,8 +656,8 @@ class PackageChangerTest(LandscapeTest):
         result = self.changer.run()
 
         def got_result(result):
-            self.assertEquals(open(output_filename).read().strip(),
-                              "ARGS -c test.conf")
+            self.assertEqual(open(output_filename).read().strip(),
+                             "ARGS -c test.conf")
         return result.addCallback(got_result)
 
     def test_set_effective_uid_and_gid_when_running_as_root(self):
@@ -757,8 +757,8 @@ class PackageChangerTest(LandscapeTest):
         result = self.changer.run()
 
         def got_result(result):
-            self.assertEquals(open(output_filename).read().strip(),
-                              "REPORTER NOT RUN")
+            self.assertEqual(open(output_filename).read().strip(),
+                             "REPORTER NOT RUN")
         return result.addCallback(got_result)
 
     def test_main(self):
@@ -776,7 +776,7 @@ class PackageChangerTest(LandscapeTest):
 
         self.mocker.replay()
 
-        self.assertEquals(main(["ARGS"]), "RESULT")
+        self.assertEqual(main(["ARGS"]), "RESULT")
 
     def test_main_run_from_shell(self):
         """
@@ -811,7 +811,7 @@ class PackageChangerTest(LandscapeTest):
 
             command = find_changer_command()
 
-            self.assertEquals(command, filename)
+            self.assertEqual(command, filename)
         finally:
             sys.argv = saved_argv
 
@@ -865,7 +865,7 @@ class PackageChangerTest(LandscapeTest):
         self.assertFalse(self.changer.smart_update_stamp_exists())
 
     def test_binaries_path(self):
-        self.assertEquals(
+        self.assertEqual(
             self.config.binaries_path,
             os.path.join(self.config.data_path, "package", "binaries"))
 
@@ -884,17 +884,17 @@ class PackageChangerTest(LandscapeTest):
                                base64.decodestring(PKGDEB1))
         self.assertFileContent(os.path.join(binaries_path, "222.deb"),
                                base64.decodestring(PKGDEB2))
-        self.assertEquals(self.facade.get_channels(),
-                          {binaries_path: {"type": "deb-dir",
-                                            "path": binaries_path}})
+        self.assertEqual(self.facade.get_channels(),
+                         {binaries_path: {"type": "deb-dir",
+                                          "path": binaries_path}})
 
-        self.assertEquals(self.store.get_hash_ids(), {HASH1: 111, HASH2: 222})
+        self.assertEqual(self.store.get_hash_ids(), {HASH1: 111, HASH2: 222})
 
         self.facade.ensure_channels_reloaded()
         [pkg1, pkg2] = sorted(self.facade.get_packages(),
                               key=lambda pkg: pkg.name)
-        self.assertEquals(self.facade.get_package_hash(pkg1), HASH1)
-        self.assertEquals(self.facade.get_package_hash(pkg2), HASH2)
+        self.assertEqual(self.facade.get_package_hash(pkg1), HASH1)
+        self.assertEqual(self.facade.get_package_hash(pkg2), HASH2)
 
     def test_init_channels_with_existing_hash_id_map(self):
         """
@@ -903,7 +903,7 @@ class PackageChangerTest(LandscapeTest):
         """
         self.store.set_hash_ids({HASH1: 111})
         self.changer.init_channels([(HASH1, 111, PKGDEB1)])
-        self.assertEquals(self.store.get_hash_ids(), {HASH1: 111})
+        self.assertEqual(self.store.get_hash_ids(), {HASH1: 111})
 
     def test_init_channels_with_existing_binaries(self):
         """
@@ -929,8 +929,8 @@ class PackageChangerTest(LandscapeTest):
 
         def assert_result(result):
             self.facade.deinit()
-            self.assertEquals(self.facade.get_package_locks(),
-                              [("foo", ">=", "1.0")])
+            self.assertEqual(self.facade.get_package_locks(),
+                             [("foo", ">=", "1.0")])
             self.assertIn("Queuing message with change package locks results "
                           "to exchange urgently.", self.logfile.getvalue())
             self.assertMessages(self.get_pending_messages(),
@@ -956,8 +956,8 @@ class PackageChangerTest(LandscapeTest):
 
         def assert_result(result):
             self.facade.deinit()
-            self.assertEquals(self.facade.get_package_locks(),
-                              [("foo", "", "")])
+            self.assertEqual(self.facade.get_package_locks(),
+                             [("foo", "", "")])
             self.assertMessages(self.get_pending_messages(),
                                 [{"type": "operation-result",
                                   "operation-id": 123,
@@ -980,7 +980,7 @@ class PackageChangerTest(LandscapeTest):
 
         def assert_result(result):
             self.facade.deinit()
-            self.assertEquals(self.facade.get_package_locks(), [])
+            self.assertEqual(self.facade.get_package_locks(), [])
             self.assertMessages(self.get_pending_messages(),
                                 [{"type": "operation-result",
                                   "operation-id": 123,

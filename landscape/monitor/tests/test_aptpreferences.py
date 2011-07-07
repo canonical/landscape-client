@@ -33,8 +33,8 @@ class AptPreferencesTest(LandscapeTest):
         preferences_filename = os.path.join(self.etc_apt_directory,
                                             "preferences")
         self.makeFile(path=preferences_filename, content="crap")
-        self.assertEquals(self.plugin.get_data(),
-                          {preferences_filename: "crap"})
+        self.assertEqual(self.plugin.get_data(),
+                         {preferences_filename: "crap"})
 
     def test_get_data_with_empty_preferences_directory(self):
         """
@@ -56,8 +56,8 @@ class AptPreferencesTest(LandscapeTest):
         self.makeDir(path=preferences_directory)
         filename1 = self.makeFile(dirname=preferences_directory, content="foo")
         filename2 = self.makeFile(dirname=preferences_directory, content="bar")
-        self.assertEquals(self.plugin.get_data(), {filename1: "foo",
-                                                   filename2: "bar"})
+        self.assertEqual(self.plugin.get_data(), {filename1: "foo",
+                                                  filename2: "bar"})
 
     def test_get_data_with_one_big_file(self):
         """
@@ -68,7 +68,7 @@ class AptPreferencesTest(LandscapeTest):
                                             "preferences")
         limit = self.plugin.size_limit
         self.makeFile(path=preferences_filename, content="a" * (limit + 1))
-        self.assertEquals(self.plugin.get_data(), {
+        self.assertEqual(self.plugin.get_data(), {
             preferences_filename: "a" * (limit - len(preferences_filename))})
 
     def test_get_data_with_many_big_files(self):
@@ -84,9 +84,9 @@ class AptPreferencesTest(LandscapeTest):
                                   content="a" * (limit / 2))
         filename2 = self.makeFile(dirname=preferences_directory,
                                   content="b" * (limit / 2))
-        self.assertEquals(self.plugin.get_data(),
-                          {filename1: "a" * (limit / 2 - len(filename1)),
-                           filename2: "b" * (limit / 2 - len(filename2))})
+        self.assertEqual(self.plugin.get_data(),
+                         {filename1: "a" * (limit / 2 - len(filename1)),
+                          filename2: "b" * (limit / 2 - len(filename2))})
 
     def test_exchange_without_apt_preferences_data(self):
         """
@@ -94,7 +94,7 @@ class AptPreferencesTest(LandscapeTest):
         """
         self.mstore.set_accepted_types(["apt-preferences"])
         self.plugin.exchange()
-        self.assertEquals(self.mstore.get_pending_messages(), [])
+        self.assertEqual(self.mstore.get_pending_messages(), [])
 
     def test_exchange(self):
         """
@@ -113,10 +113,10 @@ class AptPreferencesTest(LandscapeTest):
                                                  content="foo")
         self.plugin.exchange()
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(messages[0]["type"], "apt-preferences")
-        self.assertEquals(messages[0]["data"],
-                          {main_preferences_filename: u"crap",
-                           sub_preferences_filename: u"foo"})
+        self.assertEqual(messages[0]["type"], "apt-preferences")
+        self.assertEqual(messages[0]["data"],
+                         {main_preferences_filename: u"crap",
+                          sub_preferences_filename: u"foo"})
         for filename in messages[0]["data"]:
             self.assertTrue(isinstance(filename, unicode))
 
@@ -125,7 +125,7 @@ class AptPreferencesTest(LandscapeTest):
         os.remove(sub_preferences_filename)
         self.plugin.exchange()
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(messages[1]["type"], "apt-preferences")
+        self.assertEqual(messages[1]["type"], "apt-preferences")
         self.assertIdentical(messages[1]["data"], None)
 
     def test_exchange_only_once(self):
@@ -140,9 +140,9 @@ class AptPreferencesTest(LandscapeTest):
         self.makeFile(path=preferences_filename, content="crap")
         self.plugin.exchange()
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 1)
+        self.assertEqual(len(messages), 1)
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 1)
+        self.assertEqual(len(messages), 1)
 
     def test_run(self):
         """
@@ -174,4 +174,4 @@ class AptPreferencesTest(LandscapeTest):
         self.reactor.fire("resynchronize")
         self.plugin.run()
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 2)
+        self.assertEqual(len(messages), 2)

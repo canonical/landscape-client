@@ -12,19 +12,19 @@ def function():
 class FormatObjectTest(LandscapeTest):
 
     def test_format_instance(self):
-        self.assertEquals(format_object(self),
-                          "landscape.tests.test_log.FormatObjectTest")
+        self.assertEqual(format_object(self),
+                         "landscape.tests.test_log.FormatObjectTest")
 
     def method(self):
         pass
 
     def test_format_method(self):
-        self.assertEquals(format_object(self.method),
-                          "landscape.tests.test_log.FormatObjectTest.method()")
+        self.assertEqual(format_object(self.method),
+                         "landscape.tests.test_log.FormatObjectTest.method()")
 
     def test_format_function(self):
-        self.assertEquals(format_object(function),
-                          "landscape.tests.test_log.function()")
+        self.assertEqual(format_object(function),
+                         "landscape.tests.test_log.function()")
 
     # FIXME Write tests to make sure that inner functions render
     # usefully.
@@ -33,33 +33,33 @@ class FormatObjectTest(LandscapeTest):
 class FormatDeltaTest(LandscapeTest):
 
     def test_format_float(self):
-        self.assertEquals(format_delta(0.0), "0.00s")
-        self.assertEquals(format_delta(47.16374), "47.16s")
-        self.assertEquals(format_delta(100.0), "100.00s")
+        self.assertEqual(format_delta(0.0), "0.00s")
+        self.assertEqual(format_delta(47.16374), "47.16s")
+        self.assertEqual(format_delta(100.0), "100.00s")
 
     def test_format_int(self):
-        self.assertEquals(format_delta(0), "0.00s")
-        self.assertEquals(format_delta(47), "47.00s")
-        self.assertEquals(format_delta(100), "100.00s")
+        self.assertEqual(format_delta(0), "0.00s")
+        self.assertEqual(format_delta(47), "47.00s")
+        self.assertEqual(format_delta(100), "100.00s")
 
     def test_format_none(self):
-        self.assertEquals(format_delta(None), "0.00s")
+        self.assertEqual(format_delta(None), "0.00s")
 
 
 class FormatPercentTest(LandscapeTest):
 
     def test_format_float(self):
-        self.assertEquals(format_percent(0.0), "0.00%")
-        self.assertEquals(format_percent(47.16374), "47.16%")
-        self.assertEquals(format_percent(100.0), "100.00%")
+        self.assertEqual(format_percent(0.0), "0.00%")
+        self.assertEqual(format_percent(47.16374), "47.16%")
+        self.assertEqual(format_percent(100.0), "100.00%")
 
     def test_format_int(self):
-        self.assertEquals(format_percent(0), "0.00%")
-        self.assertEquals(format_percent(47), "47.00%")
-        self.assertEquals(format_percent(100), "100.00%")
+        self.assertEqual(format_percent(0), "0.00%")
+        self.assertEqual(format_percent(47), "47.00%")
+        self.assertEqual(format_percent(100), "100.00%")
 
     def test_format_none(self):
-        self.assertEquals(format_percent(None), "0.00%")
+        self.assertEqual(format_percent(None), "0.00%")
 
 
 class RotateLogsTest(LandscapeTest):

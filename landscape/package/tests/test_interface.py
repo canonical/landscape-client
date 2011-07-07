@@ -17,18 +17,18 @@ class LandscapeInterfaceTest(LandscapeTest):
     def test_message_with_unicode_and_utf8(self):
         self.iface.info(u"áéíóú")
         self.iface.info("áéíóú")
-        self.assertEquals(self.iface.get_output_for_landscape(),
-                          u"INFO: áéíóú\nINFO: áéíóú\n")
+        self.assertEqual(self.iface.get_output_for_landscape(),
+                         u"INFO: áéíóú\nINFO: áéíóú\n")
 
     def test_message_with_unicode_and_unknown_encoding(self):
         self.iface.info(u"áéíóú")
-        self.iface.info("aeíou\xc3") # UTF-8 expects a byte after \xc3
+        self.iface.info("aeíou\xc3")  # UTF-8 expects a byte after \xc3
         c = u"\N{REPLACEMENT CHARACTER}"
-        self.assertEquals(self.iface.get_output_for_landscape(),
-                          u"INFO: áéíóú\nINFO: ae%s%sou%s\n" % (c, c, c))
+        self.assertEqual(self.iface.get_output_for_landscape(),
+                         u"INFO: áéíóú\nINFO: ae%s%sou%s\n" % (c, c, c))
 
     def test_output_with_unicode_and_utf8(self):
         self.iface.showOutput(u"áéíóú")
         self.iface.showOutput("áéíóú")
-        self.assertEquals(self.iface.get_output_for_landscape(),
-                          u"áéíóúáéíóú")
+        self.assertEqual(self.iface.get_output_for_landscape(),
+                         u"áéíóúáéíóú")

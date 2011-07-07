@@ -10,7 +10,7 @@ class ReadFileTest(LandscapeTest):
         With no options L{read_file} reads the whole file passed as argument.
         """
         path = self.makeFile("foo")
-        self.assertEquals(read_file(path), "foo")
+        self.assertEqual(read_file(path), "foo")
 
     def test_read_file_with_limit(self):
         """
@@ -18,14 +18,14 @@ class ReadFileTest(LandscapeTest):
         given limit.
         """
         path = self.makeFile("foo bar")
-        self.assertEquals(read_file(path, limit=3), " bar")
+        self.assertEqual(read_file(path, limit=3), " bar")
 
     def test_read_file_with_negative_limit(self):
         """
         With a negative limit L{read_file} reads only the tail of the file.
         """
         path = self.makeFile("foo bar from end")
-        self.assertEquals(read_file(path, limit=-3), "end")
+        self.assertEqual(read_file(path, limit=-3), "end")
 
     def test_read_file_with_limit_bigger_than_file(self):
         """
@@ -33,8 +33,8 @@ class ReadFileTest(LandscapeTest):
         file.
         """
         path = self.makeFile("foo bar from end")
-        self.assertEquals(read_file(path, limit=100), "foo bar from end")
-        self.assertEquals(read_file(path, limit=-100), "foo bar from end")
+        self.assertEqual(read_file(path, limit=100), "foo bar from end")
+        self.assertEqual(read_file(path, limit=-100), "foo bar from end")
 
 
 class TouchFileTest(LandscapeTest):

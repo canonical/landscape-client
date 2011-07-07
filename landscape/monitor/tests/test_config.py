@@ -12,7 +12,7 @@ class MonitorConfigurationTest(LandscapeTest):
         """
         By default all plugins are enabled.
         """
-        self.assertEquals(self.config.plugin_factories, ALL_PLUGINS)
+        self.assertEqual(self.config.plugin_factories, ALL_PLUGINS)
 
     def test_plugin_factories_with_monitor_plugins(self):
         """
@@ -20,8 +20,8 @@ class MonitorConfigurationTest(LandscapeTest):
         which plugins should be active.
         """
         self.config.load(["--monitor-plugins", "  ComputerInfo, LoadAverage "])
-        self.assertEquals(self.config.plugin_factories, ["ComputerInfo",
-                                                         "LoadAverage"])
+        self.assertEqual(self.config.plugin_factories, ["ComputerInfo",
+                                                        "LoadAverage"])
 
     def test_flush_interval(self):
         """
@@ -29,4 +29,4 @@ class MonitorConfigurationTest(LandscapeTest):
         flush interval.
         """
         self.config.load(["--flush-interval", "123"])
-        self.assertEquals(self.config.flush_interval, 123)
+        self.assertEqual(self.config.flush_interval, 123)

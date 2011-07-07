@@ -22,8 +22,8 @@ class ConfigurationTests(LandscapeTest):
         configuration.load(["--http-proxy", "foo",
                             "--https-proxy", "bar",
                             "--url", "whatever"])
-        self.assertEquals(os.environ["http_proxy"], "foo")
-        self.assertEquals(os.environ["https_proxy"], "bar")
+        self.assertEqual(os.environ["http_proxy"], "foo")
+        self.assertEqual(os.environ["https_proxy"], "bar")
 
     def test_loading_without_http_proxies_does_not_touch_environment(self):
         """
@@ -36,8 +36,8 @@ class ConfigurationTests(LandscapeTest):
 
         configuration = BrokerConfiguration()
         configuration.load(["--url", "whatever"])
-        self.assertEquals(os.environ["http_proxy"], "heyo")
-        self.assertEquals(os.environ["https_proxy"], "baroo")
+        self.assertEqual(os.environ["http_proxy"], "heyo")
+        self.assertEqual(os.environ["https_proxy"], "baroo")
 
     def test_loading_resets_http_proxies(self):
         """
@@ -55,12 +55,12 @@ class ConfigurationTests(LandscapeTest):
         configuration.load(["--http-proxy", "x",
                             "--https-proxy", "y",
                             "--url", "whatever"])
-        self.assertEquals(os.environ["http_proxy"], "x")
-        self.assertEquals(os.environ["https_proxy"], "y")
+        self.assertEqual(os.environ["http_proxy"], "x")
+        self.assertEqual(os.environ["https_proxy"], "y")
 
         configuration.load(["--url", "whatever"])
-        self.assertEquals(os.environ["http_proxy"], "original")
-        self.assertEquals(os.environ["https_proxy"], "originals")
+        self.assertEqual(os.environ["http_proxy"], "original")
+        self.assertEqual(os.environ["https_proxy"], "originals")
 
     def test_intervals_are_ints(self):
         """
@@ -74,5 +74,5 @@ class ConfigurationTests(LandscapeTest):
         configuration = BrokerConfiguration()
         configuration.load(["--config", filename, "--url", "whatever"])
 
-        self.assertEquals(configuration.urgent_exchange_interval, 12)
-        self.assertEquals(configuration.exchange_interval, 34)
+        self.assertEqual(configuration.urgent_exchange_interval, 12)
+        self.assertEqual(configuration.exchange_interval, 34)

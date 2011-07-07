@@ -28,16 +28,16 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         management = UserManagement(provider=provider)
         management.add_user("jdoe", "John Doe", "password", False, "users",
                             "Room 101", "+123456", None)
-        self.assertEquals(len(provider.popen.popen_inputs), 2)
-        self.assertEquals(provider.popen.popen_inputs[0],
-                          ["adduser", "jdoe", "--disabled-password",
-                           "--gecos", "John Doe,Room 101,+123456,",
-                           "--gid", "1001"])
+        self.assertEqual(len(provider.popen.popen_inputs), 2)
+        self.assertEqual(provider.popen.popen_inputs[0],
+                         ["adduser", "jdoe", "--disabled-password",
+                          "--gecos", "John Doe,Room 101,+123456,",
+                          "--gid", "1001"])
 
         usermod = provider.popen.popen_inputs[1]
-        self.assertEquals(len(usermod), 4, usermod)
+        self.assertEqual(len(usermod), 4, usermod)
         password = guess_password(usermod[2], "password")
-        self.assertEquals(usermod, ["usermod", "-p", password, "jdoe"])
+        self.assertEqual(usermod, ["usermod", "-p", password, "jdoe"])
 
     def test_add_user_error(self):
         """
@@ -84,11 +84,11 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         management = UserManagement(provider=provider)
         management.set_user_details("jdoe", password="password")
 
-        self.assertEquals(len(provider.popen.popen_inputs), 1)
+        self.assertEqual(len(provider.popen.popen_inputs), 1)
         password = provider.popen.popen_inputs[0][2]
         password = guess_password(password, "password")
-        self.assertEquals(provider.popen.popen_inputs,
-                          [["usermod", "-p", password, "jdoe"]])
+        self.assertEqual(provider.popen.popen_inputs,
+                         [["usermod", "-p", password, "jdoe"]])
 
     def test_set_password_with_system_user(self):
         """
@@ -101,11 +101,11 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
                                     popen=MockPopen("no output"))
         management = UserManagement(provider=provider)
         management.set_user_details("root", password="password")
-        self.assertEquals(len(provider.popen.popen_inputs), 1)
+        self.assertEqual(len(provider.popen.popen_inputs), 1)
         password = provider.popen.popen_inputs[0][2]
         password = guess_password(password, "password")
-        self.assertEquals(provider.popen.popen_inputs,
-                          [["usermod", "-p", password, "root"]])
+        self.assertEqual(provider.popen.popen_inputs,
+                         [["usermod", "-p", password, "root"]])
 
     def test_set_password_unicode(self):
         """
@@ -119,11 +119,11 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         management = UserManagement(provider=provider)
         management.set_user_details("jdoe", password=u"password")
 
-        self.assertEquals(len(provider.popen.popen_inputs), 1)
+        self.assertEqual(len(provider.popen.popen_inputs), 1)
         password = provider.popen.popen_inputs[0][2]
         password = guess_password(password, "password")
-        self.assertEquals(provider.popen.popen_inputs,
-                          [["usermod", "-p", password, "jdoe"]])
+        self.assertEqual(provider.popen.popen_inputs,
+                         [["usermod", "-p", password, "jdoe"]])
 
     def test_set_name(self):
         """
@@ -136,9 +136,9 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         management = UserManagement(provider=provider)
         management.set_user_details("jdoe", name="JD")
 
-        self.assertEquals(len(provider.popen.popen_inputs), 1)
-        self.assertEquals(provider.popen.popen_inputs,
-                          [["chfn", "-f", "JD", "jdoe"]])
+        self.assertEqual(len(provider.popen.popen_inputs), 1)
+        self.assertEqual(provider.popen.popen_inputs,
+                         [["chfn", "-f", "JD", "jdoe"]])
 
     def test_set_location(self):
         """
@@ -151,9 +151,9 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         management = UserManagement(provider=provider)
         management.set_user_details("jdoe", location="Everywhere")
 
-        self.assertEquals(len(provider.popen.popen_inputs), 1)
-        self.assertEquals(provider.popen.popen_inputs,
-                          [["chfn", "-r", "Everywhere", "jdoe"]])
+        self.assertEqual(len(provider.popen.popen_inputs), 1)
+        self.assertEqual(provider.popen.popen_inputs,
+                         [["chfn", "-r", "Everywhere", "jdoe"]])
 
     def test_clear_user_location(self):
         """
@@ -166,9 +166,9 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
                                     popen=MockPopen("no output"))
         management = UserManagement(provider=provider)
         management.set_user_details("jdoe", location="")
-        self.assertEquals(len(provider.popen.popen_inputs), 1)
-        self.assertEquals(provider.popen.popen_inputs,
-                          [["chfn", "-r", "", "jdoe"]])
+        self.assertEqual(len(provider.popen.popen_inputs), 1)
+        self.assertEqual(provider.popen.popen_inputs,
+                         [["chfn", "-r", "", "jdoe"]])
 
     def test_clear_telephone_numbers(self):
         """
@@ -181,9 +181,9 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
                                     popen=MockPopen("no output"))
         management = UserManagement(provider=provider)
         management.set_user_details("jdoe", home_number="", work_number="")
-        self.assertEquals(len(provider.popen.popen_inputs), 1)
-        self.assertEquals(provider.popen.popen_inputs,
-                          [["chfn", "-w", "", "-h", "", "jdoe"]])
+        self.assertEqual(len(provider.popen.popen_inputs), 1)
+        self.assertEqual(provider.popen.popen_inputs,
+                         [["chfn", "-w", "", "-h", "", "jdoe"]])
 
     def test_set_user_details_fails(self):
         """
@@ -213,10 +213,10 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
                                     work_number=work_number,
                                     home_number=home_number)
 
-        self.assertEquals(len(provider.popen.popen_inputs), 1)
-        self.assertEquals(provider.popen.popen_inputs,
-                          [["chfn", "-r", location, "-w", work_number,
-                            "-h", home_number, "jdoe"]])
+        self.assertEqual(len(provider.popen.popen_inputs), 1)
+        self.assertEqual(provider.popen.popen_inputs,
+                         [["chfn", "-r", location, "-w", work_number,
+                           "-h", home_number, "jdoe"]])
 
     def test_set_user_details_with_unknown_username(self):
         """
@@ -242,8 +242,8 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         management = UserManagement(provider=provider)
         management.set_user_details("jdoe", primary_group_name="users")
 
-        self.assertEquals(provider.popen.popen_inputs,
-                          [["usermod", "-g", "1001", "jdoe"]])
+        self.assertEqual(provider.popen.popen_inputs,
+                         [["usermod", "-g", "1001", "jdoe"]])
 
     def test_set_primary_group_unknown_group(self):
         """
@@ -268,8 +268,8 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
                                     popen=MockPopen("no output"))
         management = UserManagement(provider=provider)
         management.lock_user("jdoe")
-        self.assertEquals(provider.popen.popen_inputs,
-                          [["usermod", "-L", "jdoe"]])
+        self.assertEqual(provider.popen.popen_inputs,
+                         [["usermod", "-L", "jdoe"]])
 
     def test_lock_user_fails(self):
         """
@@ -301,8 +301,8 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
                                     popen=MockPopen("no output"))
         management = UserManagement(provider=provider)
         management.unlock_user("jdoe")
-        self.assertEquals(provider.popen.popen_inputs,
-                          [["usermod", "-U", "jdoe"]])
+        self.assertEqual(provider.popen.popen_inputs,
+                         [["usermod", "-U", "jdoe"]])
 
     def test_unlock_user_fails(self):
         """
@@ -335,7 +335,7 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
                                     popen=popen)
         management = UserManagement(provider=provider)
         management.remove_user("jdoe")
-        self.assertEquals(popen.popen_inputs, [["deluser", "jdoe"]])
+        self.assertEqual(popen.popen_inputs, [["deluser", "jdoe"]])
 
     def test_remove_user_with_unknown_username(self):
         """
@@ -371,8 +371,8 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
                                     popen=popen)
         management = UserManagement(provider=provider)
         management.remove_user("jdoe", delete_home=True)
-        self.assertEquals(popen.popen_inputs,
-                          [["deluser", "jdoe", "--remove-home"]])
+        self.assertEqual(popen.popen_inputs,
+                         [["deluser", "jdoe", "--remove-home"]])
 
 
 class GroupWriteTest(LandscapeTest):
@@ -393,9 +393,9 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         provider = FakeUserProvider(popen=MockPopen("Result"))
         management = UserManagement(provider=provider)
         result = management.add_group("webdev")
-        self.assertEquals(provider.popen.popen_inputs,
-                          [["addgroup", "webdev"]])
-        self.assertEquals(result, "Result")
+        self.assertEqual(provider.popen.popen_inputs,
+                         [["addgroup", "webdev"]])
+        self.assertEqual(result, "Result")
 
     def test_add_group_handles_errors(self):
         """
@@ -419,8 +419,8 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         management = UserManagement(provider=provider)
         management.set_group_details("bizdev", "sales")
 
-        self.assertEquals(provider.popen.popen_inputs,
-                          [["groupmod", "-n", "sales", "bizdev"]])
+        self.assertEqual(provider.popen.popen_inputs,
+                         [["groupmod", "-n", "sales", "bizdev"]])
 
     def test_set_group_details_with_unknown_groupname(self):
         """
@@ -460,9 +460,9 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
         management = UserManagement(provider=provider)
 
         output = management.add_group_member("jdoe", "bizdev")
-        self.assertEquals(provider.popen.popen_inputs,
-                          [["gpasswd", "-a", "jdoe", "bizdev"]])
-        self.assertEquals(output, "Removing user jdoe from group bizdev")
+        self.assertEqual(provider.popen.popen_inputs,
+                         [["gpasswd", "-a", "jdoe", "bizdev"]])
+        self.assertEqual(output, "Removing user jdoe from group bizdev")
 
     def test_add_member_with_unknown_groupname(self):
         """
@@ -518,9 +518,9 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
                                     "Removing user jdoe from group bizdev"))
         management = UserManagement(provider=provider)
         output = management.remove_group_member("jdoe", "bizdev")
-        self.assertEquals(provider.popen.popen_inputs,
-                          [["gpasswd", "-d", "jdoe", "bizdev"]])
-        self.assertEquals(output, "Removing user jdoe from group bizdev")
+        self.assertEqual(provider.popen.popen_inputs,
+                         [["gpasswd", "-d", "jdoe", "bizdev"]])
+        self.assertEqual(output, "Removing user jdoe from group bizdev")
 
     def test_remove_member_with_unknown_groupname(self):
         """
@@ -575,8 +575,8 @@ sbarnes:$1$q7sz09uw$q.A3526M/SHu8vUb.Jo1A/:13349:0:99999:7:::
                                     groups=groups, popen=popen)
         management = UserManagement(provider=provider)
         management.remove_group("bizdev")
-        self.assertEquals(provider.popen.popen_inputs,
-                          [["groupdel", "bizdev"]])
+        self.assertEqual(provider.popen.popen_inputs,
+                         [["groupdel", "bizdev"]])
 
     def test_remove_group_with_unknown_groupname(self):
         """

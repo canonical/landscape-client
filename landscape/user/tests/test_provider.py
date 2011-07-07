@@ -38,7 +38,7 @@ kevin:x:1000:
         """
         data = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/zsh")]
         provider = FakeUserProvider(users=data, shadow_file=self.shadow_file)
-        self.assertEquals(provider.get_uid("jdoe"), 1000)
+        self.assertEqual(provider.get_uid("jdoe"), 1000)
         self.assertRaises(UserNotFoundError, provider.get_uid, "john")
 
     def test_get_users(self):
@@ -46,11 +46,11 @@ kevin:x:1000:
         data = [("jdoe", "x", 1000, 1000, "JD,,,,", "/home/jdoe", "/bin/zsh")]
         provider = FakeUserProvider(users=data, shadow_file=self.shadow_file)
         users = provider.get_users()
-        self.assertEquals(users, [{"username": "jdoe", "name": u"JD",
-                                   "uid": 1000, "enabled": True,
-                                   "location": None, "home-phone": None,
-                                   "work-phone": None,
-                                   "primary-gid": 1000}])
+        self.assertEqual(users, [{"username": "jdoe", "name": u"JD",
+                                  "uid": 1000, "enabled": True,
+                                  "location": None, "home-phone": None,
+                                  "work-phone": None,
+                                  "primary-gid": 1000}])
 
     def test_gecos_data(self):
         """
@@ -62,12 +62,12 @@ kevin:x:1000:
                  "/home/jdoe", "/bin/zsh")]
         provider = FakeUserProvider(users=data, shadow_file=self.shadow_file)
         users = provider.get_users()
-        self.assertEquals(users, [{"username": "jdoe", "name": u"JD",
-                                   "uid": 1000, "enabled": True,
-                                   "location": u"Everywhere",
-                                   "home-phone": u"123HOME",
-                                   "work-phone": u"7654321",
-                                   "primary-gid": 1000}])
+        self.assertEqual(users, [{"username": "jdoe", "name": u"JD",
+                                  "uid": 1000, "enabled": True,
+                                  "location": u"Everywhere",
+                                  "home-phone": u"123HOME",
+                                  "work-phone": u"7654321",
+                                  "primary-gid": 1000}])
 
     def test_four_gecos_fields(self):
         """If a GECOS field only has four fields it should still work."""
@@ -75,12 +75,12 @@ kevin:x:1000:
                  "/home/jdoe", "/bin/zsh")]
         provider = FakeUserProvider(users=data, shadow_file=self.shadow_file)
         users = provider.get_users()
-        self.assertEquals(users, [{"username": "jdoe", "name": u"JD",
-                                   "uid": 1000, "enabled": True,
-                                   "location": u"Everywhere",
-                                   "home-phone": u"123HOME",
-                                   "work-phone": u"7654321",
-                                   "primary-gid": 1000}])
+        self.assertEqual(users, [{"username": "jdoe", "name": u"JD",
+                                  "uid": 1000, "enabled": True,
+                                  "location": u"Everywhere",
+                                  "home-phone": u"123HOME",
+                                  "work-phone": u"7654321",
+                                  "primary-gid": 1000}])
 
     def test_old_school_gecos_data(self):
         """
@@ -92,10 +92,10 @@ kevin:x:1000:
                  "/home/jdoe", "/bin/zsh")]
         provider = FakeUserProvider(users=data, shadow_file=self.shadow_file)
         users = provider.get_users()
-        self.assertEquals(users, [{"username": "jdoe", "uid": 1000,
-                                   "enabled": True, "name": u"John Doe",
-                                   "location": None, "home-phone": None,
-                                   "work-phone": None, "primary-gid": 1000}])
+        self.assertEqual(users, [{"username": "jdoe", "uid": 1000,
+                                  "enabled": True, "name": u"John Doe",
+                                  "location": None, "home-phone": None,
+                                  "work-phone": None, "primary-gid": 1000}])
 
     def test_weird_gecos_data(self):
         """
@@ -106,11 +106,11 @@ kevin:x:1000:
                  "/home/jdoe", "/bin/zsh")]
         provider = FakeUserProvider(users=data, shadow_file=self.shadow_file)
         users = provider.get_users()
-        self.assertEquals(users, [{"username": "jdoe", "uid": 1000,
-                                   "enabled": True, "name": "John Doe",
-                                   "location": "Everywhere",
-                                   "home-phone": None, "work-phone": None,
-                                   "primary-gid": 1000}])
+        self.assertEqual(users, [{"username": "jdoe", "uid": 1000,
+                                  "enabled": True, "name": "John Doe",
+                                  "location": "Everywhere",
+                                  "home-phone": None, "work-phone": None,
+                                  "primary-gid": 1000}])
 
     def test_no_gecos_data(self):
         """
@@ -120,11 +120,11 @@ kevin:x:1000:
         data = [("jdoe", "x", 1000, 1000, "", "/home/jdoe", "/bin/zsh")]
         provider = FakeUserProvider(users=data, shadow_file=self.shadow_file)
         users = provider.get_users()
-        self.assertEquals(users, [{"username": "jdoe", "uid": 1000,
-                                   "enabled": True, "name": None,
-                                   "location": None, "home-phone": None,
-                                   "work-phone": None,
-                                   "primary-gid": 1000}])
+        self.assertEqual(users, [{"username": "jdoe", "uid": 1000,
+                                  "enabled": True, "name": None,
+                                  "location": None, "home-phone": None,
+                                  "work-phone": None,
+                                  "primary-gid": 1000}])
 
     def test_utf8_gecos_data(self):
         """Gecos fields should be decoded from utf-8 to unicode."""
@@ -138,10 +138,10 @@ kevin:x:1000:
         data = [("jdoe", "x", 1000, 1000, gecos, "/home/jdoe", "/bin/zsh")]
         provider = FakeUserProvider(users=data, shadow_file=self.shadow_file)
         users = provider.get_users()
-        self.assertEquals(users[0]["name"], name)
-        self.assertEquals(users[0]["location"], location)
-        self.assertEquals(users[0]["home-phone"], number)
-        self.assertEquals(users[0]["work-phone"], number)
+        self.assertEqual(users[0]["name"], name)
+        self.assertEqual(users[0]["location"], location)
+        self.assertEqual(users[0]["home-phone"], number)
+        self.assertEqual(users[0]["work-phone"], number)
 
     def test_non_utf8_data(self):
         """
@@ -153,10 +153,10 @@ kevin:x:1000:
                  "/bin/zsh")]
         provider = FakeUserProvider(users=data, shadow_file=self.shadow_file)
         users = provider.get_users()
-        self.assertEquals(users[0]["name"], unicode_unknown)
-        self.assertEquals(users[0]["location"], unicode_unknown)
-        self.assertEquals(users[0]["home-phone"], unicode_unknown)
-        self.assertEquals(users[0]["work-phone"], unicode_unknown)
+        self.assertEqual(users[0]["name"], unicode_unknown)
+        self.assertEqual(users[0]["location"], unicode_unknown)
+        self.assertEqual(users[0]["home-phone"], unicode_unknown)
+        self.assertEqual(users[0]["work-phone"], unicode_unknown)
 
     def test_get_disabled_user(self):
         """The C{enabled} field should be C{False} for disabled users."""
@@ -165,7 +165,7 @@ kevin:x:1000:
         provider = FakeUserProvider(users=data, shadow_file=self.shadow_file,
                                     locked_users=["psmith"])
         users = provider.get_users()
-        self.assertEquals(users, [
+        self.assertEqual(users, [
                 {"username": "psmith", "name": u"Peter Smith", "uid": 1000,
                  "enabled": False,
                  "location": None, "home-phone": None, "work-phone": None,
@@ -179,10 +179,10 @@ kevin:x:1000:
         user_0 = pwd.getpwuid(0)
         for user in users:
             if user["username"] == user_0.pw_name:
-                self.assertEquals(user["uid"], 0)
+                self.assertEqual(user["uid"], 0)
                 user_0_name = user_0.pw_gecos.split(",")[0].decode(
                     "utf-8", "replace")
-                self.assertEquals(user["name"], user_0_name)
+                self.assertEqual(user["name"], user_0_name)
                 break
         else:
             self.fail("The user %s (uid=0) was not found in the get_data "
@@ -197,10 +197,10 @@ kevin:x:1000:
                 ("jdoe", "x", 1001, 1001, "JD,,,,", "/home/jdoe", "/bin/zsh")]
         provider = FakeUserProvider(users=data, shadow_file=self.shadow_file)
         users = provider.get_users()
-        self.assertEquals(users, [{"username": "jdoe", "name": u"JD",
-                                   "uid": 1000, "enabled": True,
-                                   "location": None, "home-phone": None,
-                                   "work-phone": None, "primary-gid": 1000}])
+        self.assertEqual(users, [{"username": "jdoe", "name": u"JD",
+                                  "uid": 1000, "enabled": True,
+                                  "location": None, "home-phone": None,
+                                  "work-phone": None, "primary-gid": 1000}])
 
     def test_get_users_duplicate_uids(self):
         """
@@ -211,14 +211,14 @@ kevin:x:1000:
                 ("joe2", "x", 1000, 1000, "JD,,,,", "/home/joe2", "/bin/zsh")]
         provider = FakeUserProvider(users=data, shadow_file=self.shadow_file)
         users = provider.get_users()
-        self.assertEquals(users, [{"username": "joe1", "name": u"JD",
-                                   "uid": 1000, "enabled": True,
-                                   "location": None, "home-phone": None,
-                                   "work-phone": None, "primary-gid": 1000},
-                                  {"username": "joe2", "name": u"JD",
-                                   "uid": 1000, "enabled": True,
-                                   "location": None, "home-phone": None,
-                                   "work-phone": None, "primary-gid": 1000}])
+        self.assertEqual(users, [{"username": "joe1", "name": u"JD",
+                                  "uid": 1000, "enabled": True,
+                                  "location": None, "home-phone": None,
+                                  "work-phone": None, "primary-gid": 1000},
+                                 {"username": "joe2", "name": u"JD",
+                                  "uid": 1000, "enabled": True,
+                                  "location": None, "home-phone": None,
+                                  "work-phone": None, "primary-gid": 1000}])
 
     def test_user_not_in_shadow_file(self):
         """
@@ -230,8 +230,8 @@ kevin:x:1000:
                  "JD,,,,", "/home/jdoe", "/bin/zsh")]
         provider = FakeUserProvider(users=data, shadow_file=self.shadow_file)
         users = provider.get_users()
-        self.assertEquals(len(users), 1)
-        self.assertEquals(sorted([x[0] for x in data]), ["johndoe"])
+        self.assertEqual(len(users), 1)
+        self.assertEqual(sorted([x[0] for x in data]), ["johndoe"])
 
     def test_get_gid(self):
         """
@@ -239,7 +239,7 @@ kevin:x:1000:
         raises a L{UserProviderError} if a match isn't found.
         """
         provider = FakeUserProvider(groups=[("jdoe", "x", 1000, [])])
-        self.assertEquals(provider.get_gid("jdoe"), 1000)
+        self.assertEqual(provider.get_gid("jdoe"), 1000)
         self.assertRaises(GroupNotFoundError, provider.get_gid, "john")
 
     def test_group_without_members(self):
@@ -248,8 +248,8 @@ kevin:x:1000:
         members.
         """
         provider = FakeUserProvider(groups=[("jdoe", "x", 1000, [])])
-        self.assertEquals(provider.get_groups(),
-                          [{"name": "jdoe", "gid": 1000, "members": []}])
+        self.assertEqual(provider.get_groups(),
+                         [{"name": "jdoe", "gid": 1000, "members": []}])
 
     def test_group_with_members(self):
         """L{UserProvider.get_groups} should include groups with members."""
@@ -257,8 +257,8 @@ kevin:x:1000:
         groups = [("sales", "x", 50, ["jdoe"])]
         provider = FakeUserProvider(users=users, shadow_file=self.shadow_file,
                                     groups=groups)
-        self.assertEquals(provider.get_groups(),
-                          [{"name": "sales", "gid": 50, "members": ["jdoe"]}])
+        self.assertEqual(provider.get_groups(),
+                         [{"name": "sales", "gid": 50, "members": ["jdoe"]}])
 
     def test_group_with_unknown_members(self):
         """L{UserProvider.get_groups} should include groups with members.
@@ -270,8 +270,8 @@ kevin:x:1000:
         groups = [("sales", "x", 50, ["jdoe", "kevin"])]
         provider = FakeUserProvider(users=users, shadow_file=self.shadow_file,
                                     groups=groups)
-        self.assertEquals(provider.get_groups(),
-                          [{"name": "sales", "gid": 50, "members": ["jdoe"]}])
+        self.assertEqual(provider.get_groups(),
+                         [{"name": "sales", "gid": 50, "members": ["jdoe"]}])
 
     def test_group_with_duplicate_members(self):
         """
@@ -284,8 +284,8 @@ kevin:x:1000:
         groups = [("sales", "x", 50, ["jdoe", "jdoe"])]
         provider = FakeUserProvider(users=users, shadow_file=self.shadow_file,
                                     groups=groups)
-        self.assertEquals(provider.get_groups(),
-                          [{"name": "sales", "gid": 50, "members": ["jdoe"]}])
+        self.assertEqual(provider.get_groups(),
+                         [{"name": "sales", "gid": 50, "members": ["jdoe"]}])
 
     def test_group_with_duplicate_groupnames(self):
         """
@@ -300,8 +300,8 @@ kevin:x:1000:
                  ]
         provider = FakeUserProvider(users=users, shadow_file=self.shadow_file,
                                     groups=groups)
-        self.assertEquals(provider.get_groups(),
-                          [{"name": "sales", "gid": 50, "members": ["jdoe"]}])
+        self.assertEqual(provider.get_groups(),
+                         [{"name": "sales", "gid": 50, "members": ["jdoe"]}])
 
     def test_real_group_data(self):
         """
@@ -314,8 +314,8 @@ kevin:x:1000:
         groups = provider.get_groups()
         for group in groups:
             if group["name"] == group_0.gr_name:
-                self.assertEquals(group["gid"], 0)
-                self.assertEquals(group["members"], group_0.gr_mem)
+                self.assertEqual(group["gid"], 0)
+                self.assertEqual(group["members"], group_0.gr_mem)
                 break
         else:
             self.fail("The group %s (gid=0) was not found in the get_data "
@@ -326,14 +326,14 @@ kevin:x:1000:
         provider = UserProvider(passwd_file=self.passwd_file,
                                 group_file=self.group_file)
         users = provider.get_user_data()
-        self.assertEquals(users[0], ("root", "x", 0, 0, "root", "/root",
-                                     "/bin/bash"))
-        self.assertEquals(users[1], ("haldaemon", "x", 107, 116,
-                                     "Hardware abstraction layer,,,",
-                                     "/home/haldaemon", "/bin/false"))
-        self.assertEquals(users[2], ("kevin", "x", 1001, 65534,
-                                     "Kevin,101,+44123123,+44123124",
-                                     "/home/kevin", "/bin/bash"))
+        self.assertEqual(users[0], ("root", "x", 0, 0, "root", "/root",
+                                    "/bin/bash"))
+        self.assertEqual(users[1], ("haldaemon", "x", 107, 116,
+                                    "Hardware abstraction layer,,,",
+                                    "/home/haldaemon", "/bin/false"))
+        self.assertEqual(users[2], ("kevin", "x", 1001, 65534,
+                                    "Kevin,101,+44123123,+44123124",
+                                    "/home/kevin", "/bin/bash"))
 
     def test_get_users_with_many(self):
         """
@@ -343,39 +343,39 @@ kevin:x:1000:
         provider = UserProvider(passwd_file=self.passwd_file,
                                  group_file=self.group_file)
         users = provider.get_users()
-        self.assertEquals(users[0], {"username": "root",
-                                     "name": u"root",
-                                     "uid": 0, "enabled": True,
-                                     "location": None,
-                                     "home-phone": None,
-                                     "work-phone": None,
-                                     "primary-gid": 0})
-        self.assertEquals(users[1], {"username": "haldaemon",
-                                     "name": u"Hardware abstraction layer",
-                                     "uid": 107,
-                                     "enabled": True,
-                                     "location": None,
-                                     "home-phone": None,
-                                     "work-phone": None,
-                                     "primary-gid": 116})
-        self.assertEquals(users[2], {"username": "kevin",
-                                     "name": u"Kevin",
-                                     "uid": 1001,
-                                     "enabled": True,
-                                     "location": u"101",
-                                     "home-phone": u"+44123124",
-                                     "work-phone": u"+44123123",
-                                     "primary-gid": 65534})
+        self.assertEqual(users[0], {"username": "root",
+                                    "name": u"root",
+                                    "uid": 0, "enabled": True,
+                                    "location": None,
+                                    "home-phone": None,
+                                    "work-phone": None,
+                                    "primary-gid": 0})
+        self.assertEqual(users[1], {"username": "haldaemon",
+                                    "name": u"Hardware abstraction layer",
+                                    "uid": 107,
+                                    "enabled": True,
+                                    "location": None,
+                                    "home-phone": None,
+                                    "work-phone": None,
+                                    "primary-gid": 116})
+        self.assertEqual(users[2], {"username": "kevin",
+                                    "name": u"Kevin",
+                                    "uid": 1001,
+                                    "enabled": True,
+                                    "location": u"101",
+                                    "home-phone": u"+44123124",
+                                    "work-phone": u"+44123123",
+                                    "primary-gid": 65534})
 
     def test_get_group_data(self):
         """This tests the functionality for parsing /etc/group style files."""
         provider = UserProvider(passwd_file=self.passwd_file,
                                 group_file=self.group_file)
         groups = provider.get_group_data()
-        self.assertEquals(groups[0], (u"root", u"x", 0, [u""]))
-        self.assertEquals(groups[1], (u"cdrom", u"x", 24,
+        self.assertEqual(groups[0], (u"root", u"x", 0, [u""]))
+        self.assertEqual(groups[1], (u"cdrom", u"x", 24,
                                      [u"haldaemon", u"kevin"]))
-        self.assertEquals(groups[2], (u"kevin", u"x", 1000, [u""]))
+        self.assertEqual(groups[2], (u"kevin", u"x", 1000, [u""]))
 
     def test_get_groups(self):
         """
@@ -385,15 +385,15 @@ kevin:x:1000:
         provider = UserProvider(passwd_file=self.passwd_file,
                                 group_file=self.group_file)
         groups = provider.get_groups()
-        self.assertEquals(groups[0], {"name": u"root",
-                                      "gid": 0,
-                                      "members": []})
-        self.assertEquals(groups[1], {"name": u"cdrom",
-                                      "gid": 24,
-                                      "members": [u"kevin", u"haldaemon"]})
-        self.assertEquals(groups[2], {"name": u"kevin",
-                                      "gid": 1000,
-                                      "members": []})
+        self.assertEqual(groups[0], {"name": u"root",
+                                     "gid": 0,
+                                     "members": []})
+        self.assertEqual(groups[1], {"name": u"cdrom",
+                                     "gid": 24,
+                                     "members": [u"kevin", u"haldaemon"]})
+        self.assertEqual(groups[2], {"name": u"kevin",
+                                     "gid": 1000,
+                                     "members": []})
 
     def test_get_users_incorrect_passwd_file(self):
         """
@@ -414,21 +414,21 @@ broken2
         provider = UserProvider(passwd_file=passwd_file,
                                 group_file=self.group_file)
         users = provider.get_users()
-        self.assertEquals(users[0], {"username": "root",
-                                     "name": u"root",
-                                     "uid": 0, "enabled": True,
-                                     "location": None,
-                                     "home-phone": None,
-                                     "work-phone": None,
-                                     "primary-gid": 0})
-        self.assertEquals(users[1], {"username": "kevin",
-                                     "name": u"Kevin",
-                                     "uid": 1001,
-                                     "enabled": True,
-                                     "location": u"101",
-                                     "home-phone": u"+44123124",
-                                     "work-phone": u"+44123123",
-                                     "primary-gid": 65534})
+        self.assertEqual(users[0], {"username": "root",
+                                    "name": u"root",
+                                    "uid": 0, "enabled": True,
+                                    "location": None,
+                                    "home-phone": None,
+                                    "work-phone": None,
+                                    "primary-gid": 0})
+        self.assertEqual(users[1], {"username": "kevin",
+                                    "name": u"Kevin",
+                                    "uid": 1001,
+                                    "enabled": True,
+                                    "location": u"101",
+                                    "home-phone": u"+44123124",
+                                    "work-phone": u"+44123123",
+                                    "primary-gid": 65534})
         log = ("WARNING: passwd file %s is incorrectly formatted: line 2." %
                passwd_file)
         self.assertIn(log, self.logfile.getvalue())
@@ -458,21 +458,21 @@ kevin:x:1001:65534:Kevin,101,+44123123,+44123124:/home/kevin:/bin/bash
                                 group_file=self.group_file)
         users = provider.get_users()
         self.assertTrue(len(users), 2)
-        self.assertEquals(users[0], {"username": "root",
-                                     "name": u"root",
-                                     "uid": 0, "enabled": True,
-                                     "location": None,
-                                     "home-phone": None,
-                                     "work-phone": None,
-                                     "primary-gid": 0})
-        self.assertEquals(users[1], {"username": "kevin",
-                                     "name": u"Kevin",
-                                     "uid": 1001,
-                                     "enabled": True,
-                                     "location": u"101",
-                                     "home-phone": u"+44123124",
-                                     "work-phone": u"+44123123",
-                                     "primary-gid": 65534})
+        self.assertEqual(users[0], {"username": "root",
+                                    "name": u"root",
+                                    "uid": 0, "enabled": True,
+                                    "location": None,
+                                    "home-phone": None,
+                                    "work-phone": None,
+                                    "primary-gid": 0})
+        self.assertEqual(users[1], {"username": "kevin",
+                                    "name": u"Kevin",
+                                    "uid": 1001,
+                                    "enabled": True,
+                                    "location": u"101",
+                                    "home-phone": u"+44123124",
+                                    "work-phone": u"+44123123",
+                                    "primary-gid": 65534})
         log = ("WARNING: passwd file %s is incorrectly formatted" %
                passwd_file)
         self.assertTrue(log not in self.logfile.getvalue())
@@ -492,10 +492,10 @@ kevin:x:kevin:
         provider = UserProvider(passwd_file=self.passwd_file,
                                 group_file=group_file)
         groups = provider.get_groups()
-        self.assertEquals(groups[0], {"name": u"root", "gid": 0,
-                                      "members": []})
-        self.assertEquals(groups[1], {"name": u"cdrom", "gid": 24,
-                                      "members": []})
+        self.assertEqual(groups[0], {"name": u"root", "gid": 0,
+                                     "members": []})
+        self.assertEqual(groups[1], {"name": u"cdrom", "gid": 24,
+                                     "members": []})
         log = ("WARNING: group file %s is incorrectly "
                "formatted: line 3." % group_file)
         self.assertIn(log, self.logfile.getvalue())
@@ -517,7 +517,7 @@ cdrom:x:24:
         provider = UserProvider(passwd_file=self.passwd_file,
                                 group_file=group_file)
         groups = provider.get_groups()
-        self.assertEquals(groups[0], {"name": u"root", "gid": 0,
-                                      "members": []})
+        self.assertEqual(groups[0], {"name": u"root", "gid": 0,
+                                     "members": []})
         log = ("WARNING: group file %s is incorrectly formatted" % group_file)
         self.assertTrue(log not in self.logfile.getvalue())

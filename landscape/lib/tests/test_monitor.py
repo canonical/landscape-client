@@ -17,24 +17,24 @@ class TimerTest(ReactorHavingTest):
         self.timer = Timer(create_time=self.reactor.time)
 
     def test_since_start(self):
-        self.assertEquals(self.timer.since_start(), 0.0)
+        self.assertEqual(self.timer.since_start(), 0.0)
 
         self.reactor.advance(1)
-        self.assertEquals(self.timer.since_start(), 1.0)
+        self.assertEqual(self.timer.since_start(), 1.0)
 
         self.reactor.advance(2)
-        self.assertEquals(self.timer.since_start(), 3.0)
+        self.assertEqual(self.timer.since_start(), 3.0)
 
     def test_since_reset(self):
         self.reactor.advance(1)
-        self.assertEquals(self.timer.since_reset(), 1.0)
+        self.assertEqual(self.timer.since_reset(), 1.0)
 
         self.reactor.advance(1)
-        self.assertEquals(self.timer.since_start(), 2.0)
+        self.assertEqual(self.timer.since_start(), 2.0)
 
         self.reactor.advance(2)
         self.timer.reset()
-        self.assertEquals(self.timer.since_start(), 4.0)
+        self.assertEqual(self.timer.since_start(), 4.0)
 
 
 class MonitorTest(ReactorHavingTest):
@@ -44,25 +44,25 @@ class MonitorTest(ReactorHavingTest):
         self.monitor = Monitor("test", create_time=self.reactor.time)
 
     def test_ping(self):
-        self.assertEquals(self.monitor.count, 0)
-        self.assertEquals(self.monitor.total_count, 0)
+        self.assertEqual(self.monitor.count, 0)
+        self.assertEqual(self.monitor.total_count, 0)
 
         self.monitor.ping()
-        self.assertEquals(self.monitor.count, 1)
-        self.assertEquals(self.monitor.total_count, 1)
+        self.assertEqual(self.monitor.count, 1)
+        self.assertEqual(self.monitor.total_count, 1)
 
     def test_reset(self):
-        self.assertEquals(self.monitor.count, 0)
+        self.assertEqual(self.monitor.count, 0)
 
         self.monitor.ping()
         self.monitor.ping()
-        self.assertEquals(self.monitor.count, 2)
-        self.assertEquals(self.monitor.total_count, 2)
+        self.assertEqual(self.monitor.count, 2)
+        self.assertEqual(self.monitor.total_count, 2)
 
         self.monitor.reset()
         self.monitor.ping()
-        self.assertEquals(self.monitor.count, 1)
-        self.assertEquals(self.monitor.total_count, 3)
+        self.assertEqual(self.monitor.count, 1)
+        self.assertEqual(self.monitor.total_count, 3)
 
     def test_log(self):
         for i in range(100):
@@ -169,39 +169,39 @@ class CoverageMonitorTest(ReactorHavingTest):
         If no time has passed and the monitor hasn't received any
         pings it should return 100%.
         """
-        self.assertEquals(self.monitor.percent, 1.0)
+        self.assertEqual(self.monitor.percent, 1.0)
 
     def test_percent(self):
         self.reactor.advance(1)
-        self.assertEquals(self.monitor.percent, 0.0)
+        self.assertEqual(self.monitor.percent, 0.0)
 
         self.monitor.ping()
         self.reactor.advance(1)
-        self.assertEquals(self.monitor.percent, 0.5)
+        self.assertEqual(self.monitor.percent, 0.5)
 
     def test_percent_reset(self):
         self.reactor.advance(1)
-        self.assertEquals(self.monitor.percent, 0.0)
+        self.assertEqual(self.monitor.percent, 0.0)
 
         self.monitor.reset()
         self.monitor.ping()
         self.reactor.advance(1)
-        self.assertEquals(self.monitor.percent, 1.0)
+        self.assertEqual(self.monitor.percent, 1.0)
 
     def test_expected_count(self):
         self.reactor.advance(1)
-        self.assertEquals(self.monitor.expected_count, 1.0)
+        self.assertEqual(self.monitor.expected_count, 1.0)
 
         self.reactor.advance(1)
-        self.assertEquals(self.monitor.expected_count, 2.0)
+        self.assertEqual(self.monitor.expected_count, 2.0)
 
     def test_expected_count_reset(self):
         self.reactor.advance(1)
-        self.assertEquals(self.monitor.expected_count, 1.0)
+        self.assertEqual(self.monitor.expected_count, 1.0)
 
         self.monitor.reset()
         self.reactor.advance(1)
-        self.assertEquals(self.monitor.expected_count, 1.0)
+        self.assertEqual(self.monitor.expected_count, 1.0)
 
     def test_log(self):
         for i in range(100):
@@ -229,13 +229,13 @@ class FrequencyMonitorTest(ReactorHavingTest):
                                         create_time=self.reactor.time)
 
     def test_expected_count(self):
-        self.assertEquals(self.monitor.expected_count, 0)
+        self.assertEqual(self.monitor.expected_count, 0)
 
         self.reactor.advance(99)
-        self.assertEquals(self.monitor.expected_count, 0)
+        self.assertEqual(self.monitor.expected_count, 0)
 
         self.reactor.advance(1)
-        self.assertEquals(self.monitor.expected_count, 1)
+        self.assertEqual(self.monitor.expected_count, 1)
 
     def test_ping(self):
         self.assertFalse(self.monitor.warn())

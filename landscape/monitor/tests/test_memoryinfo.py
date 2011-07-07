@@ -51,10 +51,10 @@ VmallocChunk:   510252 kB
 
         message = plugin.create_message()
         self.assertTrue("type" in message)
-        self.assertEquals(message["type"], "memory-info")
+        self.assertEqual(message["type"], "memory-info")
         self.assertTrue("memory-info" in message)
         memory_info = message["memory-info"]
-        self.assertEquals(len(memory_info), 1)
+        self.assertEqual(len(memory_info), 1)
         self.assertTrue(isinstance(memory_info[0], tuple))
         self.assertTrue(len(memory_info), 3)
         self.assertTrue(isinstance(memory_info[0][0], int))
@@ -75,7 +75,7 @@ VmallocChunk:   510252 kB
         self.reactor.advance(step_size)
 
         message = plugin.create_message()
-        self.assertEquals(message["memory-info"][0], (step_size, 503, 1567))
+        self.assertEqual(message["memory-info"][0], (step_size, 503, 1567))
 
     def test_messaging_flushes(self):
         """
@@ -91,10 +91,10 @@ VmallocChunk:   510252 kB
         self.reactor.advance(self.monitor.step_size)
 
         message = plugin.create_message()
-        self.assertEquals(len(message["memory-info"]), 1)
+        self.assertEqual(len(message["memory-info"]), 1)
 
         message = plugin.create_message()
-        self.assertEquals(len(message["memory-info"]), 0)
+        self.assertEqual(len(message["memory-info"]), 0)
 
     def test_ranges_remain_contiguous_after_flush(self):
         """
@@ -112,8 +112,8 @@ VmallocChunk:   510252 kB
             self.reactor.advance(step_size)
             message = plugin.create_message()
             memory_info = message["memory-info"]
-            self.assertEquals(len(memory_info), 1)
-            self.assertEquals(memory_info[0][0], step_size * i)
+            self.assertEqual(len(memory_info), 1)
+            self.assertEqual(memory_info[0][0], step_size * i)
 
     def test_never_exchange_empty_messages(self):
         """
@@ -128,7 +128,7 @@ VmallocChunk:   510252 kB
                             create_time=self.reactor.time)
         self.monitor.add(plugin)
         self.monitor.exchange()
-        self.assertEquals(len(self.mstore.get_pending_messages()), 0)
+        self.assertEqual(len(self.mstore.get_pending_messages()), 0)
 
     def test_exchange_messages(self):
         """

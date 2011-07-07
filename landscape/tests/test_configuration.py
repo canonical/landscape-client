@@ -778,7 +778,7 @@ bus = session
         setup(config)
         parser = ConfigParser()
         parser.read(filename)
-        self.assertEquals(
+        self.assertEqual(
             {"url": "https://localhost:8080/message-system",
              "bus": "session",
              "computer_title": "rex",
@@ -825,7 +825,7 @@ random_key = random_value
         setup(config)
         parser = ConfigParser()
         parser.read(filename)
-        self.assertEquals(
+        self.assertEqual(
             {"log_level": "debug",
              "registration_password": "shared-secret",
              "url": "https://landscape.canonical.com/message-system",
@@ -878,7 +878,7 @@ registration_password = shared-secret
         setup(config)
         parser = ConfigParser()
         parser.read(filename)
-        self.assertEquals(
+        self.assertEqual(
             {"registration_password": "shared-secret",
              "url": "https://landscape.canonical.com/message-system",
              "http_proxy": "http://environ",
@@ -1089,7 +1089,7 @@ registration_password = shared-secret
         main(["--disable", "-c", self.make_working_config()])
 
     def test_non_root(self):
-        self.mocker.reset() # Forget the thing done in setUp
+        self.mocker.reset()  # Forget the thing done in setUp
         self.mocker.replace("os.getuid")()
         self.mocker.result(1000)
         self.mocker.replay()
@@ -1099,7 +1099,7 @@ registration_password = shared-secret
 
     def test_main_with_help_and_non_root(self):
         """It's possible to call 'landscape-config --help' as normal user."""
-        self.mocker.reset() # Forget the thing done in setUp
+        self.mocker.reset()  # Forget the thing done in setUp
         output = StringIO()
         self.mocker.replace("sys.stdout").write(ANY)
         self.mocker.call(output.write)
@@ -1109,7 +1109,7 @@ registration_password = shared-secret
 
     def test_main_with_help_and_non_root_short(self):
         """It's possible to call 'landscape-config -h' as normal user."""
-        self.mocker.reset() # Forget the thing done in setUp
+        self.mocker.reset()  # Forget the thing done in setUp
         output = StringIO()
         self.mocker.replace("sys.stdout").write(ANY)
         self.mocker.call(output.write)
@@ -1145,12 +1145,12 @@ registration_password = shared-secret
         options.read(config_filename)
 
         self.assertEqual(dict(options.items("client")),
-                          {"computer_title": "New Title",
-                           "account_name": "New Name",
-                           "registration_password": "New Password",
-                           "http_proxy": "http://new.proxy",
-                           "https_proxy": "https://new.proxy",
-                           "url": "http://new.url"})
+                         {"computer_title": "New Title",
+                          "account_name": "New Name",
+                          "registration_password": "New Password",
+                          "http_proxy": "http://new.proxy",
+                          "https_proxy": "https://new.proxy",
+                          "url": "http://new.url"})
 
     def test_import_from_empty_file(self):
         self.mocker.replay()
@@ -1301,7 +1301,7 @@ registration_password = shared-secret
         self.assertEqual(dict(options.items("client")),
                          {"computer_title": "Old Title",
                           "account_name": "Old Name",
-                          "registration_password": "", # <==
+                          "registration_password": "",  # <==
                           "url": "http://old.url"})
 
     def test_import_from_url(self):
@@ -1465,7 +1465,7 @@ registration_password = shared-secret
         config.data_path = data_path
         setup(config)
 
-        self.assertEquals("Hi there!", open(key_filename, "r").read())
+        self.assertEqual("Hi there!", open(key_filename, "r").read())
 
         options = ConfigParser()
         options.read(config_filename)
@@ -1492,7 +1492,7 @@ registration_password = shared-secret
         options = ConfigParser()
         options.read(config_filename)
         self.assertEqual(options.get("client", "ssl_public_key"),
-                        "/some/filename")
+                         "/some/filename")
 
     # We test them individually since they must work individually.
     def test_import_from_url_honors_http_proxy(self):
@@ -1526,9 +1526,9 @@ registration_password = shared-secret
                              "http://proxy",
                              "--import", "https://config.url"])
         except ImportOptionError:
-            pass # The returned content is empty.  We don't really
-                 # care for this test.  Mocker will ensure the tests
-                 # we care about are done.
+            pass  # The returned content is empty.  We don't really
+                  # care for this test.  Mocker will ensure the tests
+                  # we care about are done.
 
 
 class RegisterFunctionTest(LandscapeTest):
@@ -1672,7 +1672,6 @@ class RegisterFunctionTest(LandscapeTest):
                         "contact the server periodically.",
                         error=True)
 
-
         reactor_mock.stop()
 
         # Nothing else is printed!
@@ -1715,7 +1714,6 @@ class RegisterFunctionTest(LandscapeTest):
 
         # After a nice dance the configuration is reloaded.
         config_mock.reload()
-
 
         registration_mock.register()
         self.mocker.passthrough()
