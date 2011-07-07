@@ -32,7 +32,7 @@ class AptSourcesTests(LandscapeTest):
         service = self.broker_service
         service.message_store.set_accepted_types(["operation-result"])
 
-        self.sourceslist.run_process = lambda cmd, args: None
+        self.sourceslist._run_process = lambda cmd, args, *aarg, **kargs: None
 
     def test_comment_sources_list(self):
         """
@@ -173,7 +173,7 @@ class AptSourcesTests(LandscapeTest):
         """
         deferred = Deferred()
 
-        def run_process(command, args):
+        def _run_process(command, args, env={}, path=None, uid=None, gid=None):
             self.assertEqual("/usr/bin/apt-key", command)
             self.assertEqual("add", args[0])
             filename = args[1]
@@ -181,7 +181,7 @@ class AptSourcesTests(LandscapeTest):
             deferred.callback(("ok", "", 0))
             return deferred
 
-        self.sourceslist.run_process = run_process
+        self.sourceslist._run_process = _run_process
 
         self.manager.dispatch_message(
             {"type": "apt-sources-replace", "sources": [],
@@ -197,13 +197,13 @@ class AptSourcesTests(LandscapeTest):
         deferred = Deferred()
         filenames = []
 
-        def run_process(command, args):
+        def _run_process(command, args, env={}, path=None, uid=None, gid=None):
             if not filenames:
                 filenames.append(args[1])
                 deferred.callback(("ok", "", 0))
                 return deferred
 
-        self.sourceslist.run_process = run_process
+        self.sourceslist._run_process = _run_process
 
         self.manager.dispatch_message(
             {"type": "apt-sources-replace", "sources": [],
@@ -221,12 +221,12 @@ class AptSourcesTests(LandscapeTest):
         deferred = Deferred()
         filenames = []
 
-        def run_process(command, args):
+        def _run_process(command, args, env={}, path=None, uid=None, gid=None):
             filenames.append(args[1])
             deferred.callback(("error", "", 1))
             return deferred
 
-        self.sourceslist.run_process = run_process
+        self.sourceslist._run_process = _run_process
 
         self.manager.dispatch_message(
             {"type": "apt-sources-replace", "sources": [],
@@ -243,11 +243,11 @@ class AptSourcesTests(LandscapeTest):
         """
         deferred = Deferred()
 
-        def run_process(command, args):
+        def _run_process(command, args, env={}, path=None, uid=None, gid=None):
             deferred.callback(("nok", "some error", 1))
             return deferred
 
-        self.sourceslist.run_process = run_process
+        self.sourceslist._run_process = _run_process
 
         self.manager.dispatch_message(
             {"type": "apt-sources-replace", "sources": [], "gpg-keys": ["key"],
@@ -268,11 +268,11 @@ class AptSourcesTests(LandscapeTest):
         """
         deferred = Deferred()
 
-        def run_process(command, args):
+        def _run_process(command, args, env={}, path=None, uid=None, gid=None):
             deferred.errback(("nok", "some error", 1))
             return deferred
 
-        self.sourceslist.run_process = run_process
+        self.sourceslist._run_process = _run_process
 
         self.manager.dispatch_message(
             {"type": "apt-sources-replace", "sources": [], "gpg-keys": ["key"],
@@ -293,11 +293,11 @@ class AptSourcesTests(LandscapeTest):
         """
         deferred = Deferred()
 
-        def run_process(command, args):
+        def _run_process(command, args, env={}, path=None, uid=None, gid=None):
             deferred.callback(("nok", "some error", 1))
             return deferred
 
-        self.sourceslist.run_process = run_process
+        self.sourceslist._run_process = _run_process
 
         sources = file(self.sourceslist.SOURCES_LIST, "w")
         sources.write("oki\n\ndoki\n#comment\n")
@@ -322,12 +322,12 @@ class AptSourcesTests(LandscapeTest):
         deferred2 = Deferred()
         deferreds = [deferred1, deferred2]
 
-        def run_process(command, args):
+        def _run_process(command, args, env={}, path=None, uid=None, gid=None):
             if not deferreds:
                 return None
             return deferreds.pop(0)
 
-        self.sourceslist.run_process = run_process
+        self.sourceslist._run_process = _run_process
 
         self.manager.dispatch_message(
             {"type": "apt-sources-replace", "sources": [],
@@ -354,10 +354,10 @@ class AptSourcesTests(LandscapeTest):
         deferred2 = Deferred()
         deferreds = [deferred1, deferred2]
 
-        def run_process(command, args):
+        def _run_process(command, args, env={}, path=None, uid=None, gid=None):
             return deferreds.pop(0)
 
-        self.sourceslist.run_process = run_process
+        self.sourceslist._run_process = _run_process
 
         self.manager.dispatch_message(
             {"type": "apt-sources-replace", "sources": [],
@@ -381,14 +381,14 @@ class AptSourcesTests(LandscapeTest):
         """
         deferred = Deferred()
 
-        def run_process(command, args):
+        def _run_process(command, args, env={}, path=None, uid=None, gid=None):
             self.assertEqual(find_reporter_command(), command)
             self.assertEqual(["--force-smart-update", "--config=%s" %
                               self.manager.config.config], args)
             deferred.callback(("ok", "", 0))
             return deferred
 
-        self.sourceslist.run_process = run_process
+        self.sourceslist._run_process = _run_process
 
         self.manager.dispatch_message(
             {"type": "apt-sources-replace", "sources": [], "gpg-keys": [],
