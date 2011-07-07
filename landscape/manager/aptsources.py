@@ -132,8 +132,10 @@ class AptSources(ManagerPlugin):
                 new_sources.write("#%s" % line)
         new_sources.close()
 
-        os.chmod(path, os.stat(self.SOURCES_LIST).st_mode)
+        original_stat = os.stat(self.SOURCES_LIST)
         shutil.move(path, self.SOURCES_LIST)
+        os.chmod(self.SOURCES_LIST, original_stat.st_mode)
+        os.chown(self.SOURCES_LIST, original_stat.st_uid, original_stat.st_gid)
 
         for filename in glob.glob(os.path.join(self.SOURCES_LIST_D, "*.list")):
             shutil.move(filename, "%s.save" % filename)

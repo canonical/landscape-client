@@ -1,4 +1,5 @@
 import os
+from collections import namedtuple
 
 from twisted.internet.defer import Deferred
 
@@ -63,7 +64,22 @@ class AptSourcesTests(LandscapeTest):
         sources = file(self.sourceslist.SOURCES_LIST, "w")
         sources.write("oki\n\ndoki\n#comment\n # other comment\n")
         sources.close()
+        # change file mode from default to check it's restored
+        os.chmod(self.sourceslist.SOURCES_LIST, 0400)
         sources_stat_orig = os.stat(self.sourceslist.SOURCES_LIST)
+
+        FakeStatResult = namedtuple("FakeStatResult",
+                                    ["st_mode", "st_uid", "st_gid"])
+        fake_stats = FakeStatResult(st_mode=sources_stat_orig.st_mode,
+                                    st_uid=30, st_gid=30)
+        os_stat = self.mocker.replace("os.stat")
+        os_stat(self.sourceslist.SOURCES_LIST)
+        self.mocker.result(fake_stats)
+        self.mocker.count(1, max=10)
+        os_chown = self.mocker.replace("os.chown")
+        os_chown(self.sourceslist.SOURCES_LIST,
+                 fake_stats.st_uid, fake_stats.st_gid)
+        self.mocker.replay()
 
         self.manager.dispatch_message(
             {"type": "apt-sources-replace", "sources": [], "gpg-keys": [],
