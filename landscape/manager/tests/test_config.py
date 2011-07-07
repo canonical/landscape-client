@@ -22,7 +22,7 @@ class ManagerConfigurationTest(LandscapeTest):
         which plugins should be active.
         """
         self.config.load(["--manager-plugins", "ProcessKiller"])
-        self.assertEquals(self.config.plugin_factories, ["ProcessKiller"])
+        self.assertEqual(self.config.plugin_factories, ["ProcessKiller"])
 
     def test_include_script_execution(self):
         """
@@ -30,15 +30,15 @@ class ManagerConfigurationTest(LandscapeTest):
         command line option.
         """
         self.config.load(["--include-manager-plugins", "ScriptExecution"])
-        self.assertEquals(len(self.config.plugin_factories),
-                          len(ALL_PLUGINS) + 1)
+        self.assertEqual(len(self.config.plugin_factories),
+                         len(ALL_PLUGINS) + 1)
         self.assertTrue('ScriptExecution' in self.config.plugin_factories)
 
     def test_get_allowed_script_users(self):
         """
         If no script users are specified, the default is 'nobody'.
         """
-        self.assertEquals(self.config.get_allowed_script_users(), ["nobody"])
+        self.assertEqual(self.config.get_allowed_script_users(), ["nobody"])
 
     def test_get_allowed_script_users_all(self):
         """
@@ -54,5 +54,5 @@ class ManagerConfigurationTest(LandscapeTest):
         as.
         """
         self.config.load(["--script-users", "foo, bar,baz"])
-        self.assertEquals(self.config.get_allowed_script_users(),
-                          ["foo", "bar", "baz"])
+        self.assertEqual(self.config.get_allowed_script_users(),
+                         ["foo", "bar", "baz"])

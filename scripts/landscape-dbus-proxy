@@ -33,7 +33,7 @@ def array_to_string(array):
 
 
 class BrokerDBusObject(Object):
-    """A DBus-published object proxing L{RemoteBroker.send_message}.
+    """A DBus-published object proxying L{RemoteBroker.send_message}.
 
     It is used when upgrading from a DBus-based version of the Landscape client
     to the newer AMP-based one, for letting the old package-changer process

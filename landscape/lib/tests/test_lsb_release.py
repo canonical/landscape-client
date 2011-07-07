@@ -16,11 +16,11 @@ class LsbReleaseTest(LandscapeTest):
                                              "DISTRIB_DESCRIPTION="
                                              "\"Ubuntu 6.06.1 LTS\"\n")
 
-        self.assertEquals(parse_lsb_release(lsb_release_filename),
-                          {"distributor-id": "Ubuntu",
-                           "description": "Ubuntu 6.06.1 LTS",
-                           "release": "6.06",
-                           "code-name": "dapper"})
+        self.assertEqual(parse_lsb_release(lsb_release_filename),
+                         {"distributor-id": "Ubuntu",
+                          "description": "Ubuntu 6.06.1 LTS",
+                          "release": "6.06",
+                          "code-name": "dapper"})
 
     def test_parse_lsb_release_with_missing_or_extra_fields(self):
         """
@@ -29,5 +29,5 @@ class LsbReleaseTest(LandscapeTest):
         """
         lsb_release_filename = self.makeFile("DISTRIB_ID=Ubuntu\n"
                                              "FOO=Bar\n")
-        self.assertEquals(parse_lsb_release(lsb_release_filename),
-                          {"distributor-id": "Ubuntu"})
+        self.assertEqual(parse_lsb_release(lsb_release_filename),
+                         {"distributor-id": "Ubuntu"})

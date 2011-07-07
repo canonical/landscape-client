@@ -45,7 +45,7 @@ class DBusBPickleExtensionsTest(unittest.TestCase):
         post = set(bpickle.dumps_table.iteritems())
         self.assertTrue(pre.issubset(post))
         self.assertTrue(object in bpickle.dumps_table)
-        self.assertTrue(len(original)+1, len(bpickle.dumps_table))
+        self.assertTrue(len(original) + 1, len(bpickle.dumps_table))
 
     def test_dumps_utf8string(self):
         """
@@ -56,9 +56,9 @@ class DBusBPickleExtensionsTest(unittest.TestCase):
             from dbus.types import UTF8String
 
             value = UTF8String("")
-            self.assertEquals(dumps_utf8string(value), "u0:")
+            self.assertEqual(dumps_utf8string(value), "u0:")
             value = UTF8String("Charlie!")
-            self.assertEquals(dumps_utf8string(value), "u8:Charlie!")
+            self.assertEqual(dumps_utf8string(value), "u8:Charlie!")
         except ImportError:
             pass
 

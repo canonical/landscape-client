@@ -7,4 +7,4 @@ from landscape.upgraders import package
 class TestPackageUpgraders(LandscapeTest):
 
     def test_package_upgrade_manager(self):
-        self.assertEquals(type(package.upgrade_manager), SQLiteUpgradeManager)
+        self.assertEqual(type(package.upgrade_manager), SQLiteUpgradeManager)

@@ -22,5 +22,5 @@ class LoadTest(LandscapeTest):
 
         self.load.run()
 
-        self.assertEquals(self.sysinfo.get_headers(),
-                          [("System load", "1.5")])
+        self.assertEqual(self.sysinfo.get_headers(),
+                         [("System load", "1.5")])

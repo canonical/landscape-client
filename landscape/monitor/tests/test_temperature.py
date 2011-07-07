@@ -27,7 +27,7 @@ class TemperatureTestWithSampleData(ThermalZoneTest):
         thermal_zone_path = tempfile.mkdtemp()
         os.rmdir(thermal_zone_path)
         plugin = Temperature(thermal_zone_path=thermal_zone_path)
-        self.assertEquals(plugin._thermal_zones, [])
+        self.assertEqual(plugin._thermal_zones, [])
 
     def test_no_messages_without_thermal_zones(self):
         """
@@ -38,7 +38,7 @@ class TemperatureTestWithSampleData(ThermalZoneTest):
         plugin = Temperature(interval=1, thermal_zone_path=thermal_zone_path)
         self.monitor.add(plugin)
         self.reactor.advance(self.monitor.step_size)
-        self.assertEquals(len(self.mstore.get_pending_messages()), 0)
+        self.assertEqual(len(self.mstore.get_pending_messages()), 0)
 
     def test_disjointed_thermal_zone_temperature_changes(self):
         """
@@ -58,21 +58,21 @@ class TemperatureTestWithSampleData(ThermalZoneTest):
         self.reactor.advance(step_size)
 
         messages = list(plugin.create_messages())
-        self.assertEquals(len(messages), 2)
+        self.assertEqual(len(messages), 2)
 
-        self.assertEquals(messages[0]["thermal-zone"], "ZONE1")
-        self.assertEquals(len(messages[0]["temperatures"]), 2)
-        self.assertEquals(messages[0]["temperatures"][0],
-                          (step_size, 50.0))
-        self.assertEquals(messages[0]["temperatures"][1],
-                          (step_size * 2, 50.0))
+        self.assertEqual(messages[0]["thermal-zone"], "ZONE1")
+        self.assertEqual(len(messages[0]["temperatures"]), 2)
+        self.assertEqual(messages[0]["temperatures"][0],
+                         (step_size, 50.0))
+        self.assertEqual(messages[0]["temperatures"][1],
+                         (step_size * 2, 50.0))
 
-        self.assertEquals(messages[1]["thermal-zone"], "ZONE2")
-        self.assertEquals(len(messages[1]["temperatures"]), 2)
-        self.assertEquals(messages[1]["temperatures"][0],
-                          (step_size, 50.0))
-        self.assertEquals(messages[1]["temperatures"][1],
-                          (step_size * 2, 56.0))
+        self.assertEqual(messages[1]["thermal-zone"], "ZONE2")
+        self.assertEqual(len(messages[1]["temperatures"]), 2)
+        self.assertEqual(messages[1]["temperatures"][0],
+                         (step_size, 50.0))
+        self.assertEqual(messages[1]["temperatures"][1],
+                         (step_size * 2, 56.0))
 
     def test_messaging_flushes(self):
         """
@@ -87,10 +87,10 @@ class TemperatureTestWithSampleData(ThermalZoneTest):
         self.reactor.advance(self.monitor.step_size)
 
         messages = plugin.create_messages()
-        self.assertEquals(len(messages), 1)
+        self.assertEqual(len(messages), 1)
 
         messages = plugin.create_messages()
-        self.assertEquals(len(messages), 0)
+        self.assertEqual(len(messages), 0)
 
     def test_never_exchange_empty_messages(self):
         """
@@ -102,7 +102,7 @@ class TemperatureTestWithSampleData(ThermalZoneTest):
         plugin = Temperature(thermal_zone_path=self.thermal_zone_path,
                              create_time=self.reactor.time)
         self.monitor.add(plugin)
-        self.assertEquals(len(self.mstore.get_pending_messages()), 0)
+        self.assertEqual(len(self.mstore.get_pending_messages()), 0)
 
     def test_exchange_messages(self):
         """

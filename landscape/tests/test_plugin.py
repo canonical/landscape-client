@@ -42,14 +42,14 @@ class PluginTest(LandscapeTest):
     def test_register_plugin(self):
         sample_plugin = SamplePlugin()
         self.registry.add(sample_plugin)
-        self.assertEquals(sample_plugin.registered, [self.registry])
+        self.assertEqual(sample_plugin.registered, [self.registry])
 
     def test_get_plugins(self):
         plugin1 = SamplePlugin()
         plugin2 = SamplePlugin()
         self.registry.add(plugin1)
         self.registry.add(plugin2)
-        self.assertEquals(self.registry.get_plugins()[-2:], [plugin1, plugin2])
+        self.assertEqual(self.registry.get_plugins()[-2:], [plugin1, plugin2])
 
     def test_get_named_plugin(self):
         """
@@ -58,4 +58,4 @@ class PluginTest(LandscapeTest):
         """
         plugin = SamplePlugin()
         self.registry.add(plugin)
-        self.assertEquals(self.registry.get_plugin("sample"), plugin)
+        self.assertEqual(self.registry.get_plugin("sample"), plugin)

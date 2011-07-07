@@ -20,7 +20,7 @@ class ProcessorInfoTest(LandscapeTest):
     def test_read_proc_cpuinfo(self):
         """Ensure the plugin can parse /proc/cpuinfo."""
         message = ProcessorInfo().create_message()
-        self.assertEquals(message["type"], "processor-info")
+        self.assertEqual(message["type"], "processor-info")
         self.assertTrue(message["processors"] > 0)
 
         for processor in message["processors"]:
@@ -35,8 +35,9 @@ class ProcessorInfoTest(LandscapeTest):
         remote_broker_mock.send_message(ANY, urgent=True)
         self.mocker.replay()
 
-        self.reactor.fire(("message-type-acceptance-changed", "processor-info"),
-                          True)
+        self.reactor.fire(
+            ("message-type-acceptance-changed", "processor-info"),
+            True)
 
 
 class ResynchTest(LandscapeTest):
@@ -55,7 +56,7 @@ class ResynchTest(LandscapeTest):
         self.reactor.fire("resynchronize")
         plugin.run()
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 2)
+        self.assertEqual(len(messages), 2)
 
 
 class PowerPCMessageTest(LandscapeTest):
@@ -108,20 +109,20 @@ pmac-generation : NewWorld
         plugin = ProcessorInfo(machine_name="ppc64",
                                source_filename=filename)
         message = plugin.create_message()
-        self.assertEquals(message["type"], "processor-info")
+        self.assertEqual(message["type"], "processor-info")
         self.assertTrue(len(message["processors"]) == 2)
 
         processor_0 = message["processors"][0]
-        self.assertEquals(len(processor_0), 2)
-        self.assertEquals(processor_0["processor-id"], 0)
-        self.assertEquals(processor_0["model"],
-                          "PPC970FX, altivec supported")
+        self.assertEqual(len(processor_0), 2)
+        self.assertEqual(processor_0["processor-id"], 0)
+        self.assertEqual(processor_0["model"],
+                         "PPC970FX, altivec supported")
 
         processor_1 = message["processors"][1]
-        self.assertEquals(len(processor_1), 2)
-        self.assertEquals(processor_1["processor-id"], 1)
-        self.assertEquals(processor_1["model"],
-                          "PPC970FX, altivec supported")
+        self.assertEqual(len(processor_1), 2)
+        self.assertEqual(processor_1["processor-id"], 1)
+        self.assertEqual(processor_1["model"],
+                         "PPC970FX, altivec supported")
 
     def test_ppc_g5_cpu_info_same_as_last_known_cpu_info(self):
         """Test that one message is queued for duplicate G5 CPU info."""
@@ -133,23 +134,23 @@ pmac-generation : NewWorld
         plugin.run()
 
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 1)
+        self.assertEqual(len(messages), 1)
 
         message = messages[0]
-        self.assertEquals(message["type"], "processor-info")
-        self.assertEquals(len(message["processors"]), 2)
+        self.assertEqual(message["type"], "processor-info")
+        self.assertEqual(len(message["processors"]), 2)
 
         processor_0 = message["processors"][0]
-        self.assertEquals(len(processor_0), 2)
-        self.assertEquals(processor_0["model"],
-                          "PPC970FX, altivec supported")
-        self.assertEquals(processor_0["processor-id"], 0)
+        self.assertEqual(len(processor_0), 2)
+        self.assertEqual(processor_0["model"],
+                         "PPC970FX, altivec supported")
+        self.assertEqual(processor_0["processor-id"], 0)
 
         processor_1 = message["processors"][1]
-        self.assertEquals(len(processor_1), 2)
-        self.assertEquals(processor_1["model"],
-                          "PPC970FX, altivec supported")
-        self.assertEquals(processor_1["processor-id"], 1)
+        self.assertEqual(len(processor_1), 2)
+        self.assertEqual(processor_1["model"],
+                         "PPC970FX, altivec supported")
+        self.assertEqual(processor_1["processor-id"], 1)
 
     def test_read_sample_ppc_g4_data(self):
         """Ensure the plugin can parse /proc/cpuinfo from a G4 PowerBook."""
@@ -157,13 +158,13 @@ pmac-generation : NewWorld
         plugin = ProcessorInfo(machine_name="ppc",
                                source_filename=filename)
         message = plugin.create_message()
-        self.assertEquals(message["type"], "processor-info")
+        self.assertEqual(message["type"], "processor-info")
         self.assertTrue(len(message["processors"]) == 1)
 
         processor = message["processors"][0]
-        self.assertEquals(len(processor), 2)
-        self.assertEquals(processor["processor-id"], 0)
-        self.assertEquals(processor["model"], "7447A, altivec supported")
+        self.assertEqual(len(processor), 2)
+        self.assertEqual(processor["processor-id"], 0)
+        self.assertEqual(processor["model"], "7447A, altivec supported")
 
 
 class ARMMessageTest(LandscapeTest):
@@ -250,14 +251,14 @@ Processor       : ARMv7 Processor rev 1 (v7l)
         plugin = ProcessorInfo(machine_name="armv6l",
                                source_filename=filename)
         message = plugin.create_message()
-        self.assertEquals(message["type"], "processor-info")
+        self.assertEqual(message["type"], "processor-info")
         self.assertTrue(len(message["processors"]) == 1)
 
         processor_0 = message["processors"][0]
-        self.assertEquals(len(processor_0), 2)
-        self.assertEquals(processor_0["model"],
-                          "ARMv6-compatible processor rev 2 (v6l)")
-        self.assertEquals(processor_0["processor-id"], 0)
+        self.assertEqual(len(processor_0), 2)
+        self.assertEqual(processor_0["model"],
+                         "ARMv6-compatible processor rev 2 (v6l)")
+        self.assertEqual(processor_0["processor-id"], 0)
 
     def test_read_sample_armv7_data(self):
         """Ensure the plugin can parse /proc/cpuinfo from a sample ARMv7."""
@@ -265,15 +266,15 @@ Processor       : ARMv7 Processor rev 1 (v7l)
         plugin = ProcessorInfo(machine_name="armv7l",
                                source_filename=filename)
         message = plugin.create_message()
-        self.assertEquals(message["type"], "processor-info")
+        self.assertEqual(message["type"], "processor-info")
         self.assertTrue(len(message["processors"]) == 1)
 
         processor_0 = message["processors"][0]
-        self.assertEquals(len(processor_0), 3)
-        self.assertEquals(processor_0["model"],
-                          "ARMv7 Processor rev 1 (v7l)")
-        self.assertEquals(processor_0["processor-id"], 0)
-        self.assertEquals(processor_0["cache-size"], 768)
+        self.assertEqual(len(processor_0), 3)
+        self.assertEqual(processor_0["model"],
+                         "ARMv7 Processor rev 1 (v7l)")
+        self.assertEqual(processor_0["processor-id"], 0)
+        self.assertEqual(processor_0["cache-size"], 768)
 
     def test_read_sample_armv7_reverse_data(self):
         """Ensure the plugin can parse a reversed sample ARMv7 /proc/cpuinfo"""
@@ -281,15 +282,16 @@ Processor       : ARMv7 Processor rev 1 (v7l)
         plugin = ProcessorInfo(machine_name="armv7l",
                                source_filename=filename)
         message = plugin.create_message()
-        self.assertEquals(message["type"], "processor-info")
+        self.assertEqual(message["type"], "processor-info")
         self.assertTrue(len(message["processors"]) == 1)
 
         processor_0 = message["processors"][0]
-        self.assertEquals(len(processor_0), 3)
-        self.assertEquals(processor_0["model"],
-                          "ARMv7 Processor rev 1 (v7l)")
-        self.assertEquals(processor_0["processor-id"], 0)
-        self.assertEquals(processor_0["cache-size"], 768)
+        self.assertEqual(len(processor_0), 3)
+        self.assertEqual(processor_0["model"],
+                         "ARMv7 Processor rev 1 (v7l)")
+        self.assertEqual(processor_0["processor-id"], 0)
+        self.assertEqual(processor_0["cache-size"], 768)
+
 
 class SparcMessageTest(LandscapeTest):
     """Tests for sparc-specific message builder."""
@@ -321,20 +323,20 @@ CPU1:           online
         plugin = ProcessorInfo(machine_name="sparc64",
                                source_filename=filename)
         message = plugin.create_message()
-        self.assertEquals(message["type"], "processor-info")
+        self.assertEqual(message["type"], "processor-info")
         self.assertTrue(len(message["processors"]) == 2)
 
         processor_0 = message["processors"][0]
-        self.assertEquals(len(processor_0), 2)
-        self.assertEquals(processor_0["model"],
-                          "TI UltraSparc IIIi (Jalapeno)")
-        self.assertEquals(processor_0["processor-id"], 0)
+        self.assertEqual(len(processor_0), 2)
+        self.assertEqual(processor_0["model"],
+                         "TI UltraSparc IIIi (Jalapeno)")
+        self.assertEqual(processor_0["processor-id"], 0)
 
         processor_1 = message["processors"][1]
-        self.assertEquals(len(processor_1), 2)
-        self.assertEquals(processor_1["model"],
-                          "TI UltraSparc IIIi (Jalapeno)")
-        self.assertEquals(processor_1["processor-id"], 1)
+        self.assertEqual(len(processor_1), 2)
+        self.assertEqual(processor_1["model"],
+                         "TI UltraSparc IIIi (Jalapeno)")
+        self.assertEqual(processor_1["processor-id"], 1)
 
 
 class X86MessageTest(LandscapeTest):
@@ -417,24 +419,24 @@ bogomips        : 1198.25
         plugin = ProcessorInfo(machine_name="x86_64",
                                source_filename=filename)
         message = plugin.create_message()
-        self.assertEquals(message["type"], "processor-info")
+        self.assertEqual(message["type"], "processor-info")
         self.assertTrue(len(message["processors"]) == 2)
 
         processor_0 = message["processors"][0]
-        self.assertEquals(len(processor_0), 4)
-        self.assertEquals(processor_0["vendor"], "AuthenticAMD")
-        self.assertEquals(processor_0["model"],
-                          "AMD Opteron(tm) Processor 250")
-        self.assertEquals(processor_0["cache-size"], 1024)
-        self.assertEquals(processor_0["processor-id"], 0)
+        self.assertEqual(len(processor_0), 4)
+        self.assertEqual(processor_0["vendor"], "AuthenticAMD")
+        self.assertEqual(processor_0["model"],
+                         "AMD Opteron(tm) Processor 250")
+        self.assertEqual(processor_0["cache-size"], 1024)
+        self.assertEqual(processor_0["processor-id"], 0)
 
         processor_1 = message["processors"][1]
-        self.assertEquals(len(processor_1), 4)
-        self.assertEquals(processor_1["vendor"], "AuthenticAMD")
-        self.assertEquals(processor_1["model"],
-                          "AMD Opteron(tm) Processor 250")
-        self.assertEquals(processor_1["cache-size"], 1024)
-        self.assertEquals(processor_1["processor-id"], 1)
+        self.assertEqual(len(processor_1), 4)
+        self.assertEqual(processor_1["vendor"], "AuthenticAMD")
+        self.assertEqual(processor_1["model"],
+                         "AMD Opteron(tm) Processor 250")
+        self.assertEqual(processor_1["cache-size"], 1024)
+        self.assertEqual(processor_1["processor-id"], 1)
 
     def test_plugin_manager(self):
         """Test plugin manager integration."""
@@ -461,16 +463,16 @@ bogomips        : 1198.25
         plugin = ProcessorInfo(machine_name="i686",
                                source_filename=filename)
         message = plugin.create_message()
-        self.assertEquals(message["type"], "processor-info")
+        self.assertEqual(message["type"], "processor-info")
         self.assertTrue(len(message["processors"]) == 1)
 
         processor = message["processors"][0]
-        self.assertEquals(len(processor), 4)
-        self.assertEquals(processor["vendor"], "GenuineIntel")
-        self.assertEquals(processor["model"],
-                          "Intel(R) Pentium(R) M processor 1.50GHz")
-        self.assertEquals(processor["cache-size"], 2048)
-        self.assertEquals(processor["processor-id"], 0)
+        self.assertEqual(len(processor), 4)
+        self.assertEqual(processor["vendor"], "GenuineIntel")
+        self.assertEqual(processor["model"],
+                         "Intel(R) Pentium(R) M processor 1.50GHz")
+        self.assertEqual(processor["cache-size"], 2048)
+        self.assertEqual(processor["processor-id"], 0)
 
     def test_pentium_m_cpu_info_same_as_last_known_cpu_info(self):
         """Test that one message is queued for duplicate Pentium-M CPU info."""
@@ -484,19 +486,19 @@ bogomips        : 1198.25
         self.reactor.run()
 
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 1)
+        self.assertEqual(len(messages), 1)
 
         message = messages[0]
-        self.assertEquals(message["type"], "processor-info")
-        self.assertEquals(len(message["processors"]), 1)
+        self.assertEqual(message["type"], "processor-info")
+        self.assertEqual(len(message["processors"]), 1)
 
         processor = message["processors"][0]
-        self.assertEquals(len(processor), 4)
-        self.assertEquals(processor["vendor"], "GenuineIntel")
-        self.assertEquals(processor["model"],
-                          "Intel(R) Pentium(R) M processor 1.50GHz")
-        self.assertEquals(processor["cache-size"], 2048)
-        self.assertEquals(processor["processor-id"], 0)
+        self.assertEqual(len(processor), 4)
+        self.assertEqual(processor["vendor"], "GenuineIntel")
+        self.assertEqual(processor["model"],
+                         "Intel(R) Pentium(R) M processor 1.50GHz")
+        self.assertEqual(processor["cache-size"], 2048)
+        self.assertEqual(processor["processor-id"], 0)
 
     def test_unchanging_data(self):
         filename = self.makeFile(self.UP_PENTIUM_M)
@@ -505,7 +507,7 @@ bogomips        : 1198.25
         self.monitor.add(plugin)
         plugin.run()
         plugin.run()
-        self.assertEquals(len(self.mstore.get_pending_messages()), 1)
+        self.assertEqual(len(self.mstore.get_pending_messages()), 1)
 
     def test_changing_data(self):
         filename = self.makeFile(self.UP_PENTIUM_M)
@@ -516,7 +518,7 @@ bogomips        : 1198.25
         self.makeFile(self.SMP_OPTERON, path=filename)
         plugin.run()
 
-        self.assertEquals(len(self.mstore.get_pending_messages()), 2)
+        self.assertEqual(len(self.mstore.get_pending_messages()), 2)
 
     def test_no_message_if_not_accepted(self):
         """

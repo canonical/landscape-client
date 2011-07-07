@@ -5,7 +5,7 @@ from landscape.lib.fetch import fetch_async
 from landscape.service import LandscapeService, run_landscape_service
 from landscape.broker.registration import RegistrationHandler, Identity
 from landscape.broker.config import BrokerConfiguration
-from landscape.broker.transport import HTTPTransport
+from landscape.broker.transport import HTTPTransport, PayloadRecorder
 from landscape.broker.exchange import MessageExchange
 from landscape.broker.exchangestore import ExchangeStore
 from landscape.broker.ping import Pinger
@@ -48,8 +48,13 @@ class BrokerService(LandscapeService):
         self.persist_filename = os.path.join(
             config.data_path, "%s.bpickle" % (self.service_name,))
         super(BrokerService, self).__init__(config)
-        self.transport = self.transport_factory(config.url,
-                                                config.ssl_public_key)
+
+        if config.record is not None:
+            self.payload_recorder = PayloadRecorder(config.record_directory)
+        else:
+            self.payload_recorder = None
+        self.transport = self.transport_factory(
+            config.url, config.ssl_public_key, self.payload_recorder)
         self.message_store = get_default_message_store(
             self.persist, config.message_store_path)
         self.identity = Identity(self.config, self.persist)

@@ -11,7 +11,7 @@ class ProcessInfoTest(LandscapeTest):
         """
         We use os.listdir("/proc") to get the list of active processes, if a
         process ends before we attempt to read the process' information, then
-        this should not trigger an error. 
+        this should not trigger an error.
         """
         listdir_mock = self.mocker.replace("os.listdir")
         listdir_mock("/proc")
@@ -48,7 +48,7 @@ class ProcessInfoTest(LandscapeTest):
 
         process_info = ProcessInformation("/proc")
         processes = list(process_info.get_all_process_info())
-        self.assertEquals(processes, [])
+        self.assertEqual(processes, [])
         self.assertTrue(fakefile1.closed)
         self.assertTrue(fakefile2.closed)
 
@@ -74,7 +74,7 @@ class CalculatePCPUTest(unittest.TestCase):
     """
 
     def test_calculate_pcpu_real_data(self):
-        self.assertEquals(
+        self.assertEqual(
             calculate_pcpu(51286, 5000, 19000.07, 9281.0, 100), 3.0)
 
     def test_calculate_pcpu(self):
@@ -84,8 +84,8 @@ class CalculatePCPUTest(unittest.TestCase):
 
         This should be cpu utilisation of 20%
         """
-        self.assertEquals(calculate_pcpu(8000, 2000, 1000, 50000, 100),
-                          20.0)
+        self.assertEqual(calculate_pcpu(8000, 2000, 1000, 50000, 100),
+                         20.0)
 
     def test_calculate_pcpu_capped(self):
         """
@@ -95,12 +95,12 @@ class CalculatePCPUTest(unittest.TestCase):
         This should be cpu utilisation of 200% but capped at 99% CPU
         utilisation.
         """
-        self.assertEquals(calculate_pcpu(98000, 2000, 1000, 50000, 100),
-                          99.0)
+        self.assertEqual(calculate_pcpu(98000, 2000, 1000, 50000, 100),
+                         99.0)
 
     def test_calculate_pcpu_floored(self):
         """
         This calculates the pcpu based on 1 jiffies allocated to a process
         over 80 jiffies this should be negative, but floored to 0.0.
         """
-        self.assertEquals(calculate_pcpu(1, 0, 50, 800, 10), 0.0)
+        self.assertEqual(calculate_pcpu(1, 0, 50, 800, 10), 0.0)

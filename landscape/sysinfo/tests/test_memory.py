@@ -35,7 +35,6 @@ VmallocChunk:    86764 kB
 """
 
 
-
 class MemoryTest(LandscapeTest):
 
     def setUp(self):
@@ -49,6 +48,6 @@ class MemoryTest(LandscapeTest):
 
     def test_run_adds_header(self):
         self.memory.run()
-        self.assertEquals(self.sysinfo.get_headers(),
-                          [("Memory usage", "34%"),
-                           ("Swap usage", "39%")])
+        self.assertEqual(self.sysinfo.get_headers(),
+                         [("Memory usage", "34%"),
+                          ("Swap usage", "39%")])

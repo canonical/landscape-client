@@ -43,23 +43,23 @@ class DiskUtilitiesTest(LandscapeTest):
     def test_get_filesystem_for_path(self):
         self.set_mount_points(["/"])
         info = get_filesystem_for_path("/", self.mount_file, self.statvfs)
-        self.assertEquals(info["mount-point"], "/")
+        self.assertEqual(info["mount-point"], "/")
 
     def test_get_filesystem_subpath(self):
         self.set_mount_points(["/"])
         self.stat_results["/"] = (4096, 0, 1000, 500, 0, 0, 0, 0, 0)
         info = get_filesystem_for_path("/home", self.mount_file, self.statvfs)
-        self.assertEquals(info["mount-point"], "/")
+        self.assertEqual(info["mount-point"], "/")
 
     def test_get_filesystem_subpath_closest(self):
         self.set_mount_points(["/", "/home"])
         info = get_filesystem_for_path("/home", self.mount_file, self.statvfs)
-        self.assertEquals(info["mount-point"], "/home")
+        self.assertEqual(info["mount-point"], "/home")
 
     def test_get_filesystem_subpath_not_stupid(self):
         self.set_mount_points(["/", "/ho"])
         info = get_filesystem_for_path("/home", self.mount_file, self.statvfs)
-        self.assertEquals(info["mount-point"], "/")
+        self.assertEqual(info["mount-point"], "/")
 
     def test_symlink_home(self):
         symlink_path = self.makeFile()
@@ -68,7 +68,7 @@ class DiskUtilitiesTest(LandscapeTest):
         self.set_mount_points(["/", "/foo"])
         info = get_filesystem_for_path(symlink_path,
                                        self.mount_file, self.statvfs)
-        self.assertEquals(info["mount-point"], "/foo")
+        self.assertEqual(info["mount-point"], "/foo")
 
     def test_whitelist(self):
         self.set_mount_points(["/"])
