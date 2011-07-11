@@ -192,6 +192,9 @@ def get_fqdn():
         fqdn = socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET,
                                   socket.SOCK_DGRAM, socket.IPPROTO_IP,
                                   socket.AI_CANONNAME)[0][3]
+        if "localhost" in fqdn:
+            # Another fallback
+            fqdn = socket.gethostname()
     return fqdn
 
 
