@@ -111,6 +111,9 @@ class MessageExchange(object):
             self.schedule_exchange(urgent=True)
         return message_id
 
+    def send_at(self, payload, offset):
+        self._exchange_id = self._reactor.call_later(offset, self.exchange)
+
     def start(self):
         """Start scheduling exchanges. The first one will be urgent."""
         self.schedule_exchange(urgent=True)
