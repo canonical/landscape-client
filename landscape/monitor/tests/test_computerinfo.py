@@ -54,9 +54,9 @@ VmallocChunk:   107432 kB
         self.monitor.add(plugin)
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 1)
-        self.assertEquals(messages[0]["type"], "computer-info")
-        self.assertEquals(messages[0]["hostname"], "ooga.local")
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(messages[0]["type"], "computer-info")
+        self.assertEqual(messages[0]["hostname"], "ooga.local")
 
     def test_get_real_hostname(self):
         self.mstore.set_accepted_types(["computer-info"])
@@ -64,8 +64,8 @@ VmallocChunk:   107432 kB
         self.monitor.add(plugin)
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 1)
-        self.assertEquals(messages[0]["type"], "computer-info")
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(messages[0]["type"], "computer-info")
         self.assertNotEquals(len(messages[0]["hostname"]), 0)
         self.assertTrue(re.search("\w", messages[0]["hostname"]))
 
@@ -75,10 +75,10 @@ VmallocChunk:   107432 kB
         self.monitor.add(plugin)
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 1)
+        self.assertEqual(len(messages), 1)
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 1)
+        self.assertEqual(len(messages), 1)
 
     def test_report_changed_hostnames(self):
 
@@ -94,13 +94,13 @@ VmallocChunk:   107432 kB
 
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 1)
-        self.assertEquals(messages[0]["hostname"], "ooga")
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(messages[0]["hostname"], "ooga")
 
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 2)
-        self.assertEquals(messages[1]["hostname"], "wubble")
+        self.assertEqual(len(messages), 2)
+        self.assertEqual(messages[1]["hostname"], "wubble")
 
     def test_get_total_memory(self):
         self.mstore.set_accepted_types(["computer-info"])
@@ -110,9 +110,9 @@ VmallocChunk:   107432 kB
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
         message = messages[0]
-        self.assertEquals(message["type"], "computer-info")
-        self.assertEquals(message["total-memory"], 1510)
-        self.assertEquals(message["total-swap"], 1584)
+        self.assertEqual(message["type"], "computer-info")
+        self.assertEqual(message["total-memory"], 1510)
+        self.assertEqual(message["total-swap"], 1584)
 
     def test_get_real_total_memory(self):
         self.mstore.set_accepted_types(["computer-info"])
@@ -121,7 +121,7 @@ VmallocChunk:   107432 kB
         self.monitor.add(plugin)
         plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
-        self.assertEquals(message["type"], "computer-info")
+        self.assertEqual(message["type"], "computer-info")
         self.assertTrue(isinstance(message["total-memory"], int))
         self.assertTrue(isinstance(message["total-swap"], int))
 
@@ -133,13 +133,13 @@ VmallocChunk:   107432 kB
         plugin._get_memory_info = lambda: (1510, 1584)
         plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
-        self.assertEquals(message["total-memory"], 1510)
+        self.assertEqual(message["total-memory"], 1510)
         self.assertTrue("total-swap" in message)
 
         plugin._get_memory_info = lambda: (2048, 1584)
         plugin.exchange()
         message = self.mstore.get_pending_messages()[1]
-        self.assertEquals(message["total-memory"], 2048)
+        self.assertEqual(message["total-memory"], 2048)
         self.assertTrue("total-swap" not in message)
 
     def test_wb_report_changed_total_swap(self):
@@ -150,13 +150,13 @@ VmallocChunk:   107432 kB
         plugin._get_memory_info = lambda: (1510, 1584)
         plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
-        self.assertEquals(message["total-swap"], 1584)
+        self.assertEqual(message["total-swap"], 1584)
         self.assertTrue("total-memory" in message)
 
         plugin._get_memory_info = lambda: (1510, 2048)
         plugin.exchange()
         message = self.mstore.get_pending_messages()[1]
-        self.assertEquals(message["total-swap"], 2048)
+        self.assertEqual(message["total-swap"], 2048)
         self.assertTrue("total-memory" not in message)
 
     def test_get_distribution(self):
@@ -171,7 +171,7 @@ VmallocChunk:   107432 kB
 
         plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
-        self.assertEquals(message["type"], "distribution-info")
+        self.assertEqual(message["type"], "distribution-info")
         self.assertTrue("distributor-id" in message)
         self.assertTrue("description" in message)
         self.assertTrue("release" in message)
@@ -188,11 +188,11 @@ VmallocChunk:   107432 kB
 
         plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
-        self.assertEquals(message["type"], "distribution-info")
-        self.assertEquals(message["distributor-id"], "Ubuntu")
-        self.assertEquals(message["description"], "Ubuntu 6.06.1 LTS")
-        self.assertEquals(message["release"], "6.06")
-        self.assertEquals(message["code-name"], "dapper")
+        self.assertEqual(message["type"], "distribution-info")
+        self.assertEqual(message["distributor-id"], "Ubuntu")
+        self.assertEqual(message["description"], "Ubuntu 6.06.1 LTS")
+        self.assertEqual(message["release"], "6.06")
+        self.assertEqual(message["code-name"], "dapper")
 
     def test_report_once(self):
         """
@@ -205,12 +205,12 @@ VmallocChunk:   107432 kB
 
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 1)
+        self.assertEqual(len(messages), 1)
         self.assertTrue(messages[0]["type"], "distribution-info")
 
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 1)
+        self.assertEqual(len(messages), 1)
 
     def test_wb_report_changed_distribution(self):
         """
@@ -223,11 +223,11 @@ VmallocChunk:   107432 kB
 
         plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
-        self.assertEquals(message["type"], "distribution-info")
-        self.assertEquals(message["distributor-id"], "Ubuntu")
-        self.assertEquals(message["description"], "Ubuntu 6.06.1 LTS")
-        self.assertEquals(message["release"], "6.06")
-        self.assertEquals(message["code-name"], "dapper")
+        self.assertEqual(message["type"], "distribution-info")
+        self.assertEqual(message["distributor-id"], "Ubuntu")
+        self.assertEqual(message["description"], "Ubuntu 6.06.1 LTS")
+        self.assertEqual(message["release"], "6.06")
+        self.assertEqual(message["code-name"], "dapper")
 
         plugin._lsb_release_filename = self.makeFile("""\
 DISTRIB_ID=Ubuntu
@@ -237,11 +237,11 @@ DISTRIB_DESCRIPTION="Ubuntu 6.10"
 """)
         plugin.exchange()
         message = self.mstore.get_pending_messages()[1]
-        self.assertEquals(message["type"], "distribution-info")
-        self.assertEquals(message["distributor-id"], "Ubuntu")
-        self.assertEquals(message["description"], "Ubuntu 6.10")
-        self.assertEquals(message["release"], "6.10")
-        self.assertEquals(message["code-name"], "edgy")
+        self.assertEqual(message["type"], "distribution-info")
+        self.assertEqual(message["distributor-id"], "Ubuntu")
+        self.assertEqual(message["description"], "Ubuntu 6.10")
+        self.assertEqual(message["release"], "6.10")
+        self.assertEqual(message["code-name"], "edgy")
 
     def test_unknown_distribution_key(self):
         self.mstore.set_accepted_types(["distribution-info"])
@@ -257,11 +257,11 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
 
         plugin.exchange()
         message = self.mstore.get_pending_messages()[0]
-        self.assertEquals(message["type"], "distribution-info")
-        self.assertEquals(message["distributor-id"], "Ubuntu")
-        self.assertEquals(message["description"], "Ubuntu 6.10")
-        self.assertEquals(message["release"], "6.10")
-        self.assertEquals(message["code-name"], "edgy")
+        self.assertEqual(message["type"], "distribution-info")
+        self.assertEqual(message["distributor-id"], "Ubuntu")
+        self.assertEqual(message["description"], "Ubuntu 6.10")
+        self.assertEqual(message["release"], "6.10")
+        self.assertEqual(message["code-name"], "edgy")
 
     def test_resynchronize(self):
         """

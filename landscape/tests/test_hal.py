@@ -22,7 +22,7 @@ class HALManagerTest(LandscapeTest):
         manager = Interface(manager, "org.freedesktop.Hal.Manager")
         expected_devices = manager.GetAllDevices()
         actual_devices = [device.udi for device in devices]
-        self.assertEquals(set(expected_devices), set(actual_devices))
+        self.assertEqual(set(expected_devices), set(actual_devices))
 
     def test_get_devices_with_dbus_error(self):
         """
@@ -35,7 +35,7 @@ class HALManagerTest(LandscapeTest):
         self.mocker.throw(DBusException())
         self.mocker.replay()
         devices = HALManager(bus=bus).get_devices()
-        self.assertEquals(devices, [])
+        self.assertEqual(devices, [])
 
     def test_get_devices_with_no_server(self):
         """
@@ -49,7 +49,7 @@ class HALManagerTest(LandscapeTest):
         self.mocker.throw(DBusException())
         self.mocker.replay()
         devices = HALManager().get_devices()
-        self.assertEquals(devices, [])
+        self.assertEqual(devices, [])
 
 
 class MockHALManager(object):
@@ -75,13 +75,13 @@ class HALDeviceTest(LandscapeTest):
 
     def test_init(self):
         device = HALDevice(MockRealHALDevice({"info.udi": "wubble"}))
-        self.assertEquals(device.properties, {"info.udi": "wubble"})
-        self.assertEquals(device.udi, "wubble")
-        self.assertEquals(device.parent, None)
+        self.assertEqual(device.properties, {"info.udi": "wubble"})
+        self.assertEqual(device.udi, "wubble")
+        self.assertEqual(device.parent, None)
 
     def test_add_child(self):
         parent = HALDevice(MockRealHALDevice({"info.udi": "wubble"}))
         child = HALDevice(MockRealHALDevice({"info.udi": "ooga"}))
         parent.add_child(child)
-        self.assertEquals(parent.get_children(), [child])
-        self.assertEquals(child.parent, parent)
+        self.assertEqual(parent.get_children(), [child])
+        self.assertEqual(child.parent, parent)

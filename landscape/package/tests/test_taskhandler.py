@@ -31,7 +31,7 @@ class PackageTaskHandlerConfigurationTest(LandscapeTest):
         to the smart-update stamp file.
         """
         config = PackageTaskHandlerConfiguration()
-        self.assertEquals(
+        self.assertEqual(
             config.smart_update_stamp_filename,
             "/var/lib/landscape/client/package/smart-update-stamp")
 
@@ -54,7 +54,7 @@ class PackageTaskHandlerTest(LandscapeTest):
     def test_use_hash_id_db(self):
 
         # We don't have this hash=>id mapping
-        self.assertEquals(self.store.get_hash_id("hash"), None)
+        self.assertEqual(self.store.get_hash_id("hash"), None)
 
         # An appropriate hash=>id database is available
         self.config.data_path = self.makeDir()
@@ -75,7 +75,7 @@ class PackageTaskHandlerTest(LandscapeTest):
 
         # Now we do have the hash=>id mapping
         def callback(ignored):
-            self.assertEquals(self.store.get_hash_id("hash"), 123)
+            self.assertEqual(self.store.get_hash_id("hash"), 123)
         result.addCallback(callback)
 
         return result
@@ -241,7 +241,7 @@ class PackageTaskHandlerTest(LandscapeTest):
 
         self.mocker.replay()
 
-        self.assertEquals(self.handler.run(), "WAYO!")
+        self.assertEqual(self.handler.run(), "WAYO!")
 
     def test_handle_tasks(self):
         queue_name = PackageTaskHandler.queue_name
@@ -267,21 +267,21 @@ class PackageTaskHandlerTest(LandscapeTest):
 
         handle_tasks_result = self.handler.handle_tasks()
 
-        self.assertEquals(stash, [])
+        self.assertEqual(stash, [])
 
         results[1].callback(None)
-        self.assertEquals(stash, [])
-        self.assertEquals(self.store.get_next_task(queue_name).data, 0)
+        self.assertEqual(stash, [])
+        self.assertEqual(self.store.get_next_task(queue_name).data, 0)
 
         results[0].callback(None)
-        self.assertEquals(stash, [0, 1])
+        self.assertEqual(stash, [0, 1])
         self.assertTrue(handle_tasks_result.called)
-        self.assertEquals(self.store.get_next_task(queue_name).data, 2)
+        self.assertEqual(self.store.get_next_task(queue_name).data, 2)
 
         results[2].callback(None)
-        self.assertEquals(stash, [0, 1, 2])
+        self.assertEqual(stash, [0, 1, 2])
         self.assertTrue(handle_tasks_result.called)
-        self.assertEquals(self.store.get_next_task(queue_name), None)
+        self.assertEqual(self.store.get_next_task(queue_name), None)
 
         handle_tasks_result = self.handler.handle_tasks()
         self.assertTrue(handle_tasks_result.called)
@@ -308,8 +308,8 @@ class PackageTaskHandlerTest(LandscapeTest):
         handle_tasks_result = self.handler.handle_tasks()
         handle_tasks_result.addErrback(stash.append)
 
-        self.assertEquals(len(stash), 1)
-        self.assertEquals(stash[0].type, MyException)
+        self.assertEqual(len(stash), 1)
+        self.assertEqual(stash[0].type, MyException)
 
     def test_default_handle_task(self):
         result = self.handler.handle_task(None)
@@ -355,7 +355,7 @@ class PackageTaskHandlerTest(LandscapeTest):
 
         handler_args = []
         HandlerMock(ANY, ANY, ANY, ANY)
-        self.mocker.passthrough() # Let the real constructor run for testing.
+        self.mocker.passthrough()  # Let the real constructor run for testing.
         self.mocker.call(lambda *args: handler_args.extend(args))
 
         call_when_running = []
@@ -366,7 +366,6 @@ class PackageTaskHandlerTest(LandscapeTest):
         connector_mock.disconnect()
         reactor_mock.call_later(0, reactor.stop)
 
-
         # Okay, the whole playground is set.
         self.mocker.replay()
 
@@ -376,17 +375,17 @@ class PackageTaskHandlerTest(LandscapeTest):
 
             try:
                 # Verify the arguments passed to the reporter constructor.
-                self.assertEquals(type(store), PackageStore)
-                self.assertEquals(type(facade), SmartFacade)
-                self.assertEquals(type(broker), LazyRemoteBroker)
-                self.assertEquals(type(config),
-                                  PackageTaskHandlerConfiguration)
+                self.assertEqual(type(store), PackageStore)
+                self.assertEqual(type(facade), SmartFacade)
+                self.assertEqual(type(broker), LazyRemoteBroker)
+                self.assertEqual(type(config),
+                                 PackageTaskHandlerConfiguration)
 
                 # Let's see if the store path is where it should be.
                 filename = os.path.join(self.data_path, "package", "database")
                 store.add_available([1, 2, 3])
                 other_store = PackageStore(filename)
-                self.assertEquals(other_store.get_available(), [1, 2, 3])
+                self.assertEqual(other_store.get_available(), [1, 2, 3])
 
                 # Check the hash=>id database directory as well
                 self.assertTrue(os.path.exists(
@@ -395,7 +394,6 @@ class PackageTaskHandlerTest(LandscapeTest):
             finally:
                 # Put reactor back in place before returning.
                 self.mocker.reset()
-
 
         result = run_task_handler(HandlerMock, ["-c", self.config_filename])
         return result.addCallback(assert_task_handler)
@@ -418,7 +416,7 @@ class PackageTaskHandlerTest(LandscapeTest):
             run_task_handler(PackageTaskHandler,
                              ["-c", self.config_filename, "--quiet"])
         except SystemExit, e:
-            self.assertEquals(str(e), "")
+            self.assertEqual(str(e), "")
         else:
             self.fail("SystemExit not raised")
 

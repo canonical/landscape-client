@@ -2,10 +2,7 @@ from twisted.internet import reactor
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.internet.protocol import ClientCreator
 from twisted.internet.error import ConnectionDone, ConnectError
-try:
-    from twisted.internet.task import Clock
-except ImportError:
-    Clock = None # Dapper doesn't have it
+from twisted.internet.task import Clock
 
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.amp import (
@@ -456,7 +453,7 @@ class MethodCallFactoryTest(LandscapeTest):
         The L{MethodCallClientFactory} class has a default value of 30 seconds
         for the maximum reconnection delay.
         """
-        self.assertEquals(self.factory.maxDelay, 30)
+        self.assertEqual(self.factory.maxDelay, 30)
 
     def test_add_notifier(self):
         """
@@ -494,7 +491,7 @@ class MethodCallFactoryTest(LandscapeTest):
         self.factory.retry = self.mocker.mock()
         self.factory.retry(KWARGS)
         self.mocker.replay()
-        self.assertEquals(self.factory.retries, 0)
+        self.assertEqual(self.factory.retries, 0)
         self.factory.clientConnectionFailed(None, None)
 
     def test_client_connection_failed_with_max_retries_reached(self):
@@ -571,7 +568,7 @@ class RemoteObjectConnectorTest(LandscapeTest):
         self.connector.disconnect()
 
         def assert_factor(ignored):
-            self.assertEquals(self.connector._factory.factor, 1.0)
+            self.assertEqual(self.connector._factory.factor, 1.0)
 
         result = self.connector.connect(factor=1.0)
         return result.addCallback(assert_factor)
@@ -650,7 +647,7 @@ class RemoteObjectConnectorTest(LandscapeTest):
             self.port = reactor.listenUNIX(self.socket, self.server_factory)
 
         def assert_failure(error):
-            self.assertEquals(str(error), "Forbidden method 'secret'")
+            self.assertEqual(str(error), "Forbidden method 'secret'")
 
         reactor.callLater(0.5, restart_listening)
         result = self.words.secret()
@@ -686,7 +683,7 @@ class RemoteObjectConnectorTest(LandscapeTest):
             self.port = reactor.listenUNIX(self.socket, self.server_factory)
 
         def assert_failure(error):
-            self.assertEquals(str(error), "Forbidden method 'secret'")
+            self.assertEqual(str(error), "Forbidden method 'secret'")
 
         # Use our own reconnect handler
         self.connector._factory.remove_notifier(self.words._handle_reconnect)
@@ -710,13 +707,13 @@ class RemoteObjectConnectorTest(LandscapeTest):
             self.port = reactor.listenUNIX(self.socket, self.server_factory)
 
         def assert_guess(response):
-            self.assertEquals(response, "Guessed!")
+            self.assertEqual(response, "Guessed!")
 
         def assert_secret(failure):
-            self.assertEquals(str(failure.value), "Forbidden method 'secret'")
+            self.assertEqual(str(failure.value), "Forbidden method 'secret'")
 
         def assert_motd(response):
-            self.assertEquals(response, "Words are cool")
+            self.assertEqual(response, "Words are cool")
 
         reactor.callLater(0.1, restart_listening)
 
@@ -767,7 +764,7 @@ class RemoteObjectConnectorTest(LandscapeTest):
             reactor.callLater(0.1, reconnected.callback, None)
 
         def assert_failure(error):
-            self.assertEquals(str(error), "timeout")
+            self.assertEqual(str(error), "timeout")
             return reconnected
 
         reactor.callLater(0.9, restart_listening)

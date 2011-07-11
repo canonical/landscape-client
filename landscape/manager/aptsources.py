@@ -1,9 +1,13 @@
 import glob
 import os
+import pwd
+import grp
+import shutil
 import tempfile
 
 from twisted.internet.defer import succeed
-from twisted.internet.utils import getProcessOutputAndValue
+
+from landscape.lib.twisted_util import spawn_process
 
 from landscape.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
 from landscape.package.reporter import find_reporter_command
@@ -24,11 +28,11 @@ class AptSources(ManagerPlugin):
         registry.register_message(
             "apt-sources-replace", self._wrap_handle_repositories)
 
-    def run_process(self, command, args):
+    def _run_process(self, command, args, uid=None, gid=None):
         """
         Run the process in an asynchronous fashion, to be overriden in tests.
         """
-        return getProcessOutputAndValue(command, args)
+        return spawn_process(command, args, uid=uid, gid=gid)
 
     def _wrap_handle_repositories(self, message):
         """
@@ -111,7 +115,7 @@ class AptSources(ManagerPlugin):
             key_file.close()
             deferred.addCallback(
                 lambda ignore, path=path:
-                    self.run_process("/usr/bin/apt-key", ["add", path]))
+                    self._run_process("/usr/bin/apt-key", ["add", path]))
             deferred.addCallback(self._handle_process_error)
             deferred.addBoth(self._remove_and_continue, path)
         deferred.addErrback(self._handle_process_failure)
@@ -130,10 +134,14 @@ class AptSources(ManagerPlugin):
             else:
                 new_sources.write("#%s" % line)
         new_sources.close()
-        os.rename(path, self.SOURCES_LIST)
+
+        original_stat = os.stat(self.SOURCES_LIST)
+        shutil.move(path, self.SOURCES_LIST)
+        os.chmod(self.SOURCES_LIST, original_stat.st_mode)
+        os.chown(self.SOURCES_LIST, original_stat.st_uid, original_stat.st_gid)
 
         for filename in glob.glob(os.path.join(self.SOURCES_LIST_D, "*.list")):
-            os.rename(filename, "%s.save" % filename)
+            shutil.move(filename, "%s.save" % filename)
 
         for source in sources:
             filename = os.path.join(self.SOURCES_LIST_D,
@@ -141,6 +149,7 @@ class AptSources(ManagerPlugin):
             sources_file = file(filename, "w")
             sources_file.write(source["content"])
             sources_file.close()
+            os.chmod(filename, 0644)
         return self._run_reporter()
 
     def _run_reporter(self):
@@ -152,4 +161,11 @@ class AptSources(ManagerPlugin):
 
         if self.registry.config.config is not None:
             args.append("--config=%s" % self.registry.config.config)
-        return self.run_process(reporter, args)
+
+        if os.getuid() == 0:
+            uid = pwd.getpwnam("landscape").pw_uid
+            gid = grp.getgrnam("landscape").gr_gid
+        else:
+            uid = None
+            gid = None
+        return self._run_process(reporter, args, uid=uid, gid=gid)

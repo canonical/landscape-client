@@ -28,14 +28,14 @@ class LoadAveragePluginTest(LandscapeTest):
 
         message = plugin.create_message()
         self.assertTrue("type" in message)
-        self.assertEquals(message["type"], "load-average")
+        self.assertEqual(message["type"], "load-average")
         self.assertTrue("load-averages" in message)
 
         load_averages = message["load-averages"]
-        self.assertEquals(len(load_averages), 1)
+        self.assertEqual(len(load_averages), 1)
 
         load_average = load_averages[0]
-        self.assertEquals(load_average[0], self.monitor.step_size)
+        self.assertEqual(load_average[0], self.monitor.step_size)
         self.assertTrue(isinstance(load_average[0], int))
         self.assertTrue(isinstance(load_average[1], float))
 
@@ -53,8 +53,8 @@ class LoadAveragePluginTest(LandscapeTest):
 
         message = plugin.create_message()
         load_averages = message["load-averages"]
-        self.assertEquals(len(load_averages), 1)
-        self.assertEquals(load_averages[0], (self.monitor.step_size, 0.15))
+        self.assertEqual(len(load_averages), 1)
+        self.assertEqual(load_averages[0], (self.monitor.step_size, 0.15))
 
     def test_ranges_remain_contiguous_after_flush(self):
         """
@@ -70,8 +70,8 @@ class LoadAveragePluginTest(LandscapeTest):
             self.reactor.advance(self.monitor.step_size)
             message = plugin.create_message()
             load_averages = message["load-averages"]
-            self.assertEquals(len(load_averages), 1)
-            self.assertEquals(load_averages[0][0], self.monitor.step_size * i)
+            self.assertEqual(len(load_averages), 1)
+            self.assertEqual(load_averages[0][0], self.monitor.step_size * i)
 
     def test_messaging_flushes(self):
         """
@@ -86,10 +86,10 @@ class LoadAveragePluginTest(LandscapeTest):
         self.reactor.advance(self.monitor.step_size)
 
         message = plugin.create_message()
-        self.assertEquals(len(message["load-averages"]), 1)
+        self.assertEqual(len(message["load-averages"]), 1)
 
         message = plugin.create_message()
-        self.assertEquals(len(message["load-averages"]), 0)
+        self.assertEqual(len(message["load-averages"]), 0)
 
     def test_never_exchange_empty_messages(self):
         """
@@ -104,7 +104,7 @@ class LoadAveragePluginTest(LandscapeTest):
         self.monitor.add(plugin)
 
         self.monitor.exchange()
-        self.assertEquals(len(self.mstore.get_pending_messages()), 0)
+        self.assertEqual(len(self.mstore.get_pending_messages()), 0)
 
     def test_exchange_messages(self):
         """

@@ -11,7 +11,6 @@ from landscape.package.tests.helpers import SmartHelper, HASH1
 from landscape.tests.helpers import LandscapeTest
 
 
-
 class SkeletonTest(LandscapeTest):
 
     helpers = [SmartHelper]
@@ -32,16 +31,16 @@ class SkeletonTest(LandscapeTest):
     def test_build_skeleton(self):
         pkg1 = self.cache.getPackages("name1")[0]
         skeleton = build_skeleton(pkg1)
-        self.assertEquals(skeleton.get_hash(), HASH1)
+        self.assertEqual(skeleton.get_hash(), HASH1)
 
     def test_build_skeleton_with_info(self):
         pkg1 = self.cache.getPackages("name1")[0]
         skeleton = build_skeleton(pkg1, True)
-        self.assertEquals(skeleton.section, "Group1")
-        self.assertEquals(skeleton.summary, "Summary1")
-        self.assertEquals(skeleton.description, "Description1")
-        self.assertEquals(skeleton.size, 1038)
-        self.assertEquals(skeleton.installed_size, 28672)
+        self.assertEqual(skeleton.section, "Group1")
+        self.assertEqual(skeleton.summary, "Summary1")
+        self.assertEqual(skeleton.description, "Description1")
+        self.assertEqual(skeleton.size, 1038)
+        self.assertEqual(skeleton.installed_size, 28672)
 
     def test_refuse_to_build_non_debian_packages(self):
         self.assertRaises(PackageTypeError, build_skeleton,

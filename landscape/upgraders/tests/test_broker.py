@@ -7,4 +7,4 @@ from landscape.upgraders import broker
 class TestBrokerUpgraders(LandscapeTest):
 
     def test_broker_upgrade_manager(self):
-        self.assertEquals(type(broker.upgrade_manager), UpgradeManager)
+        self.assertEqual(type(broker.upgrade_manager), UpgradeManager)

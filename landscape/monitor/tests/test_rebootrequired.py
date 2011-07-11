@@ -58,15 +58,15 @@ class RebootRequiredTest(LandscapeTest):
         A message should be created if and only if the reboot-required status
         of the system has changed.
         """
-        self.assertEquals({"flag": False, "packages": []},
-                          self.plugin._create_message())
+        self.assertEqual({"flag": False, "packages": []},
+                         self.plugin._create_message())
         self.makeFile(path=self.reboot_required_filename, content="")
-        self.assertEquals({"flag": True},
-                          self.plugin._create_message())
+        self.assertEqual({"flag": True},
+                         self.plugin._create_message())
         self.makeFile(path=self.reboot_required_filename + ".pkgs",
                       content="foo\n")
-        self.assertEquals({"packages": [u"foo"]},
-                          self.plugin._create_message())
+        self.assertEqual({"packages": [u"foo"]},
+                         self.plugin._create_message())
 
     def test_send_message(self):
         """
@@ -120,4 +120,4 @@ class RebootRequiredTest(LandscapeTest):
         self.reactor.fire("resynchronize")
         self.plugin.run()
         messages = self.mstore.get_pending_messages()
-        self.assertEquals(len(messages), 2)
+        self.assertEqual(len(messages), 2)

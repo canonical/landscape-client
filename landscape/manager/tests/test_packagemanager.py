@@ -104,7 +104,7 @@ class PackageManagerTest(LandscapeTest):
 
         package_manager_mock = self.mocker.patch(self.package_manager)
         package_manager_mock.spawn_handler(PackageChanger)
-        self.mocker.count(2) # Once for registration, then again explicitly.
+        self.mocker.count(2)  # Once for registration, then again explicitly.
         self.mocker.replay()
 
         self.manager.add(self.package_manager)
@@ -121,7 +121,7 @@ class PackageManagerTest(LandscapeTest):
 
         package_manager_mock = self.mocker.patch(self.package_manager)
         package_manager_mock.spawn_handler(PackageChanger)
-        self.mocker.count(2) # Once for registration, then again explicitly.
+        self.mocker.count(2)  # Once for registration, then again explicitly.
         self.mocker.replay()
 
         self.manager.add(self.package_manager)
@@ -137,7 +137,7 @@ class PackageManagerTest(LandscapeTest):
 
         package_manager_mock = self.mocker.patch(self.package_manager)
         package_manager_mock.spawn_handler(ReleaseUpgrader)
-        self.mocker.count(2) # Once for registration, then again explicitly.
+        self.mocker.count(2)  # Once for registration, then again explicitly.
         self.mocker.replay()
 
         self.manager.add(self.package_manager)
@@ -154,7 +154,7 @@ class PackageManagerTest(LandscapeTest):
         self.manager.dispatch_message(message)
         task = self.package_store.get_next_task("changer")
         self.assertTrue(task)
-        self.assertEquals(task.data, message)
+        self.assertEqual(task.data, message)
 
     def test_release_upgrade_handling(self):
         """
@@ -172,7 +172,7 @@ class PackageManagerTest(LandscapeTest):
         self.manager.dispatch_message(message)
         task = self.package_store.get_next_task("release-upgrader")
         self.assertTrue(task)
-        self.assertEquals(task.data, message)
+        self.assertEqual(task.data, message)
 
     def test_spawn_changer(self):
         """
@@ -341,4 +341,4 @@ class PackageManagerTest(LandscapeTest):
         self.manager.dispatch_message(message)
         task = self.package_store.get_next_task("changer")
         self.assertTrue(task)
-        self.assertEquals(task.data, message)
+        self.assertEqual(task.data, message)

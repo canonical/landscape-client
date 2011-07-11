@@ -12,9 +12,9 @@ class TimestampTest(LandscapeTest):
         date = datetime.utcfromtimestamp(1000)
         timestamp = to_timestamp(date)
         self.assertTrue(isinstance(timestamp, int))
-        self.assertEquals(timestamp, 1000)
+        self.assertEqual(timestamp, 1000)
 
     def test_before_epoch_conversion(self):
         """Test converting a date before the epoch."""
         date = datetime.utcfromtimestamp(-1000)
-        self.assertEquals(to_timestamp(date), -1000)
+        self.assertEqual(to_timestamp(date), -1000)

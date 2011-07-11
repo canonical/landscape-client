@@ -81,8 +81,8 @@ class WatchDogTest(LandscapeTest):
         result = WatchDog(config=self.config).check_running()
 
         def got_result(r):
-            self.assertEquals([daemon.program for daemon in r],
-                              ["landscape-broker"])
+            self.assertEqual([daemon.program for daemon in r],
+                             ["landscape-broker"])
         return result.addCallback(got_result)
 
     def test_check_running_many(self):
@@ -94,9 +94,9 @@ class WatchDogTest(LandscapeTest):
         result = WatchDog(config=self.config).check_running()
 
         def got_result(r):
-            self.assertEquals([daemon.program for daemon in r],
-                              ["landscape-broker", "landscape-monitor",
-                               "landscape-manager"])
+            self.assertEqual([daemon.program for daemon in r],
+                             ["landscape-broker", "landscape-monitor",
+                              "landscape-manager"])
         return result.addCallback(got_result)
 
     def test_check_running_limited_daemons(self):
@@ -112,8 +112,8 @@ class WatchDogTest(LandscapeTest):
                           config=self.config).check_running()
 
         def got_result(r):
-            self.assertEquals(len(r), 1)
-            self.assertEquals(r[0].program, "landscape-broker")
+            self.assertEqual(len(r), 1)
+            self.assertEqual(r[0].program, "landscape-broker")
         return result.addCallback(got_result)
 
     def expect_request_exit(self):
@@ -271,14 +271,14 @@ class NonMockerWatchDogTests(LandscapeTest):
 
         clock.advance(5)
         for daemon in dog.daemons:
-            self.assertEquals(daemon.pings, 1)
+            self.assertEqual(daemon.pings, 1)
         clock.advance(5)
         for daemon in dog.daemons:
-            self.assertEquals(daemon.pings, 1)
+            self.assertEqual(daemon.pings, 1)
             daemon.fire_running(True)
         clock.advance(5)
         for daemon in dog.daemons:
-            self.assertEquals(daemon.pings, 2)
+            self.assertEqual(daemon.pings, 2)
 
     def test_check_daemons(self):
         """
@@ -292,19 +292,18 @@ class NonMockerWatchDogTests(LandscapeTest):
                        manager=AsynchronousPingDaemon("test-manager"))
         dog.start_monitoring()
 
-
         for i in range(4):
             clock.advance(5)
             dog.broker.fire_running(False)
             dog.monitor.fire_running(True)
             dog.manager.fire_running(True)
-            self.assertEquals(dog.broker.boots, [])
+            self.assertEqual(dog.broker.boots, [])
 
         clock.advance(5)
         dog.broker.fire_running(False)
         dog.monitor.fire_running(True)
         dog.manager.fire_running(True)
-        self.assertEquals(dog.broker.boots, [STOP, START])
+        self.assertEqual(dog.broker.boots, [STOP, START])
 
     def test_counted_ping_failures_reset_on_success(self):
         """
@@ -333,13 +332,13 @@ class NonMockerWatchDogTests(LandscapeTest):
             dog.broker.fire_running(False)
             dog.monitor.fire_running(True)
             dog.manager.fire_running(True)
-            self.assertEquals(dog.broker.boots, [])
+            self.assertEqual(dog.broker.boots, [])
 
         clock.advance(5)
         dog.broker.fire_running(False)
         dog.monitor.fire_running(True)
         dog.manager.fire_running(True)
-        self.assertEquals(dog.broker.boots, [STOP, START])
+        self.assertEqual(dog.broker.boots, [STOP, START])
 
     def test_exiting_during_outstanding_ping_works(self):
         """
@@ -374,9 +373,9 @@ class NonMockerWatchDogTests(LandscapeTest):
             clock.advance(5)
             dog.broker.fire_running(False)
 
-        self.assertEquals(dog.broker.boots, [])
+        self.assertEqual(dog.broker.boots, [])
         stop_result.callback(None)
-        self.assertEquals(dog.broker.boots, ["start"])
+        self.assertEqual(dog.broker.boots, ["start"])
 
     def test_wait_for_stop_before_ping(self):
         """
@@ -396,14 +395,14 @@ class NonMockerWatchDogTests(LandscapeTest):
             clock.advance(5)
             dog.broker.fire_running(False)
 
-        self.assertEquals(dog.broker.boots, [])
-        self.assertEquals(dog.broker.pings, 5)
-        clock.advance(5) # wait some more to see if a ping happens
-        self.assertEquals(dog.broker.pings, 5)
+        self.assertEqual(dog.broker.boots, [])
+        self.assertEqual(dog.broker.pings, 5)
+        clock.advance(5)  # wait some more to see if a ping happens
+        self.assertEqual(dog.broker.pings, 5)
         stop_result.callback(None)
-        self.assertEquals(dog.broker.boots, ["start"])
+        self.assertEqual(dog.broker.boots, ["start"])
         clock.advance(5)
-        self.assertEquals(dog.broker.pings, 6)
+        self.assertEqual(dog.broker.pings, 6)
 
     def test_ping_failure_counter_reset_after_restart(self):
         """
@@ -422,14 +421,14 @@ class NonMockerWatchDogTests(LandscapeTest):
             clock.advance(5)
             dog.broker.fire_running(False)
 
-        self.assertEquals(dog.broker.boots, ["stop", "start"])
+        self.assertEqual(dog.broker.boots, ["stop", "start"])
         for i in range(4):
             clock.advance(5)
             dog.broker.fire_running(False)
-            self.assertEquals(dog.broker.boots, ["stop", "start"])
+            self.assertEqual(dog.broker.boots, ["stop", "start"])
         clock.advance(5)
         dog.broker.fire_running(False)
-        self.assertEquals(dog.broker.boots, ["stop", "start", "stop", "start"])
+        self.assertEqual(dog.broker.boots, ["stop", "start", "stop", "start"])
 
     def test_die_when_broker_unavailable(self):
         """
@@ -533,7 +532,7 @@ class DaemonTest(DaemonTestBase):
 
     def test_find_executable_works(self):
         self.makeFile("I'm the broker.", path=self.exec_name)
-        self.assertEquals(self.daemon.find_executable(), self.exec_name)
+        self.assertEqual(self.daemon.find_executable(), self.exec_name)
 
     def test_find_executable_cant_find_file(self):
         self.assertRaises(ExecutableNotFoundError, self.daemon.find_executable)
@@ -550,8 +549,8 @@ class DaemonTest(DaemonTestBase):
 
         waiter.wait()
 
-        self.assertEquals(open(output_filename).read(),
-                          "RUN --ignore-sigint --quiet\n")
+        self.assertEqual(open(output_filename).read(),
+                         "RUN --ignore-sigint --quiet\n")
 
         return self.daemon.stop()
 
@@ -568,8 +567,8 @@ class DaemonTest(DaemonTestBase):
 
         waiter.wait()
 
-        self.assertEquals(open(output_filename).read(),
-                          "RUN --ignore-sigint\n")
+        self.assertEqual(open(output_filename).read(),
+                         "RUN --ignore-sigint\n")
 
         return daemon.stop()
 
@@ -589,7 +588,7 @@ class DaemonTest(DaemonTestBase):
         waiter = FileChangeWaiter(output_filename)
         self.daemon.start()
         waiter.wait()
-        self.assertEquals(open(output_filename).read(), "RUN")
+        self.assertEqual(open(output_filename).read(), "RUN")
         return self.daemon.stop()
 
     def test_kill_process_with_sigkill(self):
@@ -617,7 +616,7 @@ class DaemonTest(DaemonTestBase):
         waiter = FileChangeWaiter(output_filename)
         self.daemon.start()
         waiter.wait()
-        self.assertEquals(open(output_filename).read(), "RUN")
+        self.assertEqual(open(output_filename).read(), "RUN")
         return self.daemon.stop()
 
     def test_wait_for_process(self):
@@ -633,7 +632,7 @@ class DaemonTest(DaemonTestBase):
         self.daemon.start()
 
         def got_result(result):
-            self.assertEquals(open(output_filename).read(), "RUN\n")
+            self.assertEqual(open(output_filename).read(), "RUN\n")
         return self.daemon.wait().addCallback(got_result)
 
     def test_wait_or_die_dies_happily(self):
@@ -649,7 +648,7 @@ class DaemonTest(DaemonTestBase):
         self.daemon.start()
 
         def got_result(result):
-            self.assertEquals(open(output_filename).read(), "RUN\n")
+            self.assertEqual(open(output_filename).read(), "RUN\n")
         return self.daemon.wait_or_die().addCallback(got_result)
 
     def test_wait_or_die_terminates(self):
@@ -679,7 +678,7 @@ time.sleep(999)
         self.daemon.start()
 
         def got_result(result):
-            self.assertEquals(open(output_filename).read(), "TERMINATED")
+            self.assertEqual(open(output_filename).read(), "TERMINATED")
         return self.daemon.wait_or_die().addCallback(got_result)
 
     def test_wait_or_die_kills(self):
@@ -709,7 +708,7 @@ time.sleep(999)
         waiter = FileChangeWaiter(output_filename)
         self.daemon.start()
         waiter.wait()
-        self.assertEquals(open(output_filename).read(), "RUN")
+        self.assertEqual(open(output_filename).read(), "RUN")
         return self.daemon.wait_or_die()
 
     def test_wait_for_unstarted_process(self):
@@ -735,7 +734,7 @@ time.sleep(999)
         daemon = self.get_daemon()
         l = []
         daemon.wait_or_die().addCallback(l.append)
-        self.assertEquals(l, [None])
+        self.assertEqual(l, [None])
 
     def test_simulate_broker_not_starting_up(self):
         """
@@ -752,8 +751,8 @@ time.sleep(999)
         os.chmod(self.exec_name, 0755)
 
         def got_result(result):
-            self.assertEquals(len(list(open(output_filename))),
-                              MAXIMUM_CONSECUTIVE_RESTARTS)
+            self.assertEqual(len(list(open(output_filename))),
+                             MAXIMUM_CONSECUTIVE_RESTARTS)
 
             self.assertTrue("Can't keep landscape-broker running." in
                             self.logfile.getvalue())
@@ -792,8 +791,8 @@ time.sleep(999)
 
         def got_result(result):
             # Pay attention to the +1 bellow. It's the reason for this test.
-            self.assertEquals(len(list(open(output_filename))),
-                              MAXIMUM_CONSECUTIVE_RESTARTS + 1)
+            self.assertEqual(len(list(open(output_filename))),
+                             MAXIMUM_CONSECUTIVE_RESTARTS + 1)
 
             self.assertTrue("Can't keep landscape-broker running." in
                             self.logfile.getvalue())
@@ -894,8 +893,8 @@ time.sleep(999)
         self.daemon.request_exit()
 
         def got_result(result):
-            self.assertEquals(result, "")
-            self.assertEquals(open(output_filename).read(), "CALLED")
+            self.assertEqual(result, "")
+            self.assertEqual(open(output_filename).read(), "CALLED")
 
         return process_result.addCallback(got_result)
 
@@ -939,21 +938,21 @@ class WatchDogOptionsTest(LandscapeTest):
 
     def test_pid_file(self):
         self.config.load(["--pid-file", "wubble.txt"])
-        self.assertEquals(self.config.pid_file, "wubble.txt")
+        self.assertEqual(self.config.pid_file, "wubble.txt")
 
     def test_pid_file_default(self):
         self.config.load([])
-        self.assertEquals(self.config.pid_file, None)
+        self.assertEqual(self.config.pid_file, None)
 
     def test_monitor_only(self):
         self.config.load(["--monitor-only"])
-        self.assertEquals(self.config.get_enabled_daemons(),
-                          [Broker, Monitor])
+        self.assertEqual(self.config.get_enabled_daemons(),
+                         [Broker, Monitor])
 
     def test_default_daemons(self):
         self.config.load([])
-        self.assertEquals(self.config.get_enabled_daemons(),
-                          [Broker, Monitor, Manager])
+        self.assertEqual(self.config.get_enabled_daemons(),
+                         [Broker, Monitor, Manager])
 
 
 class WatchDogServiceTest(LandscapeTest):
@@ -1001,7 +1000,7 @@ class WatchDogServiceTest(LandscapeTest):
 
         service = WatchDogService(self.configuration)
         service.startService()
-        self.assertEquals(int(open(pid_file, "r").read()), os.getpid())
+        self.assertEqual(int(open(pid_file, "r").read()), os.getpid())
 
     def test_dont_write_pid_file_until_we_really_start(self):
         """
@@ -1071,7 +1070,7 @@ class WatchDogServiceTest(LandscapeTest):
         self.configuration.pid_file = pid_file
         service = WatchDogService(self.configuration)
         service.startService()
-        self.assertEquals(int(open(pid_file).read()), os.getpid())
+        self.assertEqual(int(open(pid_file).read()), os.getpid())
         service.stopService()
         self.assertFalse(os.path.exists(pid_file))
 
@@ -1134,7 +1133,7 @@ class WatchDogServiceTest(LandscapeTest):
             self.mocker.verify()
         finally:
             self.mocker.reset()
-        self.assertEquals(service.exit_code, 1)
+        self.assertEqual(service.exit_code, 1)
         return result
 
     def test_start_service_exits_when_unknown_errors_occur(self):
@@ -1164,7 +1163,7 @@ class WatchDogServiceTest(LandscapeTest):
             self.mocker.verify()
         finally:
             self.mocker.reset()
-        self.assertEquals(service.exit_code, 2)
+        self.assertEqual(service.exit_code, 2)
         return result
 
     def test_bootstrap(self):
@@ -1221,14 +1220,14 @@ class WatchDogServiceTest(LandscapeTest):
         def mode(*suffix):
             return stat.S_IMODE(os.stat(path(*suffix)).st_mode)
 
-        self.assertEquals(mode(), 0755)
-        self.assertEquals(mode("messages"), 0755)
-        self.assertEquals(mode("package"), 0755)
-        self.assertEquals(mode("package/hash-id"), 0755)
-        self.assertEquals(mode("package/binaries"), 0755)
-        self.assertEquals(mode("sockets"), 0750)
-        self.assertEquals(mode("custom-graph-scripts"), 0755)
-        self.assertEquals(mode("package/database"), 0644)
+        self.assertEqual(mode(), 0755)
+        self.assertEqual(mode("messages"), 0755)
+        self.assertEqual(mode("package"), 0755)
+        self.assertEqual(mode("package/hash-id"), 0755)
+        self.assertEqual(mode("package/binaries"), 0755)
+        self.assertEqual(mode("sockets"), 0750)
+        self.assertEqual(mode("custom-graph-scripts"), 0755)
+        self.assertEqual(mode("package/database"), 0644)
 
     def test_log_notification(self):
         """
@@ -1361,4 +1360,4 @@ class WatchDogRunTests(LandscapeTest):
         self.assertNotIn("DEBCONF_YO", os.environ)
         self.assertNotIn("LANDSCAPE_ATTACHMENTS", os.environ)
         self.assertNotIn("MAIL", os.environ)
-        self.assertEquals(os.environ["UNRELATED"], "unrelated")
+        self.assertEqual(os.environ["UNRELATED"], "unrelated")

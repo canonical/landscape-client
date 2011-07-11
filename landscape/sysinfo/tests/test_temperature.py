@@ -19,8 +19,8 @@ class TemperatureTest(ThermalZoneTest):
     def test_run_adds_header(self):
         self.write_thermal_zone("THM0", "51 C")
         self.temperature.run()
-        self.assertEquals(self.sysinfo.get_headers(),
-                          [("Temperature", "51 C")])
+        self.assertEqual(self.sysinfo.get_headers(),
+                         [("Temperature", "51 C")])
 
     def test_ignores_bad_files(self):
         self.write_thermal_zone("THM0", "")
@@ -30,17 +30,17 @@ class TemperatureTest(ThermalZoneTest):
         file.write("bad-label: 51 C")
         file.close()
         self.temperature.run()
-        self.assertEquals(self.sysinfo.get_headers(), [])
+        self.assertEqual(self.sysinfo.get_headers(), [])
 
     def test_ignores_unknown_formats(self):
         self.write_thermal_zone("THM0", "FOO C")
         self.temperature.run()
-        self.assertEquals(self.sysinfo.get_headers(), [])
+        self.assertEqual(self.sysinfo.get_headers(), [])
 
     def test_picks_highest_temperature(self):
         self.write_thermal_zone("THM0", "51 C")
         self.write_thermal_zone("THM1", "53 C")
         self.write_thermal_zone("THM2", "52 C")
         self.temperature.run()
-        self.assertEquals(self.sysinfo.get_headers(),
-                          [("Temperature", "53 C")])
+        self.assertEqual(self.sysinfo.get_headers(),
+                         [("Temperature", "53 C")])

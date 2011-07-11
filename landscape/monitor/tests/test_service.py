@@ -27,7 +27,7 @@ class MonitorServiceTest(LandscapeTest):
         By default the L{MonitorService.plugins} list holds an instance of
         every enabled monitor plugin.
         """
-        self.assertEquals(len(self.service.plugins), len(ALL_PLUGINS))
+        self.assertEqual(len(self.service.plugins), len(ALL_PLUGINS))
 
     def test_get_plugins(self):
         """
@@ -63,7 +63,7 @@ class MonitorServiceTest(LandscapeTest):
             self.broker_service.port.stopListening()
 
         def assert_broker_connection(ignored):
-            self.assertEquals(len(self.broker_service.broker.get_clients()), 1)
+            self.assertEqual(len(self.broker_service.broker.get_clients()), 1)
             self.assertIs(self.service.broker, self.service.monitor.broker)
             result = self.service.broker.ping()
             return result.addCallback(stop_service)

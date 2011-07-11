@@ -5,10 +5,9 @@ import sys
 import os
 
 from twisted.internet.defer import Deferred, succeed
-from twisted.internet.utils import getProcessOutputAndValue
 
 from landscape.lib.sequenceranges import sequence_to_ranges
-from landscape.lib.twisted_util import gather_results
+from landscape.lib.twisted_util import gather_results, spawn_process
 from landscape.lib.fetch import fetch_async
 from landscape.lib.fs import touch_file
 
@@ -182,9 +181,8 @@ class PackageReporter(PackageTaskHandler):
         if self._config.force_smart_update or self._apt_sources_have_changed():
             args = ()
         else:
-            args = ("--after", "%d" % self.smart_update_interval)
-        result = getProcessOutputAndValue(self.smart_update_filename,
-                                          args=args)
+            args = ("--after", str(self.smart_update_interval))
+        result = spawn_process(self.smart_update_filename, args=args)
 
         def callback((out, err, code)):
             # smart-update --after N will exit with error code 1 when it

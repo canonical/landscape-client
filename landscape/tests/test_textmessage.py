@@ -23,7 +23,7 @@ class SendMessageTest(LandscapeTest):
 
         def got_result(result):
             messages = service.message_store.get_pending_messages()
-            self.assertEquals(len(messages), 1)
+            self.assertEqual(len(messages), 1)
             self.assertMessage(messages[0], {"type": "text-message",
                                              "message": u"Hi there!"})
             self.assertTrue(service.exchanger.is_urgent())
@@ -51,7 +51,7 @@ class SendMessageTest(LandscapeTest):
 
         def got_result(result):
             messages = service.message_store.get_pending_messages()
-            self.assertEquals(len(messages), 1)
+            self.assertEqual(len(messages), 1)
             self.assertMessage(messages[0],
                                {"type": "text-message",
                                 "message": u"Foobl\N{HIRAGANA LETTER A}"})
@@ -72,7 +72,7 @@ class ScriptTest(LandscapeTest):
         message = get_message(
             ["landscape-message",
              u"\N{HIRAGANA LETTER A}".encode(sys.stdin.encoding), "a!"])
-        self.assertEquals(message, u"\N{HIRAGANA LETTER A} a!")
+        self.assertEqual(message, u"\N{HIRAGANA LETTER A} a!")
 
     def test_get_message_stdin(self):
         """
@@ -83,10 +83,10 @@ class ScriptTest(LandscapeTest):
         self.stdin.write(input.encode("UTF-8"))
         self.stdin.seek(0, 0)
         message = get_message(["landscape-message"])
-        self.assertEquals(self.stdout.getvalue(),
-                          "Please enter your message, and send EOF "
-                          "(Control + D after newline) when done.\n")
-        self.assertEquals(message, input)
+        self.assertEqual(self.stdout.getvalue(),
+                         "Please enter your message, and send EOF "
+                         "(Control + D after newline) when done.\n")
+        self.assertEqual(message, input)
 
     def test_get_empty_message_stdin(self):
         """
@@ -109,4 +109,4 @@ class ScriptTest(LandscapeTest):
                  u"\N{HIRAGANA LETTER A}".encode("UTF-8"), "a!"])
         finally:
             sys.stdin.encoding = encoding
-        self.assertEquals(message, u"\N{HIRAGANA LETTER A} a!")
+        self.assertEqual(message, u"\N{HIRAGANA LETTER A} a!")

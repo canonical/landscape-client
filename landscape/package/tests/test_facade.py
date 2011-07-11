@@ -30,8 +30,8 @@ class SmartFacadeTest(LandscapeTest):
     def test_get_packages(self):
         self.facade.reload_channels()
         pkgs = self.facade.get_packages()
-        self.assertEquals(sorted(pkg.name for pkg in pkgs),
-                          ["name1", "name2", "name3"])
+        self.assertEqual(sorted(pkg.name for pkg in pkgs),
+                         ["name1", "name2", "name3"])
 
     def test_get_packages_wont_return_non_debian_packages(self):
         self.facade.reload_channels()
@@ -44,14 +44,14 @@ class SmartFacadeTest(LandscapeTest):
         cache_mock.getPackages()
         self.mocker.result([StubPackage(), StubPackage()])
         self.mocker.replay()
-        self.assertEquals(self.facade.get_packages(), [])
+        self.assertEqual(self.facade.get_packages(), [])
 
     def test_get_packages_by_name(self):
         self.facade.reload_channels()
         pkgs = self.facade.get_packages_by_name("name1")
-        self.assertEquals([pkg.name for pkg in pkgs], ["name1"])
+        self.assertEqual([pkg.name for pkg in pkgs], ["name1"])
         pkgs = self.facade.get_packages_by_name("name2")
-        self.assertEquals([pkg.name for pkg in pkgs], ["name2"])
+        self.assertEqual([pkg.name for pkg in pkgs], ["name2"])
 
     def test_get_packages_by_name_wont_return_non_debian_packages(self):
         self.facade.reload_channels()
@@ -64,7 +64,7 @@ class SmartFacadeTest(LandscapeTest):
         cache_mock.getPackages("name")
         self.mocker.result([StubPackage(), StubPackage()])
         self.mocker.replay()
-        self.assertEquals(self.facade.get_packages_by_name("name"), [])
+        self.assertEqual(self.facade.get_packages_by_name("name"), [])
 
     def test_get_package_skeleton(self):
         self.facade.reload_channels()
@@ -72,39 +72,39 @@ class SmartFacadeTest(LandscapeTest):
         pkg2 = self.facade.get_packages_by_name("name2")[0]
         skeleton1 = self.facade.get_package_skeleton(pkg1)
         skeleton2 = self.facade.get_package_skeleton(pkg2)
-        self.assertEquals(skeleton1.get_hash(), HASH1)
-        self.assertEquals(skeleton2.get_hash(), HASH2)
+        self.assertEqual(skeleton1.get_hash(), HASH1)
+        self.assertEqual(skeleton2.get_hash(), HASH2)
 
     def test_build_skeleton_with_info(self):
         self.facade.reload_channels()
         pkg = self.facade.get_packages_by_name("name1")[0]
         skeleton = self.facade.get_package_skeleton(pkg, True)
-        self.assertEquals(skeleton.section, "Group1")
-        self.assertEquals(skeleton.summary, "Summary1")
-        self.assertEquals(skeleton.description, "Description1")
-        self.assertEquals(skeleton.size, 1038)
-        self.assertEquals(skeleton.installed_size, 28672)
+        self.assertEqual(skeleton.section, "Group1")
+        self.assertEqual(skeleton.summary, "Summary1")
+        self.assertEqual(skeleton.description, "Description1")
+        self.assertEqual(skeleton.size, 1038)
+        self.assertEqual(skeleton.installed_size, 28672)
 
     def test_get_package_hash(self):
         self.facade.reload_channels()
         pkg = self.facade.get_packages_by_name("name1")[0]
-        self.assertEquals(self.facade.get_package_hash(pkg), HASH1)
+        self.assertEqual(self.facade.get_package_hash(pkg), HASH1)
         pkg = self.facade.get_packages_by_name("name2")[0]
-        self.assertEquals(self.facade.get_package_hash(pkg), HASH2)
+        self.assertEqual(self.facade.get_package_hash(pkg), HASH2)
 
     def test_get_package_hashes(self):
         self.facade.reload_channels()
         hashes = self.facade.get_package_hashes()
-        self.assertEquals(sorted(hashes), sorted([HASH1, HASH2, HASH3]))
+        self.assertEqual(sorted(hashes), sorted([HASH1, HASH2, HASH3]))
 
     def test_get_package_by_hash(self):
         self.facade.reload_channels()
         pkg = self.facade.get_package_by_hash(HASH1)
-        self.assertEquals(pkg.name, "name1")
+        self.assertEqual(pkg.name, "name1")
         pkg = self.facade.get_package_by_hash(HASH2)
-        self.assertEquals(pkg.name, "name2")
+        self.assertEqual(pkg.name, "name2")
         pkg = self.facade.get_package_by_hash("none")
-        self.assertEquals(pkg, None)
+        self.assertEqual(pkg, None)
 
     def test_reload_channels_clears_hash_cache(self):
         # Load hashes.
@@ -130,19 +130,19 @@ class SmartFacadeTest(LandscapeTest):
 
         # Only packages with name2 and name3 should be loaded, and they're
         # not the same objects anymore.
-        self.assertEquals(
+        self.assertEqual(
             sorted([pkg.name for pkg in self.facade.get_packages()]),
             ["name2", "name3"])
         self.assertNotEquals(set(self.facade.get_packages()),
                              set([pkg2, pkg3]))
 
         # The hash cache shouldn't include either of the old packages.
-        self.assertEquals(self.facade.get_package_hash(pkg1), None)
-        self.assertEquals(self.facade.get_package_hash(pkg2), None)
-        self.assertEquals(self.facade.get_package_hash(pkg3), None)
+        self.assertEqual(self.facade.get_package_hash(pkg1), None)
+        self.assertEqual(self.facade.get_package_hash(pkg2), None)
+        self.assertEqual(self.facade.get_package_hash(pkg3), None)
 
         # Also, the hash for package1 shouldn't be present at all.
-        self.assertEquals(self.facade.get_package_by_hash(HASH1), None)
+        self.assertEqual(self.facade.get_package_by_hash(HASH1), None)
 
         # While HASH2 and HASH3 should point to the new packages.
         new_pkgs = self.facade.get_packages()
@@ -160,9 +160,9 @@ class SmartFacadeTest(LandscapeTest):
         The L{SmartFacade.ensure_channels_reloaded} can be called more
         than once, but channels will be reloaded only the first time.
         """
-        self.assertEquals(len(self.facade.get_packages()), 0)
+        self.assertEqual(len(self.facade.get_packages()), 0)
         self.facade.ensure_channels_reloaded()
-        self.assertEquals(len(self.facade.get_packages()), 3)
+        self.assertEqual(len(self.facade.get_packages()), 3)
 
         # Calling it once more won't reload channels again.
         self.facade.get_packages_by_name("name1")[0].installed = True
@@ -173,7 +173,7 @@ class SmartFacadeTest(LandscapeTest):
         """perform_changes() should return None when there's nothing to do.
         """
         self.facade.reload_channels()
-        self.assertEquals(self.facade.perform_changes(), None)
+        self.assertEqual(self.facade.perform_changes(), None)
 
     def test_reset_marks(self):
         """perform_changes() should return None when there's nothing to do.
@@ -182,7 +182,7 @@ class SmartFacadeTest(LandscapeTest):
         pkg = self.facade.get_packages_by_name("name1")[0]
         self.facade.mark_install(pkg)
         self.facade.reset_marks()
-        self.assertEquals(self.facade.perform_changes(), None)
+        self.assertEqual(self.facade.perform_changes(), None)
 
     def test_mark_install_transaction_error(self):
         """
@@ -220,8 +220,8 @@ class SmartFacadeTest(LandscapeTest):
         # Ask Smart to reprocess relationships.
         self.facade.reload_cache()
 
-        self.assertEquals(pkg1.requires[0].providedby[0].packages[0], pkg2)
-        self.assertEquals(pkg1.requires[1].providedby[0].packages[0], pkg2)
+        self.assertEqual(pkg1.requires[0].providedby[0].packages[0], pkg2)
+        self.assertEqual(pkg1.requires[1].providedby[0].packages[0], pkg2)
 
         self.facade.mark_install(pkg1)
         try:
@@ -231,7 +231,7 @@ class SmartFacadeTest(LandscapeTest):
         else:
             exception = None
         self.assertTrue(exception, "DependencyError not raised")
-        self.assertEquals(exception.packages, [pkg2])
+        self.assertEqual(exception.packages, [pkg2])
 
     def test_mark_remove_dependency_error(self):
         """
@@ -258,8 +258,8 @@ class SmartFacadeTest(LandscapeTest):
         pkg1.installed = True
         pkg2.installed = True
 
-        self.assertEquals(pkg1.requires[0].providedby[0].packages[0], pkg2)
-        self.assertEquals(pkg1.requires[1].providedby[0].packages[0], pkg2)
+        self.assertEqual(pkg1.requires[0].providedby[0].packages[0], pkg2)
+        self.assertEqual(pkg1.requires[1].providedby[0].packages[0], pkg2)
 
         self.facade.mark_remove(pkg2)
         try:
@@ -270,7 +270,7 @@ class SmartFacadeTest(LandscapeTest):
             exception = None
         self.assertTrue(exception, "DependencyError not raised. Output: %s"
                                    % repr(output))
-        self.assertEquals(exception.packages, [pkg1])
+        self.assertEqual(exception.packages, [pkg1])
 
     def test_mark_upgrade_dependency_error(self):
         """Artificially make pkg2 upgrade pkg1, and mark pkg1 for upgrade."""
@@ -301,7 +301,7 @@ class SmartFacadeTest(LandscapeTest):
         pkg1.installed = True
 
         # Check that the linkage worked.
-        self.assertEquals(pkg2.upgrades[0].providedby[0].packages[0], pkg1)
+        self.assertEqual(pkg2.upgrades[0].providedby[0].packages[0], pkg1)
 
         # Perform the upgrade test.
         self.facade.mark_upgrade(pkg1)
@@ -315,7 +315,7 @@ class SmartFacadeTest(LandscapeTest):
 
         # Both packages should be included in the dependency error. One
         # must be removed, and the other installed.
-        self.assertEquals(set(exception.packages), set([pkg1, pkg2]))
+        self.assertEqual(set(exception.packages), set([pkg1, pkg2]))
 
     def test_perform_changes_with_logged_error(self):
         self.log_helper.ignore_errors(".*dpkg")
@@ -372,8 +372,8 @@ class SmartFacadeTest(LandscapeTest):
         finally:
             DebPackageManager.dpkg = olddpkg
 
-        self.assertEquals(environ, ["noninteractive", "none",
-                                    "noninteractive", "none"])
+        self.assertEqual(environ, ["noninteractive", "none",
+                                   "noninteractive", "none"])
 
     def test_perform_changes_with_policy_remove(self):
         """
@@ -449,7 +449,7 @@ class SmartFacadeTest(LandscapeTest):
         self.mocker.replay()
 
         self.facade.reload_channels()
-        self.assertEquals(self.facade.get_package_hash(pkg), None)
+        self.assertEqual(self.facade.get_package_hash(pkg), None)
 
     def test_reload_channels_with_channel_error(self):
         """
@@ -469,12 +469,12 @@ class SmartFacadeTest(LandscapeTest):
 
         self.facade.reset_channels()
 
-        self.assertEquals(self.facade.get_channels(), {})
+        self.assertEqual(self.facade.get_channels(), {})
 
         self.facade.add_channel(*channels[0])
         self.facade.add_channel(*channels[1])
 
-        self.assertEquals(self.facade.get_channels(), dict(channels))
+        self.assertEqual(self.facade.get_channels(), dict(channels))
 
     def test_add_apt_deb_channel(self):
         """
@@ -483,11 +483,11 @@ class SmartFacadeTest(LandscapeTest):
         """
         self.facade.reset_channels()
         self.facade.add_channel_apt_deb("http://url/", "name", "component")
-        self.assertEquals(self.facade.get_channels(),
-                          {"name": {"baseurl": "http://url/",
-                                        "distribution": "name",
-                                        "components": "component",
-                                        "type": "apt-deb"}})
+        self.assertEqual(self.facade.get_channels(),
+                         {"name": {"baseurl": "http://url/",
+                                   "distribution": "name",
+                                   "components": "component",
+                                   "type": "apt-deb"}})
 
     def test_add_deb_dir_channel(self):
         """
@@ -496,9 +496,9 @@ class SmartFacadeTest(LandscapeTest):
         """
         self.facade.reset_channels()
         self.facade.add_channel_deb_dir("/my/repo")
-        self.assertEquals(self.facade.get_channels(),
-                          {"/my/repo": {"path": "/my/repo",
-                                        "type": "deb-dir"}})
+        self.assertEqual(self.facade.get_channels(),
+                         {"/my/repo": {"path": "/my/repo",
+                                       "type": "deb-dir"}})
 
     def test_get_arch(self):
         """
@@ -512,7 +512,7 @@ class SmartFacadeTest(LandscapeTest):
                                               ("--print-architecture",))
 
             def callback((out, err, code)):
-                self.assertEquals(self.facade.get_arch(), out.strip())
+                self.assertEqual(self.facade.get_arch(), out.strip())
             result.addCallback(callback)
             result.chainDeferred(deferred)
 
@@ -530,9 +530,9 @@ class SmartFacadeTest(LandscapeTest):
         self.facade.reload_channels()
 
         pkgs = self.facade.get_packages()
-        self.assertEquals(len(pkgs), 2)
-        self.assertEquals(pkgs[0].name, "syslinux")
-        self.assertEquals(pkgs[1].name, "kairos")
+        self.assertEqual(len(pkgs), 2)
+        self.assertEqual(pkgs[0].name, "syslinux")
+        self.assertEqual(pkgs[1].name, "kairos")
 
         self.facade.deinit()
         self.facade.set_arch("amd64")
@@ -542,9 +542,9 @@ class SmartFacadeTest(LandscapeTest):
         self.facade.reload_channels()
 
         pkgs = self.facade.get_packages()
-        self.assertEquals(len(pkgs), 2)
-        self.assertEquals(pkgs[0].name, "libclthreads2")
-        self.assertEquals(pkgs[1].name, "kairos")
+        self.assertEqual(len(pkgs), 2)
+        self.assertEqual(pkgs[0].name, "libclthreads2")
+        self.assertEqual(pkgs[1].name, "kairos")
 
     def test_set_caching_with_reload_error(self):
 
@@ -578,15 +578,15 @@ class SmartFacadeTest(LandscapeTest):
         If no package locks are set, L{SmartFacade.get_package_locks} returns
         an empty C{list}.
         """
-        self.assertEquals(self.facade.get_package_locks(), [])
+        self.assertEqual(self.facade.get_package_locks(), [])
 
     def test_get_package_locks_with_one_lock(self):
         """
         If one lock is set, the list of locks contains one item.
         """
         self.facade.set_package_lock("name1", "<", "version1")
-        self.assertEquals(self.facade.get_package_locks(),
-                          [("name1", "<", "version1")])
+        self.assertEqual(self.facade.get_package_locks(),
+                         [("name1", "<", "version1")])
 
     def test_get_package_locks_with_many_locks(self):
         """
@@ -596,10 +596,10 @@ class SmartFacadeTest(LandscapeTest):
         self.facade.set_package_lock("name1", "<", "version1")
         self.facade.set_package_lock("name1", ">=", "version3")
         self.facade.set_package_lock("name2")
-        self.assertEquals(sorted(self.facade.get_package_locks()),
-                          sorted([("name1", "<", "version1"),
-                                  ("name1", ">=", "version3"),
-                                  ("name2", "", "")]))
+        self.assertEqual(sorted(self.facade.get_package_locks()),
+                         sorted([("name1", "<", "version1"),
+                                 ("name1", ">=", "version3"),
+                                 ("name2", "", "")]))
 
     def test_set_package_lock(self):
         """
@@ -608,7 +608,7 @@ class SmartFacadeTest(LandscapeTest):
         self.facade.set_package_lock("name1")
         self.facade.reload_channels()
         [package] = self.facade.get_locked_packages()
-        self.assertEquals(package.name, "name1")
+        self.assertEqual(package.name, "name1")
 
     def test_set_package_lock_with_matching_condition(self):
         """
@@ -619,7 +619,7 @@ class SmartFacadeTest(LandscapeTest):
         self.facade.set_package_lock("name1", "<", "version2")
         self.facade.reload_channels()
         [package] = self.facade.get_locked_packages()
-        self.assertEquals(package.name, "name1")
+        self.assertEqual(package.name, "name1")
 
     def test_set_package_lock_with_non_matching_condition(self):
         """
@@ -628,7 +628,7 @@ class SmartFacadeTest(LandscapeTest):
         """
         self.facade.set_package_lock("name1", "<", "version1")
         self.facade.reload_channels()
-        self.assertEquals(self.facade.get_locked_packages(), [])
+        self.assertEqual(self.facade.get_locked_packages(), [])
 
     def test_set_package_lock_with_missing_version(self):
         """
@@ -637,7 +637,7 @@ class SmartFacadeTest(LandscapeTest):
         """
         error = self.assertRaises(RuntimeError, self.facade.set_package_lock,
                                   "name1", "<", "")
-        self.assertEquals(str(error), "Package lock version not provided")
+        self.assertEqual(str(error), "Package lock version not provided")
 
     def test_set_package_lock_with_missing_relation(self):
         """
@@ -646,7 +646,7 @@ class SmartFacadeTest(LandscapeTest):
         """
         error = self.assertRaises(RuntimeError, self.facade.set_package_lock,
                                   "name1", "", "version1")
-        self.assertEquals(str(error), "Package lock relation not provided")
+        self.assertEqual(str(error), "Package lock relation not provided")
 
     def test_remove_package_lock(self):
         """
@@ -654,7 +654,7 @@ class SmartFacadeTest(LandscapeTest):
         """
         self.facade.set_package_lock("name1")
         self.facade.remove_package_lock("name1")
-        self.assertEquals(self.facade.get_locked_packages(), [])
+        self.assertEqual(self.facade.get_locked_packages(), [])
 
     def test_remove_package_lock_with_condition(self):
         """
@@ -662,7 +662,7 @@ class SmartFacadeTest(LandscapeTest):
         """
         self.facade.set_package_lock("name1", "<", "version1")
         self.facade.remove_package_lock("name1", "<", "version1")
-        self.assertEquals(self.facade.get_locked_packages(), [])
+        self.assertEqual(self.facade.get_locked_packages(), [])
 
     def test_save_config(self):
         """
@@ -671,5 +671,5 @@ class SmartFacadeTest(LandscapeTest):
         self.facade.set_package_lock("python", "=>", "2.5")
         self.facade.save_config()
         self.facade.deinit()
-        self.assertEquals(self.facade.get_package_locks(),
-                          [("python", "=>", "2.5")])
+        self.assertEqual(self.facade.get_package_locks(),
+                         [("python", "=>", "2.5")])

@@ -42,13 +42,13 @@ class RunScriptTests(LandscapeTest):
         commands.
         """
         result = self.plugin.run_script("/bin/sh", "echo hi")
-        result.addCallback(self.assertEquals, "hi\n")
+        result.addCallback(self.assertEqual, "hi\n")
         return result
 
     def test_other_interpreter(self):
         """Non-shell interpreters can be specified."""
         result = self.plugin.run_script("/usr/bin/python", "print 'hi'")
-        result.addCallback(self.assertEquals, "hi\n")
+        result.addCallback(self.assertEqual, "hi\n")
         return result
 
     def test_other_interpreter_env(self):
@@ -78,8 +78,8 @@ class RunScriptTests(LandscapeTest):
         # run_script is truly async
         d1 = self.plugin.run_script("/bin/sh", "cat " + fifo)
         d2 = self.plugin.run_script("/bin/sh", "echo hi > " + fifo)
-        d1.addCallback(self.assertEquals, "hi\n")
-        d2.addCallback(self.assertEquals, "")
+        d1.addCallback(self.assertEqual, "hi\n")
+        d2.addCallback(self.assertEqual, "")
         return gatherResults([d1, d2])
 
     def test_accented_run_in_code(self):
@@ -91,7 +91,7 @@ class RunScriptTests(LandscapeTest):
         result = self.plugin.run_script(
             u"/bin/sh", u"echo %s" % (accented_content,))
         result.addCallback(
-            self.assertEquals, "%s\n" % (accented_content.encode("utf-8"),))
+            self.assertEqual, "%s\n" % (accented_content.encode("utf-8"),))
         return result
 
     def test_accented_run_in_interpreter(self):
@@ -119,7 +119,7 @@ class RunScriptTests(LandscapeTest):
         mock_umask(0077)
         self.mocker.replay()
         result = self.plugin.run_script("/bin/sh", "umask")
-        result.addCallback(self.assertEquals, "0022\n")
+        result.addCallback(self.assertEqual, "0022\n")
         return result
 
     def test_restore_umask_in_event_of_error(self):
@@ -147,7 +147,7 @@ class RunScriptTests(LandscapeTest):
             attachments={u"file1": "some data"})
 
         def check(result):
-            self.assertEquals(result, "file1\nsome data")
+            self.assertEqual(result, "file1\nsome data")
         result.addCallback(check)
         return result
 
@@ -157,7 +157,7 @@ class RunScriptTests(LandscapeTest):
         execution plugin tries to remove the script file.
         """
         result = self.plugin.run_script("/bin/sh", "echo hi && rm $0")
-        result.addCallback(self.assertEquals, "hi\n")
+        result.addCallback(self.assertEqual, "hi\n")
         return result
 
     def test_self_remove_attachments(self):
@@ -171,7 +171,7 @@ class RunScriptTests(LandscapeTest):
             attachments={u"file1": "some data"})
 
         def check(result):
-            self.assertEquals(result, "file1\n")
+            self.assertEqual(result, "file1\n")
         result.addCallback(check)
         return result
 
@@ -187,12 +187,12 @@ class RunScriptTests(LandscapeTest):
 
         result = self.plugin.run_script("/bin/sh", "echo hi", user=username)
 
-        self.assertEquals(len(factory.spawns), 1)
+        self.assertEqual(len(factory.spawns), 1)
         spawn = factory.spawns[0]
-        self.assertEquals(spawn[4], path)
-        self.assertEquals(spawn[5], uid)
-        self.assertEquals(spawn[6], gid)
-        result.addCallback(self.assertEquals, "foobar")
+        self.assertEqual(spawn[4], path)
+        self.assertEqual(spawn[5], uid)
+        self.assertEqual(spawn[6], gid)
+        result.addCallback(self.assertEqual, "foobar")
 
         protocol = spawn[0]
         protocol.childDataReceived(1, "foobar")
@@ -250,13 +250,13 @@ class RunScriptTests(LandscapeTest):
         result = self.plugin.run_script("/bin/sh", "echo hi", user=username,
             attachments={u"file 1": "some data"})
 
-        self.assertEquals(len(factory.spawns), 1)
+        self.assertEqual(len(factory.spawns), 1)
         spawn = factory.spawns[0]
         self.assertIn("LANDSCAPE_ATTACHMENTS", spawn[3].keys())
         attachment_dir = spawn[3]["LANDSCAPE_ATTACHMENTS"]
-        self.assertEquals(stat.S_IMODE(os.stat(attachment_dir).st_mode), 0700)
+        self.assertEqual(stat.S_IMODE(os.stat(attachment_dir).st_mode), 0700)
         filename = os.path.join(attachment_dir, "file 1")
-        self.assertEquals(stat.S_IMODE(os.stat(filename).st_mode), 0600)
+        self.assertEqual(stat.S_IMODE(os.stat(filename).st_mode), 0600)
 
         protocol = spawn[0]
         protocol.childDataReceived(1, "foobar")
@@ -265,7 +265,7 @@ class RunScriptTests(LandscapeTest):
         protocol.processEnded(Failure(ProcessDone(0)))
 
         def check(data):
-            self.assertEquals(data, "foobar")
+            self.assertEqual(data, "foobar")
             self.assertFalse(os.path.exists(attachment_dir))
         return result.addCallback(check)
 
@@ -275,7 +275,7 @@ class RunScriptTests(LandscapeTest):
         self.plugin.process_factory = factory
         self.plugin.size_limit = 100
         result = self.plugin.run_script("/bin/sh", "")
-        result.addCallback(self.assertEquals, "x" * 100)
+        result.addCallback(self.assertEqual, "x" * 100)
 
         protocol = factory.spawns[0][0]
         protocol.childDataReceived(1, "x" * 200)
@@ -310,7 +310,7 @@ class RunScriptTests(LandscapeTest):
 
         def got_error(f):
             self.assertTrue(f.check(ProcessTimeLimitReachedError))
-            self.assertEquals(f.value.data, "hi\n")
+            self.assertEqual(f.value.data, "hi\n")
         result.addErrback(got_error)
         return result
 
@@ -327,7 +327,7 @@ class RunScriptTests(LandscapeTest):
         protocol.childDataReceived(1, "hi\n")
         protocol.processEnded(Failure(ProcessDone(0)))
         self.manager.reactor.advance(501)
-        self.assertEquals(transport.signals, [])
+        self.assertEqual(transport.signals, [])
 
     def test_cancel_doesnt_blow_after_success(self):
         """
@@ -346,7 +346,7 @@ class RunScriptTests(LandscapeTest):
         self.manager.reactor.advance(501)
 
         def got_result(output):
-            self.assertEquals(output, "hi")
+            self.assertEqual(output, "hi")
         result.addCallback(got_result)
         return result
 
@@ -412,7 +412,7 @@ class RunScriptTests(LandscapeTest):
 
         def eb(failure):
             failure.trap(UnknownInterpreterError)
-            self.assertEquals(
+            self.assertEqual(
                 failure.value.interpreter,
                 "/bin/cantpossiblyexist")
         return d.addCallback(cb).addErrback(eb)
@@ -433,7 +433,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
         script has the correct content.
         """
         data = open(executable, "r").read()
-        self.assertEquals(data, "#!%s\n%s" % (interp, code))
+        self.assertEqual(data, "#!%s\n%s" % (interp, code))
 
     def _send_script(self, interpreter, code, operation_id=123,
                      user=pwd.getpwuid(os.getuid())[0],
@@ -652,7 +652,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
             self.assertTrue(self.broker_service.exchanger.is_urgent())
             [message] = (
                 self.broker_service.message_store.get_pending_messages())
-            self.assertEquals(
+            self.assertEqual(
                 message["result-text"],
                  u"\x7fELF\x01\x01\x01\x00\x00\x00\ufffd\x01")
 
