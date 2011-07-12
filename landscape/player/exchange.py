@@ -9,6 +9,7 @@ from landscape.log import format_delta
 from landscape import SERVER_API, CLIENT_API
 from landscape.broker.exchange import get_accepted_types_diff
 
+
 class PayloadExchanger(object):
 
     plugin_name = "payload-exchanger"
@@ -41,9 +42,6 @@ class PayloadExchanger(object):
         reactor.call_on("pre-exit", self.stop)
 
     def send_at(self, payload, offset):
-        print 'got here 1'
-        print 'offset=', offset
-        print 'payload=', payload
         self._exchange_id = self._reactor.call_later(offset, self.exchange)
 
     def get_exchange_intervals(self):
