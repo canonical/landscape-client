@@ -66,7 +66,6 @@ class PlaybackService(LandscapeService):
 
         Start the L{MessageExchange}, L{Pinger} and L{Player} services.
         """
-        #super(PlaybackService, self).startService()
         self.exchanger.start()
         self.pinger.start()
         self.player.load()
