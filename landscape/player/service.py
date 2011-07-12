@@ -4,16 +4,16 @@ import os
 from landscape.lib.fetch import fetch_async
 from landscape.service import LandscapeService, run_landscape_service
 from landscape.broker.registration import RegistrationHandler, Identity
+from landscape.broker.config import BrokerConfiguration
 from landscape.broker.transport import HTTPTransport
+from landscape.broker.exchange import MessageExchange
 from landscape.broker.exchangestore import ExchangeStore
 from landscape.broker.ping import Pinger
 from landscape.broker.store import get_default_message_store
 from landscape.broker.server import BrokerServer
 from landscape.broker.amp import BrokerServerProtocolFactory
-from landscape.player.exchange import PayloadExchanger
 from landscape.player.player import PayloadPlayer
 from landscape.player.reader import PayloadReader
-from landscape.player.config import PlaybackConfiguration
 
 
 class PlaybackService(LandscapeService):
@@ -37,7 +37,7 @@ class PlaybackService(LandscapeService):
             self.persist, config.message_store_path)
         self.identity = Identity(self.config, self.persist)
         exchange_store = ExchangeStore(self.config.exchange_store_path)
-        self.exchanger = PayloadExchanger(
+        self.exchanger = MessageExchange(
             self.reactor, self.message_store, self.transport, self.identity,
             exchange_store, config)
         self.pinger = self.pinger_factory(self.reactor, config.ping_url,
@@ -66,7 +66,7 @@ class PlaybackService(LandscapeService):
 
         Start the L{MessageExchange}, L{Pinger} and L{Player} services.
         """
-        super(PlaybackService, self).startService()
+        #super(PlaybackService, self).startService()
         self.exchanger.start()
         self.pinger.start()
         self.player.load()
@@ -80,4 +80,4 @@ class PlaybackService(LandscapeService):
 
 def run(args):
     """Run the application, given some command line arguments."""
-    run_landscape_service(PlaybackConfiguration, PlaybackService, args)
+    run_landscape_service(BrokerConfiguration, PlaybackService, args)
