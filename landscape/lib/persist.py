@@ -106,14 +106,8 @@ class Persist(object):
 
     def load(self, filepath):
         """Load a persisted database."""
-        filepath = os.path.expanduser(filepath)
-        if not os.path.isfile(filepath):
-            raise PersistError("File not found: %s" % filepath)
-        if os.path.getsize(filepath) == 0:
-            return
-        try:
-            self._hardmap = self._backend.load(filepath)
-        except:
+
+        def load_old():
             filepathold = filepath + ".old"
             if (os.path.isfile(filepathold) and
                 os.path.getsize(filepathold) > 0):
@@ -124,9 +118,23 @@ class Persist(object):
                 except:
                     raise PersistError("Broken configuration file at %s" %
                                        filepathold)
-            else:
-                raise PersistError("Broken configuration file at %s" %
-                                   filepath)
+                return True
+            return False
+
+        filepath = os.path.expanduser(filepath)
+        if not os.path.isfile(filepath):
+            if load_old():
+                return
+            raise PersistError("File not found: %s" % filepath)
+        if os.path.getsize(filepath) == 0:
+            load_old()
+            return
+        try:
+            self._hardmap = self._backend.load(filepath)
+        except:
+            if load_old():
+                return
+            raise PersistError("Broken configuration file at %s" % filepath)
 
     def save(self, filepath=None):
         """Save the persist to the given C{filepath}.
