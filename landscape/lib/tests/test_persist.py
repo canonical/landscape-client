@@ -397,6 +397,46 @@ class SaveLoadPersistTest(BasePersistTest):
         filename = self.makeFile("")
         self.persist.load(filename)
 
+    def test_load_empty_files_restore_backup(self):
+        """
+        If the current file is empty, it tries to load the old one if it
+        exists.
+        """
+        filename = self.makeFile("")
+        filename_old = filename + ".old"
+
+        self.persist.set("a", 1)
+        self.persist.save(filename_old)
+
+        persist = self.build_persist()
+        persist.load(filename)
+
+        self.assertEqual(persist.get("a"), 1)
+
+    def test_non_existing_raise_error(self):
+        """
+        Trying to load a file that doesn't exist result in a L{PersistError}.
+        """
+        persist = self.build_persist()
+        self.assertRaises(PersistError, persist.load, "/nonexistent")
+
+    def test_non_existing_restore_backup(self):
+        """
+        If the file doesn't exist, it tries to load the old one if present and
+        valid.
+        """
+        filename = self.makeFile("")
+        filename_old = filename + ".old"
+        os.unlink(filename)
+
+        self.persist.set("a", 1)
+        self.persist.save(filename_old)
+
+        persist = self.build_persist()
+        persist.load(filename)
+
+        self.assertEqual(persist.get("a"), 1)
+
 
 class PicklePersistTest(GeneralPersistTest, SaveLoadPersistTest):
 
