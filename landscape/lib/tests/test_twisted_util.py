@@ -63,14 +63,14 @@ class SpawnProcessTest(LandscapeTest):
         create_file(self.command, "#!/bin/sh\n/bin/echo -ne $@")
         param = r"some text\nanother line\nok, last one\n"
         expected = ["some text", "another line", "ok, last one"]
-
         lines = []
+
         def line_received(line):
             lines.append(line)
 
         def callback((out, err, code)):
             self.assertEqual(expected, lines)
-        
+
         result = spawn_process(self.command, args=(param,),
                                line_received=line_received)
         result.addCallback(callback)
@@ -83,14 +83,14 @@ class SpawnProcessTest(LandscapeTest):
         create_file(self.command, "#!/bin/sh\n/bin/echo -ne $@")
         param = r"some text\nanother line\n\n\n"
         expected = ["some text", "another line", "", ""]
-
         lines = []
+
         def line_received(line):
             lines.append(line)
 
         def callback((out, err, code)):
             self.assertEqual(expected, lines)
-        
+
         result = spawn_process(self.command, args=(param,),
                                line_received=line_received)
         result.addCallback(callback)
@@ -104,14 +104,14 @@ class SpawnProcessTest(LandscapeTest):
         create_file(self.command, "#!/bin/sh\n/bin/echo -ne $@")
         param = r"some text\nanother line\nok, last one"
         expected = ["some text", "another line", "ok, last one"]
-
         lines = []
+
         def line_received(line):
             lines.append(line)
 
         def callback((out, err, code)):
             self.assertEqual(expected, lines)
-        
+
         result = spawn_process(self.command, args=(param,),
                                line_received=line_received)
         result.addCallback(callback)

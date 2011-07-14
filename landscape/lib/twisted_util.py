@@ -54,6 +54,7 @@ class AllOutputProcessProtocol(ProcessProtocol):
         else:
             self.deferred.callback((out, err, code))
 
+
 def spawn_process(executable, args=(), env={}, path=None, uid=None, gid=None,
                   wait_pipes=True, line_received=None):
     """
@@ -76,8 +77,8 @@ def spawn_process(executable, args=(), env={}, path=None, uid=None, gid=None,
 
     result = Deferred()
     protocol = AllOutputProcessProtocol(result, line_received=line_received)
-    process = reactor.spawnProcess(protocol, executable, args=list_args, env=env,
-                                   path=path, uid=uid, gid=gid)
+    process = reactor.spawnProcess(protocol, executable, args=list_args,
+                                   env=env, path=path, uid=uid, gid=gid)
 
     if not wait_pipes:
         def maybeCallProcessEnded():
