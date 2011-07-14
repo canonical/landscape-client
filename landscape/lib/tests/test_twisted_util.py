@@ -65,14 +65,14 @@ class SpawnProcessTest(LandscapeTest):
         expected = ["some text", "another line", "ok, last one"]
 
         lines = []
-        def output_callback(line):
+        def line_received(line):
             lines.append(line)
 
         def callback((out, err, code)):
             self.assertEqual(expected, lines)
         
         result = spawn_process(self.command, args=(param,),
-                               output_callback=output_callback)
+                               line_received=line_received)
         result.addCallback(callback)
         return result
 
@@ -85,14 +85,14 @@ class SpawnProcessTest(LandscapeTest):
         expected = ["some text", "another line", "", ""]
 
         lines = []
-        def output_callback(line):
+        def line_received(line):
             lines.append(line)
 
         def callback((out, err, code)):
             self.assertEqual(expected, lines)
         
         result = spawn_process(self.command, args=(param,),
-                               output_callback=output_callback)
+                               line_received=line_received)
         result.addCallback(callback)
         return result
 
@@ -106,13 +106,13 @@ class SpawnProcessTest(LandscapeTest):
         expected = ["some text", "another line", "ok, last one"]
 
         lines = []
-        def output_callback(line):
+        def line_received(line):
             lines.append(line)
 
         def callback((out, err, code)):
             self.assertEqual(expected, lines)
         
         result = spawn_process(self.command, args=(param,),
-                               output_callback=output_callback)
+                               line_received=line_received)
         result.addCallback(callback)
         return result

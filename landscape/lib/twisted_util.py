@@ -17,19 +17,18 @@ def gather_results(deferreds, consume_errors=False):
 class AllOutputProcessProtocol(ProcessProtocol):
     """A process protocol for getting stdout, stderr and exit code."""
 
-    def __init__(self, deferred, output_callback=None):
+    def __init__(self, deferred, line_received=None):
         self.deferred = deferred
         self.outBuf = cStringIO.StringIO()
         self.errBuf = cStringIO.StringIO()
-        self.outReceived = self._outbuf_write
         self.errReceived = self.errBuf.write
-        self.output_callback = output_callback
+        self.line_received = line_received
         self._partial_line = ""
 
-    def _outbuf_write(self, data):
+    def outReceived(self, data):
         self.outBuf.write(data)
 
-        if self.output_callback is None:
+        if self.line_received is None:
             return
 
         # data may contain more than one line, so we split the output and save
@@ -40,11 +39,11 @@ class AllOutputProcessProtocol(ProcessProtocol):
         self._partial_line = lines.pop()
 
         for line in lines:
-            self.output_callback(line)
+            self.line_received(line)
 
     def processEnded(self, reason):
         if self._partial_line:
-            self.output_callback(self._partial_line)
+            self.line_received(self._partial_line)
             self._partial_line = ""
         out = self.outBuf.getvalue()
         err = self.errBuf.getvalue()
@@ -56,7 +55,7 @@ class AllOutputProcessProtocol(ProcessProtocol):
             self.deferred.callback((out, err, code))
 
 def spawn_process(executable, args=(), env={}, path=None, uid=None, gid=None,
-                  wait_pipes=True, output_callback=None):
+                  wait_pipes=True, line_received=None):
     """
     Spawn a process using Twisted reactor.
 
@@ -65,7 +64,7 @@ def spawn_process(executable, args=(), env={}, path=None, uid=None, gid=None,
 
     @param wait_pipes: if set to False, don't wait for stdin/stdout pipes to
         close when process ends.
-    @param output_callback: an optional callback called with every line of
+    @param line_received: an optional callback called with every line of
         output from the process as parameter.
 
     @note: compared to reactor.spawnProcess, this version does NOT require the
@@ -76,7 +75,7 @@ def spawn_process(executable, args=(), env={}, path=None, uid=None, gid=None,
     list_args.extend(args)
 
     result = Deferred()
-    protocol = AllOutputProcessProtocol(result, output_callback=output_callback)
+    protocol = AllOutputProcessProtocol(result, line_received=line_received)
     process = reactor.spawnProcess(protocol, executable, args=list_args, env=env,
                                    path=path, uid=uid, gid=gid)
 
