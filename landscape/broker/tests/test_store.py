@@ -176,7 +176,6 @@ class MessageStoreTest(LandscapeTest):
             self.store.add(dict(type=["data", "unaccepted"][i % 2],
                                 data=str(i)))
         self.store.set_pending_offset(2)
-        il = [m["data"] for m in self.store.get_pending_messages(2)]
         self.store.set_accepted_types(["data", "unaccepted"])
         il = [m["data"] for m in self.store.get_pending_messages(20)]
         self.assertEqual(il, map(str, [4, 6, 8, 1, 3, 5, 7, 9]))

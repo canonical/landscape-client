@@ -111,8 +111,9 @@ class MessageExchange(object):
             self.schedule_exchange(urgent=True)
         return message_id
 
-    def send_at(self, payload, offset):
-        self._exchange_id = self._reactor.call_later(offset, self.exchange)
+    def send_at(self, offset, messages):
+        self._exchange_id = self._reactor.call_later(
+            offset, self.exchange, messages)
 
     def start(self):
         """Start scheduling exchanges. The first one will be urgent."""
@@ -173,7 +174,7 @@ class MessageExchange(object):
                          self._urgent_exchange_interval)
         self._config.write()
 
-    def exchange(self):
+    def exchange(self, messages=None):
         """Send pending messages to the server and process responses.
 
         An C{pre-exchange} reactor event will be emitted just before the
@@ -194,7 +195,7 @@ class MessageExchange(object):
 
         self._reactor.fire("pre-exchange")
 
-        payload = self.make_payload()
+        payload = self.make_payload(messages)
 
         start_time = self._create_time()
         if self._urgent_exchange:
@@ -274,7 +275,7 @@ class MessageExchange(object):
     def _notify_impending_exchange(self):
         self._reactor.fire("impending-exchange")
 
-    def make_payload(self):
+    def make_payload(self, messages=None):
         """Return a dict representing the complete exchange payload.
 
         The payload will contain all pending messages eligible for
@@ -283,7 +284,8 @@ class MessageExchange(object):
         """
         store = self._message_store
         accepted_types_digest = self._hash_types(store.get_accepted_types())
-        messages = store.get_pending_messages(self._max_messages)
+        if (messages is None):
+            messages = store.get_pending_messages(self._max_messages)
         total_messages = store.count_pending_messages()
         if messages:
             # Each message is tagged with the API that the client was

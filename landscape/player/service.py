@@ -9,7 +9,7 @@ from landscape.broker.transport import HTTPTransport
 from landscape.broker.exchange import MessageExchange
 from landscape.broker.exchangestore import ExchangeStore
 from landscape.broker.ping import Pinger
-from landscape.broker.store import get_default_message_store
+from landscape.player.fake_store import get_fake_message_store
 from landscape.broker.server import BrokerServer
 from landscape.broker.amp import BrokerServerProtocolFactory
 from landscape.player.player import PayloadPlayer
@@ -33,7 +33,7 @@ class PlaybackService(LandscapeService):
 
         self.transport = self.transport_factory(
             config.url, config.ssl_public_key, None)
-        self.message_store = get_default_message_store(
+        self.message_store = get_fake_message_store(
             self.persist, config.message_store_path)
         self.identity = Identity(self.config, self.persist)
         exchange_store = ExchangeStore(self.config.exchange_store_path)
@@ -47,7 +47,7 @@ class PlaybackService(LandscapeService):
             self.message_store, fetch_async)
         self.reactor.call_on("post-exit", self._exit)
 
-        self.player = PayloadPlayer(self.payload_reader, self.exchanger, 10)
+        self.player = PayloadPlayer(self.payload_reader, self.exchanger, 1)
 
         self.broker = BrokerServer(self.config, self.reactor, self.exchanger,
                                    self.registration, self.message_store)
