@@ -931,6 +931,7 @@ class MessageExchangeTest(LandscapeTest):
         self.assertEqual(self.exchanger.exchange, self.reactor._calls[0][1])
         self.assertEqual(messages, self.reactor._calls[0][2][0])
 
+
 class AcceptedTypesMessageExchangeTest(LandscapeTest):
 
     helpers = [ExchangeHelper]
