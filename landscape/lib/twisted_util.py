@@ -17,14 +17,34 @@ def gather_results(deferreds, consume_errors=False):
 class AllOutputProcessProtocol(ProcessProtocol):
     """A process protocol for getting stdout, stderr and exit code."""
 
-    def __init__(self, deferred):
+    def __init__(self, deferred, line_received=None):
         self.deferred = deferred
         self.outBuf = cStringIO.StringIO()
         self.errBuf = cStringIO.StringIO()
-        self.outReceived = self.outBuf.write
         self.errReceived = self.errBuf.write
+        self.line_received = line_received
+        self._partial_line = ""
+
+    def outReceived(self, data):
+        self.outBuf.write(data)
+
+        if self.line_received is None:
+            return
+
+        # data may contain more than one line, so we split the output and save
+        # the last line. If it's an empty string nothing happens, otherwise it
+        # will be returned once complete
+        lines = data.split("\n")
+        lines[0] = self._partial_line + lines[0]
+        self._partial_line = lines.pop()
+
+        for line in lines:
+            self.line_received(line)
 
     def processEnded(self, reason):
+        if self._partial_line:
+            self.line_received(self._partial_line)
+            self._partial_line = ""
         out = self.outBuf.getvalue()
         err = self.errBuf.getvalue()
         e = reason.value
@@ -36,7 +56,7 @@ class AllOutputProcessProtocol(ProcessProtocol):
 
 
 def spawn_process(executable, args=(), env={}, path=None, uid=None, gid=None,
-                  wait_pipes=True):
+                  wait_pipes=True, line_received=None):
     """
     Spawn a process using Twisted reactor.
 
@@ -45,6 +65,8 @@ def spawn_process(executable, args=(), env={}, path=None, uid=None, gid=None,
 
     @param wait_pipes: if set to False, don't wait for stdin/stdout pipes to
         close when process ends.
+    @param line_received: an optional callback called with every line of
+        output from the process as parameter.
 
     @note: compared to reactor.spawnProcess, this version does NOT require the
     executable name as first element of args.
@@ -54,9 +76,9 @@ def spawn_process(executable, args=(), env={}, path=None, uid=None, gid=None,
     list_args.extend(args)
 
     result = Deferred()
-    protocol = AllOutputProcessProtocol(result)
-    process = reactor.spawnProcess(protocol, executable, args=list_args, env=env,
-                                   path=path, uid=uid, gid=gid)
+    protocol = AllOutputProcessProtocol(result, line_received=line_received)
+    process = reactor.spawnProcess(protocol, executable, args=list_args,
+                                   env=env, path=path, uid=uid, gid=gid)
 
     if not wait_pipes:
         def maybeCallProcessEnded():
