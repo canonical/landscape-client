@@ -286,7 +286,9 @@ class MessageExchange(object):
         accepted_types_digest = self._hash_types(store.get_accepted_types())
         if (messages is None):
             messages = store.get_pending_messages(self._max_messages)
-        total_messages = store.count_pending_messages()
+            total_messages = store.count_pending_messages()
+        else:
+            total_messages = len(messages)
         if messages:
             # Each message is tagged with the API that the client was
             # using at the time the message got added to the store.  The
