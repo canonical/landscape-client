@@ -15,7 +15,7 @@ class PlaybackService(BrokerService):
         @param config: A L{BrokerConfiguration}.
         """
         # Disable recording while in playback mode.
-        config.record = False
+        config.record = None
         super(PlaybackService, self).__init__(config)
 
         self.payload_reader = PayloadReader(config.record_directory)
