@@ -6,6 +6,11 @@ from landscape.tests.helpers import LandscapeTest
 class PayloadReaderTest(LandscapeTest):
 
     def test_load_returns_filename(self):
+        """
+        Each server exchange is saved in a file with the filename being the
+        offset in seconds since recording started.  C{PayloadPlayer.load()}
+        should return the filename in addition to the file contents.
+        """
         path = self.makeDir()
         recorder = PayloadRecorder(path)
 
@@ -21,6 +26,10 @@ class PayloadReaderTest(LandscapeTest):
         self.assertEqual("payload data", payloads[0][1])
 
     def test_load_returns_multiple_files(self):
+        """
+        Multiple exchanges should be handled in the same manner as
+        a single server exchange.
+        """
         path = self.makeDir()
         recorder = PayloadRecorder(path)
         recorder.save("payload data")

@@ -284,7 +284,7 @@ class MessageExchange(object):
         """
         store = self._message_store
         accepted_types_digest = self._hash_types(store.get_accepted_types())
-        if (messages is None):
+        if messages is None:
             messages = store.get_pending_messages(self._max_messages)
             total_messages = store.count_pending_messages()
         else:

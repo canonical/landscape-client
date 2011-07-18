@@ -30,5 +30,5 @@ class PayloadPlayer(object):
         for offset_str, payload in self._data:
             offset = float(offset_str) / self._playback_speed
             exchange = bpickle.loads(payload)
-            if (len(exchange['messages']) > 0):
+            if len(exchange['messages']) > 0:
                 self._exchange.send_at(offset, exchange['messages'])
