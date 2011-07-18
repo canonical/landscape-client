@@ -54,3 +54,65 @@ class SpawnProcessTest(LandscapeTest):
         result = spawn_process(self.command, args=("a", "b"))
         result.addCallback(callback)
         return result
+
+    def test_spawn_process_callback(self):
+        """
+        If a callback for process output is provieded, it is called for every
+        line of output.
+        """
+        create_file(self.command, "#!/bin/sh\n/bin/echo -ne $@")
+        param = r"some text\nanother line\nok, last one\n"
+        expected = ["some text", "another line", "ok, last one"]
+        lines = []
+
+        def line_received(line):
+            lines.append(line)
+
+        def callback((out, err, code)):
+            self.assertEqual(expected, lines)
+
+        result = spawn_process(self.command, args=(param,),
+                               line_received=line_received)
+        result.addCallback(callback)
+        return result
+
+    def test_spawn_process_callback_multiple_newlines(self):
+        """
+        If output ends with more than one newline, empty lines are preserved.
+        """
+        create_file(self.command, "#!/bin/sh\n/bin/echo -ne $@")
+        param = r"some text\nanother line\n\n\n"
+        expected = ["some text", "another line", "", ""]
+        lines = []
+
+        def line_received(line):
+            lines.append(line)
+
+        def callback((out, err, code)):
+            self.assertEqual(expected, lines)
+
+        result = spawn_process(self.command, args=(param,),
+                               line_received=line_received)
+        result.addCallback(callback)
+        return result
+
+    def test_spawn_process_callback_no_newline(self):
+        """
+        If output ends without a newline, the line is still passed to the
+        callback.
+        """
+        create_file(self.command, "#!/bin/sh\n/bin/echo -ne $@")
+        param = r"some text\nanother line\nok, last one"
+        expected = ["some text", "another line", "ok, last one"]
+        lines = []
+
+        def line_received(line):
+            lines.append(line)
+
+        def callback((out, err, code)):
+            self.assertEqual(expected, lines)
+
+        result = spawn_process(self.command, args=(param,),
+                               line_received=line_received)
+        result.addCallback(callback)
+        return result
