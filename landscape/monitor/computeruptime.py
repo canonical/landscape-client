@@ -44,10 +44,12 @@ class LoginInfo(object):
 
 
 class LoginInfoReader(object):
-    """Reader parses C{/var/log/wtmp} and/or C{/var/run/utmp} files."""
+    """Reader parses C{/var/log/wtmp} and/or C{/var/run/utmp} files.
+
+    @file: Initialize the reader with an open file.
+    """
 
     def __init__(self, file):
-        """Initialize the reader with an open file."""
         self._file = file
         self._struct_length = struct.calcsize(LoginInfo.RAW_FORMAT)
 
@@ -113,7 +115,6 @@ class ComputerUptime(MonitorPlugin):
     persist_name = "computer-uptime"
 
     def __init__(self, wtmp_file="/var/log/wtmp"):
-        """Initialize the plugin."""
         self._first_run = True
         self._wtmp_file = wtmp_file
 

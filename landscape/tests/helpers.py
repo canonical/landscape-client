@@ -474,7 +474,10 @@ class DummyProcess(object):
 
 
 class ProcessDataBuilder(object):
-    """Builder creates sample data for the process info plugin to consume."""
+    """Builder creates sample data for the process info plugin to consume.
+
+    @sample_dir: The directory for sample data.
+    """
 
     RUNNING = "R (running)"
     STOPPED = "T (stopped)"
@@ -485,7 +488,6 @@ class ProcessDataBuilder(object):
     ZOMBIE = "Z (zombie)"
 
     def __init__(self, sample_dir):
-        """Initialize factory with directory for sample data."""
         self._sample_dir = sample_dir
 
     def create_data(self, process_id, state, uid, gid,
@@ -651,12 +653,11 @@ class PyUnitResultAdapter(object):
     supports the extended result types from Trial, and also supports
     L{twisted.python.failure.Failure}s being passed to L{addError} and
     L{addFailure}.
+
+    @param original: A C{TestResult} instance from C{unittest}.
     """
 
     def __init__(self, original):
-        """
-        @param original: A C{TestResult} instance from C{unittest}.
-        """
         self.original = original
 
     def _exc_info(self, err):

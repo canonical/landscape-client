@@ -29,19 +29,18 @@ class BrokerServer(object):
     """
     A broker server capable of handling messages from plugins connected using
     the L{BrokerProtocol}.
+
+    @param config: The L{BrokerConfiguration} used by the broker.
+    @param reactor: The L{TwistedReactor} driving the broker's events.
+    @param exchange: The L{MessageExchange} to send messages with.
+    @param registration: The {RegistrationHandler}.
+    @param message_store: The broker's L{MessageStore}.
     """
     name = "broker"
     connectors_registry = RemoteComponentsRegistry
 
     def __init__(self, config, reactor, exchange, registration,
                  message_store):
-        """
-        @param config: The L{BrokerConfiguration} used by the broker.
-        @param reactor: The L{TwistedReactor} driving the broker's events.
-        @param exchange: The L{MessageExchange} to send messages with.
-        @param registration: The {RegistrationHandler}.
-        @param message_store: The broker's L{MessageStore}.
-        """
         self._config = config
         self._reactor = reactor
         self._exchanger = exchange

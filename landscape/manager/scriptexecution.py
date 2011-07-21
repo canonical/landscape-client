@@ -86,12 +86,12 @@ class UnknownInterpreterError(Exception):
 
 
 class ScriptRunnerMixin(object):
+    """
+    @param process_factory: The L{IReactorProcess} provider to run the
+        process with.
+    """
 
     def __init__(self, process_factory=None):
-        """
-        @param process_factory: The L{IReactorProcess} provider to run the
-            process with.
-        """
         if process_factory is None:
             from twisted.internet import reactor as process_factory
         self.process_factory = process_factory

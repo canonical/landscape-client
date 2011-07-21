@@ -28,19 +28,18 @@ class RemoteComponentConnector(RemoteObjectConnector):
     @cvar component: The class of the component to connect to, it is expected
         to define a C{name} class attribute, which will be used to find out
         the socket to use. It must be defined by sub-classes.
+
+    @param reactor: A L{TwistedReactor} object.
+    @param config: A L{LandscapeConfiguration}.
+    @param args: Positional arguments for protocol factory constructor.
+    @param kwargs: Keyword arguments for protocol factory constructor.
+    
+    @see: L{MethodCallClientFactory}.
     """
 
     factory = ComponentProtocolFactory
 
     def __init__(self, reactor, config, *args, **kwargs):
-        """
-        @param reactor: A L{TwistedReactor} object.
-        @param config: A L{LandscapeConfiguration}.
-        @param args: Positional arguments for protocol factory constructor.
-        @param kwargs: Keyword arguments for protocol factory constructor.
-
-        @see: L{MethodCallClientFactory}.
-        """
         self._twisted_reactor = reactor
         socket = os.path.join(config.sockets_path,
                               self.component.name + ".sock")

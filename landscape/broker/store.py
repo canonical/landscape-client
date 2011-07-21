@@ -34,6 +34,10 @@ class MessageStore(object):
     history of our exchanges with the server.  What we call "server
     sequence", is the next message number expected by the *client* itself,
     and is entirely unrelated to the stored messages.
+
+    @param persist: a L{Persist} used to save state parameters like the
+        accepted message types, sequence, server uuid etc.
+    @param directory: base of the file system hierarchy
     """
 
     api = SERVER_API
@@ -41,9 +45,6 @@ class MessageStore(object):
     def __init__(self, persist, directory, directory_size=1000,
                  monitor_interval=60*60, get_time=time.time):
         """
-        @param persist: a L{Persist} used to save state parameters like
-            the accepted message types, sequence, server uuid etc.
-        @param directory: base of the file system hierarchy
         """
         self._get_time = get_time
         self._directory = directory
