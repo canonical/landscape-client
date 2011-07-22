@@ -180,6 +180,9 @@ class RunScriptTests(LandscapeTest):
         mock_chown = self.mocker.replace("os.chown", passthrough=False)
         mock_chown(ARGS)
 
+        expected_uid = uid if uid != os.getuid() else None
+        expected_gid = gid if gid != os.getgid() else None
+
         factory = StubProcessFactory()
         self.plugin.process_factory = factory
 
@@ -190,8 +193,8 @@ class RunScriptTests(LandscapeTest):
         self.assertEqual(len(factory.spawns), 1)
         spawn = factory.spawns[0]
         self.assertEqual(spawn[4], path)
-        self.assertEqual(spawn[5], uid)
-        self.assertEqual(spawn[6], gid)
+        self.assertEqual(spawn[5], expected_uid)
+        self.assertEqual(spawn[6], expected_gid)
         result.addCallback(self.assertEqual, "foobar")
 
         protocol = spawn[0]
@@ -379,7 +382,7 @@ class RunScriptTests(LandscapeTest):
         script_file.write("#!/bin/sh\ncode")
         script_file.close()
         process_factory.spawnProcess(
-            ANY, ANY, uid=uid, gid=gid, path=ANY,
+            ANY, ANY, uid=None, gid=None, path=ANY,
             env=get_default_environment())
         self.mocker.replay()
         # We don't really care about the deferred that's returned, as long as
@@ -499,7 +502,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
             self._verify_script(filename, sys.executable, "print 'hi'")
         process_factory = self.mocker.mock()
         process_factory.spawnProcess(
-            ANY, ANY, uid=uid, gid=gid, path=ANY,
+            ANY, ANY, uid=None, gid=None, path=ANY,
             env=get_default_environment())
         self.mocker.call(spawn_called)
         self.mocker.replay()
@@ -586,9 +589,6 @@ class ScriptExecutionMessageTests(LandscapeTest):
 
     def test_urgent_response(self):
         """Responses to script execution messages are urgent."""
-        username = pwd.getpwuid(os.getuid())[0]
-        uid, gid, home = get_user_info(username)
-
         # ignore the call to chown!
         mock_chown = self.mocker.replace("os.chown", passthrough=False)
         mock_chown(ARGS)
@@ -599,7 +599,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
             self._verify_script(filename, sys.executable, "print 'hi'")
         process_factory = self.mocker.mock()
         process_factory.spawnProcess(
-            ANY, ANY, uid=uid, gid=gid, path=ANY,
+            ANY, ANY, uid=None, gid=None, path=ANY,
             env=get_default_environment())
         self.mocker.call(spawn_called)
 
@@ -626,9 +626,6 @@ class ScriptExecutionMessageTests(LandscapeTest):
         If a script outputs non-printable characters not handled by utf-8, they
         are replaced during the encoding phase but the script succeeds.
         """
-        username = pwd.getpwuid(os.getuid())[0]
-        uid, gid, home = get_user_info(username)
-
         mock_chown = self.mocker.replace("os.chown", passthrough=False)
         mock_chown(ARGS)
 
@@ -639,7 +636,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
             self._verify_script(filename, sys.executable, "print 'hi'")
         process_factory = self.mocker.mock()
         process_factory.spawnProcess(
-            ANY, ANY, uid=uid, gid=gid, path=ANY,
+            ANY, ANY, uid=None, gid=None, path=ANY,
             env=get_default_environment())
         self.mocker.call(spawn_called)
 
