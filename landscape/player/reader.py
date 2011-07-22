@@ -18,7 +18,7 @@ class PayloadReader(object):
             (filename2, file_contents2)]
         """
         result = []
-        for filename in os.listdir(self._source_dir):
+        for filename in sorted(os.listdir(self._source_dir)):
             full_path = os.path.join(self._source_dir, filename)
             result.append((filename, read_file(full_path)))
         return result
