@@ -113,6 +113,12 @@ class ScriptRunnerMixin(object):
         script_file.close()
 
     def _run_script(self, filename, uid, gid, path, env, time_limit):
+
+        if uid == os.getuid():
+            uid = None
+        if gid == os.getgid():
+            gid = None
+
         pp = ProcessAccumulationProtocol(
             self.registry.reactor, self.size_limit)
         self.process_factory.spawnProcess(
