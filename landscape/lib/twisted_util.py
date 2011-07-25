@@ -56,7 +56,7 @@ class AllOutputProcessProtocol(ProcessProtocol):
 
 
 def spawn_process(executable, args=(), env={}, path=None, uid=None, gid=None,
-                  wait_pipes=True, line_received=None):
+                  usePTY=False, wait_pipes=True, line_received=None):
     """
     Spawn a process using Twisted reactor.
 
@@ -78,9 +78,11 @@ def spawn_process(executable, args=(), env={}, path=None, uid=None, gid=None,
     result = Deferred()
     protocol = AllOutputProcessProtocol(result, line_received=line_received)
     process = reactor.spawnProcess(protocol, executable, args=list_args,
-                                   env=env, path=path, uid=uid, gid=gid)
+                                   env=env, path=path, uid=uid, gid=gid,
+                                   usePTY=usePTY)
 
     if not wait_pipes:
+
         def maybeCallProcessEnded():
             """A less strict version of Process.maybeCallProcessEnded.
 

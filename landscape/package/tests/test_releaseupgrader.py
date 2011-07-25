@@ -702,7 +702,7 @@ class ReleaseUpgraderTest(LandscapeTest):
         spawn_process_calls = []
 
         def spawn_process(pp, reporter, args=None, uid=None, gid=None,
-                          path=None, env=None):
+                          path=None, env=None, usePTY=None):
             self.assertEqual(uid, 1234)
             self.assertEqual(gid, 5678)
             spawn_process_calls.append(True)
