@@ -20,7 +20,7 @@ class Constant(object):
 class Any(object):
     """Something which must apply to any of a number of different schemas.
 
-    @*schemas: Other schema objects.
+    @param schemas: Other schema objects.
     """
     def __init__(self, *schemas):
         self.schemas = schemas

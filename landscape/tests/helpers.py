@@ -476,7 +476,7 @@ class DummyProcess(object):
 class ProcessDataBuilder(object):
     """Builder creates sample data for the process info plugin to consume.
 
-    @sample_dir: The directory for sample data.
+    @param sample_dir: The directory for sample data.
     """
 
     RUNNING = "R (running)"

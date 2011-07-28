@@ -21,10 +21,11 @@ STATES = {"R (running)": "R",
 
 class ProcessInformation(object):
     """
-    @proc_dir: The directory to use for process information.
-    @jiffies: The value to use for jiffies per second.
-    @boot_time: 
-    @uptime: The uptime value to use (for unit tests only).
+    @param proc_dir: The directory to use for process information.
+    @param jiffies: The value to use for jiffies per second.
+    @param boot_time: An alternate value to use for the last boot time.  If
+        None, the system last boot time will be used.
+    @param uptime: The uptime value to use (for unit tests only).
     """
 
     def __init__(self, proc_dir="/proc", jiffies=None, boot_time=None,

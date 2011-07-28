@@ -27,9 +27,9 @@ class ProcessorInfo(MonitorPlugin):
     information on the various platforms we support, message
     generation is deferred to per-platform message factories.
 
-    @delay: Set the starting delay.
-    @machine_name: The machine name to report.
-    @source_filename: The filesystem path to read information from.
+    @param delay: Set the starting delay.
+    @param machine_name: The machine name to report.
+    @param source_filename: The filesystem path to read information from.
     """
 
     persist_name = "processor-info"
@@ -120,7 +120,7 @@ class ProcessorInfo(MonitorPlugin):
 class PowerPCMessageFactory:
     """Factory for ppc-based processors provides processor information.
 
-    @source_filename: The file name of the data source.
+    @param source_filename: The file name of the data source.
     """
 
     def __init__(self, source_filename):
@@ -152,7 +152,7 @@ class PowerPCMessageFactory:
 class ARMMessageFactory:
     """Factory for arm-based processors provides processor information.
 
-    @source_filename: The file name of the data source.
+    @param source_filename: The file name of the data source.
     """
 
     def __init__(self, source_filename):
@@ -192,7 +192,7 @@ class ARMMessageFactory:
 class SparcMessageFactory:
     """Factory for sparc-based processors provides processor information.
 
-    @source_filename: The file name of the data source.
+    @param source_filename: The file name of the data source.
     """
 
     def __init__(self, source_filename):
@@ -227,7 +227,7 @@ class SparcMessageFactory:
 class X86MessageFactory:
     """Factory for x86-based processors provides processor information.
 
-    @source_filename: The file name of the data source.
+    @param source_filename: The file name of the data source.
     """
 
     def __init__(self, source_filename):
