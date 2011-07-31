@@ -35,6 +35,8 @@ class BrokerService(LandscapeService):
     @ivar pinger: The L{Pinger} checks if the server has new messages for us.
     @ivar registration: The L{RegistrationHandler} performs the initial
         registration.
+
+    @param config: A L{BrokerConfiguration}.
     """
 
     transport_factory = HTTPTransport
@@ -42,9 +44,6 @@ class BrokerService(LandscapeService):
     service_name = BrokerServer.name
 
     def __init__(self, config):
-        """
-        @param config: A L{BrokerConfiguration}.
-        """
         self.persist_filename = os.path.join(
             config.data_path, "%s.bpickle" % (self.service_name,))
         super(BrokerService, self).__init__(config)

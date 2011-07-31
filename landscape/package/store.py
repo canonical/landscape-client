@@ -19,17 +19,16 @@ class InvalidHashIdDb(Exception):
 
 
 class HashIdStore(object):
-    """Persist package hash=>id mappings in a file.
+    """C{HashIdStore} stores package hash=>id mappings in a file.
 
-    The implementation uses a SQLite database as backend, with a single
-    table called "hash", whose schema is defined in L{ensure_hash_id_schema}.
+    The file is a SQLite database that contains a single table called "hash".
+    The table schema is defined in L{ensure_hash_id_schema}.
+
+    @param filename: The file where the mappings are persisted to.
     """
     _db = None
 
     def __init__(self, filename):
-        """
-        @param filename: The file where the mappings are persisted to.
-        """
         self._filename = filename
 
     def _ensure_schema(self):
@@ -97,12 +96,11 @@ class PackageStore(HashIdStore):
     about the tasks to be performed by L{PackageTaskHandler}s.
 
     The additional tables and schemas are defined in L{ensure_package_schema}.
+
+    @param filename: The file where data is persisted to.
     """
 
     def __init__(self, filename):
-        """
-        @param filename: The file where data is persisted to.
-        """
         super(PackageStore, self).__init__(filename)
         self._hash_id_stores = []
 

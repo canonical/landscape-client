@@ -26,6 +26,10 @@ class ProcessorInfo(MonitorPlugin):
     In order to deal with the vagaries of parsing /proc/cpu
     information on the various platforms we support, message
     generation is deferred to per-platform message factories.
+
+    @param delay: Set the starting delay.
+    @param machine_name: The machine name to report.
+    @param source_filename: The filesystem path to read information from.
     """
 
     persist_name = "processor-info"
@@ -34,7 +38,6 @@ class ProcessorInfo(MonitorPlugin):
 
     def __init__(self, delay=2, machine_name=None,
                  source_filename="/proc/cpuinfo"):
-        """Initialize plugin with starting delay and source filename."""
         self._delay = delay
         self._source_filename = source_filename
 
@@ -115,10 +118,12 @@ class ProcessorInfo(MonitorPlugin):
 
 
 class PowerPCMessageFactory:
-    """Factory for ppc-based processors provides processor information."""
+    """Factory for ppc-based processors provides processor information.
+
+    @param source_filename: The file name of the data source.
+    """
 
     def __init__(self, source_filename):
-        """Initialize reader with filename of data source."""
         self._source_filename = source_filename
 
     def create_message(self):
@@ -145,10 +150,12 @@ class PowerPCMessageFactory:
 
 
 class ARMMessageFactory:
-    """Factory for arm-based processors provides processor information."""
+    """Factory for arm-based processors provides processor information.
+
+    @param source_filename: The file name of the data source.
+    """
 
     def __init__(self, source_filename):
-        """Initialize reader with filename of data source."""
         self._source_filename = source_filename
 
     def create_message(self):
@@ -183,10 +190,12 @@ class ARMMessageFactory:
 
 
 class SparcMessageFactory:
-    """Factory for sparc-based processors provides processor information."""
+    """Factory for sparc-based processors provides processor information.
+
+    @param source_filename: The file name of the data source.
+    """
 
     def __init__(self, source_filename):
-        """Initialize reader with filename of data source."""
         self._source_filename = source_filename
 
     def create_message(self):
@@ -216,10 +225,12 @@ class SparcMessageFactory:
 
 
 class X86MessageFactory:
-    """Factory for x86-based processors provides processor information."""
+    """Factory for x86-based processors provides processor information.
+
+    @param source_filename: The file name of the data source.
+    """
 
     def __init__(self, source_filename):
-        """Initialize reader with filename of data source."""
         self._source_filename = source_filename
 
     def create_message(self):

@@ -14,15 +14,15 @@ from landscape import SERVER_API, VERSION
 
 
 class HTTPTransport(object):
-    """Transport makes a request to exchange message data over HTTP."""
+    """Transport makes a request to exchange message data over HTTP.
+
+    @param url: URL of the remote Landscape server message system.
+    @param pubkey: SSH public key used for secure communication.
+    @param payload_recorder: PayloadRecorder used for recording exchanges
+        with the server.  If C{None}, exchanges will not be recorded.
+    """
 
     def __init__(self, url, pubkey=None, payload_recorder=None):
-        """
-        @param url: URL of the remote Landscape server message system.
-        @param pubkey: SSH public key used for secure communication.
-        @param payload_recorder: PayloadRecorder used for recording exchanges
-            with the server.  If C{None}, exchanges will not be recorded.
-        """
         self._url = url
         self._pubkey = pubkey
         self._payload_recorder = payload_recorder
@@ -99,12 +99,11 @@ class PayloadRecorder(object):
 
     Exchange payloads will be stored one per file, where the file name is
     the elapsed time since the client was started.
+
+    @param destination_dir - The directory to record exchanges in.
     """
 
     def __init__(self, destination_dir):
-        """
-        @param destination_dir - The directory to record exchanges in.
-        """
         self._time_offset = time.time()
         self._destination_dir = destination_dir
         self._last_payload_time = -1

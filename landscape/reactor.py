@@ -21,14 +21,14 @@ class CallHookError(Exception):
 
 
 class EventID(object):
-    """Unique identifier for an event handler."""
+    """Unique identifier for an event handler.
+
+    @param event_type: Name of the event type handled by the handler.
+    @param pair: Binary tuple C{(handler, priority)} holding the handler
+        function and its priority.
+    """
 
     def __init__(self, event_type, pair):
-        """
-        @param event_type: Name of the event type handled by the handler.
-        @param pair: Binary tuple C{(handler, priority)} holding the handler
-            function and its priority.
-        """
         self._event_type = event_type
         self._pair = pair
 

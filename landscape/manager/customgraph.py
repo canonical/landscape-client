@@ -66,6 +66,9 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
     """
     Manage adding and deleting custom graph scripts, and then run the scripts
     in a loop.
+
+    @param process_factory: The L{IReactorProcess} provider to run the
+        process with.
     """
     run_interval = 300
     size_limit = 1000
@@ -73,10 +76,6 @@ class CustomGraphPlugin(ManagerPlugin, ScriptRunnerMixin):
     message_type = "custom-graph"
 
     def __init__(self, process_factory=None, create_time=time.time):
-        """
-        @param process_factory: The L{IReactorProcess} provider to run the
-            process with.
-        """
         super(CustomGraphPlugin, self).__init__(process_factory)
         self._create_time = create_time
         self._data = {}

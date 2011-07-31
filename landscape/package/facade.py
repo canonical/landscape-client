@@ -35,15 +35,14 @@ class SmartFacade(object):
 
     This object wraps Smart features, in a way that makes using and testing
     these features slightly more comfortable.
+
+    @param smart_init_kwargs: A dictionary that can be used to pass specific
+        keyword parameters to to L{smart.init}.
     """
 
     _deb_package_type = None
 
     def __init__(self, smart_init_kwargs={}, sysconf_args=None):
-        """
-        @param smart_init_kwargs: A dictionary that can be used to pass
-            specific keyword parameters to to L{smart.init}.
-        """
         self._smart_init_kwargs = smart_init_kwargs.copy()
         self._smart_init_kwargs.setdefault("interface", "landscape")
         self._sysconfig_args = sysconf_args or {}
