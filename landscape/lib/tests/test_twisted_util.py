@@ -116,3 +116,16 @@ class SpawnProcessTest(LandscapeTest):
                                line_received=line_received)
         result.addCallback(callback)
         return result
+
+    def test_spawn_process_with_stdin(self):
+        """
+        Optionally C{spawn_process} accepts a C{stdin} argument.
+        """
+        create_file(self.command, "#!/bin/sh\n/bin/cat")
+
+        def callback((out, err, code)):
+            self.assertEqual("hello", out)
+
+        result = spawn_process(self.command, stdin="hello")
+        result.addCallback(callback)
+        return result
