@@ -58,6 +58,9 @@ class PackageReporter(PackageTaskHandler):
         # the SmartFacade will load freshly updated channels
         result.addCallback(lambda x: self.run_smart_update())
 
+        # Report which apt sources we're working with.
+        result.addCallback(lambda x: self.send_apt_sources())
+
         # If the appropriate hash=>id db is not there, fetch it
         result.addCallback(lambda x: self.fetch_hash_id_db())
 
@@ -215,6 +218,12 @@ class PackageReporter(PackageTaskHandler):
             "type": "package-reporter-result",
             "code": code,
             "err": err}
+        return self._broker.send_message(message, True)
+
+    def send_apt_sources(self):
+        message = {
+            "type": "apt-sources",
+            "sources": {}}
         return self._broker.send_message(message, True)
 
     def handle_task(self, task):
