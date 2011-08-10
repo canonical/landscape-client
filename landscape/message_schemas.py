@@ -302,9 +302,6 @@ PACKAGE_REPORTER_RESULT = Message("package-reporter-result", {
     "code": Int(),
     "err": utf8})
 
-APT_SOURCES = Message("apt-sources", {
-    "sources": Dict(String(), Dict(String(), Any(String(), List(String()))))})
-
 ADD_PACKAGES = Message("add-packages", {
     "packages": List(KeyDict({"name": utf8,
                               "description": Unicode(),
@@ -397,5 +394,5 @@ for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                ADD_PACKAGES, PACKAGE_REPORTER_RESULT, TEXT_MESSAGE, TEST,
                CUSTOM_GRAPH, REBOOT_REQUIRED, APT_PREFERENCES, EUCALYPTUS_INFO,
                EUCALYPTUS_INFO_ERROR, NETWORK_DEVICE, NETWORK_ACTIVITY,
-               REBOOT_REQUIRED_INFO, APT_SOURCES]:
+               REBOOT_REQUIRED_INFO]:
     message_schemas[schema.type] = schema

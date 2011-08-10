@@ -844,49 +844,6 @@ class PackageReporterTest(LandscapeTest):
         reactor.callWhenRunning(do_test)
         return deferred
 
-    def test_send_apt_sources_with_no_sources(self):
-        """
-        If no sources is defined, the sent apt-sources messages contains
-        an empty dict.
-        """
-        message_store = self.broker_service.message_store
-        message_store.set_accepted_types(["apt-sources"])
-        self.facade.reset_channels()
-
-        def check(result):
-            self.assertMessages(
-                message_store.get_pending_messages(),
-                [{"type": "apt-sources", "sources": {}}])
-
-        deferred = self.reporter.send_apt_sources()
-        return deferred.addCallback(check)
-
-    def test_send_apt_sources_with_sources(self):
-        """
-        If sources are defined, the sent apt-sources messages contains
-        all of them.
-        """
-        message_store = self.broker_service.message_store
-        message_store.set_accepted_types(["apt-sources"])
-        self.facade.reset_channels()
-        self.facade.add_channel_apt_deb(
-            "http://example.com/ubuntu", "lucid", ["main"])
-        self.facade.add_channel_deb_dir("/archive")
-        channels = {
-            "lucid": {"baseurl": "http://example.com/ubuntu",
-                      "components": ["main"],
-                      "distribution": "lucid",
-                      "type": "apt-deb"},
-            "/archive": {"path": "/archive", "type": "deb-dir"}}
-
-        def check(result):
-            self.assertMessages(
-                message_store.get_pending_messages(),
-                [{"type": "apt-sources", "sources": channels}])
-
-        deferred = self.reporter.send_apt_sources()
-        return deferred.addCallback(check)
-
     def test_remove_expired_hash_id_request(self):
         request = self.store.add_hash_id_request(["hash1"])
         request.message_id = 9999
@@ -1492,31 +1449,28 @@ class PackageReporterTest(LandscapeTest):
 
         self.mocker.order()
 
-        results = [Deferred() for i in range(8)]
+        results = [Deferred() for i in range(7)]
 
         reporter_mock.run_smart_update()
         self.mocker.result(results[0])
 
-        reporter_mock.send_apt_sources()
+        reporter_mock.fetch_hash_id_db()
         self.mocker.result(results[1])
 
-        reporter_mock.fetch_hash_id_db()
+        reporter_mock.use_hash_id_db()
         self.mocker.result(results[2])
 
-        reporter_mock.use_hash_id_db()
+        reporter_mock.handle_tasks()
         self.mocker.result(results[3])
 
-        reporter_mock.handle_tasks()
+        reporter_mock.remove_expired_hash_id_requests()
         self.mocker.result(results[4])
 
-        reporter_mock.remove_expired_hash_id_requests()
+        reporter_mock.request_unknown_hashes()
         self.mocker.result(results[5])
 
-        reporter_mock.request_unknown_hashes()
-        self.mocker.result(results[6])
-
         reporter_mock.detect_changes()
-        self.mocker.result(results[7])
+        self.mocker.result(results[6])
 
         self.mocker.replay()
 
