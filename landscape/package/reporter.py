@@ -223,7 +223,7 @@ class PackageReporter(PackageTaskHandler):
     def send_apt_sources(self):
         message = {
             "type": "apt-sources",
-            "sources": {}}
+            "sources": self._facade.get_channels()}
         return self._broker.send_message(message, True)
 
     def handle_task(self, task):

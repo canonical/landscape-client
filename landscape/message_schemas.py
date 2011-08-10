@@ -303,7 +303,7 @@ PACKAGE_REPORTER_RESULT = Message("package-reporter-result", {
     "err": utf8})
 
 APT_SOURCES = Message("apt-sources", {
-    "sources": Dict(String(), Dict(String(), String()))})
+    "sources": Dict(String(), Dict(String(), Any(String(), List(String()))))})
 
 ADD_PACKAGES = Message("add-packages", {
     "packages": List(KeyDict({"name": utf8,

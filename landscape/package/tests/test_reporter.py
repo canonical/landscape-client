@@ -806,6 +806,32 @@ class PackageReporterTest(LandscapeTest):
         deferred = self.reporter.send_apt_sources()
         return deferred.addCallback(check)
 
+    def test_send_apt_sources_with_sources(self):
+        """
+        If sources are defined, the sent apt-sources messages contains
+        all of them.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["apt-sources"])
+        self.facade.reset_channels()
+        self.facade.add_channel_apt_deb(
+            "http://example.com/ubuntu", "lucid", ["main"])
+        self.facade.add_channel_deb_dir("/archive")
+        channels = {
+            "lucid": {"baseurl": "http://example.com/ubuntu",
+                      "components": ["main"],
+                      "distribution": "lucid",
+                      "type": "apt-deb"},
+            "/archive": {"path": "/archive", "type": "deb-dir"}}
+
+        def check(result):
+            self.assertMessages(
+                message_store.get_pending_messages(),
+                [{"type": "apt-sources", "sources": channels}])
+
+        deferred = self.reporter.send_apt_sources()
+        return deferred.addCallback(check)
+
     def test_remove_expired_hash_id_request(self):
         request = self.store.add_hash_id_request(["hash1"])
         request.message_id = 9999
