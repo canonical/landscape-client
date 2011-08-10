@@ -221,6 +221,7 @@ class PackageReporter(PackageTaskHandler):
         return self._broker.send_message(message, True)
 
     def send_apt_sources(self):
+        """Report the APT sources to the server in a message."""
         message = {
             "type": "apt-sources",
             "sources": self._facade.get_channels()}
