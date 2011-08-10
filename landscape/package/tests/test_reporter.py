@@ -706,10 +706,12 @@ class PackageReporterTest(LandscapeTest):
             result = self.reporter.run_smart_update()
 
             def callback(ignore):
+                error = "There are no APT sources configured in %s or %s." % (
+                    self.reporter.sources_list_filename,
+                    self.reporter.sources_list_directory)
                 self.assertMessages(message_store.get_pending_messages(),
                     [{"type": "package-reporter-result",
-                      "code": 1,
-                      "err": u"There are no APT sources configured."}])
+                      "code": 1, "err": error}])
             result.addCallback(callback)
             result.chainDeferred(deferred)
 
