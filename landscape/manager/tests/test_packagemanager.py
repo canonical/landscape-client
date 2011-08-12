@@ -13,12 +13,12 @@ from landscape.tests.helpers import (
 
 
 class PackageManagerTest(LandscapeTest):
-    """Tests for the temperature plugin."""
+    """Tests for the package manager plugin."""
 
     helpers = [EnvironSaverHelper, ManagerHelper]
 
     def setUp(self):
-        """Initialize test helpers and create a sample thermal zone."""
+        """Initialize test helpers and create a sample package store."""
         super(PackageManagerTest, self).setUp()
         self.package_store = PackageStore(os.path.join(self.data_path,
                                                        "package/database"))
