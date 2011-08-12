@@ -662,11 +662,68 @@ class PackageReporterTest(LandscapeTest):
         reactor.callWhenRunning(do_test)
         return deferred
 
-    def test_run_smart_update_report_failures(self):
+    def test_run_smart_update_report_smart_failure(self):
         """
         If L{PackageReporter.run_smart_update} fails, a message is sent to the
         server reporting the error, to be able to fix the problem centrally.
         """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["package-reporter-result"])
+        self.reporter.smart_update_filename = self.makeFile(
+            "#!/bin/sh\necho -n error >&2\necho -n output\nexit 2")
+        os.chmod(self.reporter.smart_update_filename, 0755)
+        deferred = Deferred()
+
+        def do_test():
+            result = self.reporter.run_smart_update()
+
+            def callback(ignore):
+                self.assertMessages(message_store.get_pending_messages(),
+                    [{"type": "package-reporter-result",
+                      "code": 2, "err": u"error"}])
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
+
+    def test_run_smart_update_report_no_sources(self):
+        """
+        L{PackageReporter.run_smart_update} reports a failure if smart
+        succeeds but there are no APT sources defined. Smart doesn't
+        fail if there are no sources, but we fake a failure in order to
+        re-use the PackageReporterAlert on the server.
+        """
+        self.facade.reset_channels()
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["package-reporter-result"])
+        self.reporter.smart_update_filename = self.makeFile(
+            "#!/bin/sh\necho -n error >&2\necho -n output\nexit 0")
+        os.chmod(self.reporter.smart_update_filename, 0755)
+        deferred = Deferred()
+
+        def do_test():
+            result = self.reporter.run_smart_update()
+
+            def callback(ignore):
+                error = "There are no APT sources configured in %s or %s." % (
+                    self.reporter.sources_list_filename,
+                    self.reporter.sources_list_directory)
+                self.assertMessages(message_store.get_pending_messages(),
+                    [{"type": "package-reporter-result",
+                      "code": 1, "err": error}])
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
+
+    def test_run_smart_update_report_smart_failure_no_sources(self):
+        """
+        If L{PackageReporter.run_smart_update} fails and there are no
+        APT sources configured, the Smart error takes precedence.
+        """
+        self.facade.reset_channels()
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["package-reporter-result"])
         self.reporter.smart_update_filename = self.makeFile(
