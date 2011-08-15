@@ -18,11 +18,11 @@ class Constant(object):
 
 
 class Any(object):
-    """Something which must apply to any of a number of different schemas."""
+    """Something which must apply to any of a number of different schemas.
+
+    @param schemas: Other schema objects.
+    """
     def __init__(self, *schemas):
-        """
-        @param schemas: Any number of other schema objects.
-        """
         self.schemas = schemas
 
     def coerce(self, value):
@@ -82,12 +82,11 @@ class UnicodeOrString(object):
     """Something that must be a C{unicode} or {str}.
 
     If the value is a C{str}, it will automatically be decoded.
+
+    @param encoding: The encoding to automatically decode C{str}s with.
     """
 
     def __init__(self, encoding):
-        """
-        @param encoding: The encoding to automatically decode C{str}s with.
-        """
         self.encoding = encoding
 
     def coerce(self, value):
@@ -102,11 +101,11 @@ class UnicodeOrString(object):
 
 
 class List(object):
-    """Something which must be a C{list}."""
+    """Something which must be a C{list}.
+
+    @param schema: The schema that all values of the list must match.
+    """
     def __init__(self, schema):
-        """
-        @param schema: The schema that all values of the list must match.
-        """
         self.schema = schema
 
     def coerce(self, value):
@@ -124,12 +123,13 @@ class List(object):
 
 
 class Tuple(object):
-    """Something which must be a fixed-length tuple."""
+    """Something which must be a fixed-length tuple.
+
+    @param schema: A sequence of schemas, which will be applied to
+        each value in the tuple respectively.
+    """
+    
     def __init__(self, *schema):
-        """
-        @param schema: A sequence of schemas, which will be applied to
-            each value in the tuple respectively.
-        """
         self.schema = schema
 
     def coerce(self, value):
@@ -148,12 +148,11 @@ class KeyDict(object):
     """Something which must be a C{dict} with defined keys.
 
     The keys must be constant and the values must match a per-key schema.
+
+    @param schema: A dict mapping keys to schemas that the values of those
+        keys must match.
     """
     def __init__(self, schema, optional=None):
-        """
-        @param schema: A dict mapping keys to schemas that the values
-            of those keys must match.
-        """
         if optional is None:
             optional = []
         self.optional = set(optional)
@@ -182,13 +181,13 @@ class KeyDict(object):
 
 
 class Dict(object):
-    """Something which must be a C{dict} with arbitrary keys."""
+    """Something which must be a C{dict} with arbitrary keys.
+
+    @param key_schema: The schema that keys must match.
+    @param value_schema: The schema that values must match.
+    """
 
     def __init__(self, key_schema, value_schema):
-        """
-        @param key_schema: The schema that keys must match.
-        @param value_schema: The schema that values must match.
-        """
         self.key_schema = key_schema
         self.value_schema = value_schema
 

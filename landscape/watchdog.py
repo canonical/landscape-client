@@ -63,6 +63,12 @@ class Daemon(object):
         trying to connect to the watched daemon.
     @cvar factor: The factor by which the delay between subsequent connection
         attempts will increase.
+
+    @param connector: The L{RemoteComponentConnector} of the daemon.
+    @param reactor: The reactor used to spawn the process and schedule timed
+        calls.
+    @param verbose: Optionally, report more information when running this
+        program.  Defaults to False.
     """
 
     username = "landscape"
@@ -71,13 +77,6 @@ class Daemon(object):
 
     def __init__(self, connector, reactor=reactor, verbose=False,
                  config=None):
-        """
-        @param connector: The L{RemoteComponentConnector} of the daemon.
-        @param reactor: The reactor used to spawn the process and schedule
-            timed calls.
-        @param verbose: Optionally, report more information when
-            running this program.  Defaults to False.
-        """
         self._connector = connector
         self._reactor = reactor
         self._env = os.environ.copy()

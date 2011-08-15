@@ -16,14 +16,13 @@ from landscape.lib.log import log_failure
 
 class PingClient(object):
     """An HTTP client which asks: Are there messages for computer X?
+
+    @param url: The URL to ask the question to.
+    @type identity: L{landscape.broker.registration.Identity}
+    @param identity: This client's identity.
     """
 
     def __init__(self, reactor, url, identity, get_page=None):
-        """
-        @param url: The URL to ask the question to.
-        @type identity: L{landscape.broker.registration.Identity}
-        @param identity: This client's identity.
-        """
         if get_page is None:
             get_page = fetch
         self._reactor = reactor
@@ -69,17 +68,16 @@ class Pinger(object):
     """
     A plugin which pings the Landscape server with HTTP requests to
     see if a full exchange should be initiated.
+
+    @param reactor: The reactor to schedule calls with
+    @param url: The URL to ping
+    @param interval: How often to send the pings
+    @param exchanger: The L{landscape.broker.exchange.MessageExchange} to
+        trigger exchanges with.
     """
 
     def __init__(self, reactor, url, identity, exchanger,
                  interval=30, ping_client_factory=PingClient):
-        """
-        @param reactor: The reactor to schedule calls with
-        @param url: The URL to ping
-        @param interval: How often to send the pings
-        @param exchanger: The L{landscape.broker.exchange.MessageExchange} to
-            trigger exchanges with.
-        """
         self._url = url
         self._interval = interval
         self._identity = identity

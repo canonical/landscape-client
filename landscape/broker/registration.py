@@ -52,6 +52,10 @@ class Identity(object):
     @ivar account_name: See L{BrokerConfiguration}.
     @ivar registration_password: See L{BrokerConfiguration}.
     @ivar tags: See L{BrokerConfiguration}
+
+    @param config: A L{BrokerConfiguration} object, used to set the
+        C{computer_title}, C{account_name} and C{registration_password}
+        instance variables.
     """
 
     secure_id = persist_property("secure-id")
@@ -62,11 +66,6 @@ class Identity(object):
     tags = config_property("tags")
 
     def __init__(self, config, persist):
-        """
-        @param config: A L{BrokerConfiguration} object, used to set the
-            C{computer_title}, C{account_name} and C{registration_password}
-            instance variables.
-        """
         self._config = config
         self._persist = persist.root_at("registration")
 

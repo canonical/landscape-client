@@ -53,13 +53,12 @@ class BrokerClient(object):
         defined by sub-classes.
     @ivar broker: A reference to a connected L{RemoteBroker}, it must be set
         by the connecting machinery at service startup.
+
+    @param reactor: A L{TwistedReactor}.
     """
     name = "client"
 
     def __init__(self, reactor):
-        """
-        @param reactor: A L{TwistedReactor}.
-        """
         super(BrokerClient, self).__init__()
         self.reactor = reactor
         self.broker = None

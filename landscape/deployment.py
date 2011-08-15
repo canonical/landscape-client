@@ -40,6 +40,8 @@ class BaseConfiguration(object):
         command-line options that should never end up in a configuration file.
     @cvar default_config_filenames: A sequence of filenames to check when
         reading or writing a configuration.
+
+    Default values for supported options are set as in L{make_parser}.
     """
 
     required_options = ()
@@ -52,10 +54,6 @@ class BaseConfiguration(object):
     config_section = "client"
 
     def __init__(self):
-        """Default configuration.
-
-        Default values for supported options are set as in L{make_parser}.
-        """
         self._set_options = {}
         self._command_line_args = []
         self._command_line_options = {}

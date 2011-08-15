@@ -17,13 +17,19 @@ def gather_results(deferreds, consume_errors=False):
 class AllOutputProcessProtocol(ProcessProtocol):
     """A process protocol for getting stdout, stderr and exit code."""
 
-    def __init__(self, deferred, line_received=None):
+    def __init__(self, deferred, stdin=None, line_received=None):
         self.deferred = deferred
         self.outBuf = cStringIO.StringIO()
         self.errBuf = cStringIO.StringIO()
         self.errReceived = self.errBuf.write
+        self.stdin = stdin
         self.line_received = line_received
         self._partial_line = ""
+
+    def connectionMade(self):
+        if self.stdin is not None:
+            self.transport.write(self.stdin)
+            self.transport.closeStdin()
 
     def outReceived(self, data):
         self.outBuf.write(data)
@@ -56,7 +62,8 @@ class AllOutputProcessProtocol(ProcessProtocol):
 
 
 def spawn_process(executable, args=(), env={}, path=None, uid=None, gid=None,
-                  usePTY=False, wait_pipes=True, line_received=None):
+                  usePTY=False, wait_pipes=True, line_received=None,
+                  stdin=None):
     """
     Spawn a process using Twisted reactor.
 
@@ -76,7 +83,8 @@ def spawn_process(executable, args=(), env={}, path=None, uid=None, gid=None,
     list_args.extend(args)
 
     result = Deferred()
-    protocol = AllOutputProcessProtocol(result, line_received=line_received)
+    protocol = AllOutputProcessProtocol(result, stdin=stdin,
+                                        line_received=line_received)
     process = reactor.spawnProcess(protocol, executable, args=list_args,
                                    env=env, path=path, uid=uid, gid=gid,
                                    usePTY=usePTY)

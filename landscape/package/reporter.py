@@ -199,6 +199,10 @@ class PackageReporter(PackageTaskHandler):
             logging.debug("'%s' exited with status %d (out='%s', err='%s'" % (
                 self.smart_update_filename, code, out, err))
             touch_file(self._config.smart_update_stamp_filename)
+            if not smart_failed and not self._facade.get_channels():
+                code = 1
+                err = "There are no APT sources configured in %s or %s." % (
+                    self.sources_list_filename, self.sources_list_directory)
             deferred = self._broker.call_if_accepted(
                 "package-reporter-result", self.send_result, code, err)
             deferred.addCallback(lambda ignore: (out, err, code))
