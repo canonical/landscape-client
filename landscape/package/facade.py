@@ -150,7 +150,7 @@ class SmartFacade(object):
 
     def get_package_hashes(self):
         """Get the hashes of all the packages available in the channels."""
-        return self._pkg2hash.values()
+        return self._pkg2hash.itervalues()
 
     def get_packages(self):
         """
@@ -158,8 +158,10 @@ class SmartFacade(object):
 
         @return: a C{list} of L{smart.backends.deb.base.DebPackage} objects
         """
-        return [pkg for pkg in self._get_ctrl().getCache().getPackages()
-                if isinstance(pkg, self._deb_package_type)]
+        if self._pkg2hash:
+            return self._pkg2hash.iterkeys()
+        return (pkg for pkg in self._get_ctrl().getCache().getPackages()
+                if isinstance(pkg, self._deb_package_type))
 
     def get_locked_packages(self):
         """Get all packages in the channels matching the set locks."""
