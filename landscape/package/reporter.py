@@ -79,6 +79,9 @@ class PackageReporter(PackageTaskHandler):
         result.callback(None)
         return result
 
+    def send_message(self, message):
+        return self._broker.send_message(message, True)
+
     def fetch_hash_id_db(self):
         """
         Fetch the appropriate pre-canned database of hash=>id mappings
@@ -219,7 +222,7 @@ class PackageReporter(PackageTaskHandler):
             "type": "package-reporter-result",
             "code": code,
             "err": err}
-        return self._broker.send_message(message, True)
+        return self.send_message(message)
 
     def handle_task(self, task):
         message = task.data
@@ -389,7 +392,7 @@ class PackageReporter(PackageTaskHandler):
         """Create a hash_id_request and send message with "request-id"."""
         request = self._store.add_hash_id_request(unknown_hashes)
         message["request-id"] = request.id
-        result = self._broker.send_message(message, True)
+        result = self.send_message(message)
 
         def set_message_id(message_id):
             request.message_id = message_id
@@ -530,7 +533,7 @@ class PackageReporter(PackageTaskHandler):
             return succeed(False)
 
         message["type"] = "packages"
-        result = self._broker.send_message(message, True)
+        result = self.send_message(message)
 
         logging.info("Queuing message with changes in known packages: "
                      "%d installed, %d available, %d available upgrades, "
@@ -595,7 +598,7 @@ class PackageReporter(PackageTaskHandler):
             return succeed(False)
 
         message["type"] = "package-locks"
-        result = self._broker.send_message(message, True)
+        result = self.send_message(message)
 
         logging.info("Queuing message with changes in known package locks:"
                      " %d created, %d deleted." %
