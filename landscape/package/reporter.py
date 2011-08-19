@@ -642,22 +642,23 @@ class FakeReporter(PackageReporter):
 
     package_store_class = FakePackageStore
 
-    def send_message(self, message):
-        return succeed(None)
+    def run(self):
+        result = succeed(None)
 
-    def use_hash_id_db(self):
-        return succeed(None)
+        # If the appropriate hash=>id db is not there, fetch it
+        result.addCallback(lambda x: self.fetch_hash_id_db())
 
-    def request_unknown_hashes(self):
-        return succeed(None)
+        result.addCallback(lambda x: self.handle_tasks())
 
-    def remove_expired_hash_id_requests(self):
-        return succeed(None)
+        # Finally, verify if we have anything new to send to the server.
+        result.addCallback(lambda x: self.send_pending_messages())
+
+        return result
 
     def handle_task(self, task):
         return succeed(None)
 
-    def detect_changes(self):
+    def send_pending_messages(self):
         """
         As the last callback of L{PackageReporter}, sends messages stored.
         """
@@ -679,8 +680,7 @@ class FakeReporter(PackageReporter):
                     got_type.add(message["type"])
                     sent.append(message_id)
                     deferred.addCallback(
-                        lambda x, message=message:
-                            self._broker.send_message(message, True))
+                        lambda x, message=message: self.send_message(message))
             self._store.save_message_ids(sent)
         return deferred
 
