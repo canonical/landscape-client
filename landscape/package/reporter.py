@@ -661,29 +661,17 @@ class FakeReporter(PackageReporter):
         """
         As the last callback of L{PackageReporter}, sends messages stored.
         """
-        try:
-            import sqlite3
-        except ImportError:
-            from pysqlite2 import dbapi2 as sqlite3
-        global_store = os.environ["FAKE_PACKAGE_STORE"]
-        if not os.path.exists(global_store):
+        global_file = os.environ["FAKE_PACKAGE_STORE"]
+        if not os.path.exists(global_file):
             return succeed(None)
         message_sent = set(self._store.get_message_ids())
-        global_db = sqlite3.connect(global_store)
-        cursor = global_db.cursor()
-        all_message_ids = set(
-            row[0] for row in
-            cursor.execute("SELECT id FROM message").fetchall())
+        global_store = FakePackageStore(global_file)
+        all_message_ids = set(global_store.get_message_ids())
         not_sent = all_message_ids - message_sent
         deferred = succeed(None)
         got_type = set()
         if not_sent:
-            params = ", ".join(["?"] * len(not_sent))
-            messages = list(
-                (row[0], row[1]) for row in
-                cursor.execute(
-                    "SELECT id, data FROM message WHERE id IN (%s) "
-                    "ORDER BY id" % params, tuple(not_sent)).fetchall())
+            messages = global_store.get_messages_by_ids(not_sent)
             sent = []
             for message_id, message in messages:
                 message = bpickle.loads(str(message))

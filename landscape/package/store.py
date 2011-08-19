@@ -354,6 +354,14 @@ class FakePackageStore(PackageStore):
             "INSERT INTO message (id) VALUES (?)",
             [(message_id,) for message_id in message_ids])
 
+    @with_cursor
+    def get_messages_by_ids(self, cursor, message_ids):
+        params = ", ".join(["?"] * len(message_ids))
+        result = cursor.execute(
+                "SELECT id, data FROM message WHERE id IN (%s) "
+                "ORDER BY id" % params, tuple(message_ids)).fetchall()
+        return [(row[0], row[1]) for row in result]
+
 
 class HashIDRequest(object):
 
