@@ -625,10 +625,6 @@ class FakeGlobalReporter(PackageReporter):
 
     package_store_class = FakePackageStore
 
-    def __init__(self, package_store, package_facade, remote_broker, config):
-        super(FakeGlobalReporter, self).__init__(package_store, package_facade,
-                                                 remote_broker, config)
-
     def send_message(self, message):
         self._store.save_message(message)
         return super(FakeGlobalReporter, self).send_message(message)
@@ -648,15 +644,12 @@ class FakeReporter(PackageReporter):
         # If the appropriate hash=>id db is not there, fetch it
         result.addCallback(lambda x: self.fetch_hash_id_db())
 
-        result.addCallback(lambda x: self.handle_tasks())
+        result.addCallback(lambda x: self._store.clear_tasks())
 
         # Finally, verify if we have anything new to send to the server.
         result.addCallback(lambda x: self.send_pending_messages())
 
         return result
-
-    def handle_task(self, task):
-        return succeed(None)
 
     def send_pending_messages(self):
         """
