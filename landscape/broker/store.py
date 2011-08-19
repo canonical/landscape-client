@@ -43,9 +43,7 @@ class MessageStore(object):
     api = SERVER_API
 
     def __init__(self, persist, directory, directory_size=1000,
-                 monitor_interval=60*60, get_time=time.time):
-        """
-        """
+                 monitor_interval=60 * 60, get_time=time.time):
         self._get_time = get_time
         self._directory = directory
         self._directory_size = directory_size
@@ -82,8 +80,8 @@ class MessageStore(object):
     def get_sequence(self):
         """Get the current sequence.
 
-        @return: The sequence number of the message that the server expects us to
-           send on the next exchange.
+        @return: The sequence number of the message that the server expects us
+            to send on the next exchange.
         """
         return self._persist.get("sequence", 0)
 
@@ -98,8 +96,8 @@ class MessageStore(object):
     def get_server_sequence(self):
         """Get the current server sequence.
 
-        @return: the sequence number of the message that we will ask the server to
-            send to us on the next exchange.
+        @return: the sequence number of the message that we will ask the server
+            to send to us on the next exchange.
         """
         return self._persist.get("server_sequence", 0)
 
@@ -161,7 +159,7 @@ class MessageStore(object):
 
     def delete_old_messages(self):
         """Delete messages which are unlikely to be needed in the future."""
-        for fn in itertools.islice(self._walk_messages(exclude=HELD+BROKEN),
+        for fn in itertools.islice(self._walk_messages(exclude=HELD + BROKEN),
                                    self.get_pending_offset()):
             os.unlink(fn)
             containing_dir = os.path.split(fn)[0]
@@ -256,7 +254,8 @@ class MessageStore(object):
     def _walk_pending_messages(self):
         """Walk the files which are definitely pending."""
         pending_offset = self.get_pending_offset()
-        for i, filename in enumerate(self._walk_messages(exclude=HELD+BROKEN)):
+        for i, filename in enumerate(self._walk_messages(exclude=HELD +
+                                                                 BROKEN)):
             if i >= pending_offset:
                 yield filename
 
@@ -308,10 +307,10 @@ class MessageStore(object):
                     if accepted:
                         new_filename = self._get_next_message_filename()
                         os.rename(old_filename, new_filename)
-                        self._set_flags(new_filename, set(flags)-set(HELD))
+                        self._set_flags(new_filename, set(flags) - set(HELD))
                 else:
                     if not accepted and offset >= pending_offset:
-                        self._set_flags(old_filename, set(flags)|set(HELD))
+                        self._set_flags(old_filename, set(flags) | set(HELD))
                     offset += 1
 
     def _get_flags(self, path):
@@ -324,16 +323,18 @@ class MessageStore(object):
         dirname, basename = os.path.split(path)
         new_path = os.path.join(dirname, basename.split("_")[0])
         if flags:
-            new_path += "_"+"".join(sorted(set(flags)))
+            new_path += "_" + "".join(sorted(set(flags)))
         os.rename(path, new_path)
         return new_path
 
     def _add_flags(self, path, flags):
-        self._set_flags(path, self._get_flags(path)+flags)
+        self._set_flags(path, self._get_flags(path) + flags)
 
 
 def get_default_message_store(*args, **kwargs):
-    """Get a L{MessageStore} object with all Landscape message schemas added."""
+    """
+    Get a L{MessageStore} object with all Landscape message schemas added.
+    """
     from landscape. message_schemas import message_schemas
     store = MessageStore(*args, **kwargs)
     for schema in message_schemas.values():
