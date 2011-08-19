@@ -85,6 +85,7 @@ class PackageTaskHandler(object):
 
     queue_name = "default"
     lsb_release_filename = LSB_RELEASE_FILENAME
+    package_store_class = PackageStore
 
     def __init__(self, package_store, package_facade, remote_broker, config):
         self._store = package_store
@@ -261,7 +262,7 @@ def run_task_handler(cls, args, reactor=None):
     # import Smart unless we need to.
     from landscape.package.facade import SmartFacade
 
-    package_store = PackageStore(config.store_filename)
+    package_store = cls.package_store_class(config.store_filename)
     package_facade = SmartFacade()
 
     def finish():

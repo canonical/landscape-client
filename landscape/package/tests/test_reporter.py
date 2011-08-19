@@ -8,15 +8,18 @@ from twisted.internet.defer import Deferred, succeed
 from twisted.internet import reactor
 
 from landscape.lib.fetch import fetch_async, FetchError
-from landscape.package.store import PackageStore, UnknownHashIDRequest
+from landscape.lib import bpickle
+from landscape.package.store import (
+    PackageStore, UnknownHashIDRequest, FakePackageStore)
 from landscape.package.reporter import (
     PackageReporter, HASH_ID_REQUEST_TIMEOUT, main, find_reporter_command,
-    PackageReporterConfiguration)
+    PackageReporterConfiguration, FakeGlobalReporter, FakeReporter)
 from landscape.package import reporter
 from landscape.package.facade import SmartFacade
 from landscape.package.tests.helpers import (
     SmartFacadeHelper, HASH1, HASH2, HASH3)
-from landscape.tests.helpers import LandscapeTest, BrokerServiceHelper
+from landscape.tests.helpers import (
+    LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
 from landscape.tests.mocker import ANY
 
 SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
@@ -1587,6 +1590,130 @@ class PackageReporterTest(LandscapeTest):
 
         deferred.addCallback(check_result)
         return deferred
+
+
+class GlobalPackageReporterTest(LandscapeTest):
+
+    helpers = [SmartFacadeHelper, BrokerServiceHelper]
+
+    def setUp(self):
+
+        def set_up(ignored):
+            self.store = FakePackageStore(self.makeFile())
+            self.config = PackageReporterConfiguration()
+            self.reporter = FakeGlobalReporter(
+                self.store, self.facade, self.remote, self.config)
+            self.config.data_path = self.makeDir()
+            os.mkdir(self.config.package_directory)
+
+        result = super(GlobalPackageReporterTest, self).setUp()
+        return result.addCallback(set_up)
+
+    def test_store_messages(self):
+        """
+        L{FakeGlobalReporter} stores messages which are sent.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["package-reporter-result"])
+        self.reporter.smart_update_filename = self.makeFile(
+            "#!/bin/sh\necho -n error >&2\necho -n output\nexit 0")
+        os.chmod(self.reporter.smart_update_filename, 0755)
+        deferred = Deferred()
+
+        def do_test():
+            result = self.reporter.run_smart_update()
+
+            def callback(ignore):
+                message = {"type": "package-reporter-result",
+                           "code": 0, "err": u"error"}
+                self.assertMessages(
+                    message_store.get_pending_messages(), [message])
+                stored = list(self.store._db.execute(
+                    "SELECT id, data FROM message").fetchall())
+                self.assertEqual(1, len(stored))
+                self.assertEqual(1, stored[0][0])
+                self.assertEqual(message, bpickle.loads(str(stored[0][1])))
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
+
+
+class FakePackageReporterTest(LandscapeTest):
+
+    helpers = [EnvironSaverHelper, SmartFacadeHelper, BrokerServiceHelper]
+
+    def setUp(self):
+
+        def set_up(ignored):
+            self.store = FakePackageStore(self.makeFile())
+            global_file = self.makeFile()
+            self.global_store = FakePackageStore(global_file)
+            os.environ["FAKE_PACKAGE_STORE"] = global_file
+            self.config = PackageReporterConfiguration()
+            self.reporter = FakeReporter(
+                self.store, self.facade, self.remote, self.config)
+            self.config.data_path = self.makeDir()
+            os.mkdir(self.config.package_directory)
+
+        result = super(FakePackageReporterTest, self).setUp()
+        return result.addCallback(set_up)
+
+    def test_send_messages(self):
+        """
+        L{FakeReporter} sends messages stored in the global store specified by
+        C{FAKE_PACKAGE_STORE}.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["package-reporter-result"])
+        message = {"type": "package-reporter-result",
+                   "code": 0, "err": u"error"}
+        self.global_store.save_message(message)
+
+        def check(ignore):
+            self.assertMessages(
+                message_store.get_pending_messages(), [message])
+            stored = list(self.store._db.execute(
+                "SELECT id FROM message").fetchall())
+            self.assertEqual(1, len(stored))
+            self.assertEqual(1, stored[0][0])
+
+        deferred = self.reporter.run()
+        deferred.addCallback(check)
+        return deferred
+
+    def test_filter_message_type(self):
+        """
+        L{FakeReporter} only sends one message of each type per run.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["package-reporter-result"])
+        message1 = {"type": "package-reporter-result",
+                    "code": 0, "err": u"error"}
+        self.global_store.save_message(message1)
+        message2 = {"type": "package-reporter-result",
+                    "code": 1, "err": u"error"}
+        self.global_store.save_message(message2)
+
+        def check1(ignore):
+            self.assertMessages(
+                message_store.get_pending_messages(), [message1])
+            stored = list(self.store._db.execute(
+                "SELECT id FROM message").fetchall())
+            self.assertEqual(1, stored[0][0])
+            return self.reporter.run().addCallback(check2)
+
+        def check2(ignore):
+            self.assertMessages(
+                message_store.get_pending_messages(), [message1, message2])
+            stored = list(self.store._db.execute(
+                "SELECT id FROM message").fetchall())
+            self.assertEqual(2, len(stored))
+            self.assertEqual(1, stored[0][0])
+            self.assertEqual(2, stored[1][0])
+
+        return self.reporter.run().addCallback(check1)
 
 
 class EqualsHashes(object):

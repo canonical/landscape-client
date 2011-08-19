@@ -329,6 +329,32 @@ class PackageStore(HashIdStore):
                        ",".join([str(task.id) for task in except_tasks]))
 
 
+class FakePackageStore(PackageStore):
+    """
+    A L{PackageStore} with an additional message table to store sent messages.
+    """
+
+    def _ensure_schema(self):
+        super(FakePackageStore, self)._ensure_schema()
+        ensure_fake_package_schema(self._db)
+
+    @with_cursor
+    def save_message(self, cursor, message):
+        cursor.execute("INSERT INTO message (data) VALUES (?)",
+                       (buffer(bpickle.dumps(message)),))
+
+    @with_cursor
+    def get_message_ids(self, cursor):
+        return [row[0] for row in
+                cursor.execute("SELECT id FROM message").fetchall()]
+
+    @with_cursor
+    def save_message_ids(self, cursor, message_ids):
+        cursor.executemany(
+            "INSERT INTO message (id) VALUES (?)",
+            [(message_id,) for message_id in message_ids])
+
+
 class HashIDRequest(object):
 
     def __init__(self, db, id):
@@ -442,6 +468,19 @@ def ensure_package_schema(db):
                        " (id INTEGER PRIMARY KEY, queue TEXT,"
                        " timestamp TIMESTAMP, data BLOB)")
     except sqlite3.OperationalError:
+        cursor.close()
+        db.rollback()
+    else:
+        cursor.close()
+        db.commit()
+
+
+def ensure_fake_package_schema(db):
+    cursor = db.cursor()
+    try:
+        cursor.execute("CREATE TABLE message"
+                       " (id INTEGER PRIMARY KEY, data BLOB)")
+    except (sqlite3.OperationalError, sqlite3.DatabaseError):
         cursor.close()
         db.rollback()
     else:
