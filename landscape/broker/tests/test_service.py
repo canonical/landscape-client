@@ -54,9 +54,14 @@ class BrokerServiceTest(LandscapeTest):
 
     def test_pinger(self):
         """
-        A L{BrokerService} instance has a proper C{pinger} attribute.
+        A L{BrokerService} instance has a proper C{pinger} attribute. Its
+        interval value is configured with the C{ping_interval} value.
         """
         self.assertEqual(self.service.pinger.get_url(), self.config.ping_url)
+        self.assertEqual(30, self.service.pinger.get_interval())
+        self.config.ping_interval = 20
+        service = BrokerService(self.config)
+        self.assertEqual(20, service.pinger.get_interval())
 
     def test_registration(self):
         """
