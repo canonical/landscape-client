@@ -64,15 +64,17 @@ class ConfigurationTests(LandscapeTest):
 
     def test_intervals_are_ints(self):
         """
-        The 'urgent_exchange_interval and 'exchange_interval' values specified
-        in the configuration file are converted to integers.
+        The 'urgent_exchange_interval, 'exchange_interval' and 'ping_interval'
+        values specified in the configuration file are converted to integers.
         """
         filename = self.makeFile("[client]\n"
                                  "urgent_exchange_interval = 12\n"
-                                 "exchange_interval = 34\n")
+                                 "exchange_interval = 34\n"
+                                 "ping_interval = 6\n")
 
         configuration = BrokerConfiguration()
         configuration.load(["--config", filename, "--url", "whatever"])
 
         self.assertEqual(configuration.urgent_exchange_interval, 12)
         self.assertEqual(configuration.exchange_interval, 34)
+        self.assertEqual(configuration.ping_interval, 6)

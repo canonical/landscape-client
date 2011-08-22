@@ -62,7 +62,8 @@ class BrokerService(LandscapeService):
             self.reactor, self.message_store, self.transport, self.identity,
             exchange_store, config)
         self.pinger = self.pinger_factory(self.reactor, config.ping_url,
-                                          self.identity, self.exchanger)
+                                          self.identity, self.exchanger,
+                                          interval=config.ping_interval)
         self.registration = RegistrationHandler(
             config, self.identity, self.reactor, self.exchanger, self.pinger,
             self.message_store, fetch_async)
