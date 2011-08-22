@@ -10,10 +10,11 @@ from landscape.lib.sequenceranges import sequence_to_ranges
 from landscape.lib.twisted_util import gather_results, spawn_process
 from landscape.lib.fetch import fetch_async
 from landscape.lib.fs import touch_file
+from landscape.lib import bpickle
 
 from landscape.package.taskhandler import (
     PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler)
-from landscape.package.store import UnknownHashIDRequest
+from landscape.package.store import UnknownHashIDRequest, FakePackageStore
 
 
 HASH_ID_REQUEST_TIMEOUT = 7200
@@ -78,6 +79,9 @@ class PackageReporter(PackageTaskHandler):
 
         result.callback(None)
         return result
+
+    def send_message(self, message):
+        return self._broker.send_message(message, True)
 
     def fetch_hash_id_db(self):
         """
@@ -219,7 +223,7 @@ class PackageReporter(PackageTaskHandler):
             "type": "package-reporter-result",
             "code": code,
             "err": err}
-        return self._broker.send_message(message, True)
+        return self.send_message(message)
 
     def handle_task(self, task):
         message = task.data
@@ -389,7 +393,7 @@ class PackageReporter(PackageTaskHandler):
         """Create a hash_id_request and send message with "request-id"."""
         request = self._store.add_hash_id_request(unknown_hashes)
         message["request-id"] = request.id
-        result = self._broker.send_message(message, True)
+        result = self.send_message(message)
 
         def set_message_id(message_id):
             request.message_id = message_id
@@ -530,7 +534,7 @@ class PackageReporter(PackageTaskHandler):
             return succeed(False)
 
         message["type"] = "packages"
-        result = self._broker.send_message(message, True)
+        result = self.send_message(message)
 
         logging.info("Queuing message with changes in known packages: "
                      "%d installed, %d available, %d available upgrades, "
@@ -595,7 +599,7 @@ class PackageReporter(PackageTaskHandler):
             return succeed(False)
 
         message["type"] = "package-locks"
-        result = self._broker.send_message(message, True)
+        result = self.send_message(message)
 
         logging.info("Queuing message with changes in known package locks:"
                      " %d created, %d deleted." %
@@ -613,8 +617,74 @@ class PackageReporter(PackageTaskHandler):
         return result
 
 
+class FakeGlobalReporter(PackageReporter):
+    """
+    A standard reporter, which additionally stores messages sent into its
+    package store.
+    """
+
+    package_store_class = FakePackageStore
+
+    def send_message(self, message):
+        self._store.save_message(message)
+        return super(FakeGlobalReporter, self).send_message(message)
+
+
+class FakeReporter(PackageReporter):
+    """
+    A fake reporter which only sends messages previously stored by a
+    L{FakeGlobalReporter}.
+    """
+
+    package_store_class = FakePackageStore
+
+    def run(self):
+        result = succeed(None)
+
+        # If the appropriate hash=>id db is not there, fetch it
+        result.addCallback(lambda x: self.fetch_hash_id_db())
+
+        result.addCallback(lambda x: self._store.clear_tasks())
+
+        # Finally, verify if we have anything new to send to the server.
+        result.addCallback(lambda x: self.send_pending_messages())
+
+        return result
+
+    def send_pending_messages(self):
+        """
+        As the last callback of L{PackageReporter}, sends messages stored.
+        """
+        global_file = os.environ["FAKE_PACKAGE_STORE"]
+        if not os.path.exists(global_file):
+            return succeed(None)
+        message_sent = set(self._store.get_message_ids())
+        global_store = FakePackageStore(global_file)
+        all_message_ids = set(global_store.get_message_ids())
+        not_sent = all_message_ids - message_sent
+        deferred = succeed(None)
+        got_type = set()
+        if not_sent:
+            messages = global_store.get_messages_by_ids(not_sent)
+            sent = []
+            for message_id, message in messages:
+                message = bpickle.loads(str(message))
+                if message["type"] not in got_type:
+                    got_type.add(message["type"])
+                    sent.append(message_id)
+                    deferred.addCallback(
+                        lambda x, message=message: self.send_message(message))
+            self._store.save_message_ids(sent)
+        return deferred
+
+
 def main(args):
-    return run_task_handler(PackageReporter, args)
+    if "FAKE_PACKAGE_STORE" in os.environ:
+        return run_task_handler(FakeReporter, args)
+    elif "FAKE_GLOBAL_PACKAGE_STORE" in os.environ:
+        return run_task_handler(FakeGlobalReporter, args)
+    else:
+        return run_task_handler(PackageReporter, args)
 
 
 def find_reporter_command():

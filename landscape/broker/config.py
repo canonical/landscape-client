@@ -70,6 +70,9 @@ class BrokerConfiguration(Configuration):
         parser.add_option("--ping-url",
                           help="The URL to perform lightweight exchange "
                                "initiation with.")
+        parser.add_option("--ping-interval", default=30, type="int",
+                          metavar="INTERVAL",
+                          help="The number of seconds between pings.")
         parser.add_option("--http-proxy", metavar="URL",
                           help="The URL of the HTTP proxy, if one is needed.")
         parser.add_option("--https-proxy", metavar="URL",
