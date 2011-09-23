@@ -4,6 +4,20 @@ import os
 import smart
 
 from landscape.lib.fs import create_file
+from landscape.package.facade import AptFacade
+
+
+class AptFacadeHelper(object):
+
+    def set_up(self, test_case):
+        test_case.apt_root = test_case.makeDir()
+        test_case.dpkg_dir = os.path.join(
+            test_case.apt_root, "var", "lib", "dpkg")
+        os.makedirs(test_case.dpkg_dir)
+        test_case.dpkg_status = os.path.join(test_case.dpkg_dir, "status")
+        with open(test_case.dpkg_status, "w") as status_file:
+            status_file.write("")
+        test_case.facade = AptFacade(root=test_case.apt_root)
 
 
 class SmartHelper(object):

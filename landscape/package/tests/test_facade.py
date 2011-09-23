@@ -20,7 +20,15 @@ from landscape.tests.mocker import ANY
 from landscape.tests.helpers import LandscapeTest
 from landscape.package.tests.helpers import (
     SmartFacadeHelper, HASH1, HASH2, HASH3, PKGNAME1, PKGNAME4, PKGDEB4,
-    create_full_repository, create_deb)
+    create_full_repository, create_deb, AptFacadeHelper)
+
+
+class AptFacadeTest(LandscapeTest):
+
+    helpers = [AptFacadeHelper]
+
+    def test_no_system_packages(self):
+        self.assertEqual([], self.facade.get_packages())
 
 
 class SmartFacadeTest(LandscapeTest):
