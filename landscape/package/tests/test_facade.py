@@ -29,6 +29,7 @@ class AptFacadeTest(LandscapeTest):
     helpers = [AptFacadeHelper]
 
     def _add_system_package(self, name):
+        """Add a package to the dpkg status file."""
         with open(self.dpkg_status, "a") as status_file:
             status_file.write(textwrap.dedent("""\
                 Package: %s
@@ -47,10 +48,18 @@ class AptFacadeTest(LandscapeTest):
 
 
     def test_no_system_packages(self):
+        """
+        If the dpkg status file is empty, not packages are reported by
+        get_packages().
+        """
         self.facade.reload_channels()
         self.assertEqual([], self.facade.get_packages())
 
     def test_get_system_packages(self):
+        """
+        If the dpkg status file contains some packages, those packages
+        are reported by get_packages().
+        """
         self._add_system_package("foo")
         self._add_system_package("bar")
         self.facade.reload_channels()
