@@ -8,6 +8,7 @@ from landscape.package.facade import AptFacade
 
 
 class AptFacadeHelper(object):
+    """Helper that sets up an AptFacade with a tempdir as its root."""
 
     def set_up(self, test_case):
         test_case.apt_root = test_case.makeDir()
