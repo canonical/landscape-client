@@ -31,6 +31,7 @@ class SmartError(Exception):
 class ChannelError(Exception):
     """Raised when channels fail to load."""
 
+
 class QuietOpProgress(apt.progress.base.OpProgress):
 
     def done(self):
@@ -46,8 +47,7 @@ class AptFacade(object):
     This object wraps Apt features, in a way that makes using and testing
     these features slightly more comfortable.
 
-    @param smart_init_kwargs: A dictionary that can be used to pass specific
-        keyword parameters to to L{apt.init}.
+    @param root: The root dir of the Apt configuration files.
     """
 
     def __init__(self, root=None):
@@ -59,6 +59,7 @@ class AptFacade(object):
         return self._cache.keys()
 
     def reload_channels(self):
+        """Reload the channels and update the cache."""
         self._cache.open(None)
 
 
