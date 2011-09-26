@@ -56,8 +56,10 @@ class AptFacade(object):
 
     def get_packages(self):
         """Get all the packages available in the channels."""
-        self._cache.open(None)
         return self._cache.keys()
+
+    def reload_channels(self):
+        self._cache.open(None)
 
 
 class SmartFacade(object):

@@ -47,11 +47,13 @@ class AptFacadeTest(LandscapeTest):
 
 
     def test_no_system_packages(self):
+        self.facade.reload_channels()
         self.assertEqual([], self.facade.get_packages())
 
     def test_get_system_packages(self):
         self._add_system_package("foo")
         self._add_system_package("bar")
+        self.facade.reload_channels()
         self.assertEqual(["bar", "foo"], sorted(self.facade.get_packages()))
 
 
