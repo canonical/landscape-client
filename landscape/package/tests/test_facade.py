@@ -63,7 +63,9 @@ class AptFacadeTest(LandscapeTest):
         self._add_system_package("foo")
         self._add_system_package("bar")
         self.facade.reload_channels()
-        self.assertEqual(["bar", "foo"], sorted(self.facade.get_packages()))
+        self.assertEqual(
+            ["bar", "foo"],
+            sorted(package.name for package in self.facade.get_packages()))
 
 
 class SmartFacadeTest(LandscapeTest):
