@@ -24,9 +24,10 @@ class AptFacadeHelper(object):
         test_case.facade = AptFacade(root=test_case.apt_root)
 
     def _create_sub_dir(self, test_case, sub_dir):
-            full_path = os.path.join(test_case.apt_root, sub_dir)
-            os.makedirs(full_path)
-            return full_path
+        """Create a dir instead the Apt root dir."""
+        full_path = os.path.join(test_case.apt_root, sub_dir)
+        os.makedirs(full_path)
+        return full_path
 
 
 class SmartHelper(object):
