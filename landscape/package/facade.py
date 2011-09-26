@@ -32,15 +32,6 @@ class ChannelError(Exception):
     """Raised when channels fail to load."""
 
 
-class QuietOpProgress(apt.progress.base.OpProgress):
-
-    def done(self):
-        pass
-
-    def update(self, percent=None):
-        pass
-
-
 class AptFacade(object):
     """Wrapper for tasks using Apt.
 
@@ -51,8 +42,7 @@ class AptFacade(object):
     """
 
     def __init__(self, root=None):
-        self._cache = apt.cache.Cache(
-            rootdir=root, progress=QuietOpProgress(), memonly=True)
+        self._cache = apt.cache.Cache(rootdir=root, memonly=True)
 
     def get_packages(self):
         """Get all the packages available in the channels."""
