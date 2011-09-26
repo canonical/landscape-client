@@ -46,7 +46,6 @@ class AptFacadeTest(LandscapeTest):
 
                 """ % name))
 
-
     def test_no_system_packages(self):
         """
         If the dpkg status file is empty, not packages are reported by
