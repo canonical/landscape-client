@@ -27,8 +27,31 @@ class AptFacadeTest(LandscapeTest):
 
     helpers = [AptFacadeHelper]
 
+    def _add_system_package(self, name):
+        with open(self.dpkg_status, "a") as status_file:
+            status_file.write("""\
+Package: %s
+Status: install ok installed
+Priority: optional
+Section: misc
+Installed-Size: 1234
+Maintainer: Someone
+Architecture: amd64
+Source: source
+Version: 1.0
+Config-Version: 1.0
+Description: description
+
+""" % name)
+
+
     def test_no_system_packages(self):
         self.assertEqual([], self.facade.get_packages())
+
+    def test_get_system_packages(self):
+        self._add_system_package("foo")
+        self._add_system_package("bar")
+        self.assertEqual(["bar", "foo"], sorted(self.facade.get_packages()))
 
 
 class SmartFacadeTest(LandscapeTest):
