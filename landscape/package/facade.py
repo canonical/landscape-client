@@ -5,6 +5,7 @@ from smart.const import INSTALL, REMOVE, UPGRADE, ALWAYS, NEVER
 import smart
 
 import apt
+import apt_pkg
 
 from landscape.package.skeleton import build_skeleton
 
@@ -51,6 +52,16 @@ class AptFacade(object):
     def reload_channels(self):
         """Reload the channels and update the cache."""
         self._cache.open(None)
+
+    def add_channel_apt_deb(self, url, codename, components):
+        sources_dir = apt_pkg.config.find_dir("Dir::Etc::sourceparts")
+        sources_file_path = sources_dir  + "/landscape-internal-facade.list"
+        with open(sources_file_path , "a") as sources:
+            sources_line = "deb %s %s" % (url, codename)
+            if components:
+                sources_line += " %s" % " ".join(components)
+            sources_line += "\n"
+            sources.write(sources_line)
 
 
 class SmartFacade(object):

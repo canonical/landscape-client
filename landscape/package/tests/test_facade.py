@@ -46,6 +46,11 @@ class AptFacadeTest(LandscapeTest):
 
                 """ % name))
 
+    def _add_package_to_deb_dir(self, path, name, version="1.0"):
+        package_stanza = "Package: %(name)s\nVersion: %(version)s\n\n"
+        with open(path + "/Packages", "a") as packages:
+            packages.write(package_stanza % {"name": name, "version": version})
+
     def test_no_system_packages(self):
         """
         If the dpkg status file is empty, not packages are reported by
@@ -65,6 +70,34 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(
             ["bar", "foo"],
             sorted(package.name for package in self.facade.get_packages()))
+
+    def test_add_channel_apt_deb_without_components(self):
+        """
+        """
+        self.facade.add_channel_apt_deb(
+            "http://example.com/ubuntu", "lucid", None)
+        list_filename = (
+            self.apt_root +
+            "/etc/apt/sources.list.d/landscape-internal-facade.list")
+        with open(list_filename, "r") as sources:
+            sources_contents = sources.read()
+        self.assertEqual(
+            "deb http://example.com/ubuntu lucid\n",
+            sources_contents)
+
+    def test_add_channel_apt_deb_with_components(self):
+        """
+        """
+        self.facade.add_channel_apt_deb(
+            "http://example.com/ubuntu", "lucid", ["main", "restricted"])
+        list_filename = (
+            self.apt_root +
+            "/etc/apt/sources.list.d/landscape-internal-facade.list")
+        with open(list_filename, "r") as sources:
+            sources_contents = sources.read()
+        self.assertEqual(
+            "deb http://example.com/ubuntu lucid main restricted\n",
+            sources_contents)
 
 
 class SmartFacadeTest(LandscapeTest):
