@@ -48,11 +48,6 @@ class AptFacadeTest(LandscapeTest):
 
                 """ % name))
 
-    def _add_package_to_deb_dir(self, path, name, version="1.0"):
-        package_stanza = "Package: %(name)s\nVersion: %(version)s\n\n"
-        with open(path + "/Packages", "a") as packages:
-            packages.write(package_stanza % {"name": name, "version": version})
-
     def test_no_system_packages(self):
         """
         If the dpkg status file is empty, not packages are reported by
