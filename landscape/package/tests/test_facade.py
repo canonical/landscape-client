@@ -113,7 +113,8 @@ class AptFacadeTest(LandscapeTest):
             "http://example.com/ubuntu", "lucid", ["main", "restricted"])
         self.assertEqual([{"baseurl": "http://example.com/ubuntu",
                            "distribution": "lucid",
-                           "components": "main restricted"}],
+                           "components": "main restricted",
+                           "type": "deb"}],
                          self.facade.get_channels())
 
     def test_get_channels_with_disabled_channels(self):
@@ -130,7 +131,8 @@ class AptFacadeTest(LandscapeTest):
         sources_list.save()
         self.assertEqual([{"baseurl": "http://enabled.example.com/ubuntu",
                            "distribution": "lucid",
-                           "components": "main"}],
+                           "components": "main",
+                           "type": "deb"}],
                          self.facade.get_channels())
 
 

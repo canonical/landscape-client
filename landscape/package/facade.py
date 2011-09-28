@@ -67,7 +67,7 @@ class AptFacade(object):
     def get_channels(self):
         sources_list = SourcesList()
         return [{"baseurl": entry.uri, "distribution": entry.dist,
-                 "components": " ".join(entry.comps)}
+                 "components": " ".join(entry.comps), "type": entry.type}
                 for entry in sources_list if not entry.disabled]
 
 
