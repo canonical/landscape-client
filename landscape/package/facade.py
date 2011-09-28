@@ -70,6 +70,12 @@ class AptFacade(object):
                  "components": " ".join(entry.comps), "type": entry.type}
                 for entry in sources_list if not entry.disabled]
 
+    def reset_channels(self):
+        sources_list = SourcesList()
+        for entry in sources_list:
+            entry.set_enabled(False)
+        sources_list.save()
+
 
 class SmartFacade(object):
     """Wrapper for tasks using Smart.

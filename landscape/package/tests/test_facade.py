@@ -135,6 +135,16 @@ class AptFacadeTest(LandscapeTest):
                            "type": "deb"}],
                          self.facade.get_channels())
 
+    def test_reset_channels(self):
+        """
+        """
+        self.facade.add_channel_apt_deb(
+            "http://1.example.com/ubuntu", "lucid", ["main", "restricted"])
+        self.facade.add_channel_apt_deb(
+            "http://2.example.com/ubuntu", "lucid", ["main", "restricted"])
+        self.facade.reset_channels()
+        self.assertEqual([], self.facade.get_channels())
+
 
 class SmartFacadeTest(LandscapeTest):
 
