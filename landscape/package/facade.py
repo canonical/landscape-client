@@ -68,7 +68,7 @@ class AptFacade(object):
         sources_list = SourcesList()
         return [{"baseurl": entry.uri, "distribution": entry.dist,
                  "components": " ".join(entry.comps)}
-                for entry in sources_list]
+                for entry in sources_list if not entry.disabled]
 
 
 class SmartFacade(object):

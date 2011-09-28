@@ -8,6 +8,8 @@ from smart.control import Control
 from smart.cache import Provides
 from smart.const import NEVER, ALWAYS
 
+from aptsources.sourceslist import SourcesList
+
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from twisted.internet.utils import getProcessOutputAndValue
@@ -112,6 +114,23 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual([{"baseurl": "http://example.com/ubuntu",
                            "distribution": "lucid",
                            "components": "main restricted"}],
+                         self.facade.get_channels())
+
+    def test_get_channels_with_disabled_channels(self):
+        """
+        """
+        self.facade.add_channel_apt_deb(
+            "http://enabled.example.com/ubuntu", "lucid", ["main"])
+        self.facade.add_channel_apt_deb(
+            "http://disabled.example.com/ubuntu", "lucid", ["main"])
+        sources_list = SourcesList()
+        for entry in sources_list:
+            if "disabled" in entry.uri:
+                entry.set_enabled(False)
+        sources_list.save()
+        self.assertEqual([{"baseurl": "http://enabled.example.com/ubuntu",
+                           "distribution": "lucid",
+                           "components": "main"}],
                          self.facade.get_channels())
 
 
