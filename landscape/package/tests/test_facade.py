@@ -48,6 +48,17 @@ class AptFacadeTest(LandscapeTest):
 
                 """ % name))
 
+    def _add_package_to_deb_dir(self, path, name, version="1.0"):
+        """Add fake package information to a directory.
+
+        There will only be basic information about the package
+        available, so that get_packages() have something to return.
+        There won't be an actual package in the dir.
+        """
+        package_stanza = "Package: %(name)s\nVersion: %(version)s\n\n"
+        with open(path + "/Packages", "a") as packages:
+            packages.write(package_stanza % {"name": name, "version": version})
+
     def test_no_system_packages(self):
         """
         If the dpkg status file is empty, not packages are reported by
@@ -152,6 +163,20 @@ class AptFacadeTest(LandscapeTest):
             "http://2.example.com/ubuntu", "lucid", ["main", "restricted"])
         self.facade.reset_channels()
         self.assertEqual([], self.facade.get_channels())
+
+    def test_reload_includes_added_channels(self):
+        """
+        When reloading the channels, get_packages() returns the packages
+        in the channel.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self._add_package_to_deb_dir(deb_dir, "bar")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./", None)
+        self.facade.reload_channels()
+        self.assertEqual(
+            ["bar", "foo"],
+            sorted(package.name for package in self.facade.get_packages()))
 
 
 class SmartFacadeTest(LandscapeTest):

@@ -53,6 +53,8 @@ class AptFacade(object):
     def reload_channels(self):
         """Reload the channels and update the cache."""
         self._cache.open(None)
+        self._cache.update()
+        self._cache.open(None)
 
     def add_channel_apt_deb(self, url, codename, components):
         """Add a deb URL which points to a repository.
