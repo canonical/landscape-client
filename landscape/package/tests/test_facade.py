@@ -70,6 +70,10 @@ class AptFacadeTest(LandscapeTest):
 
     def test_add_channel_apt_deb_without_components(self):
         """
+        add_channel_apt_deb() adds a new deb URL to a file in
+        sources.list.d.
+
+        If no components are given, nothing is written after the dist.
         """
         self.facade.add_channel_apt_deb(
             "http://example.com/ubuntu", "lucid", None)
@@ -84,6 +88,10 @@ class AptFacadeTest(LandscapeTest):
 
     def test_add_channel_apt_deb_with_components(self):
         """
+        add_channel_apt_deb() adds a new deb URL to a file in
+        sources.list.d.
+
+        If components are given, they are included after the dist.
         """
         self.facade.add_channel_apt_deb(
             "http://example.com/ubuntu", "lucid", ["main", "restricted"])
@@ -98,11 +106,14 @@ class AptFacadeTest(LandscapeTest):
 
     def test_get_channels_with_no_channels(self):
         """
+        If no deb URLs have been added, get_channels() returns an empty list.
         """
         self.assertEqual([], self.facade.get_channels())
 
     def test_get_channels_with_channels(self):
         """
+        If deb URLs have been added, a list of dict is returned with
+            information about the channels.
         """
         self.facade.add_channel_apt_deb(
             "http://example.com/ubuntu", "lucid", ["main", "restricted"])
@@ -114,6 +125,7 @@ class AptFacadeTest(LandscapeTest):
 
     def test_get_channels_with_disabled_channels(self):
         """
+        get_channels() doesn't return disabled deb URLs.
         """
         self.facade.add_channel_apt_deb(
             "http://enabled.example.com/ubuntu", "lucid", ["main"])
@@ -132,6 +144,7 @@ class AptFacadeTest(LandscapeTest):
 
     def test_reset_channels(self):
         """
+        reset_channels() disables all the configured deb URLs.
         """
         self.facade.add_channel_apt_deb(
             "http://1.example.com/ubuntu", "lucid", ["main", "restricted"])
