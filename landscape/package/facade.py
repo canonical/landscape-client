@@ -4,6 +4,8 @@ from smart.const import INSTALL, REMOVE, UPGRADE, ALWAYS, NEVER
 
 import smart
 
+import apt
+
 from landscape.package.skeleton import build_skeleton
 
 
@@ -28,6 +30,27 @@ class SmartError(Exception):
 
 class ChannelError(Exception):
     """Raised when channels fail to load."""
+
+
+class AptFacade(object):
+    """Wrapper for tasks using Apt.
+
+    This object wraps Apt features, in a way that makes using and testing
+    these features slightly more comfortable.
+
+    @param root: The root dir of the Apt configuration files.
+    """
+
+    def __init__(self, root=None):
+        self._cache = apt.cache.Cache(rootdir=root, memonly=True)
+
+    def get_packages(self):
+        """Get all the packages available in the channels."""
+        return [self._cache[name] for name in self._cache.keys()]
+
+    def reload_channels(self):
+        """Reload the channels and update the cache."""
+        self._cache.open(None)
 
 
 class SmartFacade(object):

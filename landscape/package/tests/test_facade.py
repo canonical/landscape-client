@@ -2,6 +2,7 @@ import time
 import os
 import re
 import sys
+import textwrap
 
 from smart.control import Control
 from smart.cache import Provides
@@ -20,7 +21,50 @@ from landscape.tests.mocker import ANY
 from landscape.tests.helpers import LandscapeTest
 from landscape.package.tests.helpers import (
     SmartFacadeHelper, HASH1, HASH2, HASH3, PKGNAME1, PKGNAME4, PKGDEB4,
-    create_full_repository, create_deb)
+    create_full_repository, create_deb, AptFacadeHelper)
+
+
+class AptFacadeTest(LandscapeTest):
+
+    helpers = [AptFacadeHelper]
+
+    def _add_system_package(self, name):
+        """Add a package to the dpkg status file."""
+        with open(self.dpkg_status, "a") as status_file:
+            status_file.write(textwrap.dedent("""\
+                Package: %s
+                Status: install ok installed
+                Priority: optional
+                Section: misc
+                Installed-Size: 1234
+                Maintainer: Someone
+                Architecture: amd64
+                Source: source
+                Version: 1.0
+                Config-Version: 1.0
+                Description: description
+
+                """ % name))
+
+    def test_no_system_packages(self):
+        """
+        If the dpkg status file is empty, not packages are reported by
+        get_packages().
+        """
+        self.facade.reload_channels()
+        self.assertEqual([], self.facade.get_packages())
+
+    def test_get_system_packages(self):
+        """
+        If the dpkg status file contains some packages, those packages
+        are reported by get_packages().
+        """
+        self._add_system_package("foo")
+        self._add_system_package("bar")
+        self.facade.reload_channels()
+        self.assertEqual(
+            ["bar", "foo"],
+            sorted(package.name for package in self.facade.get_packages()))
 
 
 class SmartFacadeTest(LandscapeTest):

@@ -4,6 +4,30 @@ import os
 import smart
 
 from landscape.lib.fs import create_file
+from landscape.package.facade import AptFacade
+
+
+class AptFacadeHelper(object):
+    """Helper that sets up an AptFacade with a tempdir as its root."""
+
+    def set_up(self, test_case):
+        test_case.apt_root = test_case.makeDir()
+        # Create all the required directories, so that apt doesn't
+        # auto-create them, which causing the paths to be printed to stdout.
+        test_case.dpkg_dir = self._create_sub_dir(test_case, "var/lib/dpkg")
+        self._create_sub_dir(test_case, "etc/apt")
+        self._create_sub_dir(test_case, "var/cache/apt/archives/partial")
+        self._create_sub_dir(test_case, "var/lib/apt/lists/partial")
+        test_case.dpkg_status = os.path.join(test_case.dpkg_dir, "status")
+        with open(test_case.dpkg_status, "w") as status_file:
+            status_file.write("")
+        test_case.facade = AptFacade(root=test_case.apt_root)
+
+    def _create_sub_dir(self, test_case, sub_dir):
+        """Create a dir instead the Apt root dir."""
+        full_path = os.path.join(test_case.apt_root, sub_dir)
+        os.makedirs(full_path)
+        return full_path
 
 
 class SmartHelper(object):
