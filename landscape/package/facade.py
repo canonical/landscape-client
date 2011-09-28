@@ -72,6 +72,9 @@ class AptFacade(object):
             sources_line += "\n"
             sources.write(sources_line)
 
+    def add_channel_deb_dir(self, path):
+        self.add_channel_apt_deb("file://%s" % path, "./", None)
+
     def get_channels(self):
         """Return a list of channels configured.
 

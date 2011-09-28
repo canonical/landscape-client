@@ -23,7 +23,8 @@ from landscape.tests.mocker import ANY
 from landscape.tests.helpers import LandscapeTest
 from landscape.package.tests.helpers import (
     SmartFacadeHelper, HASH1, HASH2, HASH3, PKGNAME1, PKGNAME4, PKGDEB4,
-    create_full_repository, create_deb, AptFacadeHelper)
+    create_full_repository, create_deb, AptFacadeHelper,
+    create_simple_repository)
 
 
 class AptFacadeTest(LandscapeTest):
@@ -114,6 +115,21 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(
             "deb http://example.com/ubuntu lucid main restricted\n",
             sources_contents)
+
+    def test_add_channel_deb_dir_adds_deb_channel(self):
+        """
+        add_channel_deb_dir() adds a deb channel pointing to the
+        directory containing the packages.
+        """
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.assertEqual(1, len(self.facade.get_channels()))
+        self.assertEqual([{"baseurl": "file://%s" % deb_dir,
+                           "distribution": "./",
+                           "components": "",
+                           "type": "deb"}],
+                         self.facade.get_channels())
 
     def test_get_channels_with_no_channels(self):
         """
