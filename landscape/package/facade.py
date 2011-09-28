@@ -6,6 +6,7 @@ import smart
 
 import apt
 import apt_pkg
+from aptsources.sourceslist import SourcesList
 
 from landscape.package.skeleton import build_skeleton
 
@@ -62,6 +63,12 @@ class AptFacade(object):
                 sources_line += " %s" % " ".join(components)
             sources_line += "\n"
             sources.write(sources_line)
+
+    def get_channels(self):
+        sources_list = SourcesList()
+        return [{"baseurl": entry.uri, "distribution": entry.dist,
+                 "components": " ".join(entry.comps)}
+                for entry in sources_list]
 
 
 class SmartFacade(object):

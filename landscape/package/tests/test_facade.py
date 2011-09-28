@@ -99,6 +99,21 @@ class AptFacadeTest(LandscapeTest):
             "deb http://example.com/ubuntu lucid main restricted\n",
             sources_contents)
 
+    def test_get_channels_with_no_channels(self):
+        """
+        """
+        self.assertEqual([], self.facade.get_channels())
+
+    def test_get_channels_with_channels(self):
+        """
+        """
+        self.facade.add_channel_apt_deb(
+            "http://example.com/ubuntu", "lucid", ["main", "restricted"])
+        self.assertEqual([{"baseurl": "http://example.com/ubuntu",
+                           "distribution": "lucid",
+                           "components": "main restricted"}],
+                         self.facade.get_channels())
+
 
 class SmartFacadeTest(LandscapeTest):
 
