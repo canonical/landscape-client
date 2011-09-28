@@ -55,6 +55,12 @@ class AptFacade(object):
         self._cache.open(None)
 
     def add_channel_apt_deb(self, url, codename, components):
+        """Add a deb URL which points to a repository.
+
+        @param url: The base URL of the repository.
+        @param codename: The dist in the repository.
+        @param components: The components to be included.
+        """
         sources_dir = apt_pkg.config.find_dir("Dir::Etc::sourceparts")
         sources_file_path = sources_dir  + "/landscape-internal-facade.list"
         with open(sources_file_path , "a") as sources:
@@ -65,12 +71,19 @@ class AptFacade(object):
             sources.write(sources_line)
 
     def get_channels(self):
+        """Return a list of channels configured.
+
+        A channel is a deb line in sources.list or sources.list.d. It's
+        represented by a dict with baseurl, distribution, components,
+        and type keys.
+        """
         sources_list = SourcesList()
         return [{"baseurl": entry.uri, "distribution": entry.dist,
                  "components": " ".join(entry.comps), "type": entry.type}
                 for entry in sources_list if not entry.disabled]
 
     def reset_channels(self):
+        """Remove all the configured channels."""
         sources_list = SourcesList()
         for entry in sources_list:
             entry.set_enabled(False)
