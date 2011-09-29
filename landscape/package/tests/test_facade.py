@@ -16,7 +16,7 @@ from twisted.internet.utils import getProcessOutputAndValue
 
 import smart
 
-from landscape.lib.fs import read_file
+from landscape.lib.fs import append_file, read_file
 from landscape.package.facade import (
     TransactionError, DependencyError, ChannelError, SmartError)
 
@@ -33,8 +33,7 @@ class AptFacadeTest(LandscapeTest):
 
     def _add_system_package(self, name):
         """Add a package to the dpkg status file."""
-        with open(self.dpkg_status, "a") as status_file:
-            status_file.write(textwrap.dedent("""\
+        append_file(self.dpkg_status, textwrap.dedent("""\
                 Package: %s
                 Status: install ok installed
                 Priority: optional
@@ -57,8 +56,9 @@ class AptFacadeTest(LandscapeTest):
         There won't be an actual package in the dir.
         """
         package_stanza = "Package: %(name)s\nVersion: %(version)s\n\n"
-        with open(os.path.join(path, "Packages"), "a") as packages:
-            packages.write(package_stanza % {"name": name, "version": version})
+        append_file(
+            os.path.join(path, "Packages"),
+            package_stanza % {"name": name, "version": version})
 
     def test_no_system_packages(self):
         """

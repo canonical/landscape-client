@@ -10,6 +10,7 @@ import apt
 import apt_pkg
 from aptsources.sourceslist import SourcesList
 
+from landscape.lib.fs import append_file
 from landscape.package.skeleton import build_skeleton
 
 
@@ -68,12 +69,11 @@ class AptFacade(object):
         sources_dir = apt_pkg.config.find_dir("Dir::Etc::sourceparts")
         sources_file_path = os.path.join(
             sources_dir, "landscape-internal-facade.list")
-        with open(sources_file_path, "a") as sources:
-            sources_line = "deb %s %s" % (url, codename)
-            if components:
-                sources_line += " %s" % " ".join(components)
-            sources_line += "\n"
-            sources.write(sources_line)
+        sources_line = "deb %s %s" % (url, codename)
+        if components:
+            sources_line += " %s" % " ".join(components)
+        sources_line += "\n"
+        append_file(sources_file_path, sources_line)
 
     def get_channels(self):
         """Return a list of channels configured.
