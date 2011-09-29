@@ -63,7 +63,7 @@ class AptFacadeTest(LandscapeTest):
     def test_no_system_packages(self):
         """
         If the dpkg status file is empty, not packages are reported by
-        get_packages().
+        C{get_packages()}.
         """
         self.facade.reload_channels()
         self.assertEqual([], self.facade.get_packages())
@@ -71,7 +71,7 @@ class AptFacadeTest(LandscapeTest):
     def test_get_system_packages(self):
         """
         If the dpkg status file contains some packages, those packages
-        are reported by get_packages().
+        are reported by C{get_packages()}.
         """
         self._add_system_package("foo")
         self._add_system_package("bar")
@@ -82,7 +82,7 @@ class AptFacadeTest(LandscapeTest):
 
     def test_add_channel_apt_deb_without_components(self):
         """
-        add_channel_apt_deb() adds a new deb URL to a file in
+        C{add_channel_apt_deb()} adds a new deb URL to a file in
         sources.list.d.
 
         If no components are given, nothing is written after the dist.
@@ -99,7 +99,7 @@ class AptFacadeTest(LandscapeTest):
 
     def test_add_channel_apt_deb_with_components(self):
         """
-        add_channel_apt_deb() adds a new deb URL to a file in
+        C{add_channel_apt_deb()} adds a new deb URL to a file in
         sources.list.d.
 
         If components are given, they are included after the dist.
@@ -116,7 +116,7 @@ class AptFacadeTest(LandscapeTest):
 
     def test_get_channels_with_no_channels(self):
         """
-        If no deb URLs have been added, get_channels() returns an empty list.
+        If no deb URLs have been added, C{get_channels()} returns an empty list.
         """
         self.assertEqual([], self.facade.get_channels())
 
@@ -135,7 +135,7 @@ class AptFacadeTest(LandscapeTest):
 
     def test_get_channels_with_disabled_channels(self):
         """
-        get_channels() doesn't return disabled deb URLs.
+        C{get_channels()} doesn't return disabled deb URLs.
         """
         self.facade.add_channel_apt_deb(
             "http://enabled.example.com/ubuntu", "lucid", ["main"])
@@ -154,7 +154,7 @@ class AptFacadeTest(LandscapeTest):
 
     def test_reset_channels(self):
         """
-        reset_channels() disables all the configured deb URLs.
+        C{reset_channels()} disables all the configured deb URLs.
         """
         self.facade.add_channel_apt_deb(
             "http://1.example.com/ubuntu", "lucid", ["main", "restricted"])
@@ -165,7 +165,7 @@ class AptFacadeTest(LandscapeTest):
 
     def test_reload_includes_added_channels(self):
         """
-        When reloading the channels, get_packages() returns the packages
+        When reloading the channels, C{get_packages()} returns the packages
         in the channel.
         """
         deb_dir = self.makeDir()
