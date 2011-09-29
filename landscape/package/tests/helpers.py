@@ -16,6 +16,7 @@ class AptFacadeHelper(object):
         # auto-create them, which causing the paths to be printed to stdout.
         test_case.dpkg_dir = self._create_sub_dir(test_case, "var/lib/dpkg")
         self._create_sub_dir(test_case, "etc/apt")
+        self._create_sub_dir(test_case, "etc/apt/sources.list.d")
         self._create_sub_dir(test_case, "var/cache/apt/archives/partial")
         self._create_sub_dir(test_case, "var/lib/apt/lists/partial")
         test_case.dpkg_status = os.path.join(test_case.dpkg_dir, "status")
