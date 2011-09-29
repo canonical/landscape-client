@@ -16,6 +16,7 @@ from twisted.internet.utils import getProcessOutputAndValue
 
 import smart
 
+from landscape.lib.fs import read_file
 from landscape.package.facade import (
     TransactionError, DependencyError, ChannelError, SmartError)
 
@@ -91,8 +92,7 @@ class AptFacadeTest(LandscapeTest):
         list_filename = (
             self.apt_root +
             "/etc/apt/sources.list.d/landscape-internal-facade.list")
-        with open(list_filename, "r") as sources:
-            sources_contents = sources.read()
+        sources_contents = read_file(list_filename)
         self.assertEqual(
             "deb http://example.com/ubuntu lucid\n",
             sources_contents)
@@ -109,8 +109,7 @@ class AptFacadeTest(LandscapeTest):
         list_filename = (
             self.apt_root +
             "/etc/apt/sources.list.d/landscape-internal-facade.list")
-        with open(list_filename, "r") as sources:
-            sources_contents = sources.read()
+        sources_contents = read_file(list_filename)
         self.assertEqual(
             "deb http://example.com/ubuntu lucid main restricted\n",
             sources_contents)
