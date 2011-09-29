@@ -68,7 +68,7 @@ class AptFacade(object):
         """
         sources_dir = apt_pkg.config.find_dir("Dir::Etc::sourceparts")
         sources_file_path = os.path.join(
-            sources_dir, "landscape-internal-facade.list")
+            sources_dir, "_landscape-internal-facade.list")
         sources_line = "deb %s %s" % (url, codename)
         if components:
             sources_line += " %s" % " ".join(components)

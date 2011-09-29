@@ -91,7 +91,7 @@ class AptFacadeTest(LandscapeTest):
             "http://example.com/ubuntu", "lucid", None)
         list_filename = (
             self.apt_root +
-            "/etc/apt/sources.list.d/landscape-internal-facade.list")
+            "/etc/apt/sources.list.d/_landscape-internal-facade.list")
         sources_contents = read_file(list_filename)
         self.assertEqual(
             "deb http://example.com/ubuntu lucid\n",
@@ -108,7 +108,7 @@ class AptFacadeTest(LandscapeTest):
             "http://example.com/ubuntu", "lucid", ["main", "restricted"])
         list_filename = (
             self.apt_root +
-            "/etc/apt/sources.list.d/landscape-internal-facade.list")
+            "/etc/apt/sources.list.d/_landscape-internal-facade.list")
         sources_contents = read_file(list_filename)
         self.assertEqual(
             "deb http://example.com/ubuntu lucid main restricted\n",
