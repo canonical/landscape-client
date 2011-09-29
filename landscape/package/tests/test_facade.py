@@ -123,7 +123,7 @@ class AptFacadeTest(LandscapeTest):
     def test_get_channels_with_channels(self):
         """
         If deb URLs have been added, a list of dict is returned with
-            information about the channels.
+        information about the channels.
         """
         self.facade.add_channel_apt_deb(
             "http://example.com/ubuntu", "lucid", ["main", "restricted"])
