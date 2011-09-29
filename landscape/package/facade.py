@@ -1,3 +1,5 @@
+import os
+
 from smart.transaction import (
     Transaction, PolicyInstall, PolicyUpgrade, PolicyRemove, Failed)
 from smart.const import INSTALL, REMOVE, UPGRADE, ALWAYS, NEVER
@@ -64,7 +66,8 @@ class AptFacade(object):
         @param components: The components to be included.
         """
         sources_dir = apt_pkg.config.find_dir("Dir::Etc::sourceparts")
-        sources_file_path = sources_dir + "/landscape-internal-facade.list"
+        sources_file_path = os.path.join(
+            sources_dir, "landscape-internal-facade.list")
         with open(sources_file_path, "a") as sources:
             sources_line = "deb %s %s" % (url, codename)
             if components:

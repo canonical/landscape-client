@@ -56,7 +56,7 @@ class AptFacadeTest(LandscapeTest):
         There won't be an actual package in the dir.
         """
         package_stanza = "Package: %(name)s\nVersion: %(version)s\n\n"
-        with open(path + "/Packages", "a") as packages:
+        with open(os.path.join(path, "Packages"), "a") as packages:
             packages.write(package_stanza % {"name": name, "version": version})
 
     def test_no_system_packages(self):
