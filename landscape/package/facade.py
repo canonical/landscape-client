@@ -59,7 +59,7 @@ class AptFacade(object):
         self._cache.update()
         self._cache.open(None)
 
-    def add_channel_apt_deb(self, url, codename, components):
+    def add_channel_apt_deb(self, url, codename, components=None):
         """Add a deb URL which points to a repository.
 
         @param url: The base URL of the repository.

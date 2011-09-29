@@ -88,7 +88,7 @@ class AptFacadeTest(LandscapeTest):
         If no components are given, nothing is written after the dist.
         """
         self.facade.add_channel_apt_deb(
-            "http://example.com/ubuntu", "lucid", None)
+            "http://example.com/ubuntu", "lucid")
         list_filename = (
             self.apt_root +
             "/etc/apt/sources.list.d/_landscape-internal-facade.list")
@@ -171,7 +171,7 @@ class AptFacadeTest(LandscapeTest):
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
         self._add_package_to_deb_dir(deb_dir, "bar")
-        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./", None)
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
         self.assertEqual(
             ["bar", "foo"],
