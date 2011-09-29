@@ -40,7 +40,7 @@ class AptFacadeTest(LandscapeTest):
                 Section: misc
                 Installed-Size: 1234
                 Maintainer: Someone
-                Architecture: amd64
+                Architecture: all
                 Source: source
                 Version: 1.0
                 Config-Version: 1.0

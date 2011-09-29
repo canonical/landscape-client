@@ -85,7 +85,7 @@ cd ${package}-${upstream}
 #
 # Build source packages and upload them
 #
-releases="dapper_6.06 hardy_8.04 karmic_9.10 lucid_10.04 maverick_10.10"
+releases="hardy_8.04 karmic_9.10 lucid_10.04 maverick_10.10 natty_11.04 oneiric_11.10"
 
 if [ "$snapshot" = "yes" ]; then
     # Snapshot, we'll add a dummy changelog entry like for all releases
@@ -96,7 +96,7 @@ else
     dpkg-buildpackage -S -sa -k$key
     dput $ppa ../${package}_${version}_source.changes
     source_opt="-sd"
-fi    
+fi
 
 for release in $releases; do
 
