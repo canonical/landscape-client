@@ -24,7 +24,7 @@ from landscape.tests.mocker import ANY
 from landscape.tests.helpers import LandscapeTest
 from landscape.package.tests.helpers import (
     SmartFacadeHelper, HASH1, HASH2, HASH3, PKGNAME1, PKGNAME4, PKGDEB4,
-    create_full_repository, create_deb, AptFacadeHelper,
+    PKGDEB1, create_full_repository, create_deb, AptFacadeHelper,
     create_simple_repository)
 
 
@@ -129,6 +129,30 @@ class AptFacadeTest(LandscapeTest):
                            "components": "",
                            "type": "deb"}],
                          self.facade.get_channels())
+
+    def test_get_package_stanza(self):
+        deb_dir = self.makeDir()
+        create_deb(deb_dir, PKGNAME1, PKGDEB1)
+        deb_file = os.path.join(deb_dir, PKGNAME1)
+        stanza = self.facade.get_package_stanza(deb_file)
+        self.assertEqual(textwrap.dedent("""\
+            Package: name1
+            Priority: optional
+            Section: Group1
+            Installed-Size: 28
+            Maintainer: Gustavo Niemeyer <gustavo@niemeyer.net>
+            Architecture: all
+            Version: version1-release1
+            Provides: providesname1
+            Depends: requirename1 (= requireversion1)
+            Pre-Depends: prerequirename1 (= prerequireversion1)
+            Recommends: recommendsname1 (= recommendsversion1)
+            Suggests: suggestsname1 (= suggestsversion1)
+            Conflicts: conflictsname1 (= conflictsversion1)
+            Description: Summary1
+             Description1
+            """),
+            stanza)
 
     def test_get_channels_with_no_channels(self):
         """

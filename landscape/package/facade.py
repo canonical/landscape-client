@@ -7,6 +7,7 @@ from smart.const import INSTALL, REMOVE, UPGRADE, ALWAYS, NEVER
 import smart
 
 import apt
+import apt_inst
 import apt_pkg
 from aptsources.sourceslist import SourcesList
 
@@ -96,6 +97,13 @@ class AptFacade(object):
         for entry in sources_list:
             entry.set_enabled(False)
         sources_list.save()
+
+    def get_package_stanza(self, deb_path):
+        deb_file = open(deb_path)
+        deb = apt_inst.DebFile(deb_file)
+        control = deb.control.extractdata("control")
+        return apt_pkg.rewrite_section(
+            apt_pkg.TagSection(control), apt_pkg.REWRITE_PACKAGE_ORDER, [])
 
 
 class SmartFacade(object):
