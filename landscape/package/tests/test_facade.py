@@ -117,7 +117,7 @@ class AptFacadeTest(LandscapeTest):
 
     def test_add_channel_deb_dir_adds_deb_channel(self):
         """
-        add_channel_deb_dir() adds a deb channel pointing to the
+        C{add_channel_deb_dir()} adds a deb channel pointing to the
         directory containing the packages.
         """
         deb_dir = self.makeDir()
