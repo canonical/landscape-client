@@ -151,6 +151,7 @@ class AptFacadeTest(LandscapeTest):
             Conflicts: conflictsname1 (= conflictsversion1)
             Filename: %(filename)s
             Size: 1038
+            MD5sum: efe83eb2b891046b303aaf9281c14e6e
             Description: Summary1
              Description1
             """ % {"filename": PKGNAME1}),
