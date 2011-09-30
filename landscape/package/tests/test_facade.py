@@ -149,9 +149,10 @@ class AptFacadeTest(LandscapeTest):
             Recommends: recommendsname1 (= recommendsversion1)
             Suggests: suggestsname1 (= suggestsversion1)
             Conflicts: conflictsname1 (= conflictsversion1)
+            Filename: %(filename)s
             Description: Summary1
              Description1
-            """),
+            """ % {"filename": PKGNAME1}),
             stanza)
 
     def test_get_channels_with_no_channels(self):
