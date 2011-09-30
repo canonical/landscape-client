@@ -78,6 +78,13 @@ class AptFacade(object):
         append_file(sources_file_path, sources_line)
 
     def add_channel_deb_dir(self, path):
+        """Add a directory with packages as a channel.
+
+        @param path: The path to the directory containing the packages.
+
+        A Packages file is created in the directory with information
+        about the deb files.
+        """
         packages_contents = "\n".join(
             self.get_package_stanza(os.path.join(path, filename))
             for filename in sorted(os.listdir(path)))
@@ -104,6 +111,10 @@ class AptFacade(object):
         sources_list.save()
 
     def get_package_stanza(self, deb_path):
+        """Return a stanza for the package to be included in a Packages file.
+
+        @param deb_path: The path to the deb package.
+        """
         deb_file = open(deb_path)
         deb = apt_inst.DebFile(deb_file)
         filename = os.path.basename(deb_path)
@@ -112,6 +123,7 @@ class AptFacade(object):
         sha1 = hashlib.sha1(read_file(deb_path)).hexdigest()
         sha256 = hashlib.sha256(read_file(deb_path)).hexdigest()
         control = deb.control.extractdata("control")
+        # Use rewrite_section to ensure that the field order is correct.
         return apt_pkg.rewrite_section(
             apt_pkg.TagSection(control), apt_pkg.REWRITE_PACKAGE_ORDER,
             [("Filename", filename), ("Size", str(size)),
