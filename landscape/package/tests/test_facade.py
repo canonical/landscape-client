@@ -131,6 +131,10 @@ class AptFacadeTest(LandscapeTest):
                          self.facade.get_channels())
 
     def test_get_package_stanza(self):
+        """
+        C{get_package_stanza} returns an entry for the package that can
+        be included in a Packages file.
+        """
         deb_dir = self.makeDir()
         create_deb(deb_dir, PKGNAME1, PKGDEB1)
         deb_file = os.path.join(deb_dir, PKGNAME1)
@@ -160,6 +164,10 @@ class AptFacadeTest(LandscapeTest):
             stanza)
 
     def test_add_channel_deb_dir_creates_packages_file(self):
+        """
+        C{add_channel_deb_dir} creates a Packages file in the directory
+        with packages.
+        """
         deb_dir = self.makeDir()
         create_simple_repository(deb_dir)
         self.facade.add_channel_deb_dir(deb_dir)
@@ -170,6 +178,10 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(expected_contents, packages_contents)
 
     def test_add_channel_deb_dir_get_packages(self):
+        """
+        After calling {add_channel_deb_dir} and reloading the channels,
+        the packages in the deb dir is included in the package list.
+        """
         deb_dir = self.makeDir()
         create_simple_repository(deb_dir)
         self.facade.add_channel_deb_dir(deb_dir)
@@ -177,7 +189,6 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(
             ["name1", "name2", "name3"],
             sorted(package.name for package in self.facade.get_packages()))
-
 
     def test_get_channels_with_no_channels(self):
         """
