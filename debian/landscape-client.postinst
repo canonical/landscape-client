@@ -33,8 +33,6 @@ case "$1" in
             cat > $TEMPFILE <<END
 [client]
 log_level = info
-url = https://landscape.canonical.com/message-system
-ping_url = http://landscape.canonical.com/ping
 data_path = /var/lib/landscape/client
 END
             chown landscape $TEMPFILE
@@ -46,12 +44,18 @@ END
             ACCOUNT_NAME="${RET}"
             db_get $PACKAGE/registration_password
             REGISTRATION_PASSWORD="${RET}"
+            db_get $PACKAGE/url
+            URL="${RET}"
+            db_get $PACKAGE/ping_url
+            PING_URL="${RET}"
 
             # If we got the needed information, actually do the registration.
             if [ -n "$ACCOUNT_NAME" -a -n "$COMPUTER_TITLE" ]; then
                 landscape-config --silent --ok-no-register -a "$ACCOUNT_NAME" \
                                           -p "$REGISTRATION_PASSWORD" \
-                                          -t "$COMPUTER_TITLE"
+                                          -t "$COMPUTER_TITLE" \
+                                          --url="$URL" \
+                                          --ping-url="$PING_URL"
             fi
         else
             # Fix non-private permissions

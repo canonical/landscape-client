@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: landscape-client@packages.debian.org\n"
-"POT-Creation-Date: 2011-09-30 09:13-0300\n"
+"POT-Creation-Date: 2011-09-30 11:01-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -68,18 +68,30 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../landscape-client.templates:4001
-msgid "The URL of the Landscape Server."
+msgid "The server URL to connect to."
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../landscape-client.templates:5001
+msgid "Landscape PingServer URL:"
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../landscape-client.templates:5001
+msgid "The URL to perform lightweight exchange initiation with."
 msgstr ""
 
 #. Type: boolean
 #. Description
-#: ../landscape-client.templates:5001
+#: ../landscape-client.templates:6001
 msgid "Register this system with the Landscape server?"
 msgstr ""
 
 #. Type: boolean
 #. Description
-#: ../landscape-client.templates:5001
+#: ../landscape-client.templates:6001
 msgid ""
 "Register this system with a preexisting Landscape account.  Please\n"
 " go to http://landscape.canonical.com if you need a Landscape account."
