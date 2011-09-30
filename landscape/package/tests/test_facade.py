@@ -255,6 +255,22 @@ class AptFacadeTest(LandscapeTest):
             ["bar", "foo"],
             sorted(package.name for package in self.facade.get_packages()))
 
+    def test_ensure_channels_reloaded_do_not_reload_twice(self):
+        """
+        C{ensure_channels_reloaded} refreshes the channels only when
+        first called. If it called more time, it has no effect.
+        """
+        self._add_system_package("foo")
+        self.facade.ensure_channels_reloaded()
+        self.assertEqual(
+            ["foo"],
+            sorted(package.name for package in self.facade.get_packages()))
+        self._add_system_package("bar")
+        self.facade.ensure_channels_reloaded()
+        self.assertEqual(
+            ["foo"],
+            sorted(package.name for package in self.facade.get_packages()))
+
     def test_get_arch(self):
         """
         C{get_arch} returns the architecture that APT is currently

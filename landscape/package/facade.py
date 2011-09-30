@@ -50,6 +50,7 @@ class AptFacade(object):
 
     def __init__(self, root=None):
         self._cache = apt.cache.Cache(rootdir=root, memonly=True)
+        self._channels_loaded = False
 
     def get_packages(self):
         """Get all the packages available in the channels."""
@@ -60,6 +61,13 @@ class AptFacade(object):
         self._cache.open(None)
         self._cache.update()
         self._cache.open(None)
+
+    def ensure_channels_reloaded(self):
+        """Reload the channels if they haven't been reloaded yet."""
+        if self._channels_loaded:
+            return
+        self.reload_channels()
+        self._channels_loaded = True
 
     def add_channel_apt_deb(self, url, codename, components=None):
         """Add a deb URL which points to a repository.
