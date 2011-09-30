@@ -102,10 +102,11 @@ class AptFacade(object):
         deb_file = open(deb_path)
         deb = apt_inst.DebFile(deb_file)
         filename = os.path.basename(deb_path)
+        size = os.path.getsize(deb_path)
         control = deb.control.extractdata("control")
         return apt_pkg.rewrite_section(
             apt_pkg.TagSection(control), apt_pkg.REWRITE_PACKAGE_ORDER,
-            [("Filename", filename)])
+            [("Filename", filename), ("Size", str(size))])
 
 
 class SmartFacade(object):

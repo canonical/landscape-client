@@ -150,6 +150,7 @@ class AptFacadeTest(LandscapeTest):
             Suggests: suggestsname1 (= suggestsversion1)
             Conflicts: conflictsname1 (= conflictsversion1)
             Filename: %(filename)s
+            Size: 1038
             Description: Summary1
              Description1
             """ % {"filename": PKGNAME1}),
