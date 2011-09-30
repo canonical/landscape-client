@@ -2,10 +2,13 @@ import time
 import os
 import re
 import sys
+import textwrap
 
 from smart.control import Control
 from smart.cache import Provides
 from smart.const import NEVER, ALWAYS
+
+from aptsources.sourceslist import SourcesList
 
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
@@ -13,6 +16,7 @@ from twisted.internet.utils import getProcessOutputAndValue
 
 import smart
 
+from landscape.lib.fs import append_file, read_file
 from landscape.package.facade import (
     TransactionError, DependencyError, ChannelError, SmartError)
 
@@ -20,7 +24,158 @@ from landscape.tests.mocker import ANY
 from landscape.tests.helpers import LandscapeTest
 from landscape.package.tests.helpers import (
     SmartFacadeHelper, HASH1, HASH2, HASH3, PKGNAME1, PKGNAME4, PKGDEB4,
-    create_full_repository, create_deb)
+    create_full_repository, create_deb, AptFacadeHelper)
+
+
+class AptFacadeTest(LandscapeTest):
+
+    helpers = [AptFacadeHelper]
+
+    def _add_system_package(self, name):
+        """Add a package to the dpkg status file."""
+        append_file(self.dpkg_status, textwrap.dedent("""\
+                Package: %s
+                Status: install ok installed
+                Priority: optional
+                Section: misc
+                Installed-Size: 1234
+                Maintainer: Someone
+                Architecture: all
+                Source: source
+                Version: 1.0
+                Config-Version: 1.0
+                Description: description
+
+                """ % name))
+
+    def _add_package_to_deb_dir(self, path, name, version="1.0"):
+        """Add fake package information to a directory.
+
+        There will only be basic information about the package
+        available, so that get_packages() have something to return.
+        There won't be an actual package in the dir.
+        """
+        package_stanza = "Package: %(name)s\nVersion: %(version)s\n\n"
+        append_file(
+            os.path.join(path, "Packages"),
+            package_stanza % {"name": name, "version": version})
+
+    def test_no_system_packages(self):
+        """
+        If the dpkg status file is empty, not packages are reported by
+        C{get_packages()}.
+        """
+        self.facade.reload_channels()
+        self.assertEqual([], self.facade.get_packages())
+
+    def test_get_system_packages(self):
+        """
+        If the dpkg status file contains some packages, those packages
+        are reported by C{get_packages()}.
+        """
+        self._add_system_package("foo")
+        self._add_system_package("bar")
+        self.facade.reload_channels()
+        self.assertEqual(
+            ["bar", "foo"],
+            sorted(package.name for package in self.facade.get_packages()))
+
+    def test_add_channel_apt_deb_without_components(self):
+        """
+        C{add_channel_apt_deb()} adds a new deb URL to a file in
+        sources.list.d.
+
+        If no components are given, nothing is written after the dist.
+        """
+        self.facade.add_channel_apt_deb(
+            "http://example.com/ubuntu", "lucid")
+        list_filename = (
+            self.apt_root +
+            "/etc/apt/sources.list.d/_landscape-internal-facade.list")
+        sources_contents = read_file(list_filename)
+        self.assertEqual(
+            "deb http://example.com/ubuntu lucid\n",
+            sources_contents)
+
+    def test_add_channel_apt_deb_with_components(self):
+        """
+        C{add_channel_apt_deb()} adds a new deb URL to a file in
+        sources.list.d.
+
+        If components are given, they are included after the dist.
+        """
+        self.facade.add_channel_apt_deb(
+            "http://example.com/ubuntu", "lucid", ["main", "restricted"])
+        list_filename = (
+            self.apt_root +
+            "/etc/apt/sources.list.d/_landscape-internal-facade.list")
+        sources_contents = read_file(list_filename)
+        self.assertEqual(
+            "deb http://example.com/ubuntu lucid main restricted\n",
+            sources_contents)
+
+    def test_get_channels_with_no_channels(self):
+        """
+        If no deb URLs have been added, C{get_channels()} returns an empty list.
+        """
+        self.assertEqual([], self.facade.get_channels())
+
+    def test_get_channels_with_channels(self):
+        """
+        If deb URLs have been added, a list of dict is returned with
+        information about the channels.
+        """
+        self.facade.add_channel_apt_deb(
+            "http://example.com/ubuntu", "lucid", ["main", "restricted"])
+        self.assertEqual([{"baseurl": "http://example.com/ubuntu",
+                           "distribution": "lucid",
+                           "components": "main restricted",
+                           "type": "deb"}],
+                         self.facade.get_channels())
+
+    def test_get_channels_with_disabled_channels(self):
+        """
+        C{get_channels()} doesn't return disabled deb URLs.
+        """
+        self.facade.add_channel_apt_deb(
+            "http://enabled.example.com/ubuntu", "lucid", ["main"])
+        self.facade.add_channel_apt_deb(
+            "http://disabled.example.com/ubuntu", "lucid", ["main"])
+        sources_list = SourcesList()
+        for entry in sources_list:
+            if "disabled" in entry.uri:
+                entry.set_enabled(False)
+        sources_list.save()
+        self.assertEqual([{"baseurl": "http://enabled.example.com/ubuntu",
+                           "distribution": "lucid",
+                           "components": "main",
+                           "type": "deb"}],
+                         self.facade.get_channels())
+
+    def test_reset_channels(self):
+        """
+        C{reset_channels()} disables all the configured deb URLs.
+        """
+        self.facade.add_channel_apt_deb(
+            "http://1.example.com/ubuntu", "lucid", ["main", "restricted"])
+        self.facade.add_channel_apt_deb(
+            "http://2.example.com/ubuntu", "lucid", ["main", "restricted"])
+        self.facade.reset_channels()
+        self.assertEqual([], self.facade.get_channels())
+
+    def test_reload_includes_added_channels(self):
+        """
+        When reloading the channels, C{get_packages()} returns the packages
+        in the channel.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self._add_package_to_deb_dir(deb_dir, "bar")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        self.assertEqual(
+            ["bar", "foo"],
+            sorted(package.name for package in self.facade.get_packages()))
 
 
 class SmartFacadeTest(LandscapeTest):

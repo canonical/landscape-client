@@ -1,9 +1,16 @@
+import os
+
 from smart.transaction import (
     Transaction, PolicyInstall, PolicyUpgrade, PolicyRemove, Failed)
 from smart.const import INSTALL, REMOVE, UPGRADE, ALWAYS, NEVER
 
 import smart
 
+import apt
+import apt_pkg
+from aptsources.sourceslist import SourcesList
+
+from landscape.lib.fs import append_file
 from landscape.package.skeleton import build_skeleton
 
 
@@ -28,6 +35,64 @@ class SmartError(Exception):
 
 class ChannelError(Exception):
     """Raised when channels fail to load."""
+
+
+class AptFacade(object):
+    """Wrapper for tasks using Apt.
+
+    This object wraps Apt features, in a way that makes using and testing
+    these features slightly more comfortable.
+
+    @param root: The root dir of the Apt configuration files.
+    """
+
+    def __init__(self, root=None):
+        self._cache = apt.cache.Cache(rootdir=root, memonly=True)
+
+    def get_packages(self):
+        """Get all the packages available in the channels."""
+        return [self._cache[name] for name in self._cache.keys()]
+
+    def reload_channels(self):
+        """Reload the channels and update the cache."""
+        self._cache.open(None)
+        self._cache.update()
+        self._cache.open(None)
+
+    def add_channel_apt_deb(self, url, codename, components=None):
+        """Add a deb URL which points to a repository.
+
+        @param url: The base URL of the repository.
+        @param codename: The dist in the repository.
+        @param components: The components to be included.
+        """
+        sources_dir = apt_pkg.config.find_dir("Dir::Etc::sourceparts")
+        sources_file_path = os.path.join(
+            sources_dir, "_landscape-internal-facade.list")
+        sources_line = "deb %s %s" % (url, codename)
+        if components:
+            sources_line += " %s" % " ".join(components)
+        sources_line += "\n"
+        append_file(sources_file_path, sources_line)
+
+    def get_channels(self):
+        """Return a list of channels configured.
+
+        A channel is a deb line in sources.list or sources.list.d. It's
+        represented by a dict with baseurl, distribution, components,
+        and type keys.
+        """
+        sources_list = SourcesList()
+        return [{"baseurl": entry.uri, "distribution": entry.dist,
+                 "components": " ".join(entry.comps), "type": entry.type}
+                for entry in sources_list if not entry.disabled]
+
+    def reset_channels(self):
+        """Remove all the configured channels."""
+        sources_list = SourcesList()
+        for entry in sources_list:
+            entry.set_enabled(False)
+        sources_list.save()
 
 
 class SmartFacade(object):
