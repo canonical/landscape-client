@@ -129,6 +129,10 @@ class AptFacade(object):
             [("Filename", filename), ("Size", str(size)),
              ("MD5sum", md5), ("SHA1", sha1), ("SHA256", sha256)])
 
+    def get_arch(self):
+        """Return the architecture APT is configured to use."""
+        return apt_pkg.config.get("APT::Architecture")
+
 
 class SmartFacade(object):
     """Wrapper for tasks using Smart.

@@ -8,6 +8,7 @@ from smart.control import Control
 from smart.cache import Provides
 from smart.const import NEVER, ALWAYS
 
+import apt_pkg
 from aptsources.sourceslist import SourcesList
 
 from twisted.internet import reactor
@@ -253,6 +254,16 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(
             ["bar", "foo"],
             sorted(package.name for package in self.facade.get_packages()))
+
+    def test_get_arch(self):
+        """
+        C{get_arch} returns the architecture that APT is currently
+        configured to use.
+        """
+        apt_pkg.config.set("APT::Architecture", "i386")
+        self.assertEqual("i386", self.facade.get_arch())
+        apt_pkg.config.set("APT::Architecture", "amd64")
+        self.assertEqual("amd64", self.facade.get_arch())
 
 
 class SmartFacadeTest(LandscapeTest):
