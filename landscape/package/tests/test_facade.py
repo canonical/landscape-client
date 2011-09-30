@@ -23,9 +23,9 @@ from landscape.package.facade import (
 from landscape.tests.mocker import ANY
 from landscape.tests.helpers import LandscapeTest
 from landscape.package.tests.helpers import (
-    SmartFacadeHelper, HASH1, HASH2, HASH3, PKGNAME1, PKGNAME4, PKGDEB4,
-    PKGDEB1, create_full_repository, create_deb, AptFacadeHelper,
-    create_simple_repository)
+    SmartFacadeHelper, HASH1, HASH2, HASH3, PKGNAME1, PKGNAME2, PKGNAME3,
+    PKGNAME4, PKGDEB4, PKGDEB1, create_full_repository, create_deb,
+    AptFacadeHelper, create_simple_repository)
 
 
 class AptFacadeTest(LandscapeTest):
@@ -158,6 +158,26 @@ class AptFacadeTest(LandscapeTest):
              Description1
             """ % {"filename": PKGNAME1}),
             stanza)
+
+    def test_add_channel_deb_dir_creates_packages_file(self):
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self.facade.add_channel_deb_dir(deb_dir)
+        packages_contents = read_file(os.path.join(deb_dir, "Packages"))
+        expected_contents = "\n".join(
+            self.facade.get_package_stanza(os.path.join(deb_dir, pkg_name))
+            for pkg_name in [PKGNAME1, PKGNAME2, PKGNAME3])
+        self.assertEqual(expected_contents, packages_contents)
+
+    def test_add_channel_deb_dir_get_packages(self):
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.facade.reload_channels()
+        self.assertEqual(
+            ["name1", "name2", "name3"],
+            sorted(package.name for package in self.facade.get_packages()))
+
 
     def test_get_channels_with_no_channels(self):
         """

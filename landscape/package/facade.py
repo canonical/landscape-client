@@ -12,7 +12,7 @@ import apt_inst
 import apt_pkg
 from aptsources.sourceslist import SourcesList
 
-from landscape.lib.fs import append_file, read_file
+from landscape.lib.fs import append_file, create_file, read_file
 from landscape.package.skeleton import build_skeleton
 
 
@@ -78,6 +78,10 @@ class AptFacade(object):
         append_file(sources_file_path, sources_line)
 
     def add_channel_deb_dir(self, path):
+        packages_contents = "\n".join(
+            self.get_package_stanza(os.path.join(path, filename))
+            for filename in sorted(os.listdir(path)))
+        create_file(os.path.join(path, "Packages"), packages_contents)
         self.add_channel_apt_deb("file://%s" % path, "./", None)
 
     def get_channels(self):
