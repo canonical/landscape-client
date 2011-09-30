@@ -17,6 +17,12 @@ _Description: Registration Password:
  needed if the given account is requesting a client registration
  password.
 
+Template: landscape-client/server_url
+Type: string
+Default: https://landscape.ubuntu.com/
+_Description: Landscape Server URL:
+ The URL of the Landscape Server.
+
 Template: landscape-client/register_system
 Type: boolean
 Default: false
