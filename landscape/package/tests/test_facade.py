@@ -192,7 +192,8 @@ class AptFacadeTest(LandscapeTest):
 
     def test_get_channels_with_no_channels(self):
         """
-        If no deb URLs have been added, C{get_channels()} returns an empty list.
+        If no deb URLs have been added, C{get_channels()} returns an
+        empty list.
         """
         self.assertEqual([], self.facade.get_channels())
 
