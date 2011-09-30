@@ -153,6 +153,7 @@ class AptFacadeTest(LandscapeTest):
             Size: 1038
             MD5sum: efe83eb2b891046b303aaf9281c14e6e
             SHA1: b4ebcd2b0493008852a4954edc30a236d516c638
+            SHA256: f899cba22b79780dbe9bbbb802ff901b7e432425c264dc72e6bb20c0061e4f26
             Description: Summary1
              Description1
             """ % {"filename": PKGNAME1}),
