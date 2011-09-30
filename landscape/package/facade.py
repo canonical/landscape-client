@@ -1,3 +1,5 @@
+import os
+
 from smart.transaction import (
     Transaction, PolicyInstall, PolicyUpgrade, PolicyRemove, Failed)
 from smart.const import INSTALL, REMOVE, UPGRADE, ALWAYS, NEVER
@@ -8,6 +10,7 @@ import apt
 import apt_pkg
 from aptsources.sourceslist import SourcesList
 
+from landscape.lib.fs import append_file
 from landscape.package.skeleton import build_skeleton
 
 
@@ -56,7 +59,7 @@ class AptFacade(object):
         self._cache.update()
         self._cache.open(None)
 
-    def add_channel_apt_deb(self, url, codename, components):
+    def add_channel_apt_deb(self, url, codename, components=None):
         """Add a deb URL which points to a repository.
 
         @param url: The base URL of the repository.
@@ -64,13 +67,13 @@ class AptFacade(object):
         @param components: The components to be included.
         """
         sources_dir = apt_pkg.config.find_dir("Dir::Etc::sourceparts")
-        sources_file_path = sources_dir + "/landscape-internal-facade.list"
-        with open(sources_file_path, "a") as sources:
-            sources_line = "deb %s %s" % (url, codename)
-            if components:
-                sources_line += " %s" % " ".join(components)
-            sources_line += "\n"
-            sources.write(sources_line)
+        sources_file_path = os.path.join(
+            sources_dir, "_landscape-internal-facade.list")
+        sources_line = "deb %s %s" % (url, codename)
+        if components:
+            sources_line += " %s" % " ".join(components)
+        sources_line += "\n"
+        append_file(sources_file_path, sources_line)
 
     def add_channel_deb_dir(self, path):
         self.add_channel_apt_deb("file://%s" % path, "./", None)

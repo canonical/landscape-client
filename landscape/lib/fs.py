@@ -14,6 +14,19 @@ def create_file(path, content):
     fd.close()
 
 
+def append_file(path, content):
+    """Append a file with the given content.
+
+    The file is created, if it doesn't exist already.
+
+    @param path: The path to the file.
+    @param content: The content to be written in the file at the end.
+    """
+    fd = open(path, "a")
+    fd.write(content)
+    fd.close()
+
+
 def read_file(path, limit=None):
     """Return the content of the given file.
 
