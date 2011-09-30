@@ -133,6 +133,10 @@ class AptFacade(object):
         """Return the architecture APT is configured to use."""
         return apt_pkg.config.get("APT::Architecture")
 
+    def set_arch(self, architecture):
+        """Set the architecture that APT should use."""
+        return apt_pkg.config.set("APT::Architecture", architecture)
+
 
 class SmartFacade(object):
     """Wrapper for tasks using Smart.

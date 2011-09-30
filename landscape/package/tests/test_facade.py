@@ -265,6 +265,15 @@ class AptFacadeTest(LandscapeTest):
         apt_pkg.config.set("APT::Architecture", "amd64")
         self.assertEqual("amd64", self.facade.get_arch())
 
+    def test_set_arch(self):
+        """
+        C{set_arch} sets the architecture that APT should use.
+        """
+        self.facade.set_arch("i386")
+        self.assertEqual("i386", apt_pkg.config.get("APT::Architecture"))
+        self.facade.set_arch("amd64")
+        self.assertEqual("amd64", apt_pkg.config.get("APT::Architecture"))
+
 
 class SmartFacadeTest(LandscapeTest):
 
