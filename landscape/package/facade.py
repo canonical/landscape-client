@@ -117,12 +117,13 @@ class AptFacade(object):
         """
         deb_file = open(deb_path)
         deb = apt_inst.DebFile(deb_file)
+        control = deb.control.extractdata("control")
+        deb_file.close()
         filename = os.path.basename(deb_path)
         size = os.path.getsize(deb_path)
         md5 = hashlib.md5(read_file(deb_path)).hexdigest()
         sha1 = hashlib.sha1(read_file(deb_path)).hexdigest()
         sha256 = hashlib.sha256(read_file(deb_path)).hexdigest()
-        control = deb.control.extractdata("control")
         # Use rewrite_section to ensure that the field order is correct.
         return apt_pkg.rewrite_section(
             apt_pkg.TagSection(control), apt_pkg.REWRITE_PACKAGE_ORDER,
