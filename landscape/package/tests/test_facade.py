@@ -258,7 +258,7 @@ class AptFacadeTest(LandscapeTest):
     def test_ensure_channels_reloaded_do_not_reload_twice(self):
         """
         C{ensure_channels_reloaded} refreshes the channels only when
-        first called. If it called more time, it has no effect.
+        first called. If it's called more time, it has no effect.
         """
         self._add_system_package("foo")
         self.facade.ensure_channels_reloaded()
