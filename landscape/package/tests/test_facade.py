@@ -23,15 +23,16 @@ from landscape.package.facade import (
 from landscape.tests.mocker import ANY
 from landscape.tests.helpers import LandscapeTest
 from landscape.package.tests.helpers import (
-    SmartFacadeHelper, HASH1, HASH2, HASH3, PKGNAME1, PKGNAME4, PKGDEB4,
-    create_full_repository, create_deb, AptFacadeHelper)
+    SmartFacadeHelper, HASH1, HASH2, HASH3, PKGNAME1, PKGNAME2, PKGNAME3,
+    PKGNAME4, PKGDEB4, PKGDEB1, create_full_repository, create_deb,
+    AptFacadeHelper, create_simple_repository)
 
 
 class AptFacadeTest(LandscapeTest):
 
     helpers = [AptFacadeHelper]
 
-    def _add_system_package(self, name):
+    def _add_system_package(self, name, architecture="all"):
         """Add a package to the dpkg status file."""
         append_file(self.dpkg_status, textwrap.dedent("""\
                 Package: %s
@@ -40,13 +41,13 @@ class AptFacadeTest(LandscapeTest):
                 Section: misc
                 Installed-Size: 1234
                 Maintainer: Someone
-                Architecture: all
+                Architecture: %s
                 Source: source
                 Version: 1.0
                 Config-Version: 1.0
                 Description: description
 
-                """ % name))
+                """ % (name, architecture)))
 
     def _add_package_to_deb_dir(self, path, name, version="1.0"):
         """Add fake package information to a directory.
@@ -114,9 +115,85 @@ class AptFacadeTest(LandscapeTest):
             "deb http://example.com/ubuntu lucid main restricted\n",
             sources_contents)
 
+    def test_add_channel_deb_dir_adds_deb_channel(self):
+        """
+        C{add_channel_deb_dir()} adds a deb channel pointing to the
+        directory containing the packages.
+        """
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.assertEqual(1, len(self.facade.get_channels()))
+        self.assertEqual([{"baseurl": "file://%s" % deb_dir,
+                           "distribution": "./",
+                           "components": "",
+                           "type": "deb"}],
+                         self.facade.get_channels())
+
+    def test_get_package_stanza(self):
+        """
+        C{get_package_stanza} returns an entry for the package that can
+        be included in a Packages file.
+        """
+        deb_dir = self.makeDir()
+        create_deb(deb_dir, PKGNAME1, PKGDEB1)
+        deb_file = os.path.join(deb_dir, PKGNAME1)
+        stanza = self.facade.get_package_stanza(deb_file)
+        self.assertEqual(textwrap.dedent("""\
+            Package: name1
+            Priority: optional
+            Section: Group1
+            Installed-Size: 28
+            Maintainer: Gustavo Niemeyer <gustavo@niemeyer.net>
+            Architecture: all
+            Version: version1-release1
+            Provides: providesname1
+            Depends: requirename1 (= requireversion1)
+            Pre-Depends: prerequirename1 (= prerequireversion1)
+            Recommends: recommendsname1 (= recommendsversion1)
+            Suggests: suggestsname1 (= suggestsversion1)
+            Conflicts: conflictsname1 (= conflictsversion1)
+            Filename: %(filename)s
+            Size: 1038
+            MD5sum: efe83eb2b891046b303aaf9281c14e6e
+            SHA1: b4ebcd2b0493008852a4954edc30a236d516c638
+            SHA256: f899cba22b79780dbe9bbbb802ff901b7e432425c264dc72e6bb20c0061e4f26
+            Description: Summary1
+             Description1
+            """ % {"filename": PKGNAME1}),
+            stanza)
+
+    def test_add_channel_deb_dir_creates_packages_file(self):
+        """
+        C{add_channel_deb_dir} creates a Packages file in the directory
+        with packages.
+        """
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self.facade.add_channel_deb_dir(deb_dir)
+        packages_contents = read_file(os.path.join(deb_dir, "Packages"))
+        expected_contents = "\n".join(
+            self.facade.get_package_stanza(os.path.join(deb_dir, pkg_name))
+            for pkg_name in [PKGNAME1, PKGNAME2, PKGNAME3])
+        self.assertEqual(expected_contents, packages_contents)
+
+    def test_add_channel_deb_dir_get_packages(self):
+        """
+        After calling {add_channel_deb_dir} and reloading the channels,
+        the packages in the deb dir is included in the package list.
+        """
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.facade.reload_channels()
+        self.assertEqual(
+            ["name1", "name2", "name3"],
+            sorted(package.name for package in self.facade.get_packages()))
+
     def test_get_channels_with_no_channels(self):
         """
-        If no deb URLs have been added, C{get_channels()} returns an empty list.
+        If no deb URLs have been added, C{get_channels()} returns an
+        empty list.
         """
         self.assertEqual([], self.facade.get_channels())
 
@@ -175,6 +252,50 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         self.assertEqual(
             ["bar", "foo"],
+            sorted(package.name for package in self.facade.get_packages()))
+
+    def test_ensure_channels_reloaded_do_not_reload_twice(self):
+        """
+        C{ensure_channels_reloaded} refreshes the channels only when
+        first called. If it's called more time, it has no effect.
+        """
+        self._add_system_package("foo")
+        self.facade.ensure_channels_reloaded()
+        self.assertEqual(
+            ["foo"],
+            sorted(package.name for package in self.facade.get_packages()))
+        self._add_system_package("bar")
+        self.facade.ensure_channels_reloaded()
+        self.assertEqual(
+            ["foo"],
+            sorted(package.name for package in self.facade.get_packages()))
+
+    def test_get_set_arch(self):
+        """
+        C{get_arch} returns the architecture that APT is currently
+        configured to use. C{set_arch} is used to set the architecture
+        that APT should use.
+        """
+        self.facade.set_arch("amd64")
+        self.assertEqual("amd64", self.facade.get_arch())
+        self.facade.set_arch("i386")
+        self.assertEqual("i386", self.facade.get_arch())
+
+    def test_set_arch_get_packages(self):
+        """
+        After the architecture is set, APT really uses the value.
+        """
+        self._add_system_package("i386-package", architecture="i386")
+        self._add_system_package("amd64-package", architecture="amd64")
+        self.facade.set_arch("i386")
+        self.facade.reload_channels()
+        self.assertEqual(
+            ["i386-package"],
+            sorted(package.name for package in self.facade.get_packages()))
+        self.facade.set_arch("amd64")
+        self.facade.reload_channels()
+        self.assertEqual(
+            ["amd64-package"],
             sorted(package.name for package in self.facade.get_packages()))
 
 
