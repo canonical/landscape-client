@@ -32,7 +32,7 @@ class AptFacadeTest(LandscapeTest):
 
     helpers = [AptFacadeHelper]
 
-    def _add_system_package(self, name):
+    def _add_system_package(self, name, architecture="all"):
         """Add a package to the dpkg status file."""
         append_file(self.dpkg_status, textwrap.dedent("""\
                 Package: %s
@@ -41,13 +41,13 @@ class AptFacadeTest(LandscapeTest):
                 Section: misc
                 Installed-Size: 1234
                 Maintainer: Someone
-                Architecture: all
+                Architecture: %s
                 Source: source
                 Version: 1.0
                 Config-Version: 1.0
                 Description: description
 
-                """ % name))
+                """ % (name, architecture)))
 
     def _add_package_to_deb_dir(self, path, name, version="1.0"):
         """Add fake package information to a directory.
@@ -252,6 +252,50 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         self.assertEqual(
             ["bar", "foo"],
+            sorted(package.name for package in self.facade.get_packages()))
+
+    def test_ensure_channels_reloaded_do_not_reload_twice(self):
+        """
+        C{ensure_channels_reloaded} refreshes the channels only when
+        first called. If it's called more time, it has no effect.
+        """
+        self._add_system_package("foo")
+        self.facade.ensure_channels_reloaded()
+        self.assertEqual(
+            ["foo"],
+            sorted(package.name for package in self.facade.get_packages()))
+        self._add_system_package("bar")
+        self.facade.ensure_channels_reloaded()
+        self.assertEqual(
+            ["foo"],
+            sorted(package.name for package in self.facade.get_packages()))
+
+    def test_get_set_arch(self):
+        """
+        C{get_arch} returns the architecture that APT is currently
+        configured to use. C{set_arch} is used to set the architecture
+        that APT should use.
+        """
+        self.facade.set_arch("amd64")
+        self.assertEqual("amd64", self.facade.get_arch())
+        self.facade.set_arch("i386")
+        self.assertEqual("i386", self.facade.get_arch())
+
+    def test_set_arch_get_packages(self):
+        """
+        After the architecture is set, APT really uses the value.
+        """
+        self._add_system_package("i386-package", architecture="i386")
+        self._add_system_package("amd64-package", architecture="amd64")
+        self.facade.set_arch("i386")
+        self.facade.reload_channels()
+        self.assertEqual(
+            ["i386-package"],
+            sorted(package.name for package in self.facade.get_packages()))
+        self.facade.set_arch("amd64")
+        self.facade.reload_channels()
+        self.assertEqual(
+            ["amd64-package"],
             sorted(package.name for package in self.facade.get_packages()))
 
 
