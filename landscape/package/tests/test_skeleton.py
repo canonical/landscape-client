@@ -5,9 +5,11 @@ from smart.cache import Package
 from landscape.package.interface import (
     install_landscape_interface, uninstall_landscape_interface)
 
-from landscape.package.skeleton import build_skeleton, PackageTypeError
+from landscape.package.skeleton import (
+    build_skeleton, PackageTypeError, build_skeleton_apt, DEB_PROVIDES)
 
-from landscape.package.tests.helpers import SmartHelper, HASH1
+from landscape.package.tests.helpers import (
+    AptFacadeHelper, SmartHelper, HASH1, create_simple_repository)
 from landscape.tests.helpers import LandscapeTest
 
 
@@ -45,3 +47,29 @@ class SkeletonTest(LandscapeTest):
     def test_refuse_to_build_non_debian_packages(self):
         self.assertRaises(PackageTypeError, build_skeleton,
                           Package("name", "version"))
+
+
+class SkeletonAptTest(LandscapeTest):
+
+    helpers = [AptFacadeHelper]
+
+    def setUp(self):
+        super(SkeletonAptTest, self).setUp()
+        self.repository_dir = self.makeDir()
+        create_simple_repository(self.repository_dir)
+        self.facade.add_channel_deb_dir(self.repository_dir)
+        self.facade.reload_channels()
+        [self.name1_package] = [
+            package for package in self.facade.get_packages()
+            if package.name == "name1"]
+
+    def test_build_skeleton(self):
+        skeleton = build_skeleton_apt(self.name1_package)
+        self.assertEqual("name1", skeleton.name)
+        self.assertEqual("version1-release1", skeleton.version)
+        relations = [(DEB_PROVIDES, "providesname1")]
+        self.assertEqual(skeleton.section, None)
+        self.assertEqual(skeleton.summary, None)
+        self.assertEqual(skeleton.description, None)
+        self.assertEqual(skeleton.size, None)
+        self.assertEqual(skeleton.installed_size, None)

@@ -91,3 +91,9 @@ def build_skeleton(pkg, with_info=False, with_unicode=False):
     return skeleton
 
 build_skeleton.inited = False
+
+
+def build_skeleton_apt(package, with_info=False, with_unicode=False):
+    skeleton = PackageSkeleton(
+        DEB_PACKAGE, package.name, package.candidate.version)
+    return skeleton
