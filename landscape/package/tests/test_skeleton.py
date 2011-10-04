@@ -67,9 +67,10 @@ class SkeletonAptTest(LandscapeTest):
         skeleton = build_skeleton_apt(self.name1_package)
         self.assertEqual("name1", skeleton.name)
         self.assertEqual("version1-release1", skeleton.version)
-        relations = [(DEB_PROVIDES, "providesname1")]
         self.assertEqual(skeleton.section, None)
         self.assertEqual(skeleton.summary, None)
         self.assertEqual(skeleton.description, None)
         self.assertEqual(skeleton.size, None)
         self.assertEqual(skeleton.installed_size, None)
+        relations = [(DEB_PROVIDES, "providesname1")]
+        self.assertEqual(relations, skeleton.relations)
