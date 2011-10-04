@@ -6,7 +6,8 @@ from landscape.package.interface import (
     install_landscape_interface, uninstall_landscape_interface)
 
 from landscape.package.skeleton import (
-    build_skeleton, PackageTypeError, build_skeleton_apt, DEB_PROVIDES)
+    build_skeleton, PackageTypeError, build_skeleton_apt, DEB_PROVIDES,
+    DEB_NAME_PROVIDES)
 
 from landscape.package.tests.helpers import (
     AptFacadeHelper, SmartHelper, HASH1, create_simple_repository)
@@ -72,5 +73,7 @@ class SkeletonAptTest(LandscapeTest):
         self.assertEqual(skeleton.description, None)
         self.assertEqual(skeleton.size, None)
         self.assertEqual(skeleton.installed_size, None)
-        relations = [(DEB_PROVIDES, "providesname1")]
+        relations = [
+            (DEB_PROVIDES, "providesname1"),
+            (DEB_NAME_PROVIDES, "name1 = version1-release1")]
         self.assertEqual(relations, skeleton.relations)

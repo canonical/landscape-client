@@ -97,4 +97,7 @@ def build_skeleton_apt(package, with_info=False, with_unicode=False):
     skeleton = PackageSkeleton(
         DEB_PACKAGE, package.name, package.candidate.version)
     skeleton.add_relation(DEB_PROVIDES, package.candidate.record["Provides"])
+    skeleton.add_relation(
+        DEB_NAME_PROVIDES, "%s = %s" % (
+            package.name, package.candidate.version))
     return skeleton
