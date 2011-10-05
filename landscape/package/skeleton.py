@@ -103,10 +103,9 @@ def build_skeleton_apt(package, with_info=False, with_unicode=False):
     for dependendy in package.candidate.dependencies:
         if len(dependendy.or_dependencies) == 1:
             [base_dependency] = dependendy.or_dependencies
-            if base_dependency.preDepend:
-                skeleton.add_relation(
-                    DEB_REQUIRES, "%(name)s %(relation)s %(version)s" % {
-                        "name": base_dependency.name,
-                        "relation": base_dependency.relation,
-                        "version": base_dependency.version})
+            skeleton.add_relation(
+                DEB_REQUIRES, "%(name)s %(relation)s %(version)s" % {
+                    "name": base_dependency.name,
+                    "relation": base_dependency.relation,
+                    "version": base_dependency.version})
     return skeleton

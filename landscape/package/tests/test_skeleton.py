@@ -76,5 +76,6 @@ class SkeletonAptTest(LandscapeTest):
         relations = [
             (DEB_PROVIDES, "providesname1"),
             (DEB_NAME_PROVIDES, "name1 = version1-release1"),
-            (DEB_REQUIRES, "prerequirename1 = prerequireversion1")]
+            (DEB_REQUIRES, "prerequirename1 = prerequireversion1"),
+            (DEB_REQUIRES, "requirename1 = requireversion1")]
         self.assertEqual(relations, skeleton.relations)
