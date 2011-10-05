@@ -119,9 +119,10 @@ def build_skeleton_apt(package, with_info=False, with_unicode=False):
         package.candidate.record.get("Conflicts", ""))
     if conflicts:
         name, version, relation = conflicts[0][0]
-        skeleton.add_relation(
-            DEB_CONFLICTS, "%(name)s %(relation)s %(version)s" % {
-                "name": name,
+        conflict_string = name
+        if relation:
+            conflict_string += " %(relation)s %(version)s" % {
                 "relation": relation,
-                "version": version})
+                "version": version}
+        skeleton.add_relation(DEB_CONFLICTS, conflict_string)
     return skeleton
