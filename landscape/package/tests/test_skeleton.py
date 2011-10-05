@@ -81,3 +81,4 @@ class SkeletonAptTest(LandscapeTest):
             (DEB_UPGRADES, "name1 < version1-release1"),
             (DEB_CONFLICTS, "conflictsname1 = conflictsversion1")]
         self.assertEqual(relations, skeleton.relations)
+        self.assertEqual(skeleton.get_hash(), HASH1)
