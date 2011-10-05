@@ -7,7 +7,7 @@ from landscape.package.interface import (
 
 from landscape.package.skeleton import (
     build_skeleton, PackageTypeError, build_skeleton_apt, DEB_PROVIDES,
-    DEB_NAME_PROVIDES, DEB_REQUIRES)
+    DEB_NAME_PROVIDES, DEB_REQUIRES, DEB_UPGRADES)
 
 from landscape.package.tests.helpers import (
     AptFacadeHelper, SmartHelper, HASH1, create_simple_repository)
@@ -77,5 +77,6 @@ class SkeletonAptTest(LandscapeTest):
             (DEB_PROVIDES, "providesname1"),
             (DEB_NAME_PROVIDES, "name1 = version1-release1"),
             (DEB_REQUIRES, "prerequirename1 = prerequireversion1"),
-            (DEB_REQUIRES, "requirename1 = requireversion1")]
+            (DEB_REQUIRES, "requirename1 = requireversion1"),
+            (DEB_UPGRADES, "name1 < version1-release1")]
         self.assertEqual(relations, skeleton.relations)

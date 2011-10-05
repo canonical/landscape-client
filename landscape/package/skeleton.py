@@ -108,4 +108,6 @@ def build_skeleton_apt(package, with_info=False, with_unicode=False):
                     "name": base_dependency.name,
                     "relation": base_dependency.relation,
                     "version": base_dependency.version})
+    skeleton.add_relation(
+        DEB_UPGRADES, "%s < %s" % (package.name, package.candidate.version))
     return skeleton
