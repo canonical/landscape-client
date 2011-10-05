@@ -23,12 +23,6 @@ Default: https://landscape.ubuntu.com/message-system
 _Description: Landscape Server URL:
  The server URL to connect to.
 
-Template: landscape-client/ping_url
-Type: string
-Default: http://landscape.ubuntu.com/ping
-_Description: Landscape PingServer URL:
- The URL to perform lightweight exchange initiation with.
-
 Template: landscape-client/exchange_interval
 Type: string
 Default: 900
@@ -43,11 +37,36 @@ _Description: Urgent Message Exchange Interval:
  Interval, in seconds, between urgent message exchanges with the Landscape
  server.
 
+Template: landscape-client/ping_url
+Type: string
+Default: http://landscape.ubuntu.com/ping
+_Description: Landscape PingServer URL:
+ The URL to perform lightweight exchange initiation with.
+
 Template: landscape-client/ping_interval
 Type: string
 Default: 30
 _Description: Ping Interval:
  Interval, in seconds, between client ping exchanges with the Landscape server.
+
+Template: landscape-client/http_proxy
+Type: string
+Default:
+_Description: HTTP proxy (blank for none):
+ The URL of the HTTP proxy, if one is needed.
+
+Template: landscape-client/https_proxy
+Type: string
+Default:
+_Description: HTTPS proxy (blank for none):
+ The URL of the HTTPS proxy, if one is needed.
+
+Template: landscape-client/otp
+Type: string
+Default:
+_Description: The OTP to use in initial configuration:
+ The OneTimePassword to use for initial registration with the Landscape server.
+ This is only required for Cloud or Preseeded installs.
 
 Template: landscape-client/tags
 Type: string

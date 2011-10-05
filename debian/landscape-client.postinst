@@ -37,8 +37,23 @@ case "$1" in
             REGISTRATION_PASSWORD="${RET}"
             db_get $PACKAGE/url
             URL="${RET}"
+#    db_set $PACKAGE/ssl_public_key ""
+            db_get $PACKAGE/exchange_interval
+            EXCHANGE_INTERVAL="${RET}"
+            db_get $PACKAGE/urgent_exchange_interval
+            URGENT_EXCHANGE_INTERVAL="${RET}"
             db_get $PACKAGE/ping_url
             PING_URL="${RET}"
+            db_get $PACKAGE/ping_interval
+            PING_INTERVAL="${RET}"
+            db_get $PACKAGE/http_proxy
+            HTTP_PROXY="${RET}"
+            db_get $PACKAGE/https_proxy
+            HTTPS_PROXY="${RET}"
+            db_get $PACKAGE/otp
+            OTP="${RET}"
+            db_get $PACKAGE/tags
+            TAGS="${RET}"
 
             # Create new configuration, with private mode
             TEMPFILE=$(mktemp -p /etc/landscape)
