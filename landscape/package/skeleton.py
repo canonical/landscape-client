@@ -1,5 +1,7 @@
 from landscape.lib.hashlib import sha1
 
+import apt_pkg
+
 
 PACKAGE   = 1 << 0
 PROVIDES  = 1 << 1
@@ -110,4 +112,11 @@ def build_skeleton_apt(package, with_info=False, with_unicode=False):
                     "version": base_dependency.version})
     skeleton.add_relation(
         DEB_UPGRADES, "%s < %s" % (package.name, package.candidate.version))
+    conflicts = apt_pkg.parse_depends(package.candidate.record["Conflicts"])
+    name, version, relation = conflicts[0][0]
+    skeleton.add_relation(
+        DEB_CONFLICTS, "%(name)s %(relation)s %(version)s" % {
+            "name": name,
+            "relation": relation,
+            "version": version})
     return skeleton
