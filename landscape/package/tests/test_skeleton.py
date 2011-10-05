@@ -10,7 +10,8 @@ from landscape.package.skeleton import (
     DEB_NAME_PROVIDES, DEB_REQUIRES, DEB_UPGRADES, DEB_CONFLICTS)
 
 from landscape.package.tests.helpers import (
-    AptFacadeHelper, SmartHelper, HASH1, create_simple_repository)
+    AptFacadeHelper, SmartHelper, HASH1, create_simple_repository, create_deb,
+    PKGNAME_MINIMAL, PKGDEB_MINIMAL, HASH_MINIMAL)
 from landscape.tests.helpers import LandscapeTest
 
 
@@ -20,6 +21,7 @@ class SkeletonTest(LandscapeTest):
 
     def setUp(self):
         super(SkeletonTest, self).setUp()
+        create_deb(self.repository_dir, PKGNAME_MINIMAL, PKGDEB_MINIMAL)
         install_landscape_interface()
         self.ctrl = smart.init(interface="landscape", datadir=self.smart_dir)
         smart.sysconf.set("channels", {"alias": {"type": "deb-dir",
@@ -45,6 +47,22 @@ class SkeletonTest(LandscapeTest):
         self.assertEqual(skeleton.size, 1038)
         self.assertEqual(skeleton.installed_size, 28672)
 
+    def test_build_skeleton_minimal(self):
+        [minimal_package] = self.cache.getPackages("minimal")
+        skeleton = build_skeleton(minimal_package)
+        self.assertEqual("minimal", skeleton.name)
+        self.assertEqual("1.0", skeleton.version)
+        self.assertEqual(skeleton.section, None)
+        self.assertEqual(skeleton.summary, None)
+        self.assertEqual(skeleton.description, None)
+        self.assertEqual(skeleton.size, None)
+        self.assertEqual(skeleton.installed_size, None)
+        relations = [
+            (DEB_NAME_PROVIDES, "minimal = 1.0"),
+            (DEB_UPGRADES, "minimal < 1.0")]
+        self.assertEqual(relations, skeleton.relations)
+        self.assertEqual(skeleton.get_hash(), HASH_MINIMAL)
+
     def test_refuse_to_build_non_debian_packages(self):
         self.assertRaises(PackageTypeError, build_skeleton,
                           Package("name", "version"))
@@ -58,11 +76,30 @@ class SkeletonAptTest(LandscapeTest):
         super(SkeletonAptTest, self).setUp()
         self.repository_dir = self.makeDir()
         create_simple_repository(self.repository_dir)
+        create_deb(self.repository_dir, PKGNAME_MINIMAL, PKGDEB_MINIMAL)
         self.facade.add_channel_deb_dir(self.repository_dir)
         self.facade.reload_channels()
         [self.name1_package] = [
             package for package in self.facade.get_packages()
             if package.name == "name1"]
+
+    def test_build_skeleton_minimal(self):
+        [minimal_package] = [
+            package for package in self.facade.get_packages()
+            if package.name == "minimal"]
+        skeleton = build_skeleton_apt(minimal_package)
+        self.assertEqual("minimal", skeleton.name)
+        self.assertEqual("1.0", skeleton.version)
+        self.assertEqual(skeleton.section, None)
+        self.assertEqual(skeleton.summary, None)
+        self.assertEqual(skeleton.description, None)
+        self.assertEqual(skeleton.size, None)
+        self.assertEqual(skeleton.installed_size, None)
+        relations = [
+            (DEB_NAME_PROVIDES, "minimal = 1.0"),
+            (DEB_UPGRADES, "minimal < 1.0")]
+        self.assertEqual(relations, skeleton.relations)
+        self.assertEqual(skeleton.get_hash(), HASH_MINIMAL)
 
     def test_build_skeleton(self):
         skeleton = build_skeleton_apt(self.name1_package)
