@@ -98,22 +98,24 @@ build_skeleton.inited = False
 def build_skeleton_apt(package, with_info=False, with_unicode=False):
     skeleton = PackageSkeleton(
         DEB_PACKAGE, package.name, package.candidate.version)
+    relations = set()
     provides = package.candidate.record.get("Provides")
     if provides:
-        skeleton.add_relation(DEB_PROVIDES, provides)
-    skeleton.add_relation(
-        DEB_NAME_PROVIDES, "%s = %s" % (
-            package.name, package.candidate.version))
+        relations.add((DEB_PROVIDES, provides))
+    relations.add((
+        DEB_NAME_PROVIDES,
+        "%s = %s" % (package.name, package.candidate.version)))
     for dependendy in package.candidate.dependencies:
         if len(dependendy.or_dependencies) == 1:
             [base_dependency] = dependendy.or_dependencies
-            skeleton.add_relation(
-                DEB_REQUIRES, "%(name)s %(relation)s %(version)s" % {
-                    "name": base_dependency.name,
+            depend_string = base_dependency.name
+            if base_dependency.relation:
+                depend_string += " %(relation)s %(version)s" % {
                     "relation": base_dependency.relation,
-                    "version": base_dependency.version})
-    skeleton.add_relation(
-        DEB_UPGRADES, "%s < %s" % (package.name, package.candidate.version))
+                    "version": base_dependency.version}
+            relations.add((DEB_REQUIRES, depend_string))
+    relations.add((
+        DEB_UPGRADES, "%s < %s" % (package.name, package.candidate.version)))
 
     conflicts = apt_pkg.parse_depends(
         package.candidate.record.get("Conflicts", ""))
@@ -124,5 +126,6 @@ def build_skeleton_apt(package, with_info=False, with_unicode=False):
             conflict_string += " %(relation)s %(version)s" % {
                 "relation": relation,
                 "version": version}
-        skeleton.add_relation(DEB_CONFLICTS, conflict_string)
+        relations.add((DEB_CONFLICTS, conflict_string))
+    skeleton.relations = sorted(relations)
     return skeleton

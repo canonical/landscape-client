@@ -68,7 +68,7 @@ PKGNAME2 = "name2_version2-release2_all.deb"
 PKGNAME3 = "name3_version3-release3_all.deb"
 PKGNAME4 = "name3_version3-release4_all.deb"
 PKGNAME_MINIMAL = "minimal_1.0_all.deb"
-PKGNAME_SIMPLE_CONFLICT = "simple-conflict_1.0_all.deb"
+PKGNAME_SIMPLE_RELATIONS = "simple-relations_1.0_all.deb"
 
 PKGDEB1 = ("ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTE2NjExNDQ5MyAgMCAgICAgMCAgICAgMT"
            "AwNjQ0ICA0ICAgICAgICAgYAoyLjAKY29udHJvbC50YXIuZ3ogIDExNjYxMTQ0OTMg"
@@ -167,19 +167,21 @@ PKGDEB_MINIMAL = (
     "EhgZEM9I8JkIhwhKOZ\nZKXdPRzj7+pqzHxnG7N+50e0dj4NNXsOa99q7zVKxg"
     "6e98e0lBKX622Zf/y2dgAAAAAAAAAAANjR\nC8d90e8AKAAACg==\n")
 
-PKGDEB_SIMPLE_CONFLICT = (
-    "ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTMxNzgyMzAyOSAgMCAgICAgMCAgICAgMTAwNjQ0I"
-    "CA0\nICAgICAgICAgYAoyLjAKY29udHJvbC50YXIuZ3ogIDEzMTc4MjMwMjkgIDAgICAgIDAg"
-    "ICAgIDEw\nMDY0NCAgMzIwICAgICAgIGAKH4sIAAAAAAACA+3S30rDMBQG8F7nKc4LrEu2toM"
-    "i4tArQRkI3scs\ns5ltUpJs6tubuj+IoF5NGHw/aEPaw3dSTvNxdnI8mZXlsIpZyb+uB5kQVT"
-    "HlleBllXHBJ5NpRmX2\nDzYhSk+UPa2dt7/U/fX+TOVj5Wz0rj3x/Kui+HH+xUR8m7+ohvlzz"
-    "P/kFlK9yGddUzBd3+pR+htW\nrVGRPWofjLM1iZyzB63i56YzQbGFN86b+F6T64fHsmVzrxoT"
-    "U9XGpyzZtux6HxRqOmSO+l0zdieN\njenSvqZb11i6WKf7lX6Twxly5bpLdqOD8qbftZ2nxtZ"
-    "0sqV9BMVGxmNwoFcTG5IkrYuN9ocqRsm9\no+3uW8gE6r3bmqVekrEpQ9PxmLQyul3mLAMAAA"
-    "AAAAAAAAAAAAAAAAAAOB8f4xGkiwAoAABkYXRh\nLnRhci5neiAgICAgMTMxNzgyMzAyOSAgM"
-    "CAgICAgMCAgICAgMTAwNjQ0ICAxMDcgICAgICAgYAof\niwgAAAAAAAID7cqxDcJQEETBK8UV"
-    "wH2b+64HQgIjGegfCJCIIMLRTPKC3d0+/i6f5qpX21z52bdo\nrR+m7Fl9imw5jhVDxQbu19t"
-    "xHYY4nS/r8uX3awcAAAAAAAAAAIANPQALnD6FACgAAAo=\n")
+PKGDEB_SIMPLE_RELATIONS = (
+    "ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTMxNzgyNTA3NSAgMCAgICAgMCAgICAgMTAwNj"
+    "Q0ICA0 ICAgICAgICAgYAoyLjAKY29udHJvbC50YXIuZ3ogIDEzMTc4MjUwNzUgIDAgICA"
+    "gIDAgICAgIDEw MDY0NCAgMzMyICAgICAgIGAKH4sIAAAAAAACA+3R0UrDMBQG4F73Kc4L"
+    "rEtc20ERceiVoAwE72Ma bWaalCQb+vZm3aYiqFcThf+DNifpSZrDKabZ0bFkXlXbkc8r9"
+    "nE8yDivyxmrK1bNM8bZyYxlVGW/ YB2i8ETZ/cp5+03eT9//qWIqnY3emSP3vy7LL/tf1v"
+    "Wn/qcJz4ih/0e3FPJJPKqGgu4HoyZeGRG1 syG/Uz6koCFesPxWyThOeh1kvvTaeR1fGnL"
+    "DdlmYfOFlp2PKWvt0mDAmJanJpRqUbUNDg1ftGPP8 be2wcOHsg9EypiW5D3na7Ta6VePW"
+    "MeL5tdA2pkf5hq5cZ+l0ld7n6llsb15I15+lw4P0etjddZFu a3UvDA27Kil2IlInwr5ae"
+    "q+WkhtHm13RJLw6/LglbdPGD8lFngEAAAAAAAAAAAAAAAAAAAAA/Amv TUsvBAAoAABkYX"
+    "RhLnRhci5neiAgICAgMTMxNzgyNTA3NSAgMCAgICAgMCAgICAgMTAwNjQ0ICAx MDcgICA"
+    "gICAgYAofiwgAAAAAAAID7cqxDcJQEETBK8UVwH2b+64HQgIjGegfCJCIIMLRTPKC3d0+ "
+    "/i6f5qpX21z52bdorR+m7Fl9imw5jhVDxQbu19txHYY4nS/r8uX3awcAAAAAAAAAAIANPQ"
+    "ALnD6F ACgAAAo=")
+
 
 HASH1 = base64.decodestring("/ezv4AefpJJ8DuYFSq4RiEHJYP4=")
 HASH2 = base64.decodestring("glP4DwWOfMULm0AkRXYsH/exehc=")
@@ -189,8 +191,8 @@ HASH5 = '|\x93K\xe0gx\xba\xe4\x85\x84\xd9\xf4%\x8bB\xbdR\x97\xdb\xfc'
 HASH6 = '\xedt!=,\\\rk\xa7\xe3$\xfb\x06\x9c\x88\x92)\xc2\xfb\xd6'
 HASH7 = 'D\xb1\xb6\xf5\xaa\xa8i\x84\x07#x\x97\x01\xf7`.\x9b\xde\xfb '
 HASH_MINIMAL = "6\xce\x8f\x1bM\x82MWZ\x1a\xffjAc(\xdb(\xa1\x0eG"
-HASH_SIMPLE_CONFLICT = (
-    '\xf1\x0f\x9bl\x86\x82\x9ez\x9b\x18"\x1b\x99&\x070F\xb6\xfb\x97')
+HASH_SIMPLE_RELATIONS = (
+    '\x08\xd8\x11\x8ck\xce\x848,{\xbc$\xb5\xa6D\xce\x91\x88o\xff')
 
 RELEASES = {"hardy": """Origin: Ubuntu
 Label: Ubuntu
