@@ -12,7 +12,8 @@ from landscape.package.skeleton import (
 from landscape.package.tests.helpers import (
     AptFacadeHelper, SmartHelper, HASH1, create_simple_repository, create_deb,
     PKGNAME_MINIMAL, PKGDEB_MINIMAL, HASH_MINIMAL, PKGNAME_SIMPLE_RELATIONS,
-    PKGDEB_SIMPLE_RELATIONS, HASH_SIMPLE_RELATIONS)
+    PKGDEB_SIMPLE_RELATIONS, HASH_SIMPLE_RELATIONS, PKGNAME_VERSION_RELATIONS,
+    PKGDEB_VERSION_RELATIONS, HASH_VERSION_RELATIONS)
 from landscape.tests.helpers import LandscapeTest
 
 
@@ -26,6 +27,9 @@ class SkeletonTest(LandscapeTest):
         create_deb(
             self.repository_dir, PKGNAME_SIMPLE_RELATIONS,
             PKGDEB_SIMPLE_RELATIONS)
+        create_deb(
+            self.repository_dir, PKGNAME_VERSION_RELATIONS,
+            PKGDEB_VERSION_RELATIONS)
         install_landscape_interface()
         self.ctrl = smart.init(interface="landscape", datadir=self.smart_dir)
         smart.sysconf.set("channels", {"alias": {"type": "deb-dir",
@@ -82,6 +86,21 @@ class SkeletonTest(LandscapeTest):
         self.assertEqual(relations, skeleton.relations)
         self.assertEqual(skeleton.get_hash(), HASH_SIMPLE_RELATIONS)
 
+    def test_build_skeleton_version_relations(self):
+        [package] = self.cache.getPackages("version-relations")
+        skeleton = build_skeleton(package)
+        self.assertEqual("version-relations", skeleton.name)
+        self.assertEqual("1.0", skeleton.version)
+        relations = [
+            (DEB_PROVIDES, "provide1"),
+            (DEB_NAME_PROVIDES, "version-relations = 1.0"),
+            (DEB_REQUIRES, "depend1 = 2.0"),
+            (DEB_REQUIRES, "predepend1 <= 2.0"),
+            (DEB_UPGRADES, "version-relations < 1.0"),
+            (DEB_CONFLICTS, "conflict1 < 2.0")]
+        self.assertEqual(relations, skeleton.relations)
+        self.assertEqual(skeleton.get_hash(), HASH_VERSION_RELATIONS)
+
     def test_refuse_to_build_non_debian_packages(self):
         self.assertRaises(PackageTypeError, build_skeleton,
                           Package("name", "version"))
@@ -99,6 +118,9 @@ class SkeletonAptTest(LandscapeTest):
         create_deb(
             self.repository_dir, PKGNAME_SIMPLE_RELATIONS,
             PKGDEB_SIMPLE_RELATIONS)
+        create_deb(
+            self.repository_dir, PKGNAME_VERSION_RELATIONS,
+            PKGDEB_VERSION_RELATIONS)
         self.facade.add_channel_deb_dir(self.repository_dir)
         self.facade.reload_channels()
         [self.name1_package] = [
@@ -139,6 +161,23 @@ class SkeletonAptTest(LandscapeTest):
             (DEB_CONFLICTS, "conflict1")]
         self.assertEqual(relations, skeleton.relations)
         self.assertEqual(skeleton.get_hash(), HASH_SIMPLE_RELATIONS)
+
+    def test_build_skeleton_version_relations(self):
+        [package] = [
+            package for package in self.facade.get_packages()
+            if package.name == "version-relations"]
+        skeleton = build_skeleton_apt(package)
+        self.assertEqual("version-relations", skeleton.name)
+        self.assertEqual("1.0", skeleton.version)
+        relations = [
+            (DEB_PROVIDES, "provide1"),
+            (DEB_NAME_PROVIDES, "version-relations = 1.0"),
+            (DEB_REQUIRES, "depend1 = 2.0"),
+            (DEB_REQUIRES, "predepend1 <= 2.0"),
+            (DEB_UPGRADES, "version-relations < 1.0"),
+            (DEB_CONFLICTS, "conflict1 < 2.0")]
+        self.assertEqual(relations, skeleton.relations)
+        self.assertEqual(skeleton.get_hash(), HASH_VERSION_RELATIONS)
 
     def test_build_skeleton(self):
         skeleton = build_skeleton_apt(self.name1_package)
