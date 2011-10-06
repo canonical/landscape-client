@@ -41,8 +41,116 @@ class SkeletonTestHelper(object):
             test_case.skeleton_repository_dir, PKGNAME_OR_RELATIONS,
             PKGDEB_OR_RELATIONS)
 
+class SkeletonTestMixin(object):
 
-class SkeletonTest(LandscapeTest):
+    def test_build_skeleton(self):
+        pkg1 = self.get_package("name1")
+        skeleton = self.build_skeleton(pkg1)
+        self.assertEqual("name1", skeleton.name)
+        self.assertEqual("version1-release1", skeleton.version)
+        self.assertEqual(skeleton.section, None)
+        self.assertEqual(skeleton.summary, None)
+        self.assertEqual(skeleton.description, None)
+        self.assertEqual(skeleton.size, None)
+        self.assertEqual(skeleton.installed_size, None)
+        relations = [
+            (DEB_PROVIDES, "providesname1"),
+            (DEB_NAME_PROVIDES, "name1 = version1-release1"),
+            (DEB_REQUIRES, "prerequirename1 = prerequireversion1"),
+            (DEB_REQUIRES, "requirename1 = requireversion1"),
+            (DEB_UPGRADES, "name1 < version1-release1"),
+            (DEB_CONFLICTS, "conflictsname1 = conflictsversion1")]
+        self.assertEqual(skeleton.get_hash(), HASH1)
+
+    def test_build_skeleton_with_info(self):
+        pkg1 = self.get_package("name1")
+        skeleton = self.build_skeleton(pkg1, True)
+        self.assertEqual(skeleton.section, "Group1")
+        self.assertEqual(skeleton.summary, "Summary1")
+        self.assertEqual(skeleton.description, "Description1")
+        self.assertEqual(skeleton.size, 1038)
+        self.assertEqual(skeleton.installed_size, 28672)
+
+    def test_build_skeleton_minimal(self):
+        minimal_package = self.get_package("minimal")
+        skeleton = self.build_skeleton(minimal_package)
+        self.assertEqual("minimal", skeleton.name)
+        self.assertEqual("1.0", skeleton.version)
+        self.assertEqual(skeleton.section, None)
+        self.assertEqual(skeleton.summary, None)
+        self.assertEqual(skeleton.description, None)
+        self.assertEqual(skeleton.size, None)
+        self.assertEqual(skeleton.installed_size, None)
+        relations = [
+            (DEB_NAME_PROVIDES, "minimal = 1.0"),
+            (DEB_UPGRADES, "minimal < 1.0")]
+        self.assertEqual(relations, skeleton.relations)
+        self.assertEqual(skeleton.get_hash(), HASH_MINIMAL)
+
+    def test_build_skeleton_simple_relations(self):
+        package = self.get_package("simple-relations")
+        skeleton = self.build_skeleton(package)
+        self.assertEqual("simple-relations", skeleton.name)
+        self.assertEqual("1.0", skeleton.version)
+        relations = [
+            (DEB_PROVIDES, "provide1"),
+            (DEB_NAME_PROVIDES, "simple-relations = 1.0"),
+            (DEB_REQUIRES, "depend1"),
+            (DEB_REQUIRES, "predepend1"),
+            (DEB_UPGRADES, "simple-relations < 1.0"),
+            (DEB_CONFLICTS, "conflict1")]
+        self.assertEqual(relations, skeleton.relations)
+        self.assertEqual(skeleton.get_hash(), HASH_SIMPLE_RELATIONS)
+
+    def test_build_skeleton_version_relations(self):
+        package = self.get_package("version-relations")
+        skeleton = self.build_skeleton(package)
+        self.assertEqual("version-relations", skeleton.name)
+        self.assertEqual("1.0", skeleton.version)
+        relations = [
+            (DEB_PROVIDES, "provide1"),
+            (DEB_NAME_PROVIDES, "version-relations = 1.0"),
+            (DEB_REQUIRES, "depend1 = 2.0"),
+            (DEB_REQUIRES, "predepend1 <= 2.0"),
+            (DEB_UPGRADES, "version-relations < 1.0"),
+            (DEB_CONFLICTS, "conflict1 < 2.0")]
+        self.assertEqual(relations, skeleton.relations)
+        self.assertEqual(skeleton.get_hash(), HASH_VERSION_RELATIONS)
+
+    def test_build_skeleton_multiple_relations(self):
+        package = self.get_package("multiple-relations")
+        skeleton = self.build_skeleton(package)
+        self.assertEqual("multiple-relations", skeleton.name)
+        self.assertEqual("1.0", skeleton.version)
+        relations = [
+            (DEB_PROVIDES, "provide1"),
+            (DEB_PROVIDES, "provide2"),
+            (DEB_NAME_PROVIDES, "multiple-relations = 1.0"),
+            (DEB_REQUIRES, "depend1 = 2.0"),
+            (DEB_REQUIRES, "depend2"),
+            (DEB_REQUIRES, "predepend1 <= 2.0"),
+            (DEB_REQUIRES, "predepend2"),
+            (DEB_UPGRADES, "multiple-relations < 1.0"),
+            (DEB_CONFLICTS, "conflict1 < 2.0"),
+            (DEB_CONFLICTS, "conflict2")]
+        self.assertEqual(relations, skeleton.relations)
+        self.assertEqual(skeleton.get_hash(), HASH_MULTIPLE_RELATIONS)
+
+    def test_build_skeleton_or_relations(self):
+        package = self.get_package("or-relations")
+        skeleton = self.build_skeleton(package)
+        self.assertEqual("or-relations", skeleton.name)
+        self.assertEqual("1.0", skeleton.version)
+        relations = [
+            (DEB_NAME_PROVIDES, "or-relations = 1.0"),
+            (DEB_OR_REQUIRES, "depend1 = 2.0 | depend2"),
+            (DEB_OR_REQUIRES, "predepend1 <= 2.0 | predepend2"),
+            (DEB_UPGRADES, "or-relations < 1.0")]
+        self.assertEqual(relations, skeleton.relations)
+        self.assertEqual(skeleton.get_hash(), HASH_OR_RELATIONS)
+
+
+class SkeletonTest(LandscapeTest, SkeletonTestMixin):
 
     helpers = [SmartHelper, SkeletonTestHelper]
 
@@ -60,104 +168,19 @@ class SkeletonTest(LandscapeTest):
         uninstall_landscape_interface()
         super(SkeletonTest, self).tearDown()
 
-    def test_build_skeleton(self):
-        pkg1 = self.cache.getPackages("name1")[0]
-        skeleton = build_skeleton(pkg1)
-        self.assertEqual(skeleton.get_hash(), HASH1)
+    def get_package(self, name):
+        [package] = self.cache.getPackages(name)
+        return package
 
-    def test_build_skeleton_with_info(self):
-        pkg1 = self.cache.getPackages("name1")[0]
-        skeleton = build_skeleton(pkg1, True)
-        self.assertEqual(skeleton.section, "Group1")
-        self.assertEqual(skeleton.summary, "Summary1")
-        self.assertEqual(skeleton.description, "Description1")
-        self.assertEqual(skeleton.size, 1038)
-        self.assertEqual(skeleton.installed_size, 28672)
-
-    def test_build_skeleton_minimal(self):
-        [minimal_package] = self.cache.getPackages("minimal")
-        skeleton = build_skeleton(minimal_package)
-        self.assertEqual("minimal", skeleton.name)
-        self.assertEqual("1.0", skeleton.version)
-        self.assertEqual(skeleton.section, None)
-        self.assertEqual(skeleton.summary, None)
-        self.assertEqual(skeleton.description, None)
-        self.assertEqual(skeleton.size, None)
-        self.assertEqual(skeleton.installed_size, None)
-        relations = [
-            (DEB_NAME_PROVIDES, "minimal = 1.0"),
-            (DEB_UPGRADES, "minimal < 1.0")]
-        self.assertEqual(relations, skeleton.relations)
-        self.assertEqual(skeleton.get_hash(), HASH_MINIMAL)
-
-    def test_build_skeleton_simple_relations(self):
-        [package] = self.cache.getPackages("simple-relations")
-        skeleton = build_skeleton(package)
-        self.assertEqual("simple-relations", skeleton.name)
-        self.assertEqual("1.0", skeleton.version)
-        relations = [
-            (DEB_PROVIDES, "provide1"),
-            (DEB_NAME_PROVIDES, "simple-relations = 1.0"),
-            (DEB_REQUIRES, "depend1"),
-            (DEB_REQUIRES, "predepend1"),
-            (DEB_UPGRADES, "simple-relations < 1.0"),
-            (DEB_CONFLICTS, "conflict1")]
-        self.assertEqual(relations, skeleton.relations)
-        self.assertEqual(skeleton.get_hash(), HASH_SIMPLE_RELATIONS)
-
-    def test_build_skeleton_version_relations(self):
-        [package] = self.cache.getPackages("version-relations")
-        skeleton = build_skeleton(package)
-        self.assertEqual("version-relations", skeleton.name)
-        self.assertEqual("1.0", skeleton.version)
-        relations = [
-            (DEB_PROVIDES, "provide1"),
-            (DEB_NAME_PROVIDES, "version-relations = 1.0"),
-            (DEB_REQUIRES, "depend1 = 2.0"),
-            (DEB_REQUIRES, "predepend1 <= 2.0"),
-            (DEB_UPGRADES, "version-relations < 1.0"),
-            (DEB_CONFLICTS, "conflict1 < 2.0")]
-        self.assertEqual(relations, skeleton.relations)
-        self.assertEqual(skeleton.get_hash(), HASH_VERSION_RELATIONS)
-
-    def test_build_skeleton_multiple_relations(self):
-        [package] = self.cache.getPackages("multiple-relations")
-        skeleton = build_skeleton(package)
-        self.assertEqual("multiple-relations", skeleton.name)
-        self.assertEqual("1.0", skeleton.version)
-        relations = [
-            (DEB_PROVIDES, "provide1"),
-            (DEB_PROVIDES, "provide2"),
-            (DEB_NAME_PROVIDES, "multiple-relations = 1.0"),
-            (DEB_REQUIRES, "depend1 = 2.0"),
-            (DEB_REQUIRES, "depend2"),
-            (DEB_REQUIRES, "predepend1 <= 2.0"),
-            (DEB_REQUIRES, "predepend2"),
-            (DEB_UPGRADES, "multiple-relations < 1.0"),
-            (DEB_CONFLICTS, "conflict1 < 2.0"),
-            (DEB_CONFLICTS, "conflict2")]
-        self.assertEqual(relations, skeleton.relations)
-        self.assertEqual(skeleton.get_hash(), HASH_MULTIPLE_RELATIONS)
-
-    def test_build_skeleton_or_relations(self):
-        [package] = self.cache.getPackages("or-relations")
-        skeleton = build_skeleton(package)
-        self.assertEqual("or-relations", skeleton.name)
-        self.assertEqual("1.0", skeleton.version)
-        relations = [
-            (DEB_NAME_PROVIDES, "or-relations = 1.0"),
-            (DEB_OR_REQUIRES, "depend1 = 2.0 | depend2"),
-            (DEB_OR_REQUIRES, "predepend1 <= 2.0 | predepend2"),
-            (DEB_UPGRADES, "or-relations < 1.0")]
-        self.assertEqual(relations, skeleton.relations)
-        self.assertEqual(skeleton.get_hash(), HASH_OR_RELATIONS)
+    def build_skeleton(self, *args, **kwargs):
+        return build_skeleton(*args, **kwargs)
 
     def test_refuse_to_build_non_debian_packages(self):
         self.assertRaises(PackageTypeError, build_skeleton,
                           Package("name", "version"))
 
 
-class SkeletonAptTest(LandscapeTest):
+class SkeletonAptTest(LandscapeTest, SkeletonTestMixin):
 
     helpers = [AptFacadeHelper, SkeletonTestHelper]
 
@@ -165,121 +188,12 @@ class SkeletonAptTest(LandscapeTest):
         super(SkeletonAptTest, self).setUp()
         self.facade.add_channel_deb_dir(self.skeleton_repository_dir)
         self.facade.reload_channels()
-        [self.name1_package] = [
-            package for package in self.facade.get_packages()
-            if package.name == "name1"]
 
-    def test_build_skeleton_minimal(self):
-        [minimal_package] = [
-            package for package in self.facade.get_packages()
-            if package.name == "minimal"]
-        skeleton = build_skeleton_apt(minimal_package)
-        self.assertEqual("minimal", skeleton.name)
-        self.assertEqual("1.0", skeleton.version)
-        self.assertEqual(skeleton.section, None)
-        self.assertEqual(skeleton.summary, None)
-        self.assertEqual(skeleton.description, None)
-        self.assertEqual(skeleton.size, None)
-        self.assertEqual(skeleton.installed_size, None)
-        relations = [
-            (DEB_NAME_PROVIDES, "minimal = 1.0"),
-            (DEB_UPGRADES, "minimal < 1.0")]
-        self.assertEqual(relations, skeleton.relations)
-        self.assertEqual(skeleton.get_hash(), HASH_MINIMAL)
-
-    def test_build_skeleton_simple_relations(self):
+    def get_package(self, name):
         [package] = [
             package for package in self.facade.get_packages()
-            if package.name == "simple-relations"]
-        skeleton = build_skeleton_apt(package)
-        self.assertEqual("simple-relations", skeleton.name)
-        self.assertEqual("1.0", skeleton.version)
-        relations = [
-            (DEB_PROVIDES, "provide1"),
-            (DEB_NAME_PROVIDES, "simple-relations = 1.0"),
-            (DEB_REQUIRES, "depend1"),
-            (DEB_REQUIRES, "predepend1"),
-            (DEB_UPGRADES, "simple-relations < 1.0"),
-            (DEB_CONFLICTS, "conflict1")]
-        self.assertEqual(relations, skeleton.relations)
-        self.assertEqual(skeleton.get_hash(), HASH_SIMPLE_RELATIONS)
+            if package.name == name]
+        return package
 
-    def test_build_skeleton_version_relations(self):
-        [package] = [
-            package for package in self.facade.get_packages()
-            if package.name == "version-relations"]
-        skeleton = build_skeleton_apt(package)
-        self.assertEqual("version-relations", skeleton.name)
-        self.assertEqual("1.0", skeleton.version)
-        relations = [
-            (DEB_PROVIDES, "provide1"),
-            (DEB_NAME_PROVIDES, "version-relations = 1.0"),
-            (DEB_REQUIRES, "depend1 = 2.0"),
-            (DEB_REQUIRES, "predepend1 <= 2.0"),
-            (DEB_UPGRADES, "version-relations < 1.0"),
-            (DEB_CONFLICTS, "conflict1 < 2.0")]
-        self.assertEqual(relations, skeleton.relations)
-        self.assertEqual(skeleton.get_hash(), HASH_VERSION_RELATIONS)
-
-    def test_build_skeleton_multiple_relations(self):
-        [package] = [
-            package for package in self.facade.get_packages()
-            if package.name == "multiple-relations"]
-        skeleton = build_skeleton_apt(package)
-        self.assertEqual("multiple-relations", skeleton.name)
-        self.assertEqual("1.0", skeleton.version)
-        relations = [
-            (DEB_PROVIDES, "provide1"),
-            (DEB_PROVIDES, "provide2"),
-            (DEB_NAME_PROVIDES, "multiple-relations = 1.0"),
-            (DEB_REQUIRES, "depend1 = 2.0"),
-            (DEB_REQUIRES, "depend2"),
-            (DEB_REQUIRES, "predepend1 <= 2.0"),
-            (DEB_REQUIRES, "predepend2"),
-            (DEB_UPGRADES, "multiple-relations < 1.0"),
-            (DEB_CONFLICTS, "conflict1 < 2.0"),
-            (DEB_CONFLICTS, "conflict2")]
-        self.assertEqual(relations, skeleton.relations)
-        self.assertEqual(skeleton.get_hash(), HASH_MULTIPLE_RELATIONS)
-
-    def test_build_skeleton_or_relations(self):
-        [package] = [
-            package for package in self.facade.get_packages()
-            if package.name == "or-relations"]
-        skeleton = build_skeleton_apt(package)
-        self.assertEqual("or-relations", skeleton.name)
-        self.assertEqual("1.0", skeleton.version)
-        relations = [
-            (DEB_NAME_PROVIDES, "or-relations = 1.0"),
-            (DEB_OR_REQUIRES, "depend1 = 2.0 | depend2"),
-            (DEB_OR_REQUIRES, "predepend1 <= 2.0 | predepend2"),
-            (DEB_UPGRADES, "or-relations < 1.0")]
-        self.assertEqual(relations, skeleton.relations)
-        self.assertEqual(skeleton.get_hash(), HASH_OR_RELATIONS)
-
-    def test_build_skeleton(self):
-        skeleton = build_skeleton_apt(self.name1_package)
-        self.assertEqual("name1", skeleton.name)
-        self.assertEqual("version1-release1", skeleton.version)
-        self.assertEqual(skeleton.section, None)
-        self.assertEqual(skeleton.summary, None)
-        self.assertEqual(skeleton.description, None)
-        self.assertEqual(skeleton.size, None)
-        self.assertEqual(skeleton.installed_size, None)
-        relations = [
-            (DEB_PROVIDES, "providesname1"),
-            (DEB_NAME_PROVIDES, "name1 = version1-release1"),
-            (DEB_REQUIRES, "prerequirename1 = prerequireversion1"),
-            (DEB_REQUIRES, "requirename1 = requireversion1"),
-            (DEB_UPGRADES, "name1 < version1-release1"),
-            (DEB_CONFLICTS, "conflictsname1 = conflictsversion1")]
-        self.assertEqual(relations, skeleton.relations)
-        self.assertEqual(skeleton.get_hash(), HASH1)
-
-    def test_build_skeleton_with_info(self):
-        skeleton = build_skeleton_apt(self.name1_package, with_info=True)
-        self.assertEqual(skeleton.section, "Group1")
-        self.assertEqual(skeleton.summary, "Summary1")
-        self.assertEqual(skeleton.description, "Description1")
-        self.assertEqual(skeleton.size, 1038)
-        self.assertEqual(skeleton.installed_size, 28672)
+    def build_skeleton(self, *args, **kwargs):
+        return build_skeleton_apt(*args, **kwargs)
