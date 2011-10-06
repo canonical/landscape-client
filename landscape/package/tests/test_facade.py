@@ -298,6 +298,30 @@ class AptFacadeTest(LandscapeTest):
             ["amd64-package"],
             sorted(package.name for package in self.facade.get_packages()))
 
+    def test_get_package_skeleton(self):
+        """
+        C{get_package_skeleton} returns a C{PackageSkeleton} for a
+        package. By default extra information. By default extra
+        information is included, but it's possible to specify that only
+        basic information should be included.
+        """
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.facade.reload_channels()
+        [pkg1] = [
+            package for package in self.facade.get_packages()
+            if package.name == "name1"]
+        [pkg2] = [
+            package for package in self.facade.get_packages()
+            if package.name == "name2"]
+        skeleton1 = self.facade.get_package_skeleton(pkg1)
+        self.assertEqual("Summary1", skeleton1.summary)
+        skeleton2 = self.facade.get_package_skeleton(pkg2, with_info=False)
+        self.assertIs(None, skeleton2.summary)
+        self.assertEqual(HASH1, skeleton1.get_hash())
+        self.assertEqual(HASH2, skeleton2.get_hash())
+
 
 class SmartFacadeTest(LandscapeTest):
 

@@ -13,7 +13,7 @@ import apt_pkg
 from aptsources.sourceslist import SourcesList
 
 from landscape.lib.fs import append_file, create_file, read_file
-from landscape.package.skeleton import build_skeleton
+from landscape.package.skeleton import build_skeleton, build_skeleton_apt
 
 
 class TransactionError(Exception):
@@ -146,6 +146,20 @@ class AptFacade(object):
     def set_arch(self, architecture):
         """Set the architecture that APT should use."""
         return apt_pkg.config.set("APT::Architecture", architecture)
+
+    def get_package_skeleton(self, pkg, with_info=True):
+        """Return a skeleton for the provided package.
+
+        The skeleton represents the basic structure of the package.
+
+        @param pkg: Package to build skeleton from.
+        @param with_info: If True, the skeleton will include information
+            useful for sending data to the server.  Such information isn't
+            necessary if the skeleton will be used to build a hash.
+
+        @return: a L{PackageSkeleton} object.
+        """
+        return build_skeleton_apt(pkg, with_info=with_info)
 
 
 class SmartFacade(object):
