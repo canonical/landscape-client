@@ -22,6 +22,7 @@ from landscape.tests.helpers import LandscapeTest
 
 
 class SkeletonTestHelper(object):
+    """A helper to set up a repository for the skeleton tests."""
 
     def set_up(self, test_case):
         test_case.skeleton_repository_dir = test_case.makeDir()
@@ -42,22 +43,22 @@ class SkeletonTestHelper(object):
             PKGDEB_OR_RELATIONS)
 
 class SkeletonTestMixin(object):
+    """Tests for building a skeleton from a package.
 
-    def test_build_skeleton_without_unicode(self):
-        pkg1 = self.get_package("name1")
-        skeleton = self.build_skeleton(pkg1)
-        self.assertTrue(isinstance(skeleton.name, str))
-        self.assertTrue(isinstance(skeleton.version, str))
-        self.assertEqual(skeleton.get_hash(), HASH1)
+    This class should be mixed in to test different backends, like smart
+    and apt.
 
-    def test_build_skeleton_with_unicode(self):
-        pkg1 = self.get_package("name1")
-        skeleton = self.build_skeleton(pkg1, with_unicode=True)
-        self.assertTrue(isinstance(skeleton.name, unicode))
-        self.assertTrue(isinstance(skeleton.version, unicode))
-        self.assertEqual(skeleton.get_hash(), HASH1)
+    The main test case classes need to implement C{get_package(name)} to
+    get a package by name, and C{build_skeleton(package, with_info,
+    with_unicode}, which builds the skeleton.
+    """
 
     def test_build_skeleton(self):
+        """
+        C{build_skeleton} builds a C{PackageSkeleton} from a package. If
+        with_info isn't passed, C{section}, C{summary}, C{description},
+        C{size} and C{installed_size} will be C{None}.
+        """
         pkg1 = self.get_package("name1")
         skeleton = self.build_skeleton(pkg1)
         self.assertEqual("name1", skeleton.name)
@@ -76,9 +77,37 @@ class SkeletonTestMixin(object):
             (DEB_CONFLICTS, "conflictsname1 = conflictsversion1")]
         self.assertEqual(skeleton.get_hash(), HASH1)
 
-    def test_build_skeleton_with_info(self):
+    def test_build_skeleton_without_unicode(self):
+        """
+        If C{with_unicode} isn't passed to C{build_skeleton}, the name
+        and version of the skeleton are byte strings. The hash doesn't
+        change, though.
+        """
         pkg1 = self.get_package("name1")
-        skeleton = self.build_skeleton(pkg1, True)
+        skeleton = self.build_skeleton(pkg1)
+        self.assertTrue(isinstance(skeleton.name, str))
+        self.assertTrue(isinstance(skeleton.version, str))
+        self.assertEqual(skeleton.get_hash(), HASH1)
+
+    def test_build_skeleton_with_unicode(self):
+        """
+        If C{with_unicode} is passed to C{build_skeleton}, the name
+        and version of the skeleton are unicode strings.
+        """
+        pkg1 = self.get_package("name1")
+        skeleton = self.build_skeleton(pkg1, with_unicode=True)
+        self.assertTrue(isinstance(skeleton.name, unicode))
+        self.assertTrue(isinstance(skeleton.version, unicode))
+        self.assertEqual(skeleton.get_hash(), HASH1)
+
+    def test_build_skeleton_with_info(self):
+        """
+        If C{with_info} is passed to C{build_skeleton}, C{section},
+        C{summary}, C{description} and the size fields will be extracted
+        from the package.
+        """
+        pkg1 = self.get_package("name1")
+        skeleton = self.build_skeleton(pkg1, with_info=True)
         self.assertEqual(skeleton.section, "Group1")
         self.assertEqual(skeleton.summary, "Summary1")
         self.assertEqual(skeleton.description, "Description1")
@@ -86,6 +115,10 @@ class SkeletonTestMixin(object):
         self.assertEqual(skeleton.installed_size, 28672)
 
     def test_build_skeleton_minimal(self):
+        """
+        A package that has only the required fields will still have some
+        relations defined.
+        """
         minimal_package = self.get_package("minimal")
         skeleton = self.build_skeleton(minimal_package)
         self.assertEqual("minimal", skeleton.name)
@@ -102,6 +135,10 @@ class SkeletonTestMixin(object):
         self.assertEqual(skeleton.get_hash(), HASH_MINIMAL)
 
     def test_build_skeleton_minimal_with_info(self):
+        """
+        If some fields that C{with_info} wants aren't there, they will
+        be either an empty string or None, depending on which field.
+        """
         package = self.get_package("minimal")
         skeleton = self.build_skeleton(package, True)
         self.assertEqual(skeleton.section, "")
@@ -113,6 +150,10 @@ class SkeletonTestMixin(object):
         self.assertEqual(skeleton.installed_size, None)
 
     def test_build_skeleton_simple_relations(self):
+        """
+        Relations that are specified in the package control file can be
+        simple, i.e. not specifying a version.
+        """
         package = self.get_package("simple-relations")
         skeleton = self.build_skeleton(package)
         self.assertEqual("simple-relations", skeleton.name)
@@ -128,6 +169,10 @@ class SkeletonTestMixin(object):
         self.assertEqual(skeleton.get_hash(), HASH_SIMPLE_RELATIONS)
 
     def test_build_skeleton_version_relations(self):
+        """
+        Relations that are specified in the package control file can be
+        version dependent.
+        """
         package = self.get_package("version-relations")
         skeleton = self.build_skeleton(package)
         self.assertEqual("version-relations", skeleton.name)
@@ -143,6 +188,11 @@ class SkeletonTestMixin(object):
         self.assertEqual(skeleton.get_hash(), HASH_VERSION_RELATIONS)
 
     def test_build_skeleton_multiple_relations(self):
+        """
+        The relations in the package control can have multiple values.
+        In that case, one relation for each value is created in the
+        skeleton.
+        """
         package = self.get_package("multiple-relations")
         skeleton = self.build_skeleton(package)
         self.assertEqual("multiple-relations", skeleton.name)
@@ -162,6 +212,10 @@ class SkeletonTestMixin(object):
         self.assertEqual(skeleton.get_hash(), HASH_MULTIPLE_RELATIONS)
 
     def test_build_skeleton_or_relations(self):
+        """
+        The Depend and Pre-Depend fields can have an or relation. That
+        is considered to be a single relation, with a special type.
+        """
         package = self.get_package("or-relations")
         skeleton = self.build_skeleton(package)
         self.assertEqual("or-relations", skeleton.name)
@@ -175,12 +229,13 @@ class SkeletonTestMixin(object):
         self.assertEqual(skeleton.get_hash(), HASH_OR_RELATIONS)
 
 
-class SkeletonTest(LandscapeTest, SkeletonTestMixin):
+class SmartSkeletonTest(LandscapeTest, SkeletonTestMixin):
+    """C{PackageSkeleton} tests for smart packages."""
 
     helpers = [SmartHelper, SkeletonTestHelper]
 
     def setUp(self):
-        super(SkeletonTest, self).setUp()
+        super(SmartSkeletonTest, self).setUp()
         install_landscape_interface()
         self.ctrl = smart.init(interface="landscape", datadir=self.smart_dir)
         smart.sysconf.set(
@@ -191,13 +246,15 @@ class SkeletonTest(LandscapeTest, SkeletonTestMixin):
 
     def tearDown(self):
         uninstall_landscape_interface()
-        super(SkeletonTest, self).tearDown()
+        super(SmartSkeletonTest, self).tearDown()
 
     def get_package(self, name):
+        """Return the package with the specified name."""
         [package] = self.cache.getPackages(name)
         return package
 
     def build_skeleton(self, *args, **kwargs):
+        """Build the skeleton to be tested."""
         return build_skeleton(*args, **kwargs)
 
     def test_refuse_to_build_non_debian_packages(self):
@@ -206,6 +263,7 @@ class SkeletonTest(LandscapeTest, SkeletonTestMixin):
 
 
 class SkeletonAptTest(LandscapeTest, SkeletonTestMixin):
+    """C{PackageSkeleton} tests for apt packages."""
 
     helpers = [AptFacadeHelper, SkeletonTestHelper]
 
@@ -215,10 +273,12 @@ class SkeletonAptTest(LandscapeTest, SkeletonTestMixin):
         self.facade.reload_channels()
 
     def get_package(self, name):
+        """Return the package with the specified name."""
         [package] = [
             package for package in self.facade.get_packages()
             if package.name == name]
         return package
 
     def build_skeleton(self, *args, **kwargs):
+        """Build the skeleton to be tested."""
         return build_skeleton_apt(*args, **kwargs)
