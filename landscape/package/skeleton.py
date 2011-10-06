@@ -111,6 +111,7 @@ def relation_to_string(relation):
             "version": version}
     return relation_string
 
+
 def parse_record_field(record, record_field, skeleton_relation,
                        or_skeleton_relation=None):
     """Parse an apt C{Record} field and return skeleton relations

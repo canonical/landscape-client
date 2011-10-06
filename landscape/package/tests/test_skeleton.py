@@ -42,6 +42,7 @@ class SkeletonTestHelper(object):
             test_case.skeleton_repository_dir, PKGNAME_OR_RELATIONS,
             PKGDEB_OR_RELATIONS)
 
+
 class SkeletonTestMixin(object):
     """Tests for building a skeleton from a package.
 
