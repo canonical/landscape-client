@@ -21,29 +21,38 @@ from landscape.package.tests.helpers import (
 from landscape.tests.helpers import LandscapeTest
 
 
+class SkeletonTestHelper(object):
+
+    def set_up(self, test_case):
+        test_case.skeleton_repository_dir = test_case.makeDir()
+        create_simple_repository(test_case.skeleton_repository_dir)
+        create_deb(
+            test_case.skeleton_repository_dir, PKGNAME_MINIMAL, PKGDEB_MINIMAL)
+        create_deb(
+            test_case.skeleton_repository_dir, PKGNAME_SIMPLE_RELATIONS,
+            PKGDEB_SIMPLE_RELATIONS)
+        create_deb(
+            test_case.skeleton_repository_dir, PKGNAME_VERSION_RELATIONS,
+            PKGDEB_VERSION_RELATIONS)
+        create_deb(
+            test_case.skeleton_repository_dir, PKGNAME_MULTIPLE_RELATIONS,
+            PKGDEB_MULTIPLE_RELATIONS)
+        create_deb(
+            test_case.skeleton_repository_dir, PKGNAME_OR_RELATIONS,
+            PKGDEB_OR_RELATIONS)
+
+
 class SkeletonTest(LandscapeTest):
 
-    helpers = [SmartHelper]
+    helpers = [SmartHelper, SkeletonTestHelper]
 
     def setUp(self):
         super(SkeletonTest, self).setUp()
-        create_deb(self.repository_dir, PKGNAME_MINIMAL, PKGDEB_MINIMAL)
-        create_deb(
-            self.repository_dir, PKGNAME_SIMPLE_RELATIONS,
-            PKGDEB_SIMPLE_RELATIONS)
-        create_deb(
-            self.repository_dir, PKGNAME_VERSION_RELATIONS,
-            PKGDEB_VERSION_RELATIONS)
-        create_deb(
-            self.repository_dir, PKGNAME_MULTIPLE_RELATIONS,
-            PKGDEB_MULTIPLE_RELATIONS)
-        create_deb(
-            self.repository_dir, PKGNAME_OR_RELATIONS,
-            PKGDEB_OR_RELATIONS)
         install_landscape_interface()
         self.ctrl = smart.init(interface="landscape", datadir=self.smart_dir)
-        smart.sysconf.set("channels", {"alias": {"type": "deb-dir",
-                                                 "path": self.repository_dir}})
+        smart.sysconf.set(
+            "channels", {"alias": {"type": "deb-dir",
+                                   "path": self.skeleton_repository_dir}})
         self.ctrl.reloadChannels()
         self.cache = self.ctrl.getCache()
 
@@ -150,26 +159,11 @@ class SkeletonTest(LandscapeTest):
 
 class SkeletonAptTest(LandscapeTest):
 
-    helpers = [AptFacadeHelper]
+    helpers = [AptFacadeHelper, SkeletonTestHelper]
 
     def setUp(self):
         super(SkeletonAptTest, self).setUp()
-        self.repository_dir = self.makeDir()
-        create_simple_repository(self.repository_dir)
-        create_deb(self.repository_dir, PKGNAME_MINIMAL, PKGDEB_MINIMAL)
-        create_deb(
-            self.repository_dir, PKGNAME_SIMPLE_RELATIONS,
-            PKGDEB_SIMPLE_RELATIONS)
-        create_deb(
-            self.repository_dir, PKGNAME_VERSION_RELATIONS,
-            PKGDEB_VERSION_RELATIONS)
-        create_deb(
-            self.repository_dir, PKGNAME_MULTIPLE_RELATIONS,
-            PKGDEB_MULTIPLE_RELATIONS)
-        create_deb(
-            self.repository_dir, PKGNAME_OR_RELATIONS,
-            PKGDEB_OR_RELATIONS)
-        self.facade.add_channel_deb_dir(self.repository_dir)
+        self.facade.add_channel_deb_dir(self.skeleton_repository_dir)
         self.facade.reload_channels()
         [self.name1_package] = [
             package for package in self.facade.get_packages()
