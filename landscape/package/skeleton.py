@@ -95,6 +95,16 @@ def build_skeleton(pkg, with_info=False, with_unicode=False):
 build_skeleton.inited = False
 
 
+def relation_to_string(relation):
+    name, version, relation = relation
+    relation_string = name
+    if relation:
+        relation_string += " %(relation)s %(version)s" % {
+            "relation": relation,
+            "version": version}
+    return relation_string
+
+
 def build_skeleton_apt(package, with_info=False, with_unicode=False):
     skeleton = PackageSkeleton(
         DEB_PACKAGE, package.name, package.candidate.version)
@@ -108,15 +118,25 @@ def build_skeleton_apt(package, with_info=False, with_unicode=False):
     relations.add((
         DEB_NAME_PROVIDES,
         "%s = %s" % (package.name, package.candidate.version)))
-    for dependendy in package.candidate.dependencies:
-        if len(dependendy.or_dependencies) == 1:
-            [base_dependency] = dependendy.or_dependencies
-            depend_string = base_dependency.name
-            if base_dependency.relation:
-                depend_string += " %(relation)s %(version)s" % {
-                    "relation": base_dependency.relation,
-                    "version": base_dependency.version}
-            relations.add((DEB_REQUIRES, depend_string))
+    pre_depends = apt_pkg.parse_depends(
+        package.candidate.record.get("Pre-Depends", ""))
+    for depend in pre_depends:
+        depend_strings = [relation_to_string(relation) for relation in depend]
+        skeleton_relation = DEB_REQUIRES
+        if len(depend_strings) > 1:
+            skeleton_relation = DEB_OR_REQUIRES
+        depend_string = " | ".join(depend_strings)
+        relations.add((skeleton_relation, depend_string))
+    depends = apt_pkg.parse_depends(
+        package.candidate.record.get("Depends", ""))
+    for depend in depends:
+        depend_strings = [relation_to_string(relation) for relation in depend]
+        skeleton_relation = DEB_REQUIRES
+        if len(depend_strings) > 1:
+            skeleton_relation = DEB_OR_REQUIRES
+        depend_string = " | ".join(depend_strings)
+        relations.add((skeleton_relation, depend_string))
+
     relations.add((
         DEB_UPGRADES, "%s < %s" % (package.name, package.candidate.version)))
 

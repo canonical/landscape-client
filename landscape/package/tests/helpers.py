@@ -71,6 +71,7 @@ PKGNAME_MINIMAL = "minimal_1.0_all.deb"
 PKGNAME_SIMPLE_RELATIONS = "simple-relations_1.0_all.deb"
 PKGNAME_VERSION_RELATIONS = "version-relations_1.0_all.deb"
 PKGNAME_MULTIPLE_RELATIONS = "multiple-relations_1.0_all.deb"
+PKGNAME_OR_RELATIONS = "or-relations_1.0_all.deb"
 
 PKGDEB1 = ("ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTE2NjExNDQ5MyAgMCAgICAgMCAgICAgMT"
            "AwNjQ0ICA0ICAgICAgICAgYAoyLjAKY29udHJvbC50YXIuZ3ogIDExNjYxMTQ0OTMg"
@@ -214,6 +215,22 @@ PKGDEB_MULTIPLE_RELATIONS = (
     "gGR8Vj0QEpgZY/cPBMwQQYSj95If7B6O8Xf1qWe+2nrWz75Fa9N4GnLq2aO2OowtSsYOtv"
     "t6XkqJ y/W2zF9+v3YAAAAAAAAAAADY0QNvovUBACgAAAo=")
 
+PKGDEB_OR_RELATIONS = (
+    "ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTMxNzg4ODg2OSAgMCAgICAgMCAgICAgMTAwNj"
+    "Q0ICA0 ICAgICAgICAgYAoyLjAKY29udHJvbC50YXIuZ3ogIDEzMTc4ODg4NjkgIDAgICA"
+    "gIDAgICAgIDEw MDY0NCAgMzc1ICAgICAgIGAKH4sIAAAAAAACA+3R30vDMBAH8D73r7g3"
+    "FbS23brBUFHwSRAFwfeY HmtmlpQ08wf4x3vbWB2Cig8ThO8H2qbp3fXCZcfJzuViXFXLZ"
+    "zGu8u3nRlIUo+GgHBXVUPaLvCwH CVXJH1h0UQWi5GHmg/sm7qfv/1R2rL2Lwdsdz380HH"
+    "45f5n6p/kXo0GeUI7579yt0o9qyhPy4Siw VdF416X3HDpZTKjI8vSOdVy9zE2n09tgfDD"
+    "xVTLa5bay6UXQjYkStQhSSFkrQXx0yS27uptQG7he rQvaPzmlMssP6O1jt0z7yD6sj9qE"
+    "XCvjolwcJnTlG0cnM7mf84uat5Yz7ednUqbTwbTrXi+kW2fm ylK7PiHFRkVqVCcnpf6kW"
+    "UrixtlX2uqZlKupXwcm47Rd1FwfUidLJh8b3qqyqr2qpJWTfzyxtC55 bi/2qfTcsJPvVi"
+    "+WWW4qSdw3J301WZoAAAAAAAAAAAAAAAAAAAAAAPzOO2wqjioAKAAACmRhdGEu dGFyLmd"
+    "6ICAgICAxMzE3ODg4ODY5ICAwICAgICAwICAgICAxMDA2NDQgIDEwNyAgICAgICBgCh+L "
+    "CAAAAAAAAgPtyrsRwjAURNFXiioAfZBcjwkJzIyB/oGAGSIc4eic5Aa7h2P8XX6Zen+3TD"
+    "1/9yNK"
+    "GadWR2ltRC651hGpxw4et/u8phTny3Vdfvy2dgAAAAAAAAAAANjRE6Lr2rEAKAAACg==")
+
 
 HASH1 = base64.decodestring("/ezv4AefpJJ8DuYFSq4RiEHJYP4=")
 HASH2 = base64.decodestring("glP4DwWOfMULm0AkRXYsH/exehc=")
@@ -229,6 +246,8 @@ HASH_VERSION_RELATIONS = (
     '\x877\xa01A\xcd\x1c\x1e8o\xba\xae\x83\x04\xa7\x85\xefs\xb0\xe1')
 HASH_MULTIPLE_RELATIONS = (
     '{\x9f\xd0a^;=B%\xfe\xcf\x9c#\xe0\x18%\xc4{\xd5\n')
+HASH_OR_RELATIONS = (
+    '\xa1q\xf4*\x1c\xd4L\xa1\xca\xf1\xfa?\xc3\xc7\x9f\x88\xd53B\xc9')
 
 RELEASES = {"hardy": """Origin: Ubuntu
 Label: Ubuntu
