@@ -99,9 +99,12 @@ def build_skeleton_apt(package, with_info=False, with_unicode=False):
     skeleton = PackageSkeleton(
         DEB_PACKAGE, package.name, package.candidate.version)
     relations = set()
-    provides = package.candidate.record.get("Provides")
+    provides = apt_pkg.parse_depends(
+        package.candidate.record.get("Provides", ""))
     if provides:
-        relations.add((DEB_PROVIDES, provides))
+        for provide in provides:
+            name = provide[0][0]
+            relations.add((DEB_PROVIDES, name))
     relations.add((
         DEB_NAME_PROVIDES,
         "%s = %s" % (package.name, package.candidate.version)))
@@ -120,12 +123,13 @@ def build_skeleton_apt(package, with_info=False, with_unicode=False):
     conflicts = apt_pkg.parse_depends(
         package.candidate.record.get("Conflicts", ""))
     if conflicts:
-        name, version, relation = conflicts[0][0]
-        conflict_string = name
-        if relation:
-            conflict_string += " %(relation)s %(version)s" % {
-                "relation": relation,
-                "version": version}
-        relations.add((DEB_CONFLICTS, conflict_string))
+        for conflict in conflicts:
+            name, version, relation = conflict[0]
+            conflict_string = name
+            if relation:
+                conflict_string += " %(relation)s %(version)s" % {
+                    "relation": relation,
+                    "version": version}
+            relations.add((DEB_CONFLICTS, conflict_string))
     skeleton.relations = sorted(relations)
     return skeleton
