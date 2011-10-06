@@ -96,6 +96,13 @@ build_skeleton.inited = False
 
 
 def relation_to_string(relation):
+    """Convert an apt relation to a string representation.
+
+    @param relation: A tuple, (name, version, relation). version and
+        relation can be the empty string, if the relation is on a name only.
+
+    Returns something like "name > 1.0"
+    """
     name, version, relation = relation
     relation_string = name
     if relation:
@@ -105,19 +112,36 @@ def relation_to_string(relation):
     return relation_string
 
 def parse_record_field(record, record_field, skeleton_relation,
-                       or_deb_relation=None):
+                       or_skeleton_relation=None):
+    """Parse an apt C{Record} field and return skeleton relations
+
+    @param record: An C{apt.package.Record} instance with package information.
+    @param field_name: The name of the record field to parse.
+    @param skeleton_relation: The deb relation that can be passed to
+        C{skeleton.add_relation()}
+    @param skeleton_or_relation: The deb relation that should be used if
+        there are more than one value in a relation.
+    """
     relations = set()
     values = apt_pkg.parse_depends(record.get(record_field, ""))
     for value in values:
         value_strings = [relation_to_string(relation) for relation in value]
         if len(value_strings) > 1:
-            skeleton_relation = or_deb_relation
+            skeleton_relation = or_skeleton_relation
         relation_string = " | ".join(value_strings)
         relations.add((skeleton_relation, relation_string))
     return relations
 
 
 def build_skeleton_apt(package, with_info=False, with_unicode=False):
+    """Build a package skeleton from an apt package.
+
+    @param package: An instance of C{apt.package.Package}
+    @param with_info: Whether to extract extra information about the
+        package, like description, summary, size.
+    @param with_unicode: Whether the C{name} and C{version} of the
+        skeleton should be unicode strings.
+    """
     candidate = package.candidate
     name, version = package.name, candidate.version
     if with_unicode:
