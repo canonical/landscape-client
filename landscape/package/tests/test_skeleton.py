@@ -275,3 +275,11 @@ class SkeletonAptTest(LandscapeTest):
             (DEB_CONFLICTS, "conflictsname1 = conflictsversion1")]
         self.assertEqual(relations, skeleton.relations)
         self.assertEqual(skeleton.get_hash(), HASH1)
+
+    def test_build_skeleton_with_info(self):
+        skeleton = build_skeleton_apt(self.name1_package, with_info=True)
+        self.assertEqual(skeleton.section, "Group1")
+        self.assertEqual(skeleton.summary, "Summary1")
+        self.assertEqual(skeleton.description, "Description1")
+        self.assertEqual(skeleton.size, 1038)
+        self.assertEqual(skeleton.installed_size, 28672)

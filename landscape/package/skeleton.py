@@ -152,4 +152,11 @@ def build_skeleton_apt(package, with_info=False, with_unicode=False):
                     "version": version}
             relations.add((DEB_CONFLICTS, conflict_string))
     skeleton.relations = sorted(relations)
+
+    if with_info:
+        skeleton.section = package.candidate.section
+        skeleton.summary = package.candidate.summary
+        skeleton.description = package.candidate.description
+        skeleton.size = package.candidate.size
+        skeleton.installed_size = package.candidate.installed_size
     return skeleton
