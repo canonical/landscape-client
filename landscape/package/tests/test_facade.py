@@ -356,6 +356,66 @@ class AptFacadeTest(LandscapeTest):
         pkg = self.facade.get_package_by_hash("none")
         self.assertEqual(pkg, None)
 
+    def test_reload_channels_clears_hash_cache(self):
+        # Load hashes.
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.facade.reload_channels()
+
+        # Hold a reference to packages.
+        [pkg1] = [
+            package for package in self.facade.get_packages()
+            if package.name == "name1"]
+        [pkg2] = [
+            package for package in self.facade.get_packages()
+            if package.name == "name2"]
+        [pkg3] = [
+            package for package in self.facade.get_packages()
+            if package.name == "name3"]
+        self.assertTrue(pkg1 and pkg2)
+
+        # Remove the package from the repository.
+        os.unlink(os.path.join(deb_dir, PKGNAME1))
+        os.unlink(os.path.join(deb_dir, "Packages"))
+        self.facade.reset_channels()
+        self.facade.add_channel_deb_dir(deb_dir)
+        # Forcibly change the mtime of our repository, so that Smart
+        # will consider it as changed (if the change is inside the
+        # same second the directory's mtime will be the same)
+        mtime = int(time.time() + 1)
+        os.utime(deb_dir, (mtime, mtime))
+
+        # Reload channels.
+        self.facade.reload_channels()
+
+        # Only packages with name2 and name3 should be loaded, and they're
+        # not the same objects anymore.
+        self.assertEqual(
+            sorted([pkg.name for pkg in self.facade.get_packages()]),
+            ["name2", "name3"])
+        self.assertNotEquals(set(self.facade.get_packages()),
+                             set([pkg2, pkg3]))
+
+        # The hash cache shouldn't include either of the old packages.
+        self.assertEqual(self.facade.get_package_hash(pkg1), None)
+        self.assertEqual(self.facade.get_package_hash(pkg2), None)
+        self.assertEqual(self.facade.get_package_hash(pkg3), None)
+
+        # Also, the hash for package1 shouldn't be present at all.
+        self.assertEqual(self.facade.get_package_by_hash(HASH1), None)
+
+        # While HASH2 and HASH3 should point to the new packages.
+        new_pkgs = self.facade.get_packages()
+        self.assertTrue(self.facade.get_package_by_hash(HASH2)
+                        in new_pkgs)
+        self.assertTrue(self.facade.get_package_by_hash(HASH3)
+                        in new_pkgs)
+
+        # Which are not the old packages.
+        self.assertFalse(pkg2 in new_pkgs)
+        self.assertFalse(pkg3 in new_pkgs)
+
 
 class SmartFacadeTest(LandscapeTest):
 
