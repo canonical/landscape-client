@@ -104,6 +104,18 @@ def relation_to_string(relation):
             "version": version}
     return relation_string
 
+def parse_relation_field(record, relation_field, skeleton_relation,
+                         or_relation=None):
+    relations = set()
+    values = apt_pkg.parse_depends(record.get(relation_field, ""))
+    for value in values:
+        value_strings = [relation_to_string(relation) for relation in value]
+        if len(value_strings) > 1:
+            skeleton_relation = or_relation
+        relation_string = " | ".join(value_strings)
+        relations.add((skeleton_relation, relation_string))
+    return relations
+
 
 def build_skeleton_apt(package, with_info=False, with_unicode=False):
     name, version = package.name, package.candidate.version
@@ -111,48 +123,22 @@ def build_skeleton_apt(package, with_info=False, with_unicode=False):
         name, version = unicode(name), unicode(version)
     skeleton = PackageSkeleton(DEB_PACKAGE, name, version)
     relations = set()
-    provides = apt_pkg.parse_depends(
-        package.candidate.record.get("Provides", ""))
-    if provides:
-        for provide in provides:
-            name = provide[0][0]
-            relations.add((DEB_PROVIDES, name))
+    relations.update(parse_relation_field(
+        package.candidate.record, "Provides", DEB_PROVIDES))
     relations.add((
         DEB_NAME_PROVIDES,
         "%s = %s" % (package.name, package.candidate.version)))
-    pre_depends = apt_pkg.parse_depends(
-        package.candidate.record.get("Pre-Depends", ""))
-    for depend in pre_depends:
-        depend_strings = [relation_to_string(relation) for relation in depend]
-        skeleton_relation = DEB_REQUIRES
-        if len(depend_strings) > 1:
-            skeleton_relation = DEB_OR_REQUIRES
-        depend_string = " | ".join(depend_strings)
-        relations.add((skeleton_relation, depend_string))
-    depends = apt_pkg.parse_depends(
-        package.candidate.record.get("Depends", ""))
-    for depend in depends:
-        depend_strings = [relation_to_string(relation) for relation in depend]
-        skeleton_relation = DEB_REQUIRES
-        if len(depend_strings) > 1:
-            skeleton_relation = DEB_OR_REQUIRES
-        depend_string = " | ".join(depend_strings)
-        relations.add((skeleton_relation, depend_string))
+    relations.update(parse_relation_field(
+        package.candidate.record, "Pre-Depends",
+        DEB_REQUIRES, DEB_OR_REQUIRES))
+    relations.update(parse_relation_field(
+        package.candidate.record, "Depends", DEB_REQUIRES, DEB_OR_REQUIRES))
 
     relations.add((
         DEB_UPGRADES, "%s < %s" % (package.name, package.candidate.version)))
 
-    conflicts = apt_pkg.parse_depends(
-        package.candidate.record.get("Conflicts", ""))
-    if conflicts:
-        for conflict in conflicts:
-            name, version, relation = conflict[0]
-            conflict_string = name
-            if relation:
-                conflict_string += " %(relation)s %(version)s" % {
-                    "relation": relation,
-                    "version": version}
-            relations.add((DEB_CONFLICTS, conflict_string))
+    relations.update(parse_relation_field(
+        package.candidate.record, "Conflicts", DEB_CONFLICTS))
     skeleton.relations = sorted(relations)
 
     if with_info:
