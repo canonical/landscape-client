@@ -173,6 +173,18 @@ class AptFacade(object):
         return [
             self.get_package_hash(package) for package in self.get_packages()]
 
+    def get_package_by_hash(self, hash):
+        """
+        Get the package having the provided hash.
+
+        @return: The L{apt.package.Package} that has the given hash.
+        """
+        packages = [
+            package for package in self.get_packages()
+            if self.get_package_hash(package) == hash]
+        if not packages:
+            return None
+        return packages[0]
 
 
 class SmartFacade(object):
