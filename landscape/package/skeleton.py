@@ -104,48 +104,48 @@ def relation_to_string(relation):
             "version": version}
     return relation_string
 
-def parse_relation_field(record, relation_field, skeleton_relation,
-                         or_relation=None):
+def parse_record_field(record, record_field, skeleton_relation,
+                       or_deb_relation=None):
     relations = set()
-    values = apt_pkg.parse_depends(record.get(relation_field, ""))
+    values = apt_pkg.parse_depends(record.get(record_field, ""))
     for value in values:
         value_strings = [relation_to_string(relation) for relation in value]
         if len(value_strings) > 1:
-            skeleton_relation = or_relation
+            skeleton_relation = or_deb_relation
         relation_string = " | ".join(value_strings)
         relations.add((skeleton_relation, relation_string))
     return relations
 
 
 def build_skeleton_apt(package, with_info=False, with_unicode=False):
-    name, version = package.name, package.candidate.version
+    candidate = package.candidate
+    name, version = package.name, candidate.version
     if with_unicode:
         name, version = unicode(name), unicode(version)
     skeleton = PackageSkeleton(DEB_PACKAGE, name, version)
     relations = set()
-    relations.update(parse_relation_field(
-        package.candidate.record, "Provides", DEB_PROVIDES))
+    relations.update(parse_record_field(
+        candidate.record, "Provides", DEB_PROVIDES))
     relations.add((
         DEB_NAME_PROVIDES,
-        "%s = %s" % (package.name, package.candidate.version)))
-    relations.update(parse_relation_field(
-        package.candidate.record, "Pre-Depends",
-        DEB_REQUIRES, DEB_OR_REQUIRES))
-    relations.update(parse_relation_field(
-        package.candidate.record, "Depends", DEB_REQUIRES, DEB_OR_REQUIRES))
+        "%s = %s" % (package.name, candidate.version)))
+    relations.update(parse_record_field(
+        candidate.record, "Pre-Depends", DEB_REQUIRES, DEB_OR_REQUIRES))
+    relations.update(parse_record_field(
+        candidate.record, "Depends", DEB_REQUIRES, DEB_OR_REQUIRES))
 
     relations.add((
-        DEB_UPGRADES, "%s < %s" % (package.name, package.candidate.version)))
+        DEB_UPGRADES, "%s < %s" % (package.name, candidate.version)))
 
-    relations.update(parse_relation_field(
-        package.candidate.record, "Conflicts", DEB_CONFLICTS))
+    relations.update(parse_record_field(
+        candidate.record, "Conflicts", DEB_CONFLICTS))
     skeleton.relations = sorted(relations)
 
     if with_info:
-        skeleton.section = package.candidate.section
-        skeleton.summary = package.candidate.summary
-        skeleton.description = package.candidate.description
-        skeleton.size = package.candidate.size
-        if package.candidate.installed_size > 0:
-            skeleton.installed_size = package.candidate.installed_size
+        skeleton.section = candidate.section
+        skeleton.summary = candidate.summary
+        skeleton.description = candidate.description
+        skeleton.size = candidate.size
+        if candidate.installed_size > 0:
+            skeleton.installed_size = candidate.installed_size
     return skeleton
