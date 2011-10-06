@@ -161,6 +161,13 @@ class AptFacade(object):
         """
         return build_skeleton_apt(pkg, with_info=with_info)
 
+    def get_package_hash(self, pkg):
+        """Return a hash from the given package.
+
+        @param pkg: a L{smart.backends.deb.base.DebPackage} objects
+        """
+        return self.get_package_skeleton(pkg, with_info=False).get_hash()
+
 
 class SmartFacade(object):
     """Wrapper for tasks using Smart.

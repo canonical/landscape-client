@@ -322,6 +322,20 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(HASH1, skeleton1.get_hash())
         self.assertEqual(HASH2, skeleton2.get_hash())
 
+    def test_get_package_hash(self):
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.facade.reload_channels()
+        [pkg] = [
+            package for package in self.facade.get_packages()
+            if package.name == "name1"]
+        self.assertEqual(HASH1, self.facade.get_package_hash(pkg))
+        [pkg] = [
+            package for package in self.facade.get_packages()
+            if package.name == "name2"]
+        self.assertEqual(HASH2, self.facade.get_package_hash(pkg))
+
 
 class SmartFacadeTest(LandscapeTest):
 
