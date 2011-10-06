@@ -158,5 +158,6 @@ def build_skeleton_apt(package, with_info=False, with_unicode=False):
         skeleton.summary = package.candidate.summary
         skeleton.description = package.candidate.description
         skeleton.size = package.candidate.size
-        skeleton.installed_size = package.candidate.installed_size
+        if package.candidate.installed_size > 0:
+            skeleton.installed_size = package.candidate.installed_size
     return skeleton

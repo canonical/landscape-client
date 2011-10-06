@@ -87,6 +87,17 @@ class SkeletonTestMixin(object):
         self.assertEqual(relations, skeleton.relations)
         self.assertEqual(skeleton.get_hash(), HASH_MINIMAL)
 
+    def test_build_skeleton_minimal_with_info(self):
+        package = self.get_package("minimal")
+        skeleton = self.build_skeleton(package, True)
+        self.assertEqual(skeleton.section, "")
+        self.assertEqual(
+            skeleton.summary,
+            "A minimal package with no dependencies or other relations.")
+        self.assertEqual(skeleton.description, "")
+        self.assertEqual(skeleton.size, 558)
+        self.assertEqual(skeleton.installed_size, None)
+
     def test_build_skeleton_simple_relations(self):
         package = self.get_package("simple-relations")
         skeleton = self.build_skeleton(package)
