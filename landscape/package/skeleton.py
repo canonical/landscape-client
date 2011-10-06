@@ -106,8 +106,10 @@ def relation_to_string(relation):
 
 
 def build_skeleton_apt(package, with_info=False, with_unicode=False):
-    skeleton = PackageSkeleton(
-        DEB_PACKAGE, package.name, package.candidate.version)
+    name, version = package.name, package.candidate.version
+    if with_unicode:
+        name, version = unicode(name), unicode(version)
+    skeleton = PackageSkeleton(DEB_PACKAGE, name, version)
     relations = set()
     provides = apt_pkg.parse_depends(
         package.candidate.record.get("Provides", ""))

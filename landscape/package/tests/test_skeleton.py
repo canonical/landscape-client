@@ -43,6 +43,20 @@ class SkeletonTestHelper(object):
 
 class SkeletonTestMixin(object):
 
+    def test_build_skeleton_without_unicode(self):
+        pkg1 = self.get_package("name1")
+        skeleton = self.build_skeleton(pkg1)
+        self.assertTrue(isinstance(skeleton.name, str))
+        self.assertTrue(isinstance(skeleton.version, str))
+        self.assertEqual(skeleton.get_hash(), HASH1)
+
+    def test_build_skeleton_with_unicode(self):
+        pkg1 = self.get_package("name1")
+        skeleton = self.build_skeleton(pkg1, with_unicode=True)
+        self.assertTrue(isinstance(skeleton.name, unicode))
+        self.assertTrue(isinstance(skeleton.version, unicode))
+        self.assertEqual(skeleton.get_hash(), HASH1)
+
     def test_build_skeleton(self):
         pkg1 = self.get_package("name1")
         skeleton = self.build_skeleton(pkg1)
