@@ -75,6 +75,7 @@ class SkeletonTestMixin(object):
             (DEB_REQUIRES, "requirename1 = requireversion1"),
             (DEB_UPGRADES, "name1 < version1-release1"),
             (DEB_CONFLICTS, "conflictsname1 = conflictsversion1")]
+        self.assertEqual(relations, skeleton.relations)
         self.assertEqual(HASH1, skeleton.get_hash(), HASH1)
 
     def test_build_skeleton_without_unicode(self):
