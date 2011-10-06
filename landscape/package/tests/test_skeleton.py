@@ -63,11 +63,11 @@ class SkeletonTestMixin(object):
         skeleton = self.build_skeleton(pkg1)
         self.assertEqual("name1", skeleton.name)
         self.assertEqual("version1-release1", skeleton.version)
-        self.assertEqual(skeleton.section, None)
-        self.assertEqual(skeleton.summary, None)
-        self.assertEqual(skeleton.description, None)
-        self.assertEqual(skeleton.size, None)
-        self.assertEqual(skeleton.installed_size, None)
+        self.assertEqual(None, skeleton.section)
+        self.assertEqual(None, skeleton.summary)
+        self.assertEqual(None, skeleton.description)
+        self.assertEqual(None, skeleton.size)
+        self.assertEqual(None, skeleton.installed_size)
         relations = [
             (DEB_PROVIDES, "providesname1"),
             (DEB_NAME_PROVIDES, "name1 = version1-release1"),
@@ -75,7 +75,7 @@ class SkeletonTestMixin(object):
             (DEB_REQUIRES, "requirename1 = requireversion1"),
             (DEB_UPGRADES, "name1 < version1-release1"),
             (DEB_CONFLICTS, "conflictsname1 = conflictsversion1")]
-        self.assertEqual(skeleton.get_hash(), HASH1)
+        self.assertEqual(HASH1, skeleton.get_hash(), HASH1)
 
     def test_build_skeleton_without_unicode(self):
         """
@@ -87,7 +87,7 @@ class SkeletonTestMixin(object):
         skeleton = self.build_skeleton(pkg1)
         self.assertTrue(isinstance(skeleton.name, str))
         self.assertTrue(isinstance(skeleton.version, str))
-        self.assertEqual(skeleton.get_hash(), HASH1)
+        self.assertEqual(HASH1, skeleton.get_hash())
 
     def test_build_skeleton_with_unicode(self):
         """
@@ -98,7 +98,7 @@ class SkeletonTestMixin(object):
         skeleton = self.build_skeleton(pkg1, with_unicode=True)
         self.assertTrue(isinstance(skeleton.name, unicode))
         self.assertTrue(isinstance(skeleton.version, unicode))
-        self.assertEqual(skeleton.get_hash(), HASH1)
+        self.assertEqual(HASH1, skeleton.get_hash())
 
     def test_build_skeleton_with_info(self):
         """
@@ -108,11 +108,11 @@ class SkeletonTestMixin(object):
         """
         pkg1 = self.get_package("name1")
         skeleton = self.build_skeleton(pkg1, with_info=True)
-        self.assertEqual(skeleton.section, "Group1")
-        self.assertEqual(skeleton.summary, "Summary1")
-        self.assertEqual(skeleton.description, "Description1")
-        self.assertEqual(skeleton.size, 1038)
-        self.assertEqual(skeleton.installed_size, 28672)
+        self.assertEqual("Group1", skeleton.section)
+        self.assertEqual("Summary1", skeleton.summary)
+        self.assertEqual("Description1", skeleton.description)
+        self.assertEqual(1038, skeleton.size)
+        self.assertEqual(28672, skeleton.installed_size)
 
     def test_build_skeleton_minimal(self):
         """
@@ -123,16 +123,16 @@ class SkeletonTestMixin(object):
         skeleton = self.build_skeleton(minimal_package)
         self.assertEqual("minimal", skeleton.name)
         self.assertEqual("1.0", skeleton.version)
-        self.assertEqual(skeleton.section, None)
-        self.assertEqual(skeleton.summary, None)
-        self.assertEqual(skeleton.description, None)
-        self.assertEqual(skeleton.size, None)
-        self.assertEqual(skeleton.installed_size, None)
+        self.assertEqual(None, skeleton.section)
+        self.assertEqual(None, skeleton.summary)
+        self.assertEqual(None, skeleton.description)
+        self.assertEqual(None, skeleton.size)
+        self.assertEqual(None, skeleton.installed_size)
         relations = [
             (DEB_NAME_PROVIDES, "minimal = 1.0"),
             (DEB_UPGRADES, "minimal < 1.0")]
         self.assertEqual(relations, skeleton.relations)
-        self.assertEqual(skeleton.get_hash(), HASH_MINIMAL)
+        self.assertEqual(HASH_MINIMAL, skeleton.get_hash())
 
     def test_build_skeleton_minimal_with_info(self):
         """
@@ -141,13 +141,13 @@ class SkeletonTestMixin(object):
         """
         package = self.get_package("minimal")
         skeleton = self.build_skeleton(package, True)
-        self.assertEqual(skeleton.section, "")
+        self.assertEqual("", skeleton.section)
         self.assertEqual(
-            skeleton.summary,
-            "A minimal package with no dependencies or other relations.")
-        self.assertEqual(skeleton.description, "")
-        self.assertEqual(skeleton.size, 558)
-        self.assertEqual(skeleton.installed_size, None)
+            "A minimal package with no dependencies or other relations.",
+            skeleton.summary)
+        self.assertEqual("", skeleton.description)
+        self.assertEqual(558, skeleton.size)
+        self.assertEqual(None, skeleton.installed_size)
 
     def test_build_skeleton_simple_relations(self):
         """
@@ -166,7 +166,7 @@ class SkeletonTestMixin(object):
             (DEB_UPGRADES, "simple-relations < 1.0"),
             (DEB_CONFLICTS, "conflict1")]
         self.assertEqual(relations, skeleton.relations)
-        self.assertEqual(skeleton.get_hash(), HASH_SIMPLE_RELATIONS)
+        self.assertEqual(HASH_SIMPLE_RELATIONS, skeleton.get_hash())
 
     def test_build_skeleton_version_relations(self):
         """
@@ -185,7 +185,7 @@ class SkeletonTestMixin(object):
             (DEB_UPGRADES, "version-relations < 1.0"),
             (DEB_CONFLICTS, "conflict1 < 2.0")]
         self.assertEqual(relations, skeleton.relations)
-        self.assertEqual(skeleton.get_hash(), HASH_VERSION_RELATIONS)
+        self.assertEqual(HASH_VERSION_RELATIONS, skeleton.get_hash())
 
     def test_build_skeleton_multiple_relations(self):
         """
@@ -209,7 +209,7 @@ class SkeletonTestMixin(object):
             (DEB_CONFLICTS, "conflict1 < 2.0"),
             (DEB_CONFLICTS, "conflict2")]
         self.assertEqual(relations, skeleton.relations)
-        self.assertEqual(skeleton.get_hash(), HASH_MULTIPLE_RELATIONS)
+        self.assertEqual(HASH_MULTIPLE_RELATIONS, skeleton.get_hash())
 
     def test_build_skeleton_or_relations(self):
         """
@@ -226,7 +226,7 @@ class SkeletonTestMixin(object):
             (DEB_OR_REQUIRES, "predepend1 <= 2.0 | predepend2"),
             (DEB_UPGRADES, "or-relations < 1.0")]
         self.assertEqual(relations, skeleton.relations)
-        self.assertEqual(skeleton.get_hash(), HASH_OR_RELATIONS)
+        self.assertEqual(HASH_OR_RELATIONS, skeleton.get_hash())
 
 
 class SmartSkeletonTest(LandscapeTest, SkeletonTestMixin):
