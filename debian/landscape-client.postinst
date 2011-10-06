@@ -60,18 +60,29 @@ case "$1" in
             cat > $TEMPFILE <<END
 [client]
 log_level = info
-url = ${URL}
-ping_url = ${PING_URL}
 data_path = /var/lib/landscape/client
 END
             chown landscape $TEMPFILE
             mv $TEMPFILE $CONFIG_FILE
 
+            # Configure landscape
+            landscape-config --silent --no-start \
+                --computer-title "$COMPUTER_TITLE" \
+                --account-name "$ACCOUNT_NAME" \
+                --registration-password "$REGISTRATION_PASSWORD" \
+                --url "$URL" \
+                --exchange-interval "$EXCHANGE_INTERVAL" \
+                --urgent-exchange-interval "$URGENT_EXCHANGE_INTERVAL" \
+                --ping-url "$PING_URL" \
+                --ping-interval "$PING_INTERVAL" \
+                --http-proxy "$HTTP_PROXY" \
+                --https-proxy "$HTTPS_PROXY" \
+                --otp "$OTP" \
+                --tags "$TAGS"
+
             # If we got the needed information, actually do the registration.
             if [ -n "$ACCOUNT_NAME" -a -n "$COMPUTER_TITLE" ]; then
-                landscape-config --silent --ok-no-register -a "$ACCOUNT_NAME" \
-                                          -p "$REGISTRATION_PASSWORD" \
-                                          -t "$COMPUTER_TITLE"
+                landscape-config --silent --ok-no-register
             fi
         else
             # Fix non-private permissions

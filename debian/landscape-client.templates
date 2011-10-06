@@ -27,7 +27,7 @@ Template: landscape-client/exchange_interval
 Type: string
 Default: 900
 _Description: Message Exchange Interval:
- Interval, in seconds, between normal message exanges with the Landscape
+ Interval, in seconds, between normal message exchanges with the Landscape
  server.
 
 Template: landscape-client/urgent_exchange_interval
