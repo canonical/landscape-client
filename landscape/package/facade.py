@@ -168,6 +168,12 @@ class AptFacade(object):
         """
         return self.get_package_skeleton(pkg, with_info=False).get_hash()
 
+    def get_package_hashes(self):
+        """Get the hashes of all the packages available in the channels."""
+        return [
+            self.get_package_hash(package) for package in self.get_packages()]
+
+
 
 class SmartFacade(object):
     """Wrapper for tasks using Smart.
