@@ -33,7 +33,7 @@ class AptFacadeTest(LandscapeTest):
 
     helpers = [AptFacadeHelper]
 
-    def _add_system_package(self, name, architecture="all"):
+    def _add_system_package(self, name, architecture="all", version="1.0"):
         """Add a package to the dpkg status file."""
         append_file(self.dpkg_status, textwrap.dedent("""\
                 Package: %s
@@ -44,11 +44,11 @@ class AptFacadeTest(LandscapeTest):
                 Maintainer: Someone
                 Architecture: %s
                 Source: source
-                Version: 1.0
+                Version: %s
                 Config-Version: 1.0
                 Description: description
 
-                """ % (name, architecture)))
+                """ % (name, architecture, version)))
 
     def _install_deb_file(self, path):
         """Fake the the given deb file is installed in the system."""
@@ -472,6 +472,40 @@ class AptFacadeTest(LandscapeTest):
             package for package in self.facade.get_packages()
             if package.name == "name1"]
         self.assertTrue(self.facade.is_package_available(package))
+
+    def test_is_package_upgrade_in_channel_not_installed(self):
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [package] = self.facade.get_packages()
+        self.assertFalse(self.facade.is_package_upgrade(package))
+
+    def test_is_package_upgrade_in_channel_older_installed(self):
+        deb_dir = self.makeDir()
+        self._add_system_package("foo", version="0.5")
+        self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [package] = self.facade.get_packages()
+        self.assertTrue(self.facade.is_package_upgrade(package))
+
+    def test_is_package_upgrade_in_channel_newer_installed(self):
+        deb_dir = self.makeDir()
+        self._add_system_package("foo", version="1.5")
+        self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [package] = self.facade.get_packages()
+        self.assertFalse(self.facade.is_package_upgrade(package))
+
+    def test_is_package_upgrade_not_in_channel_installed(self):
+        deb_dir = self.makeDir()
+        self._add_system_package("foo", version="1.0")
+        self.facade.reload_channels()
+        [package] = self.facade.get_packages()
+        self.assertFalse(self.facade.is_package_upgrade(package))
+
 
 
 class SmartFacadeTest(LandscapeTest):

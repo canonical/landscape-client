@@ -200,6 +200,10 @@ class AptFacade(object):
         """Is the package available for installation?"""
         return package.candidate.downloadable
 
+    def is_package_upgrade(self, package):
+        """Is the package an upgrade for another installed package?"""
+        return package.is_upgradable
+
 
 class SmartFacade(object):
     """Wrapper for tasks using Smart.
