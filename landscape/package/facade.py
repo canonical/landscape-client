@@ -196,6 +196,10 @@ class AptFacade(object):
         """
         return self._hash2pkg.get(hash)
 
+    def is_package_available(self, package):
+        """Is the package available for installation (and not installed)?"""
+        return package.candidate.downloadable
+
 
 class SmartFacade(object):
     """Wrapper for tasks using Smart.

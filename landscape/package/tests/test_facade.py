@@ -8,6 +8,7 @@ from smart.control import Control
 from smart.cache import Provides
 from smart.const import NEVER, ALWAYS
 
+import apt_inst
 from aptsources.sourceslist import SourcesList
 
 from twisted.internet import reactor
@@ -429,6 +430,51 @@ class AptFacadeTest(LandscapeTest):
         # Which are not the old packages.
         self.assertFalse(pkg2 in new_pkgs)
         self.assertFalse(pkg3 in new_pkgs)
+
+    def test_is_package_available_in_channel_not_installed(self):
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.facade.reload_channels()
+        [package] = [
+            package for package in self.facade.get_packages()
+            if package.name == "name1"]
+        self.assertTrue(self.facade.is_package_available(package))
+
+    def test_is_package_available_not_in_channel_installed(self):
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        deb_file = open(os.path.join(deb_dir, PKGNAME1))
+        deb = apt_inst.DebFile(deb_file)
+        control = deb.control.extractdata("control")
+        deb_file.close()
+        lines = control.splitlines()
+        lines.insert(1, "Status: install ok installed")
+        status = "\n".join(lines)
+        append_file(self.dpkg_status, status + "\n\n")
+        self.facade.reload_channels()
+        [package] = [
+            package for package in self.facade.get_packages()
+            if package.name == "name1"]
+        self.assertFalse(self.facade.is_package_available(package))
+
+    def test_is_package_available_in_channel_installed(self):
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        deb_file = open(os.path.join(deb_dir, PKGNAME1))
+        deb = apt_inst.DebFile(deb_file)
+        control = deb.control.extractdata("control")
+        deb_file.close()
+        lines = control.splitlines()
+        lines.insert(1, "Status: install ok installed")
+        status = "\n".join(lines)
+        append_file(self.dpkg_status, status + "\n\n")
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.facade.reload_channels()
+        [package] = [
+            package for package in self.facade.get_packages()
+            if package.name == "name1"]
+        self.assertTrue(self.facade.is_package_available(package))
 
 
 class SmartFacadeTest(LandscapeTest):
