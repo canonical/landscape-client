@@ -376,15 +376,15 @@ class AptFacadeTest(LandscapeTest):
         self.assertTrue(pkg1 and pkg2)
 
         # Remove the package from the repository.
+        packages_path = os.path.join(deb_dir, "Packages")
         os.unlink(os.path.join(deb_dir, PKGNAME1))
-        os.unlink(os.path.join(deb_dir, "Packages"))
-        self.facade.reset_channels()
-        self.facade.add_channel_deb_dir(deb_dir)
+        os.unlink(packages_path)
+        self.facade.create_packages_file(deb_dir)
         # Forcibly change the mtime of our repository, so that Smart
         # will consider it as changed (if the change is inside the
         # same second the directory's mtime will be the same)
         mtime = int(time.time() + 1)
-        os.utime(deb_dir, (mtime, mtime))
+        os.utime(packages_path, (mtime, mtime))
 
         # Reload channels.
         self.facade.reload_channels()

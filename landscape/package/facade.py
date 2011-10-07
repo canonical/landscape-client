@@ -51,16 +51,24 @@ class AptFacade(object):
     def __init__(self, root=None):
         self._cache = apt.cache.Cache(rootdir=root, memonly=True)
         self._channels_loaded = False
+        self._pkg2hash = {}
 
     def get_packages(self):
         """Get all the packages available in the channels."""
-        return [self._cache[name] for name in self._cache.keys()]
+        return self._pkg2hash.keys()
 
     def reload_channels(self):
         """Reload the channels and update the cache."""
         self._cache.open(None)
         self._cache.update()
         self._cache.open(None)
+
+        self._pkg2hash = {}
+        packages = [self._cache[name] for name in self._cache.keys()]
+        for package in packages:
+            hash = self.get_package_skeleton(
+                package, with_info=False).get_hash()
+            self._pkg2hash[package] = hash
 
     def ensure_channels_reloaded(self):
         """Reload the channels if they haven't been reloaded yet."""
@@ -170,7 +178,7 @@ class AptFacade(object):
 
         @param pkg: a L{smart.backends.deb.base.DebPackage} objects
         """
-        return self.get_package_skeleton(pkg, with_info=False).get_hash()
+        return self._pkg2hash.get(pkg)
 
     def get_package_hashes(self):
         """Get the hashes of all the packages available in the channels."""
