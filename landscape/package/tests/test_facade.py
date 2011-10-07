@@ -50,6 +50,17 @@ class AptFacadeTest(LandscapeTest):
 
                 """ % (name, architecture)))
 
+    def _install_deb_file(self, path):
+        """Fake the the given deb file is installed in the system."""
+        deb_file = open(path)
+        deb = apt_inst.DebFile(deb_file)
+        control = deb.control.extractdata("control")
+        deb_file.close()
+        lines = control.splitlines()
+        lines.insert(1, "Status: install ok installed")
+        status = "\n".join(lines)
+        append_file(self.dpkg_status, status + "\n\n")
+
     def _add_package_to_deb_dir(self, path, name, version="1.0"):
         """Add fake package information to a directory.
 
@@ -444,14 +455,7 @@ class AptFacadeTest(LandscapeTest):
     def test_is_package_available_not_in_channel_installed(self):
         deb_dir = self.makeDir()
         create_simple_repository(deb_dir)
-        deb_file = open(os.path.join(deb_dir, PKGNAME1))
-        deb = apt_inst.DebFile(deb_file)
-        control = deb.control.extractdata("control")
-        deb_file.close()
-        lines = control.splitlines()
-        lines.insert(1, "Status: install ok installed")
-        status = "\n".join(lines)
-        append_file(self.dpkg_status, status + "\n\n")
+        self._install_deb_file(os.path.join(deb_dir, PKGNAME1))
         self.facade.reload_channels()
         [package] = [
             package for package in self.facade.get_packages()
@@ -461,14 +465,7 @@ class AptFacadeTest(LandscapeTest):
     def test_is_package_available_in_channel_installed(self):
         deb_dir = self.makeDir()
         create_simple_repository(deb_dir)
-        deb_file = open(os.path.join(deb_dir, PKGNAME1))
-        deb = apt_inst.DebFile(deb_file)
-        control = deb.control.extractdata("control")
-        deb_file.close()
-        lines = control.splitlines()
-        lines.insert(1, "Status: install ok installed")
-        status = "\n".join(lines)
-        append_file(self.dpkg_status, status + "\n\n")
+        self._install_deb_file(os.path.join(deb_dir, PKGNAME1))
         self.facade.add_channel_deb_dir(deb_dir)
         self.facade.reload_channels()
         [package] = [
