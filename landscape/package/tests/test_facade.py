@@ -323,6 +323,9 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(HASH2, skeleton2.get_hash())
 
     def test_get_package_hash(self):
+        """
+        C{get_package_hash} returns the hash for a given package.
+        """
         deb_dir = self.makeDir()
         create_simple_repository(deb_dir)
         self.facade.add_channel_deb_dir(deb_dir)
@@ -337,6 +340,10 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(HASH2, self.facade.get_package_hash(pkg))
 
     def test_get_package_hashes(self):
+        """
+        C{get_package_hashes} returns the hashes for all packages in the
+        channels.
+        """
         deb_dir = self.makeDir()
         create_simple_repository(deb_dir)
         self.facade.add_channel_deb_dir(deb_dir)
@@ -345,6 +352,9 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(sorted(hashes), sorted([HASH1, HASH2, HASH3]))
 
     def test_get_package_by_hash(self):
+        """
+        C{get_package_by_hash} returns the package that has the given hash.
+        """
         deb_dir = self.makeDir()
         create_simple_repository(deb_dir)
         self.facade.add_channel_deb_dir(deb_dir)
@@ -357,6 +367,10 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(pkg, None)
 
     def test_reload_channels_clears_hash_cache(self):
+        """
+        To improve performance, the hashes for the packages are cached.
+        When reloading the channels, the cache is recreated.
+        """
         # Load hashes.
         deb_dir = self.makeDir()
         create_simple_repository(deb_dir)
