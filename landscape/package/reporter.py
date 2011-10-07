@@ -470,18 +470,8 @@ class PackageReporter(PackageTaskHandler):
                     current_available.add(id)
 
                 # Are there any packages that this package is an upgrade for?
-                for upgrade in package.upgrades:
-                    for provides in upgrade.providedby:
-                        for provides_package in provides.packages:
-                            if provides_package.installed:
-                                current_upgrades.add(id)
-                                break
-                        else:
-                            continue
-                        break
-                    else:
-                        continue
-                    break
+                if self._facade.is_package_upgrade(package):
+                    current_upgrades.add(id)
 
         for package in self._facade.get_locked_packages():
             hash = self._facade.get_package_hash(package)

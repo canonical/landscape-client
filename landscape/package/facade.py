@@ -557,3 +557,20 @@ class SmartFacade(object):
             if not loader.getInstalled():
                 return True
         return False
+
+    def is_package_upgrade(self, package):
+        """Is the package an upgrade for another installed package?"""
+        is_upgrade = False
+        for upgrade in package.upgrades:
+            for provides in upgrade.providedby:
+                for provides_package in provides.packages:
+                    if provides_package.installed:
+                        is_upgrade = True
+                        break
+                else:
+                    continue
+                break
+            else:
+                continue
+            break
+        return is_upgrade
