@@ -394,13 +394,13 @@ class AptFacadeTest(LandscapeTest):
         os.unlink(os.path.join(deb_dir, PKGNAME1))
         os.unlink(packages_path)
         self.facade.create_packages_file(deb_dir)
-        # Forcibly change the mtime of our repository, so that Smart
-        # will consider it as changed (if the change is inside the
-        # same second the directory's mtime will be the same)
+        # Forcibly change the mtime of our repository's Packages file,
+        # so that apt # will consider it as changed (if the change is
+        # inside the same second the directory's mtime will be the same)
         mtime = int(time.time() + 1)
         os.utime(packages_path, (mtime, mtime))
 
-        # Reload channels.
+        # Reload channel to reload the cache.
         self.facade.reload_channels()
 
         # Only packages with name2 and name3 should be loaded, and they're
