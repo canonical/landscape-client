@@ -179,7 +179,7 @@ class AptFacade(object):
     def get_package_hash(self, pkg):
         """Return a hash from the given package.
 
-        @param pkg: a L{smart.backends.deb.base.DebPackage} objects
+        @param pkg: an L{apt.package.Package} object.
         """
         return self._pkg2hash.get(pkg)
 
@@ -188,8 +188,9 @@ class AptFacade(object):
         return self._pkg2hash.values()
 
     def get_package_by_hash(self, hash):
-        """
-        Get the package having the provided hash.
+        """Get the package having the provided hash.
+
+        @param hash: The hash the package should have.
 
         @return: The L{apt.package.Package} that has the given hash.
         """
