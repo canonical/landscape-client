@@ -197,7 +197,7 @@ class AptFacade(object):
         return self._hash2pkg.get(hash)
 
     def is_package_available(self, package):
-        """Is the package available for installation (and not installed)?"""
+        """Is the package available for installation?"""
         return package.candidate.downloadable
 
 
@@ -554,7 +554,7 @@ class SmartFacade(object):
         control.saveSysConf()
 
     def is_package_available(self, package):
-        """Is the package available for installation (and not installed)?"""
+        """Is the package available for installation?"""
         for loader in package.loaders:
             # Is the package also in a non-installed
             # loader?  IOW, "available".
