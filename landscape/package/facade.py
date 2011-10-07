@@ -548,3 +548,12 @@ class SmartFacade(object):
         """Flush the current smart configuration to disk."""
         control = self._get_ctrl()
         control.saveSysConf()
+
+    def is_package_available(self, package):
+        """Is the package available for installation (and not installed)?"""
+        for loader in package.loaders:
+            # Is the package also in a non-installed
+            # loader?  IOW, "available".
+            if not loader.getInstalled():
+                return True
+        return False
