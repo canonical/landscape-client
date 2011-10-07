@@ -52,6 +52,7 @@ class AptFacade(object):
         self._cache = apt.cache.Cache(rootdir=root, memonly=True)
         self._channels_loaded = False
         self._pkg2hash = {}
+        self._hash2pkg = {}
 
     def get_packages(self):
         """Get all the packages available in the channels."""
@@ -64,11 +65,13 @@ class AptFacade(object):
         self._cache.open(None)
 
         self._pkg2hash = {}
+        self._hash2pkg = {}
         packages = [self._cache[name] for name in self._cache.keys()]
         for package in packages:
             hash = self.get_package_skeleton(
                 package, with_info=False).get_hash()
             self._pkg2hash[package] = hash
+            self._hash2pkg[hash] = package
 
     def ensure_channels_reloaded(self):
         """Reload the channels if they haven't been reloaded yet."""
@@ -190,12 +193,7 @@ class AptFacade(object):
 
         @return: The L{apt.package.Package} that has the given hash.
         """
-        packages = [
-            package for package in self.get_packages()
-            if self.get_package_hash(package) == hash]
-        if not packages:
-            return None
-        return packages[0]
+        return self._hash2pkg.get(hash)
 
 
 class SmartFacade(object):
