@@ -182,8 +182,7 @@ class AptFacade(object):
 
     def get_package_hashes(self):
         """Get the hashes of all the packages available in the channels."""
-        return [
-            self.get_package_hash(package) for package in self.get_packages()]
+        return self._pkg2hash.values()
 
     def get_package_by_hash(self, hash):
         """
