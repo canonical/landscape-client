@@ -37,7 +37,6 @@ case "$1" in
             REGISTRATION_PASSWORD="${RET}"
             db_get $PACKAGE/url
             URL="${RET}"
-#    db_set $PACKAGE/ssl_public_key ""
             db_get $PACKAGE/exchange_interval
             EXCHANGE_INTERVAL="${RET}"
             db_get $PACKAGE/urgent_exchange_interval
