@@ -93,11 +93,15 @@ class AptFacade(object):
         A Packages file is created in the directory with information
         about the deb files.
         """
-        packages_contents = "\n".join(
-            self.get_package_stanza(os.path.join(path, filename))
-            for filename in sorted(os.listdir(path)))
-        create_file(os.path.join(path, "Packages"), packages_contents)
+        self.create_packages_file(path)
         self.add_channel_apt_deb("file://%s" % path, "./", None)
+
+    def create_packages_file(self, deb_dir):
+        """Create a Packages file in a directory with debs."""
+        packages_contents = "\n".join(
+            self.get_package_stanza(os.path.join(deb_dir, filename))
+            for filename in sorted(os.listdir(deb_dir)))
+        create_file(os.path.join(deb_dir, "Packages"), packages_contents)
 
     def get_channels(self):
         """Return a list of channels configured.
