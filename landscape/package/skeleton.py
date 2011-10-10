@@ -117,7 +117,7 @@ def parse_record_field(record, record_field, skeleton_relation,
     """Parse an apt C{Record} field and return skeleton relations
 
     @param record: An C{apt.package.Record} instance with package information.
-    @param field_name: The name of the record field to parse.
+    @param record_field: The name of the record field to parse.
     @param skeleton_relation: The deb relation that can be passed to
         C{skeleton.add_relation()}
     @param skeleton_or_relation: The deb relation that should be used if
