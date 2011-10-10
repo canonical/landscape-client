@@ -301,9 +301,9 @@ class AptFacadeTest(LandscapeTest):
     def test_get_package_skeleton(self):
         """
         C{get_package_skeleton} returns a C{PackageSkeleton} for a
-        package. By default extra information. By default extra
-        information is included, but it's possible to specify that only
-        basic information should be included.
+        package. By default extra information is included, but it's
+        possible to specify that only basic information should be
+        included.
         """
         deb_dir = self.makeDir()
         create_simple_repository(deb_dir)
