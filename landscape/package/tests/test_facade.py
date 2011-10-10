@@ -68,7 +68,19 @@ class AptFacadeTest(LandscapeTest):
         available, so that get_packages() have something to return.
         There won't be an actual package in the dir.
         """
-        package_stanza = "Package: %(name)s\nVersion: %(version)s\n\n"
+        package_stanza = textwrap.dedent("""
+                Package: %(name)s
+                Priority: optional
+                Section: misc
+                Installed-Size: 1234
+                Maintainer: Someone
+                Architecture: all
+                Source: source
+                Version: %(version)s
+                Config-Version: 1.0
+                Description: description
+
+                """)
         append_file(
             os.path.join(path, "Packages"),
             package_stanza % {"name": name, "version": version})
@@ -517,6 +529,20 @@ class AptFacadeTest(LandscapeTest):
         """
         deb_dir = self.makeDir()
         self._add_system_package("foo", version="1.5")
+        self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [package] = self.facade.get_packages()
+        self.assertFalse(self.facade.is_package_upgrade(package))
+
+    def test_is_package_upgrade_in_channel_same_as_installed(self):
+        """
+        A package is not considered to be an upgrade if the newest
+        version of the packages available in the channels is the same as
+        the installed one.
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package("foo", version="1.0")
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
