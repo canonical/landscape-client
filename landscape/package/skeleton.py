@@ -95,42 +95,41 @@ def build_skeleton(pkg, with_info=False, with_unicode=False):
 build_skeleton.inited = False
 
 
-def relation_to_string(relation):
+def relation_to_string(relation_tuple):
     """Convert an apt relation to a string representation.
 
-    @param relation: A tuple, (name, version, relation). version and
-        relation can be the empty string, if the relation is on a name only.
+    @param relation_tuple: A tuple, (name, version, relation). version
+        and relation can be the empty string, if the relation is on a
+        name only.
 
     Returns something like "name > 1.0"
     """
-    name, version, relation = relation
+    name, version, relation_type = relation_tuple
     relation_string = name
-    if relation:
-        relation_string += " %(relation)s %(version)s" % {
-            "relation": relation,
-            "version": version}
+    if relation_type:
+        relation_string += " %s %s" % (relation_type, version)
     return relation_string
 
 
-def parse_record_field(record, record_field, skeleton_relation,
-                       or_skeleton_relation=None):
+def parse_record_field(record, record_field, relation_type,
+                       or_relation_type=None):
     """Parse an apt C{Record} field and return skeleton relations
 
     @param record: An C{apt.package.Record} instance with package information.
-    @param field_name: The name of the record field to parse.
-    @param skeleton_relation: The deb relation that can be passed to
+    @param record_field: The name of the record field to parse.
+    @param relation_type: The deb relation that can be passed to
         C{skeleton.add_relation()}
-    @param skeleton_or_relation: The deb relation that should be used if
-        there are more than one value in a relation.
+    @param or_relation_type: The deb relation that should be used if
+        there is more than one value in a relation.
     """
     relations = set()
     values = apt_pkg.parse_depends(record.get(record_field, ""))
     for value in values:
         value_strings = [relation_to_string(relation) for relation in value]
         if len(value_strings) > 1:
-            skeleton_relation = or_skeleton_relation
+            relation_type = or_relation_type
         relation_string = " | ".join(value_strings)
-        relations.add((skeleton_relation, relation_string))
+        relations.add((relation_type, relation_string))
     return relations
 
 
