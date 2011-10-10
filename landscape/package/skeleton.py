@@ -118,8 +118,8 @@ def parse_record_field(record, record_field, skeleton_relation,
     @param record_field: The name of the record field to parse.
     @param skeleton_relation: The deb relation that can be passed to
         C{skeleton.add_relation()}
-    @param skeleton_or_relation: The deb relation that should be used if
-        there are more than one value in a relation.
+    @param or_skeleton_relation: The deb relation that should be used if
+        there is more than one value in a relation.
     """
     relations = set()
     values = apt_pkg.parse_depends(record.get(record_field, ""))
