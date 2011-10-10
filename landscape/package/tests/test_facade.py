@@ -554,12 +554,10 @@ class AptFacadeTest(LandscapeTest):
         A package is not considered to be an upgrade if the package is
         installed but not available in any of the configured channels.
         """
-        deb_dir = self.makeDir()
         self._add_system_package("foo", version="1.0")
         self.facade.reload_channels()
         [package] = self.facade.get_packages()
         self.assertFalse(self.facade.is_package_upgrade(package))
-
 
 
 class SmartFacadeTest(LandscapeTest):
