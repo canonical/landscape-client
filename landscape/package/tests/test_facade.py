@@ -559,6 +559,32 @@ class AptFacadeTest(LandscapeTest):
         [package] = self.facade.get_packages()
         self.assertFalse(self.facade.is_package_upgrade(package))
 
+    def test_get_packages_by_name_no_match(self):
+        """
+        If there are no packages with the given name,
+        C{get_packages_by_name} returns an empty list.
+        """
+        self._add_system_package("foo", version="1.0")
+        self.facade.reload_channels()
+        self.assertEqual([], self.facade.get_packages_by_name("bar"))
+
+    def test_get_packages_by_name_match(self):
+        """
+        C{get_packages_by_name} returns all the packages in the
+        available channels that have the specified name.
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package("foo", version="1.0")
+        self._add_package_to_deb_dir(deb_dir, "foo", version="1.5")
+        self.facade.reload_channels()
+        # XXX: This should return two packages, but it doesn't at the
+        # moment. Bug #871641 should make this return ("foo", "1.5") as
+        # well.
+        self.assertEqual(
+            [("foo", "1.0")],
+            sorted([(pkg.name, pkg.candidate.version)
+                    for pkg in self.facade.get_packages_by_name("foo")]))
+
 
 class SmartFacadeTest(LandscapeTest):
 

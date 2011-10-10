@@ -204,6 +204,13 @@ class AptFacade(object):
         """Is the package an upgrade for another installed package?"""
         return package.is_upgradable
 
+    def get_packages_by_name(self, name):
+        """Get all available packages matching the provided name.
+
+        @param name: The name the returned packages should have.
+        """
+        return [pkg for pkg in self.get_packages() if pkg.name == name]
+
 
 class SmartFacade(object):
     """Wrapper for tasks using Smart.
