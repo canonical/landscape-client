@@ -1,5 +1,7 @@
 from landscape.lib.hashlib import sha1
 
+import apt_pkg
+
 
 PACKAGE   = 1 << 0
 PROVIDES  = 1 << 1
@@ -91,3 +93,83 @@ def build_skeleton(pkg, with_info=False, with_unicode=False):
     return skeleton
 
 build_skeleton.inited = False
+
+
+def relation_to_string(relation_tuple):
+    """Convert an apt relation to a string representation.
+
+    @param relation_tuple: A tuple, (name, version, relation). version
+        and relation can be the empty string, if the relation is on a
+        name only.
+
+    Returns something like "name > 1.0"
+    """
+    name, version, relation_type = relation_tuple
+    relation_string = name
+    if relation_type:
+        relation_string += " %s %s" % (relation_type, version)
+    return relation_string
+
+
+def parse_record_field(record, record_field, relation_type,
+                       or_relation_type=None):
+    """Parse an apt C{Record} field and return skeleton relations
+
+    @param record: An C{apt.package.Record} instance with package information.
+    @param record_field: The name of the record field to parse.
+    @param relation_type: The deb relation that can be passed to
+        C{skeleton.add_relation()}
+    @param or_relation_type: The deb relation that should be used if
+        there is more than one value in a relation.
+    """
+    relations = set()
+    values = apt_pkg.parse_depends(record.get(record_field, ""))
+    for value in values:
+        value_strings = [relation_to_string(relation) for relation in value]
+        if len(value_strings) > 1:
+            relation_type = or_relation_type
+        relation_string = " | ".join(value_strings)
+        relations.add((relation_type, relation_string))
+    return relations
+
+
+def build_skeleton_apt(package, with_info=False, with_unicode=False):
+    """Build a package skeleton from an apt package.
+
+    @param package: An instance of C{apt.package.Package}
+    @param with_info: Whether to extract extra information about the
+        package, like description, summary, size.
+    @param with_unicode: Whether the C{name} and C{version} of the
+        skeleton should be unicode strings.
+    """
+    candidate = package.candidate
+    name, version = package.name, candidate.version
+    if with_unicode:
+        name, version = unicode(name), unicode(version)
+    skeleton = PackageSkeleton(DEB_PACKAGE, name, version)
+    relations = set()
+    relations.update(parse_record_field(
+        candidate.record, "Provides", DEB_PROVIDES))
+    relations.add((
+        DEB_NAME_PROVIDES,
+        "%s = %s" % (package.name, candidate.version)))
+    relations.update(parse_record_field(
+        candidate.record, "Pre-Depends", DEB_REQUIRES, DEB_OR_REQUIRES))
+    relations.update(parse_record_field(
+        candidate.record, "Depends", DEB_REQUIRES, DEB_OR_REQUIRES))
+
+    relations.add((
+        DEB_UPGRADES, "%s < %s" % (package.name, candidate.version)))
+
+    relations.update(parse_record_field(
+        candidate.record, "Conflicts", DEB_CONFLICTS))
+    skeleton.relations = sorted(relations)
+
+    if with_info:
+        skeleton.section = candidate.section
+        skeleton.summary = candidate.summary
+        skeleton.description = candidate.description
+        skeleton.size = candidate.size
+        if candidate.installed_size > 0:
+            skeleton.installed_size = candidate.installed_size
+    return skeleton
