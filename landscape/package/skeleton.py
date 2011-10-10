@@ -110,15 +110,15 @@ def relation_to_string(relation):
     return relation_string
 
 
-def parse_record_field(record, record_field, skeleton_relation,
-                       or_skeleton_relation=None):
+def parse_record_field(record, record_field, relation_type,
+                       or_relation_type=None):
     """Parse an apt C{Record} field and return skeleton relations
 
     @param record: An C{apt.package.Record} instance with package information.
     @param record_field: The name of the record field to parse.
-    @param skeleton_relation: The deb relation that can be passed to
+    @param relation_type: The deb relation that can be passed to
         C{skeleton.add_relation()}
-    @param or_skeleton_relation: The deb relation that should be used if
+    @param or_relation_type: The deb relation that should be used if
         there is more than one value in a relation.
     """
     relations = set()
@@ -126,9 +126,9 @@ def parse_record_field(record, record_field, skeleton_relation,
     for value in values:
         value_strings = [relation_to_string(relation) for relation in value]
         if len(value_strings) > 1:
-            skeleton_relation = or_skeleton_relation
+            relation_type = or_relation_type
         relation_string = " | ".join(value_strings)
-        relations.add((skeleton_relation, relation_string))
+        relations.add((relation_type, relation_string))
     return relations
 
 
