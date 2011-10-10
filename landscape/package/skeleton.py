@@ -106,9 +106,7 @@ def relation_to_string(relation):
     name, version, relation = relation
     relation_string = name
     if relation:
-        relation_string += " %(relation)s %(version)s" % {
-            "relation": relation,
-            "version": version}
+        relation_string += " %s %s" % (relation, version)
     return relation_string
 
 
