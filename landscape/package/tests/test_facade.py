@@ -443,6 +443,10 @@ class AptFacadeTest(LandscapeTest):
         self.assertFalse(pkg3 in new_pkgs)
 
     def test_is_package_available_in_channel_not_installed(self):
+        """
+        A package is considered available if the package is in a
+        configured channel and not installed.
+        """
         deb_dir = self.makeDir()
         create_simple_repository(deb_dir)
         self.facade.add_channel_deb_dir(deb_dir)
@@ -453,6 +457,10 @@ class AptFacadeTest(LandscapeTest):
         self.assertTrue(self.facade.is_package_available(package))
 
     def test_is_package_available_not_in_channel_installed(self):
+        """
+        A package is not considered available if the package is
+        installed and not in a configured channel.
+        """
         deb_dir = self.makeDir()
         create_simple_repository(deb_dir)
         self._install_deb_file(os.path.join(deb_dir, PKGNAME1))
@@ -463,6 +471,10 @@ class AptFacadeTest(LandscapeTest):
         self.assertFalse(self.facade.is_package_available(package))
 
     def test_is_package_available_in_channel_installed(self):
+        """
+        A package is considered available if the package is
+        installed and is in a configured channel.
+        """
         deb_dir = self.makeDir()
         create_simple_repository(deb_dir)
         self._install_deb_file(os.path.join(deb_dir, PKGNAME1))
@@ -474,6 +486,10 @@ class AptFacadeTest(LandscapeTest):
         self.assertTrue(self.facade.is_package_available(package))
 
     def test_is_package_upgrade_in_channel_not_installed(self):
+        """
+        A package is not consider an upgrade of no version of it is
+        installed.
+        """
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
@@ -482,6 +498,10 @@ class AptFacadeTest(LandscapeTest):
         self.assertFalse(self.facade.is_package_upgrade(package))
 
     def test_is_package_upgrade_in_channel_older_installed(self):
+        """
+        A package is considered to be an upgrade if some channel has a
+        newer version than the installed one.
+        """
         deb_dir = self.makeDir()
         self._add_system_package("foo", version="0.5")
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
@@ -491,6 +511,10 @@ class AptFacadeTest(LandscapeTest):
         self.assertTrue(self.facade.is_package_upgrade(package))
 
     def test_is_package_upgrade_in_channel_newer_installed(self):
+        """
+        A package is not considered to be an upgrade if there are only
+        older versions than the installed one in the channels.
+        """
         deb_dir = self.makeDir()
         self._add_system_package("foo", version="1.5")
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
@@ -500,6 +524,10 @@ class AptFacadeTest(LandscapeTest):
         self.assertFalse(self.facade.is_package_upgrade(package))
 
     def test_is_package_upgrade_not_in_channel_installed(self):
+        """
+        A package is not considered to be an upgrade if the package is
+        installed but not available in any of the configured channels.
+        """
         deb_dir = self.makeDir()
         self._add_system_package("foo", version="1.0")
         self.facade.reload_channels()
