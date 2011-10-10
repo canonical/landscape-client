@@ -95,18 +95,19 @@ def build_skeleton(pkg, with_info=False, with_unicode=False):
 build_skeleton.inited = False
 
 
-def relation_to_string(relation):
+def relation_to_string(relation_tuple):
     """Convert an apt relation to a string representation.
 
-    @param relation: A tuple, (name, version, relation). version and
-        relation can be the empty string, if the relation is on a name only.
+    @param relation_tuple: A tuple, (name, version, relation). version
+        and relation can be the empty string, if the relation is on a
+        name only.
 
     Returns something like "name > 1.0"
     """
-    name, version, relation = relation
+    name, version, relation_type = relation_tuple
     relation_string = name
-    if relation:
-        relation_string += " %s %s" % (relation, version)
+    if relation_type:
+        relation_string += " %s %s" % (relation_type, version)
     return relation_string
 
 
