@@ -28,24 +28,29 @@ case "$1" in
 
         CONFIG_FILE=/etc/landscape/client.conf
         if [ ! -f $CONFIG_FILE ]; then
-            # Create new configuration, with private mode
-            TEMPFILE=$(mktemp -p /etc/landscape)
-            cat > $TEMPFILE <<END
-[client]
-log_level = info
-url = https://landscape.canonical.com/message-system
-ping_url = http://landscape.canonical.com/ping
-data_path = /var/lib/landscape/client
-END
-            chown landscape $TEMPFILE
-            mv $TEMPFILE $CONFIG_FILE
-
+            # Get configuration values from debconf
             db_get $PACKAGE/computer_title
             COMPUTER_TITLE="${RET}"
             db_get $PACKAGE/account_name
             ACCOUNT_NAME="${RET}"
             db_get $PACKAGE/registration_password
             REGISTRATION_PASSWORD="${RET}"
+            db_get $PACKAGE/url
+            URL="${RET}"
+            db_get $PACKAGE/ping_url
+            PING_URL="${RET}"
+
+            # Create new configuration, with private mode
+            TEMPFILE=$(mktemp -p /etc/landscape)
+            cat > $TEMPFILE <<END
+[client]
+log_level = info
+url = ${URL}
+ping_url = ${PING_URL}
+data_path = /var/lib/landscape/client
+END
+            chown landscape $TEMPFILE
+            mv $TEMPFILE $CONFIG_FILE
 
             # If we got the needed information, actually do the registration.
             if [ -n "$ACCOUNT_NAME" -a -n "$COMPUTER_TITLE" ]; then
