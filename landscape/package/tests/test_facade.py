@@ -404,7 +404,7 @@ class AptFacadeTest(LandscapeTest):
         version = self.facade.get_package_by_hash("none")
         self.assertEqual(version, None)
 
-    def test_reload_channels_clears_hash_cache(self):
+    def test_wb_reload_channels_clears_hash_cache(self):
         """
         To improve performance, the hashes for the packages are cached.
         When reloading the channels, the cache is recreated.
@@ -425,7 +425,7 @@ class AptFacadeTest(LandscapeTest):
         packages_path = os.path.join(deb_dir, "Packages")
         os.unlink(os.path.join(deb_dir, PKGNAME1))
         os.unlink(packages_path)
-        self.facade.create_packages_file(deb_dir)
+        self.facade._create_packages_file(deb_dir)
         # Forcibly change the mtime of our repository's Packages file,
         # so that apt will consider it as changed (if the change is
         # inside the same second the directory's mtime will be the same)

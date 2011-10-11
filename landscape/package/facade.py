@@ -66,8 +66,7 @@ class AptFacade(object):
 
         self._pkg2hash.clear()
         self._hash2pkg.clear()
-        packages = [self._cache[name] for name in self._cache.keys()]
-        for package in packages:
+        for package in [self._cache[name] for name in self._cache.keys()]:
             for version in package.versions:
                 hash = self.get_package_skeleton(
                     version, with_info=False).get_hash()
@@ -108,10 +107,10 @@ class AptFacade(object):
         A Packages file is created in the directory with information
         about the deb files.
         """
-        self.create_packages_file(path)
+        self._create_packages_file(path)
         self.add_channel_apt_deb("file://%s" % path, "./", None)
 
-    def create_packages_file(self, deb_dir):
+    def _create_packages_file(self, deb_dir):
         """Create a Packages file in a directory with debs."""
         packages_contents = "\n".join(
             self.get_package_stanza(os.path.join(deb_dir, filename))
