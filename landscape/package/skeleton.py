@@ -136,7 +136,7 @@ def parse_record_field(record, record_field, relation_type,
 def build_skeleton_apt(version, with_info=False, with_unicode=False):
     """Build a package skeleton from an apt package.
 
-    @param package: An instance of C{apt.package.Package}
+    @param version: An instance of C{apt.package.Version}
     @param with_info: Whether to extract extra information about the
         package, like description, summary, size.
     @param with_unicode: Whether the C{name} and C{version} of the
