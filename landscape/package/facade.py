@@ -66,8 +66,7 @@ class AptFacade(object):
 
         self._pkg2hash.clear()
         self._hash2pkg.clear()
-        packages = [self._cache[name] for name in self._cache.keys()]
-        for package in packages:
+        for package in [self._cache[name] for name in self._cache.keys()]:
             hash = self.get_package_skeleton(
                 package, with_info=False).get_hash()
             self._pkg2hash[package] = hash
