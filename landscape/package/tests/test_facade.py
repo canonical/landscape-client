@@ -540,7 +540,7 @@ class AptFacadeTest(LandscapeTest):
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
-        [version_10, version_15] = self.facade.get_packages()
+        [version_10, version_15] = sorted(self.facade.get_packages())
         self.assertFalse(self.facade.is_package_upgrade(version_10))
         self.assertFalse(self.facade.is_package_upgrade(version_15))
 
