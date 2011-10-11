@@ -51,16 +51,26 @@ class AptFacade(object):
     def __init__(self, root=None):
         self._cache = apt.cache.Cache(rootdir=root, memonly=True)
         self._channels_loaded = False
+        self._pkg2hash = {}
+        self._hash2pkg = {}
 
     def get_packages(self):
         """Get all the packages available in the channels."""
-        return [self._cache[name] for name in self._cache.keys()]
+        return self._pkg2hash.keys()
 
     def reload_channels(self):
         """Reload the channels and update the cache."""
         self._cache.open(None)
         self._cache.update()
         self._cache.open(None)
+
+        self._pkg2hash.clear()
+        self._hash2pkg.clear()
+        for package in [self._cache[name] for name in self._cache.keys()]:
+            hash = self.get_package_skeleton(
+                package, with_info=False).get_hash()
+            self._pkg2hash[package] = hash
+            self._hash2pkg[hash] = package
 
     def ensure_channels_reloaded(self):
         """Reload the channels if they haven't been reloaded yet."""
@@ -93,11 +103,15 @@ class AptFacade(object):
         A Packages file is created in the directory with information
         about the deb files.
         """
-        packages_contents = "\n".join(
-            self.get_package_stanza(os.path.join(path, filename))
-            for filename in sorted(os.listdir(path)))
-        create_file(os.path.join(path, "Packages"), packages_contents)
+        self._create_packages_file(path)
         self.add_channel_apt_deb("file://%s" % path, "./", None)
+
+    def _create_packages_file(self, deb_dir):
+        """Create a Packages file in a directory with debs."""
+        packages_contents = "\n".join(
+            self.get_package_stanza(os.path.join(deb_dir, filename))
+            for filename in sorted(os.listdir(deb_dir)))
+        create_file(os.path.join(deb_dir, "Packages"), packages_contents)
 
     def get_channels(self):
         """Return a list of channels configured.
@@ -160,6 +174,26 @@ class AptFacade(object):
         @return: a L{PackageSkeleton} object.
         """
         return build_skeleton_apt(pkg, with_info=with_info)
+
+    def get_package_hash(self, pkg):
+        """Return a hash from the given package.
+
+        @param pkg: an L{apt.package.Package} object.
+        """
+        return self._pkg2hash.get(pkg)
+
+    def get_package_hashes(self):
+        """Get the hashes of all the packages available in the channels."""
+        return self._pkg2hash.values()
+
+    def get_package_by_hash(self, hash):
+        """Get the package having the provided hash.
+
+        @param hash: The hash the package should have.
+
+        @return: The L{apt.package.Package} that has the given hash.
+        """
+        return self._hash2pkg.get(hash)
 
 
 class SmartFacade(object):

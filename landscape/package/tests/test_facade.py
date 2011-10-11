@@ -322,6 +322,114 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(HASH1, skeleton1.get_hash())
         self.assertEqual(HASH2, skeleton2.get_hash())
 
+    def test_get_package_hash(self):
+        """
+        C{get_package_hash} returns the hash for a given package.
+        """
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.facade.reload_channels()
+        [pkg] = [
+            package for package in self.facade.get_packages()
+            if package.name == "name1"]
+        self.assertEqual(HASH1, self.facade.get_package_hash(pkg))
+        [pkg] = [
+            package for package in self.facade.get_packages()
+            if package.name == "name2"]
+        self.assertEqual(HASH2, self.facade.get_package_hash(pkg))
+
+    def test_get_package_hashes(self):
+        """
+        C{get_package_hashes} returns the hashes for all packages in the
+        channels.
+        """
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.facade.reload_channels()
+        hashes = self.facade.get_package_hashes()
+        self.assertEqual(sorted(hashes), sorted([HASH1, HASH2, HASH3]))
+
+    def test_get_package_by_hash(self):
+        """
+        C{get_package_by_hash} returns the package that has the given hash.
+        """
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.facade.reload_channels()
+        pkg = self.facade.get_package_by_hash(HASH1)
+        self.assertEqual(pkg.name, "name1")
+        pkg = self.facade.get_package_by_hash(HASH2)
+        self.assertEqual(pkg.name, "name2")
+        pkg = self.facade.get_package_by_hash("none")
+        self.assertEqual(pkg, None)
+
+    def test_wb_reload_channels_clears_hash_cache(self):
+        """
+        To improve performance, the hashes for the packages are cached.
+        When reloading the channels, the cache is recreated.
+        """
+        # Load hashes.
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.facade.reload_channels()
+
+        # Hold a reference to packages.
+        [pkg1] = [
+            package for package in self.facade.get_packages()
+            if package.name == "name1"]
+        [pkg2] = [
+            package for package in self.facade.get_packages()
+            if package.name == "name2"]
+        [pkg3] = [
+            package for package in self.facade.get_packages()
+            if package.name == "name3"]
+        self.assertTrue(pkg1 and pkg2)
+
+        # Remove the package from the repository.
+        packages_path = os.path.join(deb_dir, "Packages")
+        os.unlink(os.path.join(deb_dir, PKGNAME1))
+        os.unlink(packages_path)
+        self.facade._create_packages_file(deb_dir)
+        # Forcibly change the mtime of our repository's Packages file,
+        # so that apt will consider it as changed (if the change is
+        # inside the same second the directory's mtime will be the same)
+        mtime = int(time.time() + 1)
+        os.utime(packages_path, (mtime, mtime))
+
+        # Reload channel to reload the cache.
+        self.facade.reload_channels()
+
+        # Only packages with name2 and name3 should be loaded, and they're
+        # not the same objects anymore.
+        self.assertEqual(
+            sorted([pkg.name for pkg in self.facade.get_packages()]),
+            ["name2", "name3"])
+        self.assertNotEquals(set(self.facade.get_packages()),
+                             set([pkg2, pkg3]))
+
+        # The hash cache shouldn't include either of the old packages.
+        self.assertEqual(self.facade.get_package_hash(pkg1), None)
+        self.assertEqual(self.facade.get_package_hash(pkg2), None)
+        self.assertEqual(self.facade.get_package_hash(pkg3), None)
+
+        # Also, the hash for package1 shouldn't be present at all.
+        self.assertEqual(self.facade.get_package_by_hash(HASH1), None)
+
+        # While HASH2 and HASH3 should point to the new packages.
+        new_pkgs = self.facade.get_packages()
+        self.assertTrue(self.facade.get_package_by_hash(HASH2)
+                        in new_pkgs)
+        self.assertTrue(self.facade.get_package_by_hash(HASH3)
+                        in new_pkgs)
+
+        # Which are not the old packages.
+        self.assertFalse(pkg2 in new_pkgs)
+        self.assertFalse(pkg3 in new_pkgs)
+
 
 class SmartFacadeTest(LandscapeTest):
 
