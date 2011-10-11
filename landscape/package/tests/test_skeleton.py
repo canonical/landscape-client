@@ -272,12 +272,14 @@ class SkeletonAptTest(LandscapeTest, SkeletonTestMixin):
     def setUp(self):
         super(SkeletonAptTest, self).setUp()
         self.facade.add_channel_deb_dir(self.skeleton_repository_dir)
-        self.facade.reload_channels()
+        self.facade._cache.open(None)
+        self.facade._cache.update(None)
+        self.facade._cache.open(None)
 
     def get_package(self, name):
         """Return the package with the specified name."""
-        [package] = self.facade.get_packages_by_name(name)
-        return package
+        package = self.facade._cache[name]
+        return package.candidate
 
     def build_skeleton(self, *args, **kwargs):
         """Build the skeleton to be tested."""
