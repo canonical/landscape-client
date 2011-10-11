@@ -205,7 +205,9 @@ class AptFacade(object):
 
     def is_package_upgrade(self, version):
         """Is the package an upgrade for another installed package?"""
-        return version.package.is_upgradable
+        if not version.package.is_upgradable or not version.package.installed:
+            return False
+        return version > version.package.installed
 
     def get_packages_by_name(self, name):
         """Get all available packages matching the provided name.
