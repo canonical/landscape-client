@@ -56,9 +56,9 @@ class AptFacade(object):
 
     def get_packages(self):
         """Get all the packages available in the channels."""
-        return self._pkg2hash.keys()
+        return self._hash2pkg.values()
 
-    def reload_channels(self):
+    def reload_channels(self, debug=False):
         """Reload the channels and update the cache."""
         self._cache.open(None)
         self._cache.update()
@@ -68,10 +68,14 @@ class AptFacade(object):
         self._hash2pkg.clear()
         packages = [self._cache[name] for name in self._cache.keys()]
         for package in packages:
-            hash = self.get_package_skeleton(
-                package, with_info=False).get_hash()
-            self._pkg2hash[package] = hash
-            self._hash2pkg[hash] = package
+            for version in package.versions:
+                hash = self.get_package_skeleton(
+                    version, with_info=False).get_hash()
+                # Use a tuple including the package, since the Version
+                # objects of two different packages can have the same
+                # hash.
+                self._pkg2hash[(package, version)] = hash
+                self._hash2pkg[hash] = version
 
     def ensure_channels_reloaded(self):
         """Reload the channels if they haven't been reloaded yet."""
@@ -196,20 +200,22 @@ class AptFacade(object):
         """
         return self._hash2pkg.get(hash)
 
-    def is_package_available(self, package):
+    def is_package_available(self, version):
         """Is the package available for installation?"""
-        return package.candidate.downloadable
+        return version.downloadable
 
-    def is_package_upgrade(self, package):
+    def is_package_upgrade(self, version):
         """Is the package an upgrade for another installed package?"""
-        return package.is_upgradable
+        return version.package.is_upgradable
 
     def get_packages_by_name(self, name):
         """Get all available packages matching the provided name.
 
         @param name: The name the returned packages should have.
         """
-        return [pkg for pkg in self.get_packages() if pkg.name == name]
+        return [
+            version for version in self.get_packages()
+            if version.package.name == name]
 
 
 class SmartFacade(object):
