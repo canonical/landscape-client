@@ -441,8 +441,9 @@ class AptFacadeTest(LandscapeTest):
             sorted([version.package.name
                     for version in self.facade.get_packages()]),
             ["name2", "name3"])
-        self.assertNotEquals(set(self.facade.get_packages()),
-                             set([pkg2, pkg3]))
+        self.assertNotEquals(
+            set(version.package for version in self.facade.get_packages()),
+            set([pkg2.package, pkg3.package]))
 
         # The hash cache shouldn't include either of the old packages.
         self.assertEqual(self.facade.get_package_hash(pkg1), None)
@@ -452,16 +453,19 @@ class AptFacadeTest(LandscapeTest):
         # Also, the hash for package1 shouldn't be present at all.
         self.assertEqual(self.facade.get_package_by_hash(HASH1), None)
 
-        # While HASH2 and HASH3 should point to the new packages.
-        new_pkgs = self.facade.get_packages()
-        self.assertTrue(self.facade.get_package_by_hash(HASH2)
-                        in new_pkgs)
-        self.assertTrue(self.facade.get_package_by_hash(HASH3)
-                        in new_pkgs)
+        # While HASH2 and HASH3 should point to the new packages. We
+        # look at the Package object instead of the Version objects,
+        # since different Version objects may appear to be the same
+        # object.
+        new_pkgs = [version.package for version in self.facade.get_packages()]
+        self.assertTrue(
+            self.facade.get_package_by_hash(HASH2).package in new_pkgs)
+        self.assertTrue(
+            self.facade.get_package_by_hash(HASH3).package in new_pkgs)
 
         # Which are not the old packages.
-        self.assertFalse(pkg2 in new_pkgs)
-        self.assertFalse(pkg3 in new_pkgs)
+        self.assertFalse(pkg2.package in new_pkgs)
+        self.assertFalse(pkg3.package in new_pkgs)
 
     def test_is_package_available_in_channel_not_installed(self):
         """
