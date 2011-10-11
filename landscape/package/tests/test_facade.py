@@ -290,7 +290,7 @@ class AptFacadeTest(LandscapeTest):
         self._add_package_to_deb_dir(deb_dir, "foo")
         self._add_package_to_deb_dir(deb_dir, "bar")
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
-        self.facade.reload_channels(True)
+        self.facade.reload_channels()
         self.assertEqual(
             ["bar", "foo"],
             sorted(version.package.name
