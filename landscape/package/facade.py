@@ -179,12 +179,12 @@ class AptFacade(object):
         """
         return build_skeleton_apt(pkg, with_info=with_info)
 
-    def get_package_hash(self, pkg):
+    def get_package_hash(self, version):
         """Return a hash from the given package.
 
-        @param pkg: an L{apt.package.Package} object.
+        @param version: an L{apt.package.Version} object.
         """
-        return self._pkg2hash.get(pkg)
+        return self._pkg2hash.get((version.package, version))
 
     def get_package_hashes(self):
         """Get the hashes of all the packages available in the channels."""
