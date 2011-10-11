@@ -585,10 +585,8 @@ class AptFacadeTest(LandscapeTest):
         deb_dir = self.makeDir()
         self._add_system_package("foo", version="1.0")
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.5")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
-        # XXX: This should return two packages, but it doesn't at the
-        # moment. Bug #871641 should make this return ("foo", "1.5") as
-        # well.
         self.assertEqual(
             [("foo", "1.0"), ("foo", "1.5")],
             sorted([(version.package.name, version.version)
