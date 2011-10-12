@@ -4,7 +4,7 @@ import os
 import smart
 
 from landscape.lib.fs import create_file
-from landscape.package.facade import AptFacade
+from landscape.package.facade import AptFacade, REFETCH_PACKAGE_INDEX
 
 
 class AptFacadeHelper(object):
@@ -22,6 +22,7 @@ class AptFacadeHelper(object):
         test_case.dpkg_status = os.path.join(test_case.dpkg_dir, "status")
         create_file(test_case.dpkg_status, "")
         test_case.facade = AptFacade(root=test_case.apt_root)
+        test_case.facade.set_caching(REFETCH_PACKAGE_INDEX)
 
     def _create_sub_dir(self, test_case, sub_dir):
         """Create a dir instead the Apt root dir."""

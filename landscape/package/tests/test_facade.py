@@ -19,7 +19,8 @@ import smart
 
 from landscape.lib.fs import append_file, read_file
 from landscape.package.facade import (
-    TransactionError, DependencyError, ChannelError, SmartError)
+    TransactionError, DependencyError, ChannelError, SmartError, AptFacade,
+    REFETCH_PACKAGE_INDEX, USE_LOCAL_PACKAGE_INDEX)
 
 from landscape.tests.mocker import ANY
 from landscape.tests.helpers import LandscapeTest
@@ -84,6 +85,17 @@ class AptFacadeTest(LandscapeTest):
         append_file(
             os.path.join(path, "Packages"),
             package_stanza % {"name": name, "version": version})
+
+    def _touch_packages_file(self, deb_dir):
+        """Make sure the Packages file get a newer mtime value.
+
+        If we rely on simple writing to the file to update the mtime, we
+        might end up with the same as before, since the resolution is
+        seconds, which causes apt to not reload the file.
+        """
+        packages_path = os.path.join(deb_dir, "Packages")
+        mtime = int(time.time() + 1)
+        os.utime(packages_path, (mtime, mtime))
 
     def test_no_system_packages(self):
         """
@@ -591,6 +603,36 @@ class AptFacadeTest(LandscapeTest):
             [("foo", "1.0"), ("foo", "1.5")],
             sorted([(version.package.name, version.version)
                     for version in self.facade.get_packages_by_name("foo")]))
+
+    def test_set_caching_refetch(self):
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        new_facade = AptFacade(root=self.apt_root)
+        self._add_package_to_deb_dir(deb_dir, "bar")
+        self._touch_packages_file(deb_dir)
+        new_facade.set_caching(REFETCH_PACKAGE_INDEX)
+        new_facade.reload_channels()
+        self.assertEqual(
+            ["bar", "foo"],
+            sorted(version.package.name
+                   for version in new_facade.get_packages()))
+
+    def test_set_caching_use_local(self):
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        new_facade = AptFacade(root=self.apt_root)
+        self._add_package_to_deb_dir(deb_dir, "bar")
+        self._touch_packages_file(deb_dir)
+        new_facade.set_caching(USE_LOCAL_PACKAGE_INDEX)
+        new_facade.reload_channels()
+        self.assertEqual(
+            ["foo"],
+            sorted(version.package.name
+                   for version in new_facade.get_packages()))
 
 
 class SmartFacadeTest(LandscapeTest):

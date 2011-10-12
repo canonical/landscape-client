@@ -16,6 +16,10 @@ from landscape.lib.fs import append_file, create_file, read_file
 from landscape.package.skeleton import build_skeleton, build_skeleton_apt
 
 
+REFETCH_PACKAGE_INDEX = object()
+USE_LOCAL_PACKAGE_INDEX = object()
+
+
 class TransactionError(Exception):
     """Raised when the transaction fails to run."""
 
@@ -53,16 +57,23 @@ class AptFacade(object):
         self._channels_loaded = False
         self._pkg2hash = {}
         self._hash2pkg = {}
+        self._caching = None
 
     def get_packages(self):
         """Get all the packages available in the channels."""
         return self._hash2pkg.values()
 
-    def reload_channels(self):
+    def set_caching(self, mode):
+        """
+        """
+        self._caching = mode
+
+    def reload_channels(self, debug=False):
         """Reload the channels and update the cache."""
         self._cache.open(None)
-        self._cache.update()
-        self._cache.open(None)
+        if self._caching == REFETCH_PACKAGE_INDEX:
+            self._cache.update()
+            self._cache.open(None)
 
         self._pkg2hash.clear()
         self._hash2pkg.clear()
