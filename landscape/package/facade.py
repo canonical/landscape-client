@@ -62,7 +62,7 @@ class AptFacade(object):
         """Get all the packages available in the channels."""
         return self._hash2pkg.values()
 
-    def reload_channels(self, debug=False):
+    def reload_channels(self):
         """Reload the channels and update the cache."""
         self._cache.open(None)
         if self.refetch_package_index:
