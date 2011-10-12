@@ -276,9 +276,7 @@ class SkeletonAptTest(LandscapeTest, SkeletonTestMixin):
 
     def get_package(self, name):
         """Return the package with the specified name."""
-        [package] = [
-            package for package in self.facade.get_packages()
-            if package.name == name]
+        [package] = self.facade.get_packages_by_name(name)
         return package
 
     def build_skeleton(self, *args, **kwargs):

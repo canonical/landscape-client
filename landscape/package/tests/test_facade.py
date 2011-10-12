@@ -333,12 +333,8 @@ class AptFacadeTest(LandscapeTest):
         create_simple_repository(deb_dir)
         self.facade.add_channel_deb_dir(deb_dir)
         self.facade.reload_channels()
-        [pkg1] = [
-            package for package in self.facade.get_packages()
-            if package.name == "name1"]
-        [pkg2] = [
-            package for package in self.facade.get_packages()
-            if package.name == "name2"]
+        [pkg1] = self.facade.get_packages_by_name("name1")
+        [pkg2] = self.facade.get_packages_by_name("name2")
         skeleton1 = self.facade.get_package_skeleton(pkg1)
         self.assertEqual("Summary1", skeleton1.summary)
         skeleton2 = self.facade.get_package_skeleton(pkg2, with_info=False)
@@ -354,13 +350,9 @@ class AptFacadeTest(LandscapeTest):
         create_simple_repository(deb_dir)
         self.facade.add_channel_deb_dir(deb_dir)
         self.facade.reload_channels()
-        [pkg] = [
-            package for package in self.facade.get_packages()
-            if package.name == "name1"]
+        [pkg] = self.facade.get_packages_by_name("name1")
         self.assertEqual(HASH1, self.facade.get_package_hash(pkg))
-        [pkg] = [
-            package for package in self.facade.get_packages()
-            if package.name == "name2"]
+        [pkg] = self.facade.get_packages_by_name("name2")
         self.assertEqual(HASH2, self.facade.get_package_hash(pkg))
 
     def test_get_package_hashes(self):
@@ -402,15 +394,9 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
 
         # Hold a reference to packages.
-        [pkg1] = [
-            package for package in self.facade.get_packages()
-            if package.name == "name1"]
-        [pkg2] = [
-            package for package in self.facade.get_packages()
-            if package.name == "name2"]
-        [pkg3] = [
-            package for package in self.facade.get_packages()
-            if package.name == "name3"]
+        [pkg1] = self.facade.get_packages_by_name("name1")
+        [pkg2] = self.facade.get_packages_by_name("name2")
+        [pkg3] = self.facade.get_packages_by_name("name3")
         self.assertTrue(pkg1 and pkg2)
 
         # Remove the package from the repository.
@@ -463,9 +449,7 @@ class AptFacadeTest(LandscapeTest):
         create_simple_repository(deb_dir)
         self.facade.add_channel_deb_dir(deb_dir)
         self.facade.reload_channels()
-        [package] = [
-            package for package in self.facade.get_packages()
-            if package.name == "name1"]
+        [package] = self.facade.get_packages_by_name("name1")
         self.assertTrue(self.facade.is_package_available(package))
 
     def test_is_package_available_not_in_channel_installed(self):
@@ -477,9 +461,7 @@ class AptFacadeTest(LandscapeTest):
         create_simple_repository(deb_dir)
         self._install_deb_file(os.path.join(deb_dir, PKGNAME1))
         self.facade.reload_channels()
-        [package] = [
-            package for package in self.facade.get_packages()
-            if package.name == "name1"]
+        [package] = self.facade.get_packages_by_name("name1")
         self.assertFalse(self.facade.is_package_available(package))
 
     def test_is_package_available_in_channel_installed(self):
@@ -492,9 +474,7 @@ class AptFacadeTest(LandscapeTest):
         self._install_deb_file(os.path.join(deb_dir, PKGNAME1))
         self.facade.add_channel_deb_dir(deb_dir)
         self.facade.reload_channels()
-        [package] = [
-            package for package in self.facade.get_packages()
-            if package.name == "name1"]
+        [package] = self.facade.get_packages_by_name("name1")
         self.assertTrue(self.facade.is_package_available(package))
 
     def test_is_package_upgrade_in_channel_not_installed(self):
@@ -558,6 +538,32 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         [package] = self.facade.get_packages()
         self.assertFalse(self.facade.is_package_upgrade(package))
+
+    def test_get_packages_by_name_no_match(self):
+        """
+        If there are no packages with the given name,
+        C{get_packages_by_name} returns an empty list.
+        """
+        self._add_system_package("foo", version="1.0")
+        self.facade.reload_channels()
+        self.assertEqual([], self.facade.get_packages_by_name("bar"))
+
+    def test_get_packages_by_name_match(self):
+        """
+        C{get_packages_by_name} returns all the packages in the
+        available channels that have the specified name.
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package("foo", version="1.0")
+        self._add_package_to_deb_dir(deb_dir, "foo", version="1.5")
+        self.facade.reload_channels()
+        # XXX: This should return two packages, but it doesn't at the
+        # moment. Bug #871641 should make this return ("foo", "1.5") as
+        # well.
+        self.assertEqual(
+            [("foo", "1.0")],
+            sorted([(pkg.name, pkg.candidate.version)
+                    for pkg in self.facade.get_packages_by_name("foo")]))
 
 
 class SmartFacadeTest(LandscapeTest):
