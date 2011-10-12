@@ -46,6 +46,9 @@ class AptFacade(object):
     these features slightly more comfortable.
 
     @param root: The root dir of the Apt configuration files.
+    @ivar refetch_package_index: Whether to refetch the package indexes
+        when reloading the channels, or reuse the existing local
+        database.
     """
 
     def __init__(self, root=None):
@@ -53,6 +56,7 @@ class AptFacade(object):
         self._channels_loaded = False
         self._pkg2hash = {}
         self._hash2pkg = {}
+        self.refetch_package_index = False
 
     def get_packages(self):
         """Get all the packages available in the channels."""
@@ -61,8 +65,9 @@ class AptFacade(object):
     def reload_channels(self):
         """Reload the channels and update the cache."""
         self._cache.open(None)
-        self._cache.update()
-        self._cache.open(None)
+        if self.refetch_package_index:
+            self._cache.update()
+            self._cache.open(None)
 
         self._pkg2hash.clear()
         self._hash2pkg.clear()
