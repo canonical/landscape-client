@@ -307,6 +307,54 @@ class AptFacadeTest(LandscapeTest):
             sorted(version.package.name
                    for version in self.facade.get_packages()))
 
+    def test_reload_channels_refetch_package_index(self):
+        """
+        If C{refetch_package_index} is True, reload_channels will
+        refetch the Packages files in the channels and rebuild the
+        internal database.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        new_facade = AptFacade(root=self.apt_root)
+        self._add_package_to_deb_dir(deb_dir, "bar")
+        self._touch_packages_file(deb_dir)
+        new_facade.refetch_package_index = True
+        new_facade.reload_channels()
+        self.assertEqual(
+            ["bar", "foo"],
+            sorted(version.package.name
+                   for version in new_facade.get_packages()))
+
+    def test_reload_channels_not_refetch_package_index(self):
+        """
+        If C{refetch_package_index} is False, reload_channels won't
+        refetch the Packages files in the channels, and instead simply
+        use the internal database that is already there.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        new_facade = AptFacade(root=self.apt_root)
+        self._add_package_to_deb_dir(deb_dir, "bar")
+        self._touch_packages_file(deb_dir)
+        new_facade.refetch_package_index = False
+        new_facade.reload_channels()
+        self.assertEqual(
+            ["foo"],
+            sorted(version.package.name
+                   for version in new_facade.get_packages()))
+
+    def test_dont_refetch_package_index_by_default(self):
+        """
+        By default, package indexes are not refetched, but the local
+        database is used.
+        """
+        new_facade = AptFacade(root=self.apt_root)
+        self.assertFalse(new_facade.refetch_package_index)
+
     def test_ensure_channels_reloaded_do_not_reload_twice(self):
         """
         C{ensure_channels_reloaded} refreshes the channels only when
@@ -602,44 +650,6 @@ class AptFacadeTest(LandscapeTest):
             [("foo", "1.0"), ("foo", "1.5")],
             sorted([(version.package.name, version.version)
                     for version in self.facade.get_packages_by_name("foo")]))
-
-    def test_set_caching_refetch(self):
-        deb_dir = self.makeDir()
-        self._add_package_to_deb_dir(deb_dir, "foo")
-        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
-        self.facade.reload_channels()
-        new_facade = AptFacade(root=self.apt_root)
-        self._add_package_to_deb_dir(deb_dir, "bar")
-        self._touch_packages_file(deb_dir)
-        new_facade.refetch_package_index = True
-        new_facade.reload_channels()
-        self.assertEqual(
-            ["bar", "foo"],
-            sorted(version.package.name
-                   for version in new_facade.get_packages()))
-
-    def test_set_caching_use_local(self):
-        deb_dir = self.makeDir()
-        self._add_package_to_deb_dir(deb_dir, "foo")
-        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
-        self.facade.reload_channels()
-        new_facade = AptFacade(root=self.apt_root)
-        self._add_package_to_deb_dir(deb_dir, "bar")
-        self._touch_packages_file(deb_dir)
-        new_facade.refetch_package_index = False
-        new_facade.reload_channels()
-        self.assertEqual(
-            ["foo"],
-            sorted(version.package.name
-                   for version in new_facade.get_packages()))
-
-    def test_dont_refetch_package_index_by_default(self):
-        """
-        By default, package indexes are not refetched, but the local
-        database is used.
-        """
-        new_facade = AptFacade(root=self.apt_root)
-        self.assertFalse(new_facade.refetch_package_index)
 
 
 class SmartFacadeTest(LandscapeTest):
