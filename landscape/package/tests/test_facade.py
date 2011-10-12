@@ -102,7 +102,7 @@ class AptFacadeTest(LandscapeTest):
         C{get_packages()}.
         """
         self.facade.reload_channels()
-        self.assertEqual([], self.facade.get_packages())
+        self.assertEqual([], list(self.facade.get_packages()))
 
     def test_get_packages_single_version(self):
         """
