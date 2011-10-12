@@ -46,6 +46,9 @@ class AptFacade(object):
     these features slightly more comfortable.
 
     @param root: The root dir of the Apt configuration files.
+    @ivar refetch_package_index: Whether to refetch the package indexes
+        when reloading the channels, or reuse the existing local
+        database.
     """
 
     def __init__(self, root=None):
