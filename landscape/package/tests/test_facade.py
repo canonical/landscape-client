@@ -633,6 +633,14 @@ class AptFacadeTest(LandscapeTest):
             sorted(version.package.name
                    for version in new_facade.get_packages()))
 
+    def test_dont_refetch_package_index_by_default(self):
+        """
+        By default, package indexes are not refetched, but the local
+        database is used.
+        """
+        new_facade = AptFacade(root=self.apt_root)
+        self.assertFalse(new_facade.refetch_package_index)
+
 
 class SmartFacadeTest(LandscapeTest):
 
