@@ -612,7 +612,7 @@ class AptFacadeTest(LandscapeTest):
         new_facade = AptFacade(root=self.apt_root)
         self._add_package_to_deb_dir(deb_dir, "bar")
         self._touch_packages_file(deb_dir)
-        new_facade.set_caching(REFETCH_PACKAGE_INDEX)
+        new_facade.refetch_package_index = True
         new_facade.reload_channels()
         self.assertEqual(
             ["bar", "foo"],
@@ -627,7 +627,7 @@ class AptFacadeTest(LandscapeTest):
         new_facade = AptFacade(root=self.apt_root)
         self._add_package_to_deb_dir(deb_dir, "bar")
         self._touch_packages_file(deb_dir)
-        new_facade.set_caching(USE_LOCAL_PACKAGE_INDEX)
+        new_facade.refetch_package_index = False
         new_facade.reload_channels()
         self.assertEqual(
             ["foo"],
