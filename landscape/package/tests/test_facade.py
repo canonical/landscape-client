@@ -88,7 +88,7 @@ class AptFacadeTest(LandscapeTest):
     def _touch_packages_file(self, deb_dir):
         """Make sure the Packages file get a newer mtime value.
 
-        If we rely on simple writing to the file to update the mtime, we
+        If we rely on simply writing to the file to update the mtime, we
         might end up with the same as before, since the resolution is
         seconds, which causes apt to not reload the file.
         """
