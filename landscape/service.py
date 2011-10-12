@@ -81,8 +81,39 @@ def run_landscape_service(configuration_class, service_class, args):
     application = Application("landscape-%s" % (service_class.service_name,))
     service = service_class(configuration)
     service.setServiceParent(application)
-    startApplication(application, False)
 
+    if configuration.clones > 0:
+
+        # Create clones here because TwistedReactor.__init__ would otherwise
+        # cancel all scheduled delayed calls
+        clones = []
+        for i in range(configuration.clones):
+            clone_config = configuration.clone()
+            clone_config.computer_title += " Clone %d" % i
+            clone_config.master_data_path = configuration.data_path
+            clone_config.data_path += "-clone-%d" % i
+            clone_config.log_dir += "-clone-%d" % i
+            clone_config.is_clone = True
+            clones.append(service_class(clone_config))
+
+        configuration.is_clone = False
+
+        def start_clones():
+            # Spawn instances over 25-30 minutes.
+            delay = 25 * 60 / configuration.clones
+            delay = 5
+
+            for i, clone in enumerate(clones):
+
+                def start(clone):
+                    clone.setServiceParent(application)
+                    clone.reactor.fire("run")
+
+                service.reactor.call_later(delay * (i + 1), start, clone=clone)
+
+        service.reactor.call_when_running(start_clones)
+
+    startApplication(application, False)
     if configuration.ignore_sigint:
         signal.signal(signal.SIGINT, signal.SIG_IGN)
 

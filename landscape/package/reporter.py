@@ -637,6 +637,7 @@ class FakeReporter(PackageReporter):
     """
 
     package_store_class = FakePackageStore
+    global_store_filename = None
 
     def run(self):
         result = succeed(None)
@@ -655,11 +656,12 @@ class FakeReporter(PackageReporter):
         """
         As the last callback of L{PackageReporter}, sends messages stored.
         """
-        global_file = os.environ["FAKE_PACKAGE_STORE"]
-        if not os.path.exists(global_file):
+        if self.global_store_filename is None:
+            self.global_store_filename = os.environ["FAKE_PACKAGE_STORE"]
+        if not os.path.exists(self.global_store_filename):
             return succeed(None)
         message_sent = set(self._store.get_message_ids())
-        global_store = FakePackageStore(global_file)
+        global_store = FakePackageStore(self.global_store_filename)
         all_message_ids = set(global_store.get_message_ids())
         not_sent = all_message_ids - message_sent
         deferred = succeed(None)
@@ -679,10 +681,10 @@ class FakeReporter(PackageReporter):
 
 
 def main(args):
-    if "FAKE_PACKAGE_STORE" in os.environ:
-        return run_task_handler(FakeReporter, args)
-    elif "FAKE_GLOBAL_PACKAGE_STORE" in os.environ:
+    if "FAKE_GLOBAL_PACKAGE_STORE" in os.environ:
         return run_task_handler(FakeGlobalReporter, args)
+    elif "FAKE_PACKAGE_STORE" in os.environ:
+        return run_task_handler(FakeReporter, args)
     else:
         return run_task_handler(PackageReporter, args)
 

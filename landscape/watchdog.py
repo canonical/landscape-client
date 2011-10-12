@@ -33,7 +33,7 @@ from landscape.reactor import TwistedReactor
 
 GRACEFUL_WAIT_PERIOD = 10
 MAXIMUM_CONSECUTIVE_RESTARTS = 5
-RESTART_BURST_DELAY = 30 # seconds
+RESTART_BURST_DELAY = 30  # seconds
 SIGKILL_DELAY = 10
 
 
@@ -74,6 +74,7 @@ class Daemon(object):
     username = "landscape"
     max_retries = 3
     factor = 1.1
+    clones = 0
 
     def __init__(self, connector, reactor=reactor, verbose=False,
                  config=None):
@@ -134,6 +135,8 @@ class Daemon(object):
             args.append("--quiet")
         if self._config:
             args.extend(["-c", self._config])
+        if self.clones > 0:
+            args.extend(["--clones", str(self.clones)])
         self._reactor.spawnProcess(self._process, exe, args=args,
                                    env=self._env, uid=self._uid, gid=self._gid)
 
@@ -333,6 +336,9 @@ class WatchDog(object):
         self._checking = None
         self._stopping = False
         signal.signal(signal.SIGUSR1, self._notify_rotate_logs)
+        if config is not None and config.clones > 0:
+            for daemon in self.daemons:
+                daemon.clones = config.clones
 
         self._ping_failures = {}
 
@@ -485,6 +491,11 @@ class WatchDogService(Service):
         Service.startService(self)
         bootstrap_list.bootstrap(data_path=self._config.data_path,
                                  log_dir=self._config.log_dir)
+        for i in range(self._config.clones):
+            suffix = "-clone-%d" % i
+            bootstrap_list.bootstrap(data_path=self._config.data_path + suffix,
+                                     log_dir=self._config.log_dir + suffix)
+
         result = self.watchdog.check_running()
 
         def start_if_not_running(running_daemons):

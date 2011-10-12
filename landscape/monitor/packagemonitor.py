@@ -22,6 +22,9 @@ class PackageMonitor(MonitorPlugin):
 
     def register(self, registry):
         self.config = registry.config
+        if self.config.clones and self.config.is_clone:
+            # Run clones a bit more frequently in order to catch up
+            self.run_interval = 60  # 300
         super(PackageMonitor, self).register(registry)
 
         if not self._package_store:
@@ -50,15 +53,72 @@ class PackageMonitor(MonitorPlugin):
         if "packages" in message_types:
             self.spawn_reporter()
 
+    def _run_fake_reporter(self, args):
+        """Run a fake-reporter in-process."""
+
+        class FakeFacade(object):
+            """
+            A fake facade to workaround the issue that the SmartFacade
+            essentially allows only once instance per process.
+            """
+
+            def get_arch(self):
+                arch = os.uname()[-1]
+                result = {"pentium": "i386",
+                          "i86pc": "i386",
+                          "x86_64": "amd64"}.get(arch)
+                if result:
+                    arch = result
+                elif (arch[0] == "i" and arch.endswith("86")):
+                    arch = "i386"
+                return arch
+
+        if getattr(self, "_fake_reporter", None) is None:
+
+            from landscape.package.reporter import (
+                FakeReporter, PackageReporterConfiguration)
+            from landscape.package.store import FakePackageStore
+            package_facade = FakeFacade()
+            package_config = PackageReporterConfiguration()
+            package_config.load(args + ["-d", self.config.data_path,
+                                        "-l", self.config.log_dir])
+            package_store = FakePackageStore(package_config.store_filename)
+            self._fake_reporter = FakeReporter(package_store, package_facade,
+                                               self.registry.broker,
+                                               package_config)
+            self._fake_reporter.global_store_filename = os.path.join(
+                self.config.master_data_path, "package", "database")
+            self._fake_reporter_running = False
+
+        if self._fake_reporter_running:
+            from twisted.internet.defer import succeed
+            return succeed(None)
+
+        self._fake_reporter_running = True
+        result = self._fake_reporter.run()
+
+        def done(passthrough):
+            self._fake_reporter_running = False
+            return passthrough
+
+        return result.addBoth(done)
+
     def spawn_reporter(self):
         args = ["--quiet"]
         if self.config.config:
             args.extend(["-c", self.config.config])
+        env = os.environ.copy()
+
+        if self.config.clones > 0:
+            if self.config.is_clone:
+                return self._run_fake_reporter(args)
+            else:
+                env["FAKE_GLOBAL_PACKAGE_STORE"] = "1"
 
         # path is set to None so that getProcessOutput does not
         # chdir to "." see bug #211373
         result = getProcessOutput(self._reporter_command,
-                                  args=args, env=os.environ,
+                                  args=args, env=env,
                                   errortoo=1,
                                   path=None)
         result.addCallback(self._got_reporter_output)

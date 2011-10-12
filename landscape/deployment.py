@@ -4,7 +4,7 @@ import sys
 from logging import (getLevelName, getLogger,
                      FileHandler, StreamHandler, Formatter)
 
-from optparse import OptionParser
+from optparse import OptionParser, SUPPRESS_HELP
 from ConfigParser import ConfigParser, NoSectionError
 
 from landscape import VERSION
@@ -18,7 +18,7 @@ def init_logging(configuration, program_name):
     handlers = []
     if not os.path.exists(configuration.log_dir):
         os.makedirs(configuration.log_dir)
-    log_filename = os.path.join(configuration.log_dir, program_name+".log")
+    log_filename = os.path.join(configuration.log_dir, program_name + ".log")
     handlers.append(FileHandler(log_filename))
     if not configuration.quiet:
         handlers.append(StreamHandler(sys.stdout))
@@ -96,6 +96,17 @@ class BaseConfiguration(object):
             if option is not None:
                 value = option.convert_value(None, value)
         return value
+
+    def clone(self):
+        """
+        Return a new configuration object, with the same settings as this one.
+        """
+        config = self.__class__()
+        config._set_options = self._set_options.copy()
+        config._command_line_options = self._command_line_options.copy()
+        config._config_filename = self._config_filename
+        config._config_file_options = self._config_file_options.copy()
+        return config
 
     def get(self, name, default=None):
         """Return the value of the C{name} option or C{default}."""
@@ -289,6 +300,9 @@ class Configuration(BaseConfiguration):
         parser.add_option("--ignore-sigusr1", action="store_true",
                           default=False, help="Ignore SIGUSR1 signal to "
                                               "rotate logs.")
+
+        # Hidden options, used for load-testing to run in-process clones
+        parser.add_option("--clones", default=0, type=int, help=SUPPRESS_HELP)
 
         return parser
 
