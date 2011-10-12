@@ -16,10 +16,6 @@ from landscape.lib.fs import append_file, create_file, read_file
 from landscape.package.skeleton import build_skeleton, build_skeleton_apt
 
 
-REFETCH_PACKAGE_INDEX = object()
-USE_LOCAL_PACKAGE_INDEX = object()
-
-
 class TransactionError(Exception):
     """Raised when the transaction fails to run."""
 

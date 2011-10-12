@@ -19,8 +19,7 @@ import smart
 
 from landscape.lib.fs import append_file, read_file
 from landscape.package.facade import (
-    TransactionError, DependencyError, ChannelError, SmartError, AptFacade,
-    REFETCH_PACKAGE_INDEX, USE_LOCAL_PACKAGE_INDEX)
+    TransactionError, DependencyError, ChannelError, SmartError, AptFacade)
 
 from landscape.tests.mocker import ANY
 from landscape.tests.helpers import LandscapeTest
