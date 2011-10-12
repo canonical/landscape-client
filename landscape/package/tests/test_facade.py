@@ -91,9 +91,9 @@ class AptFacadeTest(LandscapeTest):
         C{get_packages()}.
         """
         self.facade.reload_channels()
-        self.assertEqual([], self.facade.get_packages())
+        self.assertEqual([], list(self.facade.get_packages()))
 
-    def test_get_system_packages(self):
+    def test_get_packages_single_version(self):
         """
         If the dpkg status file contains some packages, those packages
         are reported by C{get_packages()}.
@@ -103,7 +103,23 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         self.assertEqual(
             ["bar", "foo"],
-            sorted(package.name for package in self.facade.get_packages()))
+            sorted(version.package.name
+                   for version in self.facade.get_packages()))
+
+    def test_get_packages_multiple_version(self):
+        """
+        If there are multiple versions of a package, C{get_packages()}
+        returns one object per version.
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package("foo", version="1.0")
+        self._add_package_to_deb_dir(deb_dir, "foo", version="1.5")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        self.assertEqual(
+            [("foo", "1.0"), ("foo", "1.5")],
+            sorted((version.package.name, version.version)
+                   for version in self.facade.get_packages()))
 
     def test_add_channel_apt_deb_without_components(self):
         """
@@ -212,7 +228,8 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         self.assertEqual(
             ["name1", "name2", "name3"],
-            sorted(package.name for package in self.facade.get_packages()))
+            sorted(version.package.name
+                   for version in self.facade.get_packages()))
 
     def test_get_channels_with_no_channels(self):
         """
@@ -276,7 +293,8 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         self.assertEqual(
             ["bar", "foo"],
-            sorted(package.name for package in self.facade.get_packages()))
+            sorted(version.package.name
+                   for version in self.facade.get_packages()))
 
     def test_ensure_channels_reloaded_do_not_reload_twice(self):
         """
@@ -287,12 +305,14 @@ class AptFacadeTest(LandscapeTest):
         self.facade.ensure_channels_reloaded()
         self.assertEqual(
             ["foo"],
-            sorted(package.name for package in self.facade.get_packages()))
+            sorted(version.package.name
+                   for version in self.facade.get_packages()))
         self._add_system_package("bar")
         self.facade.ensure_channels_reloaded()
         self.assertEqual(
             ["foo"],
-            sorted(package.name for package in self.facade.get_packages()))
+            sorted(version.package.name
+                   for version in self.facade.get_packages()))
 
     def test_get_set_arch(self):
         """
@@ -315,12 +335,14 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         self.assertEqual(
             ["i386-package"],
-            sorted(package.name for package in self.facade.get_packages()))
+            sorted(version.package.name
+                   for version in self.facade.get_packages()))
         self.facade.set_arch("amd64")
         self.facade.reload_channels()
         self.assertEqual(
             ["amd64-package"],
-            sorted(package.name for package in self.facade.get_packages()))
+            sorted(version.package.name
+                   for version in self.facade.get_packages()))
 
     def test_get_package_skeleton(self):
         """
@@ -375,12 +397,12 @@ class AptFacadeTest(LandscapeTest):
         create_simple_repository(deb_dir)
         self.facade.add_channel_deb_dir(deb_dir)
         self.facade.reload_channels()
-        pkg = self.facade.get_package_by_hash(HASH1)
-        self.assertEqual(pkg.name, "name1")
-        pkg = self.facade.get_package_by_hash(HASH2)
-        self.assertEqual(pkg.name, "name2")
-        pkg = self.facade.get_package_by_hash("none")
-        self.assertEqual(pkg, None)
+        version = self.facade.get_package_by_hash(HASH1)
+        self.assertEqual(version.package.name, "name1")
+        version = self.facade.get_package_by_hash(HASH2)
+        self.assertEqual(version.package.name, "name2")
+        version = self.facade.get_package_by_hash("none")
+        self.assertEqual(version, None)
 
     def test_wb_reload_channels_clears_hash_cache(self):
         """
@@ -416,10 +438,12 @@ class AptFacadeTest(LandscapeTest):
         # Only packages with name2 and name3 should be loaded, and they're
         # not the same objects anymore.
         self.assertEqual(
-            sorted([pkg.name for pkg in self.facade.get_packages()]),
+            sorted([version.package.name
+                    for version in self.facade.get_packages()]),
             ["name2", "name3"])
-        self.assertNotEquals(set(self.facade.get_packages()),
-                             set([pkg2, pkg3]))
+        self.assertNotEquals(
+            set(version.package for version in self.facade.get_packages()),
+            set([pkg2.package, pkg3.package]))
 
         # The hash cache shouldn't include either of the old packages.
         self.assertEqual(self.facade.get_package_hash(pkg1), None)
@@ -429,16 +453,19 @@ class AptFacadeTest(LandscapeTest):
         # Also, the hash for package1 shouldn't be present at all.
         self.assertEqual(self.facade.get_package_by_hash(HASH1), None)
 
-        # While HASH2 and HASH3 should point to the new packages.
-        new_pkgs = self.facade.get_packages()
-        self.assertTrue(self.facade.get_package_by_hash(HASH2)
-                        in new_pkgs)
-        self.assertTrue(self.facade.get_package_by_hash(HASH3)
-                        in new_pkgs)
+        # While HASH2 and HASH3 should point to the new packages. We
+        # look at the Package object instead of the Version objects,
+        # since different Version objects may appear to be the same
+        # object.
+        new_pkgs = [version.package for version in self.facade.get_packages()]
+        self.assertTrue(
+            self.facade.get_package_by_hash(HASH2).package in new_pkgs)
+        self.assertTrue(
+            self.facade.get_package_by_hash(HASH3).package in new_pkgs)
 
         # Which are not the old packages.
-        self.assertFalse(pkg2 in new_pkgs)
-        self.assertFalse(pkg3 in new_pkgs)
+        self.assertFalse(pkg2.package in new_pkgs)
+        self.assertFalse(pkg3.package in new_pkgs)
 
     def test_is_package_available_in_channel_not_installed(self):
         """
@@ -499,8 +526,9 @@ class AptFacadeTest(LandscapeTest):
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
-        [package] = self.facade.get_packages()
-        self.assertTrue(self.facade.is_package_upgrade(package))
+        [version_05, version_10] = sorted(self.facade.get_packages())
+        self.assertTrue(self.facade.is_package_upgrade(version_10))
+        self.assertFalse(self.facade.is_package_upgrade(version_05))
 
     def test_is_package_upgrade_in_channel_newer_installed(self):
         """
@@ -512,8 +540,9 @@ class AptFacadeTest(LandscapeTest):
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
-        [package] = self.facade.get_packages()
-        self.assertFalse(self.facade.is_package_upgrade(package))
+        [version_10, version_15] = sorted(self.facade.get_packages())
+        self.assertFalse(self.facade.is_package_upgrade(version_10))
+        self.assertFalse(self.facade.is_package_upgrade(version_15))
 
     def test_is_package_upgrade_in_channel_same_as_installed(self):
         """
@@ -556,14 +585,12 @@ class AptFacadeTest(LandscapeTest):
         deb_dir = self.makeDir()
         self._add_system_package("foo", version="1.0")
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.5")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
-        # XXX: This should return two packages, but it doesn't at the
-        # moment. Bug #871641 should make this return ("foo", "1.5") as
-        # well.
         self.assertEqual(
-            [("foo", "1.0")],
-            sorted([(pkg.name, pkg.candidate.version)
-                    for pkg in self.facade.get_packages_by_name("foo")]))
+            [("foo", "1.0"), ("foo", "1.5")],
+            sorted([(version.package.name, version.version)
+                    for version in self.facade.get_packages_by_name("foo")]))
 
 
 class SmartFacadeTest(LandscapeTest):

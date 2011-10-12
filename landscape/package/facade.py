@@ -56,7 +56,7 @@ class AptFacade(object):
 
     def get_packages(self):
         """Get all the packages available in the channels."""
-        return self._pkg2hash.keys()
+        return self._hash2pkg.itervalues()
 
     def reload_channels(self):
         """Reload the channels and update the cache."""
@@ -67,10 +67,14 @@ class AptFacade(object):
         self._pkg2hash.clear()
         self._hash2pkg.clear()
         for package in [self._cache[name] for name in self._cache.keys()]:
-            hash = self.get_package_skeleton(
-                package, with_info=False).get_hash()
-            self._pkg2hash[package] = hash
-            self._hash2pkg[hash] = package
+            for version in package.versions:
+                hash = self.get_package_skeleton(
+                    version, with_info=False).get_hash()
+                # Use a tuple including the package, since the Version
+                # objects of two different packages can have the same
+                # hash.
+                self._pkg2hash[(package, version)] = hash
+                self._hash2pkg[hash] = version
 
     def ensure_channels_reloaded(self):
         """Reload the channels if they haven't been reloaded yet."""
@@ -175,12 +179,12 @@ class AptFacade(object):
         """
         return build_skeleton_apt(pkg, with_info=with_info)
 
-    def get_package_hash(self, pkg):
+    def get_package_hash(self, version):
         """Return a hash from the given package.
 
-        @param pkg: an L{apt.package.Package} object.
+        @param version: an L{apt.package.Version} object.
         """
-        return self._pkg2hash.get(pkg)
+        return self._pkg2hash.get((version.package, version))
 
     def get_package_hashes(self):
         """Get the hashes of all the packages available in the channels."""
@@ -195,20 +199,24 @@ class AptFacade(object):
         """
         return self._hash2pkg.get(hash)
 
-    def is_package_available(self, package):
+    def is_package_available(self, version):
         """Is the package available for installation?"""
-        return package.candidate.downloadable
+        return version.downloadable
 
-    def is_package_upgrade(self, package):
+    def is_package_upgrade(self, version):
         """Is the package an upgrade for another installed package?"""
-        return package.is_upgradable
+        if not version.package.is_upgradable or not version.package.installed:
+            return False
+        return version > version.package.installed
 
     def get_packages_by_name(self, name):
         """Get all available packages matching the provided name.
 
         @param name: The name the returned packages should have.
         """
-        return [pkg for pkg in self.get_packages() if pkg.name == name]
+        return [
+            version for version in self.get_packages()
+            if version.package.name == name]
 
 
 class SmartFacade(object):
