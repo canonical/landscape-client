@@ -8,6 +8,7 @@ from smart.control import Control
 from smart.cache import Provides
 from smart.const import NEVER, ALWAYS
 
+import apt_inst
 from aptsources.sourceslist import SourcesList
 
 from twisted.internet import reactor
@@ -32,7 +33,7 @@ class AptFacadeTest(LandscapeTest):
 
     helpers = [AptFacadeHelper]
 
-    def _add_system_package(self, name, architecture="all"):
+    def _add_system_package(self, name, architecture="all", version="1.0"):
         """Add a package to the dpkg status file."""
         append_file(self.dpkg_status, textwrap.dedent("""\
                 Package: %s
@@ -43,11 +44,22 @@ class AptFacadeTest(LandscapeTest):
                 Maintainer: Someone
                 Architecture: %s
                 Source: source
-                Version: 1.0
+                Version: %s
                 Config-Version: 1.0
                 Description: description
 
-                """ % (name, architecture)))
+                """ % (name, architecture, version)))
+
+    def _install_deb_file(self, path):
+        """Fake the the given deb file is installed in the system."""
+        deb_file = open(path)
+        deb = apt_inst.DebFile(deb_file)
+        control = deb.control.extractdata("control")
+        deb_file.close()
+        lines = control.splitlines()
+        lines.insert(1, "Status: install ok installed")
+        status = "\n".join(lines)
+        append_file(self.dpkg_status, status + "\n\n")
 
     def _add_package_to_deb_dir(self, path, name, version="1.0"):
         """Add fake package information to a directory.
@@ -56,7 +68,19 @@ class AptFacadeTest(LandscapeTest):
         available, so that get_packages() have something to return.
         There won't be an actual package in the dir.
         """
-        package_stanza = "Package: %(name)s\nVersion: %(version)s\n\n"
+        package_stanza = textwrap.dedent("""
+                Package: %(name)s
+                Priority: optional
+                Section: misc
+                Installed-Size: 1234
+                Maintainer: Someone
+                Architecture: all
+                Source: source
+                Version: %(version)s
+                Config-Version: 1.0
+                Description: description
+
+                """)
         append_file(
             os.path.join(path, "Packages"),
             package_stanza % {"name": name, "version": version})
@@ -429,6 +453,111 @@ class AptFacadeTest(LandscapeTest):
         # Which are not the old packages.
         self.assertFalse(pkg2 in new_pkgs)
         self.assertFalse(pkg3 in new_pkgs)
+
+    def test_is_package_available_in_channel_not_installed(self):
+        """
+        A package is considered available if the package is in a
+        configured channel and not installed.
+        """
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.facade.reload_channels()
+        [package] = [
+            package for package in self.facade.get_packages()
+            if package.name == "name1"]
+        self.assertTrue(self.facade.is_package_available(package))
+
+    def test_is_package_available_not_in_channel_installed(self):
+        """
+        A package is not considered available if the package is
+        installed and not in a configured channel.
+        """
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self._install_deb_file(os.path.join(deb_dir, PKGNAME1))
+        self.facade.reload_channels()
+        [package] = [
+            package for package in self.facade.get_packages()
+            if package.name == "name1"]
+        self.assertFalse(self.facade.is_package_available(package))
+
+    def test_is_package_available_in_channel_installed(self):
+        """
+        A package is considered available if the package is
+        installed and is in a configured channel.
+        """
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self._install_deb_file(os.path.join(deb_dir, PKGNAME1))
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.facade.reload_channels()
+        [package] = [
+            package for package in self.facade.get_packages()
+            if package.name == "name1"]
+        self.assertTrue(self.facade.is_package_available(package))
+
+    def test_is_package_upgrade_in_channel_not_installed(self):
+        """
+        A package is not consider an upgrade of no version of it is
+        installed.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [package] = self.facade.get_packages()
+        self.assertFalse(self.facade.is_package_upgrade(package))
+
+    def test_is_package_upgrade_in_channel_older_installed(self):
+        """
+        A package is considered to be an upgrade if some channel has a
+        newer version than the installed one.
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package("foo", version="0.5")
+        self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [package] = self.facade.get_packages()
+        self.assertTrue(self.facade.is_package_upgrade(package))
+
+    def test_is_package_upgrade_in_channel_newer_installed(self):
+        """
+        A package is not considered to be an upgrade if there are only
+        older versions than the installed one in the channels.
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package("foo", version="1.5")
+        self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [package] = self.facade.get_packages()
+        self.assertFalse(self.facade.is_package_upgrade(package))
+
+    def test_is_package_upgrade_in_channel_same_as_installed(self):
+        """
+        A package is not considered to be an upgrade if the newest
+        version of the packages available in the channels is the same as
+        the installed one.
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package("foo", version="1.0")
+        self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [package] = self.facade.get_packages()
+        self.assertFalse(self.facade.is_package_upgrade(package))
+
+    def test_is_package_upgrade_not_in_channel_installed(self):
+        """
+        A package is not considered to be an upgrade if the package is
+        installed but not available in any of the configured channels.
+        """
+        self._add_system_package("foo", version="1.0")
+        self.facade.reload_channels()
+        [package] = self.facade.get_packages()
+        self.assertFalse(self.facade.is_package_upgrade(package))
 
 
 class SmartFacadeTest(LandscapeTest):

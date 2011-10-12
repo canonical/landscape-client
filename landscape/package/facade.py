@@ -195,6 +195,14 @@ class AptFacade(object):
         """
         return self._hash2pkg.get(hash)
 
+    def is_package_available(self, package):
+        """Is the package available for installation?"""
+        return package.candidate.downloadable
+
+    def is_package_upgrade(self, package):
+        """Is the package an upgrade for another installed package?"""
+        return package.is_upgradable
+
 
 class SmartFacade(object):
     """Wrapper for tasks using Smart.
@@ -547,3 +555,29 @@ class SmartFacade(object):
         """Flush the current smart configuration to disk."""
         control = self._get_ctrl()
         control.saveSysConf()
+
+    def is_package_available(self, package):
+        """Is the package available for installation?"""
+        for loader in package.loaders:
+            # Is the package also in a non-installed
+            # loader?  IOW, "available".
+            if not loader.getInstalled():
+                return True
+        return False
+
+    def is_package_upgrade(self, package):
+        """Is the package an upgrade for another installed package?"""
+        is_upgrade = False
+        for upgrade in package.upgrades:
+            for provides in upgrade.providedby:
+                for provides_package in provides.packages:
+                    if provides_package.installed:
+                        is_upgrade = True
+                        break
+                else:
+                    continue
+                break
+            else:
+                continue
+            break
+        return is_upgrade
