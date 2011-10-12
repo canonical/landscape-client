@@ -19,13 +19,13 @@ _Description: Registration Password:
 
 Template: landscape-client/url
 Type: string
-Default: https://landscape.ubuntu.com/message-system
+Default: https://landscape.canonical.com/message-system
 _Description: Landscape Server URL:
  The server URL to connect to.
 
 Template: landscape-client/ping_url
 Type: string
-Default: http://landscape.ubuntu.com/ping
+Default: http://landscape.canonical.com/ping
 _Description: Landscape PingServer URL:
  The URL to perform lightweight exchange initiation with.
 
