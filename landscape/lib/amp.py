@@ -293,7 +293,7 @@ class MethodCallFactory(ReconnectingClientFactory):
         ReconnectingClientFactory.clientConnectionFailed(self, connector,
                                                          reason)
         if self.maxRetries is not None and (self.retries > self.maxRetries):
-            self.notify_failure(reason) # Give up
+            self.notify_failure(reason)  # Give up
 
     def buildProtocol(self, addr):
         self.resetDelay()
