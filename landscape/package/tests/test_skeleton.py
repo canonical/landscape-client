@@ -116,6 +116,21 @@ class SkeletonTestMixin(object):
         self.assertEqual(1038, skeleton.size)
         self.assertEqual(28672, skeleton.installed_size)
 
+    def test_build_skeleton_with_unicode_and_extra_info(self):
+        """
+        If C{with_unicode} and C{with_info} are passed to
+        C{build_skeleton}, the name, version and the extra info of the
+        skeleton are unicode strings.
+        """
+        pkg1 = self.get_package("name1")
+        skeleton = self.build_skeleton(pkg1, with_unicode=True, with_info=True)
+        self.assertTrue(isinstance(skeleton.name, unicode))
+        self.assertTrue(isinstance(skeleton.version, unicode))
+        self.assertTrue(isinstance(skeleton.section, unicode))
+        self.assertTrue(isinstance(skeleton.summary, unicode))
+        self.assertTrue(isinstance(skeleton.description, unicode))
+        self.assertEqual(HASH1, skeleton.get_hash())
+
     def test_build_skeleton_minimal(self):
         """
         A package that has only the required fields will still have some

@@ -171,4 +171,8 @@ def build_skeleton_apt(version, with_info=False, with_unicode=False):
         skeleton.size = version.size
         if version.installed_size > 0:
             skeleton.installed_size = version.installed_size
+        if with_unicode:
+            skeleton.section = skeleton.section.decode("utf-8")
+            skeleton.summary = skeleton.summary.decode("utf-8")
+            skeleton.description = skeleton.description.decode("utf-8")
     return skeleton
