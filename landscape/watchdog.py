@@ -74,7 +74,7 @@ class Daemon(object):
     username = "landscape"
     max_retries = 3
     factor = 1.1
-    clones = 0
+    options = None
 
     def __init__(self, connector, reactor=reactor, verbose=False,
                  config=None):
@@ -135,8 +135,8 @@ class Daemon(object):
             args.append("--quiet")
         if self._config:
             args.extend(["-c", self._config])
-        if self.clones > 0:
-            args.extend(["--clones", str(self.clones)])
+        if self.options is not None:
+            args.extend(self.options)
         self._reactor.spawnProcess(self._process, exe, args=args,
                                    env=self._env, uid=self._uid, gid=self._gid)
 
@@ -337,8 +337,10 @@ class WatchDog(object):
         self._stopping = False
         signal.signal(signal.SIGUSR1, self._notify_rotate_logs)
         if config is not None and config.clones > 0:
+            options = ["--clones", str(config.clones),
+                       "--start-clones-over", str(config.start_clones_over)]
             for daemon in self.daemons:
-                daemon.clones = config.clones
+                daemon.options = options
 
         self._ping_failures = {}
 

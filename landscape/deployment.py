@@ -303,6 +303,8 @@ class Configuration(BaseConfiguration):
 
         # Hidden options, used for load-testing to run in-process clones
         parser.add_option("--clones", default=0, type=int, help=SUPPRESS_HELP)
+        parser.add_option("--start-clones-over", default=25 * 60, type=int,
+                          help=SUPPRESS_HELP)
 
         return parser
 

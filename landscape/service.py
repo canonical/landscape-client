@@ -100,7 +100,7 @@ def run_landscape_service(configuration_class, service_class, args):
 
         def start_clones():
             # Spawn instances over 25-30 minutes.
-            delay = 25 * 60 / configuration.clones
+            delay = configuration.start_clones_over / configuration.clones
 
             for i, clone in enumerate(clones):
 
