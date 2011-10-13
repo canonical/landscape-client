@@ -162,6 +162,8 @@ def build_skeleton_apt(version, with_info=False, with_unicode=False):
 
     relations.update(parse_record_field(
         version.record, "Conflicts", DEB_CONFLICTS))
+    relations.update(parse_record_field(
+        version.record, "Breaks", DEB_CONFLICTS))
     skeleton.relations = sorted(relations)
 
     if with_info:

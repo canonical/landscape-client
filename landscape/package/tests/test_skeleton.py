@@ -181,6 +181,7 @@ class SkeletonTestMixin(object):
             (DEB_REQUIRES, "depend1"),
             (DEB_REQUIRES, "predepend1"),
             (DEB_UPGRADES, "simple-relations < 1.0"),
+            (DEB_CONFLICTS, "break1"),
             (DEB_CONFLICTS, "conflict1")]
         self.assertEqual(relations, skeleton.relations)
         self.assertEqual(HASH_SIMPLE_RELATIONS, skeleton.get_hash())
@@ -200,6 +201,7 @@ class SkeletonTestMixin(object):
             (DEB_REQUIRES, "depend1 = 2.0"),
             (DEB_REQUIRES, "predepend1 <= 2.0"),
             (DEB_UPGRADES, "version-relations < 1.0"),
+            (DEB_CONFLICTS, "break1 > 2.0"),
             (DEB_CONFLICTS, "conflict1 < 2.0")]
         self.assertEqual(relations, skeleton.relations)
         self.assertEqual(HASH_VERSION_RELATIONS, skeleton.get_hash())
@@ -223,6 +225,8 @@ class SkeletonTestMixin(object):
             (DEB_REQUIRES, "predepend1 <= 2.0"),
             (DEB_REQUIRES, "predepend2"),
             (DEB_UPGRADES, "multiple-relations < 1.0"),
+            (DEB_CONFLICTS, "break1 > 2.0"),
+            (DEB_CONFLICTS, "break2"),
             (DEB_CONFLICTS, "conflict1 < 2.0"),
             (DEB_CONFLICTS, "conflict2")]
         self.assertEqual(relations, skeleton.relations)
