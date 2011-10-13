@@ -373,6 +373,14 @@ class AptFacadeTest(LandscapeTest):
             sorted(version.package.name
                    for version in self.facade.get_packages()))
 
+    def test_reload_channels_with_channel_error(self):
+        """
+        The C{reload_channels} method raises a L{ChannelsError} if
+        apt fails to load the configured channels.
+        """
+        self.facade.add_channel_apt_deb("non-proto://fail.url", "./")
+        self.assertRaises(ChannelError, self.facade.reload_channels)
+
     def test_get_set_arch(self):
         """
         C{get_arch} returns the architecture that APT is currently

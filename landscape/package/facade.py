@@ -66,7 +66,12 @@ class AptFacade(object):
         """Reload the channels and update the cache."""
         self._cache.open(None)
         if self.refetch_package_index:
-            self._cache.update()
+            try:
+                self._cache.update()
+            except apt.cache.FetchFailedException:
+                raise ChannelError(
+                    "Apt failed to reload channels (%r)" % (
+                        self.get_channels()))
             self._cache.open(None)
 
         self._pkg2hash.clear()
