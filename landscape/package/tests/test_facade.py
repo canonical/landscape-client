@@ -35,7 +35,7 @@ class AptFacadeTest(LandscapeTest):
 
     def _add_system_package(self, name, architecture="all", version="1.0"):
         """Add a package to the dpkg status file."""
-        append_file(self.dpkg_status, textwrap.dedent("""\
+        append_file(self.facade.dpkg_status, textwrap.dedent("""\
                 Package: %s
                 Status: install ok installed
                 Priority: optional
@@ -59,7 +59,7 @@ class AptFacadeTest(LandscapeTest):
         lines = control.splitlines()
         lines.insert(1, "Status: install ok installed")
         status = "\n".join(lines)
-        append_file(self.dpkg_status, status + "\n\n")
+        append_file(self.facade.dpkg_status, status + "\n\n")
 
     def _add_package_to_deb_dir(self, path, name, version="1.0"):
         """Add fake package information to a directory.
@@ -95,6 +95,23 @@ class AptFacadeTest(LandscapeTest):
         packages_path = os.path.join(deb_dir, "Packages")
         mtime = int(time.time() + 1)
         os.utime(packages_path, (mtime, mtime))
+
+    def test_custom_root_create_required_files(self):
+        """
+        If a custom root is passed to the constructor, the directory and
+        files that apt expects to be there will be created.
+        """
+        root = self.makeDir()
+        facade = AptFacade(root=root)
+        self.assertTrue(os.path.exists(os.path.join(root, "etc", "apt")))
+        self.assertTrue(
+            os.path.exists(os.path.join(root, "etc", "apt", "sources.list.d")))
+        self.assertTrue(os.path.exists(
+            os.path.join(root, "var", "cache", "apt", "archives", "partial")))
+        self.assertTrue(os.path.exists(
+            os.path.join(root, "var", "lib", "apt", "lists", "partial")))
+        self.assertTrue(
+            os.path.exists(os.path.join(root, "var", "lib", "dpkg", "status")))
 
     def test_no_system_packages(self):
         """

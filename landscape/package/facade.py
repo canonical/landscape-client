@@ -52,11 +52,30 @@ class AptFacade(object):
     """
 
     def __init__(self, root=None):
+        self._root = root
+        self._ensure_dir_structure()
         self._cache = apt.cache.Cache(rootdir=root, memonly=True)
         self._channels_loaded = False
         self._pkg2hash = {}
         self._hash2pkg = {}
         self.refetch_package_index = False
+
+    def _ensure_dir_structure(self):
+        self._ensure_sub_dir("etc/apt")
+        self._ensure_sub_dir("etc/apt/sources.list.d")
+        self._ensure_sub_dir("var/cache/apt/archives/partial")
+        self._ensure_sub_dir("var/lib/apt/lists/partial")
+        dpkg_dir = self._ensure_sub_dir("var/lib/dpkg")
+        self.dpkg_status = os.path.join(dpkg_dir, "status")
+        if not os.path.exists(self.dpkg_status):
+            create_file(self.dpkg_status, "")
+
+    def _ensure_sub_dir(self, sub_dir):
+        """Ensure that a dir in the Apt root exists."""
+        full_path = os.path.join(self._root, sub_dir)
+        if not os.path.exists(full_path):
+            os.makedirs(full_path)
+        return full_path
 
     def get_packages(self):
         """Get all the packages available in the channels."""
