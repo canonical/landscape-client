@@ -66,9 +66,9 @@ class AptFacade(object):
         self._ensure_sub_dir("var/cache/apt/archives/partial")
         self._ensure_sub_dir("var/lib/apt/lists/partial")
         dpkg_dir = self._ensure_sub_dir("var/lib/dpkg")
-        self.dpkg_status = os.path.join(dpkg_dir, "status")
-        if not os.path.exists(self.dpkg_status):
-            create_file(self.dpkg_status, "")
+        self._dpkg_status = os.path.join(dpkg_dir, "status")
+        if not os.path.exists(self._dpkg_status):
+            create_file(self._dpkg_status, "")
 
     def _ensure_sub_dir(self, sub_dir):
         """Ensure that a dir in the Apt root exists."""

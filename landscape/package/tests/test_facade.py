@@ -35,7 +35,7 @@ class AptFacadeTest(LandscapeTest):
 
     def _add_system_package(self, name, architecture="all", version="1.0"):
         """Add a package to the dpkg status file."""
-        append_file(self.facade.dpkg_status, textwrap.dedent("""\
+        append_file(self.dpkg_status, textwrap.dedent("""\
                 Package: %s
                 Status: install ok installed
                 Priority: optional
@@ -59,7 +59,7 @@ class AptFacadeTest(LandscapeTest):
         lines = control.splitlines()
         lines.insert(1, "Status: install ok installed")
         status = "\n".join(lines)
-        append_file(self.facade.dpkg_status, status + "\n\n")
+        append_file(self.dpkg_status, status + "\n\n")
 
     def _add_package_to_deb_dir(self, path, name, version="1.0"):
         """Add fake package information to a directory.
