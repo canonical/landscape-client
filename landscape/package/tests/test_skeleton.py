@@ -224,6 +224,7 @@ class SkeletonTestMixin(object):
             (DEB_REQUIRES, "depend2"),
             (DEB_REQUIRES, "predepend1 <= 2.0"),
             (DEB_REQUIRES, "predepend2"),
+            (DEB_OR_REQUIRES, "depend3 | depend4 > 2.0"),
             (DEB_UPGRADES, "multiple-relations < 1.0"),
             (DEB_CONFLICTS, "break1 > 2.0"),
             (DEB_CONFLICTS, "break2"),

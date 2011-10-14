@@ -126,10 +126,11 @@ def parse_record_field(record, record_field, relation_type,
     values = apt_pkg.parse_depends(record.get(record_field, ""))
     for value in values:
         value_strings = [relation_to_string(relation) for relation in value]
+        value_relation_type = relation_type
         if len(value_strings) > 1:
-            relation_type = or_relation_type
+            value_relation_type = or_relation_type
         relation_string = " | ".join(value_strings)
-        relations.add((relation_type, relation_string))
+        relations.add((value_relation_type, relation_string))
     return relations
 
 
