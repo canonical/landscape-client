@@ -96,6 +96,23 @@ class AptFacadeTest(LandscapeTest):
         mtime = int(time.time() + 1)
         os.utime(packages_path, (mtime, mtime))
 
+    def test_custom_root_create_required_files(self):
+        """
+        If a custom root is passed to the constructor, the directory and
+        files that apt expects to be there will be created.
+        """
+        root = self.makeDir()
+        facade = AptFacade(root=root)
+        self.assertTrue(os.path.exists(os.path.join(root, "etc", "apt")))
+        self.assertTrue(
+            os.path.exists(os.path.join(root, "etc", "apt", "sources.list.d")))
+        self.assertTrue(os.path.exists(
+            os.path.join(root, "var", "cache", "apt", "archives", "partial")))
+        self.assertTrue(os.path.exists(
+            os.path.join(root, "var", "lib", "apt", "lists", "partial")))
+        self.assertTrue(
+            os.path.exists(os.path.join(root, "var", "lib", "dpkg", "status")))
+
     def test_no_system_packages(self):
         """
         If the dpkg status file is empty, not packages are reported by
