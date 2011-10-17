@@ -12,22 +12,10 @@ class AptFacadeHelper(object):
 
     def set_up(self, test_case):
         test_case.apt_root = test_case.makeDir()
-        # Create all the required directories, so that apt doesn't
-        # auto-create them, which causing the paths to be printed to stdout.
-        test_case.dpkg_dir = self._create_sub_dir(test_case, "var/lib/dpkg")
-        self._create_sub_dir(test_case, "etc/apt")
-        self._create_sub_dir(test_case, "etc/apt/sources.list.d")
-        self._create_sub_dir(test_case, "var/cache/apt/archives/partial")
-        self._create_sub_dir(test_case, "var/lib/apt/lists/partial")
-        test_case.dpkg_status = os.path.join(test_case.dpkg_dir, "status")
-        create_file(test_case.dpkg_status, "")
+        test_case.dpkg_status = os.path.join(
+            test_case.apt_root, "var", "lib", "dpkg", "status")
         test_case.facade = AptFacade(root=test_case.apt_root)
-
-    def _create_sub_dir(self, test_case, sub_dir):
-        """Create a dir instead the Apt root dir."""
-        full_path = os.path.join(test_case.apt_root, sub_dir)
-        os.makedirs(full_path)
-        return full_path
+        test_case.facade.refetch_package_index = True
 
 
 class SmartHelper(object):
@@ -169,49 +157,53 @@ PKGDEB_MINIMAL = (
     "ew5r32rvNUrGDp73x7SUEpfrbZl//LZ2AAAAAAAAAAAA2NELx33R7wAoAAAK")
 
 PKGDEB_SIMPLE_RELATIONS = (
-    "ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTMxNzgyNTA3NSAgMCAgICAgMCAgICAgMTAwNj"
-    "Q0ICA0 ICAgICAgICAgYAoyLjAKY29udHJvbC50YXIuZ3ogIDEzMTc4MjUwNzUgIDAgICA"
-    "gIDAgICAgIDEw MDY0NCAgMzMyICAgICAgIGAKH4sIAAAAAAACA+3R0UrDMBQG4F73Kc4L"
-    "rEtc20ERceiVoAwE72Ma bWaalCQb+vZm3aYiqFcThf+DNifpSZrDKabZ0bFkXlXbkc8r9"
-    "nE8yDivyxmrK1bNM8bZyYxlVGW/ YB2i8ETZ/cp5+03eT9//qWIqnY3emSP3vy7LL/tf1v"
-    "Wn/qcJz4ih/0e3FPJJPKqGgu4HoyZeGRG1 syG/Uz6koCFesPxWyThOeh1kvvTaeR1fGnL"
-    "DdlmYfOFlp2PKWvt0mDAmJanJpRqUbUNDg1ftGPP8 be2wcOHsg9EypiW5D3na7Ta6VePW"
-    "MeL5tdA2pkf5hq5cZ+l0ld7n6llsb15I15+lw4P0etjddZFu a3UvDA27Kil2IlInwr5ae"
-    "q+WkhtHm13RJLw6/LglbdPGD8lFngEAAAAAAAAAAAAAAAAAAAAA/Amv TUsvBAAoAABkYX"
-    "RhLnRhci5neiAgICAgMTMxNzgyNTA3NSAgMCAgICAgMCAgICAgMTAwNjQ0ICAx MDcgICA"
-    "gICAgYAofiwgAAAAAAAID7cqxDcJQEETBK8UVwH2b+64HQgIjGegfCJCIIMLRTPKC3d0+ "
-    "/i6f5qpX21z52bdorR+m7Fl9imw5jhVDxQbu19txHYY4nS/r8uX3awcAAAAAAAAAAIANPQ"
-    "ALnD6F ACgAAAo=")
+    "ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTMxODUxNjMyMiAgMCAgICAgMCAgICAgMTAwNj"
+    "Q0ICA0 ICAgICAgICAgYAoyLjAKY29udHJvbC50YXIuZ3ogIDEzMTg1MTYzMjIgIDAgICA"
+    "gIDAgICAgIDEw MDY0NCAgMzQ0ICAgICAgIGAKH4sIAAAAAAACA+3R3UrDMBQH8F7nKc4L"
+    "rGu2tYMi4tQrQRkI3mdp tNnSpKTZ0Lc37TYVQb2aIvx/0Ob09DQfPek4Obksmud5P/J5n"
+    "n0cjxLOi1mez6ecT5KMZ5NJkVCe /IJtF4QnSlZr5+03dT+9/6fSsXQ2eGdO3P9iNvuy/3"
+    "mWf+o/L6Y8oQz9P7mlkBvxpErqdNMaNfLK iKCd7diD8l0MSuJpxu6VDMNDozvJll47r8N"
+    "LSa7t08KwhZe1DrFq6+NkwphYpEbXqlW26kpqvaqG mLO33DFx5eyj0TLElDyEnF16JTYx"
+    "s+pHHidzO12pYaYh4uxWaBvipXxJN662dLaO9wv1LPqDpNI1 53GtTnrd7re+iJu3uhGG2"
+    "v2hKdQiUC26w+Hp/fAU3Tna7f8BCa+OC1ekbfzwQ3HKEgAAAAAAAAAA AAAAAAAAAACAv/"
+    "EKgcHt1gAoAABkYXRhLnRhci5neiAgICAgMTMxODUxNjMyMiAgMCAgICAgMCAg ICAgMTA"
+    "wNjQ0ICAxMDcgICAgICAgYAofiwgAAAAAAAID7cqxDcJQEETBK8UVwH2b+64HQgIjGegf "
+    "CJCIIMLRTPKC3d0+/i6f5qpX21z52bdorR+m7Fl9imw5jhVDxQbu19txHYY4nS/r8uX3aw"
+    "cAAAAA AAAAAIANPQALnD6FACgAAAo=")
+
 
 PKGDEB_VERSION_RELATIONS = (
-    "ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTMxNzg4NjgxNSAgMCAgICAgMCAgICAgMTAwNj"
-    "Q0ICA0 ICAgICAgICAgYAoyLjAKY29udHJvbC50YXIuZ3ogIDEzMTc4ODY4MTUgIDAgICA"
-    "gIDAgICAgIDEw MDY0NCAgMzM2ICAgICAgIGAKH4sIAAAAAAACA+3RQUvDMBQH8J77KXLU"
-    "w7qmazooUxx6EoSB4D1m cc1Mk5JkQ7+9aTuHCOppovD/QZvXvNeE5GXT5OTyaM5YP9I5y"
-    "z+O7xJKq3JWMMZmcZ7mRcESwpJf sPOBO0KSx6115pu6n/L/VDYV1gRn9Yn7X5Xll/0vK/"
-    "qp/7Sa0YTk6P/Jrbh45htZk710XlkzcVLz EAOfPowzNaFZnt5LEYaPVnmRrpyyToXXmti"
-    "un+Y6XTrRqBCrdi6uxrWORXJyIztp1r4mnZPrIabk bHFBiiw/T4/JY+aQuLbmSSsRYkoc"
-    "wv63xZhdObtXazksOkQ0vePKhPhIV5Nb2xiy2Mb3lXzhbadl Jmx7GXfzwqluPMUynsOol"
-    "mvSjRdAQsMDabgnxwvo9+4XVWbzfjs+SxMAAAAAAAAAAAAAAAAAAAAA gL/jDelqqL4AKA"
-    "AAZGF0YS50YXIuZ3ogICAgIDEzMTc4ODY4MTUgIDAgICAgIDAgICAgIDEwMDY0 NCAgMTA"
-    "3ICAgICAgIGAKH4sIAAAAAAACA+3KsRHCMBBE0StFFYAk+1A9EBKYGQP9AwEzRBDh6L3k "
-    "B7u7ffxdfRqZr7aR9bNv0dphnnpmH3PUVvvUo2Rs4H69HddS4nS+rMuX368dAAAAAAAAAA"
-    "AANvQA /4sZcAAoAAAK")
+    "ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTMxODUxNjQ5OCAgMCAgICAgMCAgICAgMTAwNj"
+    "Q0ICA0 ICAgICAgICAgYAoyLjAKY29udHJvbC50YXIuZ3ogIDEzMTg1MTY0OTggIDAgICA"
+    "gIDAgICAgIDEw MDY0NCAgMzUwICAgICAgIGAKH4sIAAAAAAACA+3RQUvDMBQH8Jz7KXLU"
+    "w7pmazcoczj1JAgDwXuW xTVbmpQkG/rtTds5RFBPGwj/H7R5fS9N07x0SM4ui6ZF0Y5sW"
+    "mRfx0+EsUleFNNxznKSsWw0HhNa kAvY+8AdpWS1tc78Mu+v+j+VDoU1wVl95v5P8vzH/h"
+    "eMfes/m7T9z9D/s1tyseMbWdKDdF5ZM3BS 8xADn7z0mZKyNEuepQjdQ628SJZOWafCe0l"
+    "t06a5ThZOVCrEWXsXV+Nax0ly8CAbada+pI2T6y5m 9Gp2Q0dpdp2ciqfKsXBvzatWIsSS"
+    "OIbta7O+euck38XSqh1jfj7v80tnD2otu491EUueuDIhXtKV 9NFWhs628X4r33jdaJkKW"
+    "8/jLrxwqun/bhH/z6iaa9r0B0NDxQOtuKeng2n31C6qzObz1HyaEAAA AAAAAAAAAAAAAA"
+    "AAAACAy/sAwTtOtwAoAABkYXRhLnRhci5neiAgICAgMTMxODUxNjQ5OCAgMCAg ICAgMCA"
+    "gICAgMTAwNjQ0ICAxMDcgICAgICAgYAofiwgAAAAAAAID7cqxEcIwEETRK0UVgCT7UD0Q "
+    "EpgZA/0DATNEEOHoveQHu7t9/F19GpmvtpH1s2/R2mGeemYfc9RW+9SjZGzgfr0d11LidL"
+    "6sy5ff rx0AAAAAAAAAAAA29AD/ixlwACgAAAo=")
+
 
 PKGDEB_MULTIPLE_RELATIONS = (
-    "ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTMxNzg4NzUzMCAgMCAgICAgMCAgICAgMTAwNj"
-    "Q0ICA0 ICAgICAgICAgYAoyLjAKY29udHJvbC50YXIuZ3ogIDEzMTc4ODc1MzAgIDAgICA"
-    "gIDAgICAgIDEw MDY0NCAgMzU1ICAgICAgIGAKH4sIAAAAAAACA+3R0UrDMBQG4F73Kc6l"
-    "wuyarl2hTHHolSAMBO9j ltnMtClpOvTtzbp1iqBeVRD+D9qcpj9pkxNNg9HFXp5l+5HlW"
-    "fx5HASMzdNZkuVxmgYxi5MkDygL /kDXOm6JgqetsfUPud/e/1PRVJjaWaNH7v9839dv+p"
-    "+lX/vP5jMWUIz+j27FxQt/lgVVnXaq0fLC Ss2dMnUbPkrb+qIgFsXhgxSuf6hUK8KVVcY"
-    "q91aQafbTXIdLK0rlfKqzfjmutQ/Ji1vZyHrdFtRY ue5rRmeLS0qi+HzyMZmEp+ApNYSG"
-    "xI2pN1oJ5zPiWO7XWhxjw1ziv2t2ai37j/YVmwxVEt5zVTt/ SVvQnSlrWmz9/Vq+8srvP"
-    "hKmuvL/0gqrmsN+l37Htaq4puZwVuRK7qjk7enMaMd1J1vaGEuSi5KG M4zCAAAAAAAAAA"
-    "AAAAAAAAAAAABgRO+flXZrACgAAApkYXRhLnRhci5neiAgICAgMTMxNzg4NzUz MCAgMCA"
-    "gICAgMCAgICAgMTAwNjQ0ICAxMDcgICAgICAgYAofiwgAAAAAAAID7cqxEcIwEETRK0UV "
-    "gGR8Vj0QEpgZY/cPBMwQQYSj95If7B6O8Xf1qWe+2nrWz75Fa9N4GnLq2aO2OowtSsYOtv"
-    "t6XkqJ y/W2zF9+v3YAAAAAAAAAAADY0QNvovUBACgAAAo=")
+    "ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTMxODU4MDA3OSAgMCAgICAgMCAgICAgMTAwNj"
+    "Q0ICA0 ICAgICAgICAgYAoyLjAKY29udHJvbC50YXIuZ3ogIDEzMTg1ODAwNzkgIDAgICA"
+    "gIDAgICAgIDEw MDY0NCAgMzgzICAgICAgIGAKH4sIAAAAAAACA+3RXUvDMBQG4F7nV5xL"
+    "BVeb2nZQ5vDrShAGgvcx izaaNiXNRMEfb9atcwq6qwnC+8CW05N3bXcSH0d7lwTjPF+uf"
+    "Jwn2+sg4rzI8nERYjxKeJJmaUR5 9AcWnReOKLp/sq75Jbdr/5+Kj6VtvLNmz+dfZNmP51"
+    "+cZN/OnxdhmxKc/97NhHwWj6qkemG8bo0a OWWE17bp2J1yXShK4nHCbpX0/UWtO8lmTlu"
+    "n/VtJtl22hWHnTlbah9TChdsJY0JIja5Uq5p5V1Lr 1LyvOR1MTimNk8Ojz2bKNsFNagit"
+    "Gif0vq4yOphOv+yl7NI2D0ZLH34v1+XyOZN1bOil7MIp8RxS 98uVb92pb6Thne2Lnqv+h"
+    "fuKHw1Vym6Ebnz4KFfSta0amjyF7zP1KuowuVjaehr+RyedblezOg/T anQtDLWrOZOvhK"
+    "dKdJt504swC9XRg3WkhKxomH/MIgAAAAAAAAAAAAAAAAAAAACAHT4AFDs6bAAo AAAKZGF"
+    "0YS50YXIuZ3ogICAgIDEzMTg1ODAwNzkgIDAgICAgIDAgICAgIDEwMDY0NCAgMTA3ICAg "
+    "ICAgIGAKH4sIAAAAAAACA+3KsRHCMBBE0StFFYBkfFY9EBKYGWP3DwTMEEGEo/eSH+wejv"
+    "F39aln vtp61s++RWvTeBpy6tmjtjqMLUrGDrb7el5Kicv1tsxffr92AAAAAAAAAAAA2NE"
+    "Db6L1AQAoAAAK")
+
 
 PKGDEB_OR_RELATIONS = (
     "ITxhcmNoPgpkZWJpYW4tYmluYXJ5ICAgMTMxNzg4ODg2OSAgMCAgICAgMCAgICAgMTAwNj"
@@ -239,11 +231,11 @@ HASH6 = '\xedt!=,\\\rk\xa7\xe3$\xfb\x06\x9c\x88\x92)\xc2\xfb\xd6'
 HASH7 = 'D\xb1\xb6\xf5\xaa\xa8i\x84\x07#x\x97\x01\xf7`.\x9b\xde\xfb '
 HASH_MINIMAL = "6\xce\x8f\x1bM\x82MWZ\x1a\xffjAc(\xdb(\xa1\x0eG"
 HASH_SIMPLE_RELATIONS = (
-    '\x08\xd8\x11\x8ck\xce\x848,{\xbc$\xb5\xa6D\xce\x91\x88o\xff')
+    "'#\xab&k\xe6\xf5E\xcfB\x9b\xceO7\xe6\xec\xa9\xddY\xaa")
 HASH_VERSION_RELATIONS = (
-    '\x877\xa01A\xcd\x1c\x1e8o\xba\xae\x83\x04\xa7\x85\xefs\xb0\xe1')
+    '\x84\xc9\xb4\xb3\r\x95\x16\x03\x95\x98\xc0\x14u\x06\xf7eA\xe65\xd1')
 HASH_MULTIPLE_RELATIONS = (
-    '{\x9f\xd0a^;=B%\xfe\xcf\x9c#\xe0\x18%\xc4{\xd5\n')
+    '\xec\xcdi\xdc\xde-\r\xc3\xd3\xc9s\x84\xe4\xc3\xd6\xc4\x12T\xa6\x0e')
 HASH_OR_RELATIONS = (
     '\xa1q\xf4*\x1c\xd4L\xa1\xca\xf1\xfa?\xc3\xc7\x9f\x88\xd53B\xc9')
 
@@ -482,7 +474,7 @@ def create_full_repository(target_dir):
 
         codename = "hardy"
         variant = "hardy-updates"
-        components = "main restricted"
+        components = ["main", "restricted"]
         archs = ["amd64", "i386"]
         hashes = [HASH4, HASH5, HASH6, HASH7]
 
@@ -499,7 +491,7 @@ def create_full_repository(target_dir):
         fd = open(os.path.join(dist_directory, "Release"), "w")
         fd.write(RELEASES[dist])
         fd.close()
-        for component in repository.components.split():
+        for component in repository.components:
             component_directory = os.path.join(dist_directory, component)
             os.mkdir(component_directory)
             for arch in repository.archs:

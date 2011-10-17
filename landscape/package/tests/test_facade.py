@@ -8,6 +8,7 @@ from smart.control import Control
 from smart.cache import Provides
 from smart.const import NEVER, ALWAYS
 
+import apt_inst
 from aptsources.sourceslist import SourcesList
 
 from twisted.internet import reactor
@@ -18,7 +19,7 @@ import smart
 
 from landscape.lib.fs import append_file, read_file
 from landscape.package.facade import (
-    TransactionError, DependencyError, ChannelError, SmartError)
+    TransactionError, DependencyError, ChannelError, SmartError, AptFacade)
 
 from landscape.tests.mocker import ANY
 from landscape.tests.helpers import LandscapeTest
@@ -32,7 +33,7 @@ class AptFacadeTest(LandscapeTest):
 
     helpers = [AptFacadeHelper]
 
-    def _add_system_package(self, name, architecture="all"):
+    def _add_system_package(self, name, architecture="all", version="1.0"):
         """Add a package to the dpkg status file."""
         append_file(self.dpkg_status, textwrap.dedent("""\
                 Package: %s
@@ -43,11 +44,22 @@ class AptFacadeTest(LandscapeTest):
                 Maintainer: Someone
                 Architecture: %s
                 Source: source
-                Version: 1.0
+                Version: %s
                 Config-Version: 1.0
                 Description: description
 
-                """ % (name, architecture)))
+                """ % (name, architecture, version)))
+
+    def _install_deb_file(self, path):
+        """Fake the the given deb file is installed in the system."""
+        deb_file = open(path)
+        deb = apt_inst.DebFile(deb_file)
+        control = deb.control.extractdata("control")
+        deb_file.close()
+        lines = control.splitlines()
+        lines.insert(1, "Status: install ok installed")
+        status = "\n".join(lines)
+        append_file(self.dpkg_status, status + "\n\n")
 
     def _add_package_to_deb_dir(self, path, name, version="1.0"):
         """Add fake package information to a directory.
@@ -56,10 +68,50 @@ class AptFacadeTest(LandscapeTest):
         available, so that get_packages() have something to return.
         There won't be an actual package in the dir.
         """
-        package_stanza = "Package: %(name)s\nVersion: %(version)s\n\n"
+        package_stanza = textwrap.dedent("""
+                Package: %(name)s
+                Priority: optional
+                Section: misc
+                Installed-Size: 1234
+                Maintainer: Someone
+                Architecture: all
+                Source: source
+                Version: %(version)s
+                Config-Version: 1.0
+                Description: description
+
+                """)
         append_file(
             os.path.join(path, "Packages"),
             package_stanza % {"name": name, "version": version})
+
+    def _touch_packages_file(self, deb_dir):
+        """Make sure the Packages file get a newer mtime value.
+
+        If we rely on simply writing to the file to update the mtime, we
+        might end up with the same as before, since the resolution is
+        seconds, which causes apt to not reload the file.
+        """
+        packages_path = os.path.join(deb_dir, "Packages")
+        mtime = int(time.time() + 1)
+        os.utime(packages_path, (mtime, mtime))
+
+    def test_custom_root_create_required_files(self):
+        """
+        If a custom root is passed to the constructor, the directory and
+        files that apt expects to be there will be created.
+        """
+        root = self.makeDir()
+        facade = AptFacade(root=root)
+        self.assertTrue(os.path.exists(os.path.join(root, "etc", "apt")))
+        self.assertTrue(
+            os.path.exists(os.path.join(root, "etc", "apt", "sources.list.d")))
+        self.assertTrue(os.path.exists(
+            os.path.join(root, "var", "cache", "apt", "archives", "partial")))
+        self.assertTrue(os.path.exists(
+            os.path.join(root, "var", "lib", "apt", "lists", "partial")))
+        self.assertTrue(
+            os.path.exists(os.path.join(root, "var", "lib", "dpkg", "status")))
 
     def test_no_system_packages(self):
         """
@@ -67,9 +119,9 @@ class AptFacadeTest(LandscapeTest):
         C{get_packages()}.
         """
         self.facade.reload_channels()
-        self.assertEqual([], self.facade.get_packages())
+        self.assertEqual([], list(self.facade.get_packages()))
 
-    def test_get_system_packages(self):
+    def test_get_packages_single_version(self):
         """
         If the dpkg status file contains some packages, those packages
         are reported by C{get_packages()}.
@@ -79,7 +131,23 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         self.assertEqual(
             ["bar", "foo"],
-            sorted(package.name for package in self.facade.get_packages()))
+            sorted(version.package.name
+                   for version in self.facade.get_packages()))
+
+    def test_get_packages_multiple_version(self):
+        """
+        If there are multiple versions of a package, C{get_packages()}
+        returns one object per version.
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package("foo", version="1.0")
+        self._add_package_to_deb_dir(deb_dir, "foo", version="1.5")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        self.assertEqual(
+            [("foo", "1.0"), ("foo", "1.5")],
+            sorted((version.package.name, version.version)
+                   for version in self.facade.get_packages()))
 
     def test_add_channel_apt_deb_without_components(self):
         """
@@ -188,7 +256,8 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         self.assertEqual(
             ["name1", "name2", "name3"],
-            sorted(package.name for package in self.facade.get_packages()))
+            sorted(version.package.name
+                   for version in self.facade.get_packages()))
 
     def test_get_channels_with_no_channels(self):
         """
@@ -252,7 +321,56 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         self.assertEqual(
             ["bar", "foo"],
-            sorted(package.name for package in self.facade.get_packages()))
+            sorted(version.package.name
+                   for version in self.facade.get_packages()))
+
+    def test_reload_channels_refetch_package_index(self):
+        """
+        If C{refetch_package_index} is True, reload_channels will
+        refetch the Packages files in the channels and rebuild the
+        internal database.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        new_facade = AptFacade(root=self.apt_root)
+        self._add_package_to_deb_dir(deb_dir, "bar")
+        self._touch_packages_file(deb_dir)
+        new_facade.refetch_package_index = True
+        new_facade.reload_channels()
+        self.assertEqual(
+            ["bar", "foo"],
+            sorted(version.package.name
+                   for version in new_facade.get_packages()))
+
+    def test_reload_channels_not_refetch_package_index(self):
+        """
+        If C{refetch_package_index} is False, reload_channels won't
+        refetch the Packages files in the channels, and instead simply
+        use the internal database that is already there.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        new_facade = AptFacade(root=self.apt_root)
+        self._add_package_to_deb_dir(deb_dir, "bar")
+        self._touch_packages_file(deb_dir)
+        new_facade.refetch_package_index = False
+        new_facade.reload_channels()
+        self.assertEqual(
+            ["foo"],
+            sorted(version.package.name
+                   for version in new_facade.get_packages()))
+
+    def test_dont_refetch_package_index_by_default(self):
+        """
+        By default, package indexes are not refetched, but the local
+        database is used.
+        """
+        new_facade = AptFacade(root=self.apt_root)
+        self.assertFalse(new_facade.refetch_package_index)
 
     def test_ensure_channels_reloaded_do_not_reload_twice(self):
         """
@@ -263,12 +381,22 @@ class AptFacadeTest(LandscapeTest):
         self.facade.ensure_channels_reloaded()
         self.assertEqual(
             ["foo"],
-            sorted(package.name for package in self.facade.get_packages()))
+            sorted(version.package.name
+                   for version in self.facade.get_packages()))
         self._add_system_package("bar")
         self.facade.ensure_channels_reloaded()
         self.assertEqual(
             ["foo"],
-            sorted(package.name for package in self.facade.get_packages()))
+            sorted(version.package.name
+                   for version in self.facade.get_packages()))
+
+    def test_reload_channels_with_channel_error(self):
+        """
+        The C{reload_channels} method raises a L{ChannelsError} if
+        apt fails to load the configured channels.
+        """
+        self.facade.add_channel_apt_deb("non-proto://fail.url", "./")
+        self.assertRaises(ChannelError, self.facade.reload_channels)
 
     def test_get_set_arch(self):
         """
@@ -291,12 +419,14 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         self.assertEqual(
             ["i386-package"],
-            sorted(package.name for package in self.facade.get_packages()))
+            sorted(version.package.name
+                   for version in self.facade.get_packages()))
         self.facade.set_arch("amd64")
         self.facade.reload_channels()
         self.assertEqual(
             ["amd64-package"],
-            sorted(package.name for package in self.facade.get_packages()))
+            sorted(version.package.name
+                   for version in self.facade.get_packages()))
 
     def test_get_package_skeleton(self):
         """
@@ -309,18 +439,241 @@ class AptFacadeTest(LandscapeTest):
         create_simple_repository(deb_dir)
         self.facade.add_channel_deb_dir(deb_dir)
         self.facade.reload_channels()
-        [pkg1] = [
-            package for package in self.facade.get_packages()
-            if package.name == "name1"]
-        [pkg2] = [
-            package for package in self.facade.get_packages()
-            if package.name == "name2"]
+        [pkg1] = self.facade.get_packages_by_name("name1")
+        [pkg2] = self.facade.get_packages_by_name("name2")
         skeleton1 = self.facade.get_package_skeleton(pkg1)
         self.assertEqual("Summary1", skeleton1.summary)
         skeleton2 = self.facade.get_package_skeleton(pkg2, with_info=False)
         self.assertIs(None, skeleton2.summary)
         self.assertEqual(HASH1, skeleton1.get_hash())
         self.assertEqual(HASH2, skeleton2.get_hash())
+
+    def test_get_package_hash(self):
+        """
+        C{get_package_hash} returns the hash for a given package.
+        """
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.facade.reload_channels()
+        [pkg] = self.facade.get_packages_by_name("name1")
+        self.assertEqual(HASH1, self.facade.get_package_hash(pkg))
+        [pkg] = self.facade.get_packages_by_name("name2")
+        self.assertEqual(HASH2, self.facade.get_package_hash(pkg))
+
+    def test_get_package_hashes(self):
+        """
+        C{get_package_hashes} returns the hashes for all packages in the
+        channels.
+        """
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.facade.reload_channels()
+        hashes = self.facade.get_package_hashes()
+        self.assertEqual(sorted(hashes), sorted([HASH1, HASH2, HASH3]))
+
+    def test_get_package_by_hash(self):
+        """
+        C{get_package_by_hash} returns the package that has the given hash.
+        """
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.facade.reload_channels()
+        version = self.facade.get_package_by_hash(HASH1)
+        self.assertEqual(version.package.name, "name1")
+        version = self.facade.get_package_by_hash(HASH2)
+        self.assertEqual(version.package.name, "name2")
+        version = self.facade.get_package_by_hash("none")
+        self.assertEqual(version, None)
+
+    def test_wb_reload_channels_clears_hash_cache(self):
+        """
+        To improve performance, the hashes for the packages are cached.
+        When reloading the channels, the cache is recreated.
+        """
+        # Load hashes.
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.facade.reload_channels()
+
+        # Hold a reference to packages.
+        [pkg1] = self.facade.get_packages_by_name("name1")
+        [pkg2] = self.facade.get_packages_by_name("name2")
+        [pkg3] = self.facade.get_packages_by_name("name3")
+        self.assertTrue(pkg1 and pkg2)
+
+        # Remove the package from the repository.
+        packages_path = os.path.join(deb_dir, "Packages")
+        os.unlink(os.path.join(deb_dir, PKGNAME1))
+        os.unlink(packages_path)
+        self.facade._create_packages_file(deb_dir)
+        # Forcibly change the mtime of our repository's Packages file,
+        # so that apt will consider it as changed (if the change is
+        # inside the same second the Packages' mtime will be the same)
+        self._touch_packages_file(deb_dir)
+
+        # Reload channel to reload the cache.
+        self.facade.reload_channels()
+
+        # Only packages with name2 and name3 should be loaded, and they're
+        # not the same objects anymore.
+        self.assertEqual(
+            sorted([version.package.name
+                    for version in self.facade.get_packages()]),
+            ["name2", "name3"])
+        self.assertNotEquals(
+            set(version.package for version in self.facade.get_packages()),
+            set([pkg2.package, pkg3.package]))
+
+        # The hash cache shouldn't include either of the old packages.
+        self.assertEqual(self.facade.get_package_hash(pkg1), None)
+        self.assertEqual(self.facade.get_package_hash(pkg2), None)
+        self.assertEqual(self.facade.get_package_hash(pkg3), None)
+
+        # Also, the hash for package1 shouldn't be present at all.
+        self.assertEqual(self.facade.get_package_by_hash(HASH1), None)
+
+        # While HASH2 and HASH3 should point to the new packages. We
+        # look at the Package object instead of the Version objects,
+        # since different Version objects may appear to be the same
+        # object.
+        new_pkgs = [version.package for version in self.facade.get_packages()]
+        self.assertTrue(
+            self.facade.get_package_by_hash(HASH2).package in new_pkgs)
+        self.assertTrue(
+            self.facade.get_package_by_hash(HASH3).package in new_pkgs)
+
+        # Which are not the old packages.
+        self.assertFalse(pkg2.package in new_pkgs)
+        self.assertFalse(pkg3.package in new_pkgs)
+
+    def test_is_package_available_in_channel_not_installed(self):
+        """
+        A package is considered available if the package is in a
+        configured channel and not installed.
+        """
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.facade.reload_channels()
+        [package] = self.facade.get_packages_by_name("name1")
+        self.assertTrue(self.facade.is_package_available(package))
+
+    def test_is_package_available_not_in_channel_installed(self):
+        """
+        A package is not considered available if the package is
+        installed and not in a configured channel.
+        """
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self._install_deb_file(os.path.join(deb_dir, PKGNAME1))
+        self.facade.reload_channels()
+        [package] = self.facade.get_packages_by_name("name1")
+        self.assertFalse(self.facade.is_package_available(package))
+
+    def test_is_package_available_in_channel_installed(self):
+        """
+        A package is considered available if the package is
+        installed and is in a configured channel.
+        """
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self._install_deb_file(os.path.join(deb_dir, PKGNAME1))
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.facade.reload_channels()
+        [package] = self.facade.get_packages_by_name("name1")
+        self.assertTrue(self.facade.is_package_available(package))
+
+    def test_is_package_upgrade_in_channel_not_installed(self):
+        """
+        A package is not consider an upgrade of no version of it is
+        installed.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [package] = self.facade.get_packages()
+        self.assertFalse(self.facade.is_package_upgrade(package))
+
+    def test_is_package_upgrade_in_channel_older_installed(self):
+        """
+        A package is considered to be an upgrade if some channel has a
+        newer version than the installed one.
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package("foo", version="0.5")
+        self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [version_05, version_10] = sorted(self.facade.get_packages())
+        self.assertTrue(self.facade.is_package_upgrade(version_10))
+        self.assertFalse(self.facade.is_package_upgrade(version_05))
+
+    def test_is_package_upgrade_in_channel_newer_installed(self):
+        """
+        A package is not considered to be an upgrade if there are only
+        older versions than the installed one in the channels.
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package("foo", version="1.5")
+        self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [version_10, version_15] = sorted(self.facade.get_packages())
+        self.assertFalse(self.facade.is_package_upgrade(version_10))
+        self.assertFalse(self.facade.is_package_upgrade(version_15))
+
+    def test_is_package_upgrade_in_channel_same_as_installed(self):
+        """
+        A package is not considered to be an upgrade if the newest
+        version of the packages available in the channels is the same as
+        the installed one.
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package("foo", version="1.0")
+        self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [package] = self.facade.get_packages()
+        self.assertFalse(self.facade.is_package_upgrade(package))
+
+    def test_is_package_upgrade_not_in_channel_installed(self):
+        """
+        A package is not considered to be an upgrade if the package is
+        installed but not available in any of the configured channels.
+        """
+        self._add_system_package("foo", version="1.0")
+        self.facade.reload_channels()
+        [package] = self.facade.get_packages()
+        self.assertFalse(self.facade.is_package_upgrade(package))
+
+    def test_get_packages_by_name_no_match(self):
+        """
+        If there are no packages with the given name,
+        C{get_packages_by_name} returns an empty list.
+        """
+        self._add_system_package("foo", version="1.0")
+        self.facade.reload_channels()
+        self.assertEqual([], self.facade.get_packages_by_name("bar"))
+
+    def test_get_packages_by_name_match(self):
+        """
+        C{get_packages_by_name} returns all the packages in the
+        available channels that have the specified name.
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package("foo", version="1.0")
+        self._add_package_to_deb_dir(deb_dir, "foo", version="1.5")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        self.assertEqual(
+            [("foo", "1.0"), ("foo", "1.5")],
+            sorted([(version.package.name, version.version)
+                    for version in self.facade.get_packages_by_name("foo")]))
 
 
 class SmartFacadeTest(LandscapeTest):
@@ -826,7 +1179,7 @@ class SmartFacadeTest(LandscapeTest):
         self.facade.set_arch("i386")
         self.facade.reset_channels()
         self.facade.add_channel_apt_deb(repo.url, repo.codename,
-                                        repo.components)
+                                        " ".join(repo.components))
         self.facade.reload_channels()
 
         pkgs = self.facade.get_packages()
@@ -838,7 +1191,7 @@ class SmartFacadeTest(LandscapeTest):
         self.facade.set_arch("amd64")
         self.facade.reset_channels()
         self.facade.add_channel_apt_deb(repo.url, repo.codename,
-                                        repo.components)
+                                        " ".join(repo.components))
         self.facade.reload_channels()
 
         pkgs = self.facade.get_packages()

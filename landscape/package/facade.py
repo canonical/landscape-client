@@ -46,21 +46,64 @@ class AptFacade(object):
     these features slightly more comfortable.
 
     @param root: The root dir of the Apt configuration files.
+    @ivar refetch_package_index: Whether to refetch the package indexes
+        when reloading the channels, or reuse the existing local
+        database.
     """
 
     def __init__(self, root=None):
+        self._root = root
+        self._ensure_dir_structure()
         self._cache = apt.cache.Cache(rootdir=root, memonly=True)
         self._channels_loaded = False
+        self._pkg2hash = {}
+        self._hash2pkg = {}
+        self.refetch_package_index = False
+
+    def _ensure_dir_structure(self):
+        self._ensure_sub_dir("etc/apt")
+        self._ensure_sub_dir("etc/apt/sources.list.d")
+        self._ensure_sub_dir("var/cache/apt/archives/partial")
+        self._ensure_sub_dir("var/lib/apt/lists/partial")
+        dpkg_dir = self._ensure_sub_dir("var/lib/dpkg")
+        self._dpkg_status = os.path.join(dpkg_dir, "status")
+        if not os.path.exists(self._dpkg_status):
+            create_file(self._dpkg_status, "")
+
+    def _ensure_sub_dir(self, sub_dir):
+        """Ensure that a dir in the Apt root exists."""
+        full_path = os.path.join(self._root, sub_dir)
+        if not os.path.exists(full_path):
+            os.makedirs(full_path)
+        return full_path
 
     def get_packages(self):
         """Get all the packages available in the channels."""
-        return [self._cache[name] for name in self._cache.keys()]
+        return self._hash2pkg.itervalues()
 
     def reload_channels(self):
         """Reload the channels and update the cache."""
         self._cache.open(None)
-        self._cache.update()
-        self._cache.open(None)
+        if self.refetch_package_index:
+            try:
+                self._cache.update()
+            except apt.cache.FetchFailedException:
+                raise ChannelError(
+                    "Apt failed to reload channels (%r)" % (
+                        self.get_channels()))
+            self._cache.open(None)
+
+        self._pkg2hash.clear()
+        self._hash2pkg.clear()
+        for package in [self._cache[name] for name in self._cache.keys()]:
+            for version in package.versions:
+                hash = self.get_package_skeleton(
+                    version, with_info=False).get_hash()
+                # Use a tuple including the package, since the Version
+                # objects of two different packages can have the same
+                # hash.
+                self._pkg2hash[(package, version)] = hash
+                self._hash2pkg[hash] = version
 
     def ensure_channels_reloaded(self):
         """Reload the channels if they haven't been reloaded yet."""
@@ -93,11 +136,15 @@ class AptFacade(object):
         A Packages file is created in the directory with information
         about the deb files.
         """
-        packages_contents = "\n".join(
-            self.get_package_stanza(os.path.join(path, filename))
-            for filename in sorted(os.listdir(path)))
-        create_file(os.path.join(path, "Packages"), packages_contents)
+        self._create_packages_file(path)
         self.add_channel_apt_deb("file://%s" % path, "./", None)
+
+    def _create_packages_file(self, deb_dir):
+        """Create a Packages file in a directory with debs."""
+        packages_contents = "\n".join(
+            self.get_package_stanza(os.path.join(deb_dir, filename))
+            for filename in sorted(os.listdir(deb_dir)))
+        create_file(os.path.join(deb_dir, "Packages"), packages_contents)
 
     def get_channels(self):
         """Return a list of channels configured.
@@ -160,6 +207,45 @@ class AptFacade(object):
         @return: a L{PackageSkeleton} object.
         """
         return build_skeleton_apt(pkg, with_info=with_info)
+
+    def get_package_hash(self, version):
+        """Return a hash from the given package.
+
+        @param version: an L{apt.package.Version} object.
+        """
+        return self._pkg2hash.get((version.package, version))
+
+    def get_package_hashes(self):
+        """Get the hashes of all the packages available in the channels."""
+        return self._pkg2hash.values()
+
+    def get_package_by_hash(self, hash):
+        """Get the package having the provided hash.
+
+        @param hash: The hash the package should have.
+
+        @return: The L{apt.package.Package} that has the given hash.
+        """
+        return self._hash2pkg.get(hash)
+
+    def is_package_available(self, version):
+        """Is the package available for installation?"""
+        return version.downloadable
+
+    def is_package_upgrade(self, version):
+        """Is the package an upgrade for another installed package?"""
+        if not version.package.is_upgradable or not version.package.installed:
+            return False
+        return version > version.package.installed
+
+    def get_packages_by_name(self, name):
+        """Get all available packages matching the provided name.
+
+        @param name: The name the returned packages should have.
+        """
+        return [
+            version for version in self.get_packages()
+            if version.package.name == name]
 
 
 class SmartFacade(object):
@@ -513,3 +599,29 @@ class SmartFacade(object):
         """Flush the current smart configuration to disk."""
         control = self._get_ctrl()
         control.saveSysConf()
+
+    def is_package_available(self, package):
+        """Is the package available for installation?"""
+        for loader in package.loaders:
+            # Is the package also in a non-installed
+            # loader?  IOW, "available".
+            if not loader.getInstalled():
+                return True
+        return False
+
+    def is_package_upgrade(self, package):
+        """Is the package an upgrade for another installed package?"""
+        is_upgrade = False
+        for upgrade in package.upgrades:
+            for provides in upgrade.providedby:
+                for provides_package in provides.packages:
+                    if provides_package.installed:
+                        is_upgrade = True
+                        break
+                else:
+                    continue
+                break
+            else:
+                continue
+            break
+        return is_upgrade

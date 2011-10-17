@@ -116,6 +116,21 @@ class SkeletonTestMixin(object):
         self.assertEqual(1038, skeleton.size)
         self.assertEqual(28672, skeleton.installed_size)
 
+    def test_build_skeleton_with_unicode_and_extra_info(self):
+        """
+        If C{with_unicode} and C{with_info} are passed to
+        C{build_skeleton}, the name, version and the extra info of the
+        skeleton are unicode strings.
+        """
+        pkg1 = self.get_package("name1")
+        skeleton = self.build_skeleton(pkg1, with_unicode=True, with_info=True)
+        self.assertTrue(isinstance(skeleton.name, unicode))
+        self.assertTrue(isinstance(skeleton.version, unicode))
+        self.assertTrue(isinstance(skeleton.section, unicode))
+        self.assertTrue(isinstance(skeleton.summary, unicode))
+        self.assertTrue(isinstance(skeleton.description, unicode))
+        self.assertEqual(HASH1, skeleton.get_hash())
+
     def test_build_skeleton_minimal(self):
         """
         A package that has only the required fields will still have some
@@ -166,6 +181,7 @@ class SkeletonTestMixin(object):
             (DEB_REQUIRES, "depend1"),
             (DEB_REQUIRES, "predepend1"),
             (DEB_UPGRADES, "simple-relations < 1.0"),
+            (DEB_CONFLICTS, "break1"),
             (DEB_CONFLICTS, "conflict1")]
         self.assertEqual(relations, skeleton.relations)
         self.assertEqual(HASH_SIMPLE_RELATIONS, skeleton.get_hash())
@@ -185,6 +201,7 @@ class SkeletonTestMixin(object):
             (DEB_REQUIRES, "depend1 = 2.0"),
             (DEB_REQUIRES, "predepend1 <= 2.0"),
             (DEB_UPGRADES, "version-relations < 1.0"),
+            (DEB_CONFLICTS, "break1 > 2.0"),
             (DEB_CONFLICTS, "conflict1 < 2.0")]
         self.assertEqual(relations, skeleton.relations)
         self.assertEqual(HASH_VERSION_RELATIONS, skeleton.get_hash())
@@ -207,7 +224,10 @@ class SkeletonTestMixin(object):
             (DEB_REQUIRES, "depend2"),
             (DEB_REQUIRES, "predepend1 <= 2.0"),
             (DEB_REQUIRES, "predepend2"),
+            (DEB_OR_REQUIRES, "depend3 | depend4 > 2.0"),
             (DEB_UPGRADES, "multiple-relations < 1.0"),
+            (DEB_CONFLICTS, "break1 > 2.0"),
+            (DEB_CONFLICTS, "break2"),
             (DEB_CONFLICTS, "conflict1 < 2.0"),
             (DEB_CONFLICTS, "conflict2")]
         self.assertEqual(relations, skeleton.relations)
@@ -272,14 +292,20 @@ class SkeletonAptTest(LandscapeTest, SkeletonTestMixin):
     def setUp(self):
         super(SkeletonAptTest, self).setUp()
         self.facade.add_channel_deb_dir(self.skeleton_repository_dir)
-        self.facade.reload_channels()
+        # Don't use reload_channels(), since that causes the test setup
+        # depending on build_skeleton_apt working correctly, which makes
+        # it harder to to TDD for these tests.
+        self.facade._cache.open(None)
+        self.facade._cache.update(None)
+        self.facade._cache.open(None)
 
     def get_package(self, name):
         """Return the package with the specified name."""
-        [package] = [
-            package for package in self.facade.get_packages()
-            if package.name == name]
-        return package
+        # Don't use get_packages(), since that causes the test setup
+        # depending on build_skeleton_apt working correctly, which makes
+        # it harder to to TDD for these tests.
+        package = self.facade._cache[name]
+        return package.candidate
 
     def build_skeleton(self, *args, **kwargs):
         """Build the skeleton to be tested."""
