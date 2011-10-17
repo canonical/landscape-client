@@ -1179,7 +1179,7 @@ class SmartFacadeTest(LandscapeTest):
         self.facade.set_arch("i386")
         self.facade.reset_channels()
         self.facade.add_channel_apt_deb(repo.url, repo.codename,
-                                        repo.components)
+                                        " ".join(repo.components))
         self.facade.reload_channels()
 
         pkgs = self.facade.get_packages()
@@ -1191,7 +1191,7 @@ class SmartFacadeTest(LandscapeTest):
         self.facade.set_arch("amd64")
         self.facade.reset_channels()
         self.facade.add_channel_apt_deb(repo.url, repo.codename,
-                                        repo.components)
+                                        " ".join(repo.components))
         self.facade.reload_channels()
 
         pkgs = self.facade.get_packages()

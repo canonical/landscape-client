@@ -474,7 +474,7 @@ def create_full_repository(target_dir):
 
         codename = "hardy"
         variant = "hardy-updates"
-        components = "main restricted"
+        components = ["main", "restricted"]
         archs = ["amd64", "i386"]
         hashes = [HASH4, HASH5, HASH6, HASH7]
 
@@ -491,7 +491,7 @@ def create_full_repository(target_dir):
         fd = open(os.path.join(dist_directory, "Release"), "w")
         fd.write(RELEASES[dist])
         fd.close()
-        for component in repository.components.split():
+        for component in repository.components:
             component_directory = os.path.join(dist_directory, component)
             os.mkdir(component_directory)
             for arch in repository.archs:
