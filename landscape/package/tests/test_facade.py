@@ -550,6 +550,54 @@ class AptFacadeTest(LandscapeTest):
         self.assertFalse(pkg2.package in new_pkgs)
         self.assertFalse(pkg3.package in new_pkgs)
 
+    def test_is_package_installed_in_channel_not_installed(self):
+        """
+        If a package is in a channel, but not installed, it's not
+        considered installed.
+        """
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.facade.reload_channels()
+        [package] = self.facade.get_packages_by_name("name1")
+        self.assertFalse(self.facade.is_package_installed(package))
+
+    def test_is_package_installed_in_channel_installed(self):
+        """
+        If a package is in a channel and installed, it's considered
+        installed.
+        """
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self._install_deb_file(os.path.join(deb_dir, PKGNAME1))
+        self.facade.reload_channels()
+        [package] = self.facade.get_packages_by_name("name1")
+        self.assertTrue(self.facade.is_package_installed(package))
+
+    def test_is_package_installed_other_verion_in_channel(self):
+        """
+        If the there are other versions in the channels, only the
+        installed version of thepackage is considered installed.
+        """
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self._add_package_to_deb_dir(
+            deb_dir, "name1", version="version0-release0")
+        self._add_package_to_deb_dir(
+            deb_dir, "name1", version="version2-release2")
+        self._install_deb_file(os.path.join(deb_dir, PKGNAME1))
+        self.facade.reload_channels()
+        [version0, version1, version2] = sorted(
+            self.facade.get_packages_by_name("name1"))
+        self.assertEqual("version0-release0", version0.version)
+        self.assertFalse(self.facade.is_package_installed(version0))
+        self.assertEqual("version1-release1", version1.version)
+        self.assertTrue(self.facade.is_package_installed(version1))
+        self.assertEqual("version2-release2", version2.version)
+        self.assertFalse(self.facade.is_package_installed(version2))
+
     def test_is_package_available_in_channel_not_installed(self):
         """
         A package is considered available if the package is in a

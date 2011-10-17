@@ -228,6 +228,10 @@ class AptFacade(object):
         """
         return self._hash2pkg.get(hash)
 
+    def is_package_installed(self, version):
+        """Is the package version installed?"""
+        return version == version.package.installed
+
     def is_package_available(self, version):
         """Is the package available for installation?"""
         return version.downloadable
