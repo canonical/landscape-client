@@ -102,7 +102,7 @@ class AptFacadeTest(LandscapeTest):
         files that apt expects to be there will be created.
         """
         root = self.makeDir()
-        facade = AptFacade(root=root)
+        AptFacade(root=root)
         self.assertTrue(os.path.exists(os.path.join(root, "etc", "apt")))
         self.assertTrue(
             os.path.exists(os.path.join(root, "etc", "apt", "sources.list.d")))
