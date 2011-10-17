@@ -462,7 +462,7 @@ class PackageReporter(PackageTaskHandler):
             hash = self._facade.get_package_hash(package)
             id = self._store.get_hash_id(hash)
             if id is not None:
-                if package.installed:
+                if self._facade.is_package_installed(package):
                     current_installed.add(id)
                     if self._facade.is_package_available(package):
                         current_available.add(id)

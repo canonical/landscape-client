@@ -600,6 +600,10 @@ class SmartFacade(object):
         control = self._get_ctrl()
         control.saveSysConf()
 
+    def is_package_installed(self, package):
+        """Is the package installed?"""
+        return package.installed
+
     def is_package_available(self, package):
         """Is the package available for installation?"""
         for loader in package.loaders:
