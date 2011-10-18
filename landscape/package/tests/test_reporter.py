@@ -7,6 +7,9 @@ import time
 from twisted.internet.defer import Deferred, succeed
 from twisted.internet import reactor
 
+import apt_inst
+
+from landscape.lib.fs import append_file
 from landscape.lib.fetch import fetch_async, FetchError
 from landscape.lib import bpickle
 from landscape.package.store import (
@@ -17,7 +20,7 @@ from landscape.package.reporter import (
 from landscape.package import reporter
 from landscape.package.facade import SmartFacade
 from landscape.package.tests.helpers import (
-    AptFacadeHelper, SimpleRepositoryHelper, HASH1, HASH2, HASH3)
+    AptFacadeHelper, SimpleRepositoryHelper, HASH1, HASH2, HASH3, PKGNAME1)
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
 from landscape.tests.mocker import ANY
@@ -55,6 +58,17 @@ class PackageReporterTest(LandscapeTest):
         result = super(PackageReporterTest, self).setUp()
         return result.addCallback(set_up)
 
+    def _install_deb_file(self, path):
+        """Fake the the given deb file is installed in the system."""
+        deb_file = open(path)
+        deb = apt_inst.DebFile(deb_file)
+        control = deb.control.extractdata("control")
+        deb_file.close()
+        lines = control.splitlines()
+        lines.insert(1, "Status: install ok installed")
+        status = "\n".join(lines)
+        append_file(self.dpkg_status, status + "\n\n")
+
     def set_pkg2_upgrades_pkg1(self):
         previous = self.Facade.channels_reloaded
 
@@ -67,12 +81,7 @@ class PackageReporterTest(LandscapeTest):
         self.Facade.channels_reloaded = callback
 
     def set_pkg1_installed(self):
-        previous = self.Facade.channels_reloaded
-
-        def callback(self):
-            previous(self)
-            self.get_packages_by_name("name1")[0].installed = True
-        self.Facade.channels_reloaded = callback
+        self._install_deb_file(os.path.join(self.repository_dir, PKGNAME1))
 
     def test_set_package_ids_with_all_known(self):
         self.store.add_hash_id_request(["hash1", "hash2"])
