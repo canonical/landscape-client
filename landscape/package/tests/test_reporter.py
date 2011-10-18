@@ -1,4 +1,3 @@
-import glob
 import sys
 import os
 import unittest
@@ -10,7 +9,7 @@ from twisted.internet import reactor
 
 import apt_inst
 
-from landscape.lib.fs import append_file
+from landscape.lib.fs import append_file, create_file
 from landscape.lib.fetch import fetch_async, FetchError
 from landscape.lib import bpickle
 from landscape.package.store import (
@@ -1102,8 +1101,7 @@ class PackageReporterTest(LandscapeTest):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["packages"])
 
-        for filename in glob.glob(self.repository_dir + "/*.deb"):
-            os.unlink(filename)
+        create_file(self.repository_dir + "/Packages", "")
 
         self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
         self.store.add_available([1, 2, 3])
