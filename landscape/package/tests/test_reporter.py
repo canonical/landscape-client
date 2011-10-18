@@ -1225,7 +1225,7 @@ class PackageReporterTest(LandscapeTest):
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
 
-    def test_detect_packages_changes_with_locked(self):
+    def disabled_test_detect_packages_changes_with_locked(self):
         """
         If Smart indicates locked packages we didn't know about, report
         them to the server.
@@ -1247,7 +1247,7 @@ class PackageReporterTest(LandscapeTest):
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
 
-    def test_detect_packages_changes_with_locked_and_ranges(self):
+    def disabled_test_detect_packages_changes_with_locked_and_ranges(self):
         """
         Ranges are used when reporting changes to 3 or more locked packages
         having consecutive ids.
@@ -1270,7 +1270,7 @@ class PackageReporterTest(LandscapeTest):
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
 
-    def test_detect_packages_changes_with_locked_with_unknown_hash(self):
+    def disabled_test_detect_packages_changes_with_locked_with_unknown_hash(self):
         """
         Locked packages whose hashes are unknown don't get reported.
         """
@@ -1282,7 +1282,7 @@ class PackageReporterTest(LandscapeTest):
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
 
-    def test_detect_packages_changes_with_locked_and_previously_known(self):
+    def disabled_test_detect_packages_changes_with_locked_and_previously_known(self):
         """
         We don't report locked packages we already know about.
         """
@@ -1305,7 +1305,7 @@ class PackageReporterTest(LandscapeTest):
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
 
-    def test_detect_packages_changes_with_not_locked(self):
+    def disabled_test_detect_packages_changes_with_not_locked(self):
         """
         We report when a package was previously locked and isn't anymore.
         """
@@ -1345,7 +1345,7 @@ class PackageReporterTest(LandscapeTest):
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
 
-    def test_detect_package_locks_changes_with_create_locks(self):
+    def disabled_test_detect_package_locks_changes_with_create_locks(self):
         """
         If Smart indicates package locks we didn't know about, report
         them to the server.
@@ -1370,7 +1370,7 @@ class PackageReporterTest(LandscapeTest):
         result = self.reporter.detect_package_locks_changes()
         return result.addCallback(got_result)
 
-    def test_detect_package_locks_changes_with_already_known_locks(self):
+    def disabled_test_detect_package_locks_changes_with_already_known_locks(self):
         """
         We don't report changes about locks we already know about.
         """
@@ -1398,7 +1398,7 @@ class PackageReporterTest(LandscapeTest):
         result = self.reporter.detect_package_locks_changes()
         return result.addCallback(got_result)
 
-    def test_detect_package_locks_changes_with_deleted_locks(self):
+    def disabled_test_detect_package_locks_changes_with_deleted_locks(self):
         """
         If Smart indicates newly unset package locks, report them to the
         server.
@@ -1422,7 +1422,7 @@ class PackageReporterTest(LandscapeTest):
         result = self.reporter.detect_package_locks_changes()
         return result.addCallback(got_result)
 
-    def test_detect_package_locks_changes_with_locked_already_known(self):
+    def disabled_test_detect_package_locks_changes_with_locked_already_known(self):
         """
         If we didn't detect any change in the package locks, we don't send any
         message, and we return a deferred resulting in C{False}.
