@@ -2,6 +2,7 @@ import glob
 import sys
 import os
 import unittest
+import textwrap
 import time
 
 from twisted.internet.defer import Deferred, succeed
@@ -69,16 +70,33 @@ class PackageReporterTest(LandscapeTest):
         status = "\n".join(lines)
         append_file(self.dpkg_status, status + "\n\n")
 
-    def set_pkg2_upgrades_pkg1(self):
-        previous = self.Facade.channels_reloaded
+    def _add_package_to_deb_dir(self, path, name, version="1.0"):
+        """Add fake package information to a directory.
 
-        def callback(self):
-            from smart.backends.deb.base import DebUpgrades
-            previous(self)
-            pkg2 = self.get_packages_by_name("name2")[0]
-            pkg2.upgrades += (DebUpgrades("name1", "=", "version1-release1"),)
-            self.reload_cache()  # Relink relations.
-        self.Facade.channels_reloaded = callback
+        There will only be basic information about the package
+        available, so that get_packages() have something to return.
+        There won't be an actual package in the dir.
+        """
+        package_stanza = textwrap.dedent("""
+                Package: %(name)s
+                Priority: optional
+                Section: misc
+                Installed-Size: 1234
+                Maintainer: Someone
+                Architecture: all
+                Source: source
+                Version: %(version)s
+                Config-Version: 1.0
+                Description: description
+
+                """)
+        append_file(
+            os.path.join(path, "Packages"),
+            package_stanza % {"name": name, "version": version})
+
+    def set_pkg1_upgradable(self):
+        self._add_package_to_deb_dir(
+            self.repository_dir, "name1", version="version2")
 
     def set_pkg1_installed(self):
         self._install_deb_file(os.path.join(self.repository_dir, PKGNAME1))
@@ -1160,7 +1178,7 @@ class PackageReporterTest(LandscapeTest):
         self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
         self.store.add_available([1, 2, 3])
 
-        self.set_pkg2_upgrades_pkg1()
+        self.set_pkg1_upgradable()
 
         def got_result(result):
             self.assertMessages(message_store.get_pending_messages(), [])
@@ -1176,7 +1194,7 @@ class PackageReporterTest(LandscapeTest):
         self.store.add_available([1, 2, 3])
         self.store.add_installed([1])
 
-        self.set_pkg2_upgrades_pkg1()
+        self.set_pkg1_upgradable()
         self.set_pkg1_installed()
 
         def got_result(result):
