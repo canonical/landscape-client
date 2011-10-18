@@ -77,6 +77,9 @@ class AptFacade(object):
             os.makedirs(full_path)
         return full_path
 
+    def deinit(self):
+        """This method exists solely to be compatible with C{SmartFacade}."""
+
     def get_packages(self):
         """Get all the packages available in the channels."""
         return self._hash2pkg.itervalues()
