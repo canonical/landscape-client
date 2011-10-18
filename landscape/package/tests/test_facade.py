@@ -434,6 +434,8 @@ class AptFacadeTest(LandscapeTest):
         package. By default extra information is included, but it's
         possible to specify that only basic information should be
         included.
+
+        The information about the package are unicode strings.
         """
         deb_dir = self.makeDir()
         create_simple_repository(deb_dir)
@@ -442,6 +444,7 @@ class AptFacadeTest(LandscapeTest):
         [pkg1] = self.facade.get_packages_by_name("name1")
         [pkg2] = self.facade.get_packages_by_name("name2")
         skeleton1 = self.facade.get_package_skeleton(pkg1)
+        self.assertTrue(isinstance(skeleton1.summary, unicode))
         self.assertEqual("Summary1", skeleton1.summary)
         skeleton2 = self.facade.get_package_skeleton(pkg2, with_info=False)
         self.assertIs(None, skeleton2.summary)

@@ -246,7 +246,7 @@ class AptFacade(object):
 
         @return: a L{PackageSkeleton} object.
         """
-        return build_skeleton_apt(pkg, with_info=with_info)
+        return build_skeleton_apt(pkg, with_info=with_info, with_unicode=True)
 
     def get_package_hash(self, version):
         """Return a hash from the given package.
