@@ -401,7 +401,7 @@ class PackageReporterTest(LandscapeTest):
         self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
 
         # Undetermined arch
-        self.facade.set_arch(None)
+        self.facade.set_arch("")
 
         # The failure should be properly logged
         logging_mock = self.mocker.replace("logging.warning")
