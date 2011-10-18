@@ -1102,7 +1102,7 @@ class PackageReporterTest(LandscapeTest):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["packages"])
 
-        for filename in glob.glob(self.repository_dir + "/*"):
+        for filename in glob.glob(self.repository_dir + "/*.deb"):
             os.unlink(filename)
 
         self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
