@@ -17,8 +17,7 @@ from landscape.package.reporter import (
 from landscape.package import reporter
 from landscape.package.facade import SmartFacade
 from landscape.package.tests.helpers import (
-    SmartFacadeHelper, AptFacadeHelper, SimpleRepositoryHelper,
-    HASH1, HASH2, HASH3)
+    AptFacadeHelper, SimpleRepositoryHelper, HASH1, HASH2, HASH3)
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
 from landscape.tests.mocker import ANY
@@ -41,7 +40,7 @@ class PackageReporterConfigurationTest(unittest.TestCase):
 
 class PackageReporterTest(LandscapeTest):
 
-    helpers = [SmartFacadeHelper, BrokerServiceHelper]
+    helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
 
     def setUp(self):
 
