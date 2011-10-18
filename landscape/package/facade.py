@@ -84,6 +84,14 @@ class AptFacade(object):
         """Get all the packages available in the channels."""
         return self._hash2pkg.itervalues()
 
+    def get_locked_packages(self):
+        """Get all packages in the channels matching the set locks.
+
+        This method isn't implemented yet. It's here to make the
+        transition to Apt in the package reporter easier.
+        """
+        return []
+
     def reload_channels(self):
         """Reload the channels and update the cache."""
         self._cache.open(None)
