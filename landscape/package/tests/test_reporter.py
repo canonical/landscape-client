@@ -19,7 +19,7 @@ from landscape.package.reporter import (
     PackageReporter, HASH_ID_REQUEST_TIMEOUT, main, find_reporter_command,
     PackageReporterConfiguration, FakeGlobalReporter, FakeReporter)
 from landscape.package import reporter
-from landscape.package.facade import SmartFacade
+from landscape.package.facade import AptFacade
 from landscape.package.tests.helpers import (
     AptFacadeHelper, SimpleRepositoryHelper, HASH1, HASH2, HASH3, PKGNAME1)
 from landscape.tests.helpers import (
@@ -223,7 +223,7 @@ class PackageReporterTest(LandscapeTest):
             installed_size = None
             relations = []
 
-        mock_facade = self.mocker.patch(SmartFacade)
+        mock_facade = self.mocker.patch(AptFacade)
         mock_facade.get_package_skeleton(ANY)
         self.mocker.result(FakePackage())
         self.mocker.replay()
