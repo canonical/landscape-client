@@ -1642,7 +1642,7 @@ class GlobalPackageReporterTest(LandscapeTest):
 
 class FakePackageReporterTest(LandscapeTest):
 
-    helpers = [EnvironSaverHelper, SmartFacadeHelper, BrokerServiceHelper]
+    helpers = [EnvironSaverHelper, BrokerServiceHelper]
 
     def setUp(self):
 
@@ -1653,7 +1653,7 @@ class FakePackageReporterTest(LandscapeTest):
             os.environ["FAKE_PACKAGE_STORE"] = global_file
             self.config = PackageReporterConfiguration()
             self.reporter = FakeReporter(
-                self.store, self.facade, self.remote, self.config)
+                self.store, None, self.remote, self.config)
             self.config.data_path = self.makeDir()
             os.mkdir(self.config.package_directory)
 
