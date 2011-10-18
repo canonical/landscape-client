@@ -110,6 +110,16 @@ class AptFacade(object):
         transition to Apt in the package reporter easier.
         """
 
+    def get_package_locks(self):
+        """Return all set package locks.
+
+        @return: A C{list} of ternary tuples, contaning the name, relation
+            and version details for each lock currently set on the system.
+
+        XXX: This method isn't implemented yet. It's here to make the
+        transition to Apt in the package reporter easier.
+        """
+        return []
 
     def reload_channels(self):
         """Reload the channels and update the cache."""
