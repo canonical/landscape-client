@@ -1188,19 +1188,23 @@ class PackageReporterTest(LandscapeTest):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["packages"])
 
-        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
-        self.store.add_available([1, 2, 3])
-        self.store.add_installed([1])
-
         self.set_pkg1_upgradable()
         self.set_pkg1_installed()
+        self.facade.reload_channels()
+        upgrade = sorted(self.facade.get_packages_by_name("name1"))[1]
+        upgrade_hash = self.facade.get_package_hash(upgrade)
+
+        self.store.set_hash_ids(
+            {HASH1: 1, HASH2: 2, HASH3: 3, upgrade_hash: 4})
+        self.store.add_available([1, 2, 3, 4])
+        self.store.add_installed([1])
 
         def got_result(result):
             self.assertMessages(message_store.get_pending_messages(),
                                 [{"type": "packages",
-                                  "available-upgrades": [2]}])
+                                  "available-upgrades": [4]}])
 
-            self.assertEqual(self.store.get_available_upgrades(), [2])
+            self.assertEqual(self.store.get_available_upgrades(), [4])
 
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
