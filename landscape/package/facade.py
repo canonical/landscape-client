@@ -53,7 +53,8 @@ class AptFacade(object):
 
     def __init__(self, root=None):
         self._root = root
-        self._ensure_dir_structure()
+        if self._root is not None:
+            self._ensure_dir_structure()
         self._cache = apt.cache.Cache(rootdir=root, memonly=True)
         self._channels_loaded = False
         self._pkg2hash = {}
