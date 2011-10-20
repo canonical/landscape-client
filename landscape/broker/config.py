@@ -73,15 +73,15 @@ class BrokerConfiguration(Configuration):
         parser.add_option("--ping-interval", default=30, type="int",
                           metavar="INTERVAL",
                           help="The number of seconds between pings.")
-        parser.add_option("--http-proxy", default="", metavar="URL",
+        parser.add_option("--http-proxy", metavar="URL",
                           help="The URL of the HTTP proxy, if one is needed.")
-        parser.add_option("--https-proxy", default="", metavar="URL",
+        parser.add_option("--https-proxy", metavar="URL",
                           help="The URL of the HTTPS proxy, if one is needed.")
         parser.add_option("--cloud", action="store_true",
                           help="Set this if your computer is in an EC2 cloud.")
         parser.add_option("--otp", default="",
                           help="The OTP to use in cloud configuration.")
-        parser.add_option("--tags", default="",
+        parser.add_option("--tags",
                           help="Comma separated list of tag names to be sent "
                                "to the server.")
         parser.add_option("--record", action="store_true",

@@ -720,6 +720,60 @@ data_path = %s
 account_name = account
 """ % config.data_path)
 
+    def test_silent_setup_no_register(self):
+        """
+        Called with command line options to write a config file but no
+        registration or validation of parameters is attempted.
+        """
+        # Make sure no sysvconfig modifications are attempted
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        self.mocker.replay()
+
+        config = self.get_config(["--silent", "--no-start"])
+        setup(config)
+        self.assertEqual(self.get_content(config), """\
+[client]
+url = https://landscape.canonical.com/message-system
+data_path = %s
+""" % config.data_path)
+
+    def test_silent_setup_no_register_with_default_preseed_params(self):
+        """
+        Make sure that the configuration can be used to write the
+        configuration file after a fresh install.
+        """
+        # Make sure no sysvconfig modifications are attempted
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        self.mocker.replay()
+
+        args = ["--silent", "--no-start"]
+        args += ["--computer-title", ""]
+        args += ["--account-name", ""]
+        args += ["--registration-password", ""]
+        args += ["--url", "https://landscape.canonical.com/message-system"]
+        args += ["--exchange-interval", "900"]
+        args += ["--urgent-exchange-interval", "60"]
+        args += ["--ping-url", "http://landscape.canonical.com/ping"]
+        args += ["--ping-interval", "30"]
+        args += ["--http-proxy", ""]
+        args += ["--https-proxy", ""]
+        args += ["--otp", ""]
+        args += ["--tags", ""]
+        config = self.get_config(args)
+        setup(config)
+        self.assertEqual(self.get_content(config), """\
+[client]
+http_proxy = 
+tags = 
+data_path = %s
+registration_password = 
+account_name = 
+url = https://landscape.canonical.com/message-system
+computer_title = 
+https_proxy = 
+ping_url = http://landscape.canonical.com/ping
+""" % config.data_path)
+
     def test_silent_setup_without_computer_title(self):
         """A computer title is required."""
         sysvconfig_mock = self.mocker.patch(SysVConfig)

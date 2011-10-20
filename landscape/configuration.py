@@ -434,26 +434,27 @@ def setup(config):
             else:
                 sys.exit("Aborting Landscape configuration")
 
-        if config.silent:
-            if not config.get("otp") and (not config.get("account_name") or not
-                                              config.get("computer_title")):
-                raise ConfigurationError("An account name and computer title are "
-                                         "required.")
-            if config.get("script_users"):
-                invalid_users = get_invalid_users(config.get("script_users"))
-                if invalid_users:
-                    raise ConfigurationError("Unknown system users: %s" %
-                                             ", ".join(invalid_users))
-                if not config.include_manager_plugins:
-                    config.include_manager_plugins = "ScriptExecution"
-        else:
-            script = LandscapeSetupScript(config)
-            script.run()
-
     if config.http_proxy is None and os.environ.get("http_proxy"):
         config.http_proxy = os.environ["http_proxy"]
     if config.https_proxy is None and os.environ.get("https_proxy"):
         config.https_proxy = os.environ["https_proxy"]
+
+    if config.silent and not config.no_start:
+        if not config.get("otp") and (not config.get("account_name") or not
+                                          config.get("computer_title")):
+            raise ConfigurationError("An account name and computer title are "
+                                     "required.")
+    if config.silent:
+        if config.get("script_users"):
+            invalid_users = get_invalid_users(config.get("script_users"))
+            if invalid_users:
+                raise ConfigurationError("Unknown system users: %s" %
+                                         ", ".join(invalid_users))
+            if not config.include_manager_plugins:
+                config.include_manager_plugins = "ScriptExecution"
+    else:
+        script = LandscapeSetupScript(config)
+        script.run()
 
     # WARNING: ssl_public_key is misnamed, it's not the key of the certificate,
     # but the actual certificate itself.
