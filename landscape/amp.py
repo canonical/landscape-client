@@ -33,7 +33,7 @@ class RemoteComponentConnector(RemoteObjectConnector):
     @param config: A L{LandscapeConfiguration}.
     @param args: Positional arguments for protocol factory constructor.
     @param kwargs: Keyword arguments for protocol factory constructor.
-    
+
     @see: L{MethodCallClientFactory}.
     """
 

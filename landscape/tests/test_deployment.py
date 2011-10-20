@@ -303,6 +303,16 @@ class ConfigurationTest(LandscapeTest):
         opts = self.parser.parse_args([])[0]
         self.assertEqual(opts.quiet, False)
 
+    def test_clones_default(self):
+        """By default, no clones are started."""
+        opts = self.parser.parse_args([])[0]
+        self.assertEqual(0, opts.clones)
+
+    def test_clones_option(self):
+        """It's possible to specify additional clones to be started."""
+        opts = self.parser.parse_args(["--clones", "3"])[0]
+        self.assertEqual(3, opts.clones)
+
     def test_ignore_sigint_option(self):
         opts = self.parser.parse_args(["--ignore-sigint"])[0]
         self.assertEqual(opts.ignore_sigint, True)
@@ -350,6 +360,14 @@ class ConfigurationTest(LandscapeTest):
         """
         self.assertEqual(self.config.sockets_path,
                          "/var/lib/landscape/client/sockets")
+
+    def test_clone(self):
+        """The L{Configuration.clone} method clones a configuration."""
+        self.config.load(["--data-path", "/some/path"])
+        self.config.foo = "bar"
+        config2 = self.config.clone()
+        self.assertEqual(self.config.data_path, config2.data_path)
+        self.assertEqual("bar", config2.foo)
 
 
 class GetVersionedPersistTest(LandscapeTest):

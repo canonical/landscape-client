@@ -462,30 +462,16 @@ class PackageReporter(PackageTaskHandler):
             hash = self._facade.get_package_hash(package)
             id = self._store.get_hash_id(hash)
             if id is not None:
-                if package.installed:
+                if self._facade.is_package_installed(package):
                     current_installed.add(id)
-                    for loader in package.loaders:
-                        # Is the package also in a non-installed
-                        # loader?  IOW, "available".
-                        if not loader.getInstalled():
-                            current_available.add(id)
-                            break
+                    if self._facade.is_package_available(package):
+                        current_available.add(id)
                 else:
                     current_available.add(id)
 
                 # Are there any packages that this package is an upgrade for?
-                for upgrade in package.upgrades:
-                    for provides in upgrade.providedby:
-                        for provides_package in provides.packages:
-                            if provides_package.installed:
-                                current_upgrades.add(id)
-                                break
-                        else:
-                            continue
-                        break
-                    else:
-                        continue
-                    break
+                if self._facade.is_package_upgrade(package):
+                    current_upgrades.add(id)
 
         for package in self._facade.get_locked_packages():
             hash = self._facade.get_package_hash(package)
@@ -637,6 +623,7 @@ class FakeReporter(PackageReporter):
     """
 
     package_store_class = FakePackageStore
+    global_store_filename = None
 
     def run(self):
         result = succeed(None)
@@ -655,11 +642,12 @@ class FakeReporter(PackageReporter):
         """
         As the last callback of L{PackageReporter}, sends messages stored.
         """
-        global_file = os.environ["FAKE_PACKAGE_STORE"]
-        if not os.path.exists(global_file):
+        if self.global_store_filename is None:
+            self.global_store_filename = os.environ["FAKE_PACKAGE_STORE"]
+        if not os.path.exists(self.global_store_filename):
             return succeed(None)
         message_sent = set(self._store.get_message_ids())
-        global_store = FakePackageStore(global_file)
+        global_store = FakePackageStore(self.global_store_filename)
         all_message_ids = set(global_store.get_message_ids())
         not_sent = all_message_ids - message_sent
         deferred = succeed(None)
@@ -679,10 +667,10 @@ class FakeReporter(PackageReporter):
 
 
 def main(args):
-    if "FAKE_PACKAGE_STORE" in os.environ:
-        return run_task_handler(FakeReporter, args)
-    elif "FAKE_GLOBAL_PACKAGE_STORE" in os.environ:
+    if "FAKE_GLOBAL_PACKAGE_STORE" in os.environ:
         return run_task_handler(FakeGlobalReporter, args)
+    elif "FAKE_PACKAGE_STORE" in os.environ:
+        return run_task_handler(FakeReporter, args)
     else:
         return run_task_handler(PackageReporter, args)
 
