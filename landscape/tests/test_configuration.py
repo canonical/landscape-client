@@ -726,7 +726,7 @@ account_name = account
         registration or validation of parameters is attempted.
         """
         # Make sure no sysvconfig modifications are attempted
-        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        self.mocker.patch(SysVConfig)
         self.mocker.replay()
 
         config = self.get_config(["--silent", "--no-start"])
@@ -743,7 +743,7 @@ data_path = %s
         configuration file after a fresh install.
         """
         # Make sure no sysvconfig modifications are attempted
-        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        self.mocker.patch(SysVConfig)
         self.mocker.replay()
 
         args = ["--silent", "--no-start"]
@@ -761,18 +761,18 @@ data_path = %s
         args += ["--tags", ""]
         config = self.get_config(args)
         setup(config)
-        self.assertEqual(self.get_content(config), """\
-[client]
-http_proxy = 
-tags = 
-data_path = %s
-registration_password = 
-account_name = 
-url = https://landscape.canonical.com/message-system
-computer_title = 
-https_proxy = 
-ping_url = http://landscape.canonical.com/ping
-""" % config.data_path)
+        self.assertEqual(self.get_content(config),
+            "[client]\n"
+            "http_proxy = \n"
+            "tags = \n"
+            "data_path = %s\n"
+            "registration_password = \n"
+            "account_name = \n"
+            "url = https://landscape.canonical.com/message-system\n"
+            "computer_title = \n"
+            "https_proxy = \n"
+            "ping_url = http://landscape.canonical.com/ping\n"
+             % config.data_path)
 
     def test_silent_setup_without_computer_title(self):
         """A computer title is required."""

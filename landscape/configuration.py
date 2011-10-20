@@ -378,7 +378,7 @@ class LandscapeSetupScript(object):
             if self._get_invalid_tags(self.config.tags):
                 self.show_help("Tag names may only contain alphanumeric "
                               "characters.")
-                self.config.tags = None # Reset for the next prompt
+                self.config.tags = None  # Reset for the next prompt
             else:
                 break
 
@@ -622,7 +622,6 @@ def main(args):
     except ImportOptionError, error:
         print_text(str(error), error=True)
         sys.exit(1)
-
 
     # Disable startup on boot and stop the client, if one is running.
     if config.disable:
