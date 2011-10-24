@@ -746,19 +746,19 @@ data_path = %s
         self.mocker.patch(SysVConfig)
         self.mocker.replay()
 
-        args = ["--silent", "--no-start"]
-        args += ["--computer-title", ""]
-        args += ["--account-name", ""]
-        args += ["--registration-password", ""]
-        args += ["--url", "https://landscape.canonical.com/message-system"]
-        args += ["--exchange-interval", "900"]
-        args += ["--urgent-exchange-interval", "60"]
-        args += ["--ping-url", "http://landscape.canonical.com/ping"]
-        args += ["--ping-interval", "30"]
-        args += ["--http-proxy", ""]
-        args += ["--https-proxy", ""]
-        args += ["--otp", ""]
-        args += ["--tags", ""]
+        args = ["--silent", "--no-start",
+                "--computer-title", "",
+                "--account-name", "",
+                "--registration-password", "",
+                "--url", "https://landscape.canonical.com/message-system",
+                "--exchange-interval", "900",
+                "--urgent-exchange-interval", "60",
+                "--ping-url", "http://landscape.canonical.com/ping",
+                "--ping-interval", "30",
+                "--http-proxy", "",
+                "--https-proxy", "",
+                "--otp", "",
+                "--tags", ""]
         config = self.get_config(args)
         setup(config)
         self.assertEqual(self.get_content(config),
