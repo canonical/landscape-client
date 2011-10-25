@@ -1,3 +1,4 @@
+import glob
 import sys
 import os
 import unittest
@@ -1045,7 +1046,7 @@ class PackageReporterTestMixin(object):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["packages"])
 
-        create_file(self.repository_dir + "/Packages", "")
+        self._clear_repository()
 
         self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
         self.store.add_available([1, 2, 3])
@@ -1390,6 +1391,10 @@ class PackageReporterSmartTest(LandscapeTest, PackageReporterTestMixin):
         result = super(PackageReporterSmartTest, self).setUp()
         return result.addCallback(set_up)
 
+    def _clear_repository(self):
+        for filename in glob.glob(self.repository_dir + "/*"):
+            os.unlink(filename)
+
     def set_pkg1_upgradable(self):
         previous = self.Facade.channels_reloaded
 
@@ -1657,6 +1662,9 @@ class PackageReporterAptTest(LandscapeTest, PackageReporterTestMixin):
         append_file(
             os.path.join(path, "Packages"),
             package_stanza % {"name": name, "version": version})
+
+    def _clear_repository(self):
+        create_file(self.repository_dir + "/Packages", "")
 
     def set_pkg1_upgradable(self):
         self._add_package_to_deb_dir(
