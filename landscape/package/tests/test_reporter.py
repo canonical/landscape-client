@@ -167,7 +167,7 @@ class PackageReporterTestMixin(object):
             installed_size = None
             relations = []
 
-        mock_facade = self.mocker.patch(AptFacade)
+        mock_facade = self.mocker.patch(self.Facade)
         mock_facade.get_package_skeleton(ANY)
         self.mocker.result(FakePackage())
         self.mocker.replay()
@@ -1614,6 +1614,8 @@ class PackageReporterSmartTest(LandscapeTest, PackageReporterTestMixin):
 class PackageReporterAptTest(LandscapeTest, PackageReporterTestMixin):
 
     helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
+
+    Facade = AptFacade
 
     def setUp(self):
 
