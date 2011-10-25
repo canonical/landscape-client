@@ -1394,6 +1394,15 @@ class PackageReporterSmartTest(LandscapeTest, PackageReporterTestMixin):
         result = super(PackageReporterSmartTest, self).setUp()
         return result.addCallback(set_up)
 
+    def set_pkg1_installed(self):
+        previous = self.Facade.channels_reloaded
+
+        def callback(self):
+            previous(self)
+            self.get_packages_by_name("name1")[0].installed = True
+        self.Facade.channels_reloaded = callback
+
+
     def test_detect_packages_changes_with_locked(self):
         """
         If Smart indicates locked packages we didn't know about, report
