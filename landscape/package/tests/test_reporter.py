@@ -1117,10 +1117,9 @@ class PackageReporterTestMixin(object):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["packages"])
 
-        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
+        upgrade_hash = self.set_pkg1_upgradable()
+        self.store.set_hash_ids({HASH1: 1, upgrade_hash: 2, HASH3: 3})
         self.store.add_available([1, 2, 3])
-
-        self.set_pkg1_upgradable()
 
         def got_result(result):
             self.assertMessages(message_store.get_pending_messages(), [])
@@ -1132,23 +1131,23 @@ class PackageReporterTestMixin(object):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["packages"])
 
-        self.set_pkg1_upgradable()
+        upgrade_hash = self.set_pkg1_upgradable()
         self.set_pkg1_installed()
         self.facade.reload_channels()
         upgrade = sorted(self.facade.get_packages_by_name("name1"))[1]
         upgrade_hash = self.facade.get_package_hash(upgrade)
 
         self.store.set_hash_ids(
-            {HASH1: 1, HASH2: 2, HASH3: 3, upgrade_hash: 4})
-        self.store.add_available([1, 2, 3, 4])
+            {HASH1: 1, upgrade_hash: 2, HASH3: 3})
+        self.store.add_available([1, 2, 3])
         self.store.add_installed([1])
 
         def got_result(result):
             self.assertMessages(message_store.get_pending_messages(),
                                 [{"type": "packages",
-                                  "available-upgrades": [4]}])
+                                  "available-upgrades": [2]}])
 
-            self.assertEqual(self.store.get_available_upgrades(), [4])
+            self.assertEqual(self.store.get_available_upgrades(), [2])
 
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
@@ -1653,6 +1652,9 @@ class PackageReporterAptTest(LandscapeTest, PackageReporterTestMixin):
     def set_pkg1_upgradable(self):
         self._add_package_to_deb_dir(
             self.repository_dir, "name1", version="version2")
+        self.facade.reload_channels()
+        name1_upgrade = sorted(self.facade.get_packages_by_name("name1"))[1]
+        return self.facade.get_package_hash(name1_upgrade)
 
     def set_pkg1_installed(self):
         self._install_deb_file(os.path.join(self.repository_dir, PKGNAME1))
