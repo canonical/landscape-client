@@ -23,11 +23,58 @@ Default: https://landscape.canonical.com/message-system
 _Description: Landscape Server URL:
  The server URL to connect to.
 
+Template: landscape-client/exchange_interval
+Type: string
+Default: 900
+_Description: Message Exchange Interval:
+ Interval, in seconds, between normal message exchanges with the Landscape
+ server.
+
+Template: landscape-client/urgent_exchange_interval
+Type: string
+Default: 60
+_Description: Urgent Message Exchange Interval:
+ Interval, in seconds, between urgent message exchanges with the Landscape
+ server.
+
 Template: landscape-client/ping_url
 Type: string
 Default: http://landscape.canonical.com/ping
 _Description: Landscape PingServer URL:
  The URL to perform lightweight exchange initiation with.
+
+Template: landscape-client/ping_interval
+Type: string
+Default: 30
+_Description: Ping Interval:
+ Interval, in seconds, between client ping exchanges with the Landscape server.
+
+Template: landscape-client/http_proxy
+Type: string
+Default:
+_Description: HTTP proxy (blank for none):
+ The URL of the HTTP proxy, if one is needed.
+
+Template: landscape-client/https_proxy
+Type: string
+Default:
+_Description: HTTPS proxy (blank for none):
+ The URL of the HTTPS proxy, if one is needed.
+
+Template: landscape-client/otp
+Type: string
+Default:
+_Description: The OTP to use in initial configuration:
+ The OneTimePassword to use for initial registration with the Landscape server.
+ This is only required for Cloud or Preseeded installs.
+
+Template: landscape-client/tags
+Type: string
+Default:
+_Description: Initial tags for first registration
+ Comma separated list of tags which will be assigned to this computer on its
+ first registration.  Once the machine is registered, these tags can only be
+ changed using the Landscape server.
 
 Template: landscape-client/register_system
 Type: boolean

@@ -720,6 +720,60 @@ data_path = %s
 account_name = account
 """ % config.data_path)
 
+    def test_silent_setup_no_register(self):
+        """
+        Called with command line options to write a config file but no
+        registration or validation of parameters is attempted.
+        """
+        # Make sure no sysvconfig modifications are attempted
+        self.mocker.patch(SysVConfig)
+        self.mocker.replay()
+
+        config = self.get_config(["--silent", "--no-start"])
+        setup(config)
+        self.assertEqual(self.get_content(config), """\
+[client]
+url = https://landscape.canonical.com/message-system
+data_path = %s
+""" % config.data_path)
+
+    def test_silent_setup_no_register_with_default_preseed_params(self):
+        """
+        Make sure that the configuration can be used to write the
+        configuration file after a fresh install.
+        """
+        # Make sure no sysvconfig modifications are attempted
+        self.mocker.patch(SysVConfig)
+        self.mocker.replay()
+
+        args = ["--silent", "--no-start",
+                "--computer-title", "",
+                "--account-name", "",
+                "--registration-password", "",
+                "--url", "https://landscape.canonical.com/message-system",
+                "--exchange-interval", "900",
+                "--urgent-exchange-interval", "60",
+                "--ping-url", "http://landscape.canonical.com/ping",
+                "--ping-interval", "30",
+                "--http-proxy", "",
+                "--https-proxy", "",
+                "--otp", "",
+                "--tags", ""]
+        config = self.get_config(args)
+        setup(config)
+        self.assertEqual(self.get_content(config),
+            "[client]\n"
+            "http_proxy = \n"
+            "tags = \n"
+            "data_path = %s\n"
+            "registration_password = \n"
+            "account_name = \n"
+            "url = https://landscape.canonical.com/message-system\n"
+            "computer_title = \n"
+            "https_proxy = \n"
+            "ping_url = http://landscape.canonical.com/ping\n"
+             % config.data_path)
+
     def test_silent_setup_without_computer_title(self):
         """A computer title is required."""
         sysvconfig_mock = self.mocker.patch(SysVConfig)

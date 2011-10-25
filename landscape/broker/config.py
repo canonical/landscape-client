@@ -79,7 +79,7 @@ class BrokerConfiguration(Configuration):
                           help="The URL of the HTTPS proxy, if one is needed.")
         parser.add_option("--cloud", action="store_true",
                           help="Set this if your computer is in an EC2 cloud.")
-        parser.add_option("--otp",
+        parser.add_option("--otp", default="",
                           help="The OTP to use in cloud configuration.")
         parser.add_option("--tags",
                           help="Comma separated list of tag names to be sent "
