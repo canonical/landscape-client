@@ -1627,22 +1627,7 @@ class PackageReporterTest(LandscapeTest):
         return deferred
 
 
-class GlobalPackageReporterTest(LandscapeTest):
-
-    helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
-
-    def setUp(self):
-
-        def set_up(ignored):
-            self.store = FakePackageStore(self.makeFile())
-            self.config = PackageReporterConfiguration()
-            self.reporter = FakeGlobalReporter(
-                self.store, self.facade, self.remote, self.config)
-            self.config.data_path = self.makeDir()
-            os.mkdir(self.config.package_directory)
-
-        result = super(GlobalPackageReporterTest, self).setUp()
-        return result.addCallback(set_up)
+class GlobalPackageReporterTestMixin(object):
 
     def test_store_messages(self):
         """
@@ -1673,6 +1658,24 @@ class GlobalPackageReporterTest(LandscapeTest):
 
         reactor.callWhenRunning(do_test)
         return deferred
+
+
+class GlobalPackageReporterTest(LandscapeTest, GlobalPackageReporterTestMixin):
+
+    helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
+
+    def setUp(self):
+
+        def set_up(ignored):
+            self.store = FakePackageStore(self.makeFile())
+            self.config = PackageReporterConfiguration()
+            self.reporter = FakeGlobalReporter(
+                self.store, self.facade, self.remote, self.config)
+            self.config.data_path = self.makeDir()
+            os.mkdir(self.config.package_directory)
+
+        result = super(GlobalPackageReporterTest, self).setUp()
+        return result.addCallback(set_up)
 
 
 class FakePackageReporterTest(LandscapeTest):
