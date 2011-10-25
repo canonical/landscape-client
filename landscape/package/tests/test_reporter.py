@@ -20,7 +20,8 @@ from landscape.package.reporter import (
 from landscape.package import reporter
 from landscape.package.facade import AptFacade
 from landscape.package.tests.helpers import (
-    AptFacadeHelper, SimpleRepositoryHelper, HASH1, HASH2, HASH3, PKGNAME1)
+    SmartFacadeHelper, AptFacadeHelper, SimpleRepositoryHelper,
+    HASH1, HASH2, HASH3, PKGNAME1)
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
 from landscape.tests.mocker import ANY
@@ -1660,7 +1661,8 @@ class GlobalPackageReporterTestMixin(object):
         return deferred
 
 
-class GlobalPackageReporterTest(LandscapeTest, GlobalPackageReporterTestMixin):
+class GlobalPackageReporterAptTest(LandscapeTest,
+                                   GlobalPackageReporterTestMixin):
 
     helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
 
@@ -1674,7 +1676,26 @@ class GlobalPackageReporterTest(LandscapeTest, GlobalPackageReporterTestMixin):
             self.config.data_path = self.makeDir()
             os.mkdir(self.config.package_directory)
 
-        result = super(GlobalPackageReporterTest, self).setUp()
+        result = super(GlobalPackageReporterAptTest, self).setUp()
+        return result.addCallback(set_up)
+
+
+class GlobalPackageReporterSmartTest(LandscapeTest,
+                                     GlobalPackageReporterTestMixin):
+
+    helpers = [SmartFacadeHelper, BrokerServiceHelper]
+
+    def setUp(self):
+
+        def set_up(ignored):
+            self.store = FakePackageStore(self.makeFile())
+            self.config = PackageReporterConfiguration()
+            self.reporter = FakeGlobalReporter(
+                self.store, self.facade, self.remote, self.config)
+            self.config.data_path = self.makeDir()
+            os.mkdir(self.config.package_directory)
+
+        result = super(GlobalPackageReporterSmartTest, self).setUp()
         return result.addCallback(set_up)
 
 
