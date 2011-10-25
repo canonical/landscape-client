@@ -1393,6 +1393,18 @@ class PackageReporterSmartTest(LandscapeTest, PackageReporterTestMixin):
         result = super(PackageReporterSmartTest, self).setUp()
         return result.addCallback(set_up)
 
+    def set_pkg1_upgradable(self):
+        previous = self.Facade.channels_reloaded
+
+        def callback(self):
+            from smart.backends.deb.base import DebUpgrades
+            previous(self)
+            pkg2 = self.get_packages_by_name("name2")[0]
+            pkg2.upgrades += (DebUpgrades("name1", "=", "version1-release1"),)
+            self.reload_cache()  # Relink relations.
+        self.Facade.channels_reloaded = callback
+        return HASH2
+
     def set_pkg1_installed(self):
         previous = self.Facade.channels_reloaded
 
