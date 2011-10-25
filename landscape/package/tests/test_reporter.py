@@ -1376,7 +1376,7 @@ class PackageReporterTestMixin(object):
 
 class PackageReporterSmartTest(LandscapeTest, PackageReporterTestMixin):
 
-    helpers = [SmartFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
+    helpers = [SmartFacadeHelper, BrokerServiceHelper]
 
     def setUp(self):
 
