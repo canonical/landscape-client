@@ -42,64 +42,7 @@ class PackageReporterConfigurationTest(unittest.TestCase):
         self.assertTrue(config.force_smart_update)
 
 
-class PackageReporterTest(LandscapeTest):
-
-    helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
-
-    def setUp(self):
-
-        def set_up(ignored):
-            self.store = PackageStore(self.makeFile())
-            self.config = PackageReporterConfiguration()
-            self.reporter = PackageReporter(
-                self.store, self.facade, self.remote, self.config)
-            self.config.data_path = self.makeDir()
-            os.mkdir(self.config.package_directory)
-
-        result = super(PackageReporterTest, self).setUp()
-        return result.addCallback(set_up)
-
-    def _install_deb_file(self, path):
-        """Fake the the given deb file is installed in the system."""
-        deb_file = open(path)
-        deb = apt_inst.DebFile(deb_file)
-        control = deb.control.extractdata("control")
-        deb_file.close()
-        lines = control.splitlines()
-        lines.insert(1, "Status: install ok installed")
-        status = "\n".join(lines)
-        append_file(self.dpkg_status, status + "\n\n")
-
-    def _add_package_to_deb_dir(self, path, name, version="1.0"):
-        """Add fake package information to a directory.
-
-        There will only be basic information about the package
-        available, so that get_packages() have something to return.
-        There won't be an actual package in the dir.
-        """
-        package_stanza = textwrap.dedent("""
-                Package: %(name)s
-                Priority: optional
-                Section: misc
-                Installed-Size: 1234
-                Maintainer: Someone
-                Architecture: all
-                Source: source
-                Version: %(version)s
-                Config-Version: 1.0
-                Description: description
-
-                """)
-        append_file(
-            os.path.join(path, "Packages"),
-            package_stanza % {"name": name, "version": version})
-
-    def set_pkg1_upgradable(self):
-        self._add_package_to_deb_dir(
-            self.repository_dir, "name1", version="version2")
-
-    def set_pkg1_installed(self):
-        self._install_deb_file(os.path.join(self.repository_dir, PKGNAME1))
+class PackageReporterTestMixin(object):
 
     def test_set_package_ids_with_all_known(self):
         self.store.add_hash_id_request(["hash1", "hash2"])
@@ -1228,105 +1171,6 @@ class PackageReporterTest(LandscapeTest):
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
 
-    def disabled_test_detect_packages_changes_with_locked(self):
-        """
-        If Smart indicates locked packages we didn't know about, report
-        them to the server.
-        """
-        message_store = self.broker_service.message_store
-        message_store.set_accepted_types(["packages"])
-
-        self.facade.set_package_lock("name1")
-        self.facade.set_package_lock("name2", ">=", "version2")
-
-        self.store.set_hash_ids({HASH1: 1, HASH2: 2})
-        self.store.add_available([1, 2])
-
-        def got_result(result):
-            self.assertMessages(message_store.get_pending_messages(),
-                                [{"type": "packages", "locked": [1, 2]}])
-            self.assertEqual(sorted(self.store.get_locked()), [1, 2])
-
-        result = self.reporter.detect_packages_changes()
-        return result.addCallback(got_result)
-
-    def disabled_test_detect_packages_changes_with_locked_and_ranges(self):
-        """
-        Ranges are used when reporting changes to 3 or more locked packages
-        having consecutive ids.
-        """
-        message_store = self.broker_service.message_store
-        message_store.set_accepted_types(["packages"])
-
-        self.facade.set_package_lock("name1")
-        self.facade.set_package_lock("name2", ">=", "version2")
-        self.facade.set_package_lock("name3", "<", "version4")
-
-        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
-        self.store.add_available([1, 2, 3])
-
-        def got_result(result):
-            self.assertMessages(message_store.get_pending_messages(),
-                                [{"type": "packages", "locked": [(1, 3)]}])
-            self.assertEqual(sorted(self.store.get_locked()), [1, 2, 3])
-
-        result = self.reporter.detect_packages_changes()
-        return result.addCallback(got_result)
-
-    def disabled_test_detect_packages_changes_with_locked_with_unknown_hash(self):
-        """
-        Locked packages whose hashes are unknown don't get reported.
-        """
-        self.facade.set_package_lock("name1")
-
-        def got_result(result):
-            self.assertEqual(self.store.get_locked(), [])
-
-        result = self.reporter.detect_packages_changes()
-        return result.addCallback(got_result)
-
-    def disabled_test_detect_packages_changes_with_locked_and_previously_known(self):
-        """
-        We don't report locked packages we already know about.
-        """
-        message_store = self.broker_service.message_store
-        message_store.set_accepted_types(["packages"])
-
-        self.facade.set_package_lock("name1")
-        self.facade.set_package_lock("name2", ">=", "version2")
-
-        self.store.set_hash_ids({HASH1: 1, HASH2: 2})
-        self.store.add_available([1, 2])
-        self.store.add_locked([1])
-
-        def got_result(result):
-            self.assertMessages(message_store.get_pending_messages(),
-                                [{"type": "packages", "locked": [2]}])
-
-            self.assertEqual(sorted(self.store.get_locked()), [1, 2])
-
-        result = self.reporter.detect_packages_changes()
-        return result.addCallback(got_result)
-
-    def disabled_test_detect_packages_changes_with_not_locked(self):
-        """
-        We report when a package was previously locked and isn't anymore.
-        """
-        message_store = self.broker_service.message_store
-        message_store.set_accepted_types(["packages"])
-
-        self.store.set_hash_ids({HASH1: 1})
-        self.store.add_available([1])
-        self.store.add_locked([1])
-
-        def got_result(result):
-            self.assertMessages(message_store.get_pending_messages(),
-                                [{"type": "packages", "not-locked": [1]}])
-            self.assertEqual(self.store.get_locked(), [])
-
-        result = self.reporter.detect_packages_changes()
-        return result.addCallback(got_result)
-
     def test_detect_packages_changes_with_not_locked_and_ranges(self):
         """
         Ranges are used when reporting changes to 3 or more not locked packages
@@ -1344,101 +1188,6 @@ class PackageReporterTest(LandscapeTest):
             self.assertMessages(message_store.get_pending_messages(),
                                 [{"type": "packages", "not-locked": [(1, 3)]}])
             self.assertEqual(sorted(self.store.get_locked()), [])
-
-        result = self.reporter.detect_packages_changes()
-        return result.addCallback(got_result)
-
-    def disabled_test_detect_package_locks_changes_with_create_locks(self):
-        """
-        If Smart indicates package locks we didn't know about, report
-        them to the server.
-        """
-        message_store = self.broker_service.message_store
-        message_store.set_accepted_types(["package-locks"])
-
-        self.facade.set_package_lock("name")
-
-        logging_mock = self.mocker.replace("logging.info")
-        logging_mock("Queuing message with changes in known package locks:"
-                     " 1 created, 0 deleted.")
-        self.mocker.replay()
-
-        def got_result(result):
-            self.assertMessages(message_store.get_pending_messages(),
-                                [{"type": "package-locks",
-                                  "created": [("name", "", "")]}])
-            self.assertEqual(self.store.get_package_locks(),
-                             [("name", "", "")])
-
-        result = self.reporter.detect_package_locks_changes()
-        return result.addCallback(got_result)
-
-    def disabled_test_detect_package_locks_changes_with_already_known_locks(self):
-        """
-        We don't report changes about locks we already know about.
-        """
-        message_store = self.broker_service.message_store
-        message_store.set_accepted_types(["package-locks"])
-
-        self.facade.set_package_lock("name1")
-        self.facade.set_package_lock("name2", "<", "1.2")
-
-        self.store.add_package_locks([("name1", "", "")])
-
-        logging_mock = self.mocker.replace("logging.info")
-        logging_mock("Queuing message with changes in known package locks:"
-                     " 1 created, 0 deleted.")
-        self.mocker.replay()
-
-        def got_result(result):
-            self.assertMessages(message_store.get_pending_messages(),
-                                [{"type": "package-locks",
-                                  "created": [("name2", "<", "1.2")]}])
-            self.assertEqual(sorted(self.store.get_package_locks()),
-                             [("name1", "", ""),
-                              ("name2", "<", "1.2")])
-
-        result = self.reporter.detect_package_locks_changes()
-        return result.addCallback(got_result)
-
-    def disabled_test_detect_package_locks_changes_with_deleted_locks(self):
-        """
-        If Smart indicates newly unset package locks, report them to the
-        server.
-        """
-        message_store = self.broker_service.message_store
-        message_store.set_accepted_types(["package-locks"])
-
-        self.store.add_package_locks([("name1", "", "")])
-
-        logging_mock = self.mocker.replace("logging.info")
-        logging_mock("Queuing message with changes in known package locks:"
-                     " 0 created, 1 deleted.")
-        self.mocker.replay()
-
-        def got_result(result):
-            self.assertMessages(message_store.get_pending_messages(),
-                                [{"type": "package-locks",
-                                  "deleted": [("name1", "", "")]}])
-            self.assertEqual(self.store.get_package_locks(), [])
-
-        result = self.reporter.detect_package_locks_changes()
-        return result.addCallback(got_result)
-
-    def disabled_test_detect_package_locks_changes_with_locked_already_known(self):
-        """
-        If we didn't detect any change in the package locks, we don't send any
-        message, and we return a deferred resulting in C{False}.
-        """
-        message_store = self.broker_service.message_store
-        message_store.set_accepted_types(["package-locks"])
-
-        self.facade.set_package_lock("name1")
-        self.store.add_package_locks([("name1", "", "")])
-
-        def got_result(result):
-            self.assertFalse(result)
-            self.assertMessages(message_store.get_pending_messages(), [])
 
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
@@ -1626,6 +1375,278 @@ class PackageReporterTest(LandscapeTest):
 
         deferred.addCallback(check_result)
         return deferred
+
+
+class PackageReporterSmartTest(LandscapeTest, PackageReporterTestMixin):
+
+    helpers = [SmartFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
+
+    def setUp(self):
+
+        def set_up(ignored):
+            self.store = PackageStore(self.makeFile())
+            self.config = PackageReporterConfiguration()
+            self.reporter = PackageReporter(
+                self.store, self.facade, self.remote, self.config)
+            self.config.data_path = self.makeDir()
+            os.mkdir(self.config.package_directory)
+
+        result = super(PackageReporterSmartTest, self).setUp()
+        return result.addCallback(set_up)
+
+
+class PackageReporterAptTest(LandscapeTest, PackageReporterTestMixin):
+
+    helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
+
+    def setUp(self):
+
+        def set_up(ignored):
+            self.store = PackageStore(self.makeFile())
+            self.config = PackageReporterConfiguration()
+            self.reporter = PackageReporter(
+                self.store, self.facade, self.remote, self.config)
+            self.config.data_path = self.makeDir()
+            os.mkdir(self.config.package_directory)
+
+        result = super(PackageReporterAptTest, self).setUp()
+        return result.addCallback(set_up)
+
+    def _install_deb_file(self, path):
+        """Fake the the given deb file is installed in the system."""
+        deb_file = open(path)
+        deb = apt_inst.DebFile(deb_file)
+        control = deb.control.extractdata("control")
+        deb_file.close()
+        lines = control.splitlines()
+        lines.insert(1, "Status: install ok installed")
+        status = "\n".join(lines)
+        append_file(self.dpkg_status, status + "\n\n")
+
+    def _add_package_to_deb_dir(self, path, name, version="1.0"):
+        """Add fake package information to a directory.
+
+        There will only be basic information about the package
+        available, so that get_packages() have something to return.
+        There won't be an actual package in the dir.
+        """
+        package_stanza = textwrap.dedent("""
+                Package: %(name)s
+                Priority: optional
+                Section: misc
+                Installed-Size: 1234
+                Maintainer: Someone
+                Architecture: all
+                Source: source
+                Version: %(version)s
+                Config-Version: 1.0
+                Description: description
+
+                """)
+        append_file(
+            os.path.join(path, "Packages"),
+            package_stanza % {"name": name, "version": version})
+
+    def set_pkg1_upgradable(self):
+        self._add_package_to_deb_dir(
+            self.repository_dir, "name1", version="version2")
+
+    def set_pkg1_installed(self):
+        self._install_deb_file(os.path.join(self.repository_dir, PKGNAME1))
+
+    def disabled_test_detect_packages_changes_with_locked(self):
+        """
+        If Smart indicates locked packages we didn't know about, report
+        them to the server.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+
+        self.facade.set_package_lock("name1")
+        self.facade.set_package_lock("name2", ">=", "version2")
+
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2})
+        self.store.add_available([1, 2])
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "packages", "locked": [1, 2]}])
+            self.assertEqual(sorted(self.store.get_locked()), [1, 2])
+
+        result = self.reporter.detect_packages_changes()
+        return result.addCallback(got_result)
+
+    def disabled_test_detect_packages_changes_with_locked_and_ranges(self):
+        """
+        Ranges are used when reporting changes to 3 or more locked packages
+        having consecutive ids.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+
+        self.facade.set_package_lock("name1")
+        self.facade.set_package_lock("name2", ">=", "version2")
+        self.facade.set_package_lock("name3", "<", "version4")
+
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
+        self.store.add_available([1, 2, 3])
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "packages", "locked": [(1, 3)]}])
+            self.assertEqual(sorted(self.store.get_locked()), [1, 2, 3])
+
+        result = self.reporter.detect_packages_changes()
+        return result.addCallback(got_result)
+
+    def disabled_test_detect_packages_changes_with_locked_with_unknown_hash(self):
+        """
+        Locked packages whose hashes are unknown don't get reported.
+        """
+        self.facade.set_package_lock("name1")
+
+        def got_result(result):
+            self.assertEqual(self.store.get_locked(), [])
+
+        result = self.reporter.detect_packages_changes()
+        return result.addCallback(got_result)
+
+    def disabled_test_detect_packages_changes_with_locked_and_previously_known(self):
+        """
+        We don't report locked packages we already know about.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+
+        self.facade.set_package_lock("name1")
+        self.facade.set_package_lock("name2", ">=", "version2")
+
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2})
+        self.store.add_available([1, 2])
+        self.store.add_locked([1])
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "packages", "locked": [2]}])
+
+            self.assertEqual(sorted(self.store.get_locked()), [1, 2])
+
+        result = self.reporter.detect_packages_changes()
+        return result.addCallback(got_result)
+
+    def disabled_test_detect_packages_changes_with_not_locked(self):
+        """
+        We report when a package was previously locked and isn't anymore.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+
+        self.store.set_hash_ids({HASH1: 1})
+        self.store.add_available([1])
+        self.store.add_locked([1])
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "packages", "not-locked": [1]}])
+            self.assertEqual(self.store.get_locked(), [])
+
+        result = self.reporter.detect_packages_changes()
+        return result.addCallback(got_result)
+
+    def disabled_test_detect_package_locks_changes_with_create_locks(self):
+        """
+        If Smart indicates package locks we didn't know about, report
+        them to the server.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["package-locks"])
+
+        self.facade.set_package_lock("name")
+
+        logging_mock = self.mocker.replace("logging.info")
+        logging_mock("Queuing message with changes in known package locks:"
+                     " 1 created, 0 deleted.")
+        self.mocker.replay()
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "package-locks",
+                                  "created": [("name", "", "")]}])
+            self.assertEqual(self.store.get_package_locks(),
+                             [("name", "", "")])
+
+        result = self.reporter.detect_package_locks_changes()
+        return result.addCallback(got_result)
+
+    def disabled_test_detect_package_locks_changes_with_already_known_locks(self):
+        """
+        We don't report changes about locks we already know about.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["package-locks"])
+
+        self.facade.set_package_lock("name1")
+        self.facade.set_package_lock("name2", "<", "1.2")
+
+        self.store.add_package_locks([("name1", "", "")])
+
+        logging_mock = self.mocker.replace("logging.info")
+        logging_mock("Queuing message with changes in known package locks:"
+                     " 1 created, 0 deleted.")
+        self.mocker.replay()
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "package-locks",
+                                  "created": [("name2", "<", "1.2")]}])
+            self.assertEqual(sorted(self.store.get_package_locks()),
+                             [("name1", "", ""),
+                              ("name2", "<", "1.2")])
+
+        result = self.reporter.detect_package_locks_changes()
+        return result.addCallback(got_result)
+
+    def disabled_test_detect_package_locks_changes_with_deleted_locks(self):
+        """
+        If Smart indicates newly unset package locks, report them to the
+        server.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["package-locks"])
+
+        self.store.add_package_locks([("name1", "", "")])
+
+        logging_mock = self.mocker.replace("logging.info")
+        logging_mock("Queuing message with changes in known package locks:"
+                     " 0 created, 1 deleted.")
+        self.mocker.replay()
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "package-locks",
+                                  "deleted": [("name1", "", "")]}])
+            self.assertEqual(self.store.get_package_locks(), [])
+
+        result = self.reporter.detect_package_locks_changes()
+        return result.addCallback(got_result)
+
+    def disabled_test_detect_package_locks_changes_with_locked_already_known(self):
+        """
+        If we didn't detect any change in the package locks, we don't send any
+        message, and we return a deferred resulting in C{False}.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["package-locks"])
+
+        self.facade.set_package_lock("name1")
+        self.store.add_package_locks([("name1", "", "")])
+
+        def got_result(result):
+            self.assertFalse(result)
+            self.assertMessages(message_store.get_pending_messages(), [])
+
+        result = self.reporter.detect_packages_changes()
+        return result.addCallback(got_result)
 
 
 class GlobalPackageReporterTestMixin(object):
