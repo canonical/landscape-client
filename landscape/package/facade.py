@@ -53,7 +53,8 @@ class AptFacade(object):
 
     def __init__(self, root=None):
         self._root = root
-        self._ensure_dir_structure()
+        if self._root is not None:
+            self._ensure_dir_structure()
         self._cache = apt.cache.Cache(rootdir=root, memonly=True)
         self._channels_loaded = False
         self._pkg2hash = {}
@@ -206,7 +207,7 @@ class AptFacade(object):
 
         @return: a L{PackageSkeleton} object.
         """
-        return build_skeleton_apt(pkg, with_info=with_info)
+        return build_skeleton_apt(pkg, with_info=with_info, with_unicode=True)
 
     def get_package_hash(self, version):
         """Return a hash from the given package.
