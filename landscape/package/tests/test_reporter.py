@@ -1321,8 +1321,10 @@ class PackageReporterTestMixin(object):
         self.assertEqual(self.store.get_installed(), [2])
         # XXX: Don't check get_locked() and get_package_locks() until
         # package locks are implemented in AptFacade.
-        #self.assertEqual(self.store.get_locked(), [3])
-        #self.assertEqual(self.store.get_package_locks(), [("name1", "", "")])
+        if not isinstance(self.facade, AptFacade):
+            self.assertEqual(self.store.get_locked(), [3])
+            self.assertEqual(
+                self.store.get_package_locks(), [("name1", "", "")])
         self.assertEqual(self.store.get_hash_id_request(request1.id).id,
                          request1.id)
 
@@ -1346,7 +1348,8 @@ class PackageReporterTestMixin(object):
             self.assertEqual(self.store.get_installed(), [])
             # XXX: Don't check get_locked() until package locks are
             # implemented in AptFacade.
-            #self.assertEqual(self.store.get_locked(), [3])
+            if not isinstance(self.facade, AptFacade):
+                self.assertEqual(self.store.get_locked(), [3])
 
             # The two original hash id requests should be still there, and
             # a new hash id request should also be detected for HASH3.
@@ -1366,9 +1369,10 @@ class PackageReporterTestMixin(object):
 
             # XXX: Don't check for package-locks messages until package
             # locks are implemented in AptFacade.
-            #self.assertMessages(message_store.get_pending_messages(),
-            #                    [{"type": "package-locks",
-            #                      "created": [("name1", "", "")]}])
+            if not isinstance(self.facade, AptFacade):
+                self.assertMessages(message_store.get_pending_messages(),
+                                    [{"type": "package-locks",
+                                      "created": [("name1", "", "")]}])
 
         deferred.addCallback(check_result)
         return deferred
@@ -1392,10 +1396,15 @@ class PackageReporterSmartTest(LandscapeTest, PackageReporterTestMixin):
         return result.addCallback(set_up)
 
     def _clear_repository(self):
+        """Remove all packages from self.repository."""
         for filename in glob.glob(self.repository_dir + "/*"):
             os.unlink(filename)
 
     def set_pkg1_upgradable(self):
+        """Make it so that package "name1" is considered to be upgradable.
+
+        Return the hash of the package that upgrades "name1".
+        """
         previous = self.Facade.channels_reloaded
 
         def callback(self):
@@ -1408,13 +1417,13 @@ class PackageReporterSmartTest(LandscapeTest, PackageReporterTestMixin):
         return HASH2
 
     def set_pkg1_installed(self):
+        """Make it so that package "name1" is considered installed."""
         previous = self.Facade.channels_reloaded
 
         def callback(self):
             previous(self)
             self.get_packages_by_name("name1")[0].installed = True
         self.Facade.channels_reloaded = callback
-
 
     def test_detect_packages_changes_with_locked(self):
         """
@@ -1666,9 +1675,14 @@ class PackageReporterAptTest(LandscapeTest, PackageReporterTestMixin):
             package_stanza % {"name": name, "version": version})
 
     def _clear_repository(self):
+        """Remove all packages from self.repository."""
         create_file(self.repository_dir + "/Packages", "")
 
     def set_pkg1_upgradable(self):
+        """Make it so that package "name1" is considered to be upgradable.
+
+        Return the hash of the package that upgrades "name1".
+        """
         self._add_package_to_deb_dir(
             self.repository_dir, "name1", version="version2")
         self.facade.reload_channels()
@@ -1676,8 +1690,8 @@ class PackageReporterAptTest(LandscapeTest, PackageReporterTestMixin):
         return self.facade.get_package_hash(name1_upgrade)
 
     def set_pkg1_installed(self):
+        """Make it so that package "name1" is considered installed."""
         self._install_deb_file(os.path.join(self.repository_dir, PKGNAME1))
-
 
 
 class GlobalPackageReporterTestMixin(object):
