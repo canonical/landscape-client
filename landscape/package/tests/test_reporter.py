@@ -1321,8 +1321,9 @@ class PackageReporterTestMixin(object):
         self.assertEqual(self.store.get_installed(), [2])
         # XXX: Don't check get_locked() and get_package_locks() until
         # package locks are implemented in AptFacade.
-        #self.assertEqual(self.store.get_locked(), [3])
-        #self.assertEqual(self.store.get_package_locks(), [("name1", "", "")])
+        if not isinstance(self.facade, AptFacade):
+            self.assertEqual(self.store.get_locked(), [3])
+            self.assertEqual(self.store.get_package_locks(), [("name1", "", "")])
         self.assertEqual(self.store.get_hash_id_request(request1.id).id,
                          request1.id)
 
@@ -1346,7 +1347,8 @@ class PackageReporterTestMixin(object):
             self.assertEqual(self.store.get_installed(), [])
             # XXX: Don't check get_locked() until package locks are
             # implemented in AptFacade.
-            #self.assertEqual(self.store.get_locked(), [3])
+            if not isinstance(self.facade, AptFacade):
+                self.assertEqual(self.store.get_locked(), [3])
 
             # The two original hash id requests should be still there, and
             # a new hash id request should also be detected for HASH3.
@@ -1366,9 +1368,10 @@ class PackageReporterTestMixin(object):
 
             # XXX: Don't check for package-locks messages until package
             # locks are implemented in AptFacade.
-            #self.assertMessages(message_store.get_pending_messages(),
-            #                    [{"type": "package-locks",
-            #                      "created": [("name1", "", "")]}])
+            if not isinstance(self.facade, AptFacade):
+                self.assertMessages(message_store.get_pending_messages(),
+                                    [{"type": "package-locks",
+                                      "created": [("name1", "", "")]}])
 
         deferred.addCallback(check_result)
         return deferred
