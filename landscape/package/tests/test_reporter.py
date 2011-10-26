@@ -1395,10 +1395,15 @@ class PackageReporterSmartTest(LandscapeTest, PackageReporterTestMixin):
         return result.addCallback(set_up)
 
     def _clear_repository(self):
+        """Remove all packages from self.repository."""
         for filename in glob.glob(self.repository_dir + "/*"):
             os.unlink(filename)
 
     def set_pkg1_upgradable(self):
+        """Make it so that package "name1" is considered to be upgradable.
+
+        Return the hash of the package that upgrades "name1".
+        """
         previous = self.Facade.channels_reloaded
 
         def callback(self):
@@ -1411,6 +1416,7 @@ class PackageReporterSmartTest(LandscapeTest, PackageReporterTestMixin):
         return HASH2
 
     def set_pkg1_installed(self):
+        """Make it so that package "name1" is considered installed."""
         previous = self.Facade.channels_reloaded
 
         def callback(self):
@@ -1669,9 +1675,14 @@ class PackageReporterAptTest(LandscapeTest, PackageReporterTestMixin):
             package_stanza % {"name": name, "version": version})
 
     def _clear_repository(self):
+        """Remove all packages from self.repository."""
         create_file(self.repository_dir + "/Packages", "")
 
     def set_pkg1_upgradable(self):
+        """Make it so that package "name1" is considered to be upgradable.
+
+        Return the hash of the package that upgrades "name1".
+        """
         self._add_package_to_deb_dir(
             self.repository_dir, "name1", version="version2")
         self.facade.reload_channels()
@@ -1679,6 +1690,7 @@ class PackageReporterAptTest(LandscapeTest, PackageReporterTestMixin):
         return self.facade.get_package_hash(name1_upgrade)
 
     def set_pkg1_installed(self):
+        """Make it so that package "name1" is considered installed."""
         self._install_deb_file(os.path.join(self.repository_dir, PKGNAME1))
 
 
