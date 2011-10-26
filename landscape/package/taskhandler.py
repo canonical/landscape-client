@@ -258,7 +258,6 @@ def run_task_handler(cls, args, reactor=None, use_apt_facade=False):
     # 0644 so...
     os.umask(022)
 
-
     package_store = cls.package_store_class(config.store_filename)
     # Delay importing of the facades so that we don't
     # import Smart unless we need to.
