@@ -1323,7 +1323,8 @@ class PackageReporterTestMixin(object):
         # package locks are implemented in AptFacade.
         if not isinstance(self.facade, AptFacade):
             self.assertEqual(self.store.get_locked(), [3])
-            self.assertEqual(self.store.get_package_locks(), [("name1", "", "")])
+            self.assertEqual(
+                self.store.get_package_locks(), [("name1", "", "")])
         self.assertEqual(self.store.get_hash_id_request(request1.id).id,
                          request1.id)
 
@@ -1423,7 +1424,6 @@ class PackageReporterSmartTest(LandscapeTest, PackageReporterTestMixin):
             previous(self)
             self.get_packages_by_name("name1")[0].installed = True
         self.Facade.channels_reloaded = callback
-
 
     def test_detect_packages_changes_with_locked(self):
         """
@@ -1692,7 +1692,6 @@ class PackageReporterAptTest(LandscapeTest, PackageReporterTestMixin):
     def set_pkg1_installed(self):
         """Make it so that package "name1" is considered installed."""
         self._install_deb_file(os.path.join(self.repository_dir, PKGNAME1))
-
 
 
 class GlobalPackageReporterTestMixin(object):
