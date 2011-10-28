@@ -212,10 +212,10 @@ class PackageTaskHandler(object):
                 return None
 
             arch = self._facade.get_arch()
-            if arch is None:
-                # The Smart code should always return a proper string, so this
-                # branch shouldn't get executed at all. However this check is
-                # kept as an extra paranoia sanity check.
+            if not arch:
+                # The Apt code should always return a non-empty string,
+                # so this branch shouldn't get executed at all. However
+                # this check is kept as an extra paranoia sanity check.
                 logging.warning(warning % "unknown dpkg architecture")
                 return None
 

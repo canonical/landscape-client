@@ -78,9 +78,49 @@ class AptFacade(object):
             os.makedirs(full_path)
         return full_path
 
+    def deinit(self):
+        """This method exists solely to be compatible with C{SmartFacade}."""
+
     def get_packages(self):
         """Get all the packages available in the channels."""
         return self._hash2pkg.itervalues()
+
+    def get_locked_packages(self):
+        """Get all packages in the channels matching the set locks.
+
+        XXX: This method isn't implemented yet. It's here to make the
+        transition to Apt in the package reporter easier.
+        """
+        return []
+
+    def set_package_lock(self, name, relation=None, version=None):
+        """Set a new package lock.
+
+        Any package matching the given name and possibly the given version
+        condition will be locked.
+
+        @param name: The name a package must match in order to be locked.
+        @param relation: Optionally, the relation of the version condition the
+            package must satisfy in order to be considered as locked.
+        @param version: Optionally, the version associated with C{relation}.
+
+        @note: If used at all, the C{relation} and C{version} parameter must be
+           both provided.
+
+        XXX: This method isn't implemented yet. It's here to make the
+        transition to Apt in the package reporter easier.
+        """
+
+    def get_package_locks(self):
+        """Return all set package locks.
+
+        @return: A C{list} of ternary tuples, contaning the name, relation
+            and version details for each lock currently set on the system.
+
+        XXX: This method isn't implemented yet. It's here to make the
+        transition to Apt in the package reporter easier.
+        """
+        return []
 
     def reload_channels(self):
         """Reload the channels and update the cache."""
