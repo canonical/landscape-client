@@ -195,11 +195,10 @@ class AptFacade(object):
 
         Setting multiple architectures aren't supported.
         """
-        # From oneiric and onwards Architectures is used to set the
-        # architectures instead of Architecture. It supports setting
-        # multiple architectures, but we force it to be single
-        # architecture, until we have a plan for supporting multiple
-        # architectures.
+        # From oneiric and onwards Architectures is used to set which
+        # architectures can be installed, in case multiple architectures
+        # are supported. We force it to be single architecture, until we
+        # have a plan for supporting multiple architectures.
         apt_pkg.config.clear("APT::Architectures")
         apt_pkg.config.set("APT::Architectures::", architecture)
         return apt_pkg.config.set("APT::Architecture", architecture)
