@@ -9,6 +9,7 @@ from smart.cache import Provides
 from smart.const import NEVER, ALWAYS
 
 import apt_inst
+import apt_pkg
 from aptsources.sourceslist import SourcesList
 
 from twisted.internet import reactor
@@ -95,6 +96,16 @@ class AptFacadeTest(LandscapeTest):
         packages_path = os.path.join(deb_dir, "Packages")
         mtime = int(time.time() + 1)
         os.utime(packages_path, (mtime, mtime))
+
+    def test_default_root(self):
+        """
+        C{AptFacade} can be created by not providing a root directory,
+        which means that the currently configured root (most likely /)
+        will be used.
+        """
+        original_dpkg_root = apt_pkg.config.get("Dir")
+        AptFacade()
+        self.assertEqual(original_dpkg_root, apt_pkg.config.get("Dir"))
 
     def test_custom_root_create_required_files(self):
         """
@@ -434,6 +445,8 @@ class AptFacadeTest(LandscapeTest):
         package. By default extra information is included, but it's
         possible to specify that only basic information should be
         included.
+
+        The information about the package are unicode strings.
         """
         deb_dir = self.makeDir()
         create_simple_repository(deb_dir)
@@ -442,6 +455,7 @@ class AptFacadeTest(LandscapeTest):
         [pkg1] = self.facade.get_packages_by_name("name1")
         [pkg2] = self.facade.get_packages_by_name("name2")
         skeleton1 = self.facade.get_package_skeleton(pkg1)
+        self.assertTrue(isinstance(skeleton1.summary, unicode))
         self.assertEqual("Summary1", skeleton1.summary)
         skeleton2 = self.facade.get_package_skeleton(pkg2, with_info=False)
         self.assertIs(None, skeleton2.summary)
