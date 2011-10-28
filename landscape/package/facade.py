@@ -192,7 +192,16 @@ class AptFacade(object):
         return apt_pkg.config.get("APT::Architecture")
 
     def set_arch(self, architecture):
-        """Set the architecture that APT should use."""
+        """Set the architecture that APT should use.
+
+        Setting multiple architectures aren't supported.
+        """
+        # From oneiric and onwards Architectures is used to set which
+        # architectures can be installed, in case multiple architectures
+        # are supported. We force it to be single architecture, until we
+        # have a plan for supporting multiple architectures.
+        apt_pkg.config.clear("APT::Architectures")
+        apt_pkg.config.set("APT::Architectures::", architecture)
         return apt_pkg.config.set("APT::Architecture", architecture)
 
     def get_package_skeleton(self, pkg, with_info=True):
