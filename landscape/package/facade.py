@@ -301,6 +301,10 @@ class AptFacade(object):
             version for version in self.get_packages()
             if version.package.name == name]
 
+    def perform_changes(self):
+        """Perform the pending package operations."""
+        return None
+
 
 class SmartFacade(object):
     """Wrapper for tasks using Smart.

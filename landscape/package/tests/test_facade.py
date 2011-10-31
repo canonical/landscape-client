@@ -737,6 +737,13 @@ class AptFacadeTest(LandscapeTest):
             sorted([(version.package.name, version.version)
                     for version in self.facade.get_packages_by_name("foo")]))
 
+    def test_perform_changes_with_nothing_to_do(self):
+        """
+        perform_changes() should return None when there's nothing to do.
+        """
+        self.facade.reload_channels()
+        self.assertEqual(self.facade.perform_changes(), None)
+
 
 class SmartFacadeTest(LandscapeTest):
 
