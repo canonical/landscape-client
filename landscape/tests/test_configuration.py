@@ -650,6 +650,25 @@ class ConfigurationFunctionsTest(LandscapeTest):
         finally:
             config.config = original_config
 
+    def assertConfigEqual(self, config_a, config_b):
+        """
+        Compare two configuration files for equality.  The order of parameters
+        and comments may be different but the actual parameters and sections
+        must be the same.
+        """
+        config_a_fp = StringIO(config_a)
+        parser_a = ConfigParser()
+        parser_a.readfp(config_a_fp)
+
+        config_b_fp = StringIO(config_b)
+        parser_b = ConfigParser()
+        parser_b.readfp(config_b_fp)
+
+        self.assertEqual(set(parser_a.sections()), set(parser_b.sections()))
+        for section in parser_a.sections():
+            self.assertEqual(dict(parser_a.items(section)),
+                             dict(parser_b.items(section)))
+
     def test_setup(self):
         filename = self.makeFile("[client]\n"
                                  "computer_title = Old Title\n"
@@ -712,7 +731,7 @@ class ConfigurationFunctionsTest(LandscapeTest):
 
         config = self.get_config(["--silent", "-a", "account", "-t", "rex"])
         setup(config)
-        self.assertEqual(self.get_content(config), """\
+        self.assertConfigEqual(self.get_content(config), """\
 [client]
 url = https://landscape.canonical.com/message-system
 computer_title = rex
@@ -731,7 +750,7 @@ account_name = account
 
         config = self.get_config(["--silent", "--no-start"])
         setup(config)
-        self.assertEqual(self.get_content(config), """\
+        self.assertConfigEqual(self.get_content(config), """\
 [client]
 url = https://landscape.canonical.com/message-system
 data_path = %s
@@ -761,7 +780,7 @@ data_path = %s
                 "--tags", ""]
         config = self.get_config(args)
         setup(config)
-        self.assertEqual(self.get_content(config),
+        self.assertConfigEqual(self.get_content(config),
             "[client]\n"
             "http_proxy = \n"
             "tags = \n"
