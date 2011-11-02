@@ -744,6 +744,20 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         self.assertEqual(self.facade.perform_changes(), None)
 
+    def test_reset_marks(self):
+        """
+        C{reset_marks()} clears things, so that there's nothing to do
+        for C{perform_changes()}
+        """
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.facade.reload_channels()
+        pkg = self.facade.get_packages_by_name("name1")[0]
+        self.facade.mark_install(pkg)
+        self.facade.reset_marks()
+        self.assertEqual(self.facade.perform_changes(), None)
+
 
 class SmartFacadeTest(LandscapeTest):
 

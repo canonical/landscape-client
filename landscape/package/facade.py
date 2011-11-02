@@ -305,6 +305,12 @@ class AptFacade(object):
         """Perform the pending package operations."""
         return None
 
+    def reset_marks(self):
+        """Clear the pending package operations."""
+
+    def mark_install(self, package):
+        """Mark the package for installation."""
+
 
 class SmartFacade(object):
     """Wrapper for tasks using Smart.
