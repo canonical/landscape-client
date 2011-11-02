@@ -650,6 +650,26 @@ class ConfigurationFunctionsTest(LandscapeTest):
         finally:
             config.config = original_config
 
+    def assertConfigEqual(self, first, second):
+        """
+        Compare two configuration files for equality.  The order of parameters
+        and comments may be different but the actual parameters and sections
+        must be the same.
+        """
+        first_fp = StringIO(first)
+        first_parser = ConfigParser()
+        first_parser.readfp(first_fp)
+
+        second_fp = StringIO(second)
+        second_parser = ConfigParser()
+        second_parser.readfp(second_fp)
+
+        self.assertEqual(set(first_parser.sections()),
+                         set(second_parser.sections()))
+        for section in first_parser.sections():
+            self.assertEqual(dict(first_parser.items(section)),
+                             dict(second_parser.items(section)))
+
     def test_setup(self):
         filename = self.makeFile("[client]\n"
                                  "computer_title = Old Title\n"
@@ -712,7 +732,7 @@ class ConfigurationFunctionsTest(LandscapeTest):
 
         config = self.get_config(["--silent", "-a", "account", "-t", "rex"])
         setup(config)
-        self.assertEqual(self.get_content(config), """\
+        self.assertConfigEqual(self.get_content(config), """\
 [client]
 url = https://landscape.canonical.com/message-system
 computer_title = rex
@@ -731,7 +751,7 @@ account_name = account
 
         config = self.get_config(["--silent", "--no-start"])
         setup(config)
-        self.assertEqual(self.get_content(config), """\
+        self.assertConfigEqual(self.get_content(config), """\
 [client]
 url = https://landscape.canonical.com/message-system
 data_path = %s
@@ -761,7 +781,7 @@ data_path = %s
                 "--tags", ""]
         config = self.get_config(args)
         setup(config)
-        self.assertEqual(self.get_content(config),
+        self.assertConfigEqual(self.get_content(config),
             "[client]\n"
             "http_proxy = \n"
             "tags = \n"
