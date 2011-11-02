@@ -308,8 +308,9 @@ class AptFacade(object):
     def reset_marks(self):
         """Clear the pending package operations."""
 
-    def mark_install(self, package):
+    def mark_install(self, version):
         """Mark the package for installation."""
+        version.package.mark_install()
 
 
 class SmartFacade(object):

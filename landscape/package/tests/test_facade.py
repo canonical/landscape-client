@@ -26,8 +26,9 @@ from landscape.tests.mocker import ANY
 from landscape.tests.helpers import LandscapeTest
 from landscape.package.tests.helpers import (
     SmartFacadeHelper, HASH1, HASH2, HASH3, PKGNAME1, PKGNAME2, PKGNAME3,
-    PKGNAME4, PKGDEB4, PKGDEB1, create_full_repository, create_deb,
-    AptFacadeHelper, create_simple_repository)
+    PKGNAME4, PKGDEB4, PKGDEB1, PKGNAME_MINIMAL, PKGDEB_MINIMAL,
+    create_full_repository, create_deb, AptFacadeHelper,
+    create_simple_repository)
 
 
 class AptFacadeTest(LandscapeTest):
@@ -750,13 +751,30 @@ class AptFacadeTest(LandscapeTest):
         for C{perform_changes()}
         """
         deb_dir = self.makeDir()
-        create_simple_repository(deb_dir)
+        create_deb(deb_dir, PKGNAME_MINIMAL, PKGDEB_MINIMAL)
         self.facade.add_channel_deb_dir(deb_dir)
         self.facade.reload_channels()
-        pkg = self.facade.get_packages_by_name("name1")[0]
+        pkg = self.facade.get_packages_by_name("minimal")[0]
         self.facade.mark_install(pkg)
         self.facade.reset_marks()
         self.assertEqual(self.facade.perform_changes(), None)
+
+    def test_wb_mark_install_no_dependencies(self):
+        """
+        If a package with no dependencies is marked for installation,
+        it's the only change in the cache.
+        """
+        deb_dir = self.makeDir()
+        create_deb(deb_dir, PKGNAME_MINIMAL, PKGDEB_MINIMAL)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.facade.reload_channels()
+        pkg = self.facade.get_packages_by_name("minimal")[0]
+        self.facade.mark_install(pkg)
+        self.assertEqual(1, len(self.facade._cache.get_changes()))
+        change = self.facade._cache.get_changes()[0]
+        self.assertTrue(change.marked_install)
+        self.assertEqual("minimal", change.name)
+
 
 
 class SmartFacadeTest(LandscapeTest):
