@@ -650,24 +650,25 @@ class ConfigurationFunctionsTest(LandscapeTest):
         finally:
             config.config = original_config
 
-    def assertConfigEqual(self, config_a, config_b):
+    def assertConfigEqual(self, first, second):
         """
         Compare two configuration files for equality.  The order of parameters
         and comments may be different but the actual parameters and sections
         must be the same.
         """
-        config_a_fp = StringIO(config_a)
-        parser_a = ConfigParser()
-        parser_a.readfp(config_a_fp)
+        first_fp = StringIO(first)
+        first_parser = ConfigParser()
+        first_parser.readfp(first_fp)
 
-        config_b_fp = StringIO(config_b)
-        parser_b = ConfigParser()
-        parser_b.readfp(config_b_fp)
+        second_fp = StringIO(second)
+        second_parser = ConfigParser()
+        second_parser.readfp(second_fp)
 
-        self.assertEqual(set(parser_a.sections()), set(parser_b.sections()))
-        for section in parser_a.sections():
-            self.assertEqual(dict(parser_a.items(section)),
-                             dict(parser_b.items(section)))
+        self.assertEqual(set(first_parser.sections()),
+                         set(second_parser.sections()))
+        for section in first_parser.sections():
+            self.assertEqual(dict(first_parser.items(section)),
+                             dict(second_parser.items(section)))
 
     def test_setup(self):
         filename = self.makeFile("[client]\n"
