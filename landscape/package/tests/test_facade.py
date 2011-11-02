@@ -743,6 +743,7 @@ class AptFacadeTest(LandscapeTest):
         perform_changes() should return None when there's nothing to do.
         """
         self.facade.reload_channels()
+        self.facade._cache.commit = lambda: None
         self.assertEqual(self.facade.perform_changes(), None)
 
     def test_reset_marks(self):
@@ -757,6 +758,7 @@ class AptFacadeTest(LandscapeTest):
         pkg = self.facade.get_packages_by_name("minimal")[0]
         self.facade.mark_install(pkg)
         self.facade.reset_marks()
+        self.facade._cache.commit = lambda: None
         self.assertEqual(self.facade.perform_changes(), None)
 
     def test_wb_mark_install_no_dependencies(self):
@@ -774,6 +776,20 @@ class AptFacadeTest(LandscapeTest):
         change = self.facade._cache.get_changes()[0]
         self.assertTrue(change.marked_install)
         self.assertEqual("minimal", change.name)
+
+    def test_wb_perform_changes_commits_changes(self):
+        """
+        When calling C{perform_changes}, it will commit the cache, to
+        cause all package changes to happen.
+        """
+        deb_dir = self.makeDir()
+        create_deb(deb_dir, PKGNAME_MINIMAL, PKGDEB_MINIMAL)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.facade.reload_channels()
+        pkg = self.facade.get_packages_by_name("minimal")[0]
+        self.facade.mark_install(pkg)
+        self.facade._cache.commit = lambda: None
+        self.facade.perform_changes()
 
 
 

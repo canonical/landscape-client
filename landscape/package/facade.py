@@ -303,6 +303,7 @@ class AptFacade(object):
 
     def perform_changes(self):
         """Perform the pending package operations."""
+        self._cache.commit()
         return None
 
     def reset_marks(self):
