@@ -764,7 +764,7 @@ class AptFacadeTest(LandscapeTest):
     def test_wb_mark_install_no_dependencies(self):
         """
         If a package with no dependencies is marked for installation,
-        it's the only change in the cache.
+        it's get added to the install list.
         """
         deb_dir = self.makeDir()
         create_deb(deb_dir, PKGNAME_MINIMAL, PKGDEB_MINIMAL)
@@ -772,10 +772,9 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         pkg = self.facade.get_packages_by_name("minimal")[0]
         self.facade.mark_install(pkg)
-        self.assertEqual(1, len(self.facade._cache.get_changes()))
-        change = self.facade._cache.get_changes()[0]
-        self.assertTrue(change.marked_install)
-        self.assertEqual("minimal", change.name)
+        self.assertEqual(1, len(self.facade._package_installs))
+        install = self.facade._package_installs[0]
+        self.assertEqual("minimal", install.package.name)
 
     def test_wb_perform_changes_commits_changes(self):
         """

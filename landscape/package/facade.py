@@ -326,10 +326,6 @@ class AptFacade(object):
     def mark_install(self, version):
         """Mark the package for installation."""
         self._package_installs.append(version)
-        try:
-            version.package.mark_install(auto_fix=False)
-        except SystemError, error:
-            self._changer_errors.append(error)
 
 
 class SmartFacade(object):
