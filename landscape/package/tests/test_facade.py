@@ -760,6 +760,7 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reset_marks()
         self.facade._cache.commit = lambda: None
         self.assertEqual(self.facade.perform_changes(), None)
+        self.assertEqual(self.facade._package_installs, [])
 
     def test_wb_mark_install_no_dependencies(self):
         """
