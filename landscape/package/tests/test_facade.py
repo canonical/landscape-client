@@ -829,7 +829,7 @@ class AptFacadeTest(LandscapeTest):
         self.facade.mark_install(foo)
         self.facade._cache.commit = lambda: None
         error = self.assertRaises(DependencyError, self.facade.perform_changes)
-        self.assertEqual(error.packages, set([bar.package]))
+        self.assertEqual(error.packages, set([bar]))
 
 
 class SmartFacadeTest(LandscapeTest):
