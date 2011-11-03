@@ -59,7 +59,6 @@ class AptFacade(object):
         self._channels_loaded = False
         self._pkg2hash = {}
         self._hash2pkg = {}
-        self._changer_errors = []
         self._package_installs = []
         self.refetch_package_index = False
 
