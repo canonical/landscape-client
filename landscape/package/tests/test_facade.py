@@ -63,13 +63,16 @@ class AptFacadeTest(LandscapeTest):
         status = "\n".join(lines)
         append_file(self.dpkg_status, status + "\n\n")
 
-    def _add_package_to_deb_dir(self, path, name, version="1.0"):
+    def _add_package_to_deb_dir(self, path, name, version="1.0",
+                                extra_items=None):
         """Add fake package information to a directory.
 
         There will only be basic information about the package
         available, so that get_packages() have something to return.
         There won't be an actual package in the dir.
         """
+        if extra_items is None:
+            extra_items = {}
         package_stanza = textwrap.dedent("""
                 Package: %(name)s
                 Priority: optional
@@ -81,11 +84,11 @@ class AptFacadeTest(LandscapeTest):
                 Version: %(version)s
                 Config-Version: 1.0
                 Description: description
-
-                """)
-        append_file(
-            os.path.join(path, "Packages"),
-            package_stanza % {"name": name, "version": version})
+                """ % {"name": name, "version": version})
+        package_stanza = apt_pkg.rewrite_section(
+            apt_pkg.TagSection(package_stanza), apt_pkg.REWRITE_PACKAGE_ORDER,
+            extra_items.items())
+        append_file(os.path.join(path, "Packages"), package_stanza + "\n")
 
     def _touch_packages_file(self, deb_dir):
         """Make sure the Packages file get a newer mtime value.
