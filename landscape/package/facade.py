@@ -60,6 +60,7 @@ class AptFacade(object):
         self._pkg2hash = {}
         self._hash2pkg = {}
         self._changer_errors = []
+        self._package_installs = []
         self.refetch_package_index = False
 
     def _ensure_dir_structure(self):
@@ -304,9 +305,17 @@ class AptFacade(object):
 
     def perform_changes(self):
         """Perform the pending package operations."""
-        if len(self._changer_errors) > 0:
-            raise TransactionError(
-                "\n".join([error.args[0] for error in self._changer_errors]))
+        fixer = apt_pkg.ProblemResolver(self._cache._depcache)
+        for version in self._package_installs:
+            version.package.mark_install(auto_fix=False)
+            fixer.clear(version.package._pkg)
+            fixer.protect(version.package._pkg)
+
+        if self._cache._depcache.broken_count > 0:
+            try:
+                fixer.resolve(True)
+            except SystemError, error:
+                raise TransactionError(error.args[0])
 
         self._cache.commit()
         return None
@@ -316,8 +325,9 @@ class AptFacade(object):
 
     def mark_install(self, version):
         """Mark the package for installation."""
+        self._package_installs.append(version)
         try:
-            version.package.mark_install()
+            version.package.mark_install(auto_fix=False)
         except SystemError, error:
             self._changer_errors.append(error)
 
