@@ -315,6 +315,10 @@ class AptFacade(object):
                 fixer.resolve(True)
             except SystemError, error:
                 raise TransactionError(error.args[0])
+        dependencies = set(self._cache.get_changes()).difference(
+            version.package for version in self._package_installs)
+        if dependencies:
+            raise DependencyError(dependencies)
 
         self._cache.commit()
         return None

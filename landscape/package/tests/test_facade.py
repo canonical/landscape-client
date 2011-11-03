@@ -813,6 +813,24 @@ class AptFacadeTest(LandscapeTest):
         #self.assertIn("requirename", exception.args[0])
         self.assertIn("Unable to correct problems", exception.args[0])
 
+    def test_mark_install_dependency_error(self):
+        """
+        If a dependency hasn't been marked for installation, a
+        DependencyError is raised with the packages that need to be installed.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(
+            deb_dir, "foo", extra_items={"Depends": "bar"})
+        self._add_package_to_deb_dir(deb_dir, "bar")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        [bar] = self.facade.get_packages_by_name("bar")
+        self.facade.mark_install(foo)
+        self.facade._cache.commit = lambda: None
+        error = self.assertRaises(DependencyError, self.facade.perform_changes)
+        self.assertEqual(error.packages, set([bar.package]))
+
 
 class SmartFacadeTest(LandscapeTest):
 
