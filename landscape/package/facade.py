@@ -59,6 +59,7 @@ class AptFacade(object):
         self._channels_loaded = False
         self._pkg2hash = {}
         self._hash2pkg = {}
+        self._changer_errors = []
         self.refetch_package_index = False
 
     def _ensure_dir_structure(self):
@@ -303,6 +304,10 @@ class AptFacade(object):
 
     def perform_changes(self):
         """Perform the pending package operations."""
+        if len(self._changer_errors) > 0:
+            raise TransactionError(
+                "\n".join([error.args[0] for error in self._changer_errors]))
+
         self._cache.commit()
         return None
 
@@ -311,7 +316,10 @@ class AptFacade(object):
 
     def mark_install(self, version):
         """Mark the package for installation."""
-        version.package.mark_install()
+        try:
+            version.package.mark_install()
+        except SystemError, error:
+            self._changer_errors.append(error)
 
 
 class SmartFacade(object):

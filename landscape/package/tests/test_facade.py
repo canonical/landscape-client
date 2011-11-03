@@ -791,6 +791,24 @@ class AptFacadeTest(LandscapeTest):
         self.facade._cache.commit = lambda: None
         self.facade.perform_changes()
 
+    def test_mark_install_transaction_error(self):
+        """
+        Mark package 'name1' for installation, and try to perform changes.
+        It should fail because 'name1' depends on 'requirename1', which
+        isn't available in the package cache.
+        """
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.facade.reload_channels()
+
+        pkg = self.facade.get_packages_by_name("name1")[0]
+        self.facade.mark_install(pkg)
+        exception = self.assertRaises(TransactionError,
+                                      self.facade.perform_changes)
+        # XXX: Investigate if we can get a better error message.
+        #self.assertIn("requirename", exception.args[0])
+        self.assertIn("Unable to correct problems", exception.args[0])
 
 
 class SmartFacadeTest(LandscapeTest):
