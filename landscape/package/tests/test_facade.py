@@ -746,7 +746,6 @@ class AptFacadeTest(LandscapeTest):
         perform_changes() should return None when there's nothing to do.
         """
         self.facade.reload_channels()
-        self.facade._cache.commit = lambda: None
         self.assertEqual(self.facade.perform_changes(), None)
 
     def test_reset_marks(self):
@@ -761,7 +760,6 @@ class AptFacadeTest(LandscapeTest):
         pkg = self.facade.get_packages_by_name("minimal")[0]
         self.facade.mark_install(pkg)
         self.facade.reset_marks()
-        self.facade._cache.commit = lambda: None
         self.assertEqual(self.facade.perform_changes(), None)
         self.assertEqual(self.facade._package_installs, [])
 
@@ -847,7 +845,6 @@ class AptFacadeTest(LandscapeTest):
         [foo] = self.facade.get_packages_by_name("foo")
         [bar] = self.facade.get_packages_by_name("bar")
         self.facade.mark_install(foo)
-        self.facade._cache.commit = lambda: None
         error = self.assertRaises(DependencyError, self.facade.perform_changes)
         self.assertEqual(error.packages, set([bar]))
 
