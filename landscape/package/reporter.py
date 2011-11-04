@@ -56,13 +56,13 @@ class PackageReporter(PackageTaskHandler):
     def run(self):
         result = Deferred()
 
-        # Run smart-update before anything else, to make sure that
-        # the SmartFacade will load freshly updated channels
-        result.addCallback(lambda x: self.run_smart_update())
-
-        # Update APT cache if APT facade is enabled.
         if os.environ.get("USE_APT_FACADE"):
+            # Update APT cache if APT facade is enabled.
             result.addCallback(lambda x: self.run_apt_update())
+        else:
+            # Run smart-update before anything else, to make sure that
+            # the SmartFacade will load freshly updated channels
+            result.addCallback(lambda x: self.run_smart_update())
 
         # If the appropriate hash=>id db is not there, fetch it
         result.addCallback(lambda x: self.fetch_hash_id_db())
