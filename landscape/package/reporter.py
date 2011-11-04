@@ -229,7 +229,7 @@ class PackageReporter(PackageTaskHandler):
         # check stamp file mtime
         last_update = os.stat(stamp)[8]
         now = int(time.time())
-        return last_update + interval < now
+        return (last_update + interval * 60) < now
 
     def run_apt_update(self):
         """Run apt-update and log a warning in case of non-zero exit code.
