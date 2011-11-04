@@ -766,7 +766,7 @@ class AptFacadeTest(LandscapeTest):
     def test_wb_mark_install_no_dependencies(self):
         """
         If a package with no dependencies is marked for installation,
-        it's get added to the install list.
+        it gets added to the install list.
         """
         deb_dir = self.makeDir()
         create_deb(deb_dir, PKGNAME_MINIMAL, PKGDEB_MINIMAL)
