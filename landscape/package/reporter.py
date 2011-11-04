@@ -49,6 +49,7 @@ class PackageReporter(PackageTaskHandler):
 
     smart_update_interval = 60
     smart_update_filename = "/usr/lib/landscape/smart-update"
+    apt_update_filename = "/usr/lib/landscape/apt-update"
     sources_list_filename = "/etc/apt/sources.list"
     sources_list_directory = "/etc/apt/sources.list.d"
 
@@ -58,6 +59,10 @@ class PackageReporter(PackageTaskHandler):
         # Run smart-update before anything else, to make sure that
         # the SmartFacade will load freshly updated channels
         result.addCallback(lambda x: self.run_smart_update())
+
+        # Update APT cache if APT facade is enabled.
+        if os.environ.get("USE_APT_FACADE"):
+            result.addCallback(lambda x: self.run_apt_update())
 
         # If the appropriate hash=>id db is not there, fetch it
         result.addCallback(lambda x: self.fetch_hash_id_db())
@@ -207,6 +212,59 @@ class PackageReporter(PackageTaskHandler):
                 code = 1
                 err = "There are no APT sources configured in %s or %s." % (
                     self.sources_list_filename, self.sources_list_directory)
+            deferred = self._broker.call_if_accepted(
+                "package-reporter-result", self.send_result, code, err)
+            deferred.addCallback(lambda ignore: (out, err, code))
+            return deferred
+
+        result.addCallback(callback)
+        return result
+
+    def _apt_update_timeout_expired(self, interval):
+        """Check if the apt-update timeout has passed."""
+        stamp = self._config.apt_update_stamp_filename
+
+        if not os.path.exists(stamp):
+            return True
+        # check stamp file mtime
+        last_update = os.stat(stamp)[8]
+        now = int(time.time())
+        return last_update + interval < now
+
+    def run_apt_update(self):
+        """Run apt-update and log a warning in case of non-zero exit code.
+
+        @return: a deferred returning (out, err, code)
+        """
+        if (self._config.force_smart_update or self._apt_sources_have_changed()
+            or self._apt_update_timeout_expired(self.smart_update_interval)):
+
+            result = spawn_process(self.apt_update_filename)
+        else:
+            err = ("'%s' didn't run, update interval has not passed" %
+                   self.apt_update_filename)
+            result = succeed(("", err, 1))
+
+        def callback((out, err, code)):
+            if code == 1:
+                # this is not a failure, apt-update didn't run
+                logging.debug(err)
+                apt_failed = False
+            else:
+                apt_failed = (code != 0)
+                touch_file(self._config.apt_update_stamp_filename)
+                logging.debug(
+                    "'%s' exited with status %d (out='%s', err='%s')" % (
+                        self.apt_update_filename, code, out, err))
+            if apt_failed:
+                logging.warning("'%s' exited with status %d (%s)" % (
+                        self.apt_update_filename, code, err))
+            if not apt_failed and not self._facade.get_channels():
+                code = 1
+                err = ("There are no APT sources configured in %s or %s." %
+                       (self.sources_list_filename,
+                        self.sources_list_directory))
+
             deferred = self._broker.call_if_accepted(
                 "package-reporter-result", self.send_result, code, err)
             deferred.addCallback(lambda ignore: (out, err, code))
