@@ -765,8 +765,8 @@ class AptFacadeTest(LandscapeTest):
 
     def test_wb_mark_install_adds_to_list(self):
         """
-        If a package with no dependencies is marked for installation,
-        it gets added to the install list.
+        C{mark_install} adds the package to the list of packages to be
+        installed.
         """
         deb_dir = self.makeDir()
         create_deb(deb_dir, PKGNAME_MINIMAL, PKGDEB_MINIMAL)
