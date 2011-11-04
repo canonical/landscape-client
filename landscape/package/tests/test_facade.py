@@ -783,9 +783,9 @@ class AptFacadeTest(LandscapeTest):
         When calling C{perform_changes}, it will commit the cache, to
         cause all package changes to happen.
         """
-        self.committed = False
         def commit():
             self.committed = True
+
         deb_dir = self.makeDir()
         create_deb(deb_dir, PKGNAME_MINIMAL, PKGDEB_MINIMAL)
         self.facade.add_channel_deb_dir(deb_dir)
@@ -793,6 +793,7 @@ class AptFacadeTest(LandscapeTest):
         pkg = self.facade.get_packages_by_name("minimal")[0]
         self.facade.mark_install(pkg)
         self.facade._cache.commit = commit
+        self.committed = False
         self.facade.perform_changes()
         self.assertTrue(self.committed)
 
