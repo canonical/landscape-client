@@ -763,7 +763,7 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(self.facade.perform_changes(), None)
         self.assertEqual(self.facade._package_installs, [])
 
-    def test_wb_mark_install_no_dependencies(self):
+    def test_wb_mark_install_adds_to_list(self):
         """
         If a package with no dependencies is marked for installation,
         it gets added to the install list.
