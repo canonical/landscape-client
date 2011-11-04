@@ -778,6 +778,24 @@ class AptFacadeTest(LandscapeTest):
         install = self.facade._package_installs[0]
         self.assertEqual("minimal", install.package.name)
 
+    def test_mark_install_specific_version(self):
+        """
+        If more than one version is available, the version passed to
+        C{mark_install} is marked as the candidate version, so that gets
+        installed.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
+        self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        foo1, foo2 = sorted(self.facade.get_packages_by_name("foo"))
+        self.assertEqual(foo2, foo1.package.candidate)
+        self.facade.mark_install(foo1)
+        self.facade._cache.commit = lambda: None
+        self.facade.perform_changes()
+        self.assertEqual(foo1, foo1.package.candidate)
+
     def test_wb_perform_changes_commits_changes(self):
         """
         When calling C{perform_changes}, it will commit the cache, to

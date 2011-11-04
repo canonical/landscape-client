@@ -308,6 +308,7 @@ class AptFacade(object):
             return None
         fixer = apt_pkg.ProblemResolver(self._cache._depcache)
         for version in self._package_installs:
+            version.package.candidate = version
             version.package.mark_install(auto_fix=False)
             fixer.clear(version.package._pkg)
             fixer.protect(version.package._pkg)
