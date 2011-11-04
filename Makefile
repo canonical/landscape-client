@@ -1,5 +1,5 @@
 PYDOCTOR ?= pydoctor
-TXT2MAN=man/txt2man
+TXT2MAN ?= txt2man 
 PYTHON ?= python
 
 all: build
@@ -33,9 +33,9 @@ docs/api/twisted/pickle:
 	-${PYDOCTOR} --make-html --html-output docs/api/twisted --add-package /usr/share/pyshared/twisted -o docs/api/twisted/pickle
 
 manpages:
-	${TXT2MAN} -P Landscape -t landscape-client < man/landscape-client.txt > man/landscape-client.1
-	${TXT2MAN} -P Landscape -t landscape-config < man/landscape-config.txt > man/landscape-config.1
-	${TXT2MAN} -P Landscape -t landscape-message < man/landscape-message.txt > man/landscape-message.1
+	${TXT2MAN} -P Landscape -s 1 -t landscape-client < man/landscape-client.txt > man/landscape-client.1
+	${TXT2MAN} -P Landscape -s 1 -t landscape-config < man/landscape-config.txt > man/landscape-config.1
+	${TXT2MAN} -P Landscape -s 1 -t landscape-message < man/landscape-message.txt > man/landscape-message.1
 
 package: manpages
 	@fakeroot debian/rules binary
