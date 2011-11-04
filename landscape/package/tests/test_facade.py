@@ -160,6 +160,24 @@ class AptFacadeTest(LandscapeTest):
             sorted((version.package.name, version.version)
                    for version in self.facade.get_packages()))
 
+    def test_get_packages_multiple_architectures(self):
+        """
+        If there are multiple architectures for a package, only the native
+        architecture is reported by C{get_packages()}.
+        """
+        apt_pkg.config.clear("APT::Architectures")
+        apt_pkg.config.set("APT::Architecture", "amd64")
+        apt_pkg.config.set("APT::Architectures::", "amd64")
+        apt_pkg.config.set("APT::Architectures::", "i386")
+        facade = AptFacade(apt_pkg.config.get("Dir"))
+
+        self._add_system_package("foo", version="1.0", architecture="amd64")
+        self._add_system_package("bar", version="1.1", architecture="i386")
+        facade.reload_channels()
+        self.assertEqual([("foo", "1.0")],
+                         [(version.package.name, version.version)
+                          for version in facade.get_packages()])
+
     def test_add_channel_apt_deb_without_components(self):
         """
         C{add_channel_apt_deb()} adds a new deb URL to a file in
