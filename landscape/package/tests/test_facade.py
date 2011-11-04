@@ -798,6 +798,22 @@ class AptFacadeTest(LandscapeTest):
         self.facade.perform_changes()
         self.assertTrue(self.committed)
 
+    def test_perform_changes_return_non_none(self):
+        """
+        When calling C{perform_changes} with changes to do, it will
+        return a string.
+        """
+        deb_dir = self.makeDir()
+        create_deb(deb_dir, PKGNAME_MINIMAL, PKGDEB_MINIMAL)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.facade.reload_channels()
+        pkg = self.facade.get_packages_by_name("minimal")[0]
+        self.facade.mark_install(pkg)
+        self.facade._cache.commit = lambda: None
+        # XXX: It should return the Apt output, but that will be done
+        # later.
+        self.assertEqual("ok", self.facade.perform_changes())
+
     def test_mark_install_transaction_error(self):
         """
         Mark package 'name1' for installation, and try to perform changes.

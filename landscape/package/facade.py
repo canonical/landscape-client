@@ -304,6 +304,8 @@ class AptFacade(object):
 
     def perform_changes(self):
         """Perform the pending package operations."""
+        if len(self._package_installs) == 0:
+            return None
         fixer = apt_pkg.ProblemResolver(self._cache._depcache)
         for version in self._package_installs:
             version.package.mark_install(auto_fix=False)
@@ -323,7 +325,7 @@ class AptFacade(object):
             raise DependencyError(dependencies)
 
         self._cache.commit()
-        return None
+        return "ok"
 
     def reset_marks(self):
         """Clear the pending package operations."""
