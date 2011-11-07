@@ -332,6 +332,7 @@ class AptFacade(object):
     def reset_marks(self):
         """Clear the pending package operations."""
         del self._package_installs[:]
+        del self._package_upgrades[:]
 
     def mark_install(self, version):
         """Mark the package for installation."""

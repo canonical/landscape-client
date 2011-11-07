@@ -754,14 +754,19 @@ class AptFacadeTest(LandscapeTest):
         for C{perform_changes()}
         """
         deb_dir = self.makeDir()
-        create_deb(deb_dir, PKGNAME_MINIMAL, PKGDEB_MINIMAL)
-        self.facade.add_channel_deb_dir(deb_dir)
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self._add_system_package("bar", version="1.0")
+        self._add_package_to_deb_dir(deb_dir, "bar", version="1.5")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
-        pkg = self.facade.get_packages_by_name("minimal")[0]
-        self.facade.mark_install(pkg)
+        foo = self.facade.get_packages_by_name("foo")[0]
+        self.facade.mark_install(foo)
+        bar_15 = sorted(self.facade.get_packages_by_name("bar"))[1]
+        self.facade.mark_upgrade(bar_15)
         self.facade.reset_marks()
         self.assertEqual(self.facade.perform_changes(), None)
         self.assertEqual(self.facade._package_installs, [])
+        self.assertEqual(self.facade._package_upgrades, [])
 
     def test_wb_mark_install_adds_to_list(self):
         """
