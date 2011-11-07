@@ -650,6 +650,26 @@ class ConfigurationFunctionsTest(LandscapeTest):
         finally:
             config.config = original_config
 
+    def assertConfigEqual(self, first, second):
+        """
+        Compare two configuration files for equality.  The order of parameters
+        and comments may be different but the actual parameters and sections
+        must be the same.
+        """
+        first_fp = StringIO(first)
+        first_parser = ConfigParser()
+        first_parser.readfp(first_fp)
+
+        second_fp = StringIO(second)
+        second_parser = ConfigParser()
+        second_parser.readfp(second_fp)
+
+        self.assertEqual(set(first_parser.sections()),
+                         set(second_parser.sections()))
+        for section in first_parser.sections():
+            self.assertEqual(dict(first_parser.items(section)),
+                             dict(second_parser.items(section)))
+
     def test_setup(self):
         filename = self.makeFile("[client]\n"
                                  "computer_title = Old Title\n"
@@ -712,13 +732,67 @@ class ConfigurationFunctionsTest(LandscapeTest):
 
         config = self.get_config(["--silent", "-a", "account", "-t", "rex"])
         setup(config)
-        self.assertEqual(self.get_content(config), """\
+        self.assertConfigEqual(self.get_content(config), """\
 [client]
 url = https://landscape.canonical.com/message-system
 computer_title = rex
 data_path = %s
 account_name = account
 """ % config.data_path)
+
+    def test_silent_setup_no_register(self):
+        """
+        Called with command line options to write a config file but no
+        registration or validation of parameters is attempted.
+        """
+        # Make sure no sysvconfig modifications are attempted
+        self.mocker.patch(SysVConfig)
+        self.mocker.replay()
+
+        config = self.get_config(["--silent", "--no-start"])
+        setup(config)
+        self.assertConfigEqual(self.get_content(config), """\
+[client]
+url = https://landscape.canonical.com/message-system
+data_path = %s
+""" % config.data_path)
+
+    def test_silent_setup_no_register_with_default_preseed_params(self):
+        """
+        Make sure that the configuration can be used to write the
+        configuration file after a fresh install.
+        """
+        # Make sure no sysvconfig modifications are attempted
+        self.mocker.patch(SysVConfig)
+        self.mocker.replay()
+
+        args = ["--silent", "--no-start",
+                "--computer-title", "",
+                "--account-name", "",
+                "--registration-password", "",
+                "--url", "https://landscape.canonical.com/message-system",
+                "--exchange-interval", "900",
+                "--urgent-exchange-interval", "60",
+                "--ping-url", "http://landscape.canonical.com/ping",
+                "--ping-interval", "30",
+                "--http-proxy", "",
+                "--https-proxy", "",
+                "--otp", "",
+                "--tags", ""]
+        config = self.get_config(args)
+        setup(config)
+        self.assertConfigEqual(self.get_content(config),
+            "[client]\n"
+            "http_proxy = \n"
+            "tags = \n"
+            "data_path = %s\n"
+            "registration_password = \n"
+            "account_name = \n"
+            "url = https://landscape.canonical.com/message-system\n"
+            "computer_title = \n"
+            "https_proxy = \n"
+            "ping_url = http://landscape.canonical.com/ping\n"
+             % config.data_path)
 
     def test_silent_setup_without_computer_title(self):
         """A computer title is required."""

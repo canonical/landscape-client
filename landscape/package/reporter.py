@@ -462,7 +462,7 @@ class PackageReporter(PackageTaskHandler):
             hash = self._facade.get_package_hash(package)
             id = self._store.get_hash_id(hash)
             if id is not None:
-                if package.installed:
+                if self._facade.is_package_installed(package):
                     current_installed.add(id)
                     if self._facade.is_package_available(package):
                         current_available.add(id)
@@ -672,7 +672,9 @@ def main(args):
     elif "FAKE_PACKAGE_STORE" in os.environ:
         return run_task_handler(FakeReporter, args)
     else:
-        return run_task_handler(PackageReporter, args)
+        use_apt_facade = os.environ.get("USE_APT_FACADE", False)
+        return run_task_handler(
+            PackageReporter, args, use_apt_facade=use_apt_facade)
 
 
 def find_reporter_command():

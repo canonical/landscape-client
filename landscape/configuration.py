@@ -378,7 +378,7 @@ class LandscapeSetupScript(object):
             if self._get_invalid_tags(self.config.tags):
                 self.show_help("Tag names may only contain alphanumeric "
                               "characters.")
-                self.config.tags = None # Reset for the next prompt
+                self.config.tags = None  # Reset for the next prompt
             else:
                 break
 
@@ -439,11 +439,12 @@ def setup(config):
     if config.https_proxy is None and os.environ.get("https_proxy"):
         config.https_proxy = os.environ["https_proxy"]
 
-    if config.silent:
+    if config.silent and not config.no_start:
         if not config.get("otp") and (not config.get("account_name") or not
                                           config.get("computer_title")):
             raise ConfigurationError("An account name and computer title are "
                                      "required.")
+    if config.silent:
         if config.get("script_users"):
             invalid_users = get_invalid_users(config.get("script_users"))
             if invalid_users:
@@ -622,7 +623,6 @@ def main(args):
         print_text(str(error), error=True)
         sys.exit(1)
 
-
     # Disable startup on boot and stop the client, if one is running.
     if config.disable:
         stop_client_and_disable_init_script()
@@ -636,10 +636,11 @@ def main(args):
         sys.exit("Aborting Landscape configuration")
 
     # Attempt to register the client.
-    if config.silent:
-        register(config)
-    else:
-        answer = raw_input("\nRequest a new registration for "
-                           "this computer now? (Y/n): ")
-        if not answer.upper().startswith("N"):
+    if not config.no_start:
+        if config.silent:
             register(config)
+        else:
+            answer = raw_input("\nRequest a new registration for "
+                               "this computer now? (Y/n): ")
+            if not answer.upper().startswith("N"):
+                register(config)

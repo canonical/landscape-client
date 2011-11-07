@@ -2,11 +2,15 @@ import glob
 import sys
 import os
 import unittest
+import textwrap
 import time
 
 from twisted.internet.defer import Deferred, succeed
 from twisted.internet import reactor
 
+import apt_inst
+
+from landscape.lib.fs import append_file, create_file
 from landscape.lib.fetch import fetch_async, FetchError
 from landscape.lib import bpickle
 from landscape.package.store import (
@@ -15,9 +19,10 @@ from landscape.package.reporter import (
     PackageReporter, HASH_ID_REQUEST_TIMEOUT, main, find_reporter_command,
     PackageReporterConfiguration, FakeGlobalReporter, FakeReporter)
 from landscape.package import reporter
-from landscape.package.facade import SmartFacade
+from landscape.package.facade import AptFacade
 from landscape.package.tests.helpers import (
-    SmartFacadeHelper, HASH1, HASH2, HASH3)
+    SmartFacadeHelper, AptFacadeHelper, SimpleRepositoryHelper,
+    HASH1, HASH2, HASH3, PKGNAME1)
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
 from landscape.tests.mocker import ANY
@@ -38,41 +43,7 @@ class PackageReporterConfigurationTest(unittest.TestCase):
         self.assertTrue(config.force_smart_update)
 
 
-class PackageReporterTest(LandscapeTest):
-
-    helpers = [SmartFacadeHelper, BrokerServiceHelper]
-
-    def setUp(self):
-
-        def set_up(ignored):
-            self.store = PackageStore(self.makeFile())
-            self.config = PackageReporterConfiguration()
-            self.reporter = PackageReporter(
-                self.store, self.facade, self.remote, self.config)
-            self.config.data_path = self.makeDir()
-            os.mkdir(self.config.package_directory)
-
-        result = super(PackageReporterTest, self).setUp()
-        return result.addCallback(set_up)
-
-    def set_pkg2_upgrades_pkg1(self):
-        previous = self.Facade.channels_reloaded
-
-        def callback(self):
-            from smart.backends.deb.base import DebUpgrades
-            previous(self)
-            pkg2 = self.get_packages_by_name("name2")[0]
-            pkg2.upgrades += (DebUpgrades("name1", "=", "version1-release1"),)
-            self.reload_cache()  # Relink relations.
-        self.Facade.channels_reloaded = callback
-
-    def set_pkg1_installed(self):
-        previous = self.Facade.channels_reloaded
-
-        def callback(self):
-            previous(self)
-            self.get_packages_by_name("name1")[0].installed = True
-        self.Facade.channels_reloaded = callback
+class PackageReporterTestMixin(object):
 
     def test_set_package_ids_with_all_known(self):
         self.store.add_hash_id_request(["hash1", "hash2"])
@@ -196,7 +167,7 @@ class PackageReporterTest(LandscapeTest):
             installed_size = None
             relations = []
 
-        mock_facade = self.mocker.patch(SmartFacade)
+        mock_facade = self.mocker.patch(self.Facade)
         mock_facade.get_package_skeleton(ANY)
         self.mocker.result(FakePackage())
         self.mocker.replay()
@@ -374,7 +345,7 @@ class PackageReporterTest(LandscapeTest):
         self.reporter.lsb_release_filename = self.makeFile(SAMPLE_LSB_RELEASE)
 
         # Undetermined arch
-        self.facade.set_arch(None)
+        self.facade.set_arch("")
 
         # The failure should be properly logged
         logging_mock = self.mocker.replace("logging.warning")
@@ -1075,8 +1046,7 @@ class PackageReporterTest(LandscapeTest):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["packages"])
 
-        for filename in glob.glob(self.repository_dir + "/*"):
-            os.unlink(filename)
+        self._clear_repository()
 
         self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
         self.store.add_available([1, 2, 3])
@@ -1148,10 +1118,9 @@ class PackageReporterTest(LandscapeTest):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["packages"])
 
-        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
+        upgrade_hash = self.set_pkg1_upgradable()
+        self.store.set_hash_ids({HASH1: 1, upgrade_hash: 2, HASH3: 3})
         self.store.add_available([1, 2, 3])
-
-        self.set_pkg2_upgrades_pkg1()
 
         def got_result(result):
             self.assertMessages(message_store.get_pending_messages(), [])
@@ -1163,12 +1132,13 @@ class PackageReporterTest(LandscapeTest):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["packages"])
 
-        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
+        upgrade_hash = self.set_pkg1_upgradable()
+        self.set_pkg1_installed()
+
+        self.store.set_hash_ids(
+            {HASH1: 1, upgrade_hash: 2, HASH3: 3})
         self.store.add_available([1, 2, 3])
         self.store.add_installed([1])
-
-        self.set_pkg2_upgrades_pkg1()
-        self.set_pkg1_installed()
 
         def got_result(result):
             self.assertMessages(message_store.get_pending_messages(),
@@ -1197,6 +1167,263 @@ class PackageReporterTest(LandscapeTest):
 
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
+
+    def test_detect_packages_changes_with_not_locked_and_ranges(self):
+        """
+        Ranges are used when reporting changes to 3 or more not locked packages
+        having consecutive ids.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+
+        self.store.add_locked([1, 2, 3])
+
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
+        self.store.add_available([1, 2, 3])
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "packages", "not-locked": [(1, 3)]}])
+            self.assertEqual(sorted(self.store.get_locked()), [])
+
+        result = self.reporter.detect_packages_changes()
+        return result.addCallback(got_result)
+
+    def test_detect_changes_considers_packages_and_locks_changes(self):
+        """
+        The L{PackageReporter.detect_changes} method considers both package and
+        package locks changes. It also releases smart locks by calling the
+        L{SmartFacade.deinit} method.
+        """
+        reporter_mock = self.mocker.patch(self.reporter)
+        reporter_mock.detect_packages_changes()
+        self.mocker.result(succeed(True))
+        reporter_mock.detect_package_locks_changes()
+        self.mocker.result(succeed(True))
+
+        facade_mock = self.mocker.patch(self.facade)
+        facade_mock.deinit()
+
+        self.mocker.replay()
+        return self.reporter.detect_changes()
+
+    def test_detect_changes_fires_package_data_changed(self):
+        """
+        The L{PackageReporter.detect_changes} method fires an event of
+        type 'package-data-changed' if we detected something has changed
+        with respect to our previous run.
+        """
+        reporter_mock = self.mocker.patch(self.reporter)
+        reporter_mock.detect_packages_changes()
+        self.mocker.result(succeed(False))
+        reporter_mock.detect_package_locks_changes()
+        self.mocker.result(succeed(True))
+        callback = self.mocker.mock()
+        callback()
+        self.mocker.replay()
+
+        self.broker_service.reactor.call_on("package-data-changed", callback)
+        return self.reporter.detect_changes()
+
+    def test_run(self):
+        reporter_mock = self.mocker.patch(self.reporter)
+
+        self.mocker.order()
+
+        results = [Deferred() for i in range(7)]
+
+        reporter_mock.run_smart_update()
+        self.mocker.result(results[0])
+
+        reporter_mock.fetch_hash_id_db()
+        self.mocker.result(results[1])
+
+        reporter_mock.use_hash_id_db()
+        self.mocker.result(results[2])
+
+        reporter_mock.handle_tasks()
+        self.mocker.result(results[3])
+
+        reporter_mock.remove_expired_hash_id_requests()
+        self.mocker.result(results[4])
+
+        reporter_mock.request_unknown_hashes()
+        self.mocker.result(results[5])
+
+        reporter_mock.detect_changes()
+        self.mocker.result(results[6])
+
+        self.mocker.replay()
+
+        self.reporter.run()
+
+        # It must raise an error because deferreds weren't yet fired.
+        self.assertRaises(AssertionError, self.mocker.verify)
+
+        # Call them in reversed order. It must not make a difference because
+        # Twisted is ensuring that things run in the proper order.
+        for deferred in reversed(results):
+            deferred.callback(None)
+
+    def test_main(self):
+        run_task_handler = self.mocker.replace("landscape.package.taskhandler"
+                                               ".run_task_handler",
+                                               passthrough=False)
+        run_task_handler(PackageReporter, ["ARGS"], use_apt_facade=False)
+        self.mocker.result("RESULT")
+        self.mocker.replay()
+
+        self.assertEqual(main(["ARGS"]), "RESULT")
+
+    def test_find_reporter_command(self):
+        dirname = self.makeDir()
+        filename = self.makeFile("", dirname=dirname,
+                                 basename="landscape-package-reporter")
+
+        saved_argv = sys.argv
+        try:
+            sys.argv = [os.path.join(dirname, "landscape-monitor")]
+
+            command = find_reporter_command()
+
+            self.assertEqual(command, filename)
+        finally:
+            sys.argv = saved_argv
+
+    def test_resynchronize(self):
+        """
+        When a resynchronize task arrives, the reporter should clear
+        out all the data in the package store, except the hash ids and
+        the hash ids requests.
+        This is done in the reporter so that we know it happens when
+        no other reporter is possibly running at the same time.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["package-locks"])
+        self.store.set_hash_ids({HASH1: 3, HASH2: 4})
+        self.store.add_available([1])
+        self.store.add_available_upgrades([2])
+        self.store.add_installed([2])
+        self.store.add_locked([3])
+        self.store.add_package_locks([("name1", None, None)])
+        self.facade.set_package_lock("name1")
+        request1 = self.store.add_hash_id_request(["hash3"])
+        request2 = self.store.add_hash_id_request(["hash4"])
+
+        # Set the message id to avoid the requests being deleted by the
+        # L{PackageReporter.remove_expired_hash_id_requests} method.
+        request1.message_id = 1
+        request2.message_id = 2
+
+        # Let's make sure the data is there.
+        self.assertEqual(self.store.get_available_upgrades(), [2])
+        self.assertEqual(self.store.get_available(), [1])
+        self.assertEqual(self.store.get_installed(), [2])
+        # XXX: Don't check get_locked() and get_package_locks() until
+        # package locks are implemented in AptFacade.
+        if not isinstance(self.facade, AptFacade):
+            self.assertEqual(self.store.get_locked(), [3])
+            self.assertEqual(
+                self.store.get_package_locks(), [("name1", "", "")])
+        self.assertEqual(self.store.get_hash_id_request(request1.id).id,
+                         request1.id)
+
+        self.store.add_task("reporter", {"type": "resynchronize"})
+
+        deferred = self.reporter.run()
+
+        def check_result(result):
+
+            # The hashes should not go away.
+            hash1 = self.store.get_hash_id(HASH1)
+            hash2 = self.store.get_hash_id(HASH2)
+            self.assertEqual([hash1, hash2], [3, 4])
+
+            # But the other data should.
+            self.assertEqual(self.store.get_available_upgrades(), [])
+
+            # After running the resychronize task, detect_packages_changes is
+            # called, and the existing known hashes are made available.
+            self.assertEqual(self.store.get_available(), [3, 4])
+            self.assertEqual(self.store.get_installed(), [])
+            # XXX: Don't check get_locked() until package locks are
+            # implemented in AptFacade.
+            if not isinstance(self.facade, AptFacade):
+                self.assertEqual(self.store.get_locked(), [3])
+
+            # The two original hash id requests should be still there, and
+            # a new hash id request should also be detected for HASH3.
+            requests_count = 0
+            new_request_found = False
+            for request in self.store.iter_hash_id_requests():
+                requests_count += 1
+                if request.id == request1.id:
+                    self.assertEqual(request.hashes, ["hash3"])
+                elif request.id == request2.id:
+                    self.assertEqual(request.hashes, ["hash4"])
+                elif not new_request_found:
+                    self.assertEqual(request.hashes, [HASH3])
+                else:
+                    self.fail("Unexpected hash-id request!")
+            self.assertEqual(requests_count, 3)
+
+            # XXX: Don't check for package-locks messages until package
+            # locks are implemented in AptFacade.
+            if not isinstance(self.facade, AptFacade):
+                self.assertMessages(message_store.get_pending_messages(),
+                                    [{"type": "package-locks",
+                                      "created": [("name1", "", "")]}])
+
+        deferred.addCallback(check_result)
+        return deferred
+
+
+class PackageReporterSmartTest(LandscapeTest, PackageReporterTestMixin):
+
+    helpers = [SmartFacadeHelper, BrokerServiceHelper]
+
+    def setUp(self):
+
+        def set_up(ignored):
+            self.store = PackageStore(self.makeFile())
+            self.config = PackageReporterConfiguration()
+            self.reporter = PackageReporter(
+                self.store, self.facade, self.remote, self.config)
+            self.config.data_path = self.makeDir()
+            os.mkdir(self.config.package_directory)
+
+        result = super(PackageReporterSmartTest, self).setUp()
+        return result.addCallback(set_up)
+
+    def _clear_repository(self):
+        """Remove all packages from self.repository."""
+        for filename in glob.glob(self.repository_dir + "/*"):
+            os.unlink(filename)
+
+    def set_pkg1_upgradable(self):
+        """Make it so that package "name1" is considered to be upgradable.
+
+        Return the hash of the package that upgrades "name1".
+        """
+        previous = self.Facade.channels_reloaded
+
+        def callback(self):
+            from smart.backends.deb.base import DebUpgrades
+            previous(self)
+            pkg2 = self.get_packages_by_name("name2")[0]
+            pkg2.upgrades += (DebUpgrades("name1", "=", "version1-release1"),)
+            self.reload_cache()  # Relink relations.
+        self.Facade.channels_reloaded = callback
+        return HASH2
+
+    def set_pkg1_installed(self):
+        """Make it so that package "name1" is considered installed."""
+        previous = self.Facade.channels_reloaded
+
+        def callback(self):
+            previous(self)
+            self.get_packages_by_name("name1")[0].installed = True
+        self.Facade.channels_reloaded = callback
 
     def test_detect_packages_changes_with_locked(self):
         """
@@ -1297,27 +1524,6 @@ class PackageReporterTest(LandscapeTest):
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
 
-    def test_detect_packages_changes_with_not_locked_and_ranges(self):
-        """
-        Ranges are used when reporting changes to 3 or more not locked packages
-        having consecutive ids.
-        """
-        message_store = self.broker_service.message_store
-        message_store.set_accepted_types(["packages"])
-
-        self.store.add_locked([1, 2, 3])
-
-        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
-        self.store.add_available([1, 2, 3])
-
-        def got_result(result):
-            self.assertMessages(message_store.get_pending_messages(),
-                                [{"type": "packages", "not-locked": [(1, 3)]}])
-            self.assertEqual(sorted(self.store.get_locked()), [])
-
-        result = self.reporter.detect_packages_changes()
-        return result.addCallback(got_result)
-
     def test_detect_package_locks_changes_with_create_locks(self):
         """
         If Smart indicates package locks we didn't know about, report
@@ -1413,201 +1619,82 @@ class PackageReporterTest(LandscapeTest):
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
 
-    def test_detect_changes_considers_packages_and_locks_changes(self):
-        """
-        The L{PackageReporter.detect_changes} method considers both package and
-        package locks changes. It also releases smart locks by calling the
-        L{SmartFacade.deinit} method.
-        """
-        reporter_mock = self.mocker.patch(self.reporter)
-        reporter_mock.detect_packages_changes()
-        self.mocker.result(succeed(True))
-        reporter_mock.detect_package_locks_changes()
-        self.mocker.result(succeed(True))
 
-        facade_mock = self.mocker.patch(self.facade)
-        facade_mock.deinit()
+class PackageReporterAptTest(LandscapeTest, PackageReporterTestMixin):
 
-        self.mocker.replay()
-        return self.reporter.detect_changes()
+    helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
 
-    def test_detect_changes_fires_package_data_changed(self):
-        """
-        The L{PackageReporter.detect_changes} method fires an event of
-        type 'package-data-changed' if we detected something has changed
-        with respect to our previous run.
-        """
-        reporter_mock = self.mocker.patch(self.reporter)
-        reporter_mock.detect_packages_changes()
-        self.mocker.result(succeed(False))
-        reporter_mock.detect_package_locks_changes()
-        self.mocker.result(succeed(True))
-        callback = self.mocker.mock()
-        callback()
-        self.mocker.replay()
-
-        self.broker_service.reactor.call_on("package-data-changed", callback)
-        return self.reporter.detect_changes()
-
-    def test_run(self):
-        reporter_mock = self.mocker.patch(self.reporter)
-
-        self.mocker.order()
-
-        results = [Deferred() for i in range(7)]
-
-        reporter_mock.run_smart_update()
-        self.mocker.result(results[0])
-
-        reporter_mock.fetch_hash_id_db()
-        self.mocker.result(results[1])
-
-        reporter_mock.use_hash_id_db()
-        self.mocker.result(results[2])
-
-        reporter_mock.handle_tasks()
-        self.mocker.result(results[3])
-
-        reporter_mock.remove_expired_hash_id_requests()
-        self.mocker.result(results[4])
-
-        reporter_mock.request_unknown_hashes()
-        self.mocker.result(results[5])
-
-        reporter_mock.detect_changes()
-        self.mocker.result(results[6])
-
-        self.mocker.replay()
-
-        self.reporter.run()
-
-        # It must raise an error because deferreds weren't yet fired.
-        self.assertRaises(AssertionError, self.mocker.verify)
-
-        # Call them in reversed order. It must not make a difference because
-        # Twisted is ensuring that things run in the proper order.
-        for deferred in reversed(results):
-            deferred.callback(None)
-
-    def test_main(self):
-        run_task_handler = self.mocker.replace("landscape.package.taskhandler"
-                                               ".run_task_handler",
-                                               passthrough=False)
-        run_task_handler(PackageReporter, ["ARGS"])
-        self.mocker.result("RESULT")
-        self.mocker.replay()
-
-        self.assertEqual(main(["ARGS"]), "RESULT")
-
-    def test_find_reporter_command(self):
-        dirname = self.makeDir()
-        filename = self.makeFile("", dirname=dirname,
-                                 basename="landscape-package-reporter")
-
-        saved_argv = sys.argv
-        try:
-            sys.argv = [os.path.join(dirname, "landscape-monitor")]
-
-            command = find_reporter_command()
-
-            self.assertEqual(command, filename)
-        finally:
-            sys.argv = saved_argv
-
-    def test_resynchronize(self):
-        """
-        When a resynchronize task arrives, the reporter should clear
-        out all the data in the package store, except the hash ids and
-        the hash ids requests.
-        This is done in the reporter so that we know it happens when
-        no other reporter is possibly running at the same time.
-        """
-        message_store = self.broker_service.message_store
-        message_store.set_accepted_types(["package-locks"])
-        self.store.set_hash_ids({HASH1: 3, HASH2: 4})
-        self.store.add_available([1])
-        self.store.add_available_upgrades([2])
-        self.store.add_installed([2])
-        self.store.add_locked([3])
-        self.store.add_package_locks([("name1", None, None)])
-        self.facade.set_package_lock("name1")
-        request1 = self.store.add_hash_id_request(["hash3"])
-        request2 = self.store.add_hash_id_request(["hash4"])
-
-        # Set the message id to avoid the requests being deleted by the
-        # L{PackageReporter.remove_expired_hash_id_requests} method.
-        request1.message_id = 1
-        request2.message_id = 2
-
-        # Let's make sure the data is there.
-        self.assertEqual(self.store.get_available_upgrades(), [2])
-        self.assertEqual(self.store.get_available(), [1])
-        self.assertEqual(self.store.get_installed(), [2])
-        self.assertEqual(self.store.get_locked(), [3])
-        self.assertEqual(self.store.get_package_locks(), [("name1", "", "")])
-        self.assertEqual(self.store.get_hash_id_request(request1.id).id,
-                         request1.id)
-
-        self.store.add_task("reporter", {"type": "resynchronize"})
-
-        deferred = self.reporter.run()
-
-        def check_result(result):
-
-            # The hashes should not go away.
-            hash1 = self.store.get_hash_id(HASH1)
-            hash2 = self.store.get_hash_id(HASH2)
-            self.assertEqual([hash1, hash2], [3, 4])
-
-            # But the other data should.
-            self.assertEqual(self.store.get_available_upgrades(), [])
-
-            # After running the resychronize task, detect_packages_changes is
-            # called, and the existing known hashes are made available.
-            self.assertEqual(self.store.get_available(), [3, 4])
-            self.assertEqual(self.store.get_installed(), [])
-            self.assertEqual(self.store.get_locked(), [3])
-
-            # The two original hash id requests should be still there, and
-            # a new hash id request should also be detected for HASH3.
-            requests_count = 0
-            new_request_found = False
-            for request in self.store.iter_hash_id_requests():
-                requests_count += 1
-                if request.id == request1.id:
-                    self.assertEqual(request.hashes, ["hash3"])
-                elif request.id == request2.id:
-                    self.assertEqual(request.hashes, ["hash4"])
-                elif not new_request_found:
-                    self.assertEqual(request.hashes, [HASH3])
-                else:
-                    self.fail("Unexpected hash-id request!")
-            self.assertEqual(requests_count, 3)
-
-            self.assertMessages(message_store.get_pending_messages(),
-                                [{"type": "package-locks",
-                                  "created": [("name1", "", "")]}])
-
-        deferred.addCallback(check_result)
-        return deferred
-
-
-class GlobalPackageReporterTest(LandscapeTest):
-
-    helpers = [SmartFacadeHelper, BrokerServiceHelper]
+    Facade = AptFacade
 
     def setUp(self):
 
         def set_up(ignored):
-            self.store = FakePackageStore(self.makeFile())
+            self.store = PackageStore(self.makeFile())
             self.config = PackageReporterConfiguration()
-            self.reporter = FakeGlobalReporter(
+            self.reporter = PackageReporter(
                 self.store, self.facade, self.remote, self.config)
             self.config.data_path = self.makeDir()
             os.mkdir(self.config.package_directory)
 
-        result = super(GlobalPackageReporterTest, self).setUp()
+        result = super(PackageReporterAptTest, self).setUp()
         return result.addCallback(set_up)
+
+    def _install_deb_file(self, path):
+        """Fake the the given deb file is installed in the system."""
+        deb_file = open(path)
+        deb = apt_inst.DebFile(deb_file)
+        control = deb.control.extractdata("control")
+        deb_file.close()
+        lines = control.splitlines()
+        lines.insert(1, "Status: install ok installed")
+        status = "\n".join(lines)
+        append_file(self.dpkg_status, status + "\n\n")
+
+    def _add_package_to_deb_dir(self, path, name, version="1.0"):
+        """Add fake package information to a directory.
+
+        There will only be basic information about the package
+        available, so that get_packages() have something to return.
+        There won't be an actual package in the dir.
+        """
+        package_stanza = textwrap.dedent("""
+                Package: %(name)s
+                Priority: optional
+                Section: misc
+                Installed-Size: 1234
+                Maintainer: Someone
+                Architecture: all
+                Source: source
+                Version: %(version)s
+                Config-Version: 1.0
+                Description: description
+
+                """)
+        append_file(
+            os.path.join(path, "Packages"),
+            package_stanza % {"name": name, "version": version})
+
+    def _clear_repository(self):
+        """Remove all packages from self.repository."""
+        create_file(self.repository_dir + "/Packages", "")
+
+    def set_pkg1_upgradable(self):
+        """Make it so that package "name1" is considered to be upgradable.
+
+        Return the hash of the package that upgrades "name1".
+        """
+        self._add_package_to_deb_dir(
+            self.repository_dir, "name1", version="version2")
+        self.facade.reload_channels()
+        name1_upgrade = sorted(self.facade.get_packages_by_name("name1"))[1]
+        return self.facade.get_package_hash(name1_upgrade)
+
+    def set_pkg1_installed(self):
+        """Make it so that package "name1" is considered installed."""
+        self._install_deb_file(os.path.join(self.repository_dir, PKGNAME1))
+
+
+class GlobalPackageReporterTestMixin(object):
 
     def test_store_messages(self):
         """
@@ -1640,9 +1727,47 @@ class GlobalPackageReporterTest(LandscapeTest):
         return deferred
 
 
+class GlobalPackageReporterAptTest(LandscapeTest,
+                                   GlobalPackageReporterTestMixin):
+
+    helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
+
+    def setUp(self):
+
+        def set_up(ignored):
+            self.store = FakePackageStore(self.makeFile())
+            self.config = PackageReporterConfiguration()
+            self.reporter = FakeGlobalReporter(
+                self.store, self.facade, self.remote, self.config)
+            self.config.data_path = self.makeDir()
+            os.mkdir(self.config.package_directory)
+
+        result = super(GlobalPackageReporterAptTest, self).setUp()
+        return result.addCallback(set_up)
+
+
+class GlobalPackageReporterSmartTest(LandscapeTest,
+                                     GlobalPackageReporterTestMixin):
+
+    helpers = [SmartFacadeHelper, BrokerServiceHelper]
+
+    def setUp(self):
+
+        def set_up(ignored):
+            self.store = FakePackageStore(self.makeFile())
+            self.config = PackageReporterConfiguration()
+            self.reporter = FakeGlobalReporter(
+                self.store, self.facade, self.remote, self.config)
+            self.config.data_path = self.makeDir()
+            os.mkdir(self.config.package_directory)
+
+        result = super(GlobalPackageReporterSmartTest, self).setUp()
+        return result.addCallback(set_up)
+
+
 class FakePackageReporterTest(LandscapeTest):
 
-    helpers = [EnvironSaverHelper, SmartFacadeHelper, BrokerServiceHelper]
+    helpers = [EnvironSaverHelper, BrokerServiceHelper]
 
     def setUp(self):
 
@@ -1653,7 +1778,7 @@ class FakePackageReporterTest(LandscapeTest):
             os.environ["FAKE_PACKAGE_STORE"] = global_file
             self.config = PackageReporterConfiguration()
             self.reporter = FakeReporter(
-                self.store, self.facade, self.remote, self.config)
+                self.store, None, self.remote, self.config)
             self.config.data_path = self.makeDir()
             os.mkdir(self.config.package_directory)
 

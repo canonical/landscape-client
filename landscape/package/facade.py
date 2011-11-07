@@ -53,12 +53,17 @@ class AptFacade(object):
 
     def __init__(self, root=None):
         self._root = root
-        self._ensure_dir_structure()
+        if self._root is not None:
+            self._ensure_dir_structure()
         self._cache = apt.cache.Cache(rootdir=root, memonly=True)
         self._channels_loaded = False
         self._pkg2hash = {}
         self._hash2pkg = {}
         self.refetch_package_index = False
+        # Explicitly set APT::Architectures to the native architecture only, as
+        # we currently don't support multiarch, so packages with different
+        # archs are not reported.
+        self.set_arch(self.get_arch())
 
     def _ensure_dir_structure(self):
         self._ensure_sub_dir("etc/apt")
@@ -77,9 +82,49 @@ class AptFacade(object):
             os.makedirs(full_path)
         return full_path
 
+    def deinit(self):
+        """This method exists solely to be compatible with C{SmartFacade}."""
+
     def get_packages(self):
         """Get all the packages available in the channels."""
         return self._hash2pkg.itervalues()
+
+    def get_locked_packages(self):
+        """Get all packages in the channels matching the set locks.
+
+        XXX: This method isn't implemented yet. It's here to make the
+        transition to Apt in the package reporter easier.
+        """
+        return []
+
+    def set_package_lock(self, name, relation=None, version=None):
+        """Set a new package lock.
+
+        Any package matching the given name and possibly the given version
+        condition will be locked.
+
+        @param name: The name a package must match in order to be locked.
+        @param relation: Optionally, the relation of the version condition the
+            package must satisfy in order to be considered as locked.
+        @param version: Optionally, the version associated with C{relation}.
+
+        @note: If used at all, the C{relation} and C{version} parameter must be
+           both provided.
+
+        XXX: This method isn't implemented yet. It's here to make the
+        transition to Apt in the package reporter easier.
+        """
+
+    def get_package_locks(self):
+        """Return all set package locks.
+
+        @return: A C{list} of ternary tuples, contaning the name, relation
+            and version details for each lock currently set on the system.
+
+        XXX: This method isn't implemented yet. It's here to make the
+        transition to Apt in the package reporter easier.
+        """
+        return []
 
     def reload_channels(self):
         """Reload the channels and update the cache."""
@@ -191,7 +236,16 @@ class AptFacade(object):
         return apt_pkg.config.get("APT::Architecture")
 
     def set_arch(self, architecture):
-        """Set the architecture that APT should use."""
+        """Set the architecture that APT should use.
+
+        Setting multiple architectures aren't supported.
+        """
+        # From oneiric and onwards Architectures is used to set which
+        # architectures can be installed, in case multiple architectures
+        # are supported. We force it to be single architecture, until we
+        # have a plan for supporting multiple architectures.
+        apt_pkg.config.clear("APT::Architectures")
+        apt_pkg.config.set("APT::Architectures::", architecture)
         return apt_pkg.config.set("APT::Architecture", architecture)
 
     def get_package_skeleton(self, pkg, with_info=True):
@@ -206,7 +260,7 @@ class AptFacade(object):
 
         @return: a L{PackageSkeleton} object.
         """
-        return build_skeleton_apt(pkg, with_info=with_info)
+        return build_skeleton_apt(pkg, with_info=with_info, with_unicode=True)
 
     def get_package_hash(self, version):
         """Return a hash from the given package.
@@ -227,6 +281,10 @@ class AptFacade(object):
         @return: The L{apt.package.Package} that has the given hash.
         """
         return self._hash2pkg.get(hash)
+
+    def is_package_installed(self, version):
+        """Is the package version installed?"""
+        return version == version.package.installed
 
     def is_package_available(self, version):
         """Is the package available for installation?"""
@@ -599,6 +657,10 @@ class SmartFacade(object):
         """Flush the current smart configuration to disk."""
         control = self._get_ctrl()
         control.saveSysConf()
+
+    def is_package_installed(self, package):
+        """Is the package installed?"""
+        return package.installed
 
     def is_package_available(self, package):
         """Is the package available for installation?"""

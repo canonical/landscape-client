@@ -212,10 +212,10 @@ class PackageTaskHandler(object):
                 return None
 
             arch = self._facade.get_arch()
-            if arch is None:
-                # The Smart code should always return a proper string, so this
-                # branch shouldn't get executed at all. However this check is
-                # kept as an extra paranoia sanity check.
+            if not arch:
+                # The Apt code should always return a non-empty string,
+                # so this branch shouldn't get executed at all. However
+                # this check is kept as an extra paranoia sanity check.
                 logging.warning(warning % "unknown dpkg architecture")
                 return None
 
@@ -227,7 +227,7 @@ class PackageTaskHandler(object):
         return result
 
 
-def run_task_handler(cls, args, reactor=None):
+def run_task_handler(cls, args, reactor=None, use_apt_facade=False):
     # please only pass reactor when you have totally mangled everything with
     # mocker. Otherwise bad things will happen.
     if reactor is None:
@@ -258,12 +258,15 @@ def run_task_handler(cls, args, reactor=None):
     # 0644 so...
     os.umask(022)
 
-    # Delay importing of the facade so that we don't
-    # import Smart unless we need to.
-    from landscape.package.facade import SmartFacade
-
     package_store = cls.package_store_class(config.store_filename)
-    package_facade = SmartFacade()
+    # Delay importing of the facades so that we don't
+    # import Smart unless we need to.
+    if use_apt_facade:
+        from landscape.package.facade import AptFacade
+        package_facade = AptFacade()
+    else:
+        from landscape.package.facade import SmartFacade
+        package_facade = SmartFacade()
 
     def finish():
         connector.disconnect()

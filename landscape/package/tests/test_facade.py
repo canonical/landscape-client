@@ -9,6 +9,7 @@ from smart.cache import Provides
 from smart.const import NEVER, ALWAYS
 
 import apt_inst
+import apt_pkg
 from aptsources.sourceslist import SourcesList
 
 from twisted.internet import reactor
@@ -96,13 +97,23 @@ class AptFacadeTest(LandscapeTest):
         mtime = int(time.time() + 1)
         os.utime(packages_path, (mtime, mtime))
 
+    def test_default_root(self):
+        """
+        C{AptFacade} can be created by not providing a root directory,
+        which means that the currently configured root (most likely /)
+        will be used.
+        """
+        original_dpkg_root = apt_pkg.config.get("Dir")
+        AptFacade()
+        self.assertEqual(original_dpkg_root, apt_pkg.config.get("Dir"))
+
     def test_custom_root_create_required_files(self):
         """
         If a custom root is passed to the constructor, the directory and
         files that apt expects to be there will be created.
         """
         root = self.makeDir()
-        facade = AptFacade(root=root)
+        AptFacade(root=root)
         self.assertTrue(os.path.exists(os.path.join(root, "etc", "apt")))
         self.assertTrue(
             os.path.exists(os.path.join(root, "etc", "apt", "sources.list.d")))
@@ -148,6 +159,24 @@ class AptFacadeTest(LandscapeTest):
             [("foo", "1.0"), ("foo", "1.5")],
             sorted((version.package.name, version.version)
                    for version in self.facade.get_packages()))
+
+    def test_get_packages_multiple_architectures(self):
+        """
+        If there are multiple architectures for a package, only the native
+        architecture is reported by C{get_packages()}.
+        """
+        apt_pkg.config.clear("APT::Architectures")
+        apt_pkg.config.set("APT::Architecture", "amd64")
+        apt_pkg.config.set("APT::Architectures::", "amd64")
+        apt_pkg.config.set("APT::Architectures::", "i386")
+        facade = AptFacade(apt_pkg.config.get("Dir"))
+
+        self._add_system_package("foo", version="1.0", architecture="amd64")
+        self._add_system_package("bar", version="1.1", architecture="i386")
+        facade.reload_channels()
+        self.assertEqual([("foo", "1.0")],
+                         [(version.package.name, version.version)
+                          for version in facade.get_packages()])
 
     def test_add_channel_apt_deb_without_components(self):
         """
@@ -434,6 +463,8 @@ class AptFacadeTest(LandscapeTest):
         package. By default extra information is included, but it's
         possible to specify that only basic information should be
         included.
+
+        The information about the package are unicode strings.
         """
         deb_dir = self.makeDir()
         create_simple_repository(deb_dir)
@@ -442,6 +473,7 @@ class AptFacadeTest(LandscapeTest):
         [pkg1] = self.facade.get_packages_by_name("name1")
         [pkg2] = self.facade.get_packages_by_name("name2")
         skeleton1 = self.facade.get_package_skeleton(pkg1)
+        self.assertTrue(isinstance(skeleton1.summary, unicode))
         self.assertEqual("Summary1", skeleton1.summary)
         skeleton2 = self.facade.get_package_skeleton(pkg2, with_info=False)
         self.assertIs(None, skeleton2.summary)
@@ -549,6 +581,54 @@ class AptFacadeTest(LandscapeTest):
         # Which are not the old packages.
         self.assertFalse(pkg2.package in new_pkgs)
         self.assertFalse(pkg3.package in new_pkgs)
+
+    def test_is_package_installed_in_channel_not_installed(self):
+        """
+        If a package is in a channel, but not installed, it's not
+        considered installed.
+        """
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.facade.reload_channels()
+        [package] = self.facade.get_packages_by_name("name1")
+        self.assertFalse(self.facade.is_package_installed(package))
+
+    def test_is_package_installed_in_channel_installed(self):
+        """
+        If a package is in a channel and installed, it's considered
+        installed.
+        """
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self._install_deb_file(os.path.join(deb_dir, PKGNAME1))
+        self.facade.reload_channels()
+        [package] = self.facade.get_packages_by_name("name1")
+        self.assertTrue(self.facade.is_package_installed(package))
+
+    def test_is_package_installed_other_verion_in_channel(self):
+        """
+        If the there are other versions in the channels, only the
+        installed version of thepackage is considered installed.
+        """
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self._add_package_to_deb_dir(
+            deb_dir, "name1", version="version0-release0")
+        self._add_package_to_deb_dir(
+            deb_dir, "name1", version="version2-release2")
+        self._install_deb_file(os.path.join(deb_dir, PKGNAME1))
+        self.facade.reload_channels()
+        [version0, version1, version2] = sorted(
+            self.facade.get_packages_by_name("name1"))
+        self.assertEqual("version0-release0", version0.version)
+        self.assertFalse(self.facade.is_package_installed(version0))
+        self.assertEqual("version1-release1", version1.version)
+        self.assertTrue(self.facade.is_package_installed(version1))
+        self.assertEqual("version2-release2", version2.version)
+        self.assertFalse(self.facade.is_package_installed(version2))
 
     def test_is_package_available_in_channel_not_installed(self):
         """
