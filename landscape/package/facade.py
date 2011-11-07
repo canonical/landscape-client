@@ -305,11 +305,16 @@ class AptFacade(object):
 
     def perform_changes(self):
         """Perform the pending package operations."""
-        if len(self._package_installs) == 0:
+        if len(self._package_installs + self._package_upgrades) == 0:
             return None
         fixer = apt_pkg.ProblemResolver(self._cache._depcache)
         for version in self._package_installs:
             version.package.candidate = version
+            version.package.mark_install(auto_fix=False)
+            fixer.clear(version.package._pkg)
+            fixer.protect(version.package._pkg)
+        for version in self._package_upgrades:
+            #version.package.candidate = version
             version.package.mark_install(auto_fix=False)
             fixer.clear(version.package._pkg)
             fixer.protect(version.package._pkg)
@@ -322,7 +327,7 @@ class AptFacade(object):
         versions_to_be_installed = set(
             package.candidate for package in self._cache.get_changes())
         dependencies = versions_to_be_installed.difference(
-            self._package_installs)
+            self._package_installs + self._package_upgrades)
         if dependencies:
             raise DependencyError(dependencies)
 

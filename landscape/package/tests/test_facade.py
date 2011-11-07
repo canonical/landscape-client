@@ -886,6 +886,24 @@ class AptFacadeTest(LandscapeTest):
         error = self.assertRaises(DependencyError, self.facade.perform_changes)
         self.assertEqual(error.packages, set([bar]))
 
+    def test_mark_upgrade_dependency_error(self):
+        """
+        If a dependency hasn't been marked for installation or upgrade, a
+        DependencyError is raised with the packages that need to be updated.
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package("foo", version="1.0")
+        self._add_package_to_deb_dir(
+            deb_dir, "foo", version="1.5", extra_items={"Depends": "bar"})
+        self._add_package_to_deb_dir(deb_dir, "bar")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        foo_15 = sorted(self.facade.get_packages_by_name("foo"))[1]
+        [bar] = self.facade.get_packages_by_name("bar")
+        self.facade.mark_upgrade(foo_15)
+        error = self.assertRaises(DependencyError, self.facade.perform_changes)
+        self.assertEqual(error.packages, set([bar]))
+
 
 class SmartFacadeTest(LandscapeTest):
 
