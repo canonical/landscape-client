@@ -60,6 +60,7 @@ class AptFacade(object):
         self._pkg2hash = {}
         self._hash2pkg = {}
         self._package_installs = []
+        self._package_upgrades= []
         self.refetch_package_index = False
 
     def _ensure_dir_structure(self):
@@ -335,6 +336,10 @@ class AptFacade(object):
     def mark_install(self, version):
         """Mark the package for installation."""
         self._package_installs.append(version)
+
+    def mark_upgrade(self, version):
+        """Mark the package for upgrade."""
+        self._package_upgrades.append(version)
 
 
 class SmartFacade(object):

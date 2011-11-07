@@ -778,6 +778,20 @@ class AptFacadeTest(LandscapeTest):
         install = self.facade._package_installs[0]
         self.assertEqual("minimal", install.package.name)
 
+    def test_wb_mark_upgrade_adds_to_list(self):
+        """
+        C{mark_upgrade} adds the package to the list of packages to be
+        upgraded.
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package("foo", version="1.0")
+        self._add_package_to_deb_dir(deb_dir, "foo", version="1.5")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        foo_15 = sorted(self.facade.get_packages_by_name("foo"))[1]
+        self.facade.mark_upgrade(foo_15)
+        self.assertEqual([foo_15], self.facade._package_upgrades)
+
     def test_mark_install_specific_version(self):
         """
         If more than one version is available, the version passed to
