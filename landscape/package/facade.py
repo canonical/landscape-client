@@ -314,7 +314,7 @@ class AptFacade(object):
             fixer.clear(version.package._pkg)
             fixer.protect(version.package._pkg)
         for version in self._package_upgrades:
-            #version.package.candidate = version
+            version.package.candidate = version
             version.package.mark_install(auto_fix=False)
             fixer.clear(version.package._pkg)
             fixer.protect(version.package._pkg)
