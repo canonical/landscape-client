@@ -61,6 +61,7 @@ class AptFacade(object):
         self._hash2pkg = {}
         self._package_installs = []
         self._package_upgrades = []
+        self._package_removals = []
         self.refetch_package_index = False
         # Explicitly set APT::Architectures to the native architecture only, as
         # we currently don't support multiarch, so packages with different
@@ -358,6 +359,10 @@ class AptFacade(object):
     def mark_upgrade(self, version):
         """Mark the package for upgrade."""
         self._package_upgrades.append(version)
+
+    def mark_remove(self, version):
+        """Mark the package for removal."""
+        self._package_removals.append(version)
 
 
 class SmartFacade(object):

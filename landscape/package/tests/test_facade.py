@@ -815,6 +815,17 @@ class AptFacadeTest(LandscapeTest):
         self.facade.mark_upgrade(foo_15)
         self.assertEqual([foo_15], self.facade._package_upgrades)
 
+    def test_wb_mark_remove_adds_to_list(self):
+        """
+        C{mark_remove} adds the package to the list of packages to be
+        removed.
+        """
+        self._add_system_package("foo")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        self.facade.mark_remove(foo)
+        self.assertEqual([foo], self.facade._package_removals)
+
     def test_mark_install_specific_version(self):
         """
         If more than one version is available, the version passed to
