@@ -312,6 +312,10 @@ class AptFacade(object):
             # install actually is the one getting installed.
             version.package.candidate = version
             version.package.mark_install(auto_fix=False)
+            # If we need to resolve dependencies, try avoiding having
+            # the package we asked to be installed from being removed.
+            # (This is what would have been done if auto_fix would have
+            # been True.
             fixer.clear(version.package._pkg)
             fixer.protect(version.package._pkg)
 
