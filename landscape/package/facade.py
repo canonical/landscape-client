@@ -61,6 +61,10 @@ class AptFacade(object):
         self._hash2pkg = {}
         self._package_installs = []
         self.refetch_package_index = False
+        # Explicitly set APT::Architectures to the native architecture only, as
+        # we currently don't support multiarch, so packages with different
+        # archs are not reported.
+        self.set_arch(self.get_arch())
 
     def _ensure_dir_structure(self):
         self._ensure_sub_dir("etc/apt")
