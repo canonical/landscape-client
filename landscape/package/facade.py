@@ -336,6 +336,8 @@ class AptFacade(object):
             fixer.protect(version.package._pkg)
         for version in self._package_removals:
             version.package.mark_delete(auto_fix=False)
+            # Configure the resolver in the same way
+            # mark_delete(auto_fix=True) would have done.
             fixer.clear(version.package._pkg)
             fixer.protect(version.package._pkg)
             fixer.remove(version.package._pkg)
