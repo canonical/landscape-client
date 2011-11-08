@@ -801,8 +801,9 @@ class AptFacadeTest(LandscapeTest):
         When calling C{perform_changes}, it will commit the cache, to
         cause all package changes to happen.
         """
+        committed = []
         def commit():
-            self.committed = True
+            committed.append(True)
 
         deb_dir = self.makeDir()
         create_deb(deb_dir, PKGNAME_MINIMAL, PKGDEB_MINIMAL)
@@ -813,7 +814,7 @@ class AptFacadeTest(LandscapeTest):
         self.facade._cache.commit = commit
         self.committed = False
         self.facade.perform_changes()
-        self.assertTrue(self.committed)
+        self.assertEqual([True], committed)
 
     def test_perform_changes_return_non_none(self):
         """
