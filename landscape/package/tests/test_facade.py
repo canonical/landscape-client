@@ -57,12 +57,15 @@ class AptFacadeTest(LandscapeTest):
             control_fields.items())
         append_file(packages_file, package_stanza + "\n")
 
-    def _add_system_package(self, name, architecture="all", version="1.0"):
+    def _add_system_package(self, name, architecture="all", version="1.0",
+                            control_fields=None):
         """Add a package to the dpkg status file."""
-        control_fields = {"Status": "install ok installed"}
+        system_control_fields = {"Status": "install ok installed"}
+        if control_fields is not None:
+            system_control_fields.update(control_fields)
         self._add_package(
             self.dpkg_status, name, architecture=architecture, version=version,
-            control_fields=control_fields)
+            control_fields=system_control_fields)
 
     def _install_deb_file(self, path):
         """Fake the the given deb file is installed in the system."""
@@ -971,6 +974,21 @@ class AptFacadeTest(LandscapeTest):
         foo_15 = sorted(self.facade.get_packages_by_name("foo"))[1]
         [bar] = self.facade.get_packages_by_name("bar")
         self.facade.mark_upgrade(foo_15)
+        error = self.assertRaises(DependencyError, self.facade.perform_changes)
+        self.assertEqual(error.packages, set([bar]))
+
+    def test_mark_remove_dependency_error(self):
+        """
+        If a dependency hasn't been marked for removal,
+        DependencyError is raised with the packages that need to be removed.
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package("foo")
+        self._add_system_package("bar", control_fields={"Depends": "foo"})
+        self.facade.reload_channels()
+        [foo]= self.facade.get_packages_by_name("foo")
+        [bar] = self.facade.get_packages_by_name("bar")
+        self.facade.mark_remove(foo)
         error = self.assertRaises(DependencyError, self.facade.perform_changes)
         self.assertEqual(error.packages, set([bar]))
 
