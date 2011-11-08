@@ -1,3 +1,9 @@
+/*
+
+ Copyright (c) 2011 Canonical, Ltd.
+
+*/
+
 #define _GNU_SOURCE
 #include <sys/resource.h>
 #include <sys/types.h>

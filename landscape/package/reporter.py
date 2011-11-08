@@ -240,38 +240,33 @@ class PackageReporter(PackageTaskHandler):
             or self._apt_update_timeout_expired(self.smart_update_interval)):
 
             result = spawn_process(self.apt_update_filename)
-        else:
-            err = ("'%s' didn't run, update interval has not passed" %
-                   self.apt_update_filename)
-            result = succeed(("", err, 1))
 
-        def callback((out, err, code)):
-            if code == 1:
-                # this is not a failure, apt-update didn't run
-                logging.debug(err)
-                apt_failed = False
-            else:
-                apt_failed = (code != 0)
+            def callback((out, err, code)):
                 touch_file(self._config.apt_update_stamp_filename)
                 logging.debug(
                     "'%s' exited with status %d (out='%s', err='%s')" % (
                         self.apt_update_filename, code, out, err))
-            if apt_failed:
-                logging.warning("'%s' exited with status %d (%s)" % (
-                        self.apt_update_filename, code, err))
-            if not apt_failed and not self._facade.get_channels():
-                code = 1
-                err = ("There are no APT sources configured in %s or %s." %
-                       (self.sources_list_filename,
-                        self.sources_list_directory))
 
-            deferred = self._broker.call_if_accepted(
-                "package-reporter-result", self.send_result, code, err)
-            deferred.addCallback(lambda ignore: (out, err, code))
-            return deferred
+                if code != 0:
+                    logging.warning("'%s' exited with status %d (%s)" % (
+                            self.apt_update_filename, code, err))
+                elif not self._facade.get_channels():
+                    code = 1
+                    err = ("There are no APT sources configured in %s or %s." %
+                           (self.sources_list_filename,
+                            self.sources_list_directory))
 
-        result.addCallback(callback)
-        return result
+                deferred = self._broker.call_if_accepted(
+                    "package-reporter-result", self.send_result, code, err)
+                deferred.addCallback(lambda ignore: (out, err, code))
+                return deferred
+
+            return result.addCallback(callback)
+
+        else:
+            logging.debug("'%s' didn't run, update interval has not passed" %
+                          self.apt_update_filename)
+            return succeed(("", "", 0))
 
     def send_result(self, code, err):
         """

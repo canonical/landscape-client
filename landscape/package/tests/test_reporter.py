@@ -1919,10 +1919,8 @@ class PackageReporterAptTest(LandscapeTest, PackageReporterTestMixin):
 
             def callback((out, err, code)):
                 self.assertEqual("", out)
-                self.assertEqual(
-                    "'%s' didn't run, update interval has not passed" %
-                    self.reporter.apt_update_filename, err)
-                self.assertEqual(1, code)
+                self.assertEqual("", err)
+                self.assertEqual(0, code)
             result.addCallback(callback)
             result.chainDeferred(deferred)
 
