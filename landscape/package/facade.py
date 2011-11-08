@@ -59,6 +59,7 @@ class AptFacade(object):
         self._channels_loaded = False
         self._pkg2hash = {}
         self._hash2pkg = {}
+        self._package_installs = []
         self.refetch_package_index = False
         # Explicitly set APT::Architectures to the native architecture only, as
         # we currently don't support multiarch, so packages with different
@@ -304,6 +305,46 @@ class AptFacade(object):
         return [
             version for version in self.get_packages()
             if version.package.name == name]
+
+    def perform_changes(self):
+        """Perform the pending package operations."""
+        if len(self._package_installs) == 0:
+            return None
+        fixer = apt_pkg.ProblemResolver(self._cache._depcache)
+        for version in self._package_installs:
+            # Set the candidate version, so that the version we want to
+            # install actually is the one getting installed.
+            version.package.candidate = version
+            version.package.mark_install(auto_fix=False)
+            # If we need to resolve dependencies, try avoiding having
+            # the package we asked to be installed from being removed.
+            # (This is what would have been done if auto_fix would have
+            # been True.
+            fixer.clear(version.package._pkg)
+            fixer.protect(version.package._pkg)
+
+        if self._cache._depcache.broken_count > 0:
+            try:
+                fixer.resolve(True)
+            except SystemError, error:
+                raise TransactionError(error.args[0])
+        versions_to_be_installed = set(
+            package.candidate for package in self._cache.get_changes())
+        dependencies = versions_to_be_installed.difference(
+            self._package_installs)
+        if dependencies:
+            raise DependencyError(dependencies)
+
+        self._cache.commit()
+        return "ok"
+
+    def reset_marks(self):
+        """Clear the pending package operations."""
+        del self._package_installs[:]
+
+    def mark_install(self, version):
+        """Mark the package for installation."""
+        self._package_installs.append(version)
 
 
 class SmartFacade(object):

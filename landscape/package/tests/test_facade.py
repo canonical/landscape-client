@@ -26,8 +26,9 @@ from landscape.tests.mocker import ANY
 from landscape.tests.helpers import LandscapeTest
 from landscape.package.tests.helpers import (
     SmartFacadeHelper, HASH1, HASH2, HASH3, PKGNAME1, PKGNAME2, PKGNAME3,
-    PKGNAME4, PKGDEB4, PKGDEB1, create_full_repository, create_deb,
-    AptFacadeHelper, create_simple_repository)
+    PKGNAME4, PKGDEB4, PKGDEB1, PKGNAME_MINIMAL, PKGDEB_MINIMAL,
+    create_full_repository, create_deb, AptFacadeHelper,
+    create_simple_repository)
 
 
 class AptFacadeTest(LandscapeTest):
@@ -62,13 +63,16 @@ class AptFacadeTest(LandscapeTest):
         status = "\n".join(lines)
         append_file(self.dpkg_status, status + "\n\n")
 
-    def _add_package_to_deb_dir(self, path, name, version="1.0"):
+    def _add_package_to_deb_dir(self, path, name, version="1.0",
+                                control_fields=None):
         """Add fake package information to a directory.
 
         There will only be basic information about the package
         available, so that get_packages() have something to return.
         There won't be an actual package in the dir.
         """
+        if control_fields is None:
+            control_fields = {}
         package_stanza = textwrap.dedent("""
                 Package: %(name)s
                 Priority: optional
@@ -80,11 +84,11 @@ class AptFacadeTest(LandscapeTest):
                 Version: %(version)s
                 Config-Version: 1.0
                 Description: description
-
-                """)
-        append_file(
-            os.path.join(path, "Packages"),
-            package_stanza % {"name": name, "version": version})
+                """ % {"name": name, "version": version})
+        package_stanza = apt_pkg.rewrite_section(
+            apt_pkg.TagSection(package_stanza), apt_pkg.REWRITE_PACKAGE_ORDER,
+            control_fields.items())
+        append_file(os.path.join(path, "Packages"), package_stanza + "\n")
 
     def _touch_packages_file(self, deb_dir):
         """Make sure the Packages file get a newer mtime value.
@@ -754,6 +758,133 @@ class AptFacadeTest(LandscapeTest):
             [("foo", "1.0"), ("foo", "1.5")],
             sorted([(version.package.name, version.version)
                     for version in self.facade.get_packages_by_name("foo")]))
+
+    def test_perform_changes_with_nothing_to_do(self):
+        """
+        perform_changes() should return None when there's nothing to do.
+        """
+        self.facade.reload_channels()
+        self.assertEqual(self.facade.perform_changes(), None)
+
+    def test_reset_marks(self):
+        """
+        C{reset_marks()} clears things, so that there's nothing to do
+        for C{perform_changes()}
+        """
+        deb_dir = self.makeDir()
+        create_deb(deb_dir, PKGNAME_MINIMAL, PKGDEB_MINIMAL)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.facade.reload_channels()
+        pkg = self.facade.get_packages_by_name("minimal")[0]
+        self.facade.mark_install(pkg)
+        self.facade.reset_marks()
+        self.assertEqual(self.facade.perform_changes(), None)
+        self.assertEqual(self.facade._package_installs, [])
+
+    def test_wb_mark_install_adds_to_list(self):
+        """
+        C{mark_install} adds the package to the list of packages to be
+        installed.
+        """
+        deb_dir = self.makeDir()
+        create_deb(deb_dir, PKGNAME_MINIMAL, PKGDEB_MINIMAL)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.facade.reload_channels()
+        pkg = self.facade.get_packages_by_name("minimal")[0]
+        self.facade.mark_install(pkg)
+        self.assertEqual(1, len(self.facade._package_installs))
+        install = self.facade._package_installs[0]
+        self.assertEqual("minimal", install.package.name)
+
+    def test_mark_install_specific_version(self):
+        """
+        If more than one version is available, the version passed to
+        C{mark_install} is marked as the candidate version, so that gets
+        installed.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
+        self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        foo1, foo2 = sorted(self.facade.get_packages_by_name("foo"))
+        self.assertEqual(foo2, foo1.package.candidate)
+        self.facade.mark_install(foo1)
+        self.facade._cache.commit = lambda: None
+        self.facade.perform_changes()
+        self.assertEqual(foo1, foo1.package.candidate)
+
+    def test_wb_perform_changes_commits_changes(self):
+        """
+        When calling C{perform_changes}, it will commit the cache, to
+        cause all package changes to happen.
+        """
+        committed = []
+        def commit():
+            committed.append(True)
+
+        deb_dir = self.makeDir()
+        create_deb(deb_dir, PKGNAME_MINIMAL, PKGDEB_MINIMAL)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.facade.reload_channels()
+        pkg = self.facade.get_packages_by_name("minimal")[0]
+        self.facade.mark_install(pkg)
+        self.facade._cache.commit = commit
+        self.committed = False
+        self.facade.perform_changes()
+        self.assertEqual([True], committed)
+
+    def test_perform_changes_return_non_none(self):
+        """
+        When calling C{perform_changes} with changes to do, it will
+        return a string.
+        """
+        deb_dir = self.makeDir()
+        create_deb(deb_dir, PKGNAME_MINIMAL, PKGDEB_MINIMAL)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.facade.reload_channels()
+        pkg = self.facade.get_packages_by_name("minimal")[0]
+        self.facade.mark_install(pkg)
+        self.facade._cache.commit = lambda: None
+        # XXX: It should return the Apt output, but that will be done
+        # later.
+        self.assertEqual("ok", self.facade.perform_changes())
+
+    def test_mark_install_transaction_error(self):
+        """
+        Mark package 'name1' for installation, and try to perform changes.
+        It should fail because 'name1' depends on 'requirename1', which
+        isn't available in the package cache.
+        """
+        deb_dir = self.makeDir()
+        create_simple_repository(deb_dir)
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.facade.reload_channels()
+
+        pkg = self.facade.get_packages_by_name("name1")[0]
+        self.facade.mark_install(pkg)
+        exception = self.assertRaises(TransactionError,
+                                      self.facade.perform_changes)
+        # XXX: Investigate if we can get a better error message.
+        #self.assertIn("requirename", exception.args[0])
+        self.assertIn("Unable to correct problems", exception.args[0])
+
+    def test_mark_install_dependency_error(self):
+        """
+        If a dependency hasn't been marked for installation, a
+        DependencyError is raised with the packages that need to be installed.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(
+            deb_dir, "foo", control_fields={"Depends": "bar"})
+        self._add_package_to_deb_dir(deb_dir, "bar")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        [bar] = self.facade.get_packages_by_name("bar")
+        self.facade.mark_install(foo)
+        error = self.assertRaises(DependencyError, self.facade.perform_changes)
+        self.assertEqual(error.packages, set([bar]))
 
 
 class SmartFacadeTest(LandscapeTest):
