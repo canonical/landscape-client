@@ -834,6 +834,28 @@ class AptFacadeTest(LandscapeTest):
         self.facade.perform_changes()
         self.assertEqual(foo2, foo2.package.candidate)
 
+    def test_mark_upgrade_preservers_auto(self):
+        """
+        Upgrading a package will retain its auto-install status.
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package("auto", version="1.0")
+        self._add_package_to_deb_dir(deb_dir, "auto", version="2.0")
+        self._add_system_package("noauto", version="1.0")
+        self._add_package_to_deb_dir(deb_dir, "noauto", version="2.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        auto1, auto2 = sorted(self.facade.get_packages_by_name("auto"))
+        noauto1, noauto2 = sorted(self.facade.get_packages_by_name("noauto"))
+        auto1.package.mark_auto(True)
+        noauto1.package.mark_auto(False)
+        self.facade.mark_upgrade(auto2)
+        self.facade.mark_upgrade(noauto2)
+        self.facade._cache.commit = lambda: None
+        self.facade.perform_changes()
+        self.assertTrue(auto2.package.is_auto_installed)
+        self.assertFalse(noauto2.package.is_auto_installed)
+
     def test_wb_perform_changes_commits_changes(self):
         """
         When calling C{perform_changes}, it will commit the cache, to
