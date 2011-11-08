@@ -35,22 +35,34 @@ class AptFacadeTest(LandscapeTest):
 
     helpers = [AptFacadeHelper]
 
-    def _add_system_package(self, name, architecture="all", version="1.0"):
-        """Add a package to the dpkg status file."""
-        append_file(self.dpkg_status, textwrap.dedent("""\
-                Package: %s
-                Status: install ok installed
+    def _add_package(self, packages_file, name, architecture="all",
+                     version="1.0", control_fields=None):
+        if control_fields is None:
+            control_fields = {}
+        package_stanza = textwrap.dedent("""
+                Package: %(name)s
                 Priority: optional
                 Section: misc
                 Installed-Size: 1234
                 Maintainer: Someone
-                Architecture: %s
+                Architecture: %(architecture)s
                 Source: source
-                Version: %s
+                Version: %(version)s
                 Config-Version: 1.0
                 Description: description
+                """ % {"name": name, "version": version,
+                       "architecture": architecture})
+        package_stanza = apt_pkg.rewrite_section(
+            apt_pkg.TagSection(package_stanza), apt_pkg.REWRITE_PACKAGE_ORDER,
+            control_fields.items())
+        append_file(packages_file, package_stanza + "\n")
 
-                """ % (name, architecture, version)))
+    def _add_system_package(self, name, architecture="all", version="1.0"):
+        """Add a package to the dpkg status file."""
+        control_fields = {"Status": "install ok installed"}
+        self._add_package(
+            self.dpkg_status, name, architecture=architecture, version=version,
+            control_fields=control_fields)
 
     def _install_deb_file(self, path):
         """Fake the the given deb file is installed in the system."""
@@ -73,22 +85,9 @@ class AptFacadeTest(LandscapeTest):
         """
         if control_fields is None:
             control_fields = {}
-        package_stanza = textwrap.dedent("""
-                Package: %(name)s
-                Priority: optional
-                Section: misc
-                Installed-Size: 1234
-                Maintainer: Someone
-                Architecture: all
-                Source: source
-                Version: %(version)s
-                Config-Version: 1.0
-                Description: description
-                """ % {"name": name, "version": version})
-        package_stanza = apt_pkg.rewrite_section(
-            apt_pkg.TagSection(package_stanza), apt_pkg.REWRITE_PACKAGE_ORDER,
-            control_fields.items())
-        append_file(os.path.join(path, "Packages"), package_stanza + "\n")
+        self._add_package(
+            os.path.join(path, "Packages"), name, version=version,
+            control_fields=control_fields)
 
     def _touch_packages_file(self, deb_dir):
         """Make sure the Packages file get a newer mtime value.
