@@ -361,6 +361,7 @@ class AptFacade(object):
         """Clear the pending package operations."""
         del self._package_installs[:]
         del self._package_upgrades[:]
+        del self._package_removals[:]
 
     def mark_install(self, version):
         """Mark the package for installation."""
