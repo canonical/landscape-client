@@ -834,7 +834,7 @@ class AptFacadeTest(LandscapeTest):
         self.facade.perform_changes()
         self.assertEqual(foo2, foo2.package.candidate)
 
-    def test_mark_upgrade_preservers_auto(self):
+    def test_mark_upgrade_preserves_auto(self):
         """
         Upgrading a package will retain its auto-install status.
         """
