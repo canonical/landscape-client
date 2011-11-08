@@ -60,7 +60,7 @@ class AptFacade(object):
         self._pkg2hash = {}
         self._hash2pkg = {}
         self._package_installs = []
-        self._package_upgrades= []
+        self._package_upgrades = []
         self.refetch_package_index = False
 
     def _ensure_dir_structure(self):
