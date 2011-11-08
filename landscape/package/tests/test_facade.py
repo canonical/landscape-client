@@ -893,6 +893,7 @@ class AptFacadeTest(LandscapeTest):
         cause all package changes to happen.
         """
         committed = []
+
         def commit():
             committed.append(True)
 
@@ -982,11 +983,10 @@ class AptFacadeTest(LandscapeTest):
         If a dependency hasn't been marked for removal,
         DependencyError is raised with the packages that need to be removed.
         """
-        deb_dir = self.makeDir()
         self._add_system_package("foo")
         self._add_system_package("bar", control_fields={"Depends": "foo"})
         self.facade.reload_channels()
-        [foo]= self.facade.get_packages_by_name("foo")
+        [foo] = self.facade.get_packages_by_name("foo")
         [bar] = self.facade.get_packages_by_name("bar")
         self.facade.mark_remove(foo)
         error = self.assertRaises(DependencyError, self.facade.perform_changes)
