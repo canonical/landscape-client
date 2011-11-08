@@ -64,15 +64,15 @@ class AptFacadeTest(LandscapeTest):
         append_file(self.dpkg_status, status + "\n\n")
 
     def _add_package_to_deb_dir(self, path, name, version="1.0",
-                                extra_items=None):
+                                control_fields=None):
         """Add fake package information to a directory.
 
         There will only be basic information about the package
         available, so that get_packages() have something to return.
         There won't be an actual package in the dir.
         """
-        if extra_items is None:
-            extra_items = {}
+        if control_fields is None:
+            control_fields = {}
         package_stanza = textwrap.dedent("""
                 Package: %(name)s
                 Priority: optional
@@ -87,7 +87,7 @@ class AptFacadeTest(LandscapeTest):
                 """ % {"name": name, "version": version})
         package_stanza = apt_pkg.rewrite_section(
             apt_pkg.TagSection(package_stanza), apt_pkg.REWRITE_PACKAGE_ORDER,
-            extra_items.items())
+            control_fields.items())
         append_file(os.path.join(path, "Packages"), package_stanza + "\n")
 
     def _touch_packages_file(self, deb_dir):
@@ -163,6 +163,24 @@ class AptFacadeTest(LandscapeTest):
             [("foo", "1.0"), ("foo", "1.5")],
             sorted((version.package.name, version.version)
                    for version in self.facade.get_packages()))
+
+    def test_get_packages_multiple_architectures(self):
+        """
+        If there are multiple architectures for a package, only the native
+        architecture is reported by C{get_packages()}.
+        """
+        apt_pkg.config.clear("APT::Architectures")
+        apt_pkg.config.set("APT::Architecture", "amd64")
+        apt_pkg.config.set("APT::Architectures::", "amd64")
+        apt_pkg.config.set("APT::Architectures::", "i386")
+        facade = AptFacade(apt_pkg.config.get("Dir"))
+
+        self._add_system_package("foo", version="1.0", architecture="amd64")
+        self._add_system_package("bar", version="1.1", architecture="i386")
+        facade.reload_channels()
+        self.assertEqual([("foo", "1.0")],
+                         [(version.package.name, version.version)
+                          for version in facade.get_packages()])
 
     def test_add_channel_apt_deb_without_components(self):
         """
@@ -861,8 +879,9 @@ class AptFacadeTest(LandscapeTest):
         When calling C{perform_changes}, it will commit the cache, to
         cause all package changes to happen.
         """
+        committed = []
         def commit():
-            self.committed = True
+            committed.append(True)
 
         deb_dir = self.makeDir()
         create_deb(deb_dir, PKGNAME_MINIMAL, PKGDEB_MINIMAL)
@@ -873,7 +892,7 @@ class AptFacadeTest(LandscapeTest):
         self.facade._cache.commit = commit
         self.committed = False
         self.facade.perform_changes()
-        self.assertTrue(self.committed)
+        self.assertEqual([True], committed)
 
     def test_perform_changes_return_non_none(self):
         """
@@ -917,7 +936,7 @@ class AptFacadeTest(LandscapeTest):
         """
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(
-            deb_dir, "foo", extra_items={"Depends": "bar"})
+            deb_dir, "foo", control_fields={"Depends": "bar"})
         self._add_package_to_deb_dir(deb_dir, "bar")
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()

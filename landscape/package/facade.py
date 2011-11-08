@@ -62,6 +62,10 @@ class AptFacade(object):
         self._package_installs = []
         self._package_upgrades = []
         self.refetch_package_index = False
+        # Explicitly set APT::Architectures to the native architecture only, as
+        # we currently don't support multiarch, so packages with different
+        # archs are not reported.
+        self.set_arch(self.get_arch())
 
     def _ensure_dir_structure(self):
         self._ensure_sub_dir("etc/apt")
@@ -309,8 +313,14 @@ class AptFacade(object):
             return None
         fixer = apt_pkg.ProblemResolver(self._cache._depcache)
         for version in self._package_installs:
+            # Set the candidate version, so that the version we want to
+            # install actually is the one getting installed.
             version.package.candidate = version
             version.package.mark_install(auto_fix=False)
+            # If we need to resolve dependencies, try avoiding having
+            # the package we asked to be installed from being removed.
+            # (This is what would have been done if auto_fix would have
+            # been True.
             fixer.clear(version.package._pkg)
             fixer.protect(version.package._pkg)
         for version in self._package_upgrades:
