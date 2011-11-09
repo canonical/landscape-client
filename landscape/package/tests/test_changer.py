@@ -1022,6 +1022,12 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         result = super(AptPackageChangerTest, self).setUp()
         return result.addCallback(set_up)
 
+    def set_pkg1_installed(self):
+        self._add_system_package("foo")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        return self.facade.get_package_hash(foo)
+
     def set_pkg1_and_pkg2_satisfied(self):
         self._add_package_to_deb_dir(
             self.repository_dir, "foo", control_fields={"Depends": "bar"})
