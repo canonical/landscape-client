@@ -846,6 +846,79 @@ class PackageChangerTestMixin(object):
         self.changer.init_channels([])
         self.assertFalse(os.path.exists(existing_deb_path))
 
+
+class SmartPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
+
+    helpers = [SmartFacadeHelper, BrokerServiceHelper]
+
+    def setUp(self):
+
+        def set_up(ignored):
+
+            self.store = PackageStore(self.makeFile())
+            self.config = PackageChangerConfiguration()
+            self.config.data_path = self.makeDir()
+            os.mkdir(self.config.package_directory)
+            os.mkdir(self.config.binaries_path)
+            touch_file(self.config.smart_update_stamp_filename)
+            self.changer = PackageChanger(
+                self.store, self.facade, self.remote, self.config)
+            service = self.broker_service
+            service.message_store.set_accepted_types(["change-packages-result",
+                                                      "operation-result"])
+
+        result = super(SmartPackageChangerTest, self).setUp()
+        return result.addCallback(set_up)
+
+    def set_pkg1_installed(self):
+        previous = self.Facade.channels_reloaded
+
+        def callback(self):
+            previous(self)
+            self.get_packages_by_name("name1")[0].installed = True
+        self.Facade.channels_reloaded = callback
+
+    def set_pkg2_upgrades_pkg1(self):
+        previous = self.Facade.channels_reloaded
+
+        def callback(self):
+            from smart.backends.deb.base import DebUpgrades
+            previous(self)
+            pkg2 = self.get_packages_by_name("name2")[0]
+            pkg2.upgrades += (DebUpgrades("name1", "=", "version1-release1"),)
+            self.reload_cache()  # Relink relations.
+        self.Facade.channels_reloaded = callback
+
+    def set_pkg2_satisfied(self):
+        previous = self.Facade.channels_reloaded
+
+        def callback(self):
+            previous(self)
+            pkg2 = self.get_packages_by_name("name2")[0]
+            pkg2.requires = ()
+            self.reload_cache()  # Relink relations.
+        self.Facade.channels_reloaded = callback
+
+    def set_pkg1_and_pkg2_satisfied(self):
+        previous = self.Facade.channels_reloaded
+
+        def callback(self):
+            previous(self)
+
+            provide1 = Provides("prerequirename1", "prerequireversion1")
+            provide2 = Provides("requirename1", "requireversion1")
+            pkg2 = self.get_packages_by_name("name2")[0]
+            pkg2.provides += (provide1, provide2)
+
+            provide1 = Provides("prerequirename2", "prerequireversion2")
+            provide2 = Provides("requirename2", "requireversion2")
+            pkg1 = self.get_packages_by_name("name1")[0]
+            pkg1.provides += (provide1, provide2)
+
+            # Ask Smart to reprocess relationships.
+            self.reload_cache()
+        self.Facade.channels_reloaded = callback
+
     def test_change_package_locks(self):
         """
         The L{PackageChanger.handle_tasks} method appropriately creates and
@@ -922,79 +995,6 @@ class PackageChangerTestMixin(object):
 
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
-
-
-class SmartPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
-
-    helpers = [SmartFacadeHelper, BrokerServiceHelper]
-
-    def setUp(self):
-
-        def set_up(ignored):
-
-            self.store = PackageStore(self.makeFile())
-            self.config = PackageChangerConfiguration()
-            self.config.data_path = self.makeDir()
-            os.mkdir(self.config.package_directory)
-            os.mkdir(self.config.binaries_path)
-            touch_file(self.config.smart_update_stamp_filename)
-            self.changer = PackageChanger(
-                self.store, self.facade, self.remote, self.config)
-            service = self.broker_service
-            service.message_store.set_accepted_types(["change-packages-result",
-                                                      "operation-result"])
-
-        result = super(SmartPackageChangerTest, self).setUp()
-        return result.addCallback(set_up)
-
-    def set_pkg1_installed(self):
-        previous = self.Facade.channels_reloaded
-
-        def callback(self):
-            previous(self)
-            self.get_packages_by_name("name1")[0].installed = True
-        self.Facade.channels_reloaded = callback
-
-    def set_pkg2_upgrades_pkg1(self):
-        previous = self.Facade.channels_reloaded
-
-        def callback(self):
-            from smart.backends.deb.base import DebUpgrades
-            previous(self)
-            pkg2 = self.get_packages_by_name("name2")[0]
-            pkg2.upgrades += (DebUpgrades("name1", "=", "version1-release1"),)
-            self.reload_cache()  # Relink relations.
-        self.Facade.channels_reloaded = callback
-
-    def set_pkg2_satisfied(self):
-        previous = self.Facade.channels_reloaded
-
-        def callback(self):
-            previous(self)
-            pkg2 = self.get_packages_by_name("name2")[0]
-            pkg2.requires = ()
-            self.reload_cache()  # Relink relations.
-        self.Facade.channels_reloaded = callback
-
-    def set_pkg1_and_pkg2_satisfied(self):
-        previous = self.Facade.channels_reloaded
-
-        def callback(self):
-            previous(self)
-
-            provide1 = Provides("prerequirename1", "prerequireversion1")
-            provide2 = Provides("requirename1", "requireversion1")
-            pkg2 = self.get_packages_by_name("name2")[0]
-            pkg2.provides += (provide1, provide2)
-
-            provide1 = Provides("prerequirename2", "prerequireversion2")
-            provide2 = Provides("requirename2", "requireversion2")
-            pkg1 = self.get_packages_by_name("name1")[0]
-            pkg1.provides += (provide1, provide2)
-
-            # Ask Smart to reprocess relationships.
-            self.reload_cache()
-        self.Facade.channels_reloaded = callback
 
 
 class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
