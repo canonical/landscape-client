@@ -140,7 +140,7 @@ REGISTER = Message(
      "account_name": utf8,
      "tags": Any(utf8, Constant(None)),
      "vm-info": String(),
-     "otp": String()},
+     "otp": Any(String(), Constant(None))},
     # hostname wasn't around in old versions
     optional=["registration_password", "hostname", "tags", "vm-info", "otp"])
 
