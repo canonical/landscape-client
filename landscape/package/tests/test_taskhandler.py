@@ -35,6 +35,16 @@ class PackageTaskHandlerConfigurationTest(LandscapeTest):
             config.smart_update_stamp_filename,
             "/var/lib/landscape/client/package/smart-update-stamp")
 
+    def test_force_apt_update_option(self):
+        """
+        L{PackageReporterConfiguration.apt_update_stamp_filename} points
+        to the apt-update stamp file.
+        """
+        config = PackageTaskHandlerConfiguration()
+        self.assertEqual(
+            config.apt_update_stamp_filename,
+            "/var/lib/landscape/client/package/apt-update-stamp")
+
 
 class PackageTaskHandlerTest(LandscapeTest):
 

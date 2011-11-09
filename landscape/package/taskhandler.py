@@ -40,6 +40,11 @@ class PackageTaskHandlerConfiguration(Configuration):
         """Get the path to the smart-update stamp file."""
         return os.path.join(self.package_directory, "smart-update-stamp")
 
+    @property
+    def apt_update_stamp_filename(self):
+        """Get the path to the apt-update stamp file."""
+        return os.path.join(self.package_directory, "apt-update-stamp")
+
 
 class LazyRemoteBroker(object):
     """Wrapper class around L{RemoteBroker} providing lazy initialization.
