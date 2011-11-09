@@ -1046,3 +1046,12 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         return (
             self.facade.get_package_hash(foo),
             self.facade.get_package_hash(bar))
+
+    def set_pkg2_upgrades_pkg1(self):
+        self._add_system_package("foo", version="1.0")
+        self._add_package_to_deb_dir(self.repository_dir, "foo", version="2.0")
+        self.facade.reload_channels()
+        foo_1, foo_2 = sorted(self.facade.get_packages_by_name("foo"))
+        return (
+            self.facade.get_package_hash(foo_1),
+            self.facade.get_package_hash(foo_2))
