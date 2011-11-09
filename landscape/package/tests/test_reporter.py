@@ -2,15 +2,13 @@ import glob
 import sys
 import os
 import unittest
-import textwrap
 import time
 
 from twisted.internet.defer import Deferred, succeed
 from twisted.internet import reactor
 
-import apt_inst
 
-from landscape.lib.fs import append_file, create_file
+from landscape.lib.fs import create_file
 from landscape.lib.fetch import fetch_async, FetchError
 from landscape.lib import bpickle
 from landscape.package.store import (
@@ -1638,41 +1636,6 @@ class PackageReporterAptTest(LandscapeTest, PackageReporterTestMixin):
 
         result = super(PackageReporterAptTest, self).setUp()
         return result.addCallback(set_up)
-
-    def _install_deb_file(self, path):
-        """Fake the the given deb file is installed in the system."""
-        deb_file = open(path)
-        deb = apt_inst.DebFile(deb_file)
-        control = deb.control.extractdata("control")
-        deb_file.close()
-        lines = control.splitlines()
-        lines.insert(1, "Status: install ok installed")
-        status = "\n".join(lines)
-        append_file(self.dpkg_status, status + "\n\n")
-
-    def _add_package_to_deb_dir(self, path, name, version="1.0"):
-        """Add fake package information to a directory.
-
-        There will only be basic information about the package
-        available, so that get_packages() have something to return.
-        There won't be an actual package in the dir.
-        """
-        package_stanza = textwrap.dedent("""
-                Package: %(name)s
-                Priority: optional
-                Section: misc
-                Installed-Size: 1234
-                Maintainer: Someone
-                Architecture: all
-                Source: source
-                Version: %(version)s
-                Config-Version: 1.0
-                Description: description
-
-                """)
-        append_file(
-            os.path.join(path, "Packages"),
-            package_stanza % {"name": name, "version": version})
 
     def _clear_repository(self):
         """Remove all packages from self.repository."""
