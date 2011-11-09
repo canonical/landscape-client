@@ -33,7 +33,7 @@ class PackageChangerTestMixin(object):
         return self.broker_service.message_store.get_pending_messages()
 
     def test_unknown_package_id_for_dependency(self):
-        self.set_pkg1_and_pkg2_satisfied()
+        hash1, hash2 = self.set_pkg1_and_pkg2_satisfied()
 
         # Let's request an operation that would require an answer with a
         # must-install field with a package for which the id isn't yet
@@ -43,19 +43,19 @@ class PackageChangerTestMixin(object):
                              "operation-id": 123})
 
         # In our first try, we should get nothing, because the id of the
-        # dependency (HASH2) isn't known.
-        self.store.set_hash_ids({HASH1: 1})
+        # dependency (hash2) isn't known.
+        self.store.set_hash_ids({hash1: 1})
         result = self.changer.handle_tasks()
         self.assertEqual(result.called, True)
         self.assertMessages(self.get_pending_messages(), [])
 
         self.assertIn("Package data not yet synchronized with server (%r)"
-                      % HASH2, self.logfile.getvalue())
+                      % hash2, self.logfile.getvalue())
 
         # So now we'll set it, and advance the reactor to the scheduled
         # change detection.  We'll get a lot of messages, including the
         # result of our previous message, which got *postponed*.
-        self.store.set_hash_ids({HASH2: 2})
+        self.store.set_hash_ids({hash2: 2})
         result = self.changer.handle_tasks()
 
         def got_result(result):
@@ -918,6 +918,7 @@ class SmartPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
             # Ask Smart to reprocess relationships.
             self.reload_cache()
         self.Facade.channels_reloaded = callback
+        return HASH1, HASH2
 
     def test_change_package_locks(self):
         """
@@ -1019,3 +1020,14 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
 
         result = super(AptPackageChangerTest, self).setUp()
         return result.addCallback(set_up)
+
+    def set_pkg1_and_pkg2_satisfied(self):
+        self._add_package_to_deb_dir(
+            self.repository_dir, "foo", control_fields={"Depends": "bar"})
+        self._add_package_to_deb_dir(self.repository_dir, "bar")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        [bar] = self.facade.get_packages_by_name("bar")
+        return (
+            self.facade.get_package_hash(foo),
+            self.facade.get_package_hash(bar))
