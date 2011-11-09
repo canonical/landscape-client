@@ -8,7 +8,6 @@ from smart.control import Control
 from smart.cache import Provides
 from smart.const import NEVER, ALWAYS
 
-import apt_inst
 import apt_pkg
 from aptsources.sourceslist import SourcesList
 
@@ -18,7 +17,7 @@ from twisted.internet.utils import getProcessOutputAndValue
 
 import smart
 
-from landscape.lib.fs import append_file, read_file
+from landscape.lib.fs import read_file
 from landscape.package.facade import (
     TransactionError, DependencyError, ChannelError, SmartError, AptFacade)
 
@@ -34,74 +33,6 @@ from landscape.package.tests.helpers import (
 class AptFacadeTest(LandscapeTest):
 
     helpers = [AptFacadeHelper]
-
-    def _add_package(self, packages_file, name, architecture="all",
-                     version="1.0", control_fields=None):
-        if control_fields is None:
-            control_fields = {}
-        package_stanza = textwrap.dedent("""
-                Package: %(name)s
-                Priority: optional
-                Section: misc
-                Installed-Size: 1234
-                Maintainer: Someone
-                Architecture: %(architecture)s
-                Source: source
-                Version: %(version)s
-                Config-Version: 1.0
-                Description: description
-                """ % {"name": name, "version": version,
-                       "architecture": architecture})
-        package_stanza = apt_pkg.rewrite_section(
-            apt_pkg.TagSection(package_stanza), apt_pkg.REWRITE_PACKAGE_ORDER,
-            control_fields.items())
-        append_file(packages_file, package_stanza + "\n")
-
-    def _add_system_package(self, name, architecture="all", version="1.0",
-                            control_fields=None):
-        """Add a package to the dpkg status file."""
-        system_control_fields = {"Status": "install ok installed"}
-        if control_fields is not None:
-            system_control_fields.update(control_fields)
-        self._add_package(
-            self.dpkg_status, name, architecture=architecture, version=version,
-            control_fields=system_control_fields)
-
-    def _install_deb_file(self, path):
-        """Fake the the given deb file is installed in the system."""
-        deb_file = open(path)
-        deb = apt_inst.DebFile(deb_file)
-        control = deb.control.extractdata("control")
-        deb_file.close()
-        lines = control.splitlines()
-        lines.insert(1, "Status: install ok installed")
-        status = "\n".join(lines)
-        append_file(self.dpkg_status, status + "\n\n")
-
-    def _add_package_to_deb_dir(self, path, name, version="1.0",
-                                control_fields=None):
-        """Add fake package information to a directory.
-
-        There will only be basic information about the package
-        available, so that get_packages() have something to return.
-        There won't be an actual package in the dir.
-        """
-        if control_fields is None:
-            control_fields = {}
-        self._add_package(
-            os.path.join(path, "Packages"), name, version=version,
-            control_fields=control_fields)
-
-    def _touch_packages_file(self, deb_dir):
-        """Make sure the Packages file get a newer mtime value.
-
-        If we rely on simply writing to the file to update the mtime, we
-        might end up with the same as before, since the resolution is
-        seconds, which causes apt to not reload the file.
-        """
-        packages_path = os.path.join(deb_dir, "Packages")
-        mtime = int(time.time() + 1)
-        os.utime(packages_path, (mtime, mtime))
 
     def test_default_root(self):
         """
