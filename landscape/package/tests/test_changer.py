@@ -490,10 +490,8 @@ class PackageChangerTestMixin(object):
         the client to perform a global upgrade.  This would be the equivalent
         of a "smart upgrade" command being executed in the command line.
         """
-        self.set_pkg2_upgrades_pkg1()
-        installable_hash = self.set_pkg2_satisfied()
-        installed_hash = self.set_pkg1_installed()
-        self.store.set_hash_ids({installed_hash: 1, installable_hash: 2})
+        hash1, hash2 = self.set_pkg2_upgrades_pkg1()
+        self.store.set_hash_ids({hash1: 1, hash2: 2})
 
         self.store.add_task("changer",
                             {"type": "change-packages", "upgrade-all": True,
@@ -889,6 +887,9 @@ class SmartPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
             pkg2.upgrades += (DebUpgrades("name1", "=", "version1-release1"),)
             self.reload_cache()  # Relink relations.
         self.Facade.channels_reloaded = callback
+        self.set_pkg2_satisfied()
+        self.set_pkg1_installed()
+        return HASH1, HASH2
 
     def set_pkg2_satisfied(self):
         previous = self.Facade.channels_reloaded
