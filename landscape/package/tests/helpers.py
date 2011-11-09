@@ -14,6 +14,7 @@ class AptFacadeHelper(object):
         test_case.apt_root = test_case.makeDir()
         test_case.dpkg_status = os.path.join(
             test_case.apt_root, "var", "lib", "dpkg", "status")
+        test_case.Facade = AptFacade
         test_case.facade = AptFacade(root=test_case.apt_root)
         test_case.facade.refetch_package_index = True
 
