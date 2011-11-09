@@ -60,6 +60,7 @@ class AptFacade(object):
         self._pkg2hash = {}
         self._hash2pkg = {}
         self._package_installs = []
+        self._package_upgrades = []
         self.refetch_package_index = False
         # Explicitly set APT::Architectures to the native architecture only, as
         # we currently don't support multiarch, so packages with different
@@ -308,7 +309,7 @@ class AptFacade(object):
 
     def perform_changes(self):
         """Perform the pending package operations."""
-        if len(self._package_installs) == 0:
+        if len(self._package_installs + self._package_upgrades) == 0:
             return None
         fixer = apt_pkg.ProblemResolver(self._cache._depcache)
         for version in self._package_installs:
@@ -322,6 +323,13 @@ class AptFacade(object):
             # been True.
             fixer.clear(version.package._pkg)
             fixer.protect(version.package._pkg)
+        for version in self._package_upgrades:
+            version.package.candidate = version
+            version.package.mark_install(
+                auto_fix=False,
+                from_user=not version.package.is_auto_installed)
+            fixer.clear(version.package._pkg)
+            fixer.protect(version.package._pkg)
 
         if self._cache._depcache.broken_count > 0:
             try:
@@ -331,7 +339,7 @@ class AptFacade(object):
         versions_to_be_installed = set(
             package.candidate for package in self._cache.get_changes())
         dependencies = versions_to_be_installed.difference(
-            self._package_installs)
+            self._package_installs + self._package_upgrades)
         if dependencies:
             raise DependencyError(dependencies)
 
@@ -341,10 +349,15 @@ class AptFacade(object):
     def reset_marks(self):
         """Clear the pending package operations."""
         del self._package_installs[:]
+        del self._package_upgrades[:]
 
     def mark_install(self, version):
         """Mark the package for installation."""
         self._package_installs.append(version)
+
+    def mark_upgrade(self, version):
+        """Mark the package for upgrade."""
+        self._package_upgrades.append(version)
 
 
 class SmartFacade(object):

@@ -772,14 +772,19 @@ class AptFacadeTest(LandscapeTest):
         for C{perform_changes()}
         """
         deb_dir = self.makeDir()
-        create_deb(deb_dir, PKGNAME_MINIMAL, PKGDEB_MINIMAL)
-        self.facade.add_channel_deb_dir(deb_dir)
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self._add_system_package("bar", version="1.0")
+        self._add_package_to_deb_dir(deb_dir, "bar", version="1.5")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
-        pkg = self.facade.get_packages_by_name("minimal")[0]
-        self.facade.mark_install(pkg)
+        foo = self.facade.get_packages_by_name("foo")[0]
+        self.facade.mark_install(foo)
+        bar_15 = sorted(self.facade.get_packages_by_name("bar"))[1]
+        self.facade.mark_upgrade(bar_15)
         self.facade.reset_marks()
         self.assertEqual(self.facade.perform_changes(), None)
         self.assertEqual(self.facade._package_installs, [])
+        self.assertEqual(self.facade._package_upgrades, [])
 
     def test_wb_mark_install_adds_to_list(self):
         """
@@ -795,6 +800,20 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(1, len(self.facade._package_installs))
         install = self.facade._package_installs[0]
         self.assertEqual("minimal", install.package.name)
+
+    def test_wb_mark_upgrade_adds_to_list(self):
+        """
+        C{mark_upgrade} adds the package to the list of packages to be
+        upgraded.
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package("foo", version="1.0")
+        self._add_package_to_deb_dir(deb_dir, "foo", version="1.5")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        foo_15 = sorted(self.facade.get_packages_by_name("foo"))[1]
+        self.facade.mark_upgrade(foo_15)
+        self.assertEqual([foo_15], self.facade._package_upgrades)
 
     def test_mark_install_specific_version(self):
         """
@@ -813,6 +832,47 @@ class AptFacadeTest(LandscapeTest):
         self.facade._cache.commit = lambda: None
         self.facade.perform_changes()
         self.assertEqual(foo1, foo1.package.candidate)
+
+    def test_mark_upgrade_specific_version(self):
+        """
+        If more than one version is available, the version passed to
+        C{mark_upgrade} is marked as the candidate version, so that gets
+        installed.
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package("foo", version="1.0")
+        self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
+        self._add_package_to_deb_dir(deb_dir, "foo", version="3.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        foo2, foo3 = sorted(self.facade.get_packages_by_name("foo"))[1:]
+        self.assertEqual(foo3, foo2.package.candidate)
+        self.facade.mark_upgrade(foo2)
+        self.facade._cache.commit = lambda: None
+        self.facade.perform_changes()
+        self.assertEqual(foo2, foo2.package.candidate)
+
+    def test_mark_upgrade_preserves_auto(self):
+        """
+        Upgrading a package will retain its auto-install status.
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package("auto", version="1.0")
+        self._add_package_to_deb_dir(deb_dir, "auto", version="2.0")
+        self._add_system_package("noauto", version="1.0")
+        self._add_package_to_deb_dir(deb_dir, "noauto", version="2.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        auto1, auto2 = sorted(self.facade.get_packages_by_name("auto"))
+        noauto1, noauto2 = sorted(self.facade.get_packages_by_name("noauto"))
+        auto1.package.mark_auto(True)
+        noauto1.package.mark_auto(False)
+        self.facade.mark_upgrade(auto2)
+        self.facade.mark_upgrade(noauto2)
+        self.facade._cache.commit = lambda: None
+        self.facade.perform_changes()
+        self.assertTrue(auto2.package.is_auto_installed)
+        self.assertFalse(noauto2.package.is_auto_installed)
 
     def test_wb_perform_changes_commits_changes(self):
         """
@@ -883,6 +943,24 @@ class AptFacadeTest(LandscapeTest):
         [foo] = self.facade.get_packages_by_name("foo")
         [bar] = self.facade.get_packages_by_name("bar")
         self.facade.mark_install(foo)
+        error = self.assertRaises(DependencyError, self.facade.perform_changes)
+        self.assertEqual(error.packages, set([bar]))
+
+    def test_mark_upgrade_dependency_error(self):
+        """
+        If a dependency hasn't been marked for installation or upgrade, a
+        DependencyError is raised with the packages that need to be updated.
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package("foo", version="1.0")
+        self._add_package_to_deb_dir(
+            deb_dir, "foo", version="1.5", control_fields={"Depends": "bar"})
+        self._add_package_to_deb_dir(deb_dir, "bar")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        foo_15 = sorted(self.facade.get_packages_by_name("foo"))[1]
+        [bar] = self.facade.get_packages_by_name("bar")
+        self.facade.mark_upgrade(foo_15)
         error = self.assertRaises(DependencyError, self.facade.perform_changes)
         self.assertEqual(error.packages, set([bar]))
 
