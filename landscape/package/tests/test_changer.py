@@ -154,12 +154,12 @@ class PackageChangerTestMixin(object):
         """
         self.log_helper.ignore_errors(".*dpkg")
 
-        self.store.set_hash_ids({HASH1: 1})
+        installed_hash = self.set_pkg1_installed()
+        self.store.set_hash_ids({installed_hash: 1})
         self.store.add_task("changer",
                             {"type": "change-packages", "remove": [1],
                              "operation-id": 123})
 
-        self.set_pkg1_installed()
 
         result = self.changer.handle_tasks()
 
@@ -192,12 +192,12 @@ class PackageChangerTestMixin(object):
         the full set of packages available as a dependency error, but
         it serves well for testing this specific feature.
         """
-        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
+        installed_hash = self.set_pkg1_installed()
+        self.store.set_hash_ids({installed_hash: 1, HASH2: 2, HASH3: 3})
         self.store.add_task("changer",
                             {"type": "change-packages", "install": [2],
                              "operation-id": 123})
 
-        self.set_pkg1_installed()
 
         def raise_dependency_error(self):
             raise DependencyError(self.get_packages())
@@ -221,14 +221,14 @@ class PackageChangerTestMixin(object):
         are sent back to the server.
         """
         os.remove(os.path.join(self.repository_dir, PKGNAME2))
-        self.store.set_hash_ids({HASH1: 1, HASH3: 3})
+        installed_hash = self.set_pkg1_installed()
+        self.store.set_hash_ids({installed_hash: 1, HASH3: 3})
         self.store.add_task("changer",
                             {"type": "change-packages",
                              "install": [2],
                              "binaries": [(HASH2, 2, PKGDEB2)],
                              "operation-id": 123})
 
-        self.set_pkg1_installed()
 
         def raise_dependency_error(self):
             raise DependencyError(self.get_packages())
@@ -277,8 +277,8 @@ class PackageChangerTestMixin(object):
         The C{POLICY_ALLOW_INSTALLS} policy doesn't allow additional packages
         to be removed.
         """
-        self.store.set_hash_ids({HASH1: 1, HASH2: 2})
-        self.set_pkg1_installed()
+        installed_hash = self.set_pkg1_installed()
+        self.store.set_hash_ids({installed_hash: 1, HASH2: 2})
         self.facade.reload_channels()
 
         package1 = self.facade.get_packages_by_name("name1")[0]
@@ -345,8 +345,8 @@ class PackageChangerTestMixin(object):
         The C{POLICY_ALLOW_ALL_CHANGES} policy allows any needed additional
         package to be installed or removed.
         """
-        self.store.set_hash_ids({HASH1: 1, HASH2: 2})
-        self.set_pkg1_installed()
+        installed_hash = self.set_pkg1_installed()
+        self.store.set_hash_ids({installed_hash: 1, HASH2: 2})
         self.facade.reload_channels()
 
         self.mocker.order()
@@ -408,7 +408,9 @@ class PackageChangerTestMixin(object):
         """
         self.log_helper.ignore_errors(".*dpkg")
 
-        self.store.set_hash_ids({HASH1: 1, HASH2: 2})
+        self.set_pkg2_satisfied()
+        installed_hash = self.set_pkg1_installed()
+        self.store.set_hash_ids({installed_hash: 1, HASH2: 2})
 
         self.store.add_task("changer",
                             {"type": "change-packages", "install": [2],
@@ -417,8 +419,6 @@ class PackageChangerTestMixin(object):
                             {"type": "change-packages", "upgrade-all": True,
                              "operation-id": 124})
 
-        self.set_pkg2_satisfied()
-        self.set_pkg1_installed()
 
         result = self.changer.handle_tasks()
 
@@ -436,12 +436,12 @@ class PackageChangerTestMixin(object):
         We'll do that by hacking perform_changes(), and returning our
         *very* successful operation result.
         """
-        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
+        installed_hash = self.set_pkg1_installed()
+        self.store.set_hash_ids({installed_hash: 1, HASH2: 2, HASH3: 3})
         self.store.add_task("changer",
                             {"type": "change-packages", "install": [2],
                              "operation-id": 123})
 
-        self.set_pkg1_installed()
 
         def return_good_result(self):
             return "Yeah, I did whatever you've asked for!"
@@ -490,15 +490,15 @@ class PackageChangerTestMixin(object):
         the client to perform a global upgrade.  This would be the equivalent
         of a "smart upgrade" command being executed in the command line.
         """
-        self.store.set_hash_ids({HASH1: 1, HASH2: 2})
+        self.set_pkg2_upgrades_pkg1()
+        self.set_pkg2_satisfied()
+        installed_hash = self.set_pkg1_installed()
+        self.store.set_hash_ids({installed_hash: 1, HASH2: 2})
 
         self.store.add_task("changer",
                             {"type": "change-packages", "upgrade-all": True,
                              "operation-id": 123})
 
-        self.set_pkg2_upgrades_pkg1()
-        self.set_pkg2_satisfied()
-        self.set_pkg1_installed()
 
         result = self.changer.handle_tasks()
 
@@ -877,6 +877,7 @@ class SmartPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
             previous(self)
             self.get_packages_by_name("name1")[0].installed = True
         self.Facade.channels_reloaded = callback
+        return HASH1
 
     def set_pkg2_upgrades_pkg1(self):
         previous = self.Facade.channels_reloaded
