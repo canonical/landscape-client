@@ -102,11 +102,16 @@ END
             echo "Old monolithic client data file migrated to new format."
         fi
 
-        # Add the setuid flag to smart-update and it be executable by users in
-        # the landscape group (that normally means landscape itself)
+        # Add the setuid flag to smart-update and apt-update, and make them be
+        # executable by users in the landscape group (that normally means
+        # landscape itself)
         smart_update=/usr/lib/landscape/smart-update
         if ! dpkg-statoverride --list $smart_update >/dev/null 2>&1; then
             dpkg-statoverride --update --add root landscape 4754 $smart_update
+        fi
+        apt_update=/usr/lib/landscape/apt-update
+        if ! dpkg-statoverride --list $apt_update >/dev/null 2>&1; then
+            dpkg-statoverride --update --add root landscape 4754 $apt_update
         fi
 
         # Remove old cron jobs

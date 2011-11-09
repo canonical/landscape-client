@@ -18,6 +18,19 @@ class AptFacadeHelper(object):
         test_case.facade.refetch_package_index = True
 
 
+class SimpleRepositoryHelper(object):
+    """Helper for adding a simple repository to the facade.
+
+    This helper requires that C{test_case.facade} has already been set
+    up.
+    """
+
+    def set_up(self, test_case):
+        test_case.repository_dir = test_case.makeDir()
+        create_simple_repository(test_case.repository_dir)
+        test_case.facade.add_channel_deb_dir(test_case.repository_dir)
+
+
 class SmartHelper(object):
 
     def set_up(self, test_case):
