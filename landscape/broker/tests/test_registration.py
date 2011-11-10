@@ -1087,10 +1087,10 @@ class ProvisioningRegistrationTest(RegistrationHandlerTestBase):
         Register provisioned machines using an OTP.
         """
         self.mstore.set_accepted_types(["register-provisioned-machine"])
-        self.config.provision = True
+        self.config.account_name = ""
         self.config.provisioning_otp = "ohteepee"
         self.reactor.fire("pre-exchange")
 
         self.assertEqual(self.logfile.getvalue().strip(),
-                           u"Queueing message to register with OTP as a"
+                           u"INFO: Queueing message to register with OTP as a"
                            u" provisiong machine.")
