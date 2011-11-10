@@ -139,10 +139,15 @@ REGISTER = Message(
      "hostname": utf8,
      "account_name": utf8,
      "tags": Any(utf8, Constant(None)),
-     "vm-info": String(),
-     "otp": Any(String(), Constant(None))},
+     "vm-info": String()},
     # hostname wasn't around in old versions
-    optional=["registration_password", "hostname", "tags", "vm-info", "otp"])
+    optional=["registration_password", "hostname", "tags", "vm-info"])
+
+
+REGISTER_PROVISIONING_MACHINE = Message(
+    "register-provisioning-machine",
+    {"opt": Any(String(), Constant(None))})
+
 
 REGISTER_CLOUD_VM = Message(
     "register-cloud-vm",
