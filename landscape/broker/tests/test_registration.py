@@ -1090,7 +1090,10 @@ class ProvisioningRegistrationTest(RegistrationHandlerTestBase):
         self.config.account_name = ""
         self.config.provisioning_otp = "ohteepee"
         self.reactor.fire("pre-exchange")
-
-        self.assertEqual(self.logfile.getvalue().strip(),
-                           u"INFO: Queueing message to register with OTP as a"
-                           u" provisiong machine.")
+        
+        self.assertMessages([{'otp': 'ohteepee', 'timestamp': 0, 'api': '3.2',
+                              'type': 'register-provisioned-machine'}], 
+                            self.mstore.get_pending_messages())
+        self.assertEqual(u"INFO: Queueing message to register with OTP as a"
+                         u" provisiong machine.",
+                         self.logfile.getvalue().strip())
