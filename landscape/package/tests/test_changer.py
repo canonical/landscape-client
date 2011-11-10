@@ -801,7 +801,7 @@ class PackageChangerTestMixin(object):
     def test_init_channels(self):
         """
         The L{PackageChanger.init_channels} method makes the given
-        Debian packages available in a C{deb-dir} Smart channel.
+        Debian packages available in a facade channel.
         """
         binaries = [(HASH1, 111, PKGDEB1), (HASH2, 222, PKGDEB2)]
 
@@ -813,15 +813,15 @@ class PackageChangerTestMixin(object):
                                base64.decodestring(PKGDEB1))
         self.assertFileContent(os.path.join(binaries_path, "222.deb"),
                                base64.decodestring(PKGDEB2))
-        self.assertEqual(self.facade.get_channels(),
-                         {binaries_path: {"type": "deb-dir",
-                                          "path": binaries_path}})
+        self.assertEqual(
+            self.facade.get_channels(),
+            self.get_binaries_channels(binaries_path))
 
         self.assertEqual(self.store.get_hash_ids(), {HASH1: 111, HASH2: 222})
 
         self.facade.ensure_channels_reloaded()
         [pkg1, pkg2] = sorted(self.facade.get_packages(),
-                              key=lambda pkg: pkg.name)
+                              key=self.get_package_name)
         self.assertEqual(self.facade.get_package_hash(pkg1), HASH1)
         self.assertEqual(self.facade.get_package_hash(pkg2), HASH2)
 
@@ -925,6 +925,13 @@ class SmartPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
 
     def get_transaction_error_message(self):
         return "requirename1 = requireversion1"
+
+    def get_binaries_channels(self, binaries_path):
+         return {binaries_path: {"type": "deb-dir",
+                                 "path": binaries_path}}
+
+    def get_package_name(self, package):
+        return package.name
 
     def test_change_package_locks(self):
         """
@@ -1061,3 +1068,12 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
 
     def get_transaction_error_message(self):
         return "Unable to correct problems"
+
+    def get_binaries_channels(self, binaries_path):
+        return [{"baseurl": "file://%s" % binaries_path,
+                 "components": "",
+                 "distribution": "./",
+                 "type": "deb"}]
+
+    def get_package_name(self, version):
+        return version.package.name
