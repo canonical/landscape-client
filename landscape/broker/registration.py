@@ -290,10 +290,6 @@ class RegistrationHandler(object):
                 logging.info(u"Queueing message to register with OTP as a"
                              u" provisiong machine.")
                 message = {"type": "register-provisioned-machine",
-                           "computer_title": id.computer_title,
-                           "account_name": id.account_name,
-                           "hostname": get_fqdn(),
-                           "tags": tags,
                            "otp": self._config.provisioning_otp}
                 self._exchange.send(message)                
             else:
