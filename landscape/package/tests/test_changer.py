@@ -350,7 +350,7 @@ class PackageChangerTestMixin(object):
         self.facade.reload_channels()
 
         self.mocker.order()
-        package1 = self.facade.get_packages_by_name("name1")[0]
+        package1 = self.facade.get_package_by_hash(installed_hash)
         package2 = self.facade.get_packages_by_name("name2")[0]
         self.facade.perform_changes = self.mocker.mock()
         self.facade.perform_changes()
