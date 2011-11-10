@@ -104,6 +104,8 @@ class RegistrationHandler(object):
         if self._config.cloud:
             return bool(not id.secure_id
                         and self._message_store.accepts("register-cloud-vm"))
+        elif self._config.provisiong_otp:
+            return True
         return bool(not id.secure_id and id.computer_title and id.account_name
                     and self._message_store.accepts("register"))
 
