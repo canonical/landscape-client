@@ -423,10 +423,10 @@ class PackageChangerTestMixin(object):
         result = self.changer.handle_tasks()
 
         def got_result(result):
-            self.assertMessage(self.get_pending_messages()[1],
-                               {"operation-id": 124,
-                                "result-code": 1,
-                                "type": "change-packages-result"})
+            message = self.get_pending_messages()[1]
+            self.assertEqual(124, message["operation-id"])
+            self.assertEqual("change-packages-result", message["type"])
+            self.assertNotEqual(0, message["result-code"])
 
         return result.addCallback(got_result)
 
