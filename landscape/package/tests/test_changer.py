@@ -385,7 +385,7 @@ class PackageChangerTestMixin(object):
         result = self.changer.handle_tasks()
 
         def got_result(result):
-            result_text = ("requirename1 = requireversion1")
+            result_text = self.get_transaction_error_message()
             messages = self.get_pending_messages()
             self.assertEqual(len(messages), 1)
             message = messages[0]
@@ -923,6 +923,9 @@ class SmartPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         self.Facade.channels_reloaded = callback
         return HASH1, HASH2
 
+    def get_transaction_error_message(self):
+        return "requirename1 = requireversion1"
+
     def test_change_package_locks(self):
         """
         The L{PackageChanger.handle_tasks} method appropriately creates and
@@ -1055,3 +1058,6 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         return (
             self.facade.get_package_hash(foo_1),
             self.facade.get_package_hash(foo_2))
+
+    def get_transaction_error_message(self):
+        return "Unable to correct problems"
