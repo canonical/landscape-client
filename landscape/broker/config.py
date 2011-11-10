@@ -85,7 +85,11 @@ class BrokerConfiguration(Configuration):
                           help="Comma separated list of tag names to be sent "
                                "to the server.")
         parser.add_option("--record", action="store_true",
-                          help="Record data sent to the server on filesystem ")
+                          help="Record data sent to the server on filesystem.")
+        parser.add_option("--provision", action="store_true", default=False,
+                          help="true if this machine is a provisioned one.")
+        parser.add_option("--provisioning-otp", default="",
+                          help="The OTP to use for provisioned machined")
         return parser
 
     @property

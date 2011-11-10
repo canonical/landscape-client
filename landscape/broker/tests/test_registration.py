@@ -1078,3 +1078,19 @@ class IsCloudManagedTests(LandscapeTest):
             self.assertFalse(is_cloud_managed(fake_fetch))
         finally:
             self.mocker.reset()
+
+
+class ProvisioningRegistrationTest(RegistrationHandlerTestBase):
+
+    def test_provisioned_machine_registration_with_otp(self):
+        """
+        Register provisioned machines using an OTP.
+        """
+        self.mstore.set_accepted_types(["register-provisioned-machine"])
+        self.config.provision = True
+        self.config.provisioning_otp = "ohteepee"
+        self.reactor.fire("pre-exchange")
+
+        self.assertEqual(self.logfile.getvalue().strip(),
+                           u"Queueing message to register with OTP as a"
+                           u" provisiong machine.")

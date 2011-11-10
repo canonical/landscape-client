@@ -274,8 +274,8 @@ class RegistrationHandler(object):
                 with_word = ["without", "with"][bool(id.registration_password)]
                 with_tags = ["", u"and tags %s " % tags][bool(tags)]
                 logging.info(u"Queueing message to register with account %r %s"
-                              "%s a password." % (id.account_name, with_tags,
-                              with_word))
+                             "%s a password." % (id.account_name, with_tags,
+                                                 with_word))
                 message = {"type": "register",
                            "computer_title": id.computer_title,
                            "account_name": id.account_name,
@@ -284,6 +284,16 @@ class RegistrationHandler(object):
                            "tags": tags,
                            "vm-info": get_vm_info()}
                 self._exchange.send(message)
+            elif self._config.provision:
+                logging.info(u"Queueing message to register with OTP as a"
+                             u" provisiong machine.")
+                message = {"type": "register-provisioning-machine",
+                           "computer_title": id.computer_title,
+                           "account_name": id.account_name,
+                           "hostname": get_fqdn(),
+                           "tags": tags,
+                           "otp": self._config.provisioning_otp}
+                self._exchange.send(message)                
             else:
                 self._reactor.fire("registration-failed")
 
