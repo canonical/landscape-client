@@ -859,6 +859,24 @@ class AptFacadeTest(LandscapeTest):
         # later.
         self.assertEqual("ok", self.facade.perform_changes())
 
+    def test_wb_perform_changes_commit_error(self):
+        """
+        If an error happens when committing the changes to the cache, a
+        transaction error is raised.
+        """
+        self._add_system_package("foo")
+        self.facade.reload_channels()
+
+        [foo] = self.facade.get_packages_by_name("foo")
+        self.facade.mark_remove(foo)
+        cache = self.mocker.replace(self.facade._cache)
+        cache.commit()
+        self.mocker.throw(SystemError("Something went wrong."))
+        self.mocker.replay()
+        exception = self.assertRaises(TransactionError,
+                                      self.facade.perform_changes)
+        self.assertIn("Something went wrong.", exception.args[0])
+
     def test_mark_install_transaction_error(self):
         """
         Mark package 'name1' for installation, and try to perform changes.

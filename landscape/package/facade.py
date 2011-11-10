@@ -353,8 +353,10 @@ class AptFacade(object):
         dependencies = versions_to_be_changed.difference(all_packages)
         if dependencies:
             raise DependencyError(dependencies)
-
-        self._cache.commit()
+        try:
+            self._cache.commit()
+        except SystemError, error:
+            raise TransactionError(error.args[0])
         return "ok"
 
     def reset_marks(self):
