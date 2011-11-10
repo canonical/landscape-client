@@ -55,7 +55,9 @@ class AptFacade(object):
         self._root = root
         if self._root is not None:
             self._ensure_dir_structure()
-        self._cache = apt.cache.Cache(rootdir=root, memonly=True)
+        # don't use memonly=True here because of a python-apt bug on Natty when
+        # sources.list contains invalid lines (LP: #886208)
+        self._cache = apt.cache.Cache(rootdir=root)
         self._channels_loaded = False
         self._pkg2hash = {}
         self._hash2pkg = {}
