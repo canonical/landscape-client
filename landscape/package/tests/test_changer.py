@@ -162,14 +162,22 @@ class PackageChangerTestMixin(object):
         it serves well for testing this specific feature.
         """
         installed_hash = self.set_pkg1_installed()
+        # Use ensure_channels_reloaded() to make sure that the package
+        # instances we raise below are the same that the facade will
+        # use. The changer will use ensure_channels_reloaded() also,
+        # which won't actually reload the package data if it's already
+        # loaded.
+        self.facade.ensure_channels_reloaded()
         self.store.set_hash_ids({installed_hash: 1, HASH2: 2, HASH3: 3})
         self.store.add_task("changer",
                             {"type": "change-packages", "install": [2],
                              "operation-id": 123})
 
-
+        packages = [
+            self.facade.get_package_by_hash(pkg_hash)
+            for pkg_hash in [installed_hash, HASH2, HASH3]]
         def raise_dependency_error(self):
-            raise DependencyError(self.get_packages())
+            raise DependencyError(set(packages))
         self.Facade.perform_changes = raise_dependency_error
 
         result = self.changer.handle_tasks()
