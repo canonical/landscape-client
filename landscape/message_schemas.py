@@ -146,7 +146,7 @@ REGISTER = Message(
 
 REGISTER_PROVISIONED_MACHINE = Message(
     "register-provisioned-machine",
-    {"otp": Any(String(), Constant(None))})
+    {"otp": String()})
 
 
 REGISTER_CLOUD_VM = Message(

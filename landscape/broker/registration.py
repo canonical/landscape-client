@@ -105,7 +105,8 @@ class RegistrationHandler(object):
             return bool(not id.secure_id
                         and self._message_store.accepts("register-cloud-vm"))
         elif self._config.provisioning_otp:
-            return True
+            return (not id.secure_id) and\
+                self._message_store.accepts("register-provisioned-machine")
         return bool(not id.secure_id and id.computer_title and id.account_name
                     and self._message_store.accepts("register"))
 
@@ -288,7 +289,7 @@ class RegistrationHandler(object):
                 self._exchange.send(message)
             elif self._config.provisioning_otp:
                 logging.info(u"Queueing message to register with OTP as a"
-                             u" provisiong machine.")
+                             u" newly provisioned machine.")
                 message = {"type": "register-provisioned-machine",
                            "otp": self._config.provisioning_otp}
                 self._exchange.send(message)
