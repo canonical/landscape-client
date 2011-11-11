@@ -1060,18 +1060,24 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         return result.addCallback(set_up)
 
     def set_pkg1_installed(self):
+        """Return the hash of a package that is installed."""
         self._add_system_package("foo")
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
         return self.facade.get_package_hash(foo)
 
     def set_pkg2_satisfied(self):
+        """Return the hash of a package that can be installed."""
         self._add_package_to_deb_dir(self.repository_dir, "bar")
         self.facade.reload_channels()
         [bar] = self.facade.get_packages_by_name("bar")
         return self.facade.get_package_hash(bar)
 
     def set_pkg1_and_pkg2_satisfied(self):
+        """Make a package depend on another package.
+
+        Return the hashes of the two packages.
+        """
         self._add_package_to_deb_dir(
             self.repository_dir, "foo", control_fields={"Depends": "bar"})
         self._add_package_to_deb_dir(self.repository_dir, "bar")
@@ -1083,6 +1089,10 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
             self.facade.get_package_hash(bar))
 
     def set_pkg2_upgrades_pkg1(self):
+        """Make it so that one package upgrades another.
+
+        Return the hashes of the two packages.
+        """
         self._add_system_package("foo", version="1.0")
         self._add_package_to_deb_dir(self.repository_dir, "foo", version="2.0")
         self.facade.reload_channels()
@@ -1092,6 +1102,7 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
             self.facade.get_package_hash(foo_2))
 
     def remove_pkg2(self):
+        """Remove package name2 from its repository."""
         packages_file = os.path.join(self.repository_dir, "Packages")
         packages_contents = read_file(packages_file)
         packages_contents = "\n\n".join(
@@ -1100,13 +1111,16 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         create_file(packages_file, packages_contents)
 
     def get_transaction_error_message(self):
+        """Return part of the apt transaction error message."""
         return "Unable to correct problems"
 
     def get_binaries_channels(self, binaries_path):
+        """Return the channels that will be used for the binaries."""
         return [{"baseurl": "file://%s" % binaries_path,
                  "components": "",
                  "distribution": "./",
                  "type": "deb"}]
 
     def get_package_name(self, version):
+        """Return the name of the package."""
         return version.package.name
