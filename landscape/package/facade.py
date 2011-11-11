@@ -328,7 +328,6 @@ class AptFacade(object):
             fixer.clear(version.package._pkg)
             fixer.protect(version.package._pkg)
         for version in self._package_upgrades:
-            version.package.candidate = version
             version.package.mark_install(
                 auto_fix=False,
                 from_user=not version.package.is_auto_installed)
