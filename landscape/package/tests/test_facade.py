@@ -35,22 +35,37 @@ class AptFacadeTest(LandscapeTest):
 
     helpers = [AptFacadeHelper]
 
-    def _add_system_package(self, name, architecture="all", version="1.0"):
-        """Add a package to the dpkg status file."""
-        append_file(self.dpkg_status, textwrap.dedent("""\
-                Package: %s
-                Status: install ok installed
+    def _add_package(self, packages_file, name, architecture="all",
+                     version="1.0", control_fields=None):
+        if control_fields is None:
+            control_fields = {}
+        package_stanza = textwrap.dedent("""
+                Package: %(name)s
                 Priority: optional
                 Section: misc
                 Installed-Size: 1234
                 Maintainer: Someone
-                Architecture: %s
+                Architecture: %(architecture)s
                 Source: source
-                Version: %s
+                Version: %(version)s
                 Config-Version: 1.0
                 Description: description
+                """ % {"name": name, "version": version,
+                       "architecture": architecture})
+        package_stanza = apt_pkg.rewrite_section(
+            apt_pkg.TagSection(package_stanza), apt_pkg.REWRITE_PACKAGE_ORDER,
+            control_fields.items())
+        append_file(packages_file, package_stanza + "\n")
 
-                """ % (name, architecture, version)))
+    def _add_system_package(self, name, architecture="all", version="1.0",
+                            control_fields=None):
+        """Add a package to the dpkg status file."""
+        system_control_fields = {"Status": "install ok installed"}
+        if control_fields is not None:
+            system_control_fields.update(control_fields)
+        self._add_package(
+            self.dpkg_status, name, architecture=architecture, version=version,
+            control_fields=system_control_fields)
 
     def _install_deb_file(self, path):
         """Fake the the given deb file is installed in the system."""
@@ -73,22 +88,9 @@ class AptFacadeTest(LandscapeTest):
         """
         if control_fields is None:
             control_fields = {}
-        package_stanza = textwrap.dedent("""
-                Package: %(name)s
-                Priority: optional
-                Section: misc
-                Installed-Size: 1234
-                Maintainer: Someone
-                Architecture: all
-                Source: source
-                Version: %(version)s
-                Config-Version: 1.0
-                Description: description
-                """ % {"name": name, "version": version})
-        package_stanza = apt_pkg.rewrite_section(
-            apt_pkg.TagSection(package_stanza), apt_pkg.REWRITE_PACKAGE_ORDER,
-            control_fields.items())
-        append_file(os.path.join(path, "Packages"), package_stanza + "\n")
+        self._add_package(
+            os.path.join(path, "Packages"), name, version=version,
+            control_fields=control_fields)
 
     def _touch_packages_file(self, deb_dir):
         """Make sure the Packages file get a newer mtime value.
@@ -775,16 +777,20 @@ class AptFacadeTest(LandscapeTest):
         self._add_package_to_deb_dir(deb_dir, "foo")
         self._add_system_package("bar", version="1.0")
         self._add_package_to_deb_dir(deb_dir, "bar", version="1.5")
+        self._add_system_package("baz")
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
         foo = self.facade.get_packages_by_name("foo")[0]
         self.facade.mark_install(foo)
         bar_15 = sorted(self.facade.get_packages_by_name("bar"))[1]
         self.facade.mark_upgrade(bar_15)
+        [baz] = self.facade.get_packages_by_name("baz")
+        self.facade.mark_remove(baz)
         self.facade.reset_marks()
-        self.assertEqual(self.facade.perform_changes(), None)
         self.assertEqual(self.facade._package_installs, [])
         self.assertEqual(self.facade._package_upgrades, [])
+        self.assertEqual(self.facade._package_removals, [])
+        self.assertEqual(self.facade.perform_changes(), None)
 
     def test_wb_mark_install_adds_to_list(self):
         """
@@ -814,6 +820,17 @@ class AptFacadeTest(LandscapeTest):
         foo_15 = sorted(self.facade.get_packages_by_name("foo"))[1]
         self.facade.mark_upgrade(foo_15)
         self.assertEqual([foo_15], self.facade._package_upgrades)
+
+    def test_wb_mark_remove_adds_to_list(self):
+        """
+        C{mark_remove} adds the package to the list of packages to be
+        removed.
+        """
+        self._add_system_package("foo")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        self.facade.mark_remove(foo)
+        self.assertEqual([foo], self.facade._package_removals)
 
     def test_mark_install_specific_version(self):
         """
@@ -880,6 +897,7 @@ class AptFacadeTest(LandscapeTest):
         cause all package changes to happen.
         """
         committed = []
+
         def commit():
             committed.append(True)
 
@@ -961,6 +979,20 @@ class AptFacadeTest(LandscapeTest):
         foo_15 = sorted(self.facade.get_packages_by_name("foo"))[1]
         [bar] = self.facade.get_packages_by_name("bar")
         self.facade.mark_upgrade(foo_15)
+        error = self.assertRaises(DependencyError, self.facade.perform_changes)
+        self.assertEqual(error.packages, set([bar]))
+
+    def test_mark_remove_dependency_error(self):
+        """
+        If a dependency hasn't been marked for removal,
+        DependencyError is raised with the packages that need to be removed.
+        """
+        self._add_system_package("foo")
+        self._add_system_package("bar", control_fields={"Depends": "foo"})
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        [bar] = self.facade.get_packages_by_name("bar")
+        self.facade.mark_remove(foo)
         error = self.assertRaises(DependencyError, self.facade.perform_changes)
         self.assertEqual(error.packages, set([bar]))
 
