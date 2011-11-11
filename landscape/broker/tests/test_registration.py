@@ -1102,7 +1102,7 @@ class ProvisioningRegistrationTest(RegistrationHandlerTestBase):
         self.assertMessages([{'otp': 'ohteepee', 'timestamp': 0, 'api': '3.2',
                               'type': 'register-provisioned-machine'}],
                             self.transport.payloads[0]["messages"])
-        
+
     def test_provisioned_machine_registration_with_empty_otp(self):
         """
         No message should be sent when an empty OTP is passed.

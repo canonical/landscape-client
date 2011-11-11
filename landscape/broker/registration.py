@@ -291,7 +291,7 @@ class RegistrationHandler(object):
                              u" provisiong machine.")
                 message = {"type": "register-provisioned-machine",
                            "otp": self._config.provisioning_otp}
-                self._exchange.send(message)                
+                self._exchange.send(message)
             else:
                 self._reactor.fire("registration-failed")
 
