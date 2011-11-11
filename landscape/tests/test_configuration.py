@@ -778,7 +778,8 @@ data_path = %s
                 "--http-proxy", "",
                 "--https-proxy", "",
                 "--otp", "",
-                "--tags", ""]
+                "--tags", "",
+                "--provisioning-otp", ""]
         config = self.get_config(args)
         setup(config)
         self.assertConfigEqual(self.get_content(config),
@@ -825,6 +826,20 @@ data_path = %s
         setup(config)
 
         self.assertEqual("otp1", config.otp)
+
+    def test_silent_setup_with_provisioning_otp(self):
+        """
+        If the provisioning OTP is specified, there is no need to pass the
+        account name and the computer title.
+        """
+        sysvconfig_mock = self.mocker.patch(SysVConfig)
+        sysvconfig_mock.set_start_on_boot(True)
+        self.mocker.replay()
+
+        config = self.get_config(["--silent", "--provisioning-otp", "otp1"])
+        setup(config)
+
+        self.assertEqual("otp1", config.provisioning_otp)
 
     def test_silent_script_users_imply_script_execution_plugin(self):
         """
