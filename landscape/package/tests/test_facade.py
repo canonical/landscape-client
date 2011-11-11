@@ -34,6 +34,10 @@ class AptFacadeTest(LandscapeTest):
 
     helpers = [AptFacadeHelper]
 
+    def version_sortkey(self, version):
+        """Return a key by which a Version object can be sorted."""
+        return (version.package, version)
+
     def test_default_root(self):
         """
         C{AptFacade} can be created by not providing a root directory,
@@ -800,7 +804,7 @@ class AptFacadeTest(LandscapeTest):
         self.facade._cache.commit = lambda: None
         exception = self.assertRaises(
             DependencyError, self.facade.perform_changes)
-        self.assertEqual(set([foo3]), exception.packages)
+        self.assertEqual([foo3], exception.packages)
 
     def test_mark_upgrade_preserves_auto(self):
         """
@@ -913,7 +917,7 @@ class AptFacadeTest(LandscapeTest):
         [bar] = self.facade.get_packages_by_name("bar")
         self.facade.mark_install(foo)
         error = self.assertRaises(DependencyError, self.facade.perform_changes)
-        self.assertEqual(error.packages, set([bar]))
+        self.assertEqual([bar], error.packages)
 
     def test_mark_upgrade_dependency_error(self):
         """
@@ -931,7 +935,7 @@ class AptFacadeTest(LandscapeTest):
         [bar] = self.facade.get_packages_by_name("bar")
         self.facade.mark_upgrade(foo_15)
         error = self.assertRaises(DependencyError, self.facade.perform_changes)
-        self.assertEqual(error.packages, set([bar]))
+        self.assertEqual([bar], error.packages)
 
     def test_mark_remove_dependency_error(self):
         """
@@ -945,7 +949,31 @@ class AptFacadeTest(LandscapeTest):
         [bar] = self.facade.get_packages_by_name("bar")
         self.facade.mark_remove(foo)
         error = self.assertRaises(DependencyError, self.facade.perform_changes)
-        self.assertEqual(error.packages, set([bar]))
+        self.assertEqual([bar], error.packages)
+
+    def test_perform_changes_dependency_error_same_version(self):
+        """
+        Apt's Version objects have the same hash if the version string
+        is the same. So if we have two different packages having the
+        same version, perform_changes() needs to take the package into
+        account when finding out which changes were requested.
+        """
+        self._add_system_package("foo", version="1.0")
+        self._add_system_package(
+            "bar", version="1.0", control_fields={"Depends": "foo"})
+        self._add_system_package(
+            "baz", version="1.0", control_fields={"Depends": "foo"})
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        [bar] = self.facade.get_packages_by_name("bar")
+        [baz] = self.facade.get_packages_by_name("baz")
+        self.facade.mark_remove(foo)
+        error = self.assertRaises(DependencyError, self.facade.perform_changes)
+
+        self.assertEqual(
+            sorted(error.packages, key=self.version_sortkey),
+            sorted([bar, baz], key=self.version_sortkey))
+
 
 
 class SmartFacadeTest(LandscapeTest):
