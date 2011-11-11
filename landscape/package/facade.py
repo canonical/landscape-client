@@ -310,10 +310,10 @@ class AptFacade(object):
 
     def perform_changes(self):
         """Perform the pending package operations."""
-        all_packages = (
-            self._package_installs + self._package_upgrades +
-            self._package_removals)
-        if len(all_packages) == 0:
+        all_packages = self._package_installs[:]
+        all_packages.extend(self._package_upgrades)
+        all_packages.extend(self._package_removals)
+        if not all_packages:
             return None
         fixer = apt_pkg.ProblemResolver(self._cache._depcache)
         for version in self._package_installs:
