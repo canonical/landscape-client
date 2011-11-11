@@ -347,11 +347,15 @@ class AptFacade(object):
                 fixer.resolve(True)
             except SystemError, error:
                 raise TransactionError(error.args[0])
+        all_versions = [
+            (version.package, version) for version in all_packages]
         versions_to_be_changed = set(
-            package.candidate for package in self._cache.get_changes())
-        dependencies = versions_to_be_changed.difference(all_packages)
+            (package, package.candidate)
+            for package in self._cache.get_changes())
+        dependencies = versions_to_be_changed.difference(all_versions)
         if dependencies:
-            raise DependencyError(dependencies)
+            raise DependencyError(
+                [version for package, version  in dependencies])
         try:
             self._cache.commit()
         except SystemError, error:
@@ -370,7 +374,8 @@ class AptFacade(object):
 
     def mark_upgrade(self, version):
         """Mark the package for upgrade."""
-        self._package_upgrades.append(version)
+        if version.package.candidate != version:
+            self._package_upgrades.append(version)
 
     def mark_remove(self, version):
         """Mark the package for removal."""
