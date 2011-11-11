@@ -1090,10 +1090,29 @@ class ProvisioningRegistrationTest(RegistrationHandlerTestBase):
         self.config.account_name = ""
         self.config.provisioning_otp = "ohteepee"
         self.reactor.fire("pre-exchange")
-        
+
         self.assertMessages([{'otp': 'ohteepee', 'timestamp': 0, 'api': '3.2',
-                              'type': 'register-provisioned-machine'}], 
+                              'type': 'register-provisioned-machine'}],
                             self.mstore.get_pending_messages())
         self.assertEqual(u"INFO: Queueing message to register with OTP as a"
                          u" provisiong machine.",
+                         self.logfile.getvalue().strip())
+
+        self.exchanger.exchange()
+        self.assertMessages([{'otp': 'ohteepee', 'timestamp': 0, 'api': '3.2',
+                              'type': 'register-provisioned-machine'}],
+                            self.transport.payloads[0]["messages"])
+        
+    def test_provisioned_machine_registration_with_empty_otp(self):
+        """
+        No message should be sent when an empty OTP is passed.
+        """
+        self.mstore.set_accepted_types(["register-provisioned-machine"])
+        self.config.account_name = ""
+        self.config.provisioning_otp = ""
+        self.reactor.fire("pre-exchange")
+
+        self.assertMessages([],
+                            self.mstore.get_pending_messages())
+        self.assertEqual(u"",
                          self.logfile.getvalue().strip())
