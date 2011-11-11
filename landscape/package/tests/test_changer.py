@@ -147,37 +147,6 @@ class PackageChangerTestMixin(object):
             self.assertEqual(self.store.get_next_task("changer"), None)
         return result.addCallback(got_result)
 
-    def test_dpkg_error(self):
-        """
-        Verify that errors emitted by dpkg are correctly reported to
-        the server as problems.
-        """
-        self.log_helper.ignore_errors(".*dpkg")
-
-        installed_hash = self.set_pkg1_installed()
-        self.store.set_hash_ids({installed_hash: 1})
-        self.store.add_task("changer",
-                            {"type": "change-packages", "remove": [1],
-                             "operation-id": 123})
-
-
-        result = self.changer.handle_tasks()
-
-        def got_result(result):
-            messages = self.get_pending_messages()
-            self.assertEqual(len(messages), 1, "Too many messages")
-            message = messages[0]
-            self.assertEqual(message["operation-id"], 123)
-            self.assertEqual(message["result-code"], 100)
-            self.assertEqual(message["type"], "change-packages-result")
-            text = message["result-text"]
-            # We can't test the actual content of the message because the dpkg
-            # error can be localized
-            self.assertIn("\n[remove] name1_version1-release1\ndpkg: ", text)
-            self.assertIn("ERROR", text)
-            self.assertIn("(2)", text)
-        return result.addCallback(got_result)
-
     def test_dependency_error(self):
         """
         In this test we hack the facade to simulate the situation where
@@ -1009,6 +978,41 @@ class SmartPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
 
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
+
+    def test_dpkg_error(self):
+        """
+        Verify that errors emitted by dpkg are correctly reported to
+        the server as problems.
+
+        This test is to make sure that Smart reports the problem
+        correctly. It doesn't make sense for AptFacade, since there we
+        don't call dpkg.
+        """
+        self.log_helper.ignore_errors(".*dpkg")
+
+        installed_hash = self.set_pkg1_installed()
+        self.store.set_hash_ids({installed_hash: 1})
+        self.store.add_task("changer",
+                            {"type": "change-packages", "remove": [1],
+                             "operation-id": 123})
+
+
+        result = self.changer.handle_tasks()
+
+        def got_result(result):
+            messages = self.get_pending_messages()
+            self.assertEqual(len(messages), 1, "Too many messages")
+            message = messages[0]
+            self.assertEqual(message["operation-id"], 123)
+            self.assertEqual(message["result-code"], 100)
+            self.assertEqual(message["type"], "change-packages-result")
+            text = message["result-text"]
+            # We can't test the actual content of the message because the dpkg
+            # error can be localized
+            self.assertIn("\n[remove] name1_version1-release1\ndpkg: ", text)
+            self.assertIn("ERROR", text)
+            self.assertIn("(2)", text)
+        return result.addCallback(got_result)
 
 
 class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
