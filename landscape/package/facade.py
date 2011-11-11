@@ -374,7 +374,8 @@ class AptFacade(object):
 
     def mark_upgrade(self, version):
         """Mark the package for upgrade."""
-        self._package_upgrades.append(version)
+        if version.package.candidate != version:
+            self._package_upgrades.append(version)
 
     def mark_remove(self, version):
         """Mark the package for removal."""

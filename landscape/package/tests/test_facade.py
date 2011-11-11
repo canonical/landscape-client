@@ -806,6 +806,23 @@ class AptFacadeTest(LandscapeTest):
             DependencyError, self.facade.perform_changes)
         self.assertEqual([foo3], exception.packages)
 
+    def test_mark_upgrade_no_upgrade(self):
+        """
+        If the candidate version of a package already is installed,
+        mark_upgrade() won't request an upgrade to be made. I.e.
+        perform_changes() won't do anything.
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package("foo", version="3.0")
+        self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
+        self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        foo3 = sorted(self.facade.get_packages_by_name("foo"))[-1]
+        self.assertEqual(foo3, foo3.package.candidate)
+        self.facade.mark_upgrade(foo3)
+        self.assertEqual(None, self.facade.perform_changes())
+
     def test_mark_upgrade_preserves_auto(self):
         """
         Upgrading a package will retain its auto-install status.
@@ -821,10 +838,10 @@ class AptFacadeTest(LandscapeTest):
         noauto1, noauto2 = sorted(self.facade.get_packages_by_name("noauto"))
         auto1.package.mark_auto(True)
         noauto1.package.mark_auto(False)
-        self.facade.mark_upgrade(auto2)
-        self.facade.mark_upgrade(noauto2)
+        self.facade.mark_upgrade(auto1)
+        self.facade.mark_upgrade(noauto1)
         self.facade._cache.commit = lambda: None
-        self.facade.perform_changes()
+        self.assertRaises(DependencyError, self.facade.perform_changes)
         self.assertTrue(auto2.package.is_auto_installed)
         self.assertFalse(noauto2.package.is_auto_installed)
 
@@ -921,8 +938,9 @@ class AptFacadeTest(LandscapeTest):
 
     def test_mark_upgrade_dependency_error(self):
         """
-        If a dependency hasn't been marked for installation or upgrade, a
-        DependencyError is raised with the packages that need to be updated.
+        If a package is marked for upgrade, a DependencyError will be
+        raised, indicating which version of the package will be
+        installed.
         """
         deb_dir = self.makeDir()
         self._add_system_package("foo", version="1.0")
@@ -931,11 +949,13 @@ class AptFacadeTest(LandscapeTest):
         self._add_package_to_deb_dir(deb_dir, "bar")
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
-        foo_15 = sorted(self.facade.get_packages_by_name("foo"))[1]
+        foo_10, foo_15 = sorted(self.facade.get_packages_by_name("foo"))
         [bar] = self.facade.get_packages_by_name("bar")
-        self.facade.mark_upgrade(foo_15)
+        self.facade.mark_upgrade(foo_10)
         error = self.assertRaises(DependencyError, self.facade.perform_changes)
-        self.assertEqual([bar], error.packages)
+        self.assertEqual(
+            sorted([bar, foo_15], key=self.version_sortkey),
+            sorted(error.packages, key=self.version_sortkey))
 
     def test_mark_remove_dependency_error(self):
         """
