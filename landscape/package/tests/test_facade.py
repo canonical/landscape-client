@@ -8,7 +8,6 @@ from smart.control import Control
 from smart.cache import Provides
 from smart.const import NEVER, ALWAYS
 
-import apt_inst
 import apt_pkg
 from aptsources.sourceslist import SourcesList
 
@@ -18,7 +17,7 @@ from twisted.internet.utils import getProcessOutputAndValue
 
 import smart
 
-from landscape.lib.fs import append_file, read_file
+from landscape.lib.fs import read_file
 from landscape.package.facade import (
     TransactionError, DependencyError, ChannelError, SmartError, AptFacade)
 
@@ -34,72 +33,6 @@ from landscape.package.tests.helpers import (
 class AptFacadeTest(LandscapeTest):
 
     helpers = [AptFacadeHelper]
-
-    def _add_system_package(self, name, architecture="all", version="1.0"):
-        """Add a package to the dpkg status file."""
-        append_file(self.dpkg_status, textwrap.dedent("""\
-                Package: %s
-                Status: install ok installed
-                Priority: optional
-                Section: misc
-                Installed-Size: 1234
-                Maintainer: Someone
-                Architecture: %s
-                Source: source
-                Version: %s
-                Config-Version: 1.0
-                Description: description
-
-                """ % (name, architecture, version)))
-
-    def _install_deb_file(self, path):
-        """Fake the the given deb file is installed in the system."""
-        deb_file = open(path)
-        deb = apt_inst.DebFile(deb_file)
-        control = deb.control.extractdata("control")
-        deb_file.close()
-        lines = control.splitlines()
-        lines.insert(1, "Status: install ok installed")
-        status = "\n".join(lines)
-        append_file(self.dpkg_status, status + "\n\n")
-
-    def _add_package_to_deb_dir(self, path, name, version="1.0",
-                                control_fields=None):
-        """Add fake package information to a directory.
-
-        There will only be basic information about the package
-        available, so that get_packages() have something to return.
-        There won't be an actual package in the dir.
-        """
-        if control_fields is None:
-            control_fields = {}
-        package_stanza = textwrap.dedent("""
-                Package: %(name)s
-                Priority: optional
-                Section: misc
-                Installed-Size: 1234
-                Maintainer: Someone
-                Architecture: all
-                Source: source
-                Version: %(version)s
-                Config-Version: 1.0
-                Description: description
-                """ % {"name": name, "version": version})
-        package_stanza = apt_pkg.rewrite_section(
-            apt_pkg.TagSection(package_stanza), apt_pkg.REWRITE_PACKAGE_ORDER,
-            control_fields.items())
-        append_file(os.path.join(path, "Packages"), package_stanza + "\n")
-
-    def _touch_packages_file(self, deb_dir):
-        """Make sure the Packages file get a newer mtime value.
-
-        If we rely on simply writing to the file to update the mtime, we
-        might end up with the same as before, since the resolution is
-        seconds, which causes apt to not reload the file.
-        """
-        packages_path = os.path.join(deb_dir, "Packages")
-        mtime = int(time.time() + 1)
-        os.utime(packages_path, (mtime, mtime))
 
     def test_default_root(self):
         """
@@ -775,16 +708,20 @@ class AptFacadeTest(LandscapeTest):
         self._add_package_to_deb_dir(deb_dir, "foo")
         self._add_system_package("bar", version="1.0")
         self._add_package_to_deb_dir(deb_dir, "bar", version="1.5")
+        self._add_system_package("baz")
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
         foo = self.facade.get_packages_by_name("foo")[0]
         self.facade.mark_install(foo)
         bar_15 = sorted(self.facade.get_packages_by_name("bar"))[1]
         self.facade.mark_upgrade(bar_15)
+        [baz] = self.facade.get_packages_by_name("baz")
+        self.facade.mark_remove(baz)
         self.facade.reset_marks()
-        self.assertEqual(self.facade.perform_changes(), None)
         self.assertEqual(self.facade._package_installs, [])
         self.assertEqual(self.facade._package_upgrades, [])
+        self.assertEqual(self.facade._package_removals, [])
+        self.assertEqual(self.facade.perform_changes(), None)
 
     def test_wb_mark_install_adds_to_list(self):
         """
@@ -814,6 +751,17 @@ class AptFacadeTest(LandscapeTest):
         foo_15 = sorted(self.facade.get_packages_by_name("foo"))[1]
         self.facade.mark_upgrade(foo_15)
         self.assertEqual([foo_15], self.facade._package_upgrades)
+
+    def test_wb_mark_remove_adds_to_list(self):
+        """
+        C{mark_remove} adds the package to the list of packages to be
+        removed.
+        """
+        self._add_system_package("foo")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        self.facade.mark_remove(foo)
+        self.assertEqual([foo], self.facade._package_removals)
 
     def test_mark_install_specific_version(self):
         """
@@ -880,6 +828,7 @@ class AptFacadeTest(LandscapeTest):
         cause all package changes to happen.
         """
         committed = []
+
         def commit():
             committed.append(True)
 
@@ -961,6 +910,20 @@ class AptFacadeTest(LandscapeTest):
         foo_15 = sorted(self.facade.get_packages_by_name("foo"))[1]
         [bar] = self.facade.get_packages_by_name("bar")
         self.facade.mark_upgrade(foo_15)
+        error = self.assertRaises(DependencyError, self.facade.perform_changes)
+        self.assertEqual(error.packages, set([bar]))
+
+    def test_mark_remove_dependency_error(self):
+        """
+        If a dependency hasn't been marked for removal,
+        DependencyError is raised with the packages that need to be removed.
+        """
+        self._add_system_package("foo")
+        self._add_system_package("bar", control_fields={"Depends": "foo"})
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        [bar] = self.facade.get_packages_by_name("bar")
+        self.facade.mark_remove(foo)
         error = self.assertRaises(DependencyError, self.facade.perform_changes)
         self.assertEqual(error.packages, set([bar]))
 

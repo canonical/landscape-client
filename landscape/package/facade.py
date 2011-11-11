@@ -55,12 +55,15 @@ class AptFacade(object):
         self._root = root
         if self._root is not None:
             self._ensure_dir_structure()
-        self._cache = apt.cache.Cache(rootdir=root, memonly=True)
+        # don't use memonly=True here because of a python-apt bug on Natty when
+        # sources.list contains invalid lines (LP: #886208)
+        self._cache = apt.cache.Cache(rootdir=root)
         self._channels_loaded = False
         self._pkg2hash = {}
         self._hash2pkg = {}
         self._package_installs = []
         self._package_upgrades = []
+        self._package_removals = []
         self.refetch_package_index = False
         # Explicitly set APT::Architectures to the native architecture only, as
         # we currently don't support multiarch, so packages with different
@@ -309,7 +312,10 @@ class AptFacade(object):
 
     def perform_changes(self):
         """Perform the pending package operations."""
-        if len(self._package_installs + self._package_upgrades) == 0:
+        all_packages = self._package_installs[:]
+        all_packages.extend(self._package_upgrades)
+        all_packages.extend(self._package_removals)
+        if not all_packages:
             return None
         fixer = apt_pkg.ProblemResolver(self._cache._depcache)
         for version in self._package_installs:
@@ -330,16 +336,23 @@ class AptFacade(object):
                 from_user=not version.package.is_auto_installed)
             fixer.clear(version.package._pkg)
             fixer.protect(version.package._pkg)
+        for version in self._package_removals:
+            version.package.mark_delete(auto_fix=False)
+            # Configure the resolver in the same way
+            # mark_delete(auto_fix=True) would have done.
+            fixer.clear(version.package._pkg)
+            fixer.protect(version.package._pkg)
+            fixer.remove(version.package._pkg)
+            fixer.install_protect()
 
         if self._cache._depcache.broken_count > 0:
             try:
                 fixer.resolve(True)
             except SystemError, error:
                 raise TransactionError(error.args[0])
-        versions_to_be_installed = set(
+        versions_to_be_changed = set(
             package.candidate for package in self._cache.get_changes())
-        dependencies = versions_to_be_installed.difference(
-            self._package_installs + self._package_upgrades)
+        dependencies = versions_to_be_changed.difference(all_packages)
         if dependencies:
             raise DependencyError(dependencies)
 
@@ -350,6 +363,7 @@ class AptFacade(object):
         """Clear the pending package operations."""
         del self._package_installs[:]
         del self._package_upgrades[:]
+        del self._package_removals[:]
 
     def mark_install(self, version):
         """Mark the package for installation."""
@@ -358,6 +372,10 @@ class AptFacade(object):
     def mark_upgrade(self, version):
         """Mark the package for upgrade."""
         self._package_upgrades.append(version)
+
+    def mark_remove(self, version):
+        """Mark the package for removal."""
+        self._package_removals.append(version)
 
 
 class SmartFacade(object):
