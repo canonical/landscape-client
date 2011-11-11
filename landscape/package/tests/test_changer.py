@@ -8,7 +8,7 @@ from twisted.internet.defer import Deferred
 
 from smart.cache import Provides
 
-from landscape.lib.fs import touch_file
+from landscape.lib.fs import create_file, read_file, touch_file
 from landscape.package.changer import (
     PackageChanger, main, find_changer_command, UNKNOWN_PACKAGE_DATA_TIMEOUT,
     SUCCESS_RESULT, DEPENDENCY_ERROR_RESULT, POLICY_ALLOW_INSTALLS,
@@ -197,7 +197,7 @@ class PackageChangerTestMixin(object):
         packages. The extra changes needed to perform the transaction
         are sent back to the server.
         """
-        os.remove(os.path.join(self.repository_dir, PKGNAME2))
+        self.remove_pkg2()
         installed_hash = self.set_pkg1_installed()
         self.store.set_hash_ids({installed_hash: 1, HASH3: 3})
         self.store.add_task("changer",
@@ -206,9 +206,12 @@ class PackageChangerTestMixin(object):
                              "binaries": [(HASH2, 2, PKGDEB2)],
                              "operation-id": 123})
 
-
+        packages = set()
         def raise_dependency_error(self):
-            raise DependencyError(self.get_packages())
+            packages.update(
+                self.get_package_by_hash(pkg_hash)
+                for pkg_hash in [installed_hash, HASH2, HASH3])
+            raise DependencyError(set(packages))
         self.Facade.perform_changes = raise_dependency_error
 
         result = self.changer.handle_tasks()
@@ -900,6 +903,9 @@ class SmartPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         self.Facade.channels_reloaded = callback
         return HASH1, HASH2
 
+    def remove_pkg2(self):
+        os.remove(os.path.join(self.repository_dir, PKGNAME2))
+
     def get_transaction_error_message(self):
         return "requirename1 = requireversion1"
 
@@ -1077,6 +1083,14 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         return (
             self.facade.get_package_hash(foo_1),
             self.facade.get_package_hash(foo_2))
+
+    def remove_pkg2(self):
+        packages_file = os.path.join(self.repository_dir, "Packages")
+        packages_contents = read_file(packages_file)
+        packages_contents = "\n\n".join(
+            [stanza for stanza in packages_contents.split("\n\n")
+             if "Package: name2" not in stanza])
+        create_file(packages_file, packages_contents)
 
     def get_transaction_error_message(self):
         return "Unable to correct problems"
