@@ -87,7 +87,7 @@ class BrokerConfiguration(Configuration):
         parser.add_option("--record", action="store_true",
                           help="Record data sent to the server on filesystem.")
         parser.add_option("--provisioning-otp", default="",
-                          help="The OTP to use for provisioned machined")
+                          help="The OTP to use for a provisioned machine.")
         return parser
 
     @property
