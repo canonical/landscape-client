@@ -441,7 +441,8 @@ def setup(config):
 
     if config.silent and not config.no_start:
         if not config.get("otp") and (not config.get("account_name") or not
-                                          config.get("computer_title")):
+                                          config.get("computer_title"))\
+                                          and not config.provisioning_otp:
             raise ConfigurationError("An account name and computer title are "
                                      "required.")
     if config.silent:
