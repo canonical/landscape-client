@@ -32,6 +32,13 @@ class PackageChangerTestMixin(object):
     def get_pending_messages(self):
         return self.broker_service.message_store.get_pending_messages()
 
+    def replace_perform_changes(self, func):
+        old_perform_changes = self.Facade.perform_changes
+        def reset_perform_changes(Facade):
+            Facade.perform_changes = old_perform_changes
+        self.addCleanup(reset_perform_changes, self.Facade)
+        self.Facade.perform_changes = func
+
     def test_unknown_package_id_for_dependency(self):
         hash1, hash2 = self.set_pkg1_and_pkg2_satisfied()
 
@@ -178,7 +185,7 @@ class PackageChangerTestMixin(object):
             for pkg_hash in [installed_hash, HASH2, HASH3]]
         def raise_dependency_error(self):
             raise DependencyError(set(packages))
-        self.Facade.perform_changes = raise_dependency_error
+        self.replace_perform_changes(raise_dependency_error)
 
         result = self.changer.handle_tasks()
 
@@ -212,7 +219,7 @@ class PackageChangerTestMixin(object):
                 self.get_package_by_hash(pkg_hash)
                 for pkg_hash in [installed_hash, HASH2, HASH3])
             raise DependencyError(set(packages))
-        self.Facade.perform_changes = raise_dependency_error
+        self.replace_perform_changes(raise_dependency_error)
 
         result = self.changer.handle_tasks()
 
@@ -425,7 +432,7 @@ class PackageChangerTestMixin(object):
 
         def return_good_result(self):
             return "Yeah, I did whatever you've asked for!"
-        self.Facade.perform_changes = return_good_result
+        self.replace_perform_changes(return_good_result)
 
         result = self.changer.handle_tasks()
 
@@ -451,7 +458,7 @@ class PackageChangerTestMixin(object):
 
         def return_good_result(self):
             return "Yeah, I did whatever you've asked for!"
-        self.Facade.perform_changes = return_good_result
+        self.replace_perform_changes(return_good_result)
 
         result = self.changer.handle_tasks()
 
@@ -732,7 +739,7 @@ class PackageChangerTestMixin(object):
 
         def raise_error(self):
             raise TransactionError(u"áéíóú")
-        self.Facade.perform_changes = raise_error
+        self.replace_perform_changes(raise_error)
 
         result = self.changer.handle_tasks()
 
@@ -752,7 +759,7 @@ class PackageChangerTestMixin(object):
 
         def raise_error(self):
             raise SmartError(u"áéíóú")
-        self.Facade.perform_changes = raise_error
+        self.replace_perform_changes(raise_error)
 
         result = self.changer.handle_tasks()
 
