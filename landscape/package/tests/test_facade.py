@@ -713,8 +713,8 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         foo = self.facade.get_packages_by_name("foo")[0]
         self.facade.mark_install(foo)
-        bar_15 = sorted(self.facade.get_packages_by_name("bar"))[1]
-        self.facade.mark_upgrade(bar_15)
+        bar_10 = sorted(self.facade.get_packages_by_name("bar"))[0]
+        self.facade.mark_upgrade(bar_10)
         [baz] = self.facade.get_packages_by_name("baz")
         self.facade.mark_remove(baz)
         self.facade.reset_marks()
@@ -748,9 +748,9 @@ class AptFacadeTest(LandscapeTest):
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.5")
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
-        foo_15 = sorted(self.facade.get_packages_by_name("foo"))[1]
-        self.facade.mark_upgrade(foo_15)
-        self.assertEqual([foo_15], self.facade._package_upgrades)
+        foo_10 = sorted(self.facade.get_packages_by_name("foo"))[0]
+        self.facade.mark_upgrade(foo_10)
+        self.assertEqual([foo_10], self.facade._package_upgrades)
 
     def test_wb_mark_remove_adds_to_list(self):
         """
@@ -781,11 +781,12 @@ class AptFacadeTest(LandscapeTest):
         self.facade.perform_changes()
         self.assertEqual(foo1, foo1.package.candidate)
 
-    def test_mark_upgrade_specific_version(self):
+    def test_mark_upgrade_candidate_version(self):
         """
-        If more than one version is available, the version passed to
-        C{mark_upgrade} is marked as the candidate version, so that gets
-        installed.
+        If more than one version is available, the package will be
+        upgraded to the candidate version. Since the user didn't request
+        which version to upgrade to, a DependencyError error will be
+        raised, so that the changes can be reviewed and approved.
         """
         deb_dir = self.makeDir()
         self._add_system_package("foo", version="1.0")
@@ -793,12 +794,13 @@ class AptFacadeTest(LandscapeTest):
         self._add_package_to_deb_dir(deb_dir, "foo", version="3.0")
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
-        foo2, foo3 = sorted(self.facade.get_packages_by_name("foo"))[1:]
-        self.assertEqual(foo3, foo2.package.candidate)
-        self.facade.mark_upgrade(foo2)
+        foo1, foo2, foo3 = sorted(self.facade.get_packages_by_name("foo"))
+        self.assertEqual(foo3, foo1.package.candidate)
+        self.facade.mark_upgrade(foo1)
         self.facade._cache.commit = lambda: None
-        self.facade.perform_changes()
-        self.assertEqual(foo2, foo2.package.candidate)
+        exception = self.assertRaises(
+            DependencyError, self.facade.perform_changes)
+        self.assertEqual(set([foo3]), exception.packages)
 
     def test_mark_upgrade_preserves_auto(self):
         """
@@ -858,6 +860,24 @@ class AptFacadeTest(LandscapeTest):
         # XXX: It should return the Apt output, but that will be done
         # later.
         self.assertEqual("ok", self.facade.perform_changes())
+
+    def test_wb_perform_changes_commit_error(self):
+        """
+        If an error happens when committing the changes to the cache, a
+        transaction error is raised.
+        """
+        self._add_system_package("foo")
+        self.facade.reload_channels()
+
+        [foo] = self.facade.get_packages_by_name("foo")
+        self.facade.mark_remove(foo)
+        cache = self.mocker.replace(self.facade._cache)
+        cache.commit()
+        self.mocker.throw(SystemError("Something went wrong."))
+        self.mocker.replay()
+        exception = self.assertRaises(TransactionError,
+                                      self.facade.perform_changes)
+        self.assertIn("Something went wrong.", exception.args[0])
 
     def test_mark_install_transaction_error(self):
         """

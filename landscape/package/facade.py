@@ -328,7 +328,6 @@ class AptFacade(object):
             fixer.clear(version.package._pkg)
             fixer.protect(version.package._pkg)
         for version in self._package_upgrades:
-            version.package.candidate = version
             version.package.mark_install(
                 auto_fix=False,
                 from_user=not version.package.is_auto_installed)
@@ -353,8 +352,10 @@ class AptFacade(object):
         dependencies = versions_to_be_changed.difference(all_packages)
         if dependencies:
             raise DependencyError(dependencies)
-
-        self._cache.commit()
+        try:
+            self._cache.commit()
+        except SystemError, error:
+            raise TransactionError(error.args[0])
         return "ok"
 
     def reset_marks(self):
