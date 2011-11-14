@@ -353,7 +353,7 @@ class AptFacade(object):
         dependencies = versions_to_be_changed.difference(all_changes)
         if dependencies:
             raise DependencyError(
-                [version for package, version  in dependencies])
+                [version for package, version in dependencies])
         try:
             self._cache.commit()
         except SystemError, error:

@@ -995,7 +995,6 @@ class AptFacadeTest(LandscapeTest):
             sorted([bar, baz], key=self.version_sortkey))
 
 
-
 class SmartFacadeTest(LandscapeTest):
 
     helpers = [SmartFacadeHelper]
