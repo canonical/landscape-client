@@ -312,10 +312,9 @@ class AptFacade(object):
 
     def perform_changes(self):
         """Perform the pending package operations."""
-        all_packages = self._package_installs[:]
-        all_packages.extend(self._package_upgrades)
-        all_packages.extend(self._package_removals)
-        if not all_packages:
+        package_changes = self._package_installs[:]
+        package_changes.extend(self._package_removals)
+        if not package_changes and not self._package_upgrades:
             return None
         fixer = apt_pkg.ProblemResolver(self._cache._depcache)
         for version in self._package_installs:
@@ -330,7 +329,6 @@ class AptFacade(object):
             fixer.clear(version.package._pkg)
             fixer.protect(version.package._pkg)
         for version in self._package_upgrades:
-            version.package.candidate = version
             version.package.mark_install(
                 auto_fix=False,
                 from_user=not version.package.is_auto_installed)
@@ -350,13 +348,19 @@ class AptFacade(object):
                 fixer.resolve(True)
             except SystemError, error:
                 raise TransactionError(error.args[0])
+        all_changes = [
+            (version.package, version) for version in package_changes]
         versions_to_be_changed = set(
-            package.candidate for package in self._cache.get_changes())
-        dependencies = versions_to_be_changed.difference(all_packages)
+            (package, package.candidate)
+            for package in self._cache.get_changes())
+        dependencies = versions_to_be_changed.difference(all_changes)
         if dependencies:
-            raise DependencyError(dependencies)
-
-        self._cache.commit()
+            raise DependencyError(
+                [version for package, version in dependencies])
+        try:
+            self._cache.commit()
+        except SystemError, error:
+            raise TransactionError(error.args[0])
         return "ok"
 
     def reset_marks(self):
@@ -371,7 +375,8 @@ class AptFacade(object):
 
     def mark_upgrade(self, version):
         """Mark the package for upgrade."""
-        self._package_upgrades.append(version)
+        if version.package.candidate != version:
+            self._package_upgrades.append(version)
 
     def mark_remove(self, version):
         """Mark the package for removal."""
