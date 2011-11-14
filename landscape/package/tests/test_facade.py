@@ -808,7 +808,7 @@ class AptFacadeTest(LandscapeTest):
 
     def test_mark_upgrade_no_upgrade(self):
         """
-        If the candidate version of a package already is installed,
+        If the candidate version of a package is already installed,
         mark_upgrade() won't request an upgrade to be made. I.e.
         perform_changes() won't do anything.
         """
@@ -993,7 +993,6 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(
             sorted(error.packages, key=self.version_sortkey),
             sorted([bar, baz], key=self.version_sortkey))
-
 
 
 class SmartFacadeTest(LandscapeTest):
