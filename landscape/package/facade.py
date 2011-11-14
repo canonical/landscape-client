@@ -310,10 +310,8 @@ class AptFacade(object):
 
     def perform_changes(self):
         """Perform the pending package operations."""
-        all_packages = (
-            self._package_installs + self._package_upgrades +
-            self._package_removals)
-        if len(all_packages) == 0:
+        package_changes = self._package_installs + self._package_removals
+        if len(package_changes) == 0 and not self._package_upgrades:
             return None
         fixer = apt_pkg.ProblemResolver(self._cache._depcache)
         for version in self._package_installs:
@@ -347,12 +345,12 @@ class AptFacade(object):
                 fixer.resolve(True)
             except SystemError, error:
                 raise TransactionError(error.args[0])
-        all_versions = [
-            (version.package, version) for version in all_packages]
+        all_changes = [
+            (version.package, version) for version in package_changes]
         versions_to_be_changed = set(
             (package, package.candidate)
             for package in self._cache.get_changes())
-        dependencies = versions_to_be_changed.difference(all_versions)
+        dependencies = versions_to_be_changed.difference(all_changes)
         if dependencies:
             raise DependencyError(
                 [version for package, version  in dependencies])
