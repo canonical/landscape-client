@@ -34,8 +34,10 @@ class PackageChangerTestMixin(object):
 
     def replace_perform_changes(self, func):
         old_perform_changes = self.Facade.perform_changes
+
         def reset_perform_changes(Facade):
             Facade.perform_changes = old_perform_changes
+
         self.addCleanup(reset_perform_changes, self.Facade)
         self.Facade.perform_changes = func
 
@@ -183,8 +185,10 @@ class PackageChangerTestMixin(object):
         packages = [
             self.facade.get_package_by_hash(pkg_hash)
             for pkg_hash in [installed_hash, HASH2, HASH3]]
+
         def raise_dependency_error(self):
             raise DependencyError(set(packages))
+
         self.replace_perform_changes(raise_dependency_error)
 
         result = self.changer.handle_tasks()
@@ -214,11 +218,13 @@ class PackageChangerTestMixin(object):
                              "operation-id": 123})
 
         packages = set()
+
         def raise_dependency_error(self):
             packages.update(
                 self.get_package_by_hash(pkg_hash)
                 for pkg_hash in [installed_hash, HASH2, HASH3])
             raise DependencyError(set(packages))
+
         self.replace_perform_changes(raise_dependency_error)
 
         result = self.changer.handle_tasks()
@@ -406,7 +412,6 @@ class PackageChangerTestMixin(object):
                             {"type": "change-packages", "upgrade-all": True,
                              "operation-id": 124})
 
-
         result = self.changer.handle_tasks()
 
         def got_result(result):
@@ -428,7 +433,6 @@ class PackageChangerTestMixin(object):
         self.store.add_task("changer",
                             {"type": "change-packages", "install": [2],
                              "operation-id": 123})
-
 
         def return_good_result(self):
             return "Yeah, I did whatever you've asked for!"
@@ -483,7 +487,6 @@ class PackageChangerTestMixin(object):
         self.store.add_task("changer",
                             {"type": "change-packages", "upgrade-all": True,
                              "operation-id": 123})
-
 
         result = self.changer.handle_tasks()
 
@@ -917,8 +920,8 @@ class SmartPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         return "requirename1 = requireversion1"
 
     def get_binaries_channels(self, binaries_path):
-         return {binaries_path: {"type": "deb-dir",
-                                 "path": binaries_path}}
+        return {binaries_path: {"type": "deb-dir",
+                                "path": binaries_path}}
 
     def get_package_name(self, package):
         return package.name
@@ -1016,7 +1019,6 @@ class SmartPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         self.store.add_task("changer",
                             {"type": "change-packages", "remove": [1],
                              "operation-id": 123})
-
 
         result = self.changer.handle_tasks()
 

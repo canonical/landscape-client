@@ -272,7 +272,6 @@ class PackageChanger(PackageTaskHandler):
         if result.removals:
             response["must-remove"] = sorted(result.removals)
 
-
         logging.info("Queuing response with change package results to "
                      "exchange urgently.")
         return self._broker.send_message(response, True)
