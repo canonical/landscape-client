@@ -170,7 +170,7 @@ class PackageChanger(PackageTaskHandler):
 
         if upgrade:
             for package in self._facade.get_packages():
-                if package.installed:
+                if self._facade.is_package_installed(package):
                     self._facade.mark_upgrade(package)
 
         for ids, mark_func in [(install, self._facade.mark_install),
@@ -215,7 +215,7 @@ class PackageChanger(PackageTaskHandler):
                         # Will have to wait until the server lets us know about
                         # this id.
                         raise UnknownPackageData(hash)
-                    if package.installed:
+                    if self._facade.is_package_installed(package):
                         # Package currently installed. Must remove it.
                         result.removals.append(id)
                     else:
@@ -271,7 +271,6 @@ class PackageChanger(PackageTaskHandler):
             response["must-install"] = sorted(result.installs)
         if result.removals:
             response["must-remove"] = sorted(result.removals)
-
 
         logging.info("Queuing response with change package results to "
                      "exchange urgently.")

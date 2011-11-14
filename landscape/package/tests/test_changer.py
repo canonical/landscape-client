@@ -8,7 +8,7 @@ from twisted.internet.defer import Deferred
 
 from smart.cache import Provides
 
-from landscape.lib.fs import touch_file
+from landscape.lib.fs import create_file, read_file, touch_file
 from landscape.package.changer import (
     PackageChanger, main, find_changer_command, UNKNOWN_PACKAGE_DATA_TIMEOUT,
     SUCCESS_RESULT, DEPENDENCY_ERROR_RESULT, POLICY_ALLOW_INSTALLS,
@@ -22,87 +22,27 @@ from landscape.tests.mocker import ANY
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServiceHelper)
 from landscape.package.tests.helpers import (
-    SmartFacadeHelper, HASH1, HASH2, HASH3, PKGDEB1, PKGDEB2, PKGNAME2)
+    SmartFacadeHelper, HASH1, HASH2, HASH3, PKGDEB1, PKGDEB2, PKGNAME2,
+    AptFacadeHelper, SimpleRepositoryHelper)
 from landscape.manager.manager import SUCCEEDED
 
 
-class PackageChangerTest(LandscapeTest):
-
-    helpers = [SmartFacadeHelper, BrokerServiceHelper]
-
-    def setUp(self):
-
-        def set_up(ignored):
-
-            self.store = PackageStore(self.makeFile())
-            self.config = PackageChangerConfiguration()
-            self.config.data_path = self.makeDir()
-            os.mkdir(self.config.package_directory)
-            os.mkdir(self.config.binaries_path)
-            touch_file(self.config.smart_update_stamp_filename)
-            self.changer = PackageChanger(
-                self.store, self.facade, self.remote, self.config)
-            service = self.broker_service
-            service.message_store.set_accepted_types(["change-packages-result",
-                                                      "operation-result"])
-
-        result = super(PackageChangerTest, self).setUp()
-        return result.addCallback(set_up)
+class PackageChangerTestMixin(object):
 
     def get_pending_messages(self):
         return self.broker_service.message_store.get_pending_messages()
 
-    def set_pkg1_installed(self):
-        previous = self.Facade.channels_reloaded
+    def replace_perform_changes(self, func):
+        old_perform_changes = self.Facade.perform_changes
 
-        def callback(self):
-            previous(self)
-            self.get_packages_by_name("name1")[0].installed = True
-        self.Facade.channels_reloaded = callback
+        def reset_perform_changes(Facade):
+            Facade.perform_changes = old_perform_changes
 
-    def set_pkg2_upgrades_pkg1(self):
-        previous = self.Facade.channels_reloaded
-
-        def callback(self):
-            from smart.backends.deb.base import DebUpgrades
-            previous(self)
-            pkg2 = self.get_packages_by_name("name2")[0]
-            pkg2.upgrades += (DebUpgrades("name1", "=", "version1-release1"),)
-            self.reload_cache()  # Relink relations.
-        self.Facade.channels_reloaded = callback
-
-    def set_pkg2_satisfied(self):
-        previous = self.Facade.channels_reloaded
-
-        def callback(self):
-            previous(self)
-            pkg2 = self.get_packages_by_name("name2")[0]
-            pkg2.requires = ()
-            self.reload_cache()  # Relink relations.
-        self.Facade.channels_reloaded = callback
-
-    def set_pkg1_and_pkg2_satisfied(self):
-        previous = self.Facade.channels_reloaded
-
-        def callback(self):
-            previous(self)
-
-            provide1 = Provides("prerequirename1", "prerequireversion1")
-            provide2 = Provides("requirename1", "requireversion1")
-            pkg2 = self.get_packages_by_name("name2")[0]
-            pkg2.provides += (provide1, provide2)
-
-            provide1 = Provides("prerequirename2", "prerequireversion2")
-            provide2 = Provides("requirename2", "requireversion2")
-            pkg1 = self.get_packages_by_name("name1")[0]
-            pkg1.provides += (provide1, provide2)
-
-            # Ask Smart to reprocess relationships.
-            self.reload_cache()
-        self.Facade.channels_reloaded = callback
+        self.addCleanup(reset_perform_changes, self.Facade)
+        self.Facade.perform_changes = func
 
     def test_unknown_package_id_for_dependency(self):
-        self.set_pkg1_and_pkg2_satisfied()
+        hash1, hash2 = self.set_pkg1_and_pkg2_satisfied()
 
         # Let's request an operation that would require an answer with a
         # must-install field with a package for which the id isn't yet
@@ -112,19 +52,19 @@ class PackageChangerTest(LandscapeTest):
                              "operation-id": 123})
 
         # In our first try, we should get nothing, because the id of the
-        # dependency (HASH2) isn't known.
-        self.store.set_hash_ids({HASH1: 1})
+        # dependency (hash2) isn't known.
+        self.store.set_hash_ids({hash1: 1})
         result = self.changer.handle_tasks()
         self.assertEqual(result.called, True)
         self.assertMessages(self.get_pending_messages(), [])
 
         self.assertIn("Package data not yet synchronized with server (%r)"
-                      % HASH2, self.logfile.getvalue())
+                      % hash2, self.logfile.getvalue())
 
         # So now we'll set it, and advance the reactor to the scheduled
         # change detection.  We'll get a lot of messages, including the
         # result of our previous message, which got *postponed*.
-        self.store.set_hash_ids({HASH2: 2})
+        self.store.set_hash_ids({hash2: 2})
         result = self.changer.handle_tasks()
 
         def got_result(result):
@@ -216,37 +156,6 @@ class PackageChangerTest(LandscapeTest):
             self.assertEqual(self.store.get_next_task("changer"), None)
         return result.addCallback(got_result)
 
-    def test_dpkg_error(self):
-        """
-        Verify that errors emitted by dpkg are correctly reported to
-        the server as problems.
-        """
-        self.log_helper.ignore_errors(".*dpkg")
-
-        self.store.set_hash_ids({HASH1: 1})
-        self.store.add_task("changer",
-                            {"type": "change-packages", "remove": [1],
-                             "operation-id": 123})
-
-        self.set_pkg1_installed()
-
-        result = self.changer.handle_tasks()
-
-        def got_result(result):
-            messages = self.get_pending_messages()
-            self.assertEqual(len(messages), 1, "Too many messages")
-            message = messages[0]
-            self.assertEqual(message["operation-id"], 123)
-            self.assertEqual(message["result-code"], 100)
-            self.assertEqual(message["type"], "change-packages-result")
-            text = message["result-text"]
-            # We can't test the actual content of the message because the dpkg
-            # error can be localized
-            self.assertIn("\n[remove] name1_version1-release1\ndpkg: ", text)
-            self.assertIn("ERROR", text)
-            self.assertIn("(2)", text)
-        return result.addCallback(got_result)
-
     def test_dependency_error(self):
         """
         In this test we hack the facade to simulate the situation where
@@ -261,16 +170,26 @@ class PackageChangerTest(LandscapeTest):
         the full set of packages available as a dependency error, but
         it serves well for testing this specific feature.
         """
-        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
+        installed_hash = self.set_pkg1_installed()
+        # Use ensure_channels_reloaded() to make sure that the package
+        # instances we raise below are the same that the facade will
+        # use. The changer will use ensure_channels_reloaded() too,
+        # which won't actually reload the package data if it's already
+        # loaded.
+        self.facade.ensure_channels_reloaded()
+        self.store.set_hash_ids({installed_hash: 1, HASH2: 2, HASH3: 3})
         self.store.add_task("changer",
                             {"type": "change-packages", "install": [2],
                              "operation-id": 123})
 
-        self.set_pkg1_installed()
+        packages = [
+            self.facade.get_package_by_hash(pkg_hash)
+            for pkg_hash in [installed_hash, HASH2, HASH3]]
 
         def raise_dependency_error(self):
-            raise DependencyError(self.get_packages())
-        self.Facade.perform_changes = raise_dependency_error
+            raise DependencyError(set(packages))
+
+        self.replace_perform_changes(raise_dependency_error)
 
         result = self.changer.handle_tasks()
 
@@ -289,19 +208,24 @@ class PackageChangerTest(LandscapeTest):
         packages. The extra changes needed to perform the transaction
         are sent back to the server.
         """
-        os.remove(os.path.join(self.repository_dir, PKGNAME2))
-        self.store.set_hash_ids({HASH1: 1, HASH3: 3})
+        self.remove_pkg2()
+        installed_hash = self.set_pkg1_installed()
+        self.store.set_hash_ids({installed_hash: 1, HASH3: 3})
         self.store.add_task("changer",
                             {"type": "change-packages",
                              "install": [2],
                              "binaries": [(HASH2, 2, PKGDEB2)],
                              "operation-id": 123})
 
-        self.set_pkg1_installed()
+        packages = set()
 
         def raise_dependency_error(self):
-            raise DependencyError(self.get_packages())
-        self.Facade.perform_changes = raise_dependency_error
+            packages.update(
+                self.get_package_by_hash(pkg_hash)
+                for pkg_hash in [installed_hash, HASH2, HASH3])
+            raise DependencyError(set(packages))
+
+        self.replace_perform_changes(raise_dependency_error)
 
         result = self.changer.handle_tasks()
 
@@ -346,11 +270,11 @@ class PackageChangerTest(LandscapeTest):
         The C{POLICY_ALLOW_INSTALLS} policy doesn't allow additional packages
         to be removed.
         """
-        self.store.set_hash_ids({HASH1: 1, HASH2: 2})
-        self.set_pkg1_installed()
+        installed_hash = self.set_pkg1_installed()
+        self.store.set_hash_ids({installed_hash: 1, HASH2: 2})
         self.facade.reload_channels()
 
-        package1 = self.facade.get_packages_by_name("name1")[0]
+        package1 = self.facade.get_package_by_hash(installed_hash)
         package2 = self.facade.get_packages_by_name("name2")[0]
         self.facade.perform_changes = self.mocker.mock()
         self.facade.perform_changes()
@@ -414,12 +338,12 @@ class PackageChangerTest(LandscapeTest):
         The C{POLICY_ALLOW_ALL_CHANGES} policy allows any needed additional
         package to be installed or removed.
         """
-        self.store.set_hash_ids({HASH1: 1, HASH2: 2})
-        self.set_pkg1_installed()
+        installed_hash = self.set_pkg1_installed()
+        self.store.set_hash_ids({installed_hash: 1, HASH2: 2})
         self.facade.reload_channels()
 
         self.mocker.order()
-        package1 = self.facade.get_packages_by_name("name1")[0]
+        package1 = self.facade.get_package_by_hash(installed_hash)
         package2 = self.facade.get_packages_by_name("name2")[0]
         self.facade.perform_changes = self.mocker.mock()
         self.facade.perform_changes()
@@ -454,7 +378,7 @@ class PackageChangerTest(LandscapeTest):
         result = self.changer.handle_tasks()
 
         def got_result(result):
-            result_text = ("requirename1 = requireversion1")
+            result_text = self.get_transaction_error_message()
             messages = self.get_pending_messages()
             self.assertEqual(len(messages), 1)
             message = messages[0]
@@ -477,7 +401,9 @@ class PackageChangerTest(LandscapeTest):
         """
         self.log_helper.ignore_errors(".*dpkg")
 
-        self.store.set_hash_ids({HASH1: 1, HASH2: 2})
+        installable_hash = self.set_pkg2_satisfied()
+        installed_hash = self.set_pkg1_installed()
+        self.store.set_hash_ids({installed_hash: 1, installable_hash: 2})
 
         self.store.add_task("changer",
                             {"type": "change-packages", "install": [2],
@@ -486,16 +412,13 @@ class PackageChangerTest(LandscapeTest):
                             {"type": "change-packages", "upgrade-all": True,
                              "operation-id": 124})
 
-        self.set_pkg2_satisfied()
-        self.set_pkg1_installed()
-
         result = self.changer.handle_tasks()
 
         def got_result(result):
-            self.assertMessage(self.get_pending_messages()[1],
-                               {"operation-id": 124,
-                                "result-code": 1,
-                                "type": "change-packages-result"})
+            message = self.get_pending_messages()[1]
+            self.assertEqual(124, message["operation-id"])
+            self.assertEqual("change-packages-result", message["type"])
+            self.assertNotEqual(0, message["result-code"])
 
         return result.addCallback(got_result)
 
@@ -505,16 +428,15 @@ class PackageChangerTest(LandscapeTest):
         We'll do that by hacking perform_changes(), and returning our
         *very* successful operation result.
         """
-        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
+        installed_hash = self.set_pkg1_installed()
+        self.store.set_hash_ids({installed_hash: 1, HASH2: 2, HASH3: 3})
         self.store.add_task("changer",
                             {"type": "change-packages", "install": [2],
                              "operation-id": 123})
 
-        self.set_pkg1_installed()
-
         def return_good_result(self):
             return "Yeah, I did whatever you've asked for!"
-        self.Facade.perform_changes = return_good_result
+        self.replace_perform_changes(return_good_result)
 
         result = self.changer.handle_tasks()
 
@@ -540,7 +462,7 @@ class PackageChangerTest(LandscapeTest):
 
         def return_good_result(self):
             return "Yeah, I did whatever you've asked for!"
-        self.Facade.perform_changes = return_good_result
+        self.replace_perform_changes(return_good_result)
 
         result = self.changer.handle_tasks()
 
@@ -559,15 +481,12 @@ class PackageChangerTest(LandscapeTest):
         the client to perform a global upgrade.  This would be the equivalent
         of a "smart upgrade" command being executed in the command line.
         """
-        self.store.set_hash_ids({HASH1: 1, HASH2: 2})
+        hash1, hash2 = self.set_pkg2_upgrades_pkg1()
+        self.store.set_hash_ids({hash1: 1, hash2: 2})
 
         self.store.add_task("changer",
                             {"type": "change-packages", "upgrade-all": True,
                              "operation-id": 123})
-
-        self.set_pkg2_upgrades_pkg1()
-        self.set_pkg2_satisfied()
-        self.set_pkg1_installed()
 
         result = self.changer.handle_tasks()
 
@@ -823,7 +742,7 @@ class PackageChangerTest(LandscapeTest):
 
         def raise_error(self):
             raise TransactionError(u"áéíóú")
-        self.Facade.perform_changes = raise_error
+        self.replace_perform_changes(raise_error)
 
         result = self.changer.handle_tasks()
 
@@ -843,7 +762,7 @@ class PackageChangerTest(LandscapeTest):
 
         def raise_error(self):
             raise SmartError(u"áéíóú")
-        self.Facade.perform_changes = raise_error
+        self.replace_perform_changes(raise_error)
 
         result = self.changer.handle_tasks()
 
@@ -872,7 +791,7 @@ class PackageChangerTest(LandscapeTest):
     def test_init_channels(self):
         """
         The L{PackageChanger.init_channels} method makes the given
-        Debian packages available in a C{deb-dir} Smart channel.
+        Debian packages available in a facade channel.
         """
         binaries = [(HASH1, 111, PKGDEB1), (HASH2, 222, PKGDEB2)]
 
@@ -884,15 +803,15 @@ class PackageChangerTest(LandscapeTest):
                                base64.decodestring(PKGDEB1))
         self.assertFileContent(os.path.join(binaries_path, "222.deb"),
                                base64.decodestring(PKGDEB2))
-        self.assertEqual(self.facade.get_channels(),
-                         {binaries_path: {"type": "deb-dir",
-                                          "path": binaries_path}})
+        self.assertEqual(
+            self.facade.get_channels(),
+            self.get_binaries_channels(binaries_path))
 
         self.assertEqual(self.store.get_hash_ids(), {HASH1: 111, HASH2: 222})
 
         self.facade.ensure_channels_reloaded()
         [pkg1, pkg2] = sorted(self.facade.get_packages(),
-                              key=lambda pkg: pkg.name)
+                              key=self.get_package_name)
         self.assertEqual(self.facade.get_package_hash(pkg1), HASH1)
         self.assertEqual(self.facade.get_package_hash(pkg2), HASH2)
 
@@ -914,6 +833,98 @@ class PackageChangerTest(LandscapeTest):
         self.makeFile(basename=existing_deb_path, content="foo")
         self.changer.init_channels([])
         self.assertFalse(os.path.exists(existing_deb_path))
+
+
+class SmartPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
+
+    helpers = [SmartFacadeHelper, BrokerServiceHelper]
+
+    def setUp(self):
+
+        def set_up(ignored):
+
+            self.store = PackageStore(self.makeFile())
+            self.config = PackageChangerConfiguration()
+            self.config.data_path = self.makeDir()
+            os.mkdir(self.config.package_directory)
+            os.mkdir(self.config.binaries_path)
+            touch_file(self.config.smart_update_stamp_filename)
+            self.changer = PackageChanger(
+                self.store, self.facade, self.remote, self.config)
+            service = self.broker_service
+            service.message_store.set_accepted_types(["change-packages-result",
+                                                      "operation-result"])
+
+        result = super(SmartPackageChangerTest, self).setUp()
+        return result.addCallback(set_up)
+
+    def set_pkg1_installed(self):
+        previous = self.Facade.channels_reloaded
+
+        def callback(self):
+            previous(self)
+            self.get_packages_by_name("name1")[0].installed = True
+        self.Facade.channels_reloaded = callback
+        return HASH1
+
+    def set_pkg2_upgrades_pkg1(self):
+        previous = self.Facade.channels_reloaded
+
+        def callback(self):
+            from smart.backends.deb.base import DebUpgrades
+            previous(self)
+            pkg2 = self.get_packages_by_name("name2")[0]
+            pkg2.upgrades += (DebUpgrades("name1", "=", "version1-release1"),)
+            self.reload_cache()  # Relink relations.
+        self.Facade.channels_reloaded = callback
+        self.set_pkg2_satisfied()
+        self.set_pkg1_installed()
+        return HASH1, HASH2
+
+    def set_pkg2_satisfied(self):
+        previous = self.Facade.channels_reloaded
+
+        def callback(self):
+            previous(self)
+            pkg2 = self.get_packages_by_name("name2")[0]
+            pkg2.requires = ()
+            self.reload_cache()  # Relink relations.
+        self.Facade.channels_reloaded = callback
+        return HASH2
+
+    def set_pkg1_and_pkg2_satisfied(self):
+        previous = self.Facade.channels_reloaded
+
+        def callback(self):
+            previous(self)
+
+            provide1 = Provides("prerequirename1", "prerequireversion1")
+            provide2 = Provides("requirename1", "requireversion1")
+            pkg2 = self.get_packages_by_name("name2")[0]
+            pkg2.provides += (provide1, provide2)
+
+            provide1 = Provides("prerequirename2", "prerequireversion2")
+            provide2 = Provides("requirename2", "requireversion2")
+            pkg1 = self.get_packages_by_name("name1")[0]
+            pkg1.provides += (provide1, provide2)
+
+            # Ask Smart to reprocess relationships.
+            self.reload_cache()
+        self.Facade.channels_reloaded = callback
+        return HASH1, HASH2
+
+    def remove_pkg2(self):
+        os.remove(os.path.join(self.repository_dir, PKGNAME2))
+
+    def get_transaction_error_message(self):
+        return "requirename1 = requireversion1"
+
+    def get_binaries_channels(self, binaries_path):
+        return {binaries_path: {"type": "deb-dir",
+                                "path": binaries_path}}
+
+    def get_package_name(self, package):
+        return package.name
 
     def test_change_package_locks(self):
         """
@@ -991,3 +1002,127 @@ class PackageChangerTest(LandscapeTest):
 
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
+
+    def test_dpkg_error(self):
+        """
+        Verify that errors emitted by dpkg are correctly reported to
+        the server as problems.
+
+        This test is to make sure that Smart reports the problem
+        correctly. It doesn't make sense for AptFacade, since there we
+        don't call dpkg.
+        """
+        self.log_helper.ignore_errors(".*dpkg")
+
+        installed_hash = self.set_pkg1_installed()
+        self.store.set_hash_ids({installed_hash: 1})
+        self.store.add_task("changer",
+                            {"type": "change-packages", "remove": [1],
+                             "operation-id": 123})
+
+        result = self.changer.handle_tasks()
+
+        def got_result(result):
+            messages = self.get_pending_messages()
+            self.assertEqual(len(messages), 1, "Too many messages")
+            message = messages[0]
+            self.assertEqual(message["operation-id"], 123)
+            self.assertEqual(message["result-code"], 100)
+            self.assertEqual(message["type"], "change-packages-result")
+            text = message["result-text"]
+            # We can't test the actual content of the message because the dpkg
+            # error can be localized
+            self.assertIn("\n[remove] name1_version1-release1\ndpkg: ", text)
+            self.assertIn("ERROR", text)
+            self.assertIn("(2)", text)
+        return result.addCallback(got_result)
+
+
+class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
+
+    helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
+
+    def setUp(self):
+
+        def set_up(ignored):
+
+            self.store = PackageStore(self.makeFile())
+            self.config = PackageChangerConfiguration()
+            self.config.data_path = self.makeDir()
+            os.mkdir(self.config.package_directory)
+            os.mkdir(self.config.binaries_path)
+            touch_file(self.config.smart_update_stamp_filename)
+            self.changer = PackageChanger(
+                self.store, self.facade, self.remote, self.config)
+            service = self.broker_service
+            service.message_store.set_accepted_types(["change-packages-result",
+                                                      "operation-result"])
+
+        result = super(AptPackageChangerTest, self).setUp()
+        return result.addCallback(set_up)
+
+    def set_pkg1_installed(self):
+        """Return the hash of a package that is installed."""
+        self._add_system_package("foo")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        return self.facade.get_package_hash(foo)
+
+    def set_pkg2_satisfied(self):
+        """Return the hash of a package that can be installed."""
+        self._add_package_to_deb_dir(self.repository_dir, "bar")
+        self.facade.reload_channels()
+        [bar] = self.facade.get_packages_by_name("bar")
+        return self.facade.get_package_hash(bar)
+
+    def set_pkg1_and_pkg2_satisfied(self):
+        """Make a package depend on another package.
+
+        Return the hashes of the two packages.
+        """
+        self._add_package_to_deb_dir(
+            self.repository_dir, "foo", control_fields={"Depends": "bar"})
+        self._add_package_to_deb_dir(self.repository_dir, "bar")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        [bar] = self.facade.get_packages_by_name("bar")
+        return (
+            self.facade.get_package_hash(foo),
+            self.facade.get_package_hash(bar))
+
+    def set_pkg2_upgrades_pkg1(self):
+        """Make it so that one package upgrades another.
+
+        Return the hashes of the two packages.
+        """
+        self._add_system_package("foo", version="1.0")
+        self._add_package_to_deb_dir(self.repository_dir, "foo", version="2.0")
+        self.facade.reload_channels()
+        foo_1, foo_2 = sorted(self.facade.get_packages_by_name("foo"))
+        return (
+            self.facade.get_package_hash(foo_1),
+            self.facade.get_package_hash(foo_2))
+
+    def remove_pkg2(self):
+        """Remove package name2 from its repository."""
+        packages_file = os.path.join(self.repository_dir, "Packages")
+        packages_contents = read_file(packages_file)
+        packages_contents = "\n\n".join(
+            [stanza for stanza in packages_contents.split("\n\n")
+             if "Package: name2" not in stanza])
+        create_file(packages_file, packages_contents)
+
+    def get_transaction_error_message(self):
+        """Return part of the apt transaction error message."""
+        return "Unable to correct problems"
+
+    def get_binaries_channels(self, binaries_path):
+        """Return the channels that will be used for the binaries."""
+        return [{"baseurl": "file://%s" % binaries_path,
+                 "components": "",
+                 "distribution": "./",
+                 "type": "deb"}]
+
+    def get_package_name(self, version):
+        """Return the name of the package."""
+        return version.package.name
