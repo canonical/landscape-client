@@ -171,7 +171,7 @@ class PackageChangerTestMixin(object):
         installed_hash = self.set_pkg1_installed()
         # Use ensure_channels_reloaded() to make sure that the package
         # instances we raise below are the same that the facade will
-        # use. The changer will use ensure_channels_reloaded() also,
+        # use. The changer will use ensure_channels_reloaded() too,
         # which won't actually reload the package data if it's already
         # loaded.
         self.facade.ensure_channels_reloaded()
