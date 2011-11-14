@@ -834,6 +834,7 @@ data_path = %s
         """
         sysvconfig_mock = self.mocker.patch(SysVConfig)
         sysvconfig_mock.set_start_on_boot(True)
+        sysvconfig_mock.restart_landscape()
         self.mocker.replay()
 
         config = self.get_config(["--silent", "--provisioning-otp", "otp1"])
