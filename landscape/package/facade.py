@@ -55,7 +55,9 @@ class AptFacade(object):
         self._root = root
         if self._root is not None:
             self._ensure_dir_structure()
-        self._cache = apt.cache.Cache(rootdir=root, memonly=True)
+        # don't use memonly=True here because of a python-apt bug on Natty when
+        # sources.list contains invalid lines (LP: #886208)
+        self._cache = apt.cache.Cache(rootdir=root)
         self._channels_loaded = False
         self._pkg2hash = {}
         self._hash2pkg = {}
@@ -310,8 +312,9 @@ class AptFacade(object):
 
     def perform_changes(self):
         """Perform the pending package operations."""
-        package_changes = self._package_installs + self._package_removals
-        if len(package_changes) == 0 and not self._package_upgrades:
+        package_changes = self._package_installs[:]
+        package_changes.extend(self._package_removals)
+        if not package_changes and not self._package_upgrades:
             return None
         fixer = apt_pkg.ProblemResolver(self._cache._depcache)
         for version in self._package_installs:

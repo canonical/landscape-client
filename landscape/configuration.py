@@ -440,8 +440,8 @@ def setup(config):
         config.https_proxy = os.environ["https_proxy"]
 
     if config.silent and not config.no_start:
-        if not config.get("otp") and (not config.get("account_name") or not
-                                          config.get("computer_title")):
+        if not (config.get("otp") or config.provisioning_otp or
+                (config.get("account_name") and config.get("computer_title"))):
             raise ConfigurationError("An account name and computer title are "
                                      "required.")
     if config.silent:

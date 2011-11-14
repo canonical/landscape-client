@@ -44,6 +44,7 @@ class BrokerConfiguration(Configuration):
               - C{cloud}
               - C{otp}
               - C{record}
+              - C{provisioning_otp}
         """
         parser = super(BrokerConfiguration, self).make_parser()
 
@@ -85,7 +86,9 @@ class BrokerConfiguration(Configuration):
                           help="Comma separated list of tag names to be sent "
                                "to the server.")
         parser.add_option("--record", action="store_true",
-                          help="Record data sent to the server on filesystem ")
+                          help="Record data sent to the server on filesystem.")
+        parser.add_option("--provisioning-otp", default="",
+                          help="The OTP to use for a provisioned machine.")
         return parser
 
     @property
