@@ -9,7 +9,7 @@ from landscape.broker.amp import RemoteBrokerConnector
 from landscape.package.taskhandler import (
     PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler,
     LazyRemoteBroker)
-from landscape.package.facade import SmartFacade
+from landscape.package.facade import AptFacade, SmartFacade
 from landscape.package.store import HashIdStore, PackageStore
 from landscape.package.tests.helpers import SmartFacadeHelper
 from landscape.tests.helpers import LandscapeTest, BrokerServiceHelper
@@ -409,6 +409,32 @@ class PackageTaskHandlerTest(LandscapeTest):
             finally:
                 # Put reactor back in place before returning.
                 self.mocker.reset()
+
+        result = run_task_handler(HandlerMock, ["-c", self.config_filename])
+        return result.addCallback(assert_task_handler)
+
+    def test_run_task_handler_use_apt_facade(self):
+        """
+        The L{run_task_handler} creates an AptFacade instead of
+        SmartFacade, if the USE_APT_FACADE environment variable is set.
+        """
+
+        HandlerMock, handler_args = self._mock_run_task_handler()
+        old_environment = os.environ
+        new_environment = old_environment.copy()
+        new_environment["USE_APT_FACADE"] = "1"
+        os.environ = new_environment
+
+        def assert_task_handler(ignored):
+
+            store, facade, broker, config = handler_args
+
+            try:
+                self.assertEqual(type(facade), AptFacade)
+            finally:
+                # Put reactor back in place before returning.
+                self.mocker.reset()
+                os.environ = old_environment
 
         result = run_task_handler(HandlerMock, ["-c", self.config_filename])
         return result.addCallback(assert_task_handler)
