@@ -327,6 +327,11 @@ class PackageTaskHandlerTest(LandscapeTest):
         self.assertTrue(result.called)
 
     def _mock_run_task_handler(self):
+        """
+        Mock the different parts of run_task_handler(), to ensure it
+        does what it's supposed to do, without actually creating files
+        and starting processes.
+        """
         # This is a slightly lengthy one, so bear with me.
 
         # Prepare the mock objects.
