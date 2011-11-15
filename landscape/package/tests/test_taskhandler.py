@@ -11,7 +11,7 @@ from landscape.package.taskhandler import (
     LazyRemoteBroker)
 from landscape.package.facade import AptFacade, SmartFacade
 from landscape.package.store import HashIdStore, PackageStore
-from landscape.package.tests.helpers import SmartFacadeHelper
+from landscape.package.tests.helpers import AptFacadeHelper, SmartFacadeHelper
 from landscape.tests.helpers import LandscapeTest, BrokerServiceHelper
 from landscape.tests.mocker import ANY, ARGS, MATCH
 
@@ -436,6 +436,12 @@ class PackageTaskHandlerTest(LandscapeTest):
                 self.mocker.reset()
                 os.environ = old_environment
 
+        # Set up using AptFacadeHelper, to get a clean root dir, so
+        # creating an AptFacade with a clean dir is much faster than
+        # using / as root. This also prevents test failures due to tests
+        # using AptFacadeHelper not resetting the apt config, which
+        # isn't trivial to do.
+        AptFacadeHelper().set_up(self)
         result = run_task_handler(HandlerMock, ["-c", self.config_filename])
         return result.addCallback(assert_task_handler)
 
