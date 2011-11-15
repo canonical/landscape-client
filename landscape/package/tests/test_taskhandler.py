@@ -326,11 +326,7 @@ class PackageTaskHandlerTest(LandscapeTest):
         self.assertTrue(isinstance(result, Deferred))
         self.assertTrue(result.called)
 
-    def test_run_task_handler(self):
-        """
-        The L{run_task_handler} function creates and runs the given task
-        handler with the proper arguments.
-        """
+    def _mock_run_task_handler(self):
         # This is a slightly lengthy one, so bear with me.
 
         # Prepare the mock objects.
@@ -378,6 +374,15 @@ class PackageTaskHandlerTest(LandscapeTest):
 
         # Okay, the whole playground is set.
         self.mocker.replay()
+
+        return HandlerMock, handler_args
+
+    def test_run_task_handler(self):
+        """
+        The L{run_task_handler} function creates and runs the given task
+        handler with the proper arguments.
+        """
+        HandlerMock, handler_args = self._mock_run_task_handler()
 
         def assert_task_handler(ignored):
 
