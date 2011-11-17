@@ -379,6 +379,16 @@ class AptFacadeTest(LandscapeTest):
         self.facade.set_arch("i386")
         self.assertEqual("i386", self.facade.get_arch())
 
+    def test_get_set_arch_none(self):
+        """
+        If C{None} is passed to C{set_arch()}, the architecture is set
+        to "", since it can't be set to C{None}. This is to ensure
+        compatibility with C{SmartFacade}, and the architecture should
+        be set to C{None} in tests only.
+        """
+        self.facade.set_arch(None)
+        self.assertEqual("", self.facade.get_arch())
+
     def test_set_arch_get_packages(self):
         """
         After the architecture is set, APT really uses the value.
