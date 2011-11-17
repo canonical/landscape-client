@@ -12,7 +12,8 @@ from landscape.package.taskhandler import (
 from landscape.package.facade import AptFacade, SmartFacade
 from landscape.package.store import HashIdStore, PackageStore
 from landscape.package.tests.helpers import AptFacadeHelper, SmartFacadeHelper
-from landscape.tests.helpers import LandscapeTest, BrokerServiceHelper
+from landscape.tests.helpers import (
+    LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
 from landscape.tests.mocker import ANY, ARGS, MATCH
 
 
@@ -48,7 +49,7 @@ class PackageTaskHandlerConfigurationTest(LandscapeTest):
 
 class PackageTaskHandlerTest(LandscapeTest):
 
-    helpers = [SmartFacadeHelper, BrokerServiceHelper]
+    helpers = [SmartFacadeHelper, EnvironSaverHelper, BrokerServiceHelper]
 
     def setUp(self):
 
@@ -425,10 +426,7 @@ class PackageTaskHandlerTest(LandscapeTest):
         """
 
         HandlerMock, handler_args = self._mock_run_task_handler()
-        old_environment = os.environ
-        new_environment = old_environment.copy()
-        new_environment["USE_APT_FACADE"] = "1"
-        os.environ = new_environment
+        os.environ["USE_APT_FACADE"] = "1"
 
         def assert_task_handler(ignored):
 
@@ -439,7 +437,6 @@ class PackageTaskHandlerTest(LandscapeTest):
             finally:
                 # Put reactor back in place before returning.
                 self.mocker.reset()
-                os.environ = old_environment
 
         # Set up using AptFacadeHelper, to get a clean root dir, so
         # creating an AptFacade with a clean dir is much faster than
