@@ -725,9 +725,7 @@ def main(args):
     elif "FAKE_PACKAGE_STORE" in os.environ:
         return run_task_handler(FakeReporter, args)
     else:
-        use_apt_facade = os.environ.get("USE_APT_FACADE", False)
-        return run_task_handler(
-            PackageReporter, args, use_apt_facade=use_apt_facade)
+        return run_task_handler(PackageReporter, args)
 
 
 def find_reporter_command():

@@ -1267,7 +1267,7 @@ class PackageReporterTestMixin(object):
         run_task_handler = self.mocker.replace("landscape.package.taskhandler"
                                                ".run_task_handler",
                                                passthrough=False)
-        run_task_handler(PackageReporter, ["ARGS"], use_apt_facade=False)
+        run_task_handler(PackageReporter, ["ARGS"])
         self.mocker.result("RESULT")
         self.mocker.replay()
 
