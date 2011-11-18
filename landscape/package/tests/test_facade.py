@@ -811,7 +811,6 @@ class AptFacadeTest(LandscapeTest):
         foo1, foo2, foo3 = sorted(self.facade.get_packages_by_name("foo"))
         self.assertEqual(foo3, foo1.package.candidate)
         self.facade.mark_upgrade(foo1)
-        self.facade._cache.commit = lambda: None
         exception = self.assertRaises(
             DependencyError, self.facade.perform_changes)
         self.assertEqual([foo3], exception.packages)
@@ -850,7 +849,6 @@ class AptFacadeTest(LandscapeTest):
         noauto1.package.mark_auto(False)
         self.facade.mark_upgrade(auto1)
         self.facade.mark_upgrade(noauto1)
-        self.facade._cache.commit = lambda: None
         self.assertRaises(DependencyError, self.facade.perform_changes)
         self.assertTrue(auto2.package.is_auto_installed)
         self.assertFalse(noauto2.package.is_auto_installed)
