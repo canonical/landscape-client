@@ -4,10 +4,12 @@ import sys
 import tempfile
 import stat
 
-from twisted.internet.defer import gatherResults
+from twisted.internet.defer import gatherResults, succeed
 from twisted.internet.error import ProcessDone
 from twisted.python.failure import Failure
 
+from landscape import VERSION
+from landscape.lib.persist import Persist
 from landscape.manager.scriptexecution import (
     ScriptExecutionPlugin, ProcessTimeLimitReachedError, PROCESS_FAILED_RESULT,
     UBUNTU_PATH, get_user_info, UnknownInterpreterError, UnknownUserError)
@@ -138,7 +140,7 @@ class RunScriptTests(LandscapeTest):
         self.mocker.replay()
         result = self.plugin.run_script("/bin/sh", "umask",
                                         attachments={u"file1": "some data"})
-        self.assertFailure(result, OSError)
+        return self.assertFailure(result, OSError)
 
     def test_run_with_attachments(self):
         result = self.plugin.run_script(
@@ -148,6 +150,37 @@ class RunScriptTests(LandscapeTest):
 
         def check(result):
             self.assertEqual(result, "file1\nsome data")
+        result.addCallback(check)
+        return result
+
+    def test_run_with_attachment_ids(self):
+        """
+        The most recent protocol for script message doesn't include the
+        attachment body inside the message itself, but instead gives an
+        attachment ID, and the plugin fetches the files separately.
+        """
+        self.manager.config.url = "https://localhost/message-system"
+        persist = Persist(
+            filename=os.path.join(self.config.data_path, "broker.bpickle"))
+        registration_persist = persist.root_at("registration")
+        registration_persist.set("secure-id", "secure_id")
+        persist.save()
+        mock_fetch = self.mocker.replace("landscape.lib.fetch.fetch_async",
+                                         passthrough=False)
+        headers = {"User-Agent": "landscape-client/%s" % VERSION,
+                   "Content-Type": "application/octet-stream",
+                   "X-Computer-ID": "secure_id"}
+        mock_fetch("https://localhost/attachment/14", headers=headers)
+        self.mocker.result(succeed("some other data"))
+        self.mocker.replay()
+
+        result = self.plugin.run_script(
+            u"/bin/sh",
+            u"ls $LANDSCAPE_ATTACHMENTS && cat $LANDSCAPE_ATTACHMENTS/file1",
+            attachments={u"file1": 14})
+
+        def check(result):
+            self.assertEqual(result, "file1\nsome other data")
         result.addCallback(check)
         return result
 

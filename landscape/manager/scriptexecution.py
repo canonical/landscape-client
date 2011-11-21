@@ -10,10 +10,14 @@ import operator
 import shutil
 
 from twisted.internet.protocol import ProcessProtocol
-from twisted.internet.defer import Deferred, fail, maybeDeferred
+from twisted.internet.defer import (
+    Deferred, fail, inlineCallbacks, returnValue, succeed)
 from twisted.internet.error import ProcessDone
 
+from landscape import VERSION
 from landscape.lib.scriptcontent import build_script
+from landscape.lib.fetch import fetch_async
+from landscape.lib.persist import Persist
 from landscape.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
 
 
@@ -165,8 +169,8 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
                     opid)
 
             d = self.run_script(message["interpreter"], message["code"],
-                                time_limit=message["time-limit"],
-                                user=user, attachments=message["attachments"])
+                                time_limit=message["time-limit"], user=user,
+                                attachments=message["attachments"])
             d.addCallback(self._respond_success, opid)
             d.addErrback(self._respond_failure, opid)
             return d
@@ -190,6 +194,33 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
             return self._respond(FAILED, failure.value.data, opid, code)
         else:
             return self._respond(FAILED, str(failure), opid)
+
+    @inlineCallbacks
+    def _save_attachments(self, attachments, uid, gid, computer_id):
+        root_path = self.registry.config.url.rsplit("/", 1)[0] + "/attachment/"
+        attachment_dir = tempfile.mkdtemp()
+        headers = {"User-Agent": "landscape-client/%s" % VERSION,
+                   "Content-Type": "application/octet-stream",
+                   "X-Computer-ID": computer_id}
+        for filename, attachment_id in attachments.items():
+            if isinstance(attachment_id, str):
+                # Backward compatible behavior
+                data = attachment_id
+                yield succeed(None)
+            else:
+                data = yield fetch_async("%s%d" % (root_path, attachment_id),
+                                         headers=headers)
+            full_filename = os.path.join(attachment_dir, filename)
+            attachment = file(full_filename, "wb")
+            os.chmod(full_filename, 0600)
+            if uid is not None:
+                os.chown(full_filename, uid, gid)
+            attachment.write(data)
+            attachment.close()
+        os.chmod(attachment_dir, 0700)
+        if uid is not None:
+            os.chown(attachment_dir, uid, gid)
+        returnValue(attachment_dir)
 
     def run_script(self, shell, code, user=None, time_limit=None,
                    attachments=None):
@@ -216,40 +247,37 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
         if not os.path.exists(shell.split()[0]):
             return fail(
                 UnknownInterpreterError(shell))
+
         uid, gid, path = get_user_info(user)
+
         fd, filename = tempfile.mkstemp()
         script_file = os.fdopen(fd, "w")
-        self.write_script_file(script_file, filename, shell, code, uid, gid)
+        self.write_script_file(
+            script_file, filename, shell, code, uid, gid)
 
-        env = {
-            "PATH": UBUNTU_PATH,
-            "USER": user or "",
-            "HOME": path or "",
-            }
+        env = {"PATH": UBUNTU_PATH, "USER": user or "", "HOME": path or ""}
         old_umask = os.umask(0022)
 
-        def run_with_attachments():
-            if attachments:
-                attachment_dir = tempfile.mkdtemp()
+        if attachments:
+            persist = Persist(
+                filename=os.path.join(self.registry.config.data_path,
+                                      "broker.bpickle"))
+            persist = persist.root_at("registration")
+            computer_id = persist.get("secure-id")
+            d = self._save_attachments(attachments, uid, gid, computer_id)
+        else:
+            d = succeed(None)
+
+        def prepare_script(attachment_dir):
+
+            if attachment_dir is not None:
                 env["LANDSCAPE_ATTACHMENTS"] = attachment_dir
-                for attachment_filename, data in attachments.iteritems():
-                    full_filename = os.path.join(
-                        attachment_dir, attachment_filename)
-                    attachment = file(full_filename, "wb")
-                    os.chmod(full_filename, 0600)
-                    if uid is not None:
-                        os.chown(full_filename, uid, gid)
-                    attachment.write(data)
-                    attachment.close()
-                os.chmod(attachment_dir, 0700)
-                if uid is not None:
-                    os.chown(attachment_dir, uid, gid)
 
             return self._run_script(
                 filename, uid, gid, path, env, time_limit)
 
-        result = maybeDeferred(run_with_attachments)
-        return result.addBoth(self._cleanup, filename, env, old_umask)
+        d.addCallback(prepare_script)
+        return d.addBoth(self._cleanup, filename, env, old_umask)
 
     def _cleanup(self, result, filename, env, old_umask):
         try:
