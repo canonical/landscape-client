@@ -30,6 +30,24 @@ from landscape.package.tests.helpers import (
     create_simple_repository)
 
 
+class FakeOwner(object):
+
+    def __init__(self, filesize, error_text=""):
+        self.id = None
+        self.filesize = filesize
+        self.complete = False
+        self.status = None
+        self.STAT_DONE = object()
+        self.error_text = error_text
+
+
+class FakeFetchItem(object):
+
+    def __init__(self, owner, description):
+        self.owner = owner
+        self.description = description
+
+
 class AptFacadeTest(LandscapeTest):
 
     helpers = [AptFacadeHelper]
@@ -713,6 +731,38 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         self.assertEqual(self.facade.perform_changes(), None)
 
+    def test_perform_changes_fetch_progress(self):
+        """
+        C{perform_changes()} captures the fetch output and returns it.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        foo = self.facade.get_packages_by_name("foo")[0]
+        self.facade.mark_install(foo)
+        fetch_item = FakeFetchItem(
+            FakeOwner(1234, error_text="Some error"), "foo package")
+
+        def commit(fetch_progress):
+            fetch_progress.start()
+            fetch_progress.fetch(fetch_item)
+            fetch_progress.fail(fetch_item)
+            fetch_progress.done(fetch_item)
+            fetch_progress.stop()
+
+        self.facade._cache.commit = commit
+        output = [
+            line.rstrip()
+            for line in self.facade.perform_changes().splitlines()
+            if line.strip()]
+        self.assertEqual(
+            ["Get:1 foo package [1234 B]",
+             "Err foo package",
+             "  Some error",
+             "Fetched 0 B in 0s (0 B/s)"],
+            output)
+
     def test_reset_marks(self):
         """
         C{reset_marks()} clears things, so that there's nothing to do
@@ -791,7 +841,7 @@ class AptFacadeTest(LandscapeTest):
         foo1, foo2 = sorted(self.facade.get_packages_by_name("foo"))
         self.assertEqual(foo2, foo1.package.candidate)
         self.facade.mark_install(foo1)
-        self.facade._cache.commit = lambda: None
+        self.facade._cache.commit = lambda fetch_progress: None
         self.facade.perform_changes()
         self.assertEqual(foo1, foo1.package.candidate)
 
@@ -860,7 +910,7 @@ class AptFacadeTest(LandscapeTest):
         """
         committed = []
 
-        def commit():
+        def commit(fetch_progress):
             committed.append(True)
 
         deb_dir = self.makeDir()
@@ -885,10 +935,10 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         pkg = self.facade.get_packages_by_name("minimal")[0]
         self.facade.mark_install(pkg)
-        self.facade._cache.commit = lambda: None
-        # XXX: It should return the Apt output, but that will be done
-        # later.
-        self.assertEqual("ok", self.facade.perform_changes())
+        self.facade._cache.commit = lambda fetch_progress: None
+        # An empty string is returned, since we don't call the progress
+        # objects, which are the ones that build the output string.
+        self.assertEqual("", self.facade.perform_changes())
 
     def test_wb_perform_changes_commit_error(self):
         """
@@ -901,7 +951,7 @@ class AptFacadeTest(LandscapeTest):
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_remove(foo)
         cache = self.mocker.replace(self.facade._cache)
-        cache.commit()
+        cache.commit(fetch_progress=ANY)
         self.mocker.throw(SystemError("Something went wrong."))
         self.mocker.replay()
         exception = self.assertRaises(TransactionError,
