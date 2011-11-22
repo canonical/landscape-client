@@ -361,12 +361,21 @@ class AptFacade(object):
             raise DependencyError(
                 [version for package, version in dependencies])
         output = StringIO()
+        import tempfile
+        fd, stdpath = tempfile.mkstemp()
+        old_stdout = os.dup(1)
+        old_stderr = os.dup(2)
+        os.dup2(fd, 1)
+        os.dup2(fd, 2)
         try:
             self._cache.commit(
                 fetch_progress=apt.progress.text.AcquireProgress(output))
         except SystemError, error:
             raise TransactionError(error.args[0])
-        return output.getvalue()
+        finally:
+            os.dup2(old_stdout, 1)
+            os.dup2(old_stderr, 2)
+        return output.getvalue() + read_file(stdpath)
 
     def reset_marks(self):
         """Clear the pending package operations."""

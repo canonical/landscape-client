@@ -763,6 +763,30 @@ class AptFacadeTest(LandscapeTest):
              "Fetched 0 B in 0s (0 B/s)"],
             output)
 
+    def test_perform_changes_dpkg_output(self):
+        """
+        C{perform_changes()} captures the dpkg output and returns it.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        foo = self.facade.get_packages_by_name("foo")[0]
+        self.facade.mark_install(foo)
+
+        def commit(fetch_progress):
+            os.write(1, "Stdout output\n")
+            os.write(2, "Stderr output\n")
+            os.write(1, "Stdout output again\n")
+
+        self.facade._cache.commit = commit
+        output = [
+            line.rstrip()
+            for line in self.facade.perform_changes().splitlines()
+            if line.strip()]
+        self.assertEqual(
+            ["Stdout output", "Stderr output", "Stdout output again"], output)
+
     def test_reset_marks(self):
         """
         C{reset_marks()} clears things, so that there's nothing to do
