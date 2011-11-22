@@ -4,15 +4,17 @@ import sys
 import tempfile
 import stat
 
-from twisted.internet.defer import gatherResults, succeed
+from twisted.internet.defer import gatherResults, succeed, fail
 from twisted.internet.error import ProcessDone
 from twisted.python.failure import Failure
 
 from landscape import VERSION
+from landscape.lib.fetch import HTTPCodeError
 from landscape.lib.persist import Persist
 from landscape.manager.scriptexecution import (
     ScriptExecutionPlugin, ProcessTimeLimitReachedError, PROCESS_FAILED_RESULT,
-    UBUNTU_PATH, get_user_info, UnknownInterpreterError, UnknownUserError)
+    UBUNTU_PATH, get_user_info, UnknownInterpreterError, UnknownUserError,
+    FETCH_ATTACHMENTS_FAILED_RESULT)
 from landscape.manager.manager import SUCCEEDED, FAILED
 from landscape.tests.helpers import (
     LandscapeTest, ManagerHelper, StubProcessFactory, DummyProcess)
@@ -473,7 +475,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
 
     def _send_script(self, interpreter, code, operation_id=123,
                      user=pwd.getpwuid(os.getuid())[0],
-                     time_limit=None):
+                     time_limit=None, attachments={}):
         return self.manager.dispatch_message(
             {"type": "execute-script",
              "interpreter": interpreter,
@@ -481,7 +483,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
              "operation-id": operation_id,
              "username": user,
              "time-limit": time_limit,
-             "attachments": {}})
+             "attachments": dict(attachments)})
 
     def test_success(self):
         """
@@ -774,3 +776,37 @@ class ScriptExecutionMessageTests(LandscapeTest):
                   "result-text": str(failure)}])
         result.addCallback(got_result)
         return result
+
+    def test_fetch_attachment_failure(self):
+        """
+        If the plugin fails to retrieve the attachments with a
+        L{HTTPCodeError}, a specific error code is shown.
+        """
+        self.manager.config.url = "https://localhost/message-system"
+        persist = Persist(
+            filename=os.path.join(self.config.data_path, "broker.bpickle"))
+        registration_persist = persist.root_at("registration")
+        registration_persist.set("secure-id", "secure_id")
+        persist.save()
+        mock_fetch = self.mocker.replace("landscape.lib.fetch.fetch_async",
+                                         passthrough=False)
+        headers = {"User-Agent": "landscape-client/%s" % VERSION,
+                   "Content-Type": "application/octet-stream",
+                   "X-Computer-ID": "secure_id"}
+        mock_fetch("https://localhost/attachment/14", headers=headers)
+        self.mocker.result(fail(HTTPCodeError(404, "Not found")))
+        self.mocker.replay()
+
+        self.manager.add(ScriptExecutionPlugin())
+        result = self._send_script(
+            "/bin/sh", "echo hi", attachments={u"file1": 14})
+
+        def got_result(ignored):
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [{"type": "operation-result",
+                  "operation-id": 123,
+                  "result-text": "Server returned HTTP code 404",
+                  "result-code": FETCH_ATTACHMENTS_FAILED_RESULT,
+                  "status": FAILED}])
+        return result.addCallback(got_result)

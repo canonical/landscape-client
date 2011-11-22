@@ -16,7 +16,7 @@ from twisted.internet.error import ProcessDone
 
 from landscape import VERSION
 from landscape.lib.scriptcontent import build_script
-from landscape.lib.fetch import fetch_async
+from landscape.lib.fetch import fetch_async, HTTPCodeError
 from landscape.lib.persist import Persist
 from landscape.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
 
@@ -24,6 +24,7 @@ from landscape.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
 ALL_USERS = object()
 TIMEOUT_RESULT = 102
 PROCESS_FAILED_RESULT = 103
+FETCH_ATTACHMENTS_FAILED_RESULT = 104
 # The name "UBUNTU" is used in the variable name due to the fact that the path
 # is Ubuntu-specific, taken from /etc/login.defs.
 UBUNTU_PATH = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
@@ -190,6 +191,12 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
             code = TIMEOUT_RESULT
         elif failure.check(ProcessFailedError):
             code = PROCESS_FAILED_RESULT
+        elif failure.check(HTTPCodeError):
+            code = FETCH_ATTACHMENTS_FAILED_RESULT
+            return self._respond(
+                FAILED, str(failure.value), opid,
+                FETCH_ATTACHMENTS_FAILED_RESULT)
+
         if code is not None:
             return self._respond(FAILED, failure.value.data, opid, code)
         else:
