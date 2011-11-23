@@ -9,10 +9,11 @@ from landscape.broker.amp import RemoteBrokerConnector
 from landscape.package.taskhandler import (
     PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler,
     LazyRemoteBroker)
-from landscape.package.facade import SmartFacade
+from landscape.package.facade import AptFacade, SmartFacade
 from landscape.package.store import HashIdStore, PackageStore
-from landscape.package.tests.helpers import SmartFacadeHelper
-from landscape.tests.helpers import LandscapeTest, BrokerServiceHelper
+from landscape.package.tests.helpers import AptFacadeHelper, SmartFacadeHelper
+from landscape.tests.helpers import (
+    LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
 from landscape.tests.mocker import ANY, ARGS, MATCH
 
 
@@ -35,10 +36,20 @@ class PackageTaskHandlerConfigurationTest(LandscapeTest):
             config.smart_update_stamp_filename,
             "/var/lib/landscape/client/package/smart-update-stamp")
 
+    def test_force_apt_update_option(self):
+        """
+        L{PackageReporterConfiguration.apt_update_stamp_filename} points
+        to the apt-update stamp file.
+        """
+        config = PackageTaskHandlerConfiguration()
+        self.assertEqual(
+            config.apt_update_stamp_filename,
+            "/var/lib/landscape/client/package/apt-update-stamp")
+
 
 class PackageTaskHandlerTest(LandscapeTest):
 
-    helpers = [SmartFacadeHelper, BrokerServiceHelper]
+    helpers = [SmartFacadeHelper, EnvironSaverHelper, BrokerServiceHelper]
 
     def setUp(self):
 
@@ -316,10 +327,11 @@ class PackageTaskHandlerTest(LandscapeTest):
         self.assertTrue(isinstance(result, Deferred))
         self.assertTrue(result.called)
 
-    def test_run_task_handler(self):
+    def _mock_run_task_handler(self):
         """
-        The L{run_task_handler} function creates and runs the given task
-        handler with the proper arguments.
+        Mock the different parts of run_task_handler(), to ensure it
+        does what it's supposed to do, without actually creating files
+        and starting processes.
         """
         # This is a slightly lengthy one, so bear with me.
 
@@ -369,6 +381,15 @@ class PackageTaskHandlerTest(LandscapeTest):
         # Okay, the whole playground is set.
         self.mocker.replay()
 
+        return HandlerMock, handler_args
+
+    def test_run_task_handler(self):
+        """
+        The L{run_task_handler} function creates and runs the given task
+        handler with the proper arguments.
+        """
+        HandlerMock, handler_args = self._mock_run_task_handler()
+
         def assert_task_handler(ignored):
 
             store, facade, broker, config = handler_args
@@ -395,6 +416,34 @@ class PackageTaskHandlerTest(LandscapeTest):
                 # Put reactor back in place before returning.
                 self.mocker.reset()
 
+        result = run_task_handler(HandlerMock, ["-c", self.config_filename])
+        return result.addCallback(assert_task_handler)
+
+    def test_run_task_handler_use_apt_facade(self):
+        """
+        The L{run_task_handler} creates an AptFacade instead of
+        SmartFacade, if the USE_APT_FACADE environment variable is set.
+        """
+
+        HandlerMock, handler_args = self._mock_run_task_handler()
+        os.environ["USE_APT_FACADE"] = "1"
+
+        def assert_task_handler(ignored):
+
+            store, facade, broker, config = handler_args
+
+            try:
+                self.assertEqual(type(facade), AptFacade)
+            finally:
+                # Put reactor back in place before returning.
+                self.mocker.reset()
+
+        # Set up using AptFacadeHelper, to get a clean root dir, so
+        # creating an AptFacade with a clean dir is much faster than
+        # using / as root. This also prevents test failures due to tests
+        # using AptFacadeHelper not resetting the apt config, which
+        # isn't trivial to do.
+        AptFacadeHelper().set_up(self)
         result = run_task_handler(HandlerMock, ["-c", self.config_filename])
         return result.addCallback(assert_task_handler)
 

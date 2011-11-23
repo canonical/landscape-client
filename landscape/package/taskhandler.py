@@ -40,6 +40,11 @@ class PackageTaskHandlerConfiguration(Configuration):
         """Get the path to the smart-update stamp file."""
         return os.path.join(self.package_directory, "smart-update-stamp")
 
+    @property
+    def apt_update_stamp_filename(self):
+        """Get the path to the apt-update stamp file."""
+        return os.path.join(self.package_directory, "apt-update-stamp")
+
 
 class LazyRemoteBroker(object):
     """Wrapper class around L{RemoteBroker} providing lazy initialization.
@@ -227,7 +232,7 @@ class PackageTaskHandler(object):
         return result
 
 
-def run_task_handler(cls, args, reactor=None, use_apt_facade=False):
+def run_task_handler(cls, args, reactor=None):
     # please only pass reactor when you have totally mangled everything with
     # mocker. Otherwise bad things will happen.
     if reactor is None:
@@ -261,7 +266,7 @@ def run_task_handler(cls, args, reactor=None, use_apt_facade=False):
     package_store = cls.package_store_class(config.store_filename)
     # Delay importing of the facades so that we don't
     # import Smart unless we need to.
-    if use_apt_facade:
+    if os.environ.get("USE_APT_FACADE"):
         from landscape.package.facade import AptFacade
         package_facade = AptFacade()
     else:

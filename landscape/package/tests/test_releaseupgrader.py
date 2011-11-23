@@ -14,7 +14,6 @@ from landscape.package.releaseupgrader import (
     ReleaseUpgrader, ReleaseUpgraderConfiguration, main)
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServiceHelper, LogKeeperHelper, EnvironSaverHelper)
-from landscape.package.tests.helpers import SmartFacadeHelper
 from landscape.manager.manager import SUCCEEDED, FAILED
 
 
@@ -33,7 +32,7 @@ class ReleaseUpgraderConfigurationTest(unittest.TestCase):
 
 class ReleaseUpgraderTest(LandscapeTest):
 
-    helpers = [LogKeeperHelper, SmartFacadeHelper,
+    helpers = [LogKeeperHelper,
                EnvironSaverHelper, BrokerServiceHelper]
 
     def setUp(self):
@@ -44,7 +43,7 @@ class ReleaseUpgraderTest(LandscapeTest):
             os.mkdir(self.config.package_directory)
             os.mkdir(self.config.upgrade_tool_directory)
             self.store = PackageStore(self.makeFile())
-            self.upgrader = ReleaseUpgrader(self.store, self.facade,
+            self.upgrader = ReleaseUpgrader(self.store, None,
                                             self.remote, self.config)
             service = self.broker_service
             service.message_store.set_accepted_types(["operation-result"])

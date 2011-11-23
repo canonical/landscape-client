@@ -2,15 +2,13 @@ import glob
 import sys
 import os
 import unittest
-import textwrap
 import time
 
 from twisted.internet.defer import Deferred, succeed
 from twisted.internet import reactor
 
-import apt_inst
 
-from landscape.lib.fs import append_file, create_file
+from landscape.lib.fs import create_file
 from landscape.lib.fetch import fetch_async, FetchError
 from landscape.lib import bpickle
 from landscape.package.store import (
@@ -1269,7 +1267,7 @@ class PackageReporterTestMixin(object):
         run_task_handler = self.mocker.replace("landscape.package.taskhandler"
                                                ".run_task_handler",
                                                passthrough=False)
-        run_task_handler(PackageReporter, ["ARGS"], use_apt_facade=False)
+        run_task_handler(PackageReporter, ["ARGS"])
         self.mocker.result("RESULT")
         self.mocker.replay()
 
@@ -1639,41 +1637,6 @@ class PackageReporterAptTest(LandscapeTest, PackageReporterTestMixin):
         result = super(PackageReporterAptTest, self).setUp()
         return result.addCallback(set_up)
 
-    def _install_deb_file(self, path):
-        """Fake the the given deb file is installed in the system."""
-        deb_file = open(path)
-        deb = apt_inst.DebFile(deb_file)
-        control = deb.control.extractdata("control")
-        deb_file.close()
-        lines = control.splitlines()
-        lines.insert(1, "Status: install ok installed")
-        status = "\n".join(lines)
-        append_file(self.dpkg_status, status + "\n\n")
-
-    def _add_package_to_deb_dir(self, path, name, version="1.0"):
-        """Add fake package information to a directory.
-
-        There will only be basic information about the package
-        available, so that get_packages() have something to return.
-        There won't be an actual package in the dir.
-        """
-        package_stanza = textwrap.dedent("""
-                Package: %(name)s
-                Priority: optional
-                Section: misc
-                Installed-Size: 1234
-                Maintainer: Someone
-                Architecture: all
-                Source: source
-                Version: %(version)s
-                Config-Version: 1.0
-                Description: description
-
-                """)
-        append_file(
-            os.path.join(path, "Packages"),
-            package_stanza % {"name": name, "version": version})
-
     def _clear_repository(self):
         """Remove all packages from self.repository."""
         create_file(self.repository_dir + "/Packages", "")
@@ -1692,6 +1655,262 @@ class PackageReporterAptTest(LandscapeTest, PackageReporterTestMixin):
     def set_pkg1_installed(self):
         """Make it so that package "name1" is considered installed."""
         self._install_deb_file(os.path.join(self.repository_dir, PKGNAME1))
+
+    def _make_fake_apt_update(self, out="output", err="error", code=0):
+        """Create a fake apt-update executable"""
+        self.reporter.apt_update_filename = self.makeFile(
+            "#!/bin/sh\n"
+            "echo -n %s\n"
+            "echo -n %s >&2\n"
+            "exit %d" % (out, err, code))
+        os.chmod(self.reporter.apt_update_filename, 0755)
+
+    def test_run_apt_update(self):
+        """
+        The L{PackageReporter.run_apt_update} method should run apt-update.
+        """
+        self.reporter.sources_list_filename = "/I/Dont/Exist"
+        self._make_fake_apt_update()
+        debug_mock = self.mocker.replace("logging.debug")
+        debug_mock("'%s' exited with status 0 (out='output', err='error')" %
+                   self.reporter.apt_update_filename)
+        warning_mock = self.mocker.replace("logging.warning")
+        self.expect(warning_mock(ANY)).count(0)
+        self.mocker.replay()
+        deferred = Deferred()
+
+        def do_test():
+
+            result = self.reporter.run_apt_update()
+
+            def callback((out, err, code)):
+                self.assertEqual("output", out)
+                self.assertEqual("error", err)
+                self.assertEqual(0, code)
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
+
+    def test_run_apt_update_with_force_smart_update(self):
+        """
+        L{PackageReporter.run_apt_update} forces an apt-update run if the
+        '--force-smart-update' command line option was passed.
+        """
+        self.makeFile("", path=self.config.apt_update_stamp_filename)
+        self.config.load(["--force-smart-update"])
+        self._make_fake_apt_update()
+
+        deferred = Deferred()
+
+        def do_test():
+            result = self.reporter.run_apt_update()
+
+            def callback((out, err, code)):
+                self.assertEqual("output", out)
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
+
+    def test_run_apt_update_with_force_smart_update_if_sources_changed(self):
+        """
+        L{PackageReporter.run_apt_update} forces an apt-update run if the APT
+        sources.list file has changed.
+
+        """
+        self.assertEqual(self.reporter.sources_list_filename,
+                         "/etc/apt/sources.list")
+        self.reporter.sources_list_filename = self.makeFile("deb ftp://url ./")
+        self._make_fake_apt_update()
+
+        deferred = Deferred()
+
+        def do_test():
+            result = self.reporter.run_apt_update()
+
+            def callback((out, err, code)):
+                self.assertEqual("output", out)
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
+
+    def test_run_apt_update_warns_about_failures(self):
+        """
+        The L{PackageReporter.run_apt_update} method should log a warning in
+        case apt-update terminates with a non-zero exit code.
+        """
+        self._make_fake_apt_update(code=2)
+        logging_mock = self.mocker.replace("logging.warning")
+        logging_mock("'%s' exited with status 2"
+                     " (error)" % self.reporter.apt_update_filename)
+        self.mocker.replay()
+        deferred = Deferred()
+
+        def do_test():
+            result = self.reporter.run_apt_update()
+
+            def callback((out, err, code)):
+                self.assertEqual("output", out)
+                self.assertEqual("error", err)
+                self.assertEqual(2, code)
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
+
+    def test_run_apt_update_report_apt_failure(self):
+        """
+        If L{PackageReporter.run_apt_update} fails, a message is sent to the
+        server reporting the error, to be able to fix the problem centrally.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["package-reporter-result"])
+        self._make_fake_apt_update(code=2)
+        deferred = Deferred()
+
+        def do_test():
+            result = self.reporter.run_apt_update()
+
+            def callback(ignore):
+                self.assertMessages(message_store.get_pending_messages(),
+                    [{"type": "package-reporter-result",
+                      "code": 2, "err": u"error"}])
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
+
+    def test_run_apt_update_report_no_sources(self):
+        """
+        L{PackageReporter.run_apt_update} reports a failure if apt succeeds but
+        there are no APT sources defined. APT doesn't fail if there are no
+        sources, but we fake a failure in order to re-use the
+        PackageReporterAlert on the server.
+        """
+        self.facade.reset_channels()
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["package-reporter-result"])
+        self._make_fake_apt_update()
+        deferred = Deferred()
+
+        def do_test():
+            result = self.reporter.run_apt_update()
+
+            def callback(ignore):
+                error = "There are no APT sources configured in %s or %s." % (
+                    self.reporter.sources_list_filename,
+                    self.reporter.sources_list_directory)
+                self.assertMessages(message_store.get_pending_messages(),
+                    [{"type": "package-reporter-result",
+                      "code": 1, "err": error}])
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
+
+    def test_run_apt_update_report_apt_failure_no_sources(self):
+        """
+        If L{PackageReporter.run_apt_update} fails and there are no
+        APT sources configured, the APT error takes precedence.
+        """
+        self.facade.reset_channels()
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["package-reporter-result"])
+        self._make_fake_apt_update(code=2)
+        deferred = Deferred()
+
+        def do_test():
+            result = self.reporter.run_apt_update()
+
+            def callback(ignore):
+                self.assertMessages(message_store.get_pending_messages(),
+                    [{"type": "package-reporter-result",
+                      "code": 2, "err": u"error"}])
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
+
+    def test_run_apt_update_report_success(self):
+        """
+        L{PackageReporter.run_apt_update} also reports success to be able to
+        know the proper state of the client.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["package-reporter-result"])
+        self._make_fake_apt_update(err="message")
+        deferred = Deferred()
+
+        def do_test():
+            result = self.reporter.run_apt_update()
+
+            def callback(ignore):
+                self.assertMessages(message_store.get_pending_messages(),
+                    [{"type": "package-reporter-result",
+                      "code": 0, "err": u"message"}])
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
+
+    def test_run_apt_update_no_run_in_interval(self):
+        """
+        The L{PackageReporter.run_apt_update} logs a debug message if
+        apt-update doesn't run because interval has not passed.
+        """
+        self.makeFile("", path=self.config.apt_update_stamp_filename)
+
+        logging_mock = self.mocker.replace("logging.debug")
+        logging_mock("'%s' didn't run, update interval has not passed" %
+                     self.reporter.apt_update_filename)
+        self.mocker.replay()
+        deferred = Deferred()
+
+        def do_test():
+
+            result = self.reporter.run_apt_update()
+
+            def callback((out, err, code)):
+                self.assertEqual("", out)
+                self.assertEqual("", err)
+                self.assertEqual(0, code)
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
+
+    def test_run_apt_update_touches_stamp_file(self):
+        """
+        The L{PackageReporter.run_apt_update} method touches a stamp file
+        after running the apt-update wrapper.
+        """
+        self.reporter.sources_list_filename = "/I/Dont/Exist"
+        self._make_fake_apt_update()
+        deferred = Deferred()
+
+        def do_test():
+
+            result = self.reporter.run_apt_update()
+
+            def callback(ignored):
+                self.assertTrue(
+                    os.path.exists(self.config.apt_update_stamp_filename))
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
 
 
 class GlobalPackageReporterTestMixin(object):

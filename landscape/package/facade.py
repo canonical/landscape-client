@@ -55,10 +55,15 @@ class AptFacade(object):
         self._root = root
         if self._root is not None:
             self._ensure_dir_structure()
-        self._cache = apt.cache.Cache(rootdir=root, memonly=True)
+        # don't use memonly=True here because of a python-apt bug on Natty when
+        # sources.list contains invalid lines (LP: #886208)
+        self._cache = apt.cache.Cache(rootdir=root)
         self._channels_loaded = False
         self._pkg2hash = {}
         self._hash2pkg = {}
+        self._package_installs = []
+        self._package_upgrades = []
+        self._package_removals = []
         self.refetch_package_index = False
         # Explicitly set APT::Architectures to the native architecture only, as
         # we currently don't support multiarch, so packages with different
@@ -140,7 +145,7 @@ class AptFacade(object):
 
         self._pkg2hash.clear()
         self._hash2pkg.clear()
-        for package in [self._cache[name] for name in self._cache.keys()]:
+        for package in self._cache:
             for version in package.versions:
                 hash = self.get_package_skeleton(
                     version, with_info=False).get_hash()
@@ -238,15 +243,21 @@ class AptFacade(object):
     def set_arch(self, architecture):
         """Set the architecture that APT should use.
 
-        Setting multiple architectures aren't supported.
+        Setting multiple architectures isn't supported.
         """
+        if architecture is None:
+            architecture = ""
         # From oneiric and onwards Architectures is used to set which
         # architectures can be installed, in case multiple architectures
         # are supported. We force it to be single architecture, until we
         # have a plan for supporting multiple architectures.
         apt_pkg.config.clear("APT::Architectures")
         apt_pkg.config.set("APT::Architectures::", architecture)
-        return apt_pkg.config.set("APT::Architecture", architecture)
+        result = apt_pkg.config.set("APT::Architecture", architecture)
+        # Reload the cache, otherwise architecture change isn't reflected in
+        # package list
+        self._cache.open(None)
+        return result
 
     def get_package_skeleton(self, pkg, with_info=True):
         """Return a skeleton for the provided package.
@@ -304,6 +315,78 @@ class AptFacade(object):
         return [
             version for version in self.get_packages()
             if version.package.name == name]
+
+    def perform_changes(self):
+        """Perform the pending package operations."""
+        package_changes = self._package_installs[:]
+        package_changes.extend(self._package_removals)
+        if not package_changes and not self._package_upgrades:
+            return None
+        fixer = apt_pkg.ProblemResolver(self._cache._depcache)
+        for version in self._package_installs:
+            # Set the candidate version, so that the version we want to
+            # install actually is the one getting installed.
+            version.package.candidate = version
+            version.package.mark_install(auto_fix=False)
+            # If we need to resolve dependencies, try avoiding having
+            # the package we asked to be installed from being removed.
+            # (This is what would have been done if auto_fix would have
+            # been True.
+            fixer.clear(version.package._pkg)
+            fixer.protect(version.package._pkg)
+        for version in self._package_upgrades:
+            version.package.mark_install(
+                auto_fix=False,
+                from_user=not version.package.is_auto_installed)
+            fixer.clear(version.package._pkg)
+            fixer.protect(version.package._pkg)
+        for version in self._package_removals:
+            version.package.mark_delete(auto_fix=False)
+            # Configure the resolver in the same way
+            # mark_delete(auto_fix=True) would have done.
+            fixer.clear(version.package._pkg)
+            fixer.protect(version.package._pkg)
+            fixer.remove(version.package._pkg)
+            fixer.install_protect()
+
+        if self._cache._depcache.broken_count > 0:
+            try:
+                fixer.resolve(True)
+            except SystemError, error:
+                raise TransactionError(error.args[0])
+        all_changes = [
+            (version.package, version) for version in package_changes]
+        versions_to_be_changed = set(
+            (package, package.candidate)
+            for package in self._cache.get_changes())
+        dependencies = versions_to_be_changed.difference(all_changes)
+        if dependencies:
+            raise DependencyError(
+                [version for package, version in dependencies])
+        try:
+            self._cache.commit()
+        except SystemError, error:
+            raise TransactionError(error.args[0])
+        return "ok"
+
+    def reset_marks(self):
+        """Clear the pending package operations."""
+        del self._package_installs[:]
+        del self._package_upgrades[:]
+        del self._package_removals[:]
+
+    def mark_install(self, version):
+        """Mark the package for installation."""
+        self._package_installs.append(version)
+
+    def mark_upgrade(self, version):
+        """Mark the package for upgrade."""
+        if version.package.candidate != version:
+            self._package_upgrades.append(version)
+
+    def mark_remove(self, version):
+        """Mark the package for removal."""
+        self._package_removals.append(version)
 
 
 class SmartFacade(object):
