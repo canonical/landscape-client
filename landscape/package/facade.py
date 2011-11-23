@@ -1,5 +1,6 @@
 import hashlib
 import os
+import tempfile
 from cStringIO import StringIO
 
 from smart.transaction import (
@@ -361,7 +362,6 @@ class AptFacade(object):
             raise DependencyError(
                 [version for package, version in dependencies])
         output = StringIO()
-        import tempfile
         fd, stdpath = tempfile.mkstemp()
         old_stdout = os.dup(1)
         old_stderr = os.dup(2)
