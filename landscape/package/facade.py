@@ -378,7 +378,10 @@ class AptFacade(object):
             self._cache.commit(
                 fetch_progress=apt.progress.text.AcquireProgress(fetch_output))
         except SystemError, error:
-            raise TransactionError(error.args[0])
+            result_text = (
+                fetch_output.getvalue() + read_file(install_output_path))
+            raise TransactionError(
+                error.args[0] + "\n\nPackage operation log:\n" + result_text)
         finally:
             # Restore stdout and stderr.
             os.dup2(old_stdout, 1)

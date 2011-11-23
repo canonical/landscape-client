@@ -790,6 +790,35 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(
             ["Stdout output", "Stderr output", "Stdout output again"], output)
 
+    def test_perform_changes_dpkg_output_error(self):
+        """
+        C{perform_changes()} captures the dpkg output and includes it in
+        the exception message, if committing the cache fails.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        foo = self.facade.get_packages_by_name("foo")[0]
+        self.facade.mark_install(foo)
+
+        def commit(fetch_progress):
+            os.write(1, "Stdout output\n")
+            os.write(2, "Stderr output\n")
+            os.write(1, "Stdout output again\n")
+            raise SystemError("Oops")
+
+        self.facade._cache.commit = commit
+        exception = self.assertRaises(
+            TransactionError, self.facade.perform_changes)
+        output = [
+            line.rstrip()
+            for line in exception.args[0].splitlines()if line.strip()]
+        self.assertEqual(
+            ["Oops", "Package operation log:", "Stdout output",
+             "Stderr output", "Stdout output again"],
+            output)
+
     def _mock_output_restore(self):
         """
         Mock methods to ensure that stdout and stderr are restored,
