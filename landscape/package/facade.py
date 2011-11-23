@@ -147,7 +147,7 @@ class AptFacade(object):
 
         self._pkg2hash.clear()
         self._hash2pkg.clear()
-        for package in [self._cache[name] for name in self._cache.keys()]:
+        for package in self._cache:
             for version in package.versions:
                 hash = self.get_package_skeleton(
                     version, with_info=False).get_hash()
@@ -245,7 +245,7 @@ class AptFacade(object):
     def set_arch(self, architecture):
         """Set the architecture that APT should use.
 
-        Setting multiple architectures aren't supported.
+        Setting multiple architectures isn't supported.
         """
         if architecture is None:
             architecture = ""
@@ -255,7 +255,11 @@ class AptFacade(object):
         # have a plan for supporting multiple architectures.
         apt_pkg.config.clear("APT::Architectures")
         apt_pkg.config.set("APT::Architectures::", architecture)
-        return apt_pkg.config.set("APT::Architecture", architecture)
+        result = apt_pkg.config.set("APT::Architecture", architecture)
+        # Reload the cache, otherwise architecture change isn't reflected in
+        # package list
+        self._cache.open(None)
+        return result
 
     def get_package_skeleton(self, pkg, with_info=True):
         """Return a skeleton for the provided package.

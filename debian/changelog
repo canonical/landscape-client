@@ -1,8 +1,55 @@
-landscape-client (11.08-0ubuntu0.11.04.0) natty; urgency=low
+landscape-client (11.11-0ubuntu0.11.10.0) oneiric; urgency=low
 
   * Placeholder for new release 
 
- -- Andreas Hasenack <andreas@canonical.com>  Mon, 18 Jul 2011 15:31:18 -0300
+ -- Andreas Hasenack <andreas@canonical.com>  Mon, 21 Nov 2011 10:08:48 -0200
+
+landscape-client (11.07.1.1-0ubuntu1.11.10.0) oneiric; urgency=low
+
+  * Included missing files (LP: #814223).
+
+ -- Andreas Hasenack <andreas@canonical.com>  Thu, 21 Jul 2011 15:40:46 -0300
+
+landscape-client (11.07.1.1-0ubuntu0.11.10.0) oneiric; urgency=low
+
+  * Try to load the old persist file if the current one doesn't exist or is
+    empty (LP: #809210).
+  * Fallback to gethostname to get something interesting out of get_fqdn.
+  * Fix wrong ownership and permissions when the reporter is run as a result
+    of applying a repository profile (LP: #804008).
+  * Keep original sources.list ownership (LP: #804548).
+  * Refactored tests (LP: #805746).
+  * Preserve permissions of sources.list (LP: #804548).
+  * Added a broker command line option (--record) that saves exchanges with the
+    server to the filesystem
+  * Detect if running in a vmware guest (LP: #795794).
+  * Report VM type when run in the cloud (LP: #797069).
+  * Report VM type in non-cloud registration (LP: #795752).
+  * Report the package reporter result even in case of success, not just in
+    case of failure (LP: #780406).
+  * Report package reporter errors (LP: #732490).
+  * Fix dependencies for hardy removing references to python 2.4 packages for
+    pycurl and dbus (LP: #759764).
+  * The landscape client now reports whether it is running on a virtual machine
+    or not.
+  * Add a plugin which manages APT sources.list and the associated GPG keys
+    (LP: #758928).
+  * Limit the number of items in a network message to 200, to prevent problems
+    when communication is interrupted with the server and the client
+    accumulates too many network items, thus overloading the server when it's
+    available again (LP: #760486).
+  * Updated version number in __init__.py so that the client reports the
+    correct one in its user-agent string.
+
+ -- Andreas Hasenack <andreas@canonical.com>  Mon, 18 Jul 2011 15:16:18 -0300
+
+landscape-client (11.02-0ubuntu0.11.04.1) natty; urgency=low
+
+  * debian/control, debian/rules: Add quilt
+  * debian/patches/fix-landscape-monitor.patch: Fix landscape
+    monitoring with gir1.0-gudev-1.0 installed. (LP: #747498)
+
+ -- Chuck Short <zulcss@ubuntu.com>  Fri, 08 Apr 2011 09:46:24 -0400
 
 landscape-client (11.02-0ubuntu0.11.04.0) natty; urgency=low
 
