@@ -32,6 +32,7 @@ from landscape.package.tests.helpers import (
 
 
 class FakeOwner(object):
+    """Fake Owner object that apt.progress.text.AcquireProgress expects."""
 
     def __init__(self, filesize, error_text=""):
         self.id = None
@@ -43,6 +44,7 @@ class FakeOwner(object):
 
 
 class FakeFetchItem(object):
+    """Fake Item object that apt.progress.text.AcquireProgress expects."""
 
     def __init__(self, owner, description):
         self.owner = owner
