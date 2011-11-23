@@ -787,17 +787,13 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(
             ["Stdout output", "Stderr output", "Stdout output again"], output)
 
-    def test_perform_changes_dpkg_output_reset(self):
+    def _mock_output_restore(self):
         """
-        C{perform_changes()} resets stdout and stderr after the cache commit.
-        """
-        deb_dir = self.makeDir()
-        self._add_package_to_deb_dir(deb_dir, "foo")
-        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
-        self.facade.reload_channels()
-        foo = self.facade.get_packages_by_name("foo")[0]
-        self.facade.mark_install(foo)
+        Mock methods to ensure that stdout and stderr are restored,
+        after they have been captured.
 
+        Return the path to the tempfile that was used to capture the output.
+        """
         old_stdout = os.dup(1)
         old_stderr = os.dup(2)
         dup = self.mocker.replace("os.dup")
@@ -810,10 +806,22 @@ class AptFacadeTest(LandscapeTest):
         self.mocker.passthrough()
         dup2(old_stderr, 2)
         self.mocker.passthrough()
+
+    def test_perform_changes_dpkg_output_reset(self):
+        """
+        C{perform_changes()} resets stdout and stderr after the cache commit.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        foo = self.facade.get_packages_by_name("foo")[0]
+        self.facade.mark_install(foo)
+
+        self._mock_output_restore()
         self.mocker.replay()
         self.facade._cache.commit = lambda fetch_progress: None
         self.facade.perform_changes()
-
 
     def test_perform_changes_dpkg_output_reset_error(self):
         """
@@ -827,18 +835,7 @@ class AptFacadeTest(LandscapeTest):
         foo = self.facade.get_packages_by_name("foo")[0]
         self.facade.mark_install(foo)
 
-        old_stdout = os.dup(1)
-        old_stderr = os.dup(2)
-        dup = self.mocker.replace("os.dup")
-        dup(1)
-        self.mocker.result(old_stdout)
-        dup(2)
-        self.mocker.result(old_stderr)
-        dup2 = self.mocker.replace("os.dup2")
-        dup2(old_stdout, 1)
-        self.mocker.passthrough()
-        dup2(old_stderr, 2)
-        self.mocker.passthrough()
+        self._mock_output_restore()
         self.mocker.replay()
 
         def commit(fetch_progress):
@@ -846,8 +843,6 @@ class AptFacadeTest(LandscapeTest):
 
         self.facade._cache.commit = commit
         self.assertRaises(TransactionError, self.facade.perform_changes)
-
-
 
     def test_reset_marks(self):
         """
