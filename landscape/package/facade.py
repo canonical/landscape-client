@@ -382,12 +382,13 @@ class AptFacade(object):
                 fetch_output.getvalue() + read_file(install_output_path))
             raise TransactionError(
                 error.args[0] + "\n\nPackage operation log:\n" + result_text)
+        else:
+            result_text = (
+                fetch_output.getvalue() + read_file(install_output_path))
         finally:
             # Restore stdout and stderr.
             os.dup2(old_stdout, 1)
             os.dup2(old_stderr, 2)
-            result_text = (
-                fetch_output.getvalue() + read_file(install_output_path))
             os.remove(install_output_path)
         return result_text
 
