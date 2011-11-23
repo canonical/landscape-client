@@ -362,7 +362,7 @@ class AptFacade(object):
             raise DependencyError(
                 [version for package, version in dependencies])
         output = StringIO()
-        fd, stdpath = tempfile.mkstemp()
+        fd, install_output_path = tempfile.mkstemp()
         old_stdout = os.dup(1)
         old_stderr = os.dup(2)
         os.dup2(fd, 1)
@@ -375,8 +375,8 @@ class AptFacade(object):
         finally:
             os.dup2(old_stdout, 1)
             os.dup2(old_stderr, 2)
-            result_text = output.getvalue() + read_file(stdpath)
-            os.remove(stdpath)
+            result_text = output.getvalue() + read_file(install_output_path)
+            os.remove(install_output_path)
         return result_text
 
     def reset_marks(self):
