@@ -375,7 +375,9 @@ class AptFacade(object):
         finally:
             os.dup2(old_stdout, 1)
             os.dup2(old_stderr, 2)
-        return output.getvalue() + read_file(stdpath)
+            result_text = output.getvalue() + read_file(stdpath)
+            os.remove(stdpath)
+        return result_text
 
     def reset_marks(self):
         """Clear the pending package operations."""

@@ -3,6 +3,7 @@ import os
 import re
 import sys
 import textwrap
+import tempfile
 
 from smart.control import Control
 from smart.cache import Provides
@@ -796,6 +797,10 @@ class AptFacadeTest(LandscapeTest):
         """
         old_stdout = os.dup(1)
         old_stderr = os.dup(2)
+        fd, outfile = tempfile.mkstemp()
+        mkstemp = self.mocker.replace("tempfile.mkstemp")
+        mkstemp()
+        self.mocker.result((fd, outfile))
         dup = self.mocker.replace("os.dup")
         dup(1)
         self.mocker.result(old_stdout)
@@ -806,6 +811,7 @@ class AptFacadeTest(LandscapeTest):
         self.mocker.passthrough()
         dup2(old_stderr, 2)
         self.mocker.passthrough()
+        return outfile
 
     def test_perform_changes_dpkg_output_reset(self):
         """
@@ -818,10 +824,12 @@ class AptFacadeTest(LandscapeTest):
         foo = self.facade.get_packages_by_name("foo")[0]
         self.facade.mark_install(foo)
 
-        self._mock_output_restore()
+        outfile = self._mock_output_restore()
         self.mocker.replay()
         self.facade._cache.commit = lambda fetch_progress: None
         self.facade.perform_changes()
+        # Make sure we don't leave the tempfile behind.
+        self.assertFalse(os.path.exists(outfile))
 
     def test_perform_changes_dpkg_output_reset_error(self):
         """
@@ -835,7 +843,7 @@ class AptFacadeTest(LandscapeTest):
         foo = self.facade.get_packages_by_name("foo")[0]
         self.facade.mark_install(foo)
 
-        self._mock_output_restore()
+        outfile = self._mock_output_restore()
         self.mocker.replay()
 
         def commit(fetch_progress):
@@ -843,6 +851,8 @@ class AptFacadeTest(LandscapeTest):
 
         self.facade._cache.commit = commit
         self.assertRaises(TransactionError, self.facade.perform_changes)
+        # Make sure we don't leave the tempfile behind.
+        self.assertFalse(os.path.exists(outfile))
 
     def test_reset_marks(self):
         """
