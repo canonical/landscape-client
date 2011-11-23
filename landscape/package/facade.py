@@ -365,7 +365,7 @@ class AptFacade(object):
         if dependencies:
             raise DependencyError(
                 [version for package, version in dependencies])
-        output = StringIO()
+        fetch_output = StringIO()
         # Redirect stdout and stderr to a file. We need to work with the
         # file descriptors, rather than sys.stdout/stderr, since dpkg is
         # run in a subprocess.
@@ -376,14 +376,15 @@ class AptFacade(object):
         os.dup2(fd, 2)
         try:
             self._cache.commit(
-                fetch_progress=apt.progress.text.AcquireProgress(output))
+                fetch_progress=apt.progress.text.AcquireProgress(fetch_output))
         except SystemError, error:
             raise TransactionError(error.args[0])
         finally:
             # Restore stdout and stderr.
             os.dup2(old_stdout, 1)
             os.dup2(old_stderr, 2)
-            result_text = output.getvalue() + read_file(install_output_path)
+            result_text = (
+                fetch_output.getvalue() + read_file(install_output_path))
             os.remove(install_output_path)
         return result_text
 
