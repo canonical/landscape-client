@@ -1,5 +1,7 @@
 import hashlib
 import os
+import tempfile
+from cStringIO import StringIO
 
 from smart.transaction import (
     Transaction, PolicyInstall, PolicyUpgrade, PolicyRemove, Failed)
@@ -363,11 +365,32 @@ class AptFacade(object):
         if dependencies:
             raise DependencyError(
                 [version for package, version in dependencies])
+        fetch_output = StringIO()
+        # Redirect stdout and stderr to a file. We need to work with the
+        # file descriptors, rather than sys.stdout/stderr, since dpkg is
+        # run in a subprocess.
+        fd, install_output_path = tempfile.mkstemp()
+        old_stdout = os.dup(1)
+        old_stderr = os.dup(2)
+        os.dup2(fd, 1)
+        os.dup2(fd, 2)
         try:
-            self._cache.commit()
+            self._cache.commit(
+                fetch_progress=apt.progress.text.AcquireProgress(fetch_output))
         except SystemError, error:
-            raise TransactionError(error.args[0])
-        return "ok"
+            result_text = (
+                fetch_output.getvalue() + read_file(install_output_path))
+            raise TransactionError(
+                error.args[0] + "\n\nPackage operation log:\n" + result_text)
+        else:
+            result_text = (
+                fetch_output.getvalue() + read_file(install_output_path))
+        finally:
+            # Restore stdout and stderr.
+            os.dup2(old_stdout, 1)
+            os.dup2(old_stderr, 2)
+            os.remove(install_output_path)
+        return result_text
 
     def reset_marks(self):
         """Clear the pending package operations."""

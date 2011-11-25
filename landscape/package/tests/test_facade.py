@@ -3,6 +3,7 @@ import os
 import re
 import sys
 import textwrap
+import tempfile
 
 from smart.control import Control
 from smart.cache import Provides
@@ -28,6 +29,26 @@ from landscape.package.tests.helpers import (
     PKGNAME4, PKGDEB4, PKGDEB1, PKGNAME_MINIMAL, PKGDEB_MINIMAL,
     create_full_repository, create_deb, AptFacadeHelper,
     create_simple_repository)
+
+
+class FakeOwner(object):
+    """Fake Owner object that apt.progress.text.AcquireProgress expects."""
+
+    def __init__(self, filesize, error_text=""):
+        self.id = None
+        self.filesize = filesize
+        self.complete = False
+        self.status = None
+        self.STAT_DONE = object()
+        self.error_text = error_text
+
+
+class FakeFetchItem(object):
+    """Fake Item object that apt.progress.text.AcquireProgress expects."""
+
+    def __init__(self, owner, description):
+        self.owner = owner
+        self.description = description
 
 
 class AptFacadeTest(LandscapeTest):
@@ -713,6 +734,157 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         self.assertEqual(self.facade.perform_changes(), None)
 
+    def test_perform_changes_fetch_progress(self):
+        """
+        C{perform_changes()} captures the fetch output and returns it.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        foo = self.facade.get_packages_by_name("foo")[0]
+        self.facade.mark_install(foo)
+        fetch_item = FakeFetchItem(
+            FakeOwner(1234, error_text="Some error"), "foo package")
+
+        def commit(fetch_progress):
+            fetch_progress.start()
+            fetch_progress.fetch(fetch_item)
+            fetch_progress.fail(fetch_item)
+            fetch_progress.done(fetch_item)
+            fetch_progress.stop()
+
+        self.facade._cache.commit = commit
+        output = [
+            line.rstrip()
+            for line in self.facade.perform_changes().splitlines()
+            if line.strip()]
+        self.assertEqual(
+            ["Get:1 foo package [1234 B]",
+             "Err foo package",
+             "  Some error",
+             "Fetched 0 B in 0s (0 B/s)"],
+            output)
+
+    def test_perform_changes_dpkg_output(self):
+        """
+        C{perform_changes()} captures the dpkg output and returns it.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        foo = self.facade.get_packages_by_name("foo")[0]
+        self.facade.mark_install(foo)
+
+        def commit(fetch_progress):
+            os.write(1, "Stdout output\n")
+            os.write(2, "Stderr output\n")
+            os.write(1, "Stdout output again\n")
+
+        self.facade._cache.commit = commit
+        output = [
+            line.rstrip()
+            for line in self.facade.perform_changes().splitlines()
+            if line.strip()]
+        self.assertEqual(
+            ["Stdout output", "Stderr output", "Stdout output again"], output)
+
+    def test_perform_changes_dpkg_output_error(self):
+        """
+        C{perform_changes()} captures the dpkg output and includes it in
+        the exception message, if committing the cache fails.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        foo = self.facade.get_packages_by_name("foo")[0]
+        self.facade.mark_install(foo)
+
+        def commit(fetch_progress):
+            os.write(1, "Stdout output\n")
+            os.write(2, "Stderr output\n")
+            os.write(1, "Stdout output again\n")
+            raise SystemError("Oops")
+
+        self.facade._cache.commit = commit
+        exception = self.assertRaises(
+            TransactionError, self.facade.perform_changes)
+        output = [
+            line.rstrip()
+            for line in exception.args[0].splitlines()if line.strip()]
+        self.assertEqual(
+            ["Oops", "Package operation log:", "Stdout output",
+             "Stderr output", "Stdout output again"],
+            output)
+
+    def _mock_output_restore(self):
+        """
+        Mock methods to ensure that stdout and stderr are restored,
+        after they have been captured.
+
+        Return the path to the tempfile that was used to capture the output.
+        """
+        old_stdout = os.dup(1)
+        old_stderr = os.dup(2)
+        fd, outfile = tempfile.mkstemp()
+        mkstemp = self.mocker.replace("tempfile.mkstemp")
+        mkstemp()
+        self.mocker.result((fd, outfile))
+        dup = self.mocker.replace("os.dup")
+        dup(1)
+        self.mocker.result(old_stdout)
+        dup(2)
+        self.mocker.result(old_stderr)
+        dup2 = self.mocker.replace("os.dup2")
+        dup2(old_stdout, 1)
+        self.mocker.passthrough()
+        dup2(old_stderr, 2)
+        self.mocker.passthrough()
+        return outfile
+
+    def test_perform_changes_dpkg_output_reset(self):
+        """
+        C{perform_changes()} resets stdout and stderr after the cache commit.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        foo = self.facade.get_packages_by_name("foo")[0]
+        self.facade.mark_install(foo)
+
+        outfile = self._mock_output_restore()
+        self.mocker.replay()
+        self.facade._cache.commit = lambda fetch_progress: None
+        self.facade.perform_changes()
+        # Make sure we don't leave the tempfile behind.
+        self.assertFalse(os.path.exists(outfile))
+
+    def test_perform_changes_dpkg_output_reset_error(self):
+        """
+        C{perform_changes()} resets stdout and stderr after the cache
+        commit, even if commit raises an error.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        foo = self.facade.get_packages_by_name("foo")[0]
+        self.facade.mark_install(foo)
+
+        outfile = self._mock_output_restore()
+        self.mocker.replay()
+
+        def commit(fetch_progress):
+            raise SystemError("Error")
+
+        self.facade._cache.commit = commit
+        self.assertRaises(TransactionError, self.facade.perform_changes)
+        # Make sure we don't leave the tempfile behind.
+        self.assertFalse(os.path.exists(outfile))
+
     def test_reset_marks(self):
         """
         C{reset_marks()} clears things, so that there's nothing to do
@@ -791,7 +963,7 @@ class AptFacadeTest(LandscapeTest):
         foo1, foo2 = sorted(self.facade.get_packages_by_name("foo"))
         self.assertEqual(foo2, foo1.package.candidate)
         self.facade.mark_install(foo1)
-        self.facade._cache.commit = lambda: None
+        self.facade._cache.commit = lambda fetch_progress: None
         self.facade.perform_changes()
         self.assertEqual(foo1, foo1.package.candidate)
 
@@ -811,7 +983,6 @@ class AptFacadeTest(LandscapeTest):
         foo1, foo2, foo3 = sorted(self.facade.get_packages_by_name("foo"))
         self.assertEqual(foo3, foo1.package.candidate)
         self.facade.mark_upgrade(foo1)
-        self.facade._cache.commit = lambda: None
         exception = self.assertRaises(
             DependencyError, self.facade.perform_changes)
         self.assertEqual([foo3], exception.packages)
@@ -850,7 +1021,6 @@ class AptFacadeTest(LandscapeTest):
         noauto1.package.mark_auto(False)
         self.facade.mark_upgrade(auto1)
         self.facade.mark_upgrade(noauto1)
-        self.facade._cache.commit = lambda: None
         self.assertRaises(DependencyError, self.facade.perform_changes)
         self.assertTrue(auto2.package.is_auto_installed)
         self.assertFalse(noauto2.package.is_auto_installed)
@@ -862,7 +1032,7 @@ class AptFacadeTest(LandscapeTest):
         """
         committed = []
 
-        def commit():
+        def commit(fetch_progress):
             committed.append(True)
 
         deb_dir = self.makeDir()
@@ -887,10 +1057,10 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         pkg = self.facade.get_packages_by_name("minimal")[0]
         self.facade.mark_install(pkg)
-        self.facade._cache.commit = lambda: None
-        # XXX: It should return the Apt output, but that will be done
-        # later.
-        self.assertEqual("ok", self.facade.perform_changes())
+        self.facade._cache.commit = lambda fetch_progress: None
+        # An empty string is returned, since we don't call the progress
+        # objects, which are the ones that build the output string.
+        self.assertEqual("", self.facade.perform_changes())
 
     def test_wb_perform_changes_commit_error(self):
         """
@@ -903,7 +1073,7 @@ class AptFacadeTest(LandscapeTest):
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_remove(foo)
         cache = self.mocker.replace(self.facade._cache)
-        cache.commit()
+        cache.commit(fetch_progress=ANY)
         self.mocker.throw(SystemError("Something went wrong."))
         self.mocker.replay()
         exception = self.assertRaises(TransactionError,
