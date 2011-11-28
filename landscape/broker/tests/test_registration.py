@@ -555,7 +555,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
                        registration_password=None,
                        tags=None)
 
-        if kwargs.has_key("vm_info"):
+        if "vm_info" in kwargs:
             message["vm-info"] = kwargs.pop("vm_info")
         else:
             message["vm-info"] = get_vm_info()
