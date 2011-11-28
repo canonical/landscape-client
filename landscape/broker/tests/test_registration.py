@@ -871,7 +871,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
                               "account_name": u"onward",
                               "registration_password": u"password",
                               "hostname": socket.getfqdn(),
-                              "vm-info": "",
+                              "vm-info": get_vm_info(),
                               "tags": None}])
 
     def test_should_register_in_cloud(self):
