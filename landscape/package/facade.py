@@ -67,10 +67,6 @@ class AptFacade(object):
         self._package_upgrades = []
         self._package_removals = []
         self.refetch_package_index = False
-        # Explicitly set APT::Architectures to the native architecture only, as
-        # we currently don't support multiarch, so packages with different
-        # archs are not reported.
-        self.set_arch(self.get_arch())
 
     def _ensure_dir_structure(self):
         self._ensure_sub_dir("etc/apt")
@@ -147,8 +143,11 @@ class AptFacade(object):
 
         self._pkg2hash.clear()
         self._hash2pkg.clear()
+        main_arch = self.get_arch()
         for package in self._cache:
             for version in package.versions:
+                if version.architecture not in [main_arch, "all"]:
+                    continue
                 hash = self.get_package_skeleton(
                     version, with_info=False).get_hash()
                 # Use a tuple including the package, since the Version
