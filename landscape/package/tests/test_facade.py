@@ -1011,6 +1011,51 @@ class AptFacadeTest(LandscapeTest):
              ("single-arch", "2.0")],
             sorted(changes))
 
+    def test_wb_mark_install_upgrade_non_main_arch_dependency_error(self):
+        """
+        If a non-main architecture is automatically upgraded, and the
+        main architecture versions hasn't been marked for installation,
+        only the main architecture version is included in the
+        C{DependencyError}.
+        """
+        apt_pkg.config.clear("APT::Architectures")
+        apt_pkg.config.set("APT::Architecture", "amd64")
+        apt_pkg.config.set("APT::Architectures::", "amd64")
+        apt_pkg.config.set("APT::Architectures::", "i386")
+        deb_dir = self.makeDir()
+        self._add_system_package(
+            "multi-arch", architecture="amd64", version="1.0")
+        self._add_system_package(
+            "multi-arch", architecture="i386", version="1.0")
+        self._add_system_package(
+            "single-arch", architecture="amd64", version="1.0",
+            control_fields={"Depends": "multi-arch"})
+        self._add_package_to_deb_dir(
+            deb_dir, "multi-arch", architecture="amd64", version="2.0")
+        self._add_package_to_deb_dir(
+            deb_dir, "multi-arch", architecture="i386", version="2.0")
+        self._add_package_to_deb_dir(
+            deb_dir, "single-arch", architecture="amd64", version="2.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+
+        multi_arch2 = sorted(
+            self.facade.get_packages_by_name("multi-arch"))[1]
+        single_arch2 = sorted(
+            self.facade.get_packages_by_name("single-arch"))[1]
+        self.facade.mark_install(single_arch2)
+        self.facade._cache.commit = lambda fetch_progress: None
+        exception = self.assertRaises(
+            DependencyError, self.facade.perform_changes)
+        self.assertEqual([multi_arch2], exception.packages)
+        changes = [
+            (pkg.name, pkg.candidate.version)
+            for pkg in self.facade._cache.get_changes()]
+        self.assertEqual(
+            [("multi-arch", "2.0"), ("multi-arch:i386", "2.0"),
+             ("single-arch", "2.0")],
+            sorted(changes))
+
     def test_mark_upgrade_candidate_version(self):
         """
         If more than one version is available, the package will be
