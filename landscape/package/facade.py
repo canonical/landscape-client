@@ -397,6 +397,7 @@ class AptFacade(object):
             os.dup2(old_stderr, 2)
             os.remove(install_output_path)
         return result_text
+
     def reset_marks(self):
         """Clear the pending package operations."""
         del self._package_installs[:]
