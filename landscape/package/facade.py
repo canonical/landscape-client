@@ -393,7 +393,11 @@ class AptFacade(object):
         return result_text
 
     def _is_main_architecture(self, package):
-        return package.candidate.architecture in ["all", self.get_arch()]
+        """Is the package for the facade's main architecture?"""
+        # package.name includes the architecture, if it's for a foreign
+        # architectures. package.shortname never includes the
+        # architecture.
+        return package.name == package.shortname
 
     def reset_marks(self):
         """Clear the pending package operations."""
