@@ -19,7 +19,7 @@ class NetworkInfoTest(LandscapeTest):
         that returned by ifconfig.
         """
         device_info = get_active_device_info()
-        result = Popen(["ifconfig"], stdout=PIPE).communicate()[0]
+        result = Popen(["/sbin/ifconfig"], stdout=PIPE).communicate()[0]
         interface_blocks = dict(
             [(block.split()[0], block.upper()) for block in
              filter(None, result.split("\n\n"))])
