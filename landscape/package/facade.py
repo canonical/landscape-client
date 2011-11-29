@@ -143,11 +143,10 @@ class AptFacade(object):
 
         self._pkg2hash.clear()
         self._hash2pkg.clear()
-        main_arch = self.get_arch()
         for package in self._cache:
+            if not self._is_main_architecture(package):
+                continue
             for version in package.versions:
-                if version.architecture not in [main_arch, "all"]:
-                    continue
                 hash = self.get_package_skeleton(
                     version, with_info=False).get_hash()
                 # Use a tuple including the package, since the Version
@@ -361,7 +360,7 @@ class AptFacade(object):
         versions_to_be_changed = set(
             (package, package.candidate)
             for package in self._cache.get_changes()
-            if package.candidate.architecture in ["all", main_arch])
+            if self._is_main_architecture(package))
         dependencies = versions_to_be_changed.difference(all_changes)
         if dependencies:
             raise DependencyError(
@@ -392,6 +391,9 @@ class AptFacade(object):
             os.dup2(old_stderr, 2)
             os.remove(install_output_path)
         return result_text
+
+    def _is_main_architecture(self, package):
+        return package.candidate.architecture in ["all", self.get_arch()]
 
     def reset_marks(self):
         """Clear the pending package operations."""
