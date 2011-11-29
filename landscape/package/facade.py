@@ -357,9 +357,11 @@ class AptFacade(object):
                 raise TransactionError(error.args[0])
         all_changes = [
             (version.package, version) for version in package_changes]
+        main_arch = self.get_arch()
         versions_to_be_changed = set(
             (package, package.candidate)
-            for package in self._cache.get_changes())
+            for package in self._cache.get_changes()
+            if package.candidate.architecture in ["all", main_arch])
         dependencies = versions_to_be_changed.difference(all_changes)
         if dependencies:
             raise DependencyError(
