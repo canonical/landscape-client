@@ -307,6 +307,13 @@ class AptFacade(object):
             return False
         return version > version.package.installed
 
+    def _is_main_architecture(self, package):
+        """Is the package for the facade's main architecture?"""
+        # package.name includes the architecture, if it's for a foreign
+        # architectures. package.shortname never includes the
+        # architecture.
+        return package.name == package.shortname
+
     def get_packages_by_name(self, name):
         """Get all available packages matching the provided name.
 
@@ -356,7 +363,6 @@ class AptFacade(object):
                 raise TransactionError(error.args[0])
         all_changes = [
             (version.package, version) for version in package_changes]
-        main_arch = self.get_arch()
         versions_to_be_changed = set(
             (package, package.candidate)
             for package in self._cache.get_changes()
@@ -391,14 +397,6 @@ class AptFacade(object):
             os.dup2(old_stderr, 2)
             os.remove(install_output_path)
         return result_text
-
-    def _is_main_architecture(self, package):
-        """Is the package for the facade's main architecture?"""
-        # package.name includes the architecture, if it's for a foreign
-        # architectures. package.shortname never includes the
-        # architecture.
-        return package.name == package.shortname
-
     def reset_marks(self):
         """Clear the pending package operations."""
         del self._package_installs[:]
