@@ -99,6 +99,10 @@ HARDWARE_INVENTORY = Message("hardware-inventory", {
                     )})
 
 
+HARDWARE_INFO = Message("hardware-info", {
+    "data": utf8})
+
+
 LOAD_AVERAGE = Message("load-average", {
     "load-averages": List(Tuple(Int(), Float())),
     })
@@ -392,7 +396,7 @@ NETWORK_ACTIVITY = Message(
 message_schemas = {}
 for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                OPERATION_RESULT, COMPUTER_INFO, DISTRIBUTION_INFO,
-               HARDWARE_INVENTORY, LOAD_AVERAGE, MEMORY_INFO,
+               HARDWARE_INVENTORY, HARDWARE_INFO, LOAD_AVERAGE, MEMORY_INFO,
                RESYNCHRONIZE, MOUNT_ACTIVITY, MOUNT_INFO, FREE_SPACE,
                REGISTER, REGISTER_CLOUD_VM, REGISTER_PROVISIONED_MACHINE,
                TEMPERATURE, PROCESSOR_INFO, USERS, PACKAGES, PACKAGE_LOCKS,
