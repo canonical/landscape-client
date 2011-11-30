@@ -41,6 +41,19 @@ class ChannelError(Exception):
     """Raised when channels fail to load."""
 
 
+class LandscapeAcquireProgress(apt.progress.text.AcquireProgress):
+
+    def _winch(self, *dummy):
+        """Override trying to get the column count of the buffer.
+
+        We always send the output to a file, not to a terminal, so the
+        default width (80 columns) is fine for us.
+
+        Overriding this method means that we don't have to care about
+        fcntl.ioctl API differences for different Python versions.
+        """
+
+
 class AptFacade(object):
     """Wrapper for tasks using Apt.
 
@@ -376,7 +389,7 @@ class AptFacade(object):
         os.dup2(fd, 2)
         try:
             self._cache.commit(
-                fetch_progress=apt.progress.text.AcquireProgress(fetch_output))
+                fetch_progress=LandscapeAcquireProgress(fetch_output))
         except SystemError, error:
             result_text = (
                 fetch_output.getvalue() + read_file(install_output_path))
