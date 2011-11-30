@@ -5,7 +5,7 @@ from twisted.internet.utils import getProcessOutput
 from landscape.manager.plugin import ManagerPlugin
 
 
-class HardwareInfoPlugin(ManagerPlugin):
+class HardwareInfo(ManagerPlugin):
     """A plugin to retrieve hardware information."""
 
     message_type = "hardware-info"
