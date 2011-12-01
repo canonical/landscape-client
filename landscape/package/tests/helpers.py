@@ -70,8 +70,8 @@ class AptFacadeHelper(object):
         status = "\n".join(lines)
         append_file(self.dpkg_status, status + "\n\n")
 
-    def _add_package_to_deb_dir(self, path, name, version="1.0",
-                                control_fields=None):
+    def _add_package_to_deb_dir(self, path, name, architecture="all",
+                                version="1.0", control_fields=None):
         """Add fake package information to a directory.
 
         There will only be basic information about the package
@@ -81,8 +81,8 @@ class AptFacadeHelper(object):
         if control_fields is None:
             control_fields = {}
         self._add_package(
-            os.path.join(path, "Packages"), name, version=version,
-            control_fields=control_fields)
+            os.path.join(path, "Packages"), name, architecture=architecture,
+            version=version, control_fields=control_fields)
 
     def _touch_packages_file(self, deb_dir):
         """Make sure the Packages file get a newer mtime value.
