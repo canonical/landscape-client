@@ -324,7 +324,10 @@ class AptFacade(object):
         """Is the package for the facade's main architecture?"""
         # package.name includes the architecture, if it's for a foreign
         # architectures. package.shortname never includes the
-        # architecture.
+        # architecture. package.shortname doesn't exist on releases that
+        # don't support multi-arch, though.
+        if not hasattr(package, "shortname"):
+            return True
         return package.name == package.shortname
 
     def get_packages_by_name(self, name):
