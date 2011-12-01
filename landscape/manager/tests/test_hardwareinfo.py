@@ -2,6 +2,7 @@ from landscape.tests.helpers import LandscapeTest, ManagerHelper
 
 from landscape.manager.hardwareinfo import HardwareInfo
 
+
 class HardwareInfoTests(LandscapeTest):
     helpers = [ManagerHelper]
 
