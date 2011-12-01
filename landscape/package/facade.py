@@ -19,6 +19,10 @@ import apt
 import apt_inst
 import apt_pkg
 from aptsources.sourceslist import SourcesList
+try:
+    from apt.progress.text import AcquireProgress
+except ImportError:
+    AcquireProgress = object
 
 from landscape.lib.fs import append_file, create_file, read_file
 from landscape.package.skeleton import build_skeleton, build_skeleton_apt
@@ -47,7 +51,7 @@ class ChannelError(Exception):
     """Raised when channels fail to load."""
 
 
-class LandscapeAcquireProgress(apt.progress.text.AcquireProgress):
+class LandscapeAcquireProgress(AcquireProgress):
 
     def _winch(self, *dummy):
         """Override trying to get the column count of the buffer.
