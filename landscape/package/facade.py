@@ -103,22 +103,7 @@ class AptFacade(object):
         dpkg_dir = self._ensure_sub_dir("var/lib/dpkg")
         self._dpkg_status = os.path.join(dpkg_dir, "status")
         if not os.path.exists(self._dpkg_status):
-            contents = """Package: libxau6
-Status: install ok installed
-Priority: optional
-Section: libs
-Installed-Size: 64
-Maintainer: Ubuntu Core Developers <ubuntu-devel-discuss@lists.ubuntu.com>
-Architecture: i386
-Source: libxau
-Version: 1:1.0.3-2
-Depends: libc6 (>= 2.5-0ubuntu1), x11-common
-Description: X11 authorisation library
- This package provides the main interface to the X11 authorisation handling,
-
-
-"""
-            create_file(self._dpkg_status, contents)
+            create_file(self._dpkg_status, "")
 
     def _ensure_sub_dir(self, sub_dir):
         """Ensure that a dir in the Apt root exists."""
@@ -177,6 +162,12 @@ Description: X11 authorisation library
         """
         return []
 
+    def _get_package_versions(self, package):
+        try:
+            return package.versions
+        except AttributeError:
+            return package._pkg.VersionList
+
     def reload_channels(self):
         """Reload the channels and update the cache."""
         self._cache.open(None)
@@ -192,7 +183,7 @@ Description: X11 authorisation library
         self._pkg2hash.clear()
         self._hash2pkg.clear()
         for package in self._cache:
-            for version in package.versions:
+            for version in self._get_package_versions(package):
                 hash = self.get_package_skeleton(
                     version, with_info=False).get_hash()
                 # Use a tuple including the package, since the Version

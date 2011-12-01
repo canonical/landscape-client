@@ -143,28 +143,36 @@ def build_skeleton_apt(version, with_info=False, with_unicode=False):
     @param with_unicode: Whether the C{name} and C{version} of the
         skeleton should be unicode strings.
     """
-    name, version_string = version.package.name, version.version
+
+    try:
+        name, version_string = version.package.name, version.version
+    except AttributeError:
+        name, version_string = version.ParentPkg.Name, version.VerStr
     if with_unicode:
         name, version_string = unicode(name), unicode(version_string)
     skeleton = PackageSkeleton(DEB_PACKAGE, name, version_string)
     relations = set()
-    relations.update(parse_record_field(
-        version.record, "Provides", DEB_PROVIDES))
-    relations.add((
-        DEB_NAME_PROVIDES,
-        "%s = %s" % (version.package.name, version.version)))
-    relations.update(parse_record_field(
-        version.record, "Pre-Depends", DEB_REQUIRES, DEB_OR_REQUIRES))
-    relations.update(parse_record_field(
-        version.record, "Depends", DEB_REQUIRES, DEB_OR_REQUIRES))
+    #XXX: This is temporary, we should extract the record by other means.
+    if hasattr(version, "record"):
+        relations.update(parse_record_field(
+            version.record, "Provides", DEB_PROVIDES))
+    relations.add((DEB_NAME_PROVIDES, "%s = %s" % (name, version)))
+    #XXX: This is temporary, we should extract the record by other means.
+    if hasattr(version, "record"):
+        relations.update(parse_record_field(
+            version.record, "Pre-Depends", DEB_REQUIRES, DEB_OR_REQUIRES))
+        relations.update(parse_record_field(
+            version.record, "Depends", DEB_REQUIRES, DEB_OR_REQUIRES))
 
     relations.add((
-        DEB_UPGRADES, "%s < %s" % (version.package.name, version.version)))
+        DEB_UPGRADES, "%s < %s" % (name, version)))
 
-    relations.update(parse_record_field(
-        version.record, "Conflicts", DEB_CONFLICTS))
-    relations.update(parse_record_field(
-        version.record, "Breaks", DEB_CONFLICTS))
+    #XXX: This is temporary, we should extract the record by other means.
+    if hasattr(version, "record"):
+        relations.update(parse_record_field(
+            version.record, "Conflicts", DEB_CONFLICTS))
+        relations.update(parse_record_field(
+            version.record, "Breaks", DEB_CONFLICTS))
     skeleton.relations = sorted(relations)
 
     if with_info:
