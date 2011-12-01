@@ -42,15 +42,10 @@ class ManagerServiceTest(LandscapeTest):
         The L{ManagerService.startService} method connects to the broker,
         starts the plugins and register the manager as broker client.
         """
-        # FIXME: don't actually run the real register method, because at the
-        # moment the UserManager plugin still depends on DBus. We can probably
-        # drop this mocking once the AMP migration is completed.
-        for plugin in self.service.plugins:
-            plugin.register = self.mocker.mock()
-            plugin.register(ANY)
-        self.mocker.replay()
-
         def stop_service(ignored):
+            for plugin in self.service.plugins:
+                if getattr(plugin, "stop", None) is not None:
+                    plugin.stop()
             [connector] = self.broker_service.broker.get_connectors()
             connector.disconnect()
             self.service.stopService()
