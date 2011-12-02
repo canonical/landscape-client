@@ -9,7 +9,8 @@ class HardwareInfo(ManagerPlugin):
     """A plugin to retrieve hardware information."""
 
     message_type = "hardware-info"
-    run_interval = 60 * 60 * 6
+    run_interval = 60 * 60 * 24
+    run_immediately = True
     command = "/usr/bin/lshw"
 
     def run(self):
