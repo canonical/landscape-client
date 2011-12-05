@@ -1856,7 +1856,7 @@ class RegisterFunctionTest(LandscapeTest):
 
     def test_register_bus_connection_failure_ok_no_register(self):
         """
-        Exit code 0 will be returned if we can't contact Landscape via DBus and
+        Exit code 0 will be returned if we can't contact Landscape and
         --ok-no-register was passed.
         """
         print_text_mock = self.mocker.replace(print_text)

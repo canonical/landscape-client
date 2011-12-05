@@ -16,10 +16,6 @@ class InvalidID(Exception):
     """Raised when an invalid ID is used with reactor.cancel_call()."""
 
 
-class CallHookError(Exception):
-    """Raised when hooking on a reactor incorrectly."""
-
-
 class EventID(object):
     """Unique identifier for an event handler.
 
@@ -146,13 +142,6 @@ class ThreadedCallsReactorMixin(object):
                 self._threaded_callbacks.pop(0)()
             except Exception, e:
                 logging.exception(e)
-
-    def _hook_threaded_callbacks(self):
-        id = self.call_every(0.5, self._run_threaded_callbacks)
-        self._run_threaded_callbacks_id = id
-
-    def _unhook_threaded_callbacks(self):
-        self.cancel_call(self._run_threaded_callbacks_id)
 
 
 class UnixReactorMixin(object):
@@ -289,12 +278,12 @@ class FakeReactor(EventHandlingReactorMixin,
         try:
             # is it an IP address?
             socket.inet_aton(hostname)
-        except socket.error: # no
+        except socket.error:  # no
             if hostname in self.hosts:
                 return succeed(self.hosts[hostname])
             else:
                 return fail(DNSLookupError(hostname))
-        else: # yes
+        else:  # yes
             return succeed(hostname)
 
 

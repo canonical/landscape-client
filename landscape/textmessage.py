@@ -1,7 +1,6 @@
 """
 Support code for the C{landscape-message} utility, which sends a text
-message to the Landscape web UI via the landscape-client's dbus
-messaging service (see L{landscape.plugins.dbus_message}).
+message to the Landscape web UI via the landscape-client's messaging service.
 """
 
 import sys

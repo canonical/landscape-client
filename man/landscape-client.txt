@@ -17,8 +17,6 @@ OPTIONS
   -h, --help                 Show this help message and exit.
   -c FILE, --config=FILE     Use config from this file (any command line 
                              options override settings from the file).
-  --bus=BUS                  Which DBUS bus to use. One of 'session' or 
-                             'system'.
   -d PATH, --data-path=PATH  The directory to store data files in.
   -q, --quiet                Do not log to the standard output.
   -l FILE, --log-dir=FILE    The directory to write log files to.

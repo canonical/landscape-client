@@ -541,10 +541,6 @@ def register(config, reactor=None):
         connector.disconnect()
 
     def catch_all(failure):
-        # We catch SecurityError here too, because on some DBUS configurations
-        # if you try to connect to a dbus name that doesn't have a listener,
-        # it'll try auto-starting the service, but then the StartServiceByName
-        # call can raise a SecurityError.
         print_text(failure.getTraceback(), error=True)
         print_text("Unknown error occurred.", error=True)
         stop()
