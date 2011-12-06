@@ -90,10 +90,6 @@ class AptFacade(object):
         self._package_upgrades = []
         self._package_removals = []
         self.refetch_package_index = False
-        # Explicitly set APT::Architectures to the native architecture only, as
-        # we currently don't support multiarch, so packages with different
-        # archs are not reported.
-        self.set_arch(self.get_arch())
 
     def _ensure_dir_structure(self):
         self._ensure_sub_dir("etc/apt")
@@ -171,6 +167,8 @@ class AptFacade(object):
         self._pkg2hash.clear()
         self._hash2pkg.clear()
         for package in self._cache:
+            if not self._is_main_architecture(package):
+                continue
             for version in package.versions:
                 hash = self.get_package_skeleton(
                     version, with_info=False).get_hash()
@@ -332,6 +330,16 @@ class AptFacade(object):
             return False
         return version > version.package.installed
 
+    def _is_main_architecture(self, package):
+        """Is the package for the facade's main architecture?"""
+        # package.name includes the architecture, if it's for a foreign
+        # architectures. package.shortname never includes the
+        # architecture. package.shortname doesn't exist on releases that
+        # don't support multi-arch, though.
+        if not hasattr(package, "shortname"):
+            return True
+        return package.name == package.shortname
+
     def get_packages_by_name(self, name):
         """Get all available packages matching the provided name.
 
@@ -383,7 +391,8 @@ class AptFacade(object):
             (version.package, version) for version in package_changes]
         versions_to_be_changed = set(
             (package, package.candidate)
-            for package in self._cache.get_changes())
+            for package in self._cache.get_changes()
+            if self._is_main_architecture(package))
         dependencies = versions_to_be_changed.difference(all_changes)
         if dependencies:
             raise DependencyError(

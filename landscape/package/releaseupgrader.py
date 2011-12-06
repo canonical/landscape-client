@@ -188,31 +188,10 @@ class ReleaseUpgrader(PackageTaskHandler):
                 config.add_section("NonInteractive")
                 config.set("NonInteractive", "ForceOverwrite", "no")
 
-            # Workaround for Bug #174148, which prevents dbus from restarting
-            # after a dapper->hardy upgrade
-            if not config.has_section("Distro"):
-                config.add_section("Distro")
-            if not config.has_option("Distro", "PostInstallScripts"):
-                config.set("Distro", "PostInstallScripts", "./dbus.sh")
-            else:
-                scripts = config.get("Distro", "PostInstallScripts")
-                scripts += ", ./dbus.sh"
-                config.set("Distro", "PostInstallScripts", scripts)
-
             # Write config changes to disk
             fd = open(config_filename, "w")
             config.write(fd)
             fd.close()
-
-            # Generate the post-install script that starts DBus
-            dbus_sh_filename = os.path.join(upgrade_tool_directory,
-                                            "dbus.sh")
-            fd = open(dbus_sh_filename, "w")
-            fd.write("#!/bin/sh\n"
-                     "/etc/init.d/dbus start\n"
-                     "sleep 10\n")
-            fd.close()
-            os.chmod(dbus_sh_filename, 0755)
 
         # On some releases the upgrade-tool doesn't support the allow third
         # party environment variable, so this trick is needed to make it
