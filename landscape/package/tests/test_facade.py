@@ -760,6 +760,8 @@ class AptFacadeTest(LandscapeTest):
             line.rstrip()
             for line in self.facade.perform_changes().splitlines()
             if line.strip()]
+        # Don't do a plain comparision of the output, since the output
+        # in Lucid is slightly different.
         self.assertEqual(4, len(output))
         self.assertTrue(output[0].startswith("Get:1 foo package"))
         self.assertEqual(
