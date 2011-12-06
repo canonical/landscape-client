@@ -10,6 +10,7 @@ from smart.cache import Provides
 from smart.const import NEVER, ALWAYS
 
 import apt_pkg
+from apt.package import Package
 from aptsources.sourceslist import SourcesList
 
 from twisted.internet import reactor
@@ -1263,6 +1264,14 @@ class AptFacadeTest(LandscapeTest):
             sorted(error.packages, key=self.version_sortkey),
             sorted([bar, baz], key=self.version_sortkey))
 
+    if not hasattr(Package, "shortname"):
+        # The 'shortname' attribute was added when multi-arch support
+        # was added to python-apt. So if it's not there, it means that
+        # multi-arch support isn't available.
+        skip_message = "multi-arch not supported"
+        test_wb_mark_install_upgrade_non_main_arch_dependency_error.skip = (
+            skip_message)
+        test_wb_mark_install_upgrade_non_main_arch.skip = skip_message
 
 class SmartFacadeTest(LandscapeTest):
 
