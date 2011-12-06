@@ -1274,6 +1274,7 @@ class AptFacadeTest(LandscapeTest):
             skip_message)
         test_wb_mark_install_upgrade_non_main_arch.skip = skip_message
 
+
 class SmartFacadeTest(LandscapeTest):
 
     helpers = [SmartFacadeHelper]
