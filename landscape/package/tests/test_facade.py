@@ -760,12 +760,11 @@ class AptFacadeTest(LandscapeTest):
             line.rstrip()
             for line in self.facade.perform_changes().splitlines()
             if line.strip()]
+        self.assertEqual(4, len(output))
+        self.assertTrue(output[0].startswith("Get:1 foo package"))
         self.assertEqual(
-            ["Get:1 foo package [1234 B]",
-             "Err foo package",
-             "  Some error",
-             "Fetched 0 B in 0s (0 B/s)"],
-            output)
+            ["Err foo package", "  Some error"], output[1:3])
+        self.assertTrue(output[3].startswith("Fetched "))
 
     def test_perform_changes_dpkg_output(self):
         """
