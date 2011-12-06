@@ -93,7 +93,7 @@ class AptFacade(object):
         # Explicitly set APT::Architectures to the native architecture only, as
         # we currently don't support multiarch, so packages with different
         # archs are not reported.
-        #self.set_arch(self.get_arch())
+        self.set_arch(self.get_arch())
 
     def _ensure_dir_structure(self):
         self._ensure_sub_dir("etc/apt")
@@ -111,12 +111,6 @@ class AptFacade(object):
         if not os.path.exists(full_path):
             os.makedirs(full_path)
         return full_path
-
-    def get_apt_config(self):
-        try:
-            return apt_pkg.config
-        except AttributeError:
-            return apt_pkg.Config
 
     def deinit(self):
         """This method exists solely to be compatible with C{SmartFacade}."""
@@ -162,12 +156,6 @@ class AptFacade(object):
         """
         return []
 
-    def _get_package_versions(self, package):
-        try:
-            return package.versions
-        except AttributeError:
-            return package._pkg.VersionList
-
     def reload_channels(self):
         """Reload the channels and update the cache."""
         self._cache.open(None)
@@ -183,7 +171,7 @@ class AptFacade(object):
         self._pkg2hash.clear()
         self._hash2pkg.clear()
         for package in self._cache:
-            for version in self._get_package_versions(package):
+            for version in package.versions:
                 hash = self.get_package_skeleton(
                     version, with_info=False).get_hash()
                 # Use a tuple including the package, since the Version
@@ -206,7 +194,7 @@ class AptFacade(object):
         @param codename: The dist in the repository.
         @param components: The components to be included.
         """
-        sources_dir = self.get_apt_config().find_dir("Dir::Etc::sourceparts")
+        sources_dir = apt_pkg.config.find_dir("Dir::Etc::sourceparts")
         sources_file_path = os.path.join(
             sources_dir, "_landscape-internal-facade.list")
         sources_line = "deb %s %s" % (url, codename)
@@ -275,7 +263,7 @@ class AptFacade(object):
 
     def get_arch(self):
         """Return the architecture APT is configured to use."""
-        return self.get_apt_config().get("APT::Architecture")
+        return apt_pkg.config.get("APT::Architecture")
 
     def set_arch(self, architecture):
         """Set the architecture that APT should use.
@@ -288,10 +276,9 @@ class AptFacade(object):
         # architectures can be installed, in case multiple architectures
         # are supported. We force it to be single architecture, until we
         # have a plan for supporting multiple architectures.
-        config = self.get_apt_config()
-        config.clear("APT::Architectures")
-        config.set("APT::Architectures::", architecture)
-        result = config.set("APT::Architecture", architecture)
+        apt_pkg.config.clear("APT::Architectures")
+        apt_pkg.config.set("APT::Architectures::", architecture)
+        result = apt_pkg.config.set("APT::Architecture", architecture)
         # Reload the cache, otherwise architecture change isn't reflected in
         # package list
         self._cache.open(None)

@@ -65,10 +65,9 @@ class AptFacadeTest(LandscapeTest):
         which means that the currently configured root (most likely /)
         will be used.
         """
-        config = self.facade.get_apt_config()
-        original_dpkg_root = config.get("Dir")
+        original_dpkg_root = apt_pkg.config.get("Dir")
         AptFacade()
-        self.assertEqual(original_dpkg_root, config.get("Dir"))
+        self.assertEqual(original_dpkg_root, apt_pkg.config.get("Dir"))
 
     def test_custom_root_create_required_files(self):
         """
@@ -128,12 +127,11 @@ class AptFacadeTest(LandscapeTest):
         If there are multiple architectures for a package, only the native
         architecture is reported by C{get_packages()}.
         """
-        config = self.facade.get_apt_config()
-        config.clear("APT::Architectures")
-        config.set("APT::Architecture", "amd64")
-        config.set("APT::Architectures::", "amd64")
-        config.set("APT::Architectures::", "i386")
-        facade = AptFacade(config.get("Dir"))
+        apt_pkg.config.clear("APT::Architectures")
+        apt_pkg.config.set("APT::Architecture", "amd64")
+        apt_pkg.config.set("APT::Architectures::", "amd64")
+        apt_pkg.config.set("APT::Architectures::", "i386")
+        facade = AptFacade(apt_pkg.config.get("Dir"))
 
         self._add_system_package("foo", version="1.0", architecture="amd64")
         self._add_system_package("bar", version="1.1", architecture="i386")
