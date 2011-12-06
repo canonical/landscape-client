@@ -18,11 +18,14 @@ del warnings
 import apt
 import apt_inst
 import apt_pkg
+
+has_new_enough_apt = True
 from aptsources.sourceslist import SourcesList
 try:
     from apt.progress.text import AcquireProgress
 except ImportError:
     AcquireProgress = object
+    has_new_enough_apt = False
 
 from landscape.lib.fs import append_file, create_file, read_file
 from landscape.package.skeleton import build_skeleton, build_skeleton_apt

@@ -20,7 +20,8 @@ import smart
 
 from landscape.lib.fs import read_file
 from landscape.package.facade import (
-    TransactionError, DependencyError, ChannelError, SmartError, AptFacade)
+    TransactionError, DependencyError, ChannelError, SmartError, AptFacade,
+    has_new_enough_apt)
 
 from landscape.tests.mocker import ANY
 from landscape.tests.helpers import LandscapeTest
@@ -52,6 +53,9 @@ class FakeFetchItem(object):
 
 
 class AptFacadeTest(LandscapeTest):
+
+    if not has_new_enough_apt:
+        skip = "Can't use AptFacade on hardy"
 
     helpers = [AptFacadeHelper]
 
