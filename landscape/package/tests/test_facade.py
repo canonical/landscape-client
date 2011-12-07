@@ -10,6 +10,7 @@ from smart.cache import Provides
 from smart.const import NEVER, ALWAYS
 
 import apt_pkg
+from apt.package import Package
 from aptsources.sourceslist import SourcesList
 
 from twisted.internet import reactor
@@ -759,12 +760,13 @@ class AptFacadeTest(LandscapeTest):
             line.rstrip()
             for line in self.facade.perform_changes().splitlines()
             if line.strip()]
+        # Don't do a plain comparision of the output, since the output
+        # in Lucid is slightly different.
+        self.assertEqual(4, len(output))
+        self.assertTrue(output[0].startswith("Get:1 foo package"))
         self.assertEqual(
-            ["Get:1 foo package [1234 B]",
-             "Err foo package",
-             "  Some error",
-             "Fetched 0 B in 0s (0 B/s)"],
-            output)
+            ["Err foo package", "  Some error"], output[1:3])
+        self.assertTrue(output[3].startswith("Fetched "))
 
     def test_perform_changes_dpkg_output(self):
         """
@@ -1262,6 +1264,15 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(
             sorted(error.packages, key=self.version_sortkey),
             sorted([bar, baz], key=self.version_sortkey))
+
+    if not hasattr(Package, "shortname"):
+        # The 'shortname' attribute was added when multi-arch support
+        # was added to python-apt. So if it's not there, it means that
+        # multi-arch support isn't available.
+        skip_message = "multi-arch not supported"
+        test_wb_mark_install_upgrade_non_main_arch_dependency_error.skip = (
+            skip_message)
+        test_wb_mark_install_upgrade_non_main_arch.skip = skip_message
 
 
 class SmartFacadeTest(LandscapeTest):

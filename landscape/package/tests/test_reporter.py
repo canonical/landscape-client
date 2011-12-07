@@ -1868,6 +1868,7 @@ class PackageReporterAptTest(LandscapeTest, PackageReporterTestMixin):
         The L{PackageReporter.run_apt_update} logs a debug message if
         apt-update doesn't run because interval has not passed.
         """
+        self.reporter._apt_sources_have_changed = lambda: False
         self.makeFile("", path=self.config.apt_update_stamp_filename)
 
         logging_mock = self.mocker.replace("logging.debug")
