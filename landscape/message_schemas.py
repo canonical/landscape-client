@@ -83,22 +83,6 @@ DISTRIBUTION_INFO = Message(
     optional=["distributor-id", "description", "release", "code-name"])
 
 
-hal_data = Dict(Unicode(),
-                Any(Unicode(), List(Unicode()), Bool(), Int(), Float()))
-
-HARDWARE_INVENTORY = Message("hardware-inventory", {
-    "devices": List(Any(Tuple(Constant("create"), hal_data),
-                        Tuple(Constant("update"),
-                              Unicode(),  # udi,
-                              hal_data,  # creates,
-                              hal_data,  # updates,
-                              hal_data),  # deletes
-                        Tuple(Constant("delete"),
-                              Unicode()),
-                        ),
-                    )})
-
-
 HARDWARE_INFO = Message("hardware-info", {
     "data": utf8})
 
@@ -396,13 +380,13 @@ NETWORK_ACTIVITY = Message(
 message_schemas = {}
 for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                OPERATION_RESULT, COMPUTER_INFO, DISTRIBUTION_INFO,
-               HARDWARE_INVENTORY, HARDWARE_INFO, LOAD_AVERAGE, MEMORY_INFO,
-               RESYNCHRONIZE, MOUNT_ACTIVITY, MOUNT_INFO, FREE_SPACE,
-               REGISTER, REGISTER_CLOUD_VM, REGISTER_PROVISIONED_MACHINE,
-               TEMPERATURE, PROCESSOR_INFO, USERS, PACKAGES, PACKAGE_LOCKS,
-               CHANGE_PACKAGES_RESULT, UNKNOWN_PACKAGE_HASHES,
-               ADD_PACKAGES, PACKAGE_REPORTER_RESULT, TEXT_MESSAGE, TEST,
-               CUSTOM_GRAPH, REBOOT_REQUIRED, APT_PREFERENCES, EUCALYPTUS_INFO,
+               HARDWARE_INFO, LOAD_AVERAGE, MEMORY_INFO, RESYNCHRONIZE,
+               MOUNT_ACTIVITY, MOUNT_INFO, FREE_SPACE, REGISTER,
+               REGISTER_CLOUD_VM, REGISTER_PROVISIONED_MACHINE, TEMPERATURE,
+               PROCESSOR_INFO, USERS, PACKAGES, PACKAGE_LOCKS,
+               CHANGE_PACKAGES_RESULT, UNKNOWN_PACKAGE_HASHES, ADD_PACKAGES,
+               PACKAGE_REPORTER_RESULT, TEXT_MESSAGE, TEST, CUSTOM_GRAPH,
+               REBOOT_REQUIRED, APT_PREFERENCES, EUCALYPTUS_INFO,
                EUCALYPTUS_INFO_ERROR, NETWORK_DEVICE, NETWORK_ACTIVITY,
                REBOOT_REQUIRED_INFO]:
     message_schemas[schema.type] = schema
