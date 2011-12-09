@@ -18,7 +18,8 @@ from landscape.package.tests.helpers import (
     PKGDEB_VERSION_RELATIONS, HASH_VERSION_RELATIONS,
     PKGNAME_MULTIPLE_RELATIONS, PKGDEB_MULTIPLE_RELATIONS,
     HASH_MULTIPLE_RELATIONS, PKGNAME_OR_RELATIONS, PKGDEB_OR_RELATIONS,
-    HASH_OR_RELATIONS)
+    HASH_OR_RELATIONS, HASH_VERSION_RELATIONS_NO_BREAKS,
+    HASH_MULTIPLE_RELATIONS_NO_BREAKS, HASH_SIMPLE_RELATIONS_NO_BREAKS)
 from landscape.tests.helpers import LandscapeTest
 
 
@@ -184,8 +185,16 @@ class SkeletonTestMixin(object):
             (DEB_UPGRADES, "simple-relations < 1.0"),
             (DEB_CONFLICTS, "break1"),
             (DEB_CONFLICTS, "conflict1")]
+        if not has_new_enough_apt:
+            relations = [
+                (relation, value) for relation, value in relations
+                if "break" not in value]
         self.assertEqual(relations, skeleton.relations)
-        self.assertEqual(HASH_SIMPLE_RELATIONS, skeleton.get_hash())
+        if has_new_enough_apt:
+            self.assertEqual(HASH_SIMPLE_RELATIONS, skeleton.get_hash())
+        else:
+            self.assertEqual(
+                HASH_SIMPLE_RELATIONS_NO_BREAKS, skeleton.get_hash())
 
     def test_build_skeleton_version_relations(self):
         """
@@ -204,8 +213,16 @@ class SkeletonTestMixin(object):
             (DEB_UPGRADES, "version-relations < 1.0"),
             (DEB_CONFLICTS, "break1 > 2.0"),
             (DEB_CONFLICTS, "conflict1 < 2.0")]
+        if not has_new_enough_apt:
+            relations = [
+                (relation, value) for relation, value in relations
+                if "break" not in value]
         self.assertEqual(relations, skeleton.relations)
-        self.assertEqual(HASH_VERSION_RELATIONS, skeleton.get_hash())
+        if has_new_enough_apt:
+            self.assertEqual(HASH_VERSION_RELATIONS, skeleton.get_hash())
+        else:
+            self.assertEqual(
+                HASH_VERSION_RELATIONS_NO_BREAKS, skeleton.get_hash())
 
     def test_build_skeleton_multiple_relations(self):
         """
@@ -231,8 +248,16 @@ class SkeletonTestMixin(object):
             (DEB_CONFLICTS, "break2"),
             (DEB_CONFLICTS, "conflict1 < 2.0"),
             (DEB_CONFLICTS, "conflict2")]
+        if not has_new_enough_apt:
+            relations = [
+                (relation, value) for relation, value in relations
+                if "break" not in value]
         self.assertEqual(relations, skeleton.relations)
-        self.assertEqual(HASH_MULTIPLE_RELATIONS, skeleton.get_hash())
+        if has_new_enough_apt:
+            self.assertEqual(HASH_MULTIPLE_RELATIONS, skeleton.get_hash())
+        else:
+            self.assertEqual(
+                HASH_MULTIPLE_RELATIONS_NO_BREAKS, skeleton.get_hash())
 
     def test_build_skeleton_or_relations(self):
         """
