@@ -187,6 +187,7 @@ class SkeletonTestMixin(object):
             (DEB_CONFLICTS, "conflict1")]
         expected_hash = HASH_SIMPLE_RELATIONS
         if not has_new_enough_apt:
+            # The Breaks field didn't exist in hardy.
             relations = [
                 (relation, value) for relation, value in relations
                 if "break" not in value]
@@ -213,6 +214,7 @@ class SkeletonTestMixin(object):
             (DEB_CONFLICTS, "conflict1 < 2.0")]
         expected_hash = HASH_VERSION_RELATIONS
         if not has_new_enough_apt:
+            # The Breaks field didn't exist in hardy.
             relations = [
                 (relation, value) for relation, value in relations
                 if "break" not in value]
@@ -246,6 +248,7 @@ class SkeletonTestMixin(object):
             (DEB_CONFLICTS, "conflict2")]
         expected_hash = HASH_MULTIPLE_RELATIONS
         if not has_new_enough_apt:
+            # The Breaks field didn't exist in hardy.
             relations = [
                 (relation, value) for relation, value in relations
                 if "break" not in value]
