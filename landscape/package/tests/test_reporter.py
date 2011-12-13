@@ -811,7 +811,7 @@ class PackageReporterTestMixin(object):
 
             def callback(ignored):
                 self.assertTrue(
-                    os.path.exists(self.config.smart_update_stamp_filename))
+                    os.path.exists(self.config.update_stamp_filename))
             result.addCallback(callback)
             result.chainDeferred(deferred)
 
@@ -1701,7 +1701,7 @@ class PackageReporterAptTest(LandscapeTest, PackageReporterTestMixin):
         L{PackageReporter.run_apt_update} forces an apt-update run if the
         '--force-smart-update' command line option was passed.
         """
-        self.makeFile("", path=self.config.apt_update_stamp_filename)
+        self.makeFile("", path=self.config.update_stamp_filename)
         self.config.load(["--force-smart-update"])
         self._make_fake_apt_update()
 
@@ -1872,7 +1872,7 @@ class PackageReporterAptTest(LandscapeTest, PackageReporterTestMixin):
         apt-update doesn't run because interval has not passed.
         """
         self.reporter._apt_sources_have_changed = lambda: False
-        self.makeFile("", path=self.config.apt_update_stamp_filename)
+        self.makeFile("", path=self.config.update_stamp_filename)
 
         logging_mock = self.mocker.replace("logging.debug")
         logging_mock("'%s' didn't run, update interval has not passed" %
@@ -1909,7 +1909,7 @@ class PackageReporterAptTest(LandscapeTest, PackageReporterTestMixin):
 
             def callback(ignored):
                 self.assertTrue(
-                    os.path.exists(self.config.apt_update_stamp_filename))
+                    os.path.exists(self.config.update_stamp_filename))
             result.addCallback(callback)
             result.chainDeferred(deferred)
 
