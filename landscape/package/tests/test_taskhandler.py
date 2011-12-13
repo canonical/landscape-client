@@ -454,7 +454,6 @@ class PackageTaskHandlerTest(LandscapeTest):
         facade_module.has_new_enough_apt = value
         self.addCleanup(reset_new_enough_apt)
 
-
     def test_run_task_handler_use_apt_facade_old_apt(self):
         """
         If the C{python-apt} module isn't new enough,
