@@ -17,7 +17,7 @@ from landscape.package.reporter import (
     PackageReporter, HASH_ID_REQUEST_TIMEOUT, main, find_reporter_command,
     PackageReporterConfiguration, FakeGlobalReporter, FakeReporter)
 from landscape.package import reporter
-from landscape.package.facade import AptFacade
+from landscape.package.facade import AptFacade, has_new_enough_apt
 from landscape.package.tests.helpers import (
     SmartFacadeHelper, AptFacadeHelper, SimpleRepositoryHelper,
     HASH1, HASH2, HASH3, PKGNAME1)
@@ -1620,6 +1620,9 @@ class PackageReporterSmartTest(LandscapeTest, PackageReporterTestMixin):
 
 class PackageReporterAptTest(LandscapeTest, PackageReporterTestMixin):
 
+    if not has_new_enough_apt:
+        skip = "Can't use AptFacade on hardy"
+
     helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
 
     Facade = AptFacade
@@ -1868,6 +1871,7 @@ class PackageReporterAptTest(LandscapeTest, PackageReporterTestMixin):
         The L{PackageReporter.run_apt_update} logs a debug message if
         apt-update doesn't run because interval has not passed.
         """
+        self.reporter._apt_sources_have_changed = lambda: False
         self.makeFile("", path=self.config.apt_update_stamp_filename)
 
         logging_mock = self.mocker.replace("logging.debug")
@@ -1948,6 +1952,9 @@ class GlobalPackageReporterTestMixin(object):
 
 class GlobalPackageReporterAptTest(LandscapeTest,
                                    GlobalPackageReporterTestMixin):
+
+    if not has_new_enough_apt:
+        skip = "Can't use AptFacade on hardy"
 
     helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
 

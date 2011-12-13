@@ -1,5 +1,7 @@
 import hashlib
 import os
+import tempfile
+from cStringIO import StringIO
 
 from smart.transaction import (
     Transaction, PolicyInstall, PolicyUpgrade, PolicyRemove, Failed)
@@ -7,10 +9,23 @@ from smart.const import INSTALL, REMOVE, UPGRADE, ALWAYS, NEVER
 
 import smart
 
+# Importing apt throws a FutureWarning on hardy, that we don't want to
+# see.
+import warnings
+warnings.filterwarnings("ignore", module="apt", category=FutureWarning)
+del warnings
+
 import apt
 import apt_inst
 import apt_pkg
+
+has_new_enough_apt = True
 from aptsources.sourceslist import SourcesList
+try:
+    from apt.progress.text import AcquireProgress
+except ImportError:
+    AcquireProgress = object
+    has_new_enough_apt = False
 
 from landscape.lib.fs import append_file, create_file, read_file
 from landscape.package.skeleton import build_skeleton, build_skeleton_apt
@@ -39,6 +54,19 @@ class ChannelError(Exception):
     """Raised when channels fail to load."""
 
 
+class LandscapeAcquireProgress(AcquireProgress):
+
+    def _winch(self, *dummy):
+        """Override trying to get the column count of the buffer.
+
+        We always send the output to a file, not to a terminal, so the
+        default width (80 columns) is fine for us.
+
+        Overriding this method means that we don't have to care about
+        fcntl.ioctl API differences for different Python versions.
+        """
+
+
 class AptFacade(object):
     """Wrapper for tasks using Apt.
 
@@ -65,10 +93,6 @@ class AptFacade(object):
         self._package_upgrades = []
         self._package_removals = []
         self.refetch_package_index = False
-        # Explicitly set APT::Architectures to the native architecture only, as
-        # we currently don't support multiarch, so packages with different
-        # archs are not reported.
-        self.set_arch(self.get_arch())
 
     def _ensure_dir_structure(self):
         self._ensure_sub_dir("etc/apt")
@@ -146,6 +170,8 @@ class AptFacade(object):
         self._pkg2hash.clear()
         self._hash2pkg.clear()
         for package in self._cache:
+            if not self._is_main_architecture(package):
+                continue
             for version in package.versions:
                 hash = self.get_package_skeleton(
                     version, with_info=False).get_hash()
@@ -307,6 +333,16 @@ class AptFacade(object):
             return False
         return version > version.package.installed
 
+    def _is_main_architecture(self, package):
+        """Is the package for the facade's main architecture?"""
+        # package.name includes the architecture, if it's for a foreign
+        # architectures. package.shortname never includes the
+        # architecture. package.shortname doesn't exist on releases that
+        # don't support multi-arch, though.
+        if not hasattr(package, "shortname"):
+            return True
+        return package.name == package.shortname
+
     def get_packages_by_name(self, name):
         """Get all available packages matching the provided name.
 
@@ -358,16 +394,38 @@ class AptFacade(object):
             (version.package, version) for version in package_changes]
         versions_to_be_changed = set(
             (package, package.candidate)
-            for package in self._cache.get_changes())
+            for package in self._cache.get_changes()
+            if self._is_main_architecture(package))
         dependencies = versions_to_be_changed.difference(all_changes)
         if dependencies:
             raise DependencyError(
                 [version for package, version in dependencies])
+        fetch_output = StringIO()
+        # Redirect stdout and stderr to a file. We need to work with the
+        # file descriptors, rather than sys.stdout/stderr, since dpkg is
+        # run in a subprocess.
+        fd, install_output_path = tempfile.mkstemp()
+        old_stdout = os.dup(1)
+        old_stderr = os.dup(2)
+        os.dup2(fd, 1)
+        os.dup2(fd, 2)
         try:
-            self._cache.commit()
+            self._cache.commit(
+                fetch_progress=LandscapeAcquireProgress(fetch_output))
         except SystemError, error:
-            raise TransactionError(error.args[0])
-        return "ok"
+            result_text = (
+                fetch_output.getvalue() + read_file(install_output_path))
+            raise TransactionError(
+                error.args[0] + "\n\nPackage operation log:\n" + result_text)
+        else:
+            result_text = (
+                fetch_output.getvalue() + read_file(install_output_path))
+        finally:
+            # Restore stdout and stderr.
+            os.dup2(old_stdout, 1)
+            os.dup2(old_stderr, 2)
+            os.remove(install_output_path)
+        return result_text
 
     def reset_marks(self):
         """Clear the pending package operations."""

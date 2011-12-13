@@ -554,7 +554,14 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
                        account_name=None,
                        registration_password=None,
                        tags=None)
-        message["vm-info"] = kwargs.pop("vm_info", "")
+
+        # The get_vm_info() needs to be deffered to the else.  If vm-info is
+        # specified in kwargs, get_vm_info() will typically be mocked.
+        if "vm_info" in kwargs:
+            message["vm-info"] = kwargs.pop("vm_info")
+        else:
+            message["vm-info"] = get_vm_info()
+
         message.update(kwargs)
         return message
 
@@ -866,7 +873,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
                               "account_name": u"onward",
                               "registration_password": u"password",
                               "hostname": socket.getfqdn(),
-                              "vm-info": "",
+                              "vm-info": get_vm_info(),
                               "tags": None}])
 
     def test_should_register_in_cloud(self):

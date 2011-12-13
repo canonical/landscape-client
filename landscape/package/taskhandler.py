@@ -266,11 +266,11 @@ def run_task_handler(cls, args, reactor=None):
     package_store = cls.package_store_class(config.store_filename)
     # Delay importing of the facades so that we don't
     # import Smart unless we need to.
-    if os.environ.get("USE_APT_FACADE"):
-        from landscape.package.facade import AptFacade
+    from landscape.package.facade import (
+        AptFacade, SmartFacade, has_new_enough_apt)
+    if os.environ.get("USE_APT_FACADE") and has_new_enough_apt:
         package_facade = AptFacade()
     else:
-        from landscape.package.facade import SmartFacade
         package_facade = SmartFacade()
 
     def finish():

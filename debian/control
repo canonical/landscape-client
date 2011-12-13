@@ -12,15 +12,14 @@ Architecture: any
 Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          python-gnupginterface,
          python-twisted-core,
-         python-gobject,
          python-apt,
          ca-certificates,
-         perl-modules,
          python-gdbm,
          lsb-release,
          lsb-base,
          adduser,
-         bc
+         bc,
+         lshw
 Suggests: ${extra:Suggests}
 Replaces: landscape-client (<= 1.0.23-0ubuntu0.8.10)
 Description: The Landscape administration system client

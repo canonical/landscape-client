@@ -3,12 +3,14 @@ import os
 import re
 import sys
 import textwrap
+import tempfile
 
 from smart.control import Control
 from smart.cache import Provides
 from smart.const import NEVER, ALWAYS
 
 import apt_pkg
+from apt.package import Package
 from aptsources.sourceslist import SourcesList
 
 from twisted.internet import reactor
@@ -19,7 +21,8 @@ import smart
 
 from landscape.lib.fs import read_file
 from landscape.package.facade import (
-    TransactionError, DependencyError, ChannelError, SmartError, AptFacade)
+    TransactionError, DependencyError, ChannelError, SmartError, AptFacade,
+    has_new_enough_apt)
 
 from landscape.tests.mocker import ANY
 from landscape.tests.helpers import LandscapeTest
@@ -30,7 +33,30 @@ from landscape.package.tests.helpers import (
     create_simple_repository)
 
 
+class FakeOwner(object):
+    """Fake Owner object that apt.progress.text.AcquireProgress expects."""
+
+    def __init__(self, filesize, error_text=""):
+        self.id = None
+        self.filesize = filesize
+        self.complete = False
+        self.status = None
+        self.STAT_DONE = object()
+        self.error_text = error_text
+
+
+class FakeFetchItem(object):
+    """Fake Item object that apt.progress.text.AcquireProgress expects."""
+
+    def __init__(self, owner, description):
+        self.owner = owner
+        self.description = description
+
+
 class AptFacadeTest(LandscapeTest):
+
+    if not has_new_enough_apt:
+        skip = "Can't use AptFacade on hardy"
 
     helpers = [AptFacadeHelper]
 
@@ -713,6 +739,158 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         self.assertEqual(self.facade.perform_changes(), None)
 
+    def test_perform_changes_fetch_progress(self):
+        """
+        C{perform_changes()} captures the fetch output and returns it.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        foo = self.facade.get_packages_by_name("foo")[0]
+        self.facade.mark_install(foo)
+        fetch_item = FakeFetchItem(
+            FakeOwner(1234, error_text="Some error"), "foo package")
+
+        def commit(fetch_progress):
+            fetch_progress.start()
+            fetch_progress.fetch(fetch_item)
+            fetch_progress.fail(fetch_item)
+            fetch_progress.done(fetch_item)
+            fetch_progress.stop()
+
+        self.facade._cache.commit = commit
+        output = [
+            line.rstrip()
+            for line in self.facade.perform_changes().splitlines()
+            if line.strip()]
+        # Don't do a plain comparision of the output, since the output
+        # in Lucid is slightly different.
+        self.assertEqual(4, len(output))
+        self.assertTrue(output[0].startswith("Get:1 foo package"))
+        self.assertEqual(
+            ["Err foo package", "  Some error"], output[1:3])
+        self.assertTrue(output[3].startswith("Fetched "))
+
+    def test_perform_changes_dpkg_output(self):
+        """
+        C{perform_changes()} captures the dpkg output and returns it.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        foo = self.facade.get_packages_by_name("foo")[0]
+        self.facade.mark_install(foo)
+
+        def commit(fetch_progress):
+            os.write(1, "Stdout output\n")
+            os.write(2, "Stderr output\n")
+            os.write(1, "Stdout output again\n")
+
+        self.facade._cache.commit = commit
+        output = [
+            line.rstrip()
+            for line in self.facade.perform_changes().splitlines()
+            if line.strip()]
+        self.assertEqual(
+            ["Stdout output", "Stderr output", "Stdout output again"], output)
+
+    def test_perform_changes_dpkg_output_error(self):
+        """
+        C{perform_changes()} captures the dpkg output and includes it in
+        the exception message, if committing the cache fails.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        foo = self.facade.get_packages_by_name("foo")[0]
+        self.facade.mark_install(foo)
+
+        def commit(fetch_progress):
+            os.write(1, "Stdout output\n")
+            os.write(2, "Stderr output\n")
+            os.write(1, "Stdout output again\n")
+            raise SystemError("Oops")
+
+        self.facade._cache.commit = commit
+        exception = self.assertRaises(
+            TransactionError, self.facade.perform_changes)
+        output = [
+            line.rstrip()
+            for line in exception.args[0].splitlines()if line.strip()]
+        self.assertEqual(
+            ["Oops", "Package operation log:", "Stdout output",
+             "Stderr output", "Stdout output again"],
+            output)
+
+    def _mock_output_restore(self):
+        """
+        Mock methods to ensure that stdout and stderr are restored,
+        after they have been captured.
+
+        Return the path to the tempfile that was used to capture the output.
+        """
+        old_stdout = os.dup(1)
+        old_stderr = os.dup(2)
+        fd, outfile = tempfile.mkstemp()
+        mkstemp = self.mocker.replace("tempfile.mkstemp")
+        mkstemp()
+        self.mocker.result((fd, outfile))
+        dup = self.mocker.replace("os.dup")
+        dup(1)
+        self.mocker.result(old_stdout)
+        dup(2)
+        self.mocker.result(old_stderr)
+        dup2 = self.mocker.replace("os.dup2")
+        dup2(old_stdout, 1)
+        self.mocker.passthrough()
+        dup2(old_stderr, 2)
+        self.mocker.passthrough()
+        return outfile
+
+    def test_perform_changes_dpkg_output_reset(self):
+        """
+        C{perform_changes()} resets stdout and stderr after the cache commit.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        foo = self.facade.get_packages_by_name("foo")[0]
+        self.facade.mark_install(foo)
+
+        outfile = self._mock_output_restore()
+        self.mocker.replay()
+        self.facade._cache.commit = lambda fetch_progress: None
+        self.facade.perform_changes()
+        # Make sure we don't leave the tempfile behind.
+        self.assertFalse(os.path.exists(outfile))
+
+    def test_perform_changes_dpkg_output_reset_error(self):
+        """
+        C{perform_changes()} resets stdout and stderr after the cache
+        commit, even if commit raises an error.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        foo = self.facade.get_packages_by_name("foo")[0]
+        self.facade.mark_install(foo)
+
+        outfile = self._mock_output_restore()
+        self.mocker.replay()
+
+        def commit(fetch_progress):
+            raise SystemError("Error")
+
+        self.facade._cache.commit = commit
+        self.assertRaises(TransactionError, self.facade.perform_changes)
+        # Make sure we don't leave the tempfile behind.
+        self.assertFalse(os.path.exists(outfile))
+
     def test_reset_marks(self):
         """
         C{reset_marks()} clears things, so that there's nothing to do
@@ -791,9 +969,98 @@ class AptFacadeTest(LandscapeTest):
         foo1, foo2 = sorted(self.facade.get_packages_by_name("foo"))
         self.assertEqual(foo2, foo1.package.candidate)
         self.facade.mark_install(foo1)
-        self.facade._cache.commit = lambda: None
+        self.facade._cache.commit = lambda fetch_progress: None
         self.facade.perform_changes()
         self.assertEqual(foo1, foo1.package.candidate)
+
+    def test_wb_mark_install_upgrade_non_main_arch(self):
+        """
+        If C{mark_install} is used to upgrade a package, its non-main
+        architecture version of the package will be upgraded as well, if
+        it is installed.
+        """
+        apt_pkg.config.clear("APT::Architectures")
+        apt_pkg.config.set("APT::Architecture", "amd64")
+        apt_pkg.config.set("APT::Architectures::", "amd64")
+        apt_pkg.config.set("APT::Architectures::", "i386")
+        deb_dir = self.makeDir()
+        self._add_system_package(
+            "multi-arch", architecture="amd64", version="1.0")
+        self._add_system_package(
+            "multi-arch", architecture="i386", version="1.0")
+        self._add_system_package(
+            "single-arch", architecture="amd64", version="1.0")
+        self._add_package_to_deb_dir(
+            deb_dir, "multi-arch", architecture="amd64", version="2.0")
+        self._add_package_to_deb_dir(
+            deb_dir, "multi-arch", architecture="i386", version="2.0")
+        self._add_package_to_deb_dir(
+            deb_dir, "single-arch", architecture="amd64", version="2.0")
+        self._add_package_to_deb_dir(
+            deb_dir, "single-arch", architecture="i386", version="2.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+
+        multi_arch1, multi_arch2 = sorted(
+            self.facade.get_packages_by_name("multi-arch"))
+        single_arch1, single_arch2 = sorted(
+            self.facade.get_packages_by_name("single-arch"))
+        self.facade.mark_install(multi_arch2)
+        self.facade.mark_install(single_arch2)
+        self.facade._cache.commit = lambda fetch_progress: None
+        self.facade.perform_changes()
+        changes = [
+            (pkg.name, pkg.candidate.version)
+            for pkg in self.facade._cache.get_changes()]
+        self.assertEqual(
+            [("multi-arch", "2.0"), ("multi-arch:i386", "2.0"),
+             ("single-arch", "2.0")],
+            sorted(changes))
+
+    def test_wb_mark_install_upgrade_non_main_arch_dependency_error(self):
+        """
+        If a non-main architecture is automatically upgraded, and the
+        main architecture versions hasn't been marked for installation,
+        only the main architecture version is included in the
+        C{DependencyError}.
+        """
+        apt_pkg.config.clear("APT::Architectures")
+        apt_pkg.config.set("APT::Architecture", "amd64")
+        apt_pkg.config.set("APT::Architectures::", "amd64")
+        apt_pkg.config.set("APT::Architectures::", "i386")
+        deb_dir = self.makeDir()
+        self._add_system_package(
+            "multi-arch", architecture="amd64", version="1.0")
+        self._add_system_package(
+            "multi-arch", architecture="i386", version="1.0")
+        self._add_system_package(
+            "single-arch", architecture="amd64", version="1.0",
+            control_fields={"Depends": "multi-arch"})
+        self._add_package_to_deb_dir(
+            deb_dir, "multi-arch", architecture="amd64", version="2.0")
+        self._add_package_to_deb_dir(
+            deb_dir, "multi-arch", architecture="i386", version="2.0")
+        self._add_package_to_deb_dir(
+            deb_dir, "single-arch", architecture="amd64", version="2.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+
+        multi_arch2 = sorted(
+            self.facade.get_packages_by_name("multi-arch"))[1]
+        single_arch2 = sorted(
+            self.facade.get_packages_by_name("single-arch"))[1]
+        self.facade.mark_install(single_arch2)
+        self.facade._cache.commit = lambda fetch_progress: None
+        exception = self.assertRaises(
+            DependencyError, self.facade.perform_changes)
+        self.assertEqual([multi_arch2], exception.packages)
+        changes = [
+            (pkg.name, pkg.candidate.version)
+            for pkg in self.facade._cache.get_changes()]
+        self.assertEqual(
+            [("multi-arch", "2.0"), ("multi-arch:i386", "2.0"),
+             ("single-arch", "2.0")],
+            sorted(changes))
 
     def test_mark_upgrade_candidate_version(self):
         """
@@ -811,7 +1078,6 @@ class AptFacadeTest(LandscapeTest):
         foo1, foo2, foo3 = sorted(self.facade.get_packages_by_name("foo"))
         self.assertEqual(foo3, foo1.package.candidate)
         self.facade.mark_upgrade(foo1)
-        self.facade._cache.commit = lambda: None
         exception = self.assertRaises(
             DependencyError, self.facade.perform_changes)
         self.assertEqual([foo3], exception.packages)
@@ -850,7 +1116,6 @@ class AptFacadeTest(LandscapeTest):
         noauto1.package.mark_auto(False)
         self.facade.mark_upgrade(auto1)
         self.facade.mark_upgrade(noauto1)
-        self.facade._cache.commit = lambda: None
         self.assertRaises(DependencyError, self.facade.perform_changes)
         self.assertTrue(auto2.package.is_auto_installed)
         self.assertFalse(noauto2.package.is_auto_installed)
@@ -862,7 +1127,7 @@ class AptFacadeTest(LandscapeTest):
         """
         committed = []
 
-        def commit():
+        def commit(fetch_progress):
             committed.append(True)
 
         deb_dir = self.makeDir()
@@ -887,10 +1152,10 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         pkg = self.facade.get_packages_by_name("minimal")[0]
         self.facade.mark_install(pkg)
-        self.facade._cache.commit = lambda: None
-        # XXX: It should return the Apt output, but that will be done
-        # later.
-        self.assertEqual("ok", self.facade.perform_changes())
+        self.facade._cache.commit = lambda fetch_progress: None
+        # An empty string is returned, since we don't call the progress
+        # objects, which are the ones that build the output string.
+        self.assertEqual("", self.facade.perform_changes())
 
     def test_wb_perform_changes_commit_error(self):
         """
@@ -903,7 +1168,7 @@ class AptFacadeTest(LandscapeTest):
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_remove(foo)
         cache = self.mocker.replace(self.facade._cache)
-        cache.commit()
+        cache.commit(fetch_progress=ANY)
         self.mocker.throw(SystemError("Something went wrong."))
         self.mocker.replay()
         exception = self.assertRaises(TransactionError,
@@ -1003,6 +1268,15 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(
             sorted(error.packages, key=self.version_sortkey),
             sorted([bar, baz], key=self.version_sortkey))
+
+    if not hasattr(Package, "shortname"):
+        # The 'shortname' attribute was added when multi-arch support
+        # was added to python-apt. So if it's not there, it means that
+        # multi-arch support isn't available.
+        skip_message = "multi-arch not supported"
+        test_wb_mark_install_upgrade_non_main_arch_dependency_error.skip = (
+            skip_message)
+        test_wb_mark_install_upgrade_non_main_arch.skip = skip_message
 
 
 class SmartFacadeTest(LandscapeTest):
