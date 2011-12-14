@@ -27,25 +27,15 @@ SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
 
 class PackageTaskHandlerConfigurationTest(LandscapeTest):
 
-    def test_force_smart_update_option(self):
+    def test_update_stamp_option(self):
         """
-        L{PackageReporterConfiguration.smart_update_stamp_filename} points
+        L{PackageReporterConfiguration.update_stamp_filename} points
         to the smart-update stamp file.
         """
         config = PackageTaskHandlerConfiguration()
         self.assertEqual(
-            config.smart_update_stamp_filename,
-            "/var/lib/landscape/client/package/smart-update-stamp")
-
-    def test_force_apt_update_option(self):
-        """
-        L{PackageReporterConfiguration.apt_update_stamp_filename} points
-        to the apt-update stamp file.
-        """
-        config = PackageTaskHandlerConfiguration()
-        self.assertEqual(
-            config.apt_update_stamp_filename,
-            "/var/lib/landscape/client/package/apt-update-stamp")
+            config.update_stamp_filename,
+            "/var/lib/landscape/client/package/update-stamp")
 
 
 class PackageTaskHandlerTest(LandscapeTest):
@@ -463,7 +453,6 @@ class PackageTaskHandlerTest(LandscapeTest):
         old_has_new_enough_apt = facade_module.has_new_enough_apt
         facade_module.has_new_enough_apt = value
         self.addCleanup(reset_new_enough_apt)
-
 
     def test_run_task_handler_use_apt_facade_old_apt(self):
         """
