@@ -45,3 +45,25 @@ ping_url = http://landscape.canonical.com/ping
                          "https://proxy.localdomain:6192")
         self.assertEqual(controller.ping_url, 
                          "http://landscape.canonical.com/ping")
+
+    def test_set_server_hostname(self):
+        """
+        Test we can set the server_hostname correctly, and derive L{url} and
+        L{ping_url} from it.
+        """
+        controller = ConfigController(self.config)
+        self.assertEqual(controller.url, 
+                         "https://landscape.canonical.com/message-system")
+        self.assertEqual(controller.ping_url,
+                         "http://landscape.canonical.com/ping")
+        self.assertEqual(controller.server_host_name, 
+                         "landscape.canonical.com")
+        new_server_host_name = "landscape.localdomain"
+        controller.server_host_name = new_server_host_name
+        self.assertEqual(controller.server_host_name, new_server_host_name)
+        self.assertEqual(controller.url,
+                         "https://landscape.localdomain/message-system")
+        self.assertEqual(controller.ping_url,
+                         "http://landscape.localdomain/ping")
+        
+
