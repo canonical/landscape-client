@@ -103,3 +103,6 @@ class ConfigController(object):
     @property
     def ping_url(self):
         return self.__ping_url
+
+    def revert(self):
+        self.__load_data_from_config()

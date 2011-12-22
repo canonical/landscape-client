@@ -45,6 +45,7 @@ ping_url = http://landscape.canonical.com/ping
                          "https://proxy.localdomain:6192")
         self.assertEqual(controller.ping_url, 
                          "http://landscape.canonical.com/ping")
+        self.assertEqual(controller.server_host_name, "landscape.canonical.com")
 
     def test_set_server_hostname(self):
         """
@@ -67,3 +68,17 @@ ping_url = http://landscape.canonical.com/ping
                          "http://landscape.localdomain/ping")
         
 
+    def test_revert(self):
+        """
+        Test that we can revert the controller to it's initial state.
+        """
+        controller = ConfigController(self.config)
+        self.assertEqual(controller.server_host_name, "landscape.canonical.com")
+        controller.server_host_name = "landscape.localdomain"
+        self.assertEqual(controller.server_host_name, "landscape.localdomain")
+        controller.revert()
+        self.assertEqual(controller.server_host_name, "landscape.canonical.com")
+    
+        
+                         
+        
