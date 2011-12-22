@@ -79,6 +79,17 @@ ping_url = http://landscape.canonical.com/ping
         controller.server_host_name = "landscape.canonical.com"
         self.assertTrue(controller.hosted)
 
+
+    def test_set_account_name(self):
+        """
+        Test that we can set the L{account_name} property.
+        """
+        controller = ConfigController(self.config)
+        self.assertEqual(controller.account_name, "foo")
+        controller.account_name = "shoe"
+        self.assertEqual(controller.account_name, "shoe")
+        
+
     def test_revert(self):
         """
         Test that we can revert the controller to it's initial state.

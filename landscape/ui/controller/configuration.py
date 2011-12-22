@@ -90,6 +90,10 @@ class ConfigController(object):
     def account_name(self):
         return self.__account_name
 
+    @account_name.setter
+    def account_name(self, value):
+        self.__account_name = value
+
     @property
     def registration_password(self):
         return self.__registration_password
