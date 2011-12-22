@@ -66,7 +66,18 @@ ping_url = http://landscape.canonical.com/ping
                          "https://landscape.localdomain/message-system")
         self.assertEqual(controller.ping_url,
                          "http://landscape.localdomain/ping")
-        
+
+    def test_setting_server_host_name_also_sets_hosted(self):
+        """
+        Test that when we set the L{server_host_name} the L{hosted} value is
+        also derived.
+        """
+        controller = ConfigController(self.config)
+        self.assertTrue(controller.hosted)
+        controller.server_host_name = "landscape.localdomain"
+        self.assertFalse(controller.hosted)
+        controller.server_host_name = "landscape.canonical.com"
+        self.assertTrue(controller.hosted)
 
     def test_revert(self):
         """

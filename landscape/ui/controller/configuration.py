@@ -4,6 +4,8 @@ from landscape.configuration import (
  
 class ConfigController(object):
 
+    HOSTED_HOST_NAME="landscape.canonical.com"
+
     def __init__(self, configuration):
         self.__configuration = configuration
         self.__configuration.load([])
@@ -103,6 +105,10 @@ class ConfigController(object):
     @property
     def ping_url(self):
         return self.__ping_url
+
+    @property
+    def hosted(self):
+        return self.server_host_name == ConfigController.HOSTED_HOST_NAME
 
     def revert(self):
         self.__load_data_from_config()
