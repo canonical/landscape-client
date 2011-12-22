@@ -98,6 +98,10 @@ class ConfigController(object):
     def registration_password(self):
         return self.__registration_password
 
+    @registration_password.setter
+    def registration_password(self, value):
+        self.__registration_password = value
+
     @property
     def computer_title(self):
         return self.__computer_title

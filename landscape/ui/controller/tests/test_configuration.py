@@ -88,6 +88,15 @@ ping_url = http://landscape.canonical.com/ping
         self.assertEqual(controller.account_name, "foo")
         controller.account_name = "shoe"
         self.assertEqual(controller.account_name, "shoe")
+
+    def test_set_registration_password(self):
+        """
+        Test that we can set the L{registration_password} property.
+        """
+        controller = ConfigController(self.config)
+        self.assertEquals(controller.registration_password, "bar")
+        controller.registration_password = "nucker"
+        self.assertEquals(controller.registration_password, "nucker")
         
 
     def test_revert(self):
