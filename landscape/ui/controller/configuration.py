@@ -42,6 +42,7 @@ class ConfigController(object):
         except ValueError:
             return without_protocol
 
+
     # def is_valid_host_name(self, host_name):
     #     valid_section = re.compile("(?!-)[A-Z\d-]{1,63}(?<!-)$", re.IGNORECASE)
     #     def is_valid_host_name_section(host_name_section):
