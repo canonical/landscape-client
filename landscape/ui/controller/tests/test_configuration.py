@@ -98,7 +98,6 @@ ping_url = http://landscape.canonical.com/ping
         controller.registration_password = "nucker"
         self.assertEquals(controller.registration_password, "nucker")
         
-
     def test_revert(self):
         """
         Test that we can revert the controller to it's initial state.
@@ -110,6 +109,20 @@ ping_url = http://landscape.canonical.com/ping
         controller.revert()
         self.assertEqual(controller.server_host_name, "landscape.canonical.com")
     
+    def test_write(self):
+        """
+        Test that we can write configuration settings back to the config file.
+        """
+        controller = ConfigController(self.config)
+        self.assertEqual(controller.server_host_name, "landscape.canonical.com")
+        controller.server_host_name = "landscape.localdomain"
+        self.assertEqual(controller.server_host_name, "landscape.localdomain")
+        controller.commit()
+        self.assertEqual(controller.server_host_name, "landscape.localdomain")
+        controller.revert()
+        self.assertEqual(controller.server_host_name, "landscape.localdomain")
+
+
         
-                         
+        
         

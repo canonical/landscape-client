@@ -99,6 +99,7 @@ class ConfigController(object):
         return self.__registration_password
 
     @registration_password.setter
+
     def registration_password(self, value):
         self.__registration_password = value
 
@@ -119,4 +120,20 @@ class ConfigController(object):
         return self.server_host_name == ConfigController.HOSTED_HOST_NAME
 
     def revert(self):
+        self.__configuration.reload()
         self.__load_data_from_config()
+
+    def commit(self):
+        self.__configuration.data_path = self.__data_path
+        self.__configuration.http_proxy = self.__http_proxy
+        self.__configuration.tags = self.__tags
+        self.__configuration.url = self.__url
+        self.__configuration.ping_url = self.__ping_url
+        self.__configuration.account_name = self.__account_name
+        self.__configuration.registration_password = \
+            self.__registration_password
+        self.__configuration.computer_title = self.__computer_title
+        self.__configuration.https_proxy = self.__https_proxy
+        self.__configuration.ping_url = self.__ping_url
+        self.__configuration.write()
+        
