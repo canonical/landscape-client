@@ -109,7 +109,7 @@ ping_url = http://landscape.canonical.com/ping
         controller.revert()
         self.assertEqual(controller.server_host_name, "landscape.canonical.com")
     
-    def test_write(self):
+    def test_commit(self):
         """
         Test that we can write configuration settings back to the config file.
         """

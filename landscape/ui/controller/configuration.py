@@ -3,7 +3,12 @@ from landscape.configuration import (
  
  
 class ConfigController(object):
-
+    """
+    L{ConfigContoller} defines actions to take against a configfuration object,
+    providing starting values from the file, allowing them to be changed
+    transiently, reverted or committed.
+    """
+    
     HOSTED_HOST_NAME="landscape.canonical.com"
 
     def __init__(self, configuration):
