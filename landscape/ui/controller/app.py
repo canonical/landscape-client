@@ -1,5 +1,10 @@
 from gi.repository import Gtk, Gio
 
+from landscape.configuration import LandscapeSetupConfiguration
+from landscape.ui.view.configuration import LandscapeClientSettingsDialog
+from landscape.ui.controller.configuration import ConfigController
+
+
 
 APPLICATION_ID="com.canonical.landscape-client.settings.ui"
 
@@ -16,5 +21,10 @@ class LandscapeSettingsApplicationController(Gtk.Application):
         self.connect("activate", self.setup_ui)
 
 
-    def setup_ui(self):
-        pass
+    def get_config(self):
+        return LandscapeSetupConfiguration([])
+
+    def setup_ui(self, data=None):
+        config = self.get_config()
+        controller = ConfigController(config)
+        self.settings_dialog = LandscapeClientSettingsDialog(controller)
