@@ -1,0 +1,22 @@
+#!/usr/bin/python 
+import os
+import sys
+
+script_dir = os.path.abspath("scripts")
+if os.path.dirname(os.path.abspath(sys.argv[0])) == script_dir:
+    sys.path.insert(0, "./")
+    data_path = os.path.abspath(os.path.join(script_dir, os.path.pardir))
+    print data_path
+else:
+    from landscape.lib.warning import hide_warnings
+    hide_warnings()
+    data_path = None
+    print "B"
+
+
+from landscape.ui.controller.app import LandscapeSettingsApplicationController
+
+
+if __name__ == "__main__":
+    app = LandscapeSettingsApplicationController(data_path=data_path)
+    app.run(None)
