@@ -1,3 +1,5 @@
+import sys
+
 from landscape.tests.helpers import LandscapeTest
 from landscape.ui.controller.app import LandscapeSettingsApplicationController
 from landscape.ui.controller.configuration import ConfigController
@@ -64,7 +66,7 @@ class LandscapeSettingsApplicationControllerUISetupTest(LandscapeTest):
         def get_config():
             configdata = """
 [client]
-data_path = /var/lib/landscape/client
+data_path = %s
 http_proxy = http://proxy.localdomain:3192
 tags = a_tag
 url = https://landscape.canonical.com/message-system
@@ -74,7 +76,7 @@ computer_title = baz
 https_proxy = https://proxy.localdomain:6192
 ping_url = http://landscape.canonical.com/ping
 
-"""
+""" % sys.path[0]
             config_filename = self.makeFile(configdata)
             class MyLandscapeSetupConfiguration(LandscapeSetupConfiguration):
                 default_config_filenames = [config_filename]
