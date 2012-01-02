@@ -21,6 +21,7 @@ class LandscapeClientSettingsDialog(Gtk.Dialog):
         self.__builder = Gtk.Builder()
         self.__builder.add_from_file(self.__ui_path)
         self.__setup_ui()
+        self.__load_data()
         
     def __setup_ui(self):
         self.set_title("Landscape Client Settings")
@@ -40,12 +41,29 @@ class LandscapeClientSettingsDialog(Gtk.Dialog):
             "reigstered-password-entry")
         self._server_host_name_entry = self.__builder.get_object(
             "server-host-name-entry")
-
+        self._account_entry.set_sensitive(False)
+        self._password_entry.set_sensitive(False)
+        self._server_host_name_entry.set_sensitive(False)
         self._hosted_radiobutton.connect("toggled", 
                                     self.__on_toggle_server_type_radiobutton)
         self._dedicated_radiobutton.connect("toggled", 
                                     self.__on_toggle_server_type_radiobutton)
-        self._hosted_radiobutton.set_active(True)
+
+
+    def __load_data(self):
+        if self.controller.hosted:
+            self._hosted_radiobutton.set_active(True)
+            if not self.controller.account_name is None:
+                self._account_entry.set_text(self.controller.account_name)
+            if not self.controller.registration_password is None:
+                self._password_entry.set_text(
+                    self.controller.registration_password)
+        else:
+            self._dedicated_radiobutton.set_active(True)
+            if not self.controller.server_host_name is None:
+                self._server_host_name_entry.set_text(
+                self.controller.server_host_name)
+        self.select_landscape_hosting()
 
 
     def select_landscape_hosting(self):
