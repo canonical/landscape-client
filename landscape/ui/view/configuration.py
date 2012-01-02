@@ -48,9 +48,13 @@ class LandscapeClientSettingsDialog(Gtk.Dialog):
                                     self.__on_toggle_server_type_radiobutton)
         self._dedicated_radiobutton.connect("toggled", 
                                     self.__on_toggle_server_type_radiobutton)
-
+        self._revert_button = self.__builder.get_object("revert-button")
+        self._revert_button.connect("clicked", self.revert)
 
     def __load_data(self):
+        self._account_entry.set_text("")
+        self._password_entry.set_text("")
+        self._server_host_name_entry.set_text("")
         if self.controller.hosted:
             self._hosted_radiobutton.set_active(True)
             if not self.controller.account_name is None:
@@ -80,7 +84,10 @@ class LandscapeClientSettingsDialog(Gtk.Dialog):
     def __on_toggle_server_type_radiobutton(self, radiobutton):
         self.select_landscape_hosting()
         return True
-        
+
+    def revert(self, button):
+        self.controller.revert()
+        self.__load_data()
         
         
         

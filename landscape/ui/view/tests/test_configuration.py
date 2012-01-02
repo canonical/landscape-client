@@ -84,6 +84,31 @@ ping_url = http://landscape.canonical.com/ping
         self.assertEqual(dialog._password_entry.get_text(), "bar")
         self.assertEqual(dialog._server_host_name_entry.get_text(), "")
 
+    def test_revert(self):
+        """
+        Test that we can revert the UI values using the controller.
+        """
+        controller = ConfigController(self.config)
+        dialog = LandscapeClientSettingsDialog(controller)
+        self.assertEqual(dialog._account_entry.get_text(), "foo")
+        self.assertEqual(dialog._password_entry.get_text(), "bar")
+        self.assertEqual(dialog._server_host_name_entry.get_text(), "")
+        dialog._dedicated_radiobutton.set_active(True)
+        dialog._server_host_name_entry.set_text("more.barn")
+        self.assertEqual(dialog._account_entry.get_text(), "foo")
+        self.assertEqual(dialog._password_entry.get_text(), "bar")
+        self.assertEqual(dialog._server_host_name_entry.get_text(), "more.barn")
+        self.assertTrue(dialog._dedicated_radiobutton.get_active())
+        self.assertFalse(dialog._hosted_radiobutton.get_active())
+        dialog.revert(None)
+        self.assertEqual(dialog._account_entry.get_text(), "foo")
+        self.assertEqual(dialog._password_entry.get_text(), "bar")
+        self.assertEqual(dialog._server_host_name_entry.get_text(), "")
+        self.assertFalse(dialog._dedicated_radiobutton.get_active())
+        self.assertTrue(dialog._hosted_radiobutton.get_active())
+
+        
+
 
 
 class DedicatedConfigurationViewTest(LandscapeTest):
