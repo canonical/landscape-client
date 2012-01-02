@@ -108,6 +108,26 @@ ping_url = http://landscape.canonical.com/ping
         self.assertEqual(controller.server_host_name, "landscape.localdomain")
         controller.revert()
         self.assertEqual(controller.server_host_name, "landscape.canonical.com")
+
+    def test_is_modified(self):
+        """
+        Test that we can determine when something has been modified.
+        """
+        controller = ConfigController(self.config)
+        self.assertFalse(controller.is_modified)
+        controller.server_host_name = "bing.bang.a.bang"
+        self.assertTrue(controller.is_modified)
+        controller.revert()
+        self.assertFalse(controller.is_modified)
+        controller.account_name = "soldierBlue"
+        self.assertTrue(controller.is_modified)
+        controller.revert()
+        self.assertFalse(controller.is_modified)
+        controller.registration_password = "HesAnIndianCowboyInTheRodeo"
+        self.assertTrue(controller.is_modified)
+        
+        
+
     
     def test_commit(self):
         """

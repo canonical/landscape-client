@@ -107,9 +107,6 @@ ping_url = http://landscape.canonical.com/ping
         self.assertFalse(dialog._dedicated_radiobutton.get_active())
         self.assertTrue(dialog._hosted_radiobutton.get_active())
 
-        
-
-
 
 class DedicatedConfigurationViewTest(LandscapeTest):
 
@@ -156,3 +153,4 @@ ping_url = http://landscape.localdomain/ping
         self.assertEqual(dialog._password_entry.get_text(), "")
         self.assertEqual(dialog._server_host_name_entry.get_text(), 
                          "landscape.localdomain")
+

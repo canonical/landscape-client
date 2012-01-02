@@ -15,6 +15,7 @@ class ConfigController(object):
         self.__configuration = configuration
         self.__configuration.load([])
         self.__load_data_from_config()
+        self.__modified = False
 
     def __load_data_from_config(self):
         self.__data_path = self.__configuration.data_path
@@ -30,6 +31,7 @@ class ConfigController(object):
         self.__ping_url = self.__configuration.ping_url
         self.__server_host_name = self.__derive_server_host_name_from_url(
             self.__url)
+        self.__modified = False
 
     def __derive_server_host_name_from_url(self, url):
         "Extract the hostname part from a url"
@@ -75,6 +77,7 @@ class ConfigController(object):
         self.__url = self.__derive_url_from_host_name(self.__server_host_name)
         self.__ping_url = self.__derive_ping_url_from_host_name(
             self.__server_host_name)
+        self.__modified = True
         
     @property 
     def data_path(self):
@@ -99,6 +102,7 @@ class ConfigController(object):
     @account_name.setter
     def account_name(self, value):
         self.__account_name = value
+        self.__modified = True
 
     @property
     def registration_password(self):
@@ -108,6 +112,7 @@ class ConfigController(object):
 
     def registration_password(self, value):
         self.__registration_password = value
+        self.__modified = True
 
     @property
     def computer_title(self):
@@ -124,6 +129,10 @@ class ConfigController(object):
     @property
     def hosted(self):
         return self.server_host_name == ConfigController.HOSTED_HOST_NAME
+
+    @property
+    def is_modified(self):
+        return self.__modified
 
     def revert(self):
         self.__configuration.reload()
@@ -142,4 +151,5 @@ class ConfigController(object):
         self.__configuration.https_proxy = self.__https_proxy
         self.__configuration.ping_url = self.__ping_url
         self.__configuration.write()
+        self.__modified = False
         
