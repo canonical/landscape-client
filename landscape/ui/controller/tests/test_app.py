@@ -1,5 +1,7 @@
 import sys
 
+from gi.repository import Gtk
+
 from landscape.tests.helpers import LandscapeTest
 from landscape.ui.controller.app import LandscapeSettingsApplicationController
 from landscape.ui.controller.configuration import ConfigController
@@ -63,6 +65,14 @@ class LandscapeSettingsApplicationControllerUISetupTest(LandscapeTest):
 
     def setUp(self):
         super(LandscapeSettingsApplicationControllerUISetupTest, self).setUp()
+        def fake_run(obj):
+            """
+            Retard X11 mapping.
+            """
+            pass
+        self._real_run = Gtk.Dialog.run
+        Gtk.Dialog.run = fake_run
+
         def get_config():
             configdata = """
 [client]
@@ -84,6 +94,13 @@ ping_url = http://landscape.canonical.com/ping
             return config
         self.app = ConnectionRecordingLandscapeSettingsApplicationController(
             get_config_f=get_config)
+
+
+    def tearDown(self):
+        Gtk.Dialog.run = self._real_run
+        super(
+            LandscapeSettingsApplicationControllerUISetupTest, self).tearDown()
+
         
     def test_setup_ui(self):
         """
