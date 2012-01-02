@@ -41,6 +41,12 @@ ping_url = http://landscape.canonical.com/ping
         self.assertEqual(len(children), 2)
         box = children[0]
         self.assertIsInstance(box, Gtk.Box)
+        self.assertTrue(dialog._hosted_radiobutton.get_active())
+        self.assertFalse(dialog._dedicated_radiobutton.get_active())
+        self.assertTrue(dialog._account_entry.get_sensitive())
+        self.assertTrue(dialog._password_entry.get_sensitive())
+        self.assertFalse(dialog._server_host_name_entry.get_sensitive())
+        
         
         
         

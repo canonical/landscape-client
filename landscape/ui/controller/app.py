@@ -14,10 +14,10 @@ class LandscapeSettingsApplicationController(Gtk.Application):
     Core application controller for the landscape settings application.
     """
 
-
-    def __init__(self):
+    def __init__(self, data_path=None):
         super(LandscapeSettingsApplicationController, self).__init__(
             application_id=APPLICATION_ID)
+        self.data_path = data_path
         self.connect("activate", self.setup_ui)
 
 
@@ -27,4 +27,6 @@ class LandscapeSettingsApplicationController(Gtk.Application):
     def setup_ui(self, data=None):
         config = self.get_config()
         controller = ConfigController(config)
-        self.settings_dialog = LandscapeClientSettingsDialog(controller)
+        self.settings_dialog = LandscapeClientSettingsDialog(
+            controller, data_path=self.data_path)
+        self.settings_dialog.run()

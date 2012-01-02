@@ -93,12 +93,12 @@
                             <property name="hexpand">True</property>
                             <property name="vexpand">True</property>
                             <child>
-                              <object class="GtkAlignment" id="hosted-radio-button-alignment">
+                              <object class="GtkAlignment" id="hosted-radiobutton-alignment">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="yalign">0</property>
                                 <child>
-                                  <object class="GtkRadioButton" id="hosted-radio-button">
+                                  <object class="GtkRadioButton" id="hosted-radiobutton">
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">False</property>
