@@ -46,6 +46,28 @@ ping_url = http://landscape.canonical.com/ping
         self.assertTrue(dialog._account_entry.get_sensitive())
         self.assertTrue(dialog._password_entry.get_sensitive())
         self.assertFalse(dialog._server_host_name_entry.get_sensitive())
+
+
+    def test_toggle_radio_button(self):
+        """
+        Test that we disable and enable the correct entries when we toggle the
+        dialog radiobuttons.
+        """
+        controller = ConfigController(self.config)
+        dialog = LandscapeClientSettingsDialog(controller)
+        self.assertTrue(dialog._hosted_radiobutton.get_active())
+        self.assertFalse(dialog._dedicated_radiobutton.get_active())
+        self.assertTrue(dialog._account_entry.get_sensitive())
+        self.assertTrue(dialog._password_entry.get_sensitive())
+        self.assertFalse(dialog._server_host_name_entry.get_sensitive())
+        dialog._dedicated_radiobutton.set_active(True)
+        self.assertFalse(dialog._hosted_radiobutton.get_active())
+        self.assertTrue(dialog._dedicated_radiobutton.get_active())
+        self.assertFalse(dialog._account_entry.get_sensitive())
+        self.assertFalse(dialog._password_entry.get_sensitive())
+        self.assertTrue(dialog._server_host_name_entry.get_sensitive())
+        
+        
         
         
         
