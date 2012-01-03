@@ -25,6 +25,7 @@ https_proxy = https://proxy.localdomain:6192
 ping_url = http://landscape.canonical.com/ping
 """ % sys.path[0]
         self.config_filename = self.makeFile(config)
+
         class MyLandscapeSetupConfiguration(LandscapeSetupConfiguration):
             default_config_filenames = [self.config_filename]
         self.config = MyLandscapeSetupConfiguration(None)
@@ -46,7 +47,6 @@ ping_url = http://landscape.canonical.com/ping
         self.assertTrue(dialog._account_entry.get_sensitive())
         self.assertTrue(dialog._password_entry.get_sensitive())
         self.assertFalse(dialog._server_host_name_entry.get_sensitive())
-
 
     def test_toggle_radio_button(self):
         """
@@ -82,7 +82,7 @@ ping_url = http://landscape.canonical.com/ping
         dialog = LandscapeClientSettingsDialog(controller)
         self.assertEqual(dialog._account_entry.get_text(), "foo")
         self.assertEqual(dialog._password_entry.get_text(), "bar")
-        self.assertEqual(dialog._server_host_name_entry.get_text(), 
+        self.assertEqual(dialog._server_host_name_entry.get_text(),
                          "landscape.canonical.com")
 
     def test_revert(self):
@@ -93,13 +93,14 @@ ping_url = http://landscape.canonical.com/ping
         dialog = LandscapeClientSettingsDialog(controller)
         self.assertEqual(dialog._account_entry.get_text(), "foo")
         self.assertEqual(dialog._password_entry.get_text(), "bar")
-        self.assertEqual(dialog._server_host_name_entry.get_text(), 
+        self.assertEqual(dialog._server_host_name_entry.get_text(),
                          "landscape.canonical.com")
         dialog._dedicated_radiobutton.set_active(True)
         dialog._server_host_name_entry.set_text("more.barn")
         self.assertEqual(dialog._account_entry.get_text(), "foo")
         self.assertEqual(dialog._password_entry.get_text(), "bar")
-        self.assertEqual(dialog._server_host_name_entry.get_text(), "more.barn")
+        self.assertEqual(dialog._server_host_name_entry.get_text(),
+                         "more.barn")
         self.assertTrue(dialog._dedicated_radiobutton.get_active())
         self.assertFalse(dialog._hosted_radiobutton.get_active())
         dialog.revert(None)
@@ -109,6 +110,7 @@ ping_url = http://landscape.canonical.com/ping
                          "landscape.canonical.com")
         self.assertFalse(dialog._dedicated_radiobutton.get_active())
         self.assertTrue(dialog._hosted_radiobutton.get_active())
+
 
 class ConfigurationViewCommitTest(LandscapeTest):
 
@@ -132,7 +134,8 @@ ping_url = http://landscape.canonical.com/ping
             default_config_filenames = [self.config_filename]
         self.config = MyLandscapeSetupConfiguration(None)
         self.real_write_back = LandscapeClientSettingsDialog._write_back
-        self.write_back_called = False 
+        self.write_back_called = False
+
         def fake_write_back(obj):
             self.write_back_called = True
         LandscapeClientSettingsDialog._write_back = fake_write_back
@@ -190,7 +193,8 @@ ping_url = http://landscape.canonical.com/ping
         a dedicated server.
         """
         self.dialog._dedicated_radiobutton.set_active(True)
-        self.dialog._server_host_name_entry.set_text("that.isolated.geographic")
+        self.dialog._server_host_name_entry.set_text(
+            "that.isolated.geographic")
         while Gtk.events_pending():
             Gtk.main_iteration()
         self.dialog._possibly_save_and_exit(None)
@@ -209,6 +213,7 @@ computer_title = baz
 ping_url = http://landscape.localdomain/ping
 """ % sys.path[0]
         self.config_filename = self.makeFile(config)
+
         class MyLandscapeSetupConfiguration(LandscapeSetupConfiguration):
             default_config_filenames = [self.config_filename]
         self.config = MyLandscapeSetupConfiguration(None)
@@ -240,9 +245,5 @@ ping_url = http://landscape.localdomain/ping
         dialog = LandscapeClientSettingsDialog(controller)
         self.assertEqual(dialog._account_entry.get_text(), "")
         self.assertEqual(dialog._password_entry.get_text(), "")
-        self.assertEqual(dialog._server_host_name_entry.get_text(), 
+        self.assertEqual(dialog._server_host_name_entry.get_text(),
                          "landscape.localdomain")
-
-
-        
-

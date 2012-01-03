@@ -6,7 +6,7 @@ from landscape.ui.model.configuration import (
 
 
 class ConfigControllerTest(LandscapeTest):
-    
+
     def setUp(self):
         super(ConfigControllerTest, self).setUp()
         config = """
@@ -23,6 +23,7 @@ ping_url = http://landscape.canonical.com/ping
 
 """
         self.config_filename = self.makeFile(config)
+
         class MyLandscapeSettingsConfiguration(LandscapeSettingsConfiguration):
             default_config_filenames = [self.config_filename]
         self.config = MyLandscapeSettingsConfiguration(None)
@@ -34,18 +35,20 @@ ping_url = http://landscape.canonical.com/ping
         """
         controller = ConfigController(self.config)
         self.assertEqual(controller.data_path, "/var/lib/landscape/client")
-        self.assertEqual(controller.http_proxy, "http://proxy.localdomain:3192")
+        self.assertEqual(controller.http_proxy,
+                         "http://proxy.localdomain:3192")
         self.assertEqual(controller.tags, "a_tag")
-        self.assertEqual(controller.url, 
+        self.assertEqual(controller.url,
                          "https://landscape.canonical.com/message-system")
         self.assertEqual(controller.account_name, "foo")
         self.assertEqual(controller.registration_password, "bar")
         self.assertEqual(controller.computer_title, "baz")
         self.assertEqual(controller.https_proxy,
                          "https://proxy.localdomain:6192")
-        self.assertEqual(controller.ping_url, 
+        self.assertEqual(controller.ping_url,
                          "http://landscape.canonical.com/ping")
-        self.assertEqual(controller.server_host_name, "landscape.canonical.com")
+        self.assertEqual(controller.server_host_name,
+                         "landscape.canonical.com")
 
     def test_set_server_hostname(self):
         """
@@ -53,11 +56,11 @@ ping_url = http://landscape.canonical.com/ping
         L{ping_url} from it.
         """
         controller = ConfigController(self.config)
-        self.assertEqual(controller.url, 
+        self.assertEqual(controller.url,
                          "https://landscape.canonical.com/message-system")
         self.assertEqual(controller.ping_url,
                          "http://landscape.canonical.com/ping")
-        self.assertEqual(controller.server_host_name, 
+        self.assertEqual(controller.server_host_name,
                          "landscape.canonical.com")
         new_server_host_name = "landscape.localdomain"
         controller.server_host_name = new_server_host_name
@@ -79,7 +82,6 @@ ping_url = http://landscape.canonical.com/ping
         controller.server_host_name = "landscape.canonical.com"
         self.assertTrue(controller.hosted)
 
-
     def test_set_account_name(self):
         """
         Test that we can set the L{account_name} property.
@@ -97,17 +99,19 @@ ping_url = http://landscape.canonical.com/ping
         self.assertEquals(controller.registration_password, "bar")
         controller.registration_password = "nucker"
         self.assertEquals(controller.registration_password, "nucker")
-        
+
     def test_revert(self):
         """
         Test that we can revert the controller to it's initial state.
         """
         controller = ConfigController(self.config)
-        self.assertEqual(controller.server_host_name, "landscape.canonical.com")
+        self.assertEqual(controller.server_host_name,
+                         "landscape.canonical.com")
         controller.server_host_name = "landscape.localdomain"
         self.assertEqual(controller.server_host_name, "landscape.localdomain")
         controller.revert()
-        self.assertEqual(controller.server_host_name, "landscape.canonical.com")
+        self.assertEqual(controller.server_host_name,
+                         "landscape.canonical.com")
 
     def test_is_modified(self):
         """
@@ -125,13 +129,14 @@ ping_url = http://landscape.canonical.com/ping
         self.assertFalse(controller.is_modified)
         controller.registration_password = "HesAnIndianCowboyInTheRodeo"
         self.assertTrue(controller.is_modified)
-            
+
     def test_commit(self):
         """
         Test that we can write configuration settings back to the config file.
         """
         controller = ConfigController(self.config)
-        self.assertEqual(controller.server_host_name, "landscape.canonical.com")
+        self.assertEqual(controller.server_host_name,
+                         "landscape.canonical.com")
         controller.server_host_name = "landscape.localdomain"
         self.assertEqual(controller.server_host_name, "landscape.localdomain")
         controller.commit()
@@ -184,11 +189,12 @@ ping_url = http://landscape.canonical.com/ping
 
 
 class EmptyConfigControllerTest(LandscapeTest):
-    
+
     def setUp(self):
         super(EmptyConfigControllerTest, self).setUp()
         config = ""
         self.config_filename = self.makeFile(config)
+
         class MyLandscapeSettingsConfiguration(LandscapeSettingsConfiguration):
             default_config_filenames = [self.config_filename]
         self.config = MyLandscapeSettingsConfiguration(None)
@@ -201,7 +207,8 @@ class EmptyConfigControllerTest(LandscapeTest):
         controller = ConfigController(self.config)
         self.assertEqual(controller.account_name, None)
         self.assertEqual(controller.registration_password, None)
-        self.assertEqual(controller.server_host_name, "landscape.canonical.com")
+        self.assertEqual(controller.server_host_name,
+                         "landscape.canonical.com")
         controller.default_dedicated()
         self.assertEqual(controller.account_name, None)
         self.assertEqual(controller.registration_password, None)
@@ -209,12 +216,14 @@ class EmptyConfigControllerTest(LandscapeTest):
         controller.default_hosted()
         self.assertEqual(controller.account_name, None)
         self.assertEqual(controller.registration_password, None)
-        self.assertEqual(controller.server_host_name, "landscape.canonical.com")
+        self.assertEqual(controller.server_host_name,
+                         "landscape.canonical.com")
         controller.default_dedicated()
         controller.server_host_name = "test.machine"
         controller.default_dedicated()
         self.assertEqual(controller.server_host_name, "test.machine")
         controller.default_hosted()
-        self.assertEqual(controller.server_host_name, "landscape.canonical.com")
+        self.assertEqual(controller.server_host_name,
+                         "landscape.canonical.com")
         controller.default_dedicated()
         self.assertEqual(controller.server_host_name, "test.machine")

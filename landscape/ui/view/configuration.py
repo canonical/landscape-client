@@ -2,10 +2,11 @@ import os
 
 from gi.repository import Gtk
 
+
 class LandscapeClientSettingsDialog(Gtk.Dialog):
 
     GLADE_FILE = "landscape-client-settings.glade"
-    
+
     def __init__(self, controller, data_path=None, *args, **kwargs):
         super(LandscapeClientSettingsDialog, self).__init__(*args, **kwargs)
         self.controller = controller
@@ -24,7 +25,7 @@ class LandscapeClientSettingsDialog(Gtk.Dialog):
         self._dedicated_toggle = None
         self.revert(self._revert_button)
         # self.select_landscape_hosting()
- 
+
     def __setup_window(self):
         """
         Configure the dialog window and pack content from the Glade UI file
@@ -46,7 +47,6 @@ class LandscapeClientSettingsDialog(Gtk.Dialog):
         self._revert_button.connect("clicked", self.revert)
         self._close_button.connect("clicked", self._possibly_save_and_exit)
 
-
     def __setup_entries(self):
         """
         Obtain handles for entry widgets, set initial state and connect them to
@@ -62,9 +62,8 @@ class LandscapeClientSettingsDialog(Gtk.Dialog):
         self._server_host_name_entry.set_sensitive(False)
         self._account_entry.connect("changed", self._update_account)
         self._password_entry.connect("changed", self._update_password)
-        self._server_host_name_entry.connect("changed", 
+        self._server_host_name_entry.connect("changed",
                                              self._update_server_host_name)
-
 
     def __setup_radiobuttons(self):
         """
@@ -96,12 +95,12 @@ class LandscapeClientSettingsDialog(Gtk.Dialog):
     def _update_account(self, event):
         if not self.controller.is_locked():
             self.controller.account_name = self._account_entry.get_text()
-    
+
     def _update_password(self, event):
         if not self.controller.is_locked():
             self.controller.registration_password = \
                 self._password_entry.get_text()
-    
+
     def _update_server_host_name(self, event):
         if not self.controller.is_locked():
             self.controller.server_host_name = \
@@ -126,7 +125,7 @@ class LandscapeClientSettingsDialog(Gtk.Dialog):
         else:
             self.controller.default_dedicated()
             self.__load_data()
-                
+
     def __on_toggle_server_type_radiobutton(self, radiobutton):
         self.select_landscape_hosting()
         return True
@@ -144,12 +143,11 @@ class LandscapeClientSettingsDialog(Gtk.Dialog):
         self.__set_entry_sensitivity(self.controller.hosted)
         self.__load_data()
         self._hosted_toggle = self._hosted_radiobutton.connect(
-            "toggled", 
+            "toggled",
             self.__on_toggle_server_type_radiobutton)
         self._dedicated_toggle = self._dedicated_radiobutton.connect(
-            "toggled", 
+            "toggled",
             self.__on_toggle_server_type_radiobutton)
-
 
     def _write_back(self):
         self.controller.commit()

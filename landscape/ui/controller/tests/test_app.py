@@ -36,18 +36,17 @@ class ConnectionRecordingLandscapeSettingsApplicationController(
             connection_name, [])
         signal_connection_kwargs.append(repr(kwargs))
         self.__connection_kwargs = signal_connection_kwargs
-        
+
     def is_connected(self, signal, func):
         connection_name = self.__make_connection_name(signal, func)
         return self.__connections.issuperset(set([connection_name]))
-        
+
     def connect(self, signal, func, *args, **kwargs):
         self.__record_connection(signal, func)
-        
-        
+
 
 class LandscapeSettingsApplicationControllerInitTest(LandscapeTest):
-    
+
     def setUp(self):
         super(LandscapeSettingsApplicationControllerInitTest, self).setUp()
 
@@ -62,9 +61,9 @@ class LandscapeSettingsApplicationControllerInitTest(LandscapeTest):
 
 class LandscapeSettingsApplicationControllerUISetupTest(LandscapeTest):
 
-
     def setUp(self):
         super(LandscapeSettingsApplicationControllerUISetupTest, self).setUp()
+
         def fake_run(obj):
             """
             Retard X11 mapping.
@@ -88,6 +87,7 @@ ping_url = http://landscape.canonical.com/ping
 
 """ % sys.path[0]
             config_filename = self.makeFile(configdata)
+
             class MyLandscapeSettingsConfiguration(
                 LandscapeSettingsConfiguration):
                 default_config_filenames = [config_filename]
@@ -96,13 +96,11 @@ ping_url = http://landscape.canonical.com/ping
         self.app = ConnectionRecordingLandscapeSettingsApplicationController(
             get_config_f=get_config)
 
-
     def tearDown(self):
         Gtk.Dialog.run = self._real_run
         super(
             LandscapeSettingsApplicationControllerUISetupTest, self).tearDown()
 
-        
     def test_setup_ui(self):
         """
         Test that we correctly setup the L{LandscapeClientSettingsDialog} with
@@ -113,8 +111,3 @@ ping_url = http://landscape.canonical.com/ping
                               LandscapeClientSettingsDialog)
         self.assertIsInstance(self.app.settings_dialog.controller,
                               ConfigController)
-        
-        
-
-
-        

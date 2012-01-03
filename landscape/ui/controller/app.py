@@ -5,7 +5,7 @@ from landscape.ui.view.configuration import LandscapeClientSettingsDialog
 from landscape.ui.controller.configuration import ConfigController
 
 
-APPLICATION_ID="com.canonical.landscape-client.settings.ui"
+APPLICATION_ID = "com.canonical.landscape-client.settings.ui"
 
 
 class LandscapeSettingsApplicationController(Gtk.Application):

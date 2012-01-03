@@ -1,17 +1,19 @@
 import threading
 
+
 class ConfigControllerLockError(Exception):
     pass
- 
+
+
 class ConfigController(object):
     """
     L{ConfigContoller} defines actions to take against a configfuration object,
     providing starting values from the file, allowing them to be changed
     transiently, reverted or committed.
     """
-    
-    HOSTED_HOST_NAME="landscape.canonical.com"
-    DEFAULT_SERVER_HOST_NAME="landscape.localdomain"
+
+    HOSTED_HOST_NAME = "landscape.canonical.com"
+    DEFAULT_SERVER_HOST_NAME = "landscape.localdomain"
 
     def __init__(self, configuration):
         self.__lock_out = True
@@ -38,10 +40,10 @@ class ConfigController(object):
             self.__ping_url = self.__derive_ping_url_from_host_name(
                 self.__server_host_name)
         self.__modified = True
-        
+
     def default_hosted(self):
         """
-        Set L{server_host_name} in a recoverable fashion when switching from 
+        Set L{server_host_name} in a recoverable fashion when switching from
         dedicated to hosted.
         """
         if self.__server_host_name != self.HOSTED_HOST_NAME:
@@ -51,7 +53,7 @@ class ConfigController(object):
         self.__ping_url = self.__derive_ping_url_from_host_name(
             self.__server_host_name)
         self.__modified = True
-        
+
     def __load_data_from_config(self):
         """
         Pull in data set from configuration class.
@@ -130,10 +132,10 @@ class ConfigController(object):
                 self.__url = self.__derive_url_from_host_name(
                     self.__server_host_name)
                 self.__ping_url = self.__derive_ping_url_from_host_name(
-                    self.__server_host_name)                
+                    self.__server_host_name)
                 self.__modified = True
-        
-    @property 
+
+    @property
     def data_path(self):
         return self.__data_path
 
@@ -144,7 +146,7 @@ class ConfigController(object):
     @property
     def http_proxy(self):
         return self.__http_proxy
-    
+
     @property
     def tags(self):
         return self.__tags
@@ -215,4 +217,3 @@ class ConfigController(object):
         self.__configuration.ping_url = self.__ping_url
         self.__configuration.write()
         self.__modified = False
-        
