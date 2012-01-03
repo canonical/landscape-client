@@ -1,8 +1,8 @@
 from landscape.tests.helpers import LandscapeTest
 from landscape.ui.controller.configuration import (
     ConfigController, ConfigControllerLockError)
-from landscape.configuration import (
-    LandscapeSetupConfiguration, LandscapeSetupScript)
+from landscape.ui.model.configuration import (
+    LandscapeSettingsConfiguration)
 
 
 class ConfigControllerTest(LandscapeTest):
@@ -23,10 +23,9 @@ ping_url = http://landscape.canonical.com/ping
 
 """
         self.config_filename = self.makeFile(config)
-        class MyLandscapeSetupConfiguration(LandscapeSetupConfiguration):
+        class MyLandscapeSettingsConfiguration(LandscapeSettingsConfiguration):
             default_config_filenames = [self.config_filename]
-        self.config = MyLandscapeSetupConfiguration(None)
-        self.script = LandscapeSetupScript(self.config)
+        self.config = MyLandscapeSettingsConfiguration(None)
 
     def test_init(self):
         """
@@ -182,3 +181,22 @@ ping_url = http://landscape.canonical.com/ping
         self.assertFalse(controller.is_modified)
         controller.registration_password = "I Win"
         self.assertTrue(controller.is_modified)
+
+
+
+class EmptyConfigControllerTest(LandscapeTest):
+    
+    def setUp(self):
+        super(EmptyConfigControllerTest, self).setUp()
+        config = ""
+        self.config_filename = self.makeFile(config)
+        class MyLandscapeSettingsConfiguration(LandscapeSettingsConfiguration):
+            default_config_filenames = [self.config_filename]
+        self.config = MyLandscapeSettingsConfiguration(None)
+
+    def test_defaulting(self):
+        """
+        Test we set the correct values when switching between hosted and
+        dedicated.
+        """
+        controller = ConfigController(self.config)

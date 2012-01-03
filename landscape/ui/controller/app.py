@@ -1,6 +1,6 @@
-from gi.repository import Gtk, Gio
+from gi.repository import Gtk
 
-from landscape.configuration import LandscapeSetupConfiguration
+from landscape.ui.model.configuration import LandscapeSettingsConfiguration
 from landscape.ui.view.configuration import LandscapeClientSettingsDialog
 from landscape.ui.controller.configuration import ConfigController
 
@@ -20,9 +20,8 @@ class LandscapeSettingsApplicationController(Gtk.Application):
         self.data_path = data_path
         self.connect("activate", self.setup_ui)
 
-
     def get_config(self):
-        return LandscapeSetupConfiguration([])
+        return LandscapeSettingsConfiguration([])
 
     def setup_ui(self, data=None):
         config = self.get_config()

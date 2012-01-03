@@ -1,3 +1,4 @@
+import os
 import threading
 
 from landscape.configuration import (
@@ -15,31 +16,63 @@ class ConfigController(object):
     """
     
     HOSTED_HOST_NAME="landscape.canonical.com"
+    DEFAULT_SERVER_HOST_NAME="landscape.localdomain"
 
     def __init__(self, configuration):
         self.__lock_out = True
         self.__lock = threading.Lock()
+        self.__initial_server_host_name = self.DEFAULT_SERVER_HOST_NAME
         self.__configuration = configuration
+        self.__configuration
         self.__configuration.load([])
         self.__load_data_from_config()
         self.__modified = False
         self.unlock()
 
+    def default_dedicated(self):
+        if (self.__configuration.url and
+            self.__derive_server_host_name_from_url(
+                self.__configuration.url) != self.HOSTED_HOST_NAME):
+            self.__url = self.__configuration.url
+            self.__ping_url = self.__configuration.ping_url
+            self.__server_host_name = self.__derive_server_host_name_from_url(
+                self.__url)
+        else:
+            self.__server_host_name = self.__initial_server_host_name
+            self.__url = self.__derive_url_from_host_name(
+                self.__server_host_name)
+            self.__ping_url = self.__derive_ping_url_from_host_name(
+                self.__server_host_name)
+        self.__modified = True
+        
+    def default_hosted(self):
+        self.__server_host_name = self.HOSTED_HOST_NAME
+        self.__url = self.__derive_url_from_host_name(
+            self.__server_host_name)
+        self.__ping_url = self.__derive_ping_url_from_host_name(
+            self.__server_host_name)
+        self.__modified = True
+        
     def __load_data_from_config(self):
-        self.__data_path = self.__configuration.data_path
-        self.__http_proxy = self.__configuration.http_proxy
-        self.__tags = self.__configuration.tags
-        self.__url = self.__configuration.url
-        self.__ping_url = self.__configuration.ping_url
-        self.__account_name = self.__configuration.account_name
-        self.__registration_password = \
-            self.__configuration.registration_password
-        self.__computer_title = self.__configuration.computer_title
-        self.__https_proxy = self.__configuration.https_proxy
-        self.__ping_url = self.__configuration.ping_url
-        self.__server_host_name = self.__derive_server_host_name_from_url(
-            self.__url)
-        self.__modified = False
+        with self.__lock:
+            self.__data_path = self.__configuration.data_path
+            self.__http_proxy = self.__configuration.http_proxy
+            self.__tags = self.__configuration.tags
+            self.__url = self.__configuration.url
+            self.__ping_url = self.__configuration.ping_url
+            self.__account_name = self.__configuration.account_name
+            self.__registration_password = \
+                self.__configuration.registration_password
+            self.__computer_title = self.__configuration.computer_title
+            self.__https_proxy = self.__configuration.https_proxy
+            self.__ping_url = self.__configuration.ping_url
+            if self.__url:
+                self.__server_host_name = \
+                    self.__derive_server_host_name_from_url(self.__url)
+            else:
+                self.__server_host_name = self.HOSTED_HOST_NAME
+            self.__initial_server_host_name = self.__server_host_name
+            self.__modified = False
 
     def lock(self):
         with self.__lock:
@@ -48,6 +81,10 @@ class ConfigController(object):
     def unlock(self):
         with self.__lock:
             self.__lock_out = False
+
+    def is_locked(self):
+        with self.__lock:
+            return self.__lock_out
 
     def __derive_server_host_name_from_url(self, url):
         "Extract the hostname part from a url"
@@ -59,17 +96,6 @@ class ConfigController(object):
             return without_protocol[:without_protocol.index("/")]
         except ValueError:
             return without_protocol
-
-
-    # def is_valid_host_name(self, host_name):
-    #     valid_section = re.compile("(?!-)[A-Z\d-]{1,63}(?<!-)$", re.IGNORECASE)
-    #     def is_valid_host_name_section(host_name_section):
-    #         return valid_section.match(host_name_section)
-
-    #     return (len(host_name) > 255 && 
-    #             all(is_valid_host_name_section(section)
-    #                 for section in host_name.split(".")))
-
 
     def __derive_url_from_host_name(self, host_name):
         "Extrapolate a url from a host name"
@@ -134,7 +160,6 @@ class ConfigController(object):
         return self.__registration_password
 
     @registration_password.setter
-
     def registration_password(self, value):
         with self.__lock:
             if self.__lock_out:
@@ -157,7 +182,7 @@ class ConfigController(object):
 
     @property
     def hosted(self):
-        return self.server_host_name == ConfigController.HOSTED_HOST_NAME
+        return self.server_host_name == self.HOSTED_HOST_NAME
 
     @property
     def is_modified(self):
