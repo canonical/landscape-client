@@ -183,7 +183,6 @@ ping_url = http://landscape.canonical.com/ping
         self.assertTrue(controller.is_modified)
 
 
-
 class EmptyConfigControllerTest(LandscapeTest):
     
     def setUp(self):
@@ -200,3 +199,22 @@ class EmptyConfigControllerTest(LandscapeTest):
         dedicated.
         """
         controller = ConfigController(self.config)
+        self.assertEqual(controller.account_name, None)
+        self.assertEqual(controller.registration_password, None)
+        self.assertEqual(controller.server_host_name, "landscape.canonical.com")
+        controller.default_dedicated()
+        self.assertEqual(controller.account_name, None)
+        self.assertEqual(controller.registration_password, None)
+        self.assertEqual(controller.server_host_name, "landscape.localdomain")
+        controller.default_hosted()
+        self.assertEqual(controller.account_name, None)
+        self.assertEqual(controller.registration_password, None)
+        self.assertEqual(controller.server_host_name, "landscape.canonical.com")
+        controller.default_dedicated()
+        controller.server_host_name = "test.machine"
+        controller.default_dedicated()
+        self.assertEqual(controller.server_host_name, "test.machine")
+        controller.default_hosted()
+        self.assertEqual(controller.server_host_name, "landscape.canonical.com")
+        controller.default_dedicated()
+        self.assertEqual(controller.server_host_name, "test.machine")

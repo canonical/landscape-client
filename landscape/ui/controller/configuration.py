@@ -30,15 +30,10 @@ class ConfigController(object):
         self.unlock()
 
     def default_dedicated(self):
-        if (self.__configuration.url and
-            self.__derive_server_host_name_from_url(
-                self.__configuration.url) != self.HOSTED_HOST_NAME):
-            self.__url = self.__configuration.url
-            self.__ping_url = self.__configuration.ping_url
-            self.__server_host_name = self.__derive_server_host_name_from_url(
-                self.__url)
-        else:
+        if self.__initial_server_host_name != self.HOSTED_HOST_NAME:
             self.__server_host_name = self.__initial_server_host_name
+        else:
+            self.__server_host_name = self.DEFAULT_SERVER_HOST_NAME
             self.__url = self.__derive_url_from_host_name(
                 self.__server_host_name)
             self.__ping_url = self.__derive_ping_url_from_host_name(
@@ -46,7 +41,8 @@ class ConfigController(object):
         self.__modified = True
         
     def default_hosted(self):
-        self.__server_host_name = self.HOSTED_HOST_NAME
+        if self.__server_host_name != self.HOSTED_HOST_NAME:
+            self.__server_host_name = self.HOSTED_HOST_NAME
         self.__url = self.__derive_url_from_host_name(
             self.__server_host_name)
         self.__ping_url = self.__derive_ping_url_from_host_name(
@@ -119,11 +115,13 @@ class ConfigController(object):
             if self.__lock_out:
                 raise ConfigControllerLockError
             else:
+                if value != self.HOSTED_HOST_NAME:
+                    self.__initial_server_host_name = value
                 self.__server_host_name = value
                 self.__url = self.__derive_url_from_host_name(
                     self.__server_host_name)
                 self.__ping_url = self.__derive_ping_url_from_host_name(
-                    self.__server_host_name)
+                    self.__server_host_name)                
                 self.__modified = True
         
     @property 

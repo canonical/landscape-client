@@ -243,3 +243,6 @@ ping_url = http://landscape.localdomain/ping
         self.assertEqual(dialog._server_host_name_entry.get_text(), 
                          "landscape.localdomain")
 
+
+        
+
