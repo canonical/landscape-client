@@ -1,5 +1,6 @@
 from gi.repository import Gtk
 
+from landscape.configuration import register
 from landscape.ui.model.configuration import LandscapeSettingsConfiguration
 from landscape.ui.view.configuration import LandscapeClientSettingsDialog
 from landscape.ui.controller.configuration import ConfigController
@@ -29,3 +30,4 @@ class LandscapeSettingsApplicationController(Gtk.Application):
         self.settings_dialog = LandscapeClientSettingsDialog(
             controller, data_path=self.data_path)
         self.settings_dialog.run()
+        # register(config)
