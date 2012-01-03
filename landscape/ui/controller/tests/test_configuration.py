@@ -1,5 +1,6 @@
 from landscape.tests.helpers import LandscapeTest
-from landscape.ui.controller.configuration import ConfigController
+from landscape.ui.controller.configuration import (
+    ConfigController, ConfigControllerLockError)
 from landscape.configuration import (
     LandscapeSetupConfiguration, LandscapeSetupScript)
 
@@ -125,10 +126,7 @@ ping_url = http://landscape.canonical.com/ping
         self.assertFalse(controller.is_modified)
         controller.registration_password = "HesAnIndianCowboyInTheRodeo"
         self.assertTrue(controller.is_modified)
-        
-        
-
-    
+            
     def test_commit(self):
         """
         Test that we can write configuration settings back to the config file.
@@ -142,7 +140,45 @@ ping_url = http://landscape.canonical.com/ping
         controller.revert()
         self.assertEqual(controller.server_host_name, "landscape.localdomain")
 
+    def test_lock(self):
+        """
+        Test that we can lock out updates.
+        """
+        controller = ConfigController(self.config)
+        controller.lock()
+        self.assertRaises(ConfigControllerLockError, setattr, controller,
+                          "server_host_name", "faily.fail.com")
+        self.assertFalse(controller.is_modified)
+        controller.unlock()
+        controller.server_host_name = "successy.success.org"
+        self.assertTrue(controller.is_modified)
 
-        
-        
-        
+        controller.revert()
+        self.assertFalse(controller.is_modified)
+
+        controller.lock()
+        self.assertRaises(ConfigControllerLockError,
+                          setattr,
+                          controller,
+                          "account_name",
+                          "Failbert")
+        self.assertFalse(controller.is_modified)
+        controller.unlock()
+        self.assertFalse(controller.is_modified)
+        controller.account_name = "Winbob"
+        self.assertTrue(controller.is_modified)
+
+        controller.revert()
+        self.assertFalse(controller.is_modified)
+
+        controller.lock()
+        self.assertRaises(ConfigControllerLockError,
+                          setattr,
+                          controller,
+                          "registration_password",
+                          "I Fail")
+        self.assertFalse(controller.is_modified)
+        controller.unlock()
+        self.assertFalse(controller.is_modified)
+        controller.registration_password = "I Win"
+        self.assertTrue(controller.is_modified)

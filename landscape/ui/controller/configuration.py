@@ -1,6 +1,11 @@
+import threading
+
 from landscape.configuration import (
     LandscapeSetupConfiguration, fetch_import_url)
  
+
+class ConfigControllerLockError(Exception):
+    pass
  
 class ConfigController(object):
     """
@@ -12,10 +17,13 @@ class ConfigController(object):
     HOSTED_HOST_NAME="landscape.canonical.com"
 
     def __init__(self, configuration):
+        self.__lock_out = True
+        self.__lock = threading.Lock()
         self.__configuration = configuration
         self.__configuration.load([])
         self.__load_data_from_config()
         self.__modified = False
+        self.unlock()
 
     def __load_data_from_config(self):
         self.__data_path = self.__configuration.data_path
@@ -32,6 +40,14 @@ class ConfigController(object):
         self.__server_host_name = self.__derive_server_host_name_from_url(
             self.__url)
         self.__modified = False
+
+    def lock(self):
+        with self.__lock:
+            self.__lock_out = True
+
+    def unlock(self):
+        with self.__lock:
+            self.__lock_out = False
 
     def __derive_server_host_name_from_url(self, url):
         "Extract the hostname part from a url"
@@ -73,11 +89,16 @@ class ConfigController(object):
 
     @server_host_name.setter
     def server_host_name(self, value):
-        self.__server_host_name = value
-        self.__url = self.__derive_url_from_host_name(self.__server_host_name)
-        self.__ping_url = self.__derive_ping_url_from_host_name(
-            self.__server_host_name)
-        self.__modified = True
+        with self.__lock:
+            if self.__lock_out:
+                raise ConfigControllerLockError
+            else:
+                self.__server_host_name = value
+                self.__url = self.__derive_url_from_host_name(
+                    self.__server_host_name)
+                self.__ping_url = self.__derive_ping_url_from_host_name(
+                    self.__server_host_name)
+                self.__modified = True
         
     @property 
     def data_path(self):
@@ -101,8 +122,12 @@ class ConfigController(object):
 
     @account_name.setter
     def account_name(self, value):
-        self.__account_name = value
-        self.__modified = True
+        with self.__lock:
+            if self.__lock_out:
+                raise ConfigControllerLockError
+            else:
+                self.__account_name = value
+                self.__modified = True
 
     @property
     def registration_password(self):
@@ -111,8 +136,12 @@ class ConfigController(object):
     @registration_password.setter
 
     def registration_password(self, value):
-        self.__registration_password = value
-        self.__modified = True
+        with self.__lock:
+            if self.__lock_out:
+                raise ConfigControllerLockError
+            else:
+                self.__registration_password = value
+                self.__modified = True
 
     @property
     def computer_title(self):
