@@ -1,9 +1,4 @@
-import os
 import threading
-
-from landscape.configuration import (
-    LandscapeSetupConfiguration, fetch_import_url)
- 
 
 class ConfigControllerLockError(Exception):
     pass
@@ -30,6 +25,10 @@ class ConfigController(object):
         self.unlock()
 
     def default_dedicated(self):
+        """
+        Set L{server_host_name} to something sane when switching from hosted to
+        dedicated
+        """
         if self.__initial_server_host_name != self.HOSTED_HOST_NAME:
             self.__server_host_name = self.__initial_server_host_name
         else:
@@ -41,6 +40,10 @@ class ConfigController(object):
         self.__modified = True
         
     def default_hosted(self):
+        """
+        Set L{server_host_name} in a recoverable fashion when switching from 
+        dedicated to hosted.
+        """
         if self.__server_host_name != self.HOSTED_HOST_NAME:
             self.__server_host_name = self.HOSTED_HOST_NAME
         self.__url = self.__derive_url_from_host_name(
@@ -50,6 +53,9 @@ class ConfigController(object):
         self.__modified = True
         
     def __load_data_from_config(self):
+        """
+        Pull in data set from configuration class.
+        """
         with self.__lock:
             self.__data_path = self.__configuration.data_path
             self.__http_proxy = self.__configuration.http_proxy
@@ -71,14 +77,17 @@ class ConfigController(object):
             self.__modified = False
 
     def lock(self):
+        "Block updates to the data set"
         with self.__lock:
             self.__lock_out = True
 
     def unlock(self):
+        "Allow updates to the data set"
         with self.__lock:
             self.__lock_out = False
 
     def is_locked(self):
+        "Check if updates are locked out"
         with self.__lock:
             return self.__lock_out
 
@@ -187,10 +196,12 @@ class ConfigController(object):
         return self.__modified
 
     def revert(self):
+        "Revert settings to those the configuration object originally found."
         self.__configuration.reload()
         self.__load_data_from_config()
 
     def commit(self):
+        "Persist settings via the configuration object"
         self.__configuration.data_path = self.__data_path
         self.__configuration.http_proxy = self.__http_proxy
         self.__configuration.tags = self.__tags

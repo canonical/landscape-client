@@ -2,9 +2,6 @@ import os
 
 from gi.repository import Gtk
 
-from landscape.ui.controller.configuration import ConfigControllerLockError
-
-
 class LandscapeClientSettingsDialog(Gtk.Dialog):
 
     GLADE_FILE = "landscape-client-settings.glade"
