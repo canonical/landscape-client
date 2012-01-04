@@ -28,7 +28,7 @@ class ConfigController(object):
     def default_dedicated(self):
         """
         Set L{server_host_name} to something sane when switching from hosted to
-        dedicated
+        dedicated.
         """
         if self._initial_server_host_name != self.HOSTED_HOST_NAME:
             self._server_host_name = self._initial_server_host_name
