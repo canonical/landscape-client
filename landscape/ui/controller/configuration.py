@@ -7,7 +7,7 @@ class ConfigControllerLockError(Exception):
 
 class ConfigController(object):
     """
-    L{ConfigContoller} defines actions to take against a configfuration object,
+    L{ConfigContoller} defines actions to take against a configuration object,
     providing starting values from the file, allowing them to be changed
     transiently, reverted or committed.
     """
