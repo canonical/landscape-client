@@ -20,7 +20,6 @@ class ConfigController(object):
         self._lock = threading.Lock()
         self._initial_server_host_name = self.DEFAULT_SERVER_HOST_NAME
         self._configuration = configuration
-        self._configuration
         self._configuration.load([])
         self._load_data_from_config()
         self._modified = False
