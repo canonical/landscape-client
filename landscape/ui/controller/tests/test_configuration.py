@@ -26,7 +26,7 @@ ping_url = http://landscape.canonical.com/ping
 
         class MyLandscapeSettingsConfiguration(LandscapeSettingsConfiguration):
             default_config_filenames = [self.config_filename]
-        self.config = MyLandscapeSettingsConfiguration(None)
+        self.config = MyLandscapeSettingsConfiguration()
 
     def test_init(self):
         """
@@ -197,7 +197,7 @@ class EmptyConfigControllerTest(LandscapeTest):
 
         class MyLandscapeSettingsConfiguration(LandscapeSettingsConfiguration):
             default_config_filenames = [self.config_filename]
-        self.config = MyLandscapeSettingsConfiguration(None)
+        self.config = MyLandscapeSettingsConfiguration()
 
     def test_defaulting(self):
         """

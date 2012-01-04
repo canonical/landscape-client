@@ -100,7 +100,7 @@ ping_url = http://landscape.canonical.com/ping
             class MyLandscapeSettingsConfiguration(
                 LandscapeSettingsConfiguration):
                 default_config_filenames = [config_filename]
-            config = MyLandscapeSettingsConfiguration(None)
+            config = MyLandscapeSettingsConfiguration()
             return config
         self.app = ConnectionRecordingLandscapeSettingsApplicationController(
             get_config_f=get_config)

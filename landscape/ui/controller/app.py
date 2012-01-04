@@ -20,7 +20,7 @@ class LandscapeSettingsApplicationController(Gtk.Application):
         self.connect("activate", self.setup_ui)
 
     def get_config(self):
-        return LandscapeSettingsConfiguration([])
+        return LandscapeSettingsConfiguration()
 
     def setup_ui(self, data=None):
         config = self.get_config()
