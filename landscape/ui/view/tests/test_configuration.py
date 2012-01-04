@@ -1,6 +1,11 @@
 import sys
 
-from gi.repository import Gtk
+try:
+    from gi.repository import Gtk
+    got_gobject_introspection = True
+except ImportError:
+    got_gobject_introspection = False
+    gobject_skip_message = "GObject Introspection module unavailable"
 
 from landscape.tests.helpers import LandscapeTest
 from landscape.configuration import LandscapeSetupConfiguration
@@ -111,6 +116,12 @@ ping_url = http://landscape.canonical.com/ping
         self.assertFalse(dialog._dedicated_radiobutton.get_active())
         self.assertTrue(dialog._hosted_radiobutton.get_active())
 
+    if not got_gobject_introspection:
+        test_revert.skip = gobject_skip_message
+        test_load_data_from_config.skip = gobject_skip_message
+        test_toggle_radio_button.skip = gobject_skip_message
+        test_init.skip = gobject_skip_message
+
 
 class ConfigurationViewCommitTest(LandscapeTest):
 
@@ -200,6 +211,13 @@ ping_url = http://landscape.canonical.com/ping
         self.dialog._possibly_save_and_exit(None)
         self.assertTrue(self.write_back_called)
 
+    if not got_gobject_introspection:
+        test_commit_dedicated_server_host_name_change.skip = \
+            gobject_skip_message
+        test_commit_hosted_password_change.skip = gobject_skip_message
+        test_commit_hosted_account_name_change.skip = gobject_skip_message
+        test_commit_fresh_dialog.skip = gobject_skip_message
+
 
 class DedicatedConfigurationViewTest(LandscapeTest):
 
@@ -247,3 +265,7 @@ ping_url = http://landscape.localdomain/ping
         self.assertEqual(dialog._password_entry.get_text(), "")
         self.assertEqual(dialog._server_host_name_entry.get_text(),
                          "landscape.localdomain")
+
+    if not got_gobject_introspection:
+        test_load_data_from_config.skip = gobject_skip_message
+        test_init.skip = gobject_skip_message

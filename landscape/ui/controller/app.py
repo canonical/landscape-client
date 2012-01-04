@@ -1,6 +1,5 @@
 from gi.repository import Gtk
 
-from landscape.configuration import register
 from landscape.ui.model.configuration import LandscapeSettingsConfiguration
 from landscape.ui.view.configuration import LandscapeClientSettingsDialog
 from landscape.ui.controller.configuration import ConfigController

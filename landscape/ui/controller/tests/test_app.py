@@ -1,6 +1,12 @@
 import sys
 
-from gi.repository import Gtk
+try:
+    from gi.repository import Gtk
+    got_gobject_introspection = True
+except ImportError:
+    got_gobject_introspection = False
+    gobject_skip_message = "GObject Introspection module unavailable"
+
 
 from landscape.tests.helpers import LandscapeTest
 from landscape.ui.controller.app import LandscapeSettingsApplicationController
@@ -58,6 +64,9 @@ class LandscapeSettingsApplicationControllerInitTest(LandscapeTest):
         app = ConnectionRecordingLandscapeSettingsApplicationController()
         self.assertTrue(app.is_connected("activate", app.setup_ui))
 
+    if not got_gobject_introspection:
+        test_init.skip = gobject_skip_message
+
 
 class LandscapeSettingsApplicationControllerUISetupTest(LandscapeTest):
 
@@ -111,3 +120,6 @@ ping_url = http://landscape.canonical.com/ping
                               LandscapeClientSettingsDialog)
         self.assertIsInstance(self.app.settings_dialog.controller,
                               ConfigController)
+
+    if not got_gobject_introspection:
+        test_setup_ui.skip = gobject_skip_message

@@ -43,7 +43,7 @@ class ConfigController(object):
 
     def default_hosted(self):
         """
-        Set L{server_host_name} in a recoverable fashion when switching from 
+        Set L{server_host_name} in a recoverable fashion when switching from
         dedicated to hosted.
         """
         if self._server_host_name != self.HOSTED_HOST_NAME:
