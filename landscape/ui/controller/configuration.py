@@ -78,22 +78,22 @@ class ConfigController(object):
             self._modified = False
 
     def lock(self):
-        "Block updates to the data set"
+        "Block updates to the data set."
         with self._lock:
             self._lock_out = True
 
     def unlock(self):
-        "Allow updates to the data set"
+        "Allow updates to the data set."
         with self._lock:
             self._lock_out = False
 
     def is_locked(self):
-        "Check if updates are locked out"
+        "Check if updates are locked out."
         with self._lock:
             return self._lock_out
 
     def _derive_server_host_name_from_url(self, url):
-        "Extract the hostname part from a url"
+        "Extract the hostname part from a URL."
         try:
             without_protocol = url[url.index("://") + 3:]
         except ValueError:
@@ -104,13 +104,13 @@ class ConfigController(object):
             return without_protocol
 
     def _derive_url_from_host_name(self, host_name):
-        "Extrapolate a url from a host name"
+        "Extrapolate a url from a host name."
         #Reuse this code to make sure it's a proper host name
         host_name = self._derive_server_host_name_from_url(host_name)
         return "https://" + host_name + "/message-system"
 
     def _derive_ping_url_from_host_name(self, host_name):
-        "Extrapolate a ping_url from a host name"
+        "Extrapolate a ping_url from a host name."
         #Reuse this code to make sure it's a proper host name
         host_name = self._derive_server_host_name_from_url(host_name)
         return "http://" + host_name + "/ping"
@@ -202,7 +202,7 @@ class ConfigController(object):
         self._load_data_from_config()
 
     def commit(self):
-        "Persist settings via the configuration object"
+        "Persist settings via the configuration object."
         self._configuration.data_path = self._data_path
         self._configuration.http_proxy = self._http_proxy
         self._configuration.tags = self._tags
