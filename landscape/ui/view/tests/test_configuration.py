@@ -18,7 +18,7 @@ class ConfigurationViewTest(LandscapeTest):
     def setUp(self):
         super(ConfigurationViewTest, self).setUp()
         config = "[client]\n"
-        config += "data_path = %s\n"  % sys.path[0]
+        config += "data_path = %s\n" % sys.path[0]
         config += "http_proxy = http://proxy.localdomain:3192\n"
         config += "tags = a_tag\n"
         config += "url = https://landscape.canonical.com/message-system\n"
