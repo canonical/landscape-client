@@ -498,7 +498,7 @@ def store_public_key_data(config, certificate_data):
     return key_filename
 
 
-def register(config, reactor=None):
+def register(config, message_handler_f, error_handler_f, reactor=None):
     """Instruct the Landscape Broker to register the client.
 
     The broker will be instructed to reload its configuration and then to
@@ -519,16 +519,16 @@ def register(config, reactor=None):
         reactor.stop()
 
     def failure():
-        print_text("Invalid account name or "
+        message_handler_f("Invalid account name or "
                    "registration password.", error=True)
         stop()
 
     def success():
-        print_text("System successfully registered.")
+        message_handler_f("System successfully registered.")
         stop()
 
     def exchange_failure():
-        print_text("We were unable to contact the server. "
+        message_handler_f("We were unable to contact the server. "
                    "Your internet connection may be down. "
                    "The landscape client will continue to try and contact "
                    "the server periodically.",
@@ -541,11 +541,11 @@ def register(config, reactor=None):
         connector.disconnect()
 
     def catch_all(failure):
-        print_text(failure.getTraceback(), error=True)
-        print_text("Unknown error occurred.", error=True)
+        message_handler_f(failure.getTraceback(), error=True)
+        message_handler_f("Unknown error occurred.", error=True)
         stop()
 
-    print_text("Please wait... ", "")
+    message_handler_f("Please wait... ", "")
 
     time.sleep(2)
 
@@ -563,9 +563,9 @@ def register(config, reactor=None):
         return results.addErrback(catch_all)
 
     def got_error(failure):
-        print_text("There was an error communicating with the Landscape "
+        message_handler_f("There was an error communicating with the Landscape "
                    "client.", error=True)
-        print_text("This machine will be registered with the provided "
+        message_handler_f("This machine will be registered with the provided "
                    "details when the client runs.", error=True)
         if not config.ok_no_register:
             exit_with_error.append(2)
@@ -579,7 +579,7 @@ def register(config, reactor=None):
     reactor.run()
 
     if exit_with_error:
-        sys.exit(exit_with_error[0])
+        error_handler_f(exit_with_error[0])
 
     return result
 
@@ -634,9 +634,9 @@ def main(args):
     # Attempt to register the client.
     if not config.no_start:
         if config.silent:
-            register(config)
+            register(config, print_text, sys.exit)
         else:
             answer = raw_input("\nRequest a new registration for "
                                "this computer now? (Y/n): ")
             if not answer.upper().startswith("N"):
-                register(config)
+                register(config, print_text, sys.exit)

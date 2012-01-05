@@ -1,4 +1,5 @@
 import os
+import sys
 from getpass import getpass
 from ConfigParser import ConfigParser
 from cStringIO import StringIO
@@ -1048,7 +1049,7 @@ registration_password = shared-secret
         self.mocker.result("")
 
         register_mock = self.mocker.replace(register, passthrough=False)
-        register_mock(ANY)
+        register_mock(ANY, ANY, ANY)
 
         self.mocker.replay()
         main(["--config", self.make_working_config()])
@@ -1108,7 +1109,7 @@ registration_password = shared-secret
         self.mocker.result("")
 
         register_mock = self.mocker.replace(register, passthrough=False)
-        register_mock(ANY)
+        register_mock(ANY, ANY, ANY)
 
         self.mocker.replay()
         main(["-c", self.make_working_config()])
@@ -1145,7 +1146,7 @@ registration_password = shared-secret
         # The registration logic should be called and passed the configuration
         # file.
         register_mock = self.mocker.replace(register, passthrough=False)
-        register_mock(ANY)
+        register_mock(ANY, ANY, ANY)
 
         self.mocker.replay()
 
@@ -1163,7 +1164,7 @@ registration_password = shared-secret
 
         # Registration logic should not be invoked.
         register_mock = self.mocker.replace(register, passthrough=False)
-        register_mock(ANY)
+        register_mock(ANY, ANY, ANY)
         self.mocker.count(0)
 
         self.mocker.replay()
@@ -1669,7 +1670,7 @@ class RegisterFunctionTest(LandscapeTest):
         self.mocker.replay()
 
         # DO IT!
-        return register(service.config)
+        return register(service.config, print_text, sys.exit)
 
     def test_register_failure(self):
         """
@@ -1721,7 +1722,7 @@ class RegisterFunctionTest(LandscapeTest):
         self.mocker.replay()
 
         # DO IT!
-        return register(service.config)
+        return register(service.config, print_text, sys.exit)
 
     def test_register_exchange_failure(self):
         """
@@ -1771,7 +1772,7 @@ class RegisterFunctionTest(LandscapeTest):
         self.mocker.replay()
 
         # DO IT!
-        return register(service.config)
+        return register(service.config, print_text, sys.exit)
 
     def test_register_timeout_failure(self):
         service = self.broker_service
@@ -1815,7 +1816,7 @@ class RegisterFunctionTest(LandscapeTest):
         self.mocker.replay()
 
         # DO IT!
-        return register(service.config)
+        return register(service.config, print_text, sys.exit)
 
     def test_register_bus_connection_failure(self):
         """
@@ -1852,7 +1853,7 @@ class RegisterFunctionTest(LandscapeTest):
         self.mocker.replay()
 
         config = get_config(self, ["-a", "accountname", "--silent"])
-        return register(config)
+        return register(config, print_text, sys.exit)
 
     def test_register_bus_connection_failure_ok_no_register(self):
         """
@@ -1879,7 +1880,7 @@ class RegisterFunctionTest(LandscapeTest):
 
         config = get_config(self, ["-a", "accountname", "--silent",
                                    "--ok-no-register"])
-        return self.assertSuccess(register(config))
+        return self.assertSuccess(register(config, print_text, sys.exit))
 
 
 class RegisterFunctionNoServiceTest(LandscapeTest):
@@ -1932,7 +1933,7 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
 
         self.mocker.replay()
 
-        return register(configuration)
+        return register(configuration, print_text, sys.exit)
 
 
 class StoreSSLCertificateDataTest(LandscapeTest):
