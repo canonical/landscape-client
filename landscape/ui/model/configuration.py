@@ -5,4 +5,4 @@ class SettingsConfiguration(LandscapeSetupConfiguration):
     required_options = []
 
     def __init__(self):
-        super(SettingsConfiguration, self).__init__(None)
+        super(SettingsConfiguration, self).__init__()
