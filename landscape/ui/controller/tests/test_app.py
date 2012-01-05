@@ -82,26 +82,26 @@ class LandscapeSettingsApplicationControllerUISetupTest(LandscapeTest):
         Gtk.Dialog.run = fake_run
 
         def get_config():
-            configdata = """
-[client]
-data_path = %s
-http_proxy = http://proxy.localdomain:3192
-tags = a_tag
-url = https://landscape.canonical.com/message-system
-account_name = foo
-registration_password = bar
-computer_title = baz
-https_proxy = https://proxy.localdomain:6192
-ping_url = http://landscape.canonical.com/ping
-
-""" % sys.path[0]
+            configdata = "[client]\n"
+            configdata += "data_path = %s\n" % sys.path[0]
+            configdata += "http_proxy = http://proxy.localdomain:3192\n"
+            configdata += "tags = a_tag\n"
+            configdata += \
+                "url = https://landscape.canonical.com/message-system\n"
+            configdata += "account_name = foo\n"
+            configdata += "registration_password = bar\n"
+            configdata += "computer_title = baz\n"
+            configdata += "https_proxy = https://proxy.localdomain:6192\n"
+            configdata += "ping_url = http://landscape.canonical.com/ping\n"
             config_filename = self.makeFile(configdata)
 
             class MyLandscapeSettingsConfiguration(
                 LandscapeSettingsConfiguration):
                 default_config_filenames = [config_filename]
+
             config = MyLandscapeSettingsConfiguration()
             return config
+
         self.app = ConnectionRecordingLandscapeSettingsApplicationController(
             get_config_f=get_config)
 
