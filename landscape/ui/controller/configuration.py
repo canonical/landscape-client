@@ -7,23 +7,25 @@ class ConfigControllerLockError(Exception):
 
 class ConfigController(object):
     """
-    L{ConfigContoller} defines actions to take against a configfuration object,
+    L{ConfigContoller} defines actions to take against a configuration object,
     providing starting values from the file, allowing them to be changed
     transiently, reverted or committed.
     """
 
     HOSTED_HOST_NAME = "landscape.canonical.com"
     DEFAULT_SERVER_HOST_NAME = "landscape.localdomain"
+    DEFAULT_DEDICATED_ACCOUNT_NAME = "standalone"
 
     def __init__(self, configuration):
-        self.__lock_out = True
-        self.__lock = threading.Lock()
-        self.__initial_server_host_name = self.DEFAULT_SERVER_HOST_NAME
-        self.__configuration = configuration
-        self.__configuration
-        self.__configuration.load([])
-        self.__load_data_from_config()
-        self.__modified = False
+        self._lock_out = True
+        self._lock = threading.Lock()
+        self._initial_server_host_name = self.DEFAULT_SERVER_HOST_NAME
+        self._initial_account_name = self.DEFAULT_DEDICATED_ACCOUNT_NAME
+        self._configuration = configuration
+        self._configuration
+        self._configuration.load([])
+        self._load_data_from_config()
+        self._modified = False
         self.unlock()
 
     def default_dedicated(self):
@@ -31,69 +33,73 @@ class ConfigController(object):
         Set L{server_host_name} to something sane when switching from hosted to
         dedicated
         """
-        if self.__initial_server_host_name != self.HOSTED_HOST_NAME:
-            self.__server_host_name = self.__initial_server_host_name
+        self._account_name = self.DEFAULT_DEDICATED_ACCOUNT_NAME
+        if self._initial_server_host_name != self.HOSTED_HOST_NAME:
+            self._server_host_name = self._initial_server_host_name
         else:
-            self.__server_host_name = self.DEFAULT_SERVER_HOST_NAME
-            self.__url = self.__derive_url_from_host_name(
-                self.__server_host_name)
-            self.__ping_url = self.__derive_ping_url_from_host_name(
-                self.__server_host_name)
-        self.__modified = True
+            self._server_host_name = self.DEFAULT_SERVER_HOST_NAME
+            self._url = self._derive_url_from_host_name(
+                self._server_host_name)
+            self._ping_url = self._derive_ping_url_from_host_name(
+                self._server_host_name)
+            
+        self._modified = True
 
     def default_hosted(self):
         """
         Set L{server_host_name} in a recoverable fashion when switching from 
         dedicated to hosted.
         """
-        if self.__server_host_name != self.HOSTED_HOST_NAME:
-            self.__server_host_name = self.HOSTED_HOST_NAME
-        self.__url = self.__derive_url_from_host_name(
-            self.__server_host_name)
-        self.__ping_url = self.__derive_ping_url_from_host_name(
-            self.__server_host_name)
-        self.__modified = True
+        if self._server_host_name != self.HOSTED_HOST_NAME:
+            self._server_host_name = self.HOSTED_HOST_NAME
+        self._url = self._derive_url_from_host_name(
+            self._server_host_name)
+        self._ping_url = self._derive_ping_url_from_host_name(
+            self._server_host_name)
+        self._account_name = self._initial_account_name
+        self._modified = True
 
-    def __load_data_from_config(self):
+    def _load_data_from_config(self):
         """
         Pull in data set from configuration class.
         """
-        with self.__lock:
-            self.__data_path = self.__configuration.data_path
-            self.__http_proxy = self.__configuration.http_proxy
-            self.__tags = self.__configuration.tags
-            self.__url = self.__configuration.url
-            self.__ping_url = self.__configuration.ping_url
-            self.__account_name = self.__configuration.account_name
-            self.__registration_password = \
-                self.__configuration.registration_password
-            self.__computer_title = self.__configuration.computer_title
-            self.__https_proxy = self.__configuration.https_proxy
-            self.__ping_url = self.__configuration.ping_url
-            if self.__url:
-                self.__server_host_name = \
-                    self.__derive_server_host_name_from_url(self.__url)
+        with self._lock:
+            self._data_path = self._configuration.data_path
+            self._http_proxy = self._configuration.http_proxy
+            self._tags = self._configuration.tags
+            self._url = self._configuration.url
+            self._ping_url = self._configuration.ping_url
+            self._account_name = self._configuration.account_name
+            self._initial_account_name = self._account_name
+            self._registration_password = \
+                self._configuration.registration_password
+            self._computer_title = self._configuration.computer_title
+            self._https_proxy = self._configuration.https_proxy
+            self._ping_url = self._configuration.ping_url
+            if self._url:
+                self._server_host_name = \
+                    self._derive_server_host_name_from_url(self._url)
             else:
-                self.__server_host_name = self.HOSTED_HOST_NAME
-            self.__initial_server_host_name = self.__server_host_name
-            self.__modified = False
+                self._server_host_name = self.HOSTED_HOST_NAME
+            self._initial_server_host_name = self._server_host_name
+            self._modified = False
 
     def lock(self):
         "Block updates to the data set"
-        with self.__lock:
-            self.__lock_out = True
+        with self._lock:
+            self._lock_out = True
 
     def unlock(self):
         "Allow updates to the data set"
-        with self.__lock:
-            self.__lock_out = False
+        with self._lock:
+            self._lock_out = False
 
     def is_locked(self):
         "Check if updates are locked out"
-        with self.__lock:
-            return self.__lock_out
+        with self._lock:
+            return self._lock_out
 
-    def __derive_server_host_name_from_url(self, url):
+    def _derive_server_host_name_from_url(self, url):
         "Extract the hostname part from a url"
         try:
             without_protocol = url[url.index("://") + 3:]
@@ -104,90 +110,91 @@ class ConfigController(object):
         except ValueError:
             return without_protocol
 
-    def __derive_url_from_host_name(self, host_name):
+    def _derive_url_from_host_name(self, host_name):
         "Extrapolate a url from a host name"
         #Reuse this code to make sure it's a proper host name
-        host_name = self.__derive_server_host_name_from_url(host_name)
+        host_name = self._derive_server_host_name_from_url(host_name)
         return "https://" + host_name + "/message-system"
 
-    def __derive_ping_url_from_host_name(self, host_name):
+    def _derive_ping_url_from_host_name(self, host_name):
         "Extrapolate a ping_url from a host name"
         #Reuse this code to make sure it's a proper host name
-        host_name = self.__derive_server_host_name_from_url(host_name)
+        host_name = self._derive_server_host_name_from_url(host_name)
         return "http://" + host_name + "/ping"
 
     @property
     def server_host_name(self):
-        return self.__server_host_name
+        return self._server_host_name
 
     @server_host_name.setter
     def server_host_name(self, value):
-        with self.__lock:
-            if self.__lock_out:
+        with self._lock:
+            if self._lock_out:
                 raise ConfigControllerLockError
             else:
                 if value != self.HOSTED_HOST_NAME:
-                    self.__initial_server_host_name = value
-                self.__server_host_name = value
-                self.__url = self.__derive_url_from_host_name(
-                    self.__server_host_name)
-                self.__ping_url = self.__derive_ping_url_from_host_name(
-                    self.__server_host_name)
-                self.__modified = True
+                    self._initial_server_host_name = value
+                self._server_host_name = value
+                self._url = self._derive_url_from_host_name(
+                    self._server_host_name)
+                self._ping_url = self._derive_ping_url_from_host_name(
+                    self._server_host_name)
+                self._modified = True
 
     @property
     def data_path(self):
-        return self.__data_path
+        return self._data_path
 
     @property
     def url(self):
-        return self.__url
+        return self._url
 
     @property
     def http_proxy(self):
-        return self.__http_proxy
+        return self._http_proxy
 
     @property
     def tags(self):
-        return self.__tags
+        return self._tags
 
     @property
     def account_name(self):
-        return self.__account_name
+        return self._account_name
 
     @account_name.setter
     def account_name(self, value):
-        with self.__lock:
-            if self.__lock_out:
+        with self._lock:
+            if self._lock_out:
                 raise ConfigControllerLockError
             else:
-                self.__account_name = value
-                self.__modified = True
+                self._account_name = value
+                self._initial_account_name = value
+                self._modified = True
 
     @property
     def registration_password(self):
-        return self.__registration_password
+        return self._registration_password
 
     @registration_password.setter
     def registration_password(self, value):
-        with self.__lock:
-            if self.__lock_out:
+        with self._lock:
+            if self._lock_out:
                 raise ConfigControllerLockError
             else:
-                self.__registration_password = value
-                self.__modified = True
+                self._registration_password = value
+                self._modified = True
 
     @property
     def computer_title(self):
-        return self.__computer_title
+        return self._computer_title
 
     @property
     def https_proxy(self):
-        return self.__https_proxy
+        return self._https_proxy
 
     @property
     def ping_url(self):
-        return self.__ping_url
+        return self._ping_url
 
     @property
     def hosted(self):
@@ -195,25 +202,25 @@ class ConfigController(object):
 
     @property
     def is_modified(self):
-        return self.__modified
+        return self._modified
 
     def revert(self):
         "Revert settings to those the configuration object originally found."
-        self.__configuration.reload()
-        self.__load_data_from_config()
+        self._configuration.reload()
+        self._load_data_from_config()
 
     def commit(self):
         "Persist settings via the configuration object"
-        self.__configuration.data_path = self.__data_path
-        self.__configuration.http_proxy = self.__http_proxy
-        self.__configuration.tags = self.__tags
-        self.__configuration.url = self.__url
-        self.__configuration.ping_url = self.__ping_url
-        self.__configuration.account_name = self.__account_name
-        self.__configuration.registration_password = \
-            self.__registration_password
-        self.__configuration.computer_title = self.__computer_title
-        self.__configuration.https_proxy = self.__https_proxy
-        self.__configuration.ping_url = self.__ping_url
-        self.__configuration.write()
-        self.__modified = False
+        self._configuration.data_path = self._data_path
+        self._configuration.http_proxy = self._http_proxy
+        self._configuration.tags = self._tags
+        self._configuration.url = self._url
+        self._configuration.ping_url = self._ping_url
+        self._configuration.account_name = self._account_name
+        self._configuration.registration_password = \
+            self._registration_password
+        self._configuration.computer_title = self._computer_title
+        self._configuration.https_proxy = self._https_proxy
+        self._configuration.ping_url = self._ping_url
+        self._configuration.write()
+        self._modified = False
