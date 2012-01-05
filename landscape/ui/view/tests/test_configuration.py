@@ -17,22 +17,22 @@ class ConfigurationViewTest(LandscapeTest):
 
     def setUp(self):
         super(ConfigurationViewTest, self).setUp()
-        config = """
-[client]
-data_path = %s
-http_proxy = http://proxy.localdomain:3192
-tags = a_tag
-url = https://landscape.canonical.com/message-system
-account_name = foo
-registration_password = bar
-computer_title = baz
-https_proxy = https://proxy.localdomain:6192
-ping_url = http://landscape.canonical.com/ping
-""" % sys.path[0]
+        config = "[client]\n"
+        config += "data_path = %s\n"  % sys.path[0]
+        config += "http_proxy = http://proxy.localdomain:3192\n"
+        config += "tags = a_tag\n"
+        config += "url = https://landscape.canonical.com/message-system\n"
+        config += "account_name = foo\n"
+        config += "registration_password = bar\n"
+        config += "computer_title = baz\n"
+        config += "https_proxy = https://proxy.localdomain:6192\n"
+        config += "ping_url = http://landscape.canonical.com/ping\n"
+
         self.config_filename = self.makeFile(config)
 
         class MyLandscapeSetupConfiguration(LandscapeSetupConfiguration):
             default_config_filenames = [self.config_filename]
+
         self.config = MyLandscapeSetupConfiguration(None)
 
     def test_init(self):
@@ -127,28 +127,28 @@ class ConfigurationViewCommitTest(LandscapeTest):
 
     def setUp(self):
         super(ConfigurationViewCommitTest, self).setUp()
-        config = """
-[client]
-data_path = %s
-http_proxy = http://proxy.localdomain:3192
-tags = a_tag
-url = https://landscape.canonical.com/message-system
-account_name = foo
-registration_password = bar
-computer_title = baz
-https_proxy = https://proxy.localdomain:6192
-ping_url = http://landscape.canonical.com/ping
-""" % sys.path[0]
+        config = "[client]\n"
+        config += "data_path = %s\n" % sys.path[0]
+        config += "http_proxy = http://proxy.localdomain:3192\n"
+        config += "tags = a_tag\n"
+        config += "url = https://landscape.canonical.com/message-system\n"
+        config += "account_name = foo\n"
+        config += "registration_password = bar\n"
+        config += "computer_title = baz\n"
+        config += "https_proxy = https://proxy.localdomain:6192\n"
+        config += "ping_url = http://landscape.canonical.com/ping\n"
         self.config_filename = self.makeFile(config)
 
         class MyLandscapeSetupConfiguration(LandscapeSetupConfiguration):
             default_config_filenames = [self.config_filename]
+
         self.config = MyLandscapeSetupConfiguration(None)
         self.real_write_back = LandscapeClientSettingsDialog._write_back
         self.write_back_called = False
 
         def fake_write_back(obj):
             self.write_back_called = True
+
         LandscapeClientSettingsDialog._write_back = fake_write_back
         self.controller = ConfigController(self.config)
         self.dialog = LandscapeClientSettingsDialog(self.controller)
@@ -223,17 +223,16 @@ class DedicatedConfigurationViewTest(LandscapeTest):
 
     def setUp(self):
         super(DedicatedConfigurationViewTest, self).setUp()
-        config = """
-[client]
-data_path = %s
-url = https://landscape.localdomain/message-system
-computer_title = baz
-ping_url = http://landscape.localdomain/ping
-""" % sys.path[0]
+        config = "[client]\n"
+        config += "data_path = %s\n" % sys.path[0]
+        config += "url = https://landscape.localdomain/message-system\n"
+        config += "computer_title = baz\n"
+        config += "ping_url = http://landscape.localdomain/ping\n"
         self.config_filename = self.makeFile(config)
 
         class MyLandscapeSetupConfiguration(LandscapeSetupConfiguration):
             default_config_filenames = [self.config_filename]
+
         self.config = MyLandscapeSetupConfiguration(None)
 
     def test_init(self):

@@ -78,6 +78,7 @@ class LandscapeSettingsApplicationControllerUISetupTest(LandscapeTest):
             Retard X11 mapping.
             """
             pass
+        
         self._real_run = Gtk.Dialog.run
         Gtk.Dialog.run = fake_run
 
