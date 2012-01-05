@@ -68,9 +68,8 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
     unsaved_options = ("no_start", "disable", "silent", "ok_no_register",
                        "import_from")
 
-    def __init__(self, fetch_import_url):
+    def __init__(self):
         super(LandscapeSetupConfiguration, self).__init__()
-        self._fetch_import_url = fetch_import_url
 
     def _load_external_options(self):
         """Handle the --import parameter.
@@ -89,7 +88,7 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
                         os.environ["http_proxy"] = self.http_proxy
                     if self.https_proxy:
                         os.environ["https_proxy"] = self.https_proxy
-                    content = self._fetch_import_url(self.import_from)
+                    content = self.fetch_import_url(self.import_from)
                     parser.readfp(StringIO(content))
                 elif not os.path.isfile(self.import_from):
                     raise ImportOptionError("File %s doesn't exist." %
@@ -108,6 +107,21 @@ class LandscapeSetupConfiguration(BrokerConfiguration):
                                         self.import_from)
             options.update(self._command_line_options)
             self._command_line_options = options
+
+    def fetch_import_url(self, url):
+        """Handle fetching of URLs passed to --url."""
+
+        print_text("Fetching configuration from %s..." % url)
+        error_message = None
+        try:
+            content = fetch(url)
+        except FetchError, error:
+            error_message = str(error)
+        if error_message is not None:
+            raise ImportOptionError(
+                "Couldn't download configuration from %s: %s" %
+                (url, error_message))
+        return content
 
     def make_parser(self):
         """
@@ -584,28 +598,8 @@ def register(config, reactor=None):
     return result
 
 
-def fetch_import_url(url):
-    """Handle fetching of URLs passed to --url.
-
-    This is done out of LandscapeSetupConfiguration since it has to deal
-    with interaction with the user and downloading of files.
-    """
-
-    print_text("Fetching configuration from %s..." % url)
-    error_message = None
-    try:
-        content = fetch(url)
-    except FetchError, error:
-        error_message = str(error)
-    if error_message is not None:
-        raise ImportOptionError(
-            "Couldn't download configuration from %s: %s" %
-            (url, error_message))
-    return content
-
-
 def main(args):
-    config = LandscapeSetupConfiguration(fetch_import_url)
+    config = LandscapeSetupConfiguration()
     if args in (["-h"], ["--help"]):
         # We let landscape-config --help to be run as normal user
         config.load(args)

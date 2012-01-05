@@ -11,7 +11,7 @@ from landscape.configuration import (
     print_text, LandscapeSetupScript, LandscapeSetupConfiguration,
     register, setup, main, setup_init_script_and_start_client,
     stop_client_and_disable_init_script, ConfigurationError,
-    fetch_import_url, ImportOptionError, store_public_key_data)
+    ImportOptionError, store_public_key_data)
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.tests.helpers import (
@@ -27,7 +27,7 @@ def get_config(self, args):
 url = https://landscape.canonical.com/message-system
 """)
         args.extend(["--config", filename, "--data-path", self.makeDir()])
-    config = LandscapeSetupConfiguration(fetch_import_url)
+    config = LandscapeSetupConfiguration()
     config.load(args)
     return config
 
@@ -91,7 +91,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
 
         class MyLandscapeSetupConfiguration(LandscapeSetupConfiguration):
             default_config_filenames = [self.config_filename]
-        self.config = MyLandscapeSetupConfiguration(None)
+        self.config = MyLandscapeSetupConfiguration()
         self.script = LandscapeSetupScript(self.config)
 
     def test_show_help(self):
@@ -1889,7 +1889,7 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
         When registration fails because of an unknown error, a message is
         printed and the program exits.
         """
-        configuration = LandscapeSetupConfiguration(None)
+        configuration = LandscapeSetupConfiguration()
 
         # We'll just mock the remote here to have it raise an exception.
         connector_factory = self.mocker.replace(
