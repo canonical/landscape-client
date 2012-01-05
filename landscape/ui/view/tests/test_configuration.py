@@ -33,7 +33,7 @@ class ConfigurationViewTest(LandscapeTest):
         class MySetupConfiguration(LandscapeSetupConfiguration):
             default_config_filenames = [self.config_filename]
 
-        self.config = MySetupConfiguration(None)
+        self.config = MySetupConfiguration()
 
     def test_init(self):
         """
@@ -142,7 +142,7 @@ class ConfigurationViewCommitTest(LandscapeTest):
         class MySetupConfiguration(LandscapeSetupConfiguration):
             default_config_filenames = [self.config_filename]
 
-        self.config = MySetupConfiguration(None)
+        self.config = MySetupConfiguration()
         self.real_write_back = ClientSettingsDialog._write_back
         self.write_back_called = False
 
@@ -233,7 +233,7 @@ class DedicatedConfigurationViewTest(LandscapeTest):
         class MySetupConfiguration(LandscapeSetupConfiguration):
             default_config_filenames = [self.config_filename]
 
-        self.config = MySetupConfiguration(None)
+        self.config = MySetupConfiguration()
 
     def test_init(self):
         """
