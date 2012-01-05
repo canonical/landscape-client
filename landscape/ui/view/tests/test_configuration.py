@@ -9,7 +9,7 @@ except ImportError:
 
 from landscape.tests.helpers import LandscapeTest
 from landscape.configuration import LandscapeSetupConfiguration
-from landscape.ui.view.configuration import LandscapeClientSettingsDialog
+from landscape.ui.view.configuration import ClientSettingsDialog
 from landscape.ui.controller.configuration import ConfigController
 
 
@@ -30,10 +30,10 @@ class ConfigurationViewTest(LandscapeTest):
 
         self.config_filename = self.makeFile(config)
 
-        class MyLandscapeSetupConfiguration(LandscapeSetupConfiguration):
+        class MySetupConfiguration(LandscapeSetupConfiguration):
             default_config_filenames = [self.config_filename]
 
-        self.config = MyLandscapeSetupConfiguration(None)
+        self.config = MySetupConfiguration(None)
 
     def test_init(self):
         """
@@ -41,7 +41,7 @@ class ConfigurationViewTest(LandscapeTest):
         from the controller.
         """
         controller = ConfigController(self.config)
-        dialog = LandscapeClientSettingsDialog(controller)
+        dialog = ClientSettingsDialog(controller)
         content_area = dialog.get_content_area()
         children = content_area.get_children()
         self.assertEqual(len(children), 2)
@@ -59,7 +59,7 @@ class ConfigurationViewTest(LandscapeTest):
         dialog radiobuttons.
         """
         controller = ConfigController(self.config)
-        dialog = LandscapeClientSettingsDialog(controller)
+        dialog = ClientSettingsDialog(controller)
         self.assertTrue(dialog._hosted_radiobutton.get_active())
         self.assertFalse(dialog._dedicated_radiobutton.get_active())
         self.assertTrue(dialog._account_entry.get_sensitive())
@@ -84,7 +84,7 @@ class ConfigurationViewTest(LandscapeTest):
         configuration file.
         """
         controller = ConfigController(self.config)
-        dialog = LandscapeClientSettingsDialog(controller)
+        dialog = ClientSettingsDialog(controller)
         self.assertEqual(dialog._account_entry.get_text(), "foo")
         self.assertEqual(dialog._password_entry.get_text(), "bar")
         self.assertEqual(dialog._server_host_name_entry.get_text(),
@@ -95,7 +95,7 @@ class ConfigurationViewTest(LandscapeTest):
         Test that we can revert the UI values using the controller.
         """
         controller = ConfigController(self.config)
-        dialog = LandscapeClientSettingsDialog(controller)
+        dialog = ClientSettingsDialog(controller)
         self.assertEqual(dialog._account_entry.get_text(), "foo")
         self.assertEqual(dialog._password_entry.get_text(), "bar")
         self.assertEqual(dialog._server_host_name_entry.get_text(),
@@ -139,19 +139,19 @@ class ConfigurationViewCommitTest(LandscapeTest):
         config += "ping_url = http://landscape.canonical.com/ping\n"
         self.config_filename = self.makeFile(config)
 
-        class MyLandscapeSetupConfiguration(LandscapeSetupConfiguration):
+        class MySetupConfiguration(LandscapeSetupConfiguration):
             default_config_filenames = [self.config_filename]
 
-        self.config = MyLandscapeSetupConfiguration(None)
-        self.real_write_back = LandscapeClientSettingsDialog._write_back
+        self.config = MySetupConfiguration(None)
+        self.real_write_back = ClientSettingsDialog._write_back
         self.write_back_called = False
 
         def fake_write_back(obj):
             self.write_back_called = True
 
-        LandscapeClientSettingsDialog._write_back = fake_write_back
+        ClientSettingsDialog._write_back = fake_write_back
         self.controller = ConfigController(self.config)
-        self.dialog = LandscapeClientSettingsDialog(self.controller)
+        self.dialog = ClientSettingsDialog(self.controller)
 
     def tearDown(self):
         self.controller = None
@@ -160,7 +160,7 @@ class ConfigurationViewCommitTest(LandscapeTest):
         while Gtk.events_pending():
             Gtk.main_iteration()
         self.write_back_called = False
-        LandscapeClientSettingsDialog._write_back = self.real_write_back
+        ClientSettingsDialog._write_back = self.real_write_back
         super(ConfigurationViewCommitTest, self).tearDown()
 
     def test_commit_fresh_dialog(self):
@@ -230,10 +230,10 @@ class DedicatedConfigurationViewTest(LandscapeTest):
         config += "ping_url = http://landscape.localdomain/ping\n"
         self.config_filename = self.makeFile(config)
 
-        class MyLandscapeSetupConfiguration(LandscapeSetupConfiguration):
+        class MySetupConfiguration(LandscapeSetupConfiguration):
             default_config_filenames = [self.config_filename]
 
-        self.config = MyLandscapeSetupConfiguration(None)
+        self.config = MySetupConfiguration(None)
 
     def test_init(self):
         """
@@ -241,7 +241,7 @@ class DedicatedConfigurationViewTest(LandscapeTest):
         from the controller.
         """
         controller = ConfigController(self.config)
-        dialog = LandscapeClientSettingsDialog(controller)
+        dialog = ClientSettingsDialog(controller)
         content_area = dialog.get_content_area()
         children = content_area.get_children()
         self.assertEqual(len(children), 2)
@@ -259,7 +259,7 @@ class DedicatedConfigurationViewTest(LandscapeTest):
         configuration file.
         """
         controller = ConfigController(self.config)
-        dialog = LandscapeClientSettingsDialog(controller)
+        dialog = ClientSettingsDialog(controller)
         self.assertEqual(dialog._account_entry.get_text(), "")
         self.assertEqual(dialog._password_entry.get_text(), "")
         self.assertEqual(dialog._server_host_name_entry.get_text(),

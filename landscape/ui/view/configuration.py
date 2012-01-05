@@ -3,21 +3,21 @@ import os
 from gi.repository import Gtk
 
 
-class LandscapeClientSettingsDialog(Gtk.Dialog):
+class ClientSettingsDialog(Gtk.Dialog):
 
     GLADE_FILE = "landscape-client-settings.glade"
 
     def __init__(self, controller, data_path=None, *args, **kwargs):
-        super(LandscapeClientSettingsDialog, self).__init__(*args, **kwargs)
+        super(ClientSettingsDialog, self).__init__(*args, **kwargs)
         self.controller = controller
         if data_path is None:
             self._ui_path = os.path.join(
                 controller.data_path, "ui",
-                LandscapeClientSettingsDialog.GLADE_FILE)
+                ClientSettingsDialog.GLADE_FILE)
         else:
             self._ui_path = os.path.join(
                 data_path, "ui",
-                LandscapeClientSettingsDialog.GLADE_FILE)
+                ClientSettingsDialog.GLADE_FILE)
         self._builder = Gtk.Builder()
         self._builder.add_from_file(self._ui_path)
         self._setup_ui()
@@ -31,7 +31,7 @@ class LandscapeClientSettingsDialog(Gtk.Dialog):
         Configure the dialog window and pack content from the Glade UI file
         into the main content area.
         """
-        self.set_title("Landscape Client Settings")
+        self.set_title("Client Settings")
         content_area = self.get_content_area()
         vbox = self._builder.get_object(
             "landscape-client-settings-dialog-vbox")

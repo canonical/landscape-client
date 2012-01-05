@@ -1,8 +1,7 @@
 from landscape.tests.helpers import LandscapeTest
 from landscape.ui.controller.configuration import (
     ConfigController, ConfigControllerLockError)
-from landscape.ui.model.configuration import (
-    LandscapeSettingsConfiguration)
+from landscape.ui.model.configuration import SettingsConfiguration
 
 
 class ConfigControllerTest(LandscapeTest):
@@ -21,10 +20,10 @@ class ConfigControllerTest(LandscapeTest):
         config += "ping_url = http://landscape.canonical.com/ping\n"
         self.config_filename = self.makeFile(config)
 
-        class MyLandscapeSettingsConfiguration(LandscapeSettingsConfiguration):
+        class MySettingsConfiguration(SettingsConfiguration):
             default_config_filenames = [self.config_filename]
 
-        self.config = MyLandscapeSettingsConfiguration()
+        self.config = MySettingsConfiguration()
 
     def test_init(self):
         """
@@ -193,10 +192,10 @@ class EmptyConfigControllerTest(LandscapeTest):
         config = ""
         self.config_filename = self.makeFile(config)
 
-        class MyLandscapeSettingsConfiguration(LandscapeSettingsConfiguration):
+        class MySettingsConfiguration(SettingsConfiguration):
             default_config_filenames = [self.config_filename]
 
-        self.config = MyLandscapeSettingsConfiguration()
+        self.config = MySettingsConfiguration()
 
     def test_defaulting(self):
         """
