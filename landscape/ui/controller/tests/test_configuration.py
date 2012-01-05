@@ -9,23 +9,21 @@ class ConfigControllerTest(LandscapeTest):
 
     def setUp(self):
         super(ConfigControllerTest, self).setUp()
-        config = """
-[client]
-data_path = /var/lib/landscape/client
-http_proxy = http://proxy.localdomain:3192
-tags = a_tag
-url = https://landscape.canonical.com/message-system
-account_name = foo
-registration_password = bar
-computer_title = baz
-https_proxy = https://proxy.localdomain:6192
-ping_url = http://landscape.canonical.com/ping
-
-"""
+        config = "[client]"
+        config += "data_path = /var/lib/landscape/client\n"
+        config += "http_proxy = http://proxy.localdomain:3192\n"
+        config += "tags = a_tag\n"
+        config += "url = https://landscape.canonical.com/message-system\n"
+        config += "account_name = foo\n"
+        config += "registration_password = bar\n"
+        config += "computer_title = baz\n"
+        config += "https_proxy = https://proxy.localdomain:6192\n"
+        config += "ping_url = http://landscape.canonical.com/ping\n"
         self.config_filename = self.makeFile(config)
 
         class MyLandscapeSettingsConfiguration(LandscapeSettingsConfiguration):
             default_config_filenames = [self.config_filename]
+
         self.config = MyLandscapeSettingsConfiguration()
 
     def test_init(self):
@@ -34,7 +32,7 @@ ping_url = http://landscape.canonical.com/ping
         directly from the configuration file.
         """
         controller = ConfigController(self.config)
-        self.assertEqual(controller.data_path, "/var/lib/landscape/client")
+        self.assertEqual(controller.data_path, "/var/lib/landscape/client/")
         self.assertEqual(controller.http_proxy,
                          "http://proxy.localdomain:3192")
         self.assertEqual(controller.tags, "a_tag")
@@ -197,6 +195,7 @@ class EmptyConfigControllerTest(LandscapeTest):
 
         class MyLandscapeSettingsConfiguration(LandscapeSettingsConfiguration):
             default_config_filenames = [self.config_filename]
+
         self.config = MyLandscapeSettingsConfiguration()
 
     def test_defaulting(self):
