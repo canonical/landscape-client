@@ -82,7 +82,10 @@ case "$1" in
         # Fix prior ownerships, we exclude the custom-graph-scripts directory
         # because there might script-generated files that we want to preserve
         # the ownership of.
-        find /var/lib/landscape/ -wholename /var/lib/landscape/client/custom-graph-scripts -prune -or -exec chown landscape {} \; > /dev/null 2>&1
+        if [ -d /var/lib/landscape/client ]; then
+            find /var/lib/landscape/client/ -wholename /var/lib/landscape/client/custom-graph-scripts -prune -or -exec chown landscape {} \; > /dev/null 2>&1
+        fi
+        [ -d /var/lib/landscape/.gnupg ] && chown -R landscape /var/lib/landscape/.gnupg || :
         chown -R landscape /var/log/landscape
 
     ;;

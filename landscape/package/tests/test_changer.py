@@ -515,12 +515,12 @@ class PackageChangerTestMixin(object):
 
         return result.addCallback(got_result)
 
-    def test_run_with_no_smart_update_stamp(self):
+    def test_run_with_no_update_stamp(self):
         """
-        If the smart-update stamp file is not there yet, the package changer
+        If the update-stamp file is not there yet, the package changer
         just exists.
         """
-        os.remove(self.config.smart_update_stamp_filename)
+        os.remove(self.config.update_stamp_filename)
 
         def assert_log(ignored):
             self.assertIn("The package-reporter hasn't run yet, exiting.",
@@ -774,14 +774,14 @@ class PackageChangerTestMixin(object):
                                   "type": "change-packages-result"}])
         return result.addCallback(got_result)
 
-    def test_smart_update_stamp_exists(self):
+    def test_update_stamp_exists(self):
         """
-        L{PackageChanger.smart_update_exists} returns C{True} if the
-        smart-update stamp file is there, C{False} otherwise.
+        L{PackageChanger.update_exists} returns C{True} if the
+        update-stamp file is there, C{False} otherwise.
         """
-        self.assertTrue(self.changer.smart_update_stamp_exists())
-        os.remove(self.config.smart_update_stamp_filename)
-        self.assertFalse(self.changer.smart_update_stamp_exists())
+        self.assertTrue(self.changer.update_stamp_exists())
+        os.remove(self.config.update_stamp_filename)
+        self.assertFalse(self.changer.update_stamp_exists())
 
     def test_binaries_path(self):
         self.assertEqual(
@@ -848,7 +848,7 @@ class SmartPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
             self.config.data_path = self.makeDir()
             os.mkdir(self.config.package_directory)
             os.mkdir(self.config.binaries_path)
-            touch_file(self.config.smart_update_stamp_filename)
+            touch_file(self.config.update_stamp_filename)
             self.changer = PackageChanger(
                 self.store, self.facade, self.remote, self.config)
             service = self.broker_service
@@ -1054,7 +1054,7 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
             self.config.data_path = self.makeDir()
             os.mkdir(self.config.package_directory)
             os.mkdir(self.config.binaries_path)
-            touch_file(self.config.smart_update_stamp_filename)
+            touch_file(self.config.update_stamp_filename)
             self.changer = PackageChanger(
                 self.store, self.facade, self.remote, self.config)
             service = self.broker_service

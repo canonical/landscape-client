@@ -207,7 +207,7 @@ class PackageReporter(PackageTaskHandler):
                     self.smart_update_filename, code, err))
             logging.debug("'%s' exited with status %d (out='%s', err='%s'" % (
                 self.smart_update_filename, code, out, err))
-            touch_file(self._config.smart_update_stamp_filename)
+            touch_file(self._config.update_stamp_filename)
             if not smart_failed and not self._facade.get_channels():
                 code = 1
                 err = "There are no APT sources configured in %s or %s." % (
@@ -222,7 +222,7 @@ class PackageReporter(PackageTaskHandler):
 
     def _apt_update_timeout_expired(self, interval):
         """Check if the apt-update timeout has passed."""
-        stamp = self._config.apt_update_stamp_filename
+        stamp = self._config.update_stamp_filename
 
         if not os.path.exists(stamp):
             return True
@@ -242,7 +242,7 @@ class PackageReporter(PackageTaskHandler):
             result = spawn_process(self.apt_update_filename)
 
             def callback((out, err, code)):
-                touch_file(self._config.apt_update_stamp_filename)
+                touch_file(self._config.update_stamp_filename)
                 logging.debug(
                     "'%s' exited with status %d (out='%s', err='%s')" % (
                         self.apt_update_filename, code, out, err))

@@ -1,5 +1,4 @@
 import os
-from collections import namedtuple
 
 from twisted.internet.defer import Deferred
 
@@ -9,6 +8,14 @@ from landscape.manager.plugin import SUCCEEDED, FAILED
 from landscape.lib.twisted_util import gather_results
 from landscape.tests.helpers import LandscapeTest, ManagerHelper
 from landscape.package.reporter import find_reporter_command
+
+
+class FakeStatResult(object):
+
+    def __init__(self, st_mode, st_uid, st_gid):
+        self.st_mode = st_mode
+        self.st_uid = st_uid
+        self.st_gid = st_gid
 
 
 class AptSourcesTests(LandscapeTest):
@@ -68,8 +75,6 @@ class AptSourcesTests(LandscapeTest):
         os.chmod(self.sourceslist.SOURCES_LIST, 0400)
         sources_stat_orig = os.stat(self.sourceslist.SOURCES_LIST)
 
-        FakeStatResult = namedtuple("FakeStatResult",
-                                    ["st_mode", "st_uid", "st_gid"])
         fake_stats = FakeStatResult(st_mode=sources_stat_orig.st_mode,
                                     st_uid=30, st_gid=30)
         os_stat = self.mocker.replace("os.stat")

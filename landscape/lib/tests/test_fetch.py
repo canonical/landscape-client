@@ -318,7 +318,7 @@ class FetchTest(LandscapeTest):
         """
         url_results = {"http://right/": "right",
                        "http://wrong/": ("wrong", 501),
-                       "http://impossilbe/": "impossible"}
+                       "http://impossible/": "impossible"}
         failed_urls = []
 
         def errback(failure, url):
@@ -328,7 +328,8 @@ class FetchTest(LandscapeTest):
             return failure
 
         curl = CurlManyStub(url_results)
-        result = fetch_many_async(url_results.keys(), callback=None,
+        urls = ["http://right/", "http://wrong/", "http://impossible/"]
+        result = fetch_many_async(urls, callback=None,
                                   errback=errback, curl=curl)
 
         def check_failure(failure):

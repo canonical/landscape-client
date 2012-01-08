@@ -63,7 +63,7 @@ class PackageChanger(PackageTaskHandler):
         """
         Handle our tasks and spawn the reporter if package data has changed.
         """
-        if not self.smart_update_stamp_exists():
+        if not self.update_stamp_exists():
             logging.warning("The package-reporter hasn't run yet, exiting.")
             return succeed(None)
 
@@ -127,11 +127,11 @@ class PackageChanger(PackageTaskHandler):
         else:
             raise PackageTaskError()
 
-    def smart_update_stamp_exists(self):
+    def update_stamp_exists(self):
         """
-        Return a boolean indicating if the smart-update stamp file exists.
+        Return a boolean indicating if the update-stamp stamp file exists.
         """
-        return os.path.exists(self._config.smart_update_stamp_filename)
+        return os.path.exists(self._config.update_stamp_filename)
 
     def init_channels(self, binaries=()):
         """Initialize the Smart channels as needed.
