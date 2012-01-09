@@ -82,14 +82,12 @@ class ConfigurationTests(LandscapeTest):
     def test_missing_url_is_defaulted(self):
         """
         Test that is we don't explicitly pass a URL that this value is
-        defaulted.  
+        defaulted.
         """
         filename = self.makeFile("[client]\n")
 
         configuration = BrokerConfiguration()
         configuration.load(["--config", filename])
 
-        self.assertEqual(configuration.url, 
+        self.assertEqual(configuration.url,
                          "https://landscape.canonical.com/message-system")
-
-        

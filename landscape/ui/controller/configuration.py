@@ -83,7 +83,7 @@ class ConfigController(object):
         self._lock.acquire()
         self._lock_out = True
         self._lock.release()
-        
+
     def unlock(self):
         "Allow updates to the data set."
         self._lock.acquire()
@@ -120,12 +120,10 @@ class ConfigController(object):
         host_name = self._derive_server_host_name_from_url(host_name)
         return "http://" + host_name + "/ping"
 
-    @property
-    def server_host_name(self):
+    def _get_server_host_name(self):
         return self._server_host_name
 
-    @server_host_name.setter
-    def server_host_name(self, value):
+    def _set_server_host_name(self, value):
         self._lock.acquire()
         if self._lock_out:
             self._lock.release()
@@ -140,6 +138,7 @@ class ConfigController(object):
                 self._server_host_name)
             self._modified = True
             self._lock.release()
+    server_host_name = property(_get_server_host_name, _set_server_host_name)
 
     @property
     def data_path(self):
@@ -157,12 +156,10 @@ class ConfigController(object):
     def tags(self):
         return self._tags
 
-    @property
-    def account_name(self):
+    def _get_account_name(self):
         return self._account_name
 
-    @account_name.setter
-    def account_name(self, value):
+    def _set_account_name(self, value):
         self._lock.acquire()
         if self._lock_out:
             self._lock.release()
@@ -171,13 +168,12 @@ class ConfigController(object):
             self._account_name = value
             self._modified = True
             self._lock.release()
+    account_name = property(_get_account_name, _set_account_name)
 
-    @property
-    def registration_password(self):
+    def _get_registration_password(self):
         return self._registration_password
 
-    @registration_password.setter
-    def registration_password(self, value):
+    def _set_registration_password(self, value):
         self._lock.acquire()
         if self._lock_out:
             self._lock.release()
@@ -186,6 +182,8 @@ class ConfigController(object):
             self._registration_password = value
             self._modified = True
             self._lock.release()
+    registration_password = property(_get_registration_password,
+                                     _set_registration_password)
 
     @property
     def computer_title(self):
