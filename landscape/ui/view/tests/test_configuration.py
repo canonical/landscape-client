@@ -97,7 +97,7 @@ ping_url = http://landscape.canonical.com/ping
                          "landscape.canonical.com")
         dialog._dedicated_radiobutton.set_active(True)
         dialog._server_host_name_entry.set_text("more.barn")
-        self.assertEqual(dialog._account_entry.get_text(), "foo")
+        self.assertEqual(dialog._account_entry.get_text(), "standalone")
         self.assertEqual(dialog._password_entry.get_text(), "bar")
         self.assertEqual(dialog._server_host_name_entry.get_text(),
                          "more.barn")

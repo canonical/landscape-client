@@ -12,9 +12,9 @@ from landscape.ui.model.configuration import LandscapeSettingsConfiguration
 class ConnectionRecordingLandscapeSettingsApplicationController(
     LandscapeSettingsApplicationController):
 
-    __connections = set()
-    __connection_args = {}
-    __connection_kwargs = {}
+    _connections = set()
+    _connection_args = {}
+    _connection_kwargs = {}
 
     def __init__(self, get_config_f=None):
         super(ConnectionRecordingLandscapeSettingsApplicationController,
@@ -22,27 +22,27 @@ class ConnectionRecordingLandscapeSettingsApplicationController(
         if get_config_f:
             self.get_config = get_config_f
 
-    def __make_connection_name(self, signal, func):
+    def _make_connection_name(self, signal, func):
         return signal + ">" + func.__name__
 
-    def __record_connection(self, signal, func, *args, **kwargs):
-        connection_name = self.__make_connection_name(signal, func)
-        self.__connections.add(connection_name)
-        signal_connection_args = self.__connection_args.get(
+    def _record_connection(self, signal, func, *args, **kwargs):
+        connection_name = self._make_connection_name(signal, func)
+        self._connections.add(connection_name)
+        signal_connection_args = self._connection_args.get(
             connection_name, [])
         signal_connection_args.append(repr(args))
-        self.__connection_args = signal_connection_args
-        signal_connection_kwargs = self.__connection_kwargs.get(
+        self._connection_args = signal_connection_args
+        signal_connection_kwargs = self._connection_kwargs.get(
             connection_name, [])
         signal_connection_kwargs.append(repr(kwargs))
-        self.__connection_kwargs = signal_connection_kwargs
+        self._connection_kwargs = signal_connection_kwargs
 
     def is_connected(self, signal, func):
-        connection_name = self.__make_connection_name(signal, func)
-        return self.__connections.issuperset(set([connection_name]))
+        connection_name = self._make_connection_name(signal, func)
+        return self._connections.issuperset(set([connection_name]))
 
     def connect(self, signal, func, *args, **kwargs):
-        self.__record_connection(signal, func)
+        self._record_connection(signal, func)
 
 
 class LandscapeSettingsApplicationControllerInitTest(LandscapeTest):

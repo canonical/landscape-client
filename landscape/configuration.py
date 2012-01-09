@@ -420,6 +420,39 @@ def stop_client_and_disable_init_script():
     sysvconfig.set_start_on_boot(False)
 
 
+def setup_http_proxy(config):
+    if config.http_proxy is None and os.environ.get("http_proxy"):
+        config.http_proxy = os.environ["http_proxy"]
+    if config.https_proxy is None and os.environ.get("https_proxy"):
+        config.https_proxy = os.environ["https_proxy"]
+
+
+def check_account_name_and_password(config):
+    if config.silent and not config.no_start:
+        if not (config.get("otp") or config.provisioning_otp or
+                (config.get("account_name") and config.get("computer_title"))):
+            raise ConfigurationError("An account name and computer title are "
+                                     "required.")
+
+def check_script_users(config):
+    if config.get("script_users"):
+        invalid_users = get_invalid_users(config.get("script_users"))
+        if invalid_users:
+            raise ConfigurationError("Unknown system users: %s" %
+                                     ", ".join(invalid_users))
+        if not config.include_manager_plugins:
+            config.include_manager_plugins = "ScriptExecution"
+
+
+def register_ssl(config):
+    # WARNING: ssl_public_key is misnamed, it's not the key of the certificate,
+    # but the actual certificate itself.
+    if config.ssl_public_key and config.ssl_public_key.startswith("base64:"):
+        decoded_cert = base64.decodestring(config.ssl_public_key[7:])
+        config.ssl_public_key = store_public_key_data(
+            config, decoded_cert)
+
+
 def setup(config):
     sysvconfig = SysVConfig()
     if not config.no_start:
@@ -434,35 +467,14 @@ def setup(config):
             else:
                 sys.exit("Aborting Landscape configuration")
 
-    if config.http_proxy is None and os.environ.get("http_proxy"):
-        config.http_proxy = os.environ["http_proxy"]
-    if config.https_proxy is None and os.environ.get("https_proxy"):
-        config.https_proxy = os.environ["https_proxy"]
-
-    if config.silent and not config.no_start:
-        if not (config.get("otp") or config.provisioning_otp or
-                (config.get("account_name") and config.get("computer_title"))):
-            raise ConfigurationError("An account name and computer title are "
-                                     "required.")
+    setup_http_proxy(config)
+    check_account_name_and_password(config)
     if config.silent:
-        if config.get("script_users"):
-            invalid_users = get_invalid_users(config.get("script_users"))
-            if invalid_users:
-                raise ConfigurationError("Unknown system users: %s" %
-                                         ", ".join(invalid_users))
-            if not config.include_manager_plugins:
-                config.include_manager_plugins = "ScriptExecution"
+        check_script_users(config)            
     else:
         script = LandscapeSetupScript(config)
         script.run()
-
-    # WARNING: ssl_public_key is misnamed, it's not the key of the certificate,
-    # but the actual certificate itself.
-    if config.ssl_public_key and config.ssl_public_key.startswith("base64:"):
-        decoded_cert = base64.decodestring(config.ssl_public_key[7:])
-        config.ssl_public_key = store_public_key_data(
-            config, decoded_cert)
-
+    register_ssl(config)
     config.write()
     # Restart the client to ensure that it's using the new configuration.
     if not config.no_start and not config.otp:
