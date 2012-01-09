@@ -15,12 +15,12 @@ class ConfigController(object):
     HOSTED_HOST_NAME = "landscape.canonical.com"
     DEFAULT_SERVER_HOST_NAME = "landscape.localdomain"
 
-    def __init__(self, configuration):
+    def __init__(self, configuration, args=[]):
         self._lock_out = True
         self._lock = threading.Lock()
         self._initial_server_host_name = self.DEFAULT_SERVER_HOST_NAME
         self._configuration = configuration
-        self._configuration.load([])
+        self._configuration.load(args)
         self._load_data_from_config()
         self._modified = False
         self.unlock()
