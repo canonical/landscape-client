@@ -1,6 +1,6 @@
 from gi.repository import Gtk
 
-from landscape.ui.model.configuration import SettingsConfiguration
+from landscape.configuration import LandscapeSetupConfiguration
 from landscape.ui.view.configuration import ClientSettingsDialog
 from landscape.ui.controller.configuration import ConfigController
 
@@ -20,7 +20,7 @@ class SettingsApplicationController(Gtk.Application):
         self.connect("activate", self.setup_ui)
 
     def get_config(self):
-        return SettingsConfiguration()
+        return LandscapeSetupConfiguration()
 
     def setup_ui(self, data=None):
         config = self.get_config()
@@ -28,4 +28,3 @@ class SettingsApplicationController(Gtk.Application):
         self.settings_dialog = ClientSettingsDialog(controller,
                                                     data_path=self.data_path)
         self.settings_dialog.run()
-        # register(config)

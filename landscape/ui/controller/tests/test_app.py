@@ -12,7 +12,7 @@ from landscape.tests.helpers import LandscapeTest
 from landscape.ui.controller.app import SettingsApplicationController
 from landscape.ui.controller.configuration import ConfigController
 from landscape.ui.view.configuration import ClientSettingsDialog
-from landscape.ui.model.configuration import SettingsConfiguration
+from landscape.configuration import LandscapeSetupConfiguration
 
 
 class ConnectionRecordingSettingsApplicationController(
@@ -96,10 +96,10 @@ class SettingsApplicationControllerUISetupTest(LandscapeTest):
             configdata += "ping_url = http://landscape.canonical.com/ping\n"
             config_filename = self.makeFile(configdata)
 
-            class MySettingsConfiguration(SettingsConfiguration):
+            class MyLandscapeSetupConfiguration(LandscapeSetupConfiguration):
                 default_config_filenames = [config_filename]
 
-            config = MySettingsConfiguration()
+            config = MyLandscapeSetupConfiguration()
             return config
 
         self.app = ConnectionRecordingSettingsApplicationController(
