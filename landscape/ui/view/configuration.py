@@ -10,21 +10,15 @@ class ClientSettingsDialog(Gtk.Dialog):
     def __init__(self, controller, data_path=None, *args, **kwargs):
         super(ClientSettingsDialog, self).__init__(*args, **kwargs)
         self.controller = controller
-        if data_path is None:
-            self._ui_path = os.path.join(
-                controller.data_path, "ui",
-                ClientSettingsDialog.GLADE_FILE)
-        else:
-            self._ui_path = os.path.join(
-                data_path, "ui",
-                ClientSettingsDialog.GLADE_FILE)
+        self._ui_path = os.path.join(
+            os.path.dirname(__file__), "ui",
+            ClientSettingsDialog.GLADE_FILE)
         self._builder = Gtk.Builder()
         self._builder.add_from_file(self._ui_path)
         self._setup_ui()
         self._hosted_toggle = None
         self._dedicated_toggle = None
         self.revert(self._revert_button)
-        # self.select_landscape_hosting()
 
     def _setup_window(self):
         """
