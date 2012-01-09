@@ -57,40 +57,45 @@ class ConfigController(object):
         """
         Pull in data set from configuration class.
         """
-        with self._lock:
-            self._data_path = self._configuration.data_path
-            self._http_proxy = self._configuration.http_proxy
-            self._tags = self._configuration.tags
-            self._url = self._configuration.url
-            self._ping_url = self._configuration.ping_url
-            self._account_name = self._configuration.account_name
-            self._registration_password = \
-                self._configuration.registration_password
-            self._computer_title = self._configuration.computer_title
-            self._https_proxy = self._configuration.https_proxy
-            self._ping_url = self._configuration.ping_url
-            if self._url:
-                self._server_host_name = \
-                    self._derive_server_host_name_from_url(self._url)
-            else:
-                self._server_host_name = self.HOSTED_HOST_NAME
-            self._initial_server_host_name = self._server_host_name
-            self._modified = False
+        self._lock.acquire()
+        self._data_path = self._configuration.data_path
+        self._http_proxy = self._configuration.http_proxy
+        self._tags = self._configuration.tags
+        self._url = self._configuration.url
+        self._ping_url = self._configuration.ping_url
+        self._account_name = self._configuration.account_name
+        self._registration_password = \
+            self._configuration.registration_password
+        self._computer_title = self._configuration.computer_title
+        self._https_proxy = self._configuration.https_proxy
+        self._ping_url = self._configuration.ping_url
+        if self._url:
+            self._server_host_name = \
+                self._derive_server_host_name_from_url(self._url)
+        else:
+            self._server_host_name = self.HOSTED_HOST_NAME
+        self._initial_server_host_name = self._server_host_name
+        self._modified = False
+        self._lock.release()
 
     def lock(self):
         "Block updates to the data set."
-        with self._lock:
-            self._lock_out = True
-
+        self._lock.acquire()
+        self._lock_out = True
+        self._lock.release()
+        
     def unlock(self):
         "Allow updates to the data set."
-        with self._lock:
-            self._lock_out = False
+        self._lock.acquire()
+        self._lock_out = False
+        self._lock.release()
 
     def is_locked(self):
         "Check if updates are locked out."
-        with self._lock:
-            return self._lock_out
+        self._lock.acquire()
+        lock_state = self._lock_out
+        self._lock.release()
+        return lock_state
 
     def _derive_server_host_name_from_url(self, url):
         "Extract the hostname part from a URL."
@@ -121,18 +126,20 @@ class ConfigController(object):
 
     @server_host_name.setter
     def server_host_name(self, value):
-        with self._lock:
-            if self._lock_out:
-                raise ConfigControllerLockError
-            else:
-                if value != self.HOSTED_HOST_NAME:
-                    self._initial_server_host_name = value
-                self._server_host_name = value
-                self._url = self._derive_url_from_host_name(
-                    self._server_host_name)
-                self._ping_url = self._derive_ping_url_from_host_name(
-                    self._server_host_name)
-                self._modified = True
+        self._lock.acquire()
+        if self._lock_out:
+            self._lock.release()
+            raise ConfigControllerLockError
+        else:
+            if value != self.HOSTED_HOST_NAME:
+                self._initial_server_host_name = value
+            self._server_host_name = value
+            self._url = self._derive_url_from_host_name(
+                self._server_host_name)
+            self._ping_url = self._derive_ping_url_from_host_name(
+                self._server_host_name)
+            self._modified = True
+            self._lock.release()
 
     @property
     def data_path(self):
@@ -156,12 +163,14 @@ class ConfigController(object):
 
     @account_name.setter
     def account_name(self, value):
-        with self._lock:
-            if self._lock_out:
-                raise ConfigControllerLockError
-            else:
-                self._account_name = value
-                self._modified = True
+        self._lock.acquire()
+        if self._lock_out:
+            self._lock.release()
+            raise ConfigControllerLockError
+        else:
+            self._account_name = value
+            self._modified = True
+            self._lock.release()
 
     @property
     def registration_password(self):
@@ -169,12 +178,14 @@ class ConfigController(object):
 
     @registration_password.setter
     def registration_password(self, value):
-        with self._lock:
-            if self._lock_out:
-                raise ConfigControllerLockError
-            else:
-                self._registration_password = value
-                self._modified = True
+        self._lock.acquire()
+        if self._lock_out:
+            self._lock.release()
+            raise ConfigControllerLockError
+        else:
+            self._registration_password = value
+            self._modified = True
+            self._lock.release()
 
     @property
     def computer_title(self):
