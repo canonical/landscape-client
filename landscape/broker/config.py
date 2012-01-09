@@ -11,7 +11,7 @@ class BrokerConfiguration(Configuration):
     @cvar required_options: C{["url"]}
     """
 
-    required_options = ["url"]
+    DEFAULT_URL = "https://landscape.canonical.com/message-system"
 
     def __init__(self):
         super(BrokerConfiguration, self).__init__()
@@ -115,3 +115,6 @@ class BrokerConfiguration(Configuration):
             os.environ["https_proxy"] = self.https_proxy
         elif self._original_https_proxy:
             os.environ["https_proxy"] = self._original_https_proxy
+
+        if self.url is None:
+            self.url = self.DEFAULT_URL

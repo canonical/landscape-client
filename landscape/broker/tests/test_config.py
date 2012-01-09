@@ -78,3 +78,18 @@ class ConfigurationTests(LandscapeTest):
         self.assertEqual(configuration.urgent_exchange_interval, 12)
         self.assertEqual(configuration.exchange_interval, 34)
         self.assertEqual(configuration.ping_interval, 6)
+
+    def test_missing_url_is_defaulted(self):
+        """
+        Test that is we don't explicitly pass a URL that this value is
+        defaulted.  
+        """
+        filename = self.makeFile("[client]\n")
+
+        configuration = BrokerConfiguration()
+        configuration.load(["--config", filename])
+
+        self.assertEqual(configuration.url, 
+                         "https://landscape.canonical.com/message-system")
+
+        
