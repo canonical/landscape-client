@@ -8,11 +8,23 @@ from landscape.sysvconfig import SysVConfig
 
 class ObservableRegistration(object):
 
+    def __init__(self):
+        self._notifiable = []
+        self._failable = [] 
+
     def notify_observers(self, message, end="\n", error=False):
-        pass
+        for fun in self._notifiable:
+            fun(message, error)
 
     def fail_observers(self, error_list):
-        pass
+        for fun in self._failable:
+            fun(error_list)
+
+    def register_notifiable(self, fun):
+        self._notifiable.append(fun)
+
+    def register_failable(self, fun):
+        self._failable.append(fun)
     
     def setup(self, config):
         sysvconfig = SysVConfig()
