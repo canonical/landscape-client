@@ -26,6 +26,7 @@ class SettingsApplicationController(Gtk.Application):
     def setup_ui(self, data=None):
         config = self.get_config()
         controller = ConfigController(config, args=self._args)
+        controller.load()
         self.settings_dialog = ClientSettingsDialog(controller,
                                                     data_path=self.data_path)
         self.settings_dialog.run()

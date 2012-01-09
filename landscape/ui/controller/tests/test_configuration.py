@@ -24,27 +24,29 @@ class ConfigControllerTest(LandscapeTest):
             default_config_filenames = [self.config_filename]
 
         self.config = MyLandscapeSetupConfiguration()
+        self.controller = ConfigController(self.config)
 
     def test_init(self):
         """
         Test that when we create a controller it has initial state read in
         directly from the configuration file.
         """
-        controller = ConfigController(self.config)
-        self.assertEqual(controller.data_path, "/var/lib/landscape/client/")
-        self.assertEqual(controller.http_proxy,
+        self.controller.load()
+        self.assertEqual(self.controller.data_path,
+                         "/var/lib/landscape/client/")
+        self.assertEqual(self.controller.http_proxy,
                          "http://proxy.localdomain:3192")
-        self.assertEqual(controller.tags, "a_tag")
-        self.assertEqual(controller.url,
+        self.assertEqual(self.controller.tags, "a_tag")
+        self.assertEqual(self.controller.url,
                          "https://landscape.canonical.com/message-system")
-        self.assertEqual(controller.account_name, "foo")
-        self.assertEqual(controller.registration_password, "bar")
-        self.assertEqual(controller.computer_title, "baz")
-        self.assertEqual(controller.https_proxy,
+        self.assertEqual(self.controller.account_name, "foo")
+        self.assertEqual(self.controller.registration_password, "bar")
+        self.assertEqual(self.controller.computer_title, "baz")
+        self.assertEqual(self.controller.https_proxy,
                          "https://proxy.localdomain:6192")
-        self.assertEqual(controller.ping_url,
+        self.assertEqual(self.controller.ping_url,
                          "http://landscape.canonical.com/ping")
-        self.assertEqual(controller.server_host_name,
+        self.assertEqual(self.controller.server_host_name,
                          "landscape.canonical.com")
 
     def test_set_server_hostname(self):
@@ -52,19 +54,20 @@ class ConfigControllerTest(LandscapeTest):
         Test we can set the server_hostname correctly, and derive L{url} and
         L{ping_url} from it.
         """
-        controller = ConfigController(self.config)
-        self.assertEqual(controller.url,
+        self.controller.load()
+        self.assertEqual(self.controller.url,
                          "https://landscape.canonical.com/message-system")
-        self.assertEqual(controller.ping_url,
+        self.assertEqual(self.controller.ping_url,
                          "http://landscape.canonical.com/ping")
-        self.assertEqual(controller.server_host_name,
+        self.assertEqual(self.controller.server_host_name,
                          "landscape.canonical.com")
         new_server_host_name = "landscape.localdomain"
-        controller.server_host_name = new_server_host_name
-        self.assertEqual(controller.server_host_name, new_server_host_name)
-        self.assertEqual(controller.url,
+        self.controller.server_host_name = new_server_host_name
+        self.assertEqual(self.controller.server_host_name,
+                         new_server_host_name)
+        self.assertEqual(self.controller.url,
                          "https://landscape.localdomain/message-system")
-        self.assertEqual(controller.ping_url,
+        self.assertEqual(self.controller.ping_url,
                          "http://landscape.localdomain/ping")
 
     def test_setting_server_host_name_also_sets_hosted(self):
@@ -72,156 +75,149 @@ class ConfigControllerTest(LandscapeTest):
         Test that when we set the L{server_host_name} the L{hosted} value is
         also derived.
         """
-        controller = ConfigController(self.config)
-        self.assertTrue(controller.hosted)
-        controller.server_host_name = "landscape.localdomain"
-        self.assertFalse(controller.hosted)
-        controller.server_host_name = "landscape.canonical.com"
-        self.assertTrue(controller.hosted)
+        self.controller.load()
+        self.assertTrue(self.controller.hosted)
+        self.controller.server_host_name = "landscape.localdomain"
+        self.assertFalse(self.controller.hosted)
+        self.controller.server_host_name = "landscape.canonical.com"
+        self.assertTrue(self.controller.hosted)
 
     def test_set_account_name(self):
         """
         Test that we can set the L{account_name} property.
         """
-        controller = ConfigController(self.config)
-        self.assertEqual(controller.account_name, "foo")
-        controller.account_name = "shoe"
-        self.assertEqual(controller.account_name, "shoe")
+        self.controller.load()
+        self.assertEqual(self.controller.account_name, "foo")
+        self.controller.account_name = "shoe"
+        self.assertEqual(self.controller.account_name, "shoe")
 
     def test_set_registration_password(self):
         """
         Test that we can set the L{registration_password} property.
         """
-        controller = ConfigController(self.config)
-        self.assertEquals(controller.registration_password, "bar")
-        controller.registration_password = "nucker"
-        self.assertEquals(controller.registration_password, "nucker")
+        self.controller.load()
+        self.assertEquals(self.controller.registration_password, "bar")
+        self.controller.registration_password = "nucker"
+        self.assertEquals(self.controller.registration_password, "nucker")
 
     def test_revert(self):
         """
         Test that we can revert the controller to it's initial state.
         """
-        controller = ConfigController(self.config)
-        self.assertEqual(controller.server_host_name,
+        self.controller.load()
+        self.assertEqual(self.controller.server_host_name,
                          "landscape.canonical.com")
-        controller.server_host_name = "landscape.localdomain"
-        self.assertEqual(controller.server_host_name, "landscape.localdomain")
-        controller.revert()
-        self.assertEqual(controller.server_host_name,
+        self.controller.server_host_name = "landscape.localdomain"
+        self.assertEqual(self.controller.server_host_name,
+                         "landscape.localdomain")
+        self.controller.revert()
+        self.assertEqual(self.controller.server_host_name,
                          "landscape.canonical.com")
 
     def test_is_modified(self):
         """
         Test that we can determine when something has been modified.
         """
-        controller = ConfigController(self.config)
-        self.assertFalse(controller.is_modified)
-        controller.server_host_name = "bing.bang.a.bang"
-        self.assertTrue(controller.is_modified)
-        controller.revert()
-        self.assertFalse(controller.is_modified)
-        controller.account_name = "soldierBlue"
-        self.assertTrue(controller.is_modified)
-        controller.revert()
-        self.assertFalse(controller.is_modified)
-        controller.registration_password = "HesAnIndianCowboyInTheRodeo"
-        self.assertTrue(controller.is_modified)
+        self.controller.load()
+        self.assertFalse(self.controller.is_modified)
+        self.controller.server_host_name = "bing.bang.a.bang"
+        self.assertTrue(self.controller.is_modified)
+        self.controller.revert()
+        self.assertFalse(self.controller.is_modified)
+        self.controller.account_name = "soldierBlue"
+        self.assertTrue(self.controller.is_modified)
+        self.controller.revert()
+        self.assertFalse(self.controller.is_modified)
+        self.controller.registration_password = "HesAnIndianCowboyInTheRodeo"
+        self.assertTrue(self.controller.is_modified)
 
     def test_commit(self):
         """
         Test that we can write configuration settings back to the config file.
         """
-        controller = ConfigController(self.config)
-        self.assertEqual(controller.server_host_name,
+        self.controller.load()
+        self.assertEqual(self.controller.server_host_name,
                          "landscape.canonical.com")
-        controller.server_host_name = "landscape.localdomain"
-        self.assertEqual(controller.server_host_name, "landscape.localdomain")
-        controller.commit()
-        self.assertEqual(controller.server_host_name, "landscape.localdomain")
-        controller.revert()
-        self.assertEqual(controller.server_host_name, "landscape.localdomain")
+        self.controller.server_host_name = "landscape.localdomain"
+        self.assertEqual(self.controller.server_host_name,
+                         "landscape.localdomain")
+        self.controller.commit()
+        self.assertEqual(self.controller.server_host_name,
+                         "landscape.localdomain")
+        self.controller.revert()
+        self.assertEqual(self.controller.server_host_name,
+                         "landscape.localdomain")
 
     def test_lock(self):
         """
         Test that we can lock out updates.
         """
-        controller = ConfigController(self.config)
-        controller.lock()
-        self.assertRaises(ConfigControllerLockError, setattr, controller,
+        self.controller.load()
+        self.controller.lock()
+        self.assertRaises(ConfigControllerLockError, setattr, self.controller,
                           "server_host_name", "faily.fail.com")
-        self.assertFalse(controller.is_modified)
-        controller.unlock()
-        controller.server_host_name = "successy.success.org"
-        self.assertTrue(controller.is_modified)
+        self.assertFalse(self.controller.is_modified)
+        self.controller.unlock()
+        self.controller.server_host_name = "successy.success.org"
+        self.assertTrue(self.controller.is_modified)
 
-        controller.revert()
-        self.assertFalse(controller.is_modified)
+        self.controller.revert()
+        self.assertFalse(self.controller.is_modified)
 
-        controller.lock()
+        self.controller.lock()
         self.assertRaises(ConfigControllerLockError,
                           setattr,
-                          controller,
+                          self.controller,
                           "account_name",
                           "Failbert")
-        self.assertFalse(controller.is_modified)
-        controller.unlock()
-        self.assertFalse(controller.is_modified)
-        controller.account_name = "Winbob"
-        self.assertTrue(controller.is_modified)
+        self.assertFalse(self.controller.is_modified)
+        self.controller.unlock()
+        self.assertFalse(self.controller.is_modified)
+        self.controller.account_name = "Winbob"
+        self.assertTrue(self.controller.is_modified)
 
-        controller.revert()
-        self.assertFalse(controller.is_modified)
+        self.controller.revert()
+        self.assertFalse(self.controller.is_modified)
 
-        controller.lock()
+        self.controller.lock()
         self.assertRaises(ConfigControllerLockError,
                           setattr,
-                          controller,
+                          self.controller,
                           "registration_password",
                           "I Fail")
-        self.assertFalse(controller.is_modified)
-        controller.unlock()
-        self.assertFalse(controller.is_modified)
-        controller.registration_password = "I Win"
-        self.assertTrue(controller.is_modified)
-
-
-class EmptyConfigControllerTest(LandscapeTest):
-
-    def setUp(self):
-        super(EmptyConfigControllerTest, self).setUp()
-        config = ""
-        self.config_filename = self.makeFile(config)
-
-        class MyLandscapeSetupConfiguration(LandscapeSetupConfiguration):
-            default_config_filenames = [self.config_filename]
-
-        self.config = MyLandscapeSetupConfiguration()
+        self.assertFalse(self.controller.is_modified)
+        self.controller.unlock()
+        self.assertFalse(self.controller.is_modified)
+        self.controller.registration_password = "I Win"
+        self.assertTrue(self.controller.is_modified)
 
     def test_defaulting(self):
         """
         Test we set the correct values when switching between hosted and
         dedicated.
         """
-        controller = ConfigController(self.config)
-        self.assertEqual(controller.account_name, None)
-        self.assertEqual(controller.registration_password, None)
-        self.assertEqual(controller.server_host_name,
+        self.makeFile("", path=self.config_filename)  # empty the config file
+        self.controller.load()
+        self.assertEqual(self.controller.account_name, None)
+        self.assertEqual(self.controller.registration_password, None)
+        self.assertEqual(self.controller.server_host_name,
                          "landscape.canonical.com")
-        controller.default_dedicated()
-        self.assertEqual(controller.account_name, None)
-        self.assertEqual(controller.registration_password, None)
-        self.assertEqual(controller.server_host_name, "landscape.localdomain")
-        controller.default_hosted()
-        self.assertEqual(controller.account_name, None)
-        self.assertEqual(controller.registration_password, None)
-        self.assertEqual(controller.server_host_name,
+        self.controller.default_dedicated()
+        self.assertEqual(self.controller.account_name, None)
+        self.assertEqual(self.controller.registration_password, None)
+        self.assertEqual(self.controller.server_host_name,
+                         "landscape.localdomain")
+        self.controller.default_hosted()
+        self.assertEqual(self.controller.account_name, None)
+        self.assertEqual(self.controller.registration_password, None)
+        self.assertEqual(self.controller.server_host_name,
                          "landscape.canonical.com")
-        controller.default_dedicated()
-        controller.server_host_name = "test.machine"
-        controller.default_dedicated()
-        self.assertEqual(controller.server_host_name, "test.machine")
-        controller.default_hosted()
-        self.assertEqual(controller.server_host_name,
+        self.controller.default_dedicated()
+        self.controller.server_host_name = "test.machine"
+        self.controller.default_dedicated()
+        self.assertEqual(self.controller.server_host_name, "test.machine")
+        self.controller.default_hosted()
+        self.assertEqual(self.controller.server_host_name,
                          "landscape.canonical.com")
-        controller.default_dedicated()
-        self.assertEqual(controller.server_host_name, "test.machine")
+        self.controller.default_dedicated()
+        self.assertEqual(self.controller.server_host_name, "test.machine")

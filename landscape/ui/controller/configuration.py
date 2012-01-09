@@ -16,12 +16,17 @@ class ConfigController(object):
     DEFAULT_SERVER_HOST_NAME = "landscape.localdomain"
 
     def __init__(self, configuration, args=[]):
-        self._lock_out = True
-        self._lock = threading.Lock()
         self._initial_server_host_name = self.DEFAULT_SERVER_HOST_NAME
         self._configuration = configuration
-        self._configuration.load(args)
-        self._load_data_from_config()
+        self._args = args
+        self._lock_out = False
+        self._lock = threading.Lock()
+
+    def load(self):
+        "Load the initial data from the configuration"
+        self.lock()
+        self._configuration.load(self._args)
+        self._pull_data_from_config()
         self._modified = False
         self.unlock()
 
@@ -53,7 +58,7 @@ class ConfigController(object):
             self._server_host_name)
         self._modified = True
 
-    def _load_data_from_config(self):
+    def _pull_data_from_config(self):
         """
         Pull in data set from configuration class.
         """
@@ -208,7 +213,7 @@ class ConfigController(object):
     def revert(self):
         "Revert settings to those the configuration object originally found."
         self._configuration.reload()
-        self._load_data_from_config()
+        self._pull_data_from_config()
 
     def commit(self):
         "Persist settings via the configuration object."
