@@ -7,8 +7,8 @@ class ClientSettingsDialog(Gtk.Dialog):
 
     GLADE_FILE = "landscape-client-settings.glade"
 
-    def __init__(self, controller, data_path=None, *args, **kwargs):
-        super(ClientSettingsDialog, self).__init__(*args, **kwargs)
+    def __init__(self, controller):
+        super(ClientSettingsDialog, self).__init__()
         self.controller = controller
         self._ui_path = os.path.join(
             os.path.dirname(__file__), "ui",

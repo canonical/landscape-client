@@ -81,7 +81,7 @@ class ConfigurationTests(LandscapeTest):
 
     def test_missing_url_is_defaulted(self):
         """
-        Test that is we don't explicitly pass a URL that this value is
+        Test that if we don't explicitly pass a URL, then this value is
         defaulted.
         """
         filename = self.makeFile("[client]\n")
