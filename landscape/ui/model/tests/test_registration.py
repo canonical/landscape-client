@@ -26,7 +26,7 @@ class RegistrationTest(LandscapeTest):
         self.mocker.order()
         sysvconfig_mock.set_start_on_boot(True)
         sysvconfig_mock.restart_landscape()
-        register_mock(ANY, ANY, ANY)
+        register_mock(ANY, ANY, ANY, success_handler_f=ANY)
         self.mocker.replay()
         observable_registration.register(service.config)
 
@@ -43,7 +43,7 @@ class RegistrationTest(LandscapeTest):
             self.notified = True
             self.notified_message = message
             self.notified_error = error
-        observable.register_notifiable(notify_me)
+        observable.register_notification_observer(notify_me)
         observable.notify_observers("Blimey", error=False)
         self.assertTrue(self.notified)
         self.assertEqual(self.notified_message, "Blimey")
@@ -53,20 +53,45 @@ class RegistrationTest(LandscapeTest):
         self.assertEqual(self.notified_message, "Gor lummey!")
         self.assertTrue(self.notified_error)
 
-    def test_fail_observers(self):
+    def test_error_observers(self):
         """
-        Test that when an failure observer is registered it is called by
-        L{fail_observers}.
+        Test that when an error observer is registered it is called by
+        L{error_observers}.
+        """
+        observable = ObservableRegistration()
+        self.errored = False
+        self.errored_error_list = None
+        def error_me(error_list):
+            self.errored = True
+            self.errored_error_list = error_list
+        observable.register_error_observer(error_me)
+        observable.error_observers(["Ouch", "Dang"])
+        self.assertTrue(self.errored)
+        self.assertEqual(self.errored_error_list, ["Ouch", "Dang"])
+
+    def test_success_observers(self):
+        """
+        Test that when a success observer is registered it is called when
+        L{succeed} is called on the model.
+        """
+        observable = ObservableRegistration()
+        self.succeeded = False
+        def success():
+            self.succeeded = True
+        observable.register_succeed_observer(success)
+        observable.succeed()
+        self.assertTrue(self.succeeded)
+
+
+    def test_failure_observers(self):
+        """
+        Test that when a failure observer is registered it is called when
+        L{fail} is called on the model.
         """
         observable = ObservableRegistration()
         self.failed = False
-        self.failed_error_list = None
-        def fail_me(error_list):
+        def failure():
             self.failed = True
-            self.failed_error_list = error_list
-        observable.register_failable(fail_me)
-        observable.fail_observers(["Ouch", "Dang"])
+        observable.register_fail_observer(failure)
+        observable.fail()
         self.assertTrue(self.failed)
-        self.assertEqual(self.failed_error_list, ["Ouch", "Dang"])
-
-        

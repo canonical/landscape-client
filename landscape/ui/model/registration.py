@@ -9,22 +9,38 @@ from landscape.sysvconfig import SysVConfig
 class ObservableRegistration(object):
 
     def __init__(self):
-        self._notifiable = []
-        self._failable = [] 
+        self._notification_observers = []
+        self._error_observers = [] 
+        self._succeed_observers = []
+        self._fail_observers = []
 
     def notify_observers(self, message, end="\n", error=False):
-        for fun in self._notifiable:
+        for fun in self._notification_observers:
             fun(message, error)
 
-    def fail_observers(self, error_list):
-        for fun in self._failable:
+    def error_observers(self, error_list):
+        for fun in self._error_observers:
             fun(error_list)
 
-    def register_notifiable(self, fun):
-        self._notifiable.append(fun)
+    def register_notification_observer(self, fun):
+        self._notification_observers.append(fun)
 
-    def register_failable(self, fun):
-        self._failable.append(fun)
+    def register_error_observer(self, fun):
+        self._error_observers.append(fun)
+
+    def register_succeed_observer(self, fun):
+        self._succeed_observers.append(fun)
+
+    def register_fail_observer(self, fun):
+        self._fail_observers.append(fun)
+
+    def succeed(self):
+        for fun in self._succeed_observers:
+            fun()
+
+    def fail(self):
+        for fun in self._fail_observers:
+            fun()
     
     def setup(self, config):
         sysvconfig = SysVConfig()
@@ -47,8 +63,9 @@ class ObservableRegistration(object):
         config.no_start = False
         if self.setup(config):
             return register(config, self.notify_observers, 
-                            self.fail_observers)
+                            self.error_observers,
+                            success_handler_f=self.succeed)
         else:
-            self.fail_observers([])
+            self.error_observers([])
 
 
