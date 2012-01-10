@@ -524,7 +524,9 @@ def store_public_key_data(config, certificate_data):
     return key_filename
 
 
-def register(config, message_handler_f, error_handler_f, reactor=None):
+def register(config, message_handler_f, error_handler_f,
+             success_handler_f=None, failure_handler_f=None, 
+             reactor=None):
     """Instruct the Landscape Broker to register the client.
 
     The broker will be instructed to reload its configuration and then to
@@ -546,12 +548,16 @@ def register(config, message_handler_f, error_handler_f, reactor=None):
 
     def failure():
         message_handler_f("Invalid account name or "
-                   "registration password.", error=True)
+                          "registration password.", error=True)
         stop()
+        if failure_handler_f:
+            failure_handler_f()
 
     def success():
         message_handler_f("System successfully registered.")
         stop()
+        if success_handler_f:
+            success_handler_f()
 
     def exchange_failure():
         message_handler_f("We were unable to contact the server. "
