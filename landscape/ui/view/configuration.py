@@ -11,6 +11,7 @@ class ClientSettingsDialog(Gtk.Dialog):
         super(ClientSettingsDialog, self).__init__()
         self._continue = False
         self.controller = controller
+        self.controller.register_observer(self._on_modify)
         self._ui_path = os.path.join(
             os.path.dirname(__file__), "ui",
             ClientSettingsDialog.GLADE_FILE)
@@ -169,23 +170,23 @@ class ClientSettingsDialog(Gtk.Dialog):
 
     def _registration_message(self, message, error=None):
         self._registration_textbuffer.insert_at_cursor(message)
-        self._registration_image.set_from_stock(Gtk.STOCK_DIALOG_INFO, 2)
+        self._registration_image.set_from_stock(Gtk.STOCK_DIALOG_INFO, 4)
         self._process_gtk_events()
 
     def _registration_error(self, message):
         self._registration_textbuffer.insert_at_cursor(message)
-        self._registration_image.set_from_stock(Gtk.STOCK_DIALOG_WARNING, 2)
+        self._registration_image.set_from_stock(Gtk.STOCK_DIALOG_WARNING, 4)
         self._process_gtk_events()
         
     def _registration_succeed(self):
-        self._registration_image.set_from_stock(Gtk.STOCK_CONNECT, 2)
+        self._registration_image.set_from_stock(Gtk.STOCK_CONNECT, 4)
         self._close_button.set_sensitive(True)
         self._set_normal_cursor()
     
     def _registration_fail(self, error=None):
         if error:
             self._registration_textbuffer.insert_at_cursor(str(error))
-        self._registration_image.set_from_stock(Gtk.STOCK_DISCONNECT, 2)
+        self._registration_image.set_from_stock(Gtk.STOCK_DISCONNECT, 4)
         self._set_normal_cursor()
 
     def _set_wait_cursor(self):
@@ -201,10 +202,15 @@ class ClientSettingsDialog(Gtk.Dialog):
     def _register(self, button):
         self._set_wait_cursor()
         self._write_back()
-        self._registration_image.set_from_stock(Gtk.STOCK_CONNECT, 2)
+        self._registration_image.set_from_stock(Gtk.STOCK_CONNECT, 4)
         self.controller.register(self._registration_message,
                                  self._registration_error,
                                  self._registration_succeed,
                                  self._registration_fail,
                                  self._process_gtk_events)
         
+
+    def _on_modify(self):
+        self._close_button.set_sensitive(False)
+        self._registration_image.set_from_stock(Gtk.STOCK_DISCONNECT, 4)
+        self._registration_textbuffer.set_text("")

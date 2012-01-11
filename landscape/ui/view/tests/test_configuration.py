@@ -96,6 +96,29 @@ class ConfigurationViewTest(LandscapeTest):
         self.assertEqual(dialog._server_host_name_entry.get_text(),
                          "landscape.canonical.com")
 
+    def test_modification(self):
+        """
+        Test that modifications to the dialog cause the close button to be
+        disabled and the connect button to be reset.
+        """
+        controller = ConfigController(self.config)
+        dialog = ClientSettingsDialog(controller)
+        self.assertEqual(dialog._registration_image.get_stock(),
+                         (Gtk.STOCK_DISCONNECT, 4))
+        dialog._registration_image.set_from_stock(Gtk.STOCK_CONNECT, 4)
+        while Gtk.events_pending():
+            Gtk.main_iteration()
+        self.assertEqual(dialog._registration_image.get_stock(),
+                         (Gtk.STOCK_CONNECT, 4))
+        dialog._account_entry.set_text("Spangles!")
+        while Gtk.events_pending():
+            Gtk.main_iteration()
+        self.assertEqual(dialog._registration_image.get_stock(),
+                         (Gtk.STOCK_DISCONNECT, 4))
+        self.assertFalse(dialog._close_button.get_sensitive())
+        
+        
+
     def test_revert(self):
         """
         Test that we can revert the UI values using the controller.
