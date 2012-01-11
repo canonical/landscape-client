@@ -52,11 +52,11 @@ class ConfigController(object):
         self.lock()
         self._configuration.load(self._args)
         self._pull_data_from_config()
-        self.default_machine()
+        self.default_computer_title()
         self.unmodify()
         self.unlock()
 
-    def default_machine(self):
+    def default_computer_title(self):
         """
         Default machine name to FQDN.
         """
