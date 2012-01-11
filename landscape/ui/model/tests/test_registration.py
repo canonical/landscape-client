@@ -14,22 +14,6 @@ class RegistrationTest(LandscapeTest):
     def setUp(self):
         super(RegistrationTest, self).setUp()
 
-    def test_register(self):
-        """
-        Test that a valid config will result in register calling though to the
-        underlying registration in L{landscape.configuration.register}.
-        """
-        observable_registration = ObservableRegistration()
-        service = self.broker_service
-        sysvconfig_mock = self.mocker.patch(SysVConfig)
-        register_mock = self.mocker.replace(register, passthrough=False)
-        self.mocker.order()
-        sysvconfig_mock.set_start_on_boot(True)
-        sysvconfig_mock.restart_landscape()
-        register_mock(ANY, ANY, ANY, success_handler_f=ANY)
-        self.mocker.replay()
-        observable_registration.register(service.config)
-
     def test_notify_observers(self):
         """
         Test that when an observer is registered it is called by
@@ -90,7 +74,7 @@ class RegistrationTest(LandscapeTest):
         """
         observable = ObservableRegistration()
         self.failed = False
-        def failure():
+        def failure(error=None):
             self.failed = True
         observable.register_fail_observer(failure)
         observable.fail()
