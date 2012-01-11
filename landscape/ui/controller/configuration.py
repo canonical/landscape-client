@@ -56,12 +56,18 @@ class ConfigController(object):
         self.unmodify()
         self.unlock()
 
+    def getfqdn(self):
+        """
+        Wrap socket.getfqdn so we can test reliably.
+        """
+        return socket.getfqdn()
+
     def default_computer_title(self):
         """
         Default machine name to FQDN.
         """
         if self._computer_title is None:
-            self._computer_title = socket.getfqdn()
+            self._computer_title = self.getfqdn()
 
     def default_dedicated(self):
         """
