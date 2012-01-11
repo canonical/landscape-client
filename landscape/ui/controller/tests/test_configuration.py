@@ -240,8 +240,6 @@ class ConfigControllerTest(LandscapeTest):
         Test we set the computer title to host name when it isn't already set
         in the config file.
         """
-        # self.controller.load()
-        # self.assertEqual(self.controller.computer_title, "baz")
         self.makeFile("", path=self.config_filename)  # Empty config
         self.controller.load()
         self.assertEqual(self.controller.computer_title, "me.here.com")

@@ -29,17 +29,21 @@ class ConfigController(object):
         self._lock = threading.Lock()
 
     def register_observer(self, fun):
+        "Register functions that observer modify/unmodify."
         self._observers.append(fun)
 
     def notify_observers(self, modified):
+        "Notify observers of modification events.  L{Modified} is boolean."
         for fun in self._observers:
             fun(modified)
 
     def modify(self):
+        "Mark this config as modified and notify observers."
         self._modified = True
         self.notify_observers(True)
 
     def unmodify(self):
+        "Mark this config as being unmodified and notify observers."
         self._modified = False
         self.notify_observers(False)
 
@@ -264,6 +268,7 @@ class ConfigController(object):
         self.unmodify()
 
     def register(self, notify_f, error_f, success_f, failure_f, idle_f):
+        "Invoke model level registration without completely locking the view."
         idle_f()
         registration = ObservableRegistration(idle_f)
         idle_f()

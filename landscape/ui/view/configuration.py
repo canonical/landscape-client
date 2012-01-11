@@ -44,6 +44,9 @@ class ClientSettingsDialog(Gtk.Dialog):
         self._close_button.connect("clicked", self._possibly_save_and_exit)
 
     def _setup_registration_controls(self):
+        """
+        Obtain handles for controls relating to the registration process.
+        """
         self._registration_button = self._builder.get_object(
             "registration-button")
         self._registration_image = self._builder.get_object(
@@ -87,6 +90,11 @@ class ClientSettingsDialog(Gtk.Dialog):
         self._setup_registration_controls()
 
     def _load_data(self):
+        """
+        Pull data up from the controller into the view widgets.  Note that we
+        don't want to propagate events back to the controller as this will set
+        up an infinite loop - hence the lock.
+        """
         self.controller.lock()
         if not self.controller.account_name is None:
             self._account_entry.set_text(self.controller.account_name)
@@ -159,11 +167,18 @@ class ClientSettingsDialog(Gtk.Dialog):
         self.controller.commit()
 
     def _possibly_save_and_exit(self, button):
+        """
+        Write back if something has been modified.
+        """
         if self.controller.is_modified:
             self._write_back()
         self.destroy()
 
     def _process_gtk_events(self):
+        """
+        Deal with any outstanding Gtk events.  Used to keep the GUI ticking
+        over during long running activities.
+        """
         while Gtk.events_pending():
             Gtk.main_iteration()
 
