@@ -8,7 +8,7 @@ class ObservableRegistration(object):
     L{ObservableRegistration} provides the ability to run the landscape-client
     registration in a way that can be observed by code using it.  This allows
     for registration in an environment other than an interactive terminal
-    session. 
+    session.
 
     @param on_idle: Optionally, a callable which will be invoked by repeatedly
     during the registration process to allow cooperative yielding of control.

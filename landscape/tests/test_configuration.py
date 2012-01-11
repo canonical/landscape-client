@@ -1049,7 +1049,7 @@ registration_password = shared-secret
         self.mocker.result("")
 
         register_mock = self.mocker.replace(register, passthrough=False)
-        register_mock(ANY, ANY, ANY)
+        register_mock(ANY)
 
         self.mocker.replay()
         main(["--config", self.make_working_config()])
@@ -1109,7 +1109,7 @@ registration_password = shared-secret
         self.mocker.result("")
 
         register_mock = self.mocker.replace(register, passthrough=False)
-        register_mock(ANY, ANY, ANY)
+        register_mock(ANY)
 
         self.mocker.replay()
         main(["-c", self.make_working_config()])
@@ -1146,7 +1146,7 @@ registration_password = shared-secret
         # The registration logic should be called and passed the configuration
         # file.
         register_mock = self.mocker.replace(register, passthrough=False)
-        register_mock(ANY, ANY, ANY)
+        register_mock(ANY)
 
         self.mocker.replay()
 

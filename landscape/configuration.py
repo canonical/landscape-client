@@ -481,8 +481,8 @@ def decode_base64_ssl_public_certificate(config):
     Decode base64 encoded SSL certificate and push that back into place in the
     config object.
     """
-    # WARNING: ssl_public_certificate is misnamed, it's not the key of the certificate,
-    # but the actual certificate itself.
+    # WARNING: ssl_public_certificate is misnamed, it's not the key of the
+    # certificate, but the actual certificate itself.
     if config.ssl_public_key and config.ssl_public_key.startswith("base64:"):
         decoded_cert = base64.decodestring(config.ssl_public_key[7:])
         config.ssl_public_key = store_public_key_data(
