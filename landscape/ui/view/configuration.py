@@ -42,7 +42,6 @@ class ClientSettingsDialog(Gtk.Dialog):
         self._revert_button = self._builder.get_object("revert-button")
         self._revert_button.connect("clicked", self.revert)
         self._close_button.connect("clicked", self._possibly_save_and_exit)
-        self._close_button.set_sensitive(False)
 
     def _setup_registration_controls(self):
         self._registration_button = self._builder.get_object(
@@ -210,7 +209,8 @@ class ClientSettingsDialog(Gtk.Dialog):
                                  self._process_gtk_events)
         
 
-    def _on_modify(self):
-        self._close_button.set_sensitive(False)
-        self._registration_image.set_from_stock(Gtk.STOCK_DISCONNECT, 4)
-        self._registration_textbuffer.set_text("")
+    def _on_modify(self, modified):
+        self._close_button.set_sensitive(not modified)
+        if modified:
+            self._registration_image.set_from_stock(Gtk.STOCK_DISCONNECT, 4)
+            self._registration_textbuffer.set_text("")

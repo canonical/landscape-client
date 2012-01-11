@@ -31,10 +31,17 @@ class ConfigController(object):
     def register_observer(self, fun):
         self._observers.append(fun)
 
+    def notify_observers(self, modified):
+        for fun in self._observers:
+            fun(modified)
+
     def modify(self):
         self._modified = True
-        for fun in self._observers:
-            fun()
+        self.notify_observers(True)
+
+    def unmodify(self):
+        self._modified = False
+        self.notify_observers(False)
 
     def load(self):
         "Load the initial data from the configuration"
@@ -42,7 +49,7 @@ class ConfigController(object):
         self._configuration.load(self._args)
         self._pull_data_from_config()
         self.default_machine()
-        self._modified = False
+        self.unmodify()
         self.unlock()
 
     def default_machine(self):
@@ -105,7 +112,7 @@ class ConfigController(object):
         else:
             self._server_host_name = self.HOSTED_HOST_NAME
         self._initial_server_host_name = self._server_host_name
-        self._modified = False
+        self.unmodify()
         self._lock.release()
 
     def lock(self):
@@ -254,7 +261,7 @@ class ConfigController(object):
         self._configuration.https_proxy = self._https_proxy
         self._configuration.ping_url = self._ping_url
         self._configuration.write()
-        self._modified = False
+        self.unmodify()
 
     def register(self, notify_f, error_f, success_f, failure_f, idle_f):
         idle_f()
