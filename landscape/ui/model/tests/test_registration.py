@@ -15,24 +15,21 @@ class RegistrationTest(LandscapeTest):
         L{notify_observers}.
         """
         observable = ObservableRegistration()
-        self.notified = False
-        self.notified_message = None
-        self.notified_error = False
+        notified = []
+        notified_message = []
+        notified_error = []
 
         def notify_me(message, error=False):
-            self.notified = True
-            self.notified_message = message
-            self.notified_error = error
+            notified.append(True)
+            notified_message.append(message)
+            notified_error.append(error)
 
         observable.register_notification_observer(notify_me)
         observable.notify_observers("Blimey", error=False)
-        self.assertTrue(self.notified)
-        self.assertEqual(self.notified_message, "Blimey")
-        self.assertFalse(self.notified_error)
         observable.notify_observers("Gor lummey!", error=True)
-        self.assertTrue(self.notified)
-        self.assertEqual(self.notified_message, "Gor lummey!")
-        self.assertTrue(self.notified_error)
+        self.assertEqual(notified, [True, True])
+        self.assertEqual(notified_message, ["Blimey", "Gor lummey!"])
+        self.assertTrue(notified_error, [False, True])
 
     def test_error_observers(self):
         """
@@ -40,17 +37,17 @@ class RegistrationTest(LandscapeTest):
         L{error_observers}.
         """
         observable = ObservableRegistration()
-        self.errored = False
-        self.errored_error_list = None
+        errored = []
+        errored_error_list = []
 
         def error_me(error_list):
-            self.errored = True
-            self.errored_error_list = error_list
+            errored.append(True)
+            errored_error_list.append(error_list)
 
         observable.register_error_observer(error_me)
         observable.error_observers(["Ouch", "Dang"])
-        self.assertTrue(self.errored)
-        self.assertEqual(self.errored_error_list, ["Ouch", "Dang"])
+        self.assertTrue(errored, [True])
+        self.assertEqual(errored_error_list, [["Ouch", "Dang"]])
 
     def test_success_observers(self):
         """
