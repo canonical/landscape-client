@@ -1,6 +1,6 @@
 import os
 
-from gi.repository import Gtk
+from gi.repository import Gtk, GObject, Gdk
 
 
 class ClientSettingsDialog(Gtk.Dialog):
@@ -9,6 +9,7 @@ class ClientSettingsDialog(Gtk.Dialog):
 
     def __init__(self, controller):
         super(ClientSettingsDialog, self).__init__()
+        self._continue = False
         self.controller = controller
         self._ui_path = os.path.join(
             os.path.dirname(__file__), "ui",
@@ -40,6 +41,16 @@ class ClientSettingsDialog(Gtk.Dialog):
         self._revert_button = self._builder.get_object("revert-button")
         self._revert_button.connect("clicked", self.revert)
         self._close_button.connect("clicked", self._possibly_save_and_exit)
+        self._close_button.set_sensitive(False)
+
+    def _setup_registration_controls(self):
+        self._registration_button = self._builder.get_object(
+            "registration-button")
+        self._registration_image = self._builder.get_object(
+            "registration-image")
+        self._registration_textbuffer = self._builder.get_object(
+            "registration-textbuffer")
+        self._registration_button.connect("clicked", self._register)
 
     def _setup_entries(self):
         """
@@ -73,6 +84,7 @@ class ClientSettingsDialog(Gtk.Dialog):
         self._setup_radiobuttons()
         self._setup_entries()
         self._setup_action_buttons()
+        self._setup_registration_controls()
 
     def _load_data(self):
         self.controller.lock()
@@ -150,3 +162,49 @@ class ClientSettingsDialog(Gtk.Dialog):
         if self.controller.is_modified:
             self._write_back()
         self.destroy()
+
+    def _process_gtk_events(self):
+        while Gtk.events_pending():
+            Gtk.main_iteration()
+
+    def _registration_message(self, message, error=None):
+        self._registration_textbuffer.insert_at_cursor(message)
+        self._registration_image.set_from_stock(Gtk.STOCK_DIALOG_INFO, 2)
+        self._process_gtk_events()
+
+    def _registration_error(self, message):
+        self._registration_textbuffer.insert_at_cursor(message)
+        self._registration_image.set_from_stock(Gtk.STOCK_DIALOG_WARNING, 2)
+        self._process_gtk_events()
+        
+    def _registration_succeed(self):
+        self._registration_image.set_from_stock(Gtk.STOCK_CONNECT, 2)
+        self._close_button.set_sensitive(True)
+        self._set_normal_cursor()
+    
+    def _registration_fail(self, error=None):
+        if error:
+            self._registration_textbuffer.insert_at_cursor(str(error))
+        self._registration_image.set_from_stock(Gtk.STOCK_DISCONNECT, 2)
+        self._set_normal_cursor()
+
+    def _set_wait_cursor(self):
+        watch = Gdk.Cursor(Gdk.CursorType.WATCH)
+        self.get_window().set_cursor(watch)
+        self._process_gtk_events()
+
+    def _set_normal_cursor(self):
+        arrow = Gdk.Cursor(Gdk.CursorType.ARROW)
+        self.get_window().set_cursor(arrow)
+        self._process_gtk_events()
+
+    def _register(self, button):
+        self._set_wait_cursor()
+        self._write_back()
+        self._registration_image.set_from_stock(Gtk.STOCK_CONNECT, 2)
+        self.controller.register(self._registration_message,
+                                 self._registration_error,
+                                 self._registration_succeed,
+                                 self._registration_fail,
+                                 self._process_gtk_events)
+        

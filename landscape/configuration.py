@@ -589,8 +589,8 @@ def register(config, message_handler_f, error_handler_f, reactor=None):
         return results.addErrback(catch_all)
 
     def got_error(failure):
-        message_handler_f("There was an error communicating with the Landscape "
-                   "client.", error=True)
+        message_handler_f("There was an error communicating with the Landscape"
+                          " client.", error=True)
         message_handler_f("This machine will be registered with the provided "
                    "details when the client runs.", error=True)
         if not config.ok_no_register:

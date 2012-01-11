@@ -52,6 +52,12 @@ class ConfigurationViewTest(LandscapeTest):
         self.assertTrue(dialog._account_entry.get_sensitive())
         self.assertTrue(dialog._password_entry.get_sensitive())
         self.assertFalse(dialog._server_host_name_entry.get_sensitive())
+        self.assertTrue(dialog._registration_button.get_sensitive())
+        start, end = dialog._registration_textbuffer.get_bounds() 
+        self.assertEqual(
+            len(dialog._registration_textbuffer.get_text(
+                    start, end, include_hidden_chars=True)),
+            0)
 
     def test_toggle_radio_button(self):
         """

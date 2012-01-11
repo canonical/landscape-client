@@ -1,4 +1,7 @@
+import socket
 import threading
+
+from landscape.ui.model.registration import ObservableRegistration
 
 
 class ConfigControllerLockError(Exception):
@@ -29,9 +32,17 @@ class ConfigController(object):
         self.lock()
         self._configuration.load(self._args)
         self._pull_data_from_config()
+        self.default_machine()
         self._modified = False
         self.unlock()
 
+    def default_machine(self):
+        """
+        Default machine name to FQDN.
+        """
+        if self._computer_title is None:
+            self._computer_title = socket.getfqdn()
+        
     def default_dedicated(self):
         """
         Set L{server_host_name} to something sane when switching from hosted to
@@ -235,3 +246,22 @@ class ConfigController(object):
         self._configuration.ping_url = self._ping_url
         self._configuration.write()
         self._modified = False
+
+    def register(self, notify_f, error_f, success_f, failure_f, idle_f):
+        idle_f()
+        registration = ObservableRegistration(idle_f)
+        idle_f()
+        self.commit()
+        idle_f()
+        registration.register_notification_observer(notify_f)
+        idle_f()
+        registration.register_error_observer(error_f)
+        idle_f()
+        registration.register_succeed_observer(success_f)
+        idle_f()
+        registration.register_fail_observer(failure_f)
+        idle_f()
+        registration.register(self._configuration)
+
+        
+        

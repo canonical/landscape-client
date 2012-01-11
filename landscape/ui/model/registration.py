@@ -1,26 +1,30 @@
+import select
+import subprocess
 import os
-
-from landscape.configuration import (
-    register, setup_http_proxy, check_account_name_and_password,
-    check_script_users, register_ssl)
-from landscape.sysvconfig import SysVConfig
 
 
 class ObservableRegistration(object):
 
-    def __init__(self):
+    def __init__(self, idle_f=None):
         self._notification_observers = []
         self._error_observers = [] 
         self._succeed_observers = []
         self._fail_observers = []
+        self._idle_f = idle_f
+
+    def do_idle(self):
+        if self._idle_f:
+            self._idle_f()
 
     def notify_observers(self, message, end="\n", error=False):
         for fun in self._notification_observers:
             fun(message, error)
+            self.do_idle()
 
     def error_observers(self, error_list):
         for fun in self._error_observers:
             fun(error_list)
+            self.do_idle()
 
     def register_notification_observer(self, fun):
         self._notification_observers.append(fun)
@@ -37,35 +41,36 @@ class ObservableRegistration(object):
     def succeed(self):
         for fun in self._succeed_observers:
             fun()
+            self.do_idle()
 
-    def fail(self):
+    def fail(self, error=None):
         for fun in self._fail_observers:
-            fun()
-    
-    def setup(self, config):
-        sysvconfig = SysVConfig()
-        sysvconfig.set_start_on_boot(True)
-        setup_http_proxy(config)
-        check_account_name_and_password(config)
-        check_script_users(config)
-        register_ssl(config)
-        config.write()
-        try:
-            sysvconfig.restart_landscape()
-        except ProcessError:
-            self.notify_observers("Couldn't restart the Landscape client.", 
-                                  error=True)
-            return False
-        return True
-        
+            fun(error=error)
+            self.do_idle()
+            
     def register(self, config):
-        config.silent = True
-        config.no_start = False
-        if self.setup(config):
-            return register(config, self.notify_observers, 
-                            self.error_observers,
-                            success_handler_f=self.succeed)
+        self.notify_observers("Trying to register ...\n")
+        cmd = ["landscape-config", "--silent", "-c",
+               os.path.abspath(config.get_config_filename())]
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, 
+                                   stderr=subprocess.PIPE)
+        return_code = None
+        while return_code is None:
+            readables, w, x = select.select([process.stdout, process.stderr],
+                                            [], [], 0)
+            for readable in readables:
+                message = readable.readline()
+                if readable is process.stdout:
+                    self.notify_observers(message)
+                else:
+                    self.error_observers(message)
+                self.do_idle()
+            return_code = process.poll()
+            self.do_idle()
+        if return_code == 0:
+            self.succeed()
+            return True
         else:
-            self.error_observers([])
-
-
+            self.fail("Failed with code %s" % str(return_code))
+            return False
+    
