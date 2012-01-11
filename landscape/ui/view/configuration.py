@@ -1,6 +1,6 @@
 import os
 
-from gi.repository import Gtk, GObject, Gdk
+from gi.repository import Gtk, Gdk
 
 
 class ClientSettingsDialog(Gtk.Dialog):
@@ -176,12 +176,12 @@ class ClientSettingsDialog(Gtk.Dialog):
         self._registration_textbuffer.insert_at_cursor(message)
         self._registration_image.set_from_stock(Gtk.STOCK_DIALOG_WARNING, 4)
         self._process_gtk_events()
-        
+
     def _registration_succeed(self):
         self._registration_image.set_from_stock(Gtk.STOCK_CONNECT, 4)
         self._close_button.set_sensitive(True)
         self._set_normal_cursor()
-    
+
     def _registration_fail(self, error=None):
         if error:
             self._registration_textbuffer.insert_at_cursor(str(error))
@@ -207,7 +207,6 @@ class ClientSettingsDialog(Gtk.Dialog):
                                  self._registration_succeed,
                                  self._registration_fail,
                                  self._process_gtk_events)
-        
 
     def _on_modify(self, modified):
         self._close_button.set_sensitive(not modified)

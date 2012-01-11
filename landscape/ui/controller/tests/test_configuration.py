@@ -5,12 +5,15 @@ from landscape.ui.controller.configuration import (
     ConfigController, ConfigControllerLockError)
 from landscape.configuration import LandscapeSetupConfiguration
 
+
 class ConfigControllerTest(LandscapeTest):
 
     def setUp(self):
         super(ConfigControllerTest, self).setUp()
+
         def get_fqdn():
             return "me.here.com"
+
         self.real_getfqdn = socket.getfqdn
         socket.getfqdn = get_fqdn
         config = "[client]"
@@ -215,7 +218,8 @@ class ConfigControllerTest(LandscapeTest):
         self.controller.default_dedicated()
         self.assertEqual(self.controller.account_name, "standalone")
         self.assertEqual(self.controller.registration_password, None)
-        self.assertEqual(self.controller.server_host_name, "landscape.localdomain")
+        self.assertEqual(self.controller.server_host_name,
+                         "landscape.localdomain")
         self.controller.default_hosted()
         self.assertEqual(self.controller.account_name, None)
         self.assertEqual(self.controller.registration_password, None)
@@ -238,6 +242,6 @@ class ConfigControllerTest(LandscapeTest):
         """
         # self.controller.load()
         # self.assertEqual(self.controller.computer_title, "baz")
-        self.makeFile("", path=self.config_filename) #Empty config
+        self.makeFile("", path=self.config_filename)  # Empty config
         self.controller.load()
         self.assertEqual(self.controller.computer_title, "me.here.com")

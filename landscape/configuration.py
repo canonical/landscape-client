@@ -448,6 +448,7 @@ def check_account_name_and_password(config):
             raise ConfigurationError("An account name and computer title are "
                                      "required.")
 
+
 def check_script_users(config):
     if config.get("script_users"):
         invalid_users = get_invalid_users(config.get("script_users"))
@@ -484,7 +485,7 @@ def setup(config):
     setup_http_proxy(config)
     check_account_name_and_password(config)
     if config.silent:
-        check_script_users(config)            
+        check_script_users(config)
     else:
         script = LandscapeSetupScript(config)
         script.run()

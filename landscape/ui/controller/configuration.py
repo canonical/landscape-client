@@ -58,7 +58,7 @@ class ConfigController(object):
         """
         if self._computer_title is None:
             self._computer_title = socket.getfqdn()
-        
+
     def default_dedicated(self):
         """
         Set L{server_host_name} to something sane when switching from hosted to
@@ -278,6 +278,3 @@ class ConfigController(object):
         registration.register_fail_observer(failure_f)
         idle_f()
         registration.register(self._configuration)
-
-        
-        

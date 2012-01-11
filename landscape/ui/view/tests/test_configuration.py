@@ -53,7 +53,7 @@ class ConfigurationViewTest(LandscapeTest):
         self.assertTrue(dialog._password_entry.get_sensitive())
         self.assertFalse(dialog._server_host_name_entry.get_sensitive())
         self.assertTrue(dialog._registration_button.get_sensitive())
-        start, end = dialog._registration_textbuffer.get_bounds() 
+        start, end = dialog._registration_textbuffer.get_bounds()
         self.assertEqual(
             len(dialog._registration_textbuffer.get_text(
                     start, end, include_hidden_chars=True)),
@@ -116,8 +116,6 @@ class ConfigurationViewTest(LandscapeTest):
         self.assertEqual(dialog._registration_image.get_stock(),
                          (Gtk.STOCK_DISCONNECT, 4))
         self.assertFalse(dialog._close_button.get_sensitive())
-        
-        
 
     def test_revert(self):
         """

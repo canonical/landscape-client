@@ -1,10 +1,5 @@
-from landscape.configuration import register
-from landscape.reactor import TwistedReactor
-from landscape.sysvconfig import SysVConfig
 from landscape.tests.helpers import LandscapeTest, BrokerServiceHelper
-from landscape.tests.mocker import ANY
 from landscape.ui.model.registration import ObservableRegistration
-from landscape.ui.model.configuration import LandscapeSettingsConfiguration
 
 
 class RegistrationTest(LandscapeTest):
@@ -23,10 +18,12 @@ class RegistrationTest(LandscapeTest):
         self.notified = False
         self.notified_message = None
         self.notified_error = False
+
         def notify_me(message, error=False):
             self.notified = True
             self.notified_message = message
             self.notified_error = error
+
         observable.register_notification_observer(notify_me)
         observable.notify_observers("Blimey", error=False)
         self.assertTrue(self.notified)
@@ -45,9 +42,11 @@ class RegistrationTest(LandscapeTest):
         observable = ObservableRegistration()
         self.errored = False
         self.errored_error_list = None
+
         def error_me(error_list):
             self.errored = True
             self.errored_error_list = error_list
+
         observable.register_error_observer(error_me)
         observable.error_observers(["Ouch", "Dang"])
         self.assertTrue(self.errored)
@@ -60,12 +59,13 @@ class RegistrationTest(LandscapeTest):
         """
         observable = ObservableRegistration()
         self.succeeded = False
+
         def success():
             self.succeeded = True
+
         observable.register_succeed_observer(success)
         observable.succeed()
         self.assertTrue(self.succeeded)
-
 
     def test_failure_observers(self):
         """
@@ -74,8 +74,10 @@ class RegistrationTest(LandscapeTest):
         """
         observable = ObservableRegistration()
         self.failed = False
+
         def failure(error=None):
             self.failed = True
+
         observable.register_fail_observer(failure)
         observable.fail()
         self.assertTrue(self.failed)

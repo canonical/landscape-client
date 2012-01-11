@@ -7,7 +7,7 @@ class ObservableRegistration(object):
 
     def __init__(self, idle_f=None):
         self._notification_observers = []
-        self._error_observers = [] 
+        self._error_observers = []
         self._succeed_observers = []
         self._fail_observers = []
         self._idle_f = idle_f
@@ -47,12 +47,12 @@ class ObservableRegistration(object):
         for fun in self._fail_observers:
             fun(error=error)
             self.do_idle()
-            
+
     def register(self, config):
         self.notify_observers("Trying to register ...\n")
         cmd = ["landscape-config", "--silent", "-c",
                os.path.abspath(config.get_config_filename())]
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, 
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
         return_code = None
         while return_code is None:
@@ -73,4 +73,3 @@ class ObservableRegistration(object):
         else:
             self.fail("Failed with code %s" % str(return_code))
             return False
-    
