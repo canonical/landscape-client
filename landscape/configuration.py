@@ -423,18 +423,27 @@ class LandscapeSetupScript(object):
 
 
 def setup_init_script_and_start_client():
+    "Configure the init script to start the client on boot."
     # XXX This function is misnamed; it doesn't start the client.
     sysvconfig = SysVConfig()
     sysvconfig.set_start_on_boot(True)
 
 
 def stop_client_and_disable_init_script():
+    """
+    Stop landscape-client and change configuration to prevent starting
+    landscape-client on boot.
+    """
     sysvconfig = SysVConfig()
     sysvconfig.stop_landscape()
     sysvconfig.set_start_on_boot(False)
 
 
 def setup_http_proxy(config):
+    """
+    If a http_proxy and a https_proxy value are not set then copy the values,
+    if any, from the environment variables L{http_proxy} and L{https_proxy}.
+    """
     if config.http_proxy is None and os.environ.get("http_proxy"):
         config.http_proxy = os.environ["http_proxy"]
     if config.https_proxy is None and os.environ.get("https_proxy"):
@@ -442,6 +451,10 @@ def setup_http_proxy(config):
 
 
 def check_account_name_and_password(config):
+    """
+    Ensure that silent configurations which plan to start landscape-client are
+    either configured for OTP or have both an account_name and computer title.
+    """
     if config.silent and not config.no_start:
         if not (config.get("otp") or config.provisioning_otp or
                 (config.get("account_name") and config.get("computer_title"))):
@@ -450,6 +463,10 @@ def check_account_name_and_password(config):
 
 
 def check_script_users(config):
+    """
+    If the configuration allows for script execution ensure that the configured
+    users are valid for that purpose.
+    """
     if config.get("script_users"):
         invalid_users = get_invalid_users(config.get("script_users"))
         if invalid_users:
@@ -459,8 +476,12 @@ def check_script_users(config):
             config.include_manager_plugins = "ScriptExecution"
 
 
-def register_ssl(config):
-    # WARNING: ssl_public_key is misnamed, it's not the key of the certificate,
+def decode_base64_ssl_public_certificate(config):
+    """
+    Decode base64 encoded SSL certificate and push that back into place in the
+    config object.
+    """
+    # WARNING: ssl_public_certificate is misnamed, it's not the key of the certificate,
     # but the actual certificate itself.
     if config.ssl_public_key and config.ssl_public_key.startswith("base64:"):
         decoded_cert = base64.decodestring(config.ssl_public_key[7:])
@@ -469,6 +490,13 @@ def register_ssl(config):
 
 
 def setup(config):
+    """
+    Perform steps to ensure that landscape-client is correctly configured
+    before we attempt to register it with a landscape server.
+
+    If we are not configured to be silent then interrogate the user to provide
+    necessary details for registration.
+    """
     sysvconfig = SysVConfig()
     if not config.no_start:
         if config.silent:
@@ -489,7 +517,7 @@ def setup(config):
     else:
         script = LandscapeSetupScript(config)
         script.run()
-    register_ssl(config)
+    decode_base64_ssl_public_certificate(config)
     config.write()
     # Restart the client to ensure that it's using the new configuration.
     if not config.no_start and not config.otp:
@@ -525,7 +553,7 @@ def store_public_key_data(config, certificate_data):
     return key_filename
 
 
-def register(config, message_handler_f, error_handler_f, reactor=None):
+def register(config, on_message=print_text, on_error=sys.exit, reactor=None):
     """Instruct the Landscape Broker to register the client.
 
     The broker will be instructed to reload its configuration and then to
@@ -546,16 +574,16 @@ def register(config, message_handler_f, error_handler_f, reactor=None):
         reactor.stop()
 
     def failure():
-        message_handler_f("Invalid account name or "
+        on_message("Invalid account name or "
                    "registration password.", error=True)
         stop()
 
     def success():
-        message_handler_f("System successfully registered.")
+        on_message("System successfully registered.")
         stop()
 
     def exchange_failure():
-        message_handler_f("We were unable to contact the server. "
+        on_message("We were unable to contact the server. "
                    "Your internet connection may be down. "
                    "The landscape client will continue to try and contact "
                    "the server periodically.",
@@ -568,11 +596,11 @@ def register(config, message_handler_f, error_handler_f, reactor=None):
         connector.disconnect()
 
     def catch_all(failure):
-        message_handler_f(failure.getTraceback(), error=True)
-        message_handler_f("Unknown error occurred.", error=True)
+        on_message(failure.getTraceback(), error=True)
+        on_message("Unknown error occurred.", error=True)
         stop()
 
-    message_handler_f("Please wait... ", "")
+    on_message("Please wait... ", "")
 
     time.sleep(2)
 
@@ -590,9 +618,9 @@ def register(config, message_handler_f, error_handler_f, reactor=None):
         return results.addErrback(catch_all)
 
     def got_error(failure):
-        message_handler_f("There was an error communicating with the Landscape"
-                          " client.", error=True)
-        message_handler_f("This machine will be registered with the provided "
+        on_message("There was an error communicating with the Landscape"
+                   " client.", error=True)
+        on_message("This machine will be registered with the provided "
                    "details when the client runs.", error=True)
         if not config.ok_no_register:
             exit_with_error.append(2)
@@ -606,7 +634,7 @@ def register(config, message_handler_f, error_handler_f, reactor=None):
     reactor.run()
 
     if exit_with_error:
-        error_handler_f(exit_with_error[0])
+        on_error(exit_with_error[0])
 
     return result
 
@@ -641,9 +669,9 @@ def main(args):
     # Attempt to register the client.
     if not config.no_start:
         if config.silent:
-            register(config, print_text, sys.exit)
+            register(config)
         else:
             answer = raw_input("\nRequest a new registration for "
                                "this computer now? (Y/n): ")
             if not answer.upper().startswith("N"):
-                register(config, print_text, sys.exit)
+                register(config)
