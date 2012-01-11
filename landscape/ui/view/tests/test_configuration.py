@@ -52,6 +52,12 @@ class ConfigurationViewTest(LandscapeTest):
         self.assertTrue(dialog._account_entry.get_sensitive())
         self.assertTrue(dialog._password_entry.get_sensitive())
         self.assertFalse(dialog._server_host_name_entry.get_sensitive())
+        self.assertTrue(dialog._registration_button.get_sensitive())
+        start, end = dialog._registration_textbuffer.get_bounds()
+        self.assertEqual(
+            len(dialog._registration_textbuffer.get_text(
+                    start, end, include_hidden_chars=True)),
+            0)
 
     def test_toggle_radio_button(self):
         """
@@ -90,6 +96,27 @@ class ConfigurationViewTest(LandscapeTest):
         self.assertEqual(dialog._server_host_name_entry.get_text(),
                          "landscape.canonical.com")
 
+    def test_modification(self):
+        """
+        Test that modifications to the dialog cause the close button to be
+        disabled and the connect button to be reset.
+        """
+        controller = ConfigController(self.config)
+        dialog = ClientSettingsDialog(controller)
+        self.assertEqual(dialog._registration_image.get_stock(),
+                         (Gtk.STOCK_DISCONNECT, 4))
+        dialog._registration_image.set_from_stock(Gtk.STOCK_CONNECT, 4)
+        while Gtk.events_pending():
+            Gtk.main_iteration()
+        self.assertEqual(dialog._registration_image.get_stock(),
+                         (Gtk.STOCK_CONNECT, 4))
+        dialog._account_entry.set_text("Spangles!")
+        while Gtk.events_pending():
+            Gtk.main_iteration()
+        self.assertEqual(dialog._registration_image.get_stock(),
+                         (Gtk.STOCK_DISCONNECT, 4))
+        self.assertFalse(dialog._close_button.get_sensitive())
+
     def test_revert(self):
         """
         Test that we can revert the UI values using the controller.
@@ -102,7 +129,7 @@ class ConfigurationViewTest(LandscapeTest):
                          "landscape.canonical.com")
         dialog._dedicated_radiobutton.set_active(True)
         dialog._server_host_name_entry.set_text("more.barn")
-        self.assertEqual(dialog._account_entry.get_text(), "foo")
+        self.assertEqual(dialog._account_entry.get_text(), "standalone")
         self.assertEqual(dialog._password_entry.get_text(), "bar")
         self.assertEqual(dialog._server_host_name_entry.get_text(),
                          "more.barn")

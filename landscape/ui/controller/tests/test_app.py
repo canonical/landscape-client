@@ -17,7 +17,6 @@ from landscape.configuration import LandscapeSetupConfiguration
 
 class ConnectionRecordingSettingsApplicationController(
     SettingsApplicationController):
-
     _connections = set()
     _connection_args = {}
     _connection_kwargs = {}

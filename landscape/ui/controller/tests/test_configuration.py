@@ -1,3 +1,5 @@
+import socket
+
 from landscape.tests.helpers import LandscapeTest
 from landscape.ui.controller.configuration import (
     ConfigController, ConfigControllerLockError)
@@ -8,6 +10,12 @@ class ConfigControllerTest(LandscapeTest):
 
     def setUp(self):
         super(ConfigControllerTest, self).setUp()
+
+        def get_fqdn():
+            return "me.here.com"
+
+        self.real_getfqdn = socket.getfqdn
+        socket.getfqdn = get_fqdn
         config = "[client]"
         config += "data_path = /var/lib/landscape/client\n"
         config += "http_proxy = http://proxy.localdomain:3192\n"
@@ -25,6 +33,10 @@ class ConfigControllerTest(LandscapeTest):
 
         self.config = MyLandscapeSetupConfiguration()
         self.controller = ConfigController(self.config)
+
+    def tearDown(self):
+        socket.getfqdn = self.real_getfqdn
+        super(ConfigControllerTest, self).tearDown()
 
     def test_init(self):
         """
@@ -202,8 +214,9 @@ class ConfigControllerTest(LandscapeTest):
         self.assertEqual(self.controller.registration_password, None)
         self.assertEqual(self.controller.server_host_name,
                          "landscape.canonical.com")
+        self.controller.account_name = "Bungle"
         self.controller.default_dedicated()
-        self.assertEqual(self.controller.account_name, None)
+        self.assertEqual(self.controller.account_name, "standalone")
         self.assertEqual(self.controller.registration_password, None)
         self.assertEqual(self.controller.server_host_name,
                          "landscape.localdomain")
@@ -221,3 +234,12 @@ class ConfigControllerTest(LandscapeTest):
                          "landscape.canonical.com")
         self.controller.default_dedicated()
         self.assertEqual(self.controller.server_host_name, "test.machine")
+
+    def test_default_computer_title(self):
+        """
+        Test we set the computer title to host name when it isn't already set
+        in the config file.
+        """
+        self.makeFile("", path=self.config_filename)  # Empty config
+        self.controller.load()
+        self.assertEqual(self.controller.computer_title, "me.here.com")
