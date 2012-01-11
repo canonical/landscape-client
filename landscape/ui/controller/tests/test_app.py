@@ -21,11 +21,11 @@ class ConnectionRecordingSettingsApplicationController(
     _connection_args = {}
     _connection_kwargs = {}
 
-    def __init__(self, get_config_f=None):
+    def __init__(self, get_config=None):
         super(ConnectionRecordingSettingsApplicationController,
               self).__init__()
-        if get_config_f:
-            self.get_config = get_config_f
+        if get_config:
+            self.get_config = get_config
 
     def _make_connection_name(self, signal, func):
         return signal + ">" + func.__name__
@@ -102,7 +102,7 @@ class SettingsApplicationControllerUISetupTest(LandscapeTest):
             return config
 
         self.app = ConnectionRecordingSettingsApplicationController(
-            get_config_f=get_config)
+            get_config=get_config)
 
     def tearDown(self):
         Gtk.Dialog.run = self._real_run

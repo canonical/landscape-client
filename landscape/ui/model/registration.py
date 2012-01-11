@@ -4,17 +4,29 @@ import os
 
 
 class ObservableRegistration(object):
+    """
+    L{ObservableRegistration} provides the ability to run the landscape-client
+    registration in a way that can be observed by code using it.  This allows
+    for registration in an environment other than an interactive terminal
+    session. 
 
-    def __init__(self, idle_f=None):
+    @param on_idle: Optionally, a callable which will be invoked by repeatedly
+    during the registration process to allow cooperative yielding of control.
+    This can be used, for example, with Gtk to allow processing of Gtk events
+    without requiring either threading or the leaking of Gtk into the model
+    layer.
+    """
+
+    def __init__(self, on_idle=None):
         self._notification_observers = []
         self._error_observers = []
         self._succeed_observers = []
         self._fail_observers = []
-        self._idle_f = idle_f
+        self._on_idle = on_idle
 
     def do_idle(self):
-        if self._idle_f:
-            self._idle_f()
+        if self._on_idle:
+            self._on_idle()
 
     def notify_observers(self, message, end="\n", error=False):
         for fun in self._notification_observers:
