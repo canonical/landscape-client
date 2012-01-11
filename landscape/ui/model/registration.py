@@ -29,35 +29,35 @@ class ObservableRegistration(object):
             self._on_idle()
 
     def notify_observers(self, message, end="\n", error=False):
-        for fun in self._notification_observers:
-            fun(message, error)
+        for function in self._notification_observers:
+            function(message, error)
             self.do_idle()
 
     def error_observers(self, error_list):
-        for fun in self._error_observers:
-            fun(error_list)
+        for function in self._error_observers:
+            function(error_list)
             self.do_idle()
 
-    def register_notification_observer(self, fun):
-        self._notification_observers.append(fun)
+    def register_notification_observer(self, function):
+        self._notification_observers.append(function)
 
-    def register_error_observer(self, fun):
-        self._error_observers.append(fun)
+    def register_error_observer(self, function):
+        self._error_observers.append(function)
 
-    def register_succeed_observer(self, fun):
-        self._succeed_observers.append(fun)
+    def register_succeed_observer(self, function):
+        self._succeed_observers.append(function)
 
-    def register_fail_observer(self, fun):
-        self._fail_observers.append(fun)
+    def register_fail_observer(self, function):
+        self._fail_observers.append(function)
 
     def succeed(self):
-        for fun in self._succeed_observers:
-            fun()
+        for function in self._succeed_observers:
+            function()
             self.do_idle()
 
     def fail(self, error=None):
-        for fun in self._fail_observers:
-            fun(error=error)
+        for function in self._fail_observers:
+            function(error=error)
             self.do_idle()
 
     def register(self, config):

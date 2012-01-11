@@ -28,14 +28,14 @@ class ConfigController(object):
         self._lock_out = False
         self._lock = threading.Lock()
 
-    def register_observer(self, fun):
+    def register_observer(self, function):
         "Register functions that observer modify/unmodify."
-        self._observers.append(fun)
+        self._observers.append(function)
 
     def notify_observers(self, modified):
         "Notify observers of modification events.  L{Modified} is boolean."
-        for fun in self._observers:
-            fun(modified)
+        for function in self._observers:
+            function(modified)
 
     def modify(self):
         "Mark this config as modified and notify observers."
