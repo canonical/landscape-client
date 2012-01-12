@@ -1268,8 +1268,9 @@ class AptFacadeTest(LandscapeTest):
 
     def test_mark_upgrade_held_packages(self):
         """
-        If a package that is on hold is marked for upgrade, a
-        C{TransactionError} is raised by C{perform_changes}.
+        If a package that is on hold is marked for upgrade,
+        C{perform_changes} won't request to install a newer version of
+        that package.
         """
         self._add_system_package(
             "foo", version="1.0",
