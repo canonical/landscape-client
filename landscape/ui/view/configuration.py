@@ -27,7 +27,7 @@ class ClientSettingsDialog(Gtk.Dialog):
         Configure the dialog window and pack content from the Glade UI file
         into the main content area.
         """
-        self.set_title("Client Settings")
+        self.set_title("Management Service Settings")
         content_area = self.get_content_area()
         vbox = self._builder.get_object(
             "landscape-client-settings-dialog-vbox")
