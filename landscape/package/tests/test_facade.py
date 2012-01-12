@@ -1281,8 +1281,7 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         [foo_10, foo_15] = sorted(self.facade.get_packages_by_name("foo"))
         self.facade.mark_upgrade(foo_10)
-        self.facade._cache.commit = lambda fetch_progress: None
-        self.facade.perform_changes()
+        self.assertEqual(None, self.facade.perform_changes())
         self.assertEqual(foo_10, foo_15.package.installed)
 
     def test_perform_changes_dependency_error_same_version(self):

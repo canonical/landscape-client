@@ -414,6 +414,8 @@ class AptFacade(object):
         if dependencies:
             raise DependencyError(
                 [version for package, version in dependencies])
+        if not versions_to_be_changed:
+            return None
         fetch_output = StringIO()
         # Redirect stdout and stderr to a file. We need to work with the
         # file descriptors, rather than sys.stdout/stderr, since dpkg is
