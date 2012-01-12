@@ -1,5 +1,3 @@
-import socket
-
 from landscape.tests.helpers import LandscapeTest
 from landscape.ui.controller.configuration import (
     ConfigController, ConfigControllerLockError)
@@ -10,12 +8,6 @@ class ConfigControllerTest(LandscapeTest):
 
     def setUp(self):
         super(ConfigControllerTest, self).setUp()
-
-        def get_fqdn():
-            return "me.here.com"
-
-        self.real_getfqdn = socket.getfqdn
-        socket.getfqdn = get_fqdn
         config = "[client]"
         config += "data_path = /var/lib/landscape/client\n"
         config += "http_proxy = http://proxy.localdomain:3192\n"
@@ -34,9 +26,10 @@ class ConfigControllerTest(LandscapeTest):
         self.config = MyLandscapeSetupConfiguration()
         self.controller = ConfigController(self.config)
 
-    def tearDown(self):
-        socket.getfqdn = self.real_getfqdn
-        super(ConfigControllerTest, self).tearDown()
+        def get_fqdn():
+            return "me.here.com"
+
+        self.controller.getfqdn = get_fqdn
 
     def test_init(self):
         """

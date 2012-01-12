@@ -28,14 +28,14 @@ class ConfigController(object):
         self._lock_out = False
         self._lock = threading.Lock()
 
-    def register_observer(self, fun):
+    def register_observer(self, function):
         "Register functions that observer modify/unmodify."
-        self._observers.append(fun)
+        self._observers.append(function)
 
     def notify_observers(self, modified):
         "Notify observers of modification events.  L{Modified} is boolean."
-        for fun in self._observers:
-            fun(modified)
+        for function in self._observers:
+            function(modified)
 
     def modify(self):
         "Mark this config as modified and notify observers."
@@ -52,16 +52,22 @@ class ConfigController(object):
         self.lock()
         self._configuration.load(self._args)
         self._pull_data_from_config()
-        self.default_machine()
+        self.default_computer_title()
         self.unmodify()
         self.unlock()
 
-    def default_machine(self):
+    def getfqdn(self):
+        """
+        Wrap socket.getfqdn so we can test reliably.
+        """
+        return socket.getfqdn()
+
+    def default_computer_title(self):
         """
         Default machine name to FQDN.
         """
         if self._computer_title is None:
-            self._computer_title = socket.getfqdn()
+            self._computer_title = self.getfqdn()
 
     def default_dedicated(self):
         """
@@ -267,19 +273,19 @@ class ConfigController(object):
         self._configuration.write()
         self.unmodify()
 
-    def register(self, notify_f, error_f, success_f, failure_f, idle_f):
+    def register(self, on_notify, on_error, on_success, on_failure, on_idle):
         "Invoke model level registration without completely locking the view."
-        idle_f()
-        registration = ObservableRegistration(idle_f)
-        idle_f()
+        on_idle()
+        registration = ObservableRegistration(on_idle)
+        on_idle()
         self.commit()
-        idle_f()
-        registration.register_notification_observer(notify_f)
-        idle_f()
-        registration.register_error_observer(error_f)
-        idle_f()
-        registration.register_succeed_observer(success_f)
-        idle_f()
-        registration.register_fail_observer(failure_f)
-        idle_f()
+        on_idle()
+        registration.register_notification_observer(on_notify)
+        on_idle()
+        registration.register_error_observer(on_error)
+        on_idle()
+        registration.register_succeed_observer(on_success)
+        on_idle()
+        registration.register_fail_observer(on_failure)
+        on_idle()
         registration.register(self._configuration)
