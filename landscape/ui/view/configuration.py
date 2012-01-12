@@ -65,8 +65,6 @@ class ClientSettingsDialog(Gtk.Dialog):
             "password-entry")
         self._server_host_name_entry = self._builder.get_object(
             "server-host-name-entry")
-        self._account_entry.set_sensitive(False)
-        self._password_entry.set_sensitive(False)
         self._server_host_name_entry.set_sensitive(False)
         self._account_entry.connect("changed", self._update_account)
         self._password_entry.connect("changed", self._update_password)
@@ -121,14 +119,7 @@ class ClientSettingsDialog(Gtk.Dialog):
                 self._server_host_name_entry.get_text()
 
     def _set_entry_sensitivity(self, hosted):
-        if hosted:
-            self._account_entry.set_sensitive(True)
-            self._password_entry.set_sensitive(True)
-            self._server_host_name_entry.set_sensitive(False)
-        else:
-            self._account_entry.set_sensitive(False)
-            self._password_entry.set_sensitive(False)
-            self._server_host_name_entry.set_sensitive(True)
+        self._server_host_name_entry.set_sensitive(not hosted)
 
     def select_landscape_hosting(self):
         hosted = self._hosted_radiobutton.get_active()
