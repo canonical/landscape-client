@@ -343,6 +343,10 @@ class AptFacade(object):
             return True
         return package.name == package.shortname
 
+    def _is_package_held(self, package):
+        """Is the package marked as held?"""
+        return package._pkg.selected_state == apt_pkg.SELSTATE_HOLD
+
     def get_packages_by_name(self, name):
         """Get all available packages matching the provided name.
 
@@ -372,7 +376,7 @@ class AptFacade(object):
             fixer.clear(version.package._pkg)
             fixer.protect(version.package._pkg)
         for version in self._package_upgrades:
-            if version.package._pkg.selected_state == apt_pkg.SELSTATE_HOLD:
+            if self._is_package_held(version.package):
                 continue
             version.package.mark_install(
                 auto_fix=False,
@@ -380,7 +384,7 @@ class AptFacade(object):
             fixer.clear(version.package._pkg)
             fixer.protect(version.package._pkg)
         for version in self._package_removals:
-            if version.package._pkg.selected_state == apt_pkg.SELSTATE_HOLD:
+            if self._is_package_held(version.package):
                 held_package_names.add(version.package.name)
             version.package.mark_delete(auto_fix=False)
             # Configure the resolver in the same way
