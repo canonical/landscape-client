@@ -372,6 +372,8 @@ class AptFacade(object):
             fixer.clear(version.package._pkg)
             fixer.protect(version.package._pkg)
         for version in self._package_upgrades:
+            if version.package._pkg.selected_state == apt_pkg.SELSTATE_HOLD:
+                continue
             version.package.mark_install(
                 auto_fix=False,
                 from_user=not version.package.is_auto_installed)

@@ -1266,6 +1266,24 @@ class AptFacadeTest(LandscapeTest):
             "Can't perform the changes, since the following packages" +
             " are held: bar, foo", error.args[0])
 
+    def test_mark_upgrade_held_packages(self):
+        """
+        If a package that is on hold is marked for upgrade, a
+        C{TransactionError} is raised by C{perform_changes}.
+        """
+        self._add_system_package(
+            "foo", version="1.0",
+            control_fields={"Status": "hold ok installed"})
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo", version="1.5")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo_10, foo_15] = sorted(self.facade.get_packages_by_name("foo"))
+        self.facade.mark_upgrade(foo_10)
+        self.facade._cache.commit = lambda fetch_progress: None
+        self.facade.perform_changes()
+        self.assertEqual(foo_10, foo_15.package.installed)
+
     def test_perform_changes_dependency_error_same_version(self):
         """
         Apt's Version objects have the same hash if the version string
