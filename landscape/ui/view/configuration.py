@@ -62,7 +62,7 @@ class ClientSettingsDialog(Gtk.Dialog):
         """
         self._account_entry = self._builder.get_object("account-name-entry")
         self._password_entry = self._builder.get_object(
-            "reigstered-password-entry")
+            "password-entry")
         self._server_host_name_entry = self._builder.get_object(
             "server-host-name-entry")
         self._account_entry.set_sensitive(False)
