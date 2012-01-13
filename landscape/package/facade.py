@@ -119,12 +119,14 @@ class AptFacade(object):
         return self._hash2pkg.itervalues()
 
     def get_locked_packages(self):
-        """Get all packages in the channels matching the set locks.
+        """Get all packages in the channels that are locked.
 
-        XXX: This method isn't implemented yet. It's here to make the
-        transition to Apt in the package reporter easier.
+        For Apt, it means all packages that are held.
         """
-        return []
+        return [
+            version for version in self.get_packages()
+            if (self.is_package_installed(version)
+                and self._is_package_held(version.package))]
 
     def set_package_lock(self, name, relation=None, version=None):
         """Set a new package lock.

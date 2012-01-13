@@ -1284,6 +1284,39 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(None, self.facade.perform_changes())
         self.assertEqual(foo_10, foo_15.package.installed)
 
+    def test_get_locked_packages_simple(self):
+        """
+        C{get_locked_packages} returns all packages that are marked as
+        being held. Locks came from the Smart implementation, but since
+        a locked installed package basically is the same as a package
+        with a dpkg hold, having C{get_locked_packages} return all the
+        held packages, the Landscape server UI won't try to upgrade
+        those packages to a newer version.
+        """
+        self._add_system_package(
+            "foo", control_fields={"Status": "hold ok installed"})
+        self._add_system_package("bar")
+        self.facade.reload_channels()
+        [foo] = sorted(self.facade.get_packages_by_name("foo"))
+        self.assertEqual([foo], self.facade.get_locked_packages())
+
+    def test_get_locked_packages_multi(self):
+        """
+        C{get_locked_packages} returns only the installed version of the
+        held package.
+        """
+        self._add_system_package(
+            "foo", version="1.0",
+            control_fields={"Status": "hold ok installed"})
+        self._add_system_package("bar", version="1.0")
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo", version="1.5")
+        self._add_package_to_deb_dir(deb_dir, "bar", version="1.5")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        foo_10 = sorted(self.facade.get_packages_by_name("foo"))[0]
+        self.assertEqual([foo_10], self.facade.get_locked_packages())
+
     def test_perform_changes_dependency_error_same_version(self):
         """
         Apt's Version objects have the same hash if the version string
