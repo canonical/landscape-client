@@ -453,6 +453,12 @@ class AptFacade(object):
         """Mark the package for installation."""
         self._package_installs.append(version)
 
+    def mark_global_upgrade(self):
+        """Upgrade all installed packages."""
+        for version in self.get_packages():
+            if self.is_package_installed(version):
+                self.mark_upgrade(version)
+
     def mark_upgrade(self, version):
         """Mark the package for upgrade."""
         if version.package.candidate != version:
@@ -623,6 +629,12 @@ class SmartFacade(object):
 
     def mark_upgrade(self, pkg):
         self._marks[pkg] = UPGRADE
+
+    def mark_global_upgrade(self):
+        """Upgrade all installed packages."""
+        for package in self.get_packages():
+            if self.is_package_installed(package):
+                self.mark_upgrade(package)
 
     def reset_marks(self):
         self._marks.clear()
