@@ -423,18 +423,80 @@ class LandscapeSetupScript(object):
 
 
 def setup_init_script_and_start_client():
+    "Configure the init script to start the client on boot."
     # XXX This function is misnamed; it doesn't start the client.
     sysvconfig = SysVConfig()
     sysvconfig.set_start_on_boot(True)
 
 
 def stop_client_and_disable_init_script():
+    """
+    Stop landscape-client and change configuration to prevent starting
+    landscape-client on boot.
+    """
     sysvconfig = SysVConfig()
     sysvconfig.stop_landscape()
     sysvconfig.set_start_on_boot(False)
 
 
+def setup_http_proxy(config):
+    """
+    If a http_proxy and a https_proxy value are not set then copy the values,
+    if any, from the environment variables L{http_proxy} and L{https_proxy}.
+    """
+    if config.http_proxy is None and os.environ.get("http_proxy"):
+        config.http_proxy = os.environ["http_proxy"]
+    if config.https_proxy is None and os.environ.get("https_proxy"):
+        config.https_proxy = os.environ["https_proxy"]
+
+
+def check_account_name_and_password(config):
+    """
+    Ensure that silent configurations which plan to start landscape-client are
+    either configured for OTP or have both an account_name and computer title.
+    """
+    if config.silent and not config.no_start:
+        if not (config.get("otp") or config.provisioning_otp or
+                (config.get("account_name") and config.get("computer_title"))):
+            raise ConfigurationError("An account name and computer title are "
+                                     "required.")
+
+
+def check_script_users(config):
+    """
+    If the configuration allows for script execution ensure that the configured
+    users are valid for that purpose.
+    """
+    if config.get("script_users"):
+        invalid_users = get_invalid_users(config.get("script_users"))
+        if invalid_users:
+            raise ConfigurationError("Unknown system users: %s" %
+                                     ", ".join(invalid_users))
+        if not config.include_manager_plugins:
+            config.include_manager_plugins = "ScriptExecution"
+
+
+def decode_base64_ssl_public_certificate(config):
+    """
+    Decode base64 encoded SSL certificate and push that back into place in the
+    config object.
+    """
+    # WARNING: ssl_public_certificate is misnamed, it's not the key of the
+    # certificate, but the actual certificate itself.
+    if config.ssl_public_key and config.ssl_public_key.startswith("base64:"):
+        decoded_cert = base64.decodestring(config.ssl_public_key[7:])
+        config.ssl_public_key = store_public_key_data(
+            config, decoded_cert)
+
+
 def setup(config):
+    """
+    Perform steps to ensure that landscape-client is correctly configured
+    before we attempt to register it with a landscape server.
+
+    If we are not configured to be silent then interrogate the user to provide
+    necessary details for registration.
+    """
     sysvconfig = SysVConfig()
     if not config.no_start:
         if config.silent:
@@ -448,35 +510,14 @@ def setup(config):
             else:
                 sys.exit("Aborting Landscape configuration")
 
-    if config.http_proxy is None and os.environ.get("http_proxy"):
-        config.http_proxy = os.environ["http_proxy"]
-    if config.https_proxy is None and os.environ.get("https_proxy"):
-        config.https_proxy = os.environ["https_proxy"]
-
-    if config.silent and not config.no_start:
-        if not (config.get("otp") or config.provisioning_otp or
-                (config.get("account_name") and config.get("computer_title"))):
-            raise ConfigurationError("An account name and computer title are "
-                                     "required.")
+    setup_http_proxy(config)
+    check_account_name_and_password(config)
     if config.silent:
-        if config.get("script_users"):
-            invalid_users = get_invalid_users(config.get("script_users"))
-            if invalid_users:
-                raise ConfigurationError("Unknown system users: %s" %
-                                         ", ".join(invalid_users))
-            if not config.include_manager_plugins:
-                config.include_manager_plugins = "ScriptExecution"
+        check_script_users(config)
     else:
         script = LandscapeSetupScript(config)
         script.run()
-
-    # WARNING: ssl_public_key is misnamed, it's not the key of the certificate,
-    # but the actual certificate itself.
-    if config.ssl_public_key and config.ssl_public_key.startswith("base64:"):
-        decoded_cert = base64.decodestring(config.ssl_public_key[7:])
-        config.ssl_public_key = store_public_key_data(
-            config, decoded_cert)
-
+    decode_base64_ssl_public_certificate(config)
     config.write()
     # Restart the client to ensure that it's using the new configuration.
     if not config.no_start and not config.otp:
@@ -512,7 +553,7 @@ def store_public_key_data(config, certificate_data):
     return key_filename
 
 
-def register(config, reactor=None):
+def register(config, on_message=print_text, on_error=sys.exit, reactor=None):
     """Instruct the Landscape Broker to register the client.
 
     The broker will be instructed to reload its configuration and then to
@@ -533,16 +574,16 @@ def register(config, reactor=None):
         reactor.stop()
 
     def failure():
-        print_text("Invalid account name or "
+        on_message("Invalid account name or "
                    "registration password.", error=True)
         stop()
 
     def success():
-        print_text("System successfully registered.")
+        on_message("System successfully registered.")
         stop()
 
     def exchange_failure():
-        print_text("We were unable to contact the server. "
+        on_message("We were unable to contact the server. "
                    "Your internet connection may be down. "
                    "The landscape client will continue to try and contact "
                    "the server periodically.",
@@ -555,11 +596,11 @@ def register(config, reactor=None):
         connector.disconnect()
 
     def catch_all(failure):
-        print_text(failure.getTraceback(), error=True)
-        print_text("Unknown error occurred.", error=True)
+        on_message(failure.getTraceback(), error=True)
+        on_message("Unknown error occurred.", error=True)
         stop()
 
-    print_text("Please wait... ", "")
+    on_message("Please wait... ", "")
 
     time.sleep(2)
 
@@ -577,9 +618,9 @@ def register(config, reactor=None):
         return results.addErrback(catch_all)
 
     def got_error(failure):
-        print_text("There was an error communicating with the Landscape "
-                   "client.", error=True)
-        print_text("This machine will be registered with the provided "
+        on_message("There was an error communicating with the Landscape"
+                   " client.", error=True)
+        on_message("This machine will be registered with the provided "
                    "details when the client runs.", error=True)
         if not config.ok_no_register:
             exit_with_error.append(2)
@@ -593,7 +634,7 @@ def register(config, reactor=None):
     reactor.run()
 
     if exit_with_error:
-        sys.exit(exit_with_error[0])
+        on_error(exit_with_error[0])
 
     return result
 

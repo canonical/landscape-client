@@ -1,4 +1,7 @@
+import socket
 import threading
+
+from landscape.ui.model.registration import ObservableRegistration
 
 
 class ConfigControllerLockError(Exception):
@@ -14,27 +17,64 @@ class ConfigController(object):
 
     HOSTED_HOST_NAME = "landscape.canonical.com"
     DEFAULT_SERVER_HOST_NAME = "landscape.localdomain"
+    DEFAULT_DEDICATED_ACCOUNT_NAME = "standalone"
 
     def __init__(self, configuration, args=[]):
+        self._observers = []
         self._initial_server_host_name = self.DEFAULT_SERVER_HOST_NAME
+        self._initial_account_name = self.DEFAULT_DEDICATED_ACCOUNT_NAME
         self._configuration = configuration
         self._args = args
         self._lock_out = False
         self._lock = threading.Lock()
+
+    def register_observer(self, function):
+        "Register functions that observer modify/unmodify."
+        self._observers.append(function)
+
+    def notify_observers(self, modified):
+        "Notify observers of modification events.  L{Modified} is boolean."
+        for function in self._observers:
+            function(modified)
+
+    def modify(self):
+        "Mark this config as modified and notify observers."
+        self._modified = True
+        self.notify_observers(True)
+
+    def unmodify(self):
+        "Mark this config as being unmodified and notify observers."
+        self._modified = False
+        self.notify_observers(False)
 
     def load(self):
         "Load the initial data from the configuration"
         self.lock()
         self._configuration.load(self._args)
         self._pull_data_from_config()
-        self._modified = False
+        self.default_computer_title()
+        self.unmodify()
         self.unlock()
+
+    def getfqdn(self):
+        """
+        Wrap socket.getfqdn so we can test reliably.
+        """
+        return socket.getfqdn()
+
+    def default_computer_title(self):
+        """
+        Default machine name to FQDN.
+        """
+        if self._computer_title is None:
+            self._computer_title = self.getfqdn()
 
     def default_dedicated(self):
         """
         Set L{server_host_name} to something sane when switching from hosted to
         dedicated.
         """
+        self._account_name = self.DEFAULT_DEDICATED_ACCOUNT_NAME
         if self._initial_server_host_name != self.HOSTED_HOST_NAME:
             self._server_host_name = self._initial_server_host_name
         else:
@@ -43,7 +83,7 @@ class ConfigController(object):
                 self._server_host_name)
             self._ping_url = self._derive_ping_url_from_host_name(
                 self._server_host_name)
-        self._modified = True
+        self.modify()
 
     def default_hosted(self):
         """
@@ -56,7 +96,8 @@ class ConfigController(object):
             self._server_host_name)
         self._ping_url = self._derive_ping_url_from_host_name(
             self._server_host_name)
-        self._modified = True
+        self._account_name = self._initial_account_name
+        self.modify()
 
     def _pull_data_from_config(self):
         """
@@ -69,6 +110,7 @@ class ConfigController(object):
         self._url = self._configuration.url
         self._ping_url = self._configuration.ping_url
         self._account_name = self._configuration.account_name
+        self._initial_account_name = self._account_name
         self._registration_password = \
             self._configuration.registration_password
         self._computer_title = self._configuration.computer_title
@@ -80,7 +122,7 @@ class ConfigController(object):
         else:
             self._server_host_name = self.HOSTED_HOST_NAME
         self._initial_server_host_name = self._server_host_name
-        self._modified = False
+        self.unmodify()
         self._lock.release()
 
     def lock(self):
@@ -141,7 +183,7 @@ class ConfigController(object):
                 self._server_host_name)
             self._ping_url = self._derive_ping_url_from_host_name(
                 self._server_host_name)
-            self._modified = True
+            self.modify()
             self._lock.release()
     server_host_name = property(_get_server_host_name, _set_server_host_name)
 
@@ -171,7 +213,7 @@ class ConfigController(object):
             raise ConfigControllerLockError
         else:
             self._account_name = value
-            self._modified = True
+            self.modify()
             self._lock.release()
     account_name = property(_get_account_name, _set_account_name)
 
@@ -185,7 +227,7 @@ class ConfigController(object):
             raise ConfigControllerLockError
         else:
             self._registration_password = value
-            self._modified = True
+            self.modify()
             self._lock.release()
     registration_password = property(_get_registration_password,
                                      _set_registration_password)
@@ -229,4 +271,21 @@ class ConfigController(object):
         self._configuration.https_proxy = self._https_proxy
         self._configuration.ping_url = self._ping_url
         self._configuration.write()
-        self._modified = False
+        self.unmodify()
+
+    def register(self, on_notify, on_error, on_success, on_failure, on_idle):
+        "Invoke model level registration without completely locking the view."
+        on_idle()
+        registration = ObservableRegistration(on_idle)
+        on_idle()
+        self.commit()
+        on_idle()
+        registration.register_notification_observer(on_notify)
+        on_idle()
+        registration.register_error_observer(on_error)
+        on_idle()
+        registration.register_succeed_observer(on_success)
+        on_idle()
+        registration.register_fail_observer(on_failure)
+        on_idle()
+        registration.register(self._configuration)

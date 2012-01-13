@@ -26,6 +26,11 @@ class ConfigControllerTest(LandscapeTest):
         self.config = MyLandscapeSetupConfiguration()
         self.controller = ConfigController(self.config)
 
+        def get_fqdn():
+            return "me.here.com"
+
+        self.controller.getfqdn = get_fqdn
+
     def test_init(self):
         """
         Test that when we create a controller it has initial state read in
@@ -202,8 +207,9 @@ class ConfigControllerTest(LandscapeTest):
         self.assertEqual(self.controller.registration_password, None)
         self.assertEqual(self.controller.server_host_name,
                          "landscape.canonical.com")
+        self.controller.account_name = "Bungle"
         self.controller.default_dedicated()
-        self.assertEqual(self.controller.account_name, None)
+        self.assertEqual(self.controller.account_name, "standalone")
         self.assertEqual(self.controller.registration_password, None)
         self.assertEqual(self.controller.server_host_name,
                          "landscape.localdomain")
@@ -221,3 +227,12 @@ class ConfigControllerTest(LandscapeTest):
                          "landscape.canonical.com")
         self.controller.default_dedicated()
         self.assertEqual(self.controller.server_host_name, "test.machine")
+
+    def test_default_computer_title(self):
+        """
+        Test we set the computer title to host name when it isn't already set
+        in the config file.
+        """
+        self.makeFile("", path=self.config_filename)  # Empty config
+        self.controller.load()
+        self.assertEqual(self.controller.computer_title, "me.here.com")
