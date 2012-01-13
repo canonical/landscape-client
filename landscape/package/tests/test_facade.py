@@ -1062,6 +1062,22 @@ class AptFacadeTest(LandscapeTest):
              ("single-arch", "2.0")],
             sorted(changes))
 
+    def test_mark_global_upgrade(self):
+        """
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package("foo", version="1.0")
+        self._add_system_package("bar")
+        self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
+        self._add_package_to_deb_dir(deb_dir, "baz")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        foo2 = sorted(self.facade.get_packages_by_name("foo"))[1]
+        self.facade.mark_global_upgrade()
+        exception = self.assertRaises(
+            DependencyError, self.facade.perform_changes)
+        self.assertEqual([foo2], exception.packages)
+
     def test_mark_upgrade_candidate_version(self):
         """
         If more than one version is available, the package will be
