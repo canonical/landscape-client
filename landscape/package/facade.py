@@ -343,6 +343,10 @@ class AptFacade(object):
             return True
         return package.name == package.shortname
 
+    def _is_package_held(self, package):
+        """Is the package marked as held?"""
+        return package._pkg.selected_state == apt_pkg.SELSTATE_HOLD
+
     def get_packages_by_name(self, name):
         """Get all available packages matching the provided name.
 
@@ -354,6 +358,7 @@ class AptFacade(object):
 
     def perform_changes(self):
         """Perform the pending package operations."""
+        held_package_names = set()
         package_changes = self._package_installs[:]
         package_changes.extend(self._package_removals)
         if not package_changes and not self._package_upgrades:
@@ -371,12 +376,16 @@ class AptFacade(object):
             fixer.clear(version.package._pkg)
             fixer.protect(version.package._pkg)
         for version in self._package_upgrades:
+            if self._is_package_held(version.package):
+                continue
             version.package.mark_install(
                 auto_fix=False,
                 from_user=not version.package.is_auto_installed)
             fixer.clear(version.package._pkg)
             fixer.protect(version.package._pkg)
         for version in self._package_removals:
+            if self._is_package_held(version.package):
+                held_package_names.add(version.package.name)
             version.package.mark_delete(auto_fix=False)
             # Configure the resolver in the same way
             # mark_delete(auto_fix=True) would have done.
@@ -384,6 +393,11 @@ class AptFacade(object):
             fixer.protect(version.package._pkg)
             fixer.remove(version.package._pkg)
             fixer.install_protect()
+
+        if held_package_names:
+            raise TransactionError(
+                "Can't perform the changes, since the following packages" +
+                " are held: %s" % ", ".join(sorted(held_package_names)))
 
         if self._cache._depcache.broken_count > 0:
             try:
@@ -400,6 +414,8 @@ class AptFacade(object):
         if dependencies:
             raise DependencyError(
                 [version for package, version in dependencies])
+        if not versions_to_be_changed:
+            return None
         fetch_output = StringIO()
         # Redirect stdout and stderr to a file. We need to work with the
         # file descriptors, rather than sys.stdout/stderr, since dpkg is

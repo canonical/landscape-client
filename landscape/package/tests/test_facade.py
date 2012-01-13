@@ -1246,6 +1246,44 @@ class AptFacadeTest(LandscapeTest):
         error = self.assertRaises(DependencyError, self.facade.perform_changes)
         self.assertEqual([bar], error.packages)
 
+    def test_mark_remove_held_packages(self):
+        """
+        If a package that is on hold is marked for removal, a
+        C{TransactionError} is raised by C{perform_changes}.
+        """
+        self._add_system_package(
+            "foo", control_fields={"Status": "hold ok installed"})
+        self._add_system_package(
+            "bar", control_fields={"Status": "hold ok installed"})
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        [bar] = self.facade.get_packages_by_name("bar")
+        self.facade.mark_remove(foo)
+        self.facade.mark_remove(bar)
+        error = self.assertRaises(
+            TransactionError, self.facade.perform_changes)
+        self.assertEqual(
+            "Can't perform the changes, since the following packages" +
+            " are held: bar, foo", error.args[0])
+
+    def test_mark_upgrade_held_packages(self):
+        """
+        If a package that is on hold is marked for upgrade,
+        C{perform_changes} won't request to install a newer version of
+        that package.
+        """
+        self._add_system_package(
+            "foo", version="1.0",
+            control_fields={"Status": "hold ok installed"})
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo", version="1.5")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo_10, foo_15] = sorted(self.facade.get_packages_by_name("foo"))
+        self.facade.mark_upgrade(foo_10)
+        self.assertEqual(None, self.facade.perform_changes())
+        self.assertEqual(foo_10, foo_15.package.installed)
+
     def test_perform_changes_dependency_error_same_version(self):
         """
         Apt's Version objects have the same hash if the version string
