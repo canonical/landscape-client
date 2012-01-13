@@ -27,7 +27,7 @@ class ClientSettingsDialog(Gtk.Dialog):
         Configure the dialog window and pack content from the Glade UI file
         into the main content area.
         """
-        self.set_title("Client Settings")
+        self.set_title("Management Service Settings")
         content_area = self.get_content_area()
         vbox = self._builder.get_object(
             "landscape-client-settings-dialog-vbox")
@@ -62,11 +62,9 @@ class ClientSettingsDialog(Gtk.Dialog):
         """
         self._account_entry = self._builder.get_object("account-name-entry")
         self._password_entry = self._builder.get_object(
-            "reigstered-password-entry")
+            "password-entry")
         self._server_host_name_entry = self._builder.get_object(
             "server-host-name-entry")
-        self._account_entry.set_sensitive(False)
-        self._password_entry.set_sensitive(False)
         self._server_host_name_entry.set_sensitive(False)
         self._account_entry.connect("changed", self._update_account)
         self._password_entry.connect("changed", self._update_password)
@@ -121,14 +119,7 @@ class ClientSettingsDialog(Gtk.Dialog):
                 self._server_host_name_entry.get_text()
 
     def _set_entry_sensitivity(self, hosted):
-        if hosted:
-            self._account_entry.set_sensitive(True)
-            self._password_entry.set_sensitive(True)
-            self._server_host_name_entry.set_sensitive(False)
-        else:
-            self._account_entry.set_sensitive(False)
-            self._password_entry.set_sensitive(False)
-            self._server_host_name_entry.set_sensitive(True)
+        self._server_host_name_entry.set_sensitive(not hosted)
 
     def select_landscape_hosting(self):
         hosted = self._hosted_radiobutton.get_active()

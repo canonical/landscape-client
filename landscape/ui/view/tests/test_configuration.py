@@ -74,8 +74,8 @@ class ConfigurationViewTest(LandscapeTest):
         dialog._dedicated_radiobutton.set_active(True)
         self.assertFalse(dialog._hosted_radiobutton.get_active())
         self.assertTrue(dialog._dedicated_radiobutton.get_active())
-        self.assertFalse(dialog._account_entry.get_sensitive())
-        self.assertFalse(dialog._password_entry.get_sensitive())
+        self.assertTrue(dialog._account_entry.get_sensitive())
+        self.assertTrue(dialog._password_entry.get_sensitive())
         self.assertTrue(dialog._server_host_name_entry.get_sensitive())
         dialog._hosted_radiobutton.set_active(True)
         self.assertTrue(dialog._hosted_radiobutton.get_active())
@@ -276,8 +276,8 @@ class DedicatedConfigurationViewTest(LandscapeTest):
         self.assertIsInstance(box, Gtk.Box)
         self.assertFalse(dialog._hosted_radiobutton.get_active())
         self.assertTrue(dialog._dedicated_radiobutton.get_active())
-        self.assertFalse(dialog._account_entry.get_sensitive())
-        self.assertFalse(dialog._password_entry.get_sensitive())
+        self.assertTrue(dialog._account_entry.get_sensitive())
+        self.assertTrue(dialog._password_entry.get_sensitive())
         self.assertTrue(dialog._server_host_name_entry.get_sensitive())
 
     def test_load_data_from_config(self):
