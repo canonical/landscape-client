@@ -1,6 +1,7 @@
 """Deployment code for the monitor."""
 
 import os
+import subprocess
 from landscape.lib.fetch import fetch_async
 from landscape.service import LandscapeService, run_landscape_service
 from landscape.broker.registration import RegistrationHandler, Identity
@@ -52,6 +53,12 @@ class BrokerService(LandscapeService):
             self.payload_recorder = PayloadRecorder(config.record_directory)
         else:
             self.payload_recorder = None
+
+        if config.srv_autodiscover:
+            domain = self._lookup_srv_record()
+            config.url = "https://%s/message-system" % domain
+            congif.ping_url = "http://%s/ping" % domain
+
         self.transport = self.transport_factory(
             config.url, config.ssl_public_key, self.payload_recorder)
         self.message_store = get_default_message_store(
@@ -71,6 +78,12 @@ class BrokerService(LandscapeService):
         self.broker = BrokerServer(self.config, self.reactor, self.exchanger,
                                    self.registration, self.message_store)
         self.factory = BrokerServerProtocolFactory(object=self.broker)
+
+    def _lookup_srv_record(self):
+        p = subprocess.Popen(["python", "lookup_srv_record.py"],
+                             stdout=subprocess.PIPE)
+        p.wait()
+        return p.stdout.read().strip()
 
     def _exit(self):
         # Our reactor calls the Twisted reactor's crash() method rather
