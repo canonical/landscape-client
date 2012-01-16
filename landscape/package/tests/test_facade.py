@@ -1298,6 +1298,32 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(None, self.facade.perform_changes())
         self.assertEqual(foo_10, foo_15.package.installed)
 
+    def test_mark_global_upgrade_held_dependencies(self):
+        """
+        If a package that can be upgraded, but that package depends on a
+        newer version of a held package, the first package won't be
+        marked as requiring upgrade.
+        """
+        self._add_system_package(
+            "foo", version="1.0",
+            control_fields={"Status": "hold ok installed"})
+        self._add_system_package(
+            "bar", version="1.0",
+            control_fields={"Depends": "foo"})
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
+        self._add_package_to_deb_dir(
+            deb_dir, "bar", version="2.0",
+            control_fields={"Depends": "foo (>> 1.0)"})
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo_1, foo_2] = sorted(self.facade.get_packages_by_name("foo"))
+        [bar_1, bar_2] = sorted(self.facade.get_packages_by_name("bar"))
+        self.facade.mark_global_upgrade()
+        self.assertEqual(None, self.facade.perform_changes())
+        self.assertEqual(foo_1, foo_2.package.installed)
+        self.assertEqual(bar_1, bar_2.package.installed)
+
     def test_perform_changes_dependency_error_same_version(self):
         """
         Apt's Version objects have the same hash if the version string
