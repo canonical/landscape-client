@@ -1064,6 +1064,10 @@ class AptFacadeTest(LandscapeTest):
 
     def test_mark_global_upgrade(self):
         """
+        C{mark_global_upgrade} upgrades all packages that can be
+        upgraded. It makes C{perform_changes} raise a C{DependencyError}
+        with the required changes, so that the user can review the
+        changes and approve them.
         """
         deb_dir = self.makeDir()
         self._add_system_package("foo", version="1.0")
