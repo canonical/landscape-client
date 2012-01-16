@@ -58,9 +58,6 @@ class BrokerService(LandscapeService):
             domain = self._lookup_srv_record()
             config.url = "https://%s/message-system" % domain
             config.ping_url = "http://%s/ping" % domain
-        self._init_part_two(config)
-
-    def _init_part_two(self, config):
         self.transport = self.transport_factory(
             config.url, config.ssl_public_key, self.payload_recorder)
         self.message_store = get_default_message_store(
