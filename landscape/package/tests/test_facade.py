@@ -912,6 +912,7 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(self.facade._package_installs, [])
         self.assertEqual(self.facade._package_upgrades, [])
         self.assertEqual(self.facade._package_removals, [])
+        self.assertFalse(self.facade._global_upgrade)
         self.assertEqual(self.facade.perform_changes(), None)
 
     def test_wb_mark_install_adds_to_list(self):

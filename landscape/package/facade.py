@@ -91,6 +91,7 @@ class AptFacade(object):
         self._hash2pkg = {}
         self._package_installs = []
         self._package_upgrades = []
+        self._global_upgrade = False
         self._package_removals = []
         self.refetch_package_index = False
 
@@ -361,7 +362,7 @@ class AptFacade(object):
         held_package_names = set()
         package_changes = self._package_installs[:]
         package_changes.extend(self._package_removals)
-        if not package_changes and not self._package_upgrades:
+        if not package_changes and not self._global_upgrade:
             return None
         fixer = apt_pkg.ProblemResolver(self._cache._depcache)
         for version in self._package_installs:
@@ -375,14 +376,8 @@ class AptFacade(object):
             # been True.
             fixer.clear(version.package._pkg)
             fixer.protect(version.package._pkg)
-        for version in self._package_upgrades:
-            if self._is_package_held(version.package):
-                continue
-            version.package.mark_install(
-                auto_fix=False,
-                from_user=not version.package.is_auto_installed)
-            fixer.clear(version.package._pkg)
-            fixer.protect(version.package._pkg)
+        if self._global_upgrade:
+            self._cache.upgrade(dist_upgrade=True)
         for version in self._package_removals:
             if self._is_package_held(version.package):
                 held_package_names.add(version.package.name)
@@ -448,6 +443,7 @@ class AptFacade(object):
         del self._package_installs[:]
         del self._package_upgrades[:]
         del self._package_removals[:]
+        self._global_upgrade = False
 
     def mark_install(self, version):
         """Mark the package for installation."""
@@ -455,6 +451,7 @@ class AptFacade(object):
 
     def mark_global_upgrade(self):
         """Upgrade all installed packages."""
+        self._global_upgrade = True
         for version in self.get_packages():
             if self.is_package_installed(version):
                 self.mark_upgrade(version)
