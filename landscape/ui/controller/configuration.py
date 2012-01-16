@@ -252,6 +252,12 @@ class ConfigController(object):
     def is_modified(self):
         return self._modified
 
+    @property
+    def srv_autodiscover(self):
+        print 'got here 1'
+        print self._srv_autodiscover
+        return self._srv_autodiscover == "true"
+
     def revert(self):
         "Revert settings to those the configuration object originally found."
         self._configuration.reload()
