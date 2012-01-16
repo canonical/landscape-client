@@ -1297,7 +1297,7 @@ class AptFacadeTest(LandscapeTest):
             "foo", control_fields={"Status": "hold ok installed"})
         self._add_system_package("bar")
         self.facade.reload_channels()
-        [foo] = sorted(self.facade.get_packages_by_name("foo"))
+        [foo] = self.facade.get_packages_by_name("foo")
         self.assertEqual([foo], self.facade.get_locked_packages())
 
     def test_get_locked_packages_multi(self):
