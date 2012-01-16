@@ -25,14 +25,6 @@ class ConfigurationMechanism(dbus.service.Object):
         self.polkit = None
         self.config = config
 
-
-    @dbus.service.method(INTERFACE_NAME,
-                         in_signature="", out_signature="s",
-                         sender_keyword="sender", connection_keyword="conn")
-    def get_account_name(self, sender=None, conn=None):
-        if self._is_allowed_by_policy(sender, conn, SERVICE_NAME):
-            return "Foo"
-
     def _get_peer_pid(self, sender, conn):
         if self.dbus_info is None:
             self.dbus_info = dbus.Interface(conn.get_object('org.freedesktop.DBus',
@@ -86,12 +78,81 @@ class ConfigurationMechanism(dbus.service.Object):
         (is_auth, _, details) = self._get_polkit_authorization(privilege)
         if not is_auth:
             raise PermissionDeniedByPolicy(privilege)
+
+    @dbus.service.method(INTERFACE_NAME,
+                         in_signature="", out_signature="s",
+                         sender_keyword="sender", connection_keyword="conn")
+    def get_account_name(self, sender=None, conn=None):
+        if self._is_allowed_by_policy(sender, conn, SERVICE_NAME):
+            return self.config.account_name
+
+
+    @dbus.service.method(INTERFACE_NAME,
+                         in_signature="", out_signature="s",
+                         sender_keyword="sender", connection_keyword="conn")
+    def get_computer_title(self, sender=None, conn=None):
+        if self._is_allowed_by_policy(sender, conn, SERVICE_NAME):
+            return self.config.computer_title
+
+    @dbus.service.method(INTERFACE_NAME,
+                         in_signature="", out_signature="s",
+                         sender_keyword="sender", connection_keyword="conn")
+    def get_data_path(self, sender=None, conn=None):
+        if self._is_allowed_by_policy(sender, conn, SERVICE_NAME):
+            return self.config.data_path
+
+    @dbus.service.method(INTERFACE_NAME,
+                         in_signature="", out_signature="s",
+                         sender_keyword="sender", connection_keyword="conn")
+    def get_http_proxy(self, sender=None, conn=None):
+        if self._is_allowed_by_policy(sender, conn, SERVICE_NAME):
+            return self.config.http_proxy
+
+    @dbus.service.method(INTERFACE_NAME,
+                         in_signature="", out_signature="s",
+                         sender_keyword="sender", connection_keyword="conn")
+    def get_ping_url(self, sender=None, conn=None):
+        if self._is_allowed_by_policy(sender, conn, SERVICE_NAME):
+            return self.config.ping_url
+
+    @dbus.service.method(INTERFACE_NAME,
+                         in_signature="", out_signature="s",
+                         sender_keyword="sender", connection_keyword="conn")
+    def get_registration_password(self, sender=None, conn=None):
+        if self._is_allowed_by_policy(sender, conn, SERVICE_NAME):
+            return self.config.registration_password
+
+    @dbus.service.method(INTERFACE_NAME,
+                         in_signature="", out_signature="s",
+                         sender_keyword="sender", connection_keyword="conn")
+    def get_tags(self, sender=None, conn=None):
+        if self._is_allowed_by_policy(sender, conn, SERVICE_NAME):
+            return self.config.tags
+
+    @dbus.service.method(INTERFACE_NAME,
+                         in_signature="", out_signature="s",
+                         sender_keyword="sender", connection_keyword="conn")
+    def get_url(self, sender=None, conn=None):
+        if self._is_allowed_by_policy(sender, conn, SERVICE_NAME):
+            return self.config.url
+
+    @dbus.service.method(INTERFACE_NAME,
+                         in_signature="", out_signature="s",
+                         sender_keyword="sender", connection_keyword="conn")
+    def get_https_proxy(self, sender=None, conn=None):
+        if self._is_allowed_by_policy(sender, conn, SERVICE_NAME):
+            return self.config.https_proxy
+
+
+        
+
+
+
         
 
 
 def listen():
     mainloop = gobject.MainLoop()
-    print "Running example service."
     mainloop.run()
 
 

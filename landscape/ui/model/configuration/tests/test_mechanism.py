@@ -31,10 +31,9 @@ class MechanismWithoutPolicyTestCase(LandscapeTest):
         # Wait for the service to become available
         time.sleep(1)
 
-    def test_get_account_name(self):
+    def test_accessing_interface_fails(self):
         """
-        Test that L{get_account_name} fails outside of a secure context and
-        succeeds within a secure context.
+        Test that accessing fails outside of a secure context.
         """
         bus = dbus.SessionBus()
         helloservice = bus.get_object(INTERFACE_NAME, OBJECT_PATH)
@@ -74,6 +73,7 @@ class MechanismTest(LandscapeTest):
         bus = dbus.SessionBus()
         bus_name = dbus.service.BusName(INTERFACE_NAME, bus)
         self.mechanism = ConfigurationMechanism(self.config, bus_name)
+        self.config.load(["-c", self.config_filename])
     
     def tearDown(self):
         self.mechanism.remove_from_connection()
@@ -90,7 +90,38 @@ class MechanismTest(LandscapeTest):
         self.assertTrue(self.mechanism._is_local_call(None, None))
         self.assertFalse(self.mechanism._is_local_call(True, True))
 
-
     def test_get_account_name(self):
         self.assertEqual(self.mechanism.get_account_name(), "foo")
 
+    def test_get_data_path(self):
+        self.assertEqual(self.mechanism.get_data_path(),
+                         "/var/lib/landscape/client/")
+
+    def test_get_http_proxy(self):
+        self.assertEqual(self.mechanism.get_http_proxy(),
+                         "http://proxy.localdomain:3192")
+
+    def test_get_tags(self):
+        self.assertEquals(self.mechanism.get_tags(),
+                          "a_tag")
+
+    def test_get_url(self):
+        self.assertEquals(self.mechanism.get_url(), 
+                          "https://landscape.canonical.com/message-system")
+
+    def test_get_ping_url(self):
+        self.assertEquals(self.mechanism.get_ping_url(),
+                          "http://landscape.canonical.com/ping")
+
+    def test_get_registration_password(self):
+        self.assertEquals(self.mechanism.get_registration_password(),
+                          "bar")
+        
+    def test_get_computer_title(self):
+        self.assertEquals(self.mechanism.get_computer_title(),
+                          "baz")
+
+    def test_https_proxy(self):
+        self.assertEqual(self.mechanism.get_https_proxy(),
+                         "https://proxy.localdomain:6192")
+                          
