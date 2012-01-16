@@ -59,7 +59,7 @@ class MechanismTest(LandscapeTest):
         config += "tags = a_tag\n"
         config += "url = https://landscape.canonical.com/message-system\n"
         config += "account_name = foo\n"
-        config += "registration_password = bar\n"
+        config += "registration_password = boink\n"
         config += "computer_title = baz\n"
         config += "https_proxy = https://proxy.localdomain:6192\n"
         config += "ping_url = http://landscape.canonical.com/ping\n"
@@ -93,27 +93,61 @@ class MechanismTest(LandscapeTest):
     def test_get_account_name(self):
         self.assertEqual(self.mechanism.get_account_name(), "foo")
 
+    def test_set_account_name(self):
+        self.mechanism.set_account_name("bar")
+        self.assertEqual(self.mechanism.get_account_name(), "bar")
+
     def test_get_data_path(self):
         self.assertEqual(self.mechanism.get_data_path(),
                          "/var/lib/landscape/client/")
+
+    def set_data_path(self):
+        self.mechanism.set_data_path("bar")
+        self.assertEqual(self.mechanism.get_data_path(),
+                         "bar")
 
     def test_get_http_proxy(self):
         self.assertEqual(self.mechanism.get_http_proxy(),
                          "http://proxy.localdomain:3192")
 
+    def test_set_http_proxy(self):
+        self.mechanism.set_http_proxy("bar")
+        self.assertEqual(self.mechanism.get_http_proxy(),
+                         "bar")
+
     def test_get_tags(self):
         self.assertEquals(self.mechanism.get_tags(),
                           "a_tag")
+
+    def test_set_tags(self):
+        self.mechanism.set_tags("bar")
+        self.assertEquals(self.mechanism.get_tags(),
+                          "bar")
 
     def test_get_url(self):
         self.assertEquals(self.mechanism.get_url(), 
                           "https://landscape.canonical.com/message-system")
 
+    def test_set_url(self):
+        self.mechanism.set_url("bar")
+        self.assertEquals(self.mechanism.get_url(), 
+                          "bar")
+
     def test_get_ping_url(self):
         self.assertEquals(self.mechanism.get_ping_url(),
                           "http://landscape.canonical.com/ping")
 
+    def test_set_ping_url(self):
+        self.mechanism.set_ping_url("bar")
+        self.assertEquals(self.mechanism.get_ping_url(),
+                          "bar")
+
     def test_get_registration_password(self):
+        self.assertEquals(self.mechanism.get_registration_password(),
+                          "boink")
+
+    def test_set_registration_password(self):
+        self.mechanism.set_registration_password("bar")
         self.assertEquals(self.mechanism.get_registration_password(),
                           "bar")
         
@@ -121,7 +155,17 @@ class MechanismTest(LandscapeTest):
         self.assertEquals(self.mechanism.get_computer_title(),
                           "baz")
 
+    def test_set_computer_title(self):
+        self.mechanism.set_computer_title("bar")
+        self.assertEquals(self.mechanism.get_computer_title(),
+                          "bar")
+
     def test_https_proxy(self):
         self.assertEqual(self.mechanism.get_https_proxy(),
                          "https://proxy.localdomain:6192")
+
+    def test_set_https_proxy(self):
+        self.mechanism.set_https_proxy("bar")
+        self.assertEqual(self.mechanism.get_https_proxy(),
+                         "bar")
                           
