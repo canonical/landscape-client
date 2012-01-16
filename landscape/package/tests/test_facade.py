@@ -910,7 +910,6 @@ class AptFacadeTest(LandscapeTest):
         self.facade.mark_remove(baz)
         self.facade.reset_marks()
         self.assertEqual(self.facade._package_installs, [])
-        self.assertEqual(self.facade._package_upgrades, [])
         self.assertEqual(self.facade._package_removals, [])
         self.assertFalse(self.facade._global_upgrade)
         self.assertEqual(self.facade.perform_changes(), None)
@@ -930,10 +929,10 @@ class AptFacadeTest(LandscapeTest):
         install = self.facade._package_installs[0]
         self.assertEqual("minimal", install.package.name)
 
-    def test_wb_mark_global_upgrade_adds_to_list(self):
+    def test_wb_mark_global_upgrade_sets_variable(self):
         """
-        C{mark_global_upgrade} adds the package to the list of packages to be
-        upgraded.
+        C{mark_global_upgrade} sets a variable, so that the actual
+        upgrade happens in C{perform_changes}.
         """
         deb_dir = self.makeDir()
         self._add_system_package("foo", version="1.0")
@@ -942,7 +941,8 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         foo_10 = sorted(self.facade.get_packages_by_name("foo"))[0]
         self.facade.mark_global_upgrade()
-        self.assertEqual([foo_10], self.facade._package_upgrades)
+        self.assertTrue(self.facade._global_upgrade)
+        self.assertEqual(foo_10, foo_10.package.installed)
 
     def test_wb_mark_remove_adds_to_list(self):
         """

@@ -90,7 +90,6 @@ class AptFacade(object):
         self._pkg2hash = {}
         self._hash2pkg = {}
         self._package_installs = []
-        self._package_upgrades = []
         self._global_upgrade = False
         self._package_removals = []
         self.refetch_package_index = False
@@ -441,7 +440,6 @@ class AptFacade(object):
     def reset_marks(self):
         """Clear the pending package operations."""
         del self._package_installs[:]
-        del self._package_upgrades[:]
         del self._package_removals[:]
         self._global_upgrade = False
 
@@ -452,14 +450,6 @@ class AptFacade(object):
     def mark_global_upgrade(self):
         """Upgrade all installed packages."""
         self._global_upgrade = True
-        for version in self.get_packages():
-            if self.is_package_installed(version):
-                self.mark_upgrade(version)
-
-    def mark_upgrade(self, version):
-        """Mark the package for upgrade."""
-        if version.package.candidate != version:
-            self._package_upgrades.append(version)
 
     def mark_remove(self, version):
         """Mark the package for removal."""
