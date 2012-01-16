@@ -37,9 +37,49 @@ class MechanismWithoutPolicyTestCase(LandscapeTest):
         """
         bus = dbus.SessionBus()
         helloservice = bus.get_object(INTERFACE_NAME, OBJECT_PATH)
-        get_account_name = helloservice.get_dbus_method('get_account_name', 
-                                             INTERFACE_NAME)
+        get_account_name = helloservice.get_dbus_method(
+            'get_account_name', INTERFACE_NAME)
+        set_account_name = helloservice.get_dbus_method(
+            'set_account_name', INTERFACE_NAME)
+        get_computer_title = helloservice.get_dbus_method(
+            'get_computer_title', INTERFACE_NAME)
+        set_computer_title = helloservice.get_dbus_method(
+            'set_computer_title', INTERFACE_NAME)
+        get_data_path = helloservice.get_dbus_method(
+            'get_data_path', INTERFACE_NAME)
+        set_data_path = helloservice.get_dbus_method(
+            'set_data_path', INTERFACE_NAME)
+        get_http_proxy = helloservice.get_dbus_method(
+            'get_http_proxy', INTERFACE_NAME)
+        set_http_proxy = helloservice.get_dbus_method(
+            'set_http_proxy', INTERFACE_NAME)
+        get_https_proxy = helloservice.get_dbus_method(
+            'get_https_proxy', INTERFACE_NAME)
+        set_https_proxy = helloservice.get_dbus_method(
+            'set_https_proxy', INTERFACE_NAME)
+        get_ping_url = helloservice.get_dbus_method(
+            'get_ping_url', INTERFACE_NAME)
+        set_ping_url = helloservice.get_dbus_method(
+            'set_ping_url', INTERFACE_NAME)
+        get_registration_password = helloservice.get_dbus_method(
+            'get_registration_password', INTERFACE_NAME)
+        set_registration_password = helloservice.get_dbus_method(
+            'set_registration_password', INTERFACE_NAME)
+        get_tags = helloservice.get_dbus_method(
+            'get_tags', INTERFACE_NAME)
+        set_tags = helloservice.get_dbus_method(
+            'set_tags', INTERFACE_NAME)
+        get_url = helloservice.get_dbus_method(
+            'get_url', INTERFACE_NAME)
+        set_url = helloservice.get_dbus_method(
+            'set_url', INTERFACE_NAME)
+
+
+
+
+
         self.assertRaises(dbus.DBusException, get_account_name)
+
         
     def tearDown(self):
         os.kill(self.p.pid, 15)
@@ -160,7 +200,7 @@ class MechanismTest(LandscapeTest):
         self.assertEquals(self.mechanism.get_computer_title(),
                           "bar")
 
-    def test_https_proxy(self):
+    def test_get_https_proxy(self):
         self.assertEqual(self.mechanism.get_https_proxy(),
                          "https://proxy.localdomain:6192")
 
