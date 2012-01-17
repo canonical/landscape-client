@@ -36,49 +36,64 @@ class MechanismWithoutPolicyTestCase(LandscapeTest):
         Test that accessing fails outside of a secure context.
         """
         bus = dbus.SessionBus()
-        helloservice = bus.get_object(INTERFACE_NAME, OBJECT_PATH)
-        get_account_name = helloservice.get_dbus_method(
+        service = bus.get_object(INTERFACE_NAME, OBJECT_PATH)
+        get_account_name = service.get_dbus_method(
             'get_account_name', INTERFACE_NAME)
-        set_account_name = helloservice.get_dbus_method(
+        set_account_name = service.get_dbus_method(
             'set_account_name', INTERFACE_NAME)
-        get_computer_title = helloservice.get_dbus_method(
+        get_computer_title = service.get_dbus_method(
             'get_computer_title', INTERFACE_NAME)
-        set_computer_title = helloservice.get_dbus_method(
+        set_computer_title = service.get_dbus_method(
             'set_computer_title', INTERFACE_NAME)
-        get_data_path = helloservice.get_dbus_method(
+        get_data_path = service.get_dbus_method(
             'get_data_path', INTERFACE_NAME)
-        set_data_path = helloservice.get_dbus_method(
+        set_data_path = service.get_dbus_method(
             'set_data_path', INTERFACE_NAME)
-        get_http_proxy = helloservice.get_dbus_method(
+        get_http_proxy = service.get_dbus_method(
             'get_http_proxy', INTERFACE_NAME)
-        set_http_proxy = helloservice.get_dbus_method(
+        set_http_proxy = service.get_dbus_method(
             'set_http_proxy', INTERFACE_NAME)
-        get_https_proxy = helloservice.get_dbus_method(
+        get_https_proxy = service.get_dbus_method(
             'get_https_proxy', INTERFACE_NAME)
-        set_https_proxy = helloservice.get_dbus_method(
+        set_https_proxy = service.get_dbus_method(
             'set_https_proxy', INTERFACE_NAME)
-        get_ping_url = helloservice.get_dbus_method(
+        get_ping_url = service.get_dbus_method(
             'get_ping_url', INTERFACE_NAME)
-        set_ping_url = helloservice.get_dbus_method(
+        set_ping_url = service.get_dbus_method(
             'set_ping_url', INTERFACE_NAME)
-        get_registration_password = helloservice.get_dbus_method(
+        get_registration_password = service.get_dbus_method(
             'get_registration_password', INTERFACE_NAME)
-        set_registration_password = helloservice.get_dbus_method(
+        set_registration_password = service.get_dbus_method(
             'set_registration_password', INTERFACE_NAME)
-        get_tags = helloservice.get_dbus_method(
+        get_tags = service.get_dbus_method(
             'get_tags', INTERFACE_NAME)
-        set_tags = helloservice.get_dbus_method(
+        set_tags = service.get_dbus_method(
             'set_tags', INTERFACE_NAME)
-        get_url = helloservice.get_dbus_method(
+        get_url = service.get_dbus_method(
             'get_url', INTERFACE_NAME)
-        set_url = helloservice.get_dbus_method(
+        set_url = service.get_dbus_method(
             'set_url', INTERFACE_NAME)
-
-
-
-
-
         self.assertRaises(dbus.DBusException, get_account_name)
+        self.assertRaises(dbus.DBusException, set_account_name, "foo")
+        self.assertRaises(dbus.DBusException, get_computer_title)
+        self.assertRaises(dbus.DBusException, set_computer_title, "foo")
+        self.assertRaises(dbus.DBusException, get_data_path)
+        self.assertRaises(dbus.DBusException, set_data_path, "foo")
+        self.assertRaises(dbus.DBusException, get_http_proxy)
+        self.assertRaises(dbus.DBusException, set_http_proxy, "foo")
+        self.assertRaises(dbus.DBusException, get_https_proxy)
+        self.assertRaises(dbus.DBusException, set_https_proxy, "foo")
+        self.assertRaises(dbus.DBusException, get_ping_url)
+        self.assertRaises(dbus.DBusException, set_ping_url, "foo")
+        self.assertRaises(dbus.DBusException, get_registration_password)
+        self.assertRaises(dbus.DBusException, set_registration_password, "foo")
+        self.assertRaises(dbus.DBusException, get_tags)
+        self.assertRaises(dbus.DBusException, set_tags, "foo")
+        self.assertRaises(dbus.DBusException, get_url)
+        self.assertRaises(dbus.DBusException, set_url, "foo")
+
+
+
 
         
     def tearDown(self):

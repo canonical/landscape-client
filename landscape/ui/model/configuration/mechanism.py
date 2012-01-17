@@ -62,15 +62,16 @@ class ConfigurationMechanism(dbus.service.Object):
                 action_id, 
                 details,
                 flags, 
-                cancellation_id, 
-                timeout=600)
+                cancellation_id,
+                timeout=1)
         except dbus.DBusException, e:
-            if e._dbus_error_name == 'org.freedesktop.DBus.Error.ServiceUnknown':
-                # This occurs on timeouts, so we retry
-                polkit = None
-                return self._get_polkit_authorization(privilege)
-            else:
-                raise
+            raise
+            # if e._dbus_error_name == 'org.freedesktop.DBus.Error.ServiceUnknown':
+            #     # This occurs on timeouts, so we retry
+            #     polkit = None
+            #     return self._get_polkit_authorization(privilege)
+            # else:
+            #     raise
         
     def _is_allowed_by_policy(self, sender, conn, privilege):
         if self._is_local_call(sender, conn):
@@ -78,6 +79,13 @@ class ConfigurationMechanism(dbus.service.Object):
         (is_auth, _, details) = self._get_polkit_authorization(privilege)
         if not is_auth:
             raise PermissionDeniedByPolicy(privilege)
+
+    @dbus.service.method(INTERFACE_NAME,
+                         in_signature="as", out_signature="",
+                         sender_keyword="sender", connection_keyword="conn")
+    def load(self, args, sender=None, conn=None):
+        if self._is_allowed_by_policy(sender, conn, SERVICE_NAME):
+            self.config.load(args)
 
     @dbus.service.method(INTERFACE_NAME,
                          in_signature="", out_signature="s",
@@ -120,7 +128,7 @@ class ConfigurationMechanism(dbus.service.Object):
                          sender_keyword="sender", connection_keyword="conn")
     def set_data_path(self, data_path, sender=None, conn=None):
         if self._is_allowed_by_policy(sender, conn, SERVICE_NAME):
-            self.config.data_pat = data_path
+            self.config.data_path = data_path
         
     @dbus.service.method(INTERFACE_NAME,
                          in_signature="", out_signature="s",
