@@ -26,9 +26,9 @@ class ConfigurationProxyBaseTest(LandscapeTest):
             """
             This just allows us to test without actually relying on dbus.
             """
-            this._iface = self.mechanism
+            this._interface = self.mechanism
         
-        ConfigurationProxy._setup_iface = setup_interface
+        ConfigurationProxy._setup_interface = setup_interface
         self.proxy = ConfigurationProxy()
         self.proxy.load(["-c", self.config_filename])
 
@@ -46,7 +46,7 @@ class ConfigurationProxyInterfaceTest(ConfigurationProxyBaseTest):
     def setUp(self):
         super(ConfigurationProxyInterfaceTest, self).setUp(
             "[client]\n"
-            "data_path = /var/lib/landscape/client\n"
+            "data_path = /var/lib/landscape/client/\n"
             "http_proxy = http://proxy.localdomain:3192\n"
             "tags = a_tag\n"
             "url = https://landscape.canonical.com/message-system\n"
@@ -55,7 +55,19 @@ class ConfigurationProxyInterfaceTest(ConfigurationProxyBaseTest):
             "computer_title = baz\n"
             "https_proxy = https://proxy.localdomain:6192\n"
             "ping_url = http://landscape.canonical.com/ping\n")
-    
+
+    def test_method_docstrings(self):
+        """
+        Test that we pass through the docstrings for methods.
+        """
+        self.assertEqual(self.proxy.load.__doc__,
+                         LandscapeSetupConfiguration.load.__doc__)
+        self.assertEqual(self.proxy.reload.__doc__,
+                         LandscapeSetupConfiguration.reload.__doc__)
+        self.assertEqual(self.proxy.write.__doc__,
+                         LandscapeSetupConfiguration.write.__doc__)
+        
+
     def test_account_name(self):
         self.assertEqual(self.proxy.account_name, "foo")
         self.proxy.account_name = "bar"
