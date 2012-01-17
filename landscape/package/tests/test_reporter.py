@@ -521,8 +521,8 @@ class PackageReporterTestMixin(object):
 
             def callback((out, err, code)):
                 interval = self.reporter.smart_update_interval
-                self.assertEqual(out, "--after %d" % interval)
                 self.assertEqual(err, "")
+                self.assertEqual(out, "--after %d" % interval)
                 self.assertEqual(code, 0)
             result.addCallback(callback)
             result.chainDeferred(deferred)
