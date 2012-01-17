@@ -7,24 +7,10 @@ from landscape.ui.model.configuration.proxy import ConfigurationProxy
 from landscape.configuration import LandscapeSetupConfiguration
 
 
-class ConfigurationProxyInterfaceTest(LandscapeTest):
-    """ 
-    Test that we define the correct interface to a
-    L{LandscapeSetupConfiguration} by really using one as the interface.
-    """
+class ConfigurationProxyBaseTest(LandscapeTest):
 
-    def setUp(self):
-        super(ConfigurationProxyInterfaceTest, self).setUp()
-        config = "[client]"
-        config += "data_path = /var/lib/landscape/client\n"
-        config += "http_proxy = http://proxy.localdomain:3192\n"
-        config += "tags = a_tag\n"
-        config += "url = https://landscape.canonical.com/message-system\n"
-        config += "account_name = foo\n"
-        config += "registration_password = boink\n"
-        config += "computer_title = baz\n"
-        config += "https_proxy = https://proxy.localdomain:6192\n"
-        config += "ping_url = http://landscape.canonical.com/ping\n"
+    def setUp(self, config):
+        super(ConfigurationProxyBaseTest, self).setUp()
         self.config_filename = self.makeFile(config)
 
         class MyLandscapeSetupConfiguration(LandscapeSetupConfiguration):
@@ -45,11 +31,31 @@ class ConfigurationProxyInterfaceTest(LandscapeTest):
         ConfigurationProxy._setup_iface = setup_interface
         self.proxy = ConfigurationProxy()
         self.proxy.load(["-c", self.config_filename])
-    
+
     def tearDown(self):
         self.mechanism.remove_from_connection()
-        super(ConfigurationProxyInterfaceTest, self).tearDown()    
+        super(ConfigurationProxyBaseTest, self).tearDown()    
 
+        
+class ConfigurationProxyInterfaceTest(ConfigurationProxyBaseTest):
+    """ 
+    Test that we define the correct interface to a
+    L{LandscapeSetupConfiguration} by really using one as the interface.
+    """
+
+    def setUp(self):
+        super(ConfigurationProxyInterfaceTest, self).setUp(
+            "[client]\n"
+            "data_path = /var/lib/landscape/client\n"
+            "http_proxy = http://proxy.localdomain:3192\n"
+            "tags = a_tag\n"
+            "url = https://landscape.canonical.com/message-system\n"
+            "account_name = foo\n"
+            "registration_password = boink\n"
+            "computer_title = baz\n"
+            "https_proxy = https://proxy.localdomain:6192\n"
+            "ping_url = http://landscape.canonical.com/ping\n")
+    
     def test_account_name(self):
         self.assertEqual(self.proxy.account_name, "foo")
         self.proxy.account_name = "bar"

@@ -88,11 +88,28 @@ class ConfigurationMechanism(dbus.service.Object):
             self.config.load(args)
 
     @dbus.service.method(INTERFACE_NAME,
+                         in_signature="", out_signature="",
+                         sender_keyword="sender", connection_keyword="conn")
+    def reload(self, sender=None, conn=None):
+        if self._is_allowed_by_policy(sender, conn, SERVICE_NAME):
+            self.config.reload()
+
+    @dbus.service.method(INTERFACE_NAME,
+                         in_signature="", out_signature="",
+                         sender_keyword="sender", connection_keyword="conn")
+    def write(self, sender=None, conn=None):
+        if self._is_allowed_by_policy(sender, conn, SERVICE_NAME):
+            self.config.write()
+
+    @dbus.service.method(INTERFACE_NAME,
                          in_signature="", out_signature="s",
                          sender_keyword="sender", connection_keyword="conn")
     def get_account_name(self, sender=None, conn=None):
         if self._is_allowed_by_policy(sender, conn, SERVICE_NAME):
-            return self.config.account_name
+            try:
+                return self.config.account_name
+            except AttributeError:
+                return ""
 
     @dbus.service.method(INTERFACE_NAME,
                          in_signature="s", out_signature="",
@@ -107,7 +124,10 @@ class ConfigurationMechanism(dbus.service.Object):
                          sender_keyword="sender", connection_keyword="conn")
     def get_computer_title(self, sender=None, conn=None):
         if self._is_allowed_by_policy(sender, conn, SERVICE_NAME):
-            return self.config.computer_title
+            try:
+                return self.config.computer_title
+            except AttributeError:
+                return ""
 
     @dbus.service.method(INTERFACE_NAME,
                          in_signature="s", out_signature="",
@@ -121,7 +141,10 @@ class ConfigurationMechanism(dbus.service.Object):
                          sender_keyword="sender", connection_keyword="conn")
     def get_data_path(self, sender=None, conn=None):
         if self._is_allowed_by_policy(sender, conn, SERVICE_NAME):
-            return self.config.data_path
+            try:
+                return self.config.data_path
+            except AttributeError:
+                return ""
 
     @dbus.service.method(INTERFACE_NAME,
                          in_signature="s", out_signature="",
@@ -135,7 +158,10 @@ class ConfigurationMechanism(dbus.service.Object):
                          sender_keyword="sender", connection_keyword="conn")
     def get_http_proxy(self, sender=None, conn=None):
         if self._is_allowed_by_policy(sender, conn, SERVICE_NAME):
-            return self.config.http_proxy
+            try:
+                return self.config.http_proxy
+            except AttributeError:
+                return ""
 
     @dbus.service.method(INTERFACE_NAME,
                          in_signature="s", out_signature="",
@@ -149,7 +175,10 @@ class ConfigurationMechanism(dbus.service.Object):
                          sender_keyword="sender", connection_keyword="conn")
     def get_ping_url(self, sender=None, conn=None):
         if self._is_allowed_by_policy(sender, conn, SERVICE_NAME):
-            return self.config.ping_url
+            try:
+                return self.config.ping_url
+            except AttributeError:
+                return ""
 
     @dbus.service.method(INTERFACE_NAME,
                          in_signature="s", out_signature="",
@@ -163,7 +192,10 @@ class ConfigurationMechanism(dbus.service.Object):
                          sender_keyword="sender", connection_keyword="conn")
     def get_registration_password(self, sender=None, conn=None):
         if self._is_allowed_by_policy(sender, conn, SERVICE_NAME):
-            return self.config.registration_password
+            try:
+                return self.config.registration_password
+            except AttributeError:
+                return ""
 
     @dbus.service.method(INTERFACE_NAME,
                          in_signature="s", out_signature="",
@@ -177,7 +209,10 @@ class ConfigurationMechanism(dbus.service.Object):
                          sender_keyword="sender", connection_keyword="conn")
     def get_tags(self, sender=None, conn=None):
         if self._is_allowed_by_policy(sender, conn, SERVICE_NAME):
-            return self.config.tags
+            try:
+                return self.config.tags
+            except AttributeError:
+                return ""
 
     @dbus.service.method(INTERFACE_NAME,
                          in_signature="s", out_signature="",
@@ -191,7 +226,10 @@ class ConfigurationMechanism(dbus.service.Object):
                          sender_keyword="sender", connection_keyword="conn")
     def get_url(self, sender=None, conn=None):
         if self._is_allowed_by_policy(sender, conn, SERVICE_NAME):
-            return self.config.url
+            try:
+                return self.config.url
+            except AttributeError:
+                return ""
 
     @dbus.service.method(INTERFACE_NAME,
                          in_signature="s", out_signature="",
@@ -205,7 +243,10 @@ class ConfigurationMechanism(dbus.service.Object):
                          sender_keyword="sender", connection_keyword="conn")
     def get_https_proxy(self, sender=None, conn=None):
         if self._is_allowed_by_policy(sender, conn, SERVICE_NAME):
-            return self.config.https_proxy
+            try:
+                return self.config.https_proxy
+            except AttributeError:
+                return ""
 
     @dbus.service.method(INTERFACE_NAME,
                          in_signature="s", out_signature="",
@@ -213,8 +254,6 @@ class ConfigurationMechanism(dbus.service.Object):
     def set_https_proxy(self, https_proxy, sender=None, conn=None):
         if self._is_allowed_by_policy(sender, conn, SERVICE_NAME):
             self.config.https_proxy = https_proxy
-
-        
 
 
 def listen():

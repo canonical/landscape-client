@@ -1,6 +1,6 @@
 from gi.repository import Gtk
 
-from landscape.configuration import LandscapeSetupConfiguration
+from landscape.ui.model.configuration.proxy import ConfigurationProxy
 from landscape.ui.view.configuration import ClientSettingsDialog
 from landscape.ui.controller.configuration import ConfigController
 
@@ -20,7 +20,7 @@ class SettingsApplicationController(Gtk.Application):
         self.connect("activate", self.setup_ui)
 
     def get_config(self):
-        return LandscapeSetupConfiguration()
+        return ConfigurationProxy()
 
     def setup_ui(self, data=None):
         config = self.get_config()

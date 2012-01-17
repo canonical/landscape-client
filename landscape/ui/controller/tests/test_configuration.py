@@ -1,35 +1,34 @@
 from landscape.tests.helpers import LandscapeTest
 from landscape.ui.controller.configuration import (
     ConfigController, ConfigControllerLockError)
+from landscape.ui.model.configuration.tests.test_proxy import (
+    ConfigurationProxyBaseTest)
 from landscape.configuration import LandscapeSetupConfiguration
 
 
-class ConfigControllerTest(LandscapeTest):
+class ConfigControllerTest(ConfigurationProxyBaseTest):
 
     def setUp(self):
-        super(ConfigControllerTest, self).setUp()
-        config = "[client]"
-        config += "data_path = /var/lib/landscape/client\n"
-        config += "http_proxy = http://proxy.localdomain:3192\n"
-        config += "tags = a_tag\n"
-        config += "url = https://landscape.canonical.com/message-system\n"
-        config += "account_name = foo\n"
-        config += "registration_password = bar\n"
-        config += "computer_title = baz\n"
-        config += "https_proxy = https://proxy.localdomain:6192\n"
-        config += "ping_url = http://landscape.canonical.com/ping\n"
-        self.config_filename = self.makeFile(config)
+        super(ConfigControllerTest, self).setUp(
+            "[client]\n"
+            "data_path = /var/lib/landscape/client/\n"
+            "http_proxy = http://proxy.localdomain:3192\n"
+            "tags = a_tag\n"
+            "url = https://landscape.canonical.com/message-system\n"
+            "account_name = foo\n"
+            "registration_password = bar\n"
+            "computer_title = baz\n"
+            "https_proxy = https://proxy.localdomain:6192\n"
+            "ping_url = http://landscape.canonical.com/ping\n"
+            )
 
-        class MyLandscapeSetupConfiguration(LandscapeSetupConfiguration):
-            default_config_filenames = [self.config_filename]
-
-        self.config = MyLandscapeSetupConfiguration()
-        self.controller = ConfigController(self.config)
+        self.controller = ConfigController(self.proxy)
 
         def get_fqdn():
             return "me.here.com"
 
         self.controller.getfqdn = get_fqdn
+        self.controller.load()
 
     def test_init(self):
         """
@@ -196,12 +195,25 @@ class ConfigControllerTest(LandscapeTest):
         self.controller.registration_password = "I Win"
         self.assertTrue(self.controller.is_modified)
 
+
+class EmptyConfigControllerTest(ConfigurationProxyBaseTest):
+
+    def setUp(self):
+        super(EmptyConfigControllerTest, self).setUp("")
+
+        self.controller = ConfigController(self.proxy)
+
+        def get_fqdn():
+            return "me.here.com"
+
+        self.controller.getfqdn = get_fqdn
+        self.controller.load()
+
     def test_defaulting(self):
         """
         Test we set the correct values when switching between hosted and
         dedicated.
         """
-        self.makeFile("", path=self.config_filename)  # empty the config file
         self.controller.load()
         self.assertEqual(self.controller.account_name, None)
         self.assertEqual(self.controller.registration_password, None)
@@ -233,6 +245,4 @@ class ConfigControllerTest(LandscapeTest):
         Test we set the computer title to host name when it isn't already set
         in the config file.
         """
-        self.makeFile("", path=self.config_filename)  # Empty config
-        self.controller.load()
         self.assertEqual(self.controller.computer_title, "me.here.com")

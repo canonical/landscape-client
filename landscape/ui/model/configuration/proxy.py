@@ -4,6 +4,8 @@ L{landscape.configuration.LandscapeSetupConfiguration} but actually directs
 it's calls via DBus to the L{ConfigurationMechanism}.
 """
 
+import dbus
+
 from landscape.ui.model.configuration.mechanism import (
     SERVICE_NAME, INTERFACE_NAME, OBJECT_PATH)
 
@@ -25,6 +27,12 @@ class ConfigurationProxy(object):
 
     def load(self, args):
         self._iface.load(args)
+
+    def reload(self):
+        self._iface.reload()
+
+    def write(self):
+        self._iface.write()
         
     def _get_account_name(self):
         return self._iface.get_account_name()
