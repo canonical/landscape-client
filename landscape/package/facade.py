@@ -157,6 +157,10 @@ class AptFacade(object):
         """
         return []
 
+    def get_package_holds(self):
+        """Return the name of all the packages that are on hold."""
+        return [version.package.name for version in self.get_locked_packages()]
+
     def reload_channels(self):
         """Reload the channels and update the cache."""
         self._cache.open(None)

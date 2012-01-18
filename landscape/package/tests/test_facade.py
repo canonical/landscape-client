@@ -1385,6 +1385,30 @@ class AptFacadeTest(LandscapeTest):
             sorted(error.packages, key=self.version_sortkey),
             sorted([bar, baz], key=self.version_sortkey))
 
+    def test_get_package_holds_with_no_hold(self):
+        """
+        If no package holds are set, C{get_package_holds} returns
+        an empty C{list}.
+        """
+        self._add_system_package("foo")
+        self.facade.reload_channels()
+        self.assertEqual([], self.facade.get_package_holds())
+
+    def test_get_package_holds_with_holds(self):
+        """
+        If package holds are set, C{get_package_holds} returns
+        the name of the packages that are held.
+        """
+        self._add_system_package(
+            "foo", control_fields={"Status": "hold ok installed"})
+        self._add_system_package("bar")
+        self._add_system_package(
+            "baz", control_fields={"Status": "hold ok installed"})
+        self.facade.reload_channels()
+
+        self.assertEqual(
+            ["baz", "foo"], sorted(self.facade.get_package_holds()))
+
     if not hasattr(Package, "shortname"):
         # The 'shortname' attribute was added when multi-arch support
         # was added to python-apt. So if it's not there, it means that
