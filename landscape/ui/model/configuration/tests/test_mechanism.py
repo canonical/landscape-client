@@ -1,11 +1,8 @@
 import os
 import subprocess
-import threading
 import time
 
 import dbus
-import gobject
-
 
 from landscape.configuration import LandscapeSetupConfiguration
 from landscape.tests.helpers import LandscapeTest
@@ -25,8 +22,8 @@ class MechanismWithoutPolicyTestCase(LandscapeTest):
         self._exerciser_file = os.path.join(os.path.dirname(__file__),
                                             'mechanism_exerciser.py')
         env = os.environ.copy()
-        self.p = subprocess.Popen(["dbus-launch", 
-                                   "--exit-with-session", 
+        self.p = subprocess.Popen(["dbus-launch",
+                                   "--exit-with-session",
                                    self._exerciser_file], env=env)
         # Wait for the service to become available
         time.sleep(1)
@@ -92,10 +89,6 @@ class MechanismWithoutPolicyTestCase(LandscapeTest):
         self.assertRaises(dbus.DBusException, get_url)
         self.assertRaises(dbus.DBusException, set_url, "foo")
 
-
-
-
-        
     def tearDown(self):
         os.kill(self.p.pid, 15)
 
@@ -129,7 +122,7 @@ class MechanismTest(LandscapeTest):
         bus_name = dbus.service.BusName(INTERFACE_NAME, bus)
         self.mechanism = ConfigurationMechanism(self.config, bus_name)
         self.config.load(["-c", self.config_filename])
-    
+
     def tearDown(self):
         self.mechanism.remove_from_connection()
         super(MechanismTest, self).tearDown()
@@ -180,12 +173,12 @@ class MechanismTest(LandscapeTest):
                           "bar")
 
     def test_get_url(self):
-        self.assertEquals(self.mechanism.get_url(), 
+        self.assertEquals(self.mechanism.get_url(),
                           "https://landscape.canonical.com/message-system")
 
     def test_set_url(self):
         self.mechanism.set_url("bar")
-        self.assertEquals(self.mechanism.get_url(), 
+        self.assertEquals(self.mechanism.get_url(),
                           "bar")
 
     def test_get_ping_url(self):
@@ -205,7 +198,7 @@ class MechanismTest(LandscapeTest):
         self.mechanism.set_registration_password("bar")
         self.assertEquals(self.mechanism.get_registration_password(),
                           "bar")
-        
+
     def test_get_computer_title(self):
         self.assertEquals(self.mechanism.get_computer_title(),
                           "baz")
@@ -223,4 +216,3 @@ class MechanismTest(LandscapeTest):
         self.mechanism.set_https_proxy("bar")
         self.assertEqual(self.mechanism.get_https_proxy(),
                          "bar")
-                          

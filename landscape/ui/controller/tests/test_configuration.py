@@ -1,9 +1,7 @@
-from landscape.tests.helpers import LandscapeTest
 from landscape.ui.controller.configuration import (
     ConfigController, ConfigControllerLockError)
 from landscape.ui.model.configuration.tests.test_proxy import (
     ConfigurationProxyBaseTest)
-from landscape.configuration import LandscapeSetupConfiguration
 
 
 class ConfigControllerTest(ConfigurationProxyBaseTest):

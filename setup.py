@@ -1,20 +1,16 @@
 #!/usr/bin/python
 
-import os
-
-from distutils.core import setup, Command, Extension
-from distutils.command.install import install
+from distutils.core import setup, Extension
 
 from landscape import UPSTREAM_VERSION
 
 
-   
 setup(name="Landscape Client",
       version=UPSTREAM_VERSION,
       description="Landscape Client",
-      author ="Landscape Team",
-      author_email = "landscape-team@canonical.com",
-      url = "http://landscape.canonical.com",
+      author="Landscape Team",
+      author_email="landscape-team@canonical.com",
+      urk="http://landscape.canonical.com",
       packages=["landscape",
                 "landscape.broker",
                 "landscape.manager",

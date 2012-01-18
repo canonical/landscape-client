@@ -14,7 +14,6 @@ from landscape.ui.controller.configuration import ConfigController
 from landscape.ui.model.configuration.tests.test_proxy import (
     ConfigurationProxyBaseTest)
 from landscape.ui.view.configuration import ClientSettingsDialog
-from landscape.configuration import LandscapeSetupConfiguration
 
 
 class ConnectionRecordingSettingsApplicationController(

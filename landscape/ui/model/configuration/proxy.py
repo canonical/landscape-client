@@ -41,7 +41,10 @@ class ConfigurationProxy(object):
     def load(self, arglist):
         # if arglist is None or len(arglist) == 0:
         #     arglist = dbus.Array([], "s")
-        al = chr(0x1e).join(arglist)
+        if arglist is None or len(arglist) == 0:
+            al = ""
+        else:
+            al = chr(0x1e).join(arglist)
         self._interface.load(al)
 
     load.__doc__ = LandscapeSetupConfiguration.load.__doc__
@@ -53,58 +56,73 @@ class ConfigurationProxy(object):
     def write(self):
         self._interface.write()
     write.__doc__ = LandscapeSetupConfiguration.write.__doc__
-        
+
+    def get_config_filename(self):
+        return self._interface.get_config_filename()
+    get_config_filename.__doc__ = \
+        LandscapeSetupConfiguration.get_config_filename.__doc__
+
     def _get_account_name(self):
         return self._interface.get_account_name()
+
     def _set_account_name(self, value):
         self._interface.set_account_name(value)
     account_name = property(_get_account_name, _set_account_name)
-        
+
     def _get_computer_title(self):
         return self._interface.get_computer_title()
+
     def _set_computer_title(self, value):
         self._interface.set_computer_title(value)
     computer_title = property(_get_computer_title, _set_computer_title)
 
     def _get_data_path(self):
-        return self._interface.get_data_path()
+        data_p = self._interface.get_data_path()
+        return data_p
+
     def _set_data_path(self, value):
         self._interface.set_data_path(value)
     data_path = property(_get_data_path, _set_data_path)
 
     def _get_http_proxy(self):
         return self._interface.get_http_proxy()
+
     def _set_http_proxy(self, value):
         self._interface.set_http_proxy(value)
     http_proxy = property(_get_http_proxy, _set_http_proxy)
 
     def _get_https_proxy(self):
         return self._interface.get_https_proxy()
+
     def _set_https_proxy(self, value):
         self._interface.set_https_proxy(value)
     https_proxy = property(_get_https_proxy, _set_https_proxy)
-    
+
     def _get_ping_url(self):
         return self._interface.get_ping_url()
+
     def _set_ping_url(self, value):
         self._interface.set_ping_url(value)
     ping_url = property(_get_ping_url, _set_ping_url)
 
     def _get_registration_password(self):
         return self._interface.get_registration_password()
+
     def _set_registration_password(self, value):
         self._interface.set_registration_password(value)
     registration_password = property(_get_registration_password,
                                      _set_registration_password)
-    
+
     def _get_tags(self):
         return self._interface.get_tags()
+
     def _set_tags(self, value):
         self._interface.set_tags(value)
     tags = property(_get_tags, _set_tags)
 
     def _get_url(self):
         return self._interface.get_url()
+
     def _set_url(self, value):
         self._interface.set_url(value)
     url = property(_get_url, _set_url)

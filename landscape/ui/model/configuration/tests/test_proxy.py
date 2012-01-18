@@ -27,18 +27,18 @@ class ConfigurationProxyBaseTest(LandscapeTest):
             This just allows us to test without actually relying on dbus.
             """
             this._interface = self.mechanism
-        
+
         ConfigurationProxy._setup_interface = setup_interface
         self.proxy = ConfigurationProxy()
         self.proxy.load(["-c", self.config_filename])
 
     def tearDown(self):
         self.mechanism.remove_from_connection()
-        super(ConfigurationProxyBaseTest, self).tearDown()    
+        super(ConfigurationProxyBaseTest, self).tearDown()
 
-        
+
 class ConfigurationProxyInterfaceTest(ConfigurationProxyBaseTest):
-    """ 
+    """
     Test that we define the correct interface to a
     L{LandscapeSetupConfiguration} by really using one as the interface.
     """
@@ -66,7 +66,6 @@ class ConfigurationProxyInterfaceTest(ConfigurationProxyBaseTest):
                          LandscapeSetupConfiguration.reload.__doc__)
         self.assertEqual(self.proxy.write.__doc__,
                          LandscapeSetupConfiguration.write.__doc__)
-        
 
     def test_account_name(self):
         self.assertEqual(self.proxy.account_name, "foo")
@@ -84,7 +83,7 @@ class ConfigurationProxyInterfaceTest(ConfigurationProxyBaseTest):
         self.assertEqual(self.proxy.data_path, "bar")
 
     def test_http_proxy(self):
-        self.assertEqual(self.proxy.http_proxy, 
+        self.assertEqual(self.proxy.http_proxy,
                          "http://proxy.localdomain:3192")
         self.proxy.http_proxy = "bar"
         self.assertEqual(self.proxy.http_proxy, "bar")
@@ -117,4 +116,3 @@ class ConfigurationProxyInterfaceTest(ConfigurationProxyBaseTest):
                          "https://landscape.canonical.com/message-system")
         self.proxy.url = "bar"
         self.assertEqual(self.proxy.url, "bar")
-

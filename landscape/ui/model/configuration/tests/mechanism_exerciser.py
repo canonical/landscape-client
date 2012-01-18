@@ -18,7 +18,7 @@ from landscape.ui.model.configuration.mechanism import (
 
 
 class TestableConfigurationMechanism(ConfigurationMechanism):
-    
+
     def __init__(self, bus_name):
         super(TestableConfigurationMechanism, self).__init__(None, bus_name)
 

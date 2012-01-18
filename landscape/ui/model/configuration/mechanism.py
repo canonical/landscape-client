@@ -4,7 +4,6 @@ import dbus.glib
 import gobject
 
 
-
 SERVICE_NAME = "com.canonical.LandscapeClientSettings"
 POLICY_NAME = SERVICE_NAME + ".configure"
 INTERFACE_NAME = "com.canonical.LandscapeClientSettings.ConfigurationInterface"
@@ -14,7 +13,7 @@ OBJECT_PATH = "/com/canonical/LandscapeClientSettings/ConfigurationInterface"
 class PermissionDeniedByPolicy(dbus.DBusException):
     _dbus_error_name = \
         "com.canonical.LandscapeClientSettings.PermissionDeniedByPolicy"
-    
+
 
 class ConfigurationMechanism(dbus.service.Object):
 
@@ -31,29 +30,29 @@ class ConfigurationMechanism(dbus.service.Object):
             return (True, None, "Bypass")
         polkit = self._get_polkit()
         try:
-            subject =  ('unix-process', 
-                        {'pid': dbus.UInt32(pid, variant_level=1),
-                         'start-time': dbus.UInt64(0, variant_level=1)})
+            subject = ('unix-process',
+                       {'pid': dbus.UInt32(pid, variant_level=1),
+                        'start-time': dbus.UInt64(0, variant_level=1)})
             action_id = privilege
-            details = {} 
+            details = {"": ""}
             flags = dbus.UInt32(1)
             cancellation_id = ""
             return polkit.CheckAuthorization(
-                subject, 
-                action_id, 
+                subject,
+                action_id,
                 details,
-                flags, 
+                flags,
                 cancellation_id,
-                timeout=1)
+                timeout=600)
         except dbus.DBusException, err:
-            raise
-            # if (e._dbus_error_name == 
-            #     'org.freedesktop.DBus.Error.ServiceUnknown'):
-            #     # This occurs on timeouts, so we retry
-            #     polkit = None
-            #     return self._get_polkit_authorization(pid, privilege)
-            # else:
-            #     raise
+            # raise
+            if (err._dbus_error_name ==
+                'org.freedesktop.DBus.Error.ServiceUnknown'):
+                # This occurs on timeouts, so we retry
+                polkit = None
+                return self._get_polkit_authorization(pid, privilege)
+            else:
+                raise
 
     def _get_peer_pid(self, sender, conn):
         if self.dbus_info is None:
@@ -68,30 +67,36 @@ class ConfigurationMechanism(dbus.service.Object):
                 'org.freedesktop.PolicyKit1',
                 '/org/freedesktop/PolicyKit1/Authority', False),
                 'org.freedesktop.PolicyKit1.Authority')
-        else:
-            return self.polkit
+        return self.polkit
 
     def _is_local_call(self, sender, conn):
-        """ 
+        """
         Check if this is a local call, implying it is within a secure context.
         """
         return (sender is None and conn is None)
-        
+
     def _is_allowed_by_policy(self, sender, conn, privilege):
         if self._is_local_call(sender, conn):
             return True
         peer_pid = self._get_peer_pid(sender, conn)
-        print peer_pid
         (is_auth, _, details) = self._get_polkit_authorization(peer_pid,
                                                                privilege)
-        print is_auth, details
         if not is_auth:
             raise PermissionDeniedByPolicy(privilege)
+        return True
 
-    @dbus.service.method(INTERFACE_NAME, in_signature="s", out_signature="", sender_keyword ="sender", connection_keyword="conn")
-    def load(self, al, sender=None, conn=None):
+    @dbus.service.method(INTERFACE_NAME,
+                         in_signature="as",
+                         out_signature="",
+                         sender_keyword="sender",
+                         connection_keyword="conn")
+    def load(self, arglist, sender=None, conn=None):
         if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
-            self.config.load(al.split(chr(0x1e)))
+            # self.config.load([])
+            if len(arglist) > 0:
+                self.config.load(arglist.split(chr(0x1e)))
+            else:
+                self.config.load([])
         return
 
     @dbus.service.method(INTERFACE_NAME,
@@ -110,16 +115,20 @@ class ConfigurationMechanism(dbus.service.Object):
 
     @dbus.service.method(INTERFACE_NAME,
                          in_signature="", out_signature="s",
+                         sender_keyword="sender",
+                         connection_keyword="conn")
+    def get_config_filename(self, sender=None, conn=None):
+        if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
+            return self.config.get_config_filename()
+
+    @dbus.service.method(INTERFACE_NAME,
+                         in_signature="", out_signature="s",
                          sender_keyword="sender", connection_keyword="conn")
     def get_account_name(self, sender=None, conn=None):
-        print "1"
         if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
-            print "2"
             try:
-                print "3"
                 return self.config.account_name
             except AttributeError:
-                print "4"
                 return ""
 
     @dbus.service.method(INTERFACE_NAME,
@@ -128,7 +137,6 @@ class ConfigurationMechanism(dbus.service.Object):
     def set_account_name(self, account_name, sender=None, conn=None):
         if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
             self.config.account_name = account_name
-
 
     @dbus.service.method(INTERFACE_NAME,
                          in_signature="", out_signature="s",
@@ -146,14 +154,14 @@ class ConfigurationMechanism(dbus.service.Object):
     def set_computer_title(self, computer_title, sender=None, conn=None):
         if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
             self.config.computer_title = computer_title
-        
+
     @dbus.service.method(INTERFACE_NAME,
                          in_signature="", out_signature="s",
                          sender_keyword="sender", connection_keyword="conn")
     def get_data_path(self, sender=None, conn=None):
         if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
             try:
-                return self.config.data_path
+                return str(self.config.data_path)
             except AttributeError:
                 return ""
 
@@ -163,7 +171,7 @@ class ConfigurationMechanism(dbus.service.Object):
     def set_data_path(self, data_path, sender=None, conn=None):
         if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
             self.config.data_path = data_path
-        
+
     @dbus.service.method(INTERFACE_NAME,
                          in_signature="", out_signature="s",
                          sender_keyword="sender", connection_keyword="conn")
@@ -180,7 +188,7 @@ class ConfigurationMechanism(dbus.service.Object):
     def set_http_proxy(self, http_proxy, sender=None, conn=None):
         if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
             self.config.http_proxy = http_proxy
-        
+
     @dbus.service.method(INTERFACE_NAME,
                          in_signature="", out_signature="s",
                          sender_keyword="sender", connection_keyword="conn")
@@ -197,7 +205,7 @@ class ConfigurationMechanism(dbus.service.Object):
     def set_ping_url(self, ping_url, sender=None, conn=None):
         if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
             self.config.ping_url = ping_url
-        
+
     @dbus.service.method(INTERFACE_NAME,
                          in_signature="", out_signature="s",
                          sender_keyword="sender", connection_keyword="conn")
@@ -209,12 +217,15 @@ class ConfigurationMechanism(dbus.service.Object):
                 return ""
 
     @dbus.service.method(INTERFACE_NAME,
-                         in_signature="s", out_signature="",
-                         sender_keyword="sender", connection_keyword="conn")
-    def set_registration_password(self, registration_password, sender=None, conn=None):
+                         in_signature="s",
+                         out_signature="",
+                         sender_keyword="sender",
+                         connection_keyword="conn")
+    def set_registration_password(self, registration_password, sender=None,
+                                  conn=None):
         if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
             self.config.registration_password = registration_password
-        
+
     @dbus.service.method(INTERFACE_NAME,
                          in_signature="", out_signature="s",
                          sender_keyword="sender", connection_keyword="conn")
@@ -231,7 +242,7 @@ class ConfigurationMechanism(dbus.service.Object):
     def set_tags(self, tags, sender=None, conn=None):
         if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
             self.config.tags = tags
-        
+
     @dbus.service.method(INTERFACE_NAME,
                          in_signature="", out_signature="s",
                          sender_keyword="sender", connection_keyword="conn")
@@ -248,7 +259,7 @@ class ConfigurationMechanism(dbus.service.Object):
     def set_url(self, url, sender=None, conn=None):
         if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
             self.config.url = url
-        
+
     @dbus.service.method(INTERFACE_NAME,
                          in_signature="", out_signature="s",
                          sender_keyword="sender", connection_keyword="conn")
@@ -270,5 +281,3 @@ class ConfigurationMechanism(dbus.service.Object):
 def listen():
     mainloop = gobject.MainLoop()
     mainloop.run()
-
-
