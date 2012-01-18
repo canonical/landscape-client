@@ -503,6 +503,7 @@ class PackageReporterTestMixin(object):
         with the proper arguments.
         """
         self.reporter.sources_list_filename = "/I/Dont/Exist"
+        self.reporter.sources_list_directory = "/I/Dont/Exist"
         self.reporter.smart_update_filename = self.makeFile(
             "#!/bin/sh\necho -n $@")
         os.chmod(self.reporter.smart_update_filename, 0755)
@@ -1673,6 +1674,7 @@ class PackageReporterAptTest(LandscapeTest, PackageReporterTestMixin):
         The L{PackageReporter.run_apt_update} method should run apt-update.
         """
         self.reporter.sources_list_filename = "/I/Dont/Exist"
+        self.reporter.sources_list_directory = "/I/Dont/Exist"
         self._make_fake_apt_update()
         debug_mock = self.mocker.replace("logging.debug")
         debug_mock("'%s' exited with status 0 (out='output', err='error')" %
