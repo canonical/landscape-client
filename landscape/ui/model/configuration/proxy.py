@@ -38,8 +38,12 @@ class ConfigurationProxy(object):
         self._remote_object = self._bus.get_object(SERVICE_NAME, OBJECT_PATH)
         self._interface = dbus.Interface(self._remote_object, INTERFACE_NAME)
 
-    def load(self, args):
-        self._interface.load(args)
+    def load(self, arglist):
+        # if arglist is None or len(arglist) == 0:
+        #     arglist = dbus.Array([], "s")
+        al = chr(0x1e).join(arglist)
+        self._interface.load(al)
+
     load.__doc__ = LandscapeSetupConfiguration.load.__doc__
 
     def reload(self):
