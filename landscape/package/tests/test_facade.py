@@ -905,14 +905,13 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         foo = self.facade.get_packages_by_name("foo")[0]
         self.facade.mark_install(foo)
-        bar_10 = sorted(self.facade.get_packages_by_name("bar"))[0]
-        self.facade.mark_upgrade(bar_10)
+        self.facade.mark_global_upgrade()
         [baz] = self.facade.get_packages_by_name("baz")
         self.facade.mark_remove(baz)
         self.facade.reset_marks()
         self.assertEqual(self.facade._package_installs, [])
-        self.assertEqual(self.facade._package_upgrades, [])
         self.assertEqual(self.facade._package_removals, [])
+        self.assertFalse(self.facade._global_upgrade)
         self.assertEqual(self.facade.perform_changes(), None)
 
     def test_wb_mark_install_adds_to_list(self):
@@ -930,10 +929,10 @@ class AptFacadeTest(LandscapeTest):
         install = self.facade._package_installs[0]
         self.assertEqual("minimal", install.package.name)
 
-    def test_wb_mark_upgrade_adds_to_list(self):
+    def test_wb_mark_global_upgrade_sets_variable(self):
         """
-        C{mark_upgrade} adds the package to the list of packages to be
-        upgraded.
+        C{mark_global_upgrade} sets a variable, so that the actual
+        upgrade happens in C{perform_changes}.
         """
         deb_dir = self.makeDir()
         self._add_system_package("foo", version="1.0")
@@ -941,8 +940,9 @@ class AptFacadeTest(LandscapeTest):
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
         foo_10 = sorted(self.facade.get_packages_by_name("foo"))[0]
-        self.facade.mark_upgrade(foo_10)
-        self.assertEqual([foo_10], self.facade._package_upgrades)
+        self.facade.mark_global_upgrade()
+        self.assertTrue(self.facade._global_upgrade)
+        self.assertEqual(foo_10, foo_10.package.installed)
 
     def test_wb_mark_remove_adds_to_list(self):
         """
@@ -1062,7 +1062,27 @@ class AptFacadeTest(LandscapeTest):
              ("single-arch", "2.0")],
             sorted(changes))
 
-    def test_mark_upgrade_candidate_version(self):
+    def test_mark_global_upgrade(self):
+        """
+        C{mark_global_upgrade} upgrades all packages that can be
+        upgraded. It makes C{perform_changes} raise a C{DependencyError}
+        with the required changes, so that the user can review the
+        changes and approve them.
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package("foo", version="1.0")
+        self._add_system_package("bar")
+        self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
+        self._add_package_to_deb_dir(deb_dir, "baz")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        foo2 = sorted(self.facade.get_packages_by_name("foo"))[1]
+        self.facade.mark_global_upgrade()
+        exception = self.assertRaises(
+            DependencyError, self.facade.perform_changes)
+        self.assertEqual([foo2], exception.packages)
+
+    def test_mark_global_upgrade_candidate_version(self):
         """
         If more than one version is available, the package will be
         upgraded to the candidate version. Since the user didn't request
@@ -1077,16 +1097,16 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         foo1, foo2, foo3 = sorted(self.facade.get_packages_by_name("foo"))
         self.assertEqual(foo3, foo1.package.candidate)
-        self.facade.mark_upgrade(foo1)
+        self.facade.mark_global_upgrade()
         exception = self.assertRaises(
             DependencyError, self.facade.perform_changes)
         self.assertEqual([foo3], exception.packages)
 
-    def test_mark_upgrade_no_upgrade(self):
+    def test_mark_global_upgrade_no_upgrade(self):
         """
         If the candidate version of a package is already installed,
-        mark_upgrade() won't request an upgrade to be made. I.e.
-        perform_changes() won't do anything.
+        C{mark_global_upgrade()} won't request an upgrade to be made. I.e.
+        C{perform_changes()} won't do anything.
         """
         deb_dir = self.makeDir()
         self._add_system_package("foo", version="3.0")
@@ -1096,10 +1116,10 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         foo3 = sorted(self.facade.get_packages_by_name("foo"))[-1]
         self.assertEqual(foo3, foo3.package.candidate)
-        self.facade.mark_upgrade(foo3)
+        self.facade.mark_global_upgrade()
         self.assertEqual(None, self.facade.perform_changes())
 
-    def test_mark_upgrade_preserves_auto(self):
+    def test_mark_global_upgrade_preserves_auto(self):
         """
         Upgrading a package will retain its auto-install status.
         """
@@ -1114,8 +1134,7 @@ class AptFacadeTest(LandscapeTest):
         noauto1, noauto2 = sorted(self.facade.get_packages_by_name("noauto"))
         auto1.package.mark_auto(True)
         noauto1.package.mark_auto(False)
-        self.facade.mark_upgrade(auto1)
-        self.facade.mark_upgrade(noauto1)
+        self.facade.mark_global_upgrade()
         self.assertRaises(DependencyError, self.facade.perform_changes)
         self.assertTrue(auto2.package.is_auto_installed)
         self.assertFalse(noauto2.package.is_auto_installed)
@@ -1211,7 +1230,7 @@ class AptFacadeTest(LandscapeTest):
         error = self.assertRaises(DependencyError, self.facade.perform_changes)
         self.assertEqual([bar], error.packages)
 
-    def test_mark_upgrade_dependency_error(self):
+    def test_mark_global_upgrade_dependency_error(self):
         """
         If a package is marked for upgrade, a DependencyError will be
         raised, indicating which version of the package will be
@@ -1226,7 +1245,7 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         foo_10, foo_15 = sorted(self.facade.get_packages_by_name("foo"))
         [bar] = self.facade.get_packages_by_name("bar")
-        self.facade.mark_upgrade(foo_10)
+        self.facade.mark_global_upgrade()
         error = self.assertRaises(DependencyError, self.facade.perform_changes)
         self.assertEqual(
             sorted([bar, foo_15], key=self.version_sortkey),
@@ -1266,7 +1285,7 @@ class AptFacadeTest(LandscapeTest):
             "Can't perform the changes, since the following packages" +
             " are held: bar, foo", error.args[0])
 
-    def test_mark_upgrade_held_packages(self):
+    def test_mark_global_upgrade_held_packages(self):
         """
         If a package that is on hold is marked for upgrade,
         C{perform_changes} won't request to install a newer version of
@@ -1280,9 +1299,35 @@ class AptFacadeTest(LandscapeTest):
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
         [foo_10, foo_15] = sorted(self.facade.get_packages_by_name("foo"))
-        self.facade.mark_upgrade(foo_10)
+        self.facade.mark_global_upgrade()
         self.assertEqual(None, self.facade.perform_changes())
         self.assertEqual(foo_10, foo_15.package.installed)
+
+    def test_mark_global_upgrade_held_dependencies(self):
+        """
+        If a package that can be upgraded, but that package depends on a
+        newer version of a held package, the first package won't be
+        marked as requiring upgrade.
+        """
+        self._add_system_package(
+            "foo", version="1.0",
+            control_fields={"Status": "hold ok installed"})
+        self._add_system_package(
+            "bar", version="1.0",
+            control_fields={"Depends": "foo"})
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
+        self._add_package_to_deb_dir(
+            deb_dir, "bar", version="2.0",
+            control_fields={"Depends": "foo (>> 1.0)"})
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo_1, foo_2] = sorted(self.facade.get_packages_by_name("foo"))
+        [bar_1, bar_2] = sorted(self.facade.get_packages_by_name("bar"))
+        self.facade.mark_global_upgrade()
+        self.assertEqual(None, self.facade.perform_changes())
+        self.assertEqual(foo_1, foo_2.package.installed)
+        self.assertEqual(bar_1, bar_2.package.installed)
 
     def test_get_locked_packages_simple(self):
         """
