@@ -294,6 +294,12 @@ PACKAGE_LOCKS = Message(
      "deleted": package_locks},
     optional=["created", "deleted"])
 
+CHANGE_PACKAGE_HOLDS = Message(
+    "change-package-holds",
+    {"created": List(utf8),
+     "deleted": List(utf8)},
+    optional=["created", "deleted"])
+
 CHANGE_PACKAGES_RESULT = Message(
     "change-packages-result",
     {"operation-id": Int(),
