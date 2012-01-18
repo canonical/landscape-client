@@ -1,7 +1,7 @@
 import socket
 import threading
 
-from landscape.ui.model.registration import ObservableRegistration
+from landscape.ui.model.registration.proxy import RegistrationProxy
 
 
 class ConfigControllerLockError(Exception):
@@ -275,17 +275,12 @@ class ConfigController(object):
 
     def register(self, on_notify, on_error, on_success, on_failure, on_idle):
         "Invoke model level registration without completely locking the view."
-        on_idle()
-        registration = ObservableRegistration(on_idle)
-        on_idle()
+        registration = RegistrationProxy()
         self.commit()
-        on_idle()
-        registration.register_notification_observer(on_notify)
-        on_idle()
-        registration.register_error_observer(on_error)
-        on_idle()
-        registration.register_succeed_observer(on_success)
-        on_idle()
-        registration.register_fail_observer(on_failure)
-        on_idle()
-        registration.register(self._configuration)
+        succeed, message = registration.register(
+            self._configuration.get_config_filename())
+        if succeed:
+            on_success()
+        else:
+            on_failure()
+        

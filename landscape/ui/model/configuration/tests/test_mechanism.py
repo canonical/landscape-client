@@ -1,96 +1,9 @@
-import os
-import subprocess
-import time
-
 import dbus
 
 from landscape.configuration import LandscapeSetupConfiguration
 from landscape.tests.helpers import LandscapeTest
 from landscape.ui.model.configuration.mechanism import (
-    ConfigurationMechanism, INTERFACE_NAME, OBJECT_PATH)
-
-
-class MechanismWithoutPolicyTestCase(LandscapeTest):
-    """
-    This class contains DBus calls to test that in the absence of a PolicyKit
-    policy declaration calls are refused (even when run on the session bus with
-    the same user).
-    """
-
-    def setUp(self):
-        super(MechanismWithoutPolicyTestCase, self).setUp()
-        self._exerciser_file = os.path.join(os.path.dirname(__file__),
-                                            'mechanism_exerciser.py')
-        env = os.environ.copy()
-        self.p = subprocess.Popen(["dbus-launch",
-                                   "--exit-with-session",
-                                   self._exerciser_file], env=env)
-        # Wait for the service to become available
-        time.sleep(1)
-
-    def test_accessing_interface_fails(self):
-        """
-        Test that accessing fails outside of a secure context.
-        """
-        bus = dbus.SessionBus()
-        service = bus.get_object(INTERFACE_NAME, OBJECT_PATH)
-        get_account_name = service.get_dbus_method(
-            'get_account_name', INTERFACE_NAME)
-        set_account_name = service.get_dbus_method(
-            'set_account_name', INTERFACE_NAME)
-        get_computer_title = service.get_dbus_method(
-            'get_computer_title', INTERFACE_NAME)
-        set_computer_title = service.get_dbus_method(
-            'set_computer_title', INTERFACE_NAME)
-        get_data_path = service.get_dbus_method(
-            'get_data_path', INTERFACE_NAME)
-        set_data_path = service.get_dbus_method(
-            'set_data_path', INTERFACE_NAME)
-        get_http_proxy = service.get_dbus_method(
-            'get_http_proxy', INTERFACE_NAME)
-        set_http_proxy = service.get_dbus_method(
-            'set_http_proxy', INTERFACE_NAME)
-        get_https_proxy = service.get_dbus_method(
-            'get_https_proxy', INTERFACE_NAME)
-        set_https_proxy = service.get_dbus_method(
-            'set_https_proxy', INTERFACE_NAME)
-        get_ping_url = service.get_dbus_method(
-            'get_ping_url', INTERFACE_NAME)
-        set_ping_url = service.get_dbus_method(
-            'set_ping_url', INTERFACE_NAME)
-        get_registration_password = service.get_dbus_method(
-            'get_registration_password', INTERFACE_NAME)
-        set_registration_password = service.get_dbus_method(
-            'set_registration_password', INTERFACE_NAME)
-        get_tags = service.get_dbus_method(
-            'get_tags', INTERFACE_NAME)
-        set_tags = service.get_dbus_method(
-            'set_tags', INTERFACE_NAME)
-        get_url = service.get_dbus_method(
-            'get_url', INTERFACE_NAME)
-        set_url = service.get_dbus_method(
-            'set_url', INTERFACE_NAME)
-        self.assertRaises(dbus.DBusException, get_account_name)
-        self.assertRaises(dbus.DBusException, set_account_name, "foo")
-        self.assertRaises(dbus.DBusException, get_computer_title)
-        self.assertRaises(dbus.DBusException, set_computer_title, "foo")
-        self.assertRaises(dbus.DBusException, get_data_path)
-        self.assertRaises(dbus.DBusException, set_data_path, "foo")
-        self.assertRaises(dbus.DBusException, get_http_proxy)
-        self.assertRaises(dbus.DBusException, set_http_proxy, "foo")
-        self.assertRaises(dbus.DBusException, get_https_proxy)
-        self.assertRaises(dbus.DBusException, set_https_proxy, "foo")
-        self.assertRaises(dbus.DBusException, get_ping_url)
-        self.assertRaises(dbus.DBusException, set_ping_url, "foo")
-        self.assertRaises(dbus.DBusException, get_registration_password)
-        self.assertRaises(dbus.DBusException, set_registration_password, "foo")
-        self.assertRaises(dbus.DBusException, get_tags)
-        self.assertRaises(dbus.DBusException, set_tags, "foo")
-        self.assertRaises(dbus.DBusException, get_url)
-        self.assertRaises(dbus.DBusException, set_url, "foo")
-
-    def tearDown(self):
-        os.kill(self.p.pid, 15)
+    ConfigurationMechanism, INTERFACE_NAME)
 
 
 class MechanismTest(LandscapeTest):

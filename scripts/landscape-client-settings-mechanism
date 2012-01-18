@@ -4,7 +4,8 @@ import dbus
 
 from landscape.configuration import LandscapeSetupConfiguration
 from landscape.ui.model.configuration.mechanism import (
-    ConfigurationMechanism, INTERFACE_NAME, SERVICE_NAME, listen)
+    ConfigurationMechanism, INTERFACE_NAME, SERVICE_NAME)
+from landscape.ui.lib.polkit import listen
 
 
 if __name__ == "__main__":
