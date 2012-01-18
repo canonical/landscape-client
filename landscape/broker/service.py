@@ -54,8 +54,8 @@ class BrokerService(LandscapeService):
         else:
             self.payload_recorder = None
 
-        if config.srv_autodiscover:
-            domain = self._lookup_srv_record()
+        if config.server_autodiscover:
+            domain = self._lookup_server_record()
             config.url = "https://%s/message-system" % domain
             config.ping_url = "http://%s/ping" % domain
         self.transport = self.transport_factory(
@@ -78,7 +78,7 @@ class BrokerService(LandscapeService):
                                    self.registration, self.message_store)
         self.factory = BrokerServerProtocolFactory(object=self.broker)
 
-    def _lookup_srv_record(self):
+    def _lookup_server_record(self):
         p = subprocess.Popen(["python", "../lookup_srv_record.py"],
                              stdout=subprocess.PIPE)
         p.wait()
