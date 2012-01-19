@@ -31,12 +31,3 @@ class MechanismTest(LandscapeTest):
         mechanism = RegistrationMechanism(self.bus_name)
         self.assertEqual(mechanism.register("foo"),
                          (False, "Failed to connect [code 1]\n"))
-
-    def test_poll(self):
-        mechanism = RegistrationMechanism(self.bus_name)
-        mechanism.error_list.append("Broke it")
-        mechanism.message_list.append("Fixed it")
-        self.assertEqual(mechanism.poll(), {"error": ["", "Broke it"],
-                                            "message": ["", "Fixed it"]})
-        self.assertEqual(mechanism.poll(), {"error": [""],
-                                            "message": [""]})

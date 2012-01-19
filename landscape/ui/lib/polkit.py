@@ -6,7 +6,7 @@ import gobject
 
 class PolicyKitMechanism(dbus.service.Object):
 
-    def __init__(self, object_path, bus_name, permission_error, 
+    def __init__(self, object_path, bus_name, permission_error,
                  bypass=False, conn=None):
         super(PolicyKitMechanism, self).__init__(
             conn, object_path, bus_name)

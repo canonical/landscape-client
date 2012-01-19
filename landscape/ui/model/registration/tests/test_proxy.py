@@ -6,17 +6,16 @@ from landscape.ui.model.registration.mechanism import (
 from landscape.ui.model.registration.proxy import RegistrationProxy
 
 
-
 class RegistrationProxyTest(LandscapeTest):
 
     def setUp(self):
         super(RegistrationProxyTest, self).setUp()
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-        bus = dbus.SessionBus()
+        bus = dbus.SessionBus(True)
         bus_name = dbus.service.BusName(INTERFACE_NAME, bus)
 
         def _do_registration(this, config_path):
-                return 0
+            return 0
 
         RegistrationMechanism._do_registration = _do_registration
         self.mechanism = RegistrationMechanism(bus_name)
@@ -27,22 +26,24 @@ class RegistrationProxyTest(LandscapeTest):
             """
             this._interface = self.mechanism
 
+        def register_handlers(this):
+            pass
+
+        def remove_handlers(this):
+            pass
+
+        def callback(message):
+            pass
+
         RegistrationProxy._setup_interface = setup_interface
-        self.proxy = RegistrationProxy()
+        RegistrationProxy._register_handlers = register_handlers
+        RegistrationProxy._remove_handlers = remove_handlers
+        self.proxy = RegistrationProxy(callback, callback, callback, callback)
 
     def tearDown(self):
         self.mechanism.remove_from_connection()
         super(RegistrationProxyTest, self).tearDown()
 
     def test_register(self):
-        self.assertEquals(self.proxy.register("foo"), (True, "Connected\n"))
-
-    def test_poll(self):
-        self.mechanism.error_list.append("Broke it")
-        self.mechanism.message_list.append("Fixed it")
-        self.assertEqual(self.proxy.poll(), {"error": ["", "Broke it"],
-                                             "message": ["", "Fixed it"]})
-        self.assertEqual(self.proxy.poll(), {"error": [""],
-                                             "message": [""]})
-
-    
+        return self.assertEquals(self.proxy.register("foo"),
+                                 (True, "Connected\n"))

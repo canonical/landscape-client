@@ -1,7 +1,5 @@
 import socket
 import threading
-import time
-
 from landscape.ui.model.registration.proxy import RegistrationProxy
 
 
@@ -279,7 +277,6 @@ class ConfigController(object):
         "Invoke model level registration without completely locking the view."
 
         def succeed_handler(result):
-            print "Succeed"
             self.stop = True
             succeed, message = result
             if succeed:
@@ -288,25 +285,19 @@ class ConfigController(object):
                 on_failure(message)
 
         def failure_handler(result):
-            print "Fail"
             self.stop = True
             on_failure(result)
 
-        print "Make registration Proxy"
-        registration = RegistrationProxy(on_notify, on_error, 
+        registration = RegistrationProxy(on_notify, on_error,
                                          on_success, on_failure)
-        print "commit config"
         self.commit()
         self.stop = False
 
-        print "Challenge"
         if registration.challenge():
-            print "Start registration"
-            registration.start_registration(
+            registration.register(
                 self._configuration.get_config_filename(),
                 reply_handler=succeed_handler,
                 error_handler=failure_handler)
         else:
-            on_failure("Sorry, you do not have permission to connect the client.")
-
-        
+            on_failure(
+                "Sorry, you do not have permission to connect the client.")
