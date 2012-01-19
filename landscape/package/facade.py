@@ -1,5 +1,6 @@
 import hashlib
 import os
+import subprocess
 import tempfile
 from cStringIO import StringIO
 
@@ -167,27 +168,29 @@ class AptFacade(object):
         """Return the name of all the packages that are on hold."""
         return [version.package.name for version in self.get_locked_packages()]
 
+    def _set_dpkg_selections(self, selection):
+        """Set the dpkg selection.
+
+        It basically does "echo $selection | dpkg --set-selections".
+        """
+        process = subprocess.Popen(
+            ["dpkg", "--set-selections"] + self._dpkg_args,
+            stdin=subprocess.PIPE)
+        process.communicate(selection + "\n")
+
     def set_package_hold(self, name):
         """Add a dpkg hold for a package.
 
         @param name: The name of the package to hold.
         """
-        import subprocess
-        process = subprocess.Popen(
-            ["dpkg", "--set-selections"] + self._dpkg_args,
-            stdin=subprocess.PIPE)
-        process.communicate(name + " hold\n")
+        self._set_dpkg_selections(name + " hold")
 
     def remove_package_hold(self, name):
         """Removes a dpkg hold for a package.
 
         @param name: The name of the package to unhold.
         """
-        import subprocess
-        process = subprocess.Popen(
-            ["dpkg", "--set-selections"] + self._dpkg_args,
-            stdin=subprocess.PIPE)
-        process.communicate(name + " install\n")
+        self._set_dpkg_selections(name + " install")
 
     def reload_channels(self):
         """Reload the channels and update the cache."""
