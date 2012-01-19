@@ -1,17 +1,19 @@
 import sys
 
 try:
-    from gi.repository import Gtk
+    from gi.repository import Gtk, Gdk
     got_gobject_introspection = True
-except ImportError:
+except (ImportError, RuntimeError):
     got_gobject_introspection = False
     gobject_skip_message = "GObject Introspection module unavailable"
+    SettingsApplicationController = object
+else:
+    from landscape.ui.controller.app import SettingsApplicationController
+    from landscape.ui.controller.configuration import ConfigController
+    from landscape.ui.view.configuration import ClientSettingsDialog
 
 
 from landscape.tests.helpers import LandscapeTest
-from landscape.ui.controller.app import SettingsApplicationController
-from landscape.ui.controller.configuration import ConfigController
-from landscape.ui.view.configuration import ClientSettingsDialog
 from landscape.configuration import LandscapeSetupConfiguration
 
 
