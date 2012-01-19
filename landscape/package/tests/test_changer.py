@@ -24,7 +24,7 @@ from landscape.tests.helpers import (
 from landscape.package.tests.helpers import (
     SmartFacadeHelper, HASH1, HASH2, HASH3, PKGDEB1, PKGDEB2, PKGNAME2,
     AptFacadeHelper, SimpleRepositoryHelper)
-from landscape.manager.manager import SUCCEEDED
+from landscape.manager.manager import FAILED, SUCCEEDED
 
 
 class PackageChangerTestMixin(object):
@@ -1156,6 +1156,40 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
                                   "result-text": "Package holds successfully"
                                                  " changed.",
                                   "result-code": 0}])
+
+        result = self.changer.handle_tasks()
+        return result.addCallback(assert_result)
+
+    def test_change_package_holds_create_not_installed(self):
+        """
+        If the C{change-package-holds} message requests to add holds for
+        packages that aren't installed, the whole activity is failed. If
+        multiple holds are specified, those won't be added. There's no
+        difference between a package that is available in some
+        repository and a package that the facade doesn't know about at
+        all.
+        """
+        self._add_system_package("foo")
+        self._add_package_to_deb_dir(self.repository_dir, "bar")
+        self.facade.reload_channels()
+        self.store.add_task("changer", {"type": "change-package-holds",
+                                        "create": ["foo", "bar", "baz"],
+                                        "operation-id": 123})
+
+        def assert_result(result):
+            self.facade.reload_channels()
+            self.assertEqual([], self.facade.get_package_holds())
+            self.assertIn("Queuing message with change package holds results "
+                          "to exchange urgently.", self.logfile.getvalue())
+            self.assertMessages(
+                self.get_pending_messages(),
+                [{"type": "operation-result",
+                  "operation-id": 123,
+                  "status": FAILED,
+                  "result-text": "Package holds not added, since the "
+                                  "following packages are not installed: "
+                                  "bar, baz",
+                  "result-code": 1}])
 
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)

@@ -18,7 +18,7 @@ from landscape.package.reporter import find_reporter_command
 from landscape.package.taskhandler import (
     PackageTaskHandler, PackageTaskHandlerConfiguration, PackageTaskError,
     run_task_handler)
-from landscape.manager.manager import SUCCEEDED
+from landscape.manager.manager import FAILED, SUCCEEDED
 
 
 class UnknownPackageData(Exception):
@@ -303,19 +303,34 @@ class PackageChanger(PackageTaskHandler):
 
         Create and delete package holds as requested by the given C{message}.
         """
+        not_installed = set()
+        holds_to_create = message.get("create", [])
+        for name in holds_to_create:
+            versions = self._facade.get_packages_by_name(name)
+            if not versions or not versions[0].package.installed:
+                not_installed.add(name)
+        if not_installed:
+            response = {
+                "type": "operation-result",
+                "operation-id": message.get("operation-id"),
+                "status": FAILED,
+                "result-text": "Package holds not added, since the following" +
+                               " packages are not installed: %s" % (
+                                   ", ".join(sorted(not_installed))),
+                "result-code": 1}
+        else:
+            for hold in holds_to_create:
+                self._facade.set_package_hold(hold)
+            self._facade.reload_channels()
+            for hold in message.get("delete", ()):
+                self._facade.remove_package_hold(hold)
+            self._facade.reload_channels()
 
-        for hold in message.get("create", ()):
-            self._facade.set_package_hold(hold)
-        self._facade.reload_channels()
-        for hold in message.get("delete", ()):
-            self._facade.remove_package_hold(hold)
-        self._facade.reload_channels()
-
-        response = {"type": "operation-result",
-                    "operation-id": message.get("operation-id"),
-                    "status": SUCCEEDED,
-                    "result-text": "Package holds successfully changed.",
-                    "result-code": 0}
+            response = {"type": "operation-result",
+                        "operation-id": message.get("operation-id"),
+                        "status": SUCCEEDED,
+                        "result-text": "Package holds successfully changed.",
+                        "result-code": 0}
 
         logging.info("Queuing message with change package holds results to "
                      "exchange urgently.")
