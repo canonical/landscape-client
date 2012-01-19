@@ -5,6 +5,7 @@ import logging
 import pprint
 
 import pycurl
+from twisted.internet.threads import blockingCallFromThread
 
 from landscape.lib.fetch import fetch
 from landscape.lib.fs import create_file
@@ -22,10 +23,13 @@ class HTTPTransport(object):
         with the server.  If C{None}, exchanges will not be recorded.
     """
 
-    def __init__(self, url, pubkey=None, payload_recorder=None):
+    def __init__(self, reactor, url, pubkey=None, payload_recorder=None,
+                 server_autodiscover=False):
+        self._reactor = reactor
         self._url = url
         self._pubkey = pubkey
         self._payload_recorder = payload_recorder
+        self._server_autodiscover = server_autodiscover
 
     def get_url(self):
         """Get the URL of the remote message system."""
@@ -36,6 +40,17 @@ class HTTPTransport(object):
         self._url = url
 
     def _curl(self, payload, computer_id, message_api):
+        from landscape.broker.service import BrokerService
+        if self._server_autodiscover:
+            result = blockingCallFromThread(
+                self._reactor, BrokerService._lookup_server_record)
+            if result is not None:
+                self._url = "https://%s/message-system" % result
+            else:
+                import sys
+                sys.stderr.write("Autodiscovery failed.  Reverting to "
+                                 "previous settings.\n")
+
         headers = {"X-Message-API": message_api,
                    "User-Agent": "landscape-client/%s" % VERSION,
                    "Content-Type": "application/octet-stream"}
@@ -152,7 +167,8 @@ class PayloadRecorder(object):
 class FakeTransport(object):
     """Fake transport for testing purposes."""
 
-    def __init__(self, url=None, pubkey=None, payload_recorder=None):
+    def __init__(self, reactor=None, url=None, pubkey=None,
+                 payload_recorder=None, server_autodiscover=False):
         self._pubkey = pubkey
         self._payload_recorder = payload_recorder
         self.payloads = []
@@ -163,6 +179,8 @@ class FakeTransport(object):
         self.message_api = None
         self.extra = {}
         self._url = url
+        self._reactor = reactor
+        self._server_autodiscover = server_autodiscover
 
     def get_url(self):
         return self._url

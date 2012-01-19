@@ -75,7 +75,7 @@ class ExchangeHelper(BrokerConfigurationHelper):
         test_case.mstore = get_default_message_store(
             test_case.persist, test_case.config.message_store_path)
         test_case.identity = Identity(test_case.config, test_case.persist)
-        test_case.transport = FakeTransport(test_case.config.url,
+        test_case.transport = FakeTransport(None, test_case.config.url,
                                             test_case.config.ssl_public_key)
         test_case.reactor = FakeReactor()
         test_case.exchange_store = ExchangeStore(

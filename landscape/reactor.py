@@ -297,7 +297,7 @@ class TwistedReactor(EventHandlingReactorMixin,
         self._LoopingCall = LoopingCall
         self._reactor = reactor
         self._cleanup()
-
+        self.callFromThread = reactor.callFromThread
         super(TwistedReactor, self).__init__()
 
     def _cleanup(self):

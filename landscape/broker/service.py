@@ -2,6 +2,8 @@
 
 import os
 import subprocess
+from twisted.names import dns
+from twisted.names.client import lookupService, getHostByName
 from landscape.lib.fetch import fetch_async
 from landscape.service import LandscapeService, run_landscape_service
 from landscape.broker.registration import RegistrationHandler, Identity
@@ -54,12 +56,9 @@ class BrokerService(LandscapeService):
         else:
             self.payload_recorder = None
 
-        if config.server_autodiscover:
-            domain = self._lookup_server_record()
-            config.url = "https://%s/message-system" % domain
-            config.ping_url = "http://%s/ping" % domain
         self.transport = self.transport_factory(
-            config.url, config.ssl_public_key, self.payload_recorder)
+            self.reactor, config.url, config.ssl_public_key,
+            self.payload_recorder, config.server_autodiscover)
         self.message_store = get_default_message_store(
             self.persist, config.message_store_path)
         self.identity = Identity(self.config, self.persist)
@@ -78,11 +77,48 @@ class BrokerService(LandscapeService):
                                    self.registration, self.message_store)
         self.factory = BrokerServerProtocolFactory(object=self.broker)
 
-    def _lookup_server_record(self):
-        p = subprocess.Popen(["python", "../lookup_srv_record.py"],
-                             stdout=subprocess.PIPE)
-        p.wait()
-        return p.stdout.read().strip()
+    @classmethod
+    def _lookup_server_record(cls):
+        service_name = "_landscape._tcp.mylandscapehost.com"
+        def lookup_done(result):
+            name = ""
+            for item in result:
+                for row in item:
+                    if row.type == dns.SRV:
+                        name = row.payload.target
+                        break
+                    elif row.type == dns.A:
+                        pass
+                    else:
+                        pass
+            return name
+
+        def lookup_failed(result):
+            import sys
+            sys.stderr.write("SRV lookup of '%s' failed.\n" % service_name)
+            return result
+
+        d = lookupService(service_name)
+        d.addCallback(lookup_done)
+        d.addErrback(lookup_failed)
+        d.addErrback(cls._lookup_hostname)
+        return d
+
+    @classmethod
+    def _lookup_hostname(cls, result):
+        hostname = "landscape.localdomain"
+        def lookup_done(result):
+            return result
+
+        def lookup_failed(result):
+            import sys
+            sys.stderr.write("Name lookup of %s failed.\n" % hostname)
+            return None
+
+        d = getHostByName(hostname)
+        d.addCallback(lookup_done)
+        d.addErrback(lookup_failed)
+        return d
 
     def _exit(self):
         # Our reactor calls the Twisted reactor's crash() method rather

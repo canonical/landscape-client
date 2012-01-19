@@ -22,13 +22,15 @@ class PingClient(object):
     @param identity: This client's identity.
     """
 
-    def __init__(self, reactor, url, identity, get_page=None):
+    def __init__(self, reactor, url, identity, get_page=None,
+                 server_autodiscover=False):
         if get_page is None:
             get_page = fetch
         self._reactor = reactor
         self._identity = identity
         self.get_page = get_page
         self.url = url
+        self._server_autodiscover = server_autodiscover
 
     def ping(self):
         """Ask the question.
@@ -39,20 +41,35 @@ class PingClient(object):
         @return: A deferred resulting in True if there are messages
             and False otherwise.
         """
-        insecure_id = self._identity.insecure_id
-        if insecure_id is not None:
-            headers = {"Content-Type": "application/x-www-form-urlencoded"}
-            data = urllib.urlencode({"insecure_id": insecure_id})
-            page_deferred = defer.Deferred()
+        def do_rest(result):
+            if result is not None:
+                self._url = "https://%s/ping" % result
+            else:
+                import sys
+                sys.stderr.write("Autodiscovery failed.  Reverting to "
+                                 "previous settings.\n")
 
-            def errback(type, value, tb):
-                page_deferred.errback(Failure(value, type, tb))
-            self._reactor.call_in_thread(page_deferred.callback, errback,
-                                         self.get_page, self.url, post=True,
-                                         data=data, headers=headers)
-            page_deferred.addCallback(self._got_result)
-            return page_deferred
-        return defer.succeed(False)
+            insecure_id = self._identity.insecure_id
+            if insecure_id is not None:
+                headers = {"Content-Type": "application/x-www-form-urlencoded"}
+                data = urllib.urlencode({"insecure_id": insecure_id})
+                page_deferred = defer.Deferred()
+
+                def errback(type, value, tb):
+                    page_deferred.errback(Failure(value, type, tb))
+                self._reactor.call_in_thread(page_deferred.callback, errback,
+                                             self.get_page, self.url, post=True,
+                                             data=data, headers=headers)
+                page_deferred.addCallback(self._got_result)
+                return page_deferred
+            return defer.succeed(False)
+
+        if self._server_autodiscover:
+            lookup_deferred = BrokerService._lookup_server_record()
+            lookup_deferred.addCallback(do_rest)
+            return lookup_deferred
+        else:
+            return do_rest(None)
 
     def _got_result(self, webtext):
         """
