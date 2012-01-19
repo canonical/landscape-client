@@ -1420,6 +1420,19 @@ class AptFacadeTest(LandscapeTest):
 
         self.assertEqual(["foo"], self.facade.get_package_holds())
 
+    def test_set_package_hold_existing_hold(self):
+        """
+        If a package is already hel, C{set_package_hold} doesn't return
+        an error.
+        """
+        self._add_system_package(
+            "foo", control_fields={"Status": "hold ok installed"})
+        self.facade.reload_channels()
+        self.facade.set_package_hold("foo")
+        self.facade.reload_channels()
+
+        self.assertEqual(["foo"], self.facade.get_package_holds())
+
     if not hasattr(Package, "shortname"):
         # The 'shortname' attribute was added when multi-arch support
         # was added to python-apt. So if it's not there, it means that
