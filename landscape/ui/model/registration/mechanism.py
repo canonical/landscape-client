@@ -21,6 +21,11 @@ class PermissionDeniedByPolicy(dbus.DBusException):
         "com.canonical.LandscapeClientRegistration.PermissionDeniedByPolicy"
 
 
+class RegistrationError(dbus.DBusException):
+    _dbus_error_name = \
+        "com.canonical.LandscapeClientRegistration.RegistrationError"
+
+
 class RegistrationMechanism(PolicyKitMechanism):
 
     def __init__(self, bus_name, bypass=False, conn=None):
@@ -28,11 +33,11 @@ class RegistrationMechanism(PolicyKitMechanism):
             OBJECT_PATH, bus_name, PermissionDeniedByPolicy,
             bypass=bypass, conn=conn)
         self.process = None
-        self.message_list = []
-        self.error_list = []
+        self.message_queue = []
+        self.error_queue = []
 
-    def _do_regisration(self, config_path):
-        self.message_list.append("Trying to register ...\n")
+    def _do_registration(self, config_path):
+        self.register_notify("Trying to register ...\n")
         cmd = ["landscape-config", "--silent", "-c",
                os.path.abspath(config_path)]
         self.process = subprocess.Popen(cmd, 
@@ -45,38 +50,64 @@ class RegistrationMechanism(PolicyKitMechanism):
             for readable in readables:
                 message = readable.readline()
                 if readable is self.process.stdout:
-                    self.message_list.append(message)
+                    self.register_notify(message)
                 else:
-                    self.error_list.append(message)
+                    self.register_error(message)
             return_code = self.process.poll()
-        return return_code
+        return return_code    
+        
+
+    @dbus.service.signal(dbus_interface=INTERFACE_NAME,
+                         signature='s')
+    def register_notify(self, message):
+        print message
+
+    @dbus.service.signal(dbus_interface=INTERFACE_NAME,
+                         signature='s')
+    def register_error(self, message):
+        print message
+
+    @dbus.service.signal(dbus_interface=INTERFACE_NAME,
+                         signature='s')
+    def register_succeed(self, message):
+        print message
+
+    @dbus.service.signal(dbus_interface=INTERFACE_NAME,
+                         signature='s')
+    def register_fail(self, message):
+        print message
+
+    @dbus.service.method(INTERFACE_NAME,
+                         in_signature="",
+                         out_signature="b",
+                         sender_keyword="sender",
+                         connection_keyword="conn")
+    def challenge(self, sender=None, conn=None):
+        """
+        Safely check if we can escalate permissions.
+        """
+        try:
+            return self._is_allowed_by_policy(sender, conn, POLICY_NAME)
+        except PermissionDeniedByPolicy:
+            return False
 
     @dbus.service.method(INTERFACE_NAME,
                          in_signature="s",
-                         out_signature="bs",
+                         out_signature="(bs)",
                          sender_keyword="sender",
                          connection_keyword="conn")
     def register(self, config_path, sender=None, conn=None):
         if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
             return_code = self._do_registration(config_path)
             if return_code == 0:
-                return True, "Connected\n"
+                message = "Connected\n"
+                self.register_succeed(message)
+                return (True, message)
             else:
-                return (False, 
-                        "Failed to connect [code %s]\n" % str(return_code))
+                message = "Failed to connect [code %s]\n" % str(return_code)
+                self.register_fail(message)
+                return (False, message)
 
-    @dbus.service.method(INTERFACE_NAME,
-                         in_signature="",
-                         out_signature="{sas}",
-                         sender_keyword="sender",
-                         connection_keyword="conn")
-    def poll(self, sender=None, conn=None):
-        messages = {"error":[""], "message":[""]}
-        while len(self.message_list) > 0:
-            messages["message"].append(self.message_list.pop())
-        while len(self.error_list) > 0:
-            messages["error"].append(self.error_list.pop())
-        return messages
  
             
 
@@ -110,22 +141,22 @@ class RegistrationMechanism(PolicyKitMechanism):
 #             function(message, error)
 #             self.do_idle()
 
-#     def error_observers(self, error_list):
+#     def error_observers(self, error_queue):
 #         for function in self._error_observers:
-#             function(error_list)
+#             function(error_queue)
 #             self.do_idle()
 
 #     def register_notification_observer(self, function):
-#         self._notification_observers.append(function)
+#         self._notification_observers.put(function)
 
 #     def register_error_observer(self, function):
-#         self._error_observers.append(function)
+#         self._error_observers.put(function)
 
 #     def register_succeed_observer(self, function):
-#         self._succeed_observers.append(function)
+#         self._succeed_observers.put(function)
 
 #     def register_fail_observer(self, function):
-#         self._fail_observers.append(function)
+#         self._fail_observers.put(function)
 
 #     def succeed(self):
 #         for function in self._succeed_observers:
