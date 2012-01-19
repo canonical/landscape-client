@@ -103,6 +103,8 @@ class PackageChanger(PackageTaskHandler):
             return result.addErrback(self.unknown_package_data_error, task)
         if message["type"] == "change-package-locks":
             return self.handle_change_package_locks(message)
+        if message["type"] == "change-package-holds":
+            return self.handle_change_package_holds(message)
 
     def unknown_package_data_error(self, failure, task):
         """Handle L{UnknownPackageData} data errors.
@@ -293,6 +295,29 @@ class PackageChanger(PackageTaskHandler):
                     "result-code": 0}
 
         logging.info("Queuing message with change package locks results to "
+                     "exchange urgently.")
+        return self._broker.send_message(response, True)
+
+    def handle_change_package_holds(self, message):
+        """Handle a C{change-package-holds} message.
+
+        Create and delete package holds as requested by the given C{message}.
+        """
+
+        for hold in message.get("create", ()):
+            self._facade.set_package_hold(hold)
+        self._facade.reload_channels()
+        for hold in message.get("delete", ()):
+            self._facade.remove_package_hold(hold)
+        self._facade.reload_channels()
+
+        response = {"type": "operation-result",
+                    "operation-id": message.get("operation-id"),
+                    "status": SUCCEEDED,
+                    "result-text": "Package holds successfully changed.",
+                    "result-code": 0}
+
+        logging.info("Queuing message with change package holds results to "
                      "exchange urgently.")
         return self._broker.send_message(response, True)
 

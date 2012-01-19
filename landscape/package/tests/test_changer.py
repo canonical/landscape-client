@@ -1129,3 +1129,33 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
     def get_package_name(self, version):
         """Return the name of the package."""
         return version.package.name
+
+    def test_change_package_holds(self):
+        """
+        The L{PackageChanger.handle_tasks} method appropriately creates and
+        deletes package holds as requested by the C{change-package-holds}
+        message.
+        """
+        self._add_system_package("foo")
+        self._add_system_package("bar")
+        self.facade.set_package_hold("bar")
+        self.facade.reload_channels()
+        self.store.add_task("changer", {"type": "change-package-holds",
+                                        "create": ["foo"],
+                                        "delete": ["bar"],
+                                        "operation-id": 123})
+
+        def assert_result(result):
+            self.assertEqual(["foo"], self.facade.get_package_holds())
+            self.assertIn("Queuing message with change package holds results "
+                          "to exchange urgently.", self.logfile.getvalue())
+            self.assertMessages(self.get_pending_messages(),
+                                [{"type": "operation-result",
+                                  "operation-id": 123,
+                                  "status": SUCCEEDED,
+                                  "result-text": "Package holds successfully"
+                                                 " changed.",
+                                  "result-code": 0}])
+
+        result = self.changer.handle_tasks()
+        return result.addCallback(assert_result)
