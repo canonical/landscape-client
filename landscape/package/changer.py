@@ -317,6 +317,7 @@ class PackageChanger(PackageTaskHandler):
                 "result-text": "This client doesn't support package holds.",
                 "result-code": 1}
             return self._send_change_package_holds_response(response)
+
         not_installed = set()
         holds_to_create = message.get("create", [])
         for name in holds_to_create:
@@ -332,19 +333,20 @@ class PackageChanger(PackageTaskHandler):
                                " packages are not installed: %s" % (
                                    ", ".join(sorted(not_installed))),
                 "result-code": 1}
-        else:
-            for hold in holds_to_create:
-                self._facade.set_package_hold(hold)
-            self._facade.reload_channels()
-            for hold in message.get("delete", []):
-                self._facade.remove_package_hold(hold)
-            self._facade.reload_channels()
+            return self._send_change_package_holds_response(response)
 
-            response = {"type": "operation-result",
-                        "operation-id": message.get("operation-id"),
-                        "status": SUCCEEDED,
-                        "result-text": "Package holds successfully changed.",
-                        "result-code": 0}
+        for hold in holds_to_create:
+            self._facade.set_package_hold(hold)
+        self._facade.reload_channels()
+        for hold in message.get("delete", []):
+            self._facade.remove_package_hold(hold)
+        self._facade.reload_channels()
+
+        response = {"type": "operation-result",
+                    "operation-id": message.get("operation-id"),
+                    "status": SUCCEEDED,
+                    "result-text": "Package holds successfully changed.",
+                    "result-code": 0}
 
         return self._send_change_package_holds_response(response)
 
