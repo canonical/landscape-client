@@ -1037,6 +1037,32 @@ class SmartPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
             self.assertIn("(2)", text)
         return result.addCallback(got_result)
 
+    def test_change_package_holds(self):
+        """
+        If C{SmartFacade} is used, the L{PackageChanger.handle_tasks}
+        method fails the activity, since it can't add or remove dpkg holds.
+        """
+        self.facade.reload_channels()
+        self.store.add_task("changer", {"type": "change-package-holds",
+                                        "create": ["name1"],
+                                        "delete": ["name2"],
+                                        "operation-id": 123})
+
+        def assert_result(result):
+            self.assertIn("Queuing message with change package holds results "
+                          "to exchange urgently.", self.logfile.getvalue())
+            self.assertMessages(
+                self.get_pending_messages(),
+                [{"type": "operation-result",
+                  "operation-id": 123,
+                  "status": FAILED,
+                  "result-text": "This client doesn't support package holds.",
+                  "result-code": 1}])
+
+        result = self.changer.handle_tasks()
+        return result.addCallback(assert_result)
+
+
 
 class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
 

@@ -80,6 +80,8 @@ class AptFacade(object):
         database.
     """
 
+    supports_package_holds = True
+
     def __init__(self, root=None):
         self._root = root
         self._dpkg_args = []
@@ -507,6 +509,7 @@ class SmartFacade(object):
     """
 
     _deb_package_type = None
+    supports_package_holds = False
 
     def __init__(self, smart_init_kwargs={}, sysconf_args=None):
         self._smart_init_kwargs = smart_init_kwargs.copy()

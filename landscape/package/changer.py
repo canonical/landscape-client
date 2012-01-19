@@ -298,11 +298,25 @@ class PackageChanger(PackageTaskHandler):
                      "exchange urgently.")
         return self._broker.send_message(response, True)
 
+    def _send_change_package_holds_response(self, response):
+        """Log that a package holds result is sent and sent the response."""
+        logging.info("Queuing message with change package holds results to "
+                     "exchange urgently.")
+        return self._broker.send_message(response, True)
+
     def handle_change_package_holds(self, message):
         """Handle a C{change-package-holds} message.
 
         Create and delete package holds as requested by the given C{message}.
         """
+        if not self._facade.supports_package_holds:
+            response = {
+                "type": "operation-result",
+                "operation-id": message.get("operation-id"),
+                "status": FAILED,
+                "result-text": "This client doesn't support package holds.",
+                "result-code": 1}
+            return self._send_change_package_holds_response(response)
         not_installed = set()
         holds_to_create = message.get("create", [])
         for name in holds_to_create:
@@ -332,9 +346,7 @@ class PackageChanger(PackageTaskHandler):
                         "result-text": "Package holds successfully changed.",
                         "result-code": 0}
 
-        logging.info("Queuing message with change package holds results to "
-                     "exchange urgently.")
-        return self._broker.send_message(response, True)
+        return self._send_change_package_holds_response(response)
 
     @staticmethod
     def find_command():
