@@ -20,6 +20,9 @@ class install_dbus_service(Command):
 
     def run(self):
         install_bin = self.get_finalized_command('install_scripts')
+        update_icon_cmd = "/usr/bin/gtk-update-icon-cache-3.0"
+        icon_dir = "/usr/share/icons/hicolor/"
+        os.system("%s %s" % (update_icon_cmd, icon_dir))
         script_install_dir = install_bin.install_dir
         output = ""
         service_dir = "/usr/share/dbus-1/system-services/"
@@ -62,14 +65,18 @@ setup(name="landscape Client Settings PolicyKit",
                         ["ui/landscape-client-settings.glade"]},
       data_files=[
         ('/usr/share/dbus-1/system-services/',
-         ['polkit-1/com.canonical.LandscapeClientSettings.service',
-          'polkit-1/com.canonical.LandscapeClientRegistration.service']),
+         ['dbus-1/com.canonical.LandscapeClientSettings.service',
+          'dbus-1/com.canonical.LandscapeClientRegistration.service']),
         ('/usr/share/polkit-1/actions',
          ['polkit-1/com.canonical.LandscapeClientSettings.policy',
           'polkit-1/com.canonical.LandscapeClientRegistration.policy']),
         ('/etc/dbus-1/system.d/',
-         ['polkit-1/com.canonical.LandscapeClientSettings.conf',
-          'polkit-1/com.canonical.LandscapeClientRegistration.conf'])],
+         ['dbus-1/com.canonical.LandscapeClientSettings.conf',
+          'dbus-1/com.canonical.LandscapeClientRegistration.conf']),
+        ('/usr/share/applications/',
+         ['applications/landscape-client-settings.desktop']),
+        ('/usr/share/icons/hicolor/scalable/apps/',
+         ['icons/preferences-management-service.svg'])],
       scripts=['scripts/landscape-client-settings-mechanism',
                'scripts/landscape-client-registration-mechanism',
                "scripts/landscape-client-settings-ui"],

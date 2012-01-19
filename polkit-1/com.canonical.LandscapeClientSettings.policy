@@ -6,7 +6,7 @@
 <policyconfig>
   <vendor>Canonical Ltd.</vendor>
   <vendor_url>http://www.canonical.com</vendor_url>
-  <icon_name>settings-management-service</icon_name>
+  <icon_name>preferences-management-service</icon_name>
 
   <action id="com.canonical.LandscapeClientSettings.configure">
     <description>Allow the user to read and write Landscape Client settings.</description>

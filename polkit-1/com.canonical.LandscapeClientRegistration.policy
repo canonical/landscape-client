@@ -6,7 +6,7 @@
 <policyconfig>
   <vendor>Canonical Ltd.</vendor>
   <vendor_url>http://www.canonical.com</vendor_url>
-  <icon_name>settings-management-service</icon_name>
+  <icon_name>preferences-management-service</icon_name>
 
   <action id="com.canonical.LandscapeClientRegistration.register">
     <description>Allow the user to perform Landscape Client registration.</description>
