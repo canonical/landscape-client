@@ -176,7 +176,7 @@ class AptFacade(object):
         process = subprocess.Popen(
             ["dpkg", "--set-selections"] + self._dpkg_args,
             stdin=subprocess.PIPE)
-        process.communicate(selection + "\n")
+        process.communicate(selection)
 
     def set_package_hold(self, name):
         """Add a dpkg hold for a package.
