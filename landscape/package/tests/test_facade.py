@@ -1445,17 +1445,34 @@ class AptFacadeTest(LandscapeTest):
 
         self.assertEqual([], self.facade.get_package_holds())
 
-    def test_remove_package_hold_no_hold(self):
+    def test_remove_package_hold_no_package(self):
         """
-        If a package isn't held, C{remove_package_hold} doesn't return
-        an error.
+        If a package doesn't exist, C{remove_package_hold} doesn't
+        return an error. It's up to the caller to make sure that the
+        package exist, if it's important.
         """
         self._add_system_package("foo")
+        self.facade.reload_channels()
+        self.facade.remove_package_hold("bar")
+        self.facade.reload_channels()
+
+        self.assertEqual([], self.facade.get_package_holds())
+
+    def test_remove_package_hold_no_hold(self):
+        """
+        If a package isn't held, the existing selection is retained when
+        C{remove_package_hold} is called.
+        """
+        self._add_system_package(
+            "foo", control_fields={"Status": "deinstall ok installed"})
         self.facade.reload_channels()
         self.facade.remove_package_hold("foo")
         self.facade.reload_channels()
 
         self.assertEqual([], self.facade.get_package_holds())
+        [foo] = self.facade.get_packages_by_name("foo")
+        self.assertEqual(
+            apt_pkg.SELSTATE_DEINSTALL, foo.package._pkg.selected_state)
 
     if not hasattr(Package, "shortname"):
         # The 'shortname' attribute was added when multi-arch support
