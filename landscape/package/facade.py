@@ -81,8 +81,10 @@ class AptFacade(object):
 
     def __init__(self, root=None):
         self._root = root
+        self._dpkg_args = []
         if self._root is not None:
             self._ensure_dir_structure()
+            self._dpkg_args.extend(["--root", self._root])
         # don't use memonly=True here because of a python-apt bug on Natty when
         # sources.list contains invalid lines (LP: #886208)
         self._cache = apt.cache.Cache(rootdir=root)
@@ -100,6 +102,10 @@ class AptFacade(object):
         self._ensure_sub_dir("var/cache/apt/archives/partial")
         self._ensure_sub_dir("var/lib/apt/lists/partial")
         dpkg_dir = self._ensure_sub_dir("var/lib/dpkg")
+        self._ensure_sub_dir("var/lib/dpkg/info")
+        self._ensure_sub_dir("var/lib/dpkg/updates")
+        self._ensure_sub_dir("var/lib/dpkg/triggers")
+        create_file(os.path.join(dpkg_dir, "available"), "")
         self._dpkg_status = os.path.join(dpkg_dir, "status")
         if not os.path.exists(self._dpkg_status):
             create_file(self._dpkg_status, "")
@@ -160,6 +166,17 @@ class AptFacade(object):
     def get_package_holds(self):
         """Return the name of all the packages that are on hold."""
         return [version.package.name for version in self.get_locked_packages()]
+
+    def set_package_hold(self, name):
+        """Add a dpkg hold for a package.
+
+        @param name: The name of the package to hold.
+        """
+        import subprocess
+        process = subprocess.Popen(
+            ["dpkg", "--set-selections"] + self._dpkg_args,
+            stdin=subprocess.PIPE)
+        process.communicate(name + " hold\n")
 
     def reload_channels(self):
         """Reload the channels and update the cache."""

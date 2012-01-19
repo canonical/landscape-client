@@ -1409,6 +1409,17 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(
             ["baz", "foo"], sorted(self.facade.get_package_holds()))
 
+    def test_set_package_hold(self):
+        """
+        C{set_package_hold} marks a package to be on hold.
+        """
+        self._add_system_package("foo")
+        self.facade.reload_channels()
+        self.facade.set_package_hold("foo")
+        self.facade.reload_channels()
+
+        self.assertEqual(["foo"], self.facade.get_package_holds())
+
     if not hasattr(Package, "shortname"):
         # The 'shortname' attribute was added when multi-arch support
         # was added to python-apt. So if it's not there, it means that
