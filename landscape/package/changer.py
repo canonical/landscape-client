@@ -322,7 +322,7 @@ class PackageChanger(PackageTaskHandler):
             for hold in holds_to_create:
                 self._facade.set_package_hold(hold)
             self._facade.reload_channels()
-            for hold in message.get("delete", ()):
+            for hold in message.get("delete", []):
                 self._facade.remove_package_hold(hold)
             self._facade.reload_channels()
 
