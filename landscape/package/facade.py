@@ -178,6 +178,17 @@ class AptFacade(object):
             stdin=subprocess.PIPE)
         process.communicate(name + " hold\n")
 
+    def remove_package_hold(self, name):
+        """Removes a dpkg hold for a package.
+
+        @param name: The name of the package to unhold.
+        """
+        import subprocess
+        process = subprocess.Popen(
+            ["dpkg", "--set-selections"] + self._dpkg_args,
+            stdin=subprocess.PIPE)
+        process.communicate(name + " install\n")
+
     def reload_channels(self):
         """Reload the channels and update the cache."""
         self._cache.open(None)
