@@ -66,9 +66,10 @@ class BrokerService(LandscapeService):
         self.exchanger = MessageExchange(
             self.reactor, self.message_store, self.transport, self.identity,
             exchange_store, config)
-        self.pinger = self.pinger_factory(self.reactor, config.ping_url,
-                                          self.identity, self.exchanger,
-                                          interval=config.ping_interval)
+        self.pinger = self.pinger_factory(
+            self.reactor, config.ping_url, self.identity, self.exchanger,
+            interval=config.ping_interval,
+            server_autodiscover=config.server_autodiscover)
         self.registration = RegistrationHandler(
             config, self.identity, self.reactor, self.exchanger, self.pinger,
             self.message_store, fetch_async)
@@ -94,6 +95,7 @@ class BrokerService(LandscapeService):
             return name
 
         def lookup_failed(result):
+            #todo: fix
             import sys
             sys.stderr.write("SRV lookup of '%s' failed.\n" % service_name)
             return result
@@ -111,6 +113,7 @@ class BrokerService(LandscapeService):
             return result
 
         def lookup_failed(result):
+            # todo: fix.
             import sys
             sys.stderr.write("Name lookup of %s failed.\n" % hostname)
             return None

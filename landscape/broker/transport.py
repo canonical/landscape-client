@@ -47,6 +47,7 @@ class HTTPTransport(object):
             if result is not None:
                 self._url = "https://%s/message-system" % result
             else:
+                #todo: fix.
                 import sys
                 sys.stderr.write("Autodiscovery failed.  Reverting to "
                                  "previous settings.\n")

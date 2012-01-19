@@ -41,14 +41,18 @@ class PingClient(object):
         @return: A deferred resulting in True if there are messages
             and False otherwise.
         """
-        def do_rest(result):
-            if result is not None:
-                self._url = "https://%s/ping" % result
-            else:
+        from landscape.broker.service import BrokerService
+        def handle_result(result):
+            if result is None:
+                #todo: fix.
                 import sys
                 sys.stderr.write("Autodiscovery failed.  Reverting to "
                                  "previous settings.\n")
+            return result
 
+        def do_rest(result):
+            if result:
+                self.url = "http://%s/ping" % result
             insecure_id = self._identity.insecure_id
             if insecure_id is not None:
                 headers = {"Content-Type": "application/x-www-form-urlencoded"}
@@ -66,6 +70,7 @@ class PingClient(object):
 
         if self._server_autodiscover:
             lookup_deferred = BrokerService._lookup_server_record()
+            lookup_deferred.addCallback(handle_result)
             lookup_deferred.addCallback(do_rest)
             return lookup_deferred
         else:
@@ -94,7 +99,8 @@ class Pinger(object):
     """
 
     def __init__(self, reactor, url, identity, exchanger,
-                 interval=30, ping_client_factory=PingClient):
+                 interval=30, ping_client_factory=PingClient,
+                 server_autodiscover=False):
         self._url = url
         self._interval = interval
         self._identity = identity
@@ -103,6 +109,7 @@ class Pinger(object):
         self._call_id = None
         self._ping_client = None
         self.ping_client_factory = ping_client_factory
+        self._server_autodiscover = server_autodiscover
         reactor.call_on("message", self._handle_set_intervals)
 
     def get_url(self):
@@ -118,8 +125,9 @@ class Pinger(object):
 
     def start(self):
         """Start pinging."""
-        self._ping_client = self.ping_client_factory(self._reactor, self._url,
-                                                     self._identity)
+        self._ping_client = self.ping_client_factory(
+            self._reactor, self._url, self._identity,
+            server_autodiscover=self._server_autodiscover)
         self._call_id = self._reactor.call_every(self._interval, self.ping)
 
     def ping(self):
@@ -136,7 +144,8 @@ class Pinger(object):
 
     def _got_error(self, failure):
         log_failure(failure,
-                    "Error contacting ping server at %s" % (self._url,))
+                    "Error contacting ping server at %s" %
+                    (self._ping_client.url,))
 
     def _handle_set_intervals(self, message):
         if message["type"] == "set-intervals" and "ping" in message:
