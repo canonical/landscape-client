@@ -12,6 +12,7 @@ from twisted.internet import defer
 
 from landscape.lib.bpickle import loads
 from landscape.lib.fetch import fetch
+from landscape.lib.log import log_failure
 
 
 class PingClient(object):
