@@ -4,6 +4,7 @@ small HTTP requests asking if we should do a full exchange.
 """
 
 import urllib
+import logging
 from logging import info
 
 from twisted.python.failure import Failure
@@ -11,7 +12,6 @@ from twisted.internet import defer
 
 from landscape.lib.bpickle import loads
 from landscape.lib.fetch import fetch
-from landscape.lib.log import log_failure
 
 
 class PingClient(object):
@@ -44,10 +44,8 @@ class PingClient(object):
         from landscape.broker.service import BrokerService
         def handle_result(result):
             if result is None:
-                #todo: fix.
-                import sys
-                sys.stderr.write("Autodiscovery failed.  Reverting to "
-                                 "previous settings.\n")
+                logging.warning("Autodiscovery failed.  Reverting to previous "
+                                "settings.")
             return result
 
         def do_rest(result):

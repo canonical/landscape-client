@@ -1,6 +1,7 @@
 """Deployment code for the monitor."""
 
 import os
+import logging
 import subprocess
 from twisted.names import dns
 from twisted.names.client import lookupService, getHostByName
@@ -95,9 +96,7 @@ class BrokerService(LandscapeService):
             return name
 
         def lookup_failed(result):
-            #todo: fix
-            import sys
-            sys.stderr.write("SRV lookup of '%s' failed.\n" % service_name)
+            logging.info("SRV lookup of %s failed." % service_name)
             return result
 
         d = lookupService(service_name)
@@ -113,9 +112,7 @@ class BrokerService(LandscapeService):
             return result
 
         def lookup_failed(result):
-            # todo: fix.
-            import sys
-            sys.stderr.write("Name lookup of %s failed.\n" % hostname)
+            logging.info("Name lookup of %s failed." % hostname)
             return None
 
         d = getHostByName(hostname)
