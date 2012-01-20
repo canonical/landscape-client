@@ -502,7 +502,8 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         self, user_data=None, instance_key="key1", launch_index=0,
         local_hostname="ooga.local", public_hostname="ooga.amazon.com",
         reservation_key=u"res1", ramdisk_key=u"ram1", kernel_key=u"kernel1",
-        image_key=u"image1", ssl_ca_certificate=None):
+        image_key=u"image1", local_ip="10.0.0.1", public_ip="10.0.0.2",
+        ssl_ca_certificate=None):
         if user_data is None:
             user_data = self.get_user_data(
                 ssl_ca_certificate=ssl_ca_certificate)
@@ -520,6 +521,8 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
             ("/meta-data/kernel-id", kernel_key),
             ("/meta-data/ramdisk-id", ramdisk_key),
             ("/meta-data/ami-id", image_key),
+            ("/meta-data/local-ipv4", local_ip),
+            ("/meta-data/public-ipv4", public_ip),
             ]:
             self.query_results[api_base + url_suffix] = value
 
@@ -553,6 +556,8 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
                        image_key=u"image1",
                        account_name=None,
                        registration_password=None,
+                       local_ipv4=u"10.0.0.1",
+                       public_ipv4=u"10.0.0.2",
                        tags=None)
 
         # The get_vm_info() needs to be deffered to the else.  If vm-info is

@@ -168,8 +168,10 @@ REGISTER_CLOUD_VM = Message(
      "launch_index": Int(),
      "image_key": Unicode(),
      "tags": Any(utf8, Constant(None)),
-     "vm-info": String()},
-     optional=["tags", "vm-info"])
+     "vm-info": String(),
+     "public_ipv4": Unicode(),
+     "local_ipv4": Unicode()},
+     optional=["tags", "vm-info", "public_ipv4", "local_ipv4"])
 
 TEMPERATURE = Message("temperature", {
     "thermal-zone": utf8,
