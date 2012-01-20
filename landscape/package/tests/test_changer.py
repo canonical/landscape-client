@@ -1063,7 +1063,6 @@ class SmartPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         return result.addCallback(assert_result)
 
 
-
 class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
 
     if not has_new_enough_apt:
