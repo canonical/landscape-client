@@ -299,7 +299,7 @@ class PackageChanger(PackageTaskHandler):
         return self._broker.send_message(response, True)
 
     def _send_change_package_holds_response(self, response):
-        """Log that a package holds result is sent and sent the response."""
+        """Log that a package holds result is sent and send the response."""
         logging.info("Queuing message with change package holds results to "
                      "exchange urgently.")
         return self._broker.send_message(response, True)
