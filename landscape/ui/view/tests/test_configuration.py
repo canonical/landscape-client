@@ -1,16 +1,18 @@
 import sys
 
 try:
-    from gi.repository import Gtk
+    from gi.repository import Gtk, Gdk
     got_gobject_introspection = True
-except ImportError:
+except (ImportError, RuntimeError):
     got_gobject_introspection = False
     gobject_skip_message = "GObject Introspection module unavailable"
+else:
+    del Gdk
+    from landscape.ui.view.configuration import ClientSettingsDialog
+    from landscape.ui.controller.configuration import ConfigController
 
 from landscape.tests.helpers import LandscapeTest
 from landscape.configuration import LandscapeSetupConfiguration
-from landscape.ui.view.configuration import ClientSettingsDialog
-from landscape.ui.controller.configuration import ConfigController
 
 
 class ConfigurationViewTest(LandscapeTest):
@@ -148,6 +150,7 @@ class ConfigurationViewTest(LandscapeTest):
         test_load_data_from_config.skip = gobject_skip_message
         test_toggle_radio_button.skip = gobject_skip_message
         test_init.skip = gobject_skip_message
+        test_modification.skip = gobject_skip_message
 
 
 class ConfigurationViewCommitTest(LandscapeTest):

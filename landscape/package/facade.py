@@ -90,7 +90,7 @@ class AptFacade(object):
         self._pkg2hash = {}
         self._hash2pkg = {}
         self._package_installs = []
-        self._package_upgrades = []
+        self._global_upgrade = False
         self._package_removals = []
         self.refetch_package_index = False
 
@@ -119,12 +119,14 @@ class AptFacade(object):
         return self._hash2pkg.itervalues()
 
     def get_locked_packages(self):
-        """Get all packages in the channels matching the set locks.
+        """Get all packages in the channels that are locked.
 
-        XXX: This method isn't implemented yet. It's here to make the
-        transition to Apt in the package reporter easier.
+        For Apt, it means all packages that are held.
         """
-        return []
+        return [
+            version for version in self.get_packages()
+            if (self.is_package_installed(version)
+                and self._is_package_held(version.package))]
 
     def set_package_lock(self, name, relation=None, version=None):
         """Set a new package lock.
@@ -361,7 +363,7 @@ class AptFacade(object):
         held_package_names = set()
         package_changes = self._package_installs[:]
         package_changes.extend(self._package_removals)
-        if not package_changes and not self._package_upgrades:
+        if not package_changes and not self._global_upgrade:
             return None
         fixer = apt_pkg.ProblemResolver(self._cache._depcache)
         for version in self._package_installs:
@@ -375,14 +377,8 @@ class AptFacade(object):
             # been True.
             fixer.clear(version.package._pkg)
             fixer.protect(version.package._pkg)
-        for version in self._package_upgrades:
-            if self._is_package_held(version.package):
-                continue
-            version.package.mark_install(
-                auto_fix=False,
-                from_user=not version.package.is_auto_installed)
-            fixer.clear(version.package._pkg)
-            fixer.protect(version.package._pkg)
+        if self._global_upgrade:
+            self._cache.upgrade(dist_upgrade=True)
         for version in self._package_removals:
             if self._is_package_held(version.package):
                 held_package_names.add(version.package.name)
@@ -446,17 +442,16 @@ class AptFacade(object):
     def reset_marks(self):
         """Clear the pending package operations."""
         del self._package_installs[:]
-        del self._package_upgrades[:]
         del self._package_removals[:]
+        self._global_upgrade = False
 
     def mark_install(self, version):
         """Mark the package for installation."""
         self._package_installs.append(version)
 
-    def mark_upgrade(self, version):
-        """Mark the package for upgrade."""
-        if version.package.candidate != version:
-            self._package_upgrades.append(version)
+    def mark_global_upgrade(self):
+        """Upgrade all installed packages."""
+        self._global_upgrade = True
 
     def mark_remove(self, version):
         """Mark the package for removal."""
@@ -623,6 +618,12 @@ class SmartFacade(object):
 
     def mark_upgrade(self, pkg):
         self._marks[pkg] = UPGRADE
+
+    def mark_global_upgrade(self):
+        """Upgrade all installed packages."""
+        for package in self.get_packages():
+            if self.is_package_installed(package):
+                self.mark_upgrade(package)
 
     def reset_marks(self):
         self._marks.clear()

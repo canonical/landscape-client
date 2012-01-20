@@ -169,9 +169,7 @@ class PackageChanger(PackageTaskHandler):
             self._facade.reset_marks()
 
         if upgrade:
-            for package in self._facade.get_packages():
-                if self._facade.is_package_installed(package):
-                    self._facade.mark_upgrade(package)
+            self._facade.mark_global_upgrade()
 
         for ids, mark_func in [(install, self._facade.mark_install),
                                  (remove, self._facade.mark_remove)]:
