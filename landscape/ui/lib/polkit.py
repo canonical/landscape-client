@@ -5,6 +5,21 @@ import gobject
 
 
 class PolicyKitMechanism(dbus.service.Object):
+    """
+    L{PolicyKitMechanism} is a specialised L{dbus.service.Object} which
+    provides PolicyKit authorization checks for a provided DBus bus name and
+    object path.  Subclasses must therefore call l{__init__} here with their
+    object path, bus name and an error class to be raised when permission
+    escalation fails.
+
+    @type object_path: string
+    @param object_path: The object path to register the subclass with.
+    @type bus_name: dbus.service.BusName
+    @param bus_name: The L{BusName} to the register the subclass with.
+    @type permission_error: dbus.DBusException
+    @param permission_error: A L{dbus.DBusException} to be raised when
+        PolicyKit authorisation fails for the client.
+    """
 
     def __init__(self, object_path, bus_name, permission_error,
                  bypass=False, conn=None):
@@ -16,6 +31,11 @@ class PolicyKitMechanism(dbus.service.Object):
         self.bypass = bypass
 
     def _get_polkit_authorization(self, pid, privilege):
+        """
+        Check that the process with id L{pid} is allowed, by policy to utilise
+        the L{privilege }.  If the class was initialised with L{bypass}=True
+        then just say it was authorised without checking (useful for testing). 
+        """
         if self.bypass:
             return (True, None, "Bypass")
         polkit = self._get_polkit()
@@ -24,7 +44,7 @@ class PolicyKitMechanism(dbus.service.Object):
                        {'pid': dbus.UInt32(pid, variant_level=1),
                         'start-time': dbus.UInt64(0, variant_level=1)})
             action_id = privilege
-            details = {"": ""}
+            details = {"": ""} # <- empty strings allow type inference
             flags = dbus.UInt32(1)
             cancellation_id = ""
             return polkit.CheckAuthorization(
@@ -35,7 +55,6 @@ class PolicyKitMechanism(dbus.service.Object):
                 cancellation_id,
                 timeout=600)
         except dbus.DBusException, err:
-            # raise
             if (err._dbus_error_name ==
                 'org.freedesktop.DBus.Error.ServiceUnknown'):
                 # This occurs on timeouts, so we retry
@@ -45,6 +64,9 @@ class PolicyKitMechanism(dbus.service.Object):
                 raise
 
     def _get_peer_pid(self, sender, conn):
+        """
+        Get the process ID of the L{sender}.
+        """
         if self.dbus_info is None:
             self.dbus_info = dbus.Interface(
                 conn.get_object('org.freedesktop.DBus',
@@ -52,6 +74,9 @@ class PolicyKitMechanism(dbus.service.Object):
         return self.dbus_info.GetConnectionUnixProcessID(sender)
 
     def _get_polkit(self):
+        """
+        Connect to polkitd via DBus and return the interface.
+        """
         if self.polkit is None:
             self.polkit = dbus.Interface(dbus.SystemBus().get_object(
                 'org.freedesktop.PolicyKit1',
@@ -66,6 +91,12 @@ class PolicyKitMechanism(dbus.service.Object):
         return (sender is None and conn is None)
 
     def _is_allowed_by_policy(self, sender, conn, privilege):
+        """
+        Check if we are already in a secure context, and if not check if the
+        policy associated with L{privilege} both exists and allows the peer to
+        utilise it.  As a side effect, if escalation of privileges is required
+        then this will occur and a challenge will be generated if needs be.
+        """
         if self._is_local_call(sender, conn):
             return True
         peer_pid = self._get_peer_pid(sender, conn)
@@ -77,5 +108,8 @@ class PolicyKitMechanism(dbus.service.Object):
 
 
 def listen():
+    """
+    Invoke a L{gobject.MainLoop} to process incoming DBus events.
+    """
     mainloop = gobject.MainLoop()
     mainloop.run()

@@ -39,8 +39,6 @@ class ConfigurationProxy(object):
         self._interface = dbus.Interface(self._remote_object, INTERFACE_NAME)
 
     def load(self, arglist):
-        # if arglist is None or len(arglist) == 0:
-        #     arglist = dbus.Array([], "s")
         if arglist is None or len(arglist) == 0:
             al = ""
         else:

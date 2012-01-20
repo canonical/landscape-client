@@ -16,6 +16,13 @@ class PermissionDeniedByPolicy(dbus.DBusException):
 
 
 class ConfigurationMechanism(PolicyKitMechanism):
+    """
+    L{ConfigurationMechanism} provides access to the
+    L{LandscapeSetupConfiguration} object via DBus with access control
+    implemented via PolicyKit policy.  The use of DBus results from the use of
+    PolicyKit, not the other way around, and is done that way because that is
+    considered to be the Right Thing for Ubuntu Desktop circa January 2012.
+    """
 
     def __init__(self, config, bus_name, bypass=False, conn=None):
         super(ConfigurationMechanism, self).__init__(
