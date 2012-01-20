@@ -2,9 +2,8 @@
 
 import os
 import logging
-import subprocess
 from twisted.names import dns
-from twisted.names.client import lookupService, getHostByName
+from twisted.names.client import Resolver
 from landscape.lib.fetch import fetch_async
 from landscape.service import LandscapeService, run_landscape_service
 from landscape.broker.registration import RegistrationHandler, Identity
@@ -80,8 +79,17 @@ class BrokerService(LandscapeService):
         self.factory = BrokerServerProtocolFactory(object=self.broker)
 
     @classmethod
-    def _lookup_server_record(cls):
+    def discover_server(cls):
+        resolver = Resolver()
+        resolver.parseConfig("/etc/resolv.conf")
+        d = cls._lookup_server_record(resolver)
+        d.addErrback(cls._lookup_hostname, resolver)
+        return d
+
+    @classmethod
+    def _lookup_server_record(cls, resolver):
         service_name = "_landscape._tcp.mylandscapehost.com"
+
         def lookup_done(result):
             name = ""
             for item in result:
@@ -99,15 +107,15 @@ class BrokerService(LandscapeService):
             logging.info("SRV lookup of %s failed." % service_name)
             return result
 
-        d = lookupService(service_name)
+        d = resolver.lookupService(service_name)
         d.addCallback(lookup_done)
         d.addErrback(lookup_failed)
-        d.addErrback(cls._lookup_hostname)
         return d
 
     @classmethod
-    def _lookup_hostname(cls, result):
+    def _lookup_hostname(cls, result, resolver):
         hostname = "landscape.localdomain"
+
         def lookup_done(result):
             return result
 
@@ -115,7 +123,7 @@ class BrokerService(LandscapeService):
             logging.info("Name lookup of %s failed." % hostname)
             return None
 
-        d = getHostByName(hostname)
+        d = resolver.getHostByName(hostname)
         d.addCallback(lookup_done)
         d.addErrback(lookup_failed)
         return d

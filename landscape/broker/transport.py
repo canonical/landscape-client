@@ -43,7 +43,7 @@ class HTTPTransport(object):
         from landscape.broker.service import BrokerService
         if self._server_autodiscover:
             result = blockingCallFromThread(
-                self._reactor, BrokerService._lookup_server_record)
+                self._reactor, BrokerService.discover_server)
             if result is not None:
                 self._url = "https://%s/message-system" % result
             else:

@@ -43,6 +43,7 @@ class PingClient(object):
             and False otherwise.
         """
         from landscape.broker.service import BrokerService
+
         def handle_result(result):
             if result is None:
                 logging.warning("Autodiscovery failed.  Reverting to previous "
@@ -61,14 +62,15 @@ class PingClient(object):
                 def errback(type, value, tb):
                     page_deferred.errback(Failure(value, type, tb))
                 self._reactor.call_in_thread(page_deferred.callback, errback,
-                                             self.get_page, self.url, post=True,
-                                             data=data, headers=headers)
+                                             self.get_page, self.url,
+                                             post=True, data=data,
+                                             headers=headers)
                 page_deferred.addCallback(self._got_result)
                 return page_deferred
             return defer.succeed(False)
 
         if self._server_autodiscover:
-            lookup_deferred = BrokerService._lookup_server_record()
+            lookup_deferred = BrokerService.discover_server()
             lookup_deferred.addCallback(handle_result)
             lookup_deferred.addCallback(do_rest)
             return lookup_deferred

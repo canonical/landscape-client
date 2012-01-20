@@ -1,13 +1,104 @@
 import os
 
-from twisted.internet import reactor
-
 from landscape.tests.helpers import LandscapeTest
 from landscape.broker.tests.helpers import BrokerConfigurationHelper
 from landscape.broker.service import BrokerService
 from landscape.broker.transport import HTTPTransport
 from landscape.broker.amp import RemoteBrokerConnector
 from landscape.reactor import FakeReactor
+
+from twisted.internet import reactor, defer
+from twisted.names import dns
+
+
+class FakeResolverResult(object):
+    def __init__(self):
+        self.type = None
+
+        class Payload(object):
+
+            def __init__(self):
+                self.target = ""
+        self.payload = Payload()
+
+
+class FakeResolver(object):
+    def __init__(self):
+        self.results = None
+        self.name = None
+
+    def lookupService(self, arg1):
+        deferred = defer.Deferred()
+        deferred.callback(self.results)
+        return deferred
+
+    def getHostByName(self, arg1):
+        deferred = defer.Deferred()
+        deferred.callback(self.name)
+        return deferred
+
+
+class DnsSrvLookupTest(LandscapeTest):
+    helpers = [BrokerConfigurationHelper]
+
+    def setUp(self):
+        super(DnsSrvLookupTest, self).setUp()
+        self.service = BrokerService(self.config)
+
+    def test_with_server_found(self):
+        fake_result = FakeResolverResult()
+        fake_result.type = dns.SRV
+        fake_result.payload.target = "a.b.com"
+        fake_resolver = FakeResolver()
+        fake_resolver.results = [[fake_result]]
+
+        def check(result):
+            self.assertEquals("a.b.com", result)
+
+        d = self.service._lookup_server_record(fake_resolver)
+        d.addCallback(check)
+        return d
+
+    def test_with_server_not_found(self):
+        fake_resolver = FakeResolver()
+        fake_resolver.results = [[]]
+
+        def check(result):
+            self.assertEquals("", result)
+
+        d = self.service._lookup_server_record(fake_resolver)
+        d.addCallback(check)
+        return d
+
+
+class DnsNameLookupTest(LandscapeTest):
+    helpers = [BrokerConfigurationHelper]
+
+    def setUp(self):
+        super(DnsNameLookupTest, self).setUp()
+        self.service = BrokerService(self.config)
+
+    def test_with_name_found(self):
+        fake_resolver = FakeResolver()
+        fake_resolver.name = "a.b.com"
+
+        def check(result):
+            self.assertEquals("a.b.com", result)
+
+        d = self.service._lookup_hostname(None, fake_resolver)
+        d.addCallback(check)
+        return d
+
+    def test_with_name_not_found(self):
+        fake_resolver = FakeResolver()
+        fake_resolver.name = None
+
+        def check(result):
+            self.assertEquals(None, result)
+
+        d = self.service._lookup_hostname(None, fake_resolver)
+        d.addCallback(check)
+        return d
 
 
 class BrokerServiceTest(LandscapeTest):
@@ -17,14 +108,6 @@ class BrokerServiceTest(LandscapeTest):
     def setUp(self):
         super(BrokerServiceTest, self).setUp()
         self.service = BrokerService(self.config)
-
-    def test_lookup_service(self):
-        deferred = self.service._lookup_server_record()
-
-        def check(result):
-            self.assertEqual(result, None)
-
-        return deferred.addCallback(check)
 
     def test_persist(self):
         """
