@@ -18,6 +18,14 @@ class BrokerServiceTest(LandscapeTest):
         super(BrokerServiceTest, self).setUp()
         self.service = BrokerService(self.config)
 
+    def test_lookup_service(self):
+        deferred = self.service._lookup_server_record()
+
+        def check(result):
+            self.assertEqual(result, None)
+
+        return deferred.addCallback(check)
+
     def test_persist(self):
         """
         A L{BrokerService} instance has a proper C{persist} attribute.
