@@ -118,3 +118,8 @@ class BrokerConfiguration(Configuration):
 
         if self.url is None:
             self.url = self.DEFAULT_URL
+
+        if self.server_autodiscover.lower() == "true":
+            self.server_autodiscover = True
+        else:
+            self.server_autodiscover = False
