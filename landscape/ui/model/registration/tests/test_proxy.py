@@ -7,6 +7,10 @@ from landscape.ui.model.registration.proxy import RegistrationProxy
 
 
 class RegistrationProxyTest(LandscapeTest):
+    """
+    L{RegistrationProxyTest} bypasses DBus to simply check the interface
+    between the proxy and the mechanism it would usually contact via DBus.
+    """
 
     def setUp(self):
         super(RegistrationProxyTest, self).setUp()
@@ -45,5 +49,9 @@ class RegistrationProxyTest(LandscapeTest):
         super(RegistrationProxyTest, self).tearDown()
 
     def test_register(self):
+        """
+        Test that the proxy calls through to the underlying interface and
+        correctly performs registration.
+        """
         return self.assertEquals(self.proxy.register("foo"),
                                  (True, "Connected\n"))

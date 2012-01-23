@@ -6,6 +6,11 @@ from landscape.ui.model.registration.mechanism import (
 
 
 class MechanismTest(LandscapeTest):
+    """
+    L{MechanismTest} mocks out the actual registration process and allows us to
+    simply and quickly check the outputs of registration that are relied on
+    elsewhere.
+    """
 
     def setUp(self):
         super(MechanismTest, self).setUp()
@@ -22,11 +27,19 @@ class MechanismTest(LandscapeTest):
         return _do_registration
 
     def test_registration_succeed(self):
+        """
+        Test we get appropriate feedback from a successful connection when we
+        call L{register} synchronously.
+        """
         RegistrationMechanism._do_registration = self.make_registration(True)
         mechanism = RegistrationMechanism(self.bus_name)
         self.assertEqual(mechanism.register("foo"), (True, "Connected\n"))
 
     def test_registration_fail(self):
+        """
+        Test we get appropriate feedback from a failed connection when we
+        call L{register} synchronously.
+        """
         RegistrationMechanism._do_registration = self.make_registration(False)
         mechanism = RegistrationMechanism(self.bus_name)
         self.assertEqual(mechanism.register("foo"),
