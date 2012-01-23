@@ -1262,7 +1262,7 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
                                         "create": [("foo", ">=", "1.0")],
                                         "delete": [("bar", None, None)],
                                         "operation-id": 123})
-        
+
         def assert_result(result):
             self.assertMessages(
                 self.get_pending_messages(),
@@ -1271,6 +1271,6 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
                   "status": FAILED,
                   "result-text": "This client doesn't support package locks.",
                   "result-code": 1}])
-            
+
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
