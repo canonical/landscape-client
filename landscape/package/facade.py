@@ -401,11 +401,11 @@ class AptFacade(object):
     def perform_changes(self):
         """Perform the pending package operations."""
         held_package_names = set()
-        installed_packages = set(
+        package_installs = set(
             version.package for version in self._version_installs)
-        upgraded_packages = set(
+        package_upgrades = set(
             version.package for version in self._version_removals
-            if version.package in installed_packages)
+            if version.package in package_installs)
         version_changes = self._version_installs[:]
         version_changes.extend(self._version_removals)
         if not version_changes and not self._global_upgrade:
@@ -427,7 +427,7 @@ class AptFacade(object):
         for version in self._version_removals:
             if self._is_package_held(version.package):
                 held_package_names.add(version.package.name)
-            if version.package in upgraded_packages:
+            if version.package in package_upgrades:
                 continue
             version.package.mark_delete(auto_fix=False)
             # Configure the resolver in the same way
