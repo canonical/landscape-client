@@ -1285,6 +1285,30 @@ class AptFacadeTest(LandscapeTest):
             "Can't perform the changes, since the following packages" +
             " are held: bar, foo", error.args[0])
 
+    def test_changer_upgrade_package(self):
+        """
+        When the {PackageChanger} requests for a package to be upgraded,
+        it requests that the new version is to be installed, and the old
+        version to be removed. This is how you had to do it with Smart.
+        With Apt we have to take care of not marking the old version for
+        removal, since that can result in packages that depend on the
+        upgraded package to be removed.
+        """
+        self._add_system_package(
+            "foo", control_fields={"Depends": "bar"})
+        self._add_system_package("bar", version="1.0")
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "bar", version="2.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        bar_1, bar_2 = sorted(self.facade.get_packages_by_name("bar"))
+        self.facade.mark_install(bar_2)
+        self.facade.mark_remove(bar_1)
+        self.facade._cache.commit = lambda fetch_progress: None
+        self.facade.perform_changes()
+        [bar] = self.facade._cache.get_changes()
+        self.assertTrue(bar.marked_upgrade)
+
     def test_mark_global_upgrade_held_packages(self):
         """
         If a package that is on hold is marked for upgrade,
