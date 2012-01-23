@@ -61,7 +61,6 @@ class RegistrationMechanism(PolicyKitMechanism):
         necessary for any actual work to occur in the method as it is called
         for the effect of invoking its decorator.
         """
-        pass
 
     @dbus.service.signal(dbus_interface=INTERFACE_NAME,
                          signature='s')
@@ -71,7 +70,6 @@ class RegistrationMechanism(PolicyKitMechanism):
         necessary for any actual work to occur in the method as it is called
         for the effect of invoking its decorator.
         """
-        pass
 
     @dbus.service.signal(dbus_interface=INTERFACE_NAME,
                          signature='s')
@@ -81,7 +79,6 @@ class RegistrationMechanism(PolicyKitMechanism):
         necessary for any actual work to occur in the method as it is called
         for the effect of invoking its decorator.
         """
-        pass
 
     @dbus.service.signal(dbus_interface=INTERFACE_NAME,
                          signature='s')
@@ -91,7 +88,6 @@ class RegistrationMechanism(PolicyKitMechanism):
         necessary for any actual work to occur in the method as it is called
         for the effect of invoking its decorator.
         """
-        pass
 
     @dbus.service.method(INTERFACE_NAME,
                          in_signature="",
