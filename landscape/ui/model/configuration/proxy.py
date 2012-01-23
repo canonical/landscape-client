@@ -60,66 +60,20 @@ class ConfigurationProxy(object):
     get_config_filename.__doc__ = \
         LandscapeSetupConfiguration.get_config_filename.__doc__
 
-    def _get_account_name(self):
-        return self._interface.get("account_name")
+    def _delegate_to_interface(field):
+        def get(self):
+            return self._interface.get(field)
+        def set(self, value):
+            self._interface.set(field, value)
+        return get, set
 
-    def _set_account_name(self, value):
-        self._interface.set("account_name", value)
-    account_name = property(_get_account_name, _set_account_name)
-
-    def _get_computer_title(self):
-        return self._interface.get("computer_title")
-
-    def _set_computer_title(self, value):
-        self._interface.set("computer_title", value)
-    computer_title = property(_get_computer_title, _set_computer_title)
-
-    def _get_data_path(self):
-        return self._interface.get("data_path")
-
-    def _set_data_path(self, value):
-        self._interface.set("data_path", value)
-    data_path = property(_get_data_path, _set_data_path)
-
-    def _get_http_proxy(self):
-        return self._interface.get("http_proxy")
-
-    def _set_http_proxy(self, value):
-        self._interface.set("http_proxy", value)
-    http_proxy = property(_get_http_proxy, _set_http_proxy)
-
-    def _get_https_proxy(self):
-        return self._interface.get("https_proxy")
-
-    def _set_https_proxy(self, value):
-        self._interface.set("https_proxy", value)
-    https_proxy = property(_get_https_proxy, _set_https_proxy)
-
-    def _get_ping_url(self):
-        return self._interface.get("ping_url")
-
-    def _set_ping_url(self, value):
-        self._interface.set("ping_url", value)
-    ping_url = property(_get_ping_url, _set_ping_url)
-
-    def _get_registration_password(self):
-        return self._interface.get("registration_password")
-
-    def _set_registration_password(self, value):
-        self._interface.set("registration_password", value)
-    registration_password = property(_get_registration_password,
-                                     _set_registration_password)
-
-    def _get_tags(self):
-        return self._interface.get("tags")
-
-    def _set_tags(self, value):
-        self._interface.set("tags", value)
-    tags = property(_get_tags, _set_tags)
-
-    def _get_url(self):
-        return self._interface.get("url")
-
-    def _set_url(self, value):
-        self._interface.set("url", value)
-    url = property(_get_url, _set_url)
+    account_name = property(*_delegate_to_interface("account_name"))
+    computer_title = property(*_delegate_to_interface("computer_title"))
+    data_path = property(*_delegate_to_interface("data_path"))
+    http_proxy = property(*_delegate_to_interface("http_proxy"))
+    https_proxy = property(*_delegate_to_interface("https_proxy"))
+    ping_url = property(*_delegate_to_interface("ping_url"))
+    registration_password = property(
+        *_delegate_to_interface("registration_password"))
+    tags = property(*_delegate_to_interface("tags"))
+    url = property(*_delegate_to_interface("url"))
