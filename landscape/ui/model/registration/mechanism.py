@@ -1,4 +1,3 @@
-import select
 import subprocess
 import os
 
@@ -52,7 +51,7 @@ class RegistrationMechanism(PolicyKitMechanism):
         except subprocess.CalledProcessError, error:
             self.register_error(str(error))
             return False
-            
+
     @dbus.service.signal(dbus_interface=INTERFACE_NAME,
                          signature='s')
     def register_notify(self, message):

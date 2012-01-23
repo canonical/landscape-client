@@ -77,7 +77,7 @@ class ConfigurationMechanism(PolicyKitMechanism):
         """
         if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
             try:
-                value = self.config.get(name) 
+                value = self.config.get(name)
             except AttributeError:
                 return ""
             if value is None:

@@ -61,10 +61,13 @@ class ConfigurationProxy(object):
         LandscapeSetupConfiguration.get_config_filename.__doc__
 
     def _delegate_to_interface(field):
+
         def get(self):
             return self._interface.get(field)
+
         def set(self, value):
             self._interface.set(field, value)
+
         return get, set
 
     account_name = property(*_delegate_to_interface("account_name"))
