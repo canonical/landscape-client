@@ -24,7 +24,6 @@ class ConfigController(object):
         self._initial_account_name = self.DEFAULT_DEDICATED_ACCOUNT_NAME
         self._configuration = configuration
         self._args = args
-        self._stop = True
         self._lock_out = False
         self._lock = threading.Lock()
 
@@ -277,7 +276,6 @@ class ConfigController(object):
         "Invoke model level registration without completely locking the view."
 
         def succeed_handler(result):
-            self.stop = True
             succeed, message = result
             if succeed:
                 on_success(message)
@@ -285,7 +283,6 @@ class ConfigController(object):
                 on_failure(message)
 
         def failure_handler(result):
-            self.stop = True
             on_failure(result)
 
         registration = RegistrationProxy(on_notify, on_error,

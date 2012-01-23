@@ -27,6 +27,11 @@ class RegistrationError(dbus.DBusException):
 
 
 class RegistrationMechanism(PolicyKitMechanism):
+    """
+    L{RegistrationMechanism} is a mechanism for invoking and observing client
+    registration over DBus.  It utilises PolicyKit to ensure that only
+    administrative users may use it.
+    """
 
     def __init__(self, bus_name, bypass=False, conn=None):
         super(RegistrationMechanism, self).__init__(
@@ -59,21 +64,41 @@ class RegistrationMechanism(PolicyKitMechanism):
     @dbus.service.signal(dbus_interface=INTERFACE_NAME,
                          signature='s')
     def register_notify(self, message):
+        """
+        L{register_notify} is a signal sent to subscribers.  It is not
+        necessary for any actual work to occur in the method as it is called
+        for the effect of invoking its decorator.
+        """
         pass
 
     @dbus.service.signal(dbus_interface=INTERFACE_NAME,
                          signature='s')
     def register_error(self, message):
+        """
+        L{register_error} is a signal sent to subscribers.  It is not
+        necessary for any actual work to occur in the method as it is called
+        for the effect of invoking its decorator.
+        """
         pass
 
     @dbus.service.signal(dbus_interface=INTERFACE_NAME,
                          signature='s')
     def register_succeed(self, message):
+        """
+        L{register_succeed} is a signal sent to subscribers.  It is not
+        necessary for any actual work to occur in the method as it is called
+        for the effect of invoking its decorator.
+        """
         pass
 
     @dbus.service.signal(dbus_interface=INTERFACE_NAME,
                          signature='s')
     def register_fail(self, message):
+        """
+        L{register_fail} is a signal sent to subscribers.  It is not
+        necessary for any actual work to occur in the method as it is called
+        for the effect of invoking its decorator.
+        """
         pass
 
     @dbus.service.method(INTERFACE_NAME,
