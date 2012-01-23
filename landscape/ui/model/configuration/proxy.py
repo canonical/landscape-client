@@ -56,7 +56,7 @@ class ConfigurationProxy(object):
     write.__doc__ = LandscapeSetupConfiguration.write.__doc__
 
     def get_config_filename(self):
-        return self._interface.get("config_filename")
+        return self._interface.get_config_filename()
     get_config_filename.__doc__ = \
         LandscapeSetupConfiguration.get_config_filename.__doc__
 

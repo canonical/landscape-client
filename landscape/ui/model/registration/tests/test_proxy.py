@@ -19,7 +19,7 @@ class RegistrationProxyTest(LandscapeTest):
         bus_name = dbus.service.BusName(INTERFACE_NAME, bus)
 
         def _do_registration(this, config_path):
-            return 0
+            return True
 
         RegistrationMechanism._do_registration = _do_registration
         self.mechanism = RegistrationMechanism(bus_name)

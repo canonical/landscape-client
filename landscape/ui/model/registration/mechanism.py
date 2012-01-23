@@ -45,22 +45,14 @@ class RegistrationMechanism(PolicyKitMechanism):
         self.register_notify("Trying to register ...\n")
         cmd = ["landscape-config", "--silent", "-c",
                os.path.abspath(config_path)]
-        self.process = subprocess.Popen(cmd,
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE)
-        return_code = None
-        while return_code is None:
-            readables, w, x = select.select(
-                [self.process.stdout, self.process.stderr], [], [], 0)
-            for readable in readables:
-                message = readable.readline()
-                if readable is self.process.stdout:
-                    self.register_notify(message)
-                else:
-                    self.register_error(message)
-            return_code = self.process.poll()
-        return return_code
-
+        try:
+            message = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+            self.register_notify(message)
+            return True
+        except subprocess.CalledProcessError, error:
+            self.register_error(str(error))
+            return False
+            
     @dbus.service.signal(dbus_interface=INTERFACE_NAME,
                          signature='s')
     def register_notify(self, message):
@@ -122,12 +114,11 @@ class RegistrationMechanism(PolicyKitMechanism):
                          connection_keyword="conn")
     def register(self, config_path, sender=None, conn=None):
         if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
-            return_code = self._do_registration(config_path)
-            if return_code == 0:
+            if self._do_registration(config_path):
                 message = "Connected\n"
                 self.register_succeed(message)
                 return (True, message)
             else:
-                message = "Failed to connect [code %s]\n" % str(return_code)
+                message = "Failed to connect\n"
                 self.register_fail(message)
                 return (False, message)

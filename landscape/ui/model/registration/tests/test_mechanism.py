@@ -19,11 +19,10 @@ class MechanismTest(LandscapeTest):
         self.bus_name = dbus.service.BusName(INTERFACE_NAME, bus)
 
     def make_registration(self, succeed):
+
         def _do_registration(this, config_path):
-            if succeed:
-                return 0
-            else:
-                return 1
+            return succeed
+
         return _do_registration
 
     def test_registration_succeed(self):
@@ -43,4 +42,4 @@ class MechanismTest(LandscapeTest):
         RegistrationMechanism._do_registration = self.make_registration(False)
         mechanism = RegistrationMechanism(self.bus_name)
         self.assertEqual(mechanism.register("foo"),
-                         (False, "Failed to connect [code 1]\n"))
+                         (False, "Failed to connect\n"))

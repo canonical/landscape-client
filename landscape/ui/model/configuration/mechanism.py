@@ -58,6 +58,14 @@ class ConfigurationMechanism(PolicyKitMechanism):
             self.config.write()
 
     @dbus.service.method(INTERFACE_NAME,
+                         in_signature="",
+                         out_signature="s",
+                         sender_keyword="sender",
+                         connection_keyword="conn")
+    def get_config_filename(self, sender=None, conn=None):
+        return self.config.get_config_filename()
+
+    @dbus.service.method(INTERFACE_NAME,
                          in_signature="s",
                          out_signature="s",
                          sender_keyword="sender",
@@ -68,7 +76,13 @@ class ConfigurationMechanism(PolicyKitMechanism):
         L{LandscapeSetupConfiguration}.
         """
         if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
-            return self.config.get(name)
+            try:
+                value = self.config.get(name) 
+            except AttributeError:
+                return ""
+            if value is None:
+                return None
+            return str(value)
 
     @dbus.service.method(INTERFACE_NAME,
                          in_signature="ss",
