@@ -1385,6 +1385,95 @@ class AptFacadeTest(LandscapeTest):
             sorted(error.packages, key=self.version_sortkey),
             sorted([bar, baz], key=self.version_sortkey))
 
+    def test_get_package_holds_with_no_hold(self):
+        """
+        If no package holds are set, C{get_package_holds} returns
+        an empty C{list}.
+        """
+        self._add_system_package("foo")
+        self.facade.reload_channels()
+        self.assertEqual([], self.facade.get_package_holds())
+
+    def test_get_package_holds_with_holds(self):
+        """
+        If package holds are set, C{get_package_holds} returns
+        the name of the packages that are held.
+        """
+        self._add_system_package(
+            "foo", control_fields={"Status": "hold ok installed"})
+        self._add_system_package("bar")
+        self._add_system_package(
+            "baz", control_fields={"Status": "hold ok installed"})
+        self.facade.reload_channels()
+
+        self.assertEqual(
+            ["baz", "foo"], sorted(self.facade.get_package_holds()))
+
+    def test_set_package_hold(self):
+        """
+        C{set_package_hold} marks a package to be on hold.
+        """
+        self._add_system_package("foo")
+        self.facade.reload_channels()
+        self.facade.set_package_hold("foo")
+        self.facade.reload_channels()
+
+        self.assertEqual(["foo"], self.facade.get_package_holds())
+
+    def test_set_package_hold_existing_hold(self):
+        """
+        If a package is already hel, C{set_package_hold} doesn't return
+        an error.
+        """
+        self._add_system_package(
+            "foo", control_fields={"Status": "hold ok installed"})
+        self.facade.reload_channels()
+        self.facade.set_package_hold("foo")
+        self.facade.reload_channels()
+
+        self.assertEqual(["foo"], self.facade.get_package_holds())
+
+    def test_remove_package_hold(self):
+        """
+        C{remove_package_hold} marks a package not to be on hold.
+        """
+        self._add_system_package(
+            "foo", control_fields={"Status": "hold ok installed"})
+        self.facade.reload_channels()
+        self.facade.remove_package_hold("foo")
+        self.facade.reload_channels()
+
+        self.assertEqual([], self.facade.get_package_holds())
+
+    def test_remove_package_hold_no_package(self):
+        """
+        If a package doesn't exist, C{remove_package_hold} doesn't
+        return an error. It's up to the caller to make sure that the
+        package exist, if it's important.
+        """
+        self._add_system_package("foo")
+        self.facade.reload_channels()
+        self.facade.remove_package_hold("bar")
+        self.facade.reload_channels()
+
+        self.assertEqual([], self.facade.get_package_holds())
+
+    def test_remove_package_hold_no_hold(self):
+        """
+        If a package isn't held, the existing selection is retained when
+        C{remove_package_hold} is called.
+        """
+        self._add_system_package(
+            "foo", control_fields={"Status": "deinstall ok installed"})
+        self.facade.reload_channels()
+        self.facade.remove_package_hold("foo")
+        self.facade.reload_channels()
+
+        self.assertEqual([], self.facade.get_package_holds())
+        [foo] = self.facade.get_packages_by_name("foo")
+        self.assertEqual(
+            apt_pkg.SELSTATE_DEINSTALL, foo.package._pkg.selected_state)
+
     if not hasattr(Package, "shortname"):
         # The 'shortname' attribute was added when multi-arch support
         # was added to python-apt. So if it's not there, it means that

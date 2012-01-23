@@ -40,7 +40,6 @@ class AptFacadeHelper(object):
                 Architecture: %(architecture)s
                 Source: source
                 Version: %(version)s
-                Config-Version: 1.0
                 Description: description
                 """ % {"name": name, "version": version,
                        "architecture": architecture})
