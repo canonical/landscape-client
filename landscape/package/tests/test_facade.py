@@ -909,8 +909,8 @@ class AptFacadeTest(LandscapeTest):
         [baz] = self.facade.get_packages_by_name("baz")
         self.facade.mark_remove(baz)
         self.facade.reset_marks()
-        self.assertEqual(self.facade._package_installs, [])
-        self.assertEqual(self.facade._package_removals, [])
+        self.assertEqual(self.facade._version_installs, [])
+        self.assertEqual(self.facade._version_removals, [])
         self.assertFalse(self.facade._global_upgrade)
         self.assertEqual(self.facade.perform_changes(), None)
 
@@ -925,8 +925,8 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         pkg = self.facade.get_packages_by_name("minimal")[0]
         self.facade.mark_install(pkg)
-        self.assertEqual(1, len(self.facade._package_installs))
-        install = self.facade._package_installs[0]
+        self.assertEqual(1, len(self.facade._version_installs))
+        install = self.facade._version_installs[0]
         self.assertEqual("minimal", install.package.name)
 
     def test_wb_mark_global_upgrade_sets_variable(self):
@@ -953,7 +953,7 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_remove(foo)
-        self.assertEqual([foo], self.facade._package_removals)
+        self.assertEqual([foo], self.facade._version_removals)
 
     def test_mark_install_specific_version(self):
         """
