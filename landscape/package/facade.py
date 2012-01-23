@@ -81,6 +81,7 @@ class AptFacade(object):
     """
 
     supports_package_holds = True
+    supports_package_locks = False
 
     def __init__(self, root=None):
         self._root = root
@@ -510,6 +511,7 @@ class SmartFacade(object):
 
     _deb_package_type = None
     supports_package_holds = False
+    supports_package_locks = True
 
     def __init__(self, smart_init_kwargs={}, sysconf_args=None):
         self._smart_init_kwargs = smart_init_kwargs.copy()
