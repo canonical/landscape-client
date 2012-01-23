@@ -149,7 +149,9 @@ class RegistrationHandler(object):
                 "/meta-data/public-hostname",
                 "/meta-data/ami-launch-index",
                 "/meta-data/kernel-id",
-                "/meta-data/ami-id"]
+                "/meta-data/ami-id",
+                "/meta-data/local-ipv4",
+                "/meta-data/public-ipv4"]
             # We're not using a DeferredList here because we want to keep the
             # number of connections to the backend minimal. See lp:567515.
             for path in paths:
@@ -165,7 +167,8 @@ class RegistrationHandler(object):
                 """Record the instance data returned by the EC2 API."""
                 (raw_user_data, instance_key, reservation_key,
                  local_hostname, public_hostname, launch_index,
-                 kernel_key, ami_key, ramdisk_key) = ec2_data
+                 kernel_key, ami_key, local_ip,
+                 public_ip, ramdisk_key) = ec2_data
                 self._ec2_data = {
                     "instance_key": instance_key,
                     "reservation_key": reservation_key,
@@ -174,7 +177,9 @@ class RegistrationHandler(object):
                     "launch_index": launch_index,
                     "kernel_key": kernel_key,
                     "ramdisk_key": ramdisk_key,
-                    "image_key": ami_key}
+                    "image_key": ami_key,
+                    "public_ipv4": public_ip,
+                    "local_ipv4": local_ip}
                 for k, v in self._ec2_data.items():
                     if v is None and k == "ramdisk_key":
                         continue
