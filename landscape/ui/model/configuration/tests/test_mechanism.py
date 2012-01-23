@@ -172,4 +172,3 @@ class MechanismTest(LandscapeTest):
         """
         self.mechanism.set("https_proxy", "bar")
         self.assertEqual(self.mechanism.get("https_proxy"), "bar")
- 

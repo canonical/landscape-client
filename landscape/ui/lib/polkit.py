@@ -34,7 +34,7 @@ class PolicyKitMechanism(dbus.service.Object):
         """
         Check that the process with id L{pid} is allowed, by policy to utilise
         the L{privilege }.  If the class was initialised with L{bypass}=True
-        then just say it was authorised without checking (useful for testing). 
+        then just say it was authorised without checking (useful for testing).
         """
         if self.bypass:
             return (True, None, "Bypass")
@@ -44,7 +44,7 @@ class PolicyKitMechanism(dbus.service.Object):
                        {'pid': dbus.UInt32(pid, variant_level=1),
                         'start-time': dbus.UInt64(0, variant_level=1)})
             action_id = privilege
-            details = {"": ""} # <- empty strings allow type inference
+            details = {"": ""}  # <- empty strings allow type inference
             flags = dbus.UInt32(1)
             cancellation_id = ""
             return polkit.CheckAuthorization(

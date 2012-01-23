@@ -22,7 +22,7 @@ class ConfigurationProxyBaseTest(LandscapeTest):
             default_config_filenames = [self.config_filename]
 
         self.config = MyLandscapeSetupConfiguration()
-        
+
         # We have to do these steps because the ConfigurationMechanism inherits
         # from dbus.service.Object which throws a fit it notices you using it
         # without a mainloop.

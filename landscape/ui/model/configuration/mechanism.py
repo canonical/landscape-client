@@ -57,9 +57,7 @@ class ConfigurationMechanism(PolicyKitMechanism):
         if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
             self.config.write()
 
-
-
-    @dbus.service.method(INTERFACE_NAME, 
+    @dbus.service.method(INTERFACE_NAME,
                          in_signature="s",
                          out_signature="s",
                          sender_keyword="sender",
@@ -72,7 +70,7 @@ class ConfigurationMechanism(PolicyKitMechanism):
         if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
             return self.config.get(name)
 
-    @dbus.service.method(INTERFACE_NAME, 
+    @dbus.service.method(INTERFACE_NAME,
                          in_signature="ss",
                          out_signature="",
                          sender_keyword="sender",
