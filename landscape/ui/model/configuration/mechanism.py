@@ -57,166 +57,30 @@ class ConfigurationMechanism(PolicyKitMechanism):
         if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
             self.config.write()
 
-    @dbus.service.method(INTERFACE_NAME,
-                         in_signature="", out_signature="s",
+
+
+    @dbus.service.method(INTERFACE_NAME, 
+                         in_signature="s",
+                         out_signature="s",
                          sender_keyword="sender",
                          connection_keyword="conn")
-    def get_config_filename(self, sender=None, conn=None):
+    def get(self, name, sender=None, conn=None):
+        """
+        Return the configuration option value associated with L{name} from the
+        L{LandscapeSetupConfiguration}.
+        """
         if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
-            return self.config.get_config_filename()
+            return self.config.get(name)
 
-    @dbus.service.method(INTERFACE_NAME,
-                         in_signature="", out_signature="s",
-                         sender_keyword="sender", connection_keyword="conn")
-    def get_account_name(self, sender=None, conn=None):
-        if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
-            try:
-                return self.config.account_name
-            except AttributeError:
-                return ""
-
-    @dbus.service.method(INTERFACE_NAME,
-                         in_signature="s", out_signature="",
-                         sender_keyword="sender", connection_keyword="conn")
-    def set_account_name(self, account_name, sender=None, conn=None):
-        if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
-            self.config.account_name = account_name
-
-    @dbus.service.method(INTERFACE_NAME,
-                         in_signature="", out_signature="s",
-                         sender_keyword="sender", connection_keyword="conn")
-    def get_computer_title(self, sender=None, conn=None):
-        if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
-            try:
-                return self.config.computer_title
-            except AttributeError:
-                return ""
-
-    @dbus.service.method(INTERFACE_NAME,
-                         in_signature="s", out_signature="",
-                         sender_keyword="sender", connection_keyword="conn")
-    def set_computer_title(self, computer_title, sender=None, conn=None):
-        if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
-            self.config.computer_title = computer_title
-
-    @dbus.service.method(INTERFACE_NAME,
-                         in_signature="", out_signature="s",
-                         sender_keyword="sender", connection_keyword="conn")
-    def get_data_path(self, sender=None, conn=None):
-        if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
-            try:
-                return str(self.config.data_path)
-            except AttributeError:
-                return ""
-
-    @dbus.service.method(INTERFACE_NAME,
-                         in_signature="s", out_signature="",
-                         sender_keyword="sender", connection_keyword="conn")
-    def set_data_path(self, data_path, sender=None, conn=None):
-        if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
-            self.config.data_path = data_path
-
-    @dbus.service.method(INTERFACE_NAME,
-                         in_signature="", out_signature="s",
-                         sender_keyword="sender", connection_keyword="conn")
-    def get_http_proxy(self, sender=None, conn=None):
-        if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
-            try:
-                return self.config.http_proxy
-            except AttributeError:
-                return ""
-
-    @dbus.service.method(INTERFACE_NAME,
-                         in_signature="s", out_signature="",
-                         sender_keyword="sender", connection_keyword="conn")
-    def set_http_proxy(self, http_proxy, sender=None, conn=None):
-        if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
-            self.config.http_proxy = http_proxy
-
-    @dbus.service.method(INTERFACE_NAME,
-                         in_signature="", out_signature="s",
-                         sender_keyword="sender", connection_keyword="conn")
-    def get_ping_url(self, sender=None, conn=None):
-        if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
-            try:
-                return self.config.ping_url
-            except AttributeError:
-                return ""
-
-    @dbus.service.method(INTERFACE_NAME,
-                         in_signature="s", out_signature="",
-                         sender_keyword="sender", connection_keyword="conn")
-    def set_ping_url(self, ping_url, sender=None, conn=None):
-        if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
-            self.config.ping_url = ping_url
-
-    @dbus.service.method(INTERFACE_NAME,
-                         in_signature="", out_signature="s",
-                         sender_keyword="sender", connection_keyword="conn")
-    def get_registration_password(self, sender=None, conn=None):
-        if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
-            try:
-                return self.config.registration_password
-            except AttributeError:
-                return ""
-
-    @dbus.service.method(INTERFACE_NAME,
-                         in_signature="s",
+    @dbus.service.method(INTERFACE_NAME, 
+                         in_signature="ss",
                          out_signature="",
                          sender_keyword="sender",
                          connection_keyword="conn")
-    def set_registration_password(self, registration_password, sender=None,
-                                  conn=None):
+    def set(self, name, value, sender=None, conn=None):
+        """
+        Set the configuration option associated with L{name} to L{value} in the
+        L{LandscapeSetupConfiguration}.
+        """
         if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
-            self.config.registration_password = registration_password
-
-    @dbus.service.method(INTERFACE_NAME,
-                         in_signature="", out_signature="s",
-                         sender_keyword="sender", connection_keyword="conn")
-    def get_tags(self, sender=None, conn=None):
-        if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
-            try:
-                return self.config.tags
-            except AttributeError:
-                return ""
-
-    @dbus.service.method(INTERFACE_NAME,
-                         in_signature="s", out_signature="",
-                         sender_keyword="sender", connection_keyword="conn")
-    def set_tags(self, tags, sender=None, conn=None):
-        if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
-            self.config.tags = tags
-
-    @dbus.service.method(INTERFACE_NAME,
-                         in_signature="", out_signature="s",
-                         sender_keyword="sender", connection_keyword="conn")
-    def get_url(self, sender=None, conn=None):
-        if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
-            try:
-                return self.config.url
-            except AttributeError:
-                return ""
-
-    @dbus.service.method(INTERFACE_NAME,
-                         in_signature="s", out_signature="",
-                         sender_keyword="sender", connection_keyword="conn")
-    def set_url(self, url, sender=None, conn=None):
-        if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
-            self.config.url = url
-
-    @dbus.service.method(INTERFACE_NAME,
-                         in_signature="", out_signature="s",
-                         sender_keyword="sender", connection_keyword="conn")
-    def get_https_proxy(self, sender=None, conn=None):
-        if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
-            try:
-                return self.config.https_proxy
-            except AttributeError:
-                return ""
-
-    @dbus.service.method(INTERFACE_NAME,
-                         in_signature="s", out_signature="",
-                         sender_keyword="sender", connection_keyword="conn")
-    def set_https_proxy(self, https_proxy, sender=None, conn=None):
-        if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
-            self.config.https_proxy = https_proxy
+            setattr(self.config, name, value)
