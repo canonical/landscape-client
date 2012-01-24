@@ -53,5 +53,4 @@ class RegistrationProxyTest(LandscapeTest):
         Test that the proxy calls through to the underlying interface and
         correctly performs registration.
         """
-        return self.assertEquals(self.proxy.register("foo"),
-                                 (True, "Connected\n"))
+        self.assertEquals((True, "Connected\n"), self.proxy.register("foo"))

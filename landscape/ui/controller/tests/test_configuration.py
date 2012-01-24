@@ -220,34 +220,34 @@ class EmptyConfigControllerTest(LandscapeTest):
         dedicated.
         """
         self.controller.load()
-        self.assertEqual(self.controller.account_name, None)
-        self.assertEqual(self.controller.registration_password, None)
-        self.assertEqual(self.controller.server_host_name,
-                         "landscape.canonical.com")
+        self.assertEqual(None, self.controller.account_name)
+        self.assertEqual(None, self.controller.registration_password)
+        self.assertEqual("landscape.canonical.com",
+                         self.controller.server_host_name)
         self.controller.account_name = "Bungle"
         self.controller.default_dedicated()
-        self.assertEqual(self.controller.account_name, "standalone")
-        self.assertEqual(self.controller.registration_password, None)
-        self.assertEqual(self.controller.server_host_name,
-                         "landscape.localdomain")
+        self.assertEqual("standalone", self.controller.account_name)
+        self.assertEqual(None, self.controller.registration_password)
+        self.assertEqual("landscape.localdomain",
+                         self.controller.server_host_name)
         self.controller.default_hosted()
-        self.assertEqual(self.controller.account_name, None)
-        self.assertEqual(self.controller.registration_password, None)
-        self.assertEqual(self.controller.server_host_name,
-                         "landscape.canonical.com")
+        self.assertEqual(None, self.controller.account_name)
+        self.assertEqual(None, self.controller.registration_password)
+        self.assertEqual("landscape.canonical.com",
+                         self.controller.server_host_name)
         self.controller.default_dedicated()
         self.controller.server_host_name = "test.machine"
         self.controller.default_dedicated()
-        self.assertEqual(self.controller.server_host_name, "test.machine")
+        self.assertEqual("test.machine", self.controller.server_host_name)
         self.controller.default_hosted()
-        self.assertEqual(self.controller.server_host_name,
-                         "landscape.canonical.com")
+        self.assertEqual("landscape.canonical.com",
+                         self.controller.server_host_name)
         self.controller.default_dedicated()
-        self.assertEqual(self.controller.server_host_name, "test.machine")
+        self.assertEqual("test.machine", self.controller.server_host_name)
 
     def test_default_computer_title(self):
         """
         Test we set the computer title to host name when it isn't already set
         in the config file.
         """
-        self.assertEqual(self.controller.computer_title, "me.here.com")
+        self.assertEqual("me.here.com", self.controller.computer_title)

@@ -32,7 +32,7 @@ class MechanismTest(LandscapeTest):
         """
         RegistrationMechanism._do_registration = self.make_registration(True)
         mechanism = RegistrationMechanism(self.bus_name)
-        self.assertEqual(mechanism.register("foo"), (True, "Connected\n"))
+        self.assertEqual((True, "Connected\n"), mechanism.register("foo"))
 
     def test_registration_fail(self):
         """
@@ -41,5 +41,5 @@ class MechanismTest(LandscapeTest):
         """
         RegistrationMechanism._do_registration = self.make_registration(False)
         mechanism = RegistrationMechanism(self.bus_name)
-        self.assertEqual(mechanism.register("foo"),
-                         (False, "Failed to connect\n"))
+        self.assertEqual((False, "Failed to connect\n"),
+                         mechanism.register("foo"))

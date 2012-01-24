@@ -55,62 +55,62 @@ class MechanismTest(LandscapeTest):
         """
         Test we can get account name from the mechanism.
         """
-        self.assertEqual(self.mechanism.get("account_name"), "foo")
+        self.assertEqual("foo", self.mechanism.get("account_name"))
 
     def test_set_account_name(self):
         """
         Test we can set the account name via the mechanism.
         """
         self.mechanism.set("account_name", "bar")
-        self.assertEqual(self.mechanism.get("account_name"), "bar")
+        self.assertEqual("bar", self.mechanism.get("account_name"))
 
     def test_get_data_path(self):
         """
         Test we can get the data path from the mechanism.
         """
-        self.assertEqual(self.mechanism.get("data_path"),
-                         "/var/lib/landscape/client/")
+        self.assertEqual("/var/lib/landscape/client/",
+                         self.mechanism.get("data_path"))
 
     def set_data_path(self):
         """
         Test we can set the data path via the mechanism.
         """
         self.mechanism.set("data_path", "bar")
-        self.assertEqual(self.mechanism.get("data_path"), "bar")
+        self.assertEqual("bar", self.mechanism.get("data_path"))
 
     def test_get_http_proxy(self):
         """
         Test that we can get the HTTP proxy from the mechanism.
         """
-        self.assertEqual(self.mechanism.get("http_proxy"),
-                         "http://proxy.localdomain:3192")
+        self.assertEqual("http://proxy.localdomain:3192",
+                         self.mechanism.get("http_proxy"))
 
     def test_set_http_proxy(self):
         """
         Test that we can set the HTTP proxy via the mechanism.
         """
         self.mechanism.set("http_proxy", "bar")
-        self.assertEqual(self.mechanism.get("http_proxy"), "bar")
+        self.assertEqual("bar", self.mechanism.get("http_proxy"))
 
     def test_get_tags(self):
         """
         Test that we can get Tags from the mechanism.
         """
-        self.assertEquals(self.mechanism.get("tags"), "a_tag")
+        self.assertEquals("a_tag", self.mechanism.get("tags"))
 
     def test_set_tags(self):
         """
         Test that we can set Tags via the mechanism.
         """
         self.mechanism.set("tags", "bar")
-        self.assertEquals(self.mechanism.get("tags"), "bar")
+        self.assertEquals("bar", self.mechanism.get("tags"))
 
     def test_get_url(self):
         """
         Test that we can get URL from the mechanism.
         """
-        self.assertEquals(self.mechanism.get("url"),
-                          "https://landscape.canonical.com/message-system")
+        self.assertEquals("https://landscape.canonical.com/message-system",
+                          self.mechanism.get("url"))
 
     def test_set_url(self):
         """
@@ -123,52 +123,52 @@ class MechanismTest(LandscapeTest):
         """
         Test that we can get the Ping URL from the mechanism.
         """
-        self.assertEquals(self.mechanism.get("ping_url"),
-                          "http://landscape.canonical.com/ping")
+        self.assertEquals("http://landscape.canonical.com/ping",
+                          self.mechanism.get("ping_url"))
 
     def test_set_ping_url(self):
         """
         Test that we can set the Ping URL via the mechanism.
         """
         self.mechanism.set("ping_url", "bar")
-        self.assertEquals(self.mechanism.get("ping_url"), "bar")
+        self.assertEquals("bar", self.mechanism.get("ping_url"))
 
     def test_get_registration_password(self):
         """
         Test that we can get the registration password from the mechanism.
         """
-        self.assertEquals(self.mechanism.get("registration_password"), "boink")
+        self.assertEquals("boink", self.mechanism.get("registration_password"))
 
     def test_set_registration_password(self):
         """
         Test that we can set the registration password via the mechanism.
         """
         self.mechanism.set("registration_password", "bar")
-        self.assertEquals(self.mechanism.get("registration_password"), "bar")
+        self.assertEquals("bar", self.mechanism.get("registration_password"))
 
     def test_get_computer_title(self):
         """
         Test that we can get the computer title from the mechanism.
         """
-        self.assertEquals(self.mechanism.get("computer_title"), "baz")
+        self.assertEquals("baz", self.mechanism.get("computer_title"))
 
     def test_set_computer_title(self):
         """
         Test that we can set the computer title via the mechanism.
         """
         self.mechanism.set("computer_title", "bar")
-        self.assertEquals(self.mechanism.get("computer_title"), "bar")
+        self.assertEquals("bar", self.mechanism.get("computer_title"))
 
     def test_get_https_proxy(self):
         """
         Test that we can get the HTTPS Proxy from the mechanism.
         """
-        self.assertEqual(self.mechanism.get("https_proxy"),
-                         "https://proxy.localdomain:6192")
+        self.assertEqual("https://proxy.localdomain:6192",
+                         self.mechanism.get("https_proxy"))
 
     def test_set_https_proxy(self):
         """
         Test that we can set the HTTPS Proxy via the mechanism.
         """
         self.mechanism.set("https_proxy", "bar")
-        self.assertEqual(self.mechanism.get("https_proxy"), "bar")
+        self.assertEqual("bar", self.mechanism.get("https_proxy"))
