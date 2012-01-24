@@ -44,6 +44,7 @@ class ConfigurationProxyInterfaceTest(LandscapeTest):
         self.assertEqual(self.proxy.account_name, "foo")
         self.proxy.account_name = "bar"
         self.assertEqual(self.proxy.account_name, "bar")
+        self.assertEqual(self.config.account_name, "bar")
 
     def test_computer_title(self):
         """
@@ -53,6 +54,7 @@ class ConfigurationProxyInterfaceTest(LandscapeTest):
         self.assertEqual(self.proxy.computer_title, "baz")
         self.proxy.computer_title = "bar"
         self.assertEqual(self.proxy.computer_title, "bar")
+        self.assertEqual(self.config.computer_title, "bar")
 
     def test_data_path(self):
         """
@@ -61,6 +63,7 @@ class ConfigurationProxyInterfaceTest(LandscapeTest):
         self.assertEqual(self.proxy.data_path, "/var/lib/landscape/client/")
         self.proxy.data_path = "bar"
         self.assertEqual(self.proxy.data_path, "bar")
+        self.assertEqual(self.config.data_path, "bar")
 
     def test_http_proxy(self):
         """
@@ -71,6 +74,7 @@ class ConfigurationProxyInterfaceTest(LandscapeTest):
                          "http://proxy.localdomain:3192")
         self.proxy.http_proxy = "bar"
         self.assertEqual(self.proxy.http_proxy, "bar")
+        self.assertEqual(self.config.http_proxy, "bar")
 
     def test_https_proxy(self):
         """
@@ -81,6 +85,7 @@ class ConfigurationProxyInterfaceTest(LandscapeTest):
                          "https://proxy.localdomain:6192")
         self.proxy.https_proxy = "bar"
         self.assertEqual(self.proxy.https_proxy, "bar")
+        self.assertEqual(self.config.https_proxy, "bar")
 
     def test_ping_url(self):
         """
@@ -90,6 +95,7 @@ class ConfigurationProxyInterfaceTest(LandscapeTest):
                          "http://landscape.canonical.com/ping")
         self.proxy.ping_url = "bar"
         self.assertEqual(self.proxy.ping_url, "bar")
+        self.assertEqual(self.config.ping_url, "bar")
 
     def test_registration_password(self):
         """
@@ -99,6 +105,7 @@ class ConfigurationProxyInterfaceTest(LandscapeTest):
         self.assertEqual(self.proxy.registration_password, "boink")
         self.proxy.registration_password = "bar"
         self.assertEqual(self.proxy.registration_password, "bar")
+        self.assertEqual(self.config.registration_password, "bar")
 
     def test_tags(self):
         """
@@ -107,6 +114,7 @@ class ConfigurationProxyInterfaceTest(LandscapeTest):
         self.assertEqual(self.proxy.tags, "a_tag")
         self.proxy.tags = "bar"
         self.assertEqual(self.proxy.tags, "bar")
+        self.assertEqual(self.config.tags, "bar")
 
     def test_url(self):
         """
@@ -116,3 +124,4 @@ class ConfigurationProxyInterfaceTest(LandscapeTest):
                          "https://landscape.canonical.com/message-system")
         self.proxy.url = "bar"
         self.assertEqual(self.proxy.url, "bar")
+        self.assertEqual(self.config.url, "bar")
