@@ -15,15 +15,14 @@ class ConfigurationProxyHelper(object):
     communication.
 
     Tests utilising this helper must define a L{test_case.config_string} for
-    use in L{set_up} below.  
+    use in L{set_up} below.
     """
-    
 
     def set_up(self, test_case):
         test_case.config_filename = test_case.makeFile(test_case.config_string)
         test_case.config = LandscapeSetupConfiguration()
         test_case.config.default_config_filenames = [test_case.config_filename]
-        
+
         # We have to do these steps because the ConfigurationMechanism inherits
         # from dbus.service.Object which throws a fit it notices you using it
         # without a mainloop.

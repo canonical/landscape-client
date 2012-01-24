@@ -1,10 +1,5 @@
-import dbus
-
 from landscape.tests.helpers import LandscapeTest
 from landscape.ui.tests.helpers import ConfigurationProxyHelper
-from landscape.ui.model.configuration.mechanism import (
-    ConfigurationMechanism, INTERFACE_NAME)
-from landscape.ui.model.configuration.proxy import ConfigurationProxy
 from landscape.configuration import LandscapeSetupConfiguration
 
 

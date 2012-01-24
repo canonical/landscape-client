@@ -88,7 +88,6 @@ class SettingsApplicationControllerUISetupTest(LandscapeTest):
              ])
 
         super(SettingsApplicationControllerUISetupTest, self).setUp()
-        
 
         def fake_run(obj):
             """
