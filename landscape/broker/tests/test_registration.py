@@ -855,6 +855,24 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
                             [self.get_expected_cloud_message(
                                 ramdisk_key=None)])
 
+    def test_cloud_registration_continues_without_kernel(self):
+        """
+        If the instance doesn't have a kernel (ie, the query for kernel
+        returns a 404), then register-cloud-vm still occurs.
+        """
+        self.log_helper.ignore_errors(HTTPCodeError)
+        self.prepare_query_results(kernel_key=HTTPCodeError(404, "ohno"))
+        self.prepare_cloud_registration()
+
+        self.reactor.fire("run")
+        self.exchanger.exchange()
+        self.assertIn("HTTPCodeError: Server returned HTTP code 404",
+                      self.logfile.getvalue())
+        self.assertEqual(len(self.transport.payloads), 1)
+        self.assertMessages(self.transport.payloads[0]["messages"],
+                            [self.get_expected_cloud_message(
+                                kernel_key=None)])
+
     def test_fall_back_to_normal_registration_when_metadata_fetch_fails(self):
         """
         If fetching metadata fails, but we do have an account name, then we
