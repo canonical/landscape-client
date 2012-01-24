@@ -428,6 +428,9 @@ class AptFacade(object):
             if self._is_package_held(version.package):
                 held_package_names.add(version.package.name)
             if version.package in package_upgrades:
+                # The server requests the old version to be removed for
+                # upgrades, since Smart worked that way. For Apt we have
+                # to take care not to mark upgraded packages for # removal.
                 continue
             version.package.mark_delete(auto_fix=False)
             # Configure the resolver in the same way
