@@ -1,7 +1,7 @@
 """
 This module contains a class, L{ConfigurationProxy} which pretends to be a
 L{landscape.configuration.LandscapeSetupConfiguration} but actually directs
-it's calls via DBus to the L{ConfigurationMechanism}.
+its calls via DBus to the L{ConfigurationMechanism}.
 """
 
 import dbus
