@@ -2,10 +2,13 @@ import logging
 import types
 import sys
 
-from smart.interface import Interface
-from smart.const import ERROR, WARNING, INFO, DEBUG
-
-import smart.interfaces
+try:
+    import smart.interfaces
+    from smart.interface import Interface
+    from smart.const import ERROR, WARNING, INFO, DEBUG
+except ImportError:
+    # Smart is optional, if AptFacade is being used.
+    Interface = object
 
 
 class LandscapeInterface(Interface):

@@ -5,9 +5,14 @@ import sys
 import textwrap
 import tempfile
 
-from smart.control import Control
-from smart.cache import Provides
-from smart.const import NEVER, ALWAYS
+try:
+    import smart
+    from smart.control import Control
+    from smart.cache import Provides
+    from smart.const import NEVER, ALWAYS
+except ImportError:
+    # Smart is optional, if AptFacade is being used.
+    pass
 
 import apt_pkg
 from apt.package import Package
@@ -16,8 +21,6 @@ from aptsources.sourceslist import SourcesList
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from twisted.internet.utils import getProcessOutputAndValue
-
-import smart
 
 from landscape.lib.fs import read_file
 from landscape.package.facade import (

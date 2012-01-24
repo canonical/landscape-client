@@ -4,11 +4,14 @@ import subprocess
 import tempfile
 from cStringIO import StringIO
 
-from smart.transaction import (
-    Transaction, PolicyInstall, PolicyUpgrade, PolicyRemove, Failed)
-from smart.const import INSTALL, REMOVE, UPGRADE, ALWAYS, NEVER
-
-import smart
+has_smart = True
+try:
+    import smart
+    from smart.transaction import (
+        Transaction, PolicyInstall, PolicyUpgrade, PolicyRemove, Failed)
+    from smart.const import INSTALL, REMOVE, UPGRADE, ALWAYS, NEVER
+except ImportError:
+    has_smart = False
 
 # Importing apt throws a FutureWarning on hardy, that we don't want to
 # see.
