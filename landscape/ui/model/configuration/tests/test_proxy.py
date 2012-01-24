@@ -38,7 +38,7 @@ class ConfigurationProxyInterfaceTest(LandscapeTest):
 
     def test_account_name(self):
         """
-        Test that we can get and set and account name via the configuration
+        Test that we can get and set an account name via the configuration
         proxy.
         """
         self.assertEqual(self.proxy.account_name, "foo")
