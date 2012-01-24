@@ -525,6 +525,9 @@ class SmartFacade(object):
     supports_package_holds = False
 
     def __init__(self, smart_init_kwargs={}, sysconf_args=None):
+        if not has_smart:
+            raise RuntimeError(
+                "Smart needs to be installed if SmartFacade is used.")
         self._smart_init_kwargs = smart_init_kwargs.copy()
         self._smart_init_kwargs.setdefault("interface", "landscape")
         self._sysconfig_args = sysconf_args or {}
