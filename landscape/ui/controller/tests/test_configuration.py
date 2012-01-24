@@ -1,24 +1,28 @@
 from landscape.ui.controller.configuration import (
     ConfigController, ConfigControllerLockError)
-from landscape.ui.model.configuration.tests.test_proxy import (
-    ConfigurationProxyBaseTest)
+from landscape.ui.tests.helpers import ConfigurationProxyHelper
+from landscape.tests.helpers import LandscapeTest
 
 
-class ConfigControllerTest(ConfigurationProxyBaseTest):
+class ConfigControllerTest(LandscapeTest):
+
+    helpers = [ConfigurationProxyHelper]
 
     def setUp(self):
-        super(ConfigControllerTest, self).setUp(
-            "[client]\n"
-            "data_path = /var/lib/landscape/client/\n"
-            "http_proxy = http://proxy.localdomain:3192\n"
-            "tags = a_tag\n"
-            "url = https://landscape.canonical.com/message-system\n"
-            "account_name = foo\n"
-            "registration_password = bar\n"
-            "computer_title = baz\n"
-            "https_proxy = https://proxy.localdomain:6192\n"
-            "ping_url = http://landscape.canonical.com/ping\n"
-            )
+        self.config_string = "\n".join(
+            ["[client]",
+             "data_path = /var/lib/landscape/client/",
+             "http_proxy = http://proxy.localdomain:3192",
+             "tags = a_tag",
+             "url = https://landscape.canonical.com/message-system",
+             "account_name = foo",
+             "registration_password = bar",
+             "computer_title = baz",
+             "https_proxy = https://proxy.localdomain:6192",
+             "ping_url = http://landscape.canonical.com/ping"
+             ])
+
+        super(ConfigControllerTest, self).setUp()
 
         self.controller = ConfigController(self.proxy)
 
@@ -194,10 +198,13 @@ class ConfigControllerTest(ConfigurationProxyBaseTest):
         self.assertTrue(self.controller.is_modified)
 
 
-class EmptyConfigControllerTest(ConfigurationProxyBaseTest):
+class EmptyConfigControllerTest(LandscapeTest):
+
+    helpers = [ConfigurationProxyHelper]
 
     def setUp(self):
-        super(EmptyConfigControllerTest, self).setUp("")
+        self.config_string = ""
+        super(EmptyConfigControllerTest, self).setUp()
 
         self.controller = ConfigController(self.proxy)
 

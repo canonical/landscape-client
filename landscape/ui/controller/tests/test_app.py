@@ -10,8 +10,7 @@ except (ImportError, RuntimeError):
 else:
     from landscape.ui.controller.app import SettingsApplicationController
     from landscape.ui.controller.configuration import ConfigController
-    from landscape.ui.model.configuration.tests.test_proxy import (
-        ConfigurationProxyBaseTest)
+    from landscape.ui.tests.helpers import ConfigurationProxyHelper
     from landscape.ui.view.configuration import ClientSettingsDialog
 
 
@@ -70,22 +69,26 @@ class SettingsApplicationControllerInitTest(LandscapeTest):
         test_init.skip = gobject_skip_message
 
 
-class SettingsApplicationControllerUISetupTest(ConfigurationProxyBaseTest):
+class SettingsApplicationControllerUISetupTest(LandscapeTest):
+
+    helpers = [ConfigurationProxyHelper]
 
     def setUp(self):
-        super(SettingsApplicationControllerUISetupTest, self).setUp(
-            "[client]\n"
-            "data_path = %s\n"
-            "http_proxy = http://proxy.localdomain:3192\n"
-            "tags = a_tag\n"
-            "url = https://landscape.canonical.com/message-system\n"
-            "account_name = foo\n"
-            "registration_password = bar\n"
-            "computer_title = baz\n"
-            "https_proxy = https://proxy.localdomain:6192\n"
-            "ping_url = http://landscape.canonical.com/ping\n"
-            % sys.path[0]
-            )
+        self.config_string = "\n".join(
+            ["[client]",
+             "data_path = %s" % sys.path[0],
+             "http_proxy = http://proxy.localdomain:3192",
+             "tags = a_tag",
+             "url = https://landscape.canonical.com/message-system",
+             "account_name = foo",
+             "registration_password = bar",
+             "computer_title = baz",
+             "https_proxy = https://proxy.localdomain:6192",
+             "ping_url = http://landscape.canonical.com/ping"
+             ])
+
+        super(SettingsApplicationControllerUISetupTest, self).setUp()
+        
 
         def fake_run(obj):
             """
