@@ -28,7 +28,7 @@ class ConfigurationMechanism(PolicyKitMechanism):
         super(ConfigurationMechanism, self).__init__(
             OBJECT_PATH, bus_name, PermissionDeniedByPolicy,
             bypass=bypass, conn=conn)
-        self.config = config
+        self._config = config
 
     @dbus.service.method(INTERFACE_NAME,
                          in_signature="as",
@@ -38,9 +38,9 @@ class ConfigurationMechanism(PolicyKitMechanism):
     def load(self, arglist, sender=None, conn=None):
         if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
             if len(arglist) > 0:
-                self.config.load(arglist.split(chr(0x1e)))
+                self._config.load(arglist.split(chr(0x1e)))
             else:
-                self.config.load([])
+                self._config.load([])
         return
 
     @dbus.service.method(INTERFACE_NAME,
@@ -48,14 +48,14 @@ class ConfigurationMechanism(PolicyKitMechanism):
                          sender_keyword="sender", connection_keyword="conn")
     def reload(self, sender=None, conn=None):
         if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
-            self.config.reload()
+            self._config.reload()
 
     @dbus.service.method(INTERFACE_NAME,
                          in_signature="", out_signature="",
                          sender_keyword="sender", connection_keyword="conn")
     def write(self, sender=None, conn=None):
         if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
-            self.config.write()
+            self._config.write()
 
     @dbus.service.method(INTERFACE_NAME,
                          in_signature="",
@@ -63,7 +63,7 @@ class ConfigurationMechanism(PolicyKitMechanism):
                          sender_keyword="sender",
                          connection_keyword="conn")
     def get_config_filename(self, sender=None, conn=None):
-        return self.config.get_config_filename()
+        return self._config.get_config_filename()
 
     @dbus.service.method(INTERFACE_NAME,
                          in_signature="s",
@@ -77,7 +77,7 @@ class ConfigurationMechanism(PolicyKitMechanism):
         """
         if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
             try:
-                value = self.config.get(name)
+                value = self._config.get(name)
             except AttributeError:
                 return ""
             if value is None:
@@ -95,4 +95,4 @@ class ConfigurationMechanism(PolicyKitMechanism):
         L{LandscapeSetupConfiguration}.
         """
         if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
-            setattr(self.config, name, value)
+            setattr(self._config, name, value)
