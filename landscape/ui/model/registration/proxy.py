@@ -4,6 +4,11 @@ import landscape.ui.model.registration.mechanism as mechanism
 
 
 class RegistrationProxy(object):
+    """
+    L{RegistrationProxy} allows the use of the L{RegistrationMechanism} via
+    DBus without having to know about DBus.  This in turn allows controller
+    code to remain agnostic to the implementation of registration.
+    """
 
     def __init__(self, on_notify, on_error,
                  on_succeed, on_fail, bus=None):
