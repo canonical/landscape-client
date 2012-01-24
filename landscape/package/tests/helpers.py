@@ -3,8 +3,6 @@ import os
 import textwrap
 import time
 
-import smart
-
 import apt_inst
 import apt_pkg
 
@@ -117,6 +115,8 @@ class SmartHelper(object):
         create_simple_repository(test_case.repository_dir)
 
     def tear_down(self, test_case):
+        import smart
+
         if smart.iface.object:
             smart.deinit()
 

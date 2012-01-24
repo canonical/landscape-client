@@ -1,7 +1,3 @@
-import smart
-
-from smart.cache import Package
-
 from landscape.package.interface import (
     install_landscape_interface, uninstall_landscape_interface)
 
@@ -258,6 +254,8 @@ class SmartSkeletonTest(LandscapeTest, SkeletonTestMixin):
     helpers = [SmartHelper, SkeletonTestHelper]
 
     def setUp(self):
+        import smart
+
         super(SmartSkeletonTest, self).setUp()
         install_landscape_interface()
         self.ctrl = smart.init(interface="landscape", datadir=self.smart_dir)
@@ -281,6 +279,8 @@ class SmartSkeletonTest(LandscapeTest, SkeletonTestMixin):
         return build_skeleton(*args, **kwargs)
 
     def test_refuse_to_build_non_debian_packages(self):
+        from smart.cache import Package
+
         self.assertRaises(PackageTypeError, build_skeleton,
                           Package("name", "version"))
 

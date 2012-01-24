@@ -5,10 +5,6 @@ import sys
 import textwrap
 import tempfile
 
-from smart.control import Control
-from smart.cache import Provides
-from smart.const import NEVER, ALWAYS
-
 import apt_pkg
 from apt.package import Package
 from aptsources.sourceslist import SourcesList
@@ -16,8 +12,6 @@ from aptsources.sourceslist import SourcesList
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from twisted.internet.utils import getProcessOutputAndValue
-
-import smart
 
 from landscape.lib.fs import read_file
 from landscape.package.facade import (
@@ -1521,6 +1515,8 @@ class SmartFacadeTest(LandscapeTest):
                          ["name1", "name2", "name3"])
 
     def test_get_packages_wont_return_non_debian_packages(self):
+        from smart.control import Control
+
         self.facade.reload_channels()
         ctrl_mock = self.mocker.patch(Control)
 
@@ -1541,6 +1537,8 @@ class SmartFacadeTest(LandscapeTest):
         self.assertEqual([pkg.name for pkg in pkgs], ["name2"])
 
     def test_get_packages_by_name_wont_return_non_debian_packages(self):
+        from smart.control import Control
+
         self.facade.reload_channels()
         ctrl_mock = self.mocker.patch(Control)
 
@@ -1691,6 +1689,8 @@ class SmartFacadeTest(LandscapeTest):
         that should make perform_changes() fail with a dependency
         error on the needed package.
         """
+        from smart.cache import Provides
+
         self.facade.reload_channels()
 
         provide1 = Provides("prerequirename1", "prerequireversion1")
@@ -1726,6 +1726,8 @@ class SmartFacadeTest(LandscapeTest):
         mark both packages installed, so that we can get an error on
         removal.
         """
+        from smart.cache import Provides
+
         self.facade.reload_channels()
 
         provide1 = Provides("prerequirename1", "prerequireversion1")
@@ -1890,6 +1892,8 @@ class SmartFacadeTest(LandscapeTest):
         self.assertIdentical(pkg1, missing)
 
     def test_perform_changes_with_commit_change_set_errors(self):
+        import smart
+        from smart.control import Control
 
         self.facade.reload_channels()
 
@@ -1912,17 +1916,22 @@ class SmartFacadeTest(LandscapeTest):
         self.assertFalse(self.facade.get_package_by_hash(HASH1))
 
     def test_deinit_deinits_smart(self):
+        import smart
+
         self.facade.reload_channels()
         self.assertTrue(smart.iface.object)
         self.facade.deinit()
         self.assertFalse(smart.iface.object)
 
     def test_deinit_when_smart_wasnt_initialized(self):
+        import smart
+
         self.assertFalse(smart.iface.object)
         # Nothing bad should happen.
         self.facade.deinit()
 
     def test_reload_channels_wont_consider_non_debian_packages(self):
+        from smart.control import Control
 
         class StubPackage(object):
             pass
@@ -1943,6 +1952,10 @@ class SmartFacadeTest(LandscapeTest):
         The L{SmartFacade.reload_channels} method raises a L{ChannelsError} if
         smart fails to load the configured channels.
         """
+        import smart
+        from smart.control import Control
+        from smart.const import ALWAYS
+
         ctrl_mock = self.mocker.patch(Control)
         ctrl_mock.reloadChannels(caching=ALWAYS)
         self.mocker.throw(smart.Error(u"Channel information is locked"))
@@ -2034,6 +2047,7 @@ class SmartFacadeTest(LandscapeTest):
         self.assertEqual(pkgs[1].name, "kairos")
 
     def test_set_caching_with_reload_error(self):
+        from smart.const import NEVER
 
         alias = "alias"
         channel = {"type": "deb-dir",
@@ -2056,6 +2070,8 @@ class SmartFacadeTest(LandscapeTest):
         is initialized: this sets a smart configuration variable and load the
         module.
         """
+        import smart
+
         self.facade.reload_channels()
         self.assertTrue(smart.sysconf.get("use-landscape-proxies"))
         self.assertIn("smart.plugins.landscape", sys.modules)
