@@ -203,6 +203,8 @@ class AptFacadeTest(LandscapeTest):
         create_deb(deb_dir, PKGNAME1, PKGDEB1)
         deb_file = os.path.join(deb_dir, PKGNAME1)
         stanza = self.facade.get_package_stanza(deb_file)
+        SHA256 = (
+            "f899cba22b79780dbe9bbbb802ff901b7e432425c264dc72e6bb20c0061e4f26")
         self.assertEqual(textwrap.dedent("""\
             Package: name1
             Priority: optional
@@ -221,10 +223,10 @@ class AptFacadeTest(LandscapeTest):
             Size: 1038
             MD5sum: efe83eb2b891046b303aaf9281c14e6e
             SHA1: b4ebcd2b0493008852a4954edc30a236d516c638
-            SHA256: f899cba22b79780dbe9bbbb802ff901b7e432425c264dc72e6bb20c0061e4f26
+            SHA256: %(sha256)s
             Description: Summary1
              Description1
-            """ % {"filename": PKGNAME1}),
+            """ % {"filename": PKGNAME1, "sha256": SHA256}),
             stanza)
 
     def test_add_channel_deb_dir_creates_packages_file(self):
@@ -909,8 +911,8 @@ class AptFacadeTest(LandscapeTest):
         [baz] = self.facade.get_packages_by_name("baz")
         self.facade.mark_remove(baz)
         self.facade.reset_marks()
-        self.assertEqual(self.facade._package_installs, [])
-        self.assertEqual(self.facade._package_removals, [])
+        self.assertEqual(self.facade._version_installs, [])
+        self.assertEqual(self.facade._version_removals, [])
         self.assertFalse(self.facade._global_upgrade)
         self.assertEqual(self.facade.perform_changes(), None)
 
@@ -925,8 +927,8 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         pkg = self.facade.get_packages_by_name("minimal")[0]
         self.facade.mark_install(pkg)
-        self.assertEqual(1, len(self.facade._package_installs))
-        install = self.facade._package_installs[0]
+        self.assertEqual(1, len(self.facade._version_installs))
+        install = self.facade._version_installs[0]
         self.assertEqual("minimal", install.package.name)
 
     def test_wb_mark_global_upgrade_sets_variable(self):
@@ -953,7 +955,7 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_remove(foo)
-        self.assertEqual([foo], self.facade._package_removals)
+        self.assertEqual([foo], self.facade._version_removals)
 
     def test_mark_install_specific_version(self):
         """
@@ -1284,6 +1286,30 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(
             "Can't perform the changes, since the following packages" +
             " are held: bar, foo", error.args[0])
+
+    def test_changer_upgrade_package(self):
+        """
+        When the {PackageChanger} requests for a package to be upgraded,
+        it requests that the new version is to be installed, and the old
+        version to be removed. This is how you had to do it with Smart.
+        With Apt we have to take care of not marking the old version for
+        removal, since that can result in packages that depend on the
+        upgraded package to be removed.
+        """
+        self._add_system_package(
+            "foo", control_fields={"Depends": "bar"})
+        self._add_system_package("bar", version="1.0")
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "bar", version="2.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        bar_1, bar_2 = sorted(self.facade.get_packages_by_name("bar"))
+        self.facade.mark_install(bar_2)
+        self.facade.mark_remove(bar_1)
+        self.facade._cache.commit = lambda fetch_progress: None
+        self.facade.perform_changes()
+        [bar] = self.facade._cache.get_changes()
+        self.assertTrue(bar.marked_upgrade)
 
     def test_mark_global_upgrade_held_packages(self):
         """

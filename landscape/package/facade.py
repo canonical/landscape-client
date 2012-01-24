@@ -94,9 +94,9 @@ class AptFacade(object):
         self._channels_loaded = False
         self._pkg2hash = {}
         self._hash2pkg = {}
-        self._package_installs = []
+        self._version_installs = []
         self._global_upgrade = False
-        self._package_removals = []
+        self._version_removals = []
         self.refetch_package_index = False
 
     def _ensure_dir_structure(self):
@@ -401,12 +401,17 @@ class AptFacade(object):
     def perform_changes(self):
         """Perform the pending package operations."""
         held_package_names = set()
-        package_changes = self._package_installs[:]
-        package_changes.extend(self._package_removals)
-        if not package_changes and not self._global_upgrade:
+        package_installs = set(
+            version.package for version in self._version_installs)
+        package_upgrades = set(
+            version.package for version in self._version_removals
+            if version.package in package_installs)
+        version_changes = self._version_installs[:]
+        version_changes.extend(self._version_removals)
+        if not version_changes and not self._global_upgrade:
             return None
         fixer = apt_pkg.ProblemResolver(self._cache._depcache)
-        for version in self._package_installs:
+        for version in self._version_installs:
             # Set the candidate version, so that the version we want to
             # install actually is the one getting installed.
             version.package.candidate = version
@@ -419,9 +424,14 @@ class AptFacade(object):
             fixer.protect(version.package._pkg)
         if self._global_upgrade:
             self._cache.upgrade(dist_upgrade=True)
-        for version in self._package_removals:
+        for version in self._version_removals:
             if self._is_package_held(version.package):
                 held_package_names.add(version.package.name)
+            if version.package in package_upgrades:
+                # The server requests the old version to be removed for
+                # upgrades, since Smart worked that way. For Apt we have
+                # to take care not to mark upgraded packages for # removal.
+                continue
             version.package.mark_delete(auto_fix=False)
             # Configure the resolver in the same way
             # mark_delete(auto_fix=True) would have done.
@@ -441,7 +451,7 @@ class AptFacade(object):
             except SystemError, error:
                 raise TransactionError(error.args[0])
         all_changes = [
-            (version.package, version) for version in package_changes]
+            (version.package, version) for version in version_changes]
         versions_to_be_changed = set(
             (package, package.candidate)
             for package in self._cache.get_changes()
@@ -481,13 +491,13 @@ class AptFacade(object):
 
     def reset_marks(self):
         """Clear the pending package operations."""
-        del self._package_installs[:]
-        del self._package_removals[:]
+        del self._version_installs[:]
+        del self._version_removals[:]
         self._global_upgrade = False
 
     def mark_install(self, version):
         """Mark the package for installation."""
-        self._package_installs.append(version)
+        self._version_installs.append(version)
 
     def mark_global_upgrade(self):
         """Upgrade all installed packages."""
@@ -495,7 +505,7 @@ class AptFacade(object):
 
     def mark_remove(self, version):
         """Mark the package for removal."""
-        self._package_removals.append(version)
+        self._version_removals.append(version)
 
 
 class SmartFacade(object):
