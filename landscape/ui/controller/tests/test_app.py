@@ -10,11 +10,11 @@ except (ImportError, RuntimeError):
 else:
     from landscape.ui.controller.app import SettingsApplicationController
     from landscape.ui.controller.configuration import ConfigController
+    from landscape.ui.tests.helpers import ConfigurationProxyHelper
     from landscape.ui.view.configuration import ClientSettingsDialog
 
 
 from landscape.tests.helpers import LandscapeTest
-from landscape.configuration import LandscapeSetupConfiguration
 
 
 class ConnectionRecordingSettingsApplicationController(
@@ -71,7 +71,22 @@ class SettingsApplicationControllerInitTest(LandscapeTest):
 
 class SettingsApplicationControllerUISetupTest(LandscapeTest):
 
+    helpers = [ConfigurationProxyHelper]
+
     def setUp(self):
+        self.config_string = "\n".join(
+            ["[client]",
+             "data_path = %s" % sys.path[0],
+             "http_proxy = http://proxy.localdomain:3192",
+             "tags = a_tag",
+             "url = https://landscape.canonical.com/message-system",
+             "account_name = foo",
+             "registration_password = bar",
+             "computer_title = baz",
+             "https_proxy = https://proxy.localdomain:6192",
+             "ping_url = http://landscape.canonical.com/ping"
+             ])
+
         super(SettingsApplicationControllerUISetupTest, self).setUp()
 
         def fake_run(obj):
@@ -84,24 +99,7 @@ class SettingsApplicationControllerUISetupTest(LandscapeTest):
         Gtk.Dialog.run = fake_run
 
         def get_config():
-            configdata = "[client]\n"
-            configdata += "data_path = %s\n" % sys.path[0]
-            configdata += "http_proxy = http://proxy.localdomain:3192\n"
-            configdata += "tags = a_tag\n"
-            configdata += \
-                "url = https://landscape.canonical.com/message-system\n"
-            configdata += "account_name = foo\n"
-            configdata += "registration_password = bar\n"
-            configdata += "computer_title = baz\n"
-            configdata += "https_proxy = https://proxy.localdomain:6192\n"
-            configdata += "ping_url = http://landscape.canonical.com/ping\n"
-            config_filename = self.makeFile(configdata)
-
-            class MyLandscapeSetupConfiguration(LandscapeSetupConfiguration):
-                default_config_filenames = [config_filename]
-
-            config = MyLandscapeSetupConfiguration()
-            return config
+            return self.proxy
 
         self.app = ConnectionRecordingSettingsApplicationController(
             get_config=get_config)

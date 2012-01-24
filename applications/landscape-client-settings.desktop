@@ -1,0 +1,17 @@
+[Desktop Entry]
+Name=Management Service
+Comment=Management Service Preferences
+Exec=landscape-client-settings-ui
+Icon=preferences-management-service
+Terminal=False
+Type=Application
+StartupNotify=true
+Categories=GNOME;GTK;Settings;X-GNOME-SystemSettings;X-GNOME-Settings-Panel;
+OnlyShowIn=GNOME;Unity;
+X-GNOME-Bugzilla-Bugzilla=GNOME
+X-GNOME-Bugzilla-Product=gnome-control-center
+X-GNOME-Bugzilla-Component=sample
+X-GNOME-Bugzilla-Version=1.0.0
+X-GNOME-Settings-Panel=sample
+X-Ubuntu-Gettext-Domain=gnome-control-center-2.0
+X-GNOME-Keywords=device;system;information;memory;processor;version;default;application;fallback;preferred;

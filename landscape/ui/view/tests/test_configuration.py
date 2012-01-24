@@ -57,9 +57,9 @@ class ConfigurationViewTest(LandscapeTest):
         self.assertTrue(dialog._registration_button.get_sensitive())
         start, end = dialog._registration_textbuffer.get_bounds()
         self.assertEqual(
+            0,
             len(dialog._registration_textbuffer.get_text(
-                    start, end, include_hidden_chars=True)),
-            0)
+                    start, end, include_hidden_chars=True)))
 
     def test_toggle_radio_button(self):
         """
@@ -93,10 +93,10 @@ class ConfigurationViewTest(LandscapeTest):
         """
         controller = ConfigController(self.config)
         dialog = ClientSettingsDialog(controller)
-        self.assertEqual(dialog._account_entry.get_text(), "foo")
-        self.assertEqual(dialog._password_entry.get_text(), "bar")
-        self.assertEqual(dialog._server_host_name_entry.get_text(),
-                         "landscape.canonical.com")
+        self.assertEqual("foo", dialog._account_entry.get_text())
+        self.assertEqual("bar", dialog._password_entry.get_text())
+        self.assertEqual("landscape.canonical.com",
+                         dialog._server_host_name_entry.get_text())
 
     def test_modification(self):
         """
@@ -105,18 +105,18 @@ class ConfigurationViewTest(LandscapeTest):
         """
         controller = ConfigController(self.config)
         dialog = ClientSettingsDialog(controller)
-        self.assertEqual(dialog._registration_image.get_stock(),
-                         (Gtk.STOCK_DISCONNECT, 4))
+        self.assertEqual((Gtk.STOCK_DISCONNECT, 4),
+                         dialog._registration_image.get_stock())
         dialog._registration_image.set_from_stock(Gtk.STOCK_CONNECT, 4)
         while Gtk.events_pending():
             Gtk.main_iteration()
-        self.assertEqual(dialog._registration_image.get_stock(),
-                         (Gtk.STOCK_CONNECT, 4))
+        self.assertEqual((Gtk.STOCK_CONNECT, 4),
+                         dialog._registration_image.get_stock())
         dialog._account_entry.set_text("Spangles!")
         while Gtk.events_pending():
             Gtk.main_iteration()
-        self.assertEqual(dialog._registration_image.get_stock(),
-                         (Gtk.STOCK_DISCONNECT, 4))
+        self.assertEqual((Gtk.STOCK_DISCONNECT, 4),
+                         dialog._registration_image.get_stock())
         self.assertFalse(dialog._close_button.get_sensitive())
 
     def test_revert(self):
@@ -125,23 +125,23 @@ class ConfigurationViewTest(LandscapeTest):
         """
         controller = ConfigController(self.config)
         dialog = ClientSettingsDialog(controller)
-        self.assertEqual(dialog._account_entry.get_text(), "foo")
-        self.assertEqual(dialog._password_entry.get_text(), "bar")
-        self.assertEqual(dialog._server_host_name_entry.get_text(),
-                         "landscape.canonical.com")
+        self.assertEqual("foo", dialog._account_entry.get_text())
+        self.assertEqual("bar", dialog._password_entry.get_text())
+        self.assertEqual("landscape.canonical.com",
+                         dialog._server_host_name_entry.get_text())
         dialog._dedicated_radiobutton.set_active(True)
         dialog._server_host_name_entry.set_text("more.barn")
-        self.assertEqual(dialog._account_entry.get_text(), "standalone")
-        self.assertEqual(dialog._password_entry.get_text(), "bar")
-        self.assertEqual(dialog._server_host_name_entry.get_text(),
-                         "more.barn")
+        self.assertEqual("standalone", dialog._account_entry.get_text())
+        self.assertEqual("bar", dialog._password_entry.get_text())
+        self.assertEqual("more.barn",
+                         dialog._server_host_name_entry.get_text())
         self.assertTrue(dialog._dedicated_radiobutton.get_active())
         self.assertFalse(dialog._hosted_radiobutton.get_active())
         dialog.revert(None)
-        self.assertEqual(dialog._account_entry.get_text(), "foo")
-        self.assertEqual(dialog._password_entry.get_text(), "bar")
-        self.assertEqual(dialog._server_host_name_entry.get_text(),
-                         "landscape.canonical.com")
+        self.assertEqual("foo", dialog._account_entry.get_text())
+        self.assertEqual("bar", dialog._password_entry.get_text())
+        self.assertEqual("landscape.canonical.com",
+                         dialog._server_host_name_entry.get_text())
         self.assertFalse(dialog._dedicated_radiobutton.get_active())
         self.assertTrue(dialog._hosted_radiobutton.get_active())
 
@@ -290,10 +290,10 @@ class DedicatedConfigurationViewTest(LandscapeTest):
         """
         controller = ConfigController(self.config)
         dialog = ClientSettingsDialog(controller)
-        self.assertEqual(dialog._account_entry.get_text(), "")
-        self.assertEqual(dialog._password_entry.get_text(), "")
-        self.assertEqual(dialog._server_host_name_entry.get_text(),
-                         "landscape.localdomain")
+        self.assertEqual("", dialog._account_entry.get_text())
+        self.assertEqual("", dialog._password_entry.get_text())
+        self.assertEqual("landscape.localdomain",
+                         dialog._server_host_name_entry.get_text())
 
     if not got_gobject_introspection:
         test_load_data_from_config.skip = gobject_skip_message
