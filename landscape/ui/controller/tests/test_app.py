@@ -7,6 +7,7 @@ except (ImportError, RuntimeError):
     got_gobject_introspection = False
     gobject_skip_message = "GObject Introspection module unavailable"
     SettingsApplicationController = object
+    ConfigurationProxyHelper = object
 else:
     from landscape.ui.controller.app import SettingsApplicationController
     from landscape.ui.controller.configuration import ConfigController
