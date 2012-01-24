@@ -22,21 +22,16 @@ class ConfigurationProxy(object):
     The canonical case for this is L{landscape-client-settings-ui}.
     """
 
-    def __init__(self, bus=None):
-        self._interface = None
-        self._setup_interface(bus)
-
-    def _setup_interface(self, bus):
-        """
-        Redefining L{_setup_interface} allows us to bypass DBus for more
-        convenient testing in some instances.
-        """
+    def __init__(self, bus=None, interface=None):
         if bus is None:
             self._bus = dbus.SystemBus()
         else:
             self._bus = bus
-        self._remote_object = self._bus.get_object(SERVICE_NAME, OBJECT_PATH)
-        self._interface = dbus.Interface(self._remote_object, INTERFACE_NAME)
+        if interface is None:
+            remote_object = self._bus.get_object(SERVICE_NAME, OBJECT_PATH)
+            self._interface = dbus.Interface(remote_object, INTERFACE_NAME)
+        else:
+            self._interface = interface
 
     def load(self, arglist):
         if arglist is None or len(arglist) == 0:

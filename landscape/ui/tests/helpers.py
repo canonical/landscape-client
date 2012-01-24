@@ -24,20 +24,15 @@ class ConfigurationProxyHelper(object):
         test_case.config.default_config_filenames = [test_case.config_filename]
 
         # We have to do these steps because the ConfigurationMechanism inherits
-        # from dbus.service.Object which throws a fit it notices you using it
-        # without a mainloop.
+        # from dbus.service.Object which throws a fit if it notices you using
+        # it without a mainloop.
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
         bus = dbus.SessionBus()
         bus_name = dbus.service.BusName(INTERFACE_NAME, bus)
         test_case.mechanism = ConfigurationMechanism(test_case.config,
                                                      bus_name)
 
-        def setup_interface(this, bus):
-            # This just allows us to test without actually relying on dbus.
-            this._interface = test_case.mechanism
-
-        ConfigurationProxy._setup_interface = setup_interface
-        test_case.proxy = ConfigurationProxy()
+        test_case.proxy = ConfigurationProxy(interface=test_case.mechanism)
         test_case.proxy.load(["-c", test_case.config_filename])
 
     def tear_down(self, test_case):
