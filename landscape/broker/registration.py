@@ -148,7 +148,6 @@ class RegistrationHandler(object):
                 "/meta-data/local-hostname",
                 "/meta-data/public-hostname",
                 "/meta-data/ami-launch-index",
-                "/meta-data/kernel-id",
                 "/meta-data/ami-id",
                 "/meta-data/local-ipv4",
                 "/meta-data/public-ipv4"]
@@ -162,13 +161,18 @@ class RegistrationHandler(object):
                 lambda ignore: self._fetch_async(
                     EC2_API + "/meta-data/ramdisk-id").addErrback(log_failure))
             deferred.addCallback(ec2_data.append)
+            # And same for kernel
+            deferred.addCallback(
+                lambda ignore: self._fetch_async(
+                    EC2_API + "/meta-data/kernel-id").addErrback(log_failure))
+            deferred.addCallback(ec2_data.append)
 
             def record_data(ignore):
                 """Record the instance data returned by the EC2 API."""
                 (raw_user_data, instance_key, reservation_key,
                  local_hostname, public_hostname, launch_index,
-                 kernel_key, ami_key, local_ip,
-                 public_ip, ramdisk_key) = ec2_data
+                 ami_key, local_ip, public_ip, ramdisk_key,
+                 kernel_key) = ec2_data
                 self._ec2_data = {
                     "instance_key": instance_key,
                     "reservation_key": reservation_key,
@@ -181,7 +185,7 @@ class RegistrationHandler(object):
                     "public_ipv4": public_ip,
                     "local_ipv4": local_ip}
                 for k, v in self._ec2_data.items():
-                    if v is None and k == "ramdisk_key":
+                    if v is None and k in ("ramdisk_key", "kernel_key"):
                         continue
                     self._ec2_data[k] = v.decode("utf-8")
                 self._ec2_data["launch_index"] = int(
