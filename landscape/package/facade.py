@@ -4,6 +4,12 @@ import subprocess
 import tempfile
 from cStringIO import StringIO
 
+from smart.transaction import (
+    Transaction, PolicyInstall, PolicyUpgrade, PolicyRemove, Failed)
+from smart.const import INSTALL, REMOVE, UPGRADE, ALWAYS, NEVER
+
+import smart
+
 # Importing apt throws a FutureWarning on hardy, that we don't want to
 # see.
 import warnings
@@ -522,8 +528,6 @@ class SmartFacade(object):
         self._reset()
 
     def _reset(self):
-        from smart.const import ALWAYS
-
         # This attribute is initialized lazily in the _get_ctrl() method.
         self._ctrl = None
         self._pkg2hash = {}
@@ -534,16 +538,12 @@ class SmartFacade(object):
 
     def deinit(self):
         """Deinitialize the Facade and the Smart library."""
-        import smart
-
         if self._ctrl:
             smart.deinit()
         self._reset()
 
     def _get_ctrl(self):
         if self._ctrl is None:
-            import smart
-
             if self._smart_init_kwargs.get("interface") == "landscape":
                 from landscape.package.interface import (
                     install_landscape_interface)
@@ -580,9 +580,6 @@ class SmartFacade(object):
 
         @raise: L{ChannelError} if Smart fails to reload the channels.
         """
-        import smart
-        from smart.const import NEVER
-
         ctrl = self._get_ctrl()
 
         try:
@@ -645,8 +642,6 @@ class SmartFacade(object):
 
     def get_locked_packages(self):
         """Get all packages in the channels matching the set locks."""
-        import smart
-
         return smart.pkgconf.filterByFlag("lock", self.get_packages())
 
     def get_packages_by_name(self, name):
@@ -667,18 +662,12 @@ class SmartFacade(object):
         return self._hash2pkg.get(hash)
 
     def mark_install(self, pkg):
-        from smart.const import INSTALL
-
         self._marks[pkg] = INSTALL
 
     def mark_remove(self, pkg):
-        from smart.const import REMOVE
-
         self._marks[pkg] = REMOVE
 
     def mark_upgrade(self, pkg):
-        from smart.const import UPGRADE
-
         self._marks[pkg] = UPGRADE
 
     def mark_global_upgrade(self):
@@ -691,10 +680,6 @@ class SmartFacade(object):
         self._marks.clear()
 
     def perform_changes(self):
-        import smart
-        from smart.const import REMOVE, UPGRADE
-        from smart.transaction import (
-            Transaction, PolicyInstall, PolicyUpgrade, PolicyRemove, Failed)
         ctrl = self._get_ctrl()
         cache = ctrl.getCache()
 
@@ -766,8 +751,6 @@ class SmartFacade(object):
 
         @param arch: the dpkg architecture to use (e.g. C{"i386"})
         """
-        import smart
-
         self._get_ctrl()
         smart.sysconf.set("deb-arch", arch)
 
@@ -788,8 +771,6 @@ class SmartFacade(object):
 
     def reset_channels(self):
         """Remove all configured Smart channels."""
-        import smart
-
         self._get_ctrl()
         smart.sysconf.set("channels", {}, soft=True)
 
@@ -804,8 +785,6 @@ class SmartFacade(object):
         @param channel: A C{dict} holding information about the channel to
             add (see the Smart API for details about valid keys and values).
         """
-        import smart
-
         channels = self.get_channels()
         channels.update({alias: channel})
         smart.sysconf.set("channels", channels, soft=True)
@@ -833,8 +812,6 @@ class SmartFacade(object):
         """
         @return: A C{dict} of all configured channels.
         """
-        import smart
-
         self._get_ctrl()
         return smart.sysconf.get("channels")
 
@@ -844,8 +821,6 @@ class SmartFacade(object):
         @return: A C{list} of ternary tuples, contaning the name, relation
             and version details for each lock currently set on the system.
         """
-        import smart
-
         self._get_ctrl()
         locks = []
         locks_by_name = smart.pkgconf.getFlagTargets("lock")
@@ -876,16 +851,12 @@ class SmartFacade(object):
         @note: If used at all, the C{relation} and C{version} parameter must be
            both provided.
         """
-        import smart
-
         self._validate_lock_condition(relation, version)
         self._get_ctrl()
         smart.pkgconf.setFlag("lock", name, relation, version)
 
     def remove_package_lock(self, name, relation=None, version=None):
         """Remove a package lock."""
-        import smart
-
         self._validate_lock_condition(relation, version)
         self._get_ctrl()
         smart.pkgconf.clearFlag("lock", name=name, relation=relation,

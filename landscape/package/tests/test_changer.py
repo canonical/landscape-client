@@ -6,6 +6,8 @@ import os
 
 from twisted.internet.defer import Deferred
 
+from smart.cache import Provides
+
 from landscape.lib.fs import create_file, read_file, touch_file
 from landscape.package.changer import (
     PackageChanger, main, find_changer_command, UNKNOWN_PACKAGE_DATA_TIMEOUT,
@@ -894,8 +896,6 @@ class SmartPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         previous = self.Facade.channels_reloaded
 
         def callback(self):
-            from smart.cache import Provides
-
             previous(self)
 
             provide1 = Provides("prerequirename1", "prerequireversion1")

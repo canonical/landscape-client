@@ -2,13 +2,10 @@ import logging
 import types
 import sys
 
-try:
-    from smart.interface import Interface
-except ImportError:
-    # Catch the import error so that it's possible to use Landscape
-    # Client using Apt, without having Smart installed. If Smart is
-    # indeed used, other Smart imports will cause import errors.
-    Interface = object
+from smart.interface import Interface
+from smart.const import ERROR, WARNING, INFO, DEBUG
+
+import smart.interfaces
 
 
 class LandscapeInterface(Interface):
@@ -51,8 +48,6 @@ class LandscapeInterface(Interface):
         super(LandscapeInterface, self).debug(msg)
 
     def message(self, level, msg):
-        from smart.const import ERROR, WARNING, INFO, DEBUG
-
         prefix = {ERROR: "ERROR", WARNING: "WARNING",
                   INFO: "INFO", DEBUG: "DEBUG"}.get(level)
         self.showOutput("%s: %s\n" % (prefix, msg))
@@ -77,8 +72,6 @@ class LandscapeInterfaceModule(types.ModuleType):
 
 def install_landscape_interface():
     if "smart.interfaces.landscape" not in sys.modules:
-        import smart.interfaces
-
         # Plug the interface in a place Smart will recognize.
         smart.interfaces.landscape = LandscapeInterfaceModule()
         sys.modules["smart.interfaces.landscape"] = smart.interfaces.landscape
