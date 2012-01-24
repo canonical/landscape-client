@@ -1305,7 +1305,8 @@ class PackageReporterTestMixin(object):
         self.store.add_installed([2])
         self.store.add_locked([3])
         self.store.add_package_locks([("name1", None, None)])
-        self.facade.set_package_lock("name1")
+        if self.facade.supports_package_locks:
+            self.facade.set_package_lock("name1")
         request1 = self.store.add_hash_id_request(["hash3"])
         request2 = self.store.add_hash_id_request(["hash4"])
 

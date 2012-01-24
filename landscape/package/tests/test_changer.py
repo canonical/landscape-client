@@ -1258,7 +1258,6 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         method fails the activity, since it can't add or remove locks because
         apt doesn't support this.
         """
-        self.facade.set_package_lock("bar")
         self.store.add_task("changer", {"type": "change-package-locks",
                                         "create": [("foo", ">=", "1.0")],
                                         "delete": [("bar", None, None)],
