@@ -15,7 +15,12 @@ class RegistrationProxyTest(LandscapeTest):
     def setUp(self):
         super(RegistrationProxyTest, self).setUp()
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-        bus = dbus.SessionBus(private=True)
+        try:
+            bus = dbus.SessionBus(private=True)
+        except dbus.exceptions.DBusException:
+            self.test_register.skip = \
+                "Cannot launch private DBus session without X11"
+            return
         bus_name = dbus.service.BusName(INTERFACE_NAME, bus)
 
         def _do_registration(this, config_path):
