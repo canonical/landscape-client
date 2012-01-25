@@ -4,11 +4,14 @@ import subprocess
 import tempfile
 from cStringIO import StringIO
 
-from smart.transaction import (
-    Transaction, PolicyInstall, PolicyUpgrade, PolicyRemove, Failed)
-from smart.const import INSTALL, REMOVE, UPGRADE, ALWAYS, NEVER
-
-import smart
+has_smart = True
+try:
+    import smart
+    from smart.transaction import (
+        Transaction, PolicyInstall, PolicyUpgrade, PolicyRemove, Failed)
+    from smart.const import INSTALL, REMOVE, UPGRADE, ALWAYS, NEVER
+except ImportError:
+    has_smart = False
 
 # Importing apt throws a FutureWarning on hardy, that we don't want to
 # see.
@@ -506,6 +509,9 @@ class SmartFacade(object):
     supports_package_locks = True
 
     def __init__(self, smart_init_kwargs={}, sysconf_args=None):
+        if not has_smart:
+            raise RuntimeError(
+                "Smart needs to be installed if SmartFacade is used.")
         self._smart_init_kwargs = smart_init_kwargs.copy()
         self._smart_init_kwargs.setdefault("interface", "landscape")
         self._sysconfig_args = sysconf_args or {}

@@ -3,7 +3,11 @@ import os
 import textwrap
 import time
 
-import smart
+try:
+    import smart
+except ImportError:
+    # Smart is optional if AptFacade is being used.
+    pass
 
 import apt_inst
 import apt_pkg

@@ -2,10 +2,13 @@ import logging
 import types
 import sys
 
-from smart.interface import Interface
-from smart.const import ERROR, WARNING, INFO, DEBUG
-
-import smart.interfaces
+try:
+    import smart.interfaces
+    from smart.interface import Interface
+    from smart.const import ERROR, WARNING, INFO, DEBUG
+except ImportError:
+    # Smart is optional if AptFacade is being used.
+    Interface = object
 
 
 class LandscapeInterface(Interface):
@@ -61,8 +64,6 @@ class LandscapeInterface(Interface):
         self.__output += output
 
 
-
-
 class LandscapeInterfaceModule(types.ModuleType):
 
     def __init__(self):
@@ -77,6 +78,7 @@ def install_landscape_interface():
         # Plug the interface in a place Smart will recognize.
         smart.interfaces.landscape = LandscapeInterfaceModule()
         sys.modules["smart.interfaces.landscape"] = smart.interfaces.landscape
+
 
 def uninstall_landscape_interface():
     sys.modules.pop("smart.interfaces.landscape", None)

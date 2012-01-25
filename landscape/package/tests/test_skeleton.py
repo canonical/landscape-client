@@ -1,6 +1,9 @@
-import smart
-
-from smart.cache import Package
+try:
+    import smart
+    from smart.cache import Package
+except ImportError:
+    # Smart is optional if AptFacade is being used.
+    pass
 
 from landscape.package.interface import (
     install_landscape_interface, uninstall_landscape_interface)

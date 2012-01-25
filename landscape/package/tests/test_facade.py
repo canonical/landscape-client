@@ -5,9 +5,14 @@ import sys
 import textwrap
 import tempfile
 
-from smart.control import Control
-from smart.cache import Provides
-from smart.const import NEVER, ALWAYS
+try:
+    import smart
+    from smart.control import Control
+    from smart.cache import Provides
+    from smart.const import NEVER, ALWAYS
+except ImportError:
+    # Smart is optional if AptFacade is being used.
+    pass
 
 import apt_pkg
 from apt.package import Package
@@ -17,9 +22,8 @@ from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from twisted.internet.utils import getProcessOutputAndValue
 
-import smart
-
 from landscape.lib.fs import read_file
+from landscape.package import facade as facade_module
 from landscape.package.facade import (
     TransactionError, DependencyError, ChannelError, SmartError, AptFacade,
     has_new_enough_apt)
@@ -1513,6 +1517,21 @@ class AptFacadeTest(LandscapeTest):
 class SmartFacadeTest(LandscapeTest):
 
     helpers = [SmartFacadeHelper]
+
+    def test_needs_smart(self):
+        """
+        If the Smart python modules can't be imported, a C{RuntimeError}
+        is raised when trying to create a C{SmartFacade}.
+        """
+
+        def reset_has_smart():
+            facade_module.has_smart = old_has_smart
+
+        self.addCleanup(reset_has_smart)
+        old_has_smart = facade_module.has_smart
+        facade_module.has_smart = False
+
+        self.assertRaises(RuntimeError, self.Facade)
 
     def test_get_packages(self):
         self.facade.reload_channels()
