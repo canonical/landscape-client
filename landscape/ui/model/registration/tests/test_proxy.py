@@ -18,8 +18,8 @@ class RegistrationProxyTest(LandscapeTest):
         try:
             bus = dbus.SessionBus(private=True)
         except dbus.exceptions.DBusException:
-            self.test_register.skip = \
-                "Cannot launch private DBus session without X11"
+            self.skip(
+                "Cannot launch private DBus session without X11")
             self.mechanism = object
             self.proxy = object
             return
