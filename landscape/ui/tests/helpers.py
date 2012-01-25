@@ -29,7 +29,7 @@ class ConfigurationProxyHelper(object):
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
         try:
             bus = dbus.SessionBus(private=True)
-        except dbus.exception.DBusError:
+        except dbus.exceptions.DBusException:
             test_case.skip = "Cannot launch private DBus session without X11"
             return
         bus_name = dbus.service.BusName(INTERFACE_NAME, bus)
