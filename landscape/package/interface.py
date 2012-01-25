@@ -7,7 +7,7 @@ try:
     from smart.interface import Interface
     from smart.const import ERROR, WARNING, INFO, DEBUG
 except ImportError:
-    # Smart is optional, if AptFacade is being used.
+    # Smart is optional if AptFacade is being used.
     Interface = object
 
 

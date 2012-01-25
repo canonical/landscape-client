@@ -9,7 +9,7 @@ from twisted.internet.defer import Deferred
 try:
     from smart.cache import Provides
 except ImportError:
-    # Smart is optional, if AptFacade is being used.
+    # Smart is optional if AptFacade is being used.
     pass
 
 from landscape.lib.fs import create_file, read_file, touch_file

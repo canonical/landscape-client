@@ -2,7 +2,7 @@ try:
     import smart
     from smart.cache import Package
 except ImportError:
-    # Smart is optional, if AptFacade is being used.
+    # Smart is optional if AptFacade is being used.
     pass
 
 from landscape.package.interface import (

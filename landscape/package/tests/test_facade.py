@@ -11,7 +11,7 @@ try:
     from smart.cache import Provides
     from smart.const import NEVER, ALWAYS
 except ImportError:
-    # Smart is optional, if AptFacade is being used.
+    # Smart is optional if AptFacade is being used.
     pass
 
 import apt_pkg
