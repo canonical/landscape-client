@@ -201,13 +201,13 @@ class ConfigControllerTest(LandscapeTest):
     if dbus_test_should_skip:
         test_lock.skip = dbus_skip_message
         test_commit.skip = dbus_skip_message
-        test_is_modified = dbus_skip_message
-        test_revert = dbus_skip_message
-        test_set_registration_password = dbus_skip_message
-        test_set_account_name = dbus_skip_message
-        test_setting_server_host_name_also_sets_hosted = dbus_skip_message
-        test_set_server_hostname = dbus_skip_message
-        test_init = dbus_skip_message
+        test_is_modified.skip = dbus_skip_message
+        test_revert.skip = dbus_skip_message
+        test_set_registration_password.skip = dbus_skip_message
+        test_set_account_name.skip = dbus_skip_message
+        test_setting_server_host_name_also_sets_hosted.skip = dbus_skip_message
+        test_set_server_hostname.skip = dbus_skip_message
+        test_init.skip = dbus_skip_message
 
 
 class EmptyConfigControllerTest(LandscapeTest):
