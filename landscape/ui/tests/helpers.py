@@ -36,16 +36,19 @@ class ConfigurationProxyHelper(object):
     """
 
     def set_up(self, test_case):
-        test_case.skip = "Foo"
-        test_case.config_filename = test_case.makeFile(test_case.config_string)
-        test_case.config = LandscapeSetupConfiguration()
-        test_case.config.default_config_filenames = [test_case.config_filename]
+        if not dbus_test_should_skip:
+            test_case.config_filename = test_case.makeFile(
+                test_case.config_string)
+            test_case.config = LandscapeSetupConfiguration()
+            test_case.config.default_config_filenames = \
+                [test_case.config_filename]
 
-        test_case.mechanism = ConfigurationMechanism(test_case.config,
-                                                     bus_name)
+            test_case.mechanism = ConfigurationMechanism(test_case.config,
+                                                         bus_name)
 
-        test_case.proxy = ConfigurationProxy(interface=test_case.mechanism)
-        test_case.proxy.load(["-c", test_case.config_filename])
+            test_case.proxy = ConfigurationProxy(interface=test_case.mechanism)
+            test_case.proxy.load(["-c", test_case.config_filename])
 
     def tear_down(self, test_case):
-        test_case.mechanism.remove_from_connection()
+        if not dbus_test_should_skip:
+            test_case.mechanism.remove_from_connection()
