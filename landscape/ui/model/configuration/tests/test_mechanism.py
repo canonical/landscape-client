@@ -30,9 +30,7 @@ class MechanismTest(LandscapeTest):
             default_config_filenames = [self.config_filename]
 
         self.config = MyLandscapeSetupConfiguration()
-        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-        bus = dbus.SessionBus()
-        bus_name = dbus.service.BusName(INTERFACE_NAME, bus)
+        bus_name = dbus.service.BusName(INTERFACE_NAME, MechanismTest.bus)
         self.mechanism = ConfigurationMechanism(self.config, bus_name)
         self.config.load(["-c", self.config_filename])
 
@@ -172,3 +170,28 @@ class MechanismTest(LandscapeTest):
         """
         self.mechanism.set("https_proxy", "bar")
         self.assertEqual("bar", self.mechanism.get("https_proxy"))
+
+    dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+    try:
+        bus = dbus.SessionBus(private=True)
+    except dbus.exceptions.DBusException:
+        skip_string = "Cannot create private DBus session without X11"
+        test_set_https_proxy.skip = skip_string
+        test_get_https_proxy = skip_string
+        test_set_computer_title = skip_string
+        test_get_computer_title = skip_string
+        test_set_registration_password = skip_string
+        test_get_registration_password = skip_string
+        test_set_ping_url = skip_string
+        test_get_ping_url = skip_string
+        test_set_url = skip_string
+        test_get_url = skip_string
+        test_set_tags = skip_string
+        test_get_tags = skip_string
+        test_set_http_proxy = skip_string
+        test_get_http_proxy = skip_string
+        set_data_path = skip_string
+        test_get_data_path = skip_string
+        test_set_account_name = skip_string
+        test_get_account_name = skip_string
+        test_is_local_call = skip_string
