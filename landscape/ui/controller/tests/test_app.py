@@ -11,7 +11,8 @@ except (ImportError, RuntimeError):
 else:
     from landscape.ui.controller.app import SettingsApplicationController
     from landscape.ui.controller.configuration import ConfigController
-    from landscape.ui.tests.helpers import ConfigurationProxyHelper
+    from landscape.ui.tests.helpers import (
+        ConfigurationProxyHelper, dbus_test_should_skip, dbus_skip_message)
     from landscape.ui.view.configuration import ClientSettingsDialog
 
 
@@ -122,3 +123,5 @@ class SettingsApplicationControllerUISetupTest(LandscapeTest):
 
     if not got_gobject_introspection:
         test_setup_ui.skip = gobject_skip_message
+    if dbus_test_should_skip:
+        test_setup_ui.skip = dbus_skip_message
