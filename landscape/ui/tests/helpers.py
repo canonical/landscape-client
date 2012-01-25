@@ -19,6 +19,7 @@ try:
     bus_name = dbus.service.BusName(INTERFACE_NAME, bus)
 except dbus.exceptions.DBusException:
     bus = object
+    bus_name = ""
     dbus_test_should_skip = True
 
 
