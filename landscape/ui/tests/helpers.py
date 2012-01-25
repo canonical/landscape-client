@@ -20,31 +20,31 @@ try:
 except dbus.exceptions.DBusException:
     bus = object
     dbus_test_should_skip = True
-else:    
 
-    class ConfigurationProxyHelper(object):
-        """
-        L{ConfigurationProxyHelper} will provide it's test case with a
-        L{ConfigurationProxy} setup in such a way that it uses a real
-        L{ConfigurationMechanism} (which in turn uses a real
-        L{LandscapeSetupConfiguration}) but which does not make use of DBus for
-        communication.
 
-        Tests utilising this helper must define a L{test_case.config_string} for
-        use in L{set_up} below.
-        """
+class ConfigurationProxyHelper(object):
+    """
+    L{ConfigurationProxyHelper} will provide it's test case with a
+    L{ConfigurationProxy} setup in such a way that it uses a real
+    L{ConfigurationMechanism} (which in turn uses a real
+    L{LandscapeSetupConfiguration}) but which does not make use of DBus for
+    communication.
 
-        def set_up(self, test_case):
-            test_case.skip = "Foo"
-            test_case.config_filename = test_case.makeFile(test_case.config_string)
-            test_case.config = LandscapeSetupConfiguration()
-            test_case.config.default_config_filenames = [test_case.config_filename]
+    Tests utilising this helper must define a L{test_case.config_string} for
+    use in L{set_up} below.
+    """
 
-            test_case.mechanism = ConfigurationMechanism(test_case.config,
-                                                         bus_name)
+    def set_up(self, test_case):
+        test_case.skip = "Foo"
+        test_case.config_filename = test_case.makeFile(test_case.config_string)
+        test_case.config = LandscapeSetupConfiguration()
+        test_case.config.default_config_filenames = [test_case.config_filename]
 
-            test_case.proxy = ConfigurationProxy(interface=test_case.mechanism)
-            test_case.proxy.load(["-c", test_case.config_filename])
+        test_case.mechanism = ConfigurationMechanism(test_case.config,
+                                                     bus_name)
 
-        def tear_down(self, test_case):
-            test_case.mechanism.remove_from_connection()
+        test_case.proxy = ConfigurationProxy(interface=test_case.mechanism)
+        test_case.proxy.load(["-c", test_case.config_filename])
+
+    def tear_down(self, test_case):
+        test_case.mechanism.remove_from_connection()
