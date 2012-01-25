@@ -22,7 +22,6 @@ class MechanismTest(LandscapeTest):
             self.mechanism.remove_from_connection()
         super(MechanismTest, self).tearDown()
 
-
     def make_registration(self, succeed):
 
         def _do_registration(this, config_path):
@@ -56,4 +55,3 @@ class MechanismTest(LandscapeTest):
         skip_string = "Cannot launch private DBus session without X11"
         test_registration_succeed.skip = skip_string
         test_registration_fail.skip = skip_string
-

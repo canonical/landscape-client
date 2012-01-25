@@ -6,14 +6,12 @@ from landscape.ui.model.configuration.mechanism import (
 from landscape.ui.model.configuration.proxy import ConfigurationProxy
 
 
-
 # We have to do these steps because the ConfigurationMechanism inherits
 # from dbus.service.Object which throws a fit if it notices you using
 # it without a mainloop.
 dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 dbus_test_should_skip = False
 dbus_skip_message = "Cannot launch private DBus session without X11"
-    
 try:
     bus = dbus.SessionBus(private=True)
     bus_name = dbus.service.BusName(INTERFACE_NAME, bus)
