@@ -12,6 +12,7 @@ from landscape.lib.fs import create_file
 from landscape.lib import bpickle
 from landscape.log import format_delta
 from landscape import SERVER_API, VERSION
+from landscape.broker.dnslookup import discover_server
 
 
 class HTTPTransport(object):
@@ -40,10 +41,8 @@ class HTTPTransport(object):
         self._url = url
 
     def _curl(self, payload, computer_id, message_api):
-        from landscape.broker.service import BrokerService
         if self._server_autodiscover:
-            result = blockingCallFromThread(
-                self._reactor, BrokerService.discover_server)
+            result = blockingCallFromThread(self._reactor, discover_server)
             if result is not None:
                 self._url = "https://%s/message-system" % result
             else:

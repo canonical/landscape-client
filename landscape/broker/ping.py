@@ -13,6 +13,7 @@ from twisted.internet import defer
 from landscape.lib.bpickle import loads
 from landscape.lib.fetch import fetch
 from landscape.lib.log import log_failure
+from landscape.broker.dnslookup import discover_server
 
 
 class PingClient(object):
@@ -42,8 +43,6 @@ class PingClient(object):
         @return: A deferred resulting in True if there are messages
             and False otherwise.
         """
-        from landscape.broker.service import BrokerService
-
         def handle_result(result):
             if result is None:
                 logging.warning("Autodiscovery failed.  Reverting to previous "
@@ -70,7 +69,7 @@ class PingClient(object):
             return defer.succeed(False)
 
         if self._server_autodiscover:
-            lookup_deferred = BrokerService.discover_server()
+            lookup_deferred = discover_server()
             lookup_deferred.addCallback(handle_result)
             lookup_deferred.addCallback(do_rest)
             return lookup_deferred
