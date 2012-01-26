@@ -1,5 +1,4 @@
 import dbus
-import unittest
 
 from landscape.configuration import LandscapeSetupConfiguration
 from landscape.ui.model.configuration.mechanism import (
