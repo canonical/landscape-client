@@ -199,15 +199,7 @@ class ConfigControllerTest(LandscapeTest):
         self.assertTrue(self.controller.is_modified)
 
     if dbus_test_should_skip:
-        test_lock.skip = dbus_skip_message
-        test_commit.skip = dbus_skip_message
-        test_is_modified.skip = dbus_skip_message
-        test_revert.skip = dbus_skip_message
-        test_set_registration_password.skip = dbus_skip_message
-        test_set_account_name.skip = dbus_skip_message
-        test_setting_server_host_name_also_sets_hosted.skip = dbus_skip_message
-        test_set_server_hostname.skip = dbus_skip_message
-        test_init.skip = dbus_skip_message
+        skip = dbus_skip_message
 
 
 class EmptyConfigControllerTest(LandscapeTest):
@@ -265,5 +257,4 @@ class EmptyConfigControllerTest(LandscapeTest):
         self.assertEqual("me.here.com", self.controller.computer_title)
 
     if dbus_test_should_skip:
-        test_default_computer_title.skip = dbus_skip_message
-        test_defaulting.skip = dbus_skip_message
+        skip = dbus_skip_message

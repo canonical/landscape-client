@@ -128,13 +128,14 @@ class ConfigurationProxyInterfaceTest(LandscapeTest):
         self.assertEqual("bar", self.config.url)
 
     if dbus_test_should_skip:
-        test_url.skip = dbus_skip_message
-        test_tags.skip = dbus_skip_message
-        test_registration_password.skip = dbus_skip_message
-        test_ping_url.skip = dbus_skip_message
-        test_https_proxy.skip = dbus_skip_message
-        test_http_proxy.skip = dbus_skip_message
-        test_data_path.skip = dbus_skip_message
-        test_computer_title.skip = dbus_skip_message
-        test_account_name.skip = dbus_skip_message
-        test_method_docstrings.skip = dbus_skip_message
+        skip = dbus_skip_message
+        # test_url.skip = dbus_skip_message
+        # test_tags.skip = dbus_skip_message
+        # test_registration_password.skip = dbus_skip_message
+        # test_ping_url.skip = dbus_skip_message
+        # test_https_proxy.skip = dbus_skip_message
+        # test_http_proxy.skip = dbus_skip_message
+        # test_data_path.skip = dbus_skip_message
+        # test_computer_title.skip = dbus_skip_message
+        # test_account_name.skip = dbus_skip_message
+        # test_method_docstrings.skip = dbus_skip_message
