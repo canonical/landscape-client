@@ -1204,9 +1204,6 @@ class AptFacadeTest(LandscapeTest):
         self.facade.mark_install(foo)
         self.facade._cache.commit = lambda fetch_progress: None
         self.assertEqual("", self.facade.perform_changes())
-        changes = [
-            (pkg.name, pkg.candidate.version)
-            for pkg in self.facade._cache.get_changes()]
         self.assertEqual(
             [foo.package], self.facade._cache.get_changes())
 
@@ -1248,9 +1245,6 @@ class AptFacadeTest(LandscapeTest):
         self.facade.mark_remove(foo)
         self.facade._cache.commit = lambda fetch_progress: None
         self.assertEqual("", self.facade.perform_changes())
-        changes = [
-            (pkg.name, pkg.candidate.version)
-            for pkg in self.facade._cache.get_changes()]
         self.assertEqual(
             [foo.package], self.facade._cache.get_changes())
 
@@ -1613,7 +1607,7 @@ class AptFacadeTest(LandscapeTest):
         # was added to python-apt. So if it's not there, it means that
         # multi-arch support isn't available.
         skip_message = "multi-arch not supported"
-        test_wb_mark_install_upgrade_non_main_arch_dependency_error.skip = (
+        disabled_test_wb_mark_install_upgrade_non_main_arch_dependency_error.skip = (
             skip_message)
         test_wb_mark_install_upgrade_non_main_arch.skip = skip_message
 
