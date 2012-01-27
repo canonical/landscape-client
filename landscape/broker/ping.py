@@ -47,11 +47,14 @@ class PingClient(object):
             if result is None:
                 logging.warning("Autodiscovery failed.  Reverting to previous "
                                 "settings.")
+            else:
+                result = "http://%s/ping" % result
             return result
 
         def do_rest(result):
-            if result:
-                self.url = "http://%s/ping" % result
+            if result is not None:
+                self.url = result
+
             insecure_id = self._identity.insecure_id
             if insecure_id is not None:
                 headers = {"Content-Type": "application/x-www-form-urlencoded"}

@@ -61,7 +61,7 @@ def lookup_hostname(result, resolver):
 
     def lookup_failed(result):
         logging.info("Name lookup of %s failed." % hostname)
-        return None
+        return result
 
     d = resolver.getHostByName(hostname)
     d.addCallback(lookup_done)
