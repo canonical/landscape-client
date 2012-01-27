@@ -1210,7 +1210,7 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(
             [foo.package], self.facade._cache.get_changes())
 
-    def test_perform_changes_install_deps_with_broken(self):
+    def test_perform_changes_with_broken_packages_install_deps(self):
         """
         Even if some installed packages are broken in the system, it's
         still possible to install packages where the dependencies need
