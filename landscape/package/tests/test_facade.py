@@ -1182,6 +1182,65 @@ class AptFacadeTest(LandscapeTest):
         # objects, which are the ones that build the output string.
         self.assertEqual("", self.facade.perform_changes())
 
+    def test_perform_changes_with_broken_packages_install_simple(self):
+        """
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package(
+            "broken", control_fields={"Depends": "missing"})
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self._add_package_to_deb_dir(deb_dir, "missing")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        self.facade.mark_install(foo)
+        self.facade._cache.commit = lambda fetch_progress: None
+        self.assertEqual("", self.facade.perform_changes())
+        changes = [
+            (pkg.name, pkg.candidate.version)
+            for pkg in self.facade._cache.get_changes()]
+        self.assertEqual(
+            [foo.package], self.facade._cache.get_changes())
+
+    def test_perform_changes_install_deps_with_broken(self):
+        """
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package(
+            "broken", control_fields={"Depends": "missing"})
+        self._add_package_to_deb_dir(
+            deb_dir, "foo", control_fields={"Depends": "bar"})
+        self._add_package_to_deb_dir(deb_dir, "bar")
+        self._add_package_to_deb_dir(deb_dir, "missing")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        [bar] = self.facade.get_packages_by_name("bar")
+        self.facade.mark_install(foo)
+        self.facade._cache.commit = lambda fetch_progress: None
+        error = self.assertRaises(DependencyError, self.facade.perform_changes)
+        self.assertEqual([bar], error.packages)
+
+    def test_perform_changes_with_broken_packages_remove_simple(self):
+        """
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package(
+            "broken", control_fields={"Depends": "missing"})
+        self._add_system_package("foo")
+        self._add_package_to_deb_dir(deb_dir, "missing")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        self.facade.mark_remove(foo)
+        self.facade._cache.commit = lambda fetch_progress: None
+        self.assertEqual("", self.facade.perform_changes())
+        changes = [
+            (pkg.name, pkg.candidate.version)
+            for pkg in self.facade._cache.get_changes()]
+        self.assertEqual(
+            [foo.package], self.facade._cache.get_changes())
+
     def test_wb_perform_changes_commit_error(self):
         """
         If an error happens when committing the changes to the cache, a
