@@ -1189,6 +1189,9 @@ class AptFacadeTest(LandscapeTest):
 
     def test_perform_changes_with_broken_packages_install_simple(self):
         """
+        Even if some installed packages are broken in the system, it's
+        still possible to install packages with no dependencies that
+        don't touch the broken ones.
         """
         deb_dir = self.makeDir()
         self._add_system_package(
@@ -1209,6 +1212,9 @@ class AptFacadeTest(LandscapeTest):
 
     def test_perform_changes_install_deps_with_broken(self):
         """
+        Even if some installed packages are broken in the system, it's
+        still possible to install packages where the dependencies need
+        to be calculated.
         """
         deb_dir = self.makeDir()
         self._add_system_package(
@@ -1228,6 +1234,8 @@ class AptFacadeTest(LandscapeTest):
 
     def test_perform_changes_with_broken_packages_remove_simple(self):
         """
+        Even if some installed packages are broken in the system, it's
+        still possible to remove packages that don't affect the broken ones.
         """
         deb_dir = self.makeDir()
         self._add_system_package(
@@ -1248,6 +1256,13 @@ class AptFacadeTest(LandscapeTest):
 
     def test_perform_changes_with_broken_packages_install_broken(self):
         """
+        If some installed package is in a broken state and you install a
+        package that fixes the broken package, as well as a new broken
+        package, C{perform_changes()} will raise a C{TransactionError}.
+
+        This test specifically tests the case where you replace the
+        broken packages, but have the same number of broken packages
+        before and after the changes.
         """
         deb_dir = self.makeDir()
         self._add_system_package(
