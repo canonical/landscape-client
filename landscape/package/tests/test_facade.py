@@ -1272,14 +1272,19 @@ class AptFacadeTest(LandscapeTest):
         self._add_package_to_deb_dir(deb_dir, "missing")
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
+        [broken] = self.facade.get_packages_by_name("broken")
         [foo] = self.facade.get_packages_by_name("foo")
         [missing] = self.facade.get_packages_by_name("missing")
+        self.assertEqual(
+            set([broken.package]), self.facade._get_broken_packages())
         self.facade.mark_install(foo)
         self.facade.mark_install(missing)
         self.facade._cache.commit = lambda fetch_progress: None
         error = self.assertRaises(
             TransactionError, self.facade.perform_changes)
         self.assertIn("you have held broken packages", error.args[0])
+        self.assertEqual(
+            set([foo.package]), self.facade._get_broken_packages())
 
     def test_wb_perform_changes_commit_error(self):
         """
