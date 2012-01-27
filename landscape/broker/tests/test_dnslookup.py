@@ -6,17 +6,30 @@ from twisted.names import dns
 
 
 class FakeResolverResult(object):
+    """
+    A fake resolver result returned by L{FakeResolver}.
+
+    @param type: The result type L{twisted.names.dns.SRV}
+    @param payload: The result contents
+    """
     def __init__(self):
         self.type = None
 
         class Payload(object):
+            """
+            A payload result returned by fake resolver.
 
+            @param target: The result of the lookup
+            """
             def __init__(self):
                 self.target = ""
         self.payload = Payload()
 
 
 class FakeResolver(object):
+    """
+    A fake resolver that mimics L{twisted.names.client.Resolver}
+    """
     def __init__(self):
         self.results = None
         self.name = None
@@ -34,6 +47,9 @@ class FakeResolver(object):
 
 class DnsSrvLookupTest(LandscapeTest):
     def test_with_server_found(self):
+        """
+        Looking up a DNS SRV record should return the result of the lookup.
+        """
         fake_result = FakeResolverResult()
         fake_result.type = dns.SRV
         fake_result.payload.target = "a.b.com"
@@ -48,6 +64,10 @@ class DnsSrvLookupTest(LandscapeTest):
         return d
 
     def test_with_server_not_found(self):
+        """
+        Looking up a DNS SRV record and finding nothing exists should return
+        an empty string.
+        """
         fake_resolver = FakeResolver()
         fake_resolver.results = [[]]
 
@@ -61,6 +81,9 @@ class DnsSrvLookupTest(LandscapeTest):
 
 class DnsNameLookupTest(LandscapeTest):
     def test_with_name_found(self):
+        """
+        Looking up a DNS name record should return the result of the lookup.
+        """
         fake_resolver = FakeResolver()
         fake_resolver.name = "a.b.com"
 
@@ -72,6 +95,10 @@ class DnsNameLookupTest(LandscapeTest):
         return d
 
     def test_with_name_not_found(self):
+        """
+        Looking up a DNS NAME record and not finding a result should return
+        None.
+        """
         fake_resolver = FakeResolver()
         fake_resolver.name = None
 

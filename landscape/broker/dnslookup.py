@@ -5,6 +5,9 @@ from twisted.names.client import Resolver
 
 
 def discover_server():
+    """
+    Look up the dns location of the landscape server.
+    """
     resolver = Resolver()
     resolver.parseConfig("/etc/resolv.conf")
     d = _lookup_server_record(resolver)
@@ -13,6 +16,14 @@ def discover_server():
 
 
 def lookup_server_record(resolver):
+    """
+    Do a DNS SRV record lookup for the location of the landscape server.
+
+    @type resolver: A resolver to use for DNS lookups
+        L{twisted.names.client.Resolver}.
+    @return: A deferred containing either the hostname of the landscape server
+        if found or an empty string if not found.
+    """
     service_name = "_landscape._tcp.mylandscapehost.com"
 
     def lookup_done(result):
@@ -35,6 +46,14 @@ def lookup_server_record(resolver):
 
 
 def lookup_hostname(result, resolver):
+    """
+    Do a DNS name lookup for the location of the landscape server.
+
+    @param result: The result from a call to lookup_server_record.
+    @param resolver: The resolver to use for DNS lookups.
+    @param return: A deferred containing the ip address of the landscape
+        server if found or None if not found.
+    """
     hostname = "landscape.localdomain"
 
     def lookup_done(result):
