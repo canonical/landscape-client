@@ -1246,6 +1246,26 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(
             [foo.package], self.facade._cache.get_changes())
 
+    def test_perform_changes_with_broken_packages_install_broken(self):
+        """
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package(
+            "broken", control_fields={"Depends": "missing"})
+        self._add_package_to_deb_dir(
+            deb_dir, "foo", control_fields={"Depends": "really-missing"})
+        self._add_package_to_deb_dir(deb_dir, "missing")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        [missing] = self.facade.get_packages_by_name("missing")
+        self.facade.mark_install(foo)
+        self.facade.mark_install(missing)
+        self.facade._cache.commit = lambda fetch_progress: None
+        error = self.assertRaises(
+            TransactionError, self.facade.perform_changes)
+        self.assertIn("you have held broken packages", error.args[0])
+
     def test_wb_perform_changes_commit_error(self):
         """
         If an error happens when committing the changes to the cache, a

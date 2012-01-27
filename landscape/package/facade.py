@@ -398,6 +398,9 @@ class AptFacade(object):
             return None
         fixer = apt_pkg.ProblemResolver(self._cache._depcache)
         old_broken_count = self._cache._depcache.broken_count
+        already_broken_packages = set(
+            version.package for version in self.get_packages()
+            if version.package.is_inst_broken)
         for version in self._version_installs:
             # Set the candidate version, so that the version we want to
             # install actually is the one getting installed.
@@ -432,7 +435,10 @@ class AptFacade(object):
                 "Can't perform the changes, since the following packages" +
                 " are held: %s" % ", ".join(sorted(held_package_names)))
 
-        if self._cache._depcache.broken_count > old_broken_count:
+        now_broken_packages = set(
+            version.package for version in self.get_packages()
+            if version.package.is_inst_broken)
+        if now_broken_packages != already_broken_packages:
             try:
                 fixer.resolve(True)
             except SystemError, error:
