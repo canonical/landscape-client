@@ -397,7 +397,7 @@ class AptFacade(object):
         if not version_changes and not self._global_upgrade:
             return None
         fixer = apt_pkg.ProblemResolver(self._cache._depcache)
-        old_broken_count = self._cache._depcache
+        old_broken_count = self._cache._depcache.broken_count
         for version in self._version_installs:
             # Set the candidate version, so that the version we want to
             # install actually is the one getting installed.
