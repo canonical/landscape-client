@@ -1334,6 +1334,25 @@ class AptFacadeTest(LandscapeTest):
         error = self.assertRaises(DependencyError, self.facade.perform_changes)
         self.assertEqual([bar], error.packages)
 
+    def test_perform_changes_unapproved_install_candidate(self):
+        """
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(
+            deb_dir, "foo", control_fields={"Depends": "bar"})
+        self._add_package_to_deb_dir(deb_dir, "bar", version="1.0")
+        self._add_package_to_deb_dir(deb_dir, "bar", version="2.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        self.facade.mark_install(foo)
+        [bar1, bar2] = sorted(self.facade.get_packages_by_name("bar"))
+        self.assertEqual(bar1.package.candidate, bar2)
+        error = self.assertRaises(DependencyError, self.facade.perform_changes)
+        self.assertEqual([bar2], error.packages)
+        self.assertTrue(foo.package.marked_install)
+        self.assertTrue(bar2.package.marked_install)
+
     def test_mark_global_upgrade_dependency_error(self):
         """
         If a package is marked for upgrade, a DependencyError will be
