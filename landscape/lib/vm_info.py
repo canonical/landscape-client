@@ -14,7 +14,7 @@ def get_vm_info(root_path="/"):
     def join_root_path(path):
         return os.path.join(root_path, path)
 
-    xen_paths = ["proc/sys/xen", "sys/bus/xen", "proc/xen"]
+    xen_paths = ["proc/sys/xen", "proc/xen"]
     xen_paths = map(join_root_path, xen_paths)
 
     vz_path = os.path.join(root_path, "proc/vz")
@@ -22,6 +22,12 @@ def get_vm_info(root_path="/"):
         return "openvz"
 
     elif filter(os.path.exists, xen_paths):
+        return "xen"
+
+    # /sys/bus/xen exists on most machines, but only virtual machines have
+    # devices
+    sys_xen_path = join_root_path("sys/bus/xen/devices")
+    if os.path.isdir(sys_xen_path) and os.listdir(sys_xen_path):
         return "xen"
 
     cpu_info_path = os.path.join(root_path, "proc/cpuinfo")
