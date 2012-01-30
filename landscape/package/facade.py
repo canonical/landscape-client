@@ -384,6 +384,12 @@ class AptFacade(object):
             version for version in self.get_packages()
             if version.package.name == name]
 
+    def _get_broken_packages(self):
+        """Return the packages that are in a broken state."""
+        return set(
+            version.package for version in self.get_packages()
+            if version.package.is_inst_broken)
+
     def perform_changes(self):
         """Perform the pending package operations."""
         held_package_names = set()
@@ -397,6 +403,7 @@ class AptFacade(object):
         if not version_changes and not self._global_upgrade:
             return None
         fixer = apt_pkg.ProblemResolver(self._cache._depcache)
+        already_broken_packages = self._get_broken_packages()
         for version in self._version_installs:
             # Set the candidate version, so that the version we want to
             # install actually is the one getting installed.
@@ -431,7 +438,8 @@ class AptFacade(object):
                 "Can't perform the changes, since the following packages" +
                 " are held: %s" % ", ".join(sorted(held_package_names)))
 
-        if self._cache._depcache.broken_count > 0:
+        now_broken_packages = self._get_broken_packages()
+        if now_broken_packages != already_broken_packages:
             try:
                 fixer.resolve(True)
             except SystemError, error:
