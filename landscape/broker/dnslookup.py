@@ -1,15 +1,17 @@
-import logging
+"""DNS lookups for server autodiscovery."""
 
+import logging
 from twisted.names import dns
 from twisted.names.client import Resolver
 
 
-def discover_server():
+def discover_server(resolver=None):
     """
     Look up the dns location of the landscape server.
     """
-    resolver = Resolver()
-    resolver.parseConfig("/etc/resolv.conf")
+    if not resolver:
+        resolver = Resolver()
+        resolver.parseConfig("/etc/resolv.conf")
     d = lookup_server_record(resolver)
     d.addErrback(lookup_hostname, resolver)
     return d

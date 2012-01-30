@@ -1,5 +1,6 @@
 from landscape.tests.helpers import LandscapeTest
-from landscape.broker.dnslookup import lookup_server_record, lookup_hostname
+from landscape.broker.dnslookup import (lookup_server_record, lookup_hostname,
+                                        discover_server)
 
 from twisted.internet import defer
 from twisted.names import dns
@@ -97,23 +98,15 @@ class DnsSrvLookupTest(LandscapeTest):
 
     def test_with_resolver_error(self):
         """A resolver error triggers error handling code."""
-        bad_resolver = BadResolver()
-
         # The failure should be properly logged
         logging_mock = self.mocker.replace("logging.info")
         logging_mock("SRV lookup of _landscape._tcp.mylandscapehost.com "
                      "failed.")
         self.mocker.replay()
 
-        error_result = []
-
-        def check_error(result):
-            error_result.append(result.value)
-
-        d = lookup_server_record(bad_resolver)
-        d.addErrback(check_error)
-
-        self.assertIsInstance(error_result[0], ResolverError)
+        d = lookup_server_record(BadResolver())
+        self.assertFailure(d, ResolverError)
+        return d
 
 
 class DnsNameLookupTest(LandscapeTest):
@@ -148,19 +141,48 @@ class DnsNameLookupTest(LandscapeTest):
 
     def test_with_resolver_error(self):
         """A resolver error triggers error handling code."""
-        bad_resolver = BadResolver()
-
         # The failure should be properly logged
         logging_mock = self.mocker.replace("logging.info")
         logging_mock("Name lookup of landscape.localdomain failed.")
         self.mocker.replay()
 
-        error_result = []
+        d = lookup_hostname(None, BadResolver())
+        self.assertFailure(d, ResolverError)
+        return d
 
-        def check_error(result):
-            error_result.append(result.value)
 
-        d = lookup_hostname(None, bad_resolver)
-        d.addErrback(check_error)
+class DiscoverServerTest(LandscapeTest):
+    def test_srv_lookup(self):
+        """The DNS name of the server is found using a SRV lookup."""
+        fake_result = FakeResolverResult()
+        fake_result.type = dns.SRV
+        fake_result.payload.target = "a.b.com"
+        fake_resolver = FakeResolver()
+        fake_resolver.results = [[fake_result]]
 
-        self.assertIsInstance(error_result[0], ResolverError)
+        d = discover_server(fake_resolver)
+
+        def check(result):
+            self.assertEquals("a.b.com", result)
+
+        d.addCallback(check)
+        return d
+
+    def test_a_name_lookup(self):
+        """The DNS name of the server is found using an A name lookup."""
+        fake_resolver = FakeResolver()
+        fake_resolver.name = "x.y.com"
+
+        d = discover_server(fake_resolver)
+
+        def check(result):
+            self.assertEquals("x.y.com", result)
+
+        d.addCallback(check)
+        return d
+
+    def test_failed_lookup(self):
+        """A resolver error is returned when server autodiscovery fails."""
+        d = lookup_server_record(BadResolver())
+        self.assertFailure(d, ResolverError)
+        return d

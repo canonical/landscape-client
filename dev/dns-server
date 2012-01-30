@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+"""
+This script creates a DNS server that has enough functionality to test
+the server autodiscovery feature of landscape client.
+"""
+
 import argparse
 import sys
 from twisted.internet import reactor, defer
