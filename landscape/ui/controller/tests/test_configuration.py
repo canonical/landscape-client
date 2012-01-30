@@ -1,6 +1,7 @@
 from landscape.ui.controller.configuration import (
     ConfigController, ConfigControllerLockError)
-from landscape.ui.tests.helpers import ConfigurationProxyHelper
+from landscape.ui.tests.helpers import (
+    ConfigurationProxyHelper, dbus_test_should_skip, dbus_skip_message)
 from landscape.tests.helpers import LandscapeTest
 
 
@@ -197,6 +198,9 @@ class ConfigControllerTest(LandscapeTest):
         self.controller.registration_password = "I Win"
         self.assertTrue(self.controller.is_modified)
 
+    if dbus_test_should_skip:
+        skip = dbus_skip_message
+
 
 class EmptyConfigControllerTest(LandscapeTest):
 
@@ -251,3 +255,6 @@ class EmptyConfigControllerTest(LandscapeTest):
         in the config file.
         """
         self.assertEqual("me.here.com", self.controller.computer_title)
+
+    if dbus_test_should_skip:
+        skip = dbus_skip_message

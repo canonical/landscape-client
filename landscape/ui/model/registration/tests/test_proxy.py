@@ -14,9 +14,8 @@ class RegistrationProxyTest(LandscapeTest):
 
     def setUp(self):
         super(RegistrationProxyTest, self).setUp()
-        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-        bus = dbus.SessionBus(True)
-        bus_name = dbus.service.BusName(INTERFACE_NAME, bus)
+        bus_name = dbus.service.BusName(INTERFACE_NAME,
+                                        RegistrationProxyTest.bus)
 
         def _do_registration(this, config_path):
             return True
@@ -54,3 +53,10 @@ class RegistrationProxyTest(LandscapeTest):
         correctly performs registration.
         """
         self.assertEquals((True, "Connected\n"), self.proxy.register("foo"))
+
+    dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+    try:
+        bus = dbus.SessionBus(private=True)
+    except dbus.exceptions.DBusException:
+        test_register.skip = \
+            "Cannot launch private DBus session without X11"

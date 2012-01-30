@@ -30,9 +30,7 @@ class MechanismTest(LandscapeTest):
             default_config_filenames = [self.config_filename]
 
         self.config = MyLandscapeSetupConfiguration()
-        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-        bus = dbus.SessionBus()
-        bus_name = dbus.service.BusName(INTERFACE_NAME, bus)
+        bus_name = dbus.service.BusName(INTERFACE_NAME, MechanismTest.bus)
         self.mechanism = ConfigurationMechanism(self.config, bus_name)
         self.config.load(["-c", self.config_filename])
 
@@ -172,3 +170,9 @@ class MechanismTest(LandscapeTest):
         """
         self.mechanism.set("https_proxy", "bar")
         self.assertEqual("bar", self.mechanism.get("https_proxy"))
+
+    dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+    try:
+        bus = dbus.SessionBus(private=True)
+    except dbus.exceptions.DBusException:
+        skip = "Cannot create private DBus session without X11"

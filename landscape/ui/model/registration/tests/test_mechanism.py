@@ -14,9 +14,13 @@ class MechanismTest(LandscapeTest):
 
     def setUp(self):
         super(MechanismTest, self).setUp()
-        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-        bus = dbus.SessionBus(private=True)
-        self.bus_name = dbus.service.BusName(INTERFACE_NAME, bus)
+        self.bus_name = dbus.service.BusName(INTERFACE_NAME, MechanismTest.bus)
+        self.mechanism = None
+
+    def tearDown(self):
+        if not self.mechanism is None:
+            self.mechanism.remove_from_connection()
+        super(MechanismTest, self).tearDown()
 
     def make_registration(self, succeed):
 
@@ -31,8 +35,8 @@ class MechanismTest(LandscapeTest):
         call L{register} synchronously.
         """
         RegistrationMechanism._do_registration = self.make_registration(True)
-        mechanism = RegistrationMechanism(self.bus_name)
-        self.assertEqual((True, "Connected\n"), mechanism.register("foo"))
+        self.mechanism = RegistrationMechanism(self.bus_name)
+        self.assertEqual((True, "Connected\n"), self.mechanism.register("foo"))
 
     def test_registration_fail(self):
         """
@@ -40,6 +44,14 @@ class MechanismTest(LandscapeTest):
         call L{register} synchronously.
         """
         RegistrationMechanism._do_registration = self.make_registration(False)
-        mechanism = RegistrationMechanism(self.bus_name)
+        self.mechanism = RegistrationMechanism(self.bus_name)
         self.assertEqual((False, "Failed to connect\n"),
-                         mechanism.register("foo"))
+                         self.mechanism.register("foo"))
+
+    dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+    try:
+        bus = dbus.SessionBus(private=True)
+    except dbus.exceptions.DBusException:
+        skip_string = "Cannot launch private DBus session without X11"
+        test_registration_succeed.skip = skip_string
+        test_registration_fail.skip = skip_string

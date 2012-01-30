@@ -1,5 +1,6 @@
 from landscape.tests.helpers import LandscapeTest
-from landscape.ui.tests.helpers import ConfigurationProxyHelper
+from landscape.ui.tests.helpers import (
+    ConfigurationProxyHelper, dbus_test_should_skip, dbus_skip_message)
 from landscape.configuration import LandscapeSetupConfiguration
 
 
@@ -125,3 +126,6 @@ class ConfigurationProxyInterfaceTest(LandscapeTest):
         self.proxy.url = "bar"
         self.assertEqual("bar", self.proxy.url)
         self.assertEqual("bar", self.config.url)
+
+    if dbus_test_should_skip:
+        skip = dbus_skip_message
