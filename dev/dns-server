@@ -2,6 +2,20 @@
 """
 This script creates a DNS server that has enough functionality to test
 the server autodiscovery feature of landscape client.
+
+Landscape client uses /etc/resolv.conf to find the location of name servers.
+To have landscape client use this server, make sure that:
+
+nameserver 127.0.0.1
+
+is the first nameserver in /etc/resolv.conf.  Linux name lookups only support
+port 53, so this program must run on port 53 in order to work.  Be aware that
+NetworkManager overwrites this file any time your network configuration
+changes.
+
+This program does not return enough information for a tool like dig to complete
+successfully.  If this is needed, use Bind 9, detailed at
+https://wiki.canonical.com/Landscape/SpecRegistry/0082
 """
 
 import argparse
