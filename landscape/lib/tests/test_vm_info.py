@@ -140,8 +140,8 @@ power management:
 
     def test_get_vm_info_is_empty_without_xen_devices(self):
         """
-        L{get_vm_info} returns "xen" if the /sys/bus/xen/devices directory
-        exists and contains file.
+        L{get_vm_info} returns an empty string if the /sys/bus/xen/devices
+        directory exists and but doesn't contain any file.
         """
         root_path = self.makeDir()
         sys_path = os.path.join(root_path, "sys")
