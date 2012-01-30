@@ -1,9 +1,6 @@
 """Deployment code for the monitor."""
 
 import os
-import logging
-from twisted.names import dns
-from twisted.names.client import Resolver
 from landscape.lib.fetch import fetch_async
 from landscape.service import LandscapeService, run_landscape_service
 from landscape.broker.registration import RegistrationHandler, Identity

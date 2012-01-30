@@ -10,8 +10,8 @@ def discover_server():
     """
     resolver = Resolver()
     resolver.parseConfig("/etc/resolv.conf")
-    d = _lookup_server_record(resolver)
-    d.addErrback(_lookup_hostname, resolver)
+    d = lookup_server_record(resolver)
+    d.addErrback(lookup_hostname, resolver)
     return d
 
 

@@ -106,6 +106,7 @@ class DnsSrvLookupTest(LandscapeTest):
         self.mocker.replay()
 
         error_result = []
+
         def check_error(result):
             error_result.append(result.value)
 
@@ -155,6 +156,7 @@ class DnsNameLookupTest(LandscapeTest):
         self.mocker.replay()
 
         error_result = []
+
         def check_error(result):
             error_result.append(result.value)
 

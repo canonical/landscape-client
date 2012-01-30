@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 import argparse
 import sys
-import twisted
 from twisted.internet import reactor, defer
-from twisted.names import client, dns, common
+from twisted.names import dns, common
 from twisted.names.server import DNSServerFactory
 
 
@@ -68,7 +67,6 @@ def main():
     parse_command_line(sys.argv)
 
     simple_resolver = SimpleResolver()
-    resolver = client.Resolver("8.8.8.8")
     factory = DNSServerFactory(authorities=[simple_resolver], verbose=1)
     protocol = dns.DNSDatagramProtocol(factory)
     print "starting reactor on port %s.." % PORT
