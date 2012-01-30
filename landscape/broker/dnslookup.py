@@ -8,10 +8,12 @@ from twisted.names.client import Resolver
 def discover_server(resolver=None):
     """
     Look up the dns location of the landscape server.
+
+    @type resolver: The resolver to use.  If none is specified a resolver that
+        uses settings from /etc/resolv.conf will be created.
     """
     if not resolver:
-        resolver = Resolver()
-        resolver.parseConfig("/etc/resolv.conf")
+        resolver = Resolver("/etc/resolv.conf")
     d = lookup_server_record(resolver)
     d.addErrback(lookup_hostname, resolver)
     return d
