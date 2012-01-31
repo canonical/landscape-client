@@ -390,11 +390,20 @@ class AptFacade(object):
             version.package for version in self.get_packages()
             if version.package.is_inst_broken)
 
+    def _get_changed_version(self, package):
+        if package.marked_install:
+            return package.candidate
+        if package.marked_upgrade:
+            return package.candidate
+        if package.marked_delete:
+            return package.installed
+        return None
+
     def _check_changes(self, version_changes):
         all_changes = [
             (version.package, version) for version in version_changes]
         versions_to_be_changed = set(
-            (package, package.candidate)
+            (package, self._get_changed_version(package))
             for package in self._cache.get_changes()
             if self._is_main_architecture(package))
         dependencies = versions_to_be_changed.difference(all_changes)
