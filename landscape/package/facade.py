@@ -390,6 +390,19 @@ class AptFacade(object):
             version.package for version in self.get_packages()
             if version.package.is_inst_broken)
 
+    def _check_changes(self, version_changes):
+        all_changes = [
+            (version.package, version) for version in version_changes]
+        versions_to_be_changed = set(
+            (package, package.candidate)
+            for package in self._cache.get_changes()
+            if self._is_main_architecture(package))
+        dependencies = versions_to_be_changed.difference(all_changes)
+        if dependencies:
+            raise DependencyError(
+                [version for package, version in dependencies])
+        return len(versions_to_be_changed) > 0
+
     def perform_changes(self):
         """Perform the pending package operations."""
         held_package_names = set()
@@ -444,17 +457,7 @@ class AptFacade(object):
                 fixer.resolve(True)
             except SystemError, error:
                 raise TransactionError(error.args[0])
-        all_changes = [
-            (version.package, version) for version in version_changes]
-        versions_to_be_changed = set(
-            (package, package.candidate)
-            for package in self._cache.get_changes()
-            if self._is_main_architecture(package))
-        dependencies = versions_to_be_changed.difference(all_changes)
-        if dependencies:
-            raise DependencyError(
-                [version for package, version in dependencies])
-        if not versions_to_be_changed:
+        if not self._check_changes(version_changes):
             return None
         fetch_output = StringIO()
         # Redirect stdout and stderr to a file. We need to work with the
