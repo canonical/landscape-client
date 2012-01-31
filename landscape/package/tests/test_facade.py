@@ -1338,20 +1338,18 @@ class AptFacadeTest(LandscapeTest):
         """
         """
         deb_dir = self.makeDir()
-        self._add_package_to_deb_dir(
-            deb_dir, "foo", control_fields={"Depends": "bar"})
-        self._add_package_to_deb_dir(deb_dir, "bar", version="1.0")
-        self._add_package_to_deb_dir(deb_dir, "bar", version="2.0")
+        self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
+        self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
-        [foo] = self.facade.get_packages_by_name("foo")
-        self.facade.mark_install(foo)
-        [bar1, bar2] = sorted(self.facade.get_packages_by_name("bar"))
-        self.assertEqual(bar1.package.candidate, bar2)
-        error = self.assertRaises(DependencyError, self.facade.perform_changes)
-        self.assertEqual([bar2], error.packages)
-        self.assertTrue(foo.package.marked_install)
-        self.assertTrue(bar2.package.marked_install)
+        [foo1, foo2] = sorted(self.facade.get_packages_by_name("foo"))
+        self.assertEqual(foo1.package, foo2.package)
+        package = foo1.package
+        self.assertEqual(package.candidate, foo2)
+        package.mark_install()
+        error = self.assertRaises(
+            DependencyError, self.facade._check_changes, [])
+        self.assertEqual([foo2], error.packages)
 
     def test_mark_global_upgrade_dependency_error(self):
         """
