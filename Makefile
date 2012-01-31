@@ -1,7 +1,8 @@
 PYDOCTOR ?= pydoctor
 TXT2MAN ?= txt2man 
 PYTHON ?= python
-TEST_COMMAND = trial landscape
+TRIAL_ARGS ?= 
+TEST_COMMAND = trial $(TRIAL_ARGS) landscape
 
 all: build
 
