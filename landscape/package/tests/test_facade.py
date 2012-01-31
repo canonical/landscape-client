@@ -1346,7 +1346,11 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(foo1.package, foo2.package)
         package = foo1.package
         self.assertEqual(package.candidate, foo2)
+
         package.mark_install()
+        self.assertEqual([package], self.facade._cache.get_changes())
+        self.assertTrue(package.marked_install)
+
         error = self.assertRaises(
             DependencyError, self.facade._check_changes, [])
         self.assertEqual([foo2], error.packages)
@@ -1362,8 +1366,12 @@ class AptFacadeTest(LandscapeTest):
         [foo1, foo2] = sorted(self.facade.get_packages_by_name("foo"))
         self.assertEqual(foo1.package, foo2.package)
         package = foo1.package
+
         package.candidate = foo1
         package.mark_install()
+        self.assertEqual([package], self.facade._cache.get_changes())
+        self.assertTrue(package.marked_install)
+
         error = self.assertRaises(
             DependencyError, self.facade._check_changes, [])
         self.assertEqual([foo1], error.packages)
