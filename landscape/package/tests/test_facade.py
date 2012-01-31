@@ -1376,6 +1376,21 @@ class AptFacadeTest(LandscapeTest):
             DependencyError, self.facade._check_changes, [])
         self.assertEqual([foo1], error.packages)
 
+    def test_perform_changes_unapproved_remove(self):
+        """
+        """
+        self._add_system_package("foo")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+
+        foo.package.mark_delete()
+        self.assertEqual([foo.package], self.facade._cache.get_changes())
+        self.assertTrue(foo.package.marked_delete)
+
+        error = self.assertRaises(
+            DependencyError, self.facade._check_changes, [])
+        self.assertEqual([foo], error.packages)
+
     def test_mark_global_upgrade_dependency_error(self):
         """
         If a package is marked for upgrade, a DependencyError will be
