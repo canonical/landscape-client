@@ -390,7 +390,14 @@ class AptFacade(object):
             version.package for version in self.get_packages()
             if version.package.is_inst_broken)
 
-    def _get_changed_version(self, package):
+    def _get_changed_versions(self, package):
+        """Return the versions that will be changed for the package.
+
+        Apt gives us that a package is going to be changed and have
+        variables set on the package to indicate what will change. We
+        need to convert that into a list of versions that will be either
+        installed or removed, which is what the server expects to get.
+        """
         if package.marked_install:
             return [package.candidate]
         if package.marked_upgrade or package.marked_downgrade:
@@ -400,6 +407,14 @@ class AptFacade(object):
         return None
 
     def _check_changes(self, requested_changes):
+        """Check that the changes Apt will do have all been requested.
+
+        If some change hasn't been explicitly requested, a
+        C{DependencyError} is raised.
+
+        C{True} is returned if all the changes that Apt will perform has
+        been requested
+        """
         # Build tuples of (package, version) so that we can do
         # comparison checks. Same versions of different packages compare
         # as being the same, so we need to include the package as well.
@@ -409,7 +424,7 @@ class AptFacade(object):
         for package in self._cache.get_changes():
             if not self._is_main_architecture(package):
                 continue
-            versions = self._get_changed_version(package)
+            versions = self._get_changed_versions(package)
             versions_to_be_changed.update(
                 (package, version) for version in versions)
         dependencies = versions_to_be_changed.difference(all_changes)
