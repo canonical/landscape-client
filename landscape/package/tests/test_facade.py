@@ -1340,8 +1340,11 @@ class AptFacadeTest(LandscapeTest):
         error = self.assertRaises(DependencyError, self.facade.perform_changes)
         self.assertEqual([bar], error.packages)
 
-    def test_check_changes_unapproved_install_default(self):
+    def test_wb_check_changes_unapproved_install_default(self):
         """
+        C{_check_changes} raises C{DependencyError} with the candidate
+        version, if a package is marked for installation, but not in the
+        requested changes.
         """
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
@@ -1361,8 +1364,11 @@ class AptFacadeTest(LandscapeTest):
             DependencyError, self.facade._check_changes, [])
         self.assertEqual([foo2], error.packages)
 
-    def test_check_changes_unapproved_install_specific_version(self):
+    def test_wb_check_changes_unapproved_install_specific_version(self):
         """
+        C{_check_changes} raises C{DependencyError} with the candidate
+        version, if a package is marked for installation with a
+        non-default candidate version.
         """
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
@@ -1384,6 +1390,9 @@ class AptFacadeTest(LandscapeTest):
 
     def test_check_changes_unapproved_remove(self):
         """
+        C{_check_changes} raises C{DependencyError} with the installed
+        version, if a package is marked for removal and the change isn't
+        in the requested changes.
         """
         self._add_system_package("foo")
         self.facade.reload_channels()
@@ -1399,6 +1408,9 @@ class AptFacadeTest(LandscapeTest):
 
     def test_check_changes_unapproved_remove_with_update_available(self):
         """
+        C{_check_changes} raises C{DependencyError} with the installed
+        version, if a package is marked for removal and there is an
+        update available.
         """
         self._add_system_package("foo", version="1.0")
         deb_dir = self.makeDir()
@@ -1419,6 +1431,9 @@ class AptFacadeTest(LandscapeTest):
 
     def test_check_changes_unapproved_upgrade(self):
         """
+        If a package is marked to be upgraded, C{_check_changes} raises
+        C{DependencyError} with the installed version and the version to
+        be upgraded to.
         """
         self._add_system_package("foo", version="1.0")
         deb_dir = self.makeDir()
@@ -1439,6 +1454,9 @@ class AptFacadeTest(LandscapeTest):
 
     def test_check_changes_unapproved_downgrade(self):
         """
+        If a package is marked to be downgraded, C{_check_changes} raises
+        C{DependencyError} with the installed version and the version to
+        be downgraded to.
         """
         self._add_system_package("foo", version="2.0")
         deb_dir = self.makeDir()
