@@ -1340,7 +1340,7 @@ class AptFacadeTest(LandscapeTest):
         error = self.assertRaises(DependencyError, self.facade.perform_changes)
         self.assertEqual([bar], error.packages)
 
-    def test_perform_changes_unapproved_install_default(self):
+    def test_check_changes_unapproved_install_default(self):
         """
         """
         deb_dir = self.makeDir()
@@ -1361,7 +1361,7 @@ class AptFacadeTest(LandscapeTest):
             DependencyError, self.facade._check_changes, [])
         self.assertEqual([foo2], error.packages)
 
-    def test_perform_changes_unapproved_install_specific_version(self):
+    def test_check_changes_unapproved_install_specific_version(self):
         """
         """
         deb_dir = self.makeDir()
@@ -1382,7 +1382,7 @@ class AptFacadeTest(LandscapeTest):
             DependencyError, self.facade._check_changes, [])
         self.assertEqual([foo1], error.packages)
 
-    def test_perform_changes_unapproved_remove(self):
+    def test_check_changes_unapproved_remove(self):
         """
         """
         self._add_system_package("foo")
@@ -1397,7 +1397,7 @@ class AptFacadeTest(LandscapeTest):
             DependencyError, self.facade._check_changes, [])
         self.assertEqual([foo], error.packages)
 
-    def test_perform_changes_unapproved_remove_with_update_available(self):
+    def test_check_changes_unapproved_remove_with_update_available(self):
         """
         """
         self._add_system_package("foo", version="1.0")
@@ -1417,7 +1417,7 @@ class AptFacadeTest(LandscapeTest):
             DependencyError, self.facade._check_changes, [])
         self.assertEqual([foo1], error.packages)
 
-    def test_perform_changes_unapproved_upgrade(self):
+    def test_check_changes_unapproved_upgrade(self):
         """
         """
         self._add_system_package("foo", version="1.0")
@@ -1437,7 +1437,7 @@ class AptFacadeTest(LandscapeTest):
             DependencyError, self.facade._check_changes, [])
         self.assertEqual(set([foo1, foo2]), set(error.packages))
 
-    def test_perform_changes_unapproved_downgrade(self):
+    def test_check_changes_unapproved_downgrade(self):
         """
         """
         self._add_system_package("foo", version="2.0")
