@@ -399,9 +399,12 @@ class AptFacade(object):
             return [package.installed]
         return None
 
-    def _check_changes(self, version_changes):
+    def _check_changes(self, requested_changes):
+        # Build tuples of (package, version) so that we can do
+        # comparison checks. Same versions of different packages compare
+        # as being the same, so we need to include the package as well.
         all_changes = [
-            (version.package, version) for version in version_changes]
+            (version.package, version) for version in requested_changes]
         versions_to_be_changed = set()
         for package in self._cache.get_changes():
             if not self._is_main_architecture(package):
