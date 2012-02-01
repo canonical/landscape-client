@@ -979,6 +979,11 @@ class AptFacadeTest(LandscapeTest):
         self.facade.perform_changes()
         self.assertEqual(foo1, foo1.package.candidate)
 
+    # XXX: The following test has been disabled, since the test setup
+    # results in the "multi-arch" package being broken, so it's not
+    # testing a valid scenario. This results in the test failing with
+    # the fix for bug 921664, even though it shouldn't.
+    # Bug 922511 has been filed to fix this test.
     def disabled_test_wb_mark_install_upgrade_non_main_arch(self):
         """
         If C{mark_install} is used to upgrade a package, its non-main
@@ -1729,7 +1734,7 @@ class AptFacadeTest(LandscapeTest):
         skip_message = "multi-arch not supported"
         disabled_test_wb_mark_install_upgrade_non_main_arch_dependency_error.skip = (
             skip_message)
-        test_wb_mark_install_upgrade_non_main_arch.skip = skip_message
+        disabled_test_wb_mark_install_upgrade_non_main_arch.skip = skip_message
 
 
 class SmartFacadeTest(LandscapeTest):
