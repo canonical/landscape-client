@@ -412,7 +412,7 @@ class AptFacade(object):
         If some change hasn't been explicitly requested, a
         C{DependencyError} is raised.
 
-        C{True} is returned if all the changes that Apt will perform has
+        C{True} is returned if all the changes that Apt will perform have
         been requested
         """
         # Build tuples of (package, version) so that we can do
