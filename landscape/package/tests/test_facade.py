@@ -979,12 +979,7 @@ class AptFacadeTest(LandscapeTest):
         self.facade.perform_changes()
         self.assertEqual(foo1, foo1.package.candidate)
 
-    # XXX: The following test has been disabled, since the test setup
-    # results in the "multi-arch" package being broken, so it's not
-    # testing a valid scenario. This results in the test failing with
-    # the fix for bug 921664, even though it shouldn't.
-    # Bug 922511 has been filed to fix this test.
-    def disabled_test_wb_mark_install_upgrade_non_main_arch(self):
+    def test_wb_mark_install_upgrade_non_main_arch(self):
         """
         If C{mark_install} is used to upgrade a package, its non-main
         architecture version of the package will be upgraded as well, if
@@ -996,15 +991,19 @@ class AptFacadeTest(LandscapeTest):
         apt_pkg.config.set("APT::Architectures::", "i386")
         deb_dir = self.makeDir()
         self._add_system_package(
-            "multi-arch", architecture="amd64", version="1.0")
+            "multi-arch", architecture="amd64", version="1.0",
+            control_fields={"Multi-Arch": "same"})
         self._add_system_package(
-            "multi-arch", architecture="i386", version="1.0")
+            "multi-arch", architecture="i386", version="1.0",
+            control_fields={"Multi-Arch": "same"})
         self._add_system_package(
             "single-arch", architecture="amd64", version="1.0")
         self._add_package_to_deb_dir(
-            deb_dir, "multi-arch", architecture="amd64", version="2.0")
+            deb_dir, "multi-arch", architecture="amd64", version="2.0",
+            control_fields={"Multi-Arch": "same"})
         self._add_package_to_deb_dir(
-            deb_dir, "multi-arch", architecture="i386", version="2.0")
+            deb_dir, "multi-arch", architecture="i386", version="2.0",
+            control_fields={"Multi-Arch": "same"})
         self._add_package_to_deb_dir(
             deb_dir, "single-arch", architecture="amd64", version="2.0")
         self._add_package_to_deb_dir(
@@ -1016,24 +1015,21 @@ class AptFacadeTest(LandscapeTest):
             self.facade.get_packages_by_name("multi-arch"))
         single_arch1, single_arch2 = sorted(
             self.facade.get_packages_by_name("single-arch"))
+        self.facade.mark_remove(multi_arch1)
         self.facade.mark_install(multi_arch2)
+        self.facade.mark_remove(single_arch1)
         self.facade.mark_install(single_arch2)
         self.facade._cache.commit = lambda fetch_progress: None
         self.facade.perform_changes()
         changes = [
-            (pkg.name, pkg.candidate.version)
+            (pkg.name, pkg.candidate.version, pkg.marked_upgrade)
             for pkg in self.facade._cache.get_changes()]
         self.assertEqual(
-            [("multi-arch", "2.0"), ("multi-arch:i386", "2.0"),
-             ("single-arch", "2.0")],
+            [("multi-arch", "2.0", True), ("multi-arch:i386", "2.0", True),
+             ("single-arch", "2.0", True)],
             sorted(changes))
 
-    # XXX: The following test has been disabled, since the test setup
-    # results in the "multi-arch" package being broken, so it's not
-    # testing a valid scenario. This results in the test failing with
-    # the fix for bug 921664, even though it shouldn't.
-    # Bug 922511 has been filed to fix this test.
-    def disabled_test_wb_mark_install_upgrade_non_main_arch_dependency_error(self):
+    def test_wb_mark_install_upgrade_non_main_arch_dependency_error(self):
         """
         If a non-main architecture is automatically upgraded, and the
         main architecture versions hasn't been marked for installation,
@@ -1046,36 +1042,33 @@ class AptFacadeTest(LandscapeTest):
         apt_pkg.config.set("APT::Architectures::", "i386")
         deb_dir = self.makeDir()
         self._add_system_package(
-            "multi-arch", architecture="amd64", version="1.0")
+            "multi-arch", architecture="amd64", version="1.0",
+            control_fields={"Multi-Arch": "same"})
         self._add_system_package(
-            "multi-arch", architecture="i386", version="1.0")
-        self._add_system_package(
-            "single-arch", architecture="amd64", version="1.0",
-            control_fields={"Depends": "multi-arch"})
+            "multi-arch", architecture="i386", version="1.0",
+            control_fields={"Multi-Arch": "same"})
         self._add_package_to_deb_dir(
-            deb_dir, "multi-arch", architecture="amd64", version="2.0")
+            deb_dir, "multi-arch", architecture="amd64", version="2.0",
+            control_fields={"Multi-Arch": "same"})
         self._add_package_to_deb_dir(
-            deb_dir, "multi-arch", architecture="i386", version="2.0")
-        self._add_package_to_deb_dir(
-            deb_dir, "single-arch", architecture="amd64", version="2.0")
+            deb_dir, "multi-arch", architecture="i386", version="2.0",
+            control_fields={"Multi-Arch": "same"})
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
 
-        multi_arch2 = sorted(
-            self.facade.get_packages_by_name("multi-arch"))[1]
-        single_arch2 = sorted(
-            self.facade.get_packages_by_name("single-arch"))[1]
-        self.facade.mark_install(single_arch2)
+        multi_arch1, multi_arch2 = sorted(
+            self.facade.get_packages_by_name("multi-arch"))
+        self.facade.mark_global_upgrade()
         self.facade._cache.commit = lambda fetch_progress: None
         exception = self.assertRaises(
             DependencyError, self.facade.perform_changes)
-        self.assertEqual([multi_arch2], exception.packages)
+        self.assertEqual(
+            sorted([multi_arch1, multi_arch2]), sorted(exception.packages))
         changes = [
             (pkg.name, pkg.candidate.version)
             for pkg in self.facade._cache.get_changes()]
         self.assertEqual(
-            [("multi-arch", "2.0"), ("multi-arch:i386", "2.0"),
-             ("single-arch", "2.0")],
+            [("multi-arch", "2.0"), ("multi-arch:i386", "2.0")],
             sorted(changes))
 
     def test_mark_global_upgrade(self):
@@ -1750,9 +1743,9 @@ class AptFacadeTest(LandscapeTest):
         # was added to python-apt. So if it's not there, it means that
         # multi-arch support isn't available.
         skip_message = "multi-arch not supported"
-        disabled_test_wb_mark_install_upgrade_non_main_arch_dependency_error.skip = (
+        test_wb_mark_install_upgrade_non_main_arch_dependency_error.skip = (
             skip_message)
-        disabled_test_wb_mark_install_upgrade_non_main_arch.skip = skip_message
+        test_wb_mark_install_upgrade_non_main_arch.skip = skip_message
 
 
 class SmartFacadeTest(LandscapeTest):
