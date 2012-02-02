@@ -409,11 +409,10 @@ class AptFacade(object):
     def _check_changes(self, requested_changes):
         """Check that the changes Apt will do have all been requested.
 
-        If some change hasn't been explicitly requested, a
-        C{DependencyError} is raised.
-
-        C{True} is returned if all the changes that Apt will perform have
-        been requested
+        @raises DependencyError: If some change hasn't been explicitly
+            requested.
+        @return: C{True} if all the changes that Apt will perform have
+            been requested.
         """
         # Build tuples of (package, version) so that we can do
         # comparison checks. Same versions of different packages compare
