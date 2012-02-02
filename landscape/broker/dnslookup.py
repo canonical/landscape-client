@@ -35,7 +35,7 @@ def lookup_server_record(resolver):
         for item in result:
             for row in item:
                 if row.type == dns.SRV:
-                    name = row.payload.target
+                    name = row.payload.target.name
                     break
         return name
 

@@ -68,11 +68,11 @@ def parse_command_line(args):
     dig -p 5553 @127.0.0.1 localhost.localdomain
     """
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument("--srv-response", type=str,
+    parser.add_argument("--srv-response", type=str, default=SRV_RESPONSE,
                         help="Give this reply to SRV queries (eg: localhost)")
-    parser.add_argument("--a-response", type=str,
+    parser.add_argument("--a-response", type=str, default=A_RESPONSE,
                         help="Give this reply to A queries (eg: 127.0.0.1)")
-    parser.add_argument("--port", type=int, default=5553,
+    parser.add_argument("--port", type=int, default=PORT,
                         help="Listen on this port (default 5553).  DNS "
                         "normally runs on port 53")
 

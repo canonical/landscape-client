@@ -25,7 +25,18 @@ class FakeResolverResult(object):
             """
             def __init__(self):
                 self.target = ""
+
+        class Target(object):
+            """
+            A payload target returned by fake resolver.
+
+            @param name: The name contained by the target.
+            """
+            def __init__(self):
+                self.name = ""
+
         self.payload = Payload()
+        self.payload.target = Target()
 
 
 class FakeResolver(object):
@@ -70,7 +81,7 @@ class DnsSrvLookupTest(LandscapeTest):
         """
         fake_result = FakeResolverResult()
         fake_result.type = dns.SRV
-        fake_result.payload.target = "a.b.com"
+        fake_result.payload.target.name = "a.b.com"
         fake_resolver = FakeResolver()
         fake_resolver.results = [[fake_result]]
 
@@ -156,7 +167,7 @@ class DiscoverServerTest(LandscapeTest):
         """The DNS name of the server is found using a SRV lookup."""
         fake_result = FakeResolverResult()
         fake_result.type = dns.SRV
-        fake_result.payload.target = "a.b.com"
+        fake_result.payload.target.name = "a.b.com"
         fake_resolver = FakeResolver()
         fake_resolver.results = [[fake_result]]
 
