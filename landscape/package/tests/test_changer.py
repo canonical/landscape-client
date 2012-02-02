@@ -498,6 +498,7 @@ class PackageChangerTestMixin(object):
             self.assertMessages(self.get_pending_messages(),
                                 [{"operation-id": 123,
                                   "must-install": [2],
+                                  "must-remove": [1],
                                   "result-code": 101,
                                   "type": "change-packages-result"}])
 
@@ -1065,6 +1066,40 @@ class SmartPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
 
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
+
+    def test_global_upgrade(self):
+        """
+        Besides asking for individual changes, the server may also request
+        the client to perform a global upgrade.  This would be the equivalent
+        of a "smart upgrade" command being executed in the command line.
+
+        This test should be run for both C{AptFacade} and
+        C{SmartFacade}, but due to the smart test setting up that two
+        packages with different names upgrade each other, the message
+        doesn't correctly report that the old version should be
+        uninstalled. The test is still useful, since it shows that the
+        message contains the changes that smart says are needed.
+
+        Making the test totally correct is a lot of work, that is not
+        worth doing, since we're removing smart soon.
+        """
+        hash1, hash2 = self.set_pkg2_upgrades_pkg1()
+        self.store.set_hash_ids({hash1: 1, hash2: 2})
+
+        self.store.add_task("changer",
+                            {"type": "change-packages", "upgrade-all": True,
+                             "operation-id": 123})
+
+        result = self.changer.handle_tasks()
+
+        def got_result(result):
+            self.assertMessages(self.get_pending_messages(),
+                                [{"operation-id": 123,
+                                  "must-install": [2],
+                                  "result-code": 101,
+                                  "type": "change-packages-result"}])
+
+        return result.addCallback(got_result)
 
 
 class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):

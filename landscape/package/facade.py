@@ -390,6 +390,48 @@ class AptFacade(object):
             version.package for version in self.get_packages()
             if version.package.is_inst_broken)
 
+    def _get_changed_versions(self, package):
+        """Return the versions that will be changed for the package.
+
+        Apt gives us that a package is going to be changed and have
+        variables set on the package to indicate what will change. We
+        need to convert that into a list of versions that will be either
+        installed or removed, which is what the server expects to get.
+        """
+        if package.marked_install:
+            return [package.candidate]
+        if package.marked_upgrade or package.marked_downgrade:
+            return [package.installed, package.candidate]
+        if package.marked_delete:
+            return [package.installed]
+        return None
+
+    def _check_changes(self, requested_changes):
+        """Check that the changes Apt will do have all been requested.
+
+        @raises DependencyError: If some change hasn't been explicitly
+            requested.
+        @return: C{True} if all the changes that Apt will perform have
+            been requested.
+        """
+        # Build tuples of (package, version) so that we can do
+        # comparison checks. Same versions of different packages compare
+        # as being the same, so we need to include the package as well.
+        all_changes = [
+            (version.package, version) for version in requested_changes]
+        versions_to_be_changed = set()
+        for package in self._cache.get_changes():
+            if not self._is_main_architecture(package):
+                continue
+            versions = self._get_changed_versions(package)
+            versions_to_be_changed.update(
+                (package, version) for version in versions)
+        dependencies = versions_to_be_changed.difference(all_changes)
+        if dependencies:
+            raise DependencyError(
+                [version for package, version in dependencies])
+        return len(versions_to_be_changed) > 0
+
     def perform_changes(self):
         """Perform the pending package operations."""
         held_package_names = set()
@@ -444,17 +486,7 @@ class AptFacade(object):
                 fixer.resolve(True)
             except SystemError, error:
                 raise TransactionError(error.args[0])
-        all_changes = [
-            (version.package, version) for version in version_changes]
-        versions_to_be_changed = set(
-            (package, package.candidate)
-            for package in self._cache.get_changes()
-            if self._is_main_architecture(package))
-        dependencies = versions_to_be_changed.difference(all_changes)
-        if dependencies:
-            raise DependencyError(
-                [version for package, version in dependencies])
-        if not versions_to_be_changed:
+        if not self._check_changes(version_changes):
             return None
         fetch_output = StringIO()
         # Redirect stdout and stderr to a file. We need to work with the
