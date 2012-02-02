@@ -252,10 +252,6 @@ class ConfigController(object):
     def is_modified(self):
         return self._modified
 
-    @property
-    def server_autodiscover(self):
-        return self._server_autodiscover == "true"
-
     def revert(self):
         "Revert settings to those the configuration object originally found."
         self._configuration.reload()
