@@ -163,13 +163,15 @@ REGISTER_CLOUD_VM = Message(
      "reservation_key": Unicode(),
      "public_hostname": Unicode(),
      "local_hostname": Unicode(),
-     "kernel_key": Unicode(),
+     "kernel_key": Any(Unicode(), Constant(None)),
      "ramdisk_key": Any(Unicode(), Constant(None)),
      "launch_index": Int(),
      "image_key": Unicode(),
      "tags": Any(utf8, Constant(None)),
-     "vm-info": String()},
-     optional=["tags", "vm-info"])
+     "vm-info": String(),
+     "public_ipv4": Unicode(),
+     "local_ipv4": Unicode()},
+     optional=["tags", "vm-info", "public_ipv4", "local_ipv4"])
 
 TEMPERATURE = Message("temperature", {
     "thermal-zone": utf8,
@@ -292,6 +294,12 @@ PACKAGE_LOCKS = Message(
     "package-locks",
     {"created": package_locks,
      "deleted": package_locks},
+    optional=["created", "deleted"])
+
+CHANGE_PACKAGE_HOLDS = Message(
+    "change-package-holds",
+    {"created": List(utf8),
+     "deleted": List(utf8)},
     optional=["created", "deleted"])
 
 CHANGE_PACKAGES_RESULT = Message(

@@ -1,6 +1,8 @@
 PYDOCTOR ?= pydoctor
 TXT2MAN ?= txt2man 
 PYTHON ?= python
+TRIAL_ARGS ?= 
+TEST_COMMAND = trial $(TRIAL_ARGS) landscape
 
 all: build
 
@@ -8,7 +10,11 @@ build:
 	$(PYTHON) setup.py build_ext -i
 
 check: build
-	-trial landscape
+	@if [ -z "$$DISPLAY" ]; then \
+	    xvfb-run $(TEST_COMMAND); \
+	else \
+	    $(TEST_COMMAND); \
+	fi
 
 pyflakes:
 	-pyflakes `find landscape -name \*py|grep -v twisted_amp\.py|grep -v configobj\.py|grep -v mocker\.py`

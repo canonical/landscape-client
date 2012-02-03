@@ -18,7 +18,7 @@ from landscape.package.reporter import find_reporter_command
 from landscape.package.taskhandler import (
     PackageTaskHandler, PackageTaskHandlerConfiguration, PackageTaskError,
     run_task_handler)
-from landscape.manager.manager import SUCCEEDED
+from landscape.manager.manager import FAILED, SUCCEEDED
 
 
 class UnknownPackageData(Exception):
@@ -103,6 +103,8 @@ class PackageChanger(PackageTaskHandler):
             return result.addErrback(self.unknown_package_data_error, task)
         if message["type"] == "change-package-locks":
             return self.handle_change_package_locks(message)
+        if message["type"] == "change-package-holds":
+            return self.handle_change_package_holds(message)
 
     def unknown_package_data_error(self, failure, task):
         """Handle L{UnknownPackageData} data errors.
@@ -169,9 +171,7 @@ class PackageChanger(PackageTaskHandler):
             self._facade.reset_marks()
 
         if upgrade:
-            for package in self._facade.get_packages():
-                if self._facade.is_package_installed(package):
-                    self._facade.mark_upgrade(package)
+            self._facade.mark_global_upgrade()
 
         for ids, mark_func in [(install, self._facade.mark_install),
                                  (remove, self._facade.mark_remove)]:
@@ -282,6 +282,15 @@ class PackageChanger(PackageTaskHandler):
         Create and delete package locks as requested by the given C{message}.
         """
 
+        if not self._facade.supports_package_locks:
+            response = {
+                "type": "operation-result",
+                "operation-id": message.get("operation-id"),
+                "status": FAILED,
+                "result-text": "This client doesn't support package locks.",
+                "result-code": 1}
+            return self._broker.send_message(response, True)
+
         for lock in message.get("create", ()):
             self._facade.set_package_lock(*lock)
         for lock in message.get("delete", ()):
@@ -297,6 +306,58 @@ class PackageChanger(PackageTaskHandler):
         logging.info("Queuing message with change package locks results to "
                      "exchange urgently.")
         return self._broker.send_message(response, True)
+
+    def _send_change_package_holds_response(self, response):
+        """Log that a package holds result is sent and send the response."""
+        logging.info("Queuing message with change package holds results to "
+                     "exchange urgently.")
+        return self._broker.send_message(response, True)
+
+    def handle_change_package_holds(self, message):
+        """Handle a C{change-package-holds} message.
+
+        Create and delete package holds as requested by the given C{message}.
+        """
+        if not self._facade.supports_package_holds:
+            response = {
+                "type": "operation-result",
+                "operation-id": message.get("operation-id"),
+                "status": FAILED,
+                "result-text": "This client doesn't support package holds.",
+                "result-code": 1}
+            return self._send_change_package_holds_response(response)
+
+        not_installed = set()
+        holds_to_create = message.get("create", [])
+        for name in holds_to_create:
+            versions = self._facade.get_packages_by_name(name)
+            if not versions or not versions[0].package.installed:
+                not_installed.add(name)
+        if not_installed:
+            response = {
+                "type": "operation-result",
+                "operation-id": message.get("operation-id"),
+                "status": FAILED,
+                "result-text": "Package holds not added, since the following" +
+                               " packages are not installed: %s" % (
+                                   ", ".join(sorted(not_installed))),
+                "result-code": 1}
+            return self._send_change_package_holds_response(response)
+
+        for hold in holds_to_create:
+            self._facade.set_package_hold(hold)
+        self._facade.reload_channels()
+        for hold in message.get("delete", []):
+            self._facade.remove_package_hold(hold)
+        self._facade.reload_channels()
+
+        response = {"type": "operation-result",
+                    "operation-id": message.get("operation-id"),
+                    "status": SUCCEEDED,
+                    "result-text": "Package holds successfully changed.",
+                    "result-code": 0}
+
+        return self._send_change_package_holds_response(response)
 
     @staticmethod
     def find_command():

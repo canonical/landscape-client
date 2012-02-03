@@ -5,9 +5,14 @@ import sys
 import textwrap
 import tempfile
 
-from smart.control import Control
-from smart.cache import Provides
-from smart.const import NEVER, ALWAYS
+try:
+    import smart
+    from smart.control import Control
+    from smart.cache import Provides
+    from smart.const import NEVER, ALWAYS
+except ImportError:
+    # Smart is optional if AptFacade is being used.
+    pass
 
 import apt_pkg
 from apt.package import Package
@@ -17,9 +22,8 @@ from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from twisted.internet.utils import getProcessOutputAndValue
 
-import smart
-
 from landscape.lib.fs import read_file
+from landscape.package import facade as facade_module
 from landscape.package.facade import (
     TransactionError, DependencyError, ChannelError, SmartError, AptFacade,
     has_new_enough_apt)
@@ -203,6 +207,8 @@ class AptFacadeTest(LandscapeTest):
         create_deb(deb_dir, PKGNAME1, PKGDEB1)
         deb_file = os.path.join(deb_dir, PKGNAME1)
         stanza = self.facade.get_package_stanza(deb_file)
+        SHA256 = (
+            "f899cba22b79780dbe9bbbb802ff901b7e432425c264dc72e6bb20c0061e4f26")
         self.assertEqual(textwrap.dedent("""\
             Package: name1
             Priority: optional
@@ -221,10 +227,10 @@ class AptFacadeTest(LandscapeTest):
             Size: 1038
             MD5sum: efe83eb2b891046b303aaf9281c14e6e
             SHA1: b4ebcd2b0493008852a4954edc30a236d516c638
-            SHA256: f899cba22b79780dbe9bbbb802ff901b7e432425c264dc72e6bb20c0061e4f26
+            SHA256: %(sha256)s
             Description: Summary1
              Description1
-            """ % {"filename": PKGNAME1}),
+            """ % {"filename": PKGNAME1, "sha256": SHA256}),
             stanza)
 
     def test_add_channel_deb_dir_creates_packages_file(self):
@@ -905,14 +911,13 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         foo = self.facade.get_packages_by_name("foo")[0]
         self.facade.mark_install(foo)
-        bar_10 = sorted(self.facade.get_packages_by_name("bar"))[0]
-        self.facade.mark_upgrade(bar_10)
+        self.facade.mark_global_upgrade()
         [baz] = self.facade.get_packages_by_name("baz")
         self.facade.mark_remove(baz)
         self.facade.reset_marks()
-        self.assertEqual(self.facade._package_installs, [])
-        self.assertEqual(self.facade._package_upgrades, [])
-        self.assertEqual(self.facade._package_removals, [])
+        self.assertEqual(self.facade._version_installs, [])
+        self.assertEqual(self.facade._version_removals, [])
+        self.assertFalse(self.facade._global_upgrade)
         self.assertEqual(self.facade.perform_changes(), None)
 
     def test_wb_mark_install_adds_to_list(self):
@@ -926,14 +931,14 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         pkg = self.facade.get_packages_by_name("minimal")[0]
         self.facade.mark_install(pkg)
-        self.assertEqual(1, len(self.facade._package_installs))
-        install = self.facade._package_installs[0]
+        self.assertEqual(1, len(self.facade._version_installs))
+        install = self.facade._version_installs[0]
         self.assertEqual("minimal", install.package.name)
 
-    def test_wb_mark_upgrade_adds_to_list(self):
+    def test_wb_mark_global_upgrade_sets_variable(self):
         """
-        C{mark_upgrade} adds the package to the list of packages to be
-        upgraded.
+        C{mark_global_upgrade} sets a variable, so that the actual
+        upgrade happens in C{perform_changes}.
         """
         deb_dir = self.makeDir()
         self._add_system_package("foo", version="1.0")
@@ -941,8 +946,9 @@ class AptFacadeTest(LandscapeTest):
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
         foo_10 = sorted(self.facade.get_packages_by_name("foo"))[0]
-        self.facade.mark_upgrade(foo_10)
-        self.assertEqual([foo_10], self.facade._package_upgrades)
+        self.facade.mark_global_upgrade()
+        self.assertTrue(self.facade._global_upgrade)
+        self.assertEqual(foo_10, foo_10.package.installed)
 
     def test_wb_mark_remove_adds_to_list(self):
         """
@@ -953,7 +959,7 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_remove(foo)
-        self.assertEqual([foo], self.facade._package_removals)
+        self.assertEqual([foo], self.facade._version_removals)
 
     def test_mark_install_specific_version(self):
         """
@@ -985,15 +991,19 @@ class AptFacadeTest(LandscapeTest):
         apt_pkg.config.set("APT::Architectures::", "i386")
         deb_dir = self.makeDir()
         self._add_system_package(
-            "multi-arch", architecture="amd64", version="1.0")
+            "multi-arch", architecture="amd64", version="1.0",
+            control_fields={"Multi-Arch": "same"})
         self._add_system_package(
-            "multi-arch", architecture="i386", version="1.0")
+            "multi-arch", architecture="i386", version="1.0",
+            control_fields={"Multi-Arch": "same"})
         self._add_system_package(
             "single-arch", architecture="amd64", version="1.0")
         self._add_package_to_deb_dir(
-            deb_dir, "multi-arch", architecture="amd64", version="2.0")
+            deb_dir, "multi-arch", architecture="amd64", version="2.0",
+            control_fields={"Multi-Arch": "same"})
         self._add_package_to_deb_dir(
-            deb_dir, "multi-arch", architecture="i386", version="2.0")
+            deb_dir, "multi-arch", architecture="i386", version="2.0",
+            control_fields={"Multi-Arch": "same"})
         self._add_package_to_deb_dir(
             deb_dir, "single-arch", architecture="amd64", version="2.0")
         self._add_package_to_deb_dir(
@@ -1005,16 +1015,18 @@ class AptFacadeTest(LandscapeTest):
             self.facade.get_packages_by_name("multi-arch"))
         single_arch1, single_arch2 = sorted(
             self.facade.get_packages_by_name("single-arch"))
+        self.facade.mark_remove(multi_arch1)
         self.facade.mark_install(multi_arch2)
+        self.facade.mark_remove(single_arch1)
         self.facade.mark_install(single_arch2)
         self.facade._cache.commit = lambda fetch_progress: None
         self.facade.perform_changes()
         changes = [
-            (pkg.name, pkg.candidate.version)
+            (pkg.name, pkg.candidate.version, pkg.marked_upgrade)
             for pkg in self.facade._cache.get_changes()]
         self.assertEqual(
-            [("multi-arch", "2.0"), ("multi-arch:i386", "2.0"),
-             ("single-arch", "2.0")],
+            [("multi-arch", "2.0", True), ("multi-arch:i386", "2.0", True),
+             ("single-arch", "2.0", True)],
             sorted(changes))
 
     def test_wb_mark_install_upgrade_non_main_arch_dependency_error(self):
@@ -1030,44 +1042,62 @@ class AptFacadeTest(LandscapeTest):
         apt_pkg.config.set("APT::Architectures::", "i386")
         deb_dir = self.makeDir()
         self._add_system_package(
-            "multi-arch", architecture="amd64", version="1.0")
+            "multi-arch", architecture="amd64", version="1.0",
+            control_fields={"Multi-Arch": "same"})
         self._add_system_package(
-            "multi-arch", architecture="i386", version="1.0")
-        self._add_system_package(
-            "single-arch", architecture="amd64", version="1.0",
-            control_fields={"Depends": "multi-arch"})
+            "multi-arch", architecture="i386", version="1.0",
+            control_fields={"Multi-Arch": "same"})
         self._add_package_to_deb_dir(
-            deb_dir, "multi-arch", architecture="amd64", version="2.0")
+            deb_dir, "multi-arch", architecture="amd64", version="2.0",
+            control_fields={"Multi-Arch": "same"})
         self._add_package_to_deb_dir(
-            deb_dir, "multi-arch", architecture="i386", version="2.0")
-        self._add_package_to_deb_dir(
-            deb_dir, "single-arch", architecture="amd64", version="2.0")
+            deb_dir, "multi-arch", architecture="i386", version="2.0",
+            control_fields={"Multi-Arch": "same"})
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
 
-        multi_arch2 = sorted(
-            self.facade.get_packages_by_name("multi-arch"))[1]
-        single_arch2 = sorted(
-            self.facade.get_packages_by_name("single-arch"))[1]
-        self.facade.mark_install(single_arch2)
+        multi_arch1, multi_arch2 = sorted(
+            self.facade.get_packages_by_name("multi-arch"))
+        self.facade.mark_global_upgrade()
         self.facade._cache.commit = lambda fetch_progress: None
         exception = self.assertRaises(
             DependencyError, self.facade.perform_changes)
-        self.assertEqual([multi_arch2], exception.packages)
+        self.assertEqual(
+            sorted([multi_arch1, multi_arch2]), sorted(exception.packages))
         changes = [
             (pkg.name, pkg.candidate.version)
             for pkg in self.facade._cache.get_changes()]
         self.assertEqual(
-            [("multi-arch", "2.0"), ("multi-arch:i386", "2.0"),
-             ("single-arch", "2.0")],
+            [("multi-arch", "2.0"), ("multi-arch:i386", "2.0")],
             sorted(changes))
 
-    def test_mark_upgrade_candidate_version(self):
+    def test_mark_global_upgrade(self):
+        """
+        C{mark_global_upgrade} upgrades all packages that can be
+        upgraded. It makes C{perform_changes} raise a C{DependencyError}
+        with the required changes, so that the user can review the
+        changes and approve them.
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package("foo", version="1.0")
+        self._add_system_package("bar")
+        self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
+        self._add_package_to_deb_dir(deb_dir, "baz")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        foo1, foo2 = sorted(self.facade.get_packages_by_name("foo"))
+        self.facade.mark_global_upgrade()
+        exception = self.assertRaises(
+            DependencyError, self.facade.perform_changes)
+        self.assertEqual(set([foo1, foo2]), set(exception.packages))
+
+    def test_mark_global_upgrade_candidate_version(self):
         """
         If more than one version is available, the package will be
         upgraded to the candidate version. Since the user didn't request
-        which version to upgrade to, a DependencyError error will be
-        raised, so that the changes can be reviewed and approved.
+        from and to which version to upgrade to, a DependencyError error
+        will be raised, so that the changes can be reviewed and
+        approved.
         """
         deb_dir = self.makeDir()
         self._add_system_package("foo", version="1.0")
@@ -1077,16 +1107,16 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         foo1, foo2, foo3 = sorted(self.facade.get_packages_by_name("foo"))
         self.assertEqual(foo3, foo1.package.candidate)
-        self.facade.mark_upgrade(foo1)
+        self.facade.mark_global_upgrade()
         exception = self.assertRaises(
             DependencyError, self.facade.perform_changes)
-        self.assertEqual([foo3], exception.packages)
+        self.assertEqual(set([foo1, foo3]), set(exception.packages))
 
-    def test_mark_upgrade_no_upgrade(self):
+    def test_mark_global_upgrade_no_upgrade(self):
         """
         If the candidate version of a package is already installed,
-        mark_upgrade() won't request an upgrade to be made. I.e.
-        perform_changes() won't do anything.
+        C{mark_global_upgrade()} won't request an upgrade to be made. I.e.
+        C{perform_changes()} won't do anything.
         """
         deb_dir = self.makeDir()
         self._add_system_package("foo", version="3.0")
@@ -1096,10 +1126,10 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         foo3 = sorted(self.facade.get_packages_by_name("foo"))[-1]
         self.assertEqual(foo3, foo3.package.candidate)
-        self.facade.mark_upgrade(foo3)
+        self.facade.mark_global_upgrade()
         self.assertEqual(None, self.facade.perform_changes())
 
-    def test_mark_upgrade_preserves_auto(self):
+    def test_mark_global_upgrade_preserves_auto(self):
         """
         Upgrading a package will retain its auto-install status.
         """
@@ -1114,8 +1144,7 @@ class AptFacadeTest(LandscapeTest):
         noauto1, noauto2 = sorted(self.facade.get_packages_by_name("noauto"))
         auto1.package.mark_auto(True)
         noauto1.package.mark_auto(False)
-        self.facade.mark_upgrade(auto1)
-        self.facade.mark_upgrade(noauto1)
+        self.facade.mark_global_upgrade()
         self.assertRaises(DependencyError, self.facade.perform_changes)
         self.assertTrue(auto2.package.is_auto_installed)
         self.assertFalse(noauto2.package.is_auto_installed)
@@ -1156,6 +1185,99 @@ class AptFacadeTest(LandscapeTest):
         # An empty string is returned, since we don't call the progress
         # objects, which are the ones that build the output string.
         self.assertEqual("", self.facade.perform_changes())
+
+    def test_perform_changes_with_broken_packages_install_simple(self):
+        """
+        Even if some installed packages are broken in the system, it's
+        still possible to install packages with no dependencies that
+        don't touch the broken ones.
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package(
+            "broken", control_fields={"Depends": "missing"})
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self._add_package_to_deb_dir(deb_dir, "missing")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        self.facade.mark_install(foo)
+        self.facade._cache.commit = lambda fetch_progress: None
+        self.assertEqual("", self.facade.perform_changes())
+        self.assertEqual(
+            [foo.package], self.facade._cache.get_changes())
+
+    def test_perform_changes_with_broken_packages_install_deps(self):
+        """
+        Even if some installed packages are broken in the system, it's
+        still possible to install packages where the dependencies need
+        to be calculated.
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package(
+            "broken", control_fields={"Depends": "missing"})
+        self._add_package_to_deb_dir(
+            deb_dir, "foo", control_fields={"Depends": "bar"})
+        self._add_package_to_deb_dir(deb_dir, "bar")
+        self._add_package_to_deb_dir(deb_dir, "missing")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        [bar] = self.facade.get_packages_by_name("bar")
+        self.facade.mark_install(foo)
+        self.facade._cache.commit = lambda fetch_progress: None
+        error = self.assertRaises(DependencyError, self.facade.perform_changes)
+        self.assertEqual([bar], error.packages)
+
+    def test_perform_changes_with_broken_packages_remove_simple(self):
+        """
+        Even if some installed packages are broken in the system, it's
+        still possible to remove packages that don't affect the broken ones.
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package(
+            "broken", control_fields={"Depends": "missing"})
+        self._add_system_package("foo")
+        self._add_package_to_deb_dir(deb_dir, "missing")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        self.facade.mark_remove(foo)
+        self.facade._cache.commit = lambda fetch_progress: None
+        self.assertEqual("", self.facade.perform_changes())
+        self.assertEqual(
+            [foo.package], self.facade._cache.get_changes())
+
+    def test_perform_changes_with_broken_packages_install_broken(self):
+        """
+        If some installed package is in a broken state and you install a
+        package that fixes the broken package, as well as a new broken
+        package, C{perform_changes()} will raise a C{TransactionError}.
+
+        This test specifically tests the case where you replace the
+        broken packages, but have the same number of broken packages
+        before and after the changes.
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package(
+            "broken", control_fields={"Depends": "missing"})
+        self._add_package_to_deb_dir(
+            deb_dir, "foo", control_fields={"Depends": "really-missing"})
+        self._add_package_to_deb_dir(deb_dir, "missing")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [broken] = self.facade.get_packages_by_name("broken")
+        [foo] = self.facade.get_packages_by_name("foo")
+        [missing] = self.facade.get_packages_by_name("missing")
+        self.assertEqual(
+            set([broken.package]), self.facade._get_broken_packages())
+        self.facade.mark_install(foo)
+        self.facade.mark_install(missing)
+        self.facade._cache.commit = lambda fetch_progress: None
+        error = self.assertRaises(
+            TransactionError, self.facade.perform_changes)
+        self.assertIn("you have held broken packages", error.args[0])
+        self.assertEqual(
+            set([foo.package]), self.facade._get_broken_packages())
 
     def test_wb_perform_changes_commit_error(self):
         """
@@ -1211,11 +1333,148 @@ class AptFacadeTest(LandscapeTest):
         error = self.assertRaises(DependencyError, self.facade.perform_changes)
         self.assertEqual([bar], error.packages)
 
-    def test_mark_upgrade_dependency_error(self):
+    def test_wb_check_changes_unapproved_install_default(self):
+        """
+        C{_check_changes} raises C{DependencyError} with the candidate
+        version, if a package is marked for installation, but not in the
+        requested changes.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
+        self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo1, foo2] = sorted(self.facade.get_packages_by_name("foo"))
+        self.assertEqual(foo1.package, foo2.package)
+        package = foo1.package
+        self.assertEqual(package.candidate, foo2)
+
+        package.mark_install()
+        self.assertEqual([package], self.facade._cache.get_changes())
+        self.assertTrue(package.marked_install)
+
+        error = self.assertRaises(
+            DependencyError, self.facade._check_changes, [])
+        self.assertEqual([foo2], error.packages)
+
+    def test_wb_check_changes_unapproved_install_specific_version(self):
+        """
+        C{_check_changes} raises C{DependencyError} with the candidate
+        version, if a package is marked for installation with a
+        non-default candidate version.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
+        self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo1, foo2] = sorted(self.facade.get_packages_by_name("foo"))
+        self.assertEqual(foo1.package, foo2.package)
+        package = foo1.package
+
+        package.candidate = foo1
+        package.mark_install()
+        self.assertEqual([package], self.facade._cache.get_changes())
+        self.assertTrue(package.marked_install)
+
+        error = self.assertRaises(
+            DependencyError, self.facade._check_changes, [])
+        self.assertEqual([foo1], error.packages)
+
+    def test_check_changes_unapproved_remove(self):
+        """
+        C{_check_changes} raises C{DependencyError} with the installed
+        version, if a package is marked for removal and the change isn't
+        in the requested changes.
+        """
+        self._add_system_package("foo")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+
+        foo.package.mark_delete()
+        self.assertEqual([foo.package], self.facade._cache.get_changes())
+        self.assertTrue(foo.package.marked_delete)
+
+        error = self.assertRaises(
+            DependencyError, self.facade._check_changes, [])
+        self.assertEqual([foo], error.packages)
+
+    def test_check_changes_unapproved_remove_with_update_available(self):
+        """
+        C{_check_changes} raises C{DependencyError} with the installed
+        version, if a package is marked for removal and there is an
+        update available.
+        """
+        self._add_system_package("foo", version="1.0")
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo1, foo2] = sorted(self.facade.get_packages_by_name("foo"))
+        self.assertEqual(foo1.package, foo2.package)
+        package = foo1.package
+
+        package.mark_delete()
+        self.assertEqual([package], self.facade._cache.get_changes())
+        self.assertTrue(package.marked_delete)
+
+        error = self.assertRaises(
+            DependencyError, self.facade._check_changes, [])
+        self.assertEqual([foo1], error.packages)
+
+    def test_check_changes_unapproved_upgrade(self):
+        """
+        If a package is marked to be upgraded, C{_check_changes} raises
+        C{DependencyError} with the installed version and the version to
+        be upgraded to.
+        """
+        self._add_system_package("foo", version="1.0")
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo1, foo2] = sorted(self.facade.get_packages_by_name("foo"))
+        self.assertEqual(foo1.package, foo2.package)
+        package = foo1.package
+
+        package.mark_install()
+        self.assertEqual([package], self.facade._cache.get_changes())
+        self.assertTrue(package.marked_upgrade)
+
+        error = self.assertRaises(
+            DependencyError, self.facade._check_changes, [])
+        self.assertEqual(set([foo1, foo2]), set(error.packages))
+
+    def test_check_changes_unapproved_downgrade(self):
+        """
+        If a package is marked to be downgraded, C{_check_changes} raises
+        C{DependencyError} with the installed version and the version to
+        be downgraded to.
+        """
+        self._add_system_package("foo", version="2.0")
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
+        self._add_package_to_deb_dir(deb_dir, "foo", version="3.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo1, foo2] = sorted(self.facade.get_packages_by_name("foo"))[:2]
+        self.assertEqual(foo1.package, foo2.package)
+        package = foo1.package
+        package.candidate = foo1
+
+        package.mark_install()
+        self.assertEqual([package], self.facade._cache.get_changes())
+        self.assertTrue(package.marked_downgrade)
+
+        error = self.assertRaises(
+            DependencyError, self.facade._check_changes, [])
+        self.assertEqual(set([foo1, foo2]), set(error.packages))
+
+    def test_mark_global_upgrade_dependency_error(self):
         """
         If a package is marked for upgrade, a DependencyError will be
         raised, indicating which version of the package will be
-        installed.
+        installed and which will be removed.
         """
         deb_dir = self.makeDir()
         self._add_system_package("foo", version="1.0")
@@ -1226,10 +1485,10 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         foo_10, foo_15 = sorted(self.facade.get_packages_by_name("foo"))
         [bar] = self.facade.get_packages_by_name("bar")
-        self.facade.mark_upgrade(foo_10)
+        self.facade.mark_global_upgrade()
         error = self.assertRaises(DependencyError, self.facade.perform_changes)
         self.assertEqual(
-            sorted([bar, foo_15], key=self.version_sortkey),
+            sorted([bar, foo_10, foo_15], key=self.version_sortkey),
             sorted(error.packages, key=self.version_sortkey))
 
     def test_mark_remove_dependency_error(self):
@@ -1266,7 +1525,31 @@ class AptFacadeTest(LandscapeTest):
             "Can't perform the changes, since the following packages" +
             " are held: bar, foo", error.args[0])
 
-    def test_mark_upgrade_held_packages(self):
+    def test_changer_upgrade_package(self):
+        """
+        When the {PackageChanger} requests for a package to be upgraded,
+        it requests that the new version is to be installed, and the old
+        version to be removed. This is how you had to do it with Smart.
+        With Apt we have to take care of not marking the old version for
+        removal, since that can result in packages that depend on the
+        upgraded package to be removed.
+        """
+        self._add_system_package(
+            "foo", control_fields={"Depends": "bar"})
+        self._add_system_package("bar", version="1.0")
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "bar", version="2.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        bar_1, bar_2 = sorted(self.facade.get_packages_by_name("bar"))
+        self.facade.mark_install(bar_2)
+        self.facade.mark_remove(bar_1)
+        self.facade._cache.commit = lambda fetch_progress: None
+        self.facade.perform_changes()
+        [bar] = self.facade._cache.get_changes()
+        self.assertTrue(bar.marked_upgrade)
+
+    def test_mark_global_upgrade_held_packages(self):
         """
         If a package that is on hold is marked for upgrade,
         C{perform_changes} won't request to install a newer version of
@@ -1280,9 +1563,68 @@ class AptFacadeTest(LandscapeTest):
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
         [foo_10, foo_15] = sorted(self.facade.get_packages_by_name("foo"))
-        self.facade.mark_upgrade(foo_10)
+        self.facade.mark_global_upgrade()
         self.assertEqual(None, self.facade.perform_changes())
         self.assertEqual(foo_10, foo_15.package.installed)
+
+    def test_mark_global_upgrade_held_dependencies(self):
+        """
+        If a package that can be upgraded, but that package depends on a
+        newer version of a held package, the first package won't be
+        marked as requiring upgrade.
+        """
+        self._add_system_package(
+            "foo", version="1.0",
+            control_fields={"Status": "hold ok installed"})
+        self._add_system_package(
+            "bar", version="1.0",
+            control_fields={"Depends": "foo"})
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
+        self._add_package_to_deb_dir(
+            deb_dir, "bar", version="2.0",
+            control_fields={"Depends": "foo (>> 1.0)"})
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo_1, foo_2] = sorted(self.facade.get_packages_by_name("foo"))
+        [bar_1, bar_2] = sorted(self.facade.get_packages_by_name("bar"))
+        self.facade.mark_global_upgrade()
+        self.assertEqual(None, self.facade.perform_changes())
+        self.assertEqual(foo_1, foo_2.package.installed)
+        self.assertEqual(bar_1, bar_2.package.installed)
+
+    def test_get_locked_packages_simple(self):
+        """
+        C{get_locked_packages} returns all packages that are marked as
+        being held. Locks came from the Smart implementation, but since
+        a locked installed package basically is the same as a package
+        with a dpkg hold, having C{get_locked_packages} return all the
+        held packages, the Landscape server UI won't try to upgrade
+        those packages to a newer version.
+        """
+        self._add_system_package(
+            "foo", control_fields={"Status": "hold ok installed"})
+        self._add_system_package("bar")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        self.assertEqual([foo], self.facade.get_locked_packages())
+
+    def test_get_locked_packages_multi(self):
+        """
+        C{get_locked_packages} returns only the installed version of the
+        held package.
+        """
+        self._add_system_package(
+            "foo", version="1.0",
+            control_fields={"Status": "hold ok installed"})
+        self._add_system_package("bar", version="1.0")
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo", version="1.5")
+        self._add_package_to_deb_dir(deb_dir, "bar", version="1.5")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        foo_10 = sorted(self.facade.get_packages_by_name("foo"))[0]
+        self.assertEqual([foo_10], self.facade.get_locked_packages())
 
     def test_perform_changes_dependency_error_same_version(self):
         """
@@ -1307,6 +1649,95 @@ class AptFacadeTest(LandscapeTest):
             sorted(error.packages, key=self.version_sortkey),
             sorted([bar, baz], key=self.version_sortkey))
 
+    def test_get_package_holds_with_no_hold(self):
+        """
+        If no package holds are set, C{get_package_holds} returns
+        an empty C{list}.
+        """
+        self._add_system_package("foo")
+        self.facade.reload_channels()
+        self.assertEqual([], self.facade.get_package_holds())
+
+    def test_get_package_holds_with_holds(self):
+        """
+        If package holds are set, C{get_package_holds} returns
+        the name of the packages that are held.
+        """
+        self._add_system_package(
+            "foo", control_fields={"Status": "hold ok installed"})
+        self._add_system_package("bar")
+        self._add_system_package(
+            "baz", control_fields={"Status": "hold ok installed"})
+        self.facade.reload_channels()
+
+        self.assertEqual(
+            ["baz", "foo"], sorted(self.facade.get_package_holds()))
+
+    def test_set_package_hold(self):
+        """
+        C{set_package_hold} marks a package to be on hold.
+        """
+        self._add_system_package("foo")
+        self.facade.reload_channels()
+        self.facade.set_package_hold("foo")
+        self.facade.reload_channels()
+
+        self.assertEqual(["foo"], self.facade.get_package_holds())
+
+    def test_set_package_hold_existing_hold(self):
+        """
+        If a package is already hel, C{set_package_hold} doesn't return
+        an error.
+        """
+        self._add_system_package(
+            "foo", control_fields={"Status": "hold ok installed"})
+        self.facade.reload_channels()
+        self.facade.set_package_hold("foo")
+        self.facade.reload_channels()
+
+        self.assertEqual(["foo"], self.facade.get_package_holds())
+
+    def test_remove_package_hold(self):
+        """
+        C{remove_package_hold} marks a package not to be on hold.
+        """
+        self._add_system_package(
+            "foo", control_fields={"Status": "hold ok installed"})
+        self.facade.reload_channels()
+        self.facade.remove_package_hold("foo")
+        self.facade.reload_channels()
+
+        self.assertEqual([], self.facade.get_package_holds())
+
+    def test_remove_package_hold_no_package(self):
+        """
+        If a package doesn't exist, C{remove_package_hold} doesn't
+        return an error. It's up to the caller to make sure that the
+        package exist, if it's important.
+        """
+        self._add_system_package("foo")
+        self.facade.reload_channels()
+        self.facade.remove_package_hold("bar")
+        self.facade.reload_channels()
+
+        self.assertEqual([], self.facade.get_package_holds())
+
+    def test_remove_package_hold_no_hold(self):
+        """
+        If a package isn't held, the existing selection is retained when
+        C{remove_package_hold} is called.
+        """
+        self._add_system_package(
+            "foo", control_fields={"Status": "deinstall ok installed"})
+        self.facade.reload_channels()
+        self.facade.remove_package_hold("foo")
+        self.facade.reload_channels()
+
+        self.assertEqual([], self.facade.get_package_holds())
+        [foo] = self.facade.get_packages_by_name("foo")
+        self.assertEqual(
+            apt_pkg.SELSTATE_DEINSTALL, foo.package._pkg.selected_state)
+
     if not hasattr(Package, "shortname"):
         # The 'shortname' attribute was added when multi-arch support
         # was added to python-apt. So if it's not there, it means that
@@ -1320,6 +1751,21 @@ class AptFacadeTest(LandscapeTest):
 class SmartFacadeTest(LandscapeTest):
 
     helpers = [SmartFacadeHelper]
+
+    def test_needs_smart(self):
+        """
+        If the Smart python modules can't be imported, a C{RuntimeError}
+        is raised when trying to create a C{SmartFacade}.
+        """
+
+        def reset_has_smart():
+            facade_module.has_smart = old_has_smart
+
+        self.addCleanup(reset_has_smart)
+        old_has_smart = facade_module.has_smart
+        facade_module.has_smart = False
+
+        self.assertRaises(RuntimeError, self.Facade)
 
     def test_get_packages(self):
         self.facade.reload_channels()

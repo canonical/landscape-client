@@ -64,9 +64,10 @@ power management:
 
         self.assertEqual("xen", get_vm_info(root_path=root_path))
 
-    def test_get_vm_info_is_xen_when_sys_bus_xen_exists(self):
+    def test_get_vm_info_is_xen_when_sys_bus_xen_is_non_empty(self):
         """
-        L{get_vm_info} should return 'xen' when /sys/bus/xen exists.
+        L{get_vm_info} should return 'xen' when /sys/bus/xen exists and has
+        devices.
         """
         root_path = self.makeDir()
         sys_path = os.path.join(root_path, "sys")
@@ -76,7 +77,13 @@ power management:
         self.makeDir(path=sys_bus_path)
 
         sys_bus_xen_path = os.path.join(sys_bus_path, "xen")
-        self.makeFile(path=sys_bus_xen_path, content="foo")
+        self.makeDir(path=sys_bus_xen_path)
+
+        devices_xen_path = os.path.join(sys_bus_xen_path, "devices")
+        self.makeDir(path=devices_xen_path)
+
+        foo_devices_path = os.path.join(devices_xen_path, "foo")
+        self.makeFile(path=foo_devices_path, content="bar")
 
         self.assertEqual("xen", get_vm_info(root_path=root_path))
 
@@ -130,3 +137,23 @@ power management:
         os.makedirs(dmi_path)
         file(os.path.join(dmi_path, "sys_vendor"), "w+").write("VMware, Inc.")
         self.assertEqual("vmware", get_vm_info(root_path=root_path))
+
+    def test_get_vm_info_is_empty_without_xen_devices(self):
+        """
+        L{get_vm_info} returns an empty string if the /sys/bus/xen/devices
+        directory exists and but doesn't contain any file.
+        """
+        root_path = self.makeDir()
+        sys_path = os.path.join(root_path, "sys")
+        self.makeDir(path=sys_path)
+
+        sys_bus_path = os.path.join(sys_path, "bus")
+        self.makeDir(path=sys_bus_path)
+
+        sys_bus_xen_path = os.path.join(sys_bus_path, "xen")
+        self.makeDir(path=sys_bus_xen_path)
+
+        devices_xen_path = os.path.join(sys_bus_xen_path, "devices")
+        self.makeDir(path=devices_xen_path)
+
+        self.assertEqual("", get_vm_info(root_path=root_path))

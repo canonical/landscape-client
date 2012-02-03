@@ -1,18 +1,24 @@
 import sys
 
 try:
-    from gi.repository import Gtk
+    from gi.repository import Gtk, Gdk
     got_gobject_introspection = True
-except ImportError:
+except (ImportError, RuntimeError):
     got_gobject_introspection = False
     gobject_skip_message = "GObject Introspection module unavailable"
+    SettingsApplicationController = object
+    ConfigurationProxyHelper = object
+    dbus_test_should_skip = True
+    dbus_skip_message = gobject_skip_message
+else:
+    from landscape.ui.controller.app import SettingsApplicationController
+    from landscape.ui.controller.configuration import ConfigController
+    from landscape.ui.tests.helpers import (
+        ConfigurationProxyHelper, dbus_test_should_skip, dbus_skip_message)
+    from landscape.ui.view.configuration import ClientSettingsDialog
 
 
 from landscape.tests.helpers import LandscapeTest
-from landscape.ui.controller.app import SettingsApplicationController
-from landscape.ui.controller.configuration import ConfigController
-from landscape.ui.view.configuration import ClientSettingsDialog
-from landscape.configuration import LandscapeSetupConfiguration
 
 
 class ConnectionRecordingSettingsApplicationController(
@@ -69,7 +75,22 @@ class SettingsApplicationControllerInitTest(LandscapeTest):
 
 class SettingsApplicationControllerUISetupTest(LandscapeTest):
 
+    helpers = [ConfigurationProxyHelper]
+
     def setUp(self):
+        self.config_string = "\n".join(
+            ["[client]",
+             "data_path = %s" % sys.path[0],
+             "http_proxy = http://proxy.localdomain:3192",
+             "tags = a_tag",
+             "url = https://landscape.canonical.com/message-system",
+             "account_name = foo",
+             "registration_password = bar",
+             "computer_title = baz",
+             "https_proxy = https://proxy.localdomain:6192",
+             "ping_url = http://landscape.canonical.com/ping"
+             ])
+
         super(SettingsApplicationControllerUISetupTest, self).setUp()
 
         def fake_run(obj):
@@ -82,24 +103,7 @@ class SettingsApplicationControllerUISetupTest(LandscapeTest):
         Gtk.Dialog.run = fake_run
 
         def get_config():
-            configdata = "[client]\n"
-            configdata += "data_path = %s\n" % sys.path[0]
-            configdata += "http_proxy = http://proxy.localdomain:3192\n"
-            configdata += "tags = a_tag\n"
-            configdata += \
-                "url = https://landscape.canonical.com/message-system\n"
-            configdata += "account_name = foo\n"
-            configdata += "registration_password = bar\n"
-            configdata += "computer_title = baz\n"
-            configdata += "https_proxy = https://proxy.localdomain:6192\n"
-            configdata += "ping_url = http://landscape.canonical.com/ping\n"
-            config_filename = self.makeFile(configdata)
-
-            class MyLandscapeSetupConfiguration(LandscapeSetupConfiguration):
-                default_config_filenames = [config_filename]
-
-            config = MyLandscapeSetupConfiguration()
-            return config
+            return self.proxy
 
         self.app = ConnectionRecordingSettingsApplicationController(
             get_config=get_config)
@@ -121,3 +125,5 @@ class SettingsApplicationControllerUISetupTest(LandscapeTest):
 
     if not got_gobject_introspection:
         test_setup_ui.skip = gobject_skip_message
+    if dbus_test_should_skip:
+        skip = dbus_skip_message

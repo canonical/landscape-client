@@ -3,7 +3,11 @@ import os
 import textwrap
 import time
 
-import smart
+try:
+    import smart
+except ImportError:
+    # Smart is optional if AptFacade is being used.
+    pass
 
 import apt_inst
 import apt_pkg
@@ -40,7 +44,6 @@ class AptFacadeHelper(object):
                 Architecture: %(architecture)s
                 Source: source
                 Version: %(version)s
-                Config-Version: 1.0
                 Description: description
                 """ % {"name": name, "version": version,
                        "architecture": architecture})

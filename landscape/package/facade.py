@@ -1,13 +1,17 @@
 import hashlib
 import os
+import subprocess
 import tempfile
 from cStringIO import StringIO
 
-from smart.transaction import (
-    Transaction, PolicyInstall, PolicyUpgrade, PolicyRemove, Failed)
-from smart.const import INSTALL, REMOVE, UPGRADE, ALWAYS, NEVER
-
-import smart
+has_smart = True
+try:
+    import smart
+    from smart.transaction import (
+        Transaction, PolicyInstall, PolicyUpgrade, PolicyRemove, Failed)
+    from smart.const import INSTALL, REMOVE, UPGRADE, ALWAYS, NEVER
+except ImportError:
+    has_smart = False
 
 # Importing apt throws a FutureWarning on hardy, that we don't want to
 # see.
@@ -79,19 +83,24 @@ class AptFacade(object):
         database.
     """
 
+    supports_package_holds = True
+    supports_package_locks = False
+
     def __init__(self, root=None):
         self._root = root
+        self._dpkg_args = []
         if self._root is not None:
             self._ensure_dir_structure()
+            self._dpkg_args.extend(["--root", self._root])
         # don't use memonly=True here because of a python-apt bug on Natty when
         # sources.list contains invalid lines (LP: #886208)
         self._cache = apt.cache.Cache(rootdir=root)
         self._channels_loaded = False
         self._pkg2hash = {}
         self._hash2pkg = {}
-        self._package_installs = []
-        self._package_upgrades = []
-        self._package_removals = []
+        self._version_installs = []
+        self._global_upgrade = False
+        self._version_removals = []
         self.refetch_package_index = False
 
     def _ensure_dir_structure(self):
@@ -100,6 +109,10 @@ class AptFacade(object):
         self._ensure_sub_dir("var/cache/apt/archives/partial")
         self._ensure_sub_dir("var/lib/apt/lists/partial")
         dpkg_dir = self._ensure_sub_dir("var/lib/dpkg")
+        self._ensure_sub_dir("var/lib/dpkg/info")
+        self._ensure_sub_dir("var/lib/dpkg/updates")
+        self._ensure_sub_dir("var/lib/dpkg/triggers")
+        create_file(os.path.join(dpkg_dir, "available"), "")
         self._dpkg_status = os.path.join(dpkg_dir, "status")
         if not os.path.exists(self._dpkg_status):
             create_file(self._dpkg_status, "")
@@ -119,30 +132,14 @@ class AptFacade(object):
         return self._hash2pkg.itervalues()
 
     def get_locked_packages(self):
-        """Get all packages in the channels matching the set locks.
+        """Get all packages in the channels that are locked.
 
-        XXX: This method isn't implemented yet. It's here to make the
-        transition to Apt in the package reporter easier.
+        For Apt, it means all packages that are held.
         """
-        return []
-
-    def set_package_lock(self, name, relation=None, version=None):
-        """Set a new package lock.
-
-        Any package matching the given name and possibly the given version
-        condition will be locked.
-
-        @param name: The name a package must match in order to be locked.
-        @param relation: Optionally, the relation of the version condition the
-            package must satisfy in order to be considered as locked.
-        @param version: Optionally, the version associated with C{relation}.
-
-        @note: If used at all, the C{relation} and C{version} parameter must be
-           both provided.
-
-        XXX: This method isn't implemented yet. It's here to make the
-        transition to Apt in the package reporter easier.
-        """
+        return [
+            version for version in self.get_packages()
+            if (self.is_package_installed(version)
+                and self._is_package_held(version.package))]
 
     def get_package_locks(self):
         """Return all set package locks.
@@ -154,6 +151,37 @@ class AptFacade(object):
         transition to Apt in the package reporter easier.
         """
         return []
+
+    def get_package_holds(self):
+        """Return the name of all the packages that are on hold."""
+        return [version.package.name for version in self.get_locked_packages()]
+
+    def _set_dpkg_selections(self, selection):
+        """Set the dpkg selection.
+
+        It basically does "echo $selection | dpkg --set-selections".
+        """
+        process = subprocess.Popen(
+            ["dpkg", "--set-selections"] + self._dpkg_args,
+            stdin=subprocess.PIPE)
+        process.communicate(selection)
+
+    def set_package_hold(self, name):
+        """Add a dpkg hold for a package.
+
+        @param name: The name of the package to hold.
+        """
+        self._set_dpkg_selections(name + " hold")
+
+    def remove_package_hold(self, name):
+        """Removes a dpkg hold for a package.
+
+        @param name: The name of the package to unhold.
+        """
+        versions = self.get_packages_by_name(name)
+        if not versions or not self._is_package_held(versions[0].package):
+            return
+        self._set_dpkg_selections(name + " install")
 
     def reload_channels(self):
         """Reload the channels and update the cache."""
@@ -356,15 +384,69 @@ class AptFacade(object):
             version for version in self.get_packages()
             if version.package.name == name]
 
+    def _get_broken_packages(self):
+        """Return the packages that are in a broken state."""
+        return set(
+            version.package for version in self.get_packages()
+            if version.package.is_inst_broken)
+
+    def _get_changed_versions(self, package):
+        """Return the versions that will be changed for the package.
+
+        Apt gives us that a package is going to be changed and have
+        variables set on the package to indicate what will change. We
+        need to convert that into a list of versions that will be either
+        installed or removed, which is what the server expects to get.
+        """
+        if package.marked_install:
+            return [package.candidate]
+        if package.marked_upgrade or package.marked_downgrade:
+            return [package.installed, package.candidate]
+        if package.marked_delete:
+            return [package.installed]
+        return None
+
+    def _check_changes(self, requested_changes):
+        """Check that the changes Apt will do have all been requested.
+
+        @raises DependencyError: If some change hasn't been explicitly
+            requested.
+        @return: C{True} if all the changes that Apt will perform have
+            been requested.
+        """
+        # Build tuples of (package, version) so that we can do
+        # comparison checks. Same versions of different packages compare
+        # as being the same, so we need to include the package as well.
+        all_changes = [
+            (version.package, version) for version in requested_changes]
+        versions_to_be_changed = set()
+        for package in self._cache.get_changes():
+            if not self._is_main_architecture(package):
+                continue
+            versions = self._get_changed_versions(package)
+            versions_to_be_changed.update(
+                (package, version) for version in versions)
+        dependencies = versions_to_be_changed.difference(all_changes)
+        if dependencies:
+            raise DependencyError(
+                [version for package, version in dependencies])
+        return len(versions_to_be_changed) > 0
+
     def perform_changes(self):
         """Perform the pending package operations."""
         held_package_names = set()
-        package_changes = self._package_installs[:]
-        package_changes.extend(self._package_removals)
-        if not package_changes and not self._package_upgrades:
+        package_installs = set(
+            version.package for version in self._version_installs)
+        package_upgrades = set(
+            version.package for version in self._version_removals
+            if version.package in package_installs)
+        version_changes = self._version_installs[:]
+        version_changes.extend(self._version_removals)
+        if not version_changes and not self._global_upgrade:
             return None
         fixer = apt_pkg.ProblemResolver(self._cache._depcache)
-        for version in self._package_installs:
+        already_broken_packages = self._get_broken_packages()
+        for version in self._version_installs:
             # Set the candidate version, so that the version we want to
             # install actually is the one getting installed.
             version.package.candidate = version
@@ -375,17 +457,16 @@ class AptFacade(object):
             # been True.
             fixer.clear(version.package._pkg)
             fixer.protect(version.package._pkg)
-        for version in self._package_upgrades:
-            if self._is_package_held(version.package):
-                continue
-            version.package.mark_install(
-                auto_fix=False,
-                from_user=not version.package.is_auto_installed)
-            fixer.clear(version.package._pkg)
-            fixer.protect(version.package._pkg)
-        for version in self._package_removals:
+        if self._global_upgrade:
+            self._cache.upgrade(dist_upgrade=True)
+        for version in self._version_removals:
             if self._is_package_held(version.package):
                 held_package_names.add(version.package.name)
+            if version.package in package_upgrades:
+                # The server requests the old version to be removed for
+                # upgrades, since Smart worked that way. For Apt we have
+                # to take care not to mark upgraded packages for # removal.
+                continue
             version.package.mark_delete(auto_fix=False)
             # Configure the resolver in the same way
             # mark_delete(auto_fix=True) would have done.
@@ -399,22 +480,13 @@ class AptFacade(object):
                 "Can't perform the changes, since the following packages" +
                 " are held: %s" % ", ".join(sorted(held_package_names)))
 
-        if self._cache._depcache.broken_count > 0:
+        now_broken_packages = self._get_broken_packages()
+        if now_broken_packages != already_broken_packages:
             try:
                 fixer.resolve(True)
             except SystemError, error:
                 raise TransactionError(error.args[0])
-        all_changes = [
-            (version.package, version) for version in package_changes]
-        versions_to_be_changed = set(
-            (package, package.candidate)
-            for package in self._cache.get_changes()
-            if self._is_main_architecture(package))
-        dependencies = versions_to_be_changed.difference(all_changes)
-        if dependencies:
-            raise DependencyError(
-                [version for package, version in dependencies])
-        if not versions_to_be_changed:
+        if not self._check_changes(version_changes):
             return None
         fetch_output = StringIO()
         # Redirect stdout and stderr to a file. We need to work with the
@@ -445,22 +517,21 @@ class AptFacade(object):
 
     def reset_marks(self):
         """Clear the pending package operations."""
-        del self._package_installs[:]
-        del self._package_upgrades[:]
-        del self._package_removals[:]
+        del self._version_installs[:]
+        del self._version_removals[:]
+        self._global_upgrade = False
 
     def mark_install(self, version):
         """Mark the package for installation."""
-        self._package_installs.append(version)
+        self._version_installs.append(version)
 
-    def mark_upgrade(self, version):
-        """Mark the package for upgrade."""
-        if version.package.candidate != version:
-            self._package_upgrades.append(version)
+    def mark_global_upgrade(self):
+        """Upgrade all installed packages."""
+        self._global_upgrade = True
 
     def mark_remove(self, version):
         """Mark the package for removal."""
-        self._package_removals.append(version)
+        self._version_removals.append(version)
 
 
 class SmartFacade(object):
@@ -474,8 +545,13 @@ class SmartFacade(object):
     """
 
     _deb_package_type = None
+    supports_package_holds = False
+    supports_package_locks = True
 
     def __init__(self, smart_init_kwargs={}, sysconf_args=None):
+        if not has_smart:
+            raise RuntimeError(
+                "Smart needs to be installed if SmartFacade is used.")
         self._smart_init_kwargs = smart_init_kwargs.copy()
         self._smart_init_kwargs.setdefault("interface", "landscape")
         self._sysconfig_args = sysconf_args or {}
@@ -623,6 +699,12 @@ class SmartFacade(object):
 
     def mark_upgrade(self, pkg):
         self._marks[pkg] = UPGRADE
+
+    def mark_global_upgrade(self):
+        """Upgrade all installed packages."""
+        for package in self.get_packages():
+            if self.is_package_installed(package):
+                self.mark_upgrade(package)
 
     def reset_marks(self):
         self._marks.clear()

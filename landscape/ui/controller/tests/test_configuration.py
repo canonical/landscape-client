@@ -1,35 +1,37 @@
-from landscape.tests.helpers import LandscapeTest
 from landscape.ui.controller.configuration import (
     ConfigController, ConfigControllerLockError)
-from landscape.configuration import LandscapeSetupConfiguration
+from landscape.ui.tests.helpers import (
+    ConfigurationProxyHelper, dbus_test_should_skip, dbus_skip_message)
+from landscape.tests.helpers import LandscapeTest
 
 
 class ConfigControllerTest(LandscapeTest):
 
+    helpers = [ConfigurationProxyHelper]
+
     def setUp(self):
+        self.config_string = "\n".join(
+            ["[client]",
+             "data_path = /var/lib/landscape/client/",
+             "http_proxy = http://proxy.localdomain:3192",
+             "tags = a_tag",
+             "url = https://landscape.canonical.com/message-system",
+             "account_name = foo",
+             "registration_password = bar",
+             "computer_title = baz",
+             "https_proxy = https://proxy.localdomain:6192",
+             "ping_url = http://landscape.canonical.com/ping"
+             ])
+
         super(ConfigControllerTest, self).setUp()
-        config = "[client]"
-        config += "data_path = /var/lib/landscape/client\n"
-        config += "http_proxy = http://proxy.localdomain:3192\n"
-        config += "tags = a_tag\n"
-        config += "url = https://landscape.canonical.com/message-system\n"
-        config += "account_name = foo\n"
-        config += "registration_password = bar\n"
-        config += "computer_title = baz\n"
-        config += "https_proxy = https://proxy.localdomain:6192\n"
-        config += "ping_url = http://landscape.canonical.com/ping\n"
-        self.config_filename = self.makeFile(config)
 
-        class MyLandscapeSetupConfiguration(LandscapeSetupConfiguration):
-            default_config_filenames = [self.config_filename]
-
-        self.config = MyLandscapeSetupConfiguration()
-        self.controller = ConfigController(self.config)
+        self.controller = ConfigController(self.proxy)
 
         def get_fqdn():
             return "me.here.com"
 
         self.controller.getfqdn = get_fqdn
+        self.controller.load()
 
     def test_init(self):
         """
@@ -196,43 +198,63 @@ class ConfigControllerTest(LandscapeTest):
         self.controller.registration_password = "I Win"
         self.assertTrue(self.controller.is_modified)
 
+    if dbus_test_should_skip:
+        skip = dbus_skip_message
+
+
+class EmptyConfigControllerTest(LandscapeTest):
+
+    helpers = [ConfigurationProxyHelper]
+
+    def setUp(self):
+        self.config_string = ""
+        super(EmptyConfigControllerTest, self).setUp()
+
+        self.controller = ConfigController(self.proxy)
+
+        def get_fqdn():
+            return "me.here.com"
+
+        self.controller.getfqdn = get_fqdn
+        self.controller.load()
+
     def test_defaulting(self):
         """
         Test we set the correct values when switching between hosted and
         dedicated.
         """
-        self.makeFile("", path=self.config_filename)  # empty the config file
         self.controller.load()
-        self.assertEqual(self.controller.account_name, None)
-        self.assertEqual(self.controller.registration_password, None)
-        self.assertEqual(self.controller.server_host_name,
-                         "landscape.canonical.com")
+        self.assertEqual(None, self.controller.account_name)
+        self.assertEqual(None, self.controller.registration_password)
+        self.assertEqual("landscape.canonical.com",
+                         self.controller.server_host_name)
         self.controller.account_name = "Bungle"
         self.controller.default_dedicated()
-        self.assertEqual(self.controller.account_name, "standalone")
-        self.assertEqual(self.controller.registration_password, None)
-        self.assertEqual(self.controller.server_host_name,
-                         "landscape.localdomain")
+        self.assertEqual("standalone", self.controller.account_name)
+        self.assertEqual(None, self.controller.registration_password)
+        self.assertEqual("landscape.localdomain",
+                         self.controller.server_host_name)
         self.controller.default_hosted()
-        self.assertEqual(self.controller.account_name, None)
-        self.assertEqual(self.controller.registration_password, None)
-        self.assertEqual(self.controller.server_host_name,
-                         "landscape.canonical.com")
+        self.assertEqual(None, self.controller.account_name)
+        self.assertEqual(None, self.controller.registration_password)
+        self.assertEqual("landscape.canonical.com",
+                         self.controller.server_host_name)
         self.controller.default_dedicated()
         self.controller.server_host_name = "test.machine"
         self.controller.default_dedicated()
-        self.assertEqual(self.controller.server_host_name, "test.machine")
+        self.assertEqual("test.machine", self.controller.server_host_name)
         self.controller.default_hosted()
-        self.assertEqual(self.controller.server_host_name,
-                         "landscape.canonical.com")
+        self.assertEqual("landscape.canonical.com",
+                         self.controller.server_host_name)
         self.controller.default_dedicated()
-        self.assertEqual(self.controller.server_host_name, "test.machine")
+        self.assertEqual("test.machine", self.controller.server_host_name)
 
     def test_default_computer_title(self):
         """
         Test we set the computer title to host name when it isn't already set
         in the config file.
         """
-        self.makeFile("", path=self.config_filename)  # Empty config
-        self.controller.load()
-        self.assertEqual(self.controller.computer_title, "me.here.com")
+        self.assertEqual("me.here.com", self.controller.computer_title)
+
+    if dbus_test_should_skip:
+        skip = dbus_skip_message

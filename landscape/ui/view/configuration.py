@@ -173,17 +173,18 @@ class ClientSettingsDialog(Gtk.Dialog):
         while Gtk.events_pending():
             Gtk.main_iteration()
 
-    def _registration_message(self, message, error=None):
+    def _registration_message(self, message):
         self._registration_textbuffer.insert_at_cursor(message)
         self._registration_image.set_from_stock(Gtk.STOCK_DIALOG_INFO, 4)
         self._process_gtk_events()
 
-    def _registration_error(self, message):
-        self._registration_textbuffer.insert_at_cursor(message)
+    def _registration_error(self, error):
+        self._registration_textbuffer.insert_at_cursor(str(error))
         self._registration_image.set_from_stock(Gtk.STOCK_DIALOG_WARNING, 4)
         self._process_gtk_events()
 
-    def _registration_succeed(self):
+    def _registration_succeed(self, message):
+        self._registration_textbuffer.insert_at_cursor(str(message))
         self._registration_image.set_from_stock(Gtk.STOCK_CONNECT, 4)
         self._close_button.set_sensitive(True)
         self._set_normal_cursor()

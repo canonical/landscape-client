@@ -502,7 +502,8 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         self, user_data=None, instance_key="key1", launch_index=0,
         local_hostname="ooga.local", public_hostname="ooga.amazon.com",
         reservation_key=u"res1", ramdisk_key=u"ram1", kernel_key=u"kernel1",
-        image_key=u"image1", ssl_ca_certificate=None):
+        image_key=u"image1", local_ip="10.0.0.1", public_ip="10.0.0.2",
+        ssl_ca_certificate=None):
         if user_data is None:
             user_data = self.get_user_data(
                 ssl_ca_certificate=ssl_ca_certificate)
@@ -520,6 +521,8 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
             ("/meta-data/kernel-id", kernel_key),
             ("/meta-data/ramdisk-id", ramdisk_key),
             ("/meta-data/ami-id", image_key),
+            ("/meta-data/local-ipv4", local_ip),
+            ("/meta-data/public-ipv4", public_ip),
             ]:
             self.query_results[api_base + url_suffix] = value
 
@@ -553,6 +556,8 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
                        image_key=u"image1",
                        account_name=None,
                        registration_password=None,
+                       local_ipv4=u"10.0.0.1",
+                       public_ipv4=u"10.0.0.2",
                        tags=None)
 
         # The get_vm_info() needs to be deffered to the else.  If vm-info is
@@ -849,6 +854,24 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertMessages(self.transport.payloads[0]["messages"],
                             [self.get_expected_cloud_message(
                                 ramdisk_key=None)])
+
+    def test_cloud_registration_continues_without_kernel(self):
+        """
+        If the instance doesn't have a kernel (ie, the query for kernel
+        returns a 404), then register-cloud-vm still occurs.
+        """
+        self.log_helper.ignore_errors(HTTPCodeError)
+        self.prepare_query_results(kernel_key=HTTPCodeError(404, "ohno"))
+        self.prepare_cloud_registration()
+
+        self.reactor.fire("run")
+        self.exchanger.exchange()
+        self.assertIn("HTTPCodeError: Server returned HTTP code 404",
+                      self.logfile.getvalue())
+        self.assertEqual(len(self.transport.payloads), 1)
+        self.assertMessages(self.transport.payloads[0]["messages"],
+                            [self.get_expected_cloud_message(
+                                kernel_key=None)])
 
     def test_fall_back_to_normal_registration_when_metadata_fetch_fails(self):
         """

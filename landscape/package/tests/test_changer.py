@@ -6,7 +6,11 @@ import os
 
 from twisted.internet.defer import Deferred
 
-from smart.cache import Provides
+try:
+    from smart.cache import Provides
+except ImportError:
+    # Smart is optional if AptFacade is being used.
+    pass
 
 from landscape.lib.fs import create_file, read_file, touch_file
 from landscape.package.changer import (
@@ -24,7 +28,7 @@ from landscape.tests.helpers import (
 from landscape.package.tests.helpers import (
     SmartFacadeHelper, HASH1, HASH2, HASH3, PKGDEB1, PKGDEB2, PKGNAME2,
     AptFacadeHelper, SimpleRepositoryHelper)
-from landscape.manager.manager import SUCCEEDED
+from landscape.manager.manager import FAILED, SUCCEEDED
 
 
 class PackageChangerTestMixin(object):
@@ -494,6 +498,7 @@ class PackageChangerTestMixin(object):
             self.assertMessages(self.get_pending_messages(),
                                 [{"operation-id": 123,
                                   "must-install": [2],
+                                  "must-remove": [1],
                                   "result-code": 101,
                                   "type": "change-packages-result"}])
 
@@ -1037,6 +1042,65 @@ class SmartPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
             self.assertIn("(2)", text)
         return result.addCallback(got_result)
 
+    def test_change_package_holds(self):
+        """
+        If C{SmartFacade} is used, the L{PackageChanger.handle_tasks}
+        method fails the activity, since it can't add or remove dpkg holds.
+        """
+        self.facade.reload_channels()
+        self.store.add_task("changer", {"type": "change-package-holds",
+                                        "create": ["name1"],
+                                        "delete": ["name2"],
+                                        "operation-id": 123})
+
+        def assert_result(result):
+            self.assertIn("Queuing message with change package holds results "
+                          "to exchange urgently.", self.logfile.getvalue())
+            self.assertMessages(
+                self.get_pending_messages(),
+                [{"type": "operation-result",
+                  "operation-id": 123,
+                  "status": FAILED,
+                  "result-text": "This client doesn't support package holds.",
+                  "result-code": 1}])
+
+        result = self.changer.handle_tasks()
+        return result.addCallback(assert_result)
+
+    def test_global_upgrade(self):
+        """
+        Besides asking for individual changes, the server may also request
+        the client to perform a global upgrade.  This would be the equivalent
+        of a "smart upgrade" command being executed in the command line.
+
+        This test should be run for both C{AptFacade} and
+        C{SmartFacade}, but due to the smart test setting up that two
+        packages with different names upgrade each other, the message
+        doesn't correctly report that the old version should be
+        uninstalled. The test is still useful, since it shows that the
+        message contains the changes that smart says are needed.
+
+        Making the test totally correct is a lot of work, that is not
+        worth doing, since we're removing smart soon.
+        """
+        hash1, hash2 = self.set_pkg2_upgrades_pkg1()
+        self.store.set_hash_ids({hash1: 1, hash2: 2})
+
+        self.store.add_task("changer",
+                            {"type": "change-packages", "upgrade-all": True,
+                             "operation-id": 123})
+
+        result = self.changer.handle_tasks()
+
+        def got_result(result):
+            self.assertMessages(self.get_pending_messages(),
+                                [{"operation-id": 123,
+                                  "must-install": [2],
+                                  "result-code": 101,
+                                  "type": "change-packages-result"}])
+
+        return result.addCallback(got_result)
+
 
 class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
 
@@ -1129,3 +1193,123 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
     def get_package_name(self, version):
         """Return the name of the package."""
         return version.package.name
+
+    def test_change_package_holds(self):
+        """
+        The L{PackageChanger.handle_tasks} method appropriately creates and
+        deletes package holds as requested by the C{change-package-holds}
+        message.
+        """
+        self._add_system_package("foo")
+        self._add_system_package("bar")
+        self.facade.set_package_hold("bar")
+        self.facade.reload_channels()
+        self.store.add_task("changer", {"type": "change-package-holds",
+                                        "create": ["foo"],
+                                        "delete": ["bar"],
+                                        "operation-id": 123})
+
+        def assert_result(result):
+            self.assertEqual(["foo"], self.facade.get_package_holds())
+            self.assertIn("Queuing message with change package holds results "
+                          "to exchange urgently.", self.logfile.getvalue())
+            self.assertMessages(
+                self.get_pending_messages(),
+                [{"type": "operation-result",
+                  "operation-id": 123,
+                  "status": SUCCEEDED,
+                  "result-text": "Package holds successfully changed.",
+                  "result-code": 0}])
+
+        result = self.changer.handle_tasks()
+        return result.addCallback(assert_result)
+
+    def test_change_package_holds_create_not_installed(self):
+        """
+        If the C{change-package-holds} message requests to add holds for
+        packages that aren't installed, the whole activity is failed. If
+        multiple holds are specified, those won't be added. There's no
+        difference between a package that is available in some
+        repository and a package that the facade doesn't know about at
+        all.
+        """
+        self._add_system_package("foo")
+        self._add_package_to_deb_dir(self.repository_dir, "bar")
+        self.facade.reload_channels()
+        self.store.add_task("changer", {"type": "change-package-holds",
+                                        "create": ["foo", "bar", "baz"],
+                                        "operation-id": 123})
+
+        def assert_result(result):
+            self.facade.reload_channels()
+            self.assertEqual([], self.facade.get_package_holds())
+            self.assertIn("Queuing message with change package holds results "
+                          "to exchange urgently.", self.logfile.getvalue())
+            self.assertMessages(
+                self.get_pending_messages(),
+                [{"type": "operation-result",
+                  "operation-id": 123,
+                  "status": FAILED,
+                  "result-text": "Package holds not added, since the "
+                                  "following packages are not installed: "
+                                  "bar, baz",
+                  "result-code": 1}])
+
+        result = self.changer.handle_tasks()
+        return result.addCallback(assert_result)
+
+    def test_change_package_holds_delete_not_held(self):
+        """
+        If the C{change-package-holds} message requests to remove holds
+        for packages that aren't held, the activity still succeeds. If
+        other valid holds are specified, those will be removed.
+        There's no difference between a package that is installed
+        and a package that isn't installed. In either case, the
+        result is that the package isn't held.
+        """
+        self._add_system_package("foo")
+        self._add_system_package("bar")
+        self.facade.set_package_hold("bar")
+        self.facade.reload_channels()
+        self.store.add_task("changer", {"type": "change-package-holds",
+                                        "delete": ["foo", "bar", "baz"],
+                                        "operation-id": 123})
+
+        def assert_result(result):
+            self.facade.reload_channels()
+            self.assertEqual([], self.facade.get_package_holds())
+            self.assertIn("Queuing message with change package holds results "
+                          "to exchange urgently.", self.logfile.getvalue())
+            self.assertMessages(
+                self.get_pending_messages(),
+                [{"type": "operation-result",
+                  "operation-id": 123,
+                  "status": SUCCEEDED,
+                  "result-text": "Package holds successfully changed.",
+                  "result-code": 0}])
+
+        result = self.changer.handle_tasks()
+        return result.addCallback(assert_result)
+
+    def test_change_package_locks(self):
+        """
+        If C{AptFacade} is used, the L{PackageChanger.handle_tasks}
+        method fails the activity, since it can't add or remove locks because
+        apt doesn't support this.
+        """
+        self.store.add_task("changer", {"type": "change-package-locks",
+                                        "create": [("foo", ">=", "1.0")],
+                                        "delete": [("bar", None, None)],
+                                        "operation-id": 123})
+
+        def assert_result(result):
+            self.assertMessages(
+                self.get_pending_messages(),
+                [{"type": "operation-result",
+                  "operation-id": 123,
+                  "status": FAILED,
+                  "result-text": "This client doesn't support package locks.",
+                  "result-code": 1}])
+
+        result = self.changer.handle_tasks()
+        return result.addCallback(assert_result)
