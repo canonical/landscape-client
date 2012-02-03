@@ -433,8 +433,11 @@ class AptFacade(object):
         return len(versions_to_be_changed) > 0
 
     def _get_unmet_dependency_info(self):
+        broken_packages = self._get_broken_packages()
+        if not broken_packages:
+            return ""
         info = ["The following packages have unmet dependencies:"]
-        for package in self._get_broken_packages():
+        for package in broken_packages:
             info.append("  " + package.name)
         return "\n".join(info)
 

@@ -850,6 +850,17 @@ class AptFacadeTest(LandscapeTest):
             "  foo",
             error.args[0])
 
+    def test_get_unmet_dependency_info_no_broken(self):
+        """
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(
+            deb_dir, "foo", control_fields={"Depends": "bar"})
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        self.assertEqual(set(), self.facade._get_broken_packages())
+        self.assertEqual("", self.facade._get_unmet_dependency_info())
+
     def _mock_output_restore(self):
         """
         Mock methods to ensure that stdout and stderr are restored,
