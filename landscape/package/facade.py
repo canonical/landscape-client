@@ -432,6 +432,12 @@ class AptFacade(object):
                 [version for package, version in dependencies])
         return len(versions_to_be_changed) > 0
 
+    def _get_unmet_dependency_info(self):
+        info = ["The following packages have unmet dependencies:"]
+        for package in self._get_broken_packages():
+            info.append("  " + package.name)
+        return "\n".join(info)
+
     def perform_changes(self):
         """Perform the pending package operations."""
         held_package_names = set()
@@ -485,7 +491,8 @@ class AptFacade(object):
             try:
                 fixer.resolve(True)
             except SystemError, error:
-                raise TransactionError(error.args[0])
+                raise TransactionError(
+                    error.args[0] + self._get_unmet_dependency_info())
         if not self._check_changes(version_changes):
             return None
         fetch_output = StringIO()

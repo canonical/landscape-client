@@ -831,6 +831,25 @@ class AptFacadeTest(LandscapeTest):
              "Stderr output", "Stdout output again"],
             output)
 
+    def test_perform_changes_install_broken_includes_error_info(self):
+        """
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(
+            deb_dir, "foo", control_fields={"Depends": "bar"})
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        self.facade.mark_install(foo)
+        self.facade._cache.commit = lambda fetch_progress: None
+        error = self.assertRaises(
+            TransactionError, self.facade.perform_changes)
+        self.assertIn("you have held broken packages", error.args[0])
+        self.assertIn(
+            "The following packages have unmet dependencies:\n" +
+            "  foo",
+            error.args[0])
+
     def _mock_output_restore(self):
         """
         Mock methods to ensure that stdout and stderr are restored,
