@@ -243,9 +243,6 @@ class ReactorTestMixin(object):
 
         reactor.call_in_thread(None, None, f, 1, 2, c=3)
 
-        while not called:
-            pass
-
         reactor.call_later(0.7, reactor.stop)
         reactor.run()
 
@@ -274,9 +271,6 @@ class ReactorTestMixin(object):
 
         reactor.call_in_thread(callback, errback, f)
 
-        while not called:
-            pass
-
         reactor.call_later(0.7, reactor.stop)
         reactor.run()
 
@@ -300,9 +294,6 @@ class ReactorTestMixin(object):
             called.append(args)
 
         reactor.call_in_thread(callback, errback, f)
-
-        while not called:
-            pass
 
         reactor.call_later(0.7, reactor.stop)
         reactor.run()
@@ -329,9 +320,6 @@ class ReactorTestMixin(object):
 
         reactor.call_in_thread(callback, None, f)
 
-        while not called:
-            pass
-
         reactor.call_later(0.7, reactor.stop)
         reactor.run()
 
@@ -354,9 +342,6 @@ class ReactorTestMixin(object):
             called.append(thread.get_ident())
 
         reactor.call_in_thread(None, None, f)
-
-        while not called:
-            pass
 
         reactor.call_later(0.7, reactor.stop)
         reactor.run()

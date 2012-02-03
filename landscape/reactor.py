@@ -1,4 +1,3 @@
-import thread
 import time
 import sys
 import logging
@@ -8,6 +7,7 @@ import socket
 from twisted.test.proto_helpers import FakeDatagramTransport
 from twisted.internet.defer import succeed, fail
 from twisted.internet.error import DNSLookupError
+from twisted.internet.threads import deferToThread
 
 from landscape.log import format_object
 
@@ -120,8 +120,20 @@ class ThreadedCallsReactorMixin(object):
         @note: Both C{callback} and C{errback} will be executed in the
             the parent thread.
         """
-        thread.start_new_thread(self._in_thread,
-                                (callback, errback, f, args, kwargs))
+        def on_success(result):
+            if callback:
+                return callback(result)
+
+        def on_failure(failure):
+            exc_info = (failure.type, failure.value, failure.tb)
+            if errback:
+                errback(*exc_info)
+            else:
+                logging.error(exc_info[1], exc_info=exc_info)
+
+        deferred = deferToThread(f, *args, **kwargs)
+        deferred.addCallback(on_success)
+        deferred.addErrback(on_failure)
 
     def _in_thread(self, callback, errback, f, args, kwargs):
         try:
