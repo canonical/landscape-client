@@ -271,6 +271,7 @@ class FakeBrokerServiceHelper(object):
             "computer_title = Some Computer\n"
             "account_name = some_account\n"
             "ping_url = http://localhost:91910\n"
+            "server_autodiscover = false\n"
             "data_path = %s\n"
             "log_dir = %s\n" % (test_case.data_path, log_dir))
 
@@ -612,7 +613,7 @@ def install_trial_hack():
         if self._shared and self not in self.__class__._instances:
             self.__class__._instances.add(self)
         result.startTest(self)
-        if self.getSkip(): # don't run test methods that are marked as .skip
+        if self.getSkip():  # don't run test methods that are marked as .skip
             result.addSkip(self, self.getSkip())
             result.stopTest(self)
             return
@@ -642,6 +643,7 @@ def install_trial_hack():
     TestCase.run = run
 
 ### Copied from Twisted, to fix a bug in trial in Twisted 2.2! ###
+
 
 class UnsupportedTrialFeature(Exception):
     """A feature of twisted.trial was used that pyunit cannot support."""

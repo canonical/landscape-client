@@ -89,6 +89,8 @@ class BrokerConfiguration(Configuration):
                           help="Record data sent to the server on filesystem.")
         parser.add_option("--provisioning-otp", default="",
                           help="The OTP to use for a provisioned machine.")
+        parser.add_option("--server-autodiscover", type="string",
+                          default="false", help="Enable server autodiscovery.")
         return parser
 
     @property
@@ -118,3 +120,6 @@ class BrokerConfiguration(Configuration):
 
         if self.url is None:
             self.url = self.DEFAULT_URL
+
+        autodiscover = str(self.server_autodiscover).lower()
+        self.server_autodiscover = (autodiscover == "true")

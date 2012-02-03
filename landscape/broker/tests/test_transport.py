@@ -52,11 +52,11 @@ class HTTPTransportTest(LandscapeTest):
 
     def test_get_url(self):
         url = "http://example/ooga"
-        transport = HTTPTransport(url)
+        transport = HTTPTransport(None, url)
         self.assertEqual(transport.get_url(), url)
 
     def test_set_url(self):
-        transport = HTTPTransport("http://example/ooga")
+        transport = HTTPTransport(None, "http://example/ooga")
         transport.set_url("http://example/message-system")
         self.assertEqual(transport.get_url(), "http://example/message-system")
 
@@ -71,7 +71,7 @@ class HTTPTransportTest(LandscapeTest):
         port = reactor.listenTCP(0, server.Site(r), interface="127.0.0.1")
         self.ports.append(port)
         transport = HTTPTransport(
-            "http://localhost:%d/" % (port.getHost().port,))
+            None, "http://localhost:%d/" % (port.getHost().port,))
         result = deferToThread(transport.exchange, "HI", computer_id="34",
                                message_api="X.Y")
 
@@ -98,7 +98,7 @@ class HTTPTransportTest(LandscapeTest):
                                  interface="127.0.0.1")
         self.ports.append(port)
         transport = HTTPTransport(
-            "https://localhost:%d/" % (port.getHost().port,), PUBKEY)
+            None, "https://localhost:%d/" % (port.getHost().port,), PUBKEY)
         result = deferToThread(transport.exchange, "HI", computer_id="34",
                                message_api="X.Y")
 
@@ -126,7 +126,7 @@ class HTTPTransportTest(LandscapeTest):
         port = reactor.listenSSL(0, server.Site(r), context_factory,
                                  interface="127.0.0.1")
         self.ports.append(port)
-        transport = HTTPTransport("https://localhost:%d/"
+        transport = HTTPTransport(None, "https://localhost:%d/"
                                   % (port.getHost().port,),
                                   pubkey=PUBKEY)
 
@@ -153,7 +153,7 @@ class HTTPTransportTest(LandscapeTest):
             return "filename"
         recorder.get_payload_filename = static_filename
 
-        transport = HTTPTransport("http://localhost",
+        transport = HTTPTransport(None, "http://localhost",
                                   payload_recorder=recorder)
 
         def fake_curl(param1, param2, param3):
@@ -174,7 +174,7 @@ class HTTPTransportTest(LandscapeTest):
         When C{HTTPTransport} is configured without a payload recorder,
         exchanges with the server should still complete.
         """
-        transport = HTTPTransport("http://localhost")
+        transport = HTTPTransport(None, "http://localhost")
         self.called = False
 
         def fake_curl(param1, param2, param3):
