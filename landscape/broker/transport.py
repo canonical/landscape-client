@@ -22,6 +22,12 @@ class HTTPTransport(object):
     @param pubkey: SSH public key used for secure communication.
     @param payload_recorder: PayloadRecorder used for recording exchanges
         with the server.  If C{None}, exchanges will not be recorded.
+    @param server_autodiscovery: Server autodiscovery is performed if True,
+        otherwise server autodiscover is not done.
+    @param autodiscover_srv_query_string: If server autodiscovery is done, this
+        string will be sent to the DNS server when making a SRV query.
+    @param autodiscover_a_query_string: If server autodiscovery is done, this
+        string will be sent to the DNS server when making an A query.
     """
 
     def __init__(self, reactor, url, pubkey=None, payload_recorder=None,

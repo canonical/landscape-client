@@ -22,6 +22,14 @@ class PingClient(object):
     @param url: The URL to ask the question to.
     @type identity: L{landscape.broker.registration.Identity}
     @param identity: This client's identity.
+    @param get_page: The method to use to retrieve content.  If not specified,
+        landscape.lib.fetch.fetch is used.
+    @param server_autodiscovery: Server autodiscovery is performed if True,
+        otherwise server autodiscover is not done.
+    @param autodiscover_srv_query_string: If server autodiscovery is done, this
+        string will be sent to the DNS server when making a SRV query.
+    @param autodiscover_a_query_string: If server autodiscovery is done, this
+        string will be sent to the DNS server when making an A query.
     """
 
     def __init__(self, reactor, url, identity, get_page=None,
