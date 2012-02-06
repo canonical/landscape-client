@@ -449,7 +449,17 @@ class AptFacade(object):
                     info += " (%s %s)" % (
                         dep.or_dependencies[0].relation,
                         dep.or_dependencies[0].version)
-                info += " but is not installable"
+                reason = " but is not installable"
+                if self._cache.has_key(dep.or_dependencies[0].name):
+                    dep_package = self._cache[dep.or_dependencies[0].name]
+                    if dep_package.installed:
+                        reason = " but %s is to be installed" % (
+                            dep_package.installed.version)
+                    else:
+                        if dep_package.marked_install:
+                            reason = " but %s is to be installed" % (
+                            dep_package.candidate.version)
+                info += reason
 
                 all_info.append(info)
         return "\n".join(all_info)
