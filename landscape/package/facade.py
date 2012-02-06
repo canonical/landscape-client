@@ -3,6 +3,7 @@ import os
 import subprocess
 import tempfile
 from cStringIO import StringIO
+from operator import attrgetter
 
 has_smart = True
 try:
@@ -437,7 +438,7 @@ class AptFacade(object):
         if not broken_packages:
             return ""
         info = ["The following packages have unmet dependencies:"]
-        for package in broken_packages:
+        for package in sorted(broken_packages, key=attrgetter("name")):
             info.append("  " + package.name)
         return "\n".join(info)
 
