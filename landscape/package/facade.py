@@ -166,12 +166,12 @@ class AptFacade(object):
             stdin=subprocess.PIPE)
         process.communicate(selection)
 
-    def set_package_hold(self, name):
+    def set_package_hold(self, version):
         """Add a dpkg hold for a package.
 
-        @param name: The name of the package to hold.
+        @param version: The version of the package to hold.
         """
-        self._set_dpkg_selections(name + " hold")
+        self._set_dpkg_selections(version.package.name + " hold")
 
     def remove_package_hold(self, name):
         """Removes a dpkg hold for a package.

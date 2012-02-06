@@ -1683,10 +1683,10 @@ class AptFacadeTest(LandscapeTest):
         """
         self._add_system_package("foo")
         self.facade.reload_channels()
-        self.facade.set_package_hold("foo")
+        foo = self.facade.get_packages_by_name("foo")[0]
+        self.facade.set_package_hold(foo)
         self.facade.reload_channels()
 
-        foo = self.facade.get_packages_by_name("foo")[0]
         holds = self.facade.get_package_holds()
 
         self.assertEqual([foo.package.name], 
@@ -1700,7 +1700,8 @@ class AptFacadeTest(LandscapeTest):
         self._add_system_package(
             "foo", control_fields={"Status": "hold ok installed"})
         self.facade.reload_channels()
-        self.facade.set_package_hold("foo")
+        foo = self.facade.get_packages_by_name("foo")[0]
+        self.facade.set_package_hold(foo)
         self.facade.reload_channels()
 
         self.assertEqual(["foo"], [package.name for package in 
