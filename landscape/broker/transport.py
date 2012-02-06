@@ -52,8 +52,8 @@ class HTTPTransport(object):
     def _curl(self, payload, computer_id, message_api):
         if self._server_autodiscover:
             result = blockingCallFromThread(self._reactor, discover_server,
-                                            autodiscover_srv_query_string,
-                                            autodiscover_a_query_string)
+                                            self.autodiscover_srv_query_string,
+                                            self.autodiscover_a_query_string)
             if result is not None:
                 self._url = "https://%s/message-system" % result
             else:
