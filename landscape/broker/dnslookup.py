@@ -5,7 +5,8 @@ from twisted.names import dns
 from twisted.names.client import Resolver
 
 
-def discover_server(resolver=None):
+def discover_server(resolver=None, autodiscover_srv_query_string="",
+                    autodiscover_a_query_string=""):
     """
     Look up the dns location of the landscape server.
 
@@ -14,12 +15,12 @@ def discover_server(resolver=None):
     """
     if not resolver:
         resolver = Resolver("/etc/resolv.conf")
-    d = lookup_server_record(resolver)
-    d.addErrback(lookup_hostname, resolver)
+    d = lookup_server_record(resolver, autodiscover_srv_query_string)
+    d.addErrback(lookup_hostname, resolver, autodiscover_a_query_string)
     return d
 
 
-def lookup_server_record(resolver):
+def lookup_server_record(resolver, service_name):
     """
     Do a DNS SRV record lookup for the location of the landscape server.
 
@@ -28,8 +29,6 @@ def lookup_server_record(resolver):
     @return: A deferred containing either the hostname of the landscape server
         if found or an empty string if not found.
     """
-    service_name = "_landscape._tcp.mylandscapehost.com"
-
     def lookup_done(result):
         name = ""
         for item in result:
@@ -49,7 +48,7 @@ def lookup_server_record(resolver):
     return d
 
 
-def lookup_hostname(result, resolver):
+def lookup_hostname(result, resolver, hostname):
     """
     Do a DNS name lookup for the location of the landscape server.
 
@@ -58,8 +57,6 @@ def lookup_hostname(result, resolver):
     @param return: A deferred containing the ip address of the landscape
         server if found or None if not found.
     """
-    hostname = "landscape.localdomain"
-
     def lookup_done(result):
         return result
 

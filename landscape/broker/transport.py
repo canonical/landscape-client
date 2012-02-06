@@ -25,12 +25,15 @@ class HTTPTransport(object):
     """
 
     def __init__(self, reactor, url, pubkey=None, payload_recorder=None,
-                 server_autodiscover=False):
+                 server_autodiscover=False, autodiscover_srv_query_string="",
+                 autodiscover_a_query_string=""):
         self._reactor = reactor
         self._url = url
         self._pubkey = pubkey
         self._payload_recorder = payload_recorder
         self._server_autodiscover = server_autodiscover
+        self._autodiscover_srv_query_string = autodiscover_srv_query_string
+        self._autodiscover_a_query_string = autodiscover_a_query_string
 
     def get_url(self):
         """Get the URL of the remote message system."""
@@ -42,7 +45,9 @@ class HTTPTransport(object):
 
     def _curl(self, payload, computer_id, message_api):
         if self._server_autodiscover:
-            result = blockingCallFromThread(self._reactor, discover_server)
+            result = blockingCallFromThread(self._reactor, discover_server,
+                                            autodiscover_srv_query_string,
+                                            autodiscover_a_query_string)
             if result is not None:
                 self._url = "https://%s/message-system" % result
             else:
@@ -166,7 +171,9 @@ class FakeTransport(object):
     """Fake transport for testing purposes."""
 
     def __init__(self, reactor=None, url=None, pubkey=None,
-                 payload_recorder=None, server_autodiscover=False):
+                 payload_recorder=None, server_autodiscover=False,
+                 autodiscover_srv_query_string="",
+                 autodiscover_a_query_string=""):
         self._pubkey = pubkey
         self._payload_recorder = payload_recorder
         self.payloads = []
@@ -179,6 +186,8 @@ class FakeTransport(object):
         self._url = url
         self._reactor = reactor
         self._server_autodiscover = server_autodiscover
+        self._autodiscover_srv_query_string = autodiscover_srv_query_string
+        self._autodiscover_a_query_string = autodiscover_a_query_string
 
     def get_url(self):
         return self._url

@@ -88,7 +88,8 @@ class DnsSrvLookupTest(LandscapeTest):
         def check(result):
             self.assertEquals("a.b.com", result)
 
-        d = lookup_server_record(fake_resolver)
+        d = lookup_server_record(fake_resolver,
+                                 "_landscape._tcp.mylandscapehost.com")
         d.addCallback(check)
         return d
 
@@ -103,7 +104,8 @@ class DnsSrvLookupTest(LandscapeTest):
         def check(result):
             self.assertEquals("", result)
 
-        d = lookup_server_record(fake_resolver)
+        d = lookup_server_record(fake_resolver,
+                                 "_landscape._tcp.mylandscapehost.com")
         d.addCallback(check)
         return d
 
@@ -115,7 +117,8 @@ class DnsSrvLookupTest(LandscapeTest):
                      "failed.")
         self.mocker.replay()
 
-        d = lookup_server_record(BadResolver())
+        d = lookup_server_record(BadResolver(),
+                                 "_landscape._tcp.mylandscapehost.com")
         self.assertFailure(d, ResolverError)
         return d
 
@@ -131,7 +134,7 @@ class DnsNameLookupTest(LandscapeTest):
         def check(result):
             self.assertEquals("a.b.com", result)
 
-        d = lookup_hostname(None, fake_resolver)
+        d = lookup_hostname(None, fake_resolver, "landscape.localdomain")
         d.addCallback(check)
         return d
 
@@ -146,7 +149,7 @@ class DnsNameLookupTest(LandscapeTest):
         def check(result):
             self.assertEquals(None, result)
 
-        d = lookup_hostname(None, fake_resolver)
+        d = lookup_hostname(None, fake_resolver, "landscape.localdomain")
         d.addCallback(check)
         return d
 
@@ -157,7 +160,7 @@ class DnsNameLookupTest(LandscapeTest):
         logging_mock("Name lookup of landscape.localdomain failed.")
         self.mocker.replay()
 
-        d = lookup_hostname(None, BadResolver())
+        d = lookup_hostname(None, BadResolver(), "landscape.localdomain")
         self.assertFailure(d, ResolverError)
         return d
 
@@ -194,6 +197,6 @@ class DiscoverServerTest(LandscapeTest):
 
     def test_failed_lookup(self):
         """A resolver error is returned when server autodiscovery fails."""
-        d = lookup_server_record(BadResolver())
+        d = lookup_server_record(BadResolver(), "landscape.localdomain")
         self.assertFailure(d, ResolverError)
         return d
