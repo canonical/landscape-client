@@ -437,17 +437,22 @@ class AptFacade(object):
         broken_packages = self._get_broken_packages()
         if not broken_packages:
             return ""
-        info = ["The following packages have unmet dependencies:"]
+        all_info = ["The following packages have unmet dependencies:"]
         for package in sorted(broken_packages, key=attrgetter("name")):
             for dep in package.candidate.dependencies:
                 dep_type = "Depends"
                 if dep.or_dependencies[0].pre_depend:
                     dep_type = "PreDepends"
+                info = "  %s: %s: %s" % (
+                    package.name, dep_type, dep.or_dependencies[0].name)
+                if dep.or_dependencies[0].version:
+                    info += " (%s %s)" % (
+                        dep.or_dependencies[0].relation,
+                        dep.or_dependencies[0].version)
+                info += " but is not installable"
 
-                info.append(
-                    "  %s: %s: %s but is not installable" % (
-                        package.name, dep_type, dep.or_dependencies[0].name))
-        return "\n".join(info)
+                all_info.append(info)
+        return "\n".join(all_info)
 
     def perform_changes(self):
         """Perform the pending package operations."""
