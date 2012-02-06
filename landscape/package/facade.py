@@ -439,7 +439,10 @@ class AptFacade(object):
             return ""
         info = ["The following packages have unmet dependencies:"]
         for package in sorted(broken_packages, key=attrgetter("name")):
-            info.append("  " + package.name)
+            for dep in package.candidate.get_dependencies("Depends"):
+                info.append(
+                    "  %s: Depends: %s but is not installable" % (
+                        package.name, dep.or_dependencies[0].name))
         return "\n".join(info)
 
     def perform_changes(self):

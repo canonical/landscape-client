@@ -875,10 +875,10 @@ class AptFacadeTest(LandscapeTest):
             set([foo.package]), self.facade._get_broken_packages())
         self.assertEqual(
             ["The following packages have unmet dependencies:",
-             "  foo"],
+             "  foo: Depends: bar but is not installable"],
             self.facade._get_unmet_dependency_info().splitlines())
 
-    def test_get_unmet_dependency_info_multiple(self):
+    def test_get_unmet_dependency_info_multiple_broken(self):
         """
         """
         deb_dir = self.makeDir()
@@ -897,8 +897,8 @@ class AptFacadeTest(LandscapeTest):
             self.facade._get_broken_packages())
         self.assertEqual(
             ["The following packages have unmet dependencies:",
-             "  another-foo",
-             "  foo"],
+             "  another-foo: Depends: another-bar but is not installable",
+             "  foo: Depends: bar but is not installable"],
             self.facade._get_unmet_dependency_info().splitlines())
 
     def _mock_output_restore(self):
