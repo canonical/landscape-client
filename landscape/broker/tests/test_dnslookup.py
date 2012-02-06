@@ -46,13 +46,16 @@ class FakeResolver(object):
     def __init__(self):
         self.results = None
         self.name = None
+        self.queried = None
 
     def lookupService(self, arg1):
+        self.queried = arg1
         deferred = defer.Deferred()
         deferred.callback(self.results)
         return deferred
 
     def getHostByName(self, arg1):
+        self.queried = arg1
         deferred = defer.Deferred()
         deferred.callback(self.name)
         return deferred
@@ -84,12 +87,13 @@ class DnsSrvLookupTest(LandscapeTest):
         fake_result.payload.target.name = "a.b.com"
         fake_resolver = FakeResolver()
         fake_resolver.results = [[fake_result]]
+        query_string = "_landscape._tcp.mylandscapehost.com"
 
         def check(result):
-            self.assertEquals("a.b.com", result)
+            self.assertEqual(fake_resolver.queried, query_string)
+            self.assertEqual("a.b.com", result)
 
-        d = lookup_server_record(fake_resolver,
-                                 "_landscape._tcp.mylandscapehost.com")
+        d = lookup_server_record(fake_resolver, query_string)
         d.addCallback(check)
         return d
 
@@ -102,7 +106,7 @@ class DnsSrvLookupTest(LandscapeTest):
         fake_resolver.results = [[]]
 
         def check(result):
-            self.assertEquals("", result)
+            self.assertEqual("", result)
 
         d = lookup_server_record(fake_resolver,
                                  "_landscape._tcp.mylandscapehost.com")
@@ -130,11 +134,13 @@ class DnsNameLookupTest(LandscapeTest):
         """
         fake_resolver = FakeResolver()
         fake_resolver.name = "a.b.com"
+        query_string = "landscape.localdomain"
 
         def check(result):
-            self.assertEquals("a.b.com", result)
+            self.assertEqual(fake_resolver.queried, query_string)
+            self.assertEqual("a.b.com", result)
 
-        d = lookup_hostname(None, fake_resolver, "landscape.localdomain")
+        d = lookup_hostname(None, fake_resolver, query_string)
         d.addCallback(check)
         return d
 
@@ -147,7 +153,7 @@ class DnsNameLookupTest(LandscapeTest):
         fake_resolver.name = None
 
         def check(result):
-            self.assertEquals(None, result)
+            self.assertEqual(None, result)
 
         d = lookup_hostname(None, fake_resolver, "landscape.localdomain")
         d.addCallback(check)
@@ -177,7 +183,7 @@ class DiscoverServerTest(LandscapeTest):
         d = discover_server(fake_resolver)
 
         def check(result):
-            self.assertEquals("a.b.com", result)
+            self.assertEqual("a.b.com", result)
 
         d.addCallback(check)
         return d
@@ -190,7 +196,7 @@ class DiscoverServerTest(LandscapeTest):
         d = discover_server(fake_resolver)
 
         def check(result):
-            self.assertEquals("x.y.com", result)
+            self.assertEqual("x.y.com", result)
 
         d.addCallback(check)
         return d

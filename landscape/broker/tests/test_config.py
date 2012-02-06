@@ -99,12 +99,12 @@ class ConfigurationTests(LandscapeTest):
         """
         configuration = BrokerConfiguration()
         configuration.load([])
-        self.assertEquals(configuration.server_autodiscover, False)
+        self.assertEqual(configuration.server_autodiscover, False)
 
         configuration = BrokerConfiguration()
         configuration.load(["--server-autodiscover=true"])
-        self.assertEquals(configuration.server_autodiscover, True)
+        self.assertEqual(configuration.server_autodiscover, True)
 
         configuration = BrokerConfiguration()
         configuration.load(["--server-autodiscover=false"])
-        self.assertEquals(configuration.server_autodiscover, False)
+        self.assertEqual(configuration.server_autodiscover, False)
