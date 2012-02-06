@@ -1049,8 +1049,8 @@ class SmartPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         """
         self.facade.reload_channels()
         self.store.add_task("changer", {"type": "change-package-holds",
-                                        "create": ["name1"],
-                                        "delete": ["name2"],
+                                        "create": [1],
+                                        "delete": [2],
                                         "operation-id": 123})
 
         def assert_result(result):
@@ -1202,15 +1202,20 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         """
         self._add_system_package("foo")
         self._add_system_package("bar")
-        self.facade.set_package_hold("bar")
         self.facade.reload_channels()
+        foo = self.facade.get_packages_by_name("foo")[0]
+        bar = self.facade.get_packages_by_name("bar")[0]
+        self.facade.set_package_hold(foo)
+        self.facade.reload_channels()
+        bar_id = bar.package.id
         self.store.add_task("changer", {"type": "change-package-holds",
-                                        "create": ["foo"],
-                                        "delete": ["bar"],
+                                        "create": [],
+                                        "delete": [bar_id],
                                         "operation-id": 123})
 
         def assert_result(result):
-            self.assertEqual(["foo"], self.facade.get_package_holds())
+            self.assertEqual(["foo"], [hold.name for hold in
+                                       self.facade.get_package_holds()])
             self.assertIn("Queuing message with change package holds results "
                           "to exchange urgently.", self.logfile.getvalue())
             self.assertMessages(
@@ -1235,9 +1240,15 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         """
         self._add_system_package("foo")
         self._add_package_to_deb_dir(self.repository_dir, "bar")
+        self._add_package_to_deb_dir(self.repository_dir, "baz")
         self.facade.reload_channels()
+        foo = self.facade.get_packages_by_name("foo")[0]
+        bar = self.facade.get_packages_by_name("bar")[0]
+        baz = self.facade.get_packages_by_name("baz")[0]
         self.store.add_task("changer", {"type": "change-package-holds",
-                                        "create": ["foo", "bar", "baz"],
+                                        "create": [foo.package.id,
+                                                   bar.package.id,
+                                                   baz.package.id], 
                                         "operation-id": 123})
 
         def assert_result(result):
@@ -1250,9 +1261,11 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
                 [{"type": "operation-result",
                   "operation-id": 123,
                   "status": FAILED,
-                  "result-text": "Package holds not added, since the "
-                                  "following packages are not installed: "
-                                  "bar, baz",
+                  "result-text": "Package holds not added, since the " 
+                  "following packages are not installed: "
+                  "%s, %s, %s" % tuple(sorted([foo.package.id,
+                                               bar.package.id,
+                                               baz.package.id])),
                   "result-code": 1}])
 
         result = self.changer.handle_tasks()
@@ -1269,7 +1282,9 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         """
         self._add_system_package("foo")
         self._add_system_package("bar")
-        self.facade.set_package_hold("bar")
+        self.facade.reload_channels()
+        bar = self.facade.get_packages_by_name("bar")[0]
+        self.facade.set_package_hold(bar)
         self.facade.reload_channels()
         self.store.add_task("changer", {"type": "change-package-holds",
                                         "delete": ["foo", "bar", "baz"],

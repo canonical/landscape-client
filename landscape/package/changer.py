@@ -329,10 +329,13 @@ class PackageChanger(PackageTaskHandler):
 
         not_installed = set()
         holds_to_create = message.get("create", [])
-        for name in holds_to_create:
-            versions = self._facade.get_packages_by_name(name)
-            if not versions or not versions[0].package.installed:
-                not_installed.add(name)
+        for id in holds_to_create:
+            hash = self._store.get_id_hash(id)
+            versions = self._facade.get_package_by_hash(hash)
+            if not versions:
+                not_installed.add(str(id))
+            elif not versions[0].package.installed:
+                not_installed.add(versions[0].package.name)
         if not_installed:
             response = {
                 "type": "operation-result",
