@@ -46,6 +46,8 @@ class BrokerConfiguration(Configuration):
               - C{record}
               - C{provisioning_otp}
               - C{server_autodiscover}
+              - C{autodiscover_srv_query_string}
+              - C{autodiscover_a_query_string}
         """
         parser = super(BrokerConfiguration, self).make_parser()
 
