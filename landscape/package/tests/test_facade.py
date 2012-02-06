@@ -861,6 +861,23 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(set(), self.facade._get_broken_packages())
         self.assertEqual("", self.facade._get_unmet_dependency_info())
 
+    def test_get_unmet_dependency_info_simple(self):
+        """
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(
+            deb_dir, "foo", control_fields={"Depends": "bar"})
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        foo.package.mark_install(auto_fix=False)
+        self.assertEqual(
+            set([foo.package]), self.facade._get_broken_packages())
+        self.assertEqual(
+            ["The following packages have unmet dependencies:",
+             "  foo"],
+            self.facade._get_unmet_dependency_info().splitlines())
+
     def _mock_output_restore(self):
         """
         Mock methods to ensure that stdout and stderr are restored,
