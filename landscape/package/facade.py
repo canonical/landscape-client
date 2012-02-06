@@ -453,8 +453,12 @@ class AptFacade(object):
                 if self._cache.has_key(dep.or_dependencies[0].name):
                     dep_package = self._cache[dep.or_dependencies[0].name]
                     if dep_package.installed:
-                        reason = " but %s is to be installed" % (
-                            dep_package.installed.version)
+                        version = dep_package.installed.version
+                        if (dep_package.marked_upgrade or
+                                dep_package.marked_downgrade):
+                            version = dep_package.candidate.version
+                        reason = " but %s is to be installed" % version
+                            
                     else:
                         if dep_package.marked_install:
                             reason = " but %s is to be installed" % (
