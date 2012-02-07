@@ -434,10 +434,7 @@ class AptFacade(object):
         return len(versions_to_be_changed) > 0
 
     def _get_unmet_relation_info(self, dep_relation):
-        dep_type = "Depends"
-        if dep_relation.pre_depend:
-            dep_type = "PreDepends"
-        info = "%s: %s" % (dep_type, dep_relation.name)
+        info = dep_relation.name
         if dep_relation.version:
             info += " (%s %s)" % (dep_relation.relation, dep_relation.version)
         reason = " but is not installable"
@@ -465,10 +462,16 @@ class AptFacade(object):
         all_info = ["The following packages have unmet dependencies:"]
         for package in sorted(broken_packages, key=attrgetter("name")):
             for dep in package.candidate.dependencies:
-                relation_info = self._get_unmet_relation_info(
-                    dep.or_dependencies[0])
-
-                all_info.append("  %s: %s" % (package.name, relation_info))
+                relation_type = "Depends"
+                relation_infos = []
+                for dep_relation in dep.or_dependencies:
+                    if dep_relation.pre_depend:
+                        relation_type = "PreDepends"
+                    relation_infos.append(
+                        self._get_unmet_relation_info(dep_relation))
+                info = "  %s: %s: " % (package.name, relation_type)
+                or_divider = " or\n" + " "*len(info)
+                all_info.append(info + or_divider.join(relation_infos))
         return "\n".join(all_info)
 
     def perform_changes(self):
