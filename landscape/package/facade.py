@@ -528,7 +528,7 @@ class AptFacade(object):
                 fixer.resolve(True)
             except SystemError, error:
                 raise TransactionError(
-                    error.args[0] + self._get_unmet_dependency_info())
+                    error.args[0] + "\n" + self._get_unmet_dependency_info())
         if not self._check_changes(version_changes):
             return None
         fetch_output = StringIO()

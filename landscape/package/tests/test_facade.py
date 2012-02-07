@@ -836,19 +836,34 @@ class AptFacadeTest(LandscapeTest):
         """
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(
-            deb_dir, "foo", control_fields={"Depends": "bar"})
+            deb_dir, "foo",
+            control_fields={"Depends": "missing | lost (>= 1.0)",
+                            "Pre-Depends": "pre-missing | pre-lost"})
+        self._add_package_to_deb_dir(
+            deb_dir, "bar",
+            control_fields={"Depends": "also-missing | also-lost (>= 1.0)",
+                            "Pre-Depends": "also-pre-missing | also-pre-lost"})
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
+        [bar] = self.facade.get_packages_by_name("bar")
         self.facade.mark_install(foo)
+        self.facade.mark_install(bar)
         self.facade._cache.commit = lambda fetch_progress: None
         error = self.assertRaises(
             TransactionError, self.facade.perform_changes)
         self.assertIn("you have held broken packages", error.args[0])
-        self.assertIn(
-            "The following packages have unmet dependencies:\n" +
-            "  foo",
-            error.args[0])
+        self.assertEqual(
+            ["The following packages have unmet dependencies:",
+             "  bar: PreDepends: also-pre-missing but is not installable or",
+             "                   also-pre-lost but is not installable",
+             "  bar: Depends: also-missing but is not installable or",
+             "                also-lost (>= 1.0) but is not installable",
+             "  foo: PreDepends: pre-missing but is not installable or",
+             "                   pre-lost but is not installable",
+             "  foo: Depends: missing but is not installable or",
+             "                lost (>= 1.0) but is not installable"],
+            error.args[0].splitlines()[-9:])
 
     def test_get_unmet_dependency_info_no_broken(self):
         """
