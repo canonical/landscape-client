@@ -433,6 +433,31 @@ class AptFacade(object):
                 [version for package, version in dependencies])
         return len(versions_to_be_changed) > 0
 
+    def _get_unmet_relation_info(self, dep_relation):
+        dep_type = "Depends"
+        if dep_relation.pre_depend:
+            dep_type = "PreDepends"
+        info = "%s: %s" % (dep_type, dep_relation.name)
+        if dep_relation.version:
+            info += " (%s %s)" % (dep_relation.relation, dep_relation.version)
+        reason = " but is not installable"
+        if self._cache.has_key(dep_relation.name):
+            dep_package = self._cache[dep_relation.name]
+            if dep_package.installed and not dep_package.marked_delete:
+                version = dep_package.installed.version
+                if (dep_package.marked_upgrade or
+                        dep_package.marked_downgrade):
+                    version = dep_package.candidate.version
+                reason = " but %s is to be installed" % version
+            elif dep_package.marked_delete:
+                reason = " but is not going to be installed"
+            else:
+                if dep_package.marked_install:
+                    reason = " but %s is to be installed" % (
+                    dep_package.candidate.version)
+        info += reason
+        return info
+
     def _get_unmet_dependency_info(self):
         broken_packages = self._get_broken_packages()
         if not broken_packages:
@@ -440,33 +465,10 @@ class AptFacade(object):
         all_info = ["The following packages have unmet dependencies:"]
         for package in sorted(broken_packages, key=attrgetter("name")):
             for dep in package.candidate.dependencies:
-                dep_type = "Depends"
-                if dep.or_dependencies[0].pre_depend:
-                    dep_type = "PreDepends"
-                info = "  %s: %s: %s" % (
-                    package.name, dep_type, dep.or_dependencies[0].name)
-                if dep.or_dependencies[0].version:
-                    info += " (%s %s)" % (
-                        dep.or_dependencies[0].relation,
-                        dep.or_dependencies[0].version)
-                reason = " but is not installable"
-                if self._cache.has_key(dep.or_dependencies[0].name):
-                    dep_package = self._cache[dep.or_dependencies[0].name]
-                    if dep_package.installed and not dep_package.marked_delete:
-                        version = dep_package.installed.version
-                        if (dep_package.marked_upgrade or
-                                dep_package.marked_downgrade):
-                            version = dep_package.candidate.version
-                        reason = " but %s is to be installed" % version
-                    elif dep_package.marked_delete:
-                        reason = " but is not going to be installed"
-                    else:
-                        if dep_package.marked_install:
-                            reason = " but %s is to be installed" % (
-                            dep_package.candidate.version)
-                info += reason
+                relation_info = self._get_unmet_relation_info(
+                    dep.or_dependencies[0])
 
-                all_info.append(info)
+                all_info.append("  %s: %s" % (package.name, relation_info))
         return "\n".join(all_info)
 
     def perform_changes(self):
