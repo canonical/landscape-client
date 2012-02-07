@@ -1714,7 +1714,8 @@ class AptFacadeTest(LandscapeTest):
         self._add_system_package(
             "foo", control_fields={"Status": "hold ok installed"})
         self.facade.reload_channels()
-        self.facade.remove_package_hold("foo")
+        [foo] = self.facade.get_packages_by_name("foo")
+        self.facade.remove_package_hold(foo)
         self.facade.reload_channels()
 
         self.assertEqual([], self.facade.get_package_holds())
@@ -1726,8 +1727,12 @@ class AptFacadeTest(LandscapeTest):
         package exist, if it's important.
         """
         self._add_system_package("foo")
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "bar", version="2.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
-        self.facade.remove_package_hold("bar")
+        [bar] = self.facade.get_packages_by_name("bar")
+        self.facade.remove_package_hold(bar)
         self.facade.reload_channels()
 
         self.assertEqual([], self.facade.get_package_holds())
@@ -1740,7 +1745,8 @@ class AptFacadeTest(LandscapeTest):
         self._add_system_package(
             "foo", control_fields={"Status": "deinstall ok installed"})
         self.facade.reload_channels()
-        self.facade.remove_package_hold("foo")
+        [foo] = self.facade.get_packages_by_name("foo")
+        self.facade.remove_package_hold(foo)
         self.facade.reload_channels()
 
         self.assertEqual([], self.facade.get_package_holds())

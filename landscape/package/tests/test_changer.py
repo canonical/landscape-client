@@ -1207,13 +1207,13 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         bar = self.facade.get_packages_by_name("bar")[0]
         self.facade.set_package_hold(foo)
         self.facade.reload_channels()
-        bar_id = bar.package.id
         self.store.add_task("changer", {"type": "change-package-holds",
                                         "create": [],
-                                        "delete": [bar_id],
+                                        "delete": [bar.package.id],
                                         "operation-id": 123})
 
         def assert_result(result):
+            self.facade.reload_channels()
             self.assertEqual(["foo"], [hold.name for hold in
                                        self.facade.get_package_holds()])
             self.assertIn("Queuing message with change package holds results "
@@ -1238,10 +1238,9 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         repository and a package that the facade doesn't know about at
         all.
         """
-        self._add_system_package("foo")
-        self._add_package_to_deb_dir(self.repository_dir, "bar")
-        self._add_package_to_deb_dir(self.repository_dir, "baz")
-        self.facade.reload_channels()
+        self._add_hashed_package("foo", self.repository_dir, installed=True)
+        self._add_hashed_package("bar", self.repository_dir)
+        self._add_hashed_package("baz", self.repository_dir)
         foo = self.facade.get_packages_by_name("foo")[0]
         bar = self.facade.get_packages_by_name("bar")[0]
         baz = self.facade.get_packages_by_name("baz")[0]
@@ -1263,8 +1262,7 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
                   "status": FAILED,
                   "result-text": "Package holds not added, since the " 
                   "following packages are not installed: "
-                  "%s, %s, %s" % tuple(sorted([foo.package.id,
-                                               bar.package.id,
+                  "%s, %s" % tuple(sorted([bar.package.id,
                                                baz.package.id])),
                   "result-code": 1}])
 
@@ -1280,14 +1278,17 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         and a package that isn't installed. In either case, the
         result is that the package isn't held.
         """
-        self._add_system_package("foo")
-        self._add_system_package("bar")
-        self.facade.reload_channels()
+        self._add_hashed_package("foo", self.repository_dir, installed=True)
+        self._add_hashed_package("bar", self.repository_dir, installed=True)
+        self._add_hashed_package("baz", self.repository_dir)
+        foo = self.facade.get_packages_by_name("foo")[0]
         bar = self.facade.get_packages_by_name("bar")[0]
+        baz = self.facade.get_packages_by_name("baz")[0]
         self.facade.set_package_hold(bar)
-        self.facade.reload_channels()
         self.store.add_task("changer", {"type": "change-package-holds",
-                                        "delete": ["foo", "bar", "baz"],
+                                        "delete": [foo.package.id,
+                                                   bar.package.id,
+                                                   baz.package.id],
                                         "operation-id": 123})
 
         def assert_result(result):
@@ -1300,11 +1301,11 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
                 [{"type": "operation-result",
                   "operation-id": 123,
                   "status": SUCCEEDED,
-                  "result-text": "Package holds successfully changed.",
+                  "result-text": u"Package holds successfully changed.",
                   "result-code": 0}])
 
         result = self.changer.handle_tasks()
-        return result.addCallback(assert_result)
+        return result.addCallback(assert_result) 
 
     def test_change_package_locks(self):
         """

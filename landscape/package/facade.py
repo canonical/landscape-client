@@ -173,15 +173,14 @@ class AptFacade(object):
         """
         self._set_dpkg_selections(version.package.name + " hold")
 
-    def remove_package_hold(self, name):
+    def remove_package_hold(self, version):
         """Removes a dpkg hold for a package.
 
-        @param name: The name of the package to unhold.
+        @param version: The version of the package to unhold.
         """
-        versions = self.get_packages_by_name(name)
-        if not versions or not self._is_package_held(versions[0].package):
+        if not self._is_package_held(version.package):
             return
-        self._set_dpkg_selections(name + " install")
+        self._set_dpkg_selections(version.package.name + " install")
 
     def reload_channels(self):
         """Reload the channels and update the cache."""
