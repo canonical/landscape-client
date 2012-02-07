@@ -113,11 +113,11 @@ class AptFacadeHelper(object):
                 skeleton = test_case.facade.get_package_skeleton(
                     version, with_info=False)
                 hash = skeleton.get_hash()
-                test_case.facade._pkg2hash[(version.package, version)] = hash                
+                test_case.facade._pkg2hash[(version.package, version)] = hash
                 hash_ids[hash] = version.package.id
 
             test_case.store.set_hash_ids(hash_ids)
-        
+
         return _add_hashed_package
 
 

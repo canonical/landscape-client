@@ -1247,7 +1247,7 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         self.store.add_task("changer", {"type": "change-package-holds",
                                         "create": [foo.package.id,
                                                    bar.package.id,
-                                                   baz.package.id], 
+                                                   baz.package.id],
                                         "operation-id": 123})
 
         def assert_result(result):
@@ -1260,7 +1260,7 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
                 [{"type": "operation-result",
                   "operation-id": 123,
                   "status": FAILED,
-                  "result-text": "Package holds not added, since the " 
+                  "result-text": "Package holds not added, since the "
                   "following packages are not installed: "
                   "%s, %s" % tuple(sorted([bar.package.id,
                                                baz.package.id])),
@@ -1305,7 +1305,7 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
                   "result-code": 0}])
 
         result = self.changer.handle_tasks()
-        return result.addCallback(assert_result) 
+        return result.addCallback(assert_result)
 
     def test_change_package_locks(self):
         """
