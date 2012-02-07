@@ -101,8 +101,19 @@ class AptFacadeHelper(object):
         os.utime(packages_path, (mtime, mtime))
 
     def _make_add_hashed_package(self, test_case):
+        """
+        Generate an add_hashed_package method with the correct 
+        test_case.  The state during setup seems to prevent some calls being
+        made via self, making a closure over L{set_up}'s version of the test
+        case gets around that issue.
+        """
 
         def _add_hashed_package(package_name, repository_dir, installed=False):
+            """
+            Make sure the L{AptFacade} has it's _pkg2hash and _hash2pkg setup
+            correctly and the L{PackageStore} has the same hashes.  This is
+            important when we ask for packages by id that aren't installed.
+            """
             if installed:
                 test_case._add_system_package(package_name)
             else:
