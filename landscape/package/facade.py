@@ -434,6 +434,7 @@ class AptFacade(object):
         return len(versions_to_be_changed) > 0
 
     def _get_unmet_relation_info(self, dep_relation):
+        """Return a string representation of a specific dependency relation."""
         info = dep_relation.name
         if dep_relation.version:
             info += " (%s %s)" % (dep_relation.relation, dep_relation.version)
@@ -456,6 +457,15 @@ class AptFacade(object):
         return info
 
     def _get_unmet_dependency_info(self):
+        """Get information about unmet dependencies in the cache state.
+
+        Go through all the broken packages and say which dependencies
+        haven't been satisfied.
+
+        @return: A string with dependency information like what you get
+            from apt-get.
+        """
+
         broken_packages = self._get_broken_packages()
         if not broken_packages:
             return ""
