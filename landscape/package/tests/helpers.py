@@ -102,7 +102,7 @@ class AptFacadeHelper(object):
 
     def _make_add_hashed_package(self, test_case):
         """
-        Generate an add_hashed_package method with the correct 
+        Generate an add_hashed_package method with the correct
         test_case.  The state during setup seems to prevent some calls being
         made via self, making a closure over L{set_up}'s version of the test
         case gets around that issue.
