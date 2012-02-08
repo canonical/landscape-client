@@ -22,10 +22,19 @@ class PingClient(object):
     @param url: The URL to ask the question to.
     @type identity: L{landscape.broker.registration.Identity}
     @param identity: This client's identity.
+    @param get_page: The method to use to retrieve content.  If not specified,
+        landscape.lib.fetch.fetch is used.
+    @param server_autodiscovery: Server autodiscovery is performed if True,
+        otherwise server autodiscover is not done.
+    @param autodiscover_srv_query_string: If server autodiscovery is done, this
+        string will be sent to the DNS server when making a SRV query.
+    @param autodiscover_a_query_string: If server autodiscovery is done, this
+        string will be sent to the DNS server when making an A query.
     """
 
     def __init__(self, reactor, url, identity, get_page=None,
-                 server_autodiscover=False):
+                 server_autodiscover=False, autodiscover_srv_query_string="",
+                 autodiscover_a_query_string=""):
         if get_page is None:
             get_page = fetch
         self._reactor = reactor
@@ -33,6 +42,8 @@ class PingClient(object):
         self.get_page = get_page
         self.url = url
         self._server_autodiscover = server_autodiscover
+        self._autodiscover_srv_query_string = autodiscover_srv_query_string
+        self._autodiscover_a_query_string = autodiscover_a_query_string
 
     def ping(self):
         """Ask the question.
@@ -72,7 +83,9 @@ class PingClient(object):
             return defer.succeed(False)
 
         if self._server_autodiscover:
-            lookup_deferred = discover_server()
+            lookup_deferred = discover_server(
+                None, self._autodiscover_srv_query_string,
+                self._autodiscover_a_query_string)
             lookup_deferred.addCallback(handle_result)
             lookup_deferred.addCallback(do_rest)
             return lookup_deferred
@@ -103,7 +116,8 @@ class Pinger(object):
 
     def __init__(self, reactor, url, identity, exchanger,
                  interval=30, ping_client_factory=PingClient,
-                 server_autodiscover=False):
+                 server_autodiscover=False, autodiscover_srv_query_string="",
+                 autodiscover_a_query_string=""):
         self._url = url
         self._interval = interval
         self._identity = identity
@@ -113,6 +127,8 @@ class Pinger(object):
         self._ping_client = None
         self.ping_client_factory = ping_client_factory
         self._server_autodiscover = server_autodiscover
+        self._autodiscover_srv_query_string = autodiscover_srv_query_string
+        self._autodiscover_a_query_string = autodiscover_a_query_string
         reactor.call_on("message", self._handle_set_intervals)
 
     def get_url(self):
@@ -130,7 +146,9 @@ class Pinger(object):
         """Start pinging."""
         self._ping_client = self.ping_client_factory(
             self._reactor, self._url, self._identity,
-            server_autodiscover=self._server_autodiscover)
+            server_autodiscover=self._server_autodiscover,
+            autodiscover_srv_query_string=self._autodiscover_srv_query_string,
+            autodiscover_a_query_string=self._autodiscover_a_query_string)
         self._call_id = self._reactor.call_every(self._interval, self.ping)
 
     def ping(self):

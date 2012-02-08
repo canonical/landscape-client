@@ -45,6 +45,9 @@ class BrokerConfiguration(Configuration):
               - C{otp}
               - C{record}
               - C{provisioning_otp}
+              - C{server_autodiscover}
+              - C{autodiscover_srv_query_string}
+              - C{autodiscover_a_query_string}
         """
         parser = super(BrokerConfiguration, self).make_parser()
 
@@ -91,6 +94,13 @@ class BrokerConfiguration(Configuration):
                           help="The OTP to use for a provisioned machine.")
         parser.add_option("--server-autodiscover", type="string",
                           default="false", help="Enable server autodiscovery.")
+        parser.add_option("--autodiscover-srv-query-string", type="string",
+                          default="_tcp._landscape.localdomain",
+                          help="autodiscovery string for DNS SRV queries")
+        parser.add_option("--autodiscover-a-query-string", type="string",
+                          default="landscape.localdomain",
+                          help="autodiscovery string for DNS A queries")
+
         return parser
 
     @property
