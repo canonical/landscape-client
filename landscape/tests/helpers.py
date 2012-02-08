@@ -74,8 +74,8 @@ class MessageTestCase(unittest.TestCase):
                                            pprint.pformat(obtained)))
 
     def assertMessages(self, obtained, expected):
-        self.assertEquals(type(obtained), list)
-        self.assertEquals(type(expected), list)
+        self.assertEqual(type(obtained), list)
+        self.assertEqual(type(expected), list)
         for obtained_message, expected_message in zip(obtained, expected):
             self.assertMessage(obtained_message, expected_message)
         obtained_len = len(obtained)
@@ -121,13 +121,13 @@ class LandscapeTest(MessageTestCase, MockerTestCase,
         Assert that the given C{deferred} results in the given C{result}.
         """
         self.assertTrue(isinstance(deferred, Deferred))
-        return deferred.addCallback(self.assertEquals, result)
+        return deferred.addCallback(self.assertEqual, result)
 
     def assertFileContent(self, filename, expected_content):
         fd = open(filename)
         actual_content = fd.read()
         fd.close()
-        self.assertEquals(expected_content, actual_content)
+        self.assertEqual(expected_content, actual_content)
 
     def makePersistFile(self, *args, **kwargs):
         """Return a temporary filename to be used by a L{Persist} object.

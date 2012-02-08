@@ -94,20 +94,20 @@ class MechanismTest(LandscapeTest):
         """
         Test that we can get Tags from the mechanism.
         """
-        self.assertEquals("a_tag", self.mechanism.get("tags"))
+        self.assertEqual("a_tag", self.mechanism.get("tags"))
 
     def test_set_tags(self):
         """
         Test that we can set Tags via the mechanism.
         """
         self.mechanism.set("tags", "bar")
-        self.assertEquals("bar", self.mechanism.get("tags"))
+        self.assertEqual("bar", self.mechanism.get("tags"))
 
     def test_get_url(self):
         """
         Test that we can get URL from the mechanism.
         """
-        self.assertEquals("https://landscape.canonical.com/message-system",
+        self.assertEqual("https://landscape.canonical.com/message-system",
                           self.mechanism.get("url"))
 
     def test_set_url(self):
@@ -115,13 +115,13 @@ class MechanismTest(LandscapeTest):
         Test that we can set the URL via the mechanisms.
         """
         self.mechanism.set("url", "bar")
-        self.assertEquals(self.mechanism.get("url"), "bar")
+        self.assertEqual(self.mechanism.get("url"), "bar")
 
     def test_get_ping_url(self):
         """
         Test that we can get the Ping URL from the mechanism.
         """
-        self.assertEquals("http://landscape.canonical.com/ping",
+        self.assertEqual("http://landscape.canonical.com/ping",
                           self.mechanism.get("ping_url"))
 
     def test_set_ping_url(self):
@@ -129,33 +129,33 @@ class MechanismTest(LandscapeTest):
         Test that we can set the Ping URL via the mechanism.
         """
         self.mechanism.set("ping_url", "bar")
-        self.assertEquals("bar", self.mechanism.get("ping_url"))
+        self.assertEqual("bar", self.mechanism.get("ping_url"))
 
     def test_get_registration_password(self):
         """
         Test that we can get the registration password from the mechanism.
         """
-        self.assertEquals("boink", self.mechanism.get("registration_password"))
+        self.assertEqual("boink", self.mechanism.get("registration_password"))
 
     def test_set_registration_password(self):
         """
         Test that we can set the registration password via the mechanism.
         """
         self.mechanism.set("registration_password", "bar")
-        self.assertEquals("bar", self.mechanism.get("registration_password"))
+        self.assertEqual("bar", self.mechanism.get("registration_password"))
 
     def test_get_computer_title(self):
         """
         Test that we can get the computer title from the mechanism.
         """
-        self.assertEquals("baz", self.mechanism.get("computer_title"))
+        self.assertEqual("baz", self.mechanism.get("computer_title"))
 
     def test_set_computer_title(self):
         """
         Test that we can set the computer title via the mechanism.
         """
         self.mechanism.set("computer_title", "bar")
-        self.assertEquals("bar", self.mechanism.get("computer_title"))
+        self.assertEqual("bar", self.mechanism.get("computer_title"))
 
     def test_get_https_proxy(self):
         """

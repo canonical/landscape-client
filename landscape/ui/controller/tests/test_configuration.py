@@ -103,9 +103,9 @@ class ConfigControllerTest(LandscapeTest):
         Test that we can set the L{registration_password} property.
         """
         self.controller.load()
-        self.assertEquals(self.controller.registration_password, "bar")
+        self.assertEqual(self.controller.registration_password, "bar")
         self.controller.registration_password = "nucker"
-        self.assertEquals(self.controller.registration_password, "nucker")
+        self.assertEqual(self.controller.registration_password, "nucker")
 
     def test_revert(self):
         """

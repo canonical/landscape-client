@@ -52,7 +52,7 @@ class RegistrationProxyTest(LandscapeTest):
         Test that the proxy calls through to the underlying interface and
         correctly performs registration.
         """
-        self.assertEquals((True, "Connected\n"), self.proxy.register("foo"))
+        self.assertEqual((True, "Connected\n"), self.proxy.register("foo"))
 
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     try:
