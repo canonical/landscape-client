@@ -471,7 +471,13 @@ class AptFacade(object):
             return ""
         all_info = ["The following packages have unmet dependencies:"]
         for package in sorted(broken_packages, key=attrgetter("name")):
-            for dep in package.candidate.dependencies:
+            raw_dependencies = (
+                package.candidate._cand.depends_list.get("PreDepends", []) +
+                package.candidate._cand.depends_list.get("Depends", []))
+            dependencies = zip(
+                package.candidate.dependencies, raw_dependencies)
+            for dep, raw_dep in dependencies:
+                dep.raw_dep = raw_dep
                 relation_type = "Depends"
                 relation_infos = []
                 for dep_relation in dep.or_dependencies:
