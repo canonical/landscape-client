@@ -833,6 +833,9 @@ class AptFacadeTest(LandscapeTest):
 
     def test_perform_changes_install_broken_includes_error_info(self):
         """
+        If some packages are broken and can't be installed, information
+        about the unment dependencies are included in the error message
+        that C{perform_changes()} will raise.
         """
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(
@@ -867,6 +870,8 @@ class AptFacadeTest(LandscapeTest):
 
     def test_get_unmet_dependency_info_no_broken(self):
         """
+        If there are no broken packages, C{_get_unmet_dependency_info}
+        returns no dependency information.
         """
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(
@@ -878,6 +883,9 @@ class AptFacadeTest(LandscapeTest):
 
     def test_get_unmet_dependency_info_depend(self):
         """
+        If a C{Depends} dependency is unmet,
+        C{_get_unmet_dependency_info} returns information about it,
+        including the dependency type.
         """
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(
@@ -895,6 +903,9 @@ class AptFacadeTest(LandscapeTest):
 
     def test_get_unmet_dependency_info_predepend(self):
         """
+        If a C{Pre-Depends} dependency is unmet,
+        C{_get_unmet_dependency_info} returns information about it,
+        including the dependency type.
         """
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(
@@ -912,6 +923,9 @@ class AptFacadeTest(LandscapeTest):
 
     def test_get_unmet_dependency_info_with_version(self):
         """
+        If an unmet dependency includes a version relation, it's
+        included in the error information from
+        C{_get_unmet_dependency_info}.
         """
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(
@@ -929,6 +943,10 @@ class AptFacadeTest(LandscapeTest):
 
     def test_get_unmet_dependency_info_with_dep_install(self):
         """
+        If an unmet dependency is being installed (but still doesn't
+        meet the vesion requirements), the version being installed is
+        included in the error information from
+        C{_get_unmet_dependency_info}.
         """
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "bar", version="0.5")
@@ -947,8 +965,12 @@ class AptFacadeTest(LandscapeTest):
              "  foo: Depends: bar (>= 1.0) but 0.5 is to be installed"],
             self.facade._get_unmet_dependency_info().splitlines())
 
-    def test_get_unmet_dependency_info_with_dep_installed(self):
+    def test_get_unmet_dependency_info_with_dep_already_installed(self):
         """
+        If an unmet dependency is already installed (but still doesn't
+        meet the vesion requirements), the version that is installed is
+        included in the error information from
+        C{_get_unmet_dependency_info}.
         """
         deb_dir = self.makeDir()
         self._add_system_package("bar", version="1.0")
@@ -970,6 +992,10 @@ class AptFacadeTest(LandscapeTest):
 
     def test_get_unmet_dependency_info_with_dep_upgraded(self):
         """
+        If an unmet dependency is being upgraded (but still doesn't meet
+        the vesion requirements), the version that it is upgraded to is
+        included in the error information from
+        C{_get_unmet_dependency_info}.
         """
         deb_dir = self.makeDir()
         self._add_system_package("bar", version="1.0")
@@ -992,6 +1018,10 @@ class AptFacadeTest(LandscapeTest):
 
     def test_get_unmet_dependency_info_with_dep_downgraded(self):
         """
+        If an unmet dependency is being downgraded (but still doesn't meet
+        the vesion requirements), the version that it is downgraded to is
+        included in the error information from
+        C{_get_unmet_dependency_info}.
         """
         deb_dir = self.makeDir()
         self._add_system_package("bar", version="2.0")
@@ -1015,6 +1045,9 @@ class AptFacadeTest(LandscapeTest):
 
     def test_get_unmet_dependency_info_with_or_deps(self):
         """
+        If an unmet dependency includes an or relation, all of the
+        possible options are included in the error information from
+        C{_get_unmet_dependency_info}.
         """
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(
@@ -1033,6 +1066,9 @@ class AptFacadeTest(LandscapeTest):
 
     def test_get_unmet_dependency_info_only_unmet(self):
         """
+        If a broken packages have some dependencies that are being
+        fulfilled, those aren't included in the error information from
+        C{_get_unmet_dependency_info}.
         """
         deb_dir = self.makeDir()
         self._add_system_package("there1")
@@ -1053,6 +1089,8 @@ class AptFacadeTest(LandscapeTest):
 
     def test_get_unmet_dependency_info_multiple_broken(self):
         """
+        If multiple packages are broken, all  broken packages are listed
+        in the error information from C{_get_unmet_dependency_info}.
         """
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(
