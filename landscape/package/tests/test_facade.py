@@ -1013,26 +1013,6 @@ class AptFacadeTest(LandscapeTest):
              "  foo: Depends: bar (>= 3.0) but 1.0 is to be installed"],
             self.facade._get_unmet_dependency_info().splitlines())
 
-    def test_get_unmet_dependency_info_with_dep_removed(self):
-        """
-        """
-        deb_dir = self.makeDir()
-        self._add_system_package("bar")
-        self._add_package_to_deb_dir(
-            deb_dir, "foo", control_fields={"Depends": "bar"})
-        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
-        self.facade.reload_channels()
-        [foo] = self.facade.get_packages_by_name("foo")
-        [bar] = self.facade.get_packages_by_name("bar")
-        foo.package.mark_install(auto_fix=False)
-        bar.package.mark_delete(auto_fix=False)
-        self.assertEqual(
-            set([foo.package]), self.facade._get_broken_packages())
-        self.assertEqual(
-            ["The following packages have unmet dependencies:",
-             "  foo: Depends: bar but is not going to be installed"],
-            self.facade._get_unmet_dependency_info().splitlines())
-
     def test_get_unmet_dependency_info_with_or_deps(self):
         """
         """
@@ -1049,6 +1029,26 @@ class AptFacadeTest(LandscapeTest):
             ["The following packages have unmet dependencies:",
              "  foo: Depends: bar but is not installable or",
              "                baz (>= 1.0) but is not installable"],
+            self.facade._get_unmet_dependency_info().splitlines())
+
+    def test_get_unmet_dependency_info_only_unmet(self):
+        """
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package("there1")
+        self._add_system_package("there2")
+        self._add_package_to_deb_dir(
+            deb_dir, "foo",
+            control_fields={"Depends": "there1, missing1, there2 | missing2"})
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        foo.package.mark_install(auto_fix=False)
+        self.assertEqual(
+            set([foo.package]), self.facade._get_broken_packages())
+        self.assertEqual(
+            ["The following packages have unmet dependencies:",
+             "  foo: Depends: missing1 but is not installable"],
             self.facade._get_unmet_dependency_info().splitlines())
 
     def test_get_unmet_dependency_info_multiple_broken(self):

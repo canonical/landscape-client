@@ -477,7 +477,8 @@ class AptFacade(object):
             dependencies = zip(
                 package.candidate.dependencies, raw_dependencies)
             for dep, raw_dep in dependencies:
-                dep.raw_dep = raw_dep
+                if any(or_dep.all_targets() for or_dep in raw_dep):
+                    continue
                 relation_type = "Depends"
                 relation_infos = []
                 for dep_relation in dep.or_dependencies:
