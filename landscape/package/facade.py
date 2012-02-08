@@ -441,18 +441,11 @@ class AptFacade(object):
         reason = " but is not installable"
         if self._cache.has_key(dep_relation.name):
             dep_package = self._cache[dep_relation.name]
-            if dep_package.installed and not dep_package.marked_delete:
-                version = dep_package.installed.version
-                if (dep_package.marked_upgrade or
-                        dep_package.marked_downgrade):
-                    version = dep_package.candidate.version
+            if dep_package.installed or dep_package.marked_install:
+                version = dep_package.candidate.version
+                if dep_package not in self._cache.get_changes():
+                    version = dep_package.installed.version
                 reason = " but %s is to be installed" % version
-            elif dep_package.marked_delete:
-                reason = " but is not going to be installed"
-            else:
-                if dep_package.marked_install:
-                    reason = " but %s is to be installed" % (
-                    dep_package.candidate.version)
         info += reason
         return info
 
