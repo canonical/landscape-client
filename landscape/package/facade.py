@@ -470,8 +470,15 @@ class AptFacade(object):
                     dep_type, [])
                 is_negative_dep = dep_type in ["Conflicts"]
                 for dependency in dependencies:
-                    has_targets = any(
-                        or_dep.all_targets() for or_dep in dependency)
+                    has_targets = False
+                    for or_dep in dependency:
+                        for target in or_dep.all_targets():
+                            if (target.parent_pkg.current_state ==
+                                    apt_pkg.CURSTATE_INSTALLED or
+                                self._cache._depcache.marked_install(
+                                    target.parent_pkg)):
+                                has_targets = True
+                                break
                     if is_negative_dep != has_targets:
                         continue
                     relation_infos = []
