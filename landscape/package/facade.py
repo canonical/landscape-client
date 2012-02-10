@@ -456,14 +456,15 @@ class AptFacade(object):
         For positive dependencies (Pre-Depends, Depends) it means that
         one of its target is going to be installed. For negative
         dependencies (Conflicts, Breaks), it means that none of its
-        target is going to be installed.
+        target are going to be installed.
         """
         is_positive = dep_type not in ["Breaks", "Conflicts"]
         for or_dep in dependency:
             for target in or_dep.all_targets():
-                if (target.parent_pkg.current_state ==
-                        apt_pkg.CURSTATE_INSTALLED or
-                    self._cache._depcache.marked_install(
+                if ((target.parent_pkg.current_state ==
+                        apt_pkg.CURSTATE_INSTALLED
+                     or self._cache._depcache.marked_install(target.parent_pkg))
+                    and not self._cache._depcache.marked_delete(
                         target.parent_pkg)):
                     return is_positive
         return not is_positive

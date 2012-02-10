@@ -1136,6 +1136,34 @@ class AptFacadeTest(LandscapeTest):
              "  bar: Breaks: foo but 1.0 is to be installed"],
             self.facade._get_unmet_dependency_info().splitlines())
 
+    def test_get_unmet_dependency_info_with_conflicts_marked_delete(self):
+        """
+        If a broken package conflicts or breaks a package that isn't
+        installed or marked for installation, information about that
+        conflict isn't reported by C{_get_unmet_dependency_info}.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(
+            deb_dir, "foo", control_fields={"Depends": "bar"})
+        self._add_package_to_deb_dir(
+            deb_dir, "bar",
+            control_fields={"Conflicts": "foo, baz", "Breaks": "foo, baz"})
+        self._add_system_package("baz")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        [bar] = self.facade.get_packages_by_name("bar")
+        [baz] = self.facade.get_packages_by_name("baz")
+        baz.package.mark_delete(auto_fix=False)
+        foo.package.mark_install(auto_fix=False)
+        self.assertEqual(
+            set([bar.package]), self.facade._get_broken_packages())
+        self.assertEqual(
+            ["The following packages have unmet dependencies:",
+             "  bar: Conflicts: foo but 1.0 is to be installed",
+             "  bar: Breaks: foo but 1.0 is to be installed"],
+            self.facade._get_unmet_dependency_info().splitlines())
+
     def test_get_unmet_dependency_info_only_unmet(self):
         """
         If a broken packages have some dependencies that are being
