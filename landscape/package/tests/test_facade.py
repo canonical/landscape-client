@@ -1138,9 +1138,9 @@ class AptFacadeTest(LandscapeTest):
 
     def test_get_unmet_dependency_info_with_conflicts_marked_delete(self):
         """
-        If a broken package conflicts or breaks a package that isn't
-        installed or marked for installation, information about that
-        conflict isn't reported by C{_get_unmet_dependency_info}.
+        If a broken package conflicts or breaks an installed package
+        that is marekd for removal, information about that conflict
+        isn't reported by C{_get_unmet_dependency_info}.
         """
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(
