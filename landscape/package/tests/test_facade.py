@@ -834,7 +834,7 @@ class AptFacadeTest(LandscapeTest):
     def test_perform_changes_install_broken_includes_error_info(self):
         """
         If some packages are broken and can't be installed, information
-        about the unment dependencies are included in the error message
+        about the unmet dependencies is included in the error message
         that C{perform_changes()} will raise.
         """
         deb_dir = self.makeDir()
@@ -1089,7 +1089,7 @@ class AptFacadeTest(LandscapeTest):
 
     def test_get_unmet_dependency_info_multiple_broken(self):
         """
-        If multiple packages are broken, all  broken packages are listed
+        If multiple packages are broken, all broken packages are listed
         in the error information from C{_get_unmet_dependency_info}.
         """
         deb_dir = self.makeDir()
