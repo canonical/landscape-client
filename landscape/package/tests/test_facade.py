@@ -831,6 +831,287 @@ class AptFacadeTest(LandscapeTest):
              "Stderr output", "Stdout output again"],
             output)
 
+    def test_perform_changes_install_broken_includes_error_info(self):
+        """
+        If some packages are broken and can't be installed, information
+        about the unmet dependencies is included in the error message
+        that C{perform_changes()} will raise.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(
+            deb_dir, "foo",
+            control_fields={"Depends": "missing | lost (>= 1.0)",
+                            "Pre-Depends": "pre-missing | pre-lost"})
+        self._add_package_to_deb_dir(
+            deb_dir, "bar",
+            control_fields={"Depends": "also-missing | also-lost (>= 1.0)",
+                            "Pre-Depends": "also-pre-missing | also-pre-lost"})
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        [bar] = self.facade.get_packages_by_name("bar")
+        self.facade.mark_install(foo)
+        self.facade.mark_install(bar)
+        self.facade._cache.commit = lambda fetch_progress: None
+        error = self.assertRaises(
+            TransactionError, self.facade.perform_changes)
+        self.assertIn("you have held broken packages", error.args[0])
+        self.assertEqual(
+            ["The following packages have unmet dependencies:",
+             "  bar: PreDepends: also-pre-missing but is not installable or",
+             "                   also-pre-lost but is not installable",
+             "  bar: Depends: also-missing but is not installable or",
+             "                also-lost (>= 1.0) but is not installable",
+             "  foo: PreDepends: pre-missing but is not installable or",
+             "                   pre-lost but is not installable",
+             "  foo: Depends: missing but is not installable or",
+             "                lost (>= 1.0) but is not installable"],
+            error.args[0].splitlines()[-9:])
+
+    def test_get_unmet_dependency_info_no_broken(self):
+        """
+        If there are no broken packages, C{_get_unmet_dependency_info}
+        returns no dependency information.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(
+            deb_dir, "foo", control_fields={"Depends": "bar"})
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        self.assertEqual(set(), self.facade._get_broken_packages())
+        self.assertEqual("", self.facade._get_unmet_dependency_info())
+
+    def test_get_unmet_dependency_info_depend(self):
+        """
+        If a C{Depends} dependency is unmet,
+        C{_get_unmet_dependency_info} returns information about it,
+        including the dependency type.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(
+            deb_dir, "foo", control_fields={"Depends": "bar"})
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        foo.package.mark_install(auto_fix=False)
+        self.assertEqual(
+            set([foo.package]), self.facade._get_broken_packages())
+        self.assertEqual(
+            ["The following packages have unmet dependencies:",
+             "  foo: Depends: bar but is not installable"],
+            self.facade._get_unmet_dependency_info().splitlines())
+
+    def test_get_unmet_dependency_info_predepend(self):
+        """
+        If a C{Pre-Depends} dependency is unmet,
+        C{_get_unmet_dependency_info} returns information about it,
+        including the dependency type.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(
+            deb_dir, "foo", control_fields={"Pre-Depends": "bar"})
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        foo.package.mark_install(auto_fix=False)
+        self.assertEqual(
+            set([foo.package]), self.facade._get_broken_packages())
+        self.assertEqual(
+            ["The following packages have unmet dependencies:",
+             "  foo: PreDepends: bar but is not installable"],
+            self.facade._get_unmet_dependency_info().splitlines())
+
+    def test_get_unmet_dependency_info_with_version(self):
+        """
+        If an unmet dependency includes a version relation, it's
+        included in the error information from
+        C{_get_unmet_dependency_info}.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(
+            deb_dir, "foo", control_fields={"Depends": "bar (>= 1.0)"})
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        foo.package.mark_install(auto_fix=False)
+        self.assertEqual(
+            set([foo.package]), self.facade._get_broken_packages())
+        self.assertEqual(
+            ["The following packages have unmet dependencies:",
+             "  foo: Depends: bar (>= 1.0) but is not installable"],
+            self.facade._get_unmet_dependency_info().splitlines())
+
+    def test_get_unmet_dependency_info_with_dep_install(self):
+        """
+        If an unmet dependency is being installed (but still doesn't
+        meet the vesion requirements), the version being installed is
+        included in the error information from
+        C{_get_unmet_dependency_info}.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "bar", version="0.5")
+        self._add_package_to_deb_dir(
+            deb_dir, "foo", control_fields={"Depends": "bar (>= 1.0)"})
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        [bar] = self.facade.get_packages_by_name("bar")
+        foo.package.mark_install(auto_fix=False)
+        bar.package.mark_install(auto_fix=False)
+        self.assertEqual(
+            set([foo.package]), self.facade._get_broken_packages())
+        self.assertEqual(
+            ["The following packages have unmet dependencies:",
+             "  foo: Depends: bar (>= 1.0) but 0.5 is to be installed"],
+            self.facade._get_unmet_dependency_info().splitlines())
+
+    def test_get_unmet_dependency_info_with_dep_already_installed(self):
+        """
+        If an unmet dependency is already installed (but still doesn't
+        meet the vesion requirements), the version that is installed is
+        included in the error information from
+        C{_get_unmet_dependency_info}.
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package("bar", version="1.0")
+        self._add_package_to_deb_dir(
+            deb_dir, "foo", control_fields={"Depends": "bar (>= 3.0)"})
+        self._add_package_to_deb_dir(deb_dir, "bar", version="2.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        [bar1, bar2] = sorted(self.facade.get_packages_by_name("bar"))
+        self.assertEqual(bar2, bar1.package.candidate)
+        foo.package.mark_install(auto_fix=False)
+        self.assertEqual(
+            set([foo.package]), self.facade._get_broken_packages())
+        self.assertEqual(
+            ["The following packages have unmet dependencies:",
+             "  foo: Depends: bar (>= 3.0) but 1.0 is to be installed"],
+            self.facade._get_unmet_dependency_info().splitlines())
+
+    def test_get_unmet_dependency_info_with_dep_upgraded(self):
+        """
+        If an unmet dependency is being upgraded (but still doesn't meet
+        the vesion requirements), the version that it is upgraded to is
+        included in the error information from
+        C{_get_unmet_dependency_info}.
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package("bar", version="1.0")
+        self._add_package_to_deb_dir(
+            deb_dir, "foo", control_fields={"Depends": "bar (>= 3.0)"})
+        self._add_package_to_deb_dir(deb_dir, "bar", version="2.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        [bar1, bar2] = sorted(self.facade.get_packages_by_name("bar"))
+        self.assertEqual(bar2, bar1.package.candidate)
+        foo.package.mark_install(auto_fix=False)
+        bar1.package.mark_install(auto_fix=False)
+        self.assertEqual(
+            set([foo.package]), self.facade._get_broken_packages())
+        self.assertEqual(
+            ["The following packages have unmet dependencies:",
+             "  foo: Depends: bar (>= 3.0) but 2.0 is to be installed"],
+            self.facade._get_unmet_dependency_info().splitlines())
+
+    def test_get_unmet_dependency_info_with_dep_downgraded(self):
+        """
+        If an unmet dependency is being downgraded (but still doesn't meet
+        the vesion requirements), the version that it is downgraded to is
+        included in the error information from
+        C{_get_unmet_dependency_info}.
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package("bar", version="2.0")
+        self._add_package_to_deb_dir(
+            deb_dir, "foo", control_fields={"Depends": "bar (>= 3.0)"})
+        self._add_package_to_deb_dir(deb_dir, "bar", version="1.0")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        [bar1, bar2] = sorted(self.facade.get_packages_by_name("bar"))
+        self.assertEqual(bar2, bar1.package.candidate)
+        bar1.package.candidate = bar1
+        foo.package.mark_install(auto_fix=False)
+        bar1.package.mark_install(auto_fix=False)
+        self.assertEqual(
+            set([foo.package]), self.facade._get_broken_packages())
+        self.assertEqual(
+            ["The following packages have unmet dependencies:",
+             "  foo: Depends: bar (>= 3.0) but 1.0 is to be installed"],
+            self.facade._get_unmet_dependency_info().splitlines())
+
+    def test_get_unmet_dependency_info_with_or_deps(self):
+        """
+        If an unmet dependency includes an or relation, all of the
+        possible options are included in the error information from
+        C{_get_unmet_dependency_info}.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(
+            deb_dir, "foo", control_fields={"Depends": "bar | baz (>= 1.0)"})
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        foo.package.mark_install(auto_fix=False)
+        self.assertEqual(
+            set([foo.package]), self.facade._get_broken_packages())
+        self.assertEqual(
+            ["The following packages have unmet dependencies:",
+             "  foo: Depends: bar but is not installable or",
+             "                baz (>= 1.0) but is not installable"],
+            self.facade._get_unmet_dependency_info().splitlines())
+
+    def test_get_unmet_dependency_info_only_unmet(self):
+        """
+        If a broken packages have some dependencies that are being
+        fulfilled, those aren't included in the error information from
+        C{_get_unmet_dependency_info}.
+        """
+        deb_dir = self.makeDir()
+        self._add_system_package("there1")
+        self._add_system_package("there2")
+        self._add_package_to_deb_dir(
+            deb_dir, "foo",
+            control_fields={"Depends": "there1, missing1, there2 | missing2"})
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        foo.package.mark_install(auto_fix=False)
+        self.assertEqual(
+            set([foo.package]), self.facade._get_broken_packages())
+        self.assertEqual(
+            ["The following packages have unmet dependencies:",
+             "  foo: Depends: missing1 but is not installable"],
+            self.facade._get_unmet_dependency_info().splitlines())
+
+    def test_get_unmet_dependency_info_multiple_broken(self):
+        """
+        If multiple packages are broken, all broken packages are listed
+        in the error information from C{_get_unmet_dependency_info}.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(
+            deb_dir, "foo", control_fields={"Depends": "bar"})
+        self._add_package_to_deb_dir(
+            deb_dir, "another-foo", control_fields={"Depends": "another-bar"})
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        [another_foo] = self.facade.get_packages_by_name("another-foo")
+        foo.package.mark_install(auto_fix=False)
+        another_foo.package.mark_install(auto_fix=False)
+        self.assertEqual(
+            set([foo.package, another_foo.package]),
+            self.facade._get_broken_packages())
+        self.assertEqual(
+            ["The following packages have unmet dependencies:",
+             "  another-foo: Depends: another-bar but is not installable",
+             "  foo: Depends: bar but is not installable"],
+            self.facade._get_unmet_dependency_info().splitlines())
+
     def _mock_output_restore(self):
         """
         Mock methods to ensure that stdout and stderr are restored,

@@ -3,6 +3,7 @@ import os
 import subprocess
 import tempfile
 from cStringIO import StringIO
+from operator import attrgetter
 
 has_smart = True
 try:
@@ -432,6 +433,57 @@ class AptFacade(object):
                 [version for package, version in dependencies])
         return len(versions_to_be_changed) > 0
 
+    def _get_unmet_relation_info(self, dep_relation):
+        """Return a string representation of a specific dependency relation."""
+        info = dep_relation.name
+        if dep_relation.version:
+            info += " (%s %s)" % (dep_relation.relation, dep_relation.version)
+        reason = " but is not installable"
+        if dep_relation.name in self._cache:
+            dep_package = self._cache[dep_relation.name]
+            if dep_package.installed or dep_package.marked_install:
+                version = dep_package.candidate.version
+                if dep_package not in self._cache.get_changes():
+                    version = dep_package.installed.version
+                reason = " but %s is to be installed" % version
+        info += reason
+        return info
+
+    def _get_unmet_dependency_info(self):
+        """Get information about unmet dependencies in the cache state.
+
+        Go through all the broken packages and say which dependencies
+        haven't been satisfied.
+
+        @return: A string with dependency information like what you get
+            from apt-get.
+        """
+
+        broken_packages = self._get_broken_packages()
+        if not broken_packages:
+            return ""
+        all_info = ["The following packages have unmet dependencies:"]
+        for package in sorted(broken_packages, key=attrgetter("name")):
+            raw_dependencies = (
+                package.candidate._cand.depends_list.get("PreDepends", []) +
+                package.candidate._cand.depends_list.get("Depends", []))
+            dependencies = zip(
+                package.candidate.dependencies, raw_dependencies)
+            for dep, raw_dep in dependencies:
+                if any(or_dep.all_targets() for or_dep in raw_dep):
+                    continue
+                relation_type = "Depends"
+                relation_infos = []
+                for dep_relation in dep.or_dependencies:
+                    if dep_relation.pre_depend:
+                        relation_type = "PreDepends"
+                    relation_infos.append(
+                        self._get_unmet_relation_info(dep_relation))
+                info = "  %s: %s: " % (package.name, relation_type)
+                or_divider = " or\n" + " " * len(info)
+                all_info.append(info + or_divider.join(relation_infos))
+        return "\n".join(all_info)
+
     def perform_changes(self):
         """Perform the pending package operations."""
         held_package_names = set()
@@ -485,7 +537,8 @@ class AptFacade(object):
             try:
                 fixer.resolve(True)
             except SystemError, error:
-                raise TransactionError(error.args[0])
+                raise TransactionError(
+                    error.args[0] + "\n" + self._get_unmet_dependency_info())
         if not self._check_changes(version_changes):
             return None
         fetch_output = StringIO()
