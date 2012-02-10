@@ -439,7 +439,7 @@ class AptFacade(object):
         if dep_relation.version:
             info += " (%s %s)" % (dep_relation.relation, dep_relation.version)
         reason = " but is not installable"
-        if self._cache.has_key(dep_relation.name):
+        if dep_relation.name in self._cache:
             dep_package = self._cache[dep_relation.name]
             if dep_package.installed or dep_package.marked_install:
                 version = dep_package.candidate.version
@@ -480,7 +480,7 @@ class AptFacade(object):
                     relation_infos.append(
                         self._get_unmet_relation_info(dep_relation))
                 info = "  %s: %s: " % (package.name, relation_type)
-                or_divider = " or\n" + " "*len(info)
+                or_divider = " or\n" + " " * len(info)
                 all_info.append(info + or_divider.join(relation_infos))
         return "\n".join(all_info)
 
