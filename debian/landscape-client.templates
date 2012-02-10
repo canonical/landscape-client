@@ -100,6 +100,7 @@ _Description: DNS SRV query string for discovering the server name:
 
 Template: landscape-client/autodiscover_a_query_string
 Type: string
+Default: landscape.localdomain
 _Description: DNS A name query string for discovering the server name:
  When server autodiscovery is enabled, this string is used to make a
  DNS A name query to find the location of the Landscape server.  This
