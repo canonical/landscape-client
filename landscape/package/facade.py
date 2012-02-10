@@ -459,13 +459,13 @@ class AptFacade(object):
         target are going to be installed.
         """
         is_positive = dep_type not in ["Breaks", "Conflicts"]
+        depcache = self._cache._depcache_
         for or_dep in dependency:
             for target in or_dep.all_targets():
-                if ((target.parent_pkg.current_state ==
-                        apt_pkg.CURSTATE_INSTALLED
-                     or self._cache._depcache.marked_install(target.parent_pkg))
-                    and not self._cache._depcache.marked_delete(
-                        target.parent_pkg)):
+                package = target.parent_pkg
+                if ((package.current_state == apt_pkg.CURSTATE_INSTALLED
+                     or depcache.marked_install(package))
+                    and not depcache.marked_delete(package)):
                     return is_positive
         return not is_positive
 
