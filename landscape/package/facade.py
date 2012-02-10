@@ -450,21 +450,23 @@ class AptFacade(object):
         info += reason
         return info
 
-    def _has_dependency_targets(self, dependency):
-        """Return whether a dependency is or is going to be installed.
+    def _is_dependency_satisfied(self, dependency, dep_type):
+        """Return whether a dependency is satisfied.
 
-        A dependency can either one that needs to be installed
-        (Pre-Depends, Depends), or one that can't be installed (Breaks,
-        Conflicts)
+        For positive dependencies (Pre-Depends, Depends) it means that
+        one of its target is going to be installed. For negative
+        dependencies (Conflicts, Breaks), it means that none of its
+        target is going to be installed.
         """
+        is_positive = dep_type not in ["Breaks", "Conflicts"]
         for or_dep in dependency:
             for target in or_dep.all_targets():
                 if (target.parent_pkg.current_state ==
                         apt_pkg.CURSTATE_INSTALLED or
                     self._cache._depcache.marked_install(
                         target.parent_pkg)):
-                    return True
-        return False
+                    return is_positive
+        return not is_positive
 
     def _get_unmet_dependency_info(self):
         """Get information about unmet dependencies in the cache state.
@@ -484,10 +486,8 @@ class AptFacade(object):
             for dep_type in ["PreDepends", "Depends", "Conflicts", "Breaks"]:
                 dependencies = package.candidate._cand.depends_list.get(
                     dep_type, [])
-                is_negative_dep = dep_type in ["Conflicts", "Breaks"]
                 for dependency in dependencies:
-                    has_targets = self._has_dependency_targets(dependency)
-                    if is_negative_dep != has_targets:
+                    if self._is_dependency_satisfied(dependency, dep_type):
                         continue
                     relation_infos = []
                     for dep_relation in dependency:
