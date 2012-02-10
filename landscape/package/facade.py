@@ -459,7 +459,7 @@ class AptFacade(object):
         target are going to be installed.
         """
         is_positive = dep_type not in ["Breaks", "Conflicts"]
-        depcache = self._cache._depcache_
+        depcache = self._cache._depcache
         for or_dep in dependency:
             for target in or_dep.all_targets():
                 package = target.parent_pkg
