@@ -1067,6 +1067,7 @@ class SmartPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
 
+
     def test_global_upgrade(self):
         """
         Besides asking for individual changes, the server may also request
@@ -1228,6 +1229,26 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
 
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
+
+    def test_change_package_holds_with_identical_vesion(self):
+        """
+        The L{PackageChanger.handle_tasks} method appropriately creates and
+        deletes package holds as requested by the C{change-package-holds}
+        message even when versions from two different packages are the same.
+        """
+        self._add_system_package("foo", version="1.1")
+        self._add_system_package("bar", version="1.1")
+        self.facade.reload_channels()
+        foo = self.facade.get_packages_by_name("foo")[0]
+        bar = self.facade.get_packages_by_name("bar")[0]
+        self.facade.set_package_hold(foo)
+        self.facade.set_package_hold(bar)
+        self.facade.reload_channels()
+        [hold1, hold2] = self.facade.get_package_holds()
+        self.assertEqual(foo.package.id, hold1.id)
+        self.assertEqual(foo.package.name, hold1.name)
+        self.assertEqual(bar.package.id, hold2.id)
+        self.assertEqual(bar.package.name, hold2.name)
 
     def test_change_package_holds_create_not_installed(self):
         """
