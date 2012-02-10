@@ -13,6 +13,7 @@ import signal
 import time
 
 from logging import warning, info, error
+from resource import setrlimit, RLIMIT_NOFILE
 
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, succeed
@@ -27,6 +28,7 @@ from landscape.lib.log import log_failure
 from landscape.lib.bootstrap import (BootstrapList, BootstrapFile,
                                      BootstrapDirectory)
 from landscape.log import rotate_logs
+from landscape.amp import ComponentProtocol
 from landscape.broker.amp import (
     RemoteBrokerConnector, RemoteMonitorConnector, RemoteManagerConnector)
 from landscape.reactor import TwistedReactor
@@ -490,10 +492,21 @@ class WatchDogService(Service):
         Service.startService(self)
         bootstrap_list.bootstrap(data_path=self._config.data_path,
                                  log_dir=self._config.log_dir)
-        for i in range(self._config.clones):
-            suffix = "-clone-%d" % i
-            bootstrap_list.bootstrap(data_path=self._config.data_path + suffix,
-                                     log_dir=self._config.log_dir + suffix)
+        if self._config.clones > 0:
+
+            # Let clones open an appropriate number of fds
+            setrlimit(RLIMIT_NOFILE, (self._config.clones * 100,
+                                      self._config.clones * 200))
+
+            # Increase the timeout of AMP's MethodCalls
+            ComponentProtocol.timeout = 300
+
+            # Create clones log and data directories
+            for i in range(self._config.clones):
+                suffix = "-clone-%d" % i
+                bootstrap_list.bootstrap(
+                    data_path=self._config.data_path + suffix,
+                    log_dir=self._config.log_dir + suffix)
 
         result = self.watchdog.check_running()
 

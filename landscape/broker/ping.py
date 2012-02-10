@@ -4,6 +4,7 @@ small HTTP requests asking if we should do a full exchange.
 """
 
 import urllib
+import logging
 from logging import info
 
 from twisted.python.failure import Failure
@@ -12,6 +13,7 @@ from twisted.internet import defer
 from landscape.lib.bpickle import loads
 from landscape.lib.fetch import fetch
 from landscape.lib.log import log_failure
+from landscape.broker.dnslookup import discover_server
 
 
 class PingClient(object):
@@ -20,15 +22,28 @@ class PingClient(object):
     @param url: The URL to ask the question to.
     @type identity: L{landscape.broker.registration.Identity}
     @param identity: This client's identity.
+    @param get_page: The method to use to retrieve content.  If not specified,
+        landscape.lib.fetch.fetch is used.
+    @param server_autodiscovery: Server autodiscovery is performed if True,
+        otherwise server autodiscover is not done.
+    @param autodiscover_srv_query_string: If server autodiscovery is done, this
+        string will be sent to the DNS server when making a SRV query.
+    @param autodiscover_a_query_string: If server autodiscovery is done, this
+        string will be sent to the DNS server when making an A query.
     """
 
-    def __init__(self, reactor, url, identity, get_page=None):
+    def __init__(self, reactor, url, identity, get_page=None,
+                 server_autodiscover=False, autodiscover_srv_query_string="",
+                 autodiscover_a_query_string=""):
         if get_page is None:
             get_page = fetch
         self._reactor = reactor
         self._identity = identity
         self.get_page = get_page
         self.url = url
+        self._server_autodiscover = server_autodiscover
+        self._autodiscover_srv_query_string = autodiscover_srv_query_string
+        self._autodiscover_a_query_string = autodiscover_a_query_string
 
     def ping(self):
         """Ask the question.
@@ -39,20 +54,43 @@ class PingClient(object):
         @return: A deferred resulting in True if there are messages
             and False otherwise.
         """
-        insecure_id = self._identity.insecure_id
-        if insecure_id is not None:
-            headers = {"Content-Type": "application/x-www-form-urlencoded"}
-            data = urllib.urlencode({"insecure_id": insecure_id})
-            page_deferred = defer.Deferred()
+        def handle_result(result):
+            if result is None:
+                logging.warning("Autodiscovery failed.  Reverting to previous "
+                                "settings.")
+            else:
+                result = "http://%s/ping" % result
+            return result
 
-            def errback(type, value, tb):
-                page_deferred.errback(Failure(value, type, tb))
-            self._reactor.call_in_thread(page_deferred.callback, errback,
-                                         self.get_page, self.url, post=True,
-                                         data=data, headers=headers)
-            page_deferred.addCallback(self._got_result)
-            return page_deferred
-        return defer.succeed(False)
+        def do_rest(result):
+            if result is not None:
+                self.url = result
+
+            insecure_id = self._identity.insecure_id
+            if insecure_id is not None:
+                headers = {"Content-Type": "application/x-www-form-urlencoded"}
+                data = urllib.urlencode({"insecure_id": insecure_id})
+                page_deferred = defer.Deferred()
+
+                def errback(type, value, tb):
+                    page_deferred.errback(Failure(value, type, tb))
+                self._reactor.call_in_thread(page_deferred.callback, errback,
+                                             self.get_page, self.url,
+                                             post=True, data=data,
+                                             headers=headers)
+                page_deferred.addCallback(self._got_result)
+                return page_deferred
+            return defer.succeed(False)
+
+        if self._server_autodiscover:
+            lookup_deferred = discover_server(
+                None, self._autodiscover_srv_query_string,
+                self._autodiscover_a_query_string)
+            lookup_deferred.addCallback(handle_result)
+            lookup_deferred.addCallback(do_rest)
+            return lookup_deferred
+        else:
+            return do_rest(None)
 
     def _got_result(self, webtext):
         """
@@ -77,7 +115,9 @@ class Pinger(object):
     """
 
     def __init__(self, reactor, url, identity, exchanger,
-                 interval=30, ping_client_factory=PingClient):
+                 interval=30, ping_client_factory=PingClient,
+                 server_autodiscover=False, autodiscover_srv_query_string="",
+                 autodiscover_a_query_string=""):
         self._url = url
         self._interval = interval
         self._identity = identity
@@ -86,6 +126,9 @@ class Pinger(object):
         self._call_id = None
         self._ping_client = None
         self.ping_client_factory = ping_client_factory
+        self._server_autodiscover = server_autodiscover
+        self._autodiscover_srv_query_string = autodiscover_srv_query_string
+        self._autodiscover_a_query_string = autodiscover_a_query_string
         reactor.call_on("message", self._handle_set_intervals)
 
     def get_url(self):
@@ -101,8 +144,11 @@ class Pinger(object):
 
     def start(self):
         """Start pinging."""
-        self._ping_client = self.ping_client_factory(self._reactor, self._url,
-                                                     self._identity)
+        self._ping_client = self.ping_client_factory(
+            self._reactor, self._url, self._identity,
+            server_autodiscover=self._server_autodiscover,
+            autodiscover_srv_query_string=self._autodiscover_srv_query_string,
+            autodiscover_a_query_string=self._autodiscover_a_query_string)
         self._call_id = self._reactor.call_every(self._interval, self.ping)
 
     def ping(self):
@@ -119,7 +165,8 @@ class Pinger(object):
 
     def _got_error(self, failure):
         log_failure(failure,
-                    "Error contacting ping server at %s" % (self._url,))
+                    "Error contacting ping server at %s" %
+                    (self._ping_client.url,))
 
     def _handle_set_intervals(self, message):
         if message["type"] == "set-intervals" and "ping" in message:

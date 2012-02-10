@@ -1,13 +1,12 @@
 import os
 
-from twisted.internet import reactor
-
 from landscape.tests.helpers import LandscapeTest
 from landscape.broker.tests.helpers import BrokerConfigurationHelper
 from landscape.broker.service import BrokerService
 from landscape.broker.transport import HTTPTransport
 from landscape.broker.amp import RemoteBrokerConnector
 from landscape.reactor import FakeReactor
+from twisted.internet import reactor
 
 
 class BrokerServiceTest(LandscapeTest):

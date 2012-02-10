@@ -128,7 +128,9 @@ class PingerTest(LandscapeTest):
         self.url = "http://localhost:8081/whatever"
         self.page_getter = FakePageGetter(None)
 
-        def factory(reactor, url, insecure_id):
+        def factory(reactor, url, insecure_id, server_autodiscover,
+                    autodiscover_srv_query_string,
+                    autodiscover_a_query_string):
             return PingClient(reactor, url, insecure_id,
                               get_page=self.page_getter.get_page)
         self.pinger = Pinger(self.broker_service.reactor,
@@ -201,7 +203,7 @@ class PingerTest(LandscapeTest):
 
         class BadPingClient(object):
             def __init__(self, *args, **kwargs):
-                pass
+                self.url = args[1]
 
             def ping(self):
                 return fail(ZeroDivisionError("Couldn't fetch page"))
