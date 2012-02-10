@@ -573,6 +573,7 @@ class AptFacade(object):
         del self._version_installs[:]
         del self._version_removals[:]
         self._global_upgrade = False
+        self._cache.clear()
 
     def mark_install(self, version):
         """Mark the package for installation."""

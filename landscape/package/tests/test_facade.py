@@ -1201,6 +1201,24 @@ class AptFacadeTest(LandscapeTest):
         self.assertFalse(self.facade._global_upgrade)
         self.assertEqual(self.facade.perform_changes(), None)
 
+    def test_reset_marks_resets_cache(self):
+        """
+        C{reset_marks()} clears the apt cache, so that no changes will
+        be pending.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(
+            deb_dir, "foo", control_fields={"Depends": "bar"})
+        self._add_package_to_deb_dir(deb_dir, "bar")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        self.facade.mark_install(foo)
+        self.assertRaises(DependencyError, self.facade.perform_changes)
+        self.assertNotEqual([], list(self.facade._cache.get_changes()))
+        self.facade.reset_marks()
+        self.assertEqual([], list(self.facade._cache.get_changes()))
+
     def test_wb_mark_install_adds_to_list(self):
         """
         C{mark_install} adds the package to the list of packages to be
