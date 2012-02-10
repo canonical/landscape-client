@@ -450,6 +450,22 @@ class AptFacade(object):
         info += reason
         return info
 
+    def _has_dependency_targets(self, dependency):
+        """Return whether a dependency is or is going to be installed.
+
+        A dependency can either one that needs to be installed
+        (Pre-Depends, Depends), or one that can't be installed (Breaks,
+        Conflicts)
+        """
+        for or_dep in dependency:
+            for target in or_dep.all_targets():
+                if (target.parent_pkg.current_state ==
+                        apt_pkg.CURSTATE_INSTALLED or
+                    self._cache._depcache.marked_install(
+                        target.parent_pkg)):
+                    return True
+        return False
+
     def _get_unmet_dependency_info(self):
         """Get information about unmet dependencies in the cache state.
 
@@ -470,15 +486,7 @@ class AptFacade(object):
                     dep_type, [])
                 is_negative_dep = dep_type in ["Conflicts", "Breaks"]
                 for dependency in dependencies:
-                    has_targets = False
-                    for or_dep in dependency:
-                        for target in or_dep.all_targets():
-                            if (target.parent_pkg.current_state ==
-                                    apt_pkg.CURSTATE_INSTALLED or
-                                self._cache._depcache.marked_install(
-                                    target.parent_pkg)):
-                                has_targets = True
-                                break
+                    has_targets = self._has_dependency_targets(dependency)
                     if is_negative_dep != has_targets:
                         continue
                     relation_infos = []
