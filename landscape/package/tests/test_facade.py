@@ -1672,10 +1672,13 @@ class AptFacadeTest(LandscapeTest):
         [foo] = self.facade.get_packages_by_name("foo")
         [baz] = self.facade.get_packages_by_name("baz")
 
-        holds = self.facade.get_package_holds()
-        self.assertEqual(
-            [baz.package.name, foo.package.name],
-            sorted([hold.name for hold in holds]))
+        holds = sorted(self.facade.get_package_holds())
+        self.assertEqual(2, len(holds))
+        [hold1, hold2] = holds
+        self.assertEqual(baz.package.name, hold1.name)
+        self.assertEqual(baz.package.id, hold1.id)
+        self.assertEqual(foo.package.name, hold2.name)
+        self.assertEqual(foo.package.id, hold2.id)
 
     def test_set_package_hold(self):
         """
