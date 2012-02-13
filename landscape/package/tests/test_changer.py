@@ -249,7 +249,7 @@ class PackageChangerTestMixin(object):
         """
         self.store.set_hash_ids({HASH1: 1})
         self.facade.reload_channels()
-        package1 = self.facade.get_packages_by_name("name1")[0]
+        [package1] = self.facade.get_packages_by_name("name1")
 
         self.mocker.order()
         self.facade.perform_changes = self.mocker.mock()
@@ -279,7 +279,7 @@ class PackageChangerTestMixin(object):
         self.facade.reload_channels()
 
         package1 = self.facade.get_package_by_hash(installed_hash)
-        package2 = self.facade.get_packages_by_name("name2")[0]
+        [package2] = self.facade.get_packages_by_name("name2")
         self.facade.perform_changes = self.mocker.mock()
         self.facade.perform_changes()
         self.mocker.throw(DependencyError([package1, package2]))
@@ -301,8 +301,8 @@ class PackageChangerTestMixin(object):
         self.store.set_hash_ids({HASH1: 1, HASH2: 2})
         self.facade.reload_channels()
 
-        package1 = self.facade.get_packages_by_name("name1")[0]
-        package2 = self.facade.get_packages_by_name("name2")[0]
+        [package1] = self.facade.get_packages_by_name("name1")
+        [package2] = self.facade.get_packages_by_name("name2")
 
         self.facade.perform_changes = self.mocker.mock()
         self.facade.perform_changes()
@@ -348,7 +348,7 @@ class PackageChangerTestMixin(object):
 
         self.mocker.order()
         package1 = self.facade.get_package_by_hash(installed_hash)
-        package2 = self.facade.get_packages_by_name("name2")[0]
+        [package2] = self.facade.get_packages_by_name("name2")
         self.facade.perform_changes = self.mocker.mock()
         self.facade.perform_changes()
         self.mocker.throw(DependencyError([package1, package2]))
@@ -878,7 +878,7 @@ class SmartPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         def callback(self):
             from smart.backends.deb.base import DebUpgrades
             previous(self)
-            pkg2 = self.get_packages_by_name("name2")[0]
+            [pkg2] = self.get_packages_by_name("name2")
             pkg2.upgrades += (DebUpgrades("name1", "=", "version1-release1"),)
             self.reload_cache()  # Relink relations.
         self.Facade.channels_reloaded = callback
@@ -891,7 +891,7 @@ class SmartPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
 
         def callback(self):
             previous(self)
-            pkg2 = self.get_packages_by_name("name2")[0]
+            [pkg2] = self.get_packages_by_name("name2")
             pkg2.requires = ()
             self.reload_cache()  # Relink relations.
         self.Facade.channels_reloaded = callback
@@ -905,12 +905,12 @@ class SmartPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
 
             provide1 = Provides("prerequirename1", "prerequireversion1")
             provide2 = Provides("requirename1", "requireversion1")
-            pkg2 = self.get_packages_by_name("name2")[0]
+            [pkg2] = self.get_packages_by_name("name2")
             pkg2.provides += (provide1, provide2)
 
             provide1 = Provides("prerequirename2", "prerequireversion2")
             provide2 = Provides("requirename2", "requireversion2")
-            pkg1 = self.get_packages_by_name("name1")[0]
+            [pkg1] = self.get_packages_by_name("name1")
             pkg1.provides += (provide1, provide2)
 
             # Ask Smart to reprocess relationships.
@@ -1204,8 +1204,8 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         self._add_hashed_package("foo", self.repository_dir, installed=True)
         self._add_hashed_package("bar", self.repository_dir, installed=True)
         self.facade.reload_channels()
-        foo = self.facade.get_packages_by_name("foo")[0]
-        bar = self.facade.get_packages_by_name("bar")[0]
+        [foo] = self.facade.get_packages_by_name("foo")
+        [bar] = self.facade.get_packages_by_name("bar")
         self.facade.set_package_hold(foo)
         self.facade.reload_channels()
         self.store.add_task("changer", {"type": "change-package-holds",
@@ -1239,8 +1239,8 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         self._add_system_package("foo", version="1.1")
         self._add_system_package("bar", version="1.1")
         self.facade.reload_channels()
-        foo = self.facade.get_packages_by_name("foo")[0]
-        bar = self.facade.get_packages_by_name("bar")[0]
+        [foo] = self.facade.get_packages_by_name("foo")
+        [bar] = self.facade.get_packages_by_name("bar")
         self.facade.set_package_hold(foo)
         self.facade.set_package_hold(bar)
         self.facade.reload_channels()
@@ -1262,9 +1262,9 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         self._add_hashed_package("foo", self.repository_dir, installed=True)
         self._add_hashed_package("bar", self.repository_dir)
         self._add_hashed_package("baz", self.repository_dir)
-        foo = self.facade.get_packages_by_name("foo")[0]
-        bar = self.facade.get_packages_by_name("bar")[0]
-        baz = self.facade.get_packages_by_name("baz")[0]
+        [foo] = self.facade.get_packages_by_name("foo")
+        [bar] = self.facade.get_packages_by_name("bar")
+        [baz] = self.facade.get_packages_by_name("baz")
         self.store.add_task("changer", {"type": "change-package-holds",
                                         "create": [foo.package.id,
                                                    bar.package.id,
@@ -1299,9 +1299,9 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         self._add_hashed_package("foo", self.repository_dir, installed=True)
         self._add_hashed_package("bar", self.repository_dir, installed=True)
         self._add_hashed_package("baz", self.repository_dir)
-        foo = self.facade.get_packages_by_name("foo")[0]
-        bar = self.facade.get_packages_by_name("bar")[0]
-        baz = self.facade.get_packages_by_name("baz")[0]
+        [foo] = self.facade.get_packages_by_name("foo")
+        [bar] = self.facade.get_packages_by_name("bar")
+        [baz] = self.facade.get_packages_by_name("baz")
         self.facade.set_package_hold(bar)
         self.store.add_task("changer", {"type": "change-package-holds",
                                         "delete": [foo.package.id,
