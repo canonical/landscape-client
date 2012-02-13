@@ -1731,7 +1731,7 @@ class AptFacadeTest(LandscapeTest):
         """
         self._add_system_package("foo")
         deb_dir = self.makeDir()
-        self._add_package_to_deb_dir(deb_dir, "bar", version="2.0")
+        self._add_package_to_deb_dir(deb_dir, "bar")
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
         [bar] = self.facade.get_packages_by_name("bar")
