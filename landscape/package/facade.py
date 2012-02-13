@@ -435,12 +435,13 @@ class AptFacade(object):
 
     def _get_unmet_relation_info(self, dep_relation):
         """Return a string representation of a specific dependency relation."""
-        info = dep_relation.name
-        if dep_relation.version:
-            info += " (%s %s)" % (dep_relation.relation, dep_relation.version)
+        info = dep_relation.target_pkg.name
+        if dep_relation.target_ver:
+            info += " (%s %s)" % (
+                dep_relation.comp_type, dep_relation.target_ver)
         reason = " but is not installable"
-        if dep_relation.name in self._cache:
-            dep_package = self._cache[dep_relation.name]
+        if dep_relation.target_pkg.name in self._cache:
+            dep_package = self._cache[dep_relation.target_pkg.name]
             if dep_package.installed or dep_package.marked_install:
                 version = dep_package.candidate.version
                 if dep_package not in self._cache.get_changes():
@@ -448,6 +449,25 @@ class AptFacade(object):
                 reason = " but %s is to be installed" % version
         info += reason
         return info
+
+    def _is_dependency_satisfied(self, dependency, dep_type):
+        """Return whether a dependency is satisfied.
+
+        For positive dependencies (Pre-Depends, Depends) it means that
+        one of its targets is going to be installed. For negative
+        dependencies (Conflicts, Breaks), it means that none of its
+        targets are going to be installed.
+        """
+        is_positive = dep_type not in ["Breaks", "Conflicts"]
+        depcache = self._cache._depcache
+        for or_dep in dependency:
+            for target in or_dep.all_targets():
+                package = target.parent_pkg
+                if ((package.current_state == apt_pkg.CURSTATE_INSTALLED
+                     or depcache.marked_install(package))
+                    and not depcache.marked_delete(package)):
+                    return is_positive
+        return not is_positive
 
     def _get_unmet_dependency_info(self):
         """Get information about unmet dependencies in the cache state.
@@ -464,24 +484,19 @@ class AptFacade(object):
             return ""
         all_info = ["The following packages have unmet dependencies:"]
         for package in sorted(broken_packages, key=attrgetter("name")):
-            raw_dependencies = (
-                package.candidate._cand.depends_list.get("PreDepends", []) +
-                package.candidate._cand.depends_list.get("Depends", []))
-            dependencies = zip(
-                package.candidate.dependencies, raw_dependencies)
-            for dep, raw_dep in dependencies:
-                if any(or_dep.all_targets() for or_dep in raw_dep):
-                    continue
-                relation_type = "Depends"
-                relation_infos = []
-                for dep_relation in dep.or_dependencies:
-                    if dep_relation.pre_depend:
-                        relation_type = "PreDepends"
-                    relation_infos.append(
-                        self._get_unmet_relation_info(dep_relation))
-                info = "  %s: %s: " % (package.name, relation_type)
-                or_divider = " or\n" + " " * len(info)
-                all_info.append(info + or_divider.join(relation_infos))
+            for dep_type in ["PreDepends", "Depends", "Conflicts", "Breaks"]:
+                dependencies = package.candidate._cand.depends_list.get(
+                    dep_type, [])
+                for dependency in dependencies:
+                    if self._is_dependency_satisfied(dependency, dep_type):
+                        continue
+                    relation_infos = []
+                    for dep_relation in dependency:
+                        relation_infos.append(
+                            self._get_unmet_relation_info(dep_relation))
+                    info = "  %s: %s: " % (package.name, dep_type)
+                    or_divider = " or\n" + " " * len(info)
+                    all_info.append(info + or_divider.join(relation_infos))
         return "\n".join(all_info)
 
     def perform_changes(self):
