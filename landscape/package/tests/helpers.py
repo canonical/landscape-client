@@ -30,8 +30,7 @@ class AptFacadeHelper(object):
         test_case._install_deb_file = self._install_deb_file
         test_case._add_package_to_deb_dir = self._add_package_to_deb_dir
         test_case._touch_packages_file = self._touch_packages_file
-        test_case._add_hashed_package = self._make_add_hashed_package(
-            test_case)
+        test_case._hash_packages_by_name = self._hash_packages_by_name
 
     def _add_package(self, packages_file, name, architecture="all",
                      version="1.0", control_fields=None):
@@ -100,36 +99,19 @@ class AptFacadeHelper(object):
         mtime = int(time.time() + 1)
         os.utime(packages_path, (mtime, mtime))
 
-    def _make_add_hashed_package(self, test_case):
+    def _hash_packages_by_name(self, facade, store, package_name):
         """
-        Generate an add_hashed_package method with the correct
-        test_case.  The state during setup seems to prevent some calls being
-        made via self, making a closure over L{set_up}'s version of the test
-        case gets around that issue.
+        Ensure the named L{Package} is correctly recorded in the store so that
+        we can really test the functions of the facade that depend on it.
         """
-
-        def _add_hashed_package(package_name, repository_dir, installed=False):
-            """
-            Make sure the L{AptFacade} has it's _pkg2hash and _hash2pkg setup
-            correctly and the L{PackageStore} has the same hashes.  This is
-            important when we ask for packages by id that aren't installed.
-            """
-            if installed:
-                test_case._add_system_package(package_name)
-            else:
-                self._add_package(self.dpkg_status, package_name)
-            test_case.facade.reload_channels()
-            hash_ids = {}
-            for version in test_case.facade.get_packages_by_name(package_name):
-                skeleton = test_case.facade.get_package_skeleton(
-                    version, with_info=False)
-                hash = skeleton.get_hash()
-                test_case.facade._pkg2hash[(version.package, version)] = hash
-                hash_ids[hash] = version.package.id
-
-            test_case.store.set_hash_ids(hash_ids)
-
-        return _add_hashed_package
+        hash_ids = {}
+        for version in facade.get_packages_by_name(package_name):
+            skeleton = facade.get_package_skeleton(
+                version, with_info=False)
+            hash = skeleton.get_hash()
+            facade._pkg2hash[(version.package, version)] = hash
+            hash_ids[hash] = version.package.id
+        store.set_hash_ids(hash_ids)
 
 
 class SimpleRepositoryHelper(object):

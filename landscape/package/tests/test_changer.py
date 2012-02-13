@@ -1200,9 +1200,11 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         deletes package holds as requested by the C{change-package-holds}
         message.
         """
-        self._add_hashed_package("foo", self.repository_dir, installed=True)
-        self._add_hashed_package("bar", self.repository_dir, installed=True)
+        self._add_system_package("foo")
+        self._add_system_package("bar")
         self.facade.reload_channels()
+        self._hash_packages_by_name(self.facade, self.store, "foo")
+        self._hash_packages_by_name(self.facade, self.store, "bar")        
         [foo] = self.facade.get_packages_by_name("foo")
         [bar] = self.facade.get_packages_by_name("bar")
         self.facade.set_package_hold(foo)
@@ -1258,9 +1260,13 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         repository and a package that the facade doesn't know about at
         all.
         """
-        self._add_hashed_package("foo", self.repository_dir, installed=True)
-        self._add_hashed_package("bar", self.repository_dir)
-        self._add_hashed_package("baz", self.repository_dir)
+        self._add_system_package("foo")
+        self._add_package_to_deb_dir(self.repository_dir, "bar")
+        self._add_package_to_deb_dir(self.repository_dir, "baz")
+        self.facade.reload_channels()
+        self._hash_packages_by_name(self.facade, self.store, "foo")
+        self._hash_packages_by_name(self.facade, self.store, "bar")
+        self._hash_packages_by_name(self.facade, self.store, "baz")
         [foo] = self.facade.get_packages_by_name("foo")
         [bar] = self.facade.get_packages_by_name("bar")
         [baz] = self.facade.get_packages_by_name("baz")
@@ -1295,9 +1301,13 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         for packages that aren't held, the activity fails. If
         other valid holds are specified, those will not be removed.
         """
-        self._add_hashed_package("foo", self.repository_dir, installed=True)
-        self._add_hashed_package("bar", self.repository_dir, installed=True)
-        self._add_hashed_package("baz", self.repository_dir)
+        self._add_system_package("foo")
+        self._add_system_package("bar")
+        self._add_package_to_deb_dir(self.repository_dir, "baz")
+        self.facade.reload_channels()
+        self._hash_packages_by_name(self.facade, self.store, "foo")
+        self._hash_packages_by_name(self.facade, self.store, "bar")
+        self._hash_packages_by_name(self.facade, self.store, "baz")
         [foo] = self.facade.get_packages_by_name("foo")
         [bar] = self.facade.get_packages_by_name("bar")
         [baz] = self.facade.get_packages_by_name("baz")
@@ -1323,7 +1333,8 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
                 [{'operation-id': 123,
                   'result-code': 1,
                   'result-text': u'Package holds not added, since the '
-                  'following packages are not installed: 23',
+                  'following packages are not installed: ' + 
+                  str(baz.package.id),
                   'status': 5,
                   'type': 'operation-result'}])
 
