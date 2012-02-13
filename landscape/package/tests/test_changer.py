@@ -1293,11 +1293,8 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
     def test_change_package_holds_delete_not_held(self):
         """
         If the C{change-package-holds} message requests to remove holds
-        for packages that aren't held, the activity still succeeds. If
-        other valid holds are specified, those will be removed.
-        There's no difference between a package that is installed
-        and a package that isn't installed. In either case, the
-        result is that the package isn't held.
+        for packages that aren't held, the activity fails. If
+        other valid holds are specified, those will not be removed.
         """
         self._add_hashed_package("foo", self.repository_dir, installed=True)
         self._add_hashed_package("bar", self.repository_dir, installed=True)
@@ -1314,16 +1311,22 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
 
         def assert_result(result):
             self.facade.reload_channels()
-            self.assertEqual([], self.facade.get_package_holds())
+            holds = self.facade.get_package_holds() 
+            self.assertEqual(1, len(holds))
+            [bar_hold] = holds
+            self.assertEqual(bar.package.id, bar_hold.id)
+            self.assertEqual(bar.package.name, bar_hold.name)
             self.assertIn("Queuing message with change package holds results "
                           "to exchange urgently.", self.logfile.getvalue())
             self.assertMessages(
                 self.get_pending_messages(),
-                [{"type": "operation-result",
-                  "operation-id": 123,
-                  "status": SUCCEEDED,
-                  "result-text": u"Package holds successfully changed.",
-                  "result-code": 0}])
+
+                [{'operation-id': 123,
+                  'result-code': 1,
+                  'result-text': u'Package holds not added, since the '
+                  'following packages are not installed: 23',
+                  'status': 5,
+                  'type': 'operation-result'}])
 
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
