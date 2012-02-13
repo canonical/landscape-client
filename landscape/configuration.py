@@ -4,6 +4,7 @@ This module, and specifically L{LandscapeSetupScript}, implements the support
 for the C{landscape-config} script.
 """
 
+import json
 import base64
 import time
 import sys
@@ -489,6 +490,38 @@ def decode_base64_ssl_public_certificate(config):
             config, decoded_cert)
 
 
+def fetch_base64_ssl_public_certificate(hostname, on_info=print_text,
+    on_warn=print_text):
+    """
+    Fetch base64 encoded SSL CA certificate from the discovered landscape
+    server and return that decoded info.
+    """
+    print_text("Fetching CA cert from %s..." % hostname)
+    encoded_cert = ""
+    ca_url = "http://%s/get-ca-cert" % hostname
+    try:
+        content = fetch(ca_url)
+    except FetchError, error:
+        on_warn(str(error))
+
+    if content and content.startswith("base64:"):
+        ca_dict = json.loads(content)
+        try:
+            if ca_dict["ca_custom_cert"].startswith("base64:"):
+                encoded_cert = ca_dict["ca_custom_cert"]
+            else:
+                on_warn("Auto-registration URL %s returns invalid CA JSON: %s." 
+                        %  (ca_url, ca_dict))
+        except KeyError:
+        # No custom CA certificate needed to talk with landscape server
+            pass
+    else:
+        on_warn("Unable to fetch CA certificate from discovered landscape "
+                "server \"%s\".  Proceding without custom CA certificate."
+                % hostname)
+    return encoded_cert
+
+                
 def setup(config):
     """
     Perform steps to ensure that landscape-client is correctly configured

@@ -2,6 +2,7 @@ import os
 
 from landscape import VERSION
 from landscape.broker.transport import HTTPTransport, PayloadRecorder
+from landscape.broker.config import BrokerConfiguration
 from landscape.lib.fetch import PyCurlError
 from landscape.lib.fs import create_file, read_file
 from landscape.lib import bpickle
@@ -44,6 +45,9 @@ class HTTPTransportTest(LandscapeTest):
     def setUp(self):
         super(HTTPTransportTest, self).setUp()
         self.ports = []
+        filename = self.makeFile("[client]\n")
+        self.config = BrokerConfiguration()
+        self.config.load(["--config", filename])
 
     def tearDown(self):
         super(HTTPTransportTest, self).tearDown()
@@ -52,11 +56,11 @@ class HTTPTransportTest(LandscapeTest):
 
     def test_get_url(self):
         url = "http://example/ooga"
-        transport = HTTPTransport(None, url)
+        transport = HTTPTransport(None, url, self.config)
         self.assertEqual(transport.get_url(), url)
 
     def test_set_url(self):
-        transport = HTTPTransport(None, "http://example/ooga")
+        transport = HTTPTransport(None, "http://example/ooga", self.config)
         transport.set_url("http://example/message-system")
         self.assertEqual(transport.get_url(), "http://example/message-system")
 
@@ -71,7 +75,7 @@ class HTTPTransportTest(LandscapeTest):
         port = reactor.listenTCP(0, server.Site(r), interface="127.0.0.1")
         self.ports.append(port)
         transport = HTTPTransport(
-            None, "http://localhost:%d/" % (port.getHost().port,))
+            None, "http://localhost:%d/" % (port.getHost().port,), self.config)
         result = deferToThread(transport.exchange, "HI", computer_id="34",
                                message_api="X.Y")
 
@@ -98,7 +102,8 @@ class HTTPTransportTest(LandscapeTest):
                                  interface="127.0.0.1")
         self.ports.append(port)
         transport = HTTPTransport(
-            None, "https://localhost:%d/" % (port.getHost().port,), PUBKEY)
+            None, "https://localhost:%d/" % (port.getHost().port,),
+            self.config, PUBKEY)
         result = deferToThread(transport.exchange, "HI", computer_id="34",
                                message_api="X.Y")
 
@@ -127,7 +132,7 @@ class HTTPTransportTest(LandscapeTest):
                                  interface="127.0.0.1")
         self.ports.append(port)
         transport = HTTPTransport(None, "https://localhost:%d/"
-                                  % (port.getHost().port,),
+                                  % (port.getHost().port,), self.config,
                                   pubkey=PUBKEY)
 
         result = deferToThread(transport.exchange, "HI", computer_id="34",
@@ -153,7 +158,7 @@ class HTTPTransportTest(LandscapeTest):
             return "filename"
         recorder.get_payload_filename = static_filename
 
-        transport = HTTPTransport(None, "http://localhost",
+        transport = HTTPTransport(None, "http://localhost", self.config,
                                   payload_recorder=recorder)
 
         def fake_curl(param1, param2, param3):
@@ -174,7 +179,7 @@ class HTTPTransportTest(LandscapeTest):
         When C{HTTPTransport} is configured without a payload recorder,
         exchanges with the server should still complete.
         """
-        transport = HTTPTransport(None, "http://localhost")
+        transport = HTTPTransport(None, "http://localhost", self.config)
         self.called = False
 
         def fake_curl(param1, param2, param3):
