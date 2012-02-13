@@ -1067,7 +1067,6 @@ class SmartPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
 
-
     def test_global_upgrade(self):
         """
         Besides asking for individual changes, the server may also request
@@ -1311,7 +1310,7 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
 
         def assert_result(result):
             self.facade.reload_channels()
-            holds = self.facade.get_package_holds() 
+            holds = self.facade.get_package_holds()
             self.assertEqual(1, len(holds))
             [bar_hold] = holds
             self.assertEqual(bar.package.id, bar_hold.id)
