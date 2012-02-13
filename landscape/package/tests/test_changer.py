@@ -1201,8 +1201,8 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         deletes package holds as requested by the C{change-package-holds}
         message.
         """
-        self._add_system_package("foo")
-        self._add_system_package("bar")
+        self._add_hashed_package("foo", self.repository_dir, installed=True)
+        self._add_hashed_package("bar", self.repository_dir, installed=True)
         self.facade.reload_channels()
         foo = self.facade.get_packages_by_name("foo")[0]
         bar = self.facade.get_packages_by_name("bar")[0]

@@ -332,11 +332,20 @@ class PackageChanger(PackageTaskHandler):
         versions_to_create = set()
         for id in holds_to_create:
             hash = self._store.get_id_hash(id)
-            version = self._facade.get_package_by_hash(hash)
-            if not version.package.installed:
-                not_installed.add(str(version.package.id))
+            hold_version = self._facade.get_package_by_hash(hash)
+            if hold_version and hold_version.package.installed:
+                versions_to_create.add(hold_version)
             else:
-                versions_to_create.add(version)
+                not_installed.add(str(id))
+        holds_to_remove = message.get("delete", [])
+        versions_to_remove = set()
+        for id in holds_to_remove:
+            hash = self._store.get_id_hash(id)
+            hold_version = self._facade.get_package_by_hash(hash)
+            if hold_version and hold_version.package.installed: 
+                versions_to_remove.add(hold_version)
+            else:
+                not_installed.add(str(id))
         if not_installed:
             response = {
                 "type": "operation-result",
@@ -350,12 +359,9 @@ class PackageChanger(PackageTaskHandler):
 
         for hold_version in versions_to_create:
             self._facade.set_package_hold(hold_version)
-        self._facade.reload_channels()
-        for id in message.get("delete", []):
-            hash = self._store.get_id_hash(id)
-            hold_version = self._facade.get_package_by_hash(hash)
-            if hold_version:  # If we don"t have them, they can't be held.
-                self._facade.remove_package_hold(hold_version)
+        for hold_version in versions_to_remove:
+            self._facade.remove_package_hold(hold_version)
+
         self._facade.reload_channels()
 
         response = {"type": "operation-result",
