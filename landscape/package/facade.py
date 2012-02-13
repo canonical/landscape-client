@@ -454,9 +454,9 @@ class AptFacade(object):
         """Return whether a dependency is satisfied.
 
         For positive dependencies (Pre-Depends, Depends) it means that
-        one of its target is going to be installed. For negative
+        one of its targets is going to be installed. For negative
         dependencies (Conflicts, Breaks), it means that none of its
-        target are going to be installed.
+        targets are going to be installed.
         """
         is_positive = dep_type not in ["Breaks", "Conflicts"]
         depcache = self._cache._depcache
