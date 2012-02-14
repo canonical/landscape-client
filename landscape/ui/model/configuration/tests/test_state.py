@@ -1,7 +1,7 @@
 from landscape.tests.helpers import LandscapeTest
 from landscape.ui.model.configuration.state import (
     ConfigurationModel, StateError, VirginState, InitialisedState,
-    TestedGoodState, TestedBadState)
+    TestedGoodState, TestedBadState, ModifiedState)
 
 
 class StateTransitionTest(LandscapeTest):
@@ -50,7 +50,6 @@ class StateTransitionTest(LandscapeTest):
         model.test()
         self.assertRaises(StateError, model.load_data)
                        
-
     def test_test_transition(self):
         """
         Test that the L{ConfigurationModel} transitions to a L{TestedGoodState}
@@ -66,4 +65,24 @@ class StateTransitionTest(LandscapeTest):
         model.load_data()
         model.test()
         self.assertTrue(isinstance(model.get_state(), TestedBadState))
+
+    def test_modifying_a_virgin_raises(self):
+        """
+        Test that attempting a L{modify} a L{ConfigurationModel} in
+        L{VirginState} raises a L{StateError}.
+        """
+        model = ConfigurationModel()
+        self.assertRaises(StateError, model.modify)
+
+    def test_modify_transition(self):
+        """
+        Test that the L{ConfigurationModel} transitions to L{ModifiedState}
+        whenever L{modify} is called on it.
+        """
+        test_succeed = lambda : True
+        test_fail = lambda : False
+        model = ConfigurationModel()
+        model.load_data()
+        model.modify()
+        self.assertTrue(isinstance(model.get_state(), ModifiedState))
         

@@ -15,17 +15,69 @@ class ConfigurationState(object):
 
     def test(self, test_method):
         raise NotImplementedError
+    
+    def modify(self):
+        raise NotImplementedError
 
 
-class TestedState(ConfigurationState):
+class ModifiableHelper(object):
+    """
+    Allow a L{ConfigurationState}s to be modified.
+    """
+
+    def modify(self):
+        return ModifiedState()
+
+class UnloadableHelper(object):
     
     def load_data(self):
         raise StateError, "A ConfiguratiomModel in a " + \
             self.__class__.__name__ + " cannot be transitioned via load_data()"
 
+
+class UnmodifiableHelper(object):
+    """
+    Disallow modification of a L{ConfigurationState}.
+    """
+
+    def modify(self):
+        raise StateError, "A ConfigurationModel in " + \
+            self.__class__.__name__ + " cannot transition via modify()"
+
+
+class UntestableHelper(object):
+    """
+    Disallow testing of a L{ConfigurationState}.
+    """
+
+    def test(self, test_method):
+        raise StateError, "A ConfigurationModel in " + \
+            self.__class__.__name__ + " cannot transition via test()"
+
+
+class ModifiedState(ConfigurationState):
+    
+    helper = ModifiableHelper()
+    
+    def modify(self):
+        return self.helper.modify()
+
+
+class TestedState(ConfigurationState):
+
+    untestable_helper = UntestableHelper()
+    unloadable_helper = UnloadableHelper()
+    
+    def test(self, test_method):
+        return self.untestable_helper.test(test_method)
+
+    def load_data(self):
+        return self.unloadable_helper.load_data()
+
+
 class TestedBadState(TestedState):
     pass
-
+    
 
 class TestedGoodState(TestedState):
     pass
@@ -38,6 +90,8 @@ class InitialisedState(ConfigurationState):
     data, any persisted user data should be loaded into blank values and
     finally defaults should be applied where necessary.
     """
+
+    helper = ModifiableHelper()
     
     def load_data(self):
         return self
@@ -48,6 +102,9 @@ class InitialisedState(ConfigurationState):
         else:
             return TestedBadState()
 
+    def modify(self):
+        return self.helper.modify()
+
 
 class VirginState(ConfigurationState):
     """
@@ -55,14 +112,17 @@ class VirginState(ConfigurationState):
     upon it.
     """
     
+    untestable_helper = UntestableHelper()
+    unmodifiable_helper = UnmodifiableHelper()
+    
     def load_data(self):
         return InitialisedState()
 
     def test(self, test_method):
-        raise StateError, "A ConfigurationModel in VirginState cannot " + \
-            "transition via test()"
+        return self.untestable_helper.test(test_method)
 
-
+    def modify(self):
+        return self.unmodifiable_helper.modify()
 
 
 class ConfigurationModel(object):
@@ -87,4 +147,5 @@ class ConfigurationModel(object):
     def test(self):
         self._current_state = self._current_state.test(self._test_method)
 
-
+    def modify(self):
+        self._current_state = self._current_state.modify()
