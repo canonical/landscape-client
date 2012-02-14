@@ -67,12 +67,16 @@ class TestedState(ConfigurationState):
 
     untestable_helper = UntestableHelper()
     unloadable_helper = UnloadableHelper()
+    modifiable_helper = ModifiableHelper()
     
     def test(self, test_method):
         return self.untestable_helper.test(test_method)
 
     def load_data(self):
         return self.unloadable_helper.load_data()
+
+    def modify(self):
+        return self.modifiable_helper.modify()
 
 
 class TestedBadState(TestedState):

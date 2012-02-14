@@ -74,15 +74,46 @@ class StateTransitionTest(LandscapeTest):
         model = ConfigurationModel()
         self.assertRaises(StateError, model.modify)
 
-    def test_modify_transition(self):
+    def test_initialised_state_is_modifiable(self):
         """
         Test that the L{ConfigurationModel} transitions to L{ModifiedState}
-        whenever L{modify} is called on it.
+        whenever L{modify} is called on it in L{InitialisedState}.
         """
-        test_succeed = lambda : True
-        test_fail = lambda : False
         model = ConfigurationModel()
         model.load_data()
         model.modify()
         self.assertTrue(isinstance(model.get_state(), ModifiedState))
+
+    def test_modified_state_is_modifiable(self):
+        """
+        Test that the L{ConfigurationModel} transitions to L{ModifiedState}
+        whenever L{modify} is called on it in L{ModifiedState}.
+        """
+        model = ConfigurationModel()
+        model.load_data()
+        model.modify()
+        self.assertTrue(isinstance(model.get_state(), ModifiedState))
+        model.modify()
+        self.assertTrue(isinstance(model.get_state(), ModifiedState))
+
+    def test_tested_states_are_modifiable(self):
+        """
+        Test that the L{ConfigurationModel} transitions to L{ModifiedState}
+        whenever L{modify} is called on it in a subclass of L{TestedState}
+        (L{TestedGoodState} or L{TestedBadState}).
+        """
+        test_succeed = lambda : True
+        test_fail = lambda : False
+        model = ConfigurationModel(test_method=test_succeed)
+        model.load_data()
+        model.test()
+        model.modify()
+        self.assertTrue(isinstance(model.get_state(), ModifiedState))
+        model = ConfigurationModel(test_method=test_fail)
+        model.load_data()
+        model.test()
+        model.modify()
+        self.assertTrue(isinstance(model.get_state(), ModifiedState))
+
+
         
