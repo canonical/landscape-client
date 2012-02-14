@@ -2001,13 +2001,10 @@ class SSLCertificateDataTest(LandscapeTest):
 
         print_text_mock = self.mocker.replace(print_text)
         expect(print_text_mock(ANY)).count(0, None)
-        #print_text_mock("Fetching CA certificate from fakehost if available...")
-       # print_text_mock("No custom CA certificate available on fakehost.")
+        print_text_mock("Fetching CA certificate from fakehost if available...")
+        print_text_mock("No custom CA certificate available on fakehost.")
         self.mocker.replay()
  
-        def me(me):
-            print "CHAD %s" % me
-
         content = fetch_base64_ssl_public_certificate("fakehost")
         self.assertEqual("", content)
 
