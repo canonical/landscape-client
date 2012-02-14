@@ -12,7 +12,8 @@ from landscape.configuration import (
     print_text, LandscapeSetupScript, LandscapeSetupConfiguration,
     register, setup, main, setup_init_script_and_start_client,
     stop_client_and_disable_init_script, ConfigurationError,
-    ImportOptionError, store_public_key_data)
+    ImportOptionError, store_public_key_data,
+    fetch_base64_ssl_public_certificate, decode_base64_ssl_public_certificate)
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.tests.helpers import (
@@ -1946,7 +1947,7 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
         return register(configuration, print_text, sys.exit)
 
 
-class StoreSSLCertificateDataTest(LandscapeTest):
+class SSLCertificateDataTest(LandscapeTest):
 
     def test_store_public_key_data(self):
         """
@@ -1966,3 +1967,85 @@ class StoreSSLCertificateDataTest(LandscapeTest):
         self.assertEqual(key_filename,
                          store_public_key_data(config, "123456789"))
         self.assertEqual("123456789", open(key_filename, "r").read())
+
+    def test_fetch_base64_ssl(self):
+        """
+        L{fetch_base64_ssl_public_certificate} should pull a JSON object from
+        http://providedhostname/get-ca-cert. And return the custom_ca_cert data
+        if it exists.
+        """
+        base64_cert = "base64:  MTIzNDU2Nzg5MA==" # encoded woo hoo
+        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
+        fetch_mock("http://fakehost/get-ca-cert")
+        self.mocker.result(
+            "{\"custom_ca_cert\": \"%s\"}" % base64_cert)
+        self.mocker.replay()
+
+        def check_info(info):
+            self.assertEqual("Fetching CA certificate from fakehost if "
+                             "available...", str(info))
+
+        content = fetch_base64_ssl_public_certificate("fakehost",
+                                                      on_info=check_info)
+        self.assertEqual(base64_cert, content)
+
+    def test_fetch_base64_ssl_no_custom_ca(self):
+        """
+        L{fetch_base64_ssl_public_certificate} should pull a JSON object from
+        http://providedhostname/get-ca-cert. And return the custom_ca_cert data
+        if it exists, otherwise it should return an empty string.""
+        """
+        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
+        fetch_mock("http://fakehost/get-ca-cert")
+        self.mocker.result("{}")
+
+        print_text_mock = self.mocker.replace(print_text)
+        expect(print_text_mock(ANY)).count(0, None)
+        #print_text_mock("Fetching CA certificate from fakehost if available...")
+       # print_text_mock("No custom CA certificate available on fakehost.")
+        self.mocker.replay()
+ 
+        def me(me):
+            print "CHAD %s" % me
+
+        content = fetch_base64_ssl_public_certificate("fakehost")
+        self.assertEqual("", content)
+
+    def test_fetch_base64_ssl_with_http_code_fetch_error(self):
+        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
+        fetch_mock("http://fakehost/get-ca-cert")
+        self.mocker.throw(HTTPCodeError(404, ""))
+        self.mocker.replay()
+
+        def check_info(info):
+            self.assertEqual("Fetching CA certificate from fakehost if "
+                             "available...", str(info))
+        def check_error(error):
+            self.assertEqual("Unable to fetch CA certificate from discovered "
+                             "server fakehost: Server does not support client "
+                             "auto-registation.",
+                             str(error))
+
+        content = fetch_base64_ssl_public_certificate("fakehost",
+                                                      on_info=check_info,
+                                                      on_error=check_error)
+        self.assertEquals("", content)
+
+    def test_fetch_base64_ssl_with_pycurl_error(self):
+        fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
+        fetch_mock("http://fakehost/get-ca-cert")
+        self.mocker.throw(PyCurlError(60, "pycurl message"))
+        self.mocker.replay()
+
+        def check_info(info):
+            self.assertEqual("Fetching CA certificate from fakehost if "
+                             "available...", str(info))
+        def check_error(error):
+            self.assertEqual("Unable to fetch CA certificate from fakehost: "
+                             "Error 60: pycurl message",
+                             str(error))
+
+        content = fetch_base64_ssl_public_certificate("fakehost",
+                                                      on_info=check_info,
+                                                      on_error=check_error)
+        self.assertEquals("", content)

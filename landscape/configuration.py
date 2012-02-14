@@ -19,7 +19,7 @@ from landscape.lib.tag import is_valid_tag
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.lib.amp import MethodCallError
 from landscape.lib.twisted_util import gather_results
-from landscape.lib.fetch import fetch, FetchError
+from landscape.lib.fetch import fetch, FetchError, HTTPCodeError
 from landscape.reactor import TwistedReactor
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.broker.config import BrokerConfiguration
@@ -491,33 +491,40 @@ def decode_base64_ssl_public_certificate(config):
 
 
 def fetch_base64_ssl_public_certificate(hostname, on_info=print_text,
-    on_warn=print_text):
+    on_error=print_text):
     """
     Fetch base64 encoded SSL CA certificate from the discovered landscape
     server and return that decoded info.
     """
-    print_text("Fetching CA cert from %s..." % hostname)
+    on_info("Fetching CA certificate from %s if available..." % hostname)
+    content = ""
     encoded_cert = ""
     ca_url = "http://%s/get-ca-cert" % hostname
     try:
         content = fetch(ca_url)
+    except HTTPCodeError, error:
+        on_error("Unable to fetch CA certificate from discovered server %s: Server "
+                 "does not support client auto-registation." % hostname)
+        return encoded_cert
     except FetchError, error:
-        on_warn(str(error))
+        on_error("Unable to fetch CA certificate from %s: %s"
+                % ( hostname, str(error)))
+        return encoded_cert
 
-    if content and content.startswith("base64:"):
+    if content:
         ca_dict = json.loads(content)
         try:
-            if ca_dict["ca_custom_cert"].startswith("base64:"):
-                encoded_cert = ca_dict["ca_custom_cert"]
+            if ca_dict["custom_ca_cert"].startswith("base64:"):
+                encoded_cert = ca_dict["custom_ca_cert"]
             else:
-                on_warn("Auto-registration URL %s returns invalid CA JSON: %s." 
-                        %  (ca_url, ca_dict))
+                on_error("Auto-registration URL %s returns invalid CA JSON: "
+                         "%s." %  (ca_url, ca_dict))
         except KeyError:
-        # No custom CA certificate needed to talk with landscape server
-            pass
+            # No custom CA certificate needed to talk with this server
+            on_info("No custom CA certificate available for %s." % hostname)
     else:
-        on_warn("Unable to fetch CA certificate from discovered landscape "
-                "server \"%s\".  Proceding without custom CA certificate."
+        on_error("Unable to fetch CA certificate from discovered server "
+                 "%s.  Proceding without custom CA certificate."
                 % hostname)
     return encoded_cert
 
