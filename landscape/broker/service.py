@@ -54,7 +54,7 @@ class BrokerService(LandscapeService):
             self.payload_recorder = None
 
         self.transport = self.transport_factory(
-            self.reactor, config.url, config.ssl_public_key,
+            self.reactor, config.url, config, config.ssl_public_key,
             self.payload_recorder, config.server_autodiscover,
             config.autodiscover_srv_query_string,
             config.autodiscover_a_query_string)

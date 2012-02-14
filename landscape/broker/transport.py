@@ -203,7 +203,7 @@ class PayloadRecorder(object):
 class FakeTransport(object):
     """Fake transport for testing purposes."""
 
-    def __init__(self, reactor=None, url=None, pubkey=None,
+    def __init__(self, reactor=None, url=None, config=None, pubkey=None,
                  payload_recorder=None, server_autodiscover=False,
                  autodiscover_srv_query_string="",
                  autodiscover_a_query_string=""):
@@ -217,6 +217,7 @@ class FakeTransport(object):
         self.message_api = None
         self.extra = {}
         self._url = url
+        self._config = config
         self._reactor = reactor
         self._server_autodiscover = server_autodiscover
         self._autodiscover_srv_query_string = autodiscover_srv_query_string
