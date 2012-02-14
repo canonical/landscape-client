@@ -57,8 +57,8 @@ class HTTPTransport(object):
 
     def _update_config(self, hostname):
         self._config.server_autodiscover = "False"
-        self._config.url = "https://%s/message-system" % hostname
-        self._config.ping_url = "https://%s/message-system" % hostname
+        self._config.url = "https://%s:8080/message-system" % hostname
+        self._config.ping_url = "http://%s:8081/ping" % hostname
         if not self._pubkey:
             self._config.ssl_public_key = fetch_base64_ssl_public_certificate(
                 hostname, on_info=logging.info, on_warn=logging.warn)
