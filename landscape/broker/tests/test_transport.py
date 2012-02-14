@@ -174,6 +174,12 @@ class HTTPTransportTest(LandscapeTest):
         file_path = os.path.join(path, static_filename())
         self.assertEqual("pay load", bpickle.loads(read_file(file_path)))
 
+    def test_autodiscover_without_pubkey(self):
+        raise NotImplemented
+
+    def test_autodiscover_with_pubkey(self):
+        raise NotImplemented
+
     def test_exchange_works_without_payload_recording(self):
         """
         When C{HTTPTransport} is configured without a payload recorder,
