@@ -173,3 +173,52 @@ class StateTransitionTest(LandscapeTest):
         model.revert()
         self.assertTrue(isinstance(model.get_state(), InitialisedState))
 
+    def test_persisting_a_virgin_raises(self):
+        """
+        Test that a L{ConfigurationModel} in L{VirginState} will raise a
+        L{StateError} when you attempt to transition it with L{persist}.
+        """
+        model = ConfigurationModel()
+        self.assertRaises(StateError, model.persist)
+
+    def test_persisting_initialised_state_raises(self):
+        """
+        Test that a L{ConfigurationModel} in L{IntialisedState} will raise a
+        L{StateError} when you attempt to transition it with L{persist}.
+        """
+        model = ConfigurationModel()
+        model.load_data()
+        self.assertRaises(StateError, model.persist)
+
+    def test_persisting_modified_state_raises(self):
+        """
+        Test that a L{ConfigurationModel} in L{InitialisedState} will raise a 
+        L{StateError} when you attempt to transition it with L{persist}.
+        """
+        model = ConfigurationModel()
+        model.load_data()
+        model.modify()
+        self.assertRaises(StateError, model.persist)
+
+    def test_persisting_tested_bad_state_raises(self):
+        """
+        Test that a L{ConfigurationModel} in L{TestedBadState} will raise a
+        L{StateError} when you attempt to transition it with L{persist}.
+        """
+        test_fail = lambda: False
+        model = ConfigurationModel(test_method=test_fail)
+        model.load_data()
+        model.test()
+        self.assertRaises(StateError, model.persist)
+
+    def test_persist_tested_good_state(self):
+        """
+        Test that a L{ConfigurationModel} in L{TestedGoodState} can be
+        transitioned via L{persist} to a L{IntialisedState}.
+        """
+        test_succeed = lambda: True
+        model = ConfigurationModel(test_method=test_succeed)
+        model.load_data()
+        model.test()
+        model.persist()
+        self.assertTrue(isinstance(model.get_state(), InitialisedState))
