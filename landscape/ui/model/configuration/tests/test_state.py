@@ -96,6 +96,17 @@ class StateTransitionTest(LandscapeTest):
         model.modify()
         self.assertTrue(isinstance(model.get_state(), ModifiedState))
 
+    def test_modified_state_is_testable(self):
+        """
+        Test that the L{ConfigurationModel} can be transitioned via L{test}
+        when it is in the L{ModifiedState}.
+        """
+        model = ConfigurationModel()
+        model.load_data()
+        model.modify()
+        model.test()
+        self.assertTrue(isinstance(model.get_state(), TestedGoodState))
+
     def test_tested_states_are_modifiable(self):
         """
         Test that the L{ConfigurationModel} transitions to L{ModifiedState}
@@ -115,5 +126,44 @@ class StateTransitionTest(LandscapeTest):
         model.modify()
         self.assertTrue(isinstance(model.get_state(), ModifiedState))
 
-
+    def test_reverting_a_virgin_raises(self):
+        """
+        Test that calling L{revert} on a L{ConfigurationModel} in
+        L{VirginState} raises a L{StateError}.
+        """
+        model = ConfigurationModel()
+        self.assertRaises(StateError, model.revert)
         
+        
+    def test_initialiased_state_is_unrevertable(self):
+        """
+        Test that calling L{revert} on a L{ConfigurationModel} in
+        L{InitialisedState} raises a L{StateError}.
+        """
+        model = ConfigurationModel()
+        model.load_data()
+        self.assertRaises(StateError, model.revert)
+
+    def test_modified_state_is_revertable(self):
+        """
+        Test that a L{ConfigurationModel} in L{ModifiedState} can be
+        transitioned via L{revert} to L{InitialisedState}.
+        """
+        model = ConfigurationModel()
+        model.load_data()
+        model.modify()
+        model.revert()
+        self.assertTrue(isinstance(model.get_state(), InitialisedState))
+    
+    def test_tested_states_are_revertable(self):
+        """
+        Test that a L{ConfigurationModel} in one of the two L{TestedState}s can
+        be transitioned via L{revert} to L{InitialisedState}.
+        """
+        test_succeed = lambda : True
+        test_fail = lambda : False
+        model = ConfigurationModel(test_method=test_succeed)
+        model.load_data()
+        model.test()
+        model.revert()
+        self.assertTrue(isinstance(model.get_state(), InitialisedState))

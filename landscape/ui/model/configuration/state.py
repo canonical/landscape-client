@@ -19,6 +19,9 @@ class ConfigurationState(object):
     def modify(self):
         raise NotImplementedError
 
+    def revert(self):
+        raise NotImplementedError
+
 
 class ModifiableHelper(object):
     """
@@ -45,9 +48,21 @@ class UnmodifiableHelper(object):
             self.__class__.__name__ + " cannot transition via modify()"
 
 
+class TestableHelper(object):
+    """
+    Allow testing of a L{ConfigurationModel}.
+    """
+
+    def test(self, test_method):
+        if test_method():
+            return TestedGoodState()
+        else:
+            return TestedBadState()
+
+
 class UntestableHelper(object):
     """
-    Disallow testing of a L{ConfigurationState}.
+    Disallow testing of a L{ConfigurationModel}.
     """
 
     def test(self, test_method):
@@ -55,12 +70,39 @@ class UntestableHelper(object):
             self.__class__.__name__ + " cannot transition via test()"
 
 
+class RevertableHelper(object):
+    """
+    Allow reverting of a L{ConfigurationModel}.
+    """
+
+    def revert(self):
+        return InitialisedState()
+
+
+class UnrevertableHelper(object):
+    """
+    Disallow reverting of a L{ConfigurationModel}.
+    """
+
+    def revert(self):
+        raise StateError, "A ConfigurationModel in " + \
+            self.__class__.__name__ + " cannot transition via revert()"
+
+
 class ModifiedState(ConfigurationState):
     
-    helper = ModifiableHelper()
+    modifiable_helper = ModifiableHelper()
+    revertable_helper = RevertableHelper()
+    testable_helper = TestableHelper()
     
     def modify(self):
-        return self.helper.modify()
+        return self.modifiable_helper.modify()
+
+    def revert(self):
+        return self.revertable_helper.revert()
+
+    def test(self, test_method):
+        return self.testable_helper.test(test_method)
 
 
 class TestedState(ConfigurationState):
@@ -68,6 +110,7 @@ class TestedState(ConfigurationState):
     untestable_helper = UntestableHelper()
     unloadable_helper = UnloadableHelper()
     modifiable_helper = ModifiableHelper()
+    revertable_helper = RevertableHelper()
     
     def test(self, test_method):
         return self.untestable_helper.test(test_method)
@@ -77,6 +120,9 @@ class TestedState(ConfigurationState):
 
     def modify(self):
         return self.modifiable_helper.modify()
+
+    def revert(self):
+        return self.revertable_helper.revert()
 
 
 class TestedBadState(TestedState):
@@ -95,19 +141,21 @@ class InitialisedState(ConfigurationState):
     finally defaults should be applied where necessary.
     """
 
-    helper = ModifiableHelper()
+    modifiable_helper = ModifiableHelper()
+    unrevertable_helper = UnrevertableHelper()
+    testable_helper = TestableHelper()
     
     def load_data(self):
         return self
 
-    def test(self, test_method):
-        if test_method():
-            return TestedGoodState()
-        else:
-            return TestedBadState()
-
     def modify(self):
-        return self.helper.modify()
+        return self.modifiable_helper.modify()
+
+    def revert(self):
+        return self.unrevertable_helper.revert()
+
+    def test(self, test_method):
+        return self.testable_helper.test(test_method)
 
 
 class VirginState(ConfigurationState):
@@ -118,6 +166,7 @@ class VirginState(ConfigurationState):
     
     untestable_helper = UntestableHelper()
     unmodifiable_helper = UnmodifiableHelper()
+    unrevertable_helper = UnrevertableHelper()
     
     def load_data(self):
         return InitialisedState()
@@ -127,6 +176,9 @@ class VirginState(ConfigurationState):
 
     def modify(self):
         return self.unmodifiable_helper.modify()
+
+    def revert(self):
+        return self.unrevertable_helper.revert()
 
 
 class ConfigurationModel(object):
@@ -153,3 +205,6 @@ class ConfigurationModel(object):
 
     def modify(self):
         self._current_state = self._current_state.modify()
+
+    def revert(self):
+        self._current_state = self._current_state.revert()
