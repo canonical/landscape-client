@@ -167,3 +167,9 @@ class StateTransitionTest(LandscapeTest):
         model.test()
         model.revert()
         self.assertTrue(isinstance(model.get_state(), InitialisedState))
+        model = ConfigurationModel(test_method=test_fail)
+        model.load_data()
+        model.test()
+        model.revert()
+        self.assertTrue(isinstance(model.get_state(), InitialisedState))
+
