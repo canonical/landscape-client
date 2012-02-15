@@ -2,16 +2,21 @@ import os
 
 from landscape import VERSION
 from landscape.broker.transport import HTTPTransport, PayloadRecorder
+from landscape.configuration import (
+    fetch_base64_ssl_public_certificate, print_text)
 from landscape.broker.config import BrokerConfiguration
-from landscape.lib.fetch import PyCurlError
+from landscape.broker.dnslookup import discover_server
+from landscape.lib.fetch import fetch, PyCurlError
 from landscape.lib.fs import create_file, read_file
 from landscape.lib import bpickle
+from landscape.tests.mocker import ANY
 
 from landscape.tests.helpers import (
     LandscapeTest, LogKeeperHelper, MockerTestCase)
 
 from twisted.web import server, resource
 from twisted.internet import reactor
+from twisted.internet.threads import blockingCallFromThread
 from twisted.internet.ssl import DefaultOpenSSLContextFactory
 from twisted.internet.threads import deferToThread
 
@@ -24,6 +29,14 @@ PRIVKEY = sibpath("private.ssl")
 PUBKEY = sibpath("public.ssl")
 BADPRIVKEY = sibpath("badprivate.ssl")
 BADPUBKEY = sibpath("badpublic.ssl")
+
+
+def fake_curl(payload, param2, param3):
+    """Stub out the curl network call."""
+    class Curly(object):
+        def getinfo(self, param1):
+            return 200
+    return (Curly(), bpickle.dumps("%s response" % payload))
 
 
 class DataCollectingResource(resource.Resource):
@@ -45,9 +58,8 @@ class HTTPTransportTest(LandscapeTest):
     def setUp(self):
         super(HTTPTransportTest, self).setUp()
         self.ports = []
-        filename = self.makeFile("[client]\n")
+        self.config_filename = self.makeFile("[client]\n")
         self.config = BrokerConfiguration()
-        self.config.load(["--config", filename])
 
     def tearDown(self):
         super(HTTPTransportTest, self).tearDown()
@@ -161,12 +173,6 @@ class HTTPTransportTest(LandscapeTest):
         transport = HTTPTransport(None, "http://localhost", self.config,
                                   payload_recorder=recorder)
 
-        def fake_curl(param1, param2, param3):
-            """Stub out the curl network call."""
-            class Curly(object):
-                def getinfo(self, param1):
-                    return 200
-            return (Curly(), bpickle.dumps("pay load response"))
         transport._curl = fake_curl
 
         transport.exchange("pay load")
@@ -174,12 +180,98 @@ class HTTPTransportTest(LandscapeTest):
         file_path = os.path.join(path, static_filename())
         self.assertEqual("pay load", bpickle.loads(read_file(file_path)))
 
-    def test_autodiscover_without_pubkey(self):
-        raise NotImplemented
+    def test_autodiscover_config_write_with_pubkey(self):
+        """
+        When server_autodiscover is set True, and the config.ssl_public_key
+        already exists, ensure we update and write the config file with the
+        discovered server urls.
+        """
+        discover_mock = self.mocker.replace(blockingCallFromThread,
+            passthrough=False)
+        discover_mock(None, discover_server, None, "", "")
+        self.mocker.result("fakehostname")
+        self.mocker.replay()
 
-    def test_autodiscover_with_pubkey(self):
-        raise NotImplemented
+        self.config.load(["--config", self.config_filename,
+                          "--ssl-public-key", PUBKEY,
+                          "--server-autodiscover=true"])
 
+        transport = HTTPTransport(None, self.config.url, self.config,
+            pubkey=self.config.ssl_public_key,
+            server_autodiscover=self.config.server_autodiscover)
+        transport._curl = fake_curl
+
+        # Validate appropriate initial config options
+        self.assertEquals("https://landscape.canonical.com/message-system",
+                          transport._url)
+        self.assertEquals(PUBKEY, transport._pubkey)
+        self.assertTrue(transport._server_autodiscover)
+
+        transport.exchange("pay load")
+
+        # Reload config to validate config.write() was called with changes
+        self.config.load(["--config", self.config_filename])
+        self.assertFalse(self.config.server_autodiscover)
+        self.assertEquals("https://fakehostname/message-system",
+                         self.config.url)
+        self.assertEquals("http://fakehostname:8081/ping",
+                         self.config.ping_url)
+        self.assertEquals(PUBKEY, self.config.ssl_public_key)
+
+    def test_autodiscover_config_write_without_pubkey(self):
+        """
+        When server_autodiscover is set True, and the config does not have an
+        ssl_public_key defined. HTTPTransport should attempt to fetch the
+        custom CA cert from the discovered server.
+        """
+        base64_cert = "base64:  MTIzNDU2Nzg5MA==" # encoded from 1234567890
+
+        # To store the 'discovered' cert
+        data_path = self.makeDir()
+
+        key_filename = os.path.join(data_path,
+            os.path.basename(self.config_filename + ".ssl_public_key"))
+
+
+        discover_mock = self.mocker.replace(blockingCallFromThread,
+            passthrough=False)
+        discover_mock(None, discover_server, None, "", "")
+        self.mocker.result("fakehostname")
+
+        fetch_ca_mock = self.mocker.replace(
+            fetch_base64_ssl_public_certificate, passthrough=False)
+
+        fetch_ca_mock("fakehostname", on_info=ANY, on_error=ANY)
+        self.mocker.result(base64_cert)
+
+        print_text_mock = self.mocker.replace(print_text)
+        print_text_mock("Writing SSL CA certificate to %s..." % key_filename)
+        
+        self.mocker.replay()
+
+        self.config.load(["--config", self.config_filename,
+                          "--data-path", data_path,
+                          "--server-autodiscover=true"])
+
+        transport = HTTPTransport(None, self.config.url, self.config,
+            server_autodiscover=self.config.server_autodiscover)
+        transport._curl = fake_curl
+
+        # Validate appropriate initial config options
+        self.assertEquals(None, self.config.ssl_public_key)
+
+        transport.exchange("pay load")
+
+        # Reload config to validate config.write() was called with changes
+        self.config.load(["--config", self.config_filename])
+        self.assertFalse(self.config.server_autodiscover)
+        self.assertEquals("https://fakehostname/message-system",
+                         self.config.url)
+        self.assertEquals("http://fakehostname:8081/ping",
+                         self.config.ping_url)
+        self.assertEquals(key_filename, self.config.ssl_public_key)
+        self.assertEqual("1234567890", open(key_filename, "r").read())
+    
     def test_exchange_works_without_payload_recording(self):
         """
         When C{HTTPTransport} is configured without a payload recorder,
@@ -196,6 +288,7 @@ class HTTPTransportTest(LandscapeTest):
                 def getinfo(self, param1):
                     return 200
             return (Curly(), bpickle.dumps("pay load response"))
+
         transport._curl = fake_curl
 
         transport.exchange("pay load")
