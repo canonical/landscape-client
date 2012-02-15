@@ -6,7 +6,7 @@ from landscape.configuration import (
     fetch_base64_ssl_public_certificate, print_text)
 from landscape.broker.config import BrokerConfiguration
 from landscape.broker.dnslookup import discover_server
-from landscape.lib.fetch import fetch, PyCurlError
+from landscape.lib.fetch import PyCurlError
 from landscape.lib.fs import create_file, read_file
 from landscape.lib import bpickle
 from landscape.tests.mocker import ANY
@@ -190,6 +190,9 @@ class HTTPTransportTest(LandscapeTest):
             passthrough=False)
         discover_mock(None, discover_server, None, "", "")
         self.mocker.result("fakehostname")
+
+        system = self.mocker.replace("os.system")
+        system("/etc/init.d/landscape-client restart")
         self.mocker.replay()
 
         self.config.load(["--config", self.config_filename,
@@ -246,7 +249,9 @@ class HTTPTransportTest(LandscapeTest):
 
         print_text_mock = self.mocker.replace(print_text)
         print_text_mock("Writing SSL CA certificate to %s..." % key_filename)
-        
+
+        system = self.mocker.replace("os.system")
+        system("/etc/init.d/landscape-client restart")
         self.mocker.replay()
 
         self.config.load(["--config", self.config_filename,

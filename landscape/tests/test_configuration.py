@@ -13,7 +13,7 @@ from landscape.configuration import (
     register, setup, main, setup_init_script_and_start_client,
     stop_client_and_disable_init_script, ConfigurationError,
     ImportOptionError, store_public_key_data,
-    fetch_base64_ssl_public_certificate, decode_base64_ssl_public_certificate)
+    fetch_base64_ssl_public_certificate)
 from landscape.broker.registration import InvalidCredentialsError
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.tests.helpers import (

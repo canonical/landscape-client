@@ -66,7 +66,6 @@ class HTTPTransport(object):
 
         # update the discovered data points & restart
         self._config.write() 
-        return # CHAD
         sysvconfig = SysVConfig()
         try:
             sysvconfig.restart_landscape()
