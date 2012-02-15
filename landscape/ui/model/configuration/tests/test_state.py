@@ -2,7 +2,40 @@ from landscape.tests.helpers import LandscapeTest
 from landscape.ui.model.configuration.state import (
     ConfigurationModel, StateError, VirginState, InitialisedState,
     TestedGoodState, TestedBadState, ModifiedState)
+from landscape.ui.tests.helpers import ConfigurationProxyHelper
 
+
+class ConfigurationModelTest(LandscapeTest):
+
+    helpers = [ConfigurationProxyHelper]
+
+    def setUp(self):
+        self.config_string = "[client]\n" \
+            "data_path = /var/lib/landscape/client/\n" \
+            "http_proxy = http://proxy.localdomain:3192\n" \
+            "tags = a_tag\n" \
+            "url = https://landscape.canonical.com/message-system\n" \
+            "account_name = foo\n" \
+            "registration_password = boink\n" \
+            "computer_title = baz\n" \
+            "https_proxy = https://proxy.localdomain:6192\n" \
+            "ping_url = http://landscape.canonical.com/ping\n"
+
+        super(ConfigurationModelTest, self).setUp()
+
+
+    def test_initialised(self):
+        """
+        Test the L{ConfigurationModel} is correctly initialised from a proxy
+        and defaults.
+        """
+        class FakeConfigurationProxy():
+            pass
+        model = ConfigurationModel(proxy=self.proxy)
+        model.load_data()
+        self.assertTrue(model.get_is_hosted())
+        
+        
 
 class StateTransitionTest(LandscapeTest):
     """

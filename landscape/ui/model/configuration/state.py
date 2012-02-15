@@ -1,3 +1,20 @@
+import copy
+
+
+HOSTED_URL = "https://landscape.canonical.com/message"
+HOSTED = 0
+LOCAL = 1
+IS_HOSTED = 2
+URL = 0
+DEFAULT_DATA = {
+    IS_HOSTED: True,
+    HOSTED: {
+        URL: HOSTED_URL,
+        },
+    LOCAL: {
+        }
+}
+
 
 class StateError(Exception):
     """
@@ -7,9 +24,15 @@ class StateError(Exception):
 
 class ConfigurationState(object):
     """
-    Abstract base class for states used in the L{ConfigurationModel}.
+    Base class for states used in the L{ConfigurationModel}.
     """
     
+    def __init__(self, data):
+        self._data = copy.copy(data)
+
+    def get(self, name):
+        return self._data[name]
+        
     def load_data(self):
         raise NotImplementedError
 
@@ -26,90 +49,107 @@ class ConfigurationState(object):
         raise NotImplementedError
 
 
-class ModifiableHelper(object):
+class Helper(object):
+    """
+    Base class for all state transition helpers.
+
+    It is assumed that the Helper classes are "friends" of the
+    L{ConfigurationState} classes and can have some knowledge of their
+    internals.  They shouldn't be visible to users of the
+    L{ConfigurationState}s and in general we should avoid seeing the
+    L{ConfigurationState}s _data attribute outside this module.
+    """
+    
+    def __init__(self, state):
+        self._state = state
+
+
+class ModifiableHelper(Helper):
     """
     Allow a L{ConfigurationState}s to be modified.
     """
 
     def modify(self):
-        return ModifiedState()
+        return ModifiedState(self._state._data)
 
 
-class UnloadableHelper(object):
+class UnloadableHelper(Helper):
     
     def load_data(self):
         raise StateError, "A ConfiguratiomModel in a " + \
-            self.__class__.__name__ + " cannot be transitioned via load_data()"
+            self._state.__class__.__name__ + \
+            " cannot be transitioned via load_data()"
 
 
-class UnmodifiableHelper(object):
+class UnmodifiableHelper(Helper):
     """
     Disallow modification of a L{ConfigurationState}.
     """
 
     def modify(self):
         raise StateError, "A ConfigurationModel in " + \
-            self.__class__.__name__ + " cannot transition via modify()"
+            self._state.__class__.__name__ + " cannot transition via modify()"
 
 
-class TestableHelper(object):
+class TestableHelper(Helper):
     """
     Allow testing of a L{ConfigurationModel}.
     """
 
     def test(self, test_method):
         if test_method():
-            return TestedGoodState()
+            return TestedGoodState(self._state._data)
         else:
-            return TestedBadState()
+            return TestedBadState(self._state._data)
 
 
-class UntestableHelper(object):
+class UntestableHelper(Helper):
     """
     Disallow testing of a L{ConfigurationModel}.
     """
 
     def test(self, test_method):
         raise StateError, "A ConfigurationModel in " + \
-            self.__class__.__name__ + " cannot transition via test()"
+            self._state.__class__.__name__ + " cannot transition via test()"
 
 
-class RevertableHelper(object):
+class RevertableHelper(Helper):
     """
     Allow reverting of a L{ConfigurationModel}.
     """
 
     def revert(self):
-        return InitialisedState()
+        return InitialisedState(self._state._data)
 
 
-class UnrevertableHelper(object):
+class UnrevertableHelper(Helper):
     """
     Disallow reverting of a L{ConfigurationModel}.
     """
 
     def revert(self):
         raise StateError, "A ConfigurationModel in " + \
-            self.__class__.__name__ + " cannot transition via revert()"
+            self._state.__class__.__name__ + " cannot transition via revert()"
 
 
-class PersistableHelper(object):
+class PersistableHelper(Helper):
     """
     Allow a L{ConfigurationModel} to persist.
     """
 
     def persist(self):
-        return InitialisedState()
+        return InitialisedState(self._state._data)
 
 
-class UnpersistableHelper(object):
+class UnpersistableHelper(Helper):
     """
     Disallow persistence of a L{ConfigurationModel}.
     """
 
     def persist(self):
         raise StateError, "A ConfiguratonModel in " + \
-            self.__class__.__name__ + " cannot be transitioned via persist()."
+            self._state.__class__.__name__ + \
+            " cannot be transitioned via persist()."
 
 
 class ModifiedState(ConfigurationState):
@@ -117,11 +157,13 @@ class ModifiedState(ConfigurationState):
     The state of a L{ConfigurationModel} whenever the user has modified some
     data but hasn't yet L{test}ed or L{revert}ed.
     """
-
-    modifiable_helper = ModifiableHelper()
-    revertable_helper = RevertableHelper()
-    testable_helper = TestableHelper()
-    unpersistable_helper = UnpersistableHelper()
+    
+    def __init__(self, data):
+        super(ModifiedState, self).__init__(data)
+        self.modifiable_helper = ModifiableHelper(self)
+        self.revertable_helper = RevertableHelper(self)
+        self.testable_helper = TestableHelper(self)
+        self.unpersistable_helper = UnpersistableHelper(self)
     
     def modify(self):
         return self.modifiable_helper.modify()
@@ -142,10 +184,12 @@ class TestedState(ConfigurationState):
     L{TestedBadState}).
     """
 
-    untestable_helper = UntestableHelper()
-    unloadable_helper = UnloadableHelper()
-    modifiable_helper = ModifiableHelper()
-    revertable_helper = RevertableHelper()
+    def __init__(self, data):
+        super(TestedState, self).__init__(data)
+        self.untestable_helper = UntestableHelper(self)
+        self.unloadable_helper = UnloadableHelper(self)
+        self.modifiable_helper = ModifiableHelper(self)
+        self.revertable_helper = RevertableHelper(self)
     
     def test(self, test_method):
         return self.untestable_helper.test(test_method)
@@ -166,7 +210,9 @@ class TestedBadState(TestedState):
     L{test} has failed for some reason.
     """
 
-    unpersistable_helper = UnpersistableHelper()
+    def __init__(self, data):
+        super(TestedBadState, self).__init__(data)
+        self.unpersistable_helper = UnpersistableHelper(self)
 
     def persist(self):
         return self.unpersistable_helper.persist()
@@ -177,8 +223,10 @@ class TestedGoodState(TestedState):
     The state of a L{ConfigurationModel} after it has been L{test}ed
     successfully.
     """
-
-    persistable_helper = PersistableHelper()
+    
+    def __init__(self, data):
+        super(TestedGoodState, self).__init__(data)
+        self.persistable_helper = PersistableHelper(self)
 
     def persist(self):
         return self.persistable_helper.persist()
@@ -192,10 +240,12 @@ class InitialisedState(ConfigurationState):
     finally defaults should be applied where necessary.
     """
 
-    modifiable_helper = ModifiableHelper()
-    unrevertable_helper = UnrevertableHelper()
-    testable_helper = TestableHelper()
-    unpersistable_helper = UnpersistableHelper()
+    def __init__(self, data):
+        super(InitialisedState, self).__init__(data)
+        self.modifiable_helper = ModifiableHelper(self)
+        self.unrevertable_helper = UnrevertableHelper(self)
+        self.testable_helper = TestableHelper(self)
+        self.unpersistable_helper = UnpersistableHelper(self)
     
     def load_data(self):
         return self
@@ -219,13 +269,15 @@ class VirginState(ConfigurationState):
     upon it.
     """
     
-    untestable_helper = UntestableHelper()
-    unmodifiable_helper = UnmodifiableHelper()
-    unrevertable_helper = UnrevertableHelper()
-    unpersistable_helper = UnpersistableHelper()
+    def __init__(self):
+        super(VirginState, self).__init__(DEFAULT_DATA)
+        self.untestable_helper = UntestableHelper(self)
+        self.unmodifiable_helper = UnmodifiableHelper(self)
+        self.unrevertable_helper = UnrevertableHelper(self)
+        self.unpersistable_helper = UnpersistableHelper(self)
     
     def load_data(self):
-        return InitialisedState()
+        return InitialisedState(self._data)
 
     def test(self, test_method):
         return self.untestable_helper.test(test_method)
@@ -242,12 +294,16 @@ class VirginState(ConfigurationState):
 
 class ConfigurationModel(object):
     
-    def __init__(self, test_method=None):
+    def __init__(self, test_method=None, proxy=None):
         self._current_state = VirginState()
         if test_method:
             self._test_method = test_method
         else:
             self._test_method = self._test
+        if proxy:
+            self._proxy = proxy
+        else:
+            pass
 
     def _test(self):
         # TODO, dump this and use something real
@@ -273,3 +329,6 @@ class ConfigurationModel(object):
     
     def persist(self):
         self._current_state = self._current_state.persist()
+
+    def get_is_hosted(self):
+        return self._current_state.get(IS_HOSTED)
