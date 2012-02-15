@@ -56,25 +56,31 @@ class HTTPTransport(object):
         self._url = url
 
     def _update_config(self, hostname):
-        self._config.server_autodiscover = "False"
-        self._config.url = "https://%s:8080/message-system" % hostname
+        self._config.server_autodiscover = False
+        self._config.url = "https://%s/message-system" % hostname
         self._config.ping_url = "http://%s:8081/ping" % hostname
         if not self._pubkey:
             self._config.ssl_public_key = fetch_base64_ssl_public_certificate(
-                hostname, on_info=logging.info, on_warn=logging.warn)
+                hostname, on_info=logging.info, on_error=logging.warn)
             decode_base64_ssl_public_certificate(self._config)
 
-        # update the discovered data points  & restart
-        self._config.write()
+        # update the discovered data points & restart
+        self._config.write() 
+        return # CHAD
         sysvconfig = SysVConfig()
         try:
             sysvconfig.restart_landscape()
         except ProcessError:
             logging.exception("Couldn't restart the Landscape client after "
-                              "auto-discovery of Landscape server %s."
+                              "config updates due to auto-discovery of " 
+                              "Landscape server %s."
                               % hostname)
 
-    def _curl(self, payload, computer_id, message_api):
+    def _autodiscovery(self):
+        """
+        Perform server autodiscovery steps and fetch any custom CA certificate
+        if available.
+        """
         if self._server_autodiscover:
             discovered_server = blockingCallFromThread(
                 self._reactor, discover_server, None,
@@ -87,6 +93,7 @@ class HTTPTransport(object):
                 logging.warn("Autodiscovery failed.  Falling back to previous "
                              "settings.")
 
+    def _curl(self, payload, computer_id, message_api):
         headers = {"X-Message-API": message_api,
                    "User-Agent": "landscape-client/%s" % VERSION,
                    "Content-Type": "application/octet-stream"}
@@ -117,7 +124,7 @@ class HTTPTransport(object):
             start_time = time.time()
             if logging.getLogger().getEffectiveLevel() <= logging.DEBUG:
                 logging.debug("Sending payload:\n%s", pprint.pformat(payload))
-
+            self._autodiscovery()
             curly, data = self._curl(spayload, computer_id, message_api)
             logging.info("Sent %d bytes and received %d bytes in %s.",
                          len(spayload), len(data),
