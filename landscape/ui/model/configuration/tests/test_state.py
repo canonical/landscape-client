@@ -1,11 +1,64 @@
 from landscape.tests.helpers import LandscapeTest
 from landscape.ui.model.configuration.state import (
     ConfigurationModel, StateError, VirginState, InitialisedState,
-    TestedGoodState, TestedBadState, ModifiedState)
+    TestedGoodState, TestedBadState, ModifiedState, IS_HOSTED, HOSTED,
+    HOSTED_LANDSCAPE_HOST, LANDSCAPE_HOST)
 from landscape.ui.tests.helpers import ConfigurationProxyHelper
 
 
 class ConfigurationModelTest(LandscapeTest):
+
+    helpers = [ConfigurationProxyHelper]
+
+    def setUp(self):
+        self.config_string = ""
+        super(ConfigurationModelTest, self).setUp()
+    
+    def tearDown(self):
+        super(ConfigurationModelTest, self).tearDown()
+        self.proxy = None
+
+    def test_get(self):
+        """
+        Test that L{get} correctly extracts data from the internal data storage
+        of the L{ConfigurationState}s associated with a L{ConfigurationModel}.
+        """
+        model = ConfigurationModel(proxy=self.proxy)
+        state = model.get_state()
+        self.assertEqual(True, state.get(IS_HOSTED))
+        self.assertEqual(HOSTED_LANDSCAPE_HOST, state.get(HOSTED, LANDSCAPE_HOST))
+        self.assertRaises(TypeError, state.get, IS_HOSTED, HOSTED, LANDSCAPE_HOST)
+        self.assertRaises(KeyError, state.get, LANDSCAPE_HOST)
+        self.assertRaises(KeyError, state.get, IS_HOSTED, LANDSCAPE_HOST)
+
+    def test_set(self):
+        """
+        Test that L{set} correctly sets data in the internal data storage of
+        the L{ConfigurationState}s associated with a L{ConfigurationModel}.
+        """
+        model = ConfigurationModel(proxy=self.proxy)
+        state = model.get_state()
+        state.set(IS_HOSTED, True)
+        self.assertTrue(state.get(IS_HOSTED))
+        state.set(IS_HOSTED, False)
+
+    def test_virginal(self):
+        """
+        Test that the L{ConfigurationModel} is created with default data.  This
+        should be managed via L{VirginState} (hence the name), but this should
+        not be exposed and is not explicitly tested here (see
+        L{StateTransitionTest}).
+        """
+        model = ConfigurationModel(proxy=self.proxy)
+        self.assertTrue(model.is_hosted)
+        self.assertEqual(HOSTED_LANDSCAPE_HOST, model.hosted_landscape_host)
+        self.assertEqual("", model.local_landscape_host)
+        self.assertEqual("", model.hosted_account_name)
+        self.assertEqual("", model.local_account_name)
+        self.assertEqual("", model.hosted_password)
+        
+
+class ConfigurationModelHostedTest(LandscapeTest):
 
     helpers = [ConfigurationProxyHelper]
 
@@ -21,19 +74,23 @@ class ConfigurationModelTest(LandscapeTest):
             "https_proxy = https://proxy.localdomain:6192\n" \
             "ping_url = http://landscape.canonical.com/ping\n"
 
-        super(ConfigurationModelTest, self).setUp()
+        super(ConfigurationModelHostedTest, self).setUp()
 
 
-    def test_initialised(self):
+    def test_initialised_hosted(self):
         """
         Test the L{ConfigurationModel} is correctly initialised from a proxy
-        and defaults.
+        and defaults with hosted data.
         """
-        class FakeConfigurationProxy():
-            pass
         model = ConfigurationModel(proxy=self.proxy)
         model.load_data()
-        self.assertTrue(model.get_is_hosted())
+        self.assertTrue(model.is_hosted)
+        self.assertEqual("landscape.canonical.com",
+                         model.hosted_landscape_host)
+        self.assertEqual("", model.local_landscape_host)
+        self.assertEqual("foo", model.hosted_account_name)
+        self.assertEqual("", model.local_account_name)
+        self.assertEqual("boink", model.hosted_password)
         
         
 
@@ -42,13 +99,19 @@ class StateTransitionTest(LandscapeTest):
     Test that we make the correct state transitions when taking actions on the
     L{ConfigurationModel}.
     """
+
+    helpers = [ConfigurationProxyHelper]
+
+    def setUp(self):
+        self.config_string = ""
+        super(StateTransitionTest, self).setUp()
     
     def test_load_data_transitions(self):
         """
         Test that the L{ConfigurationModel} correctly changes state as we call
         L{load_data}.
         """
-        model = ConfigurationModel()
+        model = ConfigurationModel(proxy=self.proxy)
         self.assertTrue(isinstance(model.get_state(), VirginState))
         model.load_data()
         self.assertTrue(isinstance(model.get_state(), InitialisedState))
@@ -62,7 +125,7 @@ class StateTransitionTest(LandscapeTest):
         Test that calling L{test} on a L{ConfigurationModel} in L{VirginState}
         raises an error.
         """
-        model = ConfigurationModel()
+        model = ConfigurationModel(proxy=self.proxy)
         self.assertTrue(isinstance(model.get_state(), VirginState))
         self.assertRaises(StateError, model.test)
 
@@ -74,11 +137,11 @@ class StateTransitionTest(LandscapeTest):
         """
         test_succeed = lambda : True
         test_fail = lambda : False
-        model = ConfigurationModel(test_method=test_succeed)
+        model = ConfigurationModel(proxy=self.proxy, test_method=test_succeed)
         model.load_data()
         model.test()
         self.assertRaises(StateError, model.load_data)
-        model = ConfigurationModel(test_method=test_fail)
+        model = ConfigurationModel(proxy=self.proxy, test_method=test_fail)
         model.load_data()
         model.test()
         self.assertRaises(StateError, model.load_data)
@@ -90,11 +153,11 @@ class StateTransitionTest(LandscapeTest):
         """
         test_succeed = lambda : True
         test_fail = lambda : False
-        model = ConfigurationModel(test_method=test_succeed)
+        model = ConfigurationModel(proxy=self.proxy, test_method=test_succeed)
         model.load_data()
         model.test()
         self.assertTrue(isinstance(model.get_state(), TestedGoodState))
-        model = ConfigurationModel(test_method=test_fail)
+        model = ConfigurationModel(proxy=self.proxy, test_method=test_fail)
         model.load_data()
         model.test()
         self.assertTrue(isinstance(model.get_state(), TestedBadState))
@@ -104,7 +167,7 @@ class StateTransitionTest(LandscapeTest):
         Test that attempting a L{modify} a L{ConfigurationModel} in
         L{VirginState} raises a L{StateError}.
         """
-        model = ConfigurationModel()
+        model = ConfigurationModel(proxy=self.proxy)
         self.assertRaises(StateError, model.modify)
 
     def test_initialised_state_is_modifiable(self):
@@ -112,7 +175,7 @@ class StateTransitionTest(LandscapeTest):
         Test that the L{ConfigurationModel} transitions to L{ModifiedState}
         whenever L{modify} is called on it in L{InitialisedState}.
         """
-        model = ConfigurationModel()
+        model = ConfigurationModel(proxy=self.proxy)
         model.load_data()
         model.modify()
         self.assertTrue(isinstance(model.get_state(), ModifiedState))
@@ -122,7 +185,7 @@ class StateTransitionTest(LandscapeTest):
         Test that the L{ConfigurationModel} transitions to L{ModifiedState}
         whenever L{modify} is called on it in L{ModifiedState}.
         """
-        model = ConfigurationModel()
+        model = ConfigurationModel(proxy=self.proxy)
         model.load_data()
         model.modify()
         self.assertTrue(isinstance(model.get_state(), ModifiedState))
@@ -134,7 +197,7 @@ class StateTransitionTest(LandscapeTest):
         Test that the L{ConfigurationModel} can be transitioned via L{test}
         when it is in the L{ModifiedState}.
         """
-        model = ConfigurationModel()
+        model = ConfigurationModel(proxy=self.proxy)
         model.load_data()
         model.modify()
         model.test()
@@ -148,12 +211,12 @@ class StateTransitionTest(LandscapeTest):
         """
         test_succeed = lambda : True
         test_fail = lambda : False
-        model = ConfigurationModel(test_method=test_succeed)
+        model = ConfigurationModel(proxy=self.proxy, test_method=test_succeed)
         model.load_data()
         model.test()
         model.modify()
         self.assertTrue(isinstance(model.get_state(), ModifiedState))
-        model = ConfigurationModel(test_method=test_fail)
+        model = ConfigurationModel(proxy=self.proxy, test_method=test_fail)
         model.load_data()
         model.test()
         model.modify()
@@ -164,7 +227,7 @@ class StateTransitionTest(LandscapeTest):
         Test that calling L{revert} on a L{ConfigurationModel} in
         L{VirginState} raises a L{StateError}.
         """
-        model = ConfigurationModel()
+        model = ConfigurationModel(proxy=self.proxy)
         self.assertRaises(StateError, model.revert)
         
         
@@ -173,7 +236,7 @@ class StateTransitionTest(LandscapeTest):
         Test that calling L{revert} on a L{ConfigurationModel} in
         L{InitialisedState} raises a L{StateError}.
         """
-        model = ConfigurationModel()
+        model = ConfigurationModel(proxy=self.proxy)
         model.load_data()
         self.assertRaises(StateError, model.revert)
 
@@ -182,7 +245,7 @@ class StateTransitionTest(LandscapeTest):
         Test that a L{ConfigurationModel} in L{ModifiedState} can be
         transitioned via L{revert} to L{InitialisedState}.
         """
-        model = ConfigurationModel()
+        model = ConfigurationModel(proxy=self.proxy)
         model.load_data()
         model.modify()
         model.revert()
@@ -195,12 +258,12 @@ class StateTransitionTest(LandscapeTest):
         """
         test_succeed = lambda : True
         test_fail = lambda : False
-        model = ConfigurationModel(test_method=test_succeed)
+        model = ConfigurationModel(proxy=self.proxy, test_method=test_succeed)
         model.load_data()
         model.test()
         model.revert()
         self.assertTrue(isinstance(model.get_state(), InitialisedState))
-        model = ConfigurationModel(test_method=test_fail)
+        model = ConfigurationModel(proxy=self.proxy, test_method=test_fail)
         model.load_data()
         model.test()
         model.revert()
@@ -211,7 +274,7 @@ class StateTransitionTest(LandscapeTest):
         Test that a L{ConfigurationModel} in L{VirginState} will raise a
         L{StateError} when you attempt to transition it with L{persist}.
         """
-        model = ConfigurationModel()
+        model = ConfigurationModel(proxy=self.proxy)
         self.assertRaises(StateError, model.persist)
 
     def test_persisting_initialised_state_raises(self):
@@ -219,7 +282,7 @@ class StateTransitionTest(LandscapeTest):
         Test that a L{ConfigurationModel} in L{IntialisedState} will raise a
         L{StateError} when you attempt to transition it with L{persist}.
         """
-        model = ConfigurationModel()
+        model = ConfigurationModel(proxy=self.proxy)
         model.load_data()
         self.assertRaises(StateError, model.persist)
 
@@ -228,7 +291,7 @@ class StateTransitionTest(LandscapeTest):
         Test that a L{ConfigurationModel} in L{InitialisedState} will raise a 
         L{StateError} when you attempt to transition it with L{persist}.
         """
-        model = ConfigurationModel()
+        model = ConfigurationModel(proxy=self.proxy)
         model.load_data()
         model.modify()
         self.assertRaises(StateError, model.persist)
@@ -239,7 +302,7 @@ class StateTransitionTest(LandscapeTest):
         L{StateError} when you attempt to transition it with L{persist}.
         """
         test_fail = lambda: False
-        model = ConfigurationModel(test_method=test_fail)
+        model = ConfigurationModel(proxy=self.proxy, test_method=test_fail)
         model.load_data()
         model.test()
         self.assertRaises(StateError, model.persist)
@@ -250,7 +313,7 @@ class StateTransitionTest(LandscapeTest):
         transitioned via L{persist} to a L{IntialisedState}.
         """
         test_succeed = lambda: True
-        model = ConfigurationModel(test_method=test_succeed)
+        model = ConfigurationModel(proxy=self.proxy, test_method=test_succeed)
         model.load_data()
         model.test()
         model.persist()
