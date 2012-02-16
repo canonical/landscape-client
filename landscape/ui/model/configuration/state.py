@@ -33,6 +33,32 @@ DEFAULT_DATA = {
 }
 
 
+def derive_server_host_name_from_url(url):
+    "Extract the hostname part from a URL."
+    try:
+        without_protocol = url[url.index("://") + 3:]
+    except ValueError:
+        without_protocol = url
+    try:
+        return without_protocol[:without_protocol.index("/")]
+    except ValueError:
+        return without_protocol
+
+
+def derive_url_from_host_name(host_name):
+    "Extrapolate a url from a host name."
+    #Reuse this code to make sure it's a proper host name
+    host_name = derive_server_host_name_from_url(host_name)
+    return "https://" + host_name + "/message-system"
+
+
+def derive_ping_url_from_host_name(host_name):
+    "Extrapolate a ping_url from a host name."
+    #Reuse this code to make sure it's a proper host name
+    host_name = derive_server_host_name_from_url(host_name)
+    return "http://" + host_name + "/ping"
+
+
 class StateError(Exception):
     """
     An exception that is raised when there is an error relating to the current
@@ -293,14 +319,19 @@ class InitialisedState(ConfigurationState):
         self.unrevertable_helper = UnrevertableHelper(self)
         self.testable_helper = TestableHelper(self)
         self.unpersistable_helper = UnpersistableHelper(self)
+        self._load_live_data()
+
+    def _load_live_data(self):
         self._proxy.load(None)
-        if self._proxy.url.find(HOSTED_LANDSCAPE_HOST):
+        url = self._proxy.url
+        if url.find(HOSTED_LANDSCAPE_HOST) > -1:
             self.set(IS_HOSTED, True)
             self.set(HOSTED, ACCOUNT_NAME, self._proxy.account_name)
             self.set(HOSTED, PASSWORD, self._proxy.registration_password)
         else:
             self.set(IS_HOSTED, False)
-            self.set(LOCAL, LANDSCAPE_HOST) 
+            self.set(LOCAL, LANDSCAPE_HOST,
+                     derive_server_host_name_from_url(url) )
             self.set(LOCAL, ACCOUNT_NAME, self._proxy.account_name)
             
     def load_data(self):

@@ -2,7 +2,7 @@ from landscape.tests.helpers import LandscapeTest
 from landscape.ui.model.configuration.state import (
     ConfigurationModel, StateError, VirginState, InitialisedState,
     TestedGoodState, TestedBadState, ModifiedState, IS_HOSTED, HOSTED,
-    HOSTED_LANDSCAPE_HOST, LANDSCAPE_HOST)
+    LOCAL, HOSTED_LANDSCAPE_HOST, LANDSCAPE_HOST)
 from landscape.ui.tests.helpers import ConfigurationProxyHelper
 
 
@@ -41,6 +41,10 @@ class ConfigurationModelTest(LandscapeTest):
         state.set(IS_HOSTED, True)
         self.assertTrue(state.get(IS_HOSTED))
         state.set(IS_HOSTED, False)
+        self.assertFalse(state.get(IS_HOSTED))
+        self.assertEqual("", state.get(LOCAL, LANDSCAPE_HOST))
+        state.set(LOCAL, LANDSCAPE_HOST, "goodison.park")
+        self.assertEqual("goodison.park", state.get(LOCAL, LANDSCAPE_HOST))
 
     def test_virginal(self):
         """
@@ -56,7 +60,7 @@ class ConfigurationModelTest(LandscapeTest):
         self.assertEqual("", model.hosted_account_name)
         self.assertEqual("", model.local_account_name)
         self.assertEqual("", model.hosted_password)
-        
+
 
 class ConfigurationModelHostedTest(LandscapeTest):
 
@@ -91,8 +95,42 @@ class ConfigurationModelHostedTest(LandscapeTest):
         self.assertEqual("foo", model.hosted_account_name)
         self.assertEqual("", model.local_account_name)
         self.assertEqual("boink", model.hosted_password)
-        
-        
+
+
+
+class ConfigurationModelLocalTest(LandscapeTest):
+
+    helpers = [ConfigurationProxyHelper]
+
+    def setUp(self):
+        self.config_string = "[client]\n" \
+            "data_path = /var/lib/landscape/client/\n" \
+            "http_proxy = http://proxy.localdomain:3192\n" \
+            "tags = a_tag\n" \
+            "url = https://landscape.localdomain/message-system\n" \
+            "account_name = foo\n" \
+            "registration_password = boink\n" \
+            "computer_title = baz\n" \
+            "https_proxy = \n" \
+            "ping_url = http://landscape.localdomain/ping\n"
+
+        super(ConfigurationModelLocalTest, self).setUp()
+
+    def test_initialised_local(self):
+        """
+        Test the L{ConfigurationModel} is correctly initialised from a proxy
+        and defaults with local data.
+        """
+        model = ConfigurationModel(proxy=self.proxy)
+        model.load_data()
+        self.assertFalse(model.is_hosted)
+        self.assertEqual("landscape.canonical.com",
+                         model.hosted_landscape_host)
+        self.assertEqual("landscape.localdomain", model.local_landscape_host)
+        self.assertEqual("", model.hosted_account_name)
+        self.assertEqual("foo", model.local_account_name)
+        self.assertEqual("", model.hosted_password)
+
 
 class StateTransitionTest(LandscapeTest):
     """
