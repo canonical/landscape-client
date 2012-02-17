@@ -39,6 +39,7 @@ class install_dbus_service(Command):
                 ff = open(service_path, "w")
                 ff.write(output)
                 ff.close()
+        os.system("glib-compile-schemas /usr/share/glib-2.0/schemas/")
 
 
 pkit_description = \
@@ -76,7 +77,10 @@ setup(name="landscape Client Settings PolicyKit",
         ('/usr/share/applications/',
          ['applications/landscape-client-settings.desktop']),
         ('/usr/share/icons/hicolor/scalable/apps/',
-         ['icons/preferences-management-service.svg'])],
+         ['icons/preferences-management-service.svg']),
+        ('/usr/share/glib-2.0/schemas/',
+         ['glib-2.0/schemas/com.canonical.landscape-client-settings.gschema.xml'])
+        ],
       scripts=['scripts/landscape-client-settings-mechanism',
                'scripts/landscape-client-registration-mechanism',
                "scripts/landscape-client-settings-ui"],

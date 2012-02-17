@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<schemalist>
+  <schema id="com.canonical.landscape-client-settings" path="/com/canonical/landscape-client-settings/">
+    <key type="b" name="is-hosted">
+      <default>true</default>
+      <summary>Whether the client settings UI currently set to a hosted client configuration.</summary>
+    </key>
+    <key type="s" name="hosted-landscape-host">
+      <default>canonical.landscape.com</default>
+      <summary>The hostname of the Canonical hosted landscape system</summary>
+    </key>
+  </schema>
+</schemalist>
