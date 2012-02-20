@@ -71,9 +71,10 @@ class ConfigurationState(object):
     Base class for states used in the L{ConfigurationModel}.
     """
     
-    def __init__(self, data, proxy):
+    def __init__(self, data, proxy, uisettings):
         self._data = copy.deepcopy(data)
         self._proxy = proxy
+        self._uisettings = uisettings
 
     def get(self, *args):
         arglen = len(args)
@@ -143,7 +144,8 @@ class ModifiableHelper(Helper):
     """
 
     def modify(self):
-        return ModifiedState(self._state._data, self._state._proxy)
+        return ModifiedState(self._state._data, self._state._proxy,
+                             self._state._uisettings)
 
 
 class UnloadableHelper(Helper):
@@ -171,9 +173,11 @@ class TestableHelper(Helper):
 
     def test(self, test_method):
         if test_method():
-            return TestedGoodState(self._state._data, self._state._proxy)
+            return TestedGoodState(self._state._data, self._state._proxy,
+                                   self._state._uisettings)
         else:
-            return TestedBadState(self._state._data, self._state._proxy)
+            return TestedBadState(self._state._data, self._state._proxy,
+                                  self._state._uisettings)
 
 
 class UntestableHelper(Helper):
@@ -192,7 +196,8 @@ class RevertableHelper(Helper):
     """
 
     def revert(self):
-        return InitialisedState(self._state._data, self._state._proxy)
+        return InitialisedState(self._state._data, self._state._proxy,
+                                self._state._uisettings)
 
 
 class UnrevertableHelper(Helper):
@@ -211,7 +216,8 @@ class PersistableHelper(Helper):
     """
 
     def persist(self):
-        return InitialisedState(self._state._data, self._state._proxy)
+        return InitialisedState(self._state._data, self._state._proxy,
+                                self._state._uisettings)
 
 
 class UnpersistableHelper(Helper):
@@ -231,8 +237,8 @@ class ModifiedState(ConfigurationState):
     data but hasn't yet L{test}ed or L{revert}ed.
     """
     
-    def __init__(self, data, proxy):
-        super(ModifiedState, self).__init__(data, proxy)
+    def __init__(self, data, proxy, uisettings):
+        super(ModifiedState, self).__init__(data, proxy, uisettings)
         self.modifiable_helper = ModifiableHelper(self)
         self.revertable_helper = RevertableHelper(self)
         self.testable_helper = TestableHelper(self)
@@ -257,8 +263,8 @@ class TestedState(ConfigurationState):
     L{TestedBadState}).
     """
 
-    def __init__(self, data, proxy):
-        super(TestedState, self).__init__(data, proxy)
+    def __init__(self, data, proxy, uisettings):
+        super(TestedState, self).__init__(data, proxy, uisettings)
         self.untestable_helper = UntestableHelper(self)
         self.unloadable_helper = UnloadableHelper(self)
         self.modifiable_helper = ModifiableHelper(self)
@@ -283,8 +289,8 @@ class TestedBadState(TestedState):
     L{test} has failed for some reason.
     """
 
-    def __init__(self, data, proxy):
-        super(TestedBadState, self).__init__(data, proxy)
+    def __init__(self, data, proxy, uisettings):
+        super(TestedBadState, self).__init__(data, proxy, uisettings)
         self.unpersistable_helper = UnpersistableHelper(self)
 
     def persist(self):
@@ -297,8 +303,8 @@ class TestedGoodState(TestedState):
     successfully.
     """
     
-    def __init__(self, data, proxy):
-        super(TestedGoodState, self).__init__(data, proxy)
+    def __init__(self, data, proxy, uisettings):
+        super(TestedGoodState, self).__init__(data, proxy, uisettings)
         self.persistable_helper = PersistableHelper(self)
 
     def persist(self):
@@ -313,13 +319,27 @@ class InitialisedState(ConfigurationState):
     finally defaults should be applied where necessary.
     """
 
-    def __init__(self, data, proxy):
-        super(InitialisedState, self).__init__(data, proxy)
+    def __init__(self, data, proxy, uisettings):
+        super(InitialisedState, self).__init__(data, proxy, uisettings)
         self.modifiable_helper = ModifiableHelper(self)
         self.unrevertable_helper = UnrevertableHelper(self)
         self.testable_helper = TestableHelper(self)
         self.unpersistable_helper = UnpersistableHelper(self)
+        self._load_uisettings_data()
         self._load_live_data()
+
+    def _load_uisettings_data(self):
+        self.set(IS_HOSTED, self._uisettings.get_is_hosted())
+        self.set(HOSTED, LANDSCAPE_HOST,
+                 self._uisettings.get_hosted_landscape_host())
+        self.set(HOSTED, ACCOUNT_NAME,
+                 self._uisettings.get_hosted_account_name())
+        self.set(HOSTED, PASSWORD, self._uisettings.get_hosted_password())
+        self.set(LOCAL, LANDSCAPE_HOST,
+                 self._uisettings.get_local_landscape_host())
+        self.set(LOCAL, ACCOUNT_NAME,
+                 self._uisettings.get_local_account_name())
+        self.set(LOCAL, PASSWORD, self._uisettings.get_local_password())
 
     def _load_live_data(self):
         self._proxy.load(None)
@@ -356,15 +376,15 @@ class VirginState(ConfigurationState):
     upon it.
     """
     
-    def __init__(self, proxy):
-        super(VirginState, self).__init__(DEFAULT_DATA, proxy)
+    def __init__(self, proxy, uisettings):
+        super(VirginState, self).__init__(DEFAULT_DATA, proxy, uisettings)
         self.untestable_helper = UntestableHelper(self)
         self.unmodifiable_helper = UnmodifiableHelper(self)
         self.unrevertable_helper = UnrevertableHelper(self)
         self.unpersistable_helper = UnpersistableHelper(self)
     
     def load_data(self):
-        return InitialisedState(self._data, self._proxy)
+        return InitialisedState(self._data, self._proxy, self._uisettings)
 
     def test(self, test_method):
         return self.untestable_helper.test(test_method)
@@ -381,10 +401,11 @@ class VirginState(ConfigurationState):
 
 class ConfigurationModel(object):
     
-    def __init__(self, test_method=None, proxy=None, proxy_loadargs=[]):
+    def __init__(self, test_method=None, proxy=None, proxy_loadargs=[],
+                 uisettings=None):
         if not proxy:
             proxy = ConfigurationProxy(loadargs=proxy_loadargs)
-        self._current_state = VirginState(proxy)
+        self._current_state = VirginState(proxy, uisettings)
         if test_method:
             self._test_method = test_method
         else:
