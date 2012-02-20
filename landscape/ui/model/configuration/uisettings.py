@@ -19,6 +19,9 @@ class ObservableUISettings(object):
     def get_is_hosted(self):
         return self.settings.get_boolean("is-hosted")
 
+    def set_is_hosted(self, value):
+        self.settings.set_boolean("is-hosted", value)
+
     def get_hosted_landscape_host(self):
         return self.settings.get_string("hosted-landscape-host")
 

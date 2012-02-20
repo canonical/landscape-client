@@ -29,16 +29,26 @@ class FakeGSettings(object):
             self.keys[key.attrib["name"]] = key.attrib["type"]
         
 
-    def get_value(self, name, gstype):
+    def check_key_data(self, name, gstype):
         if self.keys.has_key(name):
             if self.keys[name] == gstype:
-                return self.data[name]
+                return True
             else:
                 raise ValueError, "The GSchema file says %s is a %s, " + \
                     "but you asked for a %s" % (name, self.keys[name], gstype)
         else:
             raise KeyError, "Can't find %s in the GSchema file!" % name
 
+
+    def get_value(self, name, gstype):
+        if self.check_key_data(name, gstype):
+            return self.data[name]
+
+
+    def set_value(self, name, gstype, value):
+        if self.check_key_data(name, gstype):
+            self.data[name] = value
+        
     def set_data(self, data):
         self.data = data
         
@@ -62,6 +72,10 @@ class FakeGSettings(object):
         self._call("get_boolean", name)
         return self.get_value(name, "b")
 
+    def set_boolean(self, name, value):
+        self._call("set_boolean", name, value)
+        self.set_value(name, "b", value)
+        
     def get_string(self, name):
         self._call("get_string", name)
         return self.get_value(name, "s")
@@ -123,6 +137,19 @@ class ObservableUISettingsTest(LandscapeTest):
         settings = FakeGSettings(data=self.default_data)
         uisettings = ObservableUISettings(settings)
         self.assertTrue(uisettings.get_is_hosted())
+
+    def test_set_is_hosted(self):
+        """
+        Test that we can correctly use L{set_is_hosted} to write the
+        L{is_hosted} value to the L{GSettings.Client}.
+        """
+        settings = FakeGSettings(data=self.default_data)
+        uisettings = ObservableUISettings(settings)
+        self.assertTrue(uisettings.get_is_hosted())
+        uisettings.set_is_hosted(False)
+        self.assertFalse(uisettings.get_is_hosted())
+        self.assertTrue(settings.was_called_with_args(
+                "set_boolean", "is-hosted", False))
 
     def test_get_hosted_landscape_host(self):
         """
