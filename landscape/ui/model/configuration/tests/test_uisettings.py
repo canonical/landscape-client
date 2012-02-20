@@ -85,7 +85,10 @@ class ObservableUISettingsTest(LandscapeTest):
     default_data = {"is-hosted": True,
                     "hosted-landscape-host": "landscape.canonical.com",
                     "hosted-account-name": "Sparklehorse",
-                    "hosted-password": "Vivadixiesubmarinetransmissionplot"
+                    "hosted-password": "Vivadixiesubmarinetransmissionplot",
+                    "local-landscape-host": "the.local.machine",
+                    "local-account-name": "CrazyHorse",
+                    "local-password": "RustNeverSleeps"
                     }
 
     def test_setup(self):
@@ -112,7 +115,6 @@ class ObservableUISettingsTest(LandscapeTest):
                 "changed::hosted-password",
                 uisettings._on_hosted_password_changed))
 
-    
     def test_get_is_hosted(self):
         """
         Test that the L{get_is_hosted} value is correctly fetched from the
@@ -151,5 +153,35 @@ class ObservableUISettingsTest(LandscapeTest):
         uisettings = ObservableUISettings(settings)
         self.assertEqual("Vivadixiesubmarinetransmissionplot", 
                          uisettings.get_hosted_password())
+
+    def test_get_local_landscape_host(self):
+        """
+        Test that the L{get_local_landscape_host} value is correctly fetched
+        from the L{GSettings.Client}.
+        """
+        settings = FakeGSettings(data=self.default_data)
+        uisettings = ObservableUISettings(settings)
+        self.assertEqual("the.local.machine", 
+                         uisettings.get_local_landscape_host())
+        
+    def test_get_local_account_name(self):
+        """
+        Test that the L{get_local_account_name} value is correctly fetched
+        from the L{GSettings.Client}.
+        """
+        settings = FakeGSettings(data=self.default_data)
+        uisettings = ObservableUISettings(settings)
+        self.assertEqual("CrazyHorse", 
+                         uisettings.get_local_account_name())
+
+    def test_get_local_password(self):
+        """
+        Test that the L{get_local_password} value is correctly fetched
+        from the L{GSettings.Client}.
+        """
+        settings = FakeGSettings(data=self.default_data)
+        uisettings = ObservableUISettings(settings)
+        self.assertEqual("RustNeverSleeps", 
+                         uisettings.get_local_password())
 
         

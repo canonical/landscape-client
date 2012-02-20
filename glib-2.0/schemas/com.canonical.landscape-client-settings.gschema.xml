@@ -17,5 +17,17 @@
       <default></default>
       <summary>A password for use with the Canonical hosted landscape system</summary>
     </key>
+    <key type="s" name="local-landscape-host">
+      <default></default>
+      <summary>The hostname of the local landscape system.</summary>
+    </key>
+    <key type="s" name="local-account-name">
+      <default></default>
+      <summary>An account name for use with the local landscape system.</summary>
+    </key>
+    <key type="s" name="local-password">
+      <default></default>
+      <summary>A password for use with the local landscape system</summary>
+    </key>
   </schema>
 </schemalist>

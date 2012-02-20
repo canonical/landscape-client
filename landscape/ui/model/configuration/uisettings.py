@@ -28,6 +28,15 @@ class ObservableUISettings(object):
     def get_hosted_password(self):
         return self.settings.get_string("hosted-password")
 
+    def get_local_landscape_host(self):
+        return self.settings.get_string("local-landscape-host")
+
+    def get_local_account_name(self):
+        return self.settings.get_string("local-account-name")
+
+    def get_local_password(self):
+        return self.settings.get_string("local-password")
+
     def _on_is_hosted_changed(self, settings, key):
         pass
 
@@ -38,5 +47,14 @@ class ObservableUISettings(object):
         pass
 
     def _on_hosted_password_changed(self, settings, key):
+        pass
+
+    def _on_local_landscape_host_changed(self, settings, key):
+        pass
+
+    def _on_local_account_name_changed(self, settings, key):
+        pass
+
+    def _on_local_password_changed(self, settings, key):
         pass
 
