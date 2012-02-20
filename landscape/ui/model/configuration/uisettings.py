@@ -10,16 +10,33 @@ class ObservableUISettings(object):
         self.settings.connect("changed::is-hosted", self._on_is_hosted_changed)
         self.settings.connect("changed::hosted-landscape-host",
                               self._on_hosted_landscape_host_changed)
+        self.settings.connect("changed::hosted-account-name",
+                              self._on_hosted_account_name_changed)
+        self.settings.connect("changed::hosted-password",
+                              self._on_hosted_password_changed)
+
 
     def get_is_hosted(self):
         return self.settings.get_boolean("is-hosted")
 
     def get_hosted_landscape_host(self):
         return self.settings.get_string("hosted-landscape-host")
-    
+
+    def get_hosted_account_name(self):
+        return self.settings.get_string("hosted-account-name")
+
+    def get_hosted_password(self):
+        return self.settings.get_string("hosted-password")
+
     def _on_is_hosted_changed(self, settings, key):
         pass
 
     def _on_hosted_landscape_host_changed(self, settings, key):
+        pass
+
+    def _on_hosted_account_name_changed(self, settings, key):
+        pass
+
+    def _on_hosted_password_changed(self, settings, key):
         pass
 

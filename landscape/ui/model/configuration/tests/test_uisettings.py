@@ -80,11 +80,19 @@ class FakeGSettings(object):
         
 
 class ObservableUISettingsTest(LandscapeTest):
-    
-    def test_load_data_from_ui_settings(self):
-        settings = FakeGSettings(data={"is-hosted": True,
-                                       "hosted-landscape-host":
-                                           "landscape.canonical.com"})
+
+
+    default_data = {"is-hosted": True,
+                    "hosted-landscape-host": "landscape.canonical.com",
+                    "hosted-account-name": "Sparklehorse",
+                    "hosted-password": "Vivadixiesubmarinetransmissionplot"
+                    }
+
+    def test_setup(self):
+        """
+        Test that the L{GSettings.Client} is correctly initialised.
+        """
+        settings = FakeGSettings(data=self.default_data)
         uisettings = ObservableUISettings(settings)
         self.assertTrue(settings.was_called_with_args(
                 "new", ObservableUISettings.BASE_KEY))
@@ -95,7 +103,53 @@ class ObservableUISettingsTest(LandscapeTest):
                 "connect",
                 "changed::hosted-landscape-host",
                 uisettings._on_hosted_landscape_host_changed))
+        self.assertTrue(settings.was_called_with_args(
+                "connect",
+                "changed::hosted-account-name",
+                uisettings._on_hosted_account_name_changed))
+        self.assertTrue(settings.was_called_with_args(
+                "connect",
+                "changed::hosted-password",
+                uisettings._on_hosted_password_changed))
+
+    
+    def test_get_is_hosted(self):
+        """
+        Test that the L{get_is_hosted} value is correctly fetched from the
+        L{GSettings.Client}.
+        """
+        settings = FakeGSettings(data=self.default_data)
+        uisettings = ObservableUISettings(settings)
         self.assertTrue(uisettings.get_is_hosted())
+
+    def test_get_hosted_landscape_host(self):
+        """
+        Test that the L{get_hosted_landscape_host} value is correctly fetched
+        from the L{GSettings.Client}.
+        """
+        settings = FakeGSettings(data=self.default_data)
+        uisettings = ObservableUISettings(settings)
         self.assertEqual("landscape.canonical.com", 
                          uisettings.get_hosted_landscape_host())
+        
+    def test_get_hosted_account_name(self):
+        """
+        Test that the L{get_hosted_account_name} value is correctly fetched
+        from the L{GSettings.Client}.
+        """
+        settings = FakeGSettings(data=self.default_data)
+        uisettings = ObservableUISettings(settings)
+        self.assertEqual("Sparklehorse", 
+                         uisettings.get_hosted_account_name())
+
+    def test_get_hosted_password(self):
+        """
+        Test that the L{get_hosted_password} value is correctly fetched
+        from the L{GSettings.Client}.
+        """
+        settings = FakeGSettings(data=self.default_data)
+        uisettings = ObservableUISettings(settings)
+        self.assertEqual("Vivadixiesubmarinetransmissionplot", 
+                         uisettings.get_hosted_password())
+
         
