@@ -8,16 +8,20 @@ from landscape.ui.tests.helpers import ConfigurationProxyHelper, FakeGSettings
 
 
 class ConfigurationModelTest(LandscapeTest):
+    """
+    Test the internal data handling of the L{ConfigurationModel} without
+    loading external data.
+    """
 
     helpers = [ConfigurationProxyHelper]
 
     default_data = {"is-hosted": True,
-                    "hosted-landscape-host": "landscape.canonical.com",
-                    "hosted-account-name": "Sparklehorse",
-                    "hosted-password": "Vivadixiesubmarinetransmissionplot",
-                    "local-landscape-host": "the.local.machine",
-                    "local-account-name": "CrazyHorse",
-                    "local-password": "RustNeverSleeps"
+                    "hosted-landscape-host": "",
+                    "hosted-account-name": "",
+                    "hosted-password": "",
+                    "local-landscape-host": "",
+                    "local-account-name": "",
+                    "local-password": ""
                     }
 
     def setUp(self):
@@ -79,6 +83,16 @@ class ConfigurationModelTest(LandscapeTest):
 
 
 class ConfigurationModelHostedTest(LandscapeTest):
+    """
+    Test the L{ConfigurationModel} is correctly initialised when the live
+    configuration is set for a hosted account.
+
+    Note the multilayer data loading:
+
+         1. Internal state is defaulted.
+         2. UISettings data is loaded.
+         3. Live configuration is loaded.
+    """
 
     helpers = [ConfigurationProxyHelper]
 
