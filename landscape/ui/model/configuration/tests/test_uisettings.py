@@ -1,100 +1,10 @@
 import os
 
-from gi.repository import Gio
-from lxml import etree
-
 from landscape.tests.helpers import LandscapeTest
+from landscape.ui.tests.helpers import FakeGSettings
 from landscape.ui.model.configuration.uisettings import ObservableUISettings
 
 
-class FakeGSettings(object):
-
-    calls = {}
-
-    def __init__(self, data={}):
-        self.set_data(data)
-        tree = etree.parse(
-            os.path.join(
-                os.path.dirname(os.path.abspath(__file__)),
-                "../../../../../", 
-                "glib-2.0/schemas/",
-                "com.canonical.landscape-client-settings.gschema.xml"))
-        root = tree.getroot()
-        self.schema = root.find("schema")
-        assert(self.schema.attrib["id"] == \
-                   "com.canonical.landscape-client-settings")
-        self.keys = {}
-        for key in self.schema.findall("key"):
-            self.keys[key.attrib["name"]] = key.attrib["type"]
-        
-
-    def check_key_data(self, name, gstype):
-        if self.keys.has_key(name):
-            if self.keys[name] == gstype:
-                return True
-            else:
-                raise ValueError, "The GSchema file says %s is a %s, " + \
-                    "but you asked for a %s" % (name, self.keys[name], gstype)
-        else:
-            raise KeyError, "Can't find %s in the GSchema file!" % name
-
-
-    def get_value(self, name, gstype):
-        if self.check_key_data(name, gstype):
-            return self.data[name]
-
-
-    def set_value(self, name, gstype, value):
-        if self.check_key_data(name, gstype):
-            self.data[name] = value
-        
-    def set_data(self, data):
-        self.data = data
-        
-    def _call(self, name, *args):
-        [count, arglist] = self.calls.get(name, (0, []))
-        count += 1
-        arglist.append(self._args_to_string(*args))
-        self.calls[name] = [count, arglist]
-
-    def _args_to_string(self, *args):
-        return "|".join([str(arg) for arg in args])
-        
-    def new(self, key):
-        self._call("new", key)
-        return self
-
-    def connect(self, signal, callback, *args):
-        self._call("connect", signal, callback, *args)
-
-    def get_boolean(self, name):
-        self._call("get_boolean", name)
-        return self.get_value(name, "b")
-
-    def set_boolean(self, name, value):
-        self._call("set_boolean", name, value)
-        self.set_value(name, "b", value)
-        
-    def get_string(self, name):
-        self._call("get_string", name)
-        return self.get_value(name, "s")
-
-    def set_string(self, name, value):
-        self._call("set_string", name, value)
-        self.set_value(name, "s", value)
-    
-    def was_called(self, name):
-        return self.calls.haskey(name)
-
-    def was_called_with_args(self, name, *args):
-        try:
-            [count, arglist] = self.calls.get(name, (0,[]))
-        except KeyError:
-            return False
-        
-        expected_args = self._args_to_string(*args)
-        return expected_args in arglist
-        
 
 class ObservableUISettingsTest(LandscapeTest):
 
