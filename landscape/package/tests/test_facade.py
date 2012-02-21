@@ -76,9 +76,9 @@ class AptFacadeTest(LandscapeTest):
         """
 
         def commit(fetch_progress, install_progress):
+            install_progress.dpkg_exited = True
             if commit_function:
                 commit_function(fetch_progress, install_progress)
-            install_progress.dpkg_exited = True
 
         self.facade._cache.commit = commit
 
@@ -849,6 +849,9 @@ class AptFacadeTest(LandscapeTest):
         """
         C{perform_changes()} detects whether the dpkg call fails and
         raises a C{TransactionError}.
+
+        This test executes dpkg for real, which should fail, complaining
+        that superuser privileges are needed.
         """
         self._add_system_package("foo")
         self.facade.reload_channels()
@@ -856,6 +859,33 @@ class AptFacadeTest(LandscapeTest):
         self.facade.mark_remove(foo)
         exception = self.assertRaises(
             TransactionError, self.facade.perform_changes)
+
+    def test_perform_changes_dpkg_exit_dirty(self):
+        """
+        C{perform_changes()} checks whether dpkg exited cleanly and
+        raises a TransactionError if it didn't.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        foo = self.facade.get_packages_by_name("foo")[0]
+        self.facade.mark_install(foo)
+
+        def commit(fetch_progress, install_progress):
+            install_progress.dpkg_exited = False
+            os.write(1, "Stdout output\n")
+
+        self.facade._cache.commit = commit
+        exception = self.assertRaises(
+            TransactionError, self.facade.perform_changes)
+        output = [
+            line.rstrip()
+            for line in exception.args[0].splitlines()if line.strip()]
+        self.assertEqual(
+            ["dpkg didn't exit cleanly.", "Package operation log:",
+             "Stdout output"],
+            output)
 
     def test_perform_changes_install_broken_includes_error_info(self):
         """
