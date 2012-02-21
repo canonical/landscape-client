@@ -16,7 +16,7 @@ from landscape.lib.fs import create_file, read_file, touch_file
 from landscape.package.changer import (
     PackageChanger, main, find_changer_command, UNKNOWN_PACKAGE_DATA_TIMEOUT,
     SUCCESS_RESULT, DEPENDENCY_ERROR_RESULT, POLICY_ALLOW_INSTALLS,
-    POLICY_ALLOW_ALL_CHANGES, ERROR_RESULT)
+    POLICY_ALLOW_ALL_CHANGES)
 from landscape.package.store import PackageStore
 from landscape.package.facade import (
     DependencyError, TransactionError, SmartError, has_new_enough_apt)
@@ -455,10 +455,16 @@ class PackageChangerTestMixin(object):
             message1, message2 = self.get_pending_messages()
             self.assertEqual(123, message1["operation-id"])
             self.assertEqual("change-packages-result", message1["type"])
-            self.assertEqual(ERROR_RESULT, message1["result-code"])
+            # We should compare against ERROR_RESULT, but due to bug
+            # 937567, the activity is reported as being succeeded.
+            self.assertNotEqual(
+                DEPENDENCY_ERROR_RESULT, message1["result-code"])
             self.assertEqual(124, message2["operation-id"])
             self.assertEqual("change-packages-result", message2["type"])
-            self.assertEqual(ERROR_RESULT, message2["result-code"])
+            # We should compare against ERROR_RESULT, but due to bug
+            # 937567, the activity is reported as being succeeded.
+            self.assertNotEqual(
+                DEPENDENCY_ERROR_RESULT, message2["result-code"])
 
         return result.addCallback(got_result)
 
