@@ -82,14 +82,21 @@ class ConfigurationState(object):
             raise TypeError,  "get() takes either 1 or 2 keys (%d given)" % \
                 arglen
         if arglen == 2:
+            sub_dict = None
+            if args[0] in [HOSTED, LOCAL]:
+                sub_dict = self._data.get(args[0], {})
             sub_dict = self._data[args[0]]
             if not isinstance(sub_dict, dict):
                 raise KeyError, "Compound key [%s][%s] is invalid. " + \
                     "The data type returned from the first index was %s." % \
                     sub_dict.__class__.__name__
-            return sub_dict[args[1]]
+            return sub_dict.get(args[1], None)
         else:
-            return self._data[args[0]]
+            if args[0] == IS_HOSTED:
+                return self._data.get(args[0], None)
+            else:
+                raise KeyError, "Key [%s] is invalid. " % args[0]
+                
 
     def set(self, *args):
         arglen = len(args)
@@ -99,7 +106,9 @@ class ConfigurationState(object):
         if arglen == 2: 
             self._data[args[0]] = args[1]
         else:
-            sub_dict = self._data[args[0]]
+            sub_dict = None
+            if args[0] in [HOSTED, LOCAL]:
+                sub_dict = self._data.get(args[0], {})
             if not isinstance(sub_dict, dict):
                 raise KeyError, "Compound key [%s][%s] is invalid. " + \
                     "The data type returned from the first index was %s." % \
@@ -440,7 +449,7 @@ class ConfigurationModel(object):
         return self._current_state.get(IS_HOSTED)
     
     def _set_is_hosted(self, value):
-        pass
+        self._current_state.set(IS_HOSTED, value)
     
     is_hosted = property(_get_is_hosted, _set_is_hosted)
     
@@ -448,7 +457,7 @@ class ConfigurationModel(object):
         return self._current_state.get(HOSTED, LANDSCAPE_HOST)
 
     def _set_hosted_landscape_host(self, value):
-        pass
+        self._current_state.set(HOSTED, LANDSCAPE_HOST, value)
 
     hosted_landscape_host = property(_get_hosted_landscape_host, 
                                      _set_hosted_landscape_host)
@@ -457,7 +466,7 @@ class ConfigurationModel(object):
         return self._current_state.get(LOCAL, LANDSCAPE_HOST)
 
     def _set_local_landscape_host(self, value):
-        pass
+        self._current_state.set(LOCAL, LANDSCAPE_HOST, value)
 
     local_landscape_host = property(_get_local_landscape_host,
                                     _set_local_landscape_host)
@@ -466,7 +475,7 @@ class ConfigurationModel(object):
         return self._current_state.get(HOSTED, ACCOUNT_NAME)
 
     def _set_hosted_account_name(self, value):
-        pass
+        self._current_state.set(HOSTED, ACCOUNT_NAME, value)
     
     hosted_account_name = property(_get_hosted_account_name,
                                    _set_hosted_account_name)
@@ -475,7 +484,7 @@ class ConfigurationModel(object):
         return self._current_state.get(LOCAL, ACCOUNT_NAME)
 
     def _set_local_account_name(self, value):
-        pass
+        self._current_state.set(LOCAL, ACCOUNT_NAME, value)
     
     local_account_name = property(_get_local_account_name,
                                    _set_local_account_name)
@@ -484,7 +493,7 @@ class ConfigurationModel(object):
         return self._current_state.get(HOSTED, PASSWORD)
 
     def _set_hosted_password(self, value):
-        pass
+        self._current_state.set(HOSTED, PASSWORD, value)
     
     hosted_password = property(_get_hosted_password,
                                _set_hosted_password)
@@ -493,7 +502,7 @@ class ConfigurationModel(object):
         return self._current_state.get(LOCAL, PASSWORD)
 
     def _set_local_password(self, value):
-        pass
+        self._current_state.set(LOCAL, PASSWORD, value)
     
     local_password = property(_get_local_password,
                               _set_local_password)

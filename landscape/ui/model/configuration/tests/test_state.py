@@ -81,6 +81,91 @@ class ConfigurationModelTest(LandscapeTest):
         self.assertEqual("", model.local_account_name)
         self.assertEqual("", model.hosted_password)
 
+    def test_is_hosted_property(self):
+        """
+        Test we can use the L{is_hosted} property to set and get that data on
+        the current L{ConfigurationState}.
+        """
+        settings = FakeGSettings(data=self.default_data)
+        uisettings = ObservableUISettings(settings)
+        model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
+        model.load_data()
+        self.assertTrue(model.is_hosted)
+        model.is_hosted = False
+        self.assertFalse(model.is_hosted)
+
+    def test_hosted_landscape_host_property(self):
+        """
+        Test we can use the L{hosted_landscape_host} property to set and get
+        that data on the current L{ConfigurationState}.
+        """
+        settings = FakeGSettings(data=self.default_data)
+        uisettings = ObservableUISettings(settings)
+        model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
+        self.assertEqual(HOSTED_LANDSCAPE_HOST, model.hosted_landscape_host)
+        model.hosted_landscape_host = "foo"
+        self.assertEqual("foo", model.hosted_landscape_host)
+
+    def test_hosted_account_name_property(self):
+        """
+        Test we can use the L{hosted_account_name} property to set and get
+        that data on the current L{ConfigurationState}.
+        """
+        settings = FakeGSettings(data=self.default_data)
+        uisettings = ObservableUISettings(settings)
+        model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
+        self.assertEqual("", model.hosted_account_name)
+        model.hosted_account_name = "foo"
+        self.assertEqual("foo", model.hosted_account_name)
+
+    def test_hosted_password_property(self):
+        """
+        Test we can use the L{hosted_password} property to set and get
+        that data on the current L{ConfigurationState}.
+        """
+        settings = FakeGSettings(data=self.default_data)
+        uisettings = ObservableUISettings(settings)
+        model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
+        self.assertEqual("", model.hosted_password)
+        model.hosted_password = "foo"
+        self.assertEqual("foo", model.hosted_password)
+
+    def test_local_landscape_host_property(self):
+        """
+        Test we can use the L{local_landscape_host} property to set and get
+        that data on the current L{ConfigurationState}.
+        """
+        settings = FakeGSettings(data=self.default_data)
+        uisettings = ObservableUISettings(settings)
+        model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
+        self.assertEqual("", model.local_landscape_host)
+        model.local_landscape_host = "foo"
+        self.assertEqual("foo", model.local_landscape_host)
+
+    def test_local_account_name_property(self):
+        """
+        Test we can use the L{local_account_name} property to set and get
+        that data on the current L{ConfigurationState}.
+        """
+        settings = FakeGSettings(data=self.default_data)
+        uisettings = ObservableUISettings(settings)
+        model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
+        self.assertEqual("", model.local_account_name)
+        model.local_account_name = "foo"
+        self.assertEqual("foo", model.local_account_name)
+
+    def test_local_password_property(self):
+        """
+        Test we can use the L{local_password} property to set and get
+        that data on the current L{ConfigurationState}.
+        """
+        settings = FakeGSettings(data=self.default_data)
+        uisettings = ObservableUISettings(settings)
+        model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
+        self.assertEqual("", model.local_password)
+        model.local_password = "foo"
+        self.assertEqual("foo", model.local_password)
+
 
 class ConfigurationModelHostedTest(LandscapeTest):
     """
@@ -182,6 +267,8 @@ class ConfigurationModelLocalTest(LandscapeTest):
         self.assertEqual("foo", model.local_account_name)
         self.assertEqual("Vivadixiesubmarinetransmissionplot",
                          model.hosted_password)
+
+        
 
 
 class StateTransitionTest(LandscapeTest):
@@ -292,8 +379,13 @@ class StateTransitionTest(LandscapeTest):
         uisettings = ObservableUISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         model.load_data()
+        self.assertTrue(model.is_hosted)
+        model.is_hosted = False
+        self.assertFalse(model.is_hosted)
         model.modify()
         self.assertTrue(isinstance(model.get_state(), ModifiedState))
+        self.assertFalse(model.is_hosted)
+
 
     def test_modified_state_is_modifiable(self):
         """
