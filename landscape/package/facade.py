@@ -73,6 +73,7 @@ class LandscapeAcquireProgress(AcquireProgress):
         fcntl.ioctl API differences for different Python versions.
         """
 
+
 class LandscapeInstallProgress(InstallProgress):
 
     dpkg_exited = None

@@ -857,8 +857,7 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         foo = self.facade.get_packages_by_name("foo")[0]
         self.facade.mark_remove(foo)
-        exception = self.assertRaises(
-            TransactionError, self.facade.perform_changes)
+        self.assertRaises(TransactionError, self.facade.perform_changes)
 
     def test_perform_changes_dpkg_exit_dirty(self):
         """
