@@ -75,10 +75,10 @@ class AptFacadeTest(LandscapeTest):
             fetch_progress and install_progress.
         """
 
-        def commit(fetch_progress, install_progress=None):
+        def commit(fetch_progress, install_progress):
             if commit_function:
-                commit_function(
-                    fetch_progress, install_progress=install_progress)
+                commit_function(fetch_progress, install_progress)
+            install_progress.dpkg_exited = True
 
         self.facade._cache.commit = commit
 
@@ -828,7 +828,7 @@ class AptFacadeTest(LandscapeTest):
         foo = self.facade.get_packages_by_name("foo")[0]
         self.facade.mark_install(foo)
 
-        def commit(fetch_progress):
+        def commit(fetch_progress, install_progress):
             os.write(1, "Stdout output\n")
             os.write(2, "Stderr output\n")
             os.write(1, "Stdout output again\n")
@@ -1302,7 +1302,7 @@ class AptFacadeTest(LandscapeTest):
         outfile = self._mock_output_restore()
         self.mocker.replay()
 
-        def commit(fetch_progress):
+        def commit(fetch_progress, install_progress):
             raise SystemError("Error")
 
         self.facade._cache.commit = commit
@@ -1721,7 +1721,7 @@ class AptFacadeTest(LandscapeTest):
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_remove(foo)
         cache = self.mocker.replace(self.facade._cache)
-        cache.commit(fetch_progress=ANY)
+        cache.commit(fetch_progress=ANY, install_progress=ANY)
         self.mocker.throw(SystemError("Something went wrong."))
         self.mocker.replay()
         exception = self.assertRaises(TransactionError,

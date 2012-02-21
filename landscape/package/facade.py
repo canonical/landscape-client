@@ -28,8 +28,10 @@ has_new_enough_apt = True
 from aptsources.sourceslist import SourcesList
 try:
     from apt.progress.text import AcquireProgress
+    from apt.progress.base import InstallProgress
 except ImportError:
     AcquireProgress = object
+    InstallProgress = object
     has_new_enough_apt = False
 
 from landscape.lib.fs import append_file, create_file, read_file
@@ -70,6 +72,15 @@ class LandscapeAcquireProgress(AcquireProgress):
         Overriding this method means that we don't have to care about
         fcntl.ioctl API differences for different Python versions.
         """
+
+class LandscapeInstallProgress(InstallProgress):
+
+    dpkg_exited = None
+
+    def wait_child(self):
+        res = super(LandscapeInstallProgress, self).wait_child()
+        self.dpkg_exited = os.WIFEXITED(res)
+        return res
 
 
 class AptFacade(object):
@@ -565,9 +576,13 @@ class AptFacade(object):
         old_stderr = os.dup(2)
         os.dup2(fd, 1)
         os.dup2(fd, 2)
+        install_progress = LandscapeInstallProgress()
         try:
             self._cache.commit(
-                fetch_progress=LandscapeAcquireProgress(fetch_output))
+                fetch_progress=LandscapeAcquireProgress(fetch_output),
+                install_progress=install_progress)
+            if not install_progress.dpkg_exited:
+                raise SystemError("dpkg didn't exit cleanly.")
         except SystemError, error:
             result_text = (
                 fetch_output.getvalue() + read_file(install_output_path))
