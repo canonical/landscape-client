@@ -9,7 +9,7 @@ class StateTransitionTest(LandscapeTest):
     Test that we make the correct state transitions when taking actions on the
     L{ConfigurationModel}.
     """
-    
+
     def test_load_data_transitions(self):
         """
         Test that the L{ConfigurationModel} correctly changes state as we call
@@ -23,7 +23,7 @@ class StateTransitionTest(LandscapeTest):
         model.load_data()
         self.assertTrue(isinstance(model.get_state(), InitialisedState))
         self.assertIs(initialised, model.get_state())
-    
+
     def test_testing_a_virgin_raises(self):
         """
         Test that calling L{test} on a L{ConfigurationModel} in L{VirginState}
@@ -39,8 +39,8 @@ class StateTransitionTest(LandscapeTest):
         of the two L{TestedState} subclasses (L{TestedGoodState} or
         L{TestedBadState}) will raise a L{StateError}.
         """
-        test_succeed = lambda : True
-        test_fail = lambda : False
+        test_succeed = lambda: True
+        test_fail = lambda: False
         model = ConfigurationModel(test_method=test_succeed)
         model.load_data()
         model.test()
@@ -49,14 +49,14 @@ class StateTransitionTest(LandscapeTest):
         model.load_data()
         model.test()
         self.assertRaises(StateError, model.load_data)
-                       
+
     def test_test_transition(self):
         """
         Test that the L{ConfigurationModel} transitions to a L{TestedGoodState}
         or a L{TestedBadState} when L{test} is called.
         """
-        test_succeed = lambda : True
-        test_fail = lambda : False
+        test_succeed = lambda: True
+        test_fail = lambda: False
         model = ConfigurationModel(test_method=test_succeed)
         model.load_data()
         model.test()
@@ -113,8 +113,8 @@ class StateTransitionTest(LandscapeTest):
         whenever L{modify} is called on it in a subclass of L{TestedState}
         (L{TestedGoodState} or L{TestedBadState}).
         """
-        test_succeed = lambda : True
-        test_fail = lambda : False
+        test_succeed = lambda: True
+        test_fail = lambda: False
         model = ConfigurationModel(test_method=test_succeed)
         model.load_data()
         model.test()
@@ -133,8 +133,7 @@ class StateTransitionTest(LandscapeTest):
         """
         model = ConfigurationModel()
         self.assertRaises(StateError, model.revert)
-        
-        
+
     def test_initialiased_state_is_unrevertable(self):
         """
         Test that calling L{revert} on a L{ConfigurationModel} in
@@ -154,14 +153,14 @@ class StateTransitionTest(LandscapeTest):
         model.modify()
         model.revert()
         self.assertTrue(isinstance(model.get_state(), InitialisedState))
-    
+
     def test_tested_states_are_revertable(self):
         """
         Test that a L{ConfigurationModel} in one of the two L{TestedState}s can
         be transitioned via L{revert} to L{InitialisedState}.
         """
-        test_succeed = lambda : True
-        test_fail = lambda : False
+        test_succeed = lambda: True
+        test_fail = lambda: False
         model = ConfigurationModel(test_method=test_succeed)
         model.load_data()
         model.test()
@@ -192,7 +191,7 @@ class StateTransitionTest(LandscapeTest):
 
     def test_persisting_modified_state_raises(self):
         """
-        Test that a L{ConfigurationModel} in L{InitialisedState} will raise a 
+        Test that a L{ConfigurationModel} in L{InitialisedState} will raise a
         L{StateError} when you attempt to transition it with L{persist}.
         """
         model = ConfigurationModel()
