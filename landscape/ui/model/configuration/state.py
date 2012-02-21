@@ -252,6 +252,10 @@ class ModifiedState(ConfigurationState):
         self.revertable_helper = RevertableHelper(self)
         self.testable_helper = TestableHelper(self)
         self.unpersistable_helper = UnpersistableHelper(self)
+        self._save_to_uisettings()
+
+    def _save_to_uisettings(self):
+        self._uisettings.set_is_hosted(self.get(IS_HOSTED))
     
     def modify(self):
         return self.modifiable_helper.modify()

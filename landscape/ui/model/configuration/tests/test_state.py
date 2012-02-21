@@ -269,8 +269,6 @@ class ConfigurationModelLocalTest(LandscapeTest):
                          model.hosted_password)
 
         
-
-
 class StateTransitionTest(LandscapeTest):
     """
     Test that we make the correct state transitions when taking actions on the
@@ -385,6 +383,7 @@ class StateTransitionTest(LandscapeTest):
         model.modify()
         self.assertTrue(isinstance(model.get_state(), ModifiedState))
         self.assertFalse(model.is_hosted)
+        self.assertFalse(uisettings.get_is_hosted())
 
 
     def test_modified_state_is_modifiable(self):
