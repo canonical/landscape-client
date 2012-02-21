@@ -68,6 +68,20 @@ class AptFacadeTest(LandscapeTest):
         """Return a key by which a Version object can be sorted."""
         return (version.package, version)
 
+    def patch_cache_commit(self, commit_function=None):
+        """Patch the apt cache's commit function as to not call dpkg.
+
+        @param commit_function: A function accepting two parameters,
+            fetch_progress and install_progress.
+        """
+
+        def commit(fetch_progress, install_progress=None):
+            if commit_function:
+                commit_function(
+                    fetch_progress, install_progress=install_progress)
+
+        self.facade._cache.commit = commit
+
     def test_default_root(self):
         """
         C{AptFacade} can be created by not providing a root directory,
@@ -758,14 +772,14 @@ class AptFacadeTest(LandscapeTest):
         fetch_item = FakeFetchItem(
             FakeOwner(1234, error_text="Some error"), "foo package")
 
-        def commit(fetch_progress):
+        def output_progress(fetch_progress, install_progress):
             fetch_progress.start()
             fetch_progress.fetch(fetch_item)
             fetch_progress.fail(fetch_item)
             fetch_progress.done(fetch_item)
             fetch_progress.stop()
 
-        self.facade._cache.commit = commit
+        self.patch_cache_commit(output_progress)
         output = [
             line.rstrip()
             for line in self.facade.perform_changes().splitlines()
@@ -789,12 +803,12 @@ class AptFacadeTest(LandscapeTest):
         foo = self.facade.get_packages_by_name("foo")[0]
         self.facade.mark_install(foo)
 
-        def commit(fetch_progress):
+        def print_output(fetch_progress, install_progress):
             os.write(1, "Stdout output\n")
             os.write(2, "Stderr output\n")
             os.write(1, "Stdout output again\n")
 
-        self.facade._cache.commit = commit
+        self.patch_cache_commit(print_output)
         output = [
             line.rstrip()
             for line in self.facade.perform_changes().splitlines()
@@ -864,7 +878,7 @@ class AptFacadeTest(LandscapeTest):
         [bar] = self.facade.get_packages_by_name("bar")
         self.facade.mark_install(foo)
         self.facade.mark_install(bar)
-        self.facade._cache.commit = lambda fetch_progress: None
+        self.patch_cache_commit()
         error = self.assertRaises(
             TransactionError, self.facade.perform_changes)
         self.assertIn("you have held broken packages", error.args[0])
@@ -1268,7 +1282,7 @@ class AptFacadeTest(LandscapeTest):
 
         outfile = self._mock_output_restore()
         self.mocker.replay()
-        self.facade._cache.commit = lambda fetch_progress: None
+        self.patch_cache_commit()
         self.facade.perform_changes()
         # Make sure we don't leave the tempfile behind.
         self.assertFalse(os.path.exists(outfile))
@@ -1392,7 +1406,7 @@ class AptFacadeTest(LandscapeTest):
         foo1, foo2 = sorted(self.facade.get_packages_by_name("foo"))
         self.assertEqual(foo2, foo1.package.candidate)
         self.facade.mark_install(foo1)
-        self.facade._cache.commit = lambda fetch_progress: None
+        self.patch_cache_commit()
         self.facade.perform_changes()
         self.assertEqual(foo1, foo1.package.candidate)
 
@@ -1436,7 +1450,7 @@ class AptFacadeTest(LandscapeTest):
         self.facade.mark_install(multi_arch2)
         self.facade.mark_remove(single_arch1)
         self.facade.mark_install(single_arch2)
-        self.facade._cache.commit = lambda fetch_progress: None
+        self.patch_cache_commit()
         self.facade.perform_changes()
         changes = [
             (pkg.name, pkg.candidate.version, pkg.marked_upgrade)
@@ -1476,7 +1490,7 @@ class AptFacadeTest(LandscapeTest):
         multi_arch1, multi_arch2 = sorted(
             self.facade.get_packages_by_name("multi-arch"))
         self.facade.mark_global_upgrade()
-        self.facade._cache.commit = lambda fetch_progress: None
+        self.patch_cache_commit()
         exception = self.assertRaises(
             DependencyError, self.facade.perform_changes)
         self.assertEqual(
@@ -1573,7 +1587,7 @@ class AptFacadeTest(LandscapeTest):
         """
         committed = []
 
-        def commit(fetch_progress):
+        def commit(fetch_progress, install_progress):
             committed.append(True)
 
         deb_dir = self.makeDir()
@@ -1582,7 +1596,7 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         pkg = self.facade.get_packages_by_name("minimal")[0]
         self.facade.mark_install(pkg)
-        self.facade._cache.commit = commit
+        self.patch_cache_commit(commit)
         self.committed = False
         self.facade.perform_changes()
         self.assertEqual([True], committed)
@@ -1598,7 +1612,7 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         pkg = self.facade.get_packages_by_name("minimal")[0]
         self.facade.mark_install(pkg)
-        self.facade._cache.commit = lambda fetch_progress: None
+        self.patch_cache_commit()
         # An empty string is returned, since we don't call the progress
         # objects, which are the ones that build the output string.
         self.assertEqual("", self.facade.perform_changes())
@@ -1618,7 +1632,7 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_install(foo)
-        self.facade._cache.commit = lambda fetch_progress: None
+        self.patch_cache_commit()
         self.assertEqual("", self.facade.perform_changes())
         self.assertEqual(
             [foo.package], self.facade._cache.get_changes())
@@ -1641,7 +1655,7 @@ class AptFacadeTest(LandscapeTest):
         [foo] = self.facade.get_packages_by_name("foo")
         [bar] = self.facade.get_packages_by_name("bar")
         self.facade.mark_install(foo)
-        self.facade._cache.commit = lambda fetch_progress: None
+        self.patch_cache_commit()
         error = self.assertRaises(DependencyError, self.facade.perform_changes)
         self.assertEqual([bar], error.packages)
 
@@ -1659,7 +1673,7 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_remove(foo)
-        self.facade._cache.commit = lambda fetch_progress: None
+        self.patch_cache_commit()
         self.assertEqual("", self.facade.perform_changes())
         self.assertEqual(
             [foo.package], self.facade._cache.get_changes())
@@ -1689,7 +1703,7 @@ class AptFacadeTest(LandscapeTest):
             set([broken.package]), self.facade._get_broken_packages())
         self.facade.mark_install(foo)
         self.facade.mark_install(missing)
-        self.facade._cache.commit = lambda fetch_progress: None
+        self.patch_cache_commit()
         error = self.assertRaises(
             TransactionError, self.facade.perform_changes)
         self.assertIn("you have held broken packages", error.args[0])
@@ -1961,7 +1975,7 @@ class AptFacadeTest(LandscapeTest):
         bar_1, bar_2 = sorted(self.facade.get_packages_by_name("bar"))
         self.facade.mark_install(bar_2)
         self.facade.mark_remove(bar_1)
-        self.facade._cache.commit = lambda fetch_progress: None
+        self.patch_cache_commit()
         self.facade.perform_changes()
         [bar] = self.facade._cache.get_changes()
         self.assertTrue(bar.marked_upgrade)
