@@ -78,6 +78,17 @@ class LandscapeInstallProgress(InstallProgress):
     dpkg_exited = None
 
     def wait_child(self):
+        """Override to find out whether dpkg exited or not.
+
+        The C{run()} method returns os.WEXITSTATUS(res) without checking
+        os.WIFEXITED(res) first, so it can signal that everything is ok,
+        even though something causes dpkg not to exit cleanly.
+
+        Save whether dpkg exited cleanly into the C{dpkg_exited}
+        attribute. If dpkg exited cleanly the exit code can be used to
+        determine whether there were any errors. If dpkg didn't exit
+        cleanly it should mean that something went wrong.
+        """
         res = super(LandscapeInstallProgress, self).wait_child()
         self.dpkg_exited = os.WIFEXITED(res)
         return res
