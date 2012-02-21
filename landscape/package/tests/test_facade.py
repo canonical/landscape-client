@@ -836,12 +836,10 @@ class AptFacadeTest(LandscapeTest):
         C{perform_changes()} detects whether the dpkg call fails and
         raises a C{TransactionError}.
         """
-        deb_dir = self.makeDir()
-        self._add_package_to_deb_dir(deb_dir, "foo")
-        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self._add_system_package("foo")
         self.facade.reload_channels()
         foo = self.facade.get_packages_by_name("foo")[0]
-        self.facade.mark_install(foo)
+        self.facade.mark_remove(foo)
         exception = self.assertRaises(
             TransactionError, self.facade.perform_changes)
 
