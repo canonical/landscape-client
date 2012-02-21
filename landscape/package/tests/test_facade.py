@@ -831,6 +831,20 @@ class AptFacadeTest(LandscapeTest):
              "Stderr output", "Stdout output again"],
             output)
 
+    def test_perform_changes_dpkg_error_real(self):
+        """
+        C{perform_changes()} detects whether the dpkg call fails and
+        raises a C{TransactionError}.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        foo = self.facade.get_packages_by_name("foo")[0]
+        self.facade.mark_install(foo)
+        exception = self.assertRaises(
+            TransactionError, self.facade.perform_changes)
+
     def test_perform_changes_install_broken_includes_error_info(self):
         """
         If some packages are broken and can't be installed, information
