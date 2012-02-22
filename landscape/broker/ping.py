@@ -4,7 +4,6 @@ small HTTP requests asking if we should do a full exchange.
 """
 
 import urllib
-import logging
 from logging import info
 
 from twisted.python.failure import Failure

@@ -18,8 +18,12 @@ from landscape.watchdog import (
     WatchDogConfiguration, bootstrap_list,
     MAXIMUM_CONSECUTIVE_RESTARTS, RESTART_BURST_DELAY, run,
     Broker, Monitor, Manager)
+from landscape.broker.dnslookup import discover_server
+from landscape.configuration import (
+    fetch_base64_ssl_public_certificate, print_text)
 from landscape.amp import ComponentProtocolFactory, RemoteComponentConnector
 from landscape.broker.amp import RemoteBrokerConnector
+from landscape.broker.config import BrokerConfiguration
 from landscape.reactor import TwistedReactor
 
 import landscape.watchdog
@@ -962,10 +966,15 @@ class WatchDogServiceTest(LandscapeTest):
         self.configuration = WatchDogConfiguration()
         self.data_path = self.makeDir()
         self.log_dir = self.makeDir()
-        self.configuration.load(["--data-path", self.data_path,
+        self.config_filename = self.makeFile("[client]\n")
+
+    def _load_std_config(self):
+        self.configuration.load(["--config", self.config_filename,
+                                 "--data-path", self.data_path,
                                  "--log-dir", self.log_dir])
 
     def test_daemonize(self):
+        self._load_std_config()
         self.mocker.order()
         watchdog = self.mocker.patch(WatchDog)
         watchdog.check_running()
@@ -983,6 +992,7 @@ class WatchDogServiceTest(LandscapeTest):
         service.startService()
 
     def test_pid_file(self):
+        self._load_std_config()
         pid_file = self.makeFile()
 
         watchdog = self.mocker.patch(WatchDog)
@@ -1008,6 +1018,7 @@ class WatchDogServiceTest(LandscapeTest):
         the client shouldn't be daemonized and the pid file shouldn't be
         written.
         """
+        self._load_std_config()
         self.log_helper.ignore_errors(
             "ERROR: The following daemons are already running: program-name")
         pid_file = self.makeFile()
@@ -1046,6 +1057,7 @@ class WatchDogServiceTest(LandscapeTest):
         """
         When the service is stopped, the pid file is removed.
         """
+        self._load_std_config()
         #don't really daemonize or request an exit
         daemonize = self.mocker.replace("landscape.watchdog.daemonize",
                                         passthrough=False)
@@ -1076,6 +1088,7 @@ class WatchDogServiceTest(LandscapeTest):
 
     def test_remove_pid_file_only_when_ours(self):
         #don't really request an exit
+        self._load_std_config()
         watchdog = self.mocker.patch(WatchDog)
         watchdog.request_exit()
         self.mocker.result(succeed(None))
@@ -1090,6 +1103,7 @@ class WatchDogServiceTest(LandscapeTest):
         self.assertTrue(os.path.exists(pid_file))
 
     def test_remove_pid_file_doesnt_explode_on_inaccessibility(self):
+        self._load_std_config()
         pid_file = self.makeFile()
         # Make os.access say that the file isn't writable
         mock_os = self.mocker.replace("os")
@@ -1108,6 +1122,7 @@ class WatchDogServiceTest(LandscapeTest):
         self.assertTrue(os.path.exists(pid_file))
 
     def test_start_service_exits_when_already_running(self):
+        self._load_std_config()
         self.log_helper.ignore_errors(
             "ERROR: The following daemons are already running: program-name")
 
@@ -1137,6 +1152,7 @@ class WatchDogServiceTest(LandscapeTest):
         return result
 
     def test_start_service_exits_when_unknown_errors_occur(self):
+        self._load_std_config()
         self.log_helper.ignore_errors(ZeroDivisionError)
         service = WatchDogService(self.configuration)
 
@@ -1166,6 +1182,114 @@ class WatchDogServiceTest(LandscapeTest):
         self.assertEqual(service.exit_code, 2)
         return result
 
+    def test_autodiscover_config_write_with_pubkey(self):
+        """
+        When server_autodiscover is set True, and the config.ssl_public_key
+        already exists, ensure we update and write the config file with the
+        discovered server urls.
+        """
+        self.configuration.load(["--config", self.config_filename,
+                          "--data-path", self.data_path,
+                          "--log-dir", self.log_dir,
+                          "--server-autodiscover=true",
+                          "--ssl-public-key", "/tmp/fakepubkey.ssl"])
+
+        service = WatchDogService(self.configuration)
+
+        # Validate appropriate initial config options
+        self.assertEquals("https://landscape.canonical.com/message-system",
+                          service._config.url)
+        self.assertEquals("/tmp/fakepubkey.ssl", service._config.ssl_public_key)
+        self.assertTrue(service._config.server_autodiscover)
+
+        bootstrap_list_mock = self.mocker.patch(bootstrap_list)
+        bootstrap_list_mock.bootstrap(data_path=self.data_path,
+                                      log_dir=self.log_dir)
+
+        self.mocker.order()
+
+        discover_mock = self.mocker.replace(discover_server, passthrough=False)
+        discover_mock(None, self.configuration.autodiscover_srv_query_string,
+                      self.configuration.autodiscover_a_query_string)
+        self.mocker.result(succeed("fakehostname"))
+
+        watchdog_mock = self.mocker.replace(service.watchdog)
+        watchdog_mock.check_running("fakehostname")
+        self.mocker.result(succeed([]))
+        watchdog_mock.start()
+        self.mocker.result(succeed(None))
+        self.mocker.replay()
+
+
+        # trigger something to ensure autodiscover() is called
+        service.startService()
+
+        # Reload config to validate config.write() was called with changes
+        config = BrokerConfiguration()
+        config.load(["--config", self.config_filename])
+        self.assertFalse(config.server_autodiscover)
+        self.assertEquals("https://fakehostname:8080/message-system",
+                         config.url)
+        self.assertEquals("http://fakehostname:8081/ping",
+                         config.ping_url)
+        self.assertEquals("/tmp/fakepubkey.ssl", config.ssl_public_key)
+
+    def test_autodiscover_config_write_without_pubkey(self):
+        """
+        When server_autodiscover is set True, and the config does not have an
+        ssl_public_key defined. WatchDogService should attempt to fetch the
+        custom CA cert from the discovered server.
+        """
+        base64_cert = "base64:  MTIzNDU2Nzg5MA==" # encoded from 1234567890
+
+        key_filename = os.path.join(self.data_path,
+            os.path.basename(self.config_filename + ".ssl_public_key"))
+
+        self.configuration.load(["--config", self.config_filename,
+                          "--data-path", self.data_path,
+                          "--log-dir", self.log_dir,
+                          "--server-autodiscover=true"])
+
+        service = WatchDogService(self.configuration)
+
+        # Validate appropriate initial config options
+        self.assertEquals(None, self.configuration.ssl_public_key)
+        self.assertTrue(self.configuration.server_autodiscover)
+
+        discover_mock = self.mocker.replace(discover_server, passthrough=False)
+        discover_mock(None, self.configuration.autodiscover_srv_query_string,
+                      self.configuration.autodiscover_a_query_string)
+        self.mocker.result(succeed("fakehostname"))
+
+        fetch_ca_mock = self.mocker.replace(
+            fetch_base64_ssl_public_certificate, passthrough=False)
+
+        fetch_ca_mock("fakehostname", on_info=ANY, on_error=ANY)
+        self.mocker.result(base64_cert)
+
+        print_text_mock = self.mocker.replace(print_text)
+        print_text_mock("Writing SSL CA certificate to %s..." % key_filename)
+
+        watchdog_mock = self.mocker.replace(service.watchdog)
+        watchdog_mock.check_running("fakehostname")
+        self.mocker.result(succeed([]))
+        watchdog_mock.start()
+        self.mocker.result(succeed(None))
+        self.mocker.replay()
+
+        service.startService()
+
+        # Reload config file to validate config.write() was called with changes
+        config = BrokerConfiguration()
+        config.load(["--config", self.config_filename])
+        self.assertFalse(config.server_autodiscover)
+        self.assertEquals("https://fakehostname:8080/message-system",
+                         config.url)
+        self.assertEquals("http://fakehostname:8081/ping",
+                         config.ping_url)
+        self.assertEquals(key_filename, config.ssl_public_key)
+        self.assertEqual("1234567890", open(key_filename, "r").read())
+    
     def test_bootstrap(self):
 
         data_path = self.makeDir()

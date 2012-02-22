@@ -500,7 +500,6 @@ class WatchDogService(Service):
         write both the certificate and the updated config file with the
         discovered values.
         """
-
         def update_config(hostname):
             if hostname is None:
                 warning("Autodiscovery return empty hostname string. "
@@ -510,7 +509,7 @@ class WatchDogService(Service):
                      "Updating configuration values." % hostname)
                 self._config.server_autodiscover = False
                 self._config.url = "https://%s:8080/message-system" % hostname
-                self._config.ping_url = "https://%s:8081/ping" % hostname
+                self._config.ping_url = "http://%s:8081/ping" % hostname
                 if not self._config.ssl_public_key:
                     # If we don't have a key on this system, pull it from
                     # the auto-discovered server and write it to the filesystem
@@ -551,7 +550,7 @@ class WatchDogService(Service):
                     data_path=self._config.data_path + suffix,
                     log_dir=self._config.log_dir + suffix)
 
-        if True or self._config.server_autodiscover:
+        if self._config.server_autodiscover:
             result = self.autodiscover()
             result.addCallback(self.watchdog.check_running)
         else:
