@@ -118,9 +118,6 @@ class ConfigurationState(object):
             
     def load_data(self):
         raise NotImplementedError
-
-    def test(self, test_method):
-        raise NotImplementedError
     
     def modify(self):
         raise NotImplementedError
@@ -175,30 +172,6 @@ class UnmodifiableHelper(Helper):
             self._state.__class__.__name__ + " cannot transition via modify()"
 
 
-class TestableHelper(Helper):
-    """
-    Allow testing of a L{ConfigurationModel}.
-    """
-
-    def test(self, test_method):
-        if test_method():
-            return TestedGoodState(self._state._data, self._state._proxy,
-                                   self._state._uisettings)
-        else:
-            return TestedBadState(self._state._data, self._state._proxy,
-                                  self._state._uisettings)
-
-
-class UntestableHelper(Helper):
-    """
-    Disallow testing of a L{ConfigurationModel}.
-    """
-
-    def test(self, test_method):
-        raise StateError, "A ConfigurationModel in " + \
-            self._state.__class__.__name__ + " cannot transition via test()"
-
-
 class RevertableHelper(Helper):
     """
     Allow reverting of a L{ConfigurationModel}.
@@ -243,90 +216,32 @@ class UnpersistableHelper(Helper):
 class ModifiedState(ConfigurationState):
     """
     The state of a L{ConfigurationModel} whenever the user has modified some
-    data but hasn't yet L{test}ed or L{revert}ed.
+    data but hasn't yet L{persist}ed or L{revert}ed.
     """
     
     def __init__(self, data, proxy, uisettings):
         super(ModifiedState, self).__init__(data, proxy, uisettings)
         self.modifiable_helper = ModifiableHelper(self)
         self.revertable_helper = RevertableHelper(self)
-        self.testable_helper = TestableHelper(self)
-        self.unpersistable_helper = UnpersistableHelper(self)
-        self._save_to_uisettings()
-
-    def _save_to_uisettings(self):
-        self._uisettings.set_is_hosted(self.get(IS_HOSTED))
-        self._uisettings.set_hosted_account_name(
-            self.get(HOSTED, ACCOUNT_NAME))
-        self._uisettings.set_hosted_password(self.get(HOSTED, PASSWORD))
-        self._uisettings.set_local_landscape_host(
-            self.get(LOCAL, LANDSCAPE_HOST))
-        self._uisettings.set_local_account_name(self.get(LOCAL, ACCOUNT_NAME))
-        self._uisettings.set_local_password(self.get(LOCAL, PASSWORD))
-
-    def modify(self):
-        self._save_to_uisettings()
-        return self.modifiable_helper.modify()
-
-    def revert(self):
-        return self.revertable_helper.revert()
-
-    def test(self, test_method):
-        return self.testable_helper.test(test_method)
-
-    def persist(self):
-        return self.unpersistable_helper.persist()
-
-
-class TestedState(ConfigurationState):
-    """
-    A superclass for the two possible L{TestedStates} (L{TestedGoodState} and
-    L{TestedBadState}).
-    """
-
-    def __init__(self, data, proxy, uisettings):
-        super(TestedState, self).__init__(data, proxy, uisettings)
-        self.untestable_helper = UntestableHelper(self)
-        self.unloadable_helper = UnloadableHelper(self)
-        self.modifiable_helper = ModifiableHelper(self)
-        self.revertable_helper = RevertableHelper(self)
-    
-    def test(self, test_method):
-        return self.untestable_helper.test(test_method)
-
-    def load_data(self):
-        return self.unloadable_helper.load_data()
-
-    def modify(self):
-        return self.modifiable_helper.modify()
-
-    def revert(self):
-        return self.revertable_helper.revert()
-
-
-class TestedBadState(TestedState):
-    """
-    The state of a L{ConfigurationModel} after it has been L{test}ed but that
-    L{test} has failed for some reason.
-    """
-
-    def __init__(self, data, proxy, uisettings):
-        super(TestedBadState, self).__init__(data, proxy, uisettings)
-        self.unpersistable_helper = UnpersistableHelper(self)
-
-    def persist(self):
-        return self.unpersistable_helper.persist()
-
-
-class TestedGoodState(TestedState):
-    """
-    The state of a L{ConfigurationModel} after it has been L{test}ed
-    successfully.
-    """
-    
-    def __init__(self, data, proxy, uisettings):
-        super(TestedGoodState, self).__init__(data, proxy, uisettings)
         self.persistable_helper = PersistableHelper(self)
+    #     self._save_to_uisettings()
+
+    # def _save_to_uisettings(self):
+    #     self._uisettings.set_is_hosted(self.get(IS_HOSTED))
+    #     self._uisettings.set_hosted_account_name(
+    #         self.get(HOSTED, ACCOUNT_NAME))
+    #     self._uisettings.set_hosted_password(self.get(HOSTED, PASSWORD))
+    #     self._uisettings.set_local_landscape_host(
+    #         self.get(LOCAL, LANDSCAPE_HOST))
+    #     self._uisettings.set_local_account_name(self.get(LOCAL, ACCOUNT_NAME))
+    #     self._uisettings.set_local_password(self.get(LOCAL, PASSWORD))
+
+    def modify(self):
+        # self._save_to_uisettings()
+        return self.modifiable_helper.modify()
+
+    def revert(self):
+        return self.revertable_helper.revert()
 
     def persist(self):
         return self.persistable_helper.persist()
@@ -344,7 +259,6 @@ class InitialisedState(ConfigurationState):
         super(InitialisedState, self).__init__(data, proxy, uisettings)
         self.modifiable_helper = ModifiableHelper(self)
         self.unrevertable_helper = UnrevertableHelper(self)
-        self.testable_helper = TestableHelper(self)
         self.unpersistable_helper = UnpersistableHelper(self)
         self._load_uisettings_data()
         self._load_live_data()
@@ -384,9 +298,6 @@ class InitialisedState(ConfigurationState):
     def revert(self):
         return self.unrevertable_helper.revert()
 
-    def test(self, test_method):
-        return self.testable_helper.test(test_method)
-
     def persist(self):
         return self.unpersistable_helper.persist()
 
@@ -399,16 +310,12 @@ class VirginState(ConfigurationState):
     
     def __init__(self, proxy, uisettings):
         super(VirginState, self).__init__(DEFAULT_DATA, proxy, uisettings)
-        self.untestable_helper = UntestableHelper(self)
         self.unmodifiable_helper = UnmodifiableHelper(self)
         self.unrevertable_helper = UnrevertableHelper(self)
         self.unpersistable_helper = UnpersistableHelper(self)
     
     def load_data(self):
         return InitialisedState(self._data, self._proxy, self._uisettings)
-
-    def test(self, test_method):
-        return self.untestable_helper.test(test_method)
 
     def modify(self):
         return self.unmodifiable_helper.modify()
@@ -422,20 +329,11 @@ class VirginState(ConfigurationState):
 
 class ConfigurationModel(object):
     
-    def __init__(self, test_method=None, proxy=None, proxy_loadargs=[],
-                 uisettings=None):
+    def __init__(self, proxy=None, proxy_loadargs=[], uisettings=None):
         if not proxy:
             proxy = ConfigurationProxy(loadargs=proxy_loadargs)
         self._current_state = VirginState(proxy, uisettings)
-        if test_method:
-            self._test_method = test_method
-        else:
-            self._test_method = self._test
 
-    def _test(self):
-        # TODO, dump this and use something real
-        return True
-    
     def get_state(self):
         """
         Expose the underlying L{ConfigurationState}, for testing purposes.
@@ -444,9 +342,6 @@ class ConfigurationModel(object):
 
     def load_data(self):
         self._current_state = self._current_state.load_data()
-        
-    def test(self):
-        self._current_state = self._current_state.test(self._test_method)
 
     def modify(self):
         self._current_state = self._current_state.modify()

@@ -2,8 +2,8 @@ from landscape.tests.helpers import LandscapeTest
 from landscape.ui.model.configuration.uisettings import ObservableUISettings
 from landscape.ui.model.configuration.state import (
     ConfigurationModel, StateError, VirginState, InitialisedState,
-    TestedGoodState, TestedBadState, ModifiedState, IS_HOSTED, HOSTED,
-    LOCAL, HOSTED_LANDSCAPE_HOST, LANDSCAPE_HOST)
+    ModifiedState, IS_HOSTED, HOSTED, LOCAL, HOSTED_LANDSCAPE_HOST,
+    LANDSCAPE_HOST)
 from landscape.ui.tests.helpers import ConfigurationProxyHelper, FakeGSettings
 
 
@@ -306,58 +306,6 @@ class StateTransitionTest(LandscapeTest):
         self.assertTrue(isinstance(model.get_state(), InitialisedState))
         self.assertIs(initialised, model.get_state())
     
-    def test_testing_a_virgin_raises(self):
-        """
-        Test that calling L{test} on a L{ConfigurationModel} in L{VirginState}
-        raises an error.
-        """
-        settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
-        model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
-        self.assertTrue(isinstance(model.get_state(), VirginState))
-        self.assertRaises(StateError, model.test)
-
-    def test_load_data_on_tested_state_raises(self):
-        """
-        Test that calling L{load_data} on a L{ConfigurationModel} in either one
-        of the two L{TestedState} subclasses (L{TestedGoodState} or
-        L{TestedBadState}) will raise a L{StateError}.
-        """
-        test_succeed = lambda : True
-        test_fail = lambda : False
-        settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
-        model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings,
-                                   test_method=test_succeed)
-        model.load_data()
-        model.test()
-        self.assertRaises(StateError, model.load_data)
-        model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings,
-                                   test_method=test_fail)
-        model.load_data()
-        model.test()
-        self.assertRaises(StateError, model.load_data)
-                       
-    def test_test_transition(self):
-        """
-        Test that the L{ConfigurationModel} transitions to a L{TestedGoodState}
-        or a L{TestedBadState} when L{test} is called.
-        """
-        test_succeed = lambda : True
-        test_fail = lambda : False
-        settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
-        model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings,
-                                   test_method=test_succeed)
-        model.load_data()
-        model.test()
-        self.assertTrue(isinstance(model.get_state(), TestedGoodState))
-        model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings,
-                                   test_method=test_fail)
-        model.load_data()
-        model.test()
-        self.assertTrue(isinstance(model.get_state(), TestedBadState))
-
     def test_modifying_a_virgin_raises(self):
         """
         Test that attempting a L{modify} a L{ConfigurationModel} in
@@ -368,34 +316,34 @@ class StateTransitionTest(LandscapeTest):
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         self.assertRaises(StateError, model.modify)
 
-    def test_modified_state_is_written_to_uisettings(self):
-        settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
-        model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
-        model.load_data()
-        self.assertTrue(uisettings.get_is_hosted())
-        self.assertEqual("Sparklehorse", uisettings.get_hosted_account_name())
-        self.assertEqual("Vivadixiesubmarinetransmissionplot",
-                        uisettings.get_hosted_password())
-        self.assertEqual("the.local.machine",
-                         uisettings.get_local_landscape_host())
-        self.assertEqual("CrazyHorse", uisettings.get_local_account_name())
-        self.assertEqual("RustNeverSleeps", uisettings.get_local_password())
-        model.is_hosted = False
-        model.hosted_account_name = "ThomasPaine"
-        model.hosted_password = "TheAgeOfReason"
-        model.local_landscape_host = "another.local.machine"
-        model.local_account_name = "ThomasHobbes"
-        model.local_password = "TheLeviathan"
-        model.modify()
-        self.assertTrue(isinstance(model.get_state(), ModifiedState))
-        self.assertFalse(uisettings.get_is_hosted())
-        self.assertEqual("ThomasPaine", uisettings.get_hosted_account_name())
-        self.assertEqual("TheAgeOfReason", uisettings.get_hosted_password())
-        self.assertEqual("another.local.machine",
-                         uisettings.get_local_landscape_host())
-        self.assertEqual("ThomasHobbes", uisettings.get_local_account_name())
-        self.assertEqual("TheLeviathan", uisettings.get_local_password())
+    # def test_modified_state_is_written_to_uisettings(self):
+    #     settings = FakeGSettings(data=self.default_data)
+    #     uisettings = ObservableUISettings(settings)
+    #     model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
+    #     model.load_data()
+    #     self.assertTrue(uisettings.get_is_hosted())
+    #     self.assertEqual("Sparklehorse", uisettings.get_hosted_account_name())
+    #     self.assertEqual("Vivadixiesubmarinetransmissionplot",
+    #                     uisettings.get_hosted_password())
+    #     self.assertEqual("the.local.machine",
+    #                      uisettings.get_local_landscape_host())
+    #     self.assertEqual("CrazyHorse", uisettings.get_local_account_name())
+    #     self.assertEqual("RustNeverSleeps", uisettings.get_local_password())
+    #     model.is_hosted = False
+    #     model.hosted_account_name = "ThomasPaine"
+    #     model.hosted_password = "TheAgeOfReason"
+    #     model.local_landscape_host = "another.local.machine"
+    #     model.local_account_name = "ThomasHobbes"
+    #     model.local_password = "TheLeviathan"
+    #     model.modify()
+    #     self.assertTrue(isinstance(model.get_state(), ModifiedState))
+    #     self.assertFalse(uisettings.get_is_hosted())
+    #     self.assertEqual("ThomasPaine", uisettings.get_hosted_account_name())
+    #     self.assertEqual("TheAgeOfReason", uisettings.get_hosted_password())
+    #     self.assertEqual("another.local.machine",
+    #                      uisettings.get_local_landscape_host())
+    #     self.assertEqual("ThomasHobbes", uisettings.get_local_account_name())
+    #     self.assertEqual("TheLeviathan", uisettings.get_local_password())
 
     def test_initialised_state_is_modifiable(self):
         """
@@ -412,7 +360,6 @@ class StateTransitionTest(LandscapeTest):
         model.modify()
         self.assertTrue(isinstance(model.get_state(), ModifiedState))
         self.assertFalse(model.is_hosted)
-        self.assertFalse(uisettings.get_is_hosted())
 
     def test_modified_state_is_modifiable(self):
         """
@@ -428,41 +375,6 @@ class StateTransitionTest(LandscapeTest):
         model.modify()
         self.assertTrue(isinstance(model.get_state(), ModifiedState))
 
-    def test_modified_state_is_testable(self):
-        """
-        Test that the L{ConfigurationModel} can be transitioned via L{test}
-        when it is in the L{ModifiedState}.
-        """
-        settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
-        model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
-        model.load_data()
-        model.modify()
-        model.test()
-        self.assertTrue(isinstance(model.get_state(), TestedGoodState))
-
-    def test_tested_states_are_modifiable(self):
-        """
-        Test that the L{ConfigurationModel} transitions to L{ModifiedState}
-        whenever L{modify} is called on it in a subclass of L{TestedState}
-        (L{TestedGoodState} or L{TestedBadState}).
-        """
-        test_succeed = lambda : True
-        test_fail = lambda : False
-        settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
-        model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings,
-                                   test_method=test_succeed)
-        model.load_data()
-        model.test()
-        model.modify()
-        self.assertTrue(isinstance(model.get_state(), ModifiedState))
-        model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings,
-                                   test_method=test_fail)
-        model.load_data()
-        model.test()
-        model.modify()
-        self.assertTrue(isinstance(model.get_state(), ModifiedState))
 
     def test_reverting_a_virgin_raises(self):
         """
@@ -498,28 +410,27 @@ class StateTransitionTest(LandscapeTest):
         model.modify()
         model.revert()
         self.assertTrue(isinstance(model.get_state(), InitialisedState))
-    
-    def test_tested_states_are_revertable(self):
+
+    def test_reverting_reverts_data(self):
         """
-        Test that a L{ConfigurationModel} in one of the two L{TestedState}s can
-        be transitioned via L{revert} to L{InitialisedState}.
+        Test that transitioning via L{revert} causes the original
+        L{InitialisedState} to be restored.
         """
-        test_succeed = lambda : True
-        test_fail = lambda : False
         settings = FakeGSettings(data=self.default_data)
         uisettings = ObservableUISettings(settings)
-        model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings,
-                                   test_method=test_succeed)
+        model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         model.load_data()
-        model.test()
+        self.assertEqual(HOSTED_LANDSCAPE_HOST, model.hosted_landscape_host)
+        self.assertEqual("CrazyHorse", model.local_account_name)
+        model.hosted_landscape_host = "foo"
+        model.local_account_name = "bar"
+        model.modify()
+        self.assertEqual("foo", model.hosted_landscape_host)
+        self.assertEqual("bar", model.local_account_name)
         model.revert()
         self.assertTrue(isinstance(model.get_state(), InitialisedState))
-        model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings,
-                                   test_method=test_fail)
-        model.load_data()
-        model.test()
-        model.revert()
-        self.assertTrue(isinstance(model.get_state(), InitialisedState))
+        self.assertEqual(HOSTED_LANDSCAPE_HOST, model.hosted_landscape_host)        
+        self.assertEqual("CrazyHorse", model.local_account_name)
 
     def test_persisting_a_virgin_raises(self):
         """
@@ -542,43 +453,16 @@ class StateTransitionTest(LandscapeTest):
         model.load_data()
         self.assertRaises(StateError, model.persist)
 
-    def test_persisting_modified_state_raises(self):
+    def test_persisting_modified_is_allowed(self):
         """
-        Test that a L{ConfigurationModel} in L{InitialisedState} will raise a 
-        L{StateError} when you attempt to transition it with L{persist}.
+        Test that a L{ConfigurationModel} in L{ModifiedState} will allow itself
+        to be transitioned with L{persist}.
         """
         settings = FakeGSettings(data=self.default_data)
         uisettings = ObservableUISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         model.load_data()
         model.modify()
-        self.assertRaises(StateError, model.persist)
-
-    def test_persisting_tested_bad_state_raises(self):
-        """
-        Test that a L{ConfigurationModel} in L{TestedBadState} will raise a
-        L{StateError} when you attempt to transition it with L{persist}.
-        """
-        test_fail = lambda: False
-        settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
-        model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings,
-                                   test_method=test_fail)
-        model.load_data()
-        model.test()
-        self.assertRaises(StateError, model.persist)
-
-    def test_persist_tested_good_state(self):
-        """
-        Test that a L{ConfigurationModel} in L{TestedGoodState} can be
-        transitioned via L{persist} to a L{IntialisedState}.
-        """
-        test_succeed = lambda: True
-        settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
-        model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings,
-                                   test_method=test_succeed)
-        model.load_data()
-        model.test()
         model.persist()
         self.assertTrue(isinstance(model.get_state(), InitialisedState))
+
