@@ -5,47 +5,30 @@ import logging
 import pprint
 
 import pycurl
-from twisted.internet.threads import blockingCallFromThread
 
-from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.lib.fetch import fetch
-from landscape.configuration import (
-    fetch_base64_ssl_public_certificate, decode_base64_ssl_public_certificate)
 from landscape.lib.fs import create_file
 from landscape.lib import bpickle
 from landscape.log import format_delta
 from landscape import SERVER_API, VERSION
-from landscape.broker.dnslookup import discover_server
 
 
 class HTTPTransport(object):
     """Transport makes a request to exchange message data over HTTP.
 
     @param url: URL of the remote Landscape server message system.
-    @param config: The L{BrokerConfiguration} to be used to re-rwrite new
-        configuration values during autodiscovery.
     @param pubkey: SSH public key used for secure communication.
     @param payload_recorder: PayloadRecorder used for recording exchanges
         with the server.  If C{None}, exchanges will not be recorded.
-    @param server_autodiscovery: Server autodiscovery is performed if True,
-        otherwise server autodiscover is not done.
-    @param autodiscover_srv_query_string: If server autodiscovery is done, this
-        string will be sent to the DNS server when making a SRV query.
-    @param autodiscover_a_query_string: If server autodiscovery is done, this
-        string will be sent to the DNS server when making an A query.
     """
 
-    def __init__(self, reactor, url, config, pubkey=None, payload_recorder=None,
-                 server_autodiscover=False, autodiscover_srv_query_string="",
-                 autodiscover_a_query_string=""):
+    def __init__(self, reactor, url, config, pubkey=None,
+                 payload_recorder=None):
         self._reactor = reactor
         self._url = url
-        self._config = config
         self._pubkey = pubkey
         self._payload_recorder = payload_recorder
-        self._server_autodiscover = server_autodiscover
-        self._autodiscover_srv_query_string = autodiscover_srv_query_string
-        self._autodiscover_a_query_string = autodiscover_a_query_string
+
 
     def get_url(self):
         """Get the URL of the remote message system."""
@@ -54,43 +37,6 @@ class HTTPTransport(object):
     def set_url(self, url):
         """Set the URL of the remote message system."""
         self._url = url
-
-    def _update_config(self, hostname):
-        self._config.server_autodiscover = False
-        self._config.url = "https://%s/message-system" % hostname
-        self._config.ping_url = "http://%s:8081/ping" % hostname
-        if not self._pubkey:
-            self._config.ssl_public_key = fetch_base64_ssl_public_certificate(
-                hostname, on_info=logging.info, on_error=logging.warn)
-            decode_base64_ssl_public_certificate(self._config)
-
-        # update the discovered data points & restart
-        self._config.write() 
-        sysvconfig = SysVConfig()
-        try:
-            sysvconfig.restart_landscape()
-        except ProcessError:
-            logging.exception("Couldn't restart the Landscape client after "
-                              "config updates due to auto-discovery of " 
-                              "Landscape server %s."
-                              % hostname)
-
-    def _autodiscovery(self):
-        """
-        Perform server autodiscovery steps and fetch any custom CA certificate
-        if available.
-        """
-        if self._server_autodiscover:
-            discovered_server = blockingCallFromThread(
-                self._reactor, discover_server, None,
-                self._autodiscover_srv_query_string,
-                self._autodiscover_a_query_string)
-            if discovered_server is not None:
-                self._url = "https://%s/message-system" % discovered_server
-                self._update_config(discovered_server)
-            else:
-                logging.warn("Autodiscovery failed.  Falling back to previous "
-                             "settings.")
 
     def _curl(self, payload, computer_id, message_api):
         headers = {"X-Message-API": message_api,
@@ -123,7 +69,6 @@ class HTTPTransport(object):
             start_time = time.time()
             if logging.getLogger().getEffectiveLevel() <= logging.DEBUG:
                 logging.debug("Sending payload:\n%s", pprint.pformat(payload))
-            self._autodiscovery()
             curly, data = self._curl(spayload, computer_id, message_api)
             logging.info("Sent %d bytes and received %d bytes in %s.",
                          len(spayload), len(data),
@@ -209,10 +154,8 @@ class PayloadRecorder(object):
 class FakeTransport(object):
     """Fake transport for testing purposes."""
 
-    def __init__(self, reactor=None, url=None, config=None, pubkey=None,
-                 payload_recorder=None, server_autodiscover=False,
-                 autodiscover_srv_query_string="",
-                 autodiscover_a_query_string=""):
+    def __init__(self, reactor=None, url=None, pubkey=None,
+                 payload_recorder=None):
         self._pubkey = pubkey
         self._payload_recorder = payload_recorder
         self.payloads = []
@@ -223,11 +166,7 @@ class FakeTransport(object):
         self.message_api = None
         self.extra = {}
         self._url = url
-        self._config = config
         self._reactor = reactor
-        self._server_autodiscover = server_autodiscover
-        self._autodiscover_srv_query_string = autodiscover_srv_query_string
-        self._autodiscover_a_query_string = autodiscover_a_query_string
 
     def get_url(self):
         return self._url
