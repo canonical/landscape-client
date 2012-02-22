@@ -197,7 +197,21 @@ class PersistableHelper(Helper):
     Allow a L{ConfigurationModel} to persist.
     """
 
+    def _save_to_uisettings(self):
+        self._state._uisettings.set_is_hosted(self._state.get(IS_HOSTED))
+        self._state._uisettings.set_hosted_account_name(
+            self._state.get(HOSTED, ACCOUNT_NAME))
+        self._state._uisettings.set_hosted_password(
+            self._state.get(HOSTED, PASSWORD))
+        self._state._uisettings.set_local_landscape_host(
+            self._state.get(LOCAL, LANDSCAPE_HOST))
+        self._state._uisettings.set_local_account_name(
+            self._state.get(LOCAL, ACCOUNT_NAME))
+        self._state._uisettings.set_local_password(
+            self._state.get(LOCAL, PASSWORD))
+ 
     def persist(self):
+        self._save_to_uisettings()
         return InitialisedState(self._state._data, self._state._proxy,
                                 self._state._uisettings)
 
@@ -224,17 +238,6 @@ class ModifiedState(ConfigurationState):
         self.modifiable_helper = ModifiableHelper(self)
         self.revertable_helper = RevertableHelper(self)
         self.persistable_helper = PersistableHelper(self)
-    #     self._save_to_uisettings()
-
-    # def _save_to_uisettings(self):
-    #     self._uisettings.set_is_hosted(self.get(IS_HOSTED))
-    #     self._uisettings.set_hosted_account_name(
-    #         self.get(HOSTED, ACCOUNT_NAME))
-    #     self._uisettings.set_hosted_password(self.get(HOSTED, PASSWORD))
-    #     self._uisettings.set_local_landscape_host(
-    #         self.get(LOCAL, LANDSCAPE_HOST))
-    #     self._uisettings.set_local_account_name(self.get(LOCAL, ACCOUNT_NAME))
-    #     self._uisettings.set_local_password(self.get(LOCAL, PASSWORD))
 
     def modify(self):
         # self._save_to_uisettings()
