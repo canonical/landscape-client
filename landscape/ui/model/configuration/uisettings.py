@@ -15,7 +15,6 @@ class ObservableUISettings(object):
         self.settings.connect("changed::hosted-password",
                               self._on_hosted_password_changed)
 
-
     def get_is_hosted(self):
         return self.settings.get_boolean("is-hosted")
 

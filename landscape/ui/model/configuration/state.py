@@ -256,8 +256,16 @@ class ModifiedState(ConfigurationState):
 
     def _save_to_uisettings(self):
         self._uisettings.set_is_hosted(self.get(IS_HOSTED))
-    
+        self._uisettings.set_hosted_account_name(
+            self.get(HOSTED, ACCOUNT_NAME))
+        self._uisettings.set_hosted_password(self.get(HOSTED, PASSWORD))
+        self._uisettings.set_local_landscape_host(
+            self.get(LOCAL, LANDSCAPE_HOST))
+        self._uisettings.set_local_account_name(self.get(LOCAL, ACCOUNT_NAME))
+        self._uisettings.set_local_password(self.get(LOCAL, PASSWORD))
+
     def modify(self):
+        self._save_to_uisettings()
         return self.modifiable_helper.modify()
 
     def revert(self):

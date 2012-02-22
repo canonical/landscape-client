@@ -277,17 +277,17 @@ class StateTransitionTest(LandscapeTest):
 
     helpers = [ConfigurationProxyHelper]
 
-    default_data = {"is-hosted": True,
-                    "hosted-landscape-host": "landscape.canonical.com",
-                    "hosted-account-name": "Sparklehorse",
-                    "hosted-password": "Vivadixiesubmarinetransmissionplot",
-                    "local-landscape-host": "the.local.machine",
-                    "local-account-name": "CrazyHorse",
-                    "local-password": "RustNeverSleeps"
-                    }
-
     def setUp(self):
         self.config_string = ""
+        self.default_data = {
+            "is-hosted": True,
+            "hosted-landscape-host": "landscape.canonical.com",
+            "hosted-account-name": "Sparklehorse",
+            "hosted-password": "Vivadixiesubmarinetransmissionplot",
+            "local-landscape-host": "the.local.machine",
+            "local-account-name": "CrazyHorse",
+            "local-password": "RustNeverSleeps"
+            }
         super(StateTransitionTest, self).setUp()
     
     def test_load_data_transitions(self):
@@ -368,6 +368,35 @@ class StateTransitionTest(LandscapeTest):
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         self.assertRaises(StateError, model.modify)
 
+    def test_modified_state_is_written_to_uisettings(self):
+        settings = FakeGSettings(data=self.default_data)
+        uisettings = ObservableUISettings(settings)
+        model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
+        model.load_data()
+        self.assertTrue(uisettings.get_is_hosted())
+        self.assertEqual("Sparklehorse", uisettings.get_hosted_account_name())
+        self.assertEqual("Vivadixiesubmarinetransmissionplot",
+                        uisettings.get_hosted_password())
+        self.assertEqual("the.local.machine",
+                         uisettings.get_local_landscape_host())
+        self.assertEqual("CrazyHorse", uisettings.get_local_account_name())
+        self.assertEqual("RustNeverSleeps", uisettings.get_local_password())
+        model.is_hosted = False
+        model.hosted_account_name = "ThomasPaine"
+        model.hosted_password = "TheAgeOfReason"
+        model.local_landscape_host = "another.local.machine"
+        model.local_account_name = "ThomasHobbes"
+        model.local_password = "TheLeviathan"
+        model.modify()
+        self.assertTrue(isinstance(model.get_state(), ModifiedState))
+        self.assertFalse(uisettings.get_is_hosted())
+        self.assertEqual("ThomasPaine", uisettings.get_hosted_account_name())
+        self.assertEqual("TheAgeOfReason", uisettings.get_hosted_password())
+        self.assertEqual("another.local.machine",
+                         uisettings.get_local_landscape_host())
+        self.assertEqual("ThomasHobbes", uisettings.get_local_account_name())
+        self.assertEqual("TheLeviathan", uisettings.get_local_password())
+
     def test_initialised_state_is_modifiable(self):
         """
         Test that the L{ConfigurationModel} transitions to L{ModifiedState}
@@ -384,7 +413,6 @@ class StateTransitionTest(LandscapeTest):
         self.assertTrue(isinstance(model.get_state(), ModifiedState))
         self.assertFalse(model.is_hosted)
         self.assertFalse(uisettings.get_is_hosted())
-
 
     def test_modified_state_is_modifiable(self):
         """
