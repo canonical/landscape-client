@@ -2,14 +2,15 @@ import os
 
 from landscape.tests.helpers import LandscapeTest
 from landscape.ui.tests.helpers import FakeGSettings
-from landscape.ui.model.configuration.uisettings import ObservableUISettings
+from landscape.ui.model.configuration.uisettings import UISettings
 
 
 
-class ObservableUISettingsTest(LandscapeTest):
+class UISettingsTest(LandscapeTest):
 
 
     default_data = {"is-hosted": True,
+                    "computer-title": "bound.to.lose",
                     "hosted-landscape-host": "landscape.canonical.com",
                     "hosted-account-name": "Sparklehorse",
                     "hosted-password": "Vivadixiesubmarinetransmissionplot",
@@ -23,24 +24,9 @@ class ObservableUISettingsTest(LandscapeTest):
         Test that the L{GSettings.Client} is correctly initialised.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         self.assertTrue(settings.was_called_with_args(
-                "new", ObservableUISettings.BASE_KEY))
-        self.assertTrue(settings.was_called_with_args(
-                "connect",
-                "changed::is-hosted", uisettings._on_is_hosted_changed))
-        self.assertTrue(settings.was_called_with_args(
-                "connect",
-                "changed::hosted-landscape-host",
-                uisettings._on_hosted_landscape_host_changed))
-        self.assertTrue(settings.was_called_with_args(
-                "connect",
-                "changed::hosted-account-name",
-                uisettings._on_hosted_account_name_changed))
-        self.assertTrue(settings.was_called_with_args(
-                "connect",
-                "changed::hosted-password",
-                uisettings._on_hosted_password_changed))
+                "new", UISettings.BASE_KEY))
 
     def test_get_is_hosted(self):
         """
@@ -48,7 +34,7 @@ class ObservableUISettingsTest(LandscapeTest):
         L{GSettings.Client}.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         self.assertTrue(uisettings.get_is_hosted())
 
     def test_set_is_hosted(self):
@@ -57,12 +43,33 @@ class ObservableUISettingsTest(LandscapeTest):
         L{is_hosted} value to the L{GSettings.Client}.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         self.assertTrue(uisettings.get_is_hosted())
         uisettings.set_is_hosted(False)
         self.assertFalse(uisettings.get_is_hosted())
         self.assertTrue(settings.was_called_with_args(
                 "set_boolean", "is-hosted", False))
+
+    def test_get_computer_title(self):
+        """
+        Test that the L{get_computer_title} value is correctly fetched
+        from the L{GSettings.Client}.
+        """
+        settings = FakeGSettings(data=self.default_data)
+        uisettings = UISettings(settings)
+        self.assertEqual("bound.to.lose", 
+                         uisettings.get_computer_title())
+
+    def test_set_computer_title(self):
+        """
+        Test that L{set_computer_title} correctly sets the value of
+        L{computer_title} in the L{GSettings.Client}.
+        """
+        settings = FakeGSettings(data=self.default_data)
+        uisettings = UISettings(settings)
+        self.assertEqual("bound.to.lose", uisettings.get_computer_title())
+        uisettings.set_computer_title("Bang")
+        self.assertEqual("Bang", uisettings.get_computer_title())
 
     def test_get_hosted_landscape_host(self):
         """
@@ -70,7 +77,7 @@ class ObservableUISettingsTest(LandscapeTest):
         from the L{GSettings.Client}.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         self.assertEqual("landscape.canonical.com", 
                          uisettings.get_hosted_landscape_host())
 
@@ -82,7 +89,7 @@ class ObservableUISettingsTest(LandscapeTest):
         from the L{GSettings.Client}.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         self.assertEqual("Sparklehorse", 
                          uisettings.get_hosted_account_name())
 
@@ -92,11 +99,10 @@ class ObservableUISettingsTest(LandscapeTest):
         L{hosted_account_name} in the L{GSettings.Client}.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         self.assertEqual("Sparklehorse", uisettings.get_hosted_account_name())
         uisettings.set_hosted_account_name("Bang")
         self.assertEqual("Bang", uisettings.get_hosted_account_name())
-
 
     def test_get_hosted_password(self):
         """
@@ -104,7 +110,7 @@ class ObservableUISettingsTest(LandscapeTest):
         from the L{GSettings.Client}.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         self.assertEqual("Vivadixiesubmarinetransmissionplot", 
                          uisettings.get_hosted_password())
 
@@ -114,7 +120,7 @@ class ObservableUISettingsTest(LandscapeTest):
         L{hosted_password} in the L{GSettings.Client}.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         self.assertEqual("Vivadixiesubmarinetransmissionplot",
                          uisettings.get_hosted_password())
         uisettings.set_hosted_password("Bang")
@@ -126,7 +132,7 @@ class ObservableUISettingsTest(LandscapeTest):
         from the L{GSettings.Client}.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         self.assertEqual("the.local.machine", 
                          uisettings.get_local_landscape_host())
 
@@ -136,7 +142,7 @@ class ObservableUISettingsTest(LandscapeTest):
         L{local_landscape_host} in the L{GSettings.Client}.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         self.assertEqual("the.local.machine",
                          uisettings.get_local_landscape_host())
         uisettings.set_local_landscape_host("Bang")
@@ -148,7 +154,7 @@ class ObservableUISettingsTest(LandscapeTest):
         from the L{GSettings.Client}.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         self.assertEqual("CrazyHorse", 
                          uisettings.get_local_account_name())
 
@@ -158,7 +164,7 @@ class ObservableUISettingsTest(LandscapeTest):
         L{local_account_name} in the L{GSettings.Client}.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         self.assertEqual("CrazyHorse",
                          uisettings.get_local_account_name())
         uisettings.set_local_account_name("Bang")
@@ -170,7 +176,7 @@ class ObservableUISettingsTest(LandscapeTest):
         from the L{GSettings.Client}.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         self.assertEqual("RustNeverSleeps", 
                          uisettings.get_local_password())
 
@@ -180,7 +186,7 @@ class ObservableUISettingsTest(LandscapeTest):
         L{local_password} in the L{GSettings.Client}.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         self.assertEqual("RustNeverSleeps",
                          uisettings.get_local_password())
         uisettings.set_local_password("Bang")

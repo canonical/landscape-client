@@ -1,9 +1,10 @@
 from landscape.tests.helpers import LandscapeTest
-from landscape.ui.model.configuration.uisettings import ObservableUISettings
+from landscape.ui.model.configuration.uisettings import UISettings
+import landscape.ui.model.configuration.state
 from landscape.ui.model.configuration.state import (
     ConfigurationModel, StateError, VirginState, InitialisedState,
     ModifiedState, IS_HOSTED, HOSTED, LOCAL, HOSTED_LANDSCAPE_HOST,
-    LANDSCAPE_HOST)
+    LANDSCAPE_HOST, COMPUTER_TITLE)
 from landscape.ui.tests.helpers import ConfigurationProxyHelper, FakeGSettings
 
 
@@ -16,6 +17,7 @@ class ConfigurationModelTest(LandscapeTest):
     helpers = [ConfigurationProxyHelper]
 
     default_data = {"is-hosted": True,
+                    "computer-title": "",
                     "hosted-landscape-host": "",
                     "hosted-account-name": "",
                     "hosted-password": "",
@@ -26,6 +28,8 @@ class ConfigurationModelTest(LandscapeTest):
 
     def setUp(self):
         self.config_string = ""
+        landscape.ui.model.configuration.state.DEFAULT_DATA[COMPUTER_TITLE] \
+            = "bound.to.lose"
         super(ConfigurationModelTest, self).setUp()
     
     def tearDown(self):
@@ -38,7 +42,7 @@ class ConfigurationModelTest(LandscapeTest):
         of the L{ConfigurationState}s associated with a L{ConfigurationModel}.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         state = model.get_state()
         self.assertEqual(True, state.get(IS_HOSTED))
@@ -55,7 +59,7 @@ class ConfigurationModelTest(LandscapeTest):
         the L{ConfigurationState}s associated with a L{ConfigurationModel}.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         state = model.get_state()
         state.set(IS_HOSTED, True)
@@ -74,10 +78,11 @@ class ConfigurationModelTest(LandscapeTest):
         L{StateTransitionTest}).
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         self.assertTrue(model.is_hosted)
         self.assertEqual(HOSTED_LANDSCAPE_HOST, model.hosted_landscape_host)
+        self.assertEqual("bound.to.lose", model.computer_title) 
         self.assertEqual("", model.local_landscape_host)
         self.assertEqual("", model.hosted_account_name)
         self.assertEqual("", model.local_account_name)
@@ -89,12 +94,25 @@ class ConfigurationModelTest(LandscapeTest):
         the current L{ConfigurationState}.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         model.load_data()
         self.assertTrue(model.is_hosted)
         model.is_hosted = False
         self.assertFalse(model.is_hosted)
+
+    def test_computer_title_property(self):
+        """
+        Test that we can use the L{computer_title} property to set and get that
+        data on the current L{ConfigurationState}.
+        """
+        settings = FakeGSettings(data=self.default_data)
+        uisettings = UISettings(settings)
+        model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
+        model.load_data()
+        self.assertEqual("bound.to.lose", model.computer_title)
+        model.computer_title = "bound.to.win"
+        self.assertEqual("bound.to.win", model.computer_title)
 
     def test_hosted_landscape_host_property(self):
         """
@@ -102,7 +120,7 @@ class ConfigurationModelTest(LandscapeTest):
         that data on the current L{ConfigurationState}.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         self.assertEqual(HOSTED_LANDSCAPE_HOST, model.hosted_landscape_host)
         model.hosted_landscape_host = "foo"
@@ -114,7 +132,7 @@ class ConfigurationModelTest(LandscapeTest):
         that data on the current L{ConfigurationState}.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         self.assertEqual("", model.hosted_account_name)
         model.hosted_account_name = "foo"
@@ -126,7 +144,7 @@ class ConfigurationModelTest(LandscapeTest):
         that data on the current L{ConfigurationState}.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         self.assertEqual("", model.hosted_password)
         model.hosted_password = "foo"
@@ -138,7 +156,7 @@ class ConfigurationModelTest(LandscapeTest):
         that data on the current L{ConfigurationState}.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         self.assertEqual("", model.local_landscape_host)
         model.local_landscape_host = "foo"
@@ -150,7 +168,7 @@ class ConfigurationModelTest(LandscapeTest):
         that data on the current L{ConfigurationState}.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         self.assertEqual("", model.local_account_name)
         model.local_account_name = "foo"
@@ -162,7 +180,7 @@ class ConfigurationModelTest(LandscapeTest):
         that data on the current L{ConfigurationState}.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         self.assertEqual("", model.local_password)
         model.local_password = "foo"
@@ -184,6 +202,7 @@ class ConfigurationModelHostedTest(LandscapeTest):
     helpers = [ConfigurationProxyHelper]
 
     default_data = {"is-hosted": True,
+                    "computer-title": "bound.to.lose",
                     "hosted-landscape-host": "landscape.canonical.com",
                     "hosted-account-name": "Sparklehorse",
                     "hosted-password": "Vivadixiesubmarinetransmissionplot",
@@ -213,7 +232,7 @@ class ConfigurationModelHostedTest(LandscapeTest):
         and defaults with hosted data.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         model.load_data()
         self.assertTrue(model.is_hosted)
@@ -230,6 +249,7 @@ class ConfigurationModelLocalTest(LandscapeTest):
     helpers = [ConfigurationProxyHelper]
 
     default_data = {"is-hosted": True,
+                    "computer-title": "bound.to.lose",
                     "hosted-landscape-host": "landscape.canonical.com",
                     "hosted-account-name": "Sparklehorse",
                     "hosted-password": "Vivadixiesubmarinetransmissionplot",
@@ -258,7 +278,7 @@ class ConfigurationModelLocalTest(LandscapeTest):
         and defaults with local data.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         model.load_data()
         self.assertFalse(model.is_hosted)
@@ -283,6 +303,7 @@ class StateTransitionTest(LandscapeTest):
         self.config_string = ""
         self.default_data = {
             "is-hosted": True,
+            "computer-title": "bound.to.lose",
             "hosted-landscape-host": "landscape.canonical.com",
             "hosted-account-name": "Sparklehorse",
             "hosted-password": "Vivadixiesubmarinetransmissionplot",
@@ -298,7 +319,7 @@ class StateTransitionTest(LandscapeTest):
         L{load_data}.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         self.assertTrue(isinstance(model.get_state(), VirginState))
         model.load_data()
@@ -314,7 +335,7 @@ class StateTransitionTest(LandscapeTest):
         L{VirginState} raises a L{StateError}.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         self.assertRaises(StateError, model.modify)
 
@@ -324,7 +345,7 @@ class StateTransitionTest(LandscapeTest):
         whenever L{modify} is called on it in L{InitialisedState}.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         model.load_data()
         self.assertTrue(model.is_hosted)
@@ -340,7 +361,7 @@ class StateTransitionTest(LandscapeTest):
         whenever L{modify} is called on it in L{ModifiedState}.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         model.load_data()
         model.modify()
@@ -355,7 +376,7 @@ class StateTransitionTest(LandscapeTest):
         L{VirginState} raises a L{StateError}.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         self.assertRaises(StateError, model.revert)
         
@@ -366,7 +387,7 @@ class StateTransitionTest(LandscapeTest):
         L{InitialisedState} raises a L{StateError}.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         model.load_data()
         self.assertRaises(StateError, model.revert)
@@ -377,7 +398,7 @@ class StateTransitionTest(LandscapeTest):
         transitioned via L{revert} to L{InitialisedState}.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         model.load_data()
         model.modify()
@@ -390,7 +411,7 @@ class StateTransitionTest(LandscapeTest):
         L{InitialisedState} to be restored.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         model.load_data()
         self.assertEqual(HOSTED_LANDSCAPE_HOST, model.hosted_landscape_host)
@@ -411,7 +432,7 @@ class StateTransitionTest(LandscapeTest):
         L{StateError} when you attempt to transition it with L{persist}.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         self.assertRaises(StateError, model.persist)
 
@@ -421,7 +442,7 @@ class StateTransitionTest(LandscapeTest):
         L{StateError} when you attempt to transition it with L{persist}.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         model.load_data()
         self.assertRaises(StateError, model.persist)
@@ -432,7 +453,7 @@ class StateTransitionTest(LandscapeTest):
         to be transitioned with L{persist}.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         model.load_data()
         model.modify()
@@ -441,7 +462,7 @@ class StateTransitionTest(LandscapeTest):
 
     def test_persisting_saves_data_to_uisettings(self):
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         model.load_data()
         self.assertTrue(uisettings.get_is_hosted())
@@ -492,6 +513,7 @@ class StateTransitionWithExistingConfigTest(LandscapeTest):
             "ping_url = http://landscape.canonical.com/ping\n"
         self.default_data = {
             "is-hosted": True,
+            "computer-title": "bound.to.lose",
             "hosted-landscape-host": "landscape.canonical.com",
             "hosted-account-name": "Sparklehorse",
             "hosted-password": "Vivadixiesubmarinetransmissionplot",
@@ -504,7 +526,7 @@ class StateTransitionWithExistingConfigTest(LandscapeTest):
 
     def test_persisting_saves_data_to_proxy(self):
         settings = FakeGSettings(data=self.default_data)
-        uisettings = ObservableUISettings(settings)
+        uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         model.load_data()
         self.assertEqual("Sparklehorse", self.proxy.account_name)

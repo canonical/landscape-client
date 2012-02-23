@@ -1,4 +1,5 @@
 import copy
+import socket
 
 from landscape.ui.model.configuration.proxy import ConfigurationProxy
 
@@ -14,12 +15,23 @@ LOCAL_PASSWORD = ""
 
 HOSTED = "hosted"
 LOCAL = "local"
-IS_HOSTED = "is_hosted"
-LANDSCAPE_HOST = "landscape_host"
-ACCOUNT_NAME = "account_name"
+IS_HOSTED = "is-hosted"
+COMPUTER_TITLE = "computer-title"
+LANDSCAPE_HOST = "landscape-host"
+ACCOUNT_NAME = "account-name"
 PASSWORD = "password"
+
+
+def get_fqdn():
+    """
+    Wrap socket.getfqdn so we can test reliably.
+    """
+    return socket.getfqdn()
+
+
 DEFAULT_DATA = {
     IS_HOSTED: True,
+    COMPUTER_TITLE: get_fqdn(),
     HOSTED: {
         LANDSCAPE_HOST: HOSTED_LANDSCAPE_HOST,
         ACCOUNT_NAME: HOSTED_ACCOUNT_NAME,
@@ -92,7 +104,7 @@ class ConfigurationState(object):
                     sub_dict.__class__.__name__
             return sub_dict.get(args[1], None)
         else:
-            if args[0] == IS_HOSTED:
+            if args[0] in (IS_HOSTED, COMPUTER_TITLE):
                 return self._data.get(args[0], None)
             else:
                 raise KeyError, "Key [%s] is invalid. " % args[0]
@@ -199,6 +211,8 @@ class PersistableHelper(Helper):
 
     def _save_to_uisettings(self):
         self._state._uisettings.set_is_hosted(self._state.get(IS_HOSTED))
+        self._state._uisettings.set_computer_title(
+            self._state.get(COMPUTER_TITLE))
         self._state._uisettings.set_hosted_account_name(
             self._state.get(HOSTED, ACCOUNT_NAME))
         self._state._uisettings.set_hosted_password(
@@ -223,6 +237,7 @@ class PersistableHelper(Helper):
             self._state.get(first_key, ACCOUNT_NAME)
         self._state._proxy.registration_password = \
             self._state.get(first_key, PASSWORD)
+        self._state._proxy.computer_title = self._state.get(COMPUTER_TITLE)
         self._state._proxy.write()
 
     def persist(self):
@@ -284,6 +299,9 @@ class InitialisedState(ConfigurationState):
 
     def _load_uisettings_data(self):
         self.set(IS_HOSTED, self._uisettings.get_is_hosted())
+        computer_title = self._uisettings.get_computer_title()
+        if computer_title not in ("", None):
+            self.set(COMPUTER_TITLE, computer_title)
         self.set(HOSTED, LANDSCAPE_HOST,
                  self._uisettings.get_hosted_landscape_host())
         self.set(HOSTED, ACCOUNT_NAME,
@@ -297,6 +315,9 @@ class InitialisedState(ConfigurationState):
 
     def _load_live_data(self):
         self._proxy.load(None)
+        computer_title = self._proxy.computer_title
+        if computer_title not in ("", None):
+            self.set(COMPUTER_TITLE, computer_title)
         url = self._proxy.url
         if url.find(HOSTED_LANDSCAPE_HOST) > -1:
             self.set(IS_HOSTED, True)
@@ -378,6 +399,14 @@ class ConfigurationModel(object):
         self._current_state.set(IS_HOSTED, value)
     
     is_hosted = property(_get_is_hosted, _set_is_hosted)
+
+    def _get_computer_title(self):
+        return self._current_state.get(COMPUTER_TITLE)
+    
+    def _set_computer_title(self, value):
+        self._current_state.set(COMPUTER_TITLE, value)
+    
+    computer_title = property(_get_computer_title, _set_computer_title)
     
     def _get_hosted_landscape_host(self):
         return self._current_state.get(HOSTED, LANDSCAPE_HOST)

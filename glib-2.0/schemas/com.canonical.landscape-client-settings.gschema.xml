@@ -5,6 +5,10 @@
       <default>true</default>
       <summary>Whether the client settings UI currently set to a hosted client configuration.</summary>
     </key>
+    <key type="s" name="computer-title">
+      <default></default>
+      <summary>The title to register the machine with.</summary>
+    </key>
     <key type="s" name="hosted-landscape-host">
       <default>canonical.landscape.com</default>
       <summary>The hostname of the Canonical hosted landscape system.</summary>
