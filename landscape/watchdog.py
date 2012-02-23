@@ -33,7 +33,7 @@ from landscape.amp import ComponentProtocol
 from landscape.broker.amp import (
     RemoteBrokerConnector, RemoteMonitorConnector, RemoteManagerConnector)
 from landscape.reactor import TwistedReactor
-from landscape.lib.dnslookup import discover_server
+from landscape.lib.dns import discover_server
 from landscape.configuration import (
     fetch_base64_ssl_public_certificate, decode_base64_ssl_public_certificate)
 
@@ -347,7 +347,7 @@ class WatchDog(object):
 
         self._ping_failures = {}
 
-    def check_running(self, result=None):
+    def check_running(self):
         """Return a list of any daemons that are already running."""
         results = []
         for daemon in self.daemons:
@@ -508,15 +508,16 @@ class WatchDogService(Service):
                 info("Autodiscovery found landscape server at %s. "
                      "Updating configuration values." % hostname)
                 self._config.server_autodiscover = False
-                self._config.url = "https://%s:8080/message-system" % hostname
-                self._config.ping_url = "http://%s:8081/ping" % hostname
+                self._config.url = "https://%s/message-system" % hostname
+                self._config.ping_url = "http://%s/ping" % hostname
                 if not self._config.ssl_public_key:
                     # If we don't have a key on this system, pull it from
                     # the auto-discovered server and write it to the filesystem
                     ssl_public_key = fetch_base64_ssl_public_certificate(
                         hostname, on_info=info, on_error=warning)
-                    self._config.ssl_public_key = ssl_public_key
-                    decode_base64_ssl_public_certificate(self._config)
+                    if ssl_public_key:
+                        self._config.ssl_public_key = ssl_public_key
+                        decode_base64_ssl_public_certificate(self._config)
                 self._config.write()
             return hostname
 
@@ -552,7 +553,7 @@ class WatchDogService(Service):
 
         if self._config.server_autodiscover:
             result = self.autodiscover()
-            result.addCallback(self.watchdog.check_running)
+            result.addCallback(lambda _: self.watchdog.check_running())
         else:
             result = self.watchdog.check_running()
 

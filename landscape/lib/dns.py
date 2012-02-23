@@ -19,12 +19,12 @@ def discover_server(resolver=None, autodiscover_srv_query_string="",
     """
     if not resolver:
         resolver = Resolver("/etc/resolv.conf")
-    d = lookup_server_record(resolver, autodiscover_srv_query_string)
-    d.addErrback(lookup_hostname, resolver, autodiscover_a_query_string)
+    d = _lookup_server_record(resolver, autodiscover_srv_query_string)
+    d.addErrback(_lookup_hostname, resolver, autodiscover_a_query_string)
     return d
 
 
-def lookup_server_record(resolver, service_name):
+def _lookup_server_record(resolver, service_name):
     """
     Do a DNS SRV record lookup for the location of the landscape server.
 
@@ -54,7 +54,7 @@ def lookup_server_record(resolver, service_name):
     return d
 
 
-def lookup_hostname(result, resolver, hostname):
+def _lookup_hostname(result, resolver, hostname):
     """
     Do a DNS name lookup for the location of the landscape server.
 
