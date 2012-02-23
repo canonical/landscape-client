@@ -1,6 +1,3 @@
-from gi.repository import Gio
-
-
 class UISettings(object):
 
     BASE_KEY = "com.canonical.landscape-client-settings"
@@ -31,7 +28,7 @@ class UISettings(object):
 
     def get_hosted_password(self):
         return self.settings.get_string("hosted-password")
- 
+
     def set_hosted_password(self, value):
         self.settings.set_string("hosted-password", value)
 
@@ -73,4 +70,3 @@ class UISettings(object):
 
     def _on_local_password_changed(self, settings, key):
         pass
-

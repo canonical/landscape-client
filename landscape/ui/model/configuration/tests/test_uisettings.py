@@ -1,13 +1,9 @@
-import os
-
 from landscape.tests.helpers import LandscapeTest
 from landscape.ui.tests.helpers import FakeGSettings
 from landscape.ui.model.configuration.uisettings import UISettings
 
 
-
 class UISettingsTest(LandscapeTest):
-
 
     default_data = {"is-hosted": True,
                     "computer-title": "bound.to.lose",
@@ -24,7 +20,7 @@ class UISettingsTest(LandscapeTest):
         Test that the L{GSettings.Client} is correctly initialised.
         """
         settings = FakeGSettings(data=self.default_data)
-        uisettings = UISettings(settings)
+        UISettings(settings)
         self.assertTrue(settings.was_called_with_args(
                 "new", UISettings.BASE_KEY))
 
@@ -57,7 +53,7 @@ class UISettingsTest(LandscapeTest):
         """
         settings = FakeGSettings(data=self.default_data)
         uisettings = UISettings(settings)
-        self.assertEqual("bound.to.lose", 
+        self.assertEqual("bound.to.lose",
                          uisettings.get_computer_title())
 
     def test_set_computer_title(self):
@@ -78,7 +74,7 @@ class UISettingsTest(LandscapeTest):
         """
         settings = FakeGSettings(data=self.default_data)
         uisettings = UISettings(settings)
-        self.assertEqual("landscape.canonical.com", 
+        self.assertEqual("landscape.canonical.com",
                          uisettings.get_hosted_landscape_host())
 
     # NOTE: There is no facility to set the hosted-landscape-host
@@ -90,7 +86,7 @@ class UISettingsTest(LandscapeTest):
         """
         settings = FakeGSettings(data=self.default_data)
         uisettings = UISettings(settings)
-        self.assertEqual("Sparklehorse", 
+        self.assertEqual("Sparklehorse",
                          uisettings.get_hosted_account_name())
 
     def test_set_hosted_account_name(self):
@@ -111,7 +107,7 @@ class UISettingsTest(LandscapeTest):
         """
         settings = FakeGSettings(data=self.default_data)
         uisettings = UISettings(settings)
-        self.assertEqual("Vivadixiesubmarinetransmissionplot", 
+        self.assertEqual("Vivadixiesubmarinetransmissionplot",
                          uisettings.get_hosted_password())
 
     def test_set_hosted_password(self):
@@ -133,7 +129,7 @@ class UISettingsTest(LandscapeTest):
         """
         settings = FakeGSettings(data=self.default_data)
         uisettings = UISettings(settings)
-        self.assertEqual("the.local.machine", 
+        self.assertEqual("the.local.machine",
                          uisettings.get_local_landscape_host())
 
     def test_set_local_landscape_host(self):
@@ -147,7 +143,7 @@ class UISettingsTest(LandscapeTest):
                          uisettings.get_local_landscape_host())
         uisettings.set_local_landscape_host("Bang")
         self.assertEqual("Bang", uisettings.get_local_landscape_host())
-        
+
     def test_get_local_account_name(self):
         """
         Test that the L{get_local_account_name} value is correctly fetched
@@ -155,7 +151,7 @@ class UISettingsTest(LandscapeTest):
         """
         settings = FakeGSettings(data=self.default_data)
         uisettings = UISettings(settings)
-        self.assertEqual("CrazyHorse", 
+        self.assertEqual("CrazyHorse",
                          uisettings.get_local_account_name())
 
     def test_set_local_account_name(self):
@@ -177,7 +173,7 @@ class UISettingsTest(LandscapeTest):
         """
         settings = FakeGSettings(data=self.default_data)
         uisettings = UISettings(settings)
-        self.assertEqual("RustNeverSleeps", 
+        self.assertEqual("RustNeverSleeps",
                          uisettings.get_local_password())
 
     def test_set_local_password(self):
@@ -191,4 +187,3 @@ class UISettingsTest(LandscapeTest):
                          uisettings.get_local_password())
         uisettings.set_local_password("Bang")
         self.assertEqual("Bang", uisettings.get_local_password())
-        

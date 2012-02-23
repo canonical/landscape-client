@@ -2,7 +2,7 @@ import dbus
 import dbus.service
 import dbus.glib
 
-from gi.repository import GObject 
+from gi.repository import GObject
 
 
 class PolicyKitMechanism(dbus.service.Object):

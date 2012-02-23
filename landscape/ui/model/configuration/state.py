@@ -82,7 +82,6 @@ class ConfigurationState(object):
     """
     Base class for states used in the L{ConfigurationModel}.
     """
-    
     def __init__(self, data, proxy, uisettings):
         self._data = copy.deepcopy(data)
         self._proxy = proxy
@@ -91,46 +90,46 @@ class ConfigurationState(object):
     def get(self, *args):
         arglen = len(args)
         if arglen > 2 or arglen == 0:
-            raise TypeError,  "get() takes either 1 or 2 keys (%d given)" % \
-                arglen
+            raise TypeError(
+                "get() takes either 1 or 2 keys (%d given)" % arglen)
         if arglen == 2:
             sub_dict = None
             if args[0] in [HOSTED, LOCAL]:
                 sub_dict = self._data.get(args[0], {})
             sub_dict = self._data[args[0]]
             if not isinstance(sub_dict, dict):
-                raise KeyError, "Compound key [%s][%s] is invalid. " + \
-                    "The data type returned from the first index was %s." % \
-                    sub_dict.__class__.__name__
+                raise KeyError(
+                    "Compound key [%s][%s] is invalid. The data type " +
+                    "returned from the first index was %s." %
+                    sub_dict.__class__.__name__)
             return sub_dict.get(args[1], None)
         else:
             if args[0] in (IS_HOSTED, COMPUTER_TITLE):
                 return self._data.get(args[0], None)
             else:
-                raise KeyError, "Key [%s] is invalid. " % args[0]
-                
+                raise KeyError("Key [%s] is invalid. " % args[0])
 
     def set(self, *args):
         arglen = len(args)
         if arglen < 2 or arglen > 3:
-            raise TypeError,  "set() takes either 1 or 2 keys and exactly" +\
-                " 1 value (%d arguments given)" % arglen
-        if arglen == 2: 
+            raise TypeError("set() takes either 1 or 2 keys and exactly 1 " +
+                            "value (%d arguments given)" % arglen)
+        if arglen == 2:
             self._data[args[0]] = args[1]
         else:
             sub_dict = None
             if args[0] in [HOSTED, LOCAL]:
                 sub_dict = self._data.get(args[0], {})
             if not isinstance(sub_dict, dict):
-                raise KeyError, "Compound key [%s][%s] is invalid. " + \
-                    "The data type returned from the first index was %s." % \
-                    sub_dict.__class__.__name__
+                raise KeyError("Compound key [%s][%s] is invalid. The data " +
+                               "type returned from the first index was %s."
+                               % sub_dict.__class__.__name__)
             sub_dict[args[1]] = args[2]
             self._data[args[0]] = sub_dict
-            
+
     def load_data(self):
         raise NotImplementedError
-    
+
     def modify(self):
         raise NotImplementedError
 
@@ -149,9 +148,9 @@ class Helper(object):
     L{ConfigurationState} classes and can have some knowledge of their
     internals.  They shouldn't be visible to users of the
     L{ConfigurationState}s and in general we should avoid seeing the
-    L{ConfigurationState}s _data attribute outside this module.
+    L{ConfigurationState}'s _data attribute outside this module.
     """
-    
+
     def __init__(self, state):
         self._state = state
 
@@ -167,11 +166,14 @@ class ModifiableHelper(Helper):
 
 
 class UnloadableHelper(Helper):
-    
+    """
+    Disallow loading of data into a L{ConfigurationModel}.
+    """
+
     def load_data(self):
-        raise StateError, "A ConfiguratiomModel in a " + \
-            self._state.__class__.__name__ + \
-            " cannot be transitioned via load_data()"
+        raise StateError("A ConfiguratiomModel in a " +
+                         self.__class__.__name__ +
+                         " cannot be transitioned via load_data()")
 
 
 class UnmodifiableHelper(Helper):
@@ -180,8 +182,9 @@ class UnmodifiableHelper(Helper):
     """
 
     def modify(self):
-        raise StateError, "A ConfigurationModel in " + \
-            self._state.__class__.__name__ + " cannot transition via modify()"
+        raise StateError("A ConfigurationModel in " +
+                         self.__class__.__name__ +
+                         " cannot transition via modify()")
 
 
 class RevertableHelper(Helper):
@@ -200,8 +203,9 @@ class UnrevertableHelper(Helper):
     """
 
     def revert(self):
-        raise StateError, "A ConfigurationModel in " + \
-            self._state.__class__.__name__ + " cannot transition via revert()"
+        raise StateError("A ConfigurationModel in " +
+                         self.__class__.__name__ +
+                         " cannot transition via revert()")
 
 
 class PersistableHelper(Helper):
@@ -253,9 +257,9 @@ class UnpersistableHelper(Helper):
     """
 
     def persist(self):
-        raise StateError, "A ConfiguratonModel in " + \
-            self._state.__class__.__name__ + \
-            " cannot be transitioned via persist()."
+        raise StateError("A ConfiguratonModel in " +
+                         self.__class__.__name__ +
+                         " cannot be transitioned via persist().")
 
 
 class ModifiedState(ConfigurationState):
@@ -263,22 +267,21 @@ class ModifiedState(ConfigurationState):
     The state of a L{ConfigurationModel} whenever the user has modified some
     data but hasn't yet L{persist}ed or L{revert}ed.
     """
-    
+
     def __init__(self, data, proxy, uisettings):
         super(ModifiedState, self).__init__(data, proxy, uisettings)
-        self.modifiable_helper = ModifiableHelper(self)
-        self.revertable_helper = RevertableHelper(self)
-        self.persistable_helper = PersistableHelper(self)
+        self._modifiable_helper = ModifiableHelper(self)
+        self._revertable_helper = RevertableHelper(self)
+        self._persistable_helper = PersistableHelper(self)
 
     def modify(self):
-        # self._save_to_uisettings()
-        return self.modifiable_helper.modify()
+        return self._modifiable_helper.modify()
 
     def revert(self):
-        return self.revertable_helper.revert()
+        return self._revertable_helper.revert()
 
     def persist(self):
-        return self.persistable_helper.persist()
+        return self._persistable_helper.persist()
 
 
 class InitialisedState(ConfigurationState):
@@ -291,9 +294,9 @@ class InitialisedState(ConfigurationState):
 
     def __init__(self, data, proxy, uisettings):
         super(InitialisedState, self).__init__(data, proxy, uisettings)
-        self.modifiable_helper = ModifiableHelper(self)
-        self.unrevertable_helper = UnrevertableHelper(self)
-        self.unpersistable_helper = UnpersistableHelper(self)
+        self._modifiable_helper = ModifiableHelper(self)
+        self._unrevertable_helper = UnrevertableHelper(self)
+        self._unpersistable_helper = UnpersistableHelper(self)
         self._load_uisettings_data()
         self._load_live_data()
 
@@ -326,20 +329,20 @@ class InitialisedState(ConfigurationState):
         else:
             self.set(IS_HOSTED, False)
             self.set(LOCAL, LANDSCAPE_HOST,
-                     derive_server_host_name_from_url(url) )
+                     derive_server_host_name_from_url(url))
             self.set(LOCAL, ACCOUNT_NAME, self._proxy.account_name)
-            
+
     def load_data(self):
         return self
 
     def modify(self):
-        return self.modifiable_helper.modify()
+        return self._modifiable_helper.modify()
 
     def revert(self):
-        return self.unrevertable_helper.revert()
+        return self._unrevertable_helper.revert()
 
     def persist(self):
-        return self.unpersistable_helper.persist()
+        return self._unpersistable_helper.persist()
 
 
 class VirginState(ConfigurationState):
@@ -347,28 +350,47 @@ class VirginState(ConfigurationState):
     The state of the L{ConfigurationModel} before any actions have been taken
     upon it.
     """
-    
+
     def __init__(self, proxy, uisettings):
         super(VirginState, self).__init__(DEFAULT_DATA, proxy, uisettings)
-        self.unmodifiable_helper = UnmodifiableHelper(self)
-        self.unrevertable_helper = UnrevertableHelper(self)
-        self.unpersistable_helper = UnpersistableHelper(self)
-    
+        self._unmodifiable_helper = UnmodifiableHelper(self)
+        self._unrevertable_helper = UnrevertableHelper(self)
+        self._unpersistable_helper = UnpersistableHelper(self)
+
     def load_data(self):
         return InitialisedState(self._data, self._proxy, self._uisettings)
 
     def modify(self):
-        return self.unmodifiable_helper.modify()
+        return self._unmodifiable_helper.modify()
 
     def revert(self):
-        return self.unrevertable_helper.revert()
+        return self._unrevertable_helper.revert()
 
     def persist(self):
-        return self.unpersistable_helper.persist()
+        return self._unpersistable_helper.persist()
 
 
 class ConfigurationModel(object):
-    
+    """
+    L{ConfigurationModel} presents a model of configuration as the UI
+    requirements describe it (separate values for the Hosted and Local
+    configurations) as opposed to the real structure of the configuration
+    file.  This is intended to achieve the following:
+
+       1. Allow the expected behaviour in the UI without changing the live
+          config file.
+       2. Supersede the overly complex logic in the controller layer with a
+          cleaner state pattern.
+
+    The allowable state transitions are:
+
+       VirginState      --(load_data)--> InitialisedState
+       InitialisedState --(modify)-----> ModifiedState
+       ModifiedState    --(revert)-----> InitialisedState
+       ModifiedState    --(modify)-----> ModifiedState
+       ModifiedState    --(persist)----> InitialisedState
+    """
+
     def __init__(self, proxy=None, proxy_loadargs=[], uisettings=None):
         if not proxy:
             proxy = ConfigurationProxy(loadargs=proxy_loadargs)
@@ -388,33 +410,33 @@ class ConfigurationModel(object):
 
     def revert(self):
         self._current_state = self._current_state.revert()
-    
+
     def persist(self):
         self._current_state = self._current_state.persist()
 
     def _get_is_hosted(self):
         return self._current_state.get(IS_HOSTED)
-    
+
     def _set_is_hosted(self, value):
         self._current_state.set(IS_HOSTED, value)
-    
+
     is_hosted = property(_get_is_hosted, _set_is_hosted)
 
     def _get_computer_title(self):
         return self._current_state.get(COMPUTER_TITLE)
-    
+
     def _set_computer_title(self, value):
         self._current_state.set(COMPUTER_TITLE, value)
-    
+
     computer_title = property(_get_computer_title, _set_computer_title)
-    
+
     def _get_hosted_landscape_host(self):
         return self._current_state.get(HOSTED, LANDSCAPE_HOST)
 
     def _set_hosted_landscape_host(self, value):
         self._current_state.set(HOSTED, LANDSCAPE_HOST, value)
 
-    hosted_landscape_host = property(_get_hosted_landscape_host, 
+    hosted_landscape_host = property(_get_hosted_landscape_host,
                                      _set_hosted_landscape_host)
 
     def _get_local_landscape_host(self):
@@ -431,7 +453,7 @@ class ConfigurationModel(object):
 
     def _set_hosted_account_name(self, value):
         self._current_state.set(HOSTED, ACCOUNT_NAME, value)
-    
+
     hosted_account_name = property(_get_hosted_account_name,
                                    _set_hosted_account_name)
 
@@ -440,7 +462,7 @@ class ConfigurationModel(object):
 
     def _set_local_account_name(self, value):
         self._current_state.set(LOCAL, ACCOUNT_NAME, value)
-    
+
     local_account_name = property(_get_local_account_name,
                                    _set_local_account_name)
 
@@ -449,7 +471,7 @@ class ConfigurationModel(object):
 
     def _set_hosted_password(self, value):
         self._current_state.set(HOSTED, PASSWORD, value)
-    
+
     hosted_password = property(_get_hosted_password,
                                _set_hosted_password)
 
@@ -458,6 +480,6 @@ class ConfigurationModel(object):
 
     def _set_local_password(self, value):
         self._current_state.set(LOCAL, PASSWORD, value)
-    
+
     local_password = property(_get_local_password,
                               _set_local_password)

@@ -31,7 +31,7 @@ class ConfigurationModelTest(LandscapeTest):
         landscape.ui.model.configuration.state.DEFAULT_DATA[COMPUTER_TITLE] \
             = "bound.to.lose"
         super(ConfigurationModelTest, self).setUp()
-    
+
     def tearDown(self):
         super(ConfigurationModelTest, self).tearDown()
         self.proxy = None
@@ -46,9 +46,9 @@ class ConfigurationModelTest(LandscapeTest):
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         state = model.get_state()
         self.assertEqual(True, state.get(IS_HOSTED))
-        self.assertEqual(HOSTED_LANDSCAPE_HOST, 
+        self.assertEqual(HOSTED_LANDSCAPE_HOST,
                          state.get(HOSTED, LANDSCAPE_HOST))
-        self.assertRaises(TypeError, state.get, IS_HOSTED, HOSTED, 
+        self.assertRaises(TypeError, state.get, IS_HOSTED, HOSTED,
                           LANDSCAPE_HOST)
         self.assertRaises(KeyError, state.get, LANDSCAPE_HOST)
         self.assertRaises(KeyError, state.get, IS_HOSTED, LANDSCAPE_HOST)
@@ -82,7 +82,7 @@ class ConfigurationModelTest(LandscapeTest):
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         self.assertTrue(model.is_hosted)
         self.assertEqual(HOSTED_LANDSCAPE_HOST, model.hosted_landscape_host)
-        self.assertEqual("bound.to.lose", model.computer_title) 
+        self.assertEqual("bound.to.lose", model.computer_title)
         self.assertEqual("", model.local_landscape_host)
         self.assertEqual("", model.hosted_account_name)
         self.assertEqual("", model.local_account_name)
@@ -225,7 +225,6 @@ class ConfigurationModelHostedTest(LandscapeTest):
 
         super(ConfigurationModelHostedTest, self).setUp()
 
-
     def test_initialised_hosted(self):
         """
         Test the L{ConfigurationModel} is correctly initialised from a proxy
@@ -290,7 +289,7 @@ class ConfigurationModelLocalTest(LandscapeTest):
         self.assertEqual("Vivadixiesubmarinetransmissionplot",
                          model.hosted_password)
 
-        
+
 class StateTransitionTest(LandscapeTest):
     """
     Test that we make the correct state transitions when taking actions on the
@@ -312,7 +311,7 @@ class StateTransitionTest(LandscapeTest):
             "local-password": "RustNeverSleeps"
             }
         super(StateTransitionTest, self).setUp()
-    
+
     def test_load_data_transitions(self):
         """
         Test that the L{ConfigurationModel} correctly changes state as we call
@@ -328,7 +327,7 @@ class StateTransitionTest(LandscapeTest):
         model.load_data()
         self.assertTrue(isinstance(model.get_state(), InitialisedState))
         self.assertIs(initialised, model.get_state())
-    
+
     def test_modifying_a_virgin_raises(self):
         """
         Test that attempting a L{modify} a L{ConfigurationModel} in
@@ -369,7 +368,6 @@ class StateTransitionTest(LandscapeTest):
         model.modify()
         self.assertTrue(isinstance(model.get_state(), ModifiedState))
 
-
     def test_reverting_a_virgin_raises(self):
         """
         Test that calling L{revert} on a L{ConfigurationModel} in
@@ -379,8 +377,7 @@ class StateTransitionTest(LandscapeTest):
         uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         self.assertRaises(StateError, model.revert)
-        
-        
+
     def test_initialiased_state_is_unrevertable(self):
         """
         Test that calling L{revert} on a L{ConfigurationModel} in
@@ -423,7 +420,7 @@ class StateTransitionTest(LandscapeTest):
         self.assertEqual("bar", model.local_account_name)
         model.revert()
         self.assertTrue(isinstance(model.get_state(), InitialisedState))
-        self.assertEqual(HOSTED_LANDSCAPE_HOST, model.hosted_landscape_host)        
+        self.assertEqual(HOSTED_LANDSCAPE_HOST, model.hosted_landscape_host)
         self.assertEqual("CrazyHorse", model.local_account_name)
 
     def test_persisting_a_virgin_raises(self):
@@ -522,7 +519,6 @@ class StateTransitionWithExistingConfigTest(LandscapeTest):
             "local-password": "RustNeverSleeps"
             }
         super(StateTransitionWithExistingConfigTest, self).setUp()
-
 
     def test_persisting_saves_data_to_proxy(self):
         settings = FakeGSettings(data=self.default_data)

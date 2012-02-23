@@ -5,6 +5,7 @@ from landscape.ui.model.configuration.state import (
     derive_url_from_host_name, derive_ping_url_from_host_name,
     derive_server_host_name_from_url)
 
+
 class ConfigControllerLockError(Exception):
     pass
 

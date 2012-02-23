@@ -2,7 +2,6 @@ import os
 
 from lxml import etree
 import dbus
-from gi.repository import Gio
 
 from landscape.configuration import LandscapeSetupConfiguration
 from landscape.ui.model.configuration.mechanism import (
@@ -70,7 +69,7 @@ class FakeGSettings(object):
         tree = etree.parse(
             os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
-                "../../../", 
+                "../../../",
                 "glib-2.0/schemas/",
                 "com.canonical.landscape-client-settings.gschema.xml"))
         root = tree.getroot()
@@ -80,31 +79,29 @@ class FakeGSettings(object):
         self.keys = {}
         for key in self.schema.findall("key"):
             self.keys[key.attrib["name"]] = key.attrib["type"]
-        
 
     def check_key_data(self, name, gstype):
-        if self.keys.has_key(name):
+        if name in self.keys:
             if self.keys[name] == gstype:
                 return True
             else:
-                raise ValueError, "The GSchema file says %s is a %s, " + \
-                    "but you asked for a %s" % (name, self.keys[name], gstype)
+                raise ValueError("The GSchema file says %s is a %s, " +
+                                 "but you asked for a %s" %
+                                 (name, self.keys[name], gstype))
         else:
-            raise KeyError, "Can't find %s in the GSchema file!" % name
-
+            raise KeyError("Can't find %s in the GSchema file!" % name)
 
     def get_value(self, name, gstype):
         if self.check_key_data(name, gstype):
             return self.data[name]
 
-
     def set_value(self, name, gstype, value):
         if self.check_key_data(name, gstype):
             self.data[name] = value
-        
+
     def set_data(self, data):
         self.data = data
-        
+
     def _call(self, name, *args):
         [count, arglist] = self.calls.get(name, (0, []))
         count += 1
@@ -113,7 +110,7 @@ class FakeGSettings(object):
 
     def _args_to_string(self, *args):
         return "|".join([str(arg) for arg in args])
-        
+
     def new(self, key):
         self._call("new", key)
         return self
@@ -128,7 +125,7 @@ class FakeGSettings(object):
     def set_boolean(self, name, value):
         self._call("set_boolean", name, value)
         self.set_value(name, "b", value)
-        
+
     def get_string(self, name):
         self._call("get_string", name)
         return self.get_value(name, "s")
@@ -136,16 +133,15 @@ class FakeGSettings(object):
     def set_string(self, name, value):
         self._call("set_string", name, value)
         self.set_value(name, "s", value)
-    
+
     def was_called(self, name):
         return self.calls.haskey(name)
 
     def was_called_with_args(self, name, *args):
         try:
-            [count, arglist] = self.calls.get(name, (0,[]))
+            [count, arglist] = self.calls.get(name, (0, []))
         except KeyError:
             return False
-        
+
         expected_args = self._args_to_string(*args)
         return expected_args in arglist
-        
