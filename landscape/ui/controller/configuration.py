@@ -67,7 +67,7 @@ class ConfigController(object):
         """
         Default machine name to FQDN.
         """
-        if self._computer_title is None:
+        if self._computer_title in ("", None):
             self._computer_title = self.getfqdn()
 
     def default_dedicated(self):
