@@ -209,9 +209,25 @@ class PersistableHelper(Helper):
             self._state.get(LOCAL, ACCOUNT_NAME))
         self._state._uisettings.set_local_password(
             self._state.get(LOCAL, PASSWORD))
- 
+
+    def _save_to_config(self):
+        if self._state.get(IS_HOSTED):
+            first_key = HOSTED
+        else:
+            first_key = LOCAL
+        self._state._proxy.url = derive_url_from_host_name(
+            self._state.get(first_key, LANDSCAPE_HOST))
+        self._state._proxy.ping_url = derive_ping_url_from_host_name(
+            self._state.get(first_key, LANDSCAPE_HOST))
+        self._state._proxy.account_name = \
+            self._state.get(first_key, ACCOUNT_NAME)
+        self._state._proxy.registration_password = \
+            self._state.get(first_key, PASSWORD)
+        self._state._proxy.write()
+
     def persist(self):
         self._save_to_uisettings()
+        self._save_to_config()
         return InitialisedState(self._state._data, self._state._proxy,
                                 self._state._uisettings)
 

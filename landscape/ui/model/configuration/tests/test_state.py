@@ -42,8 +42,10 @@ class ConfigurationModelTest(LandscapeTest):
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         state = model.get_state()
         self.assertEqual(True, state.get(IS_HOSTED))
-        self.assertEqual(HOSTED_LANDSCAPE_HOST, state.get(HOSTED, LANDSCAPE_HOST))
-        self.assertRaises(TypeError, state.get, IS_HOSTED, HOSTED, LANDSCAPE_HOST)
+        self.assertEqual(HOSTED_LANDSCAPE_HOST, 
+                         state.get(HOSTED, LANDSCAPE_HOST))
+        self.assertRaises(TypeError, state.get, IS_HOSTED, HOSTED, 
+                          LANDSCAPE_HOST)
         self.assertRaises(KeyError, state.get, LANDSCAPE_HOST)
         self.assertRaises(KeyError, state.get, IS_HOSTED, LANDSCAPE_HOST)
 
@@ -469,3 +471,55 @@ class StateTransitionTest(LandscapeTest):
         self.assertEqual("TheLeviathan", uisettings.get_local_password())
 
 
+class StateTransitionWithExistingConfigTest(LandscapeTest):
+    """
+    Test that we handle existing configuration data correctly when
+    transitioning through L{ConfigurationModel} states.
+    """
+
+    helpers = [ConfigurationProxyHelper]
+
+    def setUp(self):
+        self.config_string = "[client]\n" \
+            "data_path = /var/lib/landscape/client/\n" \
+            "http_proxy = http://proxy.localdomain:3192\n" \
+            "tags = a_tag\n" \
+            "url = https://landscape.canonical.com/message-system\n" \
+            "account_name = Sparklehorse\n" \
+            "registration_password = Vivadixiesubmarinetransmissionplot\n" \
+            "computer_title = baz\n" \
+            "https_proxy = https://proxy.localdomain:6192\n" \
+            "ping_url = http://landscape.canonical.com/ping\n"
+        self.default_data = {
+            "is-hosted": True,
+            "hosted-landscape-host": "landscape.canonical.com",
+            "hosted-account-name": "Sparklehorse",
+            "hosted-password": "Vivadixiesubmarinetransmissionplot",
+            "local-landscape-host": "the.local.machine",
+            "local-account-name": "CrazyHorse",
+            "local-password": "RustNeverSleeps"
+            }
+        super(StateTransitionWithExistingConfigTest, self).setUp()
+
+
+    def test_persisting_saves_data_to_proxy(self):
+        settings = FakeGSettings(data=self.default_data)
+        uisettings = ObservableUISettings(settings)
+        model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
+        model.load_data()
+        self.assertEqual("Sparklehorse", self.proxy.account_name)
+        self.assertEqual("Vivadixiesubmarinetransmissionplot",
+                        self.proxy.registration_password)
+        model.is_hosted = False
+        model.local_account_name = "ThomasPaine"
+        model.local_password = "TheAgeOfReason"
+        model.modify()
+        self.assertTrue(isinstance(model.get_state(), ModifiedState))
+        model.persist()
+        self.assertTrue(isinstance(model.get_state(), InitialisedState))
+        self.assertFalse(model.is_hosted)
+        self.assertEqual("https://the.local.machine/message-system",
+                         self.proxy.url)
+        self.assertEqual("http://the.local.machine/ping", self.proxy.ping_url)
+        self.assertEqual("ThomasPaine", self.proxy.account_name)
+        self.assertEqual("TheAgeOfReason", self.proxy.registration_password)
