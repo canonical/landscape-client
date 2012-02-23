@@ -18,7 +18,7 @@ from landscape.watchdog import (
     WatchDogConfiguration, bootstrap_list,
     MAXIMUM_CONSECUTIVE_RESTARTS, RESTART_BURST_DELAY, run,
     Broker, Monitor, Manager)
-from landscape.broker.dnslookup import discover_server
+from landscape.lib.dnslookup import discover_server
 from landscape.configuration import (
     fetch_base64_ssl_public_certificate, print_text)
 from landscape.amp import ComponentProtocolFactory, RemoteComponentConnector

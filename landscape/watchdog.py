@@ -33,7 +33,7 @@ from landscape.amp import ComponentProtocol
 from landscape.broker.amp import (
     RemoteBrokerConnector, RemoteMonitorConnector, RemoteManagerConnector)
 from landscape.reactor import TwistedReactor
-from landscape.broker.dnslookup import discover_server
+from landscape.lib.dnslookup import discover_server
 from landscape.configuration import (
     fetch_base64_ssl_public_certificate, decode_base64_ssl_public_certificate)
 

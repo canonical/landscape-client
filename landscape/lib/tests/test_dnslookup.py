@@ -1,5 +1,5 @@
 from landscape.tests.helpers import LandscapeTest
-from landscape.broker.dnslookup import (lookup_server_record, lookup_hostname,
+from landscape.lib.dnslookup import (lookup_server_record, lookup_hostname,
                                         discover_server)
 
 from twisted.internet import defer
