@@ -128,22 +128,22 @@ class ModifiedState(ConfigurationState):
     data but hasn't yet L{test}ed or L{revert}ed.
     """
 
-    modifiable_helper = ModifiableHelper()
-    revertable_helper = RevertableHelper()
-    testable_helper = TestableHelper()
-    unpersistable_helper = UnpersistableHelper()
+    _modifiable_helper = ModifiableHelper()
+    _revertable_helper = RevertableHelper()
+    _testable_helper = TestableHelper()
+    _unpersistable_helper = UnpersistableHelper()
 
     def modify(self):
-        return self.modifiable_helper.modify()
+        return self._modifiable_helper.modify()
 
     def revert(self):
-        return self.revertable_helper.revert()
+        return self._revertable_helper.revert()
 
     def test(self, test_method):
-        return self.testable_helper.test(test_method)
+        return self._testable_helper.test(test_method)
 
     def persist(self):
-        return self.unpersistable_helper.persist()
+        return self._unpersistable_helper.persist()
 
 
 class TestedState(ConfigurationState):
@@ -152,22 +152,22 @@ class TestedState(ConfigurationState):
     L{TestedBadState}).
     """
 
-    untestable_helper = UntestableHelper()
-    unloadable_helper = UnloadableHelper()
-    modifiable_helper = ModifiableHelper()
-    revertable_helper = RevertableHelper()
+    _untestable_helper = UntestableHelper()
+    _unloadable_helper = UnloadableHelper()
+    _modifiable_helper = ModifiableHelper()
+    _revertable_helper = RevertableHelper()
 
     def test(self, test_method):
-        return self.untestable_helper.test(test_method)
+        return self._untestable_helper.test(test_method)
 
     def load_data(self):
-        return self.unloadable_helper.load_data()
+        return self._unloadable_helper.load_data()
 
     def modify(self):
-        return self.modifiable_helper.modify()
+        return self._modifiable_helper.modify()
 
     def revert(self):
-        return self.revertable_helper.revert()
+        return self._revertable_helper.revert()
 
 
 class TestedBadState(TestedState):
@@ -176,10 +176,10 @@ class TestedBadState(TestedState):
     L{test} has failed for some reason.
     """
 
-    unpersistable_helper = UnpersistableHelper()
+    _unpersistable_helper = UnpersistableHelper()
 
     def persist(self):
-        return self.unpersistable_helper.persist()
+        return self._unpersistable_helper.persist()
 
 
 class TestedGoodState(TestedState):
@@ -188,10 +188,10 @@ class TestedGoodState(TestedState):
     successfully.
     """
 
-    persistable_helper = PersistableHelper()
+    _persistable_helper = PersistableHelper()
 
     def persist(self):
-        return self.persistable_helper.persist()
+        return self._persistable_helper.persist()
 
 
 class InitialisedState(ConfigurationState):
@@ -202,25 +202,25 @@ class InitialisedState(ConfigurationState):
     finally defaults should be applied where necessary.
     """
 
-    modifiable_helper = ModifiableHelper()
-    unrevertable_helper = UnrevertableHelper()
-    testable_helper = TestableHelper()
-    unpersistable_helper = UnpersistableHelper()
+    _modifiable_helper = ModifiableHelper()
+    _unrevertable_helper = UnrevertableHelper()
+    _testable_helper = TestableHelper()
+    _unpersistable_helper = UnpersistableHelper()
 
     def load_data(self):
         return self
 
     def modify(self):
-        return self.modifiable_helper.modify()
+        return self._modifiable_helper.modify()
 
     def revert(self):
-        return self.unrevertable_helper.revert()
+        return self._unrevertable_helper.revert()
 
     def test(self, test_method):
-        return self.testable_helper.test(test_method)
+        return self._testable_helper.test(test_method)
 
     def persist(self):
-        return self.unpersistable_helper.persist()
+        return self._unpersistable_helper.persist()
 
 
 class VirginState(ConfigurationState):
@@ -229,25 +229,25 @@ class VirginState(ConfigurationState):
     upon it.
     """
 
-    untestable_helper = UntestableHelper()
-    unmodifiable_helper = UnmodifiableHelper()
-    unrevertable_helper = UnrevertableHelper()
-    unpersistable_helper = UnpersistableHelper()
+    _untestable_helper = UntestableHelper()
+    _unmodifiable_helper = UnmodifiableHelper()
+    _unrevertable_helper = UnrevertableHelper()
+    _unpersistable_helper = UnpersistableHelper()
 
     def load_data(self):
         return InitialisedState()
 
     def test(self, test_method):
-        return self.untestable_helper.test(test_method)
+        return self._untestable_helper.test(test_method)
 
     def modify(self):
-        return self.unmodifiable_helper.modify()
+        return self._unmodifiable_helper.modify()
 
     def revert(self):
-        return self.unrevertable_helper.revert()
+        return self._unrevertable_helper.revert()
 
     def persist(self):
-        return self.unpersistable_helper.persist()
+        return self._unpersistable_helper.persist()
 
 
 class ConfigurationModel(object):
