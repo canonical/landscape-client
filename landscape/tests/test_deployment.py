@@ -290,7 +290,8 @@ class ConfigurationTest(LandscapeTest):
         self.assertEqual(opts.data_path, "/var/lib/landscape/client/")
 
     def test_url_option(self):
-        opts = self.parser.parse_args(["--url", "http://mylandscape/message-system"])[0]
+        opts = self.parser.parse_args(["--url",
+                                       "http://mylandscape/message-system"])[0]
         self.assertEqual(opts.url, "http://mylandscape/message-system")
 
     def test_url_default(self):
@@ -306,7 +307,8 @@ class ConfigurationTest(LandscapeTest):
         self.assertEqual(opts.ping_url, None)
 
     def test_ssl_public_key_option(self):
-        opts = self.parser.parse_args(["--ssl-public-key", "/tmp/somekeyfile.ssl"])[0]
+        opts = self.parser.parse_args(["--ssl-public-key",
+                                       "/tmp/somekeyfile.ssl"])[0]
         self.assertEqual(opts.ssl_public_key, "/tmp/somekeyfile.ssl")
 
     def test_ssl_public_key_default(self):
@@ -322,20 +324,26 @@ class ConfigurationTest(LandscapeTest):
         self.assertEqual(opts.server_autodiscover, "false")
 
     def test_autodiscover_srv_query_string_option(self):
-        opts = self.parser.parse_args(["--autodiscover-srv-query-string","_tcp._landscape.someotherdomain"])[0]
-        self.assertEqual(opts.autodiscover_srv_query_string, "_tcp._landscape.someotherdomain")
+        opts = self.parser.parse_args(["--autodiscover-srv-query-string",
+                                       "_tcp._landscape.someotherdomain"])[0]
+        self.assertEqual(opts.autodiscover_srv_query_string,
+                         "_tcp._landscape.someotherdomain")
 
     def test_autodiscover_srv_query_string_default(self):
         opts = self.parser.parse_args([])[0]
-        self.assertEqual(opts.autodiscover_srv_query_string, "_tcp._landscape.localdomain")
+        self.assertEqual(opts.autodiscover_srv_query_string,
+                         "_tcp._landscape.localdomain")
 
     def test_autodiscover_a_query_string_option(self):
-        opts = self.parser.parse_args(["--autodiscover-a-query-string","customname.mydomain"])[0]
-        self.assertEqual(opts.autodiscover_a_query_string, "customname.mydomain")
+        opts = self.parser.parse_args(["--autodiscover-a-query-string",
+                                       "customname.mydomain"])[0]
+        self.assertEqual(opts.autodiscover_a_query_string,
+                         "customname.mydomain")
 
     def test_autodiscover_a_query_string_default(self):
         opts = self.parser.parse_args([])[0]
-        self.assertEqual(opts.autodiscover_a_query_string, "landscape.localdomain")
+        self.assertEqual(opts.autodiscover_a_query_string,
+                         "landscape.localdomain")
 
     def test_log_file_option(self):
         opts = self.parser.parse_args(["--log-dir",
