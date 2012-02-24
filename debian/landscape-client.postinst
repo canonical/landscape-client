@@ -52,6 +52,13 @@ case "$1" in
         OTP="${RET}"
         db_get $PACKAGE/tags
         TAGS="${RET}"
+        db_get $PACKAGE/server_autodiscover
+        SERVER_AUTODISCOVER="${RET}"
+        db_get $PACKAGE/autodiscover_srv_query_string
+        AUTODISCOVER_SRV_QUERY_STRING="${RET}"
+        db_get $PACKAGE/autodiscover_a_query_string
+        AUTODISCOVER_A_QUERY_STRING="${RET}"
+
 
         if [ ! -f $CONFIG_FILE ]; then
             touch $CONFIG_FILE
@@ -74,6 +81,9 @@ case "$1" in
             --https-proxy "$HTTPS_PROXY" \
             --otp "$OTP" \
             --tags "$TAGS"
+            --server-autodiscover "$SERVER_AUTODISCOVER" \
+            --autodiscover-srv-query-string "$AUTODISCOVER_SRV_QUERY_STRING" \
+            --autodiscover-a-query-string "$AUTODISCOVER_A_QUERY_STRING"
 
         # If we got the needed information, actually do the registration.
         if [ -n "$ACCOUNT_NAME" -a -n "$COMPUTER_TITLE" ]; then

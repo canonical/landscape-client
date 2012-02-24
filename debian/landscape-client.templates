@@ -83,3 +83,25 @@ _Description: Register this system with the Landscape server?
  Register this system with a preexisting Landscape account.  Please
   go to http://landscape.canonical.com if you need a Landscape account.
 
+Template: landscape-client/server_autodiscover
+Type: boolean
+Default: false
+_Description: Enable server autodiscovery?
+ Enable DNS searches to discover the hostname of a Landscape Dedicated
+ Server.
+
+Template: landscape-client/autodiscover_srv_query_string
+Type: string
+Default: _landscape._tcp.localdomain
+_Description: DNS SRV query string for discovering the server name:
+ When server autodiscovery is enabled, this string is used to make a
+ DNS SRV query to find the location of the Landscape server.  This
+ will override portions of the ping url and https url settings.
+
+Template: landscape-client/autodiscover_a_query_string
+Type: string
+Default: landscape.localdomain
+_Description: DNS A name query string for discovering the server name:
+ When server autodiscovery is enabled, this string is used to make a
+ DNS A name query to find the location of the Landscape server.  This
+ will override portions of the ping url and https url settings.
