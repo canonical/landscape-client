@@ -736,7 +736,6 @@ class ConfigurationFunctionsTest(LandscapeTest):
         setup(config)
         self.assertConfigEqual(self.get_content(config), """\
 [client]
-url = https://landscape.canonical.com/message-system
 computer_title = rex
 data_path = %s
 account_name = account
@@ -756,7 +755,6 @@ server_autodiscover = False
         setup(config)
         self.assertConfigEqual(self.get_content(config), """\
 [client]
-url = https://landscape.canonical.com/message-system
 server_autodiscover = False
 data_path = %s
 """ % config.data_path)
@@ -793,7 +791,6 @@ data_path = %s
             "data_path = %s\n"
             "registration_password = \n"
             "account_name = \n"
-            "url = https://landscape.canonical.com/message-system\n"
             "computer_title = \n"
             "https_proxy = \n"
             "ping_url = http://landscape.canonical.com/ping\n"
@@ -909,7 +906,6 @@ bus = session
 
         filename = self.makeFile("""
 [client]
-url = https://landscape.canonical.com/message-system
 ping_url = http://landscape.canonical.com/ping
 registration_password = shared-secret
 log_level = debug
@@ -924,7 +920,6 @@ random_key = random_value
         self.assertEqual(
             {"log_level": "debug",
              "registration_password": "shared-secret",
-             "url": "https://landscape.canonical.com/message-system",
              "ping_url": "http://localhost/ping",
              "random_key": "random_value",
              "computer_title": "rex",
@@ -967,7 +962,6 @@ random_key = random_value
 
         filename = self.makeFile("""
 [client]
-url = https://landscape.canonical.com/message-system
 registration_password = shared-secret
 """)
         config = self.get_config(["--config", filename, "--silent",
@@ -977,7 +971,6 @@ registration_password = shared-secret
         parser.read(filename)
         self.assertEqual(
             {"registration_password": "shared-secret",
-             "url": "https://landscape.canonical.com/message-system",
              "http_proxy": "http://environ",
              "https_proxy": "https://environ",
              "computer_title": "rex",

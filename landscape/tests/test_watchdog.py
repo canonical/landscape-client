@@ -23,7 +23,7 @@ from landscape.configuration import (
     fetch_base64_ssl_public_certificate, print_text)
 from landscape.amp import ComponentProtocolFactory, RemoteComponentConnector
 from landscape.broker.amp import RemoteBrokerConnector
-from landscape.broker.config import BrokerConfiguration
+from landscape.deployment import Configuration
 from landscape.reactor import TwistedReactor
 
 import landscape.watchdog
@@ -1212,7 +1212,7 @@ class WatchDogServiceTest(LandscapeTest):
         service.startService()
 
         # Reload config to validate config.write() was called with changes
-        config = BrokerConfiguration()
+        config = Configuration()
         config.load(["--config", self.config_filename])
         self.assertFalse(config.server_autodiscover)
         self.assertEquals("https://fakehostname/message-system",
@@ -1266,7 +1266,7 @@ class WatchDogServiceTest(LandscapeTest):
         service.startService()
 
         # Reload config file to validate config.write() was called with changes
-        config = BrokerConfiguration()
+        config = Configuration()
         config.load(["--config", self.config_filename])
         self.assertFalse(config.server_autodiscover)
         self.assertEquals("https://fakehostname/message-system",
@@ -1314,7 +1314,7 @@ class WatchDogServiceTest(LandscapeTest):
         service.startService()
 
         # Reload config file to validate config.write() was called with changes
-        config = BrokerConfiguration()
+        config = Configuration()
         config.load(["--config", self.config_filename])
         self.assertFalse(config.server_autodiscover)
         self.assertEquals("https://fakehostname/message-system",

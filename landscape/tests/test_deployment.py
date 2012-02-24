@@ -171,7 +171,8 @@ class ConfigurationTest(LandscapeTest):
         self.config.log_level = "warning"
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEqual(data.strip(), "[client]\nlog_level = warning")
+        self.assertEqual(data.strip(),
+            "[client]\nlog_level = warning\nserver_autodiscover = False")
 
     def test_dont_write_default_options(self):
         self.write_config_file(log_level="debug")
@@ -203,7 +204,8 @@ class ConfigurationTest(LandscapeTest):
         self.config.load(["--log-level", "warning"])
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEqual(data.strip(), "[client]\nlog_level = warning")
+        self.assertEqual(data.strip(),
+            "[client]\nserver_autodiscover = False\nlog_level = warning")
 
     def test_write_command_line_precedence(self):
         """Command line options take precedence over config file when writing.
@@ -212,7 +214,8 @@ class ConfigurationTest(LandscapeTest):
         self.config.load(["--log-level", "warning"])
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEqual(data.strip(), "[client]\nlog_level = warning")
+        self.assertEqual(data.strip(),
+            "[client]\nlog_level = warning\nserver_autodiscover = False")
 
     def test_write_manually_set_precedence(self):
         """Manually set options take precedence over command line when writing.
@@ -222,7 +225,8 @@ class ConfigurationTest(LandscapeTest):
         self.config.log_level = "error"
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEqual(data.strip(), "[client]\nlog_level = error")
+        self.assertEqual(data.strip(),
+            "[client]\nlog_level = error\nserver_autodiscover = False")
 
     def test_write_to_given_config_file(self):
         filename = self.makeFile()
@@ -231,7 +235,8 @@ class ConfigurationTest(LandscapeTest):
         self.config.log_level = "error"
         self.config.write()
         data = open(filename).read()
-        self.assertEqual(data.strip(), "[client]\nlog_level = error")
+        self.assertEqual(data.strip(),
+            "[client]\nlog_level = error\nserver_autodiscover = False")
 
     def test_config_option(self):
         opts = self.parser.parse_args(["--config", "hello.cfg"])[0]
@@ -283,6 +288,54 @@ class ConfigurationTest(LandscapeTest):
     def test_data_directory_default(self):
         opts = self.parser.parse_args([])[0]
         self.assertEqual(opts.data_path, "/var/lib/landscape/client/")
+
+    def test_url_option(self):
+        opts = self.parser.parse_args(["--url", "http://mylandscape/message-system"])[0]
+        self.assertEqual(opts.url, "http://mylandscape/message-system")
+
+    def test_url_default(self):
+        opts = self.parser.parse_args([])[0]
+        self.assertEqual(opts.url, self.config.DEFAULT_URL)
+
+    def test_ping_url_option(self):
+        opts = self.parser.parse_args(["--ping-url", "http://mylandscape/ping"])[0]
+        self.assertEqual(opts.ping_url, "http://mylandscape/ping")
+
+    def test_ping_url_default(self):
+        opts = self.parser.parse_args([])[0]
+        self.assertEqual(opts.ping_url, None)
+
+    def test_ssl_public_key_option(self):
+        opts = self.parser.parse_args(["--ssl-public-key", "/tmp/somekeyfile.ssl"])[0]
+        self.assertEqual(opts.ssl_public_key, "/tmp/somekeyfile.ssl")
+
+    def test_ssl_public_key_default(self):
+        opts = self.parser.parse_args([])[0]
+        self.assertEqual(opts.ssl_public_key, None)
+
+    def test_server_autodiscover_option(self):
+        opts = self.parser.parse_args(["--server-autodiscover=true"])[0]
+        self.assertEqual(opts.server_autodiscover, "true")
+
+    def test_server_autodiscover_default(self):
+        opts = self.parser.parse_args([])[0]
+        self.assertEqual(opts.server_autodiscover, "false")
+
+    def test_autodiscover_srv_query_string_option(self):
+        opts = self.parser.parse_args(["--autodiscover-srv-query-string","_tcp._landscape.someotherdomain"])[0]
+        self.assertEqual(opts.autodiscover_srv_query_string, "_tcp._landscape.someotherdomain")
+
+    def test_autodiscover_srv_query_string_default(self):
+        opts = self.parser.parse_args([])[0]
+        self.assertEqual(opts.autodiscover_srv_query_string, "_tcp._landscape.localdomain")
+
+    def test_autodiscover_a_query_string_option(self):
+        opts = self.parser.parse_args(["--autodiscover-a-query-string","customname.mydomain"])[0]
+        self.assertEqual(opts.autodiscover_a_query_string, "customname.mydomain")
+
+    def test_autodiscover_a_query_string_default(self):
+        opts = self.parser.parse_args([])[0]
+        self.assertEqual(opts.autodiscover_a_query_string, "landscape.localdomain")
 
     def test_log_file_option(self):
         opts = self.parser.parse_args(["--log-dir",

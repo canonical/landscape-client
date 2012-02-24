@@ -22,8 +22,7 @@ from twisted.internet.error import ProcessExitedAlready
 from twisted.application.service import Service, Application
 from twisted.application.app import startApplication
 
-from landscape.deployment import init_logging
-from landscape.broker.config import BrokerConfiguration
+from landscape.deployment import init_logging, Configuration
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.log import log_failure
 from landscape.lib.bootstrap import (BootstrapList, BootstrapFile,
@@ -443,7 +442,7 @@ class WatchDog(object):
         rotate_logs()
 
 
-class WatchDogConfiguration(BrokerConfiguration):
+class WatchDogConfiguration(Configuration):
 
     def make_parser(self):
         parser = super(WatchDogConfiguration, self).make_parser()
