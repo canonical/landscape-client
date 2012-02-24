@@ -27,6 +27,9 @@ case "$1" in
     configure)
 
         CONFIG_FILE=/etc/landscape/client.conf
+        if [ -f $CONFIG_FILE ]; then
+            mv --backup=numbered $CONFIG_FILE $CONFIG_FILE.bak
+        fi
         if [ ! -f $CONFIG_FILE ]; then
             # Get configuration values from debconf
             db_get $PACKAGE/computer_title
