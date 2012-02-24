@@ -106,8 +106,7 @@ class HTTPTransportTest(LandscapeTest):
                                  interface="127.0.0.1")
         self.ports.append(port)
         transport = HTTPTransport(
-            None, "https://localhost:%d/" % (port.getHost().port,),
-            PUBKEY)
+            None, "https://localhost:%d/" % (port.getHost().port,), PUBKEY)
         result = deferToThread(transport.exchange, "HI", computer_id="34",
                                message_api="X.Y")
 
