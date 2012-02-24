@@ -22,7 +22,7 @@ class HTTPTransport(object):
         with the server.  If C{None}, exchanges will not be recorded.
     """
 
-    def __init__(self, reactor, url, config, pubkey=None,
+    def __init__(self, reactor, url, pubkey=None,
                  payload_recorder=None):
         self._reactor = reactor
         self._url = url
