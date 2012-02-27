@@ -305,8 +305,6 @@ class InitialisedState(ConfigurationState):
         computer_title = self._uisettings.get_computer_title()
         if computer_title not in ("", None):
             self.set(COMPUTER_TITLE, computer_title)
-        self.set(HOSTED, LANDSCAPE_HOST,
-                 self._uisettings.get_hosted_landscape_host())
         self.set(HOSTED, ACCOUNT_NAME,
                  self._uisettings.get_hosted_account_name())
         self.set(HOSTED, PASSWORD, self._uisettings.get_hosted_password())
