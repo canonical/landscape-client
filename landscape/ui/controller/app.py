@@ -1,6 +1,8 @@
-from gi.repository import Gtk
+from gi.repository import Gio, Gtk
 
 from landscape.ui.model.configuration.proxy import ConfigurationProxy
+from landscape.ui.model.configuration.state import ConfigurationModel
+from landscape.ui.model.configuration.uisettings import UISettings
 from landscape.ui.view.configuration import ClientSettingsDialog
 from landscape.ui.controller.configuration import ConfigController
 
@@ -22,9 +24,15 @@ class SettingsApplicationController(Gtk.Application):
     def get_config(self):
         return ConfigurationProxy()
 
+    def get_uisettings(self):
+        return UISettings(Gio.Settings)
+
     def setup_ui(self, data=None):
         config = self.get_config()
-        controller = ConfigController(config, args=self._args)
+        uisettings = self.get_uisettings()
+        model = ConfigurationModel(proxy=config, proxy_loadargs=self._args,
+                                   uisettings=uisettings)
+        controller = ConfigController(model)
         controller.load()
         self.settings_dialog = ClientSettingsDialog(controller)
         self.settings_dialog.run()

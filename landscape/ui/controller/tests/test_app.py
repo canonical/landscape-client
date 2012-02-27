@@ -11,10 +11,13 @@ except (ImportError, RuntimeError):
     dbus_test_should_skip = True
     dbus_skip_message = gobject_skip_message
 else:
+    from landscape.ui.model.configuration.state import ConfigurationModel
+    from landscape.ui.model.configuration.uisettings import UISettings
     from landscape.ui.controller.app import SettingsApplicationController
     from landscape.ui.controller.configuration import ConfigController
     from landscape.ui.tests.helpers import (
-        ConfigurationProxyHelper, dbus_test_should_skip, dbus_skip_message)
+        ConfigurationProxyHelper, dbus_test_should_skip, dbus_skip_message,
+        FakeGSettings)
     from landscape.ui.view.configuration import ClientSettingsDialog
 
 
@@ -27,11 +30,13 @@ class ConnectionRecordingSettingsApplicationController(
     _connection_args = {}
     _connection_kwargs = {}
 
-    def __init__(self, get_config=None):
+    def __init__(self, get_config=None, get_uisettings=None):
         super(ConnectionRecordingSettingsApplicationController,
               self).__init__()
         if get_config:
             self.get_config = get_config
+        if get_uisettings:
+            self.get_uisettings = get_uisettings
 
     def _make_connection_name(self, signal, func):
         return signal + ">" + func.__name__
@@ -90,7 +95,15 @@ class SettingsApplicationControllerUISetupTest(LandscapeTest):
              "https_proxy = https://proxy.localdomain:6192",
              "ping_url = http://landscape.canonical.com/ping"
              ])
-
+        self.default_data = {"is-hosted": True,
+                             "computer-title": "",
+                             "hosted-landscape-host": "",
+                             "hosted-account-name": "",
+                             "hosted-password": "",
+                             "local-landscape-host": "",
+                             "local-account-name": "",
+                             "local-password": ""
+                             }
         super(SettingsApplicationControllerUISetupTest, self).setUp()
 
         def fake_run(obj):
@@ -105,8 +118,12 @@ class SettingsApplicationControllerUISetupTest(LandscapeTest):
         def get_config():
             return self.proxy
 
+        def get_uisettings():
+            settings = FakeGSettings(data=self.default_data)
+            return UISettings(settings)
+            
         self.app = ConnectionRecordingSettingsApplicationController(
-            get_config=get_config)
+            get_config=get_config, get_uisettings=get_uisettings)
 
     def tearDown(self):
         Gtk.Dialog.run = self._real_run
