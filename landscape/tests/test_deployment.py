@@ -299,7 +299,8 @@ class ConfigurationTest(LandscapeTest):
         self.assertEqual(opts.url, self.config.DEFAULT_URL)
 
     def test_ping_url_option(self):
-        opts = self.parser.parse_args(["--ping-url", "http://mylandscape/ping"])[0]
+        opts = self.parser.parse_args(["--ping-url",
+                                       "http://mylandscape/ping"])[0]
         self.assertEqual(opts.ping_url, "http://mylandscape/ping")
 
     def test_ping_url_default(self):

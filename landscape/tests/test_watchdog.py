@@ -1186,7 +1186,8 @@ class WatchDogServiceTest(LandscapeTest):
         # Validate appropriate initial config options
         self.assertEquals("https://landscape.canonical.com/message-system",
                           service._config.url)
-        self.assertEquals("/tmp/fakepubkey.ssl", service._config.ssl_public_key)
+        self.assertEquals("/tmp/fakepubkey.ssl",
+                          service._config.ssl_public_key)
         self.assertTrue(service._config.server_autodiscover)
 
         bootstrap_list_mock = self.mocker.patch(bootstrap_list)
@@ -1206,7 +1207,6 @@ class WatchDogServiceTest(LandscapeTest):
         watchdog_mock.start()
         self.mocker.result(succeed(None))
         self.mocker.replay()
-
 
         # trigger something to ensure autodiscover() is called
         service.startService()
@@ -1229,7 +1229,7 @@ class WatchDogServiceTest(LandscapeTest):
         should be saved and its file path should be written to to configuration
         file.
         """
-        base64_cert = "base64:  MTIzNDU2Nzg5MA==" # encoded from 1234567890
+        base64_cert = "base64:  MTIzNDU2Nzg5MA=="  # encoded from 1234567890
 
         key_filename = os.path.join(self.data_path,
             os.path.basename(self.config_filename + ".ssl_public_key"))
@@ -1275,16 +1275,13 @@ class WatchDogServiceTest(LandscapeTest):
                          config.ping_url)
         self.assertEquals(key_filename, config.ssl_public_key)
         self.assertEqual("1234567890", open(key_filename, "r").read())
-    
+
     def test_autodiscover_config_write_without_pubkey_no_custom_ca(self):
         """
         When server_autodiscover is set True, and the config does not have an
         ssl_public_key defined WatchDogService should attempt to fetch the
         custom CA cert from the discovered server.
         """
-        key_filename = os.path.join(self.data_path,
-            os.path.basename(self.config_filename + ".ssl_public_key"))
-
         self.configuration.server_autodiscover = True
 
         service = WatchDogService(self.configuration)
@@ -1322,7 +1319,7 @@ class WatchDogServiceTest(LandscapeTest):
         self.assertEquals("http://fakehostname/ping",
                          config.ping_url)
         self.assertEquals(None, config.ssl_public_key)
-    
+
     def test_bootstrap(self):
 
         data_path = self.makeDir()

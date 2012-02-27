@@ -503,12 +503,12 @@ def fetch_base64_ssl_public_certificate(hostname, on_info=print_text,
     try:
         content = fetch(ca_url)
     except HTTPCodeError, error:
-        on_error("Unable to fetch CA certificate from discovered server %s: Server "
-                 "does not support client auto-registation." % hostname)
+        on_error("Unable to fetch CA certificate from discovered server %s: "
+                 "Server does not support client auto-registation." % hostname)
         return encoded_cert
     except FetchError, error:
         on_error("Unable to fetch CA certificate from %s: %s"
-                % ( hostname, str(error)))
+                % (hostname, str(error)))
         return encoded_cert
 
     if content:
@@ -518,7 +518,7 @@ def fetch_base64_ssl_public_certificate(hostname, on_info=print_text,
                 encoded_cert = ca_dict["custom_ca_cert"]
             else:
                 on_error("Auto-registration URL %s returns invalid CA JSON: "
-                         "%s." %  (ca_url, ca_dict))
+                         "%s." % (ca_url, ca_dict))
         except KeyError:
             # No custom CA certificate needed to talk with this server
             on_info("No custom CA certificate available for %s." % hostname)
@@ -528,7 +528,7 @@ def fetch_base64_ssl_public_certificate(hostname, on_info=print_text,
                 % hostname)
     return encoded_cert
 
-                
+
 def setup(config):
     """
     Perform steps to ensure that landscape-client is correctly configured

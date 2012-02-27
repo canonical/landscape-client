@@ -28,7 +28,6 @@ class HTTPTransport(object):
         self._pubkey = pubkey
         self._payload_recorder = payload_recorder
 
-
     def get_url(self):
         """Get the URL of the remote message system."""
         return self._url

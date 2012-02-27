@@ -1967,7 +1967,7 @@ class SSLCertificateDataTest(LandscapeTest):
         http://providedhostname/get-ca-cert. And return the custom_ca_cert data
         if it exists.
         """
-        base64_cert = "base64:  MTIzNDU2Nzg5MA==" # encoded woo hoo
+        base64_cert = "base64:  MTIzNDU2Nzg5MA=="  # encoded woo hoo
         fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
         fetch_mock("http://fakehost/get-ca-cert")
         self.mocker.result(
@@ -1975,8 +1975,9 @@ class SSLCertificateDataTest(LandscapeTest):
         self.mocker.replay()
 
         def check_info(info):
-            self.assertEqual("Fetching CA certificate from fakehost if "
-                             "available...", str(info))
+            self.assertEqual(
+                "Fetching CA certificate from fakehost if available...",
+                str(info))
 
         content = fetch_base64_ssl_public_certificate("fakehost",
                                                       on_info=check_info)
@@ -1993,11 +1994,13 @@ class SSLCertificateDataTest(LandscapeTest):
         self.mocker.result("{}")
 
         print_text_mock = self.mocker.replace(print_text)
-        print_text_mock("Fetching CA certificate from fakehost if available...")
+        print_text_mock(
+            "Fetching CA certificate from fakehost if available...")
         print_text_mock("No custom CA certificate available for fakehost.")
         self.mocker.replay()
- 
-        content = fetch_base64_ssl_public_certificate("fakehost", on_info=print_text)
+
+        content = fetch_base64_ssl_public_certificate("fakehost",
+                                                      on_info=print_text)
         self.assertEqual("", content)
 
     def test_fetch_base64_ssl_with_http_code_fetch_error(self):
@@ -2005,7 +2008,8 @@ class SSLCertificateDataTest(LandscapeTest):
         fetch_mock("http://fakehost/get-ca-cert")
         self.mocker.throw(HTTPCodeError(404, ""))
         print_text_mock = self.mocker.replace(print_text)
-        print_text_mock("Fetching CA certificate from fakehost if available...")
+        print_text_mock(
+            "Fetching CA certificate from fakehost if available...")
         self.mocker.replay()
 
         def check_error(error):
@@ -2024,7 +2028,8 @@ class SSLCertificateDataTest(LandscapeTest):
         fetch_mock("http://fakehost/get-ca-cert")
         self.mocker.throw(PyCurlError(60, "pycurl message"))
         print_text_mock = self.mocker.replace(print_text)
-        print_text_mock("Fetching CA certificate from fakehost if available...")
+        print_text_mock(
+            "Fetching CA certificate from fakehost if available...")
         self.mocker.replay()
 
         def check_error(error):

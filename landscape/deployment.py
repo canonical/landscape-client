@@ -200,7 +200,7 @@ class BaseConfiguration(object):
         The filename picked for saving configuration options is the one
         returned by L{get_config_filename}.
         """
- 
+
         # The filename we'll write to
         filename = self.get_config_filename()
 

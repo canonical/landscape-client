@@ -501,7 +501,7 @@ class WatchDogService(Service):
         """
         def update_config(hostname):
             if hostname is None:
-                warning("Autodiscovery return empty hostname string. "
+                warning("Autodiscovery returned empty hostname string. "
                         "Reverting to previous settings.")
             else:
                 info("Autodiscovery found landscape server at %s. "
@@ -522,7 +522,7 @@ class WatchDogService(Service):
 
         def discovery_error(result):
             warning("Autodiscovery failed.  Reverting to previous settings.")
-    
+
         lookup_deferred = discover_server(
             self._config.autodiscover_srv_query_string,
             self._config.autodiscover_a_query_string)
