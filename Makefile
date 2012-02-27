@@ -16,6 +16,9 @@ check: build
 	    $(TEST_COMMAND); \
 	fi
 
+lint:
+	bzr ls-lint
+
 pyflakes:
 	-pyflakes `find landscape -name \*py|grep -v twisted_amp\.py|grep -v configobj\.py|grep -v mocker\.py`
 
