@@ -481,3 +481,8 @@ class ConfigurationModel(object):
 
     local_password = property(_get_local_password,
                               _set_local_password)
+
+    def _get_is_modified(self):
+        return isinstance(self.get_state(), ModifiedState)
+
+    is_modified = property(_get_is_modified)
