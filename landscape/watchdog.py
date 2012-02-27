@@ -524,7 +524,7 @@ class WatchDogService(Service):
             warning("Autodiscovery failed.  Reverting to previous settings.")
     
         lookup_deferred = discover_server(
-            None, self._config.autodiscover_srv_query_string,
+            self._config.autodiscover_srv_query_string,
             self._config.autodiscover_a_query_string)
         lookup_deferred.addCallback(update_config)
         lookup_deferred.addErrback(discovery_error)

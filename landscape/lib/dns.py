@@ -5,17 +5,17 @@ from twisted.names import dns
 from twisted.names.client import Resolver
 
 
-def discover_server(resolver=None, autodiscover_srv_query_string="",
-                    autodiscover_a_query_string=""):
+def discover_server(autodiscover_srv_query_string="",
+                    autodiscover_a_query_string="", resolver=None):
     """
     Look up the dns location of the landscape server.
 
-    @type resolver: The resolver to use.  If none is specified a resolver that
-        uses settings from /etc/resolv.conf will be created.
     @param autodiscover_srv_query_string: The query string to send to the DNS
         server when making a SRV query.
     @param autodiscover_a_query_string: The query string to send to the DNS
         server when making a A query.
+    @type resolver: The resolver to use.  If none is specified a resolver that
+        uses settings from /etc/resolv.conf will be created. (Testing only)
     """
     if not resolver:
         resolver = Resolver("/etc/resolv.conf")

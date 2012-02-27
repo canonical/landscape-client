@@ -180,7 +180,7 @@ class DiscoverServerTest(LandscapeTest):
         fake_resolver = FakeResolver()
         fake_resolver.results = [[fake_result]]
 
-        d = discover_server(fake_resolver)
+        d = discover_server(resolver=fake_resolver)
 
         def check(result):
             self.assertEqual("a.b.com", result)
@@ -193,7 +193,7 @@ class DiscoverServerTest(LandscapeTest):
         fake_resolver = FakeResolver()
         fake_resolver.name = "x.y.com"
 
-        d = discover_server(fake_resolver)
+        d = discover_server(resolver=fake_resolver)
 
         def check(result):
             self.assertEqual("x.y.com", result)

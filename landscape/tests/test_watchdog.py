@@ -1196,7 +1196,7 @@ class WatchDogServiceTest(LandscapeTest):
         self.mocker.order()
 
         discover_mock = self.mocker.replace(discover_server, passthrough=False)
-        discover_mock(None, self.configuration.autodiscover_srv_query_string,
+        discover_mock(self.configuration.autodiscover_srv_query_string,
                       self.configuration.autodiscover_a_query_string)
         self.mocker.result(succeed("fakehostname"))
 
@@ -1243,7 +1243,7 @@ class WatchDogServiceTest(LandscapeTest):
         self.assertTrue(self.configuration.server_autodiscover)
 
         discover_mock = self.mocker.replace(discover_server, passthrough=False)
-        discover_mock(None, self.configuration.autodiscover_srv_query_string,
+        discover_mock(self.configuration.autodiscover_srv_query_string,
                       self.configuration.autodiscover_a_query_string)
         self.mocker.result(succeed("fakehostname"))
 
@@ -1294,7 +1294,7 @@ class WatchDogServiceTest(LandscapeTest):
         self.assertTrue(self.configuration.server_autodiscover)
 
         discover_mock = self.mocker.replace(discover_server, passthrough=False)
-        discover_mock(None, self.configuration.autodiscover_srv_query_string,
+        discover_mock(self.configuration.autodiscover_srv_query_string,
                       self.configuration.autodiscover_a_query_string)
         self.mocker.result(succeed("fakehostname"))
 
