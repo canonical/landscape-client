@@ -25,6 +25,14 @@ BADPRIVKEY = sibpath("badprivate.ssl")
 BADPUBKEY = sibpath("badpublic.ssl")
 
 
+def fake_curl(payload, param2, param3):
+    """Stub out the curl network call."""
+    class Curly(object):
+        def getinfo(self, param1):
+            return 200
+    return (Curly(), bpickle.dumps("%s response" % payload))
+
+
 class DataCollectingResource(resource.Resource):
     request = content = None
 
@@ -127,8 +135,7 @@ class HTTPTransportTest(LandscapeTest):
                                  interface="127.0.0.1")
         self.ports.append(port)
         transport = HTTPTransport(None, "https://localhost:%d/"
-                                  % (port.getHost().port,),
-                                  pubkey=PUBKEY)
+                                  % (port.getHost().port,), pubkey=PUBKEY)
 
         result = deferToThread(transport.exchange, "HI", computer_id="34",
                                message_api="X.Y")
@@ -156,12 +163,6 @@ class HTTPTransportTest(LandscapeTest):
         transport = HTTPTransport(None, "http://localhost",
                                   payload_recorder=recorder)
 
-        def fake_curl(param1, param2, param3):
-            """Stub out the curl network call."""
-            class Curly(object):
-                def getinfo(self, param1):
-                    return 200
-            return (Curly(), bpickle.dumps("pay load response"))
         transport._curl = fake_curl
 
         transport.exchange("pay load")
@@ -185,6 +186,7 @@ class HTTPTransportTest(LandscapeTest):
                 def getinfo(self, param1):
                     return 200
             return (Curly(), bpickle.dumps("pay load response"))
+
         transport._curl = fake_curl
 
         transport.exchange("pay load")
