@@ -15,12 +15,15 @@ LOCAL_PASSWORD = ""
 
 HOSTED = "hosted"
 LOCAL = "local"
-IS_HOSTED = "is-hosted"
+MANAGEMENT_TYPE = "management-type"
 COMPUTER_TITLE = "computer-title"
 LANDSCAPE_HOST = "landscape-host"
 ACCOUNT_NAME = "account-name"
 PASSWORD = "password"
 
+CANONICAL_MANAGED = "canonical"
+LOCAL_MANAGED = "LDS"
+NOT_MANAGED = "not"
 
 def get_fqdn():
     """
@@ -30,7 +33,7 @@ def get_fqdn():
 
 
 DEFAULT_DATA = {
-    IS_HOSTED: True,
+    MANAGEMENT_TYPE: NOT_MANAGED,
     COMPUTER_TITLE: get_fqdn(),
     HOSTED: {
         LANDSCAPE_HOST: HOSTED_LANDSCAPE_HOST,
@@ -104,7 +107,7 @@ class ConfigurationState(object):
                     sub_dict.__class__.__name__)
             return sub_dict.get(args[1], None)
         else:
-            if args[0] in (IS_HOSTED, COMPUTER_TITLE):
+            if args[0] in (MANAGEMENT_TYPE, COMPUTER_TITLE):
                 return self._data.get(args[0], None)
             else:
                 raise KeyError("Key [%s] is invalid. " % args[0])
@@ -214,7 +217,8 @@ class PersistableHelper(Helper):
     """
 
     def _save_to_uisettings(self):
-        self._state._uisettings.set_is_hosted(self._state.get(IS_HOSTED))
+        self._state._uisettings.set_management_type(
+            self._state.get(MANAGEMENT_TYPE))
         self._state._uisettings.set_computer_title(
             self._state.get(COMPUTER_TITLE))
         self._state._uisettings.set_hosted_account_name(
@@ -229,20 +233,24 @@ class PersistableHelper(Helper):
             self._state.get(LOCAL, PASSWORD))
 
     def _save_to_config(self):
-        if self._state.get(IS_HOSTED):
-            first_key = HOSTED
+        hosted = self._state.get(MANAGEMENT_TYPE)
+        if hosted is NOT_MANAGED:
+            pass
         else:
-            first_key = LOCAL
-        self._state._proxy.url = derive_url_from_host_name(
-            self._state.get(first_key, LANDSCAPE_HOST))
-        self._state._proxy.ping_url = derive_ping_url_from_host_name(
-            self._state.get(first_key, LANDSCAPE_HOST))
-        self._state._proxy.account_name = \
-            self._state.get(first_key, ACCOUNT_NAME)
-        self._state._proxy.registration_password = \
-            self._state.get(first_key, PASSWORD)
-        self._state._proxy.computer_title = self._state.get(COMPUTER_TITLE)
-        self._state._proxy.write()
+            if hosted == CANONICAL_MANAGED:
+                first_key = HOSTED
+            else:
+                first_key = LOCAL
+            self._state._proxy.url = derive_url_from_host_name(
+                self._state.get(first_key, LANDSCAPE_HOST))
+            self._state._proxy.ping_url = derive_ping_url_from_host_name(
+                self._state.get(first_key, LANDSCAPE_HOST))
+            self._state._proxy.account_name = \
+                self._state.get(first_key, ACCOUNT_NAME)
+            self._state._proxy.registration_password = \
+                self._state.get(first_key, PASSWORD)
+            self._state._proxy.computer_title = self._state.get(COMPUTER_TITLE)
+            self._state._proxy.write()
 
     def persist(self):
         self._save_to_uisettings()
@@ -301,7 +309,8 @@ class InitialisedState(ConfigurationState):
         self._load_live_data()
 
     def _load_uisettings_data(self):
-        self.set(IS_HOSTED, self._uisettings.get_is_hosted())
+        hosted = self._uisettings.get_management_type()        
+        self.set(MANAGEMENT_TYPE, hosted)
         computer_title = self._uisettings.get_computer_title()
         if computer_title not in ("", None):
             self.set(COMPUTER_TITLE, computer_title)
@@ -321,11 +330,9 @@ class InitialisedState(ConfigurationState):
             self.set(COMPUTER_TITLE, computer_title)
         url = self._proxy.url
         if url.find(HOSTED_LANDSCAPE_HOST) > -1:
-            self.set(IS_HOSTED, True)
             self.set(HOSTED, ACCOUNT_NAME, self._proxy.account_name)
             self.set(HOSTED, PASSWORD, self._proxy.registration_password)
         else:
-            self.set(IS_HOSTED, False)
             self.set(LOCAL, LANDSCAPE_HOST,
                      derive_server_host_name_from_url(url))
             self.set(LOCAL, ACCOUNT_NAME, self._proxy.account_name)
@@ -412,13 +419,13 @@ class ConfigurationModel(object):
     def persist(self):
         self._current_state = self._current_state.persist()
 
-    def _get_is_hosted(self):
-        return self._current_state.get(IS_HOSTED)
+    def _get_management_type(self):
+        return self._current_state.get(MANAGEMENT_TYPE)
 
-    def _set_is_hosted(self, value):
-        self._current_state.set(IS_HOSTED, value)
+    def _set_management_type(self, value):
+        self._current_state.set(MANAGEMENT_TYPE, value)
 
-    is_hosted = property(_get_is_hosted, _set_is_hosted)
+    management_type = property(_get_management_type, _set_management_type)
 
     def _get_computer_title(self):
         return self._current_state.get(COMPUTER_TITLE)

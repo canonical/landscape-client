@@ -5,7 +5,7 @@ from landscape.ui.model.configuration.uisettings import UISettings
 
 class UISettingsTest(LandscapeTest):
 
-    default_data = {"is-hosted": True,
+    default_data = {"management-type": "LDS",
                     "computer-title": "bound.to.lose",
                     "hosted-landscape-host": "landscape.canonical.com",
                     "hosted-account-name": "Sparklehorse",
@@ -24,27 +24,27 @@ class UISettingsTest(LandscapeTest):
         self.assertTrue(settings.was_called_with_args(
                 "new", UISettings.BASE_KEY))
 
-    def test_get_is_hosted(self):
+    def test_get_management_type(self):
         """
-        Test that the L{get_is_hosted} value is correctly fetched from the
+        Test that the L{get_management_type} value is correctly fetched from the
         L{GSettings.Client}.
         """
         settings = FakeGSettings(data=self.default_data)
         uisettings = UISettings(settings)
-        self.assertTrue(uisettings.get_is_hosted())
+        self.assertTrue(uisettings.get_management_type())
 
-    def test_set_is_hosted(self):
+    def test_set_management_type(self):
         """
-        Test that we can correctly use L{set_is_hosted} to write the
-        L{is_hosted} value to the L{GSettings.Client}.
+        Test that we can correctly use L{set_management_type} to write the
+        L{management_type} value to the L{GSettings.Client}.
         """
         settings = FakeGSettings(data=self.default_data)
         uisettings = UISettings(settings)
-        self.assertTrue(uisettings.get_is_hosted())
-        uisettings.set_is_hosted(False)
-        self.assertFalse(uisettings.get_is_hosted())
+        self.assertEqual("LDS", uisettings.get_management_type())
+        uisettings.set_management_type("canonical")
+        self.assertEqual("canonical", uisettings.get_management_type())
         self.assertTrue(settings.was_called_with_args(
-                "set_boolean", "is-hosted", False))
+                "set_string", "management-type", "canonical"))
 
     def test_get_computer_title(self):
         """

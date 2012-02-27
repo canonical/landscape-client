@@ -48,16 +48,6 @@ class ConfigController(object):
         for function in self._observers:
             function(modified)
 
-    # def modify(self):
-    #     "Mark this config as modified and notify observers."
-    #     self._modified = True
-    #     self.notify_observers(True)
-
-    # def unmodify(self):
-    #     "Mark this config as being unmodified and notify observers."
-    #     self._modified = False
-    #     self.notify_observers(False)
-
     def load(self):
         "Load the initial data from the configuration"
         self._configuration.load_data()
