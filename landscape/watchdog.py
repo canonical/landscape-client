@@ -550,11 +550,10 @@ class WatchDogService(Service):
                     data_path=self._config.data_path + suffix,
                     log_dir=self._config.log_dir + suffix)
 
+        result = succeed(None)
         if self._config.server_autodiscover:
-            result = self.autodiscover()
-            result.addCallback(lambda _: self.watchdog.check_running())
-        else:
-            result = self.watchdog.check_running()
+            result.addCallback(lambda _: self.autodiscover())
+        result.addCallback(lambda _: self.watchdog.check_running())
 
         def start_if_not_running(running_daemons):
             if running_daemons:
