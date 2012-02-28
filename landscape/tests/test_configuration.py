@@ -1061,7 +1061,6 @@ registration_password = shared-secret
             )
         main(["-c", config_filename, "--silent"])
 
-
     def make_working_config(self):
         return self.makeFile("[client]\n"
                              "computer_title = Old Title\n"
