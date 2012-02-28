@@ -260,14 +260,14 @@ class LocalConfigurationViewTest(LandscapeTest):
     helpers = [ConfigurationProxyHelper]
 
     def setUp(self):
-        self.default_data = {"management-type": "canonical",
+        self.default_data = {"management-type": "LDS",
                              "computer-title": "",
                              "hosted-landscape-host": "",
                              "hosted-account-name": "",
                              "hosted-password": "",
                              "local-landscape-host": "",
                              "local-account-name": "",
-                             "local-password": ""
+                             "local-password": "manky"
                              }
 
         self.config_string = (
@@ -275,9 +275,9 @@ class LocalConfigurationViewTest(LandscapeTest):
             "data_path = %s\n"
             "url = https://landscape.localdomain/message-system\n"
             "computer_title = baz\n"
-            "ping_url = http://landscape.localdomain/ping\n"  % sys.path[0])
+            "ping_url = http://landscape.localdomain/ping\n" % sys.path[0])
             
-        super(ConfigurationViewTest, self).setUp()
+        super(LocalConfigurationViewTest, self).setUp()
         landscape.ui.model.configuration.state.DEFAULT_DATA[COMPUTER_TITLE] \
             = "me.here.com"
         settings = FakeGSettings(data=self.default_data)
@@ -286,49 +286,38 @@ class LocalConfigurationViewTest(LandscapeTest):
                                    uisettings=self.uisettings)
         self.controller = ConfigController(model)
 
-    def setUp(self):
-        super(LocalConfigurationViewTest, self).setUp()
-        config = "[client]\n"
-        config += "data_path = %s\n" % sys.path[0]
-        config += "url = https://landscape.localdomain/message-system\n"
-        config += "computer_title = baz\n"
-        config += "ping_url = http://landscape.localdomain/ping\n"
-        self.config_filename = self.makeFile(config)
-
-        class MySetupConfiguration(LandscapeSetupConfiguration):
-            default_config_filenames = [self.config_filename]
-
-        self.config = MySetupConfiguration()
-
     def test_init(self):
         """
         Test that we correctly initialise the L{ConfigurationView} correctly
         from the controller.
         """
-        controller = ConfigController(self.config)
-        dialog = ClientSettingsDialog(controller)
+        dialog = ClientSettingsDialog(self.controller)
+        while Gtk.events_pending():
+            Gtk.main_iteration()
         content_area = dialog.get_content_area()
         children = content_area.get_children()
         self.assertEqual(len(children), 2)
         box = children[0]
         self.assertIsInstance(box, Gtk.Box)
-        self.assertFalse(dialog._hosted_radiobutton.get_active())
-        self.assertTrue(dialog._local_radiobutton.get_active())
-        self.assertTrue(dialog._account_entry.get_sensitive())
-        self.assertTrue(dialog._password_entry.get_sensitive())
-        self.assertTrue(dialog._server_host_name_entry.get_sensitive())
+        self.assertEqual(2, dialog.use_type_combobox.get_active())
 
     def test_load_data_from_config(self):
         """
         Test that we load data into the appropriate entries from the
         configuration file.
         """
-        controller = ConfigController(self.config)
-        dialog = ClientSettingsDialog(controller)
-        self.assertEqual("", dialog._account_entry.get_text())
-        self.assertEqual("", dialog._password_entry.get_text())
+        dialog = ClientSettingsDialog(self.controller)
+        while Gtk.events_pending():
+            Gtk.main_iteration()
+        self.assertEqual(2, dialog.use_type_combobox.get_active())
+        self.assertEqual("", dialog.hosted_account_name_entry.get_text())
+        self.assertEqual("", dialog.hosted_password_entry.get_text())
         self.assertEqual("landscape.localdomain",
-                         dialog._server_host_name_entry.get_text())
+                         dialog.local_landscape_host_entry.get_text())
+        self.assertEqual("standalone",
+                         dialog.local_account_name_entry.get_text())
+        self.assertEqual("manky", dialog.local_password_entry.get_text())
+
 
     if not got_gobject_introspection:
         test_load_data_from_config.skip = gobject_skip_message

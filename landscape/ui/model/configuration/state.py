@@ -440,11 +440,7 @@ class ConfigurationModel(object):
     def _get_hosted_landscape_host(self):
         return self._current_state.get(HOSTED, LANDSCAPE_HOST)
 
-    def _set_hosted_landscape_host(self, value):
-        self._current_state.set(HOSTED, LANDSCAPE_HOST, value)
-
-    hosted_landscape_host = property(_get_hosted_landscape_host,
-                                     _set_hosted_landscape_host)
+    hosted_landscape_host = property(_get_hosted_landscape_host)
 
     def _get_local_landscape_host(self):
         return self._current_state.get(LOCAL, LANDSCAPE_HOST)

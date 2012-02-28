@@ -60,7 +60,7 @@ class ConfigControllerTest(LandscapeTest):
         self.assertEqual("foo", self.controller.hosted_account_name)
         self.assertEqual("bar", self.controller.hosted_password)
         self.assertEqual("", self.controller.local_landscape_host)
-        self.assertEqual("", self.controller.local_account_name)
+        self.assertEqual("standalone", self.controller.local_account_name)
         self.assertEqual("", self.controller.local_password)
 
     def test_set_hosted_account_name(self):
@@ -77,7 +77,7 @@ class ConfigControllerTest(LandscapeTest):
         Test that we can set the L{local_account_name} property.
         """
         self.controller.load()
-        self.assertEqual(self.controller.local_account_name, "")
+        self.assertEqual("standalone", self.controller.local_account_name)
         self.controller.local_account_name = "shoe"
         self.assertEqual(self.controller.local_account_name, "shoe")
 
@@ -193,7 +193,7 @@ class EmptyConfigControllerTest(LandscapeTest):
         self.assertEqual("", self.controller.hosted_password)
         self.assertEqual("landscape.canonical.com", 
                          self.controller.hosted_landscape_host)
-        self.assertEqual("", self.controller.local_account_name)
+        self.assertEqual("standalone", self.controller.local_account_name)
         self.assertEqual("", self.controller.local_password)
         self.assertEqual("me.here.com", self.controller.computer_title)
 

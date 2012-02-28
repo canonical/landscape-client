@@ -95,7 +95,7 @@ class SettingsApplicationControllerUISetupTest(LandscapeTest):
              "https_proxy = https://proxy.localdomain:6192",
              "ping_url = http://landscape.canonical.com/ping"
              ])
-        self.default_data = {"is-hosted": True,
+        self.default_data = {"management-type": "not",
                              "computer-title": "",
                              "hosted-landscape-host": "",
                              "hosted-account-name": "",
