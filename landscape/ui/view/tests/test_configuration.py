@@ -55,7 +55,6 @@ class ConfigurationViewTest(LandscapeTest):
         model = ConfigurationModel(proxy=self.proxy,
                                    uisettings=self.uisettings)
         self.controller = ConfigController(model)
-        self.controller.load()
 
     def test_init(self):
         """
@@ -113,53 +112,37 @@ class ConfigurationViewTest(LandscapeTest):
         self.assertEqual("", dialog.local_account_name_entry.get_text())
         self.assertEqual("", dialog.local_password_entry.get_text())
 
-
-    def test_modification(self):
-        """
-        Test that modifications to the dialog cause the close button to be
-        disabled and the connect button to be reset.
-        """
-        controller = ConfigController(self.config)
-        dialog = ClientSettingsDialog(controller)
-        self.assertEqual((Gtk.STOCK_DISCONNECT, 4),
-                         dialog._registration_image.get_stock())
-        dialog._registration_image.set_from_stock(Gtk.STOCK_CONNECT, 4)
-        while Gtk.events_pending():
-            Gtk.main_iteration()
-        self.assertEqual((Gtk.STOCK_CONNECT, 4),
-                         dialog._registration_image.get_stock())
-        dialog._account_entry.set_text("Spangles!")
-        while Gtk.events_pending():
-            Gtk.main_iteration()
-        self.assertEqual((Gtk.STOCK_DISCONNECT, 4),
-                         dialog._registration_image.get_stock())
-        self.assertFalse(dialog._close_button.get_sensitive())
-
     def test_revert(self):
         """
         Test that we can revert the UI values using the controller.
         """
-        controller = ConfigController(self.config)
-        dialog = ClientSettingsDialog(controller)
-        self.assertEqual("foo", dialog._account_entry.get_text())
-        self.assertEqual("bar", dialog._password_entry.get_text())
-        self.assertEqual("landscape.canonical.com",
-                         dialog._server_host_name_entry.get_text())
-        dialog._dedicated_radiobutton.set_active(True)
-        dialog._server_host_name_entry.set_text("more.barn")
-        self.assertEqual("standalone", dialog._account_entry.get_text())
-        self.assertEqual("bar", dialog._password_entry.get_text())
+        dialog = ClientSettingsDialog(self.controller)
+        while Gtk.events_pending():
+            Gtk.main_iteration()
+        self.assertEqual(1, dialog.use_type_combobox.get_active())
+        self.assertEqual("foo", dialog.hosted_account_name_entry.get_text())
+        self.assertEqual("bar", dialog.hosted_password_entry.get_text())
+        dialog.use_type_combobox.set_active(2)
+        dialog.local_landscape_host_entry.set_text("more.barn")
+        while Gtk.events_pending():
+            Gtk.main_iteration()
+        self.assertEqual("standalone", dialog.local_account_name_entry.get_text())
+        self.assertEqual("bar", dialog.hosted_password_entry.get_text())
         self.assertEqual("more.barn",
-                         dialog._server_host_name_entry.get_text())
-        self.assertTrue(dialog._dedicated_radiobutton.get_active())
-        self.assertFalse(dialog._hosted_radiobutton.get_active())
+                         dialog.local_landscape_host_entry.get_text())
         dialog.revert(None)
-        self.assertEqual("foo", dialog._account_entry.get_text())
-        self.assertEqual("bar", dialog._password_entry.get_text())
-        self.assertEqual("landscape.canonical.com",
-                         dialog._server_host_name_entry.get_text())
-        self.assertFalse(dialog._dedicated_radiobutton.get_active())
-        self.assertTrue(dialog._hosted_radiobutton.get_active())
+        while Gtk.events_pending():
+            Gtk.main_iteration()
+        self.assertEqual(1, dialog.use_type_combobox.get_active())
+        self.assertEqual("foo", dialog.hosted_account_name_entry.get_text())
+        self.assertEqual("bar", dialog.hosted_password_entry.get_text())
+
+        # self.assertEqual("foo", dialog._account_entry.get_text())
+        # self.assertEqual("bar", dialog._password_entry.get_text())
+        # self.assertEqual("landscape.canonical.com",
+        #                  dialog._server_host_name_entry.get_text())
+        # self.assertFalse(dialog._dedicated_radiobutton.get_active())
+        # self.assertTrue(dialog._hosted_radiobutton.get_active())
 
     if not got_gobject_introspection:
         test_revert.skip = gobject_skip_message

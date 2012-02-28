@@ -11,7 +11,7 @@ HOSTED_LANDSCAPE_HOST = "landscape.canonical.com"
 LOCAL_LANDSCAPE_HOST = ""
 
 HOSTED_ACCOUNT_NAME = ""
-LOCAL_ACCOUNT_NAME = ""
+LOCAL_ACCOUNT_NAME = "standalone"
 
 HOSTED_PASSWORD = ""
 LOCAL_PASSWORD = ""
@@ -319,8 +319,9 @@ class InitialisedState(ConfigurationState):
         self.set(HOSTED, PASSWORD, self._uisettings.get_hosted_password())
         self.set(LOCAL, LANDSCAPE_HOST,
                  self._uisettings.get_local_landscape_host())
-        self.set(LOCAL, ACCOUNT_NAME,
-                 self._uisettings.get_local_account_name())
+        local_account_name = self._uisettings.get_local_account_name()
+        if local_account_name:
+            self.set(LOCAL, ACCOUNT_NAME, local_account_name)
         self.set(LOCAL, PASSWORD, self._uisettings.get_local_password())
 
     def _load_live_data(self):
@@ -335,7 +336,8 @@ class InitialisedState(ConfigurationState):
         else:
             self.set(LOCAL, LANDSCAPE_HOST,
                      derive_server_host_name_from_url(url))
-            self.set(LOCAL, ACCOUNT_NAME, self._proxy.account_name)
+            if self._proxy.account_name != "":
+                self.set(LOCAL, ACCOUNT_NAME, self._proxy.account_name)
 
     def load_data(self):
         return self

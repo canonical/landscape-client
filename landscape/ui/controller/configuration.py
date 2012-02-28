@@ -2,7 +2,7 @@ import socket
 from landscape.ui.model.registration.proxy import RegistrationProxy
 from landscape.ui.model.configuration.state import (
     derive_url_from_host_name, derive_ping_url_from_host_name,
-    derive_server_host_name_from_url, ModifiedState)
+    derive_server_host_name_from_url, ModifiedState, StateError)
 
 
 class ConfigControllerLockError(Exception):
@@ -54,7 +54,11 @@ class ConfigController(object):
 
     def revert(self):
         "Revert settings to those the configuration object originally found."
-        self._configuration.revert()
+        try:
+            self._configuration.revert()
+        except StateError:
+            # We probably don't care.
+            pass
 
     def commit(self):
         "Persist settings via the configuration object."

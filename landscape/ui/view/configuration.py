@@ -45,9 +45,10 @@ class ClientSettingsDialog(Gtk.Dialog):
         self.local_password_entry.set_text(self.controller.local_password)
 
     def load_data(self):
+        self.controller.load()
         self._set_hosted_values_from_controller()
+        self._set_local_values_from_controller()
         self._set_use_type_combobox_from_controller()
-
 
     def make_liststore(self):
         liststore = Gtk.ListStore(GObject.TYPE_PYOBJECT,
@@ -102,6 +103,7 @@ class ClientSettingsDialog(Gtk.Dialog):
         revert_button = Gtk.Button(stock=Gtk.STOCK_REVERT_TO_SAVED)
         self.action_area.pack_start(revert_button, True, True, 0)
         self.action_area.reorder_child(revert_button, 0)
+        revert_button.connect("clicked", self.revert)
         revert_button.show()
         self.connect("destroy",  self.quit)
         self.connect("delete-event",  self.quit)
@@ -116,6 +118,10 @@ class ClientSettingsDialog(Gtk.Dialog):
 
     def quit(self, *args):
         self.destroy()
+
+    def revert(self, button):
+        self.controller.revert()
+        self.load_data()
 
 
 # if __name__ == "__main__":
