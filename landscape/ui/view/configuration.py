@@ -123,6 +123,9 @@ class ClientSettingsDialog(Gtk.Dialog):
         self.controller.revert()
         self.load_data()
 
+    def persist(self, button):
+        self.controller.persist()
+
 
 # if __name__ == "__main__":
 #     dialog = ClientSettingsDialog()
