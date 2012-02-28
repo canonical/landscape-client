@@ -2,7 +2,7 @@
 <schemalist>
   <schema id="com.canonical.landscape-client-settings" path="/com/canonical/landscape-client-settings/">
     <key type="s" name="management-type">
-      <default>not</default>
+      <default>"not"</default>
       <summary>Whether the client settings UI currently set to a hosted client configuration, an LDS instance or no management service.</summary>
     </key>
     <key type="s" name="computer-title">

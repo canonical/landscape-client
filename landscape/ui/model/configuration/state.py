@@ -1,6 +1,9 @@
 import copy
 import socket
 
+from landscape.ui.constants import (
+    CANONICAL_MANAGED, LOCAL_MANAGED, NOT_MANAGED)
+
 from landscape.ui.model.configuration.proxy import ConfigurationProxy
 
 
@@ -21,9 +24,6 @@ LANDSCAPE_HOST = "landscape-host"
 ACCOUNT_NAME = "account-name"
 PASSWORD = "password"
 
-CANONICAL_MANAGED = "canonical"
-LOCAL_MANAGED = "LDS"
-NOT_MANAGED = "not"
 
 def get_fqdn():
     """

@@ -12,91 +12,107 @@ else:
     from landscape.ui.controller.configuration import ConfigController
 
 from landscape.tests.helpers import LandscapeTest
+from landscape.ui.tests.helpers import ConfigurationProxyHelper, FakeGSettings
 from landscape.configuration import LandscapeSetupConfiguration
+import landscape.ui.model.configuration.state
+from landscape.ui.model.configuration.state import (
+    COMPUTER_TITLE, ConfigurationModel)
+from landscape.ui.model.configuration.uisettings import UISettings
 
 
 class ConfigurationViewTest(LandscapeTest):
 
+    helpers = [ConfigurationProxyHelper]
+
     def setUp(self):
+        self.default_data = {"management-type": "canonical",
+                             "computer-title": "",
+                             "hosted-landscape-host": "",
+                             "hosted-account-name": "",
+                             "hosted-password": "",
+                             "local-landscape-host": "",
+                             "local-account-name": "",
+                             "local-password": ""
+                             }
+
+        self.config_string = (
+            "[client]\n"
+            "data_path = %s\n"
+            "http_proxy = http://proxy.localdomain:3192\n"
+            "tags = a_tag\n"
+            "url = https://landscape.canonical.com/message-system\n"
+            "account_name = foo\n"
+            "registration_password = bar\n"
+            "computer_title = baz\n"
+            "https_proxy = https://proxy.localdomain:6192\n"
+            "ping_url = http://landscape.canonical.com/ping\n" % sys.path[0])
+
         super(ConfigurationViewTest, self).setUp()
-        config = "[client]\n"
-        config += "data_path = %s\n" % sys.path[0]
-        config += "http_proxy = http://proxy.localdomain:3192\n"
-        config += "tags = a_tag\n"
-        config += "url = https://landscape.canonical.com/message-system\n"
-        config += "account_name = foo\n"
-        config += "registration_password = bar\n"
-        config += "computer_title = baz\n"
-        config += "https_proxy = https://proxy.localdomain:6192\n"
-        config += "ping_url = http://landscape.canonical.com/ping\n"
-
-        self.config_filename = self.makeFile(config)
-
-        class MySetupConfiguration(LandscapeSetupConfiguration):
-            default_config_filenames = [self.config_filename]
-
-        self.config = MySetupConfiguration()
+        landscape.ui.model.configuration.state.DEFAULT_DATA[COMPUTER_TITLE] \
+            = "me.here.com"
+        settings = FakeGSettings(data=self.default_data)
+        self.uisettings = UISettings(settings)
+        model = ConfigurationModel(proxy=self.proxy,
+                                   uisettings=self.uisettings)
+        self.controller = ConfigController(model)
+        self.controller.load()
 
     def test_init(self):
         """
         Test that we correctly initialise the L{ConfigurationView} correctly
         from the controller.
         """
-        controller = ConfigController(self.config)
-        dialog = ClientSettingsDialog(controller)
+        dialog = ClientSettingsDialog(self.controller)
         content_area = dialog.get_content_area()
         children = content_area.get_children()
         self.assertEqual(len(children), 2)
         box = children[0]
         self.assertIsInstance(box, Gtk.Box)
-        self.assertTrue(dialog._hosted_radiobutton.get_active())
-        self.assertFalse(dialog._dedicated_radiobutton.get_active())
-        self.assertTrue(dialog._account_entry.get_sensitive())
-        self.assertTrue(dialog._password_entry.get_sensitive())
-        self.assertFalse(dialog._server_host_name_entry.get_sensitive())
-        self.assertTrue(dialog._registration_button.get_sensitive())
-        start, end = dialog._registration_textbuffer.get_bounds()
-        self.assertEqual(
-            0,
-            len(dialog._registration_textbuffer.get_text(
-                    start, end, include_hidden_chars=True)))
+        self.assertEqual(0, dialog.use_type_combobox.get_active())
 
-    def test_toggle_radio_button(self):
+    def test_on_combobox_changed(self):
         """
-        Test that we disable and enable the correct entries when we toggle the
-        dialog radiobuttons.
+        Test that changes to the active selection in L{use_type_combobox}
+        result in the correct panel becoming active and visible.
         """
-        controller = ConfigController(self.config)
-        dialog = ClientSettingsDialog(controller)
-        self.assertTrue(dialog._hosted_radiobutton.get_active())
-        self.assertFalse(dialog._dedicated_radiobutton.get_active())
-        self.assertTrue(dialog._account_entry.get_sensitive())
-        self.assertTrue(dialog._password_entry.get_sensitive())
-        self.assertFalse(dialog._server_host_name_entry.get_sensitive())
-        dialog._dedicated_radiobutton.set_active(True)
-        self.assertFalse(dialog._hosted_radiobutton.get_active())
-        self.assertTrue(dialog._dedicated_radiobutton.get_active())
-        self.assertTrue(dialog._account_entry.get_sensitive())
-        self.assertTrue(dialog._password_entry.get_sensitive())
-        self.assertTrue(dialog._server_host_name_entry.get_sensitive())
-        dialog._hosted_radiobutton.set_active(True)
-        self.assertTrue(dialog._hosted_radiobutton.get_active())
-        self.assertFalse(dialog._dedicated_radiobutton.get_active())
-        self.assertTrue(dialog._account_entry.get_sensitive())
-        self.assertTrue(dialog._password_entry.get_sensitive())
-        self.assertFalse(dialog._server_host_name_entry.get_sensitive())
+        dialog = ClientSettingsDialog(self.controller)
+        content_area = dialog.get_content_area()
+        iter = dialog.liststore.get_iter(0)
+        no_service_frame = dialog.liststore.get(iter, 2)[0]
+        iter = dialog.liststore.get_iter(1)
+        hosted_service_frame = dialog.liststore.get(iter, 2)[0]
+        iter = dialog.liststore.get_iter(2)
+        local_service_frame = dialog.liststore.get(iter, 2)[0]
+
+        self.assertEqual(0, dialog.use_type_combobox.get_active())
+
+        while Gtk.events_pending():
+            Gtk.main_iteration()
+        self.assertIs(no_service_frame, dialog.active_widget)
+
+        dialog.use_type_combobox.set_active(1)
+        while Gtk.events_pending():
+            Gtk.main_iteration()
+        self.assertIs(hosted_service_frame, dialog.active_widget)
+
+        dialog.use_type_combobox.set_active(2)
+        while Gtk.events_pending():
+            Gtk.main_iteration()
+        self.assertIs(local_service_frame, dialog.active_widget)
 
     def test_load_data_from_config(self):
         """
         Test that we load data into the appropriate entries from the
         configuration file.
         """
-        controller = ConfigController(self.config)
-        dialog = ClientSettingsDialog(controller)
-        self.assertEqual("foo", dialog._account_entry.get_text())
-        self.assertEqual("bar", dialog._password_entry.get_text())
-        self.assertEqual("landscape.canonical.com",
-                         dialog._server_host_name_entry.get_text())
+        dialog = ClientSettingsDialog(self.controller)
+        self.assertEqual(1, dialog.use_type_combobox.get_active())
+        self.assertEqual("foo", dialog.hosted_account_name_entry.get_text())
+        self.assertEqual("bar", dialog.hosted_password_entry.get_text())
+        self.assertEqual("", dialog.local_landscape_host_entry.get_text())
+        self.assertEqual("", dialog.local_account_name_entry.get_text())
+        self.assertEqual("", dialog.local_password_entry.get_text())
+
 
     def test_modification(self):
         """

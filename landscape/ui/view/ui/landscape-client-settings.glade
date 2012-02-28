@@ -220,7 +220,7 @@
                 <property name="row_spacing">12</property>
                 <property name="column_spacing">12</property>
                 <child>
-                  <object class="GtkLabel" id="account-name-label">
+                  <object class="GtkLabel" id="hosted-account-name-label">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="xalign">0</property>
@@ -234,7 +234,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="password-label">
+                  <object class="GtkLabel" id="hosted-password-label">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="xalign">0</property>
@@ -261,7 +261,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkEntry" id="account-name-entry">
+                  <object class="GtkEntry" id="hosted-account-name-entry">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="hexpand">True</property>
@@ -275,13 +275,12 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkEntry" id="password-entry">
+                  <object class="GtkEntry" id="hosted-password-entry">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="hexpand">True</property>
                     <property name="visibility">False</property>
                     <property name="invisible_char">•</property>
-                    <property name="progress_pulse_step">0.25999999046325684</property>
                   </object>
                   <packing>
                     <property name="left_attach">1</property>
