@@ -1019,6 +1019,49 @@ registration_password = shared-secret
 
         main(["-c", self.make_working_config()])
 
+    def test_main_silent(self):
+        """
+        In silent mode, the client should register when the registration
+        details are changed/set.
+        """
+        setup_mock = self.mocker.replace(setup)
+        setup_mock(ANY)
+
+        register_mock = self.mocker.replace(register, passthrough=False)
+        register_mock(ANY)
+        self.mocker.count(1)
+
+        self.mocker.replay()
+
+        config_filename = self.makeFile(
+            "[client]\n"
+            "computer_title = Old Title\n"
+            "account_name = Old Name\n"
+            "registration_password = Old Password\n"
+            )
+        main(["-c", config_filename, "--silent"])
+
+    def test_main_registration_details_unchanged(self):
+        """
+        In silent mode, the client should not register when the registration
+        details are unchanged.
+        """
+        setup_mock = self.mocker.replace(setup)
+        setup_mock(ANY)
+
+        # Fail if register() is called.
+        register_mock = self.mocker.replace(register, passthrough=False)
+        register_mock(ANY)
+        self.mocker.count(0)
+
+        self.mocker.replay()
+
+        config_filename = self.makeFile(
+            "[client]\n"
+            )
+        main(["-c", config_filename, "--silent"])
+
+
     def make_working_config(self):
         return self.makeFile("[client]\n"
                              "computer_title = Old Title\n"
