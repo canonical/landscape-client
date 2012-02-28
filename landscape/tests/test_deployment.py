@@ -171,7 +171,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.log_level = "warning"
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEqual(data.strip(),
+        self.assertConfigEqual(data.strip(),
             "[client]\nlog_level = warning\nserver_autodiscover = False")
 
     def test_dont_write_default_options(self):
@@ -204,8 +204,8 @@ class ConfigurationTest(LandscapeTest):
         self.config.load(["--log-level", "warning"])
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEqual(data.strip(),
-            "[client]\nserver_autodiscover = False\nlog_level = warning")
+        self.assertConfigEqual(data.strip(),
+            "[client]\nlog_level = warning\nserver_autodiscover = False")
 
     def test_write_command_line_precedence(self):
         """Command line options take precedence over config file when writing.
@@ -214,7 +214,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.load(["--log-level", "warning"])
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEqual(data.strip(),
+        self.assertConfigEqual(data.strip(),
             "[client]\nlog_level = warning\nserver_autodiscover = False")
 
     def test_write_manually_set_precedence(self):
@@ -225,7 +225,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.log_level = "error"
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEqual(data.strip(),
+        self.assertConfigEqual(data.strip(),
             "[client]\nlog_level = error\nserver_autodiscover = False")
 
     def test_write_to_given_config_file(self):
@@ -235,7 +235,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.log_level = "error"
         self.config.write()
         data = open(filename).read()
-        self.assertEqual(data.strip(),
+        self.assertConfigEqual(data.strip(),
             "[client]\nlog_level = error\nserver_autodiscover = False")
 
     def test_config_option(self):

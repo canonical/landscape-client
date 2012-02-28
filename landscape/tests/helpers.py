@@ -1,4 +1,5 @@
 from cStringIO import StringIO
+from ConfigParser import ConfigParser
 import logging
 import shutil
 import pprint
@@ -6,6 +7,7 @@ import re
 import os
 import sys
 import unittest
+
 
 from logging import Handler, ERROR, Formatter
 from twisted.trial.unittest import TestCase
@@ -128,6 +130,26 @@ class LandscapeTest(MessageTestCase, MockerTestCase,
         actual_content = fd.read()
         fd.close()
         self.assertEqual(expected_content, actual_content)
+
+    def assertConfigEqual(self, first, second):
+        """
+        Compare two configuration files for equality.  The order of parameters
+        and comments may be different but the actual parameters and sections
+        must be the same.
+        """
+        first_fp = StringIO(first)
+        first_parser = ConfigParser()
+        first_parser.readfp(first_fp)
+
+        second_fp = StringIO(second)
+        second_parser = ConfigParser()
+        second_parser.readfp(second_fp)
+
+        self.assertEqual(set(first_parser.sections()),
+                         set(second_parser.sections()))
+        for section in first_parser.sections():
+            self.assertEqual(dict(first_parser.items(section)),
+                             dict(second_parser.items(section)))
 
     def makePersistFile(self, *args, **kwargs):
         """Return a temporary filename to be used by a L{Persist} object.
