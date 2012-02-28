@@ -52,8 +52,6 @@ case "$1" in
         OTP="${RET}"
         db_get $PACKAGE/tags
         TAGS="${RET}"
-        db_get $PACKAGE/ask_register_system
-        ASK_REGISTER_SYSTEM="${RET}"
         db_get $PACKAGE/server_autodiscover
         SERVER_AUTODISCOVER="${RET}"
         db_get $PACKAGE/autodiscover_srv_query_string

@@ -81,7 +81,7 @@ Type: boolean
 Default: false
 _Description: Register this system with the Landscape server?
  Register this system with a preexisting Landscape account.  Please
-  go to http://landscape.canonical.com if you need a Landscape account.
+ go to http://landscape.canonical.com if you need a Landscape account.
 
 Template: landscape-client/server_autodiscover
 Type: boolean
