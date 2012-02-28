@@ -69,10 +69,12 @@ case "$1" in
         # Fix non-private permissions
         chmod 0600 $CONFIG_FILE
 
-        # If requested, perform registration
-        if [ $ASK_REGISTER_SYSTEM = "true" ]; then
+        # If we got the needed information, actually do the registration.
+        if [ -n "$ACCOUNT_NAME" -a -n "$COMPUTER_TITLE" ]; then
+            # Don't fail if registration unsuccessful
             MORE_OPTIONS="--ok-no-register"
         else
+            # Disable registration and client restart
             MORE_OPTIONS="--no-start"
         fi
 
