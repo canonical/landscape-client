@@ -83,6 +83,16 @@ _Description: Register this system with the Landscape server?
  Register this system with a preexisting Landscape account.  Please
   go to http://landscape.canonical.com if you need a Landscape account.
 
+Template: landscape-client/ask_register_system
+Type: boolean
+Default: false
+_Description: (Re)register this system with the Landscape server?
+ This system can be automatically registered with the Landscape server using
+ a preexisting Landscape account. Please go to
+ http://landscape.canonical.com if you need a Landscape account.  If a system
+ is registered a second time, past history may be disconnected from the system
+ on the server.
+
 Template: landscape-client/server_autodiscover
 Type: boolean
 Default: false

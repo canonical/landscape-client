@@ -52,6 +52,8 @@ case "$1" in
         OTP="${RET}"
         db_get $PACKAGE/tags
         TAGS="${RET}"
+        db_get $PACKAGE/ask_register_system
+        ASK_REGISTER_SYSTEM="${RET}"
         db_get $PACKAGE/server_autodiscover
         SERVER_AUTODISCOVER="${RET}"
         db_get $PACKAGE/autodiscover_srv_query_string
@@ -67,8 +69,15 @@ case "$1" in
         # Fix non-private permissions
         chmod 0600 $CONFIG_FILE
 
+        # If requested, perform registration
+        if [ $ASK_REGISTER_SYSTEM = "true" ]; then
+            MORE_OPTIONS="--ok-no-register"
+        else
+            MORE_OPTIONS="--no-start"
+        fi
+
         # Configure landscape
-        landscape-config --silent --no-start \
+        landscape-config --silent $MORE_OPTIONS \
             --computer-title "$COMPUTER_TITLE" \
             --account-name "$ACCOUNT_NAME" \
             --registration-password "$REGISTRATION_PASSWORD" \
@@ -84,11 +93,6 @@ case "$1" in
             --server-autodiscover "$SERVER_AUTODISCOVER" \
             --autodiscover-srv-query-string "$AUTODISCOVER_SRV_QUERY_STRING" \
             --autodiscover-a-query-string "$AUTODISCOVER_A_QUERY_STRING"
-
-        # If we got the needed information, actually do the registration.
-        if [ -n "$ACCOUNT_NAME" -a -n "$COMPUTER_TITLE" ]; then
-            landscape-config --silent --ok-no-register
-        fi
 
         # old monolithic clients have a single persist data file and a single
         # package hash db.  This data should be migrated to the new format
