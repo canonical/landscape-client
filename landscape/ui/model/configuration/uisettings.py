@@ -49,24 +49,3 @@ class UISettings(object):
 
     def set_local_password(self, value):
         self.settings.set_string("local-password", value)
-
-    def _on_is_hosted_changed(self, settings, key):
-        pass
-
-    def _on_hosted_landscape_host_changed(self, settings, key):
-        pass
-
-    def _on_hosted_account_name_changed(self, settings, key):
-        pass
-
-    def _on_hosted_password_changed(self, settings, key):
-        pass
-
-    def _on_local_landscape_host_changed(self, settings, key):
-        pass
-
-    def _on_local_account_name_changed(self, settings, key):
-        pass
-
-    def _on_local_password_changed(self, settings, key):
-        pass
