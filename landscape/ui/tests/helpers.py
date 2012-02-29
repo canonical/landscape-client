@@ -148,9 +148,14 @@ class FakeGSettings(object):
         return expected_args in arglist
 
 
-def simulate_gtk_key_press(window, widget, key):
+def simulate_gtk_key_release(window, widget, key):
     keypress = Gdk.Event(Gdk.EventType.KEY_PRESS)
     keypress.keyval = key
     keypress.window = window
     keypress.send_event = True
     widget.emit("key-press-event", keypress)
+    keypress = Gdk.Event(Gdk.EventType.KEY_RELEASE)
+    keypress.keyval = key
+    keypress.window = window
+    keypress.send_event = True
+    widget.emit("key-release-event", keypress)

@@ -70,35 +70,35 @@ class ClientSettingsDialog(Gtk.Dialog):
         self.hosted_account_name_entry = self._builder.get_object(
             "hosted-account-name-entry")
         self.hosted_account_name_entry.connect(
-            "key-press-event",
-            self.on_key_press_event,
-            self.controller.hosted_account_name)                                               
+            "key-release-event",
+            self.on_key_release_event,
+            "hosted_account_name")
         self.hosted_password_entry = self._builder.get_object(
             "hosted-password-entry")
         self.hosted_password_entry.connect(
-            "key-press-event",
-            self.on_key_press_event,
-            self.controller.hosted_password)
+            "key-release-event",
+            self.on_key_release_event,
+            "hosted_password")
 
     def link_local_service_widgets(self):
         self.local_landscape_host_entry = self._builder.get_object(
             "local-landscape-host-entry")
         self.local_landscape_host_entry.connect(
-            "key-press-event",
-            self.on_key_press_event,
-            self.controller.local_landscape_host)
+            "key-release-event",
+            self.on_key_release_event,
+            "local_landscape_host")
         self.local_account_name_entry = self._builder.get_object(
             "local-account-name-entry")
         self.local_account_name_entry.connect(
-            "key-press-event",
-            self.on_key_press_event,
-            self.controller.local_account_name)
+            "key-release-event",
+            self.on_key_release_event,
+            "local_account_name")
         self.local_password_entry = self._builder.get_object(
             "local-password-entry")
         self.local_password_entry.connect(
-            "key-press-event",
-            self.on_key_press_event,
-            self.controller.local_password)
+            "key-release-event",
+            self.on_key_release_event,
+            "local_password")
 
     def link_use_type_combobox(self, liststore):
         self.use_type_combobox = self._builder.get_object("use-type-combobox")
@@ -143,8 +143,8 @@ class ClientSettingsDialog(Gtk.Dialog):
         self.active_widget.unparent()
         self._vbox.add(self.active_widget)
 
-    def on_key_press_event(self, widget, event, property):
-        property = widget.get_text()
+    def on_key_release_event(self, widget, event, property):
+        setattr(self.controller, property, widget.get_text())
         self.controller.modify()
 
     def quit(self, *args):

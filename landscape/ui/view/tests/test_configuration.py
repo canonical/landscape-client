@@ -8,11 +8,11 @@ except (ImportError, RuntimeError):
     gobject_skip_message = "GObject Introspection module unavailable"
 else:
     from landscape.ui.view.configuration import ClientSettingsDialog
-    from landscape.ui.controller.configuration import ConfigController
+from landscape.ui.controller.configuration import ConfigController
 
 from landscape.tests.helpers import LandscapeTest
 from landscape.ui.tests.helpers import (
-    ConfigurationProxyHelper, FakeGSettings, simulate_gtk_key_press)
+    ConfigurationProxyHelper, FakeGSettings, simulate_gtk_key_release)
 from landscape.configuration import LandscapeSetupConfiguration
 import landscape.ui.model.configuration.state
 from landscape.ui.model.configuration.state import (
@@ -117,7 +117,16 @@ class ConfigurationViewTest(LandscapeTest):
         while Gtk.events_pending():
             Gtk.main_iteration()
         self.assertFalse(self.controller.is_modified)
-        simulate_gtk_key_press(dialog, dialog.hosted_account_name_entry,
+        simulate_gtk_key_release(dialog, dialog.hosted_account_name_entry,
+                                 Gdk.KEY_A)
+        while Gtk.events_pending():
+            Gtk.main_iteration()
+        self.assertTrue(self.controller.is_modified)
+        dialog.revert(None)
+        while Gtk.events_pending():
+            Gtk.main_iteration()
+        self.assertFalse(self.controller.is_modified)
+        simulate_gtk_key_release(dialog, dialog.hosted_password_entry,
                                Gdk.KEY_A)
         while Gtk.events_pending():
             Gtk.main_iteration()
@@ -126,16 +135,7 @@ class ConfigurationViewTest(LandscapeTest):
         while Gtk.events_pending():
             Gtk.main_iteration()
         self.assertFalse(self.controller.is_modified)
-        simulate_gtk_key_press(dialog, dialog.hosted_password_entry,
-                               Gdk.KEY_A)
-        while Gtk.events_pending():
-            Gtk.main_iteration()
-        self.assertTrue(self.controller.is_modified)
-        dialog.revert(None)
-        while Gtk.events_pending():
-            Gtk.main_iteration()
-        self.assertFalse(self.controller.is_modified)
-        simulate_gtk_key_press(dialog, dialog.local_landscape_host_entry,
+        simulate_gtk_key_release(dialog, dialog.local_landscape_host_entry,
                                Gdk.KEY_A)
         while Gtk.events_pending():
             Gtk.main_iteration()
@@ -248,7 +248,7 @@ class ConfigurationViewPersistTest(LandscapeTest):
         self.dialog.use_type_combobox.set_active(2)
         while Gtk.events_pending():
             Gtk.main_iteration()
-        self.dialog.persist(None)
+        self.dialog.persist()
         self.assertTrue(self.persisted)
 
     def test_persist_hosted_account_name_change(self):
@@ -259,7 +259,7 @@ class ConfigurationViewPersistTest(LandscapeTest):
         self.dialog.hosted_account_name_entry.set_text("glow")
         while Gtk.events_pending():
             Gtk.main_iteration()
-        self.dialog.persist(None)
+        self.dialog.persist()
         self.assertTrue(self.persisted)
 
     def test_persist_hosted_password_change(self):
@@ -270,7 +270,7 @@ class ConfigurationViewPersistTest(LandscapeTest):
         self.dialog.hosted_password_entry.set_text("sticks")
         while Gtk.events_pending():
             Gtk.main_iteration()
-        self.dialog.persist(None)
+        self.dialog.persist()
         self.assertTrue(self.persisted)
 
     def test_persist_local_server_host_name_change(self):
@@ -282,7 +282,7 @@ class ConfigurationViewPersistTest(LandscapeTest):
             "that.isolated.geographic")
         while Gtk.events_pending():
             Gtk.main_iteration()
-        self.dialog.persist(None)
+        self.dialog.persist()
         self.assertTrue(self.persisted)
 
     if not got_gobject_introspection:

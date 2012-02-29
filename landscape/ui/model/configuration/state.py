@@ -90,6 +90,9 @@ class ConfigurationState(object):
         self._proxy = proxy
         self._uisettings = uisettings
 
+    def get_config_filename(self):
+        return self._proxy.get_config_filename()
+
     def get(self, *args):
         arglen = len(args)
         if arglen > 2 or arglen == 0:
@@ -231,6 +234,7 @@ class PersistableHelper(Helper):
             self._state.get(LOCAL, ACCOUNT_NAME))
         self._state._uisettings.set_local_password(
             self._state.get(LOCAL, PASSWORD))
+        
 
     def _save_to_config(self):
         hosted = self._state.get(MANAGEMENT_TYPE)
@@ -491,3 +495,6 @@ class ConfigurationModel(object):
         return isinstance(self.get_state(), ModifiedState)
 
     is_modified = property(_get_is_modified)
+
+    def get_config_filename(self):
+        return self._current_state.get_config_filename()
