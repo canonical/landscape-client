@@ -308,7 +308,6 @@ class Configuration(BaseConfiguration):
         parser.add_option("-u", "--url", default=self.DEFAULT_URL,
                           help="The server URL to connect to.")
         parser.add_option("--ping-url",
-                          default="http://landscape.canonical.com/ping",
                           help="The URL to perform lightweight exchange "
                                "initiation with.")
         parser.add_option("-k", "--ssl-public-key",
