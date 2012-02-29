@@ -7,12 +7,12 @@ except (ImportError, RuntimeError):
     got_gobject_introspection = False
     gobject_skip_message = "GObject Introspection module unavailable"
 else:
-    del Gdk
     from landscape.ui.view.configuration import ClientSettingsDialog
     from landscape.ui.controller.configuration import ConfigController
 
 from landscape.tests.helpers import LandscapeTest
-from landscape.ui.tests.helpers import ConfigurationProxyHelper, FakeGSettings
+from landscape.ui.tests.helpers import (
+    ConfigurationProxyHelper, FakeGSettings, simulate_gtk_key_press)
 from landscape.configuration import LandscapeSetupConfiguration
 import landscape.ui.model.configuration.state
 from landscape.ui.model.configuration.state import (
@@ -104,6 +104,44 @@ class ConfigurationViewTest(LandscapeTest):
         Test that modifications to data in the UI are propagated to the
         controller.
         """
+        dialog = ClientSettingsDialog(self.controller)
+        while Gtk.events_pending():
+            Gtk.main_iteration()
+        self.assertFalse(self.controller.is_modified)
+        self.assertEqual(1, dialog.use_type_combobox.get_active())
+        dialog.use_type_combobox.set_active(2)
+        while Gtk.events_pending():
+            Gtk.main_iteration()
+        self.assertTrue(self.controller.is_modified)
+        dialog.revert(None)
+        while Gtk.events_pending():
+            Gtk.main_iteration()
+        self.assertFalse(self.controller.is_modified)
+        simulate_gtk_key_press(dialog, dialog.hosted_account_name_entry,
+                               Gdk.KEY_A)
+        while Gtk.events_pending():
+            Gtk.main_iteration()
+        self.assertTrue(self.controller.is_modified)
+        dialog.revert(None)
+        while Gtk.events_pending():
+            Gtk.main_iteration()
+        self.assertFalse(self.controller.is_modified)
+        simulate_gtk_key_press(dialog, dialog.hosted_password_entry,
+                               Gdk.KEY_A)
+        while Gtk.events_pending():
+            Gtk.main_iteration()
+        self.assertTrue(self.controller.is_modified)
+        dialog.revert(None)
+        while Gtk.events_pending():
+            Gtk.main_iteration()
+        self.assertFalse(self.controller.is_modified)
+        simulate_gtk_key_press(dialog, dialog.local_landscape_host_entry,
+                               Gdk.KEY_A)
+        while Gtk.events_pending():
+            Gtk.main_iteration()
+        self.assertTrue(self.controller.is_modified)
+
+        
 
     def test_load_data_from_config(self):
         """

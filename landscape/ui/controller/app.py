@@ -35,4 +35,7 @@ class SettingsApplicationController(Gtk.Application):
         controller = ConfigController(model)
         controller.load()
         self.settings_dialog = ClientSettingsDialog(controller)
-        self.settings_dialog.run()
+        if self.settings_dialog.run() == Gtk.ResponseType.OK:
+            self.settings_dialog.persist()
+        self.settings_dialog.destroy()
+            

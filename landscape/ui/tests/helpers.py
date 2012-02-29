@@ -2,6 +2,7 @@ import os
 
 from lxml import etree
 import dbus
+from gi.repository import Gtk, Gdk
 
 from landscape.configuration import LandscapeSetupConfiguration
 from landscape.ui.model.configuration.mechanism import (
@@ -145,3 +146,11 @@ class FakeGSettings(object):
 
         expected_args = self._args_to_string(*args)
         return expected_args in arglist
+
+
+def simulate_gtk_key_press(window, widget, key):
+    keypress = Gdk.Event(Gdk.EventType.KEY_PRESS)
+    keypress.keyval = key
+    keypress.window = window
+    keypress.send_event = True
+    widget.emit("key-press-event", keypress)
