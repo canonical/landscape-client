@@ -370,7 +370,7 @@ class ConfigurationTest(LandscapeTest):
         """
         options = self.parser.parse_args([])[0]
         self.assertEqual(options.autodiscover_srv_query_string,
-                         "_tcp._landscape.localdomain")
+                         "_landscape._tcp.localdomain")
 
     def test_autodiscover_a_query_string_option(self):
         """
