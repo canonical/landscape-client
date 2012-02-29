@@ -498,16 +498,17 @@ class StateTransitionWithExistingConfigTest(LandscapeTest):
     helpers = [ConfigurationProxyHelper]
 
     def setUp(self):
-        self.config_string = "[client]\n" \
-            "data_path = /var/lib/landscape/client/\n" \
-            "http_proxy = http://proxy.localdomain:3192\n" \
-            "tags = a_tag\n" \
-            "url = https://landscape.canonical.com/message-system\n" \
-            "account_name = Sparklehorse\n" \
-            "registration_password = Vivadixiesubmarinetransmissionplot\n" \
-            "computer_title = baz\n" \
-            "https_proxy = https://proxy.localdomain:6192\n" \
-            "ping_url = http://landscape.canonical.com/ping\n"
+        self.config_string = (
+            "[client]\n"
+            "data_path = /var/lib/landscape/client/\n"
+            "http_proxy = http://proxy.localdomain:3192\n"
+            "tags = a_tag\n"
+            "url = https://landscape.canonical.com/message-system\n"
+            "account_name = Sparklehorse\n"
+            "registration_password = Vivadixiesubmarinetransmissionplot\n"
+            "computer_title = baz\n"
+            "https_proxy = https://proxy.localdomain:6192\n"
+            "ping_url = http://landscape.canonical.com/ping\n")
         self.default_data = {
             "is-hosted": True,
             "computer-title": "bound.to.lose",
