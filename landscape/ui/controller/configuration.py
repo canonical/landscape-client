@@ -1,6 +1,9 @@
 import socket
 import threading
 from landscape.ui.model.registration.proxy import RegistrationProxy
+from landscape.ui.model.configuration.state import (
+    derive_url_from_host_name, derive_ping_url_from_host_name,
+    derive_server_host_name_from_url)
 
 
 class ConfigControllerLockError(Exception):
@@ -65,7 +68,7 @@ class ConfigController(object):
         """
         Default machine name to FQDN.
         """
-        if self._computer_title is None:
+        if self._computer_title in ("", None):
             self._computer_title = self.getfqdn()
 
     def default_dedicated(self):
@@ -78,9 +81,8 @@ class ConfigController(object):
             self._server_host_name = self._initial_server_host_name
         else:
             self._server_host_name = self.DEFAULT_SERVER_HOST_NAME
-            self._url = self._derive_url_from_host_name(
-                self._server_host_name)
-            self._ping_url = self._derive_ping_url_from_host_name(
+            self._url = derive_url_from_host_name(self._server_host_name)
+            self._ping_url = derive_ping_url_from_host_name(
                 self._server_host_name)
         self.modify()
 
@@ -91,10 +93,8 @@ class ConfigController(object):
         """
         if self._server_host_name != self.HOSTED_HOST_NAME:
             self._server_host_name = self.HOSTED_HOST_NAME
-        self._url = self._derive_url_from_host_name(
-            self._server_host_name)
-        self._ping_url = self._derive_ping_url_from_host_name(
-            self._server_host_name)
+        self._url = derive_url_from_host_name(self._server_host_name)
+        self._ping_url = derive_ping_url_from_host_name(self._server_host_name)
         self._account_name = self._initial_account_name
         self.modify()
 
@@ -117,7 +117,7 @@ class ConfigController(object):
         self._ping_url = self._configuration.ping_url
         if self._url:
             self._server_host_name = \
-                self._derive_server_host_name_from_url(self._url)
+                derive_server_host_name_from_url(self._url)
         else:
             self._server_host_name = self.HOSTED_HOST_NAME
         self._initial_server_host_name = self._server_host_name
@@ -143,29 +143,6 @@ class ConfigController(object):
         self._lock.release()
         return lock_state
 
-    def _derive_server_host_name_from_url(self, url):
-        "Extract the hostname part from a URL."
-        try:
-            without_protocol = url[url.index("://") + 3:]
-        except ValueError:
-            without_protocol = url
-        try:
-            return without_protocol[:without_protocol.index("/")]
-        except ValueError:
-            return without_protocol
-
-    def _derive_url_from_host_name(self, host_name):
-        "Extrapolate a url from a host name."
-        #Reuse this code to make sure it's a proper host name
-        host_name = self._derive_server_host_name_from_url(host_name)
-        return "https://" + host_name + "/message-system"
-
-    def _derive_ping_url_from_host_name(self, host_name):
-        "Extrapolate a ping_url from a host name."
-        #Reuse this code to make sure it's a proper host name
-        host_name = self._derive_server_host_name_from_url(host_name)
-        return "http://" + host_name + "/ping"
-
     def _get_server_host_name(self):
         return self._server_host_name
 
@@ -178,9 +155,8 @@ class ConfigController(object):
             if value != self.HOSTED_HOST_NAME:
                 self._initial_server_host_name = value
             self._server_host_name = value
-            self._url = self._derive_url_from_host_name(
-                self._server_host_name)
-            self._ping_url = self._derive_ping_url_from_host_name(
+            self._url = derive_url_from_host_name(self._server_host_name)
+            self._ping_url = derive_ping_url_from_host_name(
                 self._server_host_name)
             self.modify()
             self._lock.release()
