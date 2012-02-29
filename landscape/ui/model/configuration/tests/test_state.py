@@ -45,7 +45,7 @@ class ConfigurationModelTest(LandscapeTest):
         uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         state = model.get_state()
-        self.assertEqual(True, state.get(IS_HOSTED))
+        self.assertTrue(state.get(IS_HOSTED))
         self.assertEqual(HOSTED_LANDSCAPE_HOST,
                          state.get(HOSTED, LANDSCAPE_HOST))
         self.assertRaises(TypeError, state.get, IS_HOSTED, HOSTED,
