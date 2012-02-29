@@ -109,7 +109,7 @@ class ConfigurationState(object):
                     "returned from the first index was %s." %
                     sub_dict.__class__.__name__)
             return sub_dict.get(args[1], None)
-        else: # we looking for a leaf at the root
+        else:  # we looking for a leaf at the root
             if args[0] in (IS_HOSTED, COMPUTER_TITLE):
                 return self._data.get(args[0], None)
             else:
@@ -126,9 +126,9 @@ class ConfigurationState(object):
         if arglen < 2 or arglen > 3:
             raise TypeError("set() takes either 1 or 2 keys and exactly 1 " +
                             "value (%d arguments given)" % arglen)
-        if arglen == 2: # We're setting a leaf attached to the root
+        if arglen == 2:  # We're setting a leaf attached to the root
             self._data[args[0]] = args[1]
-        else: # We're setting a leaf on a branch
+        else:  # We're setting a leaf on a branch
             sub_dict = None
             if args[0] in [HOSTED, LOCAL]:
                 sub_dict = self._data.get(args[0], {})
