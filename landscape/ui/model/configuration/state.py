@@ -315,7 +315,7 @@ class InitialisedState(ConfigurationState):
     def _load_uisettings_data(self):
         self.set(IS_HOSTED, self._uisettings.get_is_hosted())
         computer_title = self._uisettings.get_computer_title()
-        if computer_title not in ("", None):
+        if computer_title:
             self.set(COMPUTER_TITLE, computer_title)
         self.set(HOSTED, LANDSCAPE_HOST,
                  self._uisettings.get_hosted_landscape_host())
@@ -331,7 +331,7 @@ class InitialisedState(ConfigurationState):
     def _load_live_data(self):
         self._proxy.load(None)
         computer_title = self._proxy.computer_title
-        if computer_title not in ("", None):
+        if computer_title:
             self.set(COMPUTER_TITLE, computer_title)
         url = self._proxy.url
         if url.find(HOSTED_LANDSCAPE_HOST) > -1:
