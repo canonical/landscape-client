@@ -308,6 +308,7 @@ class Configuration(BaseConfiguration):
         parser.add_option("-u", "--url", default=self.DEFAULT_URL,
                           help="The server URL to connect to.")
         parser.add_option("--ping-url",
+                          default="http://landscape.canonical.com/ping",
                           help="The URL to perform lightweight exchange "
                                "initiation with.")
         parser.add_option("-k", "--ssl-public-key",
@@ -316,7 +317,7 @@ class Configuration(BaseConfiguration):
         parser.add_option("--server-autodiscover", type="string",
                           default="false", help="Enable server autodiscovery.")
         parser.add_option("--autodiscover-srv-query-string", type="string",
-                          default="_tcp._landscape.localdomain",
+                          default="_landscape._tcp.localdomain",
                           help="autodiscovery string for DNS SRV queries")
         parser.add_option("--autodiscover-a-query-string", type="string",
                           default="landscape.localdomain",
