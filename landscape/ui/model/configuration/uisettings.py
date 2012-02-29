@@ -1,4 +1,10 @@
 class UISettings(object):
+    """
+    A very thin wrapper around L{GSettings} to avoid having to know the
+    L{BaseKey} and type information elsewhere.  In some future version it would
+    be right to bind to change events here so we can react to people changing
+    the settings in dconf, for now that is overkill.
+    """
 
     BASE_KEY = "com.canonical.landscape-client-settings"
 
