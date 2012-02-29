@@ -136,7 +136,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.log_level = "warning"
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEqual(data.strip(), "[client]\nlog_level = warning")
+        self.assertConfigEqual(data, "[client]\nlog_level = warning")
 
     def test_write_configuration_with_section(self):
         self.reset_config(configuration_class=BabbleConfiguration)
@@ -144,7 +144,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.whatever = "boo"
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEqual(data.strip(), "[babble]\nwhatever = boo")
+        self.assertConfigEqual(data, "[babble]\nwhatever = boo")
 
     def test_write_unrelated_configuration_back(self):
         """
@@ -159,8 +159,8 @@ class ConfigurationTest(LandscapeTest):
         self.config.whatever = "boo"
         self.config.write()
         data = open(config_filename).read()
-        self.assertEqual(
-            data.strip(),
+        self.assertConfigEqual(
+            data,
             "[babble]\nwhatever = boo\n\n[goojy]\nunrelated = yes")
 
     def test_write_on_the_right_default_config_file(self):
@@ -171,7 +171,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.log_level = "warning"
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEqual(data.strip(),
+        self.assertConfigEqual(data,
             "[client]\nlog_level = warning\nserver_autodiscover = False")
 
     def test_dont_write_default_options(self):
@@ -179,7 +179,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.log_level = "info"
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEqual(data.strip(), "[client]")
+        self.assertConfigEqual(data, "[client]")
 
     def test_dont_delete_explicitly_set_default_options(self):
         """
@@ -190,22 +190,22 @@ class ConfigurationTest(LandscapeTest):
         self.write_config_file(log_level="info")
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEqual(data.strip(), "[client]\nlog_level = info")
+        self.assertConfigEqual(data, "[client]\nlog_level = info")
 
     def test_dont_write_config_option(self):
         self.write_config_file()
         self.config.config = self.config_filename
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEqual(data.strip(), "[client]")
+        self.assertConfigEqual(data, "[client]")
 
     def test_write_command_line_options(self):
         self.write_config_file()
         self.config.load(["--log-level", "warning"])
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEqual(data.strip(),
-            "[client]\nserver_autodiscover = False\nlog_level = warning")
+        self.assertConfigEqual(data,
+            "[client]\nlog_level = warning\nserver_autodiscover = False")
 
     def test_write_command_line_precedence(self):
         """Command line options take precedence over config file when writing.
@@ -214,7 +214,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.load(["--log-level", "warning"])
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEqual(data.strip(),
+        self.assertConfigEqual(data,
             "[client]\nlog_level = warning\nserver_autodiscover = False")
 
     def test_write_manually_set_precedence(self):
@@ -225,7 +225,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.log_level = "error"
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEqual(data.strip(),
+        self.assertConfigEqual(data,
             "[client]\nlog_level = error\nserver_autodiscover = False")
 
     def test_write_to_given_config_file(self):
@@ -235,7 +235,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.log_level = "error"
         self.config.write()
         data = open(filename).read()
-        self.assertEqual(data.strip(),
+        self.assertConfigEqual(data,
             "[client]\nlog_level = error\nserver_autodiscover = False")
 
     def test_config_option(self):
@@ -370,7 +370,7 @@ class ConfigurationTest(LandscapeTest):
         """
         options = self.parser.parse_args([])[0]
         self.assertEqual(options.autodiscover_srv_query_string,
-                         "_tcp._landscape.localdomain")
+                         "_landscape._tcp.localdomain")
 
     def test_autodiscover_a_query_string_option(self):
         """

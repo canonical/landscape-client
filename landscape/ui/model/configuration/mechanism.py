@@ -81,8 +81,9 @@ class ConfigurationMechanism(PolicyKitMechanism):
             except AttributeError:
                 return ""
             if value is None:
-                return None
+                return ""
             return str(value)
+        return ""
 
     @dbus.service.method(INTERFACE_NAME,
                          in_signature="ss",

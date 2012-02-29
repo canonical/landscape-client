@@ -224,19 +224,19 @@ class EmptyConfigControllerTest(LandscapeTest):
         dedicated.
         """
         self.controller.load()
-        self.assertEqual(None, self.controller.account_name)
-        self.assertEqual(None, self.controller.registration_password)
+        self.assertEqual("", self.controller.account_name)
+        self.assertEqual("", self.controller.registration_password)
         self.assertEqual("landscape.canonical.com",
                          self.controller.server_host_name)
         self.controller.account_name = "Bungle"
         self.controller.default_dedicated()
         self.assertEqual("standalone", self.controller.account_name)
-        self.assertEqual(None, self.controller.registration_password)
+        self.assertEqual("", self.controller.registration_password)
         self.assertEqual("landscape.localdomain",
                          self.controller.server_host_name)
         self.controller.default_hosted()
-        self.assertEqual(None, self.controller.account_name)
-        self.assertEqual(None, self.controller.registration_password)
+        self.assertEqual("", self.controller.account_name)
+        self.assertEqual("", self.controller.registration_password)
         self.assertEqual("landscape.canonical.com",
                          self.controller.server_host_name)
         self.controller.default_dedicated()

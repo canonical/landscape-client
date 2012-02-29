@@ -1,3 +1,74 @@
+import copy
+import socket
+
+from landscape.ui.model.configuration.proxy import ConfigurationProxy
+
+
+HOSTED_LANDSCAPE_HOST = "landscape.canonical.com"
+LOCAL_LANDSCAPE_HOST = ""
+
+HOSTED_ACCOUNT_NAME = ""
+LOCAL_ACCOUNT_NAME = ""
+
+HOSTED_PASSWORD = ""
+LOCAL_PASSWORD = ""
+
+HOSTED = "hosted"
+LOCAL = "local"
+IS_HOSTED = "is-hosted"
+COMPUTER_TITLE = "computer-title"
+LANDSCAPE_HOST = "landscape-host"
+ACCOUNT_NAME = "account-name"
+PASSWORD = "password"
+
+
+def get_fqdn():
+    """
+    Wrap socket.getfqdn so we can test reliably.
+    """
+    return socket.getfqdn()
+
+
+DEFAULT_DATA = {
+    IS_HOSTED: True,
+    COMPUTER_TITLE: get_fqdn(),
+    HOSTED: {
+        LANDSCAPE_HOST: HOSTED_LANDSCAPE_HOST,
+        ACCOUNT_NAME: HOSTED_ACCOUNT_NAME,
+        PASSWORD: HOSTED_PASSWORD,
+        },
+    LOCAL: {
+        LANDSCAPE_HOST: LOCAL_LANDSCAPE_HOST,
+        ACCOUNT_NAME: LOCAL_ACCOUNT_NAME,
+        PASSWORD: LOCAL_PASSWORD,
+        }
+}
+
+
+def derive_server_host_name_from_url(url):
+    "Extract the hostname part from a URL."
+    try:
+        without_protocol = url[url.index("://") + 3:]
+    except ValueError:
+        without_protocol = url
+    try:
+        return without_protocol[:without_protocol.index("/")]
+    except ValueError:
+        return without_protocol
+
+
+def derive_url_from_host_name(host_name):
+    "Extrapolate a url from a host name."
+    #Reuse this code to make sure it's a proper host name
+    host_name = derive_server_host_name_from_url(host_name)
+    return "https://" + host_name + "/message-system"
+
+
+def derive_ping_url_from_host_name(host_name):
+    "Extrapolate a ping_url from a host name."
+    #Reuse this code to make sure it's a proper host name
+    host_name = derive_server_host_name_from_url(host_name)
+    return "http://" + host_name + "/ping"
 
 
 class StateError(Exception):
@@ -9,13 +80,66 @@ class StateError(Exception):
 
 class ConfigurationState(object):
     """
-    Abstract base class for states used in the L{ConfigurationModel}.
+    Base class for states used in the L{ConfigurationModel}.
     """
+    def __init__(self, data, proxy, uisettings):
+        self._data = copy.deepcopy(data)
+        self._proxy = proxy
+        self._uisettings = uisettings
+
+    def get(self, *args):
+        """
+        Retrieve only valid values from two level dictionary based tree.
+
+        This mainly served to pick up programming errors and could easily be
+        replaced with a simpler scheme.
+        """
+        arglen = len(args)
+        if arglen > 2 or arglen == 0:
+            raise TypeError(
+                "get() takes either 1 or 2 keys (%d given)" % arglen)
+        if arglen == 2:  # We're looking for a leaf on a branch
+            sub_dict = None
+            if args[0] in [HOSTED, LOCAL]:
+                sub_dict = self._data.get(args[0], {})
+            sub_dict = self._data[args[0]]
+            if not isinstance(sub_dict, dict):
+                raise KeyError(
+                    "Compound key [%s][%s] is invalid. The data type " +
+                    "returned from the first index was %s." %
+                    sub_dict.__class__.__name__)
+            return sub_dict.get(args[1], None)
+        else:  # we looking for a leaf at the root
+            if args[0] in (IS_HOSTED, COMPUTER_TITLE):
+                return self._data.get(args[0], None)
+            else:
+                raise KeyError("Key [%s] is invalid. " % args[0])
+
+    def set(self, *args):
+        """
+        Set only valid values from two level dictionary based tree.
+
+        This mainly served to pick up programming errors and could easily be
+        replaced with a simpler scheme.
+        """
+        arglen = len(args)
+        if arglen < 2 or arglen > 3:
+            raise TypeError("set() takes either 1 or 2 keys and exactly 1 " +
+                            "value (%d arguments given)" % arglen)
+        if arglen == 2:  # We're setting a leaf attached to the root
+            self._data[args[0]] = args[1]
+        else:  # We're setting a leaf on a branch
+            sub_dict = None
+            if args[0] in [HOSTED, LOCAL]:
+                sub_dict = self._data.get(args[0], {})
+            if not isinstance(sub_dict, dict):
+                raise KeyError("Compound key [%s][%s] is invalid. The data " +
+                               "type returned from the first index was %s."
+                               % sub_dict.__class__.__name__)
+            sub_dict[args[1]] = args[2]
+            self._data[args[0]] = sub_dict
 
     def load_data(self):
-        raise NotImplementedError
-
-    def test(self, test_method):
         raise NotImplementedError
 
     def modify(self):
@@ -28,16 +152,32 @@ class ConfigurationState(object):
         raise NotImplementedError
 
 
-class ModifiableHelper(object):
+class Helper(object):
+    """
+    Base class for all state transition helpers.
+
+    It is assumed that the Helper classes are "friends" of the
+    L{ConfigurationState} classes and can have some knowledge of their
+    internals.  They shouldn't be visible to users of the
+    L{ConfigurationState}s and in general we should avoid seeing the
+    L{ConfigurationState}'s _data attribute outside this module.
+    """
+
+    def __init__(self, state):
+        self._state = state
+
+
+class ModifiableHelper(Helper):
     """
     Allow a L{ConfigurationState}s to be modified.
     """
 
     def modify(self):
-        return ModifiedState()
+        return ModifiedState(self._state._data, self._state._proxy,
+                             self._state._uisettings)
 
 
-class UnloadableHelper(object):
+class UnloadableHelper(Helper):
     """
     Disallow loading of data into a L{ConfigurationModel}.
     """
@@ -48,7 +188,7 @@ class UnloadableHelper(object):
                          " cannot be transitioned via load_data()")
 
 
-class UnmodifiableHelper(object):
+class UnmodifiableHelper(Helper):
     """
     Disallow modification of a L{ConfigurationState}.
     """
@@ -59,39 +199,17 @@ class UnmodifiableHelper(object):
                          " cannot transition via modify()")
 
 
-class TestableHelper(object):
-    """
-    Allow testing of a L{ConfigurationModel}.
-    """
-
-    def test(self, test_method):
-        if test_method():
-            return TestedGoodState()
-        else:
-            return TestedBadState()
-
-
-class UntestableHelper(object):
-    """
-    Disallow testing of a L{ConfigurationModel}.
-    """
-
-    def test(self, test_method):
-        raise StateError("A ConfigurationModel in " +
-                         self.__class__.__name__ +
-                         " cannot transition via test()")
-
-
-class RevertableHelper(object):
+class RevertableHelper(Helper):
     """
     Allow reverting of a L{ConfigurationModel}.
     """
 
     def revert(self):
-        return InitialisedState()
+        return InitialisedState(self._state._data, self._state._proxy,
+                                self._state._uisettings)
 
 
-class UnrevertableHelper(object):
+class UnrevertableHelper(Helper):
     """
     Disallow reverting of a L{ConfigurationModel}.
     """
@@ -102,16 +220,50 @@ class UnrevertableHelper(object):
                          " cannot transition via revert()")
 
 
-class PersistableHelper(object):
+class PersistableHelper(Helper):
     """
     Allow a L{ConfigurationModel} to persist.
     """
 
+    def _save_to_uisettings(self):
+        self._state._uisettings.set_is_hosted(self._state.get(IS_HOSTED))
+        self._state._uisettings.set_computer_title(
+            self._state.get(COMPUTER_TITLE))
+        self._state._uisettings.set_hosted_account_name(
+            self._state.get(HOSTED, ACCOUNT_NAME))
+        self._state._uisettings.set_hosted_password(
+            self._state.get(HOSTED, PASSWORD))
+        self._state._uisettings.set_local_landscape_host(
+            self._state.get(LOCAL, LANDSCAPE_HOST))
+        self._state._uisettings.set_local_account_name(
+            self._state.get(LOCAL, ACCOUNT_NAME))
+        self._state._uisettings.set_local_password(
+            self._state.get(LOCAL, PASSWORD))
+
+    def _save_to_config(self):
+        if self._state.get(IS_HOSTED):
+            first_key = HOSTED
+        else:
+            first_key = LOCAL
+        self._state._proxy.url = derive_url_from_host_name(
+            self._state.get(first_key, LANDSCAPE_HOST))
+        self._state._proxy.ping_url = derive_ping_url_from_host_name(
+            self._state.get(first_key, LANDSCAPE_HOST))
+        self._state._proxy.account_name = \
+            self._state.get(first_key, ACCOUNT_NAME)
+        self._state._proxy.registration_password = \
+            self._state.get(first_key, PASSWORD)
+        self._state._proxy.computer_title = self._state.get(COMPUTER_TITLE)
+        self._state._proxy.write()
+
     def persist(self):
-        return InitialisedState()
+        self._save_to_uisettings()
+        self._save_to_config()
+        return InitialisedState(self._state._data, self._state._proxy,
+                                self._state._uisettings)
 
 
-class UnpersistableHelper(object):
+class UnpersistableHelper(Helper):
     """
     Disallow persistence of a L{ConfigurationModel}.
     """
@@ -125,70 +277,20 @@ class UnpersistableHelper(object):
 class ModifiedState(ConfigurationState):
     """
     The state of a L{ConfigurationModel} whenever the user has modified some
-    data but hasn't yet L{test}ed or L{revert}ed.
+    data but hasn't yet L{persist}ed or L{revert}ed.
     """
 
-    _modifiable_helper = ModifiableHelper()
-    _revertable_helper = RevertableHelper()
-    _testable_helper = TestableHelper()
-    _unpersistable_helper = UnpersistableHelper()
+    def __init__(self, data, proxy, uisettings):
+        super(ModifiedState, self).__init__(data, proxy, uisettings)
+        self._modifiable_helper = ModifiableHelper(self)
+        self._revertable_helper = RevertableHelper(self)
+        self._persistable_helper = PersistableHelper(self)
 
     def modify(self):
         return self._modifiable_helper.modify()
 
     def revert(self):
         return self._revertable_helper.revert()
-
-    def test(self, test_method):
-        return self._testable_helper.test(test_method)
-
-    def persist(self):
-        return self._unpersistable_helper.persist()
-
-
-class TestedState(ConfigurationState):
-    """
-    A superclass for the two possible L{TestedStates} (L{TestedGoodState} and
-    L{TestedBadState}).
-    """
-
-    _untestable_helper = UntestableHelper()
-    _unloadable_helper = UnloadableHelper()
-    _modifiable_helper = ModifiableHelper()
-    _revertable_helper = RevertableHelper()
-
-    def test(self, test_method):
-        return self._untestable_helper.test(test_method)
-
-    def load_data(self):
-        return self._unloadable_helper.load_data()
-
-    def modify(self):
-        return self._modifiable_helper.modify()
-
-    def revert(self):
-        return self._revertable_helper.revert()
-
-
-class TestedBadState(TestedState):
-    """
-    The state of a L{ConfigurationModel} after it has been L{test}ed but that
-    L{test} has failed for some reason.
-    """
-
-    _unpersistable_helper = UnpersistableHelper()
-
-    def persist(self):
-        return self._unpersistable_helper.persist()
-
-
-class TestedGoodState(TestedState):
-    """
-    The state of a L{ConfigurationModel} after it has been L{test}ed
-    successfully.
-    """
-
-    _persistable_helper = PersistableHelper()
 
     def persist(self):
         return self._persistable_helper.persist()
@@ -202,10 +304,45 @@ class InitialisedState(ConfigurationState):
     finally defaults should be applied where necessary.
     """
 
-    _modifiable_helper = ModifiableHelper()
-    _unrevertable_helper = UnrevertableHelper()
-    _testable_helper = TestableHelper()
-    _unpersistable_helper = UnpersistableHelper()
+    def __init__(self, data, proxy, uisettings):
+        super(InitialisedState, self).__init__(data, proxy, uisettings)
+        self._modifiable_helper = ModifiableHelper(self)
+        self._unrevertable_helper = UnrevertableHelper(self)
+        self._unpersistable_helper = UnpersistableHelper(self)
+        self._load_uisettings_data()
+        self._load_live_data()
+
+    def _load_uisettings_data(self):
+        self.set(IS_HOSTED, self._uisettings.get_is_hosted())
+        computer_title = self._uisettings.get_computer_title()
+        if computer_title:
+            self.set(COMPUTER_TITLE, computer_title)
+        self.set(HOSTED, LANDSCAPE_HOST,
+                 self._uisettings.get_hosted_landscape_host())
+        self.set(HOSTED, ACCOUNT_NAME,
+                 self._uisettings.get_hosted_account_name())
+        self.set(HOSTED, PASSWORD, self._uisettings.get_hosted_password())
+        self.set(LOCAL, LANDSCAPE_HOST,
+                 self._uisettings.get_local_landscape_host())
+        self.set(LOCAL, ACCOUNT_NAME,
+                 self._uisettings.get_local_account_name())
+        self.set(LOCAL, PASSWORD, self._uisettings.get_local_password())
+
+    def _load_live_data(self):
+        self._proxy.load(None)
+        computer_title = self._proxy.computer_title
+        if computer_title:
+            self.set(COMPUTER_TITLE, computer_title)
+        url = self._proxy.url
+        if url.find(HOSTED_LANDSCAPE_HOST) > -1:
+            self.set(IS_HOSTED, True)
+            self.set(HOSTED, ACCOUNT_NAME, self._proxy.account_name)
+            self.set(HOSTED, PASSWORD, self._proxy.registration_password)
+        else:
+            self.set(IS_HOSTED, False)
+            self.set(LOCAL, LANDSCAPE_HOST,
+                     derive_server_host_name_from_url(url))
+            self.set(LOCAL, ACCOUNT_NAME, self._proxy.account_name)
 
     def load_data(self):
         return self
@@ -215,9 +352,6 @@ class InitialisedState(ConfigurationState):
 
     def revert(self):
         return self._unrevertable_helper.revert()
-
-    def test(self, test_method):
-        return self._testable_helper.test(test_method)
 
     def persist(self):
         return self._unpersistable_helper.persist()
@@ -229,16 +363,14 @@ class VirginState(ConfigurationState):
     upon it.
     """
 
-    _untestable_helper = UntestableHelper()
-    _unmodifiable_helper = UnmodifiableHelper()
-    _unrevertable_helper = UnrevertableHelper()
-    _unpersistable_helper = UnpersistableHelper()
+    def __init__(self, proxy, uisettings):
+        super(VirginState, self).__init__(DEFAULT_DATA, proxy, uisettings)
+        self._unmodifiable_helper = UnmodifiableHelper(self)
+        self._unrevertable_helper = UnrevertableHelper(self)
+        self._unpersistable_helper = UnpersistableHelper(self)
 
     def load_data(self):
-        return InitialisedState()
-
-    def test(self, test_method):
-        return self._untestable_helper.test(test_method)
+        return InitialisedState(self._data, self._proxy, self._uisettings)
 
     def modify(self):
         return self._unmodifiable_helper.modify()
@@ -266,29 +398,15 @@ class ConfigurationModel(object):
 
        VirginState      --(load_data)--> InitialisedState
        InitialisedState --(modify)-----> ModifiedState
-       InitialisedState --(test)-------> TestedGoodState
-       InitialisedState --(test)-------> TestedBadState
        ModifiedState    --(revert)-----> InitialisedState
        ModifiedState    --(modify)-----> ModifiedState
-       ModifiedState    --(test)-------> TestedGoodState
-       ModifiedState    --(test)-------> TestedBadState
-       TestedGoodState  --(revert)-----> InitialisedState
-       TestedGoodState  --(persist)----> InitialisedState
-       TestedGoodState  --(modify)-----> ModifiedState
-       TestedBadState   --(revert)-----> InitialisedState
-       TestedBadState   --(modify)-----> ModifiedState
+       ModifiedState    --(persist)----> InitialisedState
     """
 
-    def __init__(self, test_method=None):
-        self._current_state = VirginState()
-        if test_method:
-            self._test_method = test_method
-        else:
-            self._test_method = self._test
-
-    def _test(self):
-        # TODO, dump this and use something real
-        return True
+    def __init__(self, proxy=None, proxy_loadargs=[], uisettings=None):
+        if not proxy:
+            proxy = ConfigurationProxy(loadargs=proxy_loadargs)
+        self._current_state = VirginState(proxy, uisettings)
 
     def get_state(self):
         """
@@ -299,9 +417,6 @@ class ConfigurationModel(object):
     def load_data(self):
         self._current_state = self._current_state.load_data()
 
-    def test(self):
-        self._current_state = self._current_state.test(self._test_method)
-
     def modify(self):
         self._current_state = self._current_state.modify()
 
@@ -310,3 +425,73 @@ class ConfigurationModel(object):
 
     def persist(self):
         self._current_state = self._current_state.persist()
+
+    def _get_is_hosted(self):
+        return self._current_state.get(IS_HOSTED)
+
+    def _set_is_hosted(self, value):
+        self._current_state.set(IS_HOSTED, value)
+
+    is_hosted = property(_get_is_hosted, _set_is_hosted)
+
+    def _get_computer_title(self):
+        return self._current_state.get(COMPUTER_TITLE)
+
+    def _set_computer_title(self, value):
+        self._current_state.set(COMPUTER_TITLE, value)
+
+    computer_title = property(_get_computer_title, _set_computer_title)
+
+    def _get_hosted_landscape_host(self):
+        return self._current_state.get(HOSTED, LANDSCAPE_HOST)
+
+    def _set_hosted_landscape_host(self, value):
+        self._current_state.set(HOSTED, LANDSCAPE_HOST, value)
+
+    hosted_landscape_host = property(_get_hosted_landscape_host,
+                                     _set_hosted_landscape_host)
+
+    def _get_local_landscape_host(self):
+        return self._current_state.get(LOCAL, LANDSCAPE_HOST)
+
+    def _set_local_landscape_host(self, value):
+        self._current_state.set(LOCAL, LANDSCAPE_HOST, value)
+
+    local_landscape_host = property(_get_local_landscape_host,
+                                    _set_local_landscape_host)
+
+    def _get_hosted_account_name(self):
+        return self._current_state.get(HOSTED, ACCOUNT_NAME)
+
+    def _set_hosted_account_name(self, value):
+        self._current_state.set(HOSTED, ACCOUNT_NAME, value)
+
+    hosted_account_name = property(_get_hosted_account_name,
+                                   _set_hosted_account_name)
+
+    def _get_local_account_name(self):
+        return self._current_state.get(LOCAL, ACCOUNT_NAME)
+
+    def _set_local_account_name(self, value):
+        self._current_state.set(LOCAL, ACCOUNT_NAME, value)
+
+    local_account_name = property(_get_local_account_name,
+                                   _set_local_account_name)
+
+    def _get_hosted_password(self):
+        return self._current_state.get(HOSTED, PASSWORD)
+
+    def _set_hosted_password(self, value):
+        self._current_state.set(HOSTED, PASSWORD, value)
+
+    hosted_password = property(_get_hosted_password,
+                               _set_hosted_password)
+
+    def _get_local_password(self):
+        return self._current_state.get(LOCAL, PASSWORD)
+
+    def _set_local_password(self, value):
+        self._current_state.set(LOCAL, PASSWORD, value)
+
+    local_password = property(_get_local_password,
+                              _set_local_password)

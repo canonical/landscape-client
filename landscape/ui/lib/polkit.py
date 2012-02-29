@@ -1,7 +1,8 @@
 import dbus
 import dbus.service
 import dbus.glib
-import gobject
+
+from gi.repository import GObject
 
 
 class PolicyKitMechanism(dbus.service.Object):
@@ -111,5 +112,5 @@ def listen():
     """
     Invoke a L{gobject.MainLoop} to process incoming DBus events.
     """
-    mainloop = gobject.MainLoop()
+    mainloop = GObject.MainLoop()
     mainloop.run()

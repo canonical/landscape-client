@@ -22,7 +22,8 @@ class ConfigurationProxy(object):
     The canonical case for this is L{landscape-client-settings-ui}.
     """
 
-    def __init__(self, bus=None, interface=None):
+    def __init__(self, bus=None, interface=None, loadargs=[]):
+        self._loadargs = loadargs
         if bus is None:
             self._bus = dbus.SystemBus()
         else:
@@ -34,7 +35,9 @@ class ConfigurationProxy(object):
             self._interface = interface
 
     def load(self, arglist):
-        if arglist is None or len(arglist) == 0:
+        if arglist is None:
+            arglist = self._loadargs
+        if len(arglist) == 0:
             al = ""
         else:
             al = chr(0x1e).join(arglist)
