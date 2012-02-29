@@ -2,7 +2,7 @@ import copy
 import socket
 
 from landscape.ui.constants import (
-    CANONICAL_MANAGED, LOCAL_MANAGED, NOT_MANAGED)
+    CANONICAL_MANAGED, NOT_MANAGED)
 
 from landscape.ui.model.configuration.proxy import ConfigurationProxy
 
@@ -234,7 +234,6 @@ class PersistableHelper(Helper):
             self._state.get(LOCAL, ACCOUNT_NAME))
         self._state._uisettings.set_local_password(
             self._state.get(LOCAL, PASSWORD))
-        
 
     def _save_to_config(self):
         hosted = self._state.get(MANAGEMENT_TYPE)
@@ -313,7 +312,7 @@ class InitialisedState(ConfigurationState):
         self._load_live_data()
 
     def _load_uisettings_data(self):
-        hosted = self._uisettings.get_management_type()        
+        hosted = self._uisettings.get_management_type()
         self.set(MANAGEMENT_TYPE, hosted)
         computer_title = self._uisettings.get_computer_title()
         if computer_title not in ("", None):

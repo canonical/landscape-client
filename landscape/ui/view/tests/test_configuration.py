@@ -13,7 +13,6 @@ from landscape.ui.controller.configuration import ConfigController
 from landscape.tests.helpers import LandscapeTest
 from landscape.ui.tests.helpers import (
     ConfigurationProxyHelper, FakeGSettings, simulate_gtk_key_release)
-from landscape.configuration import LandscapeSetupConfiguration
 import landscape.ui.model.configuration.state
 from landscape.ui.model.configuration.state import (
     COMPUTER_TITLE, ConfigurationModel)
@@ -75,7 +74,6 @@ class ConfigurationViewTest(LandscapeTest):
         result in the correct panel becoming active and visible.
         """
         dialog = ClientSettingsDialog(self.controller)
-        content_area = dialog.get_content_area()
         iter = dialog.liststore.get_iter(0)
         no_service_frame = dialog.liststore.get(iter, 2)[0]
         iter = dialog.liststore.get_iter(1)
@@ -141,8 +139,6 @@ class ConfigurationViewTest(LandscapeTest):
             Gtk.main_iteration()
         self.assertTrue(self.controller.is_modified)
 
-        
-
     def test_load_data_from_config(self):
         """
         Test that we load data into the appropriate entries from the
@@ -153,7 +149,8 @@ class ConfigurationViewTest(LandscapeTest):
         self.assertEqual("foo", dialog.hosted_account_name_entry.get_text())
         self.assertEqual("bar", dialog.hosted_password_entry.get_text())
         self.assertEqual("", dialog.local_landscape_host_entry.get_text())
-        self.assertEqual("standalone", dialog.local_account_name_entry.get_text())
+        self.assertEqual("standalone",
+                         dialog.local_account_name_entry.get_text())
         self.assertEqual("", dialog.local_password_entry.get_text())
 
     def test_revert(self):
@@ -170,7 +167,8 @@ class ConfigurationViewTest(LandscapeTest):
         dialog.local_landscape_host_entry.set_text("more.barn")
         while Gtk.events_pending():
             Gtk.main_iteration()
-        self.assertEqual("standalone", dialog.local_account_name_entry.get_text())
+        self.assertEqual("standalone",
+                         dialog.local_account_name_entry.get_text())
         self.assertEqual("bar", dialog.hosted_password_entry.get_text())
         self.assertEqual("more.barn",
                          dialog.local_landscape_host_entry.get_text())
@@ -224,10 +222,10 @@ class ConfigurationViewPersistTest(LandscapeTest):
                                         uisettings=self.uisettings)
         self.original_persist = self.model.persist
         self.persisted = False
-        
+
         def persist():
             self.persisted = True
-        
+
         self.model.persist = persist
         self.controller = ConfigController(self.model)
         self.dialog = ClientSettingsDialog(self.controller)
@@ -294,7 +292,6 @@ class ConfigurationViewPersistTest(LandscapeTest):
 
 class LocalConfigurationViewTest(LandscapeTest):
 
-
     helpers = [ConfigurationProxyHelper]
 
     def setUp(self):
@@ -314,7 +311,7 @@ class LocalConfigurationViewTest(LandscapeTest):
             "url = https://landscape.localdomain/message-system\n"
             "computer_title = baz\n"
             "ping_url = http://landscape.localdomain/ping\n" % sys.path[0])
-            
+
         super(LocalConfigurationViewTest, self).setUp()
         landscape.ui.model.configuration.state.DEFAULT_DATA[COMPUTER_TITLE] \
             = "me.here.com"
@@ -355,7 +352,6 @@ class LocalConfigurationViewTest(LandscapeTest):
         self.assertEqual("standalone",
                          dialog.local_account_name_entry.get_text())
         self.assertEqual("manky", dialog.local_password_entry.get_text())
-
 
     if not got_gobject_introspection:
         test_load_data_from_config.skip = gobject_skip_message

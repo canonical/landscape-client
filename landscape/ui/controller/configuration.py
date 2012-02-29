@@ -1,9 +1,5 @@
-import socket
-
 from landscape.ui.model.registration.proxy import RegistrationProxy
-from landscape.ui.model.configuration.state import (
-    derive_url_from_host_name, derive_ping_url_from_host_name,
-    derive_server_host_name_from_url, ModifiedState, StateError)
+from landscape.ui.model.configuration.state import StateError
 
 
 class ConfigControllerLockError(Exception):
@@ -25,14 +21,14 @@ class ConfigController(object):
         self._initialised = True
 
     def __getattr__(self, name):
-        if self.__dict__.has_key(name):
+        if name in self.__dict__:
             return self.__dict__[name]
         else:
             return getattr(self._configuration, name)
 
     def __setattr__(self, name, value):
         # this test allows attributes to be set in the __init__ method
-        if not self.__dict__.has_key('_initialised'):
+        if not '_initialised' in self.__dict__:
             return object.__setattr__(self, name, value)
         try:
             setattr(self._configuration, name, value)
@@ -60,7 +56,7 @@ class ConfigController(object):
             # We probably don't care.
             pass
 
-    def register(self, notify_method, error_method, succeed_method, 
+    def register(self, notify_method, error_method, succeed_method,
                  fail_method):
 
         registration = RegistrationProxy(notify_method, error_method,

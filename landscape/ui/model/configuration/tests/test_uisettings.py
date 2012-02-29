@@ -26,8 +26,8 @@ class UISettingsTest(LandscapeTest):
 
     def test_get_management_type(self):
         """
-        Test that the L{get_management_type} value is correctly fetched from the
-        L{GSettings.Client}.
+        Test that the L{get_management_type} value is correctly fetched from
+        the L{GSettings.Client}.
         """
         settings = FakeGSettings(data=self.default_data)
         uisettings = UISettings(settings)

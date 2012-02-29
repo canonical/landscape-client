@@ -2,8 +2,7 @@ import landscape.ui.model.configuration.state
 from landscape.ui.model.configuration.state import (
     ConfigurationModel, COMPUTER_TITLE)
 from landscape.ui.model.configuration.uisettings import UISettings
-from landscape.ui.controller.configuration import (
-    ConfigController, ConfigControllerLockError)
+from landscape.ui.controller.configuration import ConfigController
 from landscape.ui.tests.helpers import (
     ConfigurationProxyHelper, dbus_test_should_skip, dbus_skip_message,
     FakeGSettings)
@@ -99,7 +98,6 @@ class ConfigControllerTest(LandscapeTest):
         self.controller.local_password = "nucker"
         self.assertEqual(self.controller.local_password, "nucker")
 
-
     def test_set_local_landscape_host(self):
         """
         Test that we can set the L{local_landscape_host} property.
@@ -144,14 +142,14 @@ class ConfigControllerTest(LandscapeTest):
         self.controller.load()
         self.assertEqual("", self.controller.local_landscape_host)
         self.controller.local_landscape_host = "landscape.localdomain"
-        self.assertEqual("landscape.localdomain", 
+        self.assertEqual("landscape.localdomain",
                          self.controller.local_landscape_host)
         self.controller.commit()
-        self.assertEqual("landscape.localdomain", 
+        self.assertEqual("landscape.localdomain",
                          self.controller.local_landscape_host)
         self.controller.local_landscape_host = "boo"
         self.controller.revert()
-        self.assertEqual("landscape.localdomain", 
+        self.assertEqual("landscape.localdomain",
                          self.controller.local_landscape_host)
 
     if dbus_test_should_skip:
@@ -191,7 +189,7 @@ class EmptyConfigControllerTest(LandscapeTest):
         self.assertEqual("not", self.controller.management_type)
         self.assertEqual("", self.controller.hosted_account_name)
         self.assertEqual("", self.controller.hosted_password)
-        self.assertEqual("landscape.canonical.com", 
+        self.assertEqual("landscape.canonical.com",
                          self.controller.hosted_landscape_host)
         self.assertEqual("standalone", self.controller.local_account_name)
         self.assertEqual("", self.controller.local_password)

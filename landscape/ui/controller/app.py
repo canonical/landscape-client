@@ -28,22 +28,22 @@ class SettingsApplicationController(Gtk.Application):
         return UISettings(Gio.Settings)
 
     def on_notify(self, message):
-        notification = Notify.new(APPLICATION_ID, message, 
+        notification = Notify.new(APPLICATION_ID, message,
                                   Gtk.STOCK_DIALOG_INFO)
         notification.show()
 
     def on_error(self, message):
-        notification = Notify.new(APPLICATION_ID, message, 
+        notification = Notify.new(APPLICATION_ID, message,
                                   Gtk.STOCK_DIALOG_ERROR)
         notification.show()
 
     def on_succeed(self):
-        notification = Notify.new(APPLICATION_ID, "Success", 
+        notification = Notify.new(APPLICATION_ID, "Success",
                                   Gtk.STOCK_DIALOG_INFO)
         notification.show()
 
     def on_fail(self):
-        notification = Notify.new(APPLICATION_ID, "Fail", 
+        notification = Notify.new(APPLICATION_ID, "Fail",
                                   Gtk.STOCK_DIALOG_ERROR)
         notification.show()
 
@@ -61,4 +61,3 @@ class SettingsApplicationController(Gtk.Application):
             controller.register(self.on_notify, self.on_error, self.on_succeed,
                                 self.on_fail)
         self.settings_dialog.destroy()
-            

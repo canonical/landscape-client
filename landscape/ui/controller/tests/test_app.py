@@ -1,7 +1,7 @@
 import sys
 
 try:
-    from gi.repository import Gtk, Gdk
+    from gi.repository import Gtk
     got_gobject_introspection = True
 except (ImportError, RuntimeError):
     got_gobject_introspection = False
@@ -11,7 +11,6 @@ except (ImportError, RuntimeError):
     dbus_test_should_skip = True
     dbus_skip_message = gobject_skip_message
 else:
-    from landscape.ui.model.configuration.state import ConfigurationModel
     from landscape.ui.model.configuration.uisettings import UISettings
     from landscape.ui.controller.app import SettingsApplicationController
     from landscape.ui.controller.configuration import ConfigController
@@ -121,7 +120,7 @@ class SettingsApplicationControllerUISetupTest(LandscapeTest):
         def get_uisettings():
             settings = FakeGSettings(data=self.default_data)
             return UISettings(settings)
-            
+
         self.app = ConnectionRecordingSettingsApplicationController(
             get_config=get_config, get_uisettings=get_uisettings)
 

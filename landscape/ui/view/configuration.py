@@ -6,7 +6,6 @@ from landscape.ui.constants import (
     CANONICAL_MANAGED, LOCAL_MANAGED, NOT_MANAGED)
 
 
-
 class ClientSettingsDialog(Gtk.Dialog):
 
     GLADE_FILE = "landscape-client-settings.glade"
@@ -25,9 +24,10 @@ class ClientSettingsDialog(Gtk.Dialog):
         self.setup_ui()
         self.load_data()
 
-    def _set_use_type_combobox_from_controller(self):        
+    def _set_use_type_combobox_from_controller(self):
         iter = self.liststore.get_iter_first()
-        while self.liststore.get(iter, 0)[0] != self.controller.management_type:
+        while (self.liststore.get(iter, 0)[0] !=
+               self.controller.management_type):
             iter = self.liststore.iter_next(iter)
         path = self.liststore.get_path(iter)
         [index] = path.get_indices()
@@ -156,5 +156,3 @@ class ClientSettingsDialog(Gtk.Dialog):
 
     def persist(self):
         self.controller.persist()
-
-

@@ -2,7 +2,7 @@ import os
 
 from lxml import etree
 import dbus
-from gi.repository import Gtk, Gdk
+from gi.repository import Gdk
 
 from landscape.configuration import LandscapeSetupConfiguration
 from landscape.ui.model.configuration.mechanism import (
