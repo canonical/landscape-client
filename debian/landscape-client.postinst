@@ -27,68 +27,67 @@ case "$1" in
     configure)
 
         CONFIG_FILE=/etc/landscape/client.conf
-        if [ -f $CONFIG_FILE ]; then
-            mv --backup=numbered $CONFIG_FILE $CONFIG_FILE.bak
-        fi
+        # Get configuration values from debconf
+        db_get $PACKAGE/computer_title
+        COMPUTER_TITLE="${RET}"
+        db_get $PACKAGE/account_name
+        ACCOUNT_NAME="${RET}"
+        db_get $PACKAGE/registration_password
+        REGISTRATION_PASSWORD="${RET}"
+        db_get $PACKAGE/url
+        URL="${RET}"
+        db_get $PACKAGE/exchange_interval
+        EXCHANGE_INTERVAL="${RET}"
+        db_get $PACKAGE/urgent_exchange_interval
+        URGENT_EXCHANGE_INTERVAL="${RET}"
+        db_get $PACKAGE/ping_url
+        PING_URL="${RET}"
+        db_get $PACKAGE/ping_interval
+        PING_INTERVAL="${RET}"
+        db_get $PACKAGE/http_proxy
+        HTTP_PROXY="${RET}"
+        db_get $PACKAGE/https_proxy
+        HTTPS_PROXY="${RET}"
+        db_get $PACKAGE/otp
+        OTP="${RET}"
+        db_get $PACKAGE/tags
+        TAGS="${RET}"
+        db_get $PACKAGE/server_autodiscover
+        SERVER_AUTODISCOVER="${RET}"
+        db_get $PACKAGE/autodiscover_srv_query_string
+        AUTODISCOVER_SRV_QUERY_STRING="${RET}"
+        db_get $PACKAGE/autodiscover_a_query_string
+        AUTODISCOVER_A_QUERY_STRING="${RET}"
+
+
         if [ ! -f $CONFIG_FILE ]; then
-            # Get configuration values from debconf
-            db_get $PACKAGE/computer_title
-            COMPUTER_TITLE="${RET}"
-            db_get $PACKAGE/account_name
-            ACCOUNT_NAME="${RET}"
-            db_get $PACKAGE/registration_password
-            REGISTRATION_PASSWORD="${RET}"
-            db_get $PACKAGE/url
-            URL="${RET}"
-            db_get $PACKAGE/exchange_interval
-            EXCHANGE_INTERVAL="${RET}"
-            db_get $PACKAGE/urgent_exchange_interval
-            URGENT_EXCHANGE_INTERVAL="${RET}"
-            db_get $PACKAGE/ping_url
-            PING_URL="${RET}"
-            db_get $PACKAGE/ping_interval
-            PING_INTERVAL="${RET}"
-            db_get $PACKAGE/http_proxy
-            HTTP_PROXY="${RET}"
-            db_get $PACKAGE/https_proxy
-            HTTPS_PROXY="${RET}"
-            db_get $PACKAGE/otp
-            OTP="${RET}"
-            db_get $PACKAGE/tags
-            TAGS="${RET}"
+            touch $CONFIG_FILE
+        fi
+        chown landscape $CONFIG_FILE
+        # Fix non-private permissions
+        chmod 0600 $CONFIG_FILE
 
-            # Create new configuration, with private mode
-            TEMPFILE=$(mktemp -p /etc/landscape)
-            cat > $TEMPFILE <<END
-[client]
-log_level = info
-data_path = /var/lib/landscape/client
-END
-            chown landscape $TEMPFILE
-            mv $TEMPFILE $CONFIG_FILE
+        # Configure landscape
+        landscape-config --silent --no-start \
+            --computer-title "$COMPUTER_TITLE" \
+            --account-name "$ACCOUNT_NAME" \
+            --registration-password "$REGISTRATION_PASSWORD" \
+            --url "$URL" \
+            --exchange-interval "$EXCHANGE_INTERVAL" \
+            --urgent-exchange-interval "$URGENT_EXCHANGE_INTERVAL" \
+            --ping-url "$PING_URL" \
+            --ping-interval "$PING_INTERVAL" \
+            --http-proxy "$HTTP_PROXY" \
+            --https-proxy "$HTTPS_PROXY" \
+            --otp "$OTP" \
+            --tags "$TAGS" \
+            --server-autodiscover "$SERVER_AUTODISCOVER" \
+            --autodiscover-srv-query-string "$AUTODISCOVER_SRV_QUERY_STRING" \
+            --autodiscover-a-query-string "$AUTODISCOVER_A_QUERY_STRING"
 
-            # Configure landscape
-            landscape-config --silent --no-start \
-                --computer-title "$COMPUTER_TITLE" \
-                --account-name "$ACCOUNT_NAME" \
-                --registration-password "$REGISTRATION_PASSWORD" \
-                --url "$URL" \
-                --exchange-interval "$EXCHANGE_INTERVAL" \
-                --urgent-exchange-interval "$URGENT_EXCHANGE_INTERVAL" \
-                --ping-url "$PING_URL" \
-                --ping-interval "$PING_INTERVAL" \
-                --http-proxy "$HTTP_PROXY" \
-                --https-proxy "$HTTPS_PROXY" \
-                --otp "$OTP" \
-                --tags "$TAGS"
-
-            # If we got the needed information, actually do the registration.
-            if [ -n "$ACCOUNT_NAME" -a -n "$COMPUTER_TITLE" ]; then
-                landscape-config --silent --ok-no-register
-            fi
-        else
-            # Fix non-private permissions
-            chmod 0600 $CONFIG_FILE
+        # If we got the needed information, actually do the registration.
+        if [ -n "$ACCOUNT_NAME" -a -n "$COMPUTER_TITLE" ]; then
+            landscape-config --silent --ok-no-register
         fi
 
         # old monolithic clients have a single persist data file and a single

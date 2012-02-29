@@ -200,6 +200,7 @@ class BaseConfiguration(object):
         The filename picked for saving configuration options is the one
         returned by L{get_config_filename}.
         """
+
         # The filename we'll write to
         filename = self.get_config_filename()
 
@@ -270,6 +271,8 @@ class Configuration(BaseConfiguration):
     This contains all simple data, some of it calculated.
     """
 
+    DEFAULT_URL = "https://landscape.canonical.com/message-system"
+
     def make_parser(self):
         """Parser factory for supported options.
 
@@ -279,6 +282,13 @@ class Configuration(BaseConfiguration):
               - C{quiet} (C{False})
               - C{log_dir} (C{"/var/log/landscape"})
               - C{log_level} (C{"info"})
+              - C{url} (C{"http://landcape.canonical.com/message-system"})
+              - C{ping_url} (C{"http://landscape.canonical.com/ping"})
+              - C{ssl_public_key}
+              - C{server_autodiscover} (C{"false"})
+              - C{autodiscover_srv_query_string}
+                    (C{"_tcp._landscape.localdomain"})
+              - C{autodiscover_a_query_string} (C{"landscape.localdomain"})
               - C{ignore_sigint} (C{False})
         """
         parser = super(Configuration, self).make_parser()
@@ -295,6 +305,22 @@ class Configuration(BaseConfiguration):
         parser.add_option("--log-level", default="info",
                           help="One of debug, info, warning, error or "
                                "critical.")
+        parser.add_option("-u", "--url", default=self.DEFAULT_URL,
+                          help="The server URL to connect to.")
+        parser.add_option("--ping-url",
+                          help="The URL to perform lightweight exchange "
+                               "initiation with.")
+        parser.add_option("-k", "--ssl-public-key",
+                          help="The public SSL key to verify the server. "
+                               "Only used if the given URL is https.")
+        parser.add_option("--server-autodiscover", type="string",
+                          default="false", help="Enable server autodiscovery.")
+        parser.add_option("--autodiscover-srv-query-string", type="string",
+                          default="_tcp._landscape.localdomain",
+                          help="autodiscovery string for DNS SRV queries")
+        parser.add_option("--autodiscover-a-query-string", type="string",
+                          default="landscape.localdomain",
+                          help="autodiscovery string for DNS A queries")
         parser.add_option("--ignore-sigint", action="store_true",
                           default=False, help="Ignore interrupt signals.")
         parser.add_option("--ignore-sigusr1", action="store_true",
@@ -307,6 +333,16 @@ class Configuration(BaseConfiguration):
                           help=SUPPRESS_HELP)
 
         return parser
+
+    def load(self, args, accept_nonexistent_config=False):
+        """
+        Load configuration data from command line arguments and a config file.
+        """
+        super(Configuration, self).load(
+            args, accept_nonexistent_config=accept_nonexistent_config)
+
+        autodiscover = str(self.server_autodiscover).lower()
+        self.server_autodiscover = (autodiscover == "true")
 
     @property
     def sockets_path(self):

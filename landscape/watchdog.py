@@ -22,7 +22,7 @@ from twisted.internet.error import ProcessExitedAlready
 from twisted.application.service import Service, Application
 from twisted.application.app import startApplication
 
-from landscape.deployment import Configuration, init_logging
+from landscape.deployment import init_logging, Configuration
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.log import log_failure
 from landscape.lib.bootstrap import (BootstrapList, BootstrapFile,
@@ -32,6 +32,9 @@ from landscape.amp import ComponentProtocol
 from landscape.broker.amp import (
     RemoteBrokerConnector, RemoteMonitorConnector, RemoteManagerConnector)
 from landscape.reactor import TwistedReactor
+from landscape.lib.dns import discover_server
+from landscape.configuration import (
+    fetch_base64_ssl_public_certificate, decode_base64_ssl_public_certificate)
 
 GRACEFUL_WAIT_PERIOD = 10
 MAXIMUM_CONSECUTIVE_RESTARTS = 5
@@ -488,6 +491,45 @@ class WatchDogService(Service):
                                  enabled_daemons=config.get_enabled_daemons())
         self.exit_code = 0
 
+    def autodiscover(self):
+        """
+        Autodiscover called if config setting config.server_autodiscover is
+        True. This method allows the watchdog to attempt server autodiscovery,
+        fetch the discovered landscape server's custom CA certificate, and
+        write both the certificate and the updated config file with the
+        discovered values.
+        """
+        def update_config(hostname):
+            if hostname is None:
+                warning("Autodiscovery returned empty hostname string. "
+                        "Reverting to previous settings.")
+            else:
+                info("Autodiscovery found landscape server at %s. "
+                     "Updating configuration values." % hostname)
+                self._config.server_autodiscover = False
+                self._config.url = "https://%s/message-system" % hostname
+                self._config.ping_url = "http://%s/ping" % hostname
+                if not self._config.ssl_public_key:
+                    # If we don't have a key on this system, pull it from
+                    # the auto-discovered server and write it to the filesystem
+                    ssl_public_key = fetch_base64_ssl_public_certificate(
+                        hostname, on_info=info, on_error=warning)
+                    if ssl_public_key:
+                        self._config.ssl_public_key = ssl_public_key
+                        decode_base64_ssl_public_certificate(self._config)
+                self._config.write()
+            return hostname
+
+        def discovery_error(result):
+            warning("Autodiscovery failed.  Reverting to previous settings.")
+
+        lookup_deferred = discover_server(
+            self._config.autodiscover_srv_query_string,
+            self._config.autodiscover_a_query_string)
+        lookup_deferred.addCallback(update_config)
+        lookup_deferred.addErrback(discovery_error)
+        return lookup_deferred
+
     def startService(self):
         Service.startService(self)
         bootstrap_list.bootstrap(data_path=self._config.data_path,
@@ -508,7 +550,10 @@ class WatchDogService(Service):
                     data_path=self._config.data_path + suffix,
                     log_dir=self._config.log_dir + suffix)
 
-        result = self.watchdog.check_running()
+        result = succeed(None)
+        if self._config.server_autodiscover:
+            result.addCallback(lambda _: self.autodiscover())
+        result.addCallback(lambda _: self.watchdog.check_running())
 
         def start_if_not_running(running_daemons):
             if running_daemons:

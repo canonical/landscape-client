@@ -136,7 +136,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.log_level = "warning"
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEqual(data.strip(), "[client]\nlog_level = warning")
+        self.assertConfigEqual(data, "[client]\nlog_level = warning")
 
     def test_write_configuration_with_section(self):
         self.reset_config(configuration_class=BabbleConfiguration)
@@ -144,7 +144,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.whatever = "boo"
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEqual(data.strip(), "[babble]\nwhatever = boo")
+        self.assertConfigEqual(data, "[babble]\nwhatever = boo")
 
     def test_write_unrelated_configuration_back(self):
         """
@@ -159,8 +159,8 @@ class ConfigurationTest(LandscapeTest):
         self.config.whatever = "boo"
         self.config.write()
         data = open(config_filename).read()
-        self.assertEqual(
-            data.strip(),
+        self.assertConfigEqual(
+            data,
             "[babble]\nwhatever = boo\n\n[goojy]\nunrelated = yes")
 
     def test_write_on_the_right_default_config_file(self):
@@ -171,14 +171,15 @@ class ConfigurationTest(LandscapeTest):
         self.config.log_level = "warning"
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEqual(data.strip(), "[client]\nlog_level = warning")
+        self.assertConfigEqual(data,
+            "[client]\nlog_level = warning\nserver_autodiscover = False")
 
     def test_dont_write_default_options(self):
         self.write_config_file(log_level="debug")
         self.config.log_level = "info"
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEqual(data.strip(), "[client]")
+        self.assertConfigEqual(data, "[client]")
 
     def test_dont_delete_explicitly_set_default_options(self):
         """
@@ -189,21 +190,22 @@ class ConfigurationTest(LandscapeTest):
         self.write_config_file(log_level="info")
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEqual(data.strip(), "[client]\nlog_level = info")
+        self.assertConfigEqual(data, "[client]\nlog_level = info")
 
     def test_dont_write_config_option(self):
         self.write_config_file()
         self.config.config = self.config_filename
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEqual(data.strip(), "[client]")
+        self.assertConfigEqual(data, "[client]")
 
     def test_write_command_line_options(self):
         self.write_config_file()
         self.config.load(["--log-level", "warning"])
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEqual(data.strip(), "[client]\nlog_level = warning")
+        self.assertConfigEqual(data,
+            "[client]\nlog_level = warning\nserver_autodiscover = False")
 
     def test_write_command_line_precedence(self):
         """Command line options take precedence over config file when writing.
@@ -212,7 +214,8 @@ class ConfigurationTest(LandscapeTest):
         self.config.load(["--log-level", "warning"])
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEqual(data.strip(), "[client]\nlog_level = warning")
+        self.assertConfigEqual(data,
+            "[client]\nlog_level = warning\nserver_autodiscover = False")
 
     def test_write_manually_set_precedence(self):
         """Manually set options take precedence over command line when writing.
@@ -222,7 +225,8 @@ class ConfigurationTest(LandscapeTest):
         self.config.log_level = "error"
         self.config.write()
         data = open(self.config_filename).read()
-        self.assertEqual(data.strip(), "[client]\nlog_level = error")
+        self.assertConfigEqual(data,
+            "[client]\nlog_level = error\nserver_autodiscover = False")
 
     def test_write_to_given_config_file(self):
         filename = self.makeFile()
@@ -231,18 +235,27 @@ class ConfigurationTest(LandscapeTest):
         self.config.log_level = "error"
         self.config.write()
         data = open(filename).read()
-        self.assertEqual(data.strip(), "[client]\nlog_level = error")
+        self.assertConfigEqual(data,
+            "[client]\nlog_level = error\nserver_autodiscover = False")
 
     def test_config_option(self):
-        opts = self.parser.parse_args(["--config", "hello.cfg"])[0]
-        self.assertEqual(opts.config, "hello.cfg")
+        options = self.parser.parse_args(["--config", "hello.cfg"])[0]
+        self.assertEqual(options.config, "hello.cfg")
 
     def test_load_config_from_option(self):
+        """
+        Ensure config option of type string shows up in self.config when
+        config.load is called.
+        """
         filename = self.makeFile("[client]\nhello = world\n")
         self.config.load(["--config", filename])
         self.assertEqual(self.config.hello, "world")
 
     def test_load_typed_option_from_file(self):
+        """
+        Ensure config option of type int shows up in self.config when
+        config.load is called.
+        """
 
         class MyConfiguration(self.config_class):
 
@@ -257,6 +270,10 @@ class ConfigurationTest(LandscapeTest):
         self.assertEqual(config.year, 2008)
 
     def test_load_typed_option_from_command_line(self):
+        """
+        Ensure command line config option of type int shows up in self.config
+        when config.load is called.
+        """
 
         class MyConfiguration(self.config_class):
 
@@ -270,6 +287,10 @@ class ConfigurationTest(LandscapeTest):
         self.assertEqual(config.year, 2008)
 
     def test_reload(self):
+        """
+        Ensure updated options written to config file are surfaced on
+        config.reload()
+        """
         filename = self.makeFile("[client]\nhello = world1\n")
         self.config.load(["--config", filename])
         open(filename, "w").write("[client]\nhello = world2\n")
@@ -277,51 +298,156 @@ class ConfigurationTest(LandscapeTest):
         self.assertEqual(self.config.hello, "world2")
 
     def test_data_directory_option(self):
-        opts = self.parser.parse_args(["--data-path", "/opt/hoojy/var/run"])[0]
-        self.assertEqual(opts.data_path, "/opt/hoojy/var/run")
+        """Ensure options.data_path option can be read by parse_args."""
+        options = self.parser.parse_args(["--data-path",
+                                          "/opt/hoojy/var/run"])[0]
+        self.assertEqual(options.data_path, "/opt/hoojy/var/run")
 
     def test_data_directory_default(self):
-        opts = self.parser.parse_args([])[0]
-        self.assertEqual(opts.data_path, "/var/lib/landscape/client/")
+        """Ensure parse_args sets appropriate data_path default."""
+        options = self.parser.parse_args([])[0]
+        self.assertEqual(options.data_path, "/var/lib/landscape/client/")
+
+    def test_url_option(self):
+        """Ensure options.url option can be read by parse_args."""
+        options = self.parser.parse_args(["--url",
+                                       "http://mylandscape/message-system"])[0]
+        self.assertEqual(options.url, "http://mylandscape/message-system")
+
+    def test_url_default(self):
+        """Ensure parse_args sets appropriate url default."""
+        options = self.parser.parse_args([])[0]
+        self.assertEqual(options.url, self.config.DEFAULT_URL)
+
+    def test_ping_url_option(self):
+        """Ensure options.ping_url option can be read by parse_args."""
+        options = self.parser.parse_args(["--ping-url",
+                                       "http://mylandscape/ping"])[0]
+        self.assertEqual(options.ping_url, "http://mylandscape/ping")
+
+    def test_ping_url_default(self):
+        """Ensure parse_args sets appropriate ping_url default."""
+        options = self.parser.parse_args([])[0]
+        self.assertEqual(options.ping_url, None)
+
+    def test_ssl_public_key_option(self):
+        """Ensure options.ssl_public_key option can be read by parse_args."""
+        options = self.parser.parse_args(["--ssl-public-key",
+                                       "/tmp/somekeyfile.ssl"])[0]
+        self.assertEqual(options.ssl_public_key, "/tmp/somekeyfile.ssl")
+
+    def test_ssl_public_key_default(self):
+        """Ensure parse_args sets appropriate ssl_public_key default."""
+        options = self.parser.parse_args([])[0]
+        self.assertEqual(options.ssl_public_key, None)
+
+    def test_server_autodiscover_option(self):
+        """
+        Ensure options.server_autodiscover option can be read by parse_args.
+        """
+        options = self.parser.parse_args(["--server-autodiscover=true"])[0]
+        self.assertEqual(options.server_autodiscover, "true")
+
+    def test_server_autodiscover_default(self):
+        """Ensure parse_args sets appropriate server_autodiscover default."""
+        options = self.parser.parse_args([])[0]
+        self.assertEqual(options.server_autodiscover, "false")
+
+    def test_autodiscover_srv_query_string_option(self):
+        """
+        Ensure options.autodiscover_srv_query_string option can be read by
+        parse_args.
+        """
+        options = self.parser.parse_args(["--autodiscover-srv-query-string",
+                                       "_tcp._landscape.someotherdomain"])[0]
+        self.assertEqual(options.autodiscover_srv_query_string,
+                         "_tcp._landscape.someotherdomain")
+
+    def test_autodiscover_srv_query_string_default(self):
+        """
+        Ensure parse_args sets appropriate autodiscover_srv_query_string
+        default.
+        """
+        options = self.parser.parse_args([])[0]
+        self.assertEqual(options.autodiscover_srv_query_string,
+                         "_tcp._landscape.localdomain")
+
+    def test_autodiscover_a_query_string_option(self):
+        """
+        Ensure options.autodiscover_a_query_string option can be read by
+        parse_args.
+        """
+        options = self.parser.parse_args(["--autodiscover-a-query-string",
+                                       "customname.mydomain"])[0]
+        self.assertEqual(options.autodiscover_a_query_string,
+                         "customname.mydomain")
+
+    def test_autodiscover_a_query_string_default(self):
+        """
+        Ensure parse_args sets appropriate autodiscover_a_query_string
+        default.
+        """
+        options = self.parser.parse_args([])[0]
+        self.assertEqual(options.autodiscover_a_query_string,
+                         "landscape.localdomain")
 
     def test_log_file_option(self):
-        opts = self.parser.parse_args(["--log-dir",
+        """Ensure options.log_dir option can be read by parse_args."""
+        options = self.parser.parse_args(["--log-dir",
                                        "/var/log/my-awesome-log"])[0]
-        self.assertEqual(opts.log_dir, "/var/log/my-awesome-log")
+        self.assertEqual(options.log_dir, "/var/log/my-awesome-log")
+
+    def test_log_level_default(self):
+        """Ensure options.log_level default is set within parse_args."""
+        options = self.parser.parse_args([])[0]
+        self.assertEqual(options.log_level, "info")
 
     def test_log_level_option(self):
-        opts = self.parser.parse_args([])[0]
-        self.assertEqual(opts.log_level, "info")
-        opts = self.parser.parse_args(["--log-level", "debug"])[0]
-        self.assertEqual(opts.log_level, "debug")
+        """Ensure options.log_level option can be read by parse_args."""
+        options = self.parser.parse_args(["--log-level", "debug"])[0]
+        self.assertEqual(options.log_level, "debug")
 
     def test_quiet_option(self):
-        opts = self.parser.parse_args(["--quiet"])[0]
-        self.assertEqual(opts.quiet, True)
+        """Ensure options.quiet option can be read by parse_args."""
+        options = self.parser.parse_args(["--quiet"])[0]
+        self.assertEqual(options.quiet, True)
 
     def test_quiet_default(self):
-        opts = self.parser.parse_args([])[0]
-        self.assertEqual(opts.quiet, False)
+        """Ensure options.quiet default is set within parse_args."""
+        options = self.parser.parse_args([])[0]
+        self.assertEqual(options.quiet, False)
 
     def test_clones_default(self):
         """By default, no clones are started."""
-        opts = self.parser.parse_args([])[0]
-        self.assertEqual(0, opts.clones)
+        options = self.parser.parse_args([])[0]
+        self.assertEqual(0, options.clones)
 
     def test_clones_option(self):
         """It's possible to specify additional clones to be started."""
-        opts = self.parser.parse_args(["--clones", "3"])[0]
-        self.assertEqual(3, opts.clones)
+        options = self.parser.parse_args(["--clones", "3"])[0]
+        self.assertEqual(3, options.clones)
 
     def test_ignore_sigint_option(self):
-        opts = self.parser.parse_args(["--ignore-sigint"])[0]
-        self.assertEqual(opts.ignore_sigint, True)
+        """Ensure options.ignore_sigint option can be read by parse_args."""
+        options = self.parser.parse_args(["--ignore-sigint"])[0]
+        self.assertEqual(options.ignore_sigint, True)
 
     def test_ignore_sigint_default(self):
-        opts = self.parser.parse_args([])[0]
-        self.assertEqual(opts.ignore_sigint, False)
+        """Ensure options.ignore_sigint default is set within parse_args."""
+        options = self.parser.parse_args([])[0]
+        self.assertEqual(options.ignore_sigint, False)
 
     def test_get_config_filename_precedence(self):
+        """
+        Validate landscape-client configuration file load precedence. The
+        client config should return the first readable configuration files in
+        the default_config_filenames list if no config option was requested.
+
+        If a specific config file is requested, use this instead of defaults.
+
+        If a cmdilne --config option is specified this should take precedence
+        over either of the former options.
+        """
         default_filename1 = self.makeFile("")
         default_filename2 = self.makeFile("")
         explicit_filename = self.makeFile("")
@@ -335,7 +461,7 @@ class ConfigurationTest(LandscapeTest):
         self.assertEqual(self.config.get_config_filename(),
                          default_filename2)
 
-        # If is is readable, than return the first default configuration file.
+        # If it is readable, than return the first default configuration file.
         os.chmod(default_filename1, 0644)
         self.assertEqual(self.config.get_config_filename(),
                          default_filename1)

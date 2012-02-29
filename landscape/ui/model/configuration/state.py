@@ -94,11 +94,17 @@ class ConfigurationState(object):
         return self._proxy.get_config_filename()
 
     def get(self, *args):
+        """
+        Retrieve only valid values from two level dictionary based tree.
+
+        This mainly served to pick up programming errors and could easily be
+        replaced with a simpler scheme.
+        """
         arglen = len(args)
         if arglen > 2 or arglen == 0:
             raise TypeError(
                 "get() takes either 1 or 2 keys (%d given)" % arglen)
-        if arglen == 2:
+        if arglen == 2:  # We're looking for a leaf on a branch
             sub_dict = None
             if args[0] in [HOSTED, LOCAL]:
                 sub_dict = self._data.get(args[0], {})
@@ -116,13 +122,19 @@ class ConfigurationState(object):
                 raise KeyError("Key [%s] is invalid. " % args[0])
 
     def set(self, *args):
+        """
+        Set only valid values from two level dictionary based tree.
+
+        This mainly served to pick up programming errors and could easily be
+        replaced with a simpler scheme.
+        """
         arglen = len(args)
         if arglen < 2 or arglen > 3:
             raise TypeError("set() takes either 1 or 2 keys and exactly 1 " +
                             "value (%d arguments given)" % arglen)
-        if arglen == 2:
+        if arglen == 2:  # We're setting a leaf attached to the root
             self._data[args[0]] = args[1]
-        else:
+        else:  # We're setting a leaf on a branch
             sub_dict = None
             if args[0] in [HOSTED, LOCAL]:
                 sub_dict = self._data.get(args[0], {})
@@ -315,7 +327,7 @@ class InitialisedState(ConfigurationState):
         hosted = self._uisettings.get_management_type()
         self.set(MANAGEMENT_TYPE, hosted)
         computer_title = self._uisettings.get_computer_title()
-        if computer_title not in ("", None):
+        if computer_title:
             self.set(COMPUTER_TITLE, computer_title)
         self.set(HOSTED, ACCOUNT_NAME,
                  self._uisettings.get_hosted_account_name())
@@ -330,7 +342,7 @@ class InitialisedState(ConfigurationState):
     def _load_live_data(self):
         self._proxy.load(None)
         computer_title = self._proxy.computer_title
-        if computer_title not in ("", None):
+        if computer_title:
             self.set(COMPUTER_TITLE, computer_title)
         url = self._proxy.url
         if url.find(HOSTED_LANDSCAPE_HOST) > -1:

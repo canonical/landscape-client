@@ -75,8 +75,8 @@ class FakeGSettings(object):
                 "com.canonical.landscape-client-settings.gschema.xml"))
         root = tree.getroot()
         self.schema = root.find("schema")
-        assert(self.schema.attrib["id"] == \
-                   "com.canonical.landscape-client-settings")
+        assert(self.schema.attrib["id"] ==
+               "com.canonical.landscape-client-settings")
         self.keys = {}
         for key in self.schema.findall("key"):
             self.keys[key.attrib["name"]] = key.attrib["type"]

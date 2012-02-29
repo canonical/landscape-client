@@ -1,4 +1,10 @@
 class UISettings(object):
+    """
+    A very thin wrapper around L{GSettings} to avoid having to know the
+    L{BaseKey} and type information elsewhere.  In some future version it would
+    be right to bind to change events here so we can react to people changing
+    the settings in dconf, for now that is overkill.
+    """
 
     BASE_KEY = "com.canonical.landscape-client-settings"
 
@@ -49,24 +55,3 @@ class UISettings(object):
 
     def set_local_password(self, value):
         self.settings.set_string("local-password", value)
-
-    def _on_is_hosted_changed(self, settings, key):
-        pass
-
-    def _on_hosted_landscape_host_changed(self, settings, key):
-        pass
-
-    def _on_hosted_account_name_changed(self, settings, key):
-        pass
-
-    def _on_hosted_password_changed(self, settings, key):
-        pass
-
-    def _on_local_landscape_host_changed(self, settings, key):
-        pass
-
-    def _on_local_account_name_changed(self, settings, key):
-        pass
-
-    def _on_local_password_changed(self, settings, key):
-        pass
