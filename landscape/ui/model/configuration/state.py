@@ -88,11 +88,17 @@ class ConfigurationState(object):
         self._uisettings = uisettings
 
     def get(self, *args):
+        """
+        Retrieve only valid values from two level dictionary based tree.
+
+        This mainly served to pick up programming errors and could easily be
+        replaced with a simpler scheme.
+        """
         arglen = len(args)
         if arglen > 2 or arglen == 0:
             raise TypeError(
                 "get() takes either 1 or 2 keys (%d given)" % arglen)
-        if arglen == 2:
+        if arglen == 2:  # We're looking for a leaf on a branch
             sub_dict = None
             if args[0] in [HOSTED, LOCAL]:
                 sub_dict = self._data.get(args[0], {})
@@ -103,20 +109,26 @@ class ConfigurationState(object):
                     "returned from the first index was %s." %
                     sub_dict.__class__.__name__)
             return sub_dict.get(args[1], None)
-        else:
+        else: # we looking for a leaf at the root
             if args[0] in (IS_HOSTED, COMPUTER_TITLE):
                 return self._data.get(args[0], None)
             else:
                 raise KeyError("Key [%s] is invalid. " % args[0])
 
     def set(self, *args):
+        """
+        Set only valid values from two level dictionary based tree.
+
+        This mainly served to pick up programming errors and could easily be
+        replaced with a simpler scheme.
+        """
         arglen = len(args)
         if arglen < 2 or arglen > 3:
             raise TypeError("set() takes either 1 or 2 keys and exactly 1 " +
                             "value (%d arguments given)" % arglen)
-        if arglen == 2:
+        if arglen == 2: # We're setting a leaf attached to the root
             self._data[args[0]] = args[1]
-        else:
+        else: # We're setting a leaf on a branch
             sub_dict = None
             if args[0] in [HOSTED, LOCAL]:
                 sub_dict = self._data.get(args[0], {})
