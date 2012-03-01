@@ -14,8 +14,7 @@ class HardwareInfo(ManagerPlugin):
     command = "/usr/bin/lshw"
 
     def run(self):
-        return self.registry.broker.call_if_accepted(
-            self.message_type, self.send_message)
+        self.call_on_accepted(self.message_type, self.send_message)
 
     def send_message(self):
         result = getProcessOutput(

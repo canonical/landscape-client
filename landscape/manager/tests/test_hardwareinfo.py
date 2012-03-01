@@ -19,7 +19,7 @@ class HardwareInfoTests(LandscapeTest):
         """
         L{HardwareInfo} sends the output of its command when running.
         """
-        deferred = self.info.run()
+        deferred = self.info.send_message()
 
         def check(ignored):
             self.assertMessages(
