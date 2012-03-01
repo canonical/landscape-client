@@ -5,7 +5,9 @@ from landscape.ui.model.configuration.state import (
     ConfigurationModel, StateError, VirginState, InitialisedState,
     ModifiedState, IS_HOSTED, HOSTED, LOCAL, HOSTED_LANDSCAPE_HOST,
     LANDSCAPE_HOST, COMPUTER_TITLE)
-from landscape.ui.tests.helpers import ConfigurationProxyHelper, FakeGSettings
+from landscape.ui.tests.helpers import (
+    ConfigurationProxyHelper, FakeGSettings, dbus_test_should_skip,
+    dbus_skip_message)
 
 
 class ConfigurationModelTest(LandscapeTest):
@@ -16,25 +18,24 @@ class ConfigurationModelTest(LandscapeTest):
 
     helpers = [ConfigurationProxyHelper]
 
-    default_data = {"is-hosted": True,
-                    "computer-title": "",
-                    "hosted-landscape-host": "",
-                    "hosted-account-name": "",
-                    "hosted-password": "",
-                    "local-landscape-host": "",
-                    "local-account-name": "",
-                    "local-password": ""
-                    }
-
     def setUp(self):
+        self.default_data = {"is-hosted": True,
+                             "computer-title": "",
+                             "hosted-landscape-host": "",
+                             "hosted-account-name": "",
+                             "hosted-password": "",
+                             "local-landscape-host": "",
+                             "local-account-name": "",
+                             "local-password": ""
+                             }
         self.config_string = ""
         landscape.ui.model.configuration.state.DEFAULT_DATA[COMPUTER_TITLE] \
             = "bound.to.lose"
         super(ConfigurationModelTest, self).setUp()
 
-    def tearDown(self):
-        super(ConfigurationModelTest, self).tearDown()
-        self.proxy = None
+    # def tearDown(self):
+    #     super(ConfigurationModelTest, self).tearDown()
+    #     self.proxy = None
 
     def test_get(self):
         """
@@ -186,6 +187,10 @@ class ConfigurationModelTest(LandscapeTest):
         model.local_password = "foo"
         self.assertEqual("foo", model.local_password)
 
+    if dbus_test_should_skip:
+        print "Skip"
+        skip = dbus_skip_message
+
 
 class ConfigurationModelHostedTest(LandscapeTest):
     """
@@ -242,6 +247,9 @@ class ConfigurationModelHostedTest(LandscapeTest):
         self.assertEqual("CrazyHorse", model.local_account_name)
         self.assertEqual("boink", model.hosted_password)
 
+    if dbus_test_should_skip:
+        skip = dbus_skip_message
+
 
 class ConfigurationModelLocalTest(LandscapeTest):
 
@@ -288,6 +296,9 @@ class ConfigurationModelLocalTest(LandscapeTest):
         self.assertEqual("foo", model.local_account_name)
         self.assertEqual("Vivadixiesubmarinetransmissionplot",
                          model.hosted_password)
+
+    if dbus_test_should_skip:
+        skip = dbus_skip_message
 
 
 class StateTransitionTest(LandscapeTest):
@@ -488,6 +499,9 @@ class StateTransitionTest(LandscapeTest):
         self.assertEqual("ThomasHobbes", uisettings.get_local_account_name())
         self.assertEqual("TheLeviathan", uisettings.get_local_password())
 
+    if dbus_test_should_skip:
+        skip = dbus_skip_message
+
 
 class StateTransitionWithExistingConfigTest(LandscapeTest):
     """
@@ -542,3 +556,6 @@ class StateTransitionWithExistingConfigTest(LandscapeTest):
         self.assertEqual("http://the.local.machine/ping", self.proxy.ping_url)
         self.assertEqual("ThomasPaine", self.proxy.account_name)
         self.assertEqual("TheAgeOfReason", self.proxy.registration_password)
+
+    if dbus_test_should_skip:
+        skip = dbus_skip_message
