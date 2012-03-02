@@ -43,7 +43,7 @@ class ConfigControllerTest(LandscapeTest):
         settings = FakeGSettings(data=self.default_data)
         uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
-        
+
         def disable(on_suceed, on_fail):
             pass
 

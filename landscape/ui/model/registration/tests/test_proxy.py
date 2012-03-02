@@ -66,7 +66,6 @@ class RegistrationProxyTest(LandscapeTest):
         """
         self.assertEqual(True, self.proxy.disable())
 
-
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     try:
         bus = dbus.SessionBus(private=True)

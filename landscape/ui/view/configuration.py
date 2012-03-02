@@ -153,6 +153,3 @@ class ClientSettingsDialog(Gtk.Dialog):
     def revert(self, button):
         self.controller.revert()
         self.load_data()
-
-
-

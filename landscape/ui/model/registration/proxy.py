@@ -112,7 +112,6 @@ class RegistrationProxy(object):
         else:
             return self._interface.register(config_path)
 
-
     def disable(self, reply_handler=None, error_handler=None):
         self._register_handlers()
         if self._bus:

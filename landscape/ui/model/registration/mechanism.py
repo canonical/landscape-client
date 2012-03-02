@@ -121,9 +121,9 @@ class RegistrationMechanism(PolicyKitMechanism):
     def _do_disabling(self):
         cmd = ["landscape-config", "--disable"]
         try:
-            message = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+            subprocess.check_output(cmd, stderr=subprocess.STDOUT)
             return True
-        except subprocess.CalledProcessError, error:
+        except subprocess.CalledProcessError:
             return False
 
     @dbus.service.signal(dbus_interface=INTERFACE_NAME,

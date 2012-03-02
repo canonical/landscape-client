@@ -30,7 +30,7 @@ class MechanismTest(LandscapeTest):
         return _do_registration
 
     def make_disabling(self, suceed):
-        
+
         def _do_disabling(this):
             return suceed
 

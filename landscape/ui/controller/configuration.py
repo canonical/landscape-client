@@ -88,4 +88,3 @@ class ConfigController(object):
             registration.disable()
         else:
             fail_method("You do not have permission to connect the client.")
-        
