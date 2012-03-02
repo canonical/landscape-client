@@ -81,8 +81,7 @@ class ConfigController(object):
 
     def disable(self, succeed_method, fail_method):
         registration = RegistrationProxy(on_disable_succeed=succeed_method,
-                                         on_dirable_fail=fail_method)
-        self.commit()
+                                         on_disable_fail=fail_method)
         self.stop = False
 
         if registration.challenge():
