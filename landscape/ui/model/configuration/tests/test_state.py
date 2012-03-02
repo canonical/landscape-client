@@ -184,7 +184,6 @@ class ConfigurationModelTest(LandscapeTest):
         self.assertEqual("foo", model.local_password)
 
     if dbus_test_should_skip:
-        print "Skip"
         skip = dbus_skip_message
 
 
