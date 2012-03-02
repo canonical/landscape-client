@@ -29,6 +29,13 @@ class MechanismTest(LandscapeTest):
 
         return _do_registration
 
+    def make_disabling(self, suceed):
+        
+        def _do_disabling(this):
+            return suceed
+
+        return _do_disabling
+
     def test_registration_succeed(self):
         """
         Test we get appropriate feedback from a successful connection when we
@@ -47,6 +54,24 @@ class MechanismTest(LandscapeTest):
         self.mechanism = RegistrationMechanism(self.bus_name)
         self.assertEqual((False, "Failed to connect\n"),
                          self.mechanism.register("foo"))
+
+    def test_disabling_succeed(self):
+        """
+        Test we get True from a failed disabling when we call L{disable}
+        synchronously.
+        """
+        RegistrationMechanism._do_disabling = self.make_disabling(True)
+        self.mechanism = RegistrationMechanism(self.bus_name)
+        self.assertEqual(True, self.mechanism.disable())
+
+    def test_disabling_fail(self):
+        """
+        Test we get False from a failed disabling when we call L{disable}
+        synchronously.
+        """
+        RegistrationMechanism._do_disabling = self.make_disabling(False)
+        self.mechanism = RegistrationMechanism(self.bus_name)
+        self.assertEqual(False, self.mechanism.disable())
 
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     try:

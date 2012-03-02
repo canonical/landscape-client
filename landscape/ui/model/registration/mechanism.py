@@ -117,3 +117,43 @@ class RegistrationMechanism(PolicyKitMechanism):
                 message = "Failed to connect\n"
                 self.register_fail(message)
                 return (False, message)
+
+    def _do_disabling(self):
+        cmd = ["landscape-config", "--disable"]
+        try:
+            message = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+            return True
+        except subprocess.CalledProcessError, error:
+            return False
+
+    @dbus.service.signal(dbus_interface=INTERFACE_NAME,
+                         signature='')
+    def disable_succeed(self):
+        """
+        L{disable_succeed} is a signal sent to subscribers.  It is not
+        necessary for any actual work to occur in the method as it is called
+        for the effect of invoking its decorator.
+        """
+
+    @dbus.service.signal(dbus_interface=INTERFACE_NAME,
+                         signature='')
+    def disable_fail(self):
+        """
+        L{disable_fail} is a signal sent to subscribers.  It is not
+        necessary for any actual work to occur in the method as it is called
+        for the effect of invoking its decorator.
+        """
+
+    @dbus.service.method(INTERFACE_NAME,
+                         in_signature="",
+                         out_signature="b",
+                         sender_keyword="sender",
+                         connection_keyword="conn")
+    def disable(self, sender=None, conn=None):
+        if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
+            if self._do_disabling():
+                self.disable_succeed()
+                return True
+            else:
+                self.disable_fail()
+                return False
