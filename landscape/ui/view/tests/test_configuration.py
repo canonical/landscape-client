@@ -226,8 +226,8 @@ class ConfigurationViewPersistTest(LandscapeTest):
         def persist():
             self.persisted = True
 
-        self.model.persist = persist
         self.controller = ConfigController(self.model)
+        self.controller.persist = persist
         self.dialog = ClientSettingsDialog(self.controller)
 
     def tearDown(self):
@@ -246,7 +246,7 @@ class ConfigurationViewPersistTest(LandscapeTest):
         self.dialog.use_type_combobox.set_active(2)
         while Gtk.events_pending():
             Gtk.main_iteration()
-        self.dialog.persist()
+        self.controller.persist()
         self.assertTrue(self.persisted)
 
     def test_persist_hosted_account_name_change(self):

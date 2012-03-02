@@ -154,5 +154,5 @@ class ClientSettingsDialog(Gtk.Dialog):
         self.controller.revert()
         self.load_data()
 
-    def persist(self):
-        self.controller.persist()
+
+

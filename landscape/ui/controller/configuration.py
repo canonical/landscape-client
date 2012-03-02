@@ -1,3 +1,4 @@
+from landscape.ui.constants import NOT_MANAGED
 from landscape.ui.model.registration.proxy import RegistrationProxy
 from landscape.ui.model.configuration.state import StateError
 
@@ -30,11 +31,14 @@ class ConfigController(object):
         # this test allows attributes to be set in the __init__ method
         if not '_initialised' in self.__dict__:
             return object.__setattr__(self, name, value)
-        try:
-            setattr(self._configuration, name, value)
-            self._configuration.modify()
-        except AttributeError:
+        if name in ConfigController.__dict__:
             return object.__setattr__(self, name, value)
+        else:
+            try:
+                setattr(self._configuration, name, value)
+                self._configuration.modify()
+            except AttributeError:
+                return object.__setattr__(self, name, value)
 
     def load(self):
         "Load the initial data from the configuration"
@@ -48,13 +52,17 @@ class ConfigController(object):
             # We probably don't care.
             pass
 
-    def commit(self):
+    def persist(self, on_notify, on_error, on_succeed, on_fail):
         "Persist settings via the configuration object."
         try:
             self._configuration.persist()
         except StateError:
             # We probably don't care.
             pass
+        if self._configuration.management_type == NOT_MANAGED:
+            self.disable(on_succeed, on_fail)
+        else:
+            self.register(on_notify, on_error, on_succeed, on_fail)
 
     def register(self, notify_method, error_method, succeed_method,
                  fail_method):
@@ -63,7 +71,6 @@ class ConfigController(object):
                                          on_register_error=error_method,
                                          on_register_succeed=succeed_method,
                                          on_register_fail=fail_method)
-        self.commit()
         self.stop = False
 
         if registration.challenge():

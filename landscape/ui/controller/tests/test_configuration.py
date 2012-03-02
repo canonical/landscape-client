@@ -43,7 +43,16 @@ class ConfigControllerTest(LandscapeTest):
         settings = FakeGSettings(data=self.default_data)
         uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
+        
+        def disable(on_suceed, on_fail):
+            pass
+
+        def register(on_notify, on_error, on_succeed, on_fail):
+            pass
+
         self.controller = ConfigController(model)
+        self.controller.disable = disable
+        self.controller.register = register
         self.controller.load()
 
     def test_init(self):
@@ -135,7 +144,7 @@ class ConfigControllerTest(LandscapeTest):
         self.controller.registration_password = "HesAnIndianCowboyInTheRodeo"
         self.assertTrue(self.controller.is_modified)
 
-    def test_commit(self):
+    def test_persist(self):
         """
         Test that we can write configuration settings back to the config file.
         """
@@ -144,7 +153,7 @@ class ConfigControllerTest(LandscapeTest):
         self.controller.local_landscape_host = "landscape.localdomain"
         self.assertEqual("landscape.localdomain",
                          self.controller.local_landscape_host)
-        self.controller.commit()
+        self.controller.persist(None, None, None, None)
         self.assertEqual("landscape.localdomain",
                          self.controller.local_landscape_host)
         self.controller.local_landscape_host = "boo"
