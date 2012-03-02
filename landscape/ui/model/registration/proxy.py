@@ -10,14 +10,16 @@ class RegistrationProxy(object):
     code to remain agnostic to the implementation of registration.
     """
 
-    def __init__(self, on_notify, on_error,
-                 on_succeed, on_fail, bus=None):
+    def __init__(self, on_notify, on_error, on_succeed, on_fail,
+                 on_disable_succeed, on_disable_fail, bus=None):
         self._bus = None
         self._interface = None
         self._on_notify = on_notify
         self._on_error = on_error
         self._on_succeed = on_succeed
         self._on_fail = on_fail
+        self._on_disable_succeed = on_disable_succeed
+        self._on_disable_fail = on_disable_fail
         self._setup_interface(bus)
 
     def _setup_interface(self, bus):
@@ -67,6 +69,18 @@ class RegistrationProxy(object):
                 signal_name="register_fail",
                 dbus_interface=mechanism.INTERFACE_NAME,
                 bus_name=None,
+                path=mechanism.OBJECT_PATH),
+            self._bus.add_signal_receiver(
+                self._exit_handler_wrapper(self._on_disable_succeed),
+                signal_name="disable_succeed",
+                dbus_interface=mechanism.INTERFACE_NAME,
+                bus_name=None,
+                path=mechanism.OBJECT_PATH),
+            self._bus.add_signal_receiver(
+                self._exit_handler_wrapper(self._on_disable_fail),
+                signal_name="disable_fail",
+                dbus_interface=mechanism.INTERFACE_NAME,
+                bus_name=None,
                 path=mechanism.OBJECT_PATH)
             ]
 
@@ -85,3 +99,12 @@ class RegistrationProxy(object):
                                             error_handler=error_handler)
         else:
             return self._interface.register(config_path)
+
+
+    def disable(self, reply_handler=None, error_handler=None):
+        self._register_handlers()
+        if self._bus:
+            return self._interface.disable(reply_handler=reply_handler,
+                                           error_handler=error_handler)
+        else:
+            return self._interface.disable()

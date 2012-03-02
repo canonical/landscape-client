@@ -20,7 +20,11 @@ class RegistrationProxyTest(LandscapeTest):
         def _do_registration(this, config_path):
             return True
 
+        def _do_disabling(this):
+            return True
+
         RegistrationMechanism._do_registration = _do_registration
+        RegistrationMechanism._do_disabling = _do_disabling
         self.mechanism = RegistrationMechanism(bus_name)
 
         def setup_interface(this, bus):
@@ -41,7 +45,8 @@ class RegistrationProxyTest(LandscapeTest):
         RegistrationProxy._setup_interface = setup_interface
         RegistrationProxy._register_handlers = register_handlers
         RegistrationProxy._remove_handlers = remove_handlers
-        self.proxy = RegistrationProxy(callback, callback, callback, callback)
+        self.proxy = RegistrationProxy(callback, callback, callback, callback,
+                                       callback, callback)
 
     def tearDown(self):
         self.mechanism.remove_from_connection()
@@ -53,6 +58,14 @@ class RegistrationProxyTest(LandscapeTest):
         correctly performs registration.
         """
         self.assertEqual((True, "Connected\n"), self.proxy.register("foo"))
+
+    def test_disable(self):
+        """
+        Test that the proxy calls through to the underlying interface and
+        correctly performs disabling.
+        """
+        self.assertEqual(True, self.proxy.disable())
+
 
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     try:
