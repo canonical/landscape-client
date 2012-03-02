@@ -59,8 +59,10 @@ class ConfigController(object):
     def register(self, notify_method, error_method, succeed_method,
                  fail_method):
 
-        registration = RegistrationProxy(notify_method, error_method,
-                                         succeed_method, fail_method)
+        registration = RegistrationProxy(on_register_notify=notify_method,
+                                         on_register_error=error_method,
+                                         on_register_succeed=succeed_method,
+                                         on_register_fail=fail_method)
         self.commit()
         self.stop = False
 
@@ -69,3 +71,15 @@ class ConfigController(object):
                 self._configuration.get_config_filename())
         else:
             fail_method("You do not have permission to connect the client.")
+
+    def disable(self, succeed_method, fail_method):
+        registration = RegistrationProxy(on_disable_succeed=succeed_method,
+                                         on_dirable_fail=fail_method)
+        self.commit()
+        self.stop = False
+
+        if registration.challenge():
+            registration.disable()
+        else:
+            fail_method("You do not have permission to connect the client.")
+        
