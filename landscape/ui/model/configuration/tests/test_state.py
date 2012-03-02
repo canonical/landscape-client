@@ -33,10 +33,6 @@ class ConfigurationModelTest(LandscapeTest):
             = "bound.to.lose"
         super(ConfigurationModelTest, self).setUp()
 
-    # def tearDown(self):
-    #     super(ConfigurationModelTest, self).tearDown()
-    #     self.proxy = None
-
     def test_get(self):
         """
         Test that L{get} correctly extracts data from the internal data storage
