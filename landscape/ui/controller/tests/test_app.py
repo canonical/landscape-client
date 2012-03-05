@@ -9,6 +9,8 @@ if got_gobject_introspection:
     from landscape.ui.controller.app import SettingsApplicationController
     from landscape.ui.controller.configuration import ConfigController
     from landscape.ui.view.configuration import ClientSettingsDialog
+else:
+    SettingsApplicationController = object
 
 from landscape.tests.helpers import LandscapeTest
 
