@@ -1,7 +1,16 @@
-from landscape.ui.controller.configuration import (
-    ConfigController, ConfigControllerLockError)
-from landscape.ui.tests.helpers import (
-    ConfigurationProxyHelper, dbus_test_should_skip, dbus_skip_message)
+try:
+    from gi.repository import GObject
+    got_gobject_introspection = True
+except (ImportError, RuntimeError):
+    got_gobject_introspection = False
+    gobject_skip_message = "GObject Introspection module unavailable"
+    ConfigurationProxyHelper = object
+else:
+    from landscape.ui.controller.configuration import (
+        ConfigController, ConfigControllerLockError)
+    from landscape.ui.tests.helpers import (
+        ConfigurationProxyHelper, dbus_test_should_skip, dbus_skip_message)
+
 from landscape.tests.helpers import LandscapeTest
 
 
@@ -198,8 +207,11 @@ class ConfigControllerTest(LandscapeTest):
         self.controller.registration_password = "I Win"
         self.assertTrue(self.controller.is_modified)
 
-    if dbus_test_should_skip:
-        skip = dbus_skip_message
+    if not got_gobject_introspection:
+        skip = gobject_skip_message
+    else:
+        if dbus_test_should_skip:
+            skip = dbus_skip_message
 
 
 class EmptyConfigControllerTest(LandscapeTest):
@@ -256,5 +268,8 @@ class EmptyConfigControllerTest(LandscapeTest):
         """
         self.assertEqual("me.here.com", self.controller.computer_title)
 
-    if dbus_test_should_skip:
-        skip = dbus_skip_message
+    if not got_gobject_introspection:
+        skip = gobject_skip_message
+    else:
+        if dbus_test_should_skip:
+            skip = dbus_skip_message

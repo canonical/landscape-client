@@ -1,10 +1,18 @@
 import dbus
 
-from landscape.tests.helpers import LandscapeTest
-from landscape.ui.model.registration.mechanism import (
-    RegistrationMechanism, INTERFACE_NAME)
-from landscape.ui.model.registration.proxy import RegistrationProxy
+try:
+    from gi.repository import GObject
+    got_gobject_introspection = True
+except (ImportError, RuntimeError):
+    got_gobject_introspection = False
+    gobject_skip_message = "GObject Introspection module unavailable"
+else:
+   from landscape.ui.model.registration.mechanism import (
+        RegistrationMechanism, INTERFACE_NAME)
+   from landscape.ui.model.registration.proxy import RegistrationProxy
 
+from landscape.tests.helpers import LandscapeTest
+ 
 
 class RegistrationProxyTest(LandscapeTest):
     """
@@ -54,9 +62,12 @@ class RegistrationProxyTest(LandscapeTest):
         """
         self.assertEqual((True, "Connected\n"), self.proxy.register("foo"))
 
-    dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-    try:
-        bus = dbus.SessionBus(private=True)
-    except dbus.exceptions.DBusException:
-        test_register.skip = \
-            "Cannot launch private DBus session without X11"
+    if not got_gobject_introspection:
+        skip = gobject_skip_message
+    else:
+        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+        try:
+            bus = dbus.SessionBus(private=True)
+        except dbus.exceptions.DBusException:
+            test_register.skip = \
+                "Cannot launch private DBus session without X11"
