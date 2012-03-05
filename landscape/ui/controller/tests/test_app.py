@@ -1,22 +1,16 @@
 import sys
 
-try:
-    from gi.repository import Gtk, Gdk
-    got_gobject_introspection = True
-except (ImportError, RuntimeError):
-    got_gobject_introspection = False
-    gobject_skip_message = "GObject Introspection module unavailable"
-    SettingsApplicationController = object
-    ConfigurationProxyHelper = object
-    dbus_test_should_skip = True
-    dbus_skip_message = gobject_skip_message
-else:
+from landscape.ui.tests.helpers import (
+    ConfigurationProxyHelper, dbus_test_should_skip, dbus_skip_message,
+    got_gobject_introspection, gobject_skip_message)
+
+if got_gobject_introspection:
+    from gi.repository import Gtk
     from landscape.ui.controller.app import SettingsApplicationController
     from landscape.ui.controller.configuration import ConfigController
-    from landscape.ui.tests.helpers import (
-        ConfigurationProxyHelper, dbus_test_should_skip, dbus_skip_message)
     from landscape.ui.view.configuration import ClientSettingsDialog
-
+else:
+    SettingsApplicationController = object
 
 from landscape.tests.helpers import LandscapeTest
 
@@ -70,7 +64,7 @@ class SettingsApplicationControllerInitTest(LandscapeTest):
         self.assertTrue(app.is_connected("activate", app.setup_ui))
 
     if not got_gobject_introspection:
-        test_init.skip = gobject_skip_message
+        skip = gobject_skip_message
 
 
 class SettingsApplicationControllerUISetupTest(LandscapeTest):
@@ -124,6 +118,6 @@ class SettingsApplicationControllerUISetupTest(LandscapeTest):
                               ConfigController)
 
     if not got_gobject_introspection:
-        test_setup_ui.skip = gobject_skip_message
-    if dbus_test_should_skip:
+        skip = gobject_skip_message
+    elif dbus_test_should_skip:
         skip = dbus_skip_message

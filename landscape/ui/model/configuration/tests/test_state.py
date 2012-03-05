@@ -1,13 +1,15 @@
-from landscape.tests.helpers import LandscapeTest
 from landscape.ui.model.configuration.uisettings import UISettings
-import landscape.ui.model.configuration.state
-from landscape.ui.model.configuration.state import (
-    ConfigurationModel, StateError, VirginState, InitialisedState,
-    ModifiedState, IS_HOSTED, HOSTED, LOCAL, HOSTED_LANDSCAPE_HOST,
-    LANDSCAPE_HOST, COMPUTER_TITLE)
 from landscape.ui.tests.helpers import (
     ConfigurationProxyHelper, FakeGSettings, dbus_test_should_skip,
-    dbus_skip_message)
+    dbus_skip_message, gobject_skip_message, got_gobject_introspection)
+if got_gobject_introspection:
+    import landscape.ui.model.configuration.state
+    from landscape.ui.model.configuration.state import (
+        ConfigurationModel, StateError, VirginState, InitialisedState,
+        ModifiedState, IS_HOSTED, HOSTED, LOCAL, HOSTED_LANDSCAPE_HOST,
+        LANDSCAPE_HOST, COMPUTER_TITLE)
+
+from landscape.tests.helpers import LandscapeTest
 
 
 class ConfigurationModelTest(LandscapeTest):
@@ -183,7 +185,9 @@ class ConfigurationModelTest(LandscapeTest):
         model.local_password = "foo"
         self.assertEqual("foo", model.local_password)
 
-    if dbus_test_should_skip:
+    if not got_gobject_introspection:
+        skip = gobject_skip_message
+    elif dbus_test_should_skip:
         skip = dbus_skip_message
 
 
@@ -242,7 +246,9 @@ class ConfigurationModelHostedTest(LandscapeTest):
         self.assertEqual("CrazyHorse", model.local_account_name)
         self.assertEqual("boink", model.hosted_password)
 
-    if dbus_test_should_skip:
+    if not got_gobject_introspection:
+        skip = gobject_skip_message
+    elif dbus_test_should_skip:
         skip = dbus_skip_message
 
 
@@ -292,7 +298,9 @@ class ConfigurationModelLocalTest(LandscapeTest):
         self.assertEqual("Vivadixiesubmarinetransmissionplot",
                          model.hosted_password)
 
-    if dbus_test_should_skip:
+    if not got_gobject_introspection:
+        skip = gobject_skip_message
+    elif dbus_test_should_skip:
         skip = dbus_skip_message
 
 
@@ -494,7 +502,9 @@ class StateTransitionTest(LandscapeTest):
         self.assertEqual("ThomasHobbes", uisettings.get_local_account_name())
         self.assertEqual("TheLeviathan", uisettings.get_local_password())
 
-    if dbus_test_should_skip:
+    if not got_gobject_introspection:
+        skip = gobject_skip_message
+    elif dbus_test_should_skip:
         skip = dbus_skip_message
 
 
@@ -552,5 +562,7 @@ class StateTransitionWithExistingConfigTest(LandscapeTest):
         self.assertEqual("ThomasPaine", self.proxy.account_name)
         self.assertEqual("TheAgeOfReason", self.proxy.registration_password)
 
-    if dbus_test_should_skip:
+    if not got_gobject_introspection:
+        skip = gobject_skip_message
+    elif dbus_test_should_skip:
         skip = dbus_skip_message

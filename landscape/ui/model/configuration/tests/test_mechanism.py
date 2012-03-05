@@ -2,8 +2,11 @@ import dbus
 
 from landscape.configuration import LandscapeSetupConfiguration
 from landscape.tests.helpers import LandscapeTest
-from landscape.ui.model.configuration.mechanism import (
-    ConfigurationMechanism, INTERFACE_NAME)
+from landscape.ui.tests.helpers import (
+    got_gobject_introspection, gobject_skip_message)
+if got_gobject_introspection:
+    from landscape.ui.model.configuration.mechanism import (
+        ConfigurationMechanism, INTERFACE_NAME)
 
 
 class MechanismTest(LandscapeTest):
@@ -171,8 +174,11 @@ class MechanismTest(LandscapeTest):
         self.mechanism.set("https_proxy", "bar")
         self.assertEqual("bar", self.mechanism.get("https_proxy"))
 
-    dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-    try:
-        bus = dbus.SessionBus(private=True)
-    except dbus.exceptions.DBusException:
-        skip = "Cannot create private DBus session without X11"
+    if not got_gobject_introspection:
+        skip = gobject_skip_message
+    else:
+        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+        try:
+            bus = dbus.SessionBus(private=True)
+        except dbus.exceptions.DBusException:
+            skip = "Cannot create private DBus session without X11"
