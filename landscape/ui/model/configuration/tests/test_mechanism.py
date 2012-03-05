@@ -1,12 +1,12 @@
 import dbus
 
-from landscape.ui.model.configuration.mechanism import (
-    ConfigurationMechanism, INTERFACE_NAME)
-
 from landscape.configuration import LandscapeSetupConfiguration
 from landscape.tests.helpers import LandscapeTest
 from landscape.ui.tests.helpers import (
     got_gobject_introspection, gobject_skip_message)
+if got_gobject_introspection:
+    from landscape.ui.model.configuration.mechanism import (
+        ConfigurationMechanism, INTERFACE_NAME)
 
 
 class MechanismTest(LandscapeTest):

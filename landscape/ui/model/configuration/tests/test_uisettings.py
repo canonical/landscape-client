@@ -1,14 +1,8 @@
-# try:
-#     from gi.repository import GObject
-#     got_gobject_introspection = True
-# except (ImportError, RuntimeError):
-#     got_gobject_introspection = False
-#     gobject_skip_message = "GObject Introspection module unavailable"
-# else:
-from landscape.ui.tests.helpers import FakeGSettings
 
 from landscape.tests.helpers import LandscapeTest
 from landscape.ui.model.configuration.uisettings import UISettings
+from landscape.ui.tests.helpers import (
+    FakeGSettings, got_gobject_introspection, gobject_skip_message)
 
 
 class UISettingsTest(LandscapeTest):
