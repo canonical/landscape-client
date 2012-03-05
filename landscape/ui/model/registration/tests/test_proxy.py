@@ -1,11 +1,12 @@
 import dbus
 
-from landscape.ui.model.registration.mechanism import (
-    RegistrationMechanism, INTERFACE_NAME)
-from landscape.ui.model.registration.proxy import RegistrationProxy
 from landscape.tests.helpers import LandscapeTest
 from landscape.ui.tests.helpers import (
     got_gobject_introspection, gobject_skip_message)
+if got_gobject_introspection:
+    from landscape.ui.model.registration.mechanism import (
+        RegistrationMechanism, INTERFACE_NAME)
+    from landscape.ui.model.registration.proxy import RegistrationProxy
 
 
 class RegistrationProxyTest(LandscapeTest):
