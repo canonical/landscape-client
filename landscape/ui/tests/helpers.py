@@ -4,10 +4,6 @@ from lxml import etree
 import dbus
 
 from landscape.configuration import LandscapeSetupConfiguration
-from landscape.ui.model.configuration.mechanism import (
-    INTERFACE_NAME, ConfigurationMechanism)
-from landscape.ui.model.configuration.proxy import ConfigurationProxy
-
 
 try:
     from gi.repository import GObject
@@ -33,6 +29,12 @@ except dbus.exceptions.DBusException:
     dbus_test_should_skip = True
 
 
+if got_gobject_introspection:
+    from landscape.ui.model.configuration.mechanism import (
+        INTERFACE_NAME, ConfigurationMechanism)
+    from landscape.ui.model.configuration.proxy import ConfigurationProxy
+
+
 class ConfigurationProxyHelper(object):
     """
     L{ConfigurationProxyHelper} will provide it's test case with a
@@ -53,14 +55,17 @@ class ConfigurationProxyHelper(object):
             test_case.config.default_config_filenames = \
                 [test_case.config_filename]
 
-            test_case.mechanism = ConfigurationMechanism(test_case.config,
-                                                         bus_name)
+            if got_gobject_introspection:
+                test_case.mechanism = ConfigurationMechanism(test_case.config,
+                                                             bus_name)
 
-            test_case.proxy = ConfigurationProxy(interface=test_case.mechanism)
-            test_case.proxy.load(["-c", test_case.config_filename])
+                test_case.proxy = ConfigurationProxy(
+                    interface=test_case.mechanism)
+                test_case.proxy.load(["-c", test_case.config_filename])
+                
 
     def tear_down(self, test_case):
-        if not dbus_test_should_skip:
+        if not dbus_test_should_skip and got_gobject_introspection:
             test_case.mechanism.remove_from_connection()
 
 
