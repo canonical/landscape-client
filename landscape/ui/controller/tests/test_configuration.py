@@ -1,8 +1,9 @@
-from landscape.ui.controller.configuration import (
-    ConfigController, ConfigControllerLockError)
 from landscape.ui.tests.helpers import (
     ConfigurationProxyHelper, dbus_test_should_skip, dbus_skip_message,
     got_gobject_introspection, gobject_skip_message)
+if got_gobject_introspection:
+    from landscape.ui.controller.configuration import (
+        ConfigController, ConfigControllerLockError)
 
 from landscape.tests.helpers import LandscapeTest
 
