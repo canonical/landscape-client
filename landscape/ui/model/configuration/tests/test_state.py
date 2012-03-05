@@ -185,10 +185,10 @@ class ConfigurationModelTest(LandscapeTest):
         model.local_password = "foo"
         self.assertEqual("foo", model.local_password)
 
-    if dbus_test_should_skip:
-        skip = dbus_skip_message
     if not got_gobject_introspection:
         skip = gobject_skip_message
+    elif dbus_test_should_skip:
+        skip = dbus_skip_message
 
 
 class ConfigurationModelHostedTest(LandscapeTest):
@@ -246,10 +246,10 @@ class ConfigurationModelHostedTest(LandscapeTest):
         self.assertEqual("CrazyHorse", model.local_account_name)
         self.assertEqual("boink", model.hosted_password)
 
-    if dbus_test_should_skip:
-        skip = dbus_skip_message
     if not got_gobject_introspection:
         skip = gobject_skip_message
+    elif dbus_test_should_skip:
+        skip = dbus_skip_message
 
 
 class ConfigurationModelLocalTest(LandscapeTest):
@@ -298,10 +298,10 @@ class ConfigurationModelLocalTest(LandscapeTest):
         self.assertEqual("Vivadixiesubmarinetransmissionplot",
                          model.hosted_password)
 
-    if dbus_test_should_skip:
-        skip = dbus_skip_message
     if not got_gobject_introspection:
         skip = gobject_skip_message
+    elif dbus_test_should_skip:
+        skip = dbus_skip_message
 
 
 class StateTransitionTest(LandscapeTest):
@@ -502,10 +502,10 @@ class StateTransitionTest(LandscapeTest):
         self.assertEqual("ThomasHobbes", uisettings.get_local_account_name())
         self.assertEqual("TheLeviathan", uisettings.get_local_password())
 
-    if dbus_test_should_skip:
-        skip = dbus_skip_message
     if not got_gobject_introspection:
         skip = gobject_skip_message
+    elif dbus_test_should_skip:
+        skip = dbus_skip_message
 
 
 class StateTransitionWithExistingConfigTest(LandscapeTest):
@@ -562,7 +562,7 @@ class StateTransitionWithExistingConfigTest(LandscapeTest):
         self.assertEqual("ThomasPaine", self.proxy.account_name)
         self.assertEqual("TheAgeOfReason", self.proxy.registration_password)
 
-    if dbus_test_should_skip:
-        skip = dbus_skip_message
     if not got_gobject_introspection:
         skip = gobject_skip_message
+    elif dbus_test_should_skip:
+        skip = dbus_skip_message

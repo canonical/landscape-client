@@ -203,9 +203,8 @@ class ConfigControllerTest(LandscapeTest):
 
     if not got_gobject_introspection:
         skip = gobject_skip_message
-    else:
-        if dbus_test_should_skip:
-            skip = dbus_skip_message
+    elif dbus_test_should_skip:
+        skip = dbus_skip_message
 
 
 class EmptyConfigControllerTest(LandscapeTest):
@@ -264,6 +263,5 @@ class EmptyConfigControllerTest(LandscapeTest):
 
     if not got_gobject_introspection:
         skip = gobject_skip_message
-    else:
-        if dbus_test_should_skip:
-            skip = dbus_skip_message
+    elif dbus_test_should_skip:
+        skip = dbus_skip_message
