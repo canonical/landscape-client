@@ -1,14 +1,14 @@
-try:
-    from gi.repository import GObject
-    got_gobject_introspection = True
-except (ImportError, RuntimeError):
-    got_gobject_introspection = False
-    gobject_skip_message = "GObject Introspection module unavailable"
-else:
-    from landscape.ui.model.configuration.uisettings import UISettings
-    from landscape.ui.tests.helpers import FakeGSettings    
+# try:
+#     from gi.repository import GObject
+#     got_gobject_introspection = True
+# except (ImportError, RuntimeError):
+#     got_gobject_introspection = False
+#     gobject_skip_message = "GObject Introspection module unavailable"
+# else:
+from landscape.ui.tests.helpers import FakeGSettings    
 
 from landscape.tests.helpers import LandscapeTest
+from landscape.ui.model.configuration.uisettings import UISettings
 
 
 class UISettingsTest(LandscapeTest):
@@ -24,8 +24,9 @@ class UISettingsTest(LandscapeTest):
                     }
     
     def setUp(self):
+        super(UISettingsTest, self).setUp()
         self.settings = FakeGSettings(data=self.default_data)
-        self.uisettings = UISettings(self.settings)     
+        self.uisettings = UISettings(self.settings)
 
     def test_setup(self):
         """
@@ -168,5 +169,5 @@ class UISettingsTest(LandscapeTest):
         self.uisettings.set_local_password("Bang")
         self.assertEqual("Bang", self.uisettings.get_local_password())
         
-    if not got_gobject_introspection:
-        skip = gobject_skip_message
+    # if not got_gobject_introspection:
+    #     skip = gobject_skip_message
