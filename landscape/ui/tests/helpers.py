@@ -5,6 +5,7 @@ import dbus
 
 from landscape.configuration import LandscapeSetupConfiguration
 
+dbus_skip_message = "Cannot launch private DBus session without X11"
 try:
     from gi.repository import GObject
     got_gobject_introspection = True
@@ -28,7 +29,6 @@ if got_gobject_introspection:
     # it without a mainloop.
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     dbus_test_should_skip = False
-    dbus_skip_message = "Cannot launch private DBus session without X11"
     try:
         bus = dbus.SessionBus(private=True)
         bus_name = dbus.service.BusName(INTERFACE_NAME, bus)
