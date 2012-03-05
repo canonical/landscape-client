@@ -18,8 +18,6 @@ except (ImportError, RuntimeError):
     dbus_test_should_skip = True
 
 
-
-
 if got_gobject_introspection:
     from landscape.ui.model.configuration.mechanism import (
         INTERFACE_NAME, ConfigurationMechanism)
@@ -65,7 +63,6 @@ class ConfigurationProxyHelper(object):
                 test_case.proxy = ConfigurationProxy(
                     interface=test_case.mechanism)
                 test_case.proxy.load(["-c", test_case.config_filename])
-                
 
     def tear_down(self, test_case):
         if not dbus_test_should_skip and got_gobject_introspection:

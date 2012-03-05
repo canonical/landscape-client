@@ -164,5 +164,5 @@ class UISettingsTest(LandscapeTest):
         self.uisettings.set_local_password("Bang")
         self.assertEqual("Bang", self.uisettings.get_local_password())
 
-    # if not got_gobject_introspection:
-    #     skip = gobject_skip_message
+    if not got_gobject_introspection:
+        skip = gobject_skip_message
