@@ -5,7 +5,7 @@
 #     got_gobject_introspection = False
 #     gobject_skip_message = "GObject Introspection module unavailable"
 # else:
-from landscape.ui.tests.helpers import FakeGSettings    
+from landscape.ui.tests.helpers import FakeGSettings
 
 from landscape.tests.helpers import LandscapeTest
 from landscape.ui.model.configuration.uisettings import UISettings
@@ -22,7 +22,7 @@ class UISettingsTest(LandscapeTest):
                     "local-account-name": "CrazyHorse",
                     "local-password": "RustNeverSleeps"
                     }
-    
+
     def setUp(self):
         super(UISettingsTest, self).setUp()
         self.settings = FakeGSettings(data=self.default_data)
@@ -93,7 +93,8 @@ class UISettingsTest(LandscapeTest):
         Test that L{set_hosted_account_name} correctly sets the value of
         L{hosted_account_name} in the L{GSettings.Client}.
         """
-        self.assertEqual("Sparklehorse", self.uisettings.get_hosted_account_name())
+        self.assertEqual("Sparklehorse",
+                         self.uisettings.get_hosted_account_name())
         self.uisettings.set_hosted_account_name("Bang")
         self.assertEqual("Bang", self.uisettings.get_hosted_account_name())
 
@@ -168,6 +169,6 @@ class UISettingsTest(LandscapeTest):
                          self.uisettings.get_local_password())
         self.uisettings.set_local_password("Bang")
         self.assertEqual("Bang", self.uisettings.get_local_password())
-        
+
     # if not got_gobject_introspection:
     #     skip = gobject_skip_message

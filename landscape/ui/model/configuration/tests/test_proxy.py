@@ -1,15 +1,7 @@
-try:
-    from gi.repository import GObject
-    got_gobject_introspection = True
-except (ImportError, RuntimeError):
-    got_gobject_introspection = False
-    gobject_skip_message = "GObject Introspection module unavailable"
-    ConfigurationProxyHelper = object
-else:
-    from landscape.configuration import LandscapeSetupConfiguration
-    from landscape.ui.tests.helpers import (
-        ConfigurationProxyHelper, dbus_test_should_skip, dbus_skip_message)
-
+from landscape.configuration import LandscapeSetupConfiguration
+from landscape.ui.tests.helpers import (
+    ConfigurationProxyHelper, dbus_test_should_skip, dbus_skip_message,
+    got_gobject_introspection, gobject_skip_message)
 from landscape.tests.helpers import LandscapeTest
 
 

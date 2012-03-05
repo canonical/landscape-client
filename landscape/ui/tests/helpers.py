@@ -9,6 +9,15 @@ from landscape.ui.model.configuration.mechanism import (
 from landscape.ui.model.configuration.proxy import ConfigurationProxy
 
 
+try:
+    from gi.repository import GObject
+    got_gobject_introspection = True
+    gobject_skip_message = GObject._version  # Shut up pyflakes
+except (ImportError, RuntimeError):
+    got_gobject_introspection = False
+    gobject_skip_message = "GObject Introspection module unavailable"
+
+
 # We have to do these steps because the ConfigurationMechanism inherits
 # from dbus.service.Object which throws a fit if it notices you using
 # it without a mainloop.

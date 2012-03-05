@@ -1,18 +1,12 @@
 import dbus
 
-try:
-    from gi.repository import GObject
-    got_gobject_introspection = True
-except (ImportError, RuntimeError):
-    got_gobject_introspection = False
-    gobject_skip_message = "GObject Introspection module unavailable"
-else:
-   from landscape.ui.model.registration.mechanism import (
-        RegistrationMechanism, INTERFACE_NAME)
-   from landscape.ui.model.registration.proxy import RegistrationProxy
-
+from landscape.ui.model.registration.mechanism import (
+    RegistrationMechanism, INTERFACE_NAME)
+from landscape.ui.model.registration.proxy import RegistrationProxy
 from landscape.tests.helpers import LandscapeTest
- 
+from landscape.ui.tests.helpers import (
+    got_gobject_introspection, gobject_skip_message)
+
 
 class RegistrationProxyTest(LandscapeTest):
     """

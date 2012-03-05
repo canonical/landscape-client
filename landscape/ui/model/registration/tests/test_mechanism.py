@@ -1,16 +1,10 @@
 import dbus
 
-try:
-    from gi.repository import GObject
-    got_gobject_introspection = True
-except (ImportError, RuntimeError):
-    got_gobject_introspection = False
-    gobject_skip_message = "GObject Introspection module unavailable"
-else:
-    from landscape.ui.model.registration.mechanism import (
-        RegistrationMechanism, INTERFACE_NAME)
-
+from landscape.ui.model.registration.mechanism import (
+    RegistrationMechanism, INTERFACE_NAME)
 from landscape.tests.helpers import LandscapeTest
+from landscape.ui.tests.helpers import (
+    got_gobject_introspection, gobject_skip_message)
 
 
 class MechanismTest(LandscapeTest):
@@ -66,4 +60,3 @@ class MechanismTest(LandscapeTest):
             skip_string = "Cannot launch private DBus session without X11"
             test_registration_succeed.skip = skip_string
             test_registration_fail.skip = skip_string
-
