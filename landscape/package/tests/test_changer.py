@@ -1267,25 +1267,59 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
 
-    def test_change_package_holds_with_identical_vesion(self):
+    def test_create_package_holds_with_identical_version(self):
         """
-        The L{PackageChanger.handle_tasks} method appropriately creates and
-        deletes package holds as requested by the C{change-package-holds}
-        message even when versions from two different packages are the same.
+        The L{PackageChanger.handle_tasks} method appropriately creates
+        holds as requested by the C{change-package-holds} message even
+        when versions from two different packages are the same.
         """
         self._add_system_package("foo", version="1.1")
         self._add_system_package("bar", version="1.1")
         self.facade.reload_channels()
+        self._hash_packages_by_name(self.facade, self.store, "foo")
+        self._hash_packages_by_name(self.facade, self.store, "bar")
+        [foo] = self.facade.get_packages_by_name("foo")
+        [bar] = self.facade.get_packages_by_name("bar")
+        self.facade.reload_channels()
+        self.store.add_task("changer", {"type": "change-package-holds",
+                                        "create": [foo.package.id,
+                                                   bar.package.id],
+                                        "operation-id": 123})
+
+        def assert_result(result):
+            [hold1, hold2] = self.facade.get_package_holds()
+            self.assertEqual("foo", hold1.name)
+            self.assertEqual("bar", hold2.name)
+
+        result = self.changer.handle_tasks()
+        return result.addCallback(assert_result)
+
+    def test_delete_package_holds_with_identical_version(self):
+        """
+        The L{PackageChanger.handle_tasks} method appropriately deletes
+        holds as requested by the C{change-package-holds} message even
+        when versions from two different packages are the same.
+        """
+        self._add_system_package("foo", version="1.1")
+        self._add_system_package("bar", version="1.1")
+        self.facade.reload_channels()
+        self._hash_packages_by_name(self.facade, self.store, "foo")
+        self._hash_packages_by_name(self.facade, self.store, "bar")
         [foo] = self.facade.get_packages_by_name("foo")
         [bar] = self.facade.get_packages_by_name("bar")
         self.facade.set_package_hold(foo)
         self.facade.set_package_hold(bar)
         self.facade.reload_channels()
-        [hold1, hold2] = self.facade.get_package_holds()
-        self.assertEqual(foo.package.id, hold1.id)
-        self.assertEqual(foo.package.name, hold1.name)
-        self.assertEqual(bar.package.id, hold2.id)
-        self.assertEqual(bar.package.name, hold2.name)
+        self.store.add_task("changer", {"type": "change-package-holds",
+                                        "delete": [foo.package.id,
+                                                   bar.package.id],
+                                        "operation-id": 123})
+
+        def assert_result(result):
+            self.assertEqual([], self.facade.get_package_holds())
+
+        result = self.changer.handle_tasks()
+        return result.addCallback(assert_result)
 
     def test_change_package_holds_create_not_installed(self):
         """

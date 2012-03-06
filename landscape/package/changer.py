@@ -334,7 +334,7 @@ class PackageChanger(PackageTaskHandler):
             hash = self._store.get_id_hash(id)
             hold_version = self._facade.get_package_by_hash(hash)
             if hold_version and hold_version.package.installed:
-                versions_to_create.add(hold_version)
+                versions_to_create.add((hold_version.package, hold_version))
             else:
                 not_installed.add(str(id))
         holds_to_remove = message.get("delete", [])
@@ -343,7 +343,7 @@ class PackageChanger(PackageTaskHandler):
             hash = self._store.get_id_hash(id)
             hold_version = self._facade.get_package_by_hash(hash)
             if hold_version and hold_version.package.installed:
-                versions_to_remove.add(hold_version)
+                versions_to_remove.add((hold_version.package, hold_version))
             else:
                 not_installed.add(str(id))
         if not_installed:
@@ -357,9 +357,9 @@ class PackageChanger(PackageTaskHandler):
                 "result-code": 1}
             return self._send_change_package_holds_response(response)
 
-        for hold_version in versions_to_create:
+        for package, hold_version in versions_to_create:
             self._facade.set_package_hold(hold_version)
-        for hold_version in versions_to_remove:
+        for package, hold_version in versions_to_remove:
             self._facade.remove_package_hold(hold_version)
 
         self._facade.reload_channels()
