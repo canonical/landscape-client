@@ -34,9 +34,10 @@ class ConfigController(object):
             return object.__setattr__(self, name, value)
         try:
             setattr(self._configuration, name, value)
-            self._configuration.modify()
         except AttributeError:
             return object.__setattr__(self, name, value)
+        else:
+            self._configuration.modify()
 
     def load(self):
         "Load the initial data from the configuration"
