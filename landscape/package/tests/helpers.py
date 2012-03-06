@@ -30,6 +30,7 @@ class AptFacadeHelper(object):
         test_case._install_deb_file = self._install_deb_file
         test_case._add_package_to_deb_dir = self._add_package_to_deb_dir
         test_case._touch_packages_file = self._touch_packages_file
+        test_case._hash_packages_by_name = self._hash_packages_by_name
 
     def _add_package(self, packages_file, name, architecture="all",
                      version="1.0", control_fields=None):
@@ -97,6 +98,20 @@ class AptFacadeHelper(object):
         packages_path = os.path.join(deb_dir, "Packages")
         mtime = int(time.time() + 1)
         os.utime(packages_path, (mtime, mtime))
+
+    def _hash_packages_by_name(self, facade, store, package_name):
+        """
+        Ensure the named L{Package} is correctly recorded in the store so that
+        we can really test the functions of the facade that depend on it.
+        """
+        hash_ids = {}
+        for version in facade.get_packages_by_name(package_name):
+            skeleton = facade.get_package_skeleton(
+                version, with_info=False)
+            hash = skeleton.get_hash()
+            facade._pkg2hash[(version.package, version)] = hash
+            hash_ids[hash] = version.package.id
+        store.set_hash_ids(hash_ids)
 
 
 class SimpleRepositoryHelper(object):

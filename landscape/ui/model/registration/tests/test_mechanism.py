@@ -1,8 +1,11 @@
 import dbus
 
 from landscape.tests.helpers import LandscapeTest
-from landscape.ui.model.registration.mechanism import (
-    RegistrationMechanism, INTERFACE_NAME)
+from landscape.ui.tests.helpers import (
+    got_gobject_introspection, gobject_skip_message)
+if got_gobject_introspection:
+    from landscape.ui.model.registration.mechanism import (
+        RegistrationMechanism, INTERFACE_NAME)
 
 
 class MechanismTest(LandscapeTest):
@@ -73,10 +76,13 @@ class MechanismTest(LandscapeTest):
         self.mechanism = RegistrationMechanism(self.bus_name)
         self.assertEqual(False, self.mechanism.disable())
 
-    dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-    try:
-        bus = dbus.SessionBus(private=True)
-    except dbus.exceptions.DBusException:
-        skip_string = "Cannot launch private DBus session without X11"
-        test_registration_succeed.skip = skip_string
-        test_registration_fail.skip = skip_string
+    if not got_gobject_introspection:
+        skip = gobject_skip_message
+    else:
+        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+        try:
+            bus = dbus.SessionBus(private=True)
+        except dbus.exceptions.DBusException:
+            skip_string = "Cannot launch private DBus session without X11"
+            test_registration_succeed.skip = skip_string
+            test_registration_fail.skip = skip_string

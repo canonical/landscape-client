@@ -12,6 +12,7 @@ from landscape.lib.fetch import fetch_async
 from landscape.lib.fs import touch_file
 from landscape.lib import bpickle
 
+from landscape.package.facade import AptFacade
 from landscape.package.taskhandler import (
     PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler)
 from landscape.package.store import UnknownHashIDRequest, FakePackageStore
@@ -56,7 +57,7 @@ class PackageReporter(PackageTaskHandler):
     def run(self):
         result = Deferred()
 
-        if os.environ.get("USE_APT_FACADE"):
+        if isinstance(self._facade, AptFacade):
             # Update APT cache if APT facade is enabled.
             result.addCallback(lambda x: self.run_apt_update())
         else:

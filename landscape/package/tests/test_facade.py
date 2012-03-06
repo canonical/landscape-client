@@ -767,7 +767,7 @@ class AptFacadeTest(LandscapeTest):
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
-        foo = self.facade.get_packages_by_name("foo")[0]
+        [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_install(foo)
         fetch_item = FakeFetchItem(
             FakeOwner(1234, error_text="Some error"), "foo package")
@@ -800,7 +800,7 @@ class AptFacadeTest(LandscapeTest):
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
-        foo = self.facade.get_packages_by_name("foo")[0]
+        [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_install(foo)
 
         def print_output(fetch_progress, install_progress):
@@ -825,7 +825,7 @@ class AptFacadeTest(LandscapeTest):
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
-        foo = self.facade.get_packages_by_name("foo")[0]
+        [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_install(foo)
 
         def commit(fetch_progress, install_progress):
@@ -1306,7 +1306,7 @@ class AptFacadeTest(LandscapeTest):
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
-        foo = self.facade.get_packages_by_name("foo")[0]
+        [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_install(foo)
 
         outfile = self._mock_output_restore()
@@ -1325,7 +1325,7 @@ class AptFacadeTest(LandscapeTest):
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
-        foo = self.facade.get_packages_by_name("foo")[0]
+        [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_install(foo)
 
         outfile = self._mock_output_restore()
@@ -1351,7 +1351,7 @@ class AptFacadeTest(LandscapeTest):
         self._add_system_package("baz")
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
-        foo = self.facade.get_packages_by_name("foo")[0]
+        [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_install(foo)
         self.facade.mark_global_upgrade()
         [baz] = self.facade.get_packages_by_name("baz")
@@ -1389,10 +1389,10 @@ class AptFacadeTest(LandscapeTest):
         create_deb(deb_dir, PKGNAME_MINIMAL, PKGDEB_MINIMAL)
         self.facade.add_channel_deb_dir(deb_dir)
         self.facade.reload_channels()
-        pkg = self.facade.get_packages_by_name("minimal")[0]
+        [pkg] = self.facade.get_packages_by_name("minimal")
         self.facade.mark_install(pkg)
         self.assertEqual(1, len(self.facade._version_installs))
-        install = self.facade._version_installs[0]
+        [install] = self.facade._version_installs
         self.assertEqual("minimal", install.package.name)
 
     def test_wb_mark_global_upgrade_sets_variable(self):
@@ -1623,7 +1623,7 @@ class AptFacadeTest(LandscapeTest):
         create_deb(deb_dir, PKGNAME_MINIMAL, PKGDEB_MINIMAL)
         self.facade.add_channel_deb_dir(deb_dir)
         self.facade.reload_channels()
-        pkg = self.facade.get_packages_by_name("minimal")[0]
+        [pkg] = self.facade.get_packages_by_name("minimal")
         self.facade.mark_install(pkg)
         self.patch_cache_commit(commit)
         self.committed = False
@@ -1639,7 +1639,7 @@ class AptFacadeTest(LandscapeTest):
         create_deb(deb_dir, PKGNAME_MINIMAL, PKGDEB_MINIMAL)
         self.facade.add_channel_deb_dir(deb_dir)
         self.facade.reload_channels()
-        pkg = self.facade.get_packages_by_name("minimal")[0]
+        [pkg] = self.facade.get_packages_by_name("minimal")
         self.facade.mark_install(pkg)
         self.patch_cache_commit()
         # An empty string is returned, since we don't call the progress
@@ -1768,7 +1768,7 @@ class AptFacadeTest(LandscapeTest):
         self.facade.add_channel_deb_dir(deb_dir)
         self.facade.reload_channels()
 
-        pkg = self.facade.get_packages_by_name("name1")[0]
+        [pkg] = self.facade.get_packages_by_name("name1")
         self.facade.mark_install(pkg)
         exception = self.assertRaises(TransactionError,
                                       self.facade.perform_changes)
@@ -2129,6 +2129,8 @@ class AptFacadeTest(LandscapeTest):
         self._add_system_package(
             "baz", control_fields={"Status": "hold ok installed"})
         self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        [baz] = self.facade.get_packages_by_name("baz")
 
         self.assertEqual(
             ["baz", "foo"], sorted(self.facade.get_package_holds()))
@@ -2139,7 +2141,8 @@ class AptFacadeTest(LandscapeTest):
         """
         self._add_system_package("foo")
         self.facade.reload_channels()
-        self.facade.set_package_hold("foo")
+        [foo] = self.facade.get_packages_by_name("foo")
+        self.facade.set_package_hold(foo)
         self.facade.reload_channels()
 
         self.assertEqual(["foo"], self.facade.get_package_holds())
@@ -2152,7 +2155,8 @@ class AptFacadeTest(LandscapeTest):
         self._add_system_package(
             "foo", control_fields={"Status": "hold ok installed"})
         self.facade.reload_channels()
-        self.facade.set_package_hold("foo")
+        [foo] = self.facade.get_packages_by_name("foo")
+        self.facade.set_package_hold(foo)
         self.facade.reload_channels()
 
         self.assertEqual(["foo"], self.facade.get_package_holds())
@@ -2164,7 +2168,8 @@ class AptFacadeTest(LandscapeTest):
         self._add_system_package(
             "foo", control_fields={"Status": "hold ok installed"})
         self.facade.reload_channels()
-        self.facade.remove_package_hold("foo")
+        [foo] = self.facade.get_packages_by_name("foo")
+        self.facade.remove_package_hold(foo)
         self.facade.reload_channels()
 
         self.assertEqual([], self.facade.get_package_holds())
@@ -2176,8 +2181,12 @@ class AptFacadeTest(LandscapeTest):
         package exist, if it's important.
         """
         self._add_system_package("foo")
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "bar")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
-        self.facade.remove_package_hold("bar")
+        [bar] = self.facade.get_packages_by_name("bar")
+        self.facade.remove_package_hold(bar)
         self.facade.reload_channels()
 
         self.assertEqual([], self.facade.get_package_holds())
@@ -2190,7 +2199,8 @@ class AptFacadeTest(LandscapeTest):
         self._add_system_package(
             "foo", control_fields={"Status": "deinstall ok installed"})
         self.facade.reload_channels()
-        self.facade.remove_package_hold("foo")
+        [foo] = self.facade.get_packages_by_name("foo")
+        self.facade.remove_package_hold(foo)
         self.facade.reload_channels()
 
         self.assertEqual([], self.facade.get_package_holds())
@@ -2268,8 +2278,8 @@ class SmartFacadeTest(LandscapeTest):
 
     def test_get_package_skeleton(self):
         self.facade.reload_channels()
-        pkg1 = self.facade.get_packages_by_name("name1")[0]
-        pkg2 = self.facade.get_packages_by_name("name2")[0]
+        [pkg1] = self.facade.get_packages_by_name("name1")
+        [pkg2] = self.facade.get_packages_by_name("name2")
         skeleton1 = self.facade.get_package_skeleton(pkg1)
         skeleton2 = self.facade.get_package_skeleton(pkg2)
         self.assertEqual(skeleton1.get_hash(), HASH1)
@@ -2277,7 +2287,7 @@ class SmartFacadeTest(LandscapeTest):
 
     def test_build_skeleton_with_info(self):
         self.facade.reload_channels()
-        pkg = self.facade.get_packages_by_name("name1")[0]
+        [pkg] = self.facade.get_packages_by_name("name1")
         skeleton = self.facade.get_package_skeleton(pkg, True)
         self.assertEqual(skeleton.section, "Group1")
         self.assertEqual(skeleton.summary, "Summary1")
@@ -2287,9 +2297,9 @@ class SmartFacadeTest(LandscapeTest):
 
     def test_get_package_hash(self):
         self.facade.reload_channels()
-        pkg = self.facade.get_packages_by_name("name1")[0]
+        [pkg] = self.facade.get_packages_by_name("name1")
         self.assertEqual(self.facade.get_package_hash(pkg), HASH1)
-        pkg = self.facade.get_packages_by_name("name2")[0]
+        [pkg] = self.facade.get_packages_by_name("name2")
         self.assertEqual(self.facade.get_package_hash(pkg), HASH2)
 
     def test_get_package_hashes(self):
@@ -2311,9 +2321,9 @@ class SmartFacadeTest(LandscapeTest):
         self.facade.reload_channels()
 
         # Hold a reference to packages.
-        pkg1 = self.facade.get_packages_by_name("name1")[0]
-        pkg2 = self.facade.get_packages_by_name("name2")[0]
-        pkg3 = self.facade.get_packages_by_name("name3")[0]
+        [pkg1] = self.facade.get_packages_by_name("name1")
+        [pkg2] = self.facade.get_packages_by_name("name2")
+        [pkg3] = self.facade.get_packages_by_name("name3")
         self.assertTrue(pkg1 and pkg2)
 
         # Remove the package from the repository.
@@ -2379,7 +2389,7 @@ class SmartFacadeTest(LandscapeTest):
         """perform_changes() should return None when there's nothing to do.
         """
         self.facade.reload_channels()
-        pkg = self.facade.get_packages_by_name("name1")[0]
+        [pkg] = self.facade.get_packages_by_name("name1")
         self.facade.mark_install(pkg)
         self.facade.reset_marks()
         self.assertEqual(self.facade.perform_changes(), None)
@@ -2391,7 +2401,7 @@ class SmartFacadeTest(LandscapeTest):
         """
         self.facade.reload_channels()
 
-        pkg = self.facade.get_packages_by_name("name1")[0]
+        [pkg] = self.facade.get_packages_by_name("name1")
         self.facade.mark_install(pkg)
         exception = self.assertRaises(TransactionError,
                                       self.facade.perform_changes)
@@ -2408,13 +2418,13 @@ class SmartFacadeTest(LandscapeTest):
 
         provide1 = Provides("prerequirename1", "prerequireversion1")
         provide2 = Provides("requirename1", "requireversion1")
-        pkg2 = self.facade.get_packages_by_name("name2")[0]
+        [pkg2] = self.facade.get_packages_by_name("name2")
         pkg2.provides += (provide1, provide2)
 
         # We have to satisfy *both* packages.
         provide1 = Provides("prerequirename2", "prerequireversion2")
         provide2 = Provides("requirename2", "requireversion2")
-        pkg1 = self.facade.get_packages_by_name("name1")[0]
+        [pkg1] = self.facade.get_packages_by_name("name1")
         pkg1.provides += (provide1, provide2)
 
         # Ask Smart to reprocess relationships.
@@ -2443,13 +2453,13 @@ class SmartFacadeTest(LandscapeTest):
 
         provide1 = Provides("prerequirename1", "prerequireversion1")
         provide2 = Provides("requirename1", "requireversion1")
-        pkg2 = self.facade.get_packages_by_name("name2")[0]
+        [pkg2] = self.facade.get_packages_by_name("name2")
         pkg2.provides += (provide1, provide2)
 
         # We have to satisfy *both* packages.
         provide1 = Provides("prerequirename2", "prerequireversion2")
         provide2 = Provides("requirename2", "requireversion2")
-        pkg1 = self.facade.get_packages_by_name("name1")[0]
+        [pkg1] = self.facade.get_packages_by_name("name1")
         pkg1.provides += (provide1, provide2)
 
         # Ask Smart to reprocess relationships.
@@ -2480,8 +2490,8 @@ class SmartFacadeTest(LandscapeTest):
 
         self.facade.reload_channels()
 
-        pkg1 = self.facade.get_packages_by_name("name1")[0]
-        pkg2 = self.facade.get_packages_by_name("name2")[0]
+        [pkg1] = self.facade.get_packages_by_name("name1")
+        [pkg2] = self.facade.get_packages_by_name("name2")
 
         # Artificially make pkg2 be self-satisfied, and make it upgrade and
         # conflict with pkg1.
@@ -2522,7 +2532,7 @@ class SmartFacadeTest(LandscapeTest):
 
         self.facade.reload_channels()
 
-        pkg = self.facade.get_packages_by_name("name1")[0]
+        [pkg] = self.facade.get_packages_by_name("name1")
         pkg.requires = ()
 
         self.facade.reload_cache()
@@ -2551,7 +2561,7 @@ class SmartFacadeTest(LandscapeTest):
 
         self.facade.reload_channels()
 
-        pkg = self.facade.get_packages_by_name("name1")[0]
+        [pkg] = self.facade.get_packages_by_name("name1")
         pkg.requires = ()
 
         self.facade.reload_cache()
@@ -2606,7 +2616,7 @@ class SmartFacadeTest(LandscapeTest):
 
         self.facade.reload_channels()
 
-        pkg = self.facade.get_packages_by_name("name1")[0]
+        [pkg] = self.facade.get_packages_by_name("name1")
         pkg.requires = ()
 
         self.facade.mark_install(pkg)

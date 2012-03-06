@@ -1,11 +1,14 @@
-import landscape.ui.model.configuration.state
-from landscape.ui.model.configuration.state import (
-    ConfigurationModel, COMPUTER_TITLE)
-from landscape.ui.model.configuration.uisettings import UISettings
-from landscape.ui.controller.configuration import ConfigController
 from landscape.ui.tests.helpers import (
     ConfigurationProxyHelper, dbus_test_should_skip, dbus_skip_message,
-    FakeGSettings)
+    FakeGSettings, got_gobject_introspection, gobject_skip_message)
+
+if got_gobject_introspection:
+    from landscape.ui.controller.configuration import ConfigController
+    import landscape.ui.model.configuration.state
+    from landscape.ui.model.configuration.state import (
+        ConfigurationModel, COMPUTER_TITLE)
+    from landscape.ui.model.configuration.uisettings import UISettings
+
 from landscape.tests.helpers import LandscapeTest
 
 
@@ -24,8 +27,7 @@ class ConfigControllerTest(LandscapeTest):
              "registration_password = bar",
              "computer_title = baz",
              "https_proxy = https://proxy.localdomain:6192",
-             "ping_url = http://landscape.canonical.com/ping"
-             ])
+             "ping_url = http://landscape.canonical.com/ping"])
 
         self.default_data = {"management-type": "canonical",
                              "computer-title": "",
@@ -34,8 +36,7 @@ class ConfigControllerTest(LandscapeTest):
                              "hosted-password": "",
                              "local-landscape-host": "",
                              "local-account-name": "",
-                             "local-password": ""
-                             }
+                             "local-password": ""}
 
         super(ConfigControllerTest, self).setUp()
         landscape.ui.model.configuration.state.DEFAULT_DATA[COMPUTER_TITLE] \
@@ -161,7 +162,9 @@ class ConfigControllerTest(LandscapeTest):
         self.assertEqual("landscape.localdomain",
                          self.controller.local_landscape_host)
 
-    if dbus_test_should_skip:
+    if not got_gobject_introspection:
+        skip = gobject_skip_message
+    elif dbus_test_should_skip:
         skip = dbus_skip_message
 
 
@@ -178,8 +181,7 @@ class EmptyConfigControllerTest(LandscapeTest):
                              "hosted-password": "",
                              "local-landscape-host": "",
                              "local-account-name": "",
-                             "local-password": ""
-                             }
+                             "local-password": ""}
 
         super(EmptyConfigControllerTest, self).setUp()
         landscape.ui.model.configuration.state.DEFAULT_DATA[COMPUTER_TITLE] \
@@ -204,5 +206,7 @@ class EmptyConfigControllerTest(LandscapeTest):
         self.assertEqual("", self.controller.local_password)
         self.assertEqual("me.here.com", self.controller.computer_title)
 
-    if dbus_test_should_skip:
+    if not got_gobject_introspection:
+        skip = gobject_skip_message
+    elif dbus_test_should_skip:
         skip = dbus_skip_message

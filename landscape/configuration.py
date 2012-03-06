@@ -699,6 +699,10 @@ def main(args):
         stop_client_and_disable_init_script()
         return
 
+    # Read old configuration for reference.
+    old_config = BrokerConfiguration()
+    old_config.load([], accept_nonexistent_config=True)
+
     # Setup client configuration.
     try:
         setup(config)
@@ -709,7 +713,11 @@ def main(args):
     # Attempt to register the client.
     if not config.no_start:
         if config.silent:
-            register(config)
+            if (old_config.computer_title != config.computer_title
+                or old_config.account_name != config.account_name
+                or old_config.registration_password != \
+                    config.registration_password):
+                register(config)
         else:
             answer = raw_input("\nRequest a new registration for "
                                "this computer now? (Y/n): ")

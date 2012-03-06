@@ -1,4 +1,6 @@
 from landscape.ui.constants import NOT_MANAGED
+import logging
+
 from landscape.ui.model.registration.proxy import RegistrationProxy
 from landscape.ui.model.configuration.state import StateError
 
@@ -39,18 +41,25 @@ class ConfigController(object):
                 self._configuration.modify()
             except AttributeError:
                 return object.__setattr__(self, name, value)
+            else:
+                self._configuration.modify()
 
     def load(self):
-        "Load the initial data from the configuration"
+        """
+        Load the initial data from the configuration.
+        """
         self._configuration.load_data()
 
     def revert(self):
-        "Revert settings to those the configuration object originally found."
+        """
+        Revert settings to those the configuration object originally found.
+        """
         try:
             self._configuration.revert()
         except StateError:
             # We probably don't care.
-            pass
+            logging.info("landscape-client-settings-ui reverted with no "
+                         "changes to revert.")
 
     def persist(self, on_notify, on_error, on_succeed, on_fail):
         "Persist settings via the configuration object."
@@ -58,7 +67,8 @@ class ConfigController(object):
             self._configuration.persist()
         except StateError:
             # We probably don't care.
-            pass
+            logging.info("landscape-client-settings-ui committed with no "
+                         "changes to commit.")
         if self._configuration.management_type == NOT_MANAGED:
             self.disable(on_succeed, on_fail)
         else:
@@ -66,12 +76,13 @@ class ConfigController(object):
 
     def register(self, notify_method, error_method, succeed_method,
                  fail_method):
-
+        """
+        Perform registration using the L{RegistrationProxy}.
+        """
         registration = RegistrationProxy(on_register_notify=notify_method,
                                          on_register_error=error_method,
                                          on_register_succeed=succeed_method,
                                          on_register_fail=fail_method)
-        self.stop = False
 
         if registration.challenge():
             registration.register(
@@ -82,7 +93,6 @@ class ConfigController(object):
     def disable(self, succeed_method, fail_method):
         registration = RegistrationProxy(on_disable_succeed=succeed_method,
                                          on_disable_fail=fail_method)
-        self.stop = False
 
         if registration.challenge():
             registration.disable()

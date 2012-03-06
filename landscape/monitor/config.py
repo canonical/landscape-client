@@ -1,10 +1,11 @@
 from landscape.deployment import Configuration
 
 
-ALL_PLUGINS = ["ActiveProcessInfo", "ComputerInfo", "LoadAverage",
-               "MemoryInfo", "MountInfo", "ProcessorInfo", "Temperature",
-               "PackageMonitor", "UserMonitor", "RebootRequired",
-               "AptPreferences", "NetworkActivity", "NetworkDevice"]
+ALL_PLUGINS = ["ActiveProcessInfo", "ComputerInfo", "HardwareInventory",
+               "LoadAverage", "MemoryInfo", "MountInfo", "ProcessorInfo",
+               "Temperature", "PackageMonitor", "UserMonitor",
+               "RebootRequired", "AptPreferences", "NetworkActivity",
+               "NetworkDevice"]
 
 
 class MonitorConfiguration(Configuration):

@@ -2,27 +2,39 @@ import os
 
 from lxml import etree
 import dbus
-from gi.repository import Gdk
 
 from landscape.configuration import LandscapeSetupConfiguration
-from landscape.ui.model.configuration.mechanism import (
-    INTERFACE_NAME, ConfigurationMechanism)
-from landscape.ui.model.configuration.proxy import ConfigurationProxy
 
-
-# We have to do these steps because the ConfigurationMechanism inherits
-# from dbus.service.Object which throws a fit if it notices you using
-# it without a mainloop.
-dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-dbus_test_should_skip = False
 dbus_skip_message = "Cannot launch private DBus session without X11"
 try:
-    bus = dbus.SessionBus(private=True)
-    bus_name = dbus.service.BusName(INTERFACE_NAME, bus)
-except dbus.exceptions.DBusException:
+    from gi.repository import GObject
+    got_gobject_introspection = True
+    gobject_skip_message = GObject._version  # Shut up pyflakes
+except (ImportError, RuntimeError):
+    got_gobject_introspection = False
+    gobject_skip_message = "GObject Introspection module unavailable"
     bus = object
     bus_name = ""
     dbus_test_should_skip = True
+
+
+if got_gobject_introspection:
+    from gi.repository import Gdk
+    from landscape.ui.model.configuration.mechanism import (
+        INTERFACE_NAME, ConfigurationMechanism)
+    from landscape.ui.model.configuration.proxy import ConfigurationProxy
+    # We have to do these steps because the ConfigurationMechanism inherits
+    # from dbus.service.Object which throws a fit if it notices you using
+    # it without a mainloop.
+    dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+    dbus_test_should_skip = False
+    try:
+        bus = dbus.SessionBus(private=True)
+        bus_name = dbus.service.BusName(INTERFACE_NAME, bus)
+    except dbus.exceptions.DBusException:
+        bus = object
+        bus_name = ""
+        dbus_test_should_skip = True
 
 
 class ConfigurationProxyHelper(object):
@@ -45,14 +57,16 @@ class ConfigurationProxyHelper(object):
             test_case.config.default_config_filenames = \
                 [test_case.config_filename]
 
-            test_case.mechanism = ConfigurationMechanism(test_case.config,
-                                                         bus_name)
+            if got_gobject_introspection:
+                test_case.mechanism = ConfigurationMechanism(test_case.config,
+                                                             bus_name)
 
-            test_case.proxy = ConfigurationProxy(interface=test_case.mechanism)
-            test_case.proxy.load(["-c", test_case.config_filename])
+                test_case.proxy = ConfigurationProxy(
+                    interface=test_case.mechanism)
+                test_case.proxy.load(["-c", test_case.config_filename])
 
     def tear_down(self, test_case):
-        if not dbus_test_should_skip:
+        if not dbus_test_should_skip and got_gobject_introspection:
             test_case.mechanism.remove_from_connection()
 
 

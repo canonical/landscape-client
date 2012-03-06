@@ -1,22 +1,19 @@
 import sys
 
-try:
+from landscape.ui.tests.helpers import (
+    ConfigurationProxyHelper, FakeGSettings, gobject_skip_message,
+    got_gobject_introspection, simulate_gtk_key_release)
+
+if got_gobject_introspection:
     from gi.repository import Gtk, Gdk
-    got_gobject_introspection = True
-except (ImportError, RuntimeError):
-    got_gobject_introspection = False
-    gobject_skip_message = "GObject Introspection module unavailable"
-else:
     from landscape.ui.view.configuration import ClientSettingsDialog
-from landscape.ui.controller.configuration import ConfigController
+    from landscape.ui.controller.configuration import ConfigController
+    import landscape.ui.model.configuration.state
+    from landscape.ui.model.configuration.state import (
+        COMPUTER_TITLE, ConfigurationModel)
+    from landscape.ui.model.configuration.uisettings import UISettings
 
 from landscape.tests.helpers import LandscapeTest
-from landscape.ui.tests.helpers import (
-    ConfigurationProxyHelper, FakeGSettings, simulate_gtk_key_release)
-import landscape.ui.model.configuration.state
-from landscape.ui.model.configuration.state import (
-    COMPUTER_TITLE, ConfigurationModel)
-from landscape.ui.model.configuration.uisettings import UISettings
 
 
 class ConfigurationViewTest(LandscapeTest):
@@ -31,8 +28,7 @@ class ConfigurationViewTest(LandscapeTest):
                              "hosted-password": "",
                              "local-landscape-host": "",
                              "local-account-name": "",
-                             "local-password": ""
-                             }
+                             "local-password": ""}
 
         self.config_string = (
             "[client]\n"
@@ -180,10 +176,7 @@ class ConfigurationViewTest(LandscapeTest):
         self.assertEqual("bar", dialog.hosted_password_entry.get_text())
 
     if not got_gobject_introspection:
-        test_revert.skip = gobject_skip_message
-        test_load_data_from_config.skip = gobject_skip_message
-        test_on_combobox_changed.skip = gobject_skip_message
-        test_init.skip = gobject_skip_message
+        skip = gobject_skip_message
 
 
 class LocalConfigurationViewTest(LandscapeTest):
@@ -198,8 +191,7 @@ class LocalConfigurationViewTest(LandscapeTest):
                              "hosted-password": "",
                              "local-landscape-host": "",
                              "local-account-name": "",
-                             "local-password": "manky"
-                             }
+                             "local-password": "manky"}
 
         self.config_string = (
             "[client]\n"
@@ -250,5 +242,4 @@ class LocalConfigurationViewTest(LandscapeTest):
         self.assertEqual("manky", dialog.local_password_entry.get_text())
 
     if not got_gobject_introspection:
-        test_load_data_from_config.skip = gobject_skip_message
-        test_init.skip = gobject_skip_message
+        skip = gobject_skip_message
