@@ -422,7 +422,9 @@ class MessageExchange(object):
                 handler(message)
 
     def register_client_accepted_message_type(self, type):
-        self._client_accepted_types.add(type)
+        # stringify the type because it's a dbus.String.  It should work
+        # anyway, but this is just for sanity and less confusing logs.
+        self._client_accepted_types.add(str(type))
 
     def get_client_accepted_message_types(self):
         return sorted(self._client_accepted_types)

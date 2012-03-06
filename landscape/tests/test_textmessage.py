@@ -13,8 +13,8 @@ class SendMessageTest(LandscapeTest):
 
     def test_send_message(self):
         """
-        L{send_message} should send a message of type C{text-message} to the
-        landscape messaging service.
+        L{send_message} should send a message of type
+        C{text-message} to the landscape dbus messaging service.
         """
         service = self.broker_service
         service.message_store.set_accepted_types(["text-message"])
