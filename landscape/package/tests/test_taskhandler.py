@@ -40,7 +40,7 @@ class PackageTaskHandlerConfigurationTest(LandscapeTest):
 
 class PackageTaskHandlerTest(LandscapeTest):
 
-    helpers = [SmartFacadeHelper, EnvironSaverHelper, BrokerServiceHelper]
+    helpers = [AptFacadeHelper, EnvironSaverHelper, BrokerServiceHelper]
 
     def setUp(self):
 
