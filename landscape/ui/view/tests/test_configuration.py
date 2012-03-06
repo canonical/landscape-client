@@ -28,8 +28,7 @@ class ConfigurationViewTest(LandscapeTest):
                              "hosted-password": "",
                              "local-landscape-host": "",
                              "local-account-name": "",
-                             "local-password": ""
-                             }
+                             "local-password": ""}
 
         self.config_string = (
             "[client]\n"
@@ -192,8 +191,7 @@ class ConfigurationViewPersistTest(LandscapeTest):
                              "hosted-password": "",
                              "local-landscape-host": "",
                              "local-account-name": "",
-                             "local-password": ""
-                             }
+                             "local-password": ""}
 
         self.config_string = (
             "[client]\n"
@@ -293,8 +291,7 @@ class LocalConfigurationViewTest(LandscapeTest):
                              "hosted-password": "",
                              "local-landscape-host": "",
                              "local-account-name": "",
-                             "local-password": "manky"
-                             }
+                             "local-password": "manky"}
 
         self.config_string = (
             "[client]\n"

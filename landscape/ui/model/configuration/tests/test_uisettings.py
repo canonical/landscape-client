@@ -14,8 +14,7 @@ class UISettingsTest(LandscapeTest):
                     "hosted-password": "Vivadixiesubmarinetransmissionplot",
                     "local-landscape-host": "the.local.machine",
                     "local-account-name": "CrazyHorse",
-                    "local-password": "RustNeverSleeps"
-                    }
+                    "local-password": "RustNeverSleeps"}
 
     def setUp(self):
         super(UISettingsTest, self).setUp()

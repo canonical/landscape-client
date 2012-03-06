@@ -27,8 +27,7 @@ class ConfigControllerTest(LandscapeTest):
              "registration_password = bar",
              "computer_title = baz",
              "https_proxy = https://proxy.localdomain:6192",
-             "ping_url = http://landscape.canonical.com/ping"
-             ])
+             "ping_url = http://landscape.canonical.com/ping"])
 
         self.default_data = {"management-type": "canonical",
                              "computer-title": "",
@@ -37,8 +36,7 @@ class ConfigControllerTest(LandscapeTest):
                              "hosted-password": "",
                              "local-landscape-host": "",
                              "local-account-name": "",
-                             "local-password": ""
-                             }
+                             "local-password": ""}
 
         super(ConfigControllerTest, self).setUp()
         landscape.ui.model.configuration.state.DEFAULT_DATA[COMPUTER_TITLE] \
@@ -174,8 +172,7 @@ class EmptyConfigControllerTest(LandscapeTest):
                              "hosted-password": "",
                              "local-landscape-host": "",
                              "local-account-name": "",
-                             "local-password": ""
-                             }
+                             "local-password": ""}
 
         super(EmptyConfigControllerTest, self).setUp()
         landscape.ui.model.configuration.state.DEFAULT_DATA[COMPUTER_TITLE] \

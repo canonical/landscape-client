@@ -85,8 +85,7 @@ class SettingsApplicationControllerUISetupTest(LandscapeTest):
              "registration_password = bar",
              "computer_title = baz",
              "https_proxy = https://proxy.localdomain:6192",
-             "ping_url = http://landscape.canonical.com/ping"
-             ])
+             "ping_url = http://landscape.canonical.com/ping"])
         self.default_data = {"management-type": "not",
                              "computer-title": "",
                              "hosted-landscape-host": "",
@@ -94,8 +93,7 @@ class SettingsApplicationControllerUISetupTest(LandscapeTest):
                              "hosted-password": "",
                              "local-landscape-host": "",
                              "local-account-name": "",
-                             "local-password": ""
-                             }
+                             "local-password": ""}
         super(SettingsApplicationControllerUISetupTest, self).setUp()
 
         def fake_run(obj):

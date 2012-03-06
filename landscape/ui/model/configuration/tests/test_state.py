@@ -32,8 +32,7 @@ class ConfigurationModelTest(LandscapeTest):
                              "hosted-password": "",
                              "local-landscape-host": "",
                              "local-account-name": "",
-                             "local-password": ""
-                             }
+                             "local-password": ""}
         self.config_string = ""
         self.default_data = {"management-type": "canonical",
                              "computer-title": "",
@@ -42,8 +41,7 @@ class ConfigurationModelTest(LandscapeTest):
                              "hosted-password": "",
                              "local-landscape-host": "",
                              "local-account-name": "",
-                             "local-password": ""
-                             }
+                             "local-password": ""}
         landscape.ui.model.configuration.state.DEFAULT_DATA[COMPUTER_TITLE] \
             = "bound.to.lose"
         super(ConfigurationModelTest, self).setUp()
@@ -229,8 +227,7 @@ class ConfigurationModelHostedTest(LandscapeTest):
                     "hosted-password": "Vivadixiesubmarinetransmissionplot",
                     "local-landscape-host": "the.local.machine",
                     "local-account-name": "CrazyHorse",
-                    "local-password": "RustNeverSleeps"
-                    }
+                    "local-password": "RustNeverSleeps"}
 
     def setUp(self):
         self.config_string = "[client]\n" \
@@ -280,8 +277,7 @@ class ConfigurationModelLocalTest(LandscapeTest):
                     "hosted-password": "Vivadixiesubmarinetransmissionplot",
                     "local-landscape-host": "the.local.machine",
                     "local-account-name": "CrazyHorse",
-                    "local-password": "RustNeverSleeps"
-                    }
+                    "local-password": "RustNeverSleeps"}
 
     def setUp(self):
         self.config_string = "[client]\n" \
@@ -339,8 +335,7 @@ class StateTransitionTest(LandscapeTest):
             "hosted-password": "Vivadixiesubmarinetransmissionplot",
             "local-landscape-host": "the.local.machine",
             "local-account-name": "CrazyHorse",
-            "local-password": "RustNeverSleeps"
-            }
+            "local-password": "RustNeverSleeps"}
         super(StateTransitionTest, self).setUp()
 
     def test_load_data_transitions(self):
@@ -550,8 +545,7 @@ class StateTransitionWithExistingConfigTest(LandscapeTest):
             "hosted-password": "Vivadixiesubmarinetransmissionplot",
             "local-landscape-host": "the.local.machine",
             "local-account-name": "CrazyHorse",
-            "local-password": "RustNeverSleeps"
-            }
+            "local-password": "RustNeverSleeps"}
         super(StateTransitionWithExistingConfigTest, self).setUp()
 
     def test_persisting_saves_data_to_proxy(self):
