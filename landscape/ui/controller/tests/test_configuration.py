@@ -1,11 +1,16 @@
-import landscape.ui.model.configuration.state
-from landscape.ui.model.configuration.state import (
-    ConfigurationModel, COMPUTER_TITLE)
-from landscape.ui.model.configuration.uisettings import UISettings
-from landscape.ui.controller.configuration import ConfigController
 from landscape.ui.tests.helpers import (
     ConfigurationProxyHelper, dbus_test_should_skip, dbus_skip_message,
-    FakeGSettings)
+    FakeGSettings, got_gobject_introspection, gobject_skip_message)
+
+if got_gobject_introspection:
+    from landscape.ui.controller.configuration import (
+        ConfigController, ConfigControllerLockError)
+    import landscape.ui.model.configuration.state
+    from landscape.ui.model.configuration.state import (
+        ConfigurationModel, COMPUTER_TITLE)
+    from landscape.ui.model.configuration.uisettings import UISettings
+    from landscape.ui.controller.configuration import ConfigController
+
 from landscape.tests.helpers import LandscapeTest
 
 
@@ -152,7 +157,9 @@ class ConfigControllerTest(LandscapeTest):
         self.assertEqual("landscape.localdomain",
                          self.controller.local_landscape_host)
 
-    if dbus_test_should_skip:
+    if not got_gobject_introspection:
+        skip = gobject_skip_message
+    elif dbus_test_should_skip:
         skip = dbus_skip_message
 
 
@@ -195,5 +202,7 @@ class EmptyConfigControllerTest(LandscapeTest):
         self.assertEqual("", self.controller.local_password)
         self.assertEqual("me.here.com", self.controller.computer_title)
 
-    if dbus_test_should_skip:
+    if not got_gobject_introspection:
+        skip = gobject_skip_message
+    elif dbus_test_should_skip:
         skip = dbus_skip_message

@@ -62,6 +62,8 @@ class Daemon(object):
     @cvar program: The name of the executable program that will start this
         daemon.
     @cvar username: The name of the user to switch to, by default.
+    @cvar service: The DBus service name that the program will be expected to
+        listen on.
     @cvar max_retries: The maximum number of retries before giving up when
         trying to connect to the watched daemon.
     @cvar factor: The factor by which the delay between subsequent connection
@@ -176,7 +178,8 @@ class Daemon(object):
 
     def is_running(self):
         # FIXME Error cases may not be handled in the best possible way
-        # here. We're basically return False if any error happens.
+        # here. We're basically return False if any error happens from the
+        # dbus ping.
         return self._connect_and_call("ping")
 
     def wait(self):
@@ -364,7 +367,7 @@ class WatchDog(object):
     def start(self):
         """
         Start all daemons. The broker will be started first, and no other
-        daemons will be started before it is running and responding to
+        daemons will be started before it is running and responding to DBUS
         messages.
 
         @return: A deferred which fires when all services have successfully

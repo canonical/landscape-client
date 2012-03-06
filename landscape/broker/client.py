@@ -41,6 +41,18 @@ class BrokerClientPlugin(object):
         """An alias for the C{client} attribute."""
         return self.client
 
+    def call_on_accepted(self, type, callable, *args, **kwargs):
+        """
+        Register a callback fired upon a C{message-type-acceptance-changed}.
+        """
+
+        def acceptance_changed(acceptance):
+            if acceptance:
+                return callable(*args, **kwargs)
+
+        self.client.reactor.call_on(("message-type-acceptance-changed", type),
+                                    acceptance_changed)
+
 
 class BrokerClient(object):
     """Basic plugin registry for clients that have to deal with the broker.
