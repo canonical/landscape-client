@@ -374,10 +374,12 @@ class PackageTaskHandlerTest(LandscapeTest):
 
         return HandlerMock, handler_args
 
-    def test_run_task_handler(self):
+    def test_run_task_handler_new_apt(self):
         """
         The L{run_task_handler} function creates and runs the given task
-        handler with the proper arguments.
+        handler with the proper arguments. If the system has a new
+        enough version of Apt (i.e. newer than Hardy), AptFacade will
+        be used.
         """
         self._set_new_enough_apt(True)
         HandlerMock, handler_args = self._mock_run_task_handler()
