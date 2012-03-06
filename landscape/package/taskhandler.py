@@ -263,7 +263,7 @@ def run_task_handler(cls, args, reactor=None):
     # import Smart unless we need to.
     from landscape.package.facade import (
         AptFacade, SmartFacade, has_new_enough_apt)
-    if os.environ.get("USE_APT_FACADE") and has_new_enough_apt:
+    if  has_new_enough_apt:
         package_facade = AptFacade()
     else:
         package_facade = SmartFacade()

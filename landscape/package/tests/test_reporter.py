@@ -1231,7 +1231,11 @@ class PackageReporterTestMixin(object):
 
         results = [Deferred() for i in range(7)]
 
-        reporter_mock.run_smart_update()
+        # Either the Apt or Smart cache will be updated, not both.
+        if isinstance(self.facade, AptFacade):
+            reporter_mock.run_apt_update()
+        else:
+            reporter_mock.run_smart_update()
         self.mocker.result(results[0])
 
         reporter_mock.fetch_hash_id_db()
