@@ -1239,7 +1239,6 @@ class PackageReporterTestMixin(object):
             reporter_mock.run_smart_update()
             self.mocker.result(results[0])
 
-
         reporter_mock.fetch_hash_id_db()
         self.mocker.result(results[1])
 

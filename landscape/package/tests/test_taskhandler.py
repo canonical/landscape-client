@@ -12,7 +12,7 @@ from landscape.package.taskhandler import (
 from landscape.package import facade as facade_module
 from landscape.package.facade import AptFacade, SmartFacade
 from landscape.package.store import HashIdStore, PackageStore
-from landscape.package.tests.helpers import AptFacadeHelper, SmartFacadeHelper
+from landscape.package.tests.helpers import AptFacadeHelper
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
 from landscape.tests.mocker import ANY, ARGS, MATCH
