@@ -260,10 +260,10 @@ class PersistableHelper(Helper):
                 self._state.get(first_key, LANDSCAPE_HOST))
             self._state._proxy.ping_url = derive_ping_url_from_host_name(
                 self._state.get(first_key, LANDSCAPE_HOST))
-            self._state._proxy.account_name = \
-                self._state.get(first_key, ACCOUNT_NAME)
-            self._state._proxy.registration_password = \
-                self._state.get(first_key, PASSWORD)
+            self._state._proxy.account_name = self._state.get(
+                first_key, ACCOUNT_NAME)
+            self._state._proxy.registration_password = self._state.get(
+                first_key, PASSWORD)
             self._state._proxy.computer_title = self._state.get(COMPUTER_TITLE)
             self._state._proxy.write()
 
