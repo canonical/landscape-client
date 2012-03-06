@@ -379,6 +379,7 @@ class PackageTaskHandlerTest(LandscapeTest):
         The L{run_task_handler} function creates and runs the given task
         handler with the proper arguments.
         """
+        self._set_new_enough_apt(True)
         HandlerMock, handler_args = self._mock_run_task_handler()
 
         def assert_task_handler(ignored):
@@ -388,7 +389,7 @@ class PackageTaskHandlerTest(LandscapeTest):
             try:
                 # Verify the arguments passed to the reporter constructor.
                 self.assertEqual(type(store), PackageStore)
-                self.assertEqual(type(facade), SmartFacade)
+                self.assertEqual(type(facade), AptFacade)
                 self.assertEqual(type(broker), LazyRemoteBroker)
                 self.assertEqual(type(config),
                                  PackageTaskHandlerConfiguration)
@@ -410,36 +411,6 @@ class PackageTaskHandlerTest(LandscapeTest):
         result = run_task_handler(HandlerMock, ["-c", self.config_filename])
         return result.addCallback(assert_task_handler)
 
-    def test_run_task_handler_use_apt_facade_new_apt(self):
-        """
-        The L{run_task_handler} creates an AptFacade instead of
-        SmartFacade, if the USE_APT_FACADE environment variable is set
-        and C{python-apt} is new enough.
-        """
-
-        HandlerMock, handler_args = self._mock_run_task_handler()
-        os.environ["USE_APT_FACADE"] = "1"
-        self._set_new_enough_apt(True)
-
-        def assert_task_handler(ignored):
-
-            store, facade, broker, config = handler_args
-
-            try:
-                self.assertEqual(type(facade), AptFacade)
-            finally:
-                # Put reactor back in place before returning.
-                self.mocker.reset()
-
-        # Set up using AptFacadeHelper, to get a clean root dir, so
-        # creating an AptFacade with a clean dir is much faster than
-        # using / as root. This also prevents test failures due to tests
-        # using AptFacadeHelper not resetting the apt config, which
-        # isn't trivial to do.
-        AptFacadeHelper().set_up(self)
-        result = run_task_handler(HandlerMock, ["-c", self.config_filename])
-        return result.addCallback(assert_task_handler)
-
     def _set_new_enough_apt(self, value):
         """Override landscape.package.facade.has_new_enough_apt.
 
@@ -454,19 +425,17 @@ class PackageTaskHandlerTest(LandscapeTest):
         facade_module.has_new_enough_apt = value
         self.addCleanup(reset_new_enough_apt)
 
-    def test_run_task_handler_use_apt_facade_old_apt(self):
+    def test_run_task_handler_old_apt(self):
         """
         If the C{python-apt} module isn't new enough,
-        C{run_task_handler} will create a C{SmartFacade}, even when
-        USE_APT_FACADE is set, since C{AptFacade} doesn't work with old
-        versions of C{python-apt}.
+        C{run_task_handler} will create a C{SmartFacade}, since
+        C{AptFacade} doesn't work with old versions of C{python-apt}.
 
         Hardy has a too old version of C{python-apt}, but lucid and
         onwards should have a new enough version.
         """
 
         HandlerMock, handler_args = self._mock_run_task_handler()
-        os.environ["USE_APT_FACADE"] = "1"
         self._set_new_enough_apt(False)
 
         def assert_task_handler(ignored):
