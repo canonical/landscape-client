@@ -20,6 +20,8 @@ class PingClient(object):
     @param url: The URL to ask the question to.
     @type identity: L{landscape.broker.registration.Identity}
     @param identity: This client's identity.
+    @param get_page: The method to use to retrieve content.  If not specified,
+        landscape.lib.fetch.fetch is used.
     """
 
     def __init__(self, reactor, url, identity, get_page=None):
@@ -48,8 +50,9 @@ class PingClient(object):
             def errback(type, value, tb):
                 page_deferred.errback(Failure(value, type, tb))
             self._reactor.call_in_thread(page_deferred.callback, errback,
-                                         self.get_page, self.url, post=True,
-                                         data=data, headers=headers)
+                                         self.get_page, self.url,
+                                         post=True, data=data,
+                                         headers=headers)
             page_deferred.addCallback(self._got_result)
             return page_deferred
         return defer.succeed(False)
@@ -101,8 +104,8 @@ class Pinger(object):
 
     def start(self):
         """Start pinging."""
-        self._ping_client = self.ping_client_factory(self._reactor, self._url,
-                                                     self._identity)
+        self._ping_client = self.ping_client_factory(
+            self._reactor, self._url, self._identity)
         self._call_id = self._reactor.call_every(self._interval, self.ping)
 
     def ping(self):
@@ -119,7 +122,8 @@ class Pinger(object):
 
     def _got_error(self, failure):
         log_failure(failure,
-                    "Error contacting ping server at %s" % (self._url,))
+                    "Error contacting ping server at %s" %
+                    (self._ping_client.url,))
 
     def _handle_set_intervals(self, message):
         if message["type"] == "set-intervals" and "ping" in message:

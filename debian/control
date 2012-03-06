@@ -34,6 +34,7 @@ Package: landscape-client
 Architecture: any
 Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          python-twisted-web,
+         python-twisted-names,
          landscape-common (>= ${Source-Version})
 Suggests: ${extra:Suggests}
 Description: The Landscape administration system client

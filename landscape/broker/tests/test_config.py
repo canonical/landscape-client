@@ -91,3 +91,20 @@ class ConfigurationTests(LandscapeTest):
 
         self.assertEqual(configuration.url,
                          "https://landscape.canonical.com/message-system")
+
+    def test_server_autodiscover_handling(self):
+        """
+        server_autodiscover is parsed and converted to a boolean value by
+        load().
+        """
+        configuration = BrokerConfiguration()
+        configuration.load([])
+        self.assertEqual(configuration.server_autodiscover, False)
+
+        configuration = BrokerConfiguration()
+        configuration.load(["--server-autodiscover=true"])
+        self.assertEqual(configuration.server_autodiscover, True)
+
+        configuration = BrokerConfiguration()
+        configuration.load(["--server-autodiscover=false"])
+        self.assertEqual(configuration.server_autodiscover, False)

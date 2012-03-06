@@ -22,7 +22,8 @@ class HTTPTransport(object):
         with the server.  If C{None}, exchanges will not be recorded.
     """
 
-    def __init__(self, url, pubkey=None, payload_recorder=None):
+    def __init__(self, reactor, url, pubkey=None, payload_recorder=None):
+        self._reactor = reactor
         self._url = url
         self._pubkey = pubkey
         self._payload_recorder = payload_recorder
@@ -66,7 +67,6 @@ class HTTPTransport(object):
             start_time = time.time()
             if logging.getLogger().getEffectiveLevel() <= logging.DEBUG:
                 logging.debug("Sending payload:\n%s", pprint.pformat(payload))
-
             curly, data = self._curl(spayload, computer_id, message_api)
             logging.info("Sent %d bytes and received %d bytes in %s.",
                          len(spayload), len(data),
@@ -152,7 +152,8 @@ class PayloadRecorder(object):
 class FakeTransport(object):
     """Fake transport for testing purposes."""
 
-    def __init__(self, url=None, pubkey=None, payload_recorder=None):
+    def __init__(self, reactor=None, url=None, pubkey=None,
+                 payload_recorder=None):
         self._pubkey = pubkey
         self._payload_recorder = payload_recorder
         self.payloads = []
@@ -163,6 +164,7 @@ class FakeTransport(object):
         self.message_api = None
         self.extra = {}
         self._url = url
+        self._reactor = reactor
 
     def get_url(self):
         return self._url

@@ -16,6 +16,7 @@ will read the message from STDIN until EOF.
 OPTIONS
   --version           Show program's version number and exit.
   -h, --help          Show this help message and exit.
+  -b BUS, --bus=BUS   The DBUS bus to use to send the message.
 
 EXAMPLES
 

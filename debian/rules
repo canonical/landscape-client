@@ -60,6 +60,7 @@ install: build
 	install -D -o root -g root -m 644 debian/cloud-default.conf $(root_dir)/usr/share/landscape/cloud-default.conf
 	install -D -o root -g root -m 755 smart-update/smart-update $(root_dir)/usr/lib/landscape/smart-update
 	install -D -o root -g root -m 755 apt-update/apt-update $(root_dir)/usr/lib/landscape/apt-update
+	install -D -o root -g root -m 644 dbus/landscape.conf $(root_dir)/etc/dbus-1/system.d/landscape.conf
 
 binary-indep:
 # do nothing
@@ -75,7 +76,7 @@ binary-arch: build install
 	dh_installman -p landscape-client man/landscape-client.1 man/landscape-config.1 man/landscape-message.1
 	dh_installchangelogs
 	dh_install --sourcedir debian/tmp/
-	dh_installinit -- start 45 2 3 4 5 . stop 15 1 .
+	dh_installinit -- start 45 2 3 4 5 . stop 15 0 1 6 .
 	dh_installlogrotate
 	dh_installdebconf
 	dh_compress
@@ -83,22 +84,24 @@ binary-arch: build install
 
 ifneq (,$(findstring $(dist_release),"dapper"))
 	# We need python2.4-pysqlite2 and a non-buggy libcurl3-gnutls on dapper
-	echo "extra:Depends=python2.4-pysqlite2, libcurl3-gnutls (>= 7.15.1-1ubuntu3), python-smartpm (>= 1.1.1~bzr20081010-0ubuntu1.6.06.0)" >> $(landscape_common_substvars)
-	echo "extra:Depends=python2.4-pycurl" >> $(landscape_client_substvars)
+	echo "extra:Depends=python2.4-pysqlite2, libcurl3-gnutls (>= 7.15.1-1ubuntu3), python-smartpm (>= 1.1.1~bzr20081010-0ubuntu1.6.06.0), python2.4-dbus" >> $(landscape_common_substvars)
+	echo "extra:Depends=python2.4-pycurl, hal" >> $(landscape_client_substvars)
 endif
 ifneq (,$(findstring $(dist_release),"hardy"))
 	# We want the smart 1.1.1 from the Landscape repository on hardy
-	echo "extra:Depends=python-smartpm (>= 1.1.1~bzr20081010-0ubuntu1.8.04.1)" >> $(landscape_common_substvars)
-	echo "extra:Depends=python-pycurl" >> $(landscape_client_substvars)
+	echo "extra:Depends=python-smartpm (>= 1.1.1~bzr20081010-0ubuntu1.8.04.1), python-dbus" >> $(landscape_common_substvars)
+	echo "extra:Depends=python-pycurl, hal" >> $(landscape_client_substvars)
 endif
 ifneq (,$(filter $(dist_release),karmic lucid maverick))
 	# We want libpam-modules in karmic, and smart 1.2
-	echo "extra:Depends=libpam-modules (>= 1.0.1-9ubuntu3), python-smartpm (>= 1.2-4)" >> $(landscape_common_substvars)
-	echo "extra:Depends=python-pycurl" >> $(landscape_client_substvars)
+	echo "extra:Depends=libpam-modules (>= 1.0.1-9ubuntu3), python-smartpm (>= 1.2-4), python-dbus" >> $(landscape_common_substvars)
+	echo "extra:Depends=python-pycurl, hal" >> $(landscape_client_substvars)
 endif
 ifeq (,$(filter $(dist_release),dapper hardy karmic lucid maverick))
+	# Starting natty, no more hal or dbus
 	echo "extra:Depends=libpam-modules (>= 1.0.1-9ubuntu3), python-smartpm (>= 1.2-4)" >> $(landscape_common_substvars)
 	echo "extra:Depends=python-pycurl, gir1.2-gudev-1.0 (>= 165-0ubuntu2)" >> $(landscape_client_substvars)
+	echo "extra:Suggests=python-dbus, hal" >> $(landscape_client_substvars)
 endif
 ifeq (,$(filter $(dist_release),dapper hardy karmic))
 	# The python-image-store-proxy package is needed for the eucalyptus plugin

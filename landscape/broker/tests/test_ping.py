@@ -201,7 +201,7 @@ class PingerTest(LandscapeTest):
 
         class BadPingClient(object):
             def __init__(self, *args, **kwargs):
-                pass
+                self.url = args[1]
 
             def ping(self):
                 return fail(ZeroDivisionError("Couldn't fetch page"))

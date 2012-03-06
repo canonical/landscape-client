@@ -16,7 +16,7 @@ from landscape.lib.fs import create_file, read_file, touch_file
 from landscape.package.changer import (
     PackageChanger, main, find_changer_command, UNKNOWN_PACKAGE_DATA_TIMEOUT,
     SUCCESS_RESULT, DEPENDENCY_ERROR_RESULT, POLICY_ALLOW_INSTALLS,
-    POLICY_ALLOW_ALL_CHANGES)
+    POLICY_ALLOW_ALL_CHANGES, ERROR_RESULT)
 from landscape.package.store import PackageStore
 from landscape.package.facade import (
     DependencyError, TransactionError, SmartError, has_new_enough_apt)
@@ -392,7 +392,7 @@ class PackageChangerTestMixin(object):
             self.assertEqual(message["type"], "change-packages-result")
         return result.addCallback(got_result)
 
-    def test_tasks_are_isolated(self):
+    def test_tasks_are_isolated_marks(self):
         """
         Changes attempted on one task should be reset before the next
         task is run.  In this test, we try to run two different
@@ -401,7 +401,7 @@ class PackageChangerTestMixin(object):
         of superuser privileges, and the second one will succeed since
         there's nothing to upgrade.  If tasks are mixed up, the second
         operation will fail too, because the installation of package 2
-        is still queued.
+        is still marked in the facade.
         """
         self.log_helper.ignore_errors(".*dpkg")
 
@@ -423,6 +423,42 @@ class PackageChangerTestMixin(object):
             self.assertEqual(124, message["operation-id"])
             self.assertEqual("change-packages-result", message["type"])
             self.assertNotEqual(0, message["result-code"])
+
+        return result.addCallback(got_result)
+
+    def test_tasks_are_isolated_cache(self):
+        """
+        The package (apt/smart) cache should be reset between task runs.
+        In this test, we try to run two different operations, first
+        installing package 2, then removing package 1.  Both tasks will
+        fail for lack of superuser privileges.  If the package cache
+        isn't reset between tasks, the second operation will fail with a
+        dependency error, since it will be marked for installation, but
+        we haven't explicitly marked it so.
+        """
+        self.log_helper.ignore_errors(".*dpkg")
+
+        installable_hash = self.set_pkg2_satisfied()
+        installed_hash = self.set_pkg1_installed()
+        self.store.set_hash_ids({installed_hash: 1, installable_hash: 2})
+
+        self.store.add_task("changer",
+                            {"type": "change-packages", "install": [2],
+                             "operation-id": 123})
+        self.store.add_task("changer",
+                            {"type": "change-packages", "remove": [1],
+                             "operation-id": 124})
+
+        result = self.changer.handle_tasks()
+
+        def got_result(result):
+            message1, message2 = self.get_pending_messages()
+            self.assertEqual(123, message1["operation-id"])
+            self.assertEqual("change-packages-result", message1["type"])
+            self.assertEqual(ERROR_RESULT, message1["result-code"])
+            self.assertEqual(124, message2["operation-id"])
+            self.assertEqual("change-packages-result", message2["type"])
+            self.assertEqual(ERROR_RESULT, message2["result-code"])
 
         return result.addCallback(got_result)
 

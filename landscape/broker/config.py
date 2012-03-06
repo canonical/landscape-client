@@ -11,8 +11,6 @@ class BrokerConfiguration(Configuration):
     @cvar required_options: C{["url"]}
     """
 
-    DEFAULT_URL = "https://landscape.canonical.com/message-system"
-
     def __init__(self):
         super(BrokerConfiguration, self).__init__()
         self._original_http_proxy = os.environ.get("http_proxy")
@@ -34,11 +32,8 @@ class BrokerConfiguration(Configuration):
               - C{account_name}
               - C{registration_password}
               - C{computer_title}
-              - C{url}
-              - C{ssl_public_key}
               - C{exchange_interval} (C{15*60})
               - C{urgent_exchange_interval} (C{1*60})
-              - C{ping_url}
               - C{http_proxy}
               - C{https_proxy}
               - C{cloud}
@@ -55,11 +50,6 @@ class BrokerConfiguration(Configuration):
                                "registering clients.")
         parser.add_option("-t", "--computer-title", metavar="TITLE",
                           help="The title of this computer")
-        parser.add_option("-u", "--url",
-                          help="The server URL to connect to.")
-        parser.add_option("-k", "--ssl-public-key",
-                          help="The public SSL key to verify the server. "
-                               "Only used if the given URL is https.")
         parser.add_option("--exchange-interval", default=15 * 60, type="int",
                           metavar="INTERVAL",
                           help="The number of seconds between server "
@@ -68,9 +58,6 @@ class BrokerConfiguration(Configuration):
                           type="int", metavar="INTERVAL",
                           help="The number of seconds between urgent server "
                                "exchanges.")
-        parser.add_option("--ping-url",
-                          help="The URL to perform lightweight exchange "
-                               "initiation with.")
         parser.add_option("--ping-interval", default=30, type="int",
                           metavar="INTERVAL",
                           help="The number of seconds between pings.")
@@ -89,6 +76,7 @@ class BrokerConfiguration(Configuration):
                           help="Record data sent to the server on filesystem.")
         parser.add_option("--provisioning-otp", default="",
                           help="The OTP to use for a provisioned machine.")
+
         return parser
 
     @property
@@ -115,6 +103,3 @@ class BrokerConfiguration(Configuration):
             os.environ["https_proxy"] = self.https_proxy
         elif self._original_https_proxy:
             os.environ["https_proxy"] = self._original_https_proxy
-
-        if self.url is None:
-            self.url = self.DEFAULT_URL

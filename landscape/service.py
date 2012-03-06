@@ -8,6 +8,7 @@ from twisted.application.app import startApplication
 from landscape.log import rotate_logs
 from landscape.reactor import TwistedReactor
 from landscape.deployment import get_versioned_persist, init_logging
+from landscape.amp import ComponentProtocol
 
 
 class LandscapeService(Service, object):
@@ -28,6 +29,12 @@ class LandscapeService(Service, object):
 
     def __init__(self, config):
         self.config = config
+        try:
+            from landscape.lib import bpickle_dbus
+        except ImportError:
+            pass
+        else:
+            bpickle_dbus.install()
         self.reactor = self.reactor_factory()
         if self.persist_filename:
             self.persist = get_versioned_persist(self)
@@ -78,6 +85,9 @@ def run_landscape_service(configuration_class, service_class, args):
 
     if configuration.clones > 0:
 
+        # Increase the timeout of AMP's MethodCalls
+        ComponentProtocol.timeout = 300
+
         # Create clones here because TwistedReactor.__init__ would otherwise
         # cancel all scheduled delayed calls
         clones = []
@@ -93,8 +103,9 @@ def run_landscape_service(configuration_class, service_class, args):
         configuration.is_clone = False
 
         def start_clones():
-            # Spawn instances over 25-30 minutes.
-            delay = configuration.start_clones_over / configuration.clones
+            # Spawn instances over the given time window
+            start_clones_over = float(configuration.start_clones_over)
+            delay = start_clones_over / configuration.clones
 
             for i, clone in enumerate(clones):
 

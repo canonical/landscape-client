@@ -36,18 +36,6 @@ class MonitorPlugin(BrokerClientPlugin):
         """An alias for the C{client} attribute."""
         return self.client
 
-    def call_on_accepted(self, type, callable, *args, **kwargs):
-        """
-        Register a callback fired upon a C{message-type-acceptance-changed}.
-        """
-
-        def acceptance_changed(acceptance):
-            if acceptance:
-                return callable(*args, **kwargs)
-
-        self.monitor.reactor.call_on(("message-type-acceptance-changed",
-                                       type), acceptance_changed)
-
 
 class DataWatcher(MonitorPlugin):
     """

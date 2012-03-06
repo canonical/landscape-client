@@ -52,8 +52,10 @@ class BrokerService(LandscapeService):
             self.payload_recorder = PayloadRecorder(config.record_directory)
         else:
             self.payload_recorder = None
+
         self.transport = self.transport_factory(
-            config.url, config.ssl_public_key, self.payload_recorder)
+            self.reactor, config.url, config.ssl_public_key,
+            self.payload_recorder)
         self.message_store = get_default_message_store(
             self.persist, config.message_store_path)
         self.identity = Identity(self.config, self.persist)
@@ -61,9 +63,9 @@ class BrokerService(LandscapeService):
         self.exchanger = MessageExchange(
             self.reactor, self.message_store, self.transport, self.identity,
             exchange_store, config)
-        self.pinger = self.pinger_factory(self.reactor, config.ping_url,
-                                          self.identity, self.exchanger,
-                                          interval=config.ping_interval)
+        self.pinger = self.pinger_factory(
+            self.reactor, config.ping_url, self.identity, self.exchanger,
+            interval=config.ping_interval)
         self.registration = RegistrationHandler(
             config, self.identity, self.reactor, self.exchanger, self.pinger,
             self.message_store, fetch_async)

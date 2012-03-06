@@ -1,4 +1,3 @@
-import thread
 import time
 import sys
 import logging
@@ -8,12 +7,17 @@ import socket
 from twisted.test.proto_helpers import FakeDatagramTransport
 from twisted.internet.defer import succeed, fail
 from twisted.internet.error import DNSLookupError
+from twisted.internet.threads import deferToThread
 
 from landscape.log import format_object
 
 
 class InvalidID(Exception):
     """Raised when an invalid ID is used with reactor.cancel_call()."""
+
+
+class CallHookError(Exception):
+    """Raised when hooking on a reactor incorrectly."""
 
 
 class EventID(object):
@@ -120,8 +124,20 @@ class ThreadedCallsReactorMixin(object):
         @note: Both C{callback} and C{errback} will be executed in the
             the parent thread.
         """
-        thread.start_new_thread(self._in_thread,
-                                (callback, errback, f, args, kwargs))
+        def on_success(result):
+            if callback:
+                return callback(result)
+
+        def on_failure(failure):
+            exc_info = (failure.type, failure.value, failure.tb)
+            if errback:
+                errback(*exc_info)
+            else:
+                logging.error(exc_info[1], exc_info=exc_info)
+
+        deferred = deferToThread(f, *args, **kwargs)
+        deferred.addCallback(on_success)
+        deferred.addErrback(on_failure)
 
     def _in_thread(self, callback, errback, f, args, kwargs):
         try:
@@ -142,6 +158,13 @@ class ThreadedCallsReactorMixin(object):
                 self._threaded_callbacks.pop(0)()
             except Exception, e:
                 logging.exception(e)
+
+    def _hook_threaded_callbacks(self):
+        id = self.call_every(0.5, self._run_threaded_callbacks)
+        self._run_threaded_callbacks_id = id
+
+    def _unhook_threaded_callbacks(self):
+        self.cancel_call(self._run_threaded_callbacks_id)
 
 
 class UnixReactorMixin(object):
@@ -297,7 +320,7 @@ class TwistedReactor(EventHandlingReactorMixin,
         self._LoopingCall = LoopingCall
         self._reactor = reactor
         self._cleanup()
-
+        self.callFromThread = reactor.callFromThread
         super(TwistedReactor, self).__init__()
 
     def _cleanup(self):

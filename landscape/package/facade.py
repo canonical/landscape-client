@@ -3,6 +3,7 @@ import os
 import subprocess
 import tempfile
 from cStringIO import StringIO
+from operator import attrgetter
 
 has_smart = True
 try:
@@ -27,8 +28,10 @@ has_new_enough_apt = True
 from aptsources.sourceslist import SourcesList
 try:
     from apt.progress.text import AcquireProgress
+    from apt.progress.base import InstallProgress
 except ImportError:
     AcquireProgress = object
+    InstallProgress = object
     has_new_enough_apt = False
 
 from landscape.lib.fs import append_file, create_file, read_file
@@ -69,6 +72,27 @@ class LandscapeAcquireProgress(AcquireProgress):
         Overriding this method means that we don't have to care about
         fcntl.ioctl API differences for different Python versions.
         """
+
+
+class LandscapeInstallProgress(InstallProgress):
+
+    dpkg_exited = None
+
+    def wait_child(self):
+        """Override to find out whether dpkg exited or not.
+
+        The C{run()} method returns os.WEXITSTATUS(res) without checking
+        os.WIFEXITED(res) first, so it can signal that everything is ok,
+        even though something causes dpkg not to exit cleanly.
+
+        Save whether dpkg exited cleanly into the C{dpkg_exited}
+        attribute. If dpkg exited cleanly the exit code can be used to
+        determine whether there were any errors. If dpkg didn't exit
+        cleanly it should mean that something went wrong.
+        """
+        res = super(LandscapeInstallProgress, self).wait_child()
+        self.dpkg_exited = os.WIFEXITED(res)
+        return res
 
 
 class AptFacade(object):
@@ -431,6 +455,72 @@ class AptFacade(object):
                 [version for package, version in dependencies])
         return len(versions_to_be_changed) > 0
 
+    def _get_unmet_relation_info(self, dep_relation):
+        """Return a string representation of a specific dependency relation."""
+        info = dep_relation.target_pkg.name
+        if dep_relation.target_ver:
+            info += " (%s %s)" % (
+                dep_relation.comp_type, dep_relation.target_ver)
+        reason = " but is not installable"
+        if dep_relation.target_pkg.name in self._cache:
+            dep_package = self._cache[dep_relation.target_pkg.name]
+            if dep_package.installed or dep_package.marked_install:
+                version = dep_package.candidate.version
+                if dep_package not in self._cache.get_changes():
+                    version = dep_package.installed.version
+                reason = " but %s is to be installed" % version
+        info += reason
+        return info
+
+    def _is_dependency_satisfied(self, dependency, dep_type):
+        """Return whether a dependency is satisfied.
+
+        For positive dependencies (Pre-Depends, Depends) it means that
+        one of its targets is going to be installed. For negative
+        dependencies (Conflicts, Breaks), it means that none of its
+        targets are going to be installed.
+        """
+        is_positive = dep_type not in ["Breaks", "Conflicts"]
+        depcache = self._cache._depcache
+        for or_dep in dependency:
+            for target in or_dep.all_targets():
+                package = target.parent_pkg
+                if ((package.current_state == apt_pkg.CURSTATE_INSTALLED
+                     or depcache.marked_install(package))
+                    and not depcache.marked_delete(package)):
+                    return is_positive
+        return not is_positive
+
+    def _get_unmet_dependency_info(self):
+        """Get information about unmet dependencies in the cache state.
+
+        Go through all the broken packages and say which dependencies
+        haven't been satisfied.
+
+        @return: A string with dependency information like what you get
+            from apt-get.
+        """
+
+        broken_packages = self._get_broken_packages()
+        if not broken_packages:
+            return ""
+        all_info = ["The following packages have unmet dependencies:"]
+        for package in sorted(broken_packages, key=attrgetter("name")):
+            for dep_type in ["PreDepends", "Depends", "Conflicts", "Breaks"]:
+                dependencies = package.candidate._cand.depends_list.get(
+                    dep_type, [])
+                for dependency in dependencies:
+                    if self._is_dependency_satisfied(dependency, dep_type):
+                        continue
+                    relation_infos = []
+                    for dep_relation in dependency:
+                        relation_infos.append(
+                            self._get_unmet_relation_info(dep_relation))
+                    info = "  %s: %s: " % (package.name, dep_type)
+                    or_divider = " or\n" + " " * len(info)
+                    all_info.append(info + or_divider.join(relation_infos))
+        return "\n".join(all_info)
+
     def perform_changes(self):
         """Perform the pending package operations."""
         held_package_names = set()
@@ -484,7 +574,8 @@ class AptFacade(object):
             try:
                 fixer.resolve(True)
             except SystemError, error:
-                raise TransactionError(error.args[0])
+                raise TransactionError(
+                    error.args[0] + "\n" + self._get_unmet_dependency_info())
         if not self._check_changes(version_changes):
             return None
         fetch_output = StringIO()
@@ -496,9 +587,13 @@ class AptFacade(object):
         old_stderr = os.dup(2)
         os.dup2(fd, 1)
         os.dup2(fd, 2)
+        install_progress = LandscapeInstallProgress()
         try:
             self._cache.commit(
-                fetch_progress=LandscapeAcquireProgress(fetch_output))
+                fetch_progress=LandscapeAcquireProgress(fetch_output),
+                install_progress=install_progress)
+            if not install_progress.dpkg_exited:
+                raise SystemError("dpkg didn't exit cleanly.")
         except SystemError, error:
             result_text = (
                 fetch_output.getvalue() + read_file(install_output_path))
@@ -519,6 +614,7 @@ class AptFacade(object):
         del self._version_installs[:]
         del self._version_removals[:]
         self._global_upgrade = False
+        self._cache.clear()
 
     def mark_install(self, version):
         """Mark the package for installation."""

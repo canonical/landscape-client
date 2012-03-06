@@ -13,6 +13,7 @@ import signal
 import time
 
 from logging import warning, info, error
+from resource import setrlimit, RLIMIT_NOFILE
 
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, succeed
@@ -21,15 +22,19 @@ from twisted.internet.error import ProcessExitedAlready
 from twisted.application.service import Service, Application
 from twisted.application.app import startApplication
 
-from landscape.deployment import Configuration, init_logging
+from landscape.deployment import init_logging, Configuration
 from landscape.lib.twisted_util import gather_results
 from landscape.lib.log import log_failure
 from landscape.lib.bootstrap import (BootstrapList, BootstrapFile,
                                      BootstrapDirectory)
 from landscape.log import rotate_logs
+from landscape.amp import ComponentProtocol
 from landscape.broker.amp import (
     RemoteBrokerConnector, RemoteMonitorConnector, RemoteManagerConnector)
 from landscape.reactor import TwistedReactor
+from landscape.lib.dns import discover_server
+from landscape.configuration import (
+    fetch_base64_ssl_public_certificate, decode_base64_ssl_public_certificate)
 
 GRACEFUL_WAIT_PERIOD = 10
 MAXIMUM_CONSECUTIVE_RESTARTS = 5
@@ -57,6 +62,8 @@ class Daemon(object):
     @cvar program: The name of the executable program that will start this
         daemon.
     @cvar username: The name of the user to switch to, by default.
+    @cvar service: The DBus service name that the program will be expected to
+        listen on.
     @cvar max_retries: The maximum number of retries before giving up when
         trying to connect to the watched daemon.
     @cvar factor: The factor by which the delay between subsequent connection
@@ -171,7 +178,8 @@ class Daemon(object):
 
     def is_running(self):
         # FIXME Error cases may not be handled in the best possible way
-        # here. We're basically return False if any error happens.
+        # here. We're basically return False if any error happens from the
+        # dbus ping.
         return self._connect_and_call("ping")
 
     def wait(self):
@@ -359,7 +367,7 @@ class WatchDog(object):
     def start(self):
         """
         Start all daemons. The broker will be started first, and no other
-        daemons will be started before it is running and responding to
+        daemons will be started before it is running and responding to DBUS
         messages.
 
         @return: A deferred which fires when all services have successfully
@@ -486,16 +494,69 @@ class WatchDogService(Service):
                                  enabled_daemons=config.get_enabled_daemons())
         self.exit_code = 0
 
+    def autodiscover(self):
+        """
+        Autodiscover called if config setting config.server_autodiscover is
+        True. This method allows the watchdog to attempt server autodiscovery,
+        fetch the discovered landscape server's custom CA certificate, and
+        write both the certificate and the updated config file with the
+        discovered values.
+        """
+        def update_config(hostname):
+            if hostname is None:
+                warning("Autodiscovery returned empty hostname string. "
+                        "Reverting to previous settings.")
+            else:
+                info("Autodiscovery found landscape server at %s. "
+                     "Updating configuration values." % hostname)
+                self._config.server_autodiscover = False
+                self._config.url = "https://%s/message-system" % hostname
+                self._config.ping_url = "http://%s/ping" % hostname
+                if not self._config.ssl_public_key:
+                    # If we don't have a key on this system, pull it from
+                    # the auto-discovered server and write it to the filesystem
+                    ssl_public_key = fetch_base64_ssl_public_certificate(
+                        hostname, on_info=info, on_error=warning)
+                    if ssl_public_key:
+                        self._config.ssl_public_key = ssl_public_key
+                        decode_base64_ssl_public_certificate(self._config)
+                self._config.write()
+            return hostname
+
+        def discovery_error(result):
+            warning("Autodiscovery failed.  Reverting to previous settings.")
+
+        lookup_deferred = discover_server(
+            self._config.autodiscover_srv_query_string,
+            self._config.autodiscover_a_query_string)
+        lookup_deferred.addCallback(update_config)
+        lookup_deferred.addErrback(discovery_error)
+        return lookup_deferred
+
     def startService(self):
         Service.startService(self)
         bootstrap_list.bootstrap(data_path=self._config.data_path,
                                  log_dir=self._config.log_dir)
-        for i in range(self._config.clones):
-            suffix = "-clone-%d" % i
-            bootstrap_list.bootstrap(data_path=self._config.data_path + suffix,
-                                     log_dir=self._config.log_dir + suffix)
+        if self._config.clones > 0:
 
-        result = self.watchdog.check_running()
+            # Let clones open an appropriate number of fds
+            setrlimit(RLIMIT_NOFILE, (self._config.clones * 100,
+                                      self._config.clones * 200))
+
+            # Increase the timeout of AMP's MethodCalls
+            ComponentProtocol.timeout = 300
+
+            # Create clones log and data directories
+            for i in range(self._config.clones):
+                suffix = "-clone-%d" % i
+                bootstrap_list.bootstrap(
+                    data_path=self._config.data_path + suffix,
+                    log_dir=self._config.log_dir + suffix)
+
+        result = succeed(None)
+        if self._config.server_autodiscover:
+            result.addCallback(lambda _: self.autodiscover())
+        result.addCallback(lambda _: self.watchdog.check_running())
 
         def start_if_not_running(running_daemons):
             if running_daemons:
