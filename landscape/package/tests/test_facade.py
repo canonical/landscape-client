@@ -2132,13 +2132,8 @@ class AptFacadeTest(LandscapeTest):
         [foo] = self.facade.get_packages_by_name("foo")
         [baz] = self.facade.get_packages_by_name("baz")
 
-        holds = sorted(self.facade.get_package_holds())
-        self.assertEqual(2, len(holds))
-        [hold1, hold2] = holds
-        self.assertEqual(baz.package.name, hold1.name)
-        self.assertEqual(baz.package.id, hold1.id)
-        self.assertEqual(foo.package.name, hold2.name)
-        self.assertEqual(foo.package.id, hold2.id)
+        self.assertEqual(
+            ["baz", "foo"], sorted(self.facade.get_package_holds()))
 
     def test_set_package_hold(self):
         """
@@ -2150,10 +2145,7 @@ class AptFacadeTest(LandscapeTest):
         self.facade.set_package_hold(foo)
         self.facade.reload_channels()
 
-        holds = self.facade.get_package_holds()
-
-        self.assertEqual([foo.package.name],
-                         [package.name for package in holds])
+        self.assertEqual(["foo"], self.facade.get_package_holds())
 
     def test_set_package_hold_existing_hold(self):
         """
@@ -2167,8 +2159,7 @@ class AptFacadeTest(LandscapeTest):
         self.facade.set_package_hold(foo)
         self.facade.reload_channels()
 
-        self.assertEqual(["foo"], [package.name for package in
-                                   self.facade.get_package_holds()])
+        self.assertEqual(["foo"], self.facade.get_package_holds())
 
     def test_remove_package_hold(self):
         """

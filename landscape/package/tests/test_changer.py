@@ -1252,8 +1252,7 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
 
         def assert_result(result):
             self.facade.reload_channels()
-            self.assertEqual(["foo"], [hold.name for hold in
-                                       self.facade.get_package_holds()])
+            self.assertEqual(["foo"], self.facade.get_package_holds())
             self.assertIn("Queuing message with change package holds results "
                           "to exchange urgently.", self.logfile.getvalue())
             self.assertMessages(
@@ -1287,9 +1286,7 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
                                         "operation-id": 123})
 
         def assert_result(result):
-            [hold1, hold2] = self.facade.get_package_holds()
-            self.assertEqual("foo", hold1.name)
-            self.assertEqual("bar", hold2.name)
+            self.assertEqual(["foo", "bar"], self.facade.get_package_holds())
 
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
@@ -1390,11 +1387,7 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
 
         def assert_result(result):
             self.facade.reload_channels()
-            holds = self.facade.get_package_holds()
-            self.assertEqual(1, len(holds))
-            [bar_hold] = holds
-            self.assertEqual(bar.package.id, bar_hold.id)
-            self.assertEqual(bar.package.name, bar_hold.name)
+            self.assertEqual(["bar"], self.facade.get_package_holds())
             self.assertIn("Queuing message with change package holds results "
                           "to exchange urgently.", self.logfile.getvalue())
             self.assertMessages(
