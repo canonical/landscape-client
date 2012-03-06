@@ -57,7 +57,6 @@ class SettingsApplicationController(Gtk.Application):
         controller.load()
         self.settings_dialog = ClientSettingsDialog(controller)
         if self.settings_dialog.run() == Gtk.ResponseType.OK:
-            self.settings_dialog.persist()
-            controller.register(self.on_notify, self.on_error, self.on_succeed,
-                                self.on_fail)
+            controller.persist(self.on_notify, self.on_error, self.on_succeed,
+                               self.on_fail)
         self.settings_dialog.destroy()

@@ -175,6 +175,3 @@ class ClientSettingsDialog(Gtk.Dialog):
     def revert(self, button):
         self.controller.revert()
         self.load_data()
-
-    def persist(self):
-        self.controller.commit()

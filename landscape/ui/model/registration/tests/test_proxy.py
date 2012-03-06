@@ -20,31 +20,37 @@ class RegistrationProxyTest(LandscapeTest):
         bus_name = dbus.service.BusName(INTERFACE_NAME,
                                         RegistrationProxyTest.bus)
 
-        def _do_registration(this, config_path):
+        def fake_do__registration(this, config_path):
             return True
 
-        RegistrationMechanism._do_registration = _do_registration
+        def fake_do__disabling(this):
+            return True
+
+        RegistrationMechanism._do_registration = fake_do__registration
+        RegistrationMechanism._do_disabling = fake_do__disabling
         self.mechanism = RegistrationMechanism(bus_name)
 
-        def setup_interface(this, bus):
+        def fake_setup_interface(this, bus):
             """
             This just allows us to test without actually relying on dbus.
             """
             this._interface = self.mechanism
 
-        def register_handlers(this):
+        def fake_register_handlers(this):
             pass
 
-        def remove_handlers(this):
+        def fake_remove_handlers(this):
             pass
 
-        def callback(message):
+        def fake_callback(message):
             pass
 
-        RegistrationProxy._setup_interface = setup_interface
-        RegistrationProxy._register_handlers = register_handlers
-        RegistrationProxy._remove_handlers = remove_handlers
-        self.proxy = RegistrationProxy(callback, callback, callback, callback)
+        RegistrationProxy._setup_interface = fake_setup_interface
+        RegistrationProxy._register_handlers = fake_register_handlers
+        RegistrationProxy._remove_handlers = fake_remove_handlers
+        self.proxy = RegistrationProxy(fake_callback, fake_callback,
+                                       fake_callback, fake_callback,
+                                       fake_callback, fake_callback)
 
     def tearDown(self):
         self.mechanism.remove_from_connection()
@@ -57,6 +63,13 @@ class RegistrationProxyTest(LandscapeTest):
         """
         self.assertEqual((True, "Connected\n"), self.proxy.register("foo"))
 
+    def test_disable(self):
+        """
+        Test that the proxy calls through to the underlying interface and
+        correctly performs disabling.
+        """
+        self.assertEqual(True, self.proxy.disable())
+
     if not got_gobject_introspection:
         skip = gobject_skip_message
     else:
@@ -64,5 +77,5 @@ class RegistrationProxyTest(LandscapeTest):
         try:
             bus = dbus.SessionBus(private=True)
         except dbus.exceptions.DBusException:
-            test_register.skip = \
-                "Cannot launch private DBus session without X11"
+            test_register.skip = ("Cannot launch private DBus session without "
+                                  "X11")

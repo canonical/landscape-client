@@ -10,14 +10,17 @@ class RegistrationProxy(object):
     code to remain agnostic to the implementation of registration.
     """
 
-    def __init__(self, on_notify, on_error,
-                 on_succeed, on_fail, bus=None):
+    def __init__(self, on_register_notify=None, on_register_error=None,
+                 on_register_succeed=None, on_register_fail=None,
+                 on_disable_succeed=None, on_disable_fail=None, bus=None):
         self._bus = None
         self._interface = None
-        self._on_notify = on_notify
-        self._on_error = on_error
-        self._on_succeed = on_succeed
-        self._on_fail = on_fail
+        self._on_register_notify = on_register_notify
+        self._on_register_error = on_register_error
+        self._on_register_succeed = on_register_succeed
+        self._on_register_fail = on_register_fail
+        self._on_disable_succeed = on_disable_succeed
+        self._on_disable_fail = on_disable_fail
         self._setup_interface(bus)
 
     def _setup_interface(self, bus):
@@ -43,32 +46,55 @@ class RegistrationProxy(object):
         return wrapped_exit_handler
 
     def _register_handlers(self):
-        self._handlers = [
-            self._bus.add_signal_receiver(
-                self._on_notify,
-                signal_name="register_notify",
-                dbus_interface=mechanism.INTERFACE_NAME,
-                bus_name=None,
-                path=mechanism.OBJECT_PATH),
-            self._bus.add_signal_receiver(
-                self._on_error,
-                signal_name="register_error",
-                dbus_interface=mechanism.INTERFACE_NAME,
-                bus_name=None,
-                path=mechanism.OBJECT_PATH),
-            self._bus.add_signal_receiver(
-                self._exit_handler_wrapper(self._on_succeed),
-                signal_name="register_succeed",
-                dbus_interface=mechanism.INTERFACE_NAME,
-                bus_name=None,
-                path=mechanism.OBJECT_PATH),
-            self._bus.add_signal_receiver(
-                self._exit_handler_wrapper(self._on_fail),
-                signal_name="register_fail",
-                dbus_interface=mechanism.INTERFACE_NAME,
-                bus_name=None,
-                path=mechanism.OBJECT_PATH)
-            ]
+        self._handlers = []
+        if self._on_register_notify:
+            self._handlers.append(
+                self._bus.add_signal_receiver(
+                    self._on_register_notify,
+                    signal_name="register_notify",
+                    dbus_interface=mechanism.INTERFACE_NAME,
+                    bus_name=None,
+                    path=mechanism.OBJECT_PATH))
+        if self._on_register_error:
+            self._handlers.append(
+                self._bus.add_signal_receiver(
+                    self._on_register_error,
+                    signal_name="register_error",
+                    dbus_interface=mechanism.INTERFACE_NAME,
+                    bus_name=None,
+                    path=mechanism.OBJECT_PATH))
+        if self._on_register_succeed:
+            self._handlers.append(
+                self._bus.add_signal_receiver(
+                    self._exit_handler_wrapper(self._on_register_succeed),
+                    signal_name="register_succeed",
+                    dbus_interface=mechanism.INTERFACE_NAME,
+                    bus_name=None,
+                    path=mechanism.OBJECT_PATH))
+        if self._on_register_fail:
+            self._handlers.append(
+                self._bus.add_signal_receiver(
+                    self._exit_handler_wrapper(self._on_register_fail),
+                    signal_name="register_fail",
+                    dbus_interface=mechanism.INTERFACE_NAME,
+                    bus_name=None,
+                    path=mechanism.OBJECT_PATH))
+        if self._on_disable_succeed:
+            self._handlers.append(
+                self._bus.add_signal_receiver(
+                    self._exit_handler_wrapper(self._on_disable_succeed),
+                    signal_name="disable_succeed",
+                    dbus_interface=mechanism.INTERFACE_NAME,
+                    bus_name=None,
+                    path=mechanism.OBJECT_PATH))
+        if self._on_disable_fail:
+            self._handlers.append(
+                self._bus.add_signal_receiver(
+                    self._exit_handler_wrapper(self._on_disable_fail),
+                    signal_name="disable_fail",
+                    dbus_interface=mechanism.INTERFACE_NAME,
+                    bus_name=None,
+                    path=mechanism.OBJECT_PATH))
 
     def _remove_handlers(self):
         for handler in self._handlers:
@@ -85,3 +111,11 @@ class RegistrationProxy(object):
                                             error_handler=error_handler)
         else:
             return self._interface.register(config_path)
+
+    def disable(self, reply_handler=None, error_handler=None):
+        self._register_handlers()
+        if self._bus:
+            return self._interface.disable(reply_handler=reply_handler,
+                                           error_handler=error_handler)
+        else:
+            return self._interface.disable()
