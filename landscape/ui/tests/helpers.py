@@ -2,7 +2,6 @@ import os
 
 from lxml import etree
 import dbus
-from gi.repository import Gdk
 
 from landscape.configuration import LandscapeSetupConfiguration
 
@@ -20,6 +19,7 @@ except (ImportError, RuntimeError):
 
 
 if got_gobject_introspection:
+    from gi.repository import Gdk
     from landscape.ui.model.configuration.mechanism import (
         INTERFACE_NAME, ConfigurationMechanism)
     from landscape.ui.model.configuration.proxy import ConfigurationProxy

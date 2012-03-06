@@ -1,22 +1,21 @@
 import sys
 
-try:
+from landscape.ui.tests.helpers import (
+    ConfigurationProxyHelper, FakeGSettings, dbus_test_should_skip,
+    dbus_skip_message, gobject_skip_message, got_gobject_introspection)
+
+if got_gobject_introspection:
     from gi.repository import Gtk, Gdk
-    got_gobject_introspection = True
-except (ImportError, RuntimeError):
-    got_gobject_introspection = False
-    gobject_skip_message = "GObject Introspection module unavailable"
-else:
     from landscape.ui.view.configuration import ClientSettingsDialog
-from landscape.ui.controller.configuration import ConfigController
+    from landscape.ui.controller.configuration import ConfigController
+    from landscape.ui.tests.helpers import (
+        ConfigurationProxyHelper, FakeGSettings, simulate_gtk_key_release)
+    import landscape.ui.model.configuration.state
+    from landscape.ui.model.configuration.state import (
+        COMPUTER_TITLE, ConfigurationModel)
+    from landscape.ui.model.configuration.uisettings import UISettings
 
 from landscape.tests.helpers import LandscapeTest
-from landscape.ui.tests.helpers import (
-    ConfigurationProxyHelper, FakeGSettings, simulate_gtk_key_release)
-import landscape.ui.model.configuration.state
-from landscape.ui.model.configuration.state import (
-    COMPUTER_TITLE, ConfigurationModel)
-from landscape.ui.model.configuration.uisettings import UISettings
 
 
 class ConfigurationViewTest(LandscapeTest):
@@ -180,11 +179,8 @@ class ConfigurationViewTest(LandscapeTest):
         self.assertEqual("bar", dialog.hosted_password_entry.get_text())
 
     if not got_gobject_introspection:
-        test_revert.skip = gobject_skip_message
-        test_load_data_from_config.skip = gobject_skip_message
-        test_on_combobox_changed.skip = gobject_skip_message
-        test_init.skip = gobject_skip_message
-
+        skip = gobject_skip_message
+        
 
 class ConfigurationViewPersistTest(LandscapeTest):
 
@@ -284,10 +280,7 @@ class ConfigurationViewPersistTest(LandscapeTest):
         self.assertTrue(self.persisted)
 
     if not got_gobject_introspection:
-        test_persist_local_server_host_name_change.skip = \
-            gobject_skip_message
-        test_persist_hosted_password_change.skip = gobject_skip_message
-        test_persist_hosted_account_name_change.skip = gobject_skip_message
+        skip = gobject_skip_message
 
 
 class LocalConfigurationViewTest(LandscapeTest):
@@ -354,5 +347,4 @@ class LocalConfigurationViewTest(LandscapeTest):
         self.assertEqual("manky", dialog.local_password_entry.get_text())
 
     if not got_gobject_introspection:
-        test_load_data_from_config.skip = gobject_skip_message
-        test_init.skip = gobject_skip_message
+        skip = gobject_skip_message
