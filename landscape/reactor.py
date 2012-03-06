@@ -301,12 +301,12 @@ class FakeReactor(EventHandlingReactorMixin,
         try:
             # is it an IP address?
             socket.inet_aton(hostname)
-        except socket.error: # no
+        except socket.error:  # no
             if hostname in self.hosts:
                 return succeed(self.hosts[hostname])
             else:
                 return fail(DNSLookupError(hostname))
-        else: # yes
+        else:  # yes
             return succeed(hostname)
 
 

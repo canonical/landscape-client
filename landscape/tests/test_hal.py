@@ -29,7 +29,7 @@ class HALManagerTest(LandscapeTest):
         If the L{HALManager} fails connecting to HAL over D-Bus, then the
         L{HALManager.get_devices} method returns an empty list.
         """
-        self.log_helper.ignore_errors("Couldn't to connect to Hal via DBus")
+        self.log_helper.ignore_errors("Couldn't connect to Hal via DBus")
         bus = self.mocker.mock()
         bus.get_object("org.freedesktop.Hal", "/org/freedesktop/Hal/Manager")
         self.mocker.throw(DBusException())
@@ -43,7 +43,7 @@ class HALManagerTest(LandscapeTest):
         because the DBus server is not running at all, then the
         L{HALManager.get_devices} method returns an empty list.
         """
-        self.log_helper.ignore_errors("Couldn't to connect to Hal via DBus")
+        self.log_helper.ignore_errors("Couldn't connect to Hal via DBus")
         bus_mock = self.mocker.replace("dbus.SystemBus")
         bus_mock()
         self.mocker.throw(DBusException())

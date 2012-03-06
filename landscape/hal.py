@@ -12,7 +12,7 @@ class HALManager(object):
             manager = self._bus.get_object("org.freedesktop.Hal",
                                            "/org/freedesktop/Hal/Manager")
         except DBusException:
-            logging.error("Couldn't to connect to Hal via DBus")
+            logging.error("Couldn't connect to Hal via DBus")
             self._manager = None
         else:
             self._manager = Interface(manager, "org.freedesktop.Hal.Manager")

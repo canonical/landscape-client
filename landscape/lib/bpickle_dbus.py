@@ -35,11 +35,13 @@ def dumps_utf8string(obj):
     """
     return "u%s:%s" % (len(obj), obj)
 
+
 def dumps_double(obj):
     """
     Convert a dbus.types.Double into a floating point representation.
     """
     return "f%r;" % float(obj)
+
 
 def get_dbus_types():
     """
@@ -57,7 +59,7 @@ def get_dbus_types():
                                   ("Array", bpickle.dumps_list),
                                   ("Dictionary", bpickle.dumps_dict),
                                   ("String", bpickle.dumps_unicode),
-                                  ("UTF8String", dumps_utf8string),]:
+                                  ("UTF8String", dumps_utf8string)]:
         type = getattr(dbus.types, type_name, None)
         if type is not None:
             yield type, function

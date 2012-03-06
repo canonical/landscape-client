@@ -468,11 +468,11 @@ class WatchDogConfiguration(Configuration):
 
 def daemonize():
     # See http://www.steve.org.uk/Reference/Unix/faq_2.html#SEC16
-    if os.fork():   # launch child and...
-        os._exit(0) # kill off parent
+    if os.fork():  # launch child and...
+        os._exit(0)  # kill off parent
     os.setsid()
-    if os.fork():   # launch child and...
-        os._exit(0) # kill off parent again.
+    if os.fork():  # launch child and...
+        os._exit(0)  # kill off parent again.
     # some argue that this umask should be 0, but that's annoying.
     os.umask(077)
     null = os.open('/dev/null', os.O_RDWR)
@@ -563,7 +563,7 @@ class WatchDogService(Service):
                 error("ERROR: The following daemons are already running: %s"
                       % (", ".join(x.program for x in running_daemons)))
                 self.exit_code = 1
-                reactor.crash() # so stopService isn't called.
+                reactor.crash()  # so stopService isn't called.
                 return
             self._daemonize()
             info("Watchdog watching for daemons.")
