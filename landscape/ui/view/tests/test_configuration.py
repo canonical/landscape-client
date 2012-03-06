@@ -1,15 +1,13 @@
 import sys
 
 from landscape.ui.tests.helpers import (
-    ConfigurationProxyHelper, FakeGSettings, dbus_test_should_skip,
-    dbus_skip_message, gobject_skip_message, got_gobject_introspection)
+    ConfigurationProxyHelper, FakeGSettings, gobject_skip_message,
+    got_gobject_introspection, simulate_gtk_key_release)
 
 if got_gobject_introspection:
     from gi.repository import Gtk, Gdk
     from landscape.ui.view.configuration import ClientSettingsDialog
     from landscape.ui.controller.configuration import ConfigController
-    from landscape.ui.tests.helpers import (
-        ConfigurationProxyHelper, FakeGSettings, simulate_gtk_key_release)
     import landscape.ui.model.configuration.state
     from landscape.ui.model.configuration.state import (
         COMPUTER_TITLE, ConfigurationModel)
@@ -180,7 +178,7 @@ class ConfigurationViewTest(LandscapeTest):
 
     if not got_gobject_introspection:
         skip = gobject_skip_message
-        
+
 
 class ConfigurationViewPersistTest(LandscapeTest):
 

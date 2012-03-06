@@ -3,13 +3,11 @@ from landscape.ui.tests.helpers import (
     FakeGSettings, got_gobject_introspection, gobject_skip_message)
 
 if got_gobject_introspection:
-    from landscape.ui.controller.configuration import (
-        ConfigController, ConfigControllerLockError)
+    from landscape.ui.controller.configuration import ConfigController
     import landscape.ui.model.configuration.state
     from landscape.ui.model.configuration.state import (
         ConfigurationModel, COMPUTER_TITLE)
     from landscape.ui.model.configuration.uisettings import UISettings
-    from landscape.ui.controller.configuration import ConfigController
 
 from landscape.tests.helpers import LandscapeTest
 
