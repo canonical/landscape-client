@@ -7,6 +7,11 @@ from landscape.ui.constants import (
 
 
 class ClientSettingsDialog(Gtk.Dialog):
+    """
+    L{ClientSettingsDialog} is a subclass of Gtk.Dialog that loads the UI
+    components from the associated Glade XML file and wires everything up to
+    the controller.
+    """
 
     GLADE_FILE = "landscape-client-settings.glade"
     NO_SERVICE_TEXT = "Do not manage this computer with Landscape."
@@ -25,6 +30,14 @@ class ClientSettingsDialog(Gtk.Dialog):
         self.load_data()
 
     def _set_use_type_combobox_from_controller(self):
+        """
+        Load the persisted L{management_type} from the controller and set the
+        combobox appropriately.
+
+        Note that Gtk makes us jump through some hoops by having it's own model
+        level to deal with here.  The conversion between paths and iters makes
+        more sense if you understand that treeviews use the same model.
+        """
         iter = self.liststore.get_iter_first()
         while (self.liststore.get(iter, 0)[0] !=
                self.controller.management_type):
@@ -54,6 +67,14 @@ class ClientSettingsDialog(Gtk.Dialog):
         self._initialised = True
 
     def make_liststore(self):
+        """
+        Construct the correct L{Gtk.ListStore} to drive the L{Gtk.ComboBox} for
+        use-type.  This a table of:
+
+           * Management type (key)
+           * Text to display in the combobox
+           * L{Gtk.Frame} to load when this item is selected.
+        """
         liststore = Gtk.ListStore(GObject.TYPE_PYOBJECT,
                                   GObject.TYPE_STRING,
                                   GObject.TYPE_PYOBJECT)
