@@ -1240,7 +1240,7 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         self._add_system_package("bar")
         self.facade.reload_channels()
         self._hash_packages_by_name(self.facade, self.store, "foo")
-        self._hash_packages_by_name(self.facade, self.store, "bar")        
+        self._hash_packages_by_name(self.facade, self.store, "bar")
         [foo] = self.facade.get_packages_by_name("foo")
         [bar] = self.facade.get_packages_by_name("bar")
         self.facade.set_package_hold(foo)
@@ -1396,7 +1396,7 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
                 [{'operation-id': 123,
                   'result-code': 1,
                   'result-text': u'Package holds not added, since the '
-                  'following packages are not installed: ' + 
+                  'following packages are not installed: ' +
                   str(baz.package.id),
                   'status': 5,
                   'type': 'operation-result'}])
