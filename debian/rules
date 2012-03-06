@@ -94,12 +94,12 @@ ifneq (,$(findstring $(dist_release),"hardy"))
 endif
 ifneq (,$(filter $(dist_release),karmic lucid maverick))
 	# We want libpam-modules in karmic, and smart 1.2
-	echo "extra:Depends=libpam-modules (>= 1.0.1-9ubuntu3), python-smartpm (>= 1.2-4), python-dbus" >> $(landscape_common_substvars)
+	echo "extra:Depends=libpam-modules (>= 1.0.1-9ubuntu3), python-dbus" >> $(landscape_common_substvars)
 	echo "extra:Depends=python-pycurl, hal" >> $(landscape_client_substvars)
 endif
 ifeq (,$(filter $(dist_release),dapper hardy karmic lucid maverick))
 	# Starting natty, no more hal or dbus
-	echo "extra:Depends=libpam-modules (>= 1.0.1-9ubuntu3), python-smartpm (>= 1.2-4)" >> $(landscape_common_substvars)
+	echo "extra:Depends=libpam-modules (>= 1.0.1-9ubuntu3)" >> $(landscape_common_substvars)
 	echo "extra:Depends=python-pycurl, gir1.2-gudev-1.0 (>= 165-0ubuntu2)" >> $(landscape_client_substvars)
 	echo "extra:Suggests=python-dbus, hal" >> $(landscape_client_substvars)
 endif
