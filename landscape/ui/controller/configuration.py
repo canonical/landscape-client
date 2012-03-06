@@ -1,3 +1,5 @@
+import logging
+
 from landscape.ui.model.registration.proxy import RegistrationProxy
 from landscape.ui.model.configuration.state import StateError
 
@@ -46,7 +48,8 @@ class ConfigController(object):
             self._configuration.revert()
         except StateError:
             # We probably don't care.
-            pass
+            logging.info("landscape-client-settings-ui reverted with no "
+                         "changes to revert.")
 
     def commit(self):
         "Persist settings via the configuration object."
@@ -54,7 +57,8 @@ class ConfigController(object):
             self._configuration.persist()
         except StateError:
             # We probably don't care.
-            pass
+            logging.info("landscape-client-settings-ui committed with no "
+                         "changes to commit.")
 
     def register(self, notify_method, error_method, succeed_method,
                  fail_method):
