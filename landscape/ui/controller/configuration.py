@@ -40,11 +40,15 @@ class ConfigController(object):
             self._configuration.modify()
 
     def load(self):
-        "Load the initial data from the configuration"
+        """
+        Load the initial data from the configuration.
+        """
         self._configuration.load_data()
 
     def revert(self):
-        "Revert settings to those the configuration object originally found."
+        """
+        Revert settings to those the configuration object originally found.
+        """
         try:
             self._configuration.revert()
         except StateError:
@@ -53,7 +57,9 @@ class ConfigController(object):
                          "changes to revert.")
 
     def commit(self):
-        "Persist settings via the configuration object."
+        """
+        Persist settings via the configuration object.
+        """
         try:
             self._configuration.persist()
         except StateError:
@@ -63,7 +69,9 @@ class ConfigController(object):
 
     def register(self, notify_method, error_method, succeed_method,
                  fail_method):
-
+        """
+        Perform registration using the L{RegistrationProxy}.
+        """
         registration = RegistrationProxy(notify_method, error_method,
                                          succeed_method, fail_method)
         self.commit()

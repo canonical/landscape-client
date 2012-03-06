@@ -49,7 +49,9 @@ DEFAULT_DATA = {
 
 
 def derive_server_host_name_from_url(url):
-    "Extract the hostname part from a URL."
+    """
+    Extract the hostname part from a URL.
+    """
     try:
         without_protocol = url[url.index("://") + 3:]
     except ValueError:
@@ -61,14 +63,18 @@ def derive_server_host_name_from_url(url):
 
 
 def derive_url_from_host_name(host_name):
-    "Extrapolate a url from a host name."
+    """
+    Extrapolate a url from a host name.
+    """
     #Reuse this code to make sure it's a proper host name
     host_name = derive_server_host_name_from_url(host_name)
     return "https://" + host_name + "/message-system"
 
 
 def derive_ping_url_from_host_name(host_name):
-    "Extrapolate a ping_url from a host name."
+    """
+    Extrapolate a ping_url from a host name.
+    """
     #Reuse this code to make sure it's a proper host name
     host_name = derive_server_host_name_from_url(host_name)
     return "http://" + host_name + "/ping"
