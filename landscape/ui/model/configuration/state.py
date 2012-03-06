@@ -1,8 +1,7 @@
 import copy
 import socket
 
-from landscape.ui.constants import (
-    CANONICAL_MANAGED, NOT_MANAGED)
+from landscape.ui.constants import CANONICAL_MANAGED, NOT_MANAGED
 
 from landscape.ui.model.configuration.proxy import ConfigurationProxy
 
