@@ -7,15 +7,14 @@ from landscape.ui.tests.helpers import (
 
 class UISettingsTest(LandscapeTest):
 
-    default_data = {"is-hosted": True,
+    default_data = {"management-type": "LDS",
                     "computer-title": "bound.to.lose",
                     "hosted-landscape-host": "landscape.canonical.com",
                     "hosted-account-name": "Sparklehorse",
                     "hosted-password": "Vivadixiesubmarinetransmissionplot",
                     "local-landscape-host": "the.local.machine",
                     "local-account-name": "CrazyHorse",
-                    "local-password": "RustNeverSleeps"
-                    }
+                    "local-password": "RustNeverSleeps"}
 
     def setUp(self):
         super(UISettingsTest, self).setUp()
@@ -29,23 +28,23 @@ class UISettingsTest(LandscapeTest):
         self.assertTrue(self.settings.was_called_with_args(
                 "new", UISettings.BASE_KEY))
 
-    def test_get_is_hosted(self):
+    def test_get_management_type(self):
         """
-        Test that the L{get_is_hosted} value is correctly fetched from the
-        L{GSettings.Client}.
+        Test that the L{get_management_type} value is correctly fetched from
+        the L{GSettings.Client}.
         """
-        self.assertTrue(self.uisettings.get_is_hosted())
+        self.assertEqual("LDS", self.uisettings.get_management_type())
 
-    def test_set_is_hosted(self):
+    def test_set_management_type(self):
         """
-        Test that we can correctly use L{set_is_hosted} to write the
-        L{is_hosted} value to the L{GSettings.Client}.
+        Test that we can correctly use L{set_management_type} to write the
+        L{management_type} value to the L{GSettings.Client}.
         """
-        self.assertTrue(self.uisettings.get_is_hosted())
-        self.uisettings.set_is_hosted(False)
-        self.assertFalse(self.uisettings.get_is_hosted())
+        self.assertEqual("LDS", self.uisettings.get_management_type())
+        self.uisettings.set_management_type("canonical")
+        self.assertEqual("canonical", self.uisettings.get_management_type())
         self.assertTrue(self.settings.was_called_with_args(
-                "set_boolean", "is-hosted", False))
+                "set_string", "management-type", "canonical"))
 
     def test_get_computer_title(self):
         """

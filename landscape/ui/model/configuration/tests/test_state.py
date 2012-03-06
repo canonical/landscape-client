@@ -1,13 +1,17 @@
-from landscape.ui.model.configuration.uisettings import UISettings
 from landscape.ui.tests.helpers import (
     ConfigurationProxyHelper, FakeGSettings, dbus_test_should_skip,
     dbus_skip_message, gobject_skip_message, got_gobject_introspection)
+
 if got_gobject_introspection:
+    from landscape.ui.model.configuration.uisettings import UISettings
     import landscape.ui.model.configuration.state
     from landscape.ui.model.configuration.state import (
         ConfigurationModel, StateError, VirginState, InitialisedState,
-        ModifiedState, IS_HOSTED, HOSTED, LOCAL, HOSTED_LANDSCAPE_HOST,
+        ModifiedState, MANAGEMENT_TYPE, HOSTED, LOCAL, HOSTED_LANDSCAPE_HOST,
         LANDSCAPE_HOST, COMPUTER_TITLE)
+    from landscape.ui.constants import (
+        CANONICAL_MANAGED, LOCAL_MANAGED, NOT_MANAGED)
+
 
 from landscape.tests.helpers import LandscapeTest
 
@@ -28,9 +32,16 @@ class ConfigurationModelTest(LandscapeTest):
                              "hosted-password": "",
                              "local-landscape-host": "",
                              "local-account-name": "",
-                             "local-password": ""
-                             }
+                             "local-password": ""}
         self.config_string = ""
+        self.default_data = {"management-type": "canonical",
+                             "computer-title": "",
+                             "hosted-landscape-host": "",
+                             "hosted-account-name": "",
+                             "hosted-password": "",
+                             "local-landscape-host": "",
+                             "local-account-name": "",
+                             "local-password": ""}
         landscape.ui.model.configuration.state.DEFAULT_DATA[COMPUTER_TITLE] \
             = "bound.to.lose"
         super(ConfigurationModelTest, self).setUp()
@@ -44,13 +55,13 @@ class ConfigurationModelTest(LandscapeTest):
         uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         state = model.get_state()
-        self.assertTrue(state.get(IS_HOSTED))
+        self.assertEqual(NOT_MANAGED, state.get(MANAGEMENT_TYPE))
         self.assertEqual(HOSTED_LANDSCAPE_HOST,
                          state.get(HOSTED, LANDSCAPE_HOST))
-        self.assertRaises(TypeError, state.get, IS_HOSTED, HOSTED,
+        self.assertRaises(TypeError, state.get, MANAGEMENT_TYPE, HOSTED,
                           LANDSCAPE_HOST)
         self.assertRaises(KeyError, state.get, LANDSCAPE_HOST)
-        self.assertRaises(KeyError, state.get, IS_HOSTED, LANDSCAPE_HOST)
+        self.assertRaises(KeyError, state.get, MANAGEMENT_TYPE, LANDSCAPE_HOST)
 
     def test_set(self):
         """
@@ -61,10 +72,12 @@ class ConfigurationModelTest(LandscapeTest):
         uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         state = model.get_state()
-        state.set(IS_HOSTED, True)
-        self.assertTrue(state.get(IS_HOSTED))
-        state.set(IS_HOSTED, False)
-        self.assertFalse(state.get(IS_HOSTED))
+        state.set(MANAGEMENT_TYPE, NOT_MANAGED)
+        self.assertEqual(NOT_MANAGED, state.get(MANAGEMENT_TYPE))
+        state.set(MANAGEMENT_TYPE, CANONICAL_MANAGED)
+        self.assertEqual(CANONICAL_MANAGED, state.get(MANAGEMENT_TYPE))
+        state.set(MANAGEMENT_TYPE, LOCAL_MANAGED)
+        self.assertEqual(LOCAL_MANAGED, state.get(MANAGEMENT_TYPE))
         self.assertEqual("", state.get(LOCAL, LANDSCAPE_HOST))
         state.set(LOCAL, LANDSCAPE_HOST, "goodison.park")
         self.assertEqual("goodison.park", state.get(LOCAL, LANDSCAPE_HOST))
@@ -79,12 +92,12 @@ class ConfigurationModelTest(LandscapeTest):
         settings = FakeGSettings(data=self.default_data)
         uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
-        self.assertTrue(model.is_hosted)
+        self.assertEqual(NOT_MANAGED, model.management_type)
         self.assertEqual(HOSTED_LANDSCAPE_HOST, model.hosted_landscape_host)
         self.assertEqual("bound.to.lose", model.computer_title)
         self.assertEqual("", model.local_landscape_host)
         self.assertEqual("", model.hosted_account_name)
-        self.assertEqual("", model.local_account_name)
+        self.assertEqual("standalone", model.local_account_name)
         self.assertEqual("", model.hosted_password)
 
     def test_is_hosted_property(self):
@@ -96,9 +109,11 @@ class ConfigurationModelTest(LandscapeTest):
         uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         model.load_data()
-        self.assertTrue(model.is_hosted)
-        model.is_hosted = False
-        self.assertFalse(model.is_hosted)
+        self.assertEqual(CANONICAL_MANAGED, model.management_type)
+        model.management_type = LOCAL_MANAGED
+        self.assertEqual(LOCAL_MANAGED, model.management_type)
+        model.management_type = NOT_MANAGED
+        self.assertEqual(NOT_MANAGED, model.management_type)
 
     def test_computer_title_property(self):
         """
@@ -122,8 +137,8 @@ class ConfigurationModelTest(LandscapeTest):
         uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         self.assertEqual(HOSTED_LANDSCAPE_HOST, model.hosted_landscape_host)
-        model.hosted_landscape_host = "foo"
-        self.assertEqual("foo", model.hosted_landscape_host)
+        self.assertRaises(AttributeError, setattr, model,
+                          "hosted_landscape_host", "foo")
 
     def test_hosted_account_name_property(self):
         """
@@ -169,7 +184,7 @@ class ConfigurationModelTest(LandscapeTest):
         settings = FakeGSettings(data=self.default_data)
         uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
-        self.assertEqual("", model.local_account_name)
+        self.assertEqual("standalone", model.local_account_name)
         model.local_account_name = "foo"
         self.assertEqual("foo", model.local_account_name)
 
@@ -205,15 +220,14 @@ class ConfigurationModelHostedTest(LandscapeTest):
 
     helpers = [ConfigurationProxyHelper]
 
-    default_data = {"is-hosted": True,
+    default_data = {"management-type": "canonical",
                     "computer-title": "bound.to.lose",
                     "hosted-landscape-host": "landscape.canonical.com",
                     "hosted-account-name": "Sparklehorse",
                     "hosted-password": "Vivadixiesubmarinetransmissionplot",
                     "local-landscape-host": "the.local.machine",
                     "local-account-name": "CrazyHorse",
-                    "local-password": "RustNeverSleeps"
-                    }
+                    "local-password": "RustNeverSleeps"}
 
     def setUp(self):
         self.config_string = "[client]\n" \
@@ -238,7 +252,7 @@ class ConfigurationModelHostedTest(LandscapeTest):
         uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         model.load_data()
-        self.assertTrue(model.is_hosted)
+        self.assertEqual(CANONICAL_MANAGED, model.management_type)
         self.assertEqual("landscape.canonical.com",
                          model.hosted_landscape_host)
         self.assertEqual("the.local.machine", model.local_landscape_host)
@@ -256,15 +270,14 @@ class ConfigurationModelLocalTest(LandscapeTest):
 
     helpers = [ConfigurationProxyHelper]
 
-    default_data = {"is-hosted": True,
+    default_data = {"management-type": "LDS",
                     "computer-title": "bound.to.lose",
                     "hosted-landscape-host": "landscape.canonical.com",
                     "hosted-account-name": "Sparklehorse",
                     "hosted-password": "Vivadixiesubmarinetransmissionplot",
                     "local-landscape-host": "the.local.machine",
                     "local-account-name": "CrazyHorse",
-                    "local-password": "RustNeverSleeps"
-                    }
+                    "local-password": "RustNeverSleeps"}
 
     def setUp(self):
         self.config_string = "[client]\n" \
@@ -289,7 +302,7 @@ class ConfigurationModelLocalTest(LandscapeTest):
         uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         model.load_data()
-        self.assertFalse(model.is_hosted)
+        self.assertEqual(LOCAL_MANAGED, model.management_type)
         self.assertEqual("landscape.canonical.com",
                          model.hosted_landscape_host)
         self.assertEqual("landscape.localdomain", model.local_landscape_host)
@@ -315,15 +328,14 @@ class StateTransitionTest(LandscapeTest):
     def setUp(self):
         self.config_string = ""
         self.default_data = {
-            "is-hosted": True,
+            "management-type": "canonical",
             "computer-title": "bound.to.lose",
             "hosted-landscape-host": "landscape.canonical.com",
             "hosted-account-name": "Sparklehorse",
             "hosted-password": "Vivadixiesubmarinetransmissionplot",
             "local-landscape-host": "the.local.machine",
             "local-account-name": "CrazyHorse",
-            "local-password": "RustNeverSleeps"
-            }
+            "local-password": "RustNeverSleeps"}
         super(StateTransitionTest, self).setUp()
 
     def test_load_data_transitions(self):
@@ -361,12 +373,12 @@ class StateTransitionTest(LandscapeTest):
         uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         model.load_data()
-        self.assertTrue(model.is_hosted)
-        model.is_hosted = False
-        self.assertFalse(model.is_hosted)
+        self.assertEqual(CANONICAL_MANAGED, model.management_type)
+        model.management_type = LOCAL_MANAGED
+        self.assertEqual(LOCAL_MANAGED, model.management_type)
         model.modify()
         self.assertTrue(isinstance(model.get_state(), ModifiedState))
-        self.assertFalse(model.is_hosted)
+        self.assertEqual(LOCAL_MANAGED, model.management_type)
 
     def test_modified_state_is_modifiable(self):
         """
@@ -427,14 +439,11 @@ class StateTransitionTest(LandscapeTest):
         model.load_data()
         self.assertEqual(HOSTED_LANDSCAPE_HOST, model.hosted_landscape_host)
         self.assertEqual("CrazyHorse", model.local_account_name)
-        model.hosted_landscape_host = "foo"
         model.local_account_name = "bar"
         model.modify()
-        self.assertEqual("foo", model.hosted_landscape_host)
         self.assertEqual("bar", model.local_account_name)
         model.revert()
         self.assertTrue(isinstance(model.get_state(), InitialisedState))
-        self.assertEqual(HOSTED_LANDSCAPE_HOST, model.hosted_landscape_host)
         self.assertEqual("CrazyHorse", model.local_account_name)
 
     def test_persisting_a_virgin_raises(self):
@@ -476,7 +485,7 @@ class StateTransitionTest(LandscapeTest):
         uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         model.load_data()
-        self.assertTrue(uisettings.get_is_hosted())
+        self.assertEqual(CANONICAL_MANAGED, uisettings.get_management_type())
         self.assertEqual("Sparklehorse", uisettings.get_hosted_account_name())
         self.assertEqual("Vivadixiesubmarinetransmissionplot",
                         uisettings.get_hosted_password())
@@ -484,7 +493,7 @@ class StateTransitionTest(LandscapeTest):
                          uisettings.get_local_landscape_host())
         self.assertEqual("CrazyHorse", uisettings.get_local_account_name())
         self.assertEqual("RustNeverSleeps", uisettings.get_local_password())
-        model.is_hosted = False
+        model.management_type = LOCAL_MANAGED
         model.hosted_account_name = "ThomasPaine"
         model.hosted_password = "TheAgeOfReason"
         model.local_landscape_host = "another.local.machine"
@@ -494,7 +503,7 @@ class StateTransitionTest(LandscapeTest):
         self.assertTrue(isinstance(model.get_state(), ModifiedState))
         model.persist()
         self.assertTrue(isinstance(model.get_state(), InitialisedState))
-        self.assertFalse(uisettings.get_is_hosted())
+        self.assertEqual(LOCAL_MANAGED, uisettings.get_management_type())
         self.assertEqual("ThomasPaine", uisettings.get_hosted_account_name())
         self.assertEqual("TheAgeOfReason", uisettings.get_hosted_password())
         self.assertEqual("another.local.machine",
@@ -529,15 +538,14 @@ class StateTransitionWithExistingConfigTest(LandscapeTest):
             "https_proxy = https://proxy.localdomain:6192\n"
             "ping_url = http://landscape.canonical.com/ping\n")
         self.default_data = {
-            "is-hosted": True,
+            "management-type": "canonical",
             "computer-title": "bound.to.lose",
             "hosted-landscape-host": "landscape.canonical.com",
             "hosted-account-name": "Sparklehorse",
             "hosted-password": "Vivadixiesubmarinetransmissionplot",
             "local-landscape-host": "the.local.machine",
             "local-account-name": "CrazyHorse",
-            "local-password": "RustNeverSleeps"
-            }
+            "local-password": "RustNeverSleeps"}
         super(StateTransitionWithExistingConfigTest, self).setUp()
 
     def test_persisting_saves_data_to_proxy(self):
@@ -548,14 +556,14 @@ class StateTransitionWithExistingConfigTest(LandscapeTest):
         self.assertEqual("Sparklehorse", self.proxy.account_name)
         self.assertEqual("Vivadixiesubmarinetransmissionplot",
                         self.proxy.registration_password)
-        model.is_hosted = False
+        model.management_type = LOCAL_MANAGED
         model.local_account_name = "ThomasPaine"
         model.local_password = "TheAgeOfReason"
         model.modify()
         self.assertTrue(isinstance(model.get_state(), ModifiedState))
         model.persist()
         self.assertTrue(isinstance(model.get_state(), InitialisedState))
-        self.assertFalse(model.is_hosted)
+        self.assertEqual(LOCAL_MANAGED, model.management_type)
         self.assertEqual("https://the.local.machine/message-system",
                          self.proxy.url)
         self.assertEqual("http://the.local.machine/ping", self.proxy.ping_url)

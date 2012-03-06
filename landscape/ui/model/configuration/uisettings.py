@@ -11,11 +11,11 @@ class UISettings(object):
     def __init__(self, settings):
         self.settings = settings.new(self.BASE_KEY)
 
-    def get_is_hosted(self):
-        return self.settings.get_boolean("is-hosted")
+    def get_management_type(self):
+        return self.settings.get_string("management-type")
 
-    def set_is_hosted(self, value):
-        self.settings.set_boolean("is-hosted", value)
+    def set_management_type(self, value):
+        self.settings.set_string("management-type", value)
 
     def get_computer_title(self):
         return self.settings.get_string("computer-title")

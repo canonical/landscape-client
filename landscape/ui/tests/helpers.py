@@ -19,6 +19,7 @@ except (ImportError, RuntimeError):
 
 
 if got_gobject_introspection:
+    from gi.repository import Gdk
     from landscape.ui.model.configuration.mechanism import (
         INTERFACE_NAME, ConfigurationMechanism)
     from landscape.ui.model.configuration.proxy import ConfigurationProxy
@@ -159,3 +160,16 @@ class FakeGSettings(object):
 
         expected_args = self._args_to_string(*args)
         return expected_args in arglist
+
+
+def simulate_gtk_key_release(window, widget, key):
+    keypress = Gdk.Event(Gdk.EventType.KEY_PRESS)
+    keypress.keyval = key
+    keypress.window = window
+    keypress.send_event = True
+    widget.emit("key-press-event", keypress)
+    keypress = Gdk.Event(Gdk.EventType.KEY_RELEASE)
+    keypress.keyval = key
+    keypress.window = window
+    keypress.send_event = True
+    widget.emit("key-release-event", keypress)
