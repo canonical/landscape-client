@@ -155,4 +155,4 @@ class ClientSettingsDialog(Gtk.Dialog):
         self.load_data()
 
     def persist(self):
-        self.controller.persist()
+        self.controller.commit()
