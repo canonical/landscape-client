@@ -14,9 +14,9 @@ class ClientSettingsDialog(Gtk.Dialog):
     """
 
     GLADE_FILE = "landscape-client-settings.glade"
-    NO_SERVICE_TEXT = "Do not manage this computer with Landscape."
-    HOSTED_SERVICE_TEXT = "Use Canonical's hosted Landscape service."
-    LOCAL_SERVICE_TEXT = "Use a dedicated Landscape system."
+    NO_SERVICE_TEXT = "None"
+    HOSTED_SERVICE_TEXT = "Landscape - hosted by Canonical"
+    LOCAL_SERVICE_TEXT = "Landscape - dedicated server"
 
     def __init__(self, controller):
         super(ClientSettingsDialog, self).__init__(
@@ -24,6 +24,7 @@ class ClientSettingsDialog(Gtk.Dialog):
             flags=Gtk.DialogFlags.MODAL,
             buttons=(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
                      Gtk.STOCK_OK, Gtk.ResponseType.OK))
+        self.set_resizable(False)
         self._initialised = False
         self.controller = controller
         self.setup_ui()
