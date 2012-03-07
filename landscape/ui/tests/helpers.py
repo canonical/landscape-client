@@ -7,9 +7,10 @@ from landscape.configuration import LandscapeSetupConfiguration
 
 dbus_skip_message = "Cannot launch private DBus session without X11"
 try:
-    from gi.repository import GObject
+    from gi.repository import GObject, Gtk
     got_gobject_introspection = True
-    gobject_skip_message = GObject._version  # Shut up pyflakes
+    # Shut up pyflakes
+    gobject_skip_message = GObject._version + str(Gtk.MAJOR_VERSION)
 except (ImportError, RuntimeError):
     got_gobject_introspection = False
     gobject_skip_message = "GObject Introspection module unavailable"
