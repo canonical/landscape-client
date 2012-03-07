@@ -10,8 +10,14 @@ build:
 	$(PYTHON) setup.py build_ext -i
 
 check: build
-	@if [ -z "$$DISPLAY" ]; then \
-	    xvfb-run $(TEST_COMMAND); \
+	@if [ -z "$$DBUS_SESSION_BUS_ADDRESS" ]; then \
+		OUTPUT=`dbus-daemon --print-address=1 --print-pid=1 --session --fork`; \
+		export DBUS_SESSION_BUS_ADDRESS=`echo $$OUTPUT | cut -f1 -d ' '`; \
+		DBUS_PID=`echo $$OUTPUT | cut -f2 -d ' '`; \
+		trap "kill $$DBUS_PID" EXIT; \
+	fi; \
+	if [ -z "$$DISPLAY" ]; then \
+		xvfb-run $(TEST_COMMAND); \
 	else \
 	    $(TEST_COMMAND); \
 	fi
