@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: landscape-client@packages.debian.org\n"
-"POT-Creation-Date: 2011-10-06 10:12-0300\n"
+"POT-Creation-Date: 2012-03-07 17:07+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -152,26 +152,12 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../landscape-client.templates:11001
-msgid "The OTP to use in initial configuration:"
-msgstr ""
-
-#. Type: string
-#. Description
-#: ../landscape-client.templates:11001
-msgid ""
-"The OneTimePassword to use for initial registration with the Landscape "
-"server. This is only required for Cloud or Preseeded installs."
-msgstr ""
-
-#. Type: string
-#. Description
-#: ../landscape-client.templates:12001
 msgid "Initial tags for first registration"
 msgstr ""
 
 #. Type: string
 #. Description
-#: ../landscape-client.templates:12001
+#: ../landscape-client.templates:11001
 msgid ""
 "Comma separated list of tags which will be assigned to this computer on its "
 "first registration.  Once the machine is registered, these tags can only be "
@@ -180,16 +166,16 @@ msgstr ""
 
 #. Type: boolean
 #. Description
-#: ../landscape-client.templates:13001
+#: ../landscape-client.templates:12001
 msgid "Register this system with the Landscape server?"
 msgstr ""
 
 #. Type: boolean
 #. Description
-#: ../landscape-client.templates:13001
+#: ../landscape-client.templates:12001
 msgid ""
-"Register this system with a preexisting Landscape account.  Please\n"
-" go to http://landscape.canonical.com if you need a Landscape account."
+"Register this system with a preexisting Landscape account.  Please go to "
+"http://landscape.canonical.com if you need a Landscape account."
 msgstr ""
 
 #. Type: select
