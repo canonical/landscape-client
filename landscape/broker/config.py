@@ -20,10 +20,6 @@ class BrokerConfiguration(Configuration):
     def exchange_store_path(self):
         return os.path.join(self.data_path, "exchange.database")
 
-    @property
-    def record_directory(self):
-        return os.path.join(self.data_path, "exchanges")
-
     def make_parser(self):
         """Parser factory for broker-specific options.
 
@@ -38,7 +34,6 @@ class BrokerConfiguration(Configuration):
               - C{https_proxy}
               - C{cloud}
               - C{otp}
-              - C{record}
               - C{provisioning_otp}
         """
         parser = super(BrokerConfiguration, self).make_parser()
@@ -72,8 +67,6 @@ class BrokerConfiguration(Configuration):
         parser.add_option("--tags",
                           help="Comma separated list of tag names to be sent "
                                "to the server.")
-        parser.add_option("--record", action="store_true",
-                          help="Record data sent to the server on filesystem.")
         parser.add_option("--provisioning-otp", default="",
                           help="The OTP to use for a provisioned machine.")
 

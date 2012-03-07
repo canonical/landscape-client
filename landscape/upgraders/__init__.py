@@ -1,4 +1,4 @@
-from landscape.upgraders import legacy, broker, monitor, package, player
+from landscape.upgraders import legacy, broker, monitor, package
 
 
 UPGRADE_MANAGERS = {
@@ -6,6 +6,4 @@ UPGRADE_MANAGERS = {
     "legacy": legacy.upgrade_manager,
     "broker": broker.upgrade_manager,
     "monitor": monitor.upgrade_manager,
-    "package": package.upgrade_manager,
-    "player": player.upgrade_manager,
-    }
+    "package": package.upgrade_manager}

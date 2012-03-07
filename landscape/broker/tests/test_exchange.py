@@ -873,64 +873,6 @@ class MessageExchangeTest(LandscapeTest):
         self.assertTrue(len(ids_after) == len(ids_before) - 1)
         self.assertFalse('234567' in ids_after)
 
-    def test_make_payload_default_messages(self):
-        """
-        When messages are not passed in to L{make_payload}, L{make_payload}
-        should retrieve messages from the message store.
-        """
-        self.mstore.set_accepted_types(["resynchronize"])
-        self.exchanger.send({"type": "resynchronize",
-                             "operation-id": 13579})
-        payload = self.exchanger.make_payload()
-        self.assertEqual(1, len(payload["messages"]))
-        self.assertEqual(1, payload["total-messages"])
-
-    def test_make_payload_non_default_messages(self):
-        """
-        When messages are passed in to L{make_payload}, L{make_payload}
-        should not retrieve messages from the message store.  L{make_payload}
-        should correctly set the message count.
-        """
-        payload = self.exchanger.make_payload(
-            [{"type": "resynchronize",
-              "api": "2.1",
-              "operation-id": 24680},
-             {"type": "resynchronize",
-              "api": "2.1",
-              "operation-id": 24681}])
-        self.assertEqual(2, len(payload["messages"]))
-        self.assertEqual("resynchronize", payload["messages"][0]["type"])
-        self.assertEqual(2, payload["total-messages"])
-
-    def test_exchange_with_messages(self):
-        """
-        L{exchange} should be able to pass messages to make_payload.
-        """
-        self.exchanger.exchange([{"type": "empty",
-                                  "timestamp": 0,
-                                  "api": SERVER_API}])
-        self.assertEqual(len(self.transport.payloads), 1)
-        messages = self.transport.payloads[0]["messages"]
-        self.assertEqual(messages, [{"type": "empty",
-                                     "timestamp": 0,
-                                     "api": SERVER_API}])
-
-    def test_send_at_schedules_an_exchange(self):
-        """
-        L{send_at} should schedule an exchange at the specified time with
-        the supplied messages.
-        """
-        messages = [{"type": "empty",
-                     "timestamp": 0,
-                     "api": SERVER_API}]
-
-        self.exchanger.send_at(338, messages)
-
-        self.assertEqual(1, len(self.reactor._calls))
-        self.assertEqual(338, self.reactor._calls[0][0])
-        self.assertEqual(self.exchanger.exchange, self.reactor._calls[0][1])
-        self.assertEqual(messages, self.reactor._calls[0][2][0])
-
 
 class AcceptedTypesMessageExchangeTest(LandscapeTest):
 
