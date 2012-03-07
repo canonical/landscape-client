@@ -47,7 +47,19 @@ class SettingsApplicationController(Gtk.Application):
                                   Gtk.STOCK_DIALOG_ERROR)
         notification.show()
 
-    def setup_ui(self, data=None):
+    def setup_ui(self, data=None, asynchronous=True):
+        """
+        L{setup_ui} wires the model to the L{ConfigurationController} and then
+        invokes the view with the controller.  When the dialog exits
+        appropriate termination is triggered.
+
+        @param data: the Gtk callback could pass this, but it is always None in
+        practice.
+        @param asynchronous: a parameter passed through to
+        L{ConfigurationController.exit}, it indicates whether the exit method
+        should be called asynchronously.  Is makes testing easier to use it
+        synchronously.
+        """
         Notify.init(APPLICATION_ID)
         config = self.get_config()
         uisettings = self.get_uisettings()
@@ -60,3 +72,4 @@ class SettingsApplicationController(Gtk.Application):
             controller.persist(self.on_notify, self.on_error, self.on_succeed,
                                self.on_fail)
         self.settings_dialog.destroy()
+        controller.exit(asynchronous=asynchronous)

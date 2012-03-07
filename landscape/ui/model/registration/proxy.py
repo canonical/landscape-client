@@ -119,3 +119,13 @@ class RegistrationProxy(object):
                                            error_handler=error_handler)
         else:
             return self._interface.disable()
+
+    def exit(self):
+        """
+        Cause the mechanism to exit.
+        """
+        try:
+            self._interface.exit()
+        except dbus.DBusException, e:
+            if e.get_dbus_name() != "org.freedesktop.DBus.Error.NoReply":
+                raise

@@ -162,6 +162,10 @@ class ConfigurationState(object):
     def persist(self):
         raise NotImplementedError
 
+    def exit(self, asynchronous=True):
+        return ExitedState(self._data, self._proxy, self._uisettings,
+                           asynchronous=asynchronous)
+
 
 class Helper(object):
     """
@@ -288,6 +292,39 @@ class UnpersistableHelper(Helper):
         raise StateError("A ConfiguratonModel in " +
                          self.__class__.__name__ +
                          " cannot be transitioned via persist().")
+
+
+class ExitedState(ConfigurationState):
+    """
+    The terminal state of L{ConfigurationModel}, you can't do anything further
+    once this state is reached.
+    """
+    def __init__(self, data, proxy, uisettings, exit_method=None,
+                 asynchronous=True):
+        super(ExitedState, self).__init__(None, None, None)
+        if callable(exit_method):
+            exit_method()
+        else:
+            proxy.exit(asynchronous=asynchronous)
+        self._unloadable_helper = UnloadableHelper(self)
+        self._unmodifiable_helper = UnmodifiableHelper(self)
+        self._unrevertable_helper = UnrevertableHelper(self)
+        self._unpersistable_helper = UnpersistableHelper(self)
+
+    def load_data(self):
+        return self._unloadable_helper.load_data()
+
+    def modify(self):
+        return self._unmodifiable_helper.modify()
+
+    def revert(self):
+        return self._unrevertable_helper.revert()
+
+    def persist(self):
+        return self._unpersistable_helper.persist()
+
+    def exit(self):
+        return self
 
 
 class ModifiedState(ConfigurationState):
@@ -514,3 +551,6 @@ class ConfigurationModel(object):
 
     def get_config_filename(self):
         return self._current_state.get_config_filename()
+
+    def exit(self, asynchronous=True):
+        self._current_state.exit(asynchronous=asynchronous)

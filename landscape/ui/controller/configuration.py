@@ -89,6 +89,7 @@ class ConfigController(object):
                 self._configuration.get_config_filename())
         else:
             fail_method("You do not have permission to connect the client.")
+        registration.exit()
 
     def disable(self, succeed_method, fail_method):
         registration = RegistrationProxy(on_disable_succeed=succeed_method,
@@ -98,3 +99,4 @@ class ConfigController(object):
             registration.disable()
         else:
             fail_method("You do not have permission to connect the client.")
+        registration.exit()

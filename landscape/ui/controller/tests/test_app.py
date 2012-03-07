@@ -125,7 +125,8 @@ class SettingsApplicationControllerUISetupTest(LandscapeTest):
         Test that we correctly setup the L{ClientSettingsDialog} with
         the config object and correct data
         """
-        self.app.setup_ui(data=None)
+        self.assertRaises(SystemExit, self.app.setup_ui, data=None,
+                          asynchronous=False)
         self.assertIsInstance(self.app.settings_dialog, ClientSettingsDialog)
         self.assertIsInstance(self.app.settings_dialog.controller,
                               ConfigController)

@@ -174,6 +174,12 @@ class MechanismTest(LandscapeTest):
         self.mechanism.set("https_proxy", "bar")
         self.assertEqual("bar", self.mechanism.get("https_proxy"))
 
+    def test_exit(self):
+        """
+        Test that we cause the mechanism to exit.
+        """
+        self.assertRaises(SystemExit, self.mechanism.exit)
+
     if not got_gobject_introspection:
         skip = gobject_skip_message
     else:

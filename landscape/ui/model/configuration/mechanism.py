@@ -1,3 +1,5 @@
+import sys
+
 import dbus
 import dbus.service
 
@@ -97,3 +99,14 @@ class ConfigurationMechanism(PolicyKitMechanism):
         """
         if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
             setattr(self._config, name, value)
+
+    @dbus.service.method(INTERFACE_NAME,
+                         in_signature="",
+                         out_signature="",
+                         sender_keyword="sender",
+                         connection_keyword="conn")
+    def exit(self, sender=None, conn=None):
+        """
+        Exit this process.
+        """
+        sys.exit(0)
