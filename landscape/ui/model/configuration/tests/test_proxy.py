@@ -132,7 +132,7 @@ class ConfigurationProxyInterfaceTest(LandscapeTest):
         """
         Test that we can cause the mechanism to exit.
         """
-        self.assertRaises(SystemExit, self.proxy.exit)
+        self.assertRaises(SystemExit, self.proxy.exit, asynchronous=False)
 
     if not got_gobject_introspection:
         skip = gobject_skip_message

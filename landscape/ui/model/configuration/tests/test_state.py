@@ -207,7 +207,7 @@ class ConfigurationModelTest(LandscapeTest):
         settings = FakeGSettings(data=self.default_data)
         uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
-        self.assertRaises(SystemExit, model.exit)
+        self.assertRaises(SystemExit, model.exit, asynchronous=False)
 
     if not got_gobject_introspection:
         skip = gobject_skip_message

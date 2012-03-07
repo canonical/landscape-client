@@ -58,7 +58,7 @@ class ConfigurationProxy(object):
     get_config_filename.__doc__ = \
         LandscapeSetupConfiguration.get_config_filename.__doc__
 
-    def exit(self):
+    def exit(self, asynchronous=True):
         """
         Cause the mechanism to exit.
         """
@@ -74,8 +74,11 @@ class ConfigurationProxy(object):
             L{NoReply} error from DBus when we terminate the mechanism.
             """
 
-        self._interface.exit(reply_handler=on_reply,
-                             error_handler=on_error)
+        if asynchronous:
+            self._interface.exit(reply_handler=on_reply,
+                                 error_handler=on_error)
+        else:
+            self._interface.exit()
         
     def _delegate_to_interface(field):
 

@@ -47,7 +47,7 @@ class SettingsApplicationController(Gtk.Application):
                                   Gtk.STOCK_DIALOG_ERROR)
         notification.show()
 
-    def setup_ui(self, data=None):
+    def setup_ui(self, data=None, asynchronous=True):
         Notify.init(APPLICATION_ID)
         config = self.get_config()
         uisettings = self.get_uisettings()
@@ -60,4 +60,4 @@ class SettingsApplicationController(Gtk.Application):
             controller.persist(self.on_notify, self.on_error, self.on_succeed,
                                self.on_fail)
         self.settings_dialog.destroy()
-        controller.exit()
+        controller.exit(asynchronous=asynchronous)
