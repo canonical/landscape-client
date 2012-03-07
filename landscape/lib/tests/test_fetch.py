@@ -231,6 +231,24 @@ class FetchTest(LandscapeTest):
         else:
             self.fail("PyCurlError not raised")
 
+    def test_pycurl_insecure(self):
+        curl = CurlStub("result")
+        result = fetch("http://example.com/get-ca-cert", curl=curl,
+                       insecure=True)
+        self.assertEqual(result, "result")
+        self.assertEqual(curl.options,
+                         {pycurl.URL: "http://example.com/get-ca-cert",
+                          pycurl.FOLLOWLOCATION: True,
+                          pycurl.MAXREDIRS: 5,
+                          pycurl.CONNECTTIMEOUT: 30,
+                          pycurl.LOW_SPEED_LIMIT: 1,
+                          pycurl.LOW_SPEED_TIME: 600,
+                          pycurl.NOSIGNAL: 1,
+                          pycurl.WRITEFUNCTION: Any(),
+                          pycurl.SSL_VERIFYPEER: False,
+                          pycurl.DNS_CACHE_TIMEOUT: 0,
+                          pycurl.ENCODING: "gzip,deflate"})
+
     def test_pycurl_error_str(self):
         self.assertEqual(str(PyCurlError(60, "pycurl error")),
                          "Error 60: pycurl error")
