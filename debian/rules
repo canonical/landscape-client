@@ -29,7 +29,6 @@ build-stamp:
 	dh_testdir
 	sed -i -e "s/^DEBIAN_REVISION = \"\"/DEBIAN_REVISION = \"-$(revision)\"/g" landscape/__init__.py
 	python setup.py build
-	make -C smart-update
 	make -C apt-update
 	touch build-stamp
 
@@ -58,7 +57,6 @@ install: build
 
 	install -D -o root -g root -m 755 debian/landscape-sysinfo.wrapper $(root_dir)/usr/share/landscape/landscape-sysinfo.wrapper
 	install -D -o root -g root -m 644 debian/cloud-default.conf $(root_dir)/usr/share/landscape/cloud-default.conf
-	install -D -o root -g root -m 755 smart-update/smart-update $(root_dir)/usr/lib/landscape/smart-update
 	install -D -o root -g root -m 755 apt-update/apt-update $(root_dir)/usr/lib/landscape/apt-update
 	install -D -o root -g root -m 644 dbus/landscape.conf $(root_dir)/etc/dbus-1/system.d/landscape.conf
 
