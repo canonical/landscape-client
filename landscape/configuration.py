@@ -501,7 +501,7 @@ def fetch_base64_ssl_public_certificate(hostname, on_info=print_text,
     encoded_cert = ""
     ca_url = "http://%s/get-ca-cert" % hostname
     try:
-        content = fetch(ca_url)
+        content = fetch(ca_url, insecure=True)
     except HTTPCodeError, error:
         on_error("Unable to fetch CA certificate from discovered server %s: "
                  "Server does not support client auto-registation." % hostname)

@@ -1991,7 +1991,7 @@ class SSLCertificateDataTest(LandscapeTest):
         """
         base64_cert = "base64:  MTIzNDU2Nzg5MA=="  # encoded woo hoo
         fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
-        fetch_mock("http://fakehost/get-ca-cert")
+        fetch_mock("http://fakehost/get-ca-cert", insecure=True)
         self.mocker.result(
             "{\"custom_ca_cert\": \"%s\"}" % base64_cert)
         self.mocker.replay()
@@ -2012,7 +2012,7 @@ class SSLCertificateDataTest(LandscapeTest):
         if it exists, otherwise it should return an empty string.""
         """
         fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
-        fetch_mock("http://fakehost/get-ca-cert")
+        fetch_mock("http://fakehost/get-ca-cert", insecure=True)
         self.mocker.result("{}")
 
         print_text_mock = self.mocker.replace(print_text)
@@ -2027,7 +2027,7 @@ class SSLCertificateDataTest(LandscapeTest):
 
     def test_fetch_base64_ssl_with_http_code_fetch_error(self):
         fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
-        fetch_mock("http://fakehost/get-ca-cert")
+        fetch_mock("http://fakehost/get-ca-cert", insecure=True)
         self.mocker.throw(HTTPCodeError(404, ""))
         print_text_mock = self.mocker.replace(print_text)
         print_text_mock(
@@ -2047,7 +2047,7 @@ class SSLCertificateDataTest(LandscapeTest):
 
     def test_fetch_base64_ssl_with_pycurl_error(self):
         fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")
-        fetch_mock("http://fakehost/get-ca-cert")
+        fetch_mock("http://fakehost/get-ca-cert", insecure=True)
         self.mocker.throw(PyCurlError(60, "pycurl message"))
         print_text_mock = self.mocker.replace(print_text)
         print_text_mock(
