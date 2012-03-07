@@ -67,7 +67,7 @@ class ConfigurationProxy(object):
             This will never get called because we call L{sys.exit} inside the
             mechanism.
             """
-        
+
         def on_error():
             """
             This will always be called, this allows us to supress the
@@ -79,7 +79,7 @@ class ConfigurationProxy(object):
                                  error_handler=on_error)
         else:
             self._interface.exit()
-        
+
     def _delegate_to_interface(field):
 
         def get(self):

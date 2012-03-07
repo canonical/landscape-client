@@ -524,7 +524,7 @@ class StateTransitionTest(LandscapeTest):
         """
         Test that we cannot transition the L{ExitedState} at all.
         """
-        
+
         def fake_exit():
             """
             This just avoids raising L{exceptions.SysExit} during __init__.
@@ -536,7 +536,6 @@ class StateTransitionTest(LandscapeTest):
         self.assertRaises(StateError, state.persist)
         self.assertRaises(StateError, state.revert)
 
-        
     if not got_gobject_introspection:
         skip = gobject_skip_message
     elif dbus_test_should_skip:

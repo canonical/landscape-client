@@ -163,7 +163,7 @@ class ConfigurationState(object):
         raise NotImplementedError
 
     def exit(self, asynchronous=True):
-        return ExitedState(self._data, self._proxy, self._uisettings, 
+        return ExitedState(self._data, self._proxy, self._uisettings,
                            asynchronous=asynchronous)
 
 
@@ -293,6 +293,7 @@ class UnpersistableHelper(Helper):
                          self.__class__.__name__ +
                          " cannot be transitioned via persist().")
 
+
 class ExitedState(ConfigurationState):
     """
     The terminal state of L{ConfigurationModel}, you can't do anything further
@@ -321,7 +322,7 @@ class ExitedState(ConfigurationState):
 
     def persist(self):
         return self._unpersistable_helper.persist()
-    
+
     def exit(self):
         return self
 
