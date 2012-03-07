@@ -18,7 +18,6 @@ case "$1" in
     purge)
     LOG_DIR=/var/log/landscape
     DATA_DIR=/var/lib/landscape
-    CONFIG_FILE=/etc/landscape/client.conf
 
     rm -f "/etc/default/landscape-client"
 
@@ -31,7 +30,6 @@ case "$1" in
 
     rm -rf "${DATA_DIR}/client"
     rm -rf "${DATA_DIR}/.gnupg"
-    rm -f "${CONFIG_FILE}"
 
     ;;
 
