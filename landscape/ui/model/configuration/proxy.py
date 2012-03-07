@@ -62,8 +62,21 @@ class ConfigurationProxy(object):
         """
         Cause the mechanism to exit.
         """
-        self._interface.exit()
+        def on_reply():
+            """
+            This will never get called because we call L{sys.exit} inside the
+            mechanism.
+            """
+        
+        def on_error():
+            """
+            This will always be called, this allows us to supress the
+            L{NoReply} error from DBus when we terminate the mechanism.
+            """
 
+        self._interface.exit(reply_handler=on_reply,
+                             error_handler=on_error)
+        
     def _delegate_to_interface(field):
 
         def get(self):
