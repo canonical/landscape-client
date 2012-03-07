@@ -60,3 +60,4 @@ class SettingsApplicationController(Gtk.Application):
             controller.persist(self.on_notify, self.on_error, self.on_succeed,
                                self.on_fail)
         self.settings_dialog.destroy()
+        controller.exit()
