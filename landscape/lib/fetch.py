@@ -54,7 +54,7 @@ def fetch(url, post=False, data="", headers={}, cainfo=None, curl=None,
                     on the request.
     @param cainfo: Path to the file with CA certificates.
     @param insecure: If true, perform curl using insecure option which will
-                     not attempt to verify authenticity of the peer'scw
+                     not attempt to verify authenticity of the peer's
                      certificate. (Used during autodiscovery)
     """
     import pycurl
