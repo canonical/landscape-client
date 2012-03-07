@@ -119,3 +119,9 @@ class RegistrationProxy(object):
                                            error_handler=error_handler)
         else:
             return self._interface.disable()
+
+    def exit(self):
+        """
+        Cause the mechanism to exit.
+        """
+        self._interface.exit()
