@@ -128,6 +128,12 @@ class ConfigurationProxyInterfaceTest(LandscapeTest):
         self.assertEqual("bar", self.proxy.url)
         self.assertEqual("bar", self.config.url)
 
+    def test_exit(self):
+        """
+        Test that we can cause the mechanism to exit.
+        """
+        self.assertRaises(SystemExit, self.proxy.exit)
+
     if not got_gobject_introspection:
         skip = gobject_skip_message
     elif dbus_test_should_skip:

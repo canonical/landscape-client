@@ -58,6 +58,12 @@ class ConfigurationProxy(object):
     get_config_filename.__doc__ = \
         LandscapeSetupConfiguration.get_config_filename.__doc__
 
+    def exit(self):
+        """
+        Cause the mechanism to exit.
+        """
+        self._interface.exit()
+
     def _delegate_to_interface(field):
 
         def get(self):
