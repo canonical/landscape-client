@@ -27,72 +27,62 @@ case "$1" in
     configure)
 
         CONFIG_FILE=/etc/landscape/client.conf
-        # Get configuration values from debconf
-        db_get $PACKAGE/computer_title
-        COMPUTER_TITLE="${RET}"
-        db_get $PACKAGE/account_name
-        ACCOUNT_NAME="${RET}"
-        db_get $PACKAGE/registration_password
-        REGISTRATION_PASSWORD="${RET}"
-        db_get $PACKAGE/url
-        URL="${RET}"
-        db_get $PACKAGE/exchange_interval
-        EXCHANGE_INTERVAL="${RET}"
-        db_get $PACKAGE/urgent_exchange_interval
-        URGENT_EXCHANGE_INTERVAL="${RET}"
-        db_get $PACKAGE/ping_url
-        PING_URL="${RET}"
-        db_get $PACKAGE/ping_interval
-        PING_INTERVAL="${RET}"
-        db_get $PACKAGE/http_proxy
-        HTTP_PROXY="${RET}"
-        db_get $PACKAGE/https_proxy
-        HTTPS_PROXY="${RET}"
-        db_get $PACKAGE/otp
-        OTP="${RET}"
-        db_get $PACKAGE/tags
-        TAGS="${RET}"
-        db_get $PACKAGE/server_autodiscover
-        SERVER_AUTODISCOVER="${RET}"
-        db_get $PACKAGE/autodiscover_srv_query_string
-        AUTODISCOVER_SRV_QUERY_STRING="${RET}"
-        db_get $PACKAGE/autodiscover_a_query_string
-        AUTODISCOVER_A_QUERY_STRING="${RET}"
-
-
         if [ ! -f $CONFIG_FILE ]; then
-            touch $CONFIG_FILE
-        fi
-        chown landscape $CONFIG_FILE
-        # Fix non-private permissions
-        chmod 0600 $CONFIG_FILE
+            # Create new configuration, with private mode
+            TEMPFILE=$(mktemp -p /etc/landscape)
+            cat > $TEMPFILE <<END
+[client]
+log_level = info
+url = https://landscape.canonical.com/message-system
+ping_url = http://landscape.canonical.com/ping
+data_path = /var/lib/landscape/client
+END
+            chown landscape $TEMPFILE
+            mv $TEMPFILE $CONFIG_FILE
 
-        # If we got the needed information, actually do the registration.
-        if [ -n "$ACCOUNT_NAME" -a -n "$COMPUTER_TITLE" ]; then
-            # Don't fail if registration unsuccessful
-            MORE_OPTIONS="--ok-no-register"
+            # Get configuration values from debconf
+            db_get $PACKAGE/computer_title
+            COMPUTER_TITLE="${RET}"
+            db_get $PACKAGE/account_name
+            ACCOUNT_NAME="${RET}"
+            db_get $PACKAGE/registration_password
+            REGISTRATION_PASSWORD="${RET}"
+            db_get $PACKAGE/url
+            URL="${RET}"
+            db_get $PACKAGE/exchange_interval
+            EXCHANGE_INTERVAL="${RET}"
+            db_get $PACKAGE/urgent_exchange_interval
+            URGENT_EXCHANGE_INTERVAL="${RET}"
+            db_get $PACKAGE/ping_url
+            PING_URL="${RET}"
+            db_get $PACKAGE/ping_interval
+            PING_INTERVAL="${RET}"
+            db_get $PACKAGE/http_proxy
+            HTTP_PROXY="${RET}"
+            db_get $PACKAGE/https_proxy
+            HTTPS_PROXY="${RET}"
+            db_get $PACKAGE/tags
+            TAGS="${RET}"
+
+            # If we got the needed information, actually do the registration.
+            if [ -n "$ACCOUNT_NAME" -a -n "$COMPUTER_TITLE" ]; then
+                landscape-config --silent --ok-no-register \
+                    --computer-title "$COMPUTER_TITLE" \
+                    --account-name "$ACCOUNT_NAME" \
+                    --registration-password "$REGISTRATION_PASSWORD" \
+                    --url "$URL" \
+                    --exchange-interval "$EXCHANGE_INTERVAL" \
+                    --urgent-exchange-interval "$URGENT_EXCHANGE_INTERVAL" \
+                    --ping-url "$PING_URL" \
+                    --ping-interval "$PING_INTERVAL" \
+                    --http-proxy "$HTTP_PROXY" \
+                    --https-proxy "$HTTPS_PROXY" \
+                    --tags "$TAGS"
+            fi
         else
-            # Disable registration and client restart
-            MORE_OPTIONS="--no-start"
+            # Fix non-private permissions
+            chmod 0600 $CONFIG_FILE
         fi
-
-        # Configure landscape
-        landscape-config --silent $MORE_OPTIONS \
-            --computer-title "$COMPUTER_TITLE" \
-            --account-name "$ACCOUNT_NAME" \
-            --registration-password "$REGISTRATION_PASSWORD" \
-            --url "$URL" \
-            --exchange-interval "$EXCHANGE_INTERVAL" \
-            --urgent-exchange-interval "$URGENT_EXCHANGE_INTERVAL" \
-            --ping-url "$PING_URL" \
-            --ping-interval "$PING_INTERVAL" \
-            --http-proxy "$HTTP_PROXY" \
-            --https-proxy "$HTTPS_PROXY" \
-            --otp "$OTP" \
-            --tags "$TAGS" \
-            --server-autodiscover "$SERVER_AUTODISCOVER" \
-            --autodiscover-srv-query-string "$AUTODISCOVER_SRV_QUERY_STRING" \
-            --autodiscover-a-query-string "$AUTODISCOVER_A_QUERY_STRING"
 
         # old monolithic clients have a single persist data file and a single
         # package hash db.  This data should be migrated to the new format
@@ -108,13 +98,14 @@ case "$1" in
             echo "Old monolithic client data file migrated to new format."
         fi
 
-        # Add the setuid flag to smart-update and apt-update, and make them be
-        # executable by users in the landscape group (that normally means
-        # landscape itself)
+        # Remove statoverride for smart-update, if there's one
         smart_update=/usr/lib/landscape/smart-update
-        if ! dpkg-statoverride --list $smart_update >/dev/null 2>&1; then
-            dpkg-statoverride --update --add root landscape 4754 $smart_update
+        if dpkg-statoverride --list $smart_update >/dev/null 2>&1; then
+            dpkg-statoverride --remove $smart_update
         fi
+
+        # Add the setuid flag to apt-update, and make it be executable by
+        # users in the landscape group (that normally means landscape itself)
         apt_update=/usr/lib/landscape/apt-update
         if ! dpkg-statoverride --list $apt_update >/dev/null 2>&1; then
             dpkg-statoverride --update --add root landscape 4754 $apt_update
