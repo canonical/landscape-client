@@ -8,7 +8,7 @@ if got_gobject_introspection:
     from landscape.ui.model.configuration.state import (
         ConfigurationModel, StateError, VirginState, InitialisedState,
         ModifiedState, MANAGEMENT_TYPE, HOSTED, LOCAL, HOSTED_LANDSCAPE_HOST,
-        LANDSCAPE_HOST, COMPUTER_TITLE)
+        LANDSCAPE_HOST, COMPUTER_TITLE, ExitedState)
     from landscape.ui.constants import (
         CANONICAL_MANAGED, LOCAL_MANAGED, NOT_MANAGED)
 
@@ -199,6 +199,15 @@ class ConfigurationModelTest(LandscapeTest):
         self.assertEqual("", model.local_password)
         model.local_password = "foo"
         self.assertEqual("foo", model.local_password)
+
+    def test_exit(self):
+        """
+        Test that we can cause the mechanism to exit.
+        """
+        settings = FakeGSettings(data=self.default_data)
+        uisettings = UISettings(settings)
+        model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
+        self.assertRaises(SystemExit, model.exit)
 
     if not got_gobject_introspection:
         skip = gobject_skip_message
@@ -511,6 +520,23 @@ class StateTransitionTest(LandscapeTest):
         self.assertEqual("ThomasHobbes", uisettings.get_local_account_name())
         self.assertEqual("TheLeviathan", uisettings.get_local_password())
 
+    def test_any_transition_on_exited_state_raises(self):
+        """
+        Test that we cannot transition the L{ExitedState} at all.
+        """
+        
+        def fake_exit():
+            """
+            This just avoids raising L{exceptions.SysExit} during __init__.
+            """
+
+        state = ExitedState(None, None, None, exit_method=fake_exit)
+        self.assertRaises(StateError, state.load_data)
+        self.assertRaises(StateError, state.modify)
+        self.assertRaises(StateError, state.persist)
+        self.assertRaises(StateError, state.revert)
+
+        
     if not got_gobject_introspection:
         skip = gobject_skip_message
     elif dbus_test_should_skip:
