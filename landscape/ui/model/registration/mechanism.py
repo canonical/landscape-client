@@ -1,4 +1,5 @@
 import subprocess
+import sys
 import os
 
 import dbus
@@ -157,3 +158,14 @@ class RegistrationMechanism(PolicyKitMechanism):
             else:
                 self.disable_fail()
                 return False
+
+    @dbus.service.method(INTERFACE_NAME,
+                         in_signature="",
+                         out_signature="",
+                         sender_keyword="sender",
+                         connection_keyword="conn")
+    def exit(self, sender=None, conn=None):
+        """
+        Exit this process.
+        """
+        sys.exit(0)

@@ -86,6 +86,13 @@ class MechanismTest(LandscapeTest):
         self.mechanism = RegistrationMechanism(self.bus_name)
         self.assertFalse(self.mechanism.disable())
 
+    def test_exit(self):
+        """
+        Test that we cause the mechanism to exit.
+        """
+        self.mechanism = RegistrationMechanism(self.bus_name)
+        self.assertRaises(SystemExit, self.mechanism.exit)
+
     if not got_gobject_introspection:
         skip = gobject_skip_message
     else:
