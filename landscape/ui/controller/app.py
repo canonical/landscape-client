@@ -48,6 +48,18 @@ class SettingsApplicationController(Gtk.Application):
         notification.show()
 
     def setup_ui(self, data=None, asynchronous=True):
+        """
+        L{setup_ui} wires the model to the L{ConfigurationController} and then
+        invokes the view with the controller.  When the dialog exits
+        appropriate termination is triggered.
+
+        @param data: the Gtk callback could pass this, but it is always None in
+        practice.
+        @param asynchronous: a parameter passed through to
+        L{ConfigurationController.exit}, it indicates whether the exit method
+        should be called asynchronously.  Is makes testing easier to use it
+        synchronously.
+        """
         Notify.init(APPLICATION_ID)
         config = self.get_config()
         uisettings = self.get_uisettings()
