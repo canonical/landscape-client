@@ -488,9 +488,7 @@ class ConfigurationModel(object):
         """
         return self._current_state
 
-    def load_data(self, asynchronous=True):
-        exit_method = lambda: sys.stderr.write(
-            "Cannot load data, transitioning to exit state.")
+    def load_data(self, asynchronous=True, exit_method=None):
         self._current_state = self._current_state.load_data(
             asynchronous=asynchronous, exit_method=exit_method)
         return isinstance(self._current_state, InitialisedState)

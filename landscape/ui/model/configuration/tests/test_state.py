@@ -51,11 +51,17 @@ class AuthenticationFailureTest(LandscapeTest):
             """
             raise PermissionDeniedByPolicy()
 
+        def fake_exit_method():
+            """
+            Avoid raising a L{SystemExit} exception.
+            """
+
         self.mechanism.load = fake_faily_load
         settings = FakeGSettings(data=self.default_data)
         uisettings = UISettings(settings)
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
-        self.assertFalse(model.load_data(asynchronous=False))
+        self.assertFalse(model.load_data(asynchronous=False,
+                                         exit_method=fake_exit_method))
         self.assertTrue(isinstance(model.get_state(), ExitedState))
 
 
