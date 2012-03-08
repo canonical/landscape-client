@@ -467,10 +467,14 @@ class ConfigurationModel(object):
     The allowable state transitions are:
 
        VirginState      --(load_data)--> InitialisedState
+       VirginState      --(load_data)--> ExitedState
+       VirginState      --(exit)-------> ExitedState
        InitialisedState --(modify)-----> ModifiedState
+       InitialisedState --(exit)-------> ExitedState
        ModifiedState    --(revert)-----> InitialisedState
        ModifiedState    --(modify)-----> ModifiedState
        ModifiedState    --(persist)----> InitialisedState
+       ModifiedState    --(exit)-------> ExitedState
     """
 
     def __init__(self, proxy=None, proxy_loadargs=[], uisettings=None):
@@ -485,7 +489,7 @@ class ConfigurationModel(object):
         return self._current_state
 
     def load_data(self, asynchronous=True):
-        exit_method = lambda : sys.stderr.write(
+        exit_method = lambda: sys.stderr.write(
             "Cannot load data, transitioning to exit state.")
         self._current_state = self._current_state.load_data(
             asynchronous=asynchronous, exit_method=exit_method)

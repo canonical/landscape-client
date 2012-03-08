@@ -50,7 +50,7 @@ class AuthenticationFailureTest(LandscapeTest):
             credentials 3 times when L{PolicyKit} challenges you.
             """
             raise PermissionDeniedByPolicy()
-        
+
         self.mechanism.load = fake_faily_load
         settings = FakeGSettings(data=self.default_data)
         uisettings = UISettings(settings)

@@ -71,10 +71,9 @@ class SettingsApplicationController(Gtk.Application):
         if controller.load():
             self.settings_dialog = ClientSettingsDialog(controller)
             if self.settings_dialog.run() == Gtk.ResponseType.OK:
-                controller.persist(self.on_notify, self.on_error, self.on_succeed,
-                                   self.on_fail)
+                controller.persist(self.on_notify, self.on_error,
+                                   self.on_succeed, self.on_fail)
                 self.settings_dialog.destroy()
                 controller.exit(asynchronous=asynchronous)
         else:
             sys.stderr.write("Authentication failed.\n")
-

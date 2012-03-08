@@ -28,10 +28,10 @@ class AuthenticationFailureTest(LandscapeTest):
             credentials 3 times when L{PolicyKit} challenges you.
             """
             raise PermissionDeniedByPolicy()
-        
+
         self.mechanism.load = fake_faily_load
         self.assertFalse(self.proxy.load([]))
-        
+
 
 class ConfigurationProxyInterfaceTest(LandscapeTest):
     """
