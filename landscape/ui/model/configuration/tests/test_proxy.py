@@ -2,8 +2,36 @@ from landscape.configuration import LandscapeSetupConfiguration
 from landscape.ui.tests.helpers import (
     ConfigurationProxyHelper, dbus_test_should_skip, dbus_skip_message,
     got_gobject_introspection, gobject_skip_message)
+from landscape.ui.model.configuration.mechanism import PermissionDeniedByPolicy
 from landscape.tests.helpers import LandscapeTest
 
+
+class AuthenticationFailureTest(LandscapeTest):
+    """
+    Test that an authentication failure is handled correctly.
+    """
+    helpers = [ConfigurationProxyHelper]
+
+    def setUp(self):
+        self.config_string = ""
+
+        super(AuthenticationFailureTest, self).setUp()
+
+    def test_failed_authentication(self):
+        """
+        Test that load returns False when authentication fails.
+        """
+
+        def fake_faily_load(arglist):
+            """
+            This simulates what you see if you click "Cancel" or give the wrong
+            credentials 3 times when L{PolicyKit} challenges you.
+            """
+            raise PermissionDeniedByPolicy()
+        
+        self.mechanism.load = fake_faily_load
+        self.assertFalse(self.proxy.load([]))
+        
 
 class ConfigurationProxyInterfaceTest(LandscapeTest):
     """

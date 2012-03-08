@@ -9,11 +9,54 @@ if got_gobject_introspection:
         ConfigurationModel, StateError, VirginState, InitialisedState,
         ModifiedState, MANAGEMENT_TYPE, HOSTED, LOCAL, HOSTED_LANDSCAPE_HOST,
         LANDSCAPE_HOST, COMPUTER_TITLE, ExitedState)
+    from landscape.ui.model.configuration.mechanism import (
+        PermissionDeniedByPolicy)
     from landscape.ui.constants import (
         CANONICAL_MANAGED, LOCAL_MANAGED, NOT_MANAGED)
 
 
 from landscape.tests.helpers import LandscapeTest
+
+
+class AuthenticationFailureTest(LandscapeTest):
+    """
+    Test that an authentication failure is handled correctly in the
+    L{ConfigurationModel}.
+    """
+    helpers = [ConfigurationProxyHelper]
+
+    def setUp(self):
+        self.config_string = ""
+        self.default_data = {"management-type": "canonical",
+                             "computer-title": "",
+                             "hosted-landscape-host": "",
+                             "hosted-account-name": "",
+                             "hosted-password": "",
+                             "local-landscape-host": "",
+                             "local-account-name": "",
+                             "local-password": ""}
+        landscape.ui.model.configuration.state.DEFAULT_DATA[COMPUTER_TITLE] \
+            = "bound.to.lose"
+        super(AuthenticationFailureTest, self).setUp()
+
+    def test_failed_authentication(self):
+        """
+        Test that load returns False when authentication fails.
+        """
+
+        def fake_faily_load(arglist):
+            """
+            This simulates what you see if you click "Cancel" or give the wrong
+            credentials 3 times when L{PolicyKit} challenges you.
+            """
+            raise PermissionDeniedByPolicy()
+        
+        self.mechanism.load = fake_faily_load
+        settings = FakeGSettings(data=self.default_data)
+        uisettings = UISettings(settings)
+        model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
+        self.assertFalse(model.load_data(asynchronous=False))
+        self.assertTrue(isinstance(model.get_state(), ExitedState))
 
 
 class ConfigurationModelTest(LandscapeTest):
@@ -25,14 +68,6 @@ class ConfigurationModelTest(LandscapeTest):
     helpers = [ConfigurationProxyHelper]
 
     def setUp(self):
-        self.default_data = {"is-hosted": True,
-                             "computer-title": "",
-                             "hosted-landscape-host": "",
-                             "hosted-account-name": "",
-                             "hosted-password": "",
-                             "local-landscape-host": "",
-                             "local-account-name": "",
-                             "local-password": ""}
         self.config_string = ""
         self.default_data = {"management-type": "canonical",
                              "computer-title": "",
