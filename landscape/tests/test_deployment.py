@@ -172,7 +172,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.write()
         data = open(self.config_filename).read()
         self.assertConfigEqual(data,
-            "[client]\nlog_level = warning\nserver_autodiscover = False")
+            "[client]\nlog_level = warning\n")
 
     def test_dont_write_default_options(self):
         self.write_config_file(log_level="debug")
@@ -205,7 +205,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.write()
         data = open(self.config_filename).read()
         self.assertConfigEqual(data,
-            "[client]\nlog_level = warning\nserver_autodiscover = False")
+            "[client]\nlog_level = warning\n")
 
     def test_write_command_line_precedence(self):
         """Command line options take precedence over config file when writing.
@@ -215,7 +215,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.write()
         data = open(self.config_filename).read()
         self.assertConfigEqual(data,
-            "[client]\nlog_level = warning\nserver_autodiscover = False")
+            "[client]\nlog_level = warning\n")
 
     def test_write_manually_set_precedence(self):
         """Manually set options take precedence over command line when writing.
@@ -226,7 +226,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.write()
         data = open(self.config_filename).read()
         self.assertConfigEqual(data,
-            "[client]\nlog_level = error\nserver_autodiscover = False")
+            "[client]\nlog_level = error\n")
 
     def test_write_to_given_config_file(self):
         filename = self.makeFile()
@@ -236,7 +236,7 @@ class ConfigurationTest(LandscapeTest):
         self.config.write()
         data = open(filename).read()
         self.assertConfigEqual(data,
-            "[client]\nlog_level = error\nserver_autodiscover = False")
+            "[client]\nlog_level = error\n")
 
     def test_config_option(self):
         options = self.parser.parse_args(["--config", "hello.cfg"])[0]
@@ -351,7 +351,7 @@ class ConfigurationTest(LandscapeTest):
     def test_server_autodiscover_default(self):
         """Ensure parse_args sets appropriate server_autodiscover default."""
         options = self.parser.parse_args([])[0]
-        self.assertEqual(options.server_autodiscover, "false")
+        self.assertEqual(options.server_autodiscover, False)
 
     def test_autodiscover_srv_query_string_option(self):
         """
