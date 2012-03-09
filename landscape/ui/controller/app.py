@@ -10,6 +10,7 @@ from landscape.ui.controller.configuration import ConfigController
 APPLICATION_ID = "com.canonical.landscape-client.settings.ui"
 NOTIFY_ID = "landscape-client.settings.ui"
 
+
 class SettingsApplicationController(Gtk.Application):
     """
     Core application controller for the landscape settings application.
