@@ -5,11 +5,11 @@ import os
 import dbus
 import dbus.service
 import dbus.glib
-from landscape.ui.lib.polkit import PolicyKitMechanism
+
+from landscape.ui.lib.polkit import PolicyKitMechanism, POLICY_NAME
 
 
 SERVICE_NAME = "com.canonical.LandscapeClientRegistration"
-POLICY_NAME = SERVICE_NAME + ".register"
 INTERFACE_NAME = \
     "com.canonical.LandscapeClientRegistration.RegistrationInterface"
 OBJECT_PATH = \
