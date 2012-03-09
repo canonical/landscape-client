@@ -253,6 +253,9 @@ class PersistableHelper(Helper):
     """
 
     def _save_to_uisettings(self):
+        """
+        Persist full content to the L{UISettings} object.
+        """
         self._state._uisettings.set_management_type(
             self._state.get(MANAGEMENT_TYPE))
         self._state._uisettings.set_computer_title(
@@ -269,6 +272,10 @@ class PersistableHelper(Helper):
             self._state.get(LOCAL, PASSWORD))
 
     def _save_to_config(self):
+        """
+        Persist the subset of the data we want to make live to the actual
+        configuration file.
+        """
         hosted = self._state.get(MANAGEMENT_TYPE)
         if hosted is NOT_MANAGED:
             pass
@@ -380,6 +387,9 @@ class InitialisedState(ConfigurationState):
             raise TransitionError("Authentication Failure")
 
     def _load_uisettings_data(self):
+        """
+        Load the complete set of dialog data from L{UISettings}.
+        """
         hosted = self._uisettings.get_management_type()
         self.set(MANAGEMENT_TYPE, hosted)
         computer_title = self._uisettings.get_computer_title()
@@ -396,6 +406,9 @@ class InitialisedState(ConfigurationState):
         self.set(LOCAL, PASSWORD, self._uisettings.get_local_password())
 
     def _load_live_data(self):
+        """
+        Load the current live subset of data from the configuration file.
+        """
         if self._proxy.load(None):
             computer_title = self._proxy.computer_title
             if computer_title:
