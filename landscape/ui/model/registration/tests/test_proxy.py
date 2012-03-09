@@ -11,7 +11,7 @@ if got_gobject_introspection:
 
 class TimeoutTest(LandscapeTest):
     """
-    L{TimeoutTest} bypasses DBus and tests with a faked method that raises a 
+    L{TimeoutTest} bypasses DBus and tests with a faked method that raises a
     timeout exception.
     """
 
@@ -27,24 +27,22 @@ class TimeoutTest(LandscapeTest):
         class FakeTimeoutException(dbus.DBusException):
             _dbus_error_name = "org.freedesktop.DBus.Error.NoReply"
 
-
         class FakeFailyMechanism(object):
 
             def register(this, config_path, reply_handler=None,
                          error_handler=None):
                 raise FakeTimeoutException()
-            
 
         def fake_setup_interface(this, bus):
             this._interface = FakeFailyMechanism()
             this._bus = bus
-            
+
         def fake_register_handlers(this):
             pass
 
         def fake_remove_handlers(this):
             pass
-        
+
         RegistrationProxy._setup_interface = fake_setup_interface
         RegistrationProxy._register_handlers = fake_register_handlers
         RegistrationProxy._remove_handlers = fake_remove_handlers
