@@ -11,7 +11,7 @@ ifneq (,$(filter $(dist_release),precise))
 	# We want landscape-client-ui only from precise onward
 	dh_extra_flags =
 else
-	dh_extra_flags = -Nlandscape-client-ui
+	dh_extra_flags = -Nlandscape-client-ui -Nlandscape-client-install-ui
 endif
 
 -include /usr/share/python/python.mk

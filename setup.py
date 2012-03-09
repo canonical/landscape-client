@@ -44,8 +44,7 @@ setup(name="Landscape Client",
           ("/usr/share/icons/hicolor/scalable/apps/",
            ["icons/preferences-management-service.svg"]),
           ("/usr/share/glib-2.0/schemas/",
-           ["glib-2.0/schemas/com.canonical.landscape-client-settings.gschema.xml"])
-        ],
+           ["glib-2.0/schemas/com.canonical.landscape-client-settings.gschema.xml"])],
       scripts=["scripts/landscape-client",
                "scripts/landscape-config",
                "scripts/landscape-message",
@@ -60,8 +59,7 @@ setup(name="Landscape Client",
                "scripts/landscape-dbus-proxy",
                "scripts/landscape-client-settings-mechanism",
                "scripts/landscape-client-registration-mechanism",
-               "scripts/landscape-client-settings-ui"
-               ],
+               "scripts/landscape-client-settings-ui",
+               "scripts/landscape-client-ui-install"],
       ext_modules=[Extension("landscape.lib.initgroups",
-                             ["landscape/lib/initgroups.c"])]
-          )
+                             ["landscape/lib/initgroups.c"])])
