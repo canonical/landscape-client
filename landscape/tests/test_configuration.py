@@ -719,7 +719,6 @@ class ConfigurationFunctionsTest(LandscapeTest):
 computer_title = rex
 data_path = %s
 account_name = account
-server_autodiscover = False
 """ % config.data_path)
 
     def test_silent_setup_no_register(self):
@@ -735,7 +734,6 @@ server_autodiscover = False
         setup(config)
         self.assertConfigEqual(self.get_content(config), """\
 [client]
-server_autodiscover = False
 data_path = %s
 """ % config.data_path)
 
@@ -774,7 +772,6 @@ data_path = %s
             "computer_title = \n"
             "https_proxy = \n"
             "ping_url = http://landscape.canonical.com/ping\n"
-            "server_autodiscover = False\n"
              % config.data_path)
 
     def test_silent_setup_without_computer_title(self):
@@ -856,8 +853,7 @@ bus = session
              "computer_title": "rex",
              "include_manager_plugins": "ScriptExecution",
              "script_users": "root, nobody",
-             "account_name": "account",
-             "server_autodiscover": "False"},
+             "account_name": "account"},
             dict(parser.items("client")))
 
     def test_silent_script_users_with_all_user(self):
@@ -903,8 +899,7 @@ random_key = random_value
              "ping_url": "http://localhost/ping",
              "random_key": "random_value",
              "computer_title": "rex",
-             "account_name": "account",
-             "server_autodiscover": "False"},
+             "account_name": "account"},
             dict(parser.items("client")))
 
     def test_setup_with_proxies_from_environment(self):
@@ -954,8 +949,7 @@ registration_password = shared-secret
              "http_proxy": "http://environ",
              "https_proxy": "https://environ",
              "computer_title": "rex",
-             "account_name": "account",
-             "server_autodiscover": "False"},
+             "account_name": "account"},
             dict(parser.items("client")))
 
     def test_setup_prefers_proxies_from_config_over_environment(self):
@@ -1243,8 +1237,7 @@ registration_password = shared-secret
                           "registration_password": "New Password",
                           "http_proxy": "http://new.proxy",
                           "https_proxy": "https://new.proxy",
-                          "url": "http://new.url",
-                          "server_autodiscover": "False"})
+                          "url": "http://new.url"})
 
     def test_import_from_empty_file(self):
         self.mocker.replay()
@@ -1355,8 +1348,7 @@ registration_password = shared-secret
                           "registration_password": "Command Line Password",
                           "http_proxy": "http://old.proxy",
                           "https_proxy": "https://old.proxy",
-                          "url": "http://new.url",
-                          "server_autodiscover": "False"})
+                          "url": "http://new.url"})
 
     def test_import_from_file_may_reset_old_options(self):
         """
@@ -1397,8 +1389,7 @@ registration_password = shared-secret
                          {"computer_title": "Old Title",
                           "account_name": "Old Name",
                           "registration_password": "",  # <==
-                          "url": "http://old.url",
-                          "server_autodiscover": "False"})
+                          "url": "http://old.url"})
 
     def test_import_from_url(self):
         sysvconfig_mock = self.mocker.patch(SysVConfig)
@@ -1439,8 +1430,7 @@ registration_password = shared-secret
                           "registration_password": "New Password",
                           "http_proxy": "http://new.proxy",
                           "https_proxy": "https://new.proxy",
-                          "url": "http://new.url",
-                          "server_autodiscover": "False"})
+                          "url": "http://new.url"})
 
     def test_import_from_url_with_http_code_fetch_error(self):
         fetch_mock = self.mocker.replace("landscape.lib.fetch.fetch")

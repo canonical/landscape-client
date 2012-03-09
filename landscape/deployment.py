@@ -314,7 +314,7 @@ class Configuration(BaseConfiguration):
                           help="The public SSL key to verify the server. "
                                "Only used if the given URL is https.")
         parser.add_option("--server-autodiscover", type="string",
-                          default="false", help="Enable server autodiscovery.")
+                          default=False, help="Enable server autodiscovery.")
         parser.add_option("--autodiscover-srv-query-string", type="string",
                           default="_landscape._tcp.localdomain",
                           help="autodiscovery string for DNS SRV queries")
@@ -341,8 +341,9 @@ class Configuration(BaseConfiguration):
         super(Configuration, self).load(
             args, accept_nonexistent_config=accept_nonexistent_config)
 
-        autodiscover = str(self.server_autodiscover).lower()
-        self.server_autodiscover = (autodiscover == "true")
+        if not isinstance(self.server_autodiscover, bool):
+            autodiscover = str(self.server_autodiscover).lower()
+            self.server_autodiscover = (autodiscover == "true")
 
     @property
     def sockets_path(self):

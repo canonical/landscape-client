@@ -48,7 +48,7 @@ class ConfigController(object):
         """
         Load the initial data from the configuration.
         """
-        self._configuration.load_data()
+        return self._configuration.load_data()
 
     def revert(self):
         """

@@ -37,7 +37,6 @@ class BrokerConfigurationHelper(object):
             "computer_title = Some Computer\n"
             "account_name = some_account\n"
             "ping_url = http://localhost:91910\n"
-            "server_autodiscover = false\n"
             "data_path = %s\n"
             "log_dir = %s\n" % (data_path, log_dir))
 
