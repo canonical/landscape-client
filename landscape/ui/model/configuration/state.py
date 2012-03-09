@@ -90,7 +90,11 @@ class StateError(Exception):
 class TransitionError(Exception):
     """
     An L{Exception} that is raised when a valid transition between states fails
-    for some non state related reason.
+    for some non state related reason.  For example, this error is raised when
+    the user does not have the privilege of reading the configuration file,
+    this causes the transition from L{VirginState} to L{InitialisedState} to
+    fail but not because that transition from one state to another was not
+    permitted, but rather the transition encountered an error.
     """
 
 
