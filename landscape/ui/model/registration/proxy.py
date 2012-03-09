@@ -112,7 +112,8 @@ class RegistrationProxy(object):
                 if e.get_dbus_name() != "org.freedesktop.DBus.Error.NoReply":
                     raise
                 else:
-                    error_handler("Registration timed out.")
+                    result = False
+                    message = "Registration timed out."
             if result:
                 reply_handler()
             else:
