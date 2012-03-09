@@ -9,9 +9,9 @@ ifeq (,$(filter $(dist_release), hardy lucid))
 endif
 ifneq (,$(filter $(dist_release),precise))
 	# We want landscape-client-ui only from precise onward
-	dh_extra_flags =
+	dh_extra_flags = -plandscape-common -plandscape-client -plandscape-client-ui -plandscape-client-install-ui
 else
-	dh_extra_flags = -Nlandscape-client-ui -Nlandscape-client-install-ui
+	dh_extra_flags = -plandscape-common -plandscape-client 
 endif
 
 -include /usr/share/python/python.mk
