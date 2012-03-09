@@ -8,7 +8,7 @@ from landscape.ui.controller.configuration import ConfigController
 
 
 APPLICATION_ID = "com.canonical.landscape-client.settings.ui"
-NOTIFY_ID = "landscape-client.settings.ui"
+NOTIFY_ID = "Landscape management service"
 
 
 class SettingsApplicationController(Gtk.Application):

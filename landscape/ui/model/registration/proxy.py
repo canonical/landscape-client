@@ -107,14 +107,17 @@ class RegistrationProxy(object):
         self._register_handlers()
         if self._bus:
             try:
-                return self._interface.register(config_path,
-                                                reply_handler=reply_handler,
-                                                error_handler=error_handler)
+                result, message = self._interface.register(config_path)
             except dbus.DBusException, e:
                 if e.get_dbus_name() != "org.freedesktop.DBus.Error.NoReply":
                     raise
                 else:
                     error_handler("Registration timed out.")
+            if result:
+                reply_handler()
+            else:
+                error_handler(message)
+            return result
         else:
             return self._interface.register(config_path)
 
