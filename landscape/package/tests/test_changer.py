@@ -1243,10 +1243,10 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         self._hash_packages_by_name(self.facade, self.store, "bar")
         [foo] = self.facade.get_packages_by_name("foo")
         [bar] = self.facade.get_packages_by_name("bar")
-        self.facade.set_package_hold(foo)
+        self.facade.set_package_hold(bar)
         self.facade.reload_channels()
         self.store.add_task("changer", {"type": "change-package-holds",
-                                        "create": [],
+                                        "create": [foo.package.id],
                                         "delete": [bar.package.id],
                                         "operation-id": 123})
 
