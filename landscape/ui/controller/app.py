@@ -29,7 +29,6 @@ class SettingsApplicationController(Gtk.Application):
         return UISettings(Gio.Settings)
 
     def on_notify(self, message):
-        print message
         notification = Notify.Notification.new(NOTIFY_ID, message,
                                                "dialog-information")
         notification.show()
