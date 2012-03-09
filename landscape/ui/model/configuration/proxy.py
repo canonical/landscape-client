@@ -44,13 +44,11 @@ class ConfigurationProxy(object):
         try:
             self._interface.load(al)
         except dbus.DBusException, e:
-            if e.get_dbus_name() == ("com.canonical.LandscapeClientSettings."
+            if e.get_dbus_name() != ("com.canonical.LandscapeClientSettings."
                                      "PermissionDeniedByPolicy"):
-                return False
-            else:
                 raise
+            return False
         return True
-
     load.__doc__ = LandscapeSetupConfiguration.load.__doc__
 
     def reload(self):
