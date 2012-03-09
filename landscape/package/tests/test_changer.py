@@ -1350,6 +1350,50 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
 
+    def test_change_package_holds_create_other_version_installed(self):
+        """
+        If the C{change-package-holds} message requests to add holds for
+        packages that has a different version installed than the one
+        being requested to hold, the activity fails.
+
+        The whole activity is failed, meaning that other valid hold
+        requests  won't get processed.
+        """
+        self._add_system_package("foo", version="1.0")
+        self._add_package_to_deb_dir(
+            self.repository_dir, "foo", version="2.0")
+        self._add_system_package("bar", version="1.0")
+        self._add_package_to_deb_dir(
+            self.repository_dir, "bar", version="2.0")
+        self.facade.reload_channels()
+        [foo1, foo2] = sorted(self.facade.get_packages_by_name("foo"))
+        [bar1, bar2] = sorted(self.facade.get_packages_by_name("bar"))
+        self.store.set_hash_ids({self.facade.get_package_hash(foo1): 1,
+                                 self.facade.get_package_hash(foo2): 2,
+                                 self.facade.get_package_hash(bar1): 3,
+                                 self.facade.get_package_hash(bar2): 4})
+        self.facade.reload_channels()
+        self.store.add_task("changer", {"type": "change-package-holds",
+                                        "create": [2, 3],
+                                        "operation-id": 123})
+
+        def assert_result(result):
+            self.facade.reload_channels()
+            self.assertEqual([], self.facade.get_package_holds())
+            self.assertIn("Queuing message with change package holds results "
+                          "to exchange urgently.", self.logfile.getvalue())
+            self.assertMessages(
+                self.get_pending_messages(),
+                [{"type": "operation-result",
+                  "operation-id": 123,
+                  "status": FAILED,
+                  "result-text": "Package holds not changed, since the" +
+                                 " following packages are not installed: 2",
+                  "result-code": 1}])
+
+        result = self.changer.handle_tasks()
+        return result.addCallback(assert_result)
+
     def test_change_package_holds_create_not_installed(self):
         """
         If the C{change-package-holds} message requests to add holds for
@@ -1385,7 +1429,7 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
                 [{"type": "operation-result",
                   "operation-id": 123,
                   "status": FAILED,
-                  "result-text": "Package holds not added, since the "
+                  "result-text": "Package holds not changed, since the "
                   "following packages are not installed: "
                   "%s, %s" % tuple(sorted([bar.package.id,
                                                baz.package.id])),
@@ -1427,7 +1471,7 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
 
                 [{'operation-id': 123,
                   'result-code': 1,
-                  'result-text': u'Package holds not added, since the '
+                  'result-text': u'Package holds not changed, since the '
                   'following packages are not installed: ' +
                   str(baz.package.id),
                   'status': 5,

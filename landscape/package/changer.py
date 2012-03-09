@@ -333,7 +333,7 @@ class PackageChanger(PackageTaskHandler):
         for id in holds_to_create:
             hash = self._store.get_id_hash(id)
             hold_version = self._facade.get_package_by_hash(hash)
-            if hold_version and hold_version.package.installed:
+            if hold_version and self._facade.is_package_installed(hold_version):
                 versions_to_create.add((hold_version.package, hold_version))
             else:
                 not_installed.add(str(id))
@@ -351,8 +351,8 @@ class PackageChanger(PackageTaskHandler):
                 "type": "operation-result",
                 "operation-id": message.get("operation-id"),
                 "status": FAILED,
-                "result-text": "Package holds not added, since the following" +
-                               " packages are not installed: %s" % (
+                "result-text": "Package holds not changed, since the" +
+                               " following packages are not installed: %s" % (
                                    ", ".join(sorted(not_installed))),
                 "result-code": 1}
             return self._send_change_package_holds_response(response)
