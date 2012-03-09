@@ -2,7 +2,8 @@ from landscape.configuration import LandscapeSetupConfiguration
 from landscape.ui.tests.helpers import (
     ConfigurationProxyHelper, dbus_test_should_skip, dbus_skip_message,
     got_gobject_introspection, gobject_skip_message)
-from landscape.ui.model.configuration.mechanism import PermissionDeniedByPolicy
+if got_gobject_introspection:
+    from landscape.ui.model.configuration.mechanism import PermissionDeniedByPolicy
 from landscape.tests.helpers import LandscapeTest
 
 
@@ -31,6 +32,9 @@ class AuthenticationFailureTest(LandscapeTest):
 
         self.mechanism.load = fake_faily_load
         self.assertFalse(self.proxy.load([]))
+
+    if not got_gobject_introspection:
+        skip = gobject_skip_message
 
 
 class ConfigurationProxyInterfaceTest(LandscapeTest):

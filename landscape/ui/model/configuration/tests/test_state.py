@@ -64,6 +64,9 @@ class AuthenticationFailureTest(LandscapeTest):
                                          exit_method=fake_exit_method))
         self.assertTrue(isinstance(model.get_state(), ExitedState))
 
+    if not got_gobject_introspection:
+        skip = gobject_skip_message
+
 
 class ConfigurationModelTest(LandscapeTest):
     """
