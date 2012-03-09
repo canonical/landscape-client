@@ -2,24 +2,24 @@
 
 dist_release := $(shell lsb_release -cs)
 ifneq ($(dist_release),dapper)
-  use_pycentral = yes
+	use_pycentral = yes
 endif
 ifeq (,$(filter $(dist_release), hardy lucid))
-  use_dhpython2 = yes
+	use_dhpython2 = yes
 endif
+
+dh_extra_flags = -plandscape-common -plandscape-client
 ifneq (,$(filter $(dist_release),precise))
 	# We want landscape-client-ui only from precise onward
-	dh_extra_flags = -plandscape-common -plandscape-client -plandscape-client-ui -plandscape-client-install-ui
-else
-	dh_extra_flags = -plandscape-common -plandscape-client 
+	dh_extra_flags = $(dh_extra_flags) -plandscape-client-ui -plandscape-client-install-ui
 endif
 
 -include /usr/share/python/python.mk
 ifeq (,$(py_sitename))
-  py_sitename = site-packages
-  py_libdir = /usr/lib/python$(subst python,,$(1))/site-packages
-  py_sitename_sh = $(py_sitename)
-  py_libdir_sh = $(py_libdir)
+	py_sitename = site-packages
+	py_libdir = /usr/lib/python$(subst python,,$(1))/site-packages
+	py_sitename_sh = $(py_sitename)
+	py_libdir_sh = $(py_libdir)
 endif
 
 package = landscape-client
@@ -107,15 +107,15 @@ endif
 ifeq ($(use_dhpython2),yes)
 	dh_python2 --no-guessing-versions
 else
-  ifeq ($(use_pycentral),yes)
-     ifneq (,$(py_setup_install_args))
-		DH_PYCENTRAL=include-links dh_pycentral
-     else
-		DH_PYCENTRAL=nomove dh_pycentral
-     endif
-  else
+	ifeq ($(use_pycentral),yes)
+		ifneq (,$(py_setup_install_args))
+			DH_PYCENTRAL=include-links dh_pycentral
+		else
+			DH_PYCENTRAL=nomove dh_pycentral
+		endif
+	else
 		dh_python
-  endif
+	endif
 endif
 	dh_installdeb $(dh_extra_flags)
 	dh_gencontrol $(dh_extra_flags)
