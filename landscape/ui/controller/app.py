@@ -1,3 +1,5 @@
+import sys
+
 from gi.repository import Gio, Gtk, Notify
 
 from landscape.ui.model.configuration.proxy import ConfigurationProxy
@@ -66,10 +68,12 @@ class SettingsApplicationController(Gtk.Application):
         model = ConfigurationModel(proxy=config, proxy_loadargs=self._args,
                                    uisettings=uisettings)
         controller = ConfigController(model)
-        controller.load()
-        self.settings_dialog = ClientSettingsDialog(controller)
-        if self.settings_dialog.run() == Gtk.ResponseType.OK:
-            controller.persist(self.on_notify, self.on_error, self.on_succeed,
-                               self.on_fail)
-        self.settings_dialog.destroy()
-        controller.exit(asynchronous=asynchronous)
+        if controller.load():
+            self.settings_dialog = ClientSettingsDialog(controller)
+            if self.settings_dialog.run() == Gtk.ResponseType.OK:
+                controller.persist(self.on_notify, self.on_error,
+                                   self.on_succeed, self.on_fail)
+                self.settings_dialog.destroy()
+                controller.exit(asynchronous=asynchronous)
+        else:
+            sys.stderr.write("Authentication failed.\n")

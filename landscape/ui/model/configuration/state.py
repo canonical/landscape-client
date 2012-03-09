@@ -1,5 +1,6 @@
 import copy
 import socket
+import sys
 
 from landscape.ui.constants import CANONICAL_MANAGED, NOT_MANAGED
 
@@ -86,6 +87,17 @@ class StateError(Exception):
     """
 
 
+class TransitionError(Exception):
+    """
+    An L{Exception} that is raised when a valid transition between states fails
+    for some non state related reason.  For example, this error is raised when
+    the user does not have the privilege of reading the configuration file,
+    this causes the transition from L{VirginState} to L{InitialisedState} to
+    fail but not because that transition from one state to another was not
+    permitted, but rather the transition encountered an error.
+    """
+
+
 class ConfigurationState(object):
     """
     Base class for states used in the L{ConfigurationModel}.
@@ -150,7 +162,7 @@ class ConfigurationState(object):
             sub_dict[args[1]] = args[2]
             self._data[args[0]] = sub_dict
 
-    def load_data(self):
+    def load_data(self, asynchronous=True, exit_method=None):
         raise NotImplementedError
 
     def modify(self):
@@ -162,9 +174,9 @@ class ConfigurationState(object):
     def persist(self):
         raise NotImplementedError
 
-    def exit(self, asynchronous=True):
+    def exit(self, asynchronous=True, exit_method=None):
         return ExitedState(self._data, self._proxy, self._uisettings,
-                           asynchronous=asynchronous)
+                           asynchronous=asynchronous, exit_method=exit_method)
 
 
 class Helper(object):
@@ -197,7 +209,7 @@ class UnloadableHelper(Helper):
     Disallow loading of data into a L{ConfigurationModel}.
     """
 
-    def load_data(self):
+    def load_data(self, asynchronous=True, exit_method=None):
         raise StateError("A ConfiguratiomModel in a " +
                          self.__class__.__name__ +
                          " cannot be transitioned via load_data()")
@@ -241,6 +253,9 @@ class PersistableHelper(Helper):
     """
 
     def _save_to_uisettings(self):
+        """
+        Persist full content to the L{UISettings} object.
+        """
         self._state._uisettings.set_management_type(
             self._state.get(MANAGEMENT_TYPE))
         self._state._uisettings.set_computer_title(
@@ -257,6 +272,10 @@ class PersistableHelper(Helper):
             self._state.get(LOCAL, PASSWORD))
 
     def _save_to_config(self):
+        """
+        Persist the subset of the data we want to make live to the actual
+        configuration file.
+        """
         hosted = self._state.get(MANAGEMENT_TYPE)
         if hosted is NOT_MANAGED:
             pass
@@ -311,8 +330,9 @@ class ExitedState(ConfigurationState):
         self._unrevertable_helper = UnrevertableHelper(self)
         self._unpersistable_helper = UnpersistableHelper(self)
 
-    def load_data(self):
-        return self._unloadable_helper.load_data()
+    def load_data(self, asynchronous=True, exit_method=None):
+        return self._unloadable_helper.load_data(asynchronous=asynchronous,
+                                                 exit_method=exit_method)
 
     def modify(self):
         return self._unmodifiable_helper.modify()
@@ -323,7 +343,7 @@ class ExitedState(ConfigurationState):
     def persist(self):
         return self._unpersistable_helper.persist()
 
-    def exit(self):
+    def exit(self, asynchronous=True):
         return self
 
 
@@ -363,9 +383,13 @@ class InitialisedState(ConfigurationState):
         self._unrevertable_helper = UnrevertableHelper(self)
         self._unpersistable_helper = UnpersistableHelper(self)
         self._load_uisettings_data()
-        self._load_live_data()
+        if not self._load_live_data():
+            raise TransitionError("Authentication Failure")
 
     def _load_uisettings_data(self):
+        """
+        Load the complete set of dialog data from L{UISettings}.
+        """
         hosted = self._uisettings.get_management_type()
         self.set(MANAGEMENT_TYPE, hosted)
         computer_title = self._uisettings.get_computer_title()
@@ -382,21 +406,27 @@ class InitialisedState(ConfigurationState):
         self.set(LOCAL, PASSWORD, self._uisettings.get_local_password())
 
     def _load_live_data(self):
-        self._proxy.load(None)
-        computer_title = self._proxy.computer_title
-        if computer_title:
-            self.set(COMPUTER_TITLE, computer_title)
-        url = self._proxy.url
-        if url.find(HOSTED_LANDSCAPE_HOST) > -1:
-            self.set(HOSTED, ACCOUNT_NAME, self._proxy.account_name)
-            self.set(HOSTED, PASSWORD, self._proxy.registration_password)
+        """
+        Load the current live subset of data from the configuration file.
+        """
+        if self._proxy.load(None):
+            computer_title = self._proxy.computer_title
+            if computer_title:
+                self.set(COMPUTER_TITLE, computer_title)
+            url = self._proxy.url
+            if url.find(HOSTED_LANDSCAPE_HOST) > -1:
+                self.set(HOSTED, ACCOUNT_NAME, self._proxy.account_name)
+                self.set(HOSTED, PASSWORD, self._proxy.registration_password)
+            else:
+                self.set(LOCAL, LANDSCAPE_HOST,
+                         derive_server_host_name_from_url(url))
+                if self._proxy.account_name != "":
+                    self.set(LOCAL, ACCOUNT_NAME, self._proxy.account_name)
+            return True
         else:
-            self.set(LOCAL, LANDSCAPE_HOST,
-                     derive_server_host_name_from_url(url))
-            if self._proxy.account_name != "":
-                self.set(LOCAL, ACCOUNT_NAME, self._proxy.account_name)
+            return False
 
-    def load_data(self):
+    def load_data(self, asynchronous=True, exit_method=None):
         return self
 
     def modify(self):
@@ -421,8 +451,13 @@ class VirginState(ConfigurationState):
         self._unrevertable_helper = UnrevertableHelper(self)
         self._unpersistable_helper = UnpersistableHelper(self)
 
-    def load_data(self):
-        return InitialisedState(self._data, self._proxy, self._uisettings)
+    def load_data(self, asynchronous=True, exit_method=None):
+        try:
+            return InitialisedState(self._data, self._proxy, self._uisettings)
+        except TransitionError:
+            return ExitedState(self._data, self._proxy, self._uisettings,
+                               asynchronous=asynchronous,
+                               exit_method=exit_method)
 
     def modify(self):
         return self._unmodifiable_helper.modify()
@@ -449,10 +484,14 @@ class ConfigurationModel(object):
     The allowable state transitions are:
 
        VirginState      --(load_data)--> InitialisedState
+       VirginState      --(load_data)--> ExitedState
+       VirginState      --(exit)-------> ExitedState
        InitialisedState --(modify)-----> ModifiedState
+       InitialisedState --(exit)-------> ExitedState
        ModifiedState    --(revert)-----> InitialisedState
        ModifiedState    --(modify)-----> ModifiedState
        ModifiedState    --(persist)----> InitialisedState
+       ModifiedState    --(exit)-------> ExitedState
     """
 
     def __init__(self, proxy=None, proxy_loadargs=[], uisettings=None):
@@ -466,8 +505,10 @@ class ConfigurationModel(object):
         """
         return self._current_state
 
-    def load_data(self):
-        self._current_state = self._current_state.load_data()
+    def load_data(self, asynchronous=True, exit_method=None):
+        self._current_state = self._current_state.load_data(
+            asynchronous=asynchronous, exit_method=exit_method)
+        return isinstance(self._current_state, InitialisedState)
 
     def modify(self):
         self._current_state = self._current_state.modify()
