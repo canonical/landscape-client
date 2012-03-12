@@ -1622,6 +1622,11 @@ class RegisterFunctionTest(LandscapeTest):
 
     helpers = [BrokerServiceHelper]
 
+    def setUp(self):
+        super(RegisterFunctionTest, self).setUp()
+        self.config = LandscapeSetupConfiguration()
+        self.config.load(["-c", self.config_filename])
+
     def test_register_success(self):
         service = self.broker_service
 
@@ -1666,7 +1671,7 @@ class RegisterFunctionTest(LandscapeTest):
         self.mocker.replay()
 
         # DO IT!
-        return register(service.config, print_text, sys.exit)
+        return register(self.config, print_text, sys.exit)
 
     def test_register_failure(self):
         """
@@ -1718,7 +1723,7 @@ class RegisterFunctionTest(LandscapeTest):
         self.mocker.replay()
 
         # DO IT!
-        return register(service.config, print_text, sys.exit)
+        return register(self.config, print_text, sys.exit)
 
     def test_register_exchange_failure(self):
         """
@@ -1768,7 +1773,7 @@ class RegisterFunctionTest(LandscapeTest):
         self.mocker.replay()
 
         # DO IT!
-        return register(service.config, print_text, sys.exit)
+        return register(self.config, print_text, sys.exit)
 
     def test_register_timeout_failure(self):
         service = self.broker_service
@@ -1812,7 +1817,7 @@ class RegisterFunctionTest(LandscapeTest):
         self.mocker.replay()
 
         # DO IT!
-        return register(service.config, print_text, sys.exit)
+        return register(self.config, print_text, sys.exit)
 
     def test_register_bus_connection_failure(self):
         """
@@ -1887,6 +1892,7 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
         printed and the program exits.
         """
         configuration = LandscapeSetupConfiguration()
+        configuration.ok_no_register = True
 
         # We'll just mock the remote here to have it raise an exception.
         connector_factory = self.mocker.replace(

@@ -606,17 +606,16 @@ def register(config, on_message=print_text, on_error=sys.exit, reactor=None):
     reactor = TwistedReactor()
     exit_with_error = []
 
-    # XXX: many of these reactor.stop() calls should also specify a non-0 exit
-    # code, unless ok-no-register is passed.
-
-    def stop():
+    def stop(error=None):
+        if not config.ok_no_register and error is not None:
+            exit_with_error.append(error)
         connector.disconnect()
         reactor.stop()
 
     def failure():
         on_message("Invalid account name or "
                    "registration password.", error=True)
-        stop()
+        stop(2)
 
     def success():
         on_message("System successfully registered.")
@@ -628,7 +627,7 @@ def register(config, on_message=print_text, on_error=sys.exit, reactor=None):
                    "The landscape client will continue to try and contact "
                    "the server periodically.",
                    error=True)
-        stop()
+        stop(2)
 
     def handle_registration_errors(failure):
         # We'll get invalid credentials through the signal.
@@ -638,7 +637,7 @@ def register(config, on_message=print_text, on_error=sys.exit, reactor=None):
     def catch_all(failure):
         on_message(failure.getTraceback(), error=True)
         on_message("Unknown error occurred.", error=True)
-        stop()
+        stop(2)
 
     on_message("Please wait... ", "")
 
@@ -662,9 +661,7 @@ def register(config, on_message=print_text, on_error=sys.exit, reactor=None):
                    " client.", error=True)
         on_message("This machine will be registered with the provided "
                    "details when the client runs.", error=True)
-        if not config.ok_no_register:
-            exit_with_error.append(2)
-        stop()
+        stop(2)
 
     connector = RemoteBrokerConnector(reactor, config)
     result = connector.connect(max_retries=0, quiet=True)
