@@ -342,7 +342,7 @@ class PackageChanger(PackageTaskHandler):
         for id in holds_to_remove:
             hash = self._store.get_id_hash(id)
             hold_version = self._facade.get_package_by_hash(hash)
-            if hold_version and hold_version.package.installed:
+            if hold_version and self._facade.is_package_installed(hold_version):
                 versions_to_remove.add((hold_version.package, hold_version))
 
         if not_installed:

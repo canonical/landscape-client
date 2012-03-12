@@ -1469,6 +1469,42 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
 
+    def test_change_package_holds_delete_different_version_held(self):
+        """
+        If the C{change-package-holds} message requests to remove holds
+        for packages that aren't held, the activity succeeds if the
+        right version is installed, since the end result is that the
+        hold is removed.
+        """
+        self._add_system_package("foo", version="1.0")
+        self._add_package_to_deb_dir(
+            self.repository_dir, "foo", version="2.0")
+        self.facade.reload_channels()
+        [foo1, foo2] = sorted(self.facade.get_packages_by_name("foo"))
+        self.facade.set_package_hold(foo1)
+        self.store.set_hash_ids({self.facade.get_package_hash(foo1): 1,
+                                 self.facade.get_package_hash(foo2): 2})
+        self.facade.reload_channels()
+        self.store.add_task("changer", {"type": "change-package-holds",
+                                        "delete": [2],
+                                        "operation-id": 123})
+
+        def assert_result(result):
+            self.facade.reload_channels()
+            self.assertEqual(["foo"], self.facade.get_package_holds())
+            self.assertIn("Queuing message with change package holds results "
+                          "to exchange urgently.", self.logfile.getvalue())
+            self.assertMessages(
+                self.get_pending_messages(),
+                [{"type": "operation-result",
+                  "operation-id": 123,
+                  "status": SUCCEEDED,
+                  "result-text": "Package holds successfully changed.",
+                  "result-code": 0}])
+
+        result = self.changer.handle_tasks()
+        return result.addCallback(assert_result)
+
     def test_change_package_holds_delete_not_installed(self):
         """
         If the C{change-package-holds} message requests to remove holds
