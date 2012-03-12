@@ -103,7 +103,7 @@
                       <object class="GtkLabel" id="about-label">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Landscape is a remote administration service from Canonical.  If you allow it, a Landcape server can monitor this computers performance and send administration commands.</property>
+                        <property name="label" translatable="yes">Landscape is a remote administration service from Canonical.  If you allow it, a Landcape server can monitor this computer's performance and send administration commands.</property>
                         <property name="wrap">True</property>
                       </object>
                       <packing>
