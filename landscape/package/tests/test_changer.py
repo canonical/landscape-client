@@ -1441,41 +1441,30 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
     def test_change_package_holds_delete_not_held(self):
         """
         If the C{change-package-holds} message requests to remove holds
-        for packages that aren't held, the activity fails. If
-        other valid holds are specified, those will not be removed.
+        for packages that aren't held, the activity succeeds if the
+        right version is installed, since the end result is that the
+        hold is removed.
         """
         self._add_system_package("foo")
-        self._add_system_package("bar")
-        self._add_package_to_deb_dir(self.repository_dir, "baz")
         self.facade.reload_channels()
         self._hash_packages_by_name(self.facade, self.store, "foo")
-        self._hash_packages_by_name(self.facade, self.store, "bar")
-        self._hash_packages_by_name(self.facade, self.store, "baz")
         [foo] = self.facade.get_packages_by_name("foo")
-        [bar] = self.facade.get_packages_by_name("bar")
-        [baz] = self.facade.get_packages_by_name("baz")
-        self.facade.set_package_hold(bar)
         self.store.add_task("changer", {"type": "change-package-holds",
-                                        "delete": [foo.package.id,
-                                                   bar.package.id,
-                                                   baz.package.id],
+                                        "delete": [foo.package.id],
                                         "operation-id": 123})
 
         def assert_result(result):
             self.facade.reload_channels()
-            self.assertEqual(["bar"], self.facade.get_package_holds())
+            self.assertEqual([], self.facade.get_package_holds())
             self.assertIn("Queuing message with change package holds results "
                           "to exchange urgently.", self.logfile.getvalue())
             self.assertMessages(
                 self.get_pending_messages(),
-
-                [{'operation-id': 123,
-                  'result-code': 1,
-                  'result-text': u'Package holds not changed, since the '
-                  'following packages are not installed: ' +
-                  str(baz.package.id),
-                  'status': 5,
-                  'type': 'operation-result'}])
+                [{"type": "operation-result",
+                  "operation-id": 123,
+                  "status": SUCCEEDED,
+                  "result-text": "Package holds successfully changed.",
+                  "result-code": 0}])
 
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
