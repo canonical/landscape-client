@@ -70,6 +70,26 @@ class RunScriptTests(LandscapeTest):
         result.addCallback(check_environment)
         return result
 
+    def test_server_supplied_env(self):
+        """
+        Server-supplied environment variables are merged with default
+        variables then passed to script.
+        """
+        server_supplied_env = {"DOG": "Woof", "CAT": "Meow"}
+        result = self.plugin.run_script(
+            sys.executable,
+            "import os\nprint os.environ",
+            server_supplied_env=server_supplied_env)
+
+        def check_environment(results):
+            for string in get_default_environment().keys():
+                self.assertIn(string, results)
+            for name, value in server_supplied_env.items():
+                self.assertIn(name, results)
+                self.assertIn(value, results)
+        result.addCallback(check_environment)
+        return result
+
     def test_concurrent(self):
         """
         Scripts run with the ScriptExecutionPlugin plugin are run concurrently.

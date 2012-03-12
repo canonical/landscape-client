@@ -168,10 +168,12 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
                     FAILED,
                     u"Scripts cannot be run as user %s." % (user,),
                     opid)
+            server_supplied_env = message.get("env", None)
 
             d = self.run_script(message["interpreter"], message["code"],
                                 time_limit=message["time-limit"], user=user,
-                                attachments=message["attachments"])
+                                attachments=message["attachments"],
+                                server_supplied_env=server_supplied_env)
             d.addCallback(self._respond_success, opid)
             d.addErrback(self._respond_failure, opid)
             return d
@@ -230,7 +232,7 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
         returnValue(attachment_dir)
 
     def run_script(self, shell, code, user=None, time_limit=None,
-                   attachments=None):
+                   attachments=None, server_supplied_env=None):
         """
         Run a script based on a shell and the code.
 
@@ -263,6 +265,8 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
             script_file, filename, shell, code, uid, gid)
 
         env = {"PATH": UBUNTU_PATH, "USER": user or "", "HOME": path or ""}
+        if server_supplied_env:
+            env.update(server_supplied_env)
         old_umask = os.umask(0022)
 
         if attachments:
