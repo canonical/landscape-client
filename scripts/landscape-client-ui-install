@@ -17,6 +17,9 @@ script = "/usr/bin/landscape-client-settings-ui"
 
 def on_transaction_done(transaction, exit):
     Gtk.main_quit()
+    # Install may have failed
+    if os.path.exists(script):
+        subprocess.call(script)
 
 
 @inline_callbacks
