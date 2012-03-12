@@ -66,6 +66,9 @@ class TimeoutTest(LandscapeTest):
         [message] = self.error_handler_messages
         self.assertEqual("Registration timed out.", message)
 
+    if not got_gobject_introspection:
+        skip = gobject_skip_message
+
 
 class RegistrationProxyTest(LandscapeTest):
     """
