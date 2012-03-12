@@ -344,8 +344,7 @@ class PackageChanger(PackageTaskHandler):
             hold_version = self._facade.get_package_by_hash(hash)
             if hold_version and hold_version.package.installed:
                 versions_to_remove.add((hold_version.package, hold_version))
-            else:
-                not_installed.add(str(id))
+
         if not_installed:
             response = {
                 "type": "operation-result",

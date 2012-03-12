@@ -1445,6 +1445,37 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         right version is installed, since the end result is that the
         hold is removed.
         """
+        self._add_package_to_deb_dir(self.repository_dir, "foo")
+        self.facade.reload_channels()
+        self._hash_packages_by_name(self.facade, self.store, "foo")
+        [foo] = self.facade.get_packages_by_name("foo")
+        self.store.add_task("changer", {"type": "change-package-holds",
+                                        "delete": [foo.package.id],
+                                        "operation-id": 123})
+
+        def assert_result(result):
+            self.facade.reload_channels()
+            self.assertEqual([], self.facade.get_package_holds())
+            self.assertIn("Queuing message with change package holds results "
+                          "to exchange urgently.", self.logfile.getvalue())
+            self.assertMessages(
+                self.get_pending_messages(),
+                [{"type": "operation-result",
+                  "operation-id": 123,
+                  "status": SUCCEEDED,
+                  "result-text": "Package holds successfully changed.",
+                  "result-code": 0}])
+
+        result = self.changer.handle_tasks()
+        return result.addCallback(assert_result)
+
+    def test_change_package_holds_delete_not_installed(self):
+        """
+        If the C{change-package-holds} message requests to remove holds
+        for packages that aren't installed, the activity succeeds, since
+        the end result is still that the package isn't held at the
+        requested version.
+        """
         self._add_system_package("foo")
         self.facade.reload_channels()
         self._hash_packages_by_name(self.facade, self.store, "foo")
