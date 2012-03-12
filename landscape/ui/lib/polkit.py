@@ -5,6 +5,9 @@ import dbus.glib
 from gi.repository import GObject
 
 
+POLICY_NAME = "com.canonical.LandscapeClientSettings.configure"
+
+
 class PolicyKitMechanism(dbus.service.Object):
     """
     L{PolicyKitMechanism} is a specialised L{dbus.service.Object} which

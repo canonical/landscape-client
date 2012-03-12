@@ -3,11 +3,10 @@ import sys
 import dbus
 import dbus.service
 
-from landscape.ui.lib.polkit import PolicyKitMechanism
+from landscape.ui.lib.polkit import PolicyKitMechanism, POLICY_NAME
 
 
 SERVICE_NAME = "com.canonical.LandscapeClientSettings"
-POLICY_NAME = SERVICE_NAME + ".configure"
 INTERFACE_NAME = "com.canonical.LandscapeClientSettings.ConfigurationInterface"
 OBJECT_PATH = "/com/canonical/LandscapeClientSettings/ConfigurationInterface"
 

@@ -4,7 +4,6 @@ usr/bin/landscape-client-settings-ui
 usr/share/dbus-1/system-services/com.canonical.LandscapeClientSettings.service
 usr/share/dbus-1/system-services/com.canonical.LandscapeClientRegistration.service
 usr/share/polkit-1/actions/com.canonical.LandscapeClientSettings.policy
-usr/share/polkit-1/actions/com.canonical.LandscapeClientRegistration.policy
 etc/dbus-1/system.d/com.canonical.LandscapeClientSettings.conf
 etc/dbus-1/system.d/com.canonical.LandscapeClientRegistration.conf
 usr/share/glib-2.0/schemas/com.canonical.landscape-client-settings.gschema.xml
