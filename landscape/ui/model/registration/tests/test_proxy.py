@@ -9,6 +9,64 @@ if got_gobject_introspection:
     from landscape.ui.model.registration.proxy import RegistrationProxy
 
 
+class TimeoutTest(LandscapeTest):
+    """
+    L{TimeoutTest} bypasses DBus and tests with a faked method that raises a
+    timeout exception.
+    """
+
+    def setUp(self):
+        super(TimeoutTest, self).setUp()
+        self.error_handler_messages = []
+
+        class FakeBus(object):
+            """
+            Hello, I will be your fake DBus for this flight.
+            """
+
+        class FakeTimeoutException(dbus.DBusException):
+            _dbus_error_name = "org.freedesktop.DBus.Error.NoReply"
+
+        class FakeFailyMechanism(object):
+
+            def register(this, config_path, reply_handler=None,
+                         error_handler=None):
+                raise FakeTimeoutException()
+
+        def fake_setup_interface(this, bus):
+            this._interface = FakeFailyMechanism()
+            this._bus = bus
+
+        def fake_register_handlers(this):
+            pass
+
+        def fake_remove_handlers(this):
+            pass
+
+        RegistrationProxy._setup_interface = fake_setup_interface
+        RegistrationProxy._register_handlers = fake_register_handlers
+        RegistrationProxy._remove_handlers = fake_remove_handlers
+        self.proxy = RegistrationProxy(bus=FakeBus())
+
+    def tearDown(self):
+        self.error_handler_messages = []
+        super(TimeoutTest, self).tearDown()
+
+    def test_register(self):
+        """
+        Test that the proxy calls through to the underlying interface and
+        correctly performs registration.
+        """
+
+        def fake_error_handler(message):
+            self.error_handler_messages.append(message)
+
+        self.proxy.register("foo", error_handler=fake_error_handler)
+        self.assertEqual(1, len(self.error_handler_messages))
+        [message] = self.error_handler_messages
+        self.assertEqual("Registration timed out.", message)
+
+
 class RegistrationProxyTest(LandscapeTest):
     """
     L{RegistrationProxyTest} bypasses DBus to simply check the interface

@@ -10,6 +10,7 @@ from landscape.ui.controller.configuration import ConfigController
 
 
 APPLICATION_ID = "com.canonical.landscape-client.settings.ui"
+NOTIFY_ID = "Landscape management service"
 
 
 class SettingsApplicationController(Gtk.Application):
@@ -30,23 +31,23 @@ class SettingsApplicationController(Gtk.Application):
         return UISettings(Gio.Settings)
 
     def on_notify(self, message):
-        notification = Notify.new(APPLICATION_ID, message,
-                                  Gtk.STOCK_DIALOG_INFO)
+        notification = Notify.Notification.new(NOTIFY_ID, message,
+                                               "dialog-information")
         notification.show()
 
     def on_error(self, message):
-        notification = Notify.new(APPLICATION_ID, message,
-                                  Gtk.STOCK_DIALOG_ERROR)
+        notification = Notify.Notification.new(NOTIFY_ID, message,
+                                               "dialog-information")
         notification.show()
 
     def on_succeed(self):
-        notification = Notify.new(APPLICATION_ID, "Success",
-                                  Gtk.STOCK_DIALOG_INFO)
+        notification = Notify.Notification.new(NOTIFY_ID, "Success",
+                                               "dialog-information")
         notification.show()
 
     def on_fail(self):
-        notification = Notify.new(APPLICATION_ID, "Fail",
-                                  Gtk.STOCK_DIALOG_ERROR)
+        notification = Notify.Notification.new(NOTIFY_ID, "Fail",
+                                               "dialog-information")
         notification.show()
 
     def setup_ui(self, data=None, asynchronous=True):
@@ -62,7 +63,7 @@ class SettingsApplicationController(Gtk.Application):
         should be called asynchronously.  Is makes testing easier to use it
         synchronously.
         """
-        Notify.init(APPLICATION_ID)
+        Notify.init(NOTIFY_ID)
         config = self.get_config()
         uisettings = self.get_uisettings()
         model = ConfigurationModel(proxy=config, proxy_loadargs=self._args,
@@ -71,9 +72,11 @@ class SettingsApplicationController(Gtk.Application):
         if controller.load():
             self.settings_dialog = ClientSettingsDialog(controller)
             if self.settings_dialog.run() == Gtk.ResponseType.OK:
+                self.on_notify("Sending registration request.")
                 controller.persist(self.on_notify, self.on_error,
                                    self.on_succeed, self.on_fail)
-                self.settings_dialog.destroy()
-                controller.exit(asynchronous=asynchronous)
+                self.on_notify("Registration request sent.")
+            controller.exit(asynchronous=asynchronous)
+            self.settings_dialog.destroy()
         else:
             sys.stderr.write("Authentication failed.\n")
