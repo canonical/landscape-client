@@ -252,6 +252,10 @@ class AptFacade(object):
         sources_line = "deb %s %s" % (url, codename)
         if components:
             sources_line += " %s" % " ".join(components)
+        if os.path.exists(sources_file_path):
+            current_content = read_file(sources_file_path).split("\n")
+            if sources_line in current_content:
+                return
         sources_line += "\n"
         append_file(sources_file_path, sources_line)
 
