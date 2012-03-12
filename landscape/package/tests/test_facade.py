@@ -29,7 +29,7 @@ from landscape.package.facade import (
     has_new_enough_apt)
 
 from landscape.tests.mocker import ANY
-from landscape.tests.helpers import LandscapeTest
+from landscape.tests.helpers import LandscapeTest, EnvironSaverHelper
 from landscape.package.tests.helpers import (
     SmartFacadeHelper, HASH1, HASH2, HASH3, PKGNAME1, PKGNAME2, PKGNAME3,
     PKGNAME4, PKGDEB4, PKGDEB1, PKGNAME_MINIMAL, PKGDEB_MINIMAL,
@@ -62,7 +62,7 @@ class AptFacadeTest(LandscapeTest):
     if not has_new_enough_apt:
         skip = "Can't use AptFacade on hardy"
 
-    helpers = [AptFacadeHelper]
+    helpers = [AptFacadeHelper, EnvironSaverHelper]
 
     def version_sortkey(self, version):
         """Return a key by which a Version object can be sorted."""
@@ -758,6 +758,11 @@ class AptFacadeTest(LandscapeTest):
         """
         self.facade.reload_channels()
         self.assertEqual(self.facade.perform_changes(), None)
+        self.assertEqual("none", os.environ["APT_LISTCHANGES_FRONTEND"])
+        self.assertEqual("none", os.environ["APT_LISTBUGS_FRONTEND"])
+        self.assertEqual("noninteractive", os.environ["DEBIAN_FRONTEND"])
+        self.assertEqual(["--force-confold"],
+                         apt_pkg.config.value_list("DPkg::options"))
 
     def test_perform_changes_fetch_progress(self):
         """
