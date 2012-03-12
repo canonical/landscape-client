@@ -107,15 +107,15 @@ endif
 ifeq ($(use_dhpython2),yes)
 	dh_python2 --no-guessing-versions
 else
-	ifeq ($(use_pycentral),yes)
-		ifneq (,$(py_setup_install_args))
+    ifeq ($(use_pycentral),yes)
+        ifneq (,$(py_setup_install_args))
 			DH_PYCENTRAL=include-links dh_pycentral
-		else
+        else
 			DH_PYCENTRAL=nomove dh_pycentral
-		endif
-	else
+        endif
+    else
 		dh_python
-	endif
+    endif
 endif
 	dh_installdeb $(dh_extra_flags)
 	dh_gencontrol $(dh_extra_flags)
