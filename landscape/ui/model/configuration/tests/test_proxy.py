@@ -3,7 +3,10 @@ from landscape.ui.tests.helpers import (
     ConfigurationProxyHelper, dbus_test_should_skip, dbus_skip_message,
     got_gobject_introspection, gobject_skip_message)
 if got_gobject_introspection:
-    from landscape.ui.model.configuration.mechanism import PermissionDeniedByPolicy
+    from landscape.ui.model.configuration.mechanism import (
+        PermissionDeniedByPolicy)
+if not dbus_test_should_skip:
+    import dbus
 from landscape.tests.helpers import LandscapeTest
 
 
@@ -23,18 +26,37 @@ class AuthenticationFailureTest(LandscapeTest):
         Test that load returns False when authentication fails.
         """
 
-        def fake_faily_load(arglist):
+        def fake_policy_failure_load(arglist):
             """
             This simulates what you see if you click "Cancel" or give the wrong
             credentials 3 times when L{PolicyKit} challenges you.
             """
             raise PermissionDeniedByPolicy()
 
-        self.mechanism.load = fake_faily_load
+        def fake_timeout_failure_load(arglist):
+            """
+            This simulates what you see if you take no action when L{PolicyKit}
+            challenges you.
+            """
+            
+            class FakeNoReply(dbus.DBusException):
+                """
+                Simulate a L{DBus} L{NoReply} exception.
+                """
+                _dbus_error_name = "org.freedesktop.DBus.Error.NoReply"
+
+            raise FakeNoReply()
+
+        self.mechanism.load = fake_policy_failure_load
         self.assertFalse(self.proxy.load([]))
+        self.mechanism.load = fake_timeout_failure_load
+        self.assertFalse(self.proxy.load([]))
+
 
     if not got_gobject_introspection:
         skip = gobject_skip_message
+    elif dbus_test_should_skip:
+        skip = dbus_skip_message
 
 
 class ConfigurationProxyInterfaceTest(LandscapeTest):
