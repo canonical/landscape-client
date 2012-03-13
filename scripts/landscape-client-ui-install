@@ -2,7 +2,7 @@
 
 import os
 import dbus
-import subprocess
+import sys
 
 from gi.repository import GObject, Gtk
 
@@ -20,7 +20,7 @@ def on_transaction_done(transaction, exit):
     Gtk.main_quit()
     # Install may have failed
     if os.path.exists(script):
-        subprocess.call(script)
+        os.execl(sys.executable, sys.executable, script)
 
 
 @inline_callbacks
@@ -35,9 +35,9 @@ def install_package():
     except NotAuthorizedError:
         Gtk.main_quit()
     transaction = yield aptclient.install_packages(["landscape-client-ui"])
-    transaction.connect('finished', on_transaction_done)
-    dia = AptProgressDialog(transaction)
-    dia.run(close_on_finished=True, show_error=True)
+    transaction.connect("finished", on_transaction_done)
+    dialog = AptProgressDialog(transaction)
+    dialog.run(close_on_finished=True, show_error=True)
 
 
 def main():
@@ -65,4 +65,4 @@ if __name__ == "__main__":
         GObject.idle_add(main)
         Gtk.main()
     else:
-        subprocess.call(script)
+        os.execl(sys.executable, sys.executable, script)
