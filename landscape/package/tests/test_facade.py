@@ -89,8 +89,10 @@ class AptFacadeTest(LandscapeTest):
         will be used.
         """
         original_dpkg_root = apt_pkg.config.get("Dir")
-        AptFacade()
+        facade = AptFacade()
         self.assertEqual(original_dpkg_root, apt_pkg.config.get("Dir"))
+        # Make sure that at least reloading the channels work.
+        facade.reload_channels()
 
     def test_custom_root_create_required_files(self):
         """

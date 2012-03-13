@@ -110,6 +110,7 @@ class AptFacade(object):
 
     supports_package_holds = True
     supports_package_locks = False
+    _dpkg_status = "/var/lib/dpkg/status"
 
     def __init__(self, root=None):
         self._root = root
