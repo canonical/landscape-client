@@ -90,6 +90,25 @@ class RunScriptTests(LandscapeTest):
         result.addCallback(check_environment)
         return result
 
+    def test_server_supplied_env_overrides_client(self):
+        """
+        Server-supplied environment variables override client default
+        values if the server provides them.
+        """
+        server_supplied_env = {"PATH": "server-path", "USER": "server-user",
+                               "HOME": "server-home"}
+        result = self.plugin.run_script(
+            sys.executable,
+            "import os\nprint os.environ",
+            server_supplied_env=server_supplied_env)
+
+        def check_environment(results):
+            for name, value in server_supplied_env.items():
+                self.assertIn(name, results)
+                self.assertIn(value, results)
+        result.addCallback(check_environment)
+        return result
+
     def test_concurrent(self):
         """
         Scripts run with the ScriptExecutionPlugin plugin are run concurrently.
@@ -495,15 +514,18 @@ class ScriptExecutionMessageTests(LandscapeTest):
 
     def _send_script(self, interpreter, code, operation_id=123,
                      user=pwd.getpwuid(os.getuid())[0],
-                     time_limit=None, attachments={}):
-        return self.manager.dispatch_message(
-            {"type": "execute-script",
-             "interpreter": interpreter,
-             "code": code,
-             "operation-id": operation_id,
-             "username": user,
-             "time-limit": time_limit,
-             "attachments": dict(attachments)})
+                     time_limit=None, attachments={},
+                     server_supplied_env=None):
+        message = {"type": "execute-script",
+                   "interpreter": interpreter,
+                   "code": code,
+                   "operation-id": operation_id,
+                   "username": user,
+                   "time-limit": time_limit,
+                   "attachments": dict(attachments)}
+        if server_supplied_env:
+            message["env"] = server_supplied_env
+        return self.manager.dispatch_message(message)
 
     def test_success(self):
         """
@@ -539,6 +561,48 @@ class ScriptExecutionMessageTests(LandscapeTest):
                   "operation-id": 123,
                   "status": SUCCEEDED,
                   "result-text": u"hi!\n"}])
+        result.addCallback(got_result)
+        return result
+
+    def test_success_with_server_supplied_env(self):
+        """
+        When a C{execute-script} message is received from the server, the
+        specified script will be run with the supplied environment and an
+        operation-result will be sent back to the server.
+        """
+        # Let's use a stub process factory, because otherwise we don't have
+        # access to the deferred.
+        factory = StubProcessFactory()
+
+        # ignore the call to chown!
+        mock_chown = self.mocker.replace("os.chown", passthrough=False)
+        mock_chown(ARGS)
+
+        self.manager.add(ScriptExecutionPlugin(process_factory=factory))
+
+        self.mocker.replay()
+        result = self._send_script(sys.executable, "print 'hi'",
+                                   server_supplied_env={"Dog": "Woof"})
+
+        self._verify_script(factory.spawns[0][1], sys.executable, "print 'hi'")
+        # Verify environment was passed
+        self.assertIn("Dog", factory.spawns[0][3])
+        self.assertEqual("Woof", factory.spawns[0][3]["Dog"])
+
+        self.assertMessages(
+            self.broker_service.message_store.get_pending_messages(), [])
+
+        # Now let's simulate the completion of the process
+        factory.spawns[0][0].childDataReceived(1, "Woof\n")
+        factory.spawns[0][0].processEnded(Failure(ProcessDone(0)))
+
+        def got_result(r):
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [{"type": "operation-result",
+                  "operation-id": 123,
+                  "status": SUCCEEDED,
+                  "result-text": u"Woof\n"}])
         result.addCallback(got_result)
         return result
 
