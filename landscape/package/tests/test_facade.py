@@ -172,8 +172,23 @@ class AptFacadeTest(LandscapeTest):
 
         If no components are given, nothing is written after the dist.
         """
-        self.facade.add_channel_apt_deb(
-            "http://example.com/ubuntu", "lucid")
+        self.facade.add_channel_apt_deb("http://example.com/ubuntu", "lucid")
+        list_filename = (
+            self.apt_root +
+            "/etc/apt/sources.list.d/_landscape-internal-facade.list")
+        sources_contents = read_file(list_filename)
+        self.assertEqual(
+            "deb http://example.com/ubuntu lucid\n",
+            sources_contents)
+
+    def test_add_channel_apt_deb_no_duplicate(self):
+        """
+        C{add_channel_apt_deb} doesn't put duplicate lines in the landscape
+        internal apt sources list.
+        """
+        self.facade.add_channel_apt_deb("http://example.com/ubuntu", "lucid")
+        self.facade.add_channel_apt_deb("http://example.com/ubuntu", "lucid")
+        self.facade.add_channel_apt_deb("http://example.com/ubuntu", "lucid")
         list_filename = (
             self.apt_root +
             "/etc/apt/sources.list.d/_landscape-internal-facade.list")
