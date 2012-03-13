@@ -1243,10 +1243,10 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         self._hash_packages_by_name(self.facade, self.store, "bar")
         [foo] = self.facade.get_packages_by_name("foo")
         [bar] = self.facade.get_packages_by_name("bar")
-        self.facade.set_package_hold(foo)
+        self.facade.set_package_hold(bar)
         self.facade.reload_channels()
         self.store.add_task("changer", {"type": "change-package-holds",
-                                        "create": [],
+                                        "create": [foo.package.id],
                                         "delete": [bar.package.id],
                                         "operation-id": 123})
 
@@ -1318,6 +1318,82 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
 
+    def test_change_package_holds_create_already_held(self):
+        """
+        If the C{change-package-holds} message requests to add holds for
+        packages that are already held, the activity succeeds, since the
+        end result is that the requested package holds are there.
+        """
+        self._add_system_package("foo")
+        self.facade.reload_channels()
+        self._hash_packages_by_name(self.facade, self.store, "foo")
+        [foo] = self.facade.get_packages_by_name("foo")
+        self.facade.set_package_hold(foo)
+        self.facade.reload_channels()
+        self.store.add_task("changer", {"type": "change-package-holds",
+                                        "create": [foo.package.id],
+                                        "operation-id": 123})
+
+        def assert_result(result):
+            self.facade.reload_channels()
+            self.assertEqual(["foo"], self.facade.get_package_holds())
+            self.assertIn("Queuing message with change package holds results "
+                          "to exchange urgently.", self.logfile.getvalue())
+            self.assertMessages(
+                self.get_pending_messages(),
+                [{"type": "operation-result",
+                  "operation-id": 123,
+                  "status": SUCCEEDED,
+                  "result-text": "Package holds successfully changed.",
+                  "result-code": 0}])
+
+        result = self.changer.handle_tasks()
+        return result.addCallback(assert_result)
+
+    def test_change_package_holds_create_other_version_installed(self):
+        """
+        If the C{change-package-holds} message requests to add holds for
+        packages that have a different version installed than the one
+        being requested to hold, the activity fails.
+
+        The whole activity is failed, meaning that other valid hold
+        requests won't get processed.
+        """
+        self._add_system_package("foo", version="1.0")
+        self._add_package_to_deb_dir(
+            self.repository_dir, "foo", version="2.0")
+        self._add_system_package("bar", version="1.0")
+        self._add_package_to_deb_dir(
+            self.repository_dir, "bar", version="2.0")
+        self.facade.reload_channels()
+        [foo1, foo2] = sorted(self.facade.get_packages_by_name("foo"))
+        [bar1, bar2] = sorted(self.facade.get_packages_by_name("bar"))
+        self.store.set_hash_ids({self.facade.get_package_hash(foo1): 1,
+                                 self.facade.get_package_hash(foo2): 2,
+                                 self.facade.get_package_hash(bar1): 3,
+                                 self.facade.get_package_hash(bar2): 4})
+        self.facade.reload_channels()
+        self.store.add_task("changer", {"type": "change-package-holds",
+                                        "create": [2, 3],
+                                        "operation-id": 123})
+
+        def assert_result(result):
+            self.facade.reload_channels()
+            self.assertEqual([], self.facade.get_package_holds())
+            self.assertIn("Queuing message with change package holds results "
+                          "to exchange urgently.", self.logfile.getvalue())
+            self.assertMessages(
+                self.get_pending_messages(),
+                [{"type": "operation-result",
+                  "operation-id": 123,
+                  "status": FAILED,
+                  "result-text": "Package holds not changed, since the" +
+                                 " following packages are not installed: 2",
+                  "result-code": 1}])
+
+        result = self.changer.handle_tasks()
+        return result.addCallback(assert_result)
+
     def test_change_package_holds_create_not_installed(self):
         """
         If the C{change-package-holds} message requests to add holds for
@@ -1353,7 +1429,7 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
                 [{"type": "operation-result",
                   "operation-id": 123,
                   "status": FAILED,
-                  "result-text": "Package holds not added, since the "
+                  "result-text": "Package holds not changed, since the "
                   "following packages are not installed: "
                   "%s, %s" % tuple(sorted([bar.package.id,
                                                baz.package.id])),
@@ -1362,44 +1438,155 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
 
-    def test_change_package_holds_delete_not_held(self):
+    def test_change_package_holds_create_unknown_hash(self):
         """
-        If the C{change-package-holds} message requests to remove holds
-        for packages that aren't held, the activity fails. If
-        other valid holds are specified, those will not be removed.
+        If the C{change-package-holds} message requests to add holds for
+        packages that the client doesn't know about, it's being treated
+        as the packages not being installed.
         """
-        self._add_system_package("foo")
-        self._add_system_package("bar")
-        self._add_package_to_deb_dir(self.repository_dir, "baz")
         self.facade.reload_channels()
-        self._hash_packages_by_name(self.facade, self.store, "foo")
-        self._hash_packages_by_name(self.facade, self.store, "bar")
-        self._hash_packages_by_name(self.facade, self.store, "baz")
-        [foo] = self.facade.get_packages_by_name("foo")
-        [bar] = self.facade.get_packages_by_name("bar")
-        [baz] = self.facade.get_packages_by_name("baz")
-        self.facade.set_package_hold(bar)
         self.store.add_task("changer", {"type": "change-package-holds",
-                                        "delete": [foo.package.id,
-                                                   bar.package.id,
-                                                   baz.package.id],
+                                        "create": [1],
                                         "operation-id": 123})
 
         def assert_result(result):
             self.facade.reload_channels()
-            self.assertEqual(["bar"], self.facade.get_package_holds())
+            self.assertEqual([], self.facade.get_package_holds())
             self.assertIn("Queuing message with change package holds results "
                           "to exchange urgently.", self.logfile.getvalue())
             self.assertMessages(
                 self.get_pending_messages(),
+                [{"type": "operation-result",
+                  "operation-id": 123,
+                  "status": FAILED,
+                  "result-text": "Package holds not changed, since the" +
+                                 " following packages are not installed: 1",
+                  "result-code": 1}])
 
-                [{'operation-id': 123,
-                  'result-code': 1,
-                  'result-text': u'Package holds not added, since the '
-                  'following packages are not installed: ' +
-                  str(baz.package.id),
-                  'status': 5,
-                  'type': 'operation-result'}])
+        result = self.changer.handle_tasks()
+        return result.addCallback(assert_result)
+
+    def test_change_package_holds_delete_not_held(self):
+        """
+        If the C{change-package-holds} message requests to remove holds
+        for packages that aren't held, the activity succeeds if the
+        right version is installed, since the end result is that the
+        hold is removed.
+        """
+        self._add_package_to_deb_dir(self.repository_dir, "foo")
+        self.facade.reload_channels()
+        self._hash_packages_by_name(self.facade, self.store, "foo")
+        [foo] = self.facade.get_packages_by_name("foo")
+        self.store.add_task("changer", {"type": "change-package-holds",
+                                        "delete": [foo.package.id],
+                                        "operation-id": 123})
+
+        def assert_result(result):
+            self.facade.reload_channels()
+            self.assertEqual([], self.facade.get_package_holds())
+            self.assertIn("Queuing message with change package holds results "
+                          "to exchange urgently.", self.logfile.getvalue())
+            self.assertMessages(
+                self.get_pending_messages(),
+                [{"type": "operation-result",
+                  "operation-id": 123,
+                  "status": SUCCEEDED,
+                  "result-text": "Package holds successfully changed.",
+                  "result-code": 0}])
+
+        result = self.changer.handle_tasks()
+        return result.addCallback(assert_result)
+
+    def test_change_package_holds_delete_different_version_held(self):
+        """
+        If the C{change-package-holds} message requests to remove holds
+        for packages that aren't held, the activity succeeds if the
+        right version is installed, since the end result is that the
+        hold is removed.
+        """
+        self._add_system_package("foo", version="1.0")
+        self._add_package_to_deb_dir(
+            self.repository_dir, "foo", version="2.0")
+        self.facade.reload_channels()
+        [foo1, foo2] = sorted(self.facade.get_packages_by_name("foo"))
+        self.facade.set_package_hold(foo1)
+        self.store.set_hash_ids({self.facade.get_package_hash(foo1): 1,
+                                 self.facade.get_package_hash(foo2): 2})
+        self.facade.reload_channels()
+        self.store.add_task("changer", {"type": "change-package-holds",
+                                        "delete": [2],
+                                        "operation-id": 123})
+
+        def assert_result(result):
+            self.facade.reload_channels()
+            self.assertEqual(["foo"], self.facade.get_package_holds())
+            self.assertIn("Queuing message with change package holds results "
+                          "to exchange urgently.", self.logfile.getvalue())
+            self.assertMessages(
+                self.get_pending_messages(),
+                [{"type": "operation-result",
+                  "operation-id": 123,
+                  "status": SUCCEEDED,
+                  "result-text": "Package holds successfully changed.",
+                  "result-code": 0}])
+
+        result = self.changer.handle_tasks()
+        return result.addCallback(assert_result)
+
+    def test_change_package_holds_delete_unknown_hash(self):
+        """
+        If the C{change-package-holds} message requests to remove holds
+        for packages that aren't known by the client, the activity
+        succeeds, since the end result is that the package isn't
+        held at that version.
+        """
+        self.store.add_task("changer", {"type": "change-package-holds",
+                                        "delete": [1],
+                                        "operation-id": 123})
+
+        def assert_result(result):
+            self.facade.reload_channels()
+            self.assertEqual([], self.facade.get_package_holds())
+            self.assertIn("Queuing message with change package holds results "
+                          "to exchange urgently.", self.logfile.getvalue())
+            self.assertMessages(
+                self.get_pending_messages(),
+                [{"type": "operation-result",
+                  "operation-id": 123,
+                  "status": SUCCEEDED,
+                  "result-text": "Package holds successfully changed.",
+                  "result-code": 0}])
+
+        result = self.changer.handle_tasks()
+        return result.addCallback(assert_result)
+
+    def test_change_package_holds_delete_not_installed(self):
+        """
+        If the C{change-package-holds} message requests to remove holds
+        for packages that aren't installed, the activity succeeds, since
+        the end result is still that the package isn't held at the
+        requested version.
+        """
+        self._add_system_package("foo")
+        self.facade.reload_channels()
+        self._hash_packages_by_name(self.facade, self.store, "foo")
+        [foo] = self.facade.get_packages_by_name("foo")
+        self.store.add_task("changer", {"type": "change-package-holds",
+                                        "delete": [foo.package.id],
+                                        "operation-id": 123})
+
+        def assert_result(result):
+            self.facade.reload_channels()
+            self.assertEqual([], self.facade.get_package_holds())
+            self.assertIn("Queuing message with change package holds results "
+                          "to exchange urgently.", self.logfile.getvalue())
+            self.assertMessages(
+                self.get_pending_messages(),
+                [{"type": "operation-result",
+                  "operation-id": 123,
+                  "status": SUCCEEDED,
+                  "result-text": "Package holds successfully changed.",
+                  "result-code": 0}])
 
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)

@@ -2,6 +2,7 @@ import hashlib
 import os
 import subprocess
 import tempfile
+import time
 from cStringIO import StringIO
 from operator import attrgetter
 
@@ -109,6 +110,7 @@ class AptFacade(object):
 
     supports_package_holds = True
     supports_package_locks = False
+    _dpkg_status = "/var/lib/dpkg/status"
 
     def __init__(self, root=None):
         self._root = root
@@ -189,6 +191,13 @@ class AptFacade(object):
             ["dpkg", "--set-selections"] + self._dpkg_args,
             stdin=subprocess.PIPE)
         process.communicate(selection)
+        # Make sure the mtime of the status file is at least one second
+        # newer than when the channels was reloaded, otherwise it won't
+        # be parsed by another call to reload_channels().
+        current_time = time.time()
+        if current_time - self._last_dpkg_status_mtime < 1.0:
+            mtime = self._last_dpkg_status_mtime + 1
+            os.utime(self._dpkg_status, (mtime, mtime))
 
     def set_package_hold(self, version):
         """Add a dpkg hold for a package.
@@ -208,6 +217,8 @@ class AptFacade(object):
 
     def reload_channels(self):
         """Reload the channels and update the cache."""
+        stat = os.stat(self._dpkg_status)
+        self._last_dpkg_status_mtime = stat.st_mtime
         self._cache.open(None)
         if self.refetch_package_index:
             try:
@@ -252,6 +263,10 @@ class AptFacade(object):
         sources_line = "deb %s %s" % (url, codename)
         if components:
             sources_line += " %s" % " ".join(components)
+        if os.path.exists(sources_file_path):
+            current_content = read_file(sources_file_path).split("\n")
+            if sources_line in current_content:
+                return
         sources_line += "\n"
         append_file(sources_file_path, sources_line)
 
@@ -523,6 +538,13 @@ class AptFacade(object):
 
     def perform_changes(self):
         """Perform the pending package operations."""
+        # Try to enforce non-interactivity
+        os.environ["DEBIAN_FRONTEND"] = "noninteractive"
+        os.environ["APT_LISTCHANGES_FRONTEND"] = "none"
+        os.environ["APT_LISTBUGS_FRONTEND"] = "none"
+        apt_pkg.config.clear("DPkg::options")
+        apt_pkg.config.set("DPkg::options::", "--force-confold")
+
         held_package_names = set()
         package_installs = set(
             version.package for version in self._version_installs)

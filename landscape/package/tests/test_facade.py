@@ -29,7 +29,7 @@ from landscape.package.facade import (
     has_new_enough_apt)
 
 from landscape.tests.mocker import ANY
-from landscape.tests.helpers import LandscapeTest
+from landscape.tests.helpers import LandscapeTest, EnvironSaverHelper
 from landscape.package.tests.helpers import (
     SmartFacadeHelper, HASH1, HASH2, HASH3, PKGNAME1, PKGNAME2, PKGNAME3,
     PKGNAME4, PKGDEB4, PKGDEB1, PKGNAME_MINIMAL, PKGDEB_MINIMAL,
@@ -62,7 +62,7 @@ class AptFacadeTest(LandscapeTest):
     if not has_new_enough_apt:
         skip = "Can't use AptFacade on hardy"
 
-    helpers = [AptFacadeHelper]
+    helpers = [AptFacadeHelper, EnvironSaverHelper]
 
     def version_sortkey(self, version):
         """Return a key by which a Version object can be sorted."""
@@ -89,8 +89,10 @@ class AptFacadeTest(LandscapeTest):
         will be used.
         """
         original_dpkg_root = apt_pkg.config.get("Dir")
-        AptFacade()
+        facade = AptFacade()
         self.assertEqual(original_dpkg_root, apt_pkg.config.get("Dir"))
+        # Make sure that at least reloading the channels work.
+        facade.reload_channels()
 
     def test_custom_root_create_required_files(self):
         """
@@ -170,8 +172,23 @@ class AptFacadeTest(LandscapeTest):
 
         If no components are given, nothing is written after the dist.
         """
-        self.facade.add_channel_apt_deb(
-            "http://example.com/ubuntu", "lucid")
+        self.facade.add_channel_apt_deb("http://example.com/ubuntu", "lucid")
+        list_filename = (
+            self.apt_root +
+            "/etc/apt/sources.list.d/_landscape-internal-facade.list")
+        sources_contents = read_file(list_filename)
+        self.assertEqual(
+            "deb http://example.com/ubuntu lucid\n",
+            sources_contents)
+
+    def test_add_channel_apt_deb_no_duplicate(self):
+        """
+        C{add_channel_apt_deb} doesn't put duplicate lines in the landscape
+        internal apt sources list.
+        """
+        self.facade.add_channel_apt_deb("http://example.com/ubuntu", "lucid")
+        self.facade.add_channel_apt_deb("http://example.com/ubuntu", "lucid")
+        self.facade.add_channel_apt_deb("http://example.com/ubuntu", "lucid")
         list_filename = (
             self.apt_root +
             "/etc/apt/sources.list.d/_landscape-internal-facade.list")
@@ -758,6 +775,11 @@ class AptFacadeTest(LandscapeTest):
         """
         self.facade.reload_channels()
         self.assertEqual(self.facade.perform_changes(), None)
+        self.assertEqual("none", os.environ["APT_LISTCHANGES_FRONTEND"])
+        self.assertEqual("none", os.environ["APT_LISTBUGS_FRONTEND"])
+        self.assertEqual("noninteractive", os.environ["DEBIAN_FRONTEND"])
+        self.assertEqual(["--force-confold"],
+                         apt_pkg.config.value_list("DPkg::options"))
 
     def test_perform_changes_fetch_progress(self):
         """

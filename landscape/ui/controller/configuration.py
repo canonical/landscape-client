@@ -88,7 +88,7 @@ class ConfigController(object):
             registration.register(
                 self._configuration.get_config_filename(),
                 reply_handler=succeed_method,
-                error_handler=fail_method)
+                error_handler=error_method)
         else:
             fail_method("You do not have permission to connect the client.")
         registration.exit()
