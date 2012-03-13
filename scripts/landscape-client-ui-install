@@ -45,8 +45,11 @@ def main():
         flags=Gtk.DialogFlags.MODAL, type=Gtk.MessageType.INFO,
         buttons=Gtk.ButtonsType.CANCEL)
     dialog.set_markup(
-        "<big><b>%s</b></big>\n\n%s" % (
-            "Landscape client is not installed",
+        "<big><b>%s</b></big>\n\n%s\n\n%s" % (
+            "Landscape client",
+            "Landscape is an easy to use systems management and monitoring "
+            "service offered by Canonical that helps administrators manage "
+            "multiple machines efficiently.",
             "You need to install Landscape client to be able to configure it. "
             "Do you want to intall it now?"))
     dialog.set_title("Install Landscape client?")
