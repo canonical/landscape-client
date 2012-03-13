@@ -46,7 +46,7 @@ class ConfigurationProxy(object):
         except dbus.DBusException, e:
             error_name = e.get_dbus_name()
             if error_name not in ("com.canonical.LandscapeClientSettings."
-                                  "PermissionDeniedByPolicy", 
+                                  "PermissionDeniedByPolicy",
                                   "org.freedesktop.DBus.Error.NoReply"):
                 raise
             return False

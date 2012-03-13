@@ -42,7 +42,7 @@ class PolicyKitMechanism(dbus.service.Object):
         """
         if self.bypass:
             return (True, None, "Bypass")
-        polkit =  dbus.Interface(dbus.SystemBus().get_object(
+        polkit = dbus.Interface(dbus.SystemBus().get_object(
                 'org.freedesktop.PolicyKit1',
                 '/org/freedesktop/PolicyKit1/Authority', False),
                 'org.freedesktop.PolicyKit1.Authority')

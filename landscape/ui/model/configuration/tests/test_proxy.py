@@ -38,7 +38,7 @@ class AuthenticationFailureTest(LandscapeTest):
             This simulates what you see if you take no action when L{PolicyKit}
             challenges you.
             """
-            
+
             class FakeNoReply(dbus.DBusException):
                 """
                 Simulate a L{DBus} L{NoReply} exception.
@@ -51,7 +51,6 @@ class AuthenticationFailureTest(LandscapeTest):
         self.assertFalse(self.proxy.load([]))
         self.mechanism.load = fake_timeout_failure_load
         self.assertFalse(self.proxy.load([]))
-
 
     if not got_gobject_introspection:
         skip = gobject_skip_message
