@@ -523,6 +523,13 @@ class AptFacade(object):
 
     def perform_changes(self):
         """Perform the pending package operations."""
+        # Try to enforce non-interactivity
+        os.environ["DEBIAN_FRONTEND"] = "noninteractive"
+        os.environ["APT_LISTCHANGES_FRONTEND"] = "none"
+        os.environ["APT_LISTBUGS_FRONTEND"] = "none"
+        apt_pkg.config.clear("DPkg::options")
+        apt_pkg.config.set("DPkg::options::", "--force-confold")
+
         held_package_names = set()
         package_installs = set(
             version.package for version in self._version_installs)
