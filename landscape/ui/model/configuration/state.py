@@ -1,9 +1,8 @@
 import copy
-import socket
-import sys
+
+from landscape.lib.network import get_fqdn
 
 from landscape.ui.constants import CANONICAL_MANAGED, NOT_MANAGED
-
 from landscape.ui.model.configuration.proxy import ConfigurationProxy
 
 
@@ -25,27 +24,17 @@ ACCOUNT_NAME = "account-name"
 PASSWORD = "password"
 
 
-def get_fqdn():
-    """
-    Wrap socket.getfqdn so we can test reliably.
-    """
-    return socket.getfqdn()
-
-
 DEFAULT_DATA = {
     MANAGEMENT_TYPE: NOT_MANAGED,
     COMPUTER_TITLE: get_fqdn(),
     HOSTED: {
         LANDSCAPE_HOST: HOSTED_LANDSCAPE_HOST,
         ACCOUNT_NAME: HOSTED_ACCOUNT_NAME,
-        PASSWORD: HOSTED_PASSWORD,
-        },
+        PASSWORD: HOSTED_PASSWORD},
     LOCAL: {
         LANDSCAPE_HOST: LOCAL_LANDSCAPE_HOST,
         ACCOUNT_NAME: LOCAL_ACCOUNT_NAME,
-        PASSWORD: LOCAL_PASSWORD,
-        }
-}
+        PASSWORD: LOCAL_PASSWORD}}
 
 
 def derive_server_host_name_from_url(url):
