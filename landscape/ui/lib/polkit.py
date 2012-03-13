@@ -42,30 +42,24 @@ class PolicyKitMechanism(dbus.service.Object):
         """
         if self.bypass:
             return (True, None, "Bypass")
-        polkit = self._get_polkit()
-        try:
-            subject = ('unix-process',
-                       {'pid': dbus.UInt32(pid, variant_level=1),
-                        'start-time': dbus.UInt64(0, variant_level=1)})
-            action_id = privilege
-            details = {"": ""}  # <- empty strings allow type inference
-            flags = dbus.UInt32(1)
-            cancellation_id = ""
-            return polkit.CheckAuthorization(
-                subject,
-                action_id,
-                details,
-                flags,
-                cancellation_id,
-                timeout=600)
-        except dbus.DBusException, err:
-            if (err._dbus_error_name ==
-                'org.freedesktop.DBus.Error.ServiceUnknown'):
-                # This occurs on timeouts, so we retry
-                polkit = None
-                return self._get_polkit_authorization(pid, privilege)
-            else:
-                raise
+        polkit = dbus.Interface(dbus.SystemBus().get_object(
+                'org.freedesktop.PolicyKit1',
+                '/org/freedesktop/PolicyKit1/Authority', False),
+                'org.freedesktop.PolicyKit1.Authority')
+        subject = ('unix-process',
+                   {'pid': dbus.UInt32(pid, variant_level=1),
+                    'start-time': dbus.UInt64(0, variant_level=1)})
+        action_id = privilege
+        details = {"": ""}  # <- empty strings allow type inference
+        flags = dbus.UInt32(1)
+        cancellation_id = ""
+        return polkit.CheckAuthorization(
+            subject,
+            action_id,
+            details,
+            flags,
+            cancellation_id,
+            timeout=15)
 
     def _get_peer_pid(self, sender, conn):
         """
@@ -76,17 +70,6 @@ class PolicyKitMechanism(dbus.service.Object):
                 conn.get_object('org.freedesktop.DBus',
                 '/org/freedesktop/DBus/Bus', False), 'org.freedesktop.DBus')
         return self.dbus_info.GetConnectionUnixProcessID(sender)
-
-    def _get_polkit(self):
-        """
-        Connect to polkitd via DBus and return the interface.
-        """
-        if self.polkit is None:
-            self.polkit = dbus.Interface(dbus.SystemBus().get_object(
-                'org.freedesktop.PolicyKit1',
-                '/org/freedesktop/PolicyKit1/Authority', False),
-                'org.freedesktop.PolicyKit1.Authority')
-        return self.polkit
 
     def _is_local_call(self, sender, conn):
         """
