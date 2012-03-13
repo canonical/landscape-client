@@ -1321,8 +1321,8 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
     def test_change_package_holds_create_already_held(self):
         """
         If the C{change-package-holds} message requests to add holds for
-        packages that is already hel, the activity succeeds, since the
-        end result is that the requested package hold is there.
+        packages that are already held, the activity succeeds, since the
+        end result is that the requested package holds are there.
         """
         self._add_system_package("foo")
         self.facade.reload_channels()
@@ -1353,11 +1353,11 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
     def test_change_package_holds_create_other_version_installed(self):
         """
         If the C{change-package-holds} message requests to add holds for
-        packages that has a different version installed than the one
+        packages that have a different version installed than the one
         being requested to hold, the activity fails.
 
         The whole activity is failed, meaning that other valid hold
-        requests  won't get processed.
+        requests won't get processed.
         """
         self._add_system_package("foo", version="1.0")
         self._add_package_to_deb_dir(
