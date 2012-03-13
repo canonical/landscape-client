@@ -17,13 +17,12 @@ class ClientSettingsDialog(Gtk.Dialog):
     NO_SERVICE_TEXT = "None"
     HOSTED_SERVICE_TEXT = "Landscape - hosted by Canonical"
     LOCAL_SERVICE_TEXT = "Landscape - dedicated server"
+    REGISTER_BUTTON_TEXT = "Register this machine"
 
     def __init__(self, controller):
         super(ClientSettingsDialog, self).__init__(
             title="Management Service",
-            flags=Gtk.DialogFlags.MODAL,
-            buttons=(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
-                     Gtk.STOCK_OK, Gtk.ResponseType.OK))
+            flags=Gtk.DialogFlags.MODAL)
         self.set_resizable(False)
         self._initialised = False
         self.controller = controller
@@ -130,12 +129,29 @@ class ClientSettingsDialog(Gtk.Dialog):
         self.use_type_combobox.pack_start(cell, True)
         self.use_type_combobox.add_attribute(cell, 'text', 1)
 
-    def setup_revert_button(self):
+    def cancel_response(self, widget):
+        self.response(Gtk.ResponseType.CANCEL)
+
+    def register_response(self, widget):
+        self.response(Gtk.ResponseType.OK)
+
+    def setup_buttons(self):
         self.revert_button = Gtk.Button(stock=Gtk.STOCK_REVERT_TO_SAVED)
         self.action_area.pack_start(self.revert_button, True, True, 0)
-        self.action_area.reorder_child(self.revert_button, 0)
         self.revert_button.connect("clicked", self.revert)
         self.revert_button.show()
+        self.cancel_button = Gtk.Button(stock=Gtk.STOCK_CANCEL)
+        self.action_area.pack_start(self.cancel_button, True, True, 0)
+        self.cancel_button.show()
+        self.cancel_button.connect("clicked", self.cancel_response)
+        self.register_button = Gtk.Button(stock=Gtk.STOCK_OK)
+        self.action_area.pack_start(self.register_button, True, True, 0)
+        self.register_button.show()
+        [alignment] = self.register_button.get_children()
+        [hbox] = alignment.get_children()
+        [image, label] = hbox.get_children()
+        label.set_text(self.REGISTER_BUTTON_TEXT)
+        self.register_button.connect("clicked", self.register_response)
 
     def setup_ui(self):
         self._builder = Gtk.Builder()
@@ -152,7 +168,7 @@ class ClientSettingsDialog(Gtk.Dialog):
         self.link_use_type_combobox(self.liststore)
         self.link_hosted_service_widgets()
         self.link_local_service_widgets()
-        self.setup_revert_button()
+        self.setup_buttons()
 
     def on_combo_changed(self, combobox):
         iter = self.liststore.get_iter(combobox.get_active())
