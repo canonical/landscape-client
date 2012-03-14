@@ -403,8 +403,8 @@ class AptFacadeTest(LandscapeTest):
         refetch the Packages files in the channels and rebuild the
         internal database.
 
-        Ideally it would reload only the repo where we store package
-        profiles, but for now it reloads everything.
+        XXX: Ideally it would reload only the repo where we store package
+        profiles, but for now it reloads everything. Bug #954822.
         """
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
