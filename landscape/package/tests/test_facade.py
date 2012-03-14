@@ -410,15 +410,14 @@ class AptFacadeTest(LandscapeTest):
         self._add_package_to_deb_dir(deb_dir, "foo")
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
-        new_facade = AptFacade(root=self.apt_root)
         self._add_package_to_deb_dir(deb_dir, "bar")
         self._touch_packages_file(deb_dir)
-        new_facade.refetch_package_index = False
-        new_facade.reload_channels(force_reload_binaries=True)
+        self.facade.refetch_package_index = False
+        self.facade.reload_channels(force_reload_binaries=True)
         self.assertEqual(
             ["bar", "foo"],
             sorted(version.package.name
-                   for version in new_facade.get_packages()))
+                   for version in self.facade.get_packages()))
 
     def test_dont_refetch_package_index_by_default(self):
         """
