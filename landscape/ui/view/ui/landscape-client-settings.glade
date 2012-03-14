@@ -202,7 +202,7 @@
       <action-widget response="0">ok-button</action-widget>
     </action-widgets>
   </object>
-  <object class="GtkWindow" id="window1">
+  <object class="GtkWindow" id="hosted-window">
     <property name="can_focus">False</property>
     <child>
       <object class="GtkFrame" id="hosted-service-frame">
@@ -323,7 +323,7 @@
       </object>
     </child>
   </object>
-  <object class="GtkWindow" id="window2">
+  <object class="GtkWindow" id="local-window">
     <property name="can_focus">False</property>
     <child>
       <object class="GtkFrame" id="local-service-frame">
@@ -342,20 +342,6 @@
                 <property name="row_spacing">12</property>
                 <property name="column_spacing">12</property>
                 <child>
-                  <object class="GtkLabel" id="local-account-name-label">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="xalign">1</property>
-                    <property name="label" translatable="yes">Account name:</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">0</property>
-                    <property name="top_attach">1</property>
-                    <property name="width">1</property>
-                    <property name="height">1</property>
-                  </packing>
-                </child>
-                <child>
                   <object class="GtkLabel" id="local-password-label">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
@@ -364,7 +350,7 @@
                   </object>
                   <packing>
                     <property name="left_attach">0</property>
-                    <property name="top_attach">2</property>
+                    <property name="top_attach">1</property>
                     <property name="width">1</property>
                     <property name="height">1</property>
                   </packing>
@@ -384,21 +370,6 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkEntry" id="local-account-name-entry">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="hexpand">True</property>
-                    <property name="invisible_char">•</property>
-                    <property name="invisible_char_set">True</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">1</property>
-                    <property name="top_attach">1</property>
-                    <property name="width">1</property>
-                    <property name="height">1</property>
-                  </packing>
-                </child>
-                <child>
                   <object class="GtkEntry" id="local-password-entry">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
@@ -410,7 +381,7 @@
                   </object>
                   <packing>
                     <property name="left_attach">1</property>
-                    <property name="top_attach">2</property>
+                    <property name="top_attach">1</property>
                     <property name="width">1</property>
                     <property name="height">1</property>
                   </packing>
@@ -438,7 +409,7 @@
       </object>
     </child>
   </object>
-  <object class="GtkWindow" id="window3">
+  <object class="GtkWindow" id="no-service-window">
     <property name="can_focus">False</property>
     <child>
       <object class="GtkFrame" id="no-service-frame">
@@ -495,28 +466,25 @@
       </object>
     </child>
   </object>
-  <object class="GtkSizeGroup" id="entries-sizegroup">
+  <object class="GtkSizeGroup" id="entries-sizgroup">
     <widgets>
-      <widget name="use-type-combobox"/>
-      <widget name="local-landscape-host-entry"/>
-      <widget name="local-account-name-entry"/>
-      <widget name="local-password-entry"/>
       <widget name="hosted-account-name-entry"/>
       <widget name="hosted-password-entry"/>
-      <widget name="signup-linkbutton"/>
+      <widget name="local-landscape-host-entry"/>
+      <widget name="local-password-entry"/>
       <widget name="disabled-label"/>
+      <widget name="use-type-combobox"/>
     </widgets>
   </object>
   <object class="GtkSizeGroup" id="labels-sizegroup">
     <widgets>
-      <widget name="use-type-label"/>
-      <widget name="local-landscape-host-label"/>
-      <widget name="local-account-name-label"/>
-      <widget name="local-password-label"/>
-      <widget name="no-account-label"/>
-      <widget name="hosted-password-label"/>
       <widget name="hosted-account-name-label"/>
+      <widget name="hosted-password-label"/>
+      <widget name="no-account-label"/>
+      <widget name="local-landscape-host-label"/>
+      <widget name="local-password-label"/>
       <widget name="empty-label"/>
+      <widget name="use-type-label"/>
     </widgets>
   </object>
 </interface>

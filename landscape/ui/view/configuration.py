@@ -54,8 +54,6 @@ class ClientSettingsDialog(Gtk.Dialog):
     def _set_local_values_from_controller(self):
         self.local_landscape_host_entry.set_text(
             self.controller.local_landscape_host)
-        self.local_account_name_entry.set_text(
-            self.controller.local_account_name)
         self.local_password_entry.set_text(self.controller.local_password)
 
     def load_data(self):
@@ -108,12 +106,6 @@ class ClientSettingsDialog(Gtk.Dialog):
             "key-release-event",
             self.on_key_release_event,
             "local_landscape_host")
-        self.local_account_name_entry = self._builder.get_object(
-            "local-account-name-entry")
-        self.local_account_name_entry.connect(
-            "key-release-event",
-            self.on_key_release_event,
-            "local_account_name")
         self.local_password_entry = self._builder.get_object(
             "local-password-entry")
         self.local_password_entry.connect(
