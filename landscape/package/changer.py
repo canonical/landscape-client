@@ -156,6 +156,7 @@ class PackageChanger(PackageTaskHandler):
                 hash_ids[hash] = id
             self._store.set_hash_ids(hash_ids)
             self._facade.add_channel_deb_dir(binaries_path)
+            self._facade.reload_channels(force_reload_binaries=True)
 
         self._facade.ensure_channels_reloaded()
 
