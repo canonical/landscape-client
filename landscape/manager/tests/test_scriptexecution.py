@@ -65,8 +65,50 @@ class RunScriptTests(LandscapeTest):
             "import os\nprint os.environ")
 
         def check_environment(results):
-            for string in get_default_environment().keys():
+            for string in get_default_environment():
                 self.assertIn(string, results)
+
+        result.addCallback(check_environment)
+        return result
+
+    def test_server_supplied_env(self):
+        """
+        Server-supplied environment variables are merged with default
+        variables then passed to script.
+        """
+        server_supplied_env = {"DOG": "Woof", "CAT": "Meow"}
+        result = self.plugin.run_script(
+            sys.executable,
+            "import os\nprint os.environ",
+            server_supplied_env=server_supplied_env)
+
+        def check_environment(results):
+            for string in get_default_environment():
+                self.assertIn(string, results)
+            for name, value in server_supplied_env.items():
+                self.assertIn(name, results)
+                self.assertIn(value, results)
+
+        result.addCallback(check_environment)
+        return result
+
+    def test_server_supplied_env_overrides_client(self):
+        """
+        Server-supplied environment variables override client default
+        values if the server provides them.
+        """
+        server_supplied_env = {"PATH": "server-path", "USER": "server-user",
+                               "HOME": "server-home"}
+        result = self.plugin.run_script(
+            sys.executable,
+            "import os\nprint os.environ",
+            server_supplied_env=server_supplied_env)
+
+        def check_environment(results):
+            for name, value in server_supplied_env.items():
+                self.assertIn(name, results)
+                self.assertIn(value, results)
+
         result.addCallback(check_environment)
         return result
 
@@ -109,6 +151,7 @@ class RunScriptTests(LandscapeTest):
         def check(result):
             self.assertTrue(
                 "%s " % (accented_content.encode("utf-8"),) in result)
+
         result.addCallback(check)
         return result
 
@@ -152,6 +195,7 @@ class RunScriptTests(LandscapeTest):
 
         def check(result):
             self.assertEqual(result, "file1\nsome data")
+
         result.addCallback(check)
         return result
 
@@ -183,6 +227,7 @@ class RunScriptTests(LandscapeTest):
 
         def check(result):
             self.assertEqual(result, "file1\nsome other data")
+
         result.addCallback(check)
         return result
 
@@ -207,6 +252,7 @@ class RunScriptTests(LandscapeTest):
 
         def check(result):
             self.assertEqual(result, "file1\n")
+
         result.addCallback(check)
         return result
 
@@ -290,7 +336,7 @@ class RunScriptTests(LandscapeTest):
 
         self.assertEqual(len(factory.spawns), 1)
         spawn = factory.spawns[0]
-        self.assertIn("LANDSCAPE_ATTACHMENTS", spawn[3].keys())
+        self.assertIn("LANDSCAPE_ATTACHMENTS", spawn[3])
         attachment_dir = spawn[3]["LANDSCAPE_ATTACHMENTS"]
         self.assertEqual(stat.S_IMODE(os.stat(attachment_dir).st_mode), 0700)
         filename = os.path.join(attachment_dir, "file 1")
@@ -305,6 +351,7 @@ class RunScriptTests(LandscapeTest):
         def check(data):
             self.assertEqual(data, "foobar")
             self.assertFalse(os.path.exists(attachment_dir))
+
         return result.addCallback(check)
 
     def test_limit_size(self):
@@ -349,6 +396,7 @@ class RunScriptTests(LandscapeTest):
         def got_error(f):
             self.assertTrue(f.check(ProcessTimeLimitReachedError))
             self.assertEqual(f.value.data, "hi\n")
+
         result.addErrback(got_error)
         return result
 
@@ -385,6 +433,7 @@ class RunScriptTests(LandscapeTest):
 
         def got_result(output):
             self.assertEqual(output, "hi")
+
         result.addCallback(got_result)
         return result
 
@@ -475,15 +524,18 @@ class ScriptExecutionMessageTests(LandscapeTest):
 
     def _send_script(self, interpreter, code, operation_id=123,
                      user=pwd.getpwuid(os.getuid())[0],
-                     time_limit=None, attachments={}):
-        return self.manager.dispatch_message(
-            {"type": "execute-script",
-             "interpreter": interpreter,
-             "code": code,
-             "operation-id": operation_id,
-             "username": user,
-             "time-limit": time_limit,
-             "attachments": dict(attachments)})
+                     time_limit=None, attachments={},
+                     server_supplied_env=None):
+        message = {"type": "execute-script",
+                   "interpreter": interpreter,
+                   "code": code,
+                   "operation-id": operation_id,
+                   "username": user,
+                   "time-limit": time_limit,
+                   "attachments": dict(attachments)}
+        if server_supplied_env:
+            message["env"] = server_supplied_env
+        return self.manager.dispatch_message(message)
 
     def test_success(self):
         """
@@ -519,6 +571,53 @@ class ScriptExecutionMessageTests(LandscapeTest):
                   "operation-id": 123,
                   "status": SUCCEEDED,
                   "result-text": u"hi!\n"}])
+
+        result.addCallback(got_result)
+        return result
+
+    def test_success_with_server_supplied_env(self):
+        """
+        When a C{execute-script} message is received from the server, the
+        specified script will be run with the supplied environment and an
+        operation-result will be sent back to the server.
+        """
+        # Let's use a stub process factory, because otherwise we don't have
+        # access to the deferred.
+        factory = StubProcessFactory()
+
+        # ignore the call to chown!
+        mock_chown = self.mocker.replace("os.chown", passthrough=False)
+        mock_chown(ARGS)
+
+        self.manager.add(ScriptExecutionPlugin(process_factory=factory))
+
+        self.mocker.replay()
+        result = self._send_script(sys.executable, "print 'hi'",
+                                   server_supplied_env={"Dog": "Woof"})
+
+        self._verify_script(factory.spawns[0][1], sys.executable, "print 'hi'")
+        # Verify environment was passed
+        self.assertIn("HOME", factory.spawns[0][3])
+        self.assertIn("USER", factory.spawns[0][3])
+        self.assertIn("PATH", factory.spawns[0][3])
+        self.assertIn("Dog", factory.spawns[0][3])
+        self.assertEqual("Woof", factory.spawns[0][3]["Dog"])
+
+        self.assertMessages(
+            self.broker_service.message_store.get_pending_messages(), [])
+
+        # Now let's simulate the completion of the process
+        factory.spawns[0][0].childDataReceived(1, "Woof\n")
+        factory.spawns[0][0].processEnded(Failure(ProcessDone(0)))
+
+        def got_result(r):
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [{"type": "operation-result",
+                  "operation-id": 123,
+                  "status": SUCCEEDED,
+                  "result-text": u"Woof\n"}])
+
         result.addCallback(got_result)
         return result
 
@@ -535,6 +634,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
             protocol.childDataReceived(1, "hi!\n")
             protocol.processEnded(Failure(ProcessDone(0)))
             self._verify_script(filename, sys.executable, "print 'hi'")
+
         process_factory = self.mocker.mock()
         process_factory.spawnProcess(
             ANY, ANY, uid=None, gid=None, path=ANY,
@@ -600,6 +700,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
                   "status": FAILED,
                   "result-text": u"ONOEZ",
                   "result-code": 102}])
+
         result.addCallback(got_result)
         return result
 
@@ -619,6 +720,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
                   "operation-id": 123,
                   "status": FAILED,
                   "result-text": u"Scripts cannot be run as user whatever."}])
+
         result.addCallback(got_result)
         return result
 
@@ -632,6 +734,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
             protocol.childDataReceived(1, "hi!\n")
             protocol.processEnded(Failure(ProcessDone(0)))
             self._verify_script(filename, sys.executable, "print 'hi'")
+
         process_factory = self.mocker.mock()
         process_factory.spawnProcess(
             ANY, ANY, uid=None, gid=None, path=ANY,
@@ -669,6 +772,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
             "\x7fELF\x01\x01\x01\x00\x00\x00\x95\x01")
             protocol.processEnded(Failure(ProcessDone(0)))
             self._verify_script(filename, sys.executable, "print 'hi'")
+
         process_factory = self.mocker.mock()
         process_factory.spawnProcess(
             ANY, ANY, uid=None, gid=None, path=ANY,
@@ -741,6 +845,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
                   "result-text": "hi\n",
                   "result-code": PROCESS_FAILED_RESULT,
                   "status": FAILED}])
+
         return result.addCallback(got_result)
 
     def test_unknown_error(self):
@@ -774,6 +879,7 @@ class ScriptExecutionMessageTests(LandscapeTest):
                   "operation-id": 123,
                   "status": FAILED,
                   "result-text": str(failure)}])
+
         result.addCallback(got_result)
         return result
 
@@ -809,4 +915,5 @@ class ScriptExecutionMessageTests(LandscapeTest):
                   "result-text": "Server returned HTTP code 404",
                   "result-code": FETCH_ATTACHMENTS_FAILED_RESULT,
                   "status": FAILED}])
+
         return result.addCallback(got_result)
