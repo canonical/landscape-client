@@ -103,32 +103,30 @@ class RegistrationProxy(object):
     def challenge(self):
         return self._interface.challenge()
 
-    def register(self, config_path, reply_handler=None, error_handler=None):
+    def register(self, config_path):
         self._register_handlers()
-        if self._bus:
-            try:
-                result, message = self._interface.register(config_path)
-            except dbus.DBusException, e:
-                if e.get_dbus_name() != "org.freedesktop.DBus.Error.NoReply":
-                    raise
-                else:
-                    result = False
-                    message = "Registration timed out."
-            if result:
-                reply_handler()
+        try:
+            result, message = self._interface.register(config_path)
+        except dbus.DBusException, e:
+            if e.get_dbus_name() != "org.freedesktop.DBus.Error.NoReply":
+                raise
             else:
-                error_handler(message)
-            return result
+                result = False
+                message = "Registration timed out."
+        if result:
+            self._on_register_succeed()
         else:
-            return self._interface.register(config_path)
+            self._on_register_error(message)
+        return result
 
-    def disable(self, reply_handler=None, error_handler=None):
+    def disable(self):
         self._register_handlers()
-        if self._bus:
-            return self._interface.disable(reply_handler=reply_handler,
-                                           error_handler=error_handler)
+        result = self._interface.disable()
+        if result:
+            self._on_disable_succeed()
         else:
-            return self._interface.disable()
+            self._on_disable_error(message)
+        return result
 
     def exit(self):
         """
@@ -137,5 +135,5 @@ class RegistrationProxy(object):
         try:
             self._interface.exit()
         except dbus.DBusException, e:
-            if e.get_dbus_name() != "org.freedesktop.DBus.Error.NoReply":
+            if e.get_dbus_name() != "org.freedesktop.DBus.Error.Reply":
                 raise

@@ -43,10 +43,14 @@ class TimeoutTest(LandscapeTest):
         def fake_remove_handlers(this):
             pass
 
+        def fake_error_handler(message):
+            self.error_handler_messages.append(message)
+
         RegistrationProxy._setup_interface = fake_setup_interface
         RegistrationProxy._register_handlers = fake_register_handlers
         RegistrationProxy._remove_handlers = fake_remove_handlers
-        self.proxy = RegistrationProxy(bus=FakeBus())
+        self.proxy = RegistrationProxy(bus=FakeBus(),
+                                       on_register_error=fake_error_handler)
 
     def tearDown(self):
         self.error_handler_messages = []
@@ -57,11 +61,7 @@ class TimeoutTest(LandscapeTest):
         Test that the proxy calls through to the underlying interface and
         correctly performs registration.
         """
-
-        def fake_error_handler(message):
-            self.error_handler_messages.append(message)
-
-        self.proxy.register("foo", error_handler=fake_error_handler)
+        self.proxy.register("foo")
         self.assertEqual(1, len(self.error_handler_messages))
         [message] = self.error_handler_messages
         self.assertEqual("Registration timed out.", message)
@@ -103,7 +103,7 @@ class RegistrationProxyTest(LandscapeTest):
         def fake_remove_handlers(this):
             pass
 
-        def fake_callback(message):
+        def fake_callback(message=None):
             pass
 
         RegistrationProxy._setup_interface = fake_setup_interface
@@ -122,7 +122,7 @@ class RegistrationProxyTest(LandscapeTest):
         Test that the proxy calls through to the underlying interface and
         correctly performs registration.
         """
-        self.assertEqual((True, "Connected\n"), self.proxy.register("foo"))
+        self.assertEqual(True, self.proxy.register("foo"))
 
     def test_disable(self):
         """

@@ -55,7 +55,9 @@ class MechanismTest(LandscapeTest):
         RegistrationMechanism._do_registration = self.make_fake_registration(
             True)
         self.mechanism = RegistrationMechanism(self.bus_name)
-        self.assertEqual((True, "Connected\n"), self.mechanism.register("foo"))
+        self.assertEqual(
+            (True, "Registration message sent to Landscape server.\n"),
+            self.mechanism.register("foo"))
 
     def test_registration_fail(self):
         """
@@ -65,7 +67,7 @@ class MechanismTest(LandscapeTest):
         RegistrationMechanism._do_registration = self.make_fake_registration(
             False)
         self.mechanism = RegistrationMechanism(self.bus_name)
-        self.assertEqual((False, "Failed to connect\n"),
+        self.assertEqual((False, "Failed to connect to Landscape server.\n"),
                          self.mechanism.register("foo"))
 
     def test_disabling_succeed(self):

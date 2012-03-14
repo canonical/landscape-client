@@ -111,11 +111,11 @@ class RegistrationMechanism(PolicyKitMechanism):
     def register(self, config_path, sender=None, conn=None):
         if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
             if self._do_registration(config_path):
-                message = "Connected\n"
+                message = "Registration message sent to Landscape server.\n"
                 self.register_succeed(message)
                 return (True, message)
             else:
-                message = "Failed to connect\n"
+                message = "Failed to connect to Landscape server.\n"
                 self.register_fail(message)
                 return (False, message)
 
