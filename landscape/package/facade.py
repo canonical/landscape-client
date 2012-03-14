@@ -242,13 +242,13 @@ class AptFacade(object):
                 # hash.
                 self._pkg2hash[(package, version)] = hash
                 self._hash2pkg[hash] = version
+        self._channels_loaded = True
 
     def ensure_channels_reloaded(self):
         """Reload the channels if they haven't been reloaded yet."""
         if self._channels_loaded:
             return
         self.reload_channels()
-        self._channels_loaded = True
 
     def add_channel_apt_deb(self, url, codename, components=None):
         """Add a deb URL which points to a repository.

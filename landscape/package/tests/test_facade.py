@@ -423,6 +423,24 @@ class AptFacadeTest(LandscapeTest):
             sorted(version.package.name
                    for version in self.facade.get_packages()))
 
+    def test_ensure_channels_reloaded_reload_channels(self):
+        """
+        C{ensure_channels_reloaded} doesn't refresh the channels if
+        C{reload_chanels} have been called first.
+        """
+        self._add_system_package("foo")
+        self.facade.reload_channels()
+        self.assertEqual(
+            ["foo"],
+            sorted(version.package.name
+                   for version in self.facade.get_packages()))
+        self._add_system_package("bar")
+        self.facade.ensure_channels_reloaded()
+        self.assertEqual(
+            ["foo"],
+            sorted(version.package.name
+                   for version in self.facade.get_packages()))
+
     def test_reload_channels_with_channel_error(self):
         """
         The C{reload_channels} method raises a L{ChannelsError} if
