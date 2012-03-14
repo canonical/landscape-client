@@ -215,12 +215,17 @@ class AptFacade(object):
             return
         self._set_dpkg_selections(version.package.name + " install")
 
-    def reload_channels(self):
-        """Reload the channels and update the cache."""
+    def reload_channels(self, force_reload_binaries=False):
+        """Reload the channels and update the cache.
+
+        @param force_reload_binaries: Whether to always reload
+            information about the binaries packages that are in the facade's
+            internal repo.
+        """
         stat = os.stat(self._dpkg_status)
         self._last_dpkg_status_mtime = stat.st_mtime
         self._cache.open(None)
-        if self.refetch_package_index:
+        if self.refetch_package_index or force_reload_binaries:
             try:
                 self._cache.update()
             except apt.cache.FetchFailedException:
@@ -721,7 +726,7 @@ class SmartFacade(object):
         self._channels_reloaded = True
         self.reload_channels()
 
-    def reload_channels(self):
+    def reload_channels(self, force_reload_binaries=False):
         """
         Reload Smart channels, getting all the cache (packages) in memory.
 
