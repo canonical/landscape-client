@@ -1230,6 +1230,32 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         """Return the name of the package."""
         return version.package.name
 
+    def test_binaries_available_in_cache(self):
+        """
+        If binaries are included in the changes-packages message, those
+        will be added to the facade's cache.
+        """
+        # Make sure to turn off automatic rereading of Packages file,
+        # like it is by default.
+        self.facade.refetch_package_index = False
+        self.assertEqual(None, self.facade.get_package_by_hash(HASH2))
+        self.store.add_task("changer",
+                            {"type": "change-packages", "install": [2],
+                             "binaries": [(HASH2, 2, PKGDEB2)],
+                             "operation-id": 123})
+
+        def return_good_result(self):
+            return "Yeah, I did whatever you've asked for!"
+        self.replace_perform_changes(return_good_result)
+
+        result = self.changer.handle_tasks()
+
+        def got_result(result):
+            self.assertNotEqual(None, self.facade.get_package_by_hash(HASH2))
+            self.assertFalse(self.facade.refetch_package_index)
+
+        return result.addCallback(got_result)
+
     def test_change_package_holds(self):
         """
         The L{PackageChanger.handle_tasks} method appropriately creates and

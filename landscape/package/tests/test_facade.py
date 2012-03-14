@@ -397,6 +397,28 @@ class AptFacadeTest(LandscapeTest):
             sorted(version.package.name
                    for version in new_facade.get_packages()))
 
+    def test_reload_channels_force_reload_binaries(self):
+        """
+        If C{force_reload_binaries} is True, reload_channels will
+        refetch the Packages files in the channels and rebuild the
+        internal database.
+
+        XXX: Ideally it would reload only the repo where we store package
+        profiles, but for now it reloads everything. Bug #954822.
+        """
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.reload_channels()
+        self._add_package_to_deb_dir(deb_dir, "bar")
+        self._touch_packages_file(deb_dir)
+        self.facade.refetch_package_index = False
+        self.facade.reload_channels(force_reload_binaries=True)
+        self.assertEqual(
+            ["bar", "foo"],
+            sorted(version.package.name
+                   for version in self.facade.get_packages()))
+
     def test_dont_refetch_package_index_by_default(self):
         """
         By default, package indexes are not refetched, but the local
@@ -412,6 +434,24 @@ class AptFacadeTest(LandscapeTest):
         """
         self._add_system_package("foo")
         self.facade.ensure_channels_reloaded()
+        self.assertEqual(
+            ["foo"],
+            sorted(version.package.name
+                   for version in self.facade.get_packages()))
+        self._add_system_package("bar")
+        self.facade.ensure_channels_reloaded()
+        self.assertEqual(
+            ["foo"],
+            sorted(version.package.name
+                   for version in self.facade.get_packages()))
+
+    def test_ensure_channels_reloaded_reload_channels(self):
+        """
+        C{ensure_channels_reloaded} doesn't refresh the channels if
+        C{reload_chanels} have been called first.
+        """
+        self._add_system_package("foo")
+        self.facade.reload_channels()
         self.assertEqual(
             ["foo"],
             sorted(version.package.name
