@@ -145,8 +145,6 @@ class ConfigurationViewTest(LandscapeTest):
         self.assertEqual("foo", dialog.hosted_account_name_entry.get_text())
         self.assertEqual("bar", dialog.hosted_password_entry.get_text())
         self.assertEqual("", dialog.local_landscape_host_entry.get_text())
-        self.assertEqual("standalone",
-                         dialog.local_account_name_entry.get_text())
         self.assertEqual("", dialog.local_password_entry.get_text())
 
     def test_revert(self):
@@ -163,8 +161,6 @@ class ConfigurationViewTest(LandscapeTest):
         dialog.local_landscape_host_entry.set_text("more.barn")
         while Gtk.events_pending():
             Gtk.main_iteration()
-        self.assertEqual("standalone",
-                         dialog.local_account_name_entry.get_text())
         self.assertEqual("bar", dialog.hosted_password_entry.get_text())
         self.assertEqual("more.barn",
                          dialog.local_landscape_host_entry.get_text())
@@ -237,8 +233,6 @@ class LocalConfigurationViewTest(LandscapeTest):
         self.assertEqual("", dialog.hosted_password_entry.get_text())
         self.assertEqual("landscape.localdomain",
                          dialog.local_landscape_host_entry.get_text())
-        self.assertEqual("standalone",
-                         dialog.local_account_name_entry.get_text())
         self.assertEqual("manky", dialog.local_password_entry.get_text())
 
     if not got_gobject_introspection:
