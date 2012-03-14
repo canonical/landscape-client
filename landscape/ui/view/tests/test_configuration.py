@@ -78,20 +78,26 @@ class ConfigurationViewTest(LandscapeTest):
         local_service_frame = dialog.liststore.get(iter, 2)[0]
 
         self.assertEqual(1, dialog.use_type_combobox.get_active())
+        [alignment] = dialog.register_button.get_children()
+        [hbox] = alignment.get_children()
+        [image, label] = hbox.get_children()
 
         while Gtk.events_pending():
             Gtk.main_iteration()
         self.assertIs(hosted_service_frame, dialog.active_widget)
+        self.assertEqual(dialog.REGISTER_BUTTON_TEXT, label.get_text())
 
         dialog.use_type_combobox.set_active(0)
         while Gtk.events_pending():
             Gtk.main_iteration()
         self.assertIs(no_service_frame, dialog.active_widget)
+        self.assertEqual(dialog.DISABLE_BUTTON_TEXT, label.get_text())
 
         dialog.use_type_combobox.set_active(2)
         while Gtk.events_pending():
             Gtk.main_iteration()
         self.assertIs(local_service_frame, dialog.active_widget)
+        self.assertEqual(dialog.REGISTER_BUTTON_TEXT, label.get_text())
 
     def test_modify(self):
         """
