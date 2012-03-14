@@ -92,10 +92,10 @@ class ConfigController(object):
             on_register_succeed=registration_succeed_wrapper,
             on_register_fail=registration_fail_wrapper)
         if self._configuration.management_type == CANONICAL_MANAGED:
-            notify_method("Attempting to register at %s" % 
+            notify_method("Attempting to register at %s" %
                           self._configuration.hosted_landscape_host)
         else:
-            notify_method("Attempting to register at %s" % 
+            notify_method("Attempting to register at %s" %
                           self._configuration.local_landscape_host)
         registration.register(self._configuration.get_config_filename())
         registration.exit()

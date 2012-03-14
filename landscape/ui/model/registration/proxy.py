@@ -125,7 +125,7 @@ class RegistrationProxy(object):
         if result:
             self._on_disable_succeed()
         else:
-            self._on_disable_error(message)
+            self._on_disable_error("Failed to disable Landscape client.")
         return result
 
     def exit(self):
@@ -135,5 +135,5 @@ class RegistrationProxy(object):
         try:
             self._interface.exit()
         except dbus.DBusException, e:
-            if e.get_dbus_name() != "org.freedesktop.DBus.Error.Reply":
+            if e.get_dbus_name() != "org.freedesktop.DBus.Error.NoReply":
                 raise
