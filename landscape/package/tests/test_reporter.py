@@ -1133,7 +1133,11 @@ class PackageReporterTestMixin(object):
 
         upgrade_hash = self.set_pkg1_upgradable()
         self.set_pkg1_installed()
-        self.facade.reload_channels()
+        # Don't reload for SmartFacade, since the hash of pkg2 will be
+        # changed, resulting in that name2 will be considered not
+        # available..
+        if isinstance(self.facade, AptFacade):
+            self.facade.reload_channels()
 
         self.store.set_hash_ids(
             {HASH1: 1, upgrade_hash: 2, HASH3: 3})
