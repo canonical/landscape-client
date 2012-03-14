@@ -17,7 +17,8 @@ class ClientSettingsDialog(Gtk.Dialog):
     NO_SERVICE_TEXT = "None"
     HOSTED_SERVICE_TEXT = "Landscape - hosted by Canonical"
     LOCAL_SERVICE_TEXT = "Landscape - dedicated server"
-    REGISTER_BUTTON_TEXT = "Register this machine"
+    REGISTER_BUTTON_TEXT = "Register"
+    DISABLE_BUTTON_TEXT = "Disable"
 
     def __init__(self, controller):
         super(ClientSettingsDialog, self).__init__(
@@ -127,6 +128,15 @@ class ClientSettingsDialog(Gtk.Dialog):
     def register_response(self, widget):
         self.response(Gtk.ResponseType.OK)
 
+    def set_button_text(self, management_type):
+        [alignment] = self.register_button.get_children()
+        [hbox] = alignment.get_children()
+        [image, label] = hbox.get_children()
+        if management_type == NOT_MANAGED:
+            label.set_text(self.DISABLE_BUTTON_TEXT)
+        else:
+            label.set_text(self.REGISTER_BUTTON_TEXT)
+
     def setup_buttons(self):
         self.revert_button = Gtk.Button(stock=Gtk.STOCK_REVERT_TO_SAVED)
         self.action_area.pack_start(self.revert_button, True, True, 0)
@@ -139,10 +149,6 @@ class ClientSettingsDialog(Gtk.Dialog):
         self.register_button = Gtk.Button(stock=Gtk.STOCK_OK)
         self.action_area.pack_start(self.register_button, True, True, 0)
         self.register_button.show()
-        [alignment] = self.register_button.get_children()
-        [hbox] = alignment.get_children()
-        [image, label] = hbox.get_children()
-        label.set_text(self.REGISTER_BUTTON_TEXT)
         self.register_button.connect("clicked", self.register_response)
 
     def setup_ui(self):
@@ -166,8 +172,10 @@ class ClientSettingsDialog(Gtk.Dialog):
         iter = self.liststore.get_iter(combobox.get_active())
         if not self.active_widget is None:
             self._vbox.remove(self.active_widget)
+        [management_type] = self.liststore.get(iter, 0)
+        self.set_button_text(management_type)
         if self._initialised:
-            [self.controller.management_type] = self.liststore.get(iter, 0)
+            self.controller.management_type = management_type
             self.controller.modify()
         [self.active_widget] = self.liststore.get(iter, 2)
         self.active_widget.unparent()
