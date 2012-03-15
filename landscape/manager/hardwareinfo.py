@@ -15,7 +15,7 @@ class HardwareInfo(ManagerPlugin):
 
     def run(self):
         self.call_on_accepted(self.message_type, self.send_message)
-        self.registry.broker.call_if_accepted(
+        return self.registry.broker.call_if_accepted(
                 self.message_type, self.send_message)
 
     def send_message(self):
