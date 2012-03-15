@@ -82,7 +82,7 @@ class RegistrationProxyTest(LandscapeTest):
                                         RegistrationProxyTest.bus)
 
         def fake_do__registration(this, config_path):
-            return True
+            return True, ""
 
         def fake_do__disabling(this):
             return True

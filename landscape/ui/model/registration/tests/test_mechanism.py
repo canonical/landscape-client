@@ -25,14 +25,14 @@ class MechanismTest(LandscapeTest):
             self.mechanism.remove_from_connection()
         super(MechanismTest, self).tearDown()
 
-    def make_fake_registration(self, succeed):
+    def make_fake_registration(self, succeed, message=""):
         """
         Return a fake registration method that will fail or succeed by
         returning L{succeed} (a boolean).
         """
 
         def _do_registration(this, config_path):
-            return succeed
+            return succeed, message
 
         return _do_registration
 
@@ -65,9 +65,9 @@ class MechanismTest(LandscapeTest):
         call L{register} synchronously.
         """
         RegistrationMechanism._do_registration = self.make_fake_registration(
-            False)
+            False, "boom")
         self.mechanism = RegistrationMechanism(self.bus_name)
-        self.assertEqual((False, "Failed to connect to Landscape server.\n"),
+        self.assertEqual((False, "boom"),
                          self.mechanism.register("foo"))
 
     def test_disabling_succeed(self):
