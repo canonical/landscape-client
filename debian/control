@@ -22,7 +22,7 @@ Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          lshw
 Suggests: ${extra:Suggests}
 Replaces: landscape-client (<= 1.0.23-0ubuntu0.8.10)
-Description: The Landscape administration system client
+Description: The Landscape administration system client - Common files
  Landscape is a web-based tool for managing Ubuntu systems. This
  package is necessary if you want your machine to be managed in a
  Landscape account.
@@ -54,7 +54,7 @@ Depends: ${python:Depends}, ${misc:Depends},
          policykit-1,
          gir1.2-notify-0.7,
          gir1.2-gtk-3.0
-Description: The Landscape administration system client
+Description: The Landscape administration system client - UI configuration
  Landscape is a web-based tool for managing Ubuntu systems.
  .
  This package provides the Landscape client configuration UI.
@@ -68,7 +68,7 @@ Depends: ${python:Depends}, ${misc:Depends},
          policykit-1,
          gir1.2-gtk-3.0,
          python-aptdaemon
-Description: The Landscape administration system client
+Description: The Landscape administration system client - UI installer
  Landscape is a web-based tool for managing Ubuntu systems.
  .
  This package provides an automatic installer for landscape-client-ui.
