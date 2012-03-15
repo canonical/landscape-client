@@ -1,4 +1,4 @@
-from landscape.ui.constants import NOT_MANAGED
+from landscape.ui.constants import NOT_MANAGED, CANONICAL_MANAGED
 import logging
 
 from landscape.ui.model.registration.proxy import RegistrationProxy
@@ -70,7 +70,7 @@ class ConfigController(object):
             logging.info("landscape-client-settings-ui committed with no "
                          "changes to commit.")
         if self._configuration.management_type == NOT_MANAGED:
-            self.disable(on_succeed, on_fail)
+            self.disable(on_notify, on_succeed, on_fail)
         else:
             self.register(on_notify, on_error, on_succeed, on_fail)
 
@@ -79,26 +79,41 @@ class ConfigController(object):
         """
         Perform registration using the L{RegistrationProxy}.
         """
-        registration = RegistrationProxy(on_register_notify=notify_method,
-                                         on_register_error=error_method,
-                                         on_register_succeed=succeed_method,
-                                         on_register_fail=fail_method)
 
-        if registration.challenge():
-            registration.register(
-                self._configuration.get_config_filename(),
-                reply_handler=succeed_method,
-                error_handler=error_method)
+        def registration_fail_wrapper():
+            fail_method(action="Registering client")
+
+        def registration_succeed_wrapper():
+            succeed_method(action="Registering client")
+
+        registration = RegistrationProxy(
+            on_register_notify=notify_method,
+            on_register_error=error_method,
+            on_register_succeed=registration_succeed_wrapper,
+            on_register_fail=registration_fail_wrapper)
+        if self._configuration.management_type == CANONICAL_MANAGED:
+            notify_method("Attempting to register at %s" %
+                          self._configuration.hosted_landscape_host)
         else:
-            fail_method("You do not have permission to connect the client.")
+            notify_method("Attempting to register at %s" %
+                          self._configuration.local_landscape_host)
+        registration.register(self._configuration.get_config_filename())
         registration.exit()
 
-    def disable(self, succeed_method, fail_method):
-        registration = RegistrationProxy(on_disable_succeed=succeed_method,
-                                         on_disable_fail=fail_method)
+    def disable(self, notify_method, succeed_method, fail_method):
+        """
+        Disable landscape client via the L{RegistrationProxy}.
+        """
 
-        if registration.challenge():
-            registration.disable()
-        else:
-            fail_method("You do not have permission to connect the client.")
+        def disabling_fail_wrapper():
+            fail_method(action="Disabling client")
+
+        def disabling_succeed_wrapper():
+            succeed_method(action="Disabling client")
+
+        registration = RegistrationProxy(
+            on_disable_succeed=disabling_succeed_wrapper,
+            on_disable_fail=disabling_fail_wrapper)
+        notify_method("Attempting to disable landscape client.")
+        registration.disable()
         registration.exit()

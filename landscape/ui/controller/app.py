@@ -40,13 +40,21 @@ class SettingsApplicationController(Gtk.Application):
                                                "dialog-information")
         notification.show()
 
-    def on_succeed(self):
-        notification = Notify.Notification.new(NOTIFY_ID, "Success",
+    def on_succeed(self, action=None):
+        if action:
+            message = "%s was successful." % action
+        else:
+            message = "Success"
+        notification = Notify.Notification.new(NOTIFY_ID, message,
                                                "dialog-information")
         notification.show()
 
-    def on_fail(self):
-        notification = Notify.Notification.new(NOTIFY_ID, "Fail",
+    def on_fail(self, action=None):
+        if action:
+            message = "%s failed." % action
+        else:
+            message = "Failure."
+        notification = Notify.Notification.new(NOTIFY_ID, message,
                                                "dialog-information")
         notification.show()
 
@@ -72,11 +80,10 @@ class SettingsApplicationController(Gtk.Application):
         if controller.load():
             self.settings_dialog = ClientSettingsDialog(controller)
             if self.settings_dialog.run() == Gtk.ResponseType.OK:
-                self.on_notify("Sending registration request.")
                 controller.persist(self.on_notify, self.on_error,
                                    self.on_succeed, self.on_fail)
-                self.on_notify("Registration request sent.")
             controller.exit(asynchronous=asynchronous)
             self.settings_dialog.destroy()
         else:
+            self.on_fail(action="Authentication")
             sys.stderr.write("Authentication failed.\n")
