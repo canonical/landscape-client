@@ -256,6 +256,7 @@ class AptFacade(object):
         self.reload_channels()
 
     def _get_internal_sources_list(self):
+        """Return the path to the source.list file for the facade channels."""
         sources_dir = apt_pkg.config.find_dir("Dir::Etc::sourceparts")
         return os.path.join(sources_dir, "_landscape-internal-facade.list")
 
