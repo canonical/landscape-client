@@ -30,6 +30,8 @@ class ClientSettingsDialog(Gtk.Dialog):
         self.controller = controller
         self.setup_ui()
         self.load_data()
+        # One extra revert to reset after loading data
+        self.controller.revert()
 
     def _set_use_type_combobox_from_controller(self):
         """
@@ -40,11 +42,11 @@ class ClientSettingsDialog(Gtk.Dialog):
         level to deal with here.  The conversion between paths and iters makes
         more sense if you understand that treeviews use the same model.
         """
-        iter = self.liststore.get_iter_first()
-        while (self.liststore.get(iter, 0)[0] !=
+        list_iter = self.liststore.get_iter_first()
+        while (self.liststore.get(list_iter, 0)[0] !=
                self.controller.management_type):
-            iter = self.liststore.iter_next(iter)
-        path = self.liststore.get_path(iter)
+            list_iter = self.liststore.iter_next(list_iter)
+        path = self.liststore.get_path(list_iter)
         [index] = path.get_indices()
         self.use_type_combobox.set_active(index)
 
@@ -91,29 +93,23 @@ class ClientSettingsDialog(Gtk.Dialog):
         self.hosted_account_name_entry = self._builder.get_object(
             "hosted-account-name-entry")
         self.hosted_account_name_entry.connect(
-            "key-release-event",
-            self.on_key_release_event,
-            "hosted_account_name")
+            "changed", self.on_changed_event, "hosted_account_name")
+
         self.hosted_password_entry = self._builder.get_object(
             "hosted-password-entry")
         self.hosted_password_entry.connect(
-            "key-release-event",
-            self.on_key_release_event,
-            "hosted_password")
+            "changed", self.on_changed_event, "hosted_password")
 
     def link_local_service_widgets(self):
         self.local_landscape_host_entry = self._builder.get_object(
             "local-landscape-host-entry")
         self.local_landscape_host_entry.connect(
-            "key-release-event",
-            self.on_key_release_event,
-            "local_landscape_host")
+            "changed", self.on_changed_event, "local_landscape_host")
+
         self.local_password_entry = self._builder.get_object(
             "local-password-entry")
         self.local_password_entry.connect(
-            "key-release-event",
-            self.on_key_release_event,
-            "local_password")
+            "changed", self.on_changed_event, "local_password")
 
     def link_use_type_combobox(self, liststore):
         self.use_type_combobox = self._builder.get_object("use-type-combobox")
@@ -170,20 +166,20 @@ class ClientSettingsDialog(Gtk.Dialog):
         self.setup_buttons()
 
     def on_combo_changed(self, combobox):
-        iter = self.liststore.get_iter(combobox.get_active())
+        list_iter = self.liststore.get_iter(combobox.get_active())
         if not self.active_widget is None:
             self._vbox.remove(self.active_widget)
-        [management_type] = self.liststore.get(iter, 0)
+        [management_type] = self.liststore.get(list_iter, 0)
         self.set_button_text(management_type)
         if self._initialised:
             self.controller.management_type = management_type
             self.controller.modify()
-        [self.active_widget] = self.liststore.get(iter, 2)
+        [self.active_widget] = self.liststore.get(list_iter, 2)
         self.active_widget.unparent()
         self._vbox.add(self.active_widget)
 
-    def on_key_release_event(self, widget, event, property):
-        setattr(self.controller, property, widget.get_text())
+    def on_changed_event(self, widget, attribute):
+        setattr(self.controller, attribute, widget.get_text())
         self.controller.modify()
 
     def quit(self, *args):
@@ -192,3 +188,5 @@ class ClientSettingsDialog(Gtk.Dialog):
     def revert(self, button):
         self.controller.revert()
         self.load_data()
+        # One extra revert to reset after loading data
+        self.controller.revert()

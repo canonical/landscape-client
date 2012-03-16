@@ -163,14 +163,25 @@ class FakeGSettings(object):
         return expected_args in arglist
 
 
-def simulate_gtk_key_release(window, widget, key):
-    keypress = Gdk.Event(Gdk.EventType.KEY_PRESS)
-    keypress.keyval = key
-    keypress.window = window
-    keypress.send_event = True
-    widget.emit("key-press-event", keypress)
-    keypress = Gdk.Event(Gdk.EventType.KEY_RELEASE)
-    keypress.keyval = key
-    keypress.window = window
-    keypress.send_event = True
-    widget.emit("key-release-event", keypress)
+def simulate_gtk_key_release(widget, key):
+    """
+    Simulates a keypress in a widget
+
+    @param widget: The widget which should receive the keypress.
+    @param key: The key to use.
+    """
+    widget.insert_text(key, -1)
+
+
+def simulate_gtk_paste(widget, pasted_text):
+    """
+    Simulates pasting text into a editable element.
+
+    @param widget: The widget which should receive the paste.
+    @param pasted_text: The text to paste into the widget.
+    """
+    widget.set_text("")
+    clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+    clipboard.set_text(pasted_text, len=-1)
+    widget.set_position(0)
+    widget.paste_clipboard()

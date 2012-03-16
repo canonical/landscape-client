@@ -2,10 +2,10 @@ import sys
 
 from landscape.ui.tests.helpers import (
     ConfigurationProxyHelper, FakeGSettings, gobject_skip_message,
-    got_gobject_introspection, simulate_gtk_key_release)
+    got_gobject_introspection, simulate_gtk_key_release, simulate_gtk_paste)
 
 if got_gobject_introspection:
-    from gi.repository import Gtk, Gdk
+    from gi.repository import Gtk
     from landscape.ui.view.configuration import ClientSettingsDialog
     from landscape.ui.controller.configuration import ConfigController
     import landscape.ui.model.configuration.state
@@ -51,6 +51,28 @@ class ConfigurationViewTest(LandscapeTest):
                                    uisettings=self.uisettings)
         self.controller = ConfigController(model)
 
+    def run_gtk_eventloop(self):
+        """Run the Gtk event loop until all events have been processed."""
+        while Gtk.events_pending():
+            Gtk.main_iteration()
+
+    def assert_paste_data_saved(self, dialog, combo, widget, attribute):
+        """
+        Paste text into specified widget then verify data is saved.
+        """
+        # Switch to local mode
+        dialog.use_type_combobox.set_active(combo)
+        self.run_gtk_eventloop()
+
+        simulate_gtk_paste(widget, "pasted text")
+        self.run_gtk_eventloop()
+        self.assertTrue(self.controller.is_modified)
+        self.assertEqual("pasted text", getattr(self.controller, attribute))
+
+        dialog.revert(None)
+        self.run_gtk_eventloop()
+        self.assertFalse(self.controller.is_modified)
+
     def test_init(self):
         """
         Test that we correctly initialise the L{ConfigurationView} correctly
@@ -84,20 +106,17 @@ class ConfigurationViewTest(LandscapeTest):
         [hbox] = alignment.get_children()
         [image, label] = hbox.get_children()
 
-        while Gtk.events_pending():
-            Gtk.main_iteration()
+        self.run_gtk_eventloop()
         self.assertIs(hosted_service_frame, dialog.active_widget)
         self.assertEqual(dialog.REGISTER_BUTTON_TEXT, label.get_text())
 
         dialog.use_type_combobox.set_active(0)
-        while Gtk.events_pending():
-            Gtk.main_iteration()
+        self.run_gtk_eventloop()
         self.assertIs(no_service_frame, dialog.active_widget)
         self.assertEqual(dialog.DISABLE_BUTTON_TEXT, label.get_text())
 
         dialog.use_type_combobox.set_active(2)
-        while Gtk.events_pending():
-            Gtk.main_iteration()
+        self.run_gtk_eventloop()
         self.assertIs(local_service_frame, dialog.active_widget)
         self.assertEqual(dialog.REGISTER_BUTTON_TEXT, label.get_text())
 
@@ -107,41 +126,56 @@ class ConfigurationViewTest(LandscapeTest):
         controller.
         """
         dialog = ClientSettingsDialog(self.controller)
-        while Gtk.events_pending():
-            Gtk.main_iteration()
+        self.run_gtk_eventloop()
         self.assertFalse(self.controller.is_modified)
         self.assertEqual(1, dialog.use_type_combobox.get_active())
         dialog.use_type_combobox.set_active(2)
-        while Gtk.events_pending():
-            Gtk.main_iteration()
+        self.run_gtk_eventloop()
         self.assertTrue(self.controller.is_modified)
         dialog.revert(None)
-        while Gtk.events_pending():
-            Gtk.main_iteration()
+        self.run_gtk_eventloop()
         self.assertFalse(self.controller.is_modified)
-        simulate_gtk_key_release(dialog, dialog.hosted_account_name_entry,
-                                 Gdk.KEY_A)
-        while Gtk.events_pending():
-            Gtk.main_iteration()
+        simulate_gtk_key_release(dialog.hosted_account_name_entry, "A")
+        self.run_gtk_eventloop()
         self.assertTrue(self.controller.is_modified)
         dialog.revert(None)
-        while Gtk.events_pending():
-            Gtk.main_iteration()
+        self.run_gtk_eventloop()
         self.assertFalse(self.controller.is_modified)
-        simulate_gtk_key_release(dialog, dialog.hosted_password_entry,
-                               Gdk.KEY_A)
-        while Gtk.events_pending():
-            Gtk.main_iteration()
+        simulate_gtk_key_release(dialog.hosted_password_entry, "B")
+        self.run_gtk_eventloop()
         self.assertTrue(self.controller.is_modified)
         dialog.revert(None)
-        while Gtk.events_pending():
-            Gtk.main_iteration()
+        self.run_gtk_eventloop()
         self.assertFalse(self.controller.is_modified)
-        simulate_gtk_key_release(dialog, dialog.local_landscape_host_entry,
-                               Gdk.KEY_A)
-        while Gtk.events_pending():
-            Gtk.main_iteration()
+        simulate_gtk_key_release(dialog.local_landscape_host_entry, "C")
+        self.run_gtk_eventloop()
         self.assertTrue(self.controller.is_modified)
+
+    def test_modify_with_paste(self):
+        """
+        Non-keypress modifications to data in the UI are propagated to the
+        controller.
+        """
+        dialog = ClientSettingsDialog(self.controller)
+        self.run_gtk_eventloop()
+        self.assertFalse(self.controller.is_modified)
+        self.assertEqual(1, dialog.use_type_combobox.get_active())
+        # Test hosted account name
+        self.assert_paste_data_saved(dialog, 1,
+                                     dialog.hosted_account_name_entry,
+                                     "hosted_account_name")
+        # Test hosted password
+        self.assert_paste_data_saved(dialog, 1,
+                                     dialog.hosted_password_entry,
+                                     "hosted_password")
+        # Test local hostname
+        self.assert_paste_data_saved(dialog, 2,
+                                     dialog.local_landscape_host_entry,
+                                     "local_landscape_host")
+        # Test local password
+        self.assert_paste_data_saved(dialog, 2,
+                                     dialog.local_password_entry,
+                                     "local_password")
 
     def test_load_data_from_config(self):
         """
@@ -160,21 +194,18 @@ class ConfigurationViewTest(LandscapeTest):
         Test that we can revert the UI values using the controller.
         """
         dialog = ClientSettingsDialog(self.controller)
-        while Gtk.events_pending():
-            Gtk.main_iteration()
+        self.run_gtk_eventloop()
         self.assertEqual(1, dialog.use_type_combobox.get_active())
         self.assertEqual("foo", dialog.hosted_account_name_entry.get_text())
         self.assertEqual("bar", dialog.hosted_password_entry.get_text())
         dialog.use_type_combobox.set_active(2)
         dialog.local_landscape_host_entry.set_text("more.barn")
-        while Gtk.events_pending():
-            Gtk.main_iteration()
+        self.run_gtk_eventloop()
         self.assertEqual("bar", dialog.hosted_password_entry.get_text())
         self.assertEqual("more.barn",
                          dialog.local_landscape_host_entry.get_text())
         dialog.revert(None)
-        while Gtk.events_pending():
-            Gtk.main_iteration()
+        self.run_gtk_eventloop()
         self.assertEqual(1, dialog.use_type_combobox.get_active())
         self.assertEqual("foo", dialog.hosted_account_name_entry.get_text())
         self.assertEqual("bar", dialog.hosted_password_entry.get_text())
