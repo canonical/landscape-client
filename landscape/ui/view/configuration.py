@@ -24,6 +24,7 @@ class ClientSettingsDialog(Gtk.Dialog):
         super(ClientSettingsDialog, self).__init__(
             title="Management Service",
             flags=Gtk.DialogFlags.MODAL)
+        self.set_default_icon_name("preferences-management-service")
         self.set_resizable(False)
         self._initialised = False
         self.controller = controller

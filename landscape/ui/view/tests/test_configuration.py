@@ -58,6 +58,8 @@ class ConfigurationViewTest(LandscapeTest):
         """
         dialog = ClientSettingsDialog(self.controller)
         content_area = dialog.get_content_area()
+        self.assertEqual("preferences-management-service",
+                         dialog.get_default_icon_name())
         children = content_area.get_children()
         self.assertEqual(len(children), 2)
         box = children[0]
