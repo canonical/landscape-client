@@ -48,10 +48,16 @@ class RegistrationMechanism(PolicyKitMechanism):
         try:
             message = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
             self.register_notify(message)
-            return True
+            return True, message
         except subprocess.CalledProcessError, error:
-            self.register_error(str(error))
-            return False
+            wait_phrase = "Please wait... "
+            wait_phrase_index = error.output.find(wait_phrase)
+            if wait_phrase_index > -1:
+                message = error.output[wait_phrase_index + len(wait_phrase):]
+            else:
+                message = "Landscape configuration failed.\n%s" % error.output
+            self.register_error(message)
+            return False, message
 
     @dbus.service.signal(dbus_interface=INTERFACE_NAME,
                          signature='s')
@@ -110,12 +116,12 @@ class RegistrationMechanism(PolicyKitMechanism):
                          connection_keyword="conn")
     def register(self, config_path, sender=None, conn=None):
         if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
-            if self._do_registration(config_path):
+            succeed, message = self._do_registration(config_path)
+            if succeed:
                 message = "Registration message sent to Landscape server.\n"
                 self.register_succeed(message)
                 return (True, message)
             else:
-                message = "Failed to connect to Landscape server.\n"
                 self.register_fail(message)
                 return (False, message)
 
