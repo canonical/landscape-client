@@ -29,6 +29,8 @@ class ClientSettingsDialog(Gtk.Dialog):
         self.controller = controller
         self.setup_ui()
         self.load_data()
+        # One extra revert to reset after loading data
+        self.controller.revert()
 
     def _set_use_type_combobox_from_controller(self):
         """
@@ -90,31 +92,23 @@ class ClientSettingsDialog(Gtk.Dialog):
         self.hosted_account_name_entry = self._builder.get_object(
             "hosted-account-name-entry")
         self.hosted_account_name_entry.connect(
-            "changed",
-            self.on_changed_event,
-            "hosted_account_name")
+            "changed", self.on_changed_event, "hosted_account_name")
 
         self.hosted_password_entry = self._builder.get_object(
             "hosted-password-entry")
         self.hosted_password_entry.connect(
-            "changed",
-            self.on_changed_event,
-            "hosted_password")
+            "changed", self.on_changed_event, "hosted_password")
 
     def link_local_service_widgets(self):
         self.local_landscape_host_entry = self._builder.get_object(
             "local-landscape-host-entry")
         self.local_landscape_host_entry.connect(
-            "changed",
-            self.on_changed_event,
-            "local_landscape_host")
+            "changed", self.on_changed_event, "local_landscape_host")
 
         self.local_password_entry = self._builder.get_object(
             "local-password-entry")
         self.local_password_entry.connect(
-            "changed",
-            self.on_changed_event,
-            "local_password")
+            "changed", self.on_changed_event, "local_password")
 
     def link_use_type_combobox(self, liststore):
         self.use_type_combobox = self._builder.get_object("use-type-combobox")
@@ -193,3 +187,5 @@ class ClientSettingsDialog(Gtk.Dialog):
     def revert(self, button):
         self.controller.revert()
         self.load_data()
+        # One extra revert to reset after loading data
+        self.controller.revert()
