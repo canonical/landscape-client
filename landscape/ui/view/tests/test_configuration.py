@@ -64,7 +64,7 @@ class ConfigurationViewTest(LandscapeTest):
         dialog.use_type_combobox.set_active(combo)
         self.run_gtk_eventloop()
 
-        simulate_gtk_paste(dialog, widget, "pasted text")
+        simulate_gtk_paste(widget, "pasted text")
         self.run_gtk_eventloop()
         self.assertTrue(self.controller.is_modified)
         self.assertEqual("pasted text", getattr(self.controller, attribute))
@@ -133,21 +133,19 @@ class ConfigurationViewTest(LandscapeTest):
         dialog.revert(None)
         self.run_gtk_eventloop()
         self.assertFalse(self.controller.is_modified)
-        simulate_gtk_key_release(dialog, dialog.hosted_account_name_entry,
-                                 "A")
+        simulate_gtk_key_release(dialog.hosted_account_name_entry, "A")
         self.run_gtk_eventloop()
         self.assertTrue(self.controller.is_modified)
         dialog.revert(None)
         self.run_gtk_eventloop()
         self.assertFalse(self.controller.is_modified)
-        simulate_gtk_key_release(dialog, dialog.hosted_password_entry, "B")
+        simulate_gtk_key_release(dialog.hosted_password_entry, "B")
         self.run_gtk_eventloop()
         self.assertTrue(self.controller.is_modified)
         dialog.revert(None)
         self.run_gtk_eventloop()
         self.assertFalse(self.controller.is_modified)
-        simulate_gtk_key_release(dialog, dialog.local_landscape_host_entry,
-                                 "C")
+        simulate_gtk_key_release(dialog.local_landscape_host_entry, "C")
         self.run_gtk_eventloop()
         self.assertTrue(self.controller.is_modified)
 

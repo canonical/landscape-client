@@ -163,22 +163,20 @@ class FakeGSettings(object):
         return expected_args in arglist
 
 
-def simulate_gtk_key_release(window, widget, key):
+def simulate_gtk_key_release(widget, key):
     """
     Simulates a keypress in a widget
 
-    @param window: The parent Gtk window.
     @param widget: The widget which should receive the keypress.
     @param key: The key to use.
     """
     widget.insert_text(key, -1)
 
 
-def simulate_gtk_paste(window, widget, pasted_text):
+def simulate_gtk_paste(widget, pasted_text):
     """
     Simulates pasting text into a editable element.
 
-    @param window: The parent Gtk window.
     @param widget: The widget which should receive the paste.
     @param pasted_text: The text to paste into the widget.
     """
