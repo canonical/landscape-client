@@ -97,6 +97,8 @@ class ConfigurationMechanism(PolicyKitMechanism):
         L{LandscapeSetupConfiguration}.
         """
         if self._is_allowed_by_policy(sender, conn, POLICY_NAME):
+            # Underlying _config does not support unicode so convert to ascii
+            value = unicode(value).encode("ascii", errors="replace")
             setattr(self._config, name, value)
 
     @dbus.service.method(INTERFACE_NAME,

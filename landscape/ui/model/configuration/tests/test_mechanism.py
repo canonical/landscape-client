@@ -65,6 +65,26 @@ class MechanismTest(LandscapeTest):
         self.mechanism.set("account_name", "bar")
         self.assertEqual("bar", self.mechanism.get("account_name"))
 
+    def test_set_account_name_unicode(self):
+        """
+        Non-ascii characters are replaced before passing to underlying config.
+        """
+        self.mechanism.set("account_name", u"unicode\u00a3unicode")
+        self.assertEqual("unicode?unicode", self.mechanism.get("account_name"))
+
+    def test_no_unicode_to_underlying_config(self):
+        """
+        Non-ascii characters are replaced before passing to underlying config.
+        """
+        class FakeConfig(object):
+            def __init__(self):
+                self.account_name = None
+
+        fake_config = FakeConfig()
+        self.mechanism._config = fake_config
+        self.mechanism.set("account_name", u"unicode\u00a3unicode")
+        self.assertEqual("unicode?unicode", fake_config.account_name)
+
     def test_get_data_path(self):
         """
         Test we can get the data path from the mechanism.
