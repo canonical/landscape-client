@@ -33,6 +33,15 @@ from landscape.manager.manager import FAILED, SUCCEEDED
 
 class PackageChangerTestMixin(object):
 
+    def disable_clear_channels(self):
+        """Disable clear_channels(), so that it doesn't remove test setup.
+
+        This is useful for change-packages tests, which will call
+        facade.clear_channels(). Normally that's safe, but since we used
+        the facade to set up channels, we don't want them to be removed.
+        """
+        self._facade.clear_channels = lambda: None
+
     def get_pending_messages(self):
         return self.broker_service.message_store.get_pending_messages()
 
@@ -231,6 +240,7 @@ class PackageChangerTestMixin(object):
 
         self.replace_perform_changes(raise_dependency_error)
 
+        self.facade.clear_channels = lambda : None
         result = self.changer.handle_tasks()
 
         def got_result(result):
@@ -335,6 +345,7 @@ class PackageChangerTestMixin(object):
         result.code = SUCCESS_RESULT
         self.mocker.result(result)
         self.mocker.replay()
+        self.facade.clear_channels = lambda : None
         return self.changer.handle_tasks()
 
     def test_perform_changes_with_policy_allow_all_changes(self):
@@ -379,6 +390,7 @@ class PackageChangerTestMixin(object):
                             {"type": "change-packages", "install": [1],
                              "operation-id": 123})
 
+        self.disable_clear_channels()
         result = self.changer.handle_tasks()
 
         def got_result(result):
@@ -503,6 +515,7 @@ class PackageChangerTestMixin(object):
         def return_good_result(self):
             return "Yeah, I did whatever you've asked for!"
         self.replace_perform_changes(return_good_result)
+        self.disable_clear_channels()
 
         result = self.changer.handle_tasks()
 
@@ -784,6 +797,7 @@ class PackageChangerTestMixin(object):
         def raise_error(self):
             raise TransactionError(u"áéíóú")
         self.replace_perform_changes(raise_error)
+        self.disable_clear_channels()
 
         result = self.changer.handle_tasks()
 
@@ -804,6 +818,7 @@ class PackageChangerTestMixin(object):
         def raise_error(self):
             raise SmartError(u"áéíóú")
         self.replace_perform_changes(raise_error)
+        self.disable_clear_channels()
 
         result = self.changer.handle_tasks()
 
@@ -1639,3 +1654,32 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
 
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
+
+    def test_change_packages_with_binaries_removes_binaries(self):
+        """
+        After the C{change-packages} handler has installed the binaries,
+        the binaries and the internal facade deb source is removed.
+        """
+        self.store.add_task("changer",
+                            {"type": "change-packages", "install": [2],
+                             "binaries": [(HASH2, 2, PKGDEB2)],
+                             "operation-id": 123})
+
+        def return_good_result(self):
+            return "Yeah, I did whatever you've asked for!"
+        self.replace_perform_changes(return_good_result)
+
+        result = self.changer.handle_tasks()
+
+        def got_result(result):
+            self.assertMessages(self.get_pending_messages(),
+                                [{"operation-id": 123,
+                                  "result-code": 1,
+                                  "result-text": "Yeah, I did whatever you've "
+                                                 "asked for!",
+                                  "type": "change-packages-result"}])
+            self.assertEqual([], os.listdir(self.config.binaries_path))
+            self.assertFalse(
+                os.path.exists(self.facade._get_internal_sources_list()))
+
+        return result.addCallback(got_result)
