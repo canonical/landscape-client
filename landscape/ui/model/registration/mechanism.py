@@ -55,7 +55,7 @@ class RegistrationMechanism(PolicyKitMechanism):
             if wait_phrase_index > -1:
                 message = error.output[wait_phrase_index + len(wait_phrase):]
             else:
-                message = str(error)
+                message = "Landscape configuration failed.\n%s" % error.output
             self.register_error(message)
             return False, message
 
