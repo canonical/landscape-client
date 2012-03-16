@@ -40,7 +40,7 @@ class PackageChangerTestMixin(object):
         facade.clear_channels(). Normally that's safe, but since we used
         the facade to set up channels, we don't want them to be removed.
         """
-        self._facade.clear_channels = lambda: None
+        self.facade.clear_channels = lambda: None
 
     def get_pending_messages(self):
         return self.broker_service.message_store.get_pending_messages()
