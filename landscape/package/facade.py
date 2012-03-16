@@ -255,6 +255,10 @@ class AptFacade(object):
             return
         self.reload_channels()
 
+    def _get_internal_sources_list(self):
+        sources_dir = apt_pkg.config.find_dir("Dir::Etc::sourceparts")
+        return os.path.join(sources_dir, "_landscape-internal-facade.list")
+
     def add_channel_apt_deb(self, url, codename, components=None):
         """Add a deb URL which points to a repository.
 
@@ -262,9 +266,7 @@ class AptFacade(object):
         @param codename: The dist in the repository.
         @param components: The components to be included.
         """
-        sources_dir = apt_pkg.config.find_dir("Dir::Etc::sourceparts")
-        sources_file_path = os.path.join(
-            sources_dir, "_landscape-internal-facade.list")
+        sources_file_path = self._get_internal_sources_list()
         sources_line = "deb %s %s" % (url, codename)
         if components:
             sources_line += " %s" % " ".join(components)
@@ -285,6 +287,18 @@ class AptFacade(object):
         """
         self._create_packages_file(path)
         self.add_channel_apt_deb("file://%s" % path, "./", None)
+
+    def clear_channels(self):
+        """Clear the channels that have been added through the facade.
+
+        Channels that weren't added through the facade (.i.e.
+        /etc/apt/sources.list and /etc/apt/sources.list.d) won't be
+        removed.
+        """
+        sources_file_path = self._get_internal_sources_list()
+        if os.path.exists(sources_file_path):
+            os.remove(sources_file_path)
+
 
     def _create_packages_file(self, deb_dir):
         """Create a Packages file in a directory with debs."""
@@ -959,6 +973,13 @@ class SmartFacade(object):
         alias = path
         channel = {"path": path, "type": "deb-dir"}
         self.add_channel(alias, channel)
+
+    def clear_channels(self):
+        """Clear channels.
+
+        This method exists to be compatible with AptFacade. Smart
+        doesn't need to clear its channels.
+        """
 
     def get_channels(self):
         """
