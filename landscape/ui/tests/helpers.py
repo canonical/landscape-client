@@ -173,6 +173,7 @@ def simulate_gtk_key_release(window, widget, key):
     """
     widget.insert_text(key, -1)
 
+
 def simulate_gtk_paste(window, widget, pasted_text):
     """
     Simulates pasting text into a editable element.

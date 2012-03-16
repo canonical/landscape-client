@@ -5,7 +5,7 @@ from landscape.ui.tests.helpers import (
     got_gobject_introspection, simulate_gtk_key_release, simulate_gtk_paste)
 
 if got_gobject_introspection:
-    from gi.repository import Gtk, Gdk
+    from gi.repository import Gtk
     from landscape.ui.view.configuration import ClientSettingsDialog
     from landscape.ui.controller.configuration import ConfigController
     import landscape.ui.model.configuration.state
@@ -161,13 +161,21 @@ class ConfigurationViewTest(LandscapeTest):
         self.assertFalse(self.controller.is_modified)
         self.assertEqual(1, dialog.use_type_combobox.get_active())
         # Test hosted account name
-        self.assert_paste_data_saved(dialog, 1, dialog.hosted_account_name_entry, "hosted_account_name")
+        self.assert_paste_data_saved(dialog, 1,
+                                     dialog.hosted_account_name_entry,
+                                     "hosted_account_name")
         # Test hosted password
-        self.assert_paste_data_saved(dialog, 1, dialog.hosted_password_entry, "hosted_password")
+        self.assert_paste_data_saved(dialog, 1,
+                                     dialog.hosted_password_entry,
+                                     "hosted_password")
         # Test local hostname
-        self.assert_paste_data_saved(dialog, 2, dialog.local_landscape_host_entry, "local_landscape_host")
+        self.assert_paste_data_saved(dialog, 2,
+                                     dialog.local_landscape_host_entry,
+                                     "local_landscape_host")
         # Test local password
-        self.assert_paste_data_saved(dialog, 2, dialog.local_password_entry, "local_password")
+        self.assert_paste_data_saved(dialog, 2,
+                                     dialog.local_password_entry,
+                                     "local_password")
 
     def test_load_data_from_config(self):
         """
