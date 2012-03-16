@@ -239,8 +239,8 @@ class PackageChangerTestMixin(object):
             raise DependencyError(set(packages))
 
         self.replace_perform_changes(raise_dependency_error)
+        self.disable_clear_channels()
 
-        self.facade.clear_channels = lambda : None
         result = self.changer.handle_tasks()
 
         def got_result(result):
@@ -345,7 +345,8 @@ class PackageChangerTestMixin(object):
         result.code = SUCCESS_RESULT
         self.mocker.result(result)
         self.mocker.replay()
-        self.facade.clear_channels = lambda : None
+
+        self.disable_clear_channels()
         return self.changer.handle_tasks()
 
     def test_perform_changes_with_policy_allow_all_changes(self):

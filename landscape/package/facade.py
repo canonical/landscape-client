@@ -299,7 +299,6 @@ class AptFacade(object):
         if os.path.exists(sources_file_path):
             os.remove(sources_file_path)
 
-
     def _create_packages_file(self, deb_dir):
         """Create a Packages file in a directory with debs."""
         packages_contents = "\n".join(
