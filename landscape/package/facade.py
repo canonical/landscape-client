@@ -292,7 +292,7 @@ class AptFacade(object):
     def clear_channels(self):
         """Clear the channels that have been added through the facade.
 
-        Channels that weren't added through the facade (.i.e.
+        Channels that weren't added through the facade (i.e.
         /etc/apt/sources.list and /etc/apt/sources.list.d) won't be
         removed.
         """

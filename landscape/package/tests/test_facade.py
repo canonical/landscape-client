@@ -231,7 +231,7 @@ class AptFacadeTest(LandscapeTest):
 
     def test_clear_channels(self):
         """
-        C{clear_channels} revmoes all the channels added to the facade.
+        C{clear_channels} revoves all the channels added to the facade.
         It also removes the internal .list file.
         """
         deb_dir = self.makeDir()
