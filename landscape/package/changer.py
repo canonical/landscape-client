@@ -135,6 +135,15 @@ class PackageChanger(PackageTaskHandler):
         """
         return os.path.exists(self._config.update_stamp_filename)
 
+    def _clear_binaries(self):
+        """Remove any binaries and its associated channel."""
+        binaries_path = self._config.binaries_path
+
+        for existing_deb_path in os.listdir(binaries_path):
+            # Clean up the binaries we wrote in former runs
+            os.remove(os.path.join(binaries_path, existing_deb_path))
+        self._facade.clear_channels()
+
     def init_channels(self, binaries=()):
         """Initialize the Smart channels as needed.
 
@@ -144,9 +153,8 @@ class PackageChanger(PackageTaskHandler):
         """
         binaries_path = self._config.binaries_path
 
-        for existing_deb_path in os.listdir(binaries_path):
-            # Clean up the binaries we wrote in former runs
-            os.remove(os.path.join(binaries_path, existing_deb_path))
+        # Clean up the binaries we wrote in former runs
+        self._clear_binaries()
 
         if binaries:
             hash_ids = {}
@@ -261,6 +269,7 @@ class PackageChanger(PackageTaskHandler):
                            message.get("remove", ()))
 
         result = self.change_packages(message.get("policy", POLICY_STRICT))
+        self._clear_binaries()
 
         response = {"type": "change-packages-result",
                    "operation-id": message.get("operation-id")}

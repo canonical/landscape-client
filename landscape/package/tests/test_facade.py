@@ -22,7 +22,7 @@ from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from twisted.internet.utils import getProcessOutputAndValue
 
-from landscape.lib.fs import read_file
+from landscape.lib.fs import read_file, create_file
 from landscape.package import facade as facade_module
 from landscape.package.facade import (
     TransactionError, DependencyError, ChannelError, SmartError, AptFacade,
@@ -228,6 +228,48 @@ class AptFacadeTest(LandscapeTest):
                            "components": "",
                            "type": "deb"}],
                          self.facade.get_channels())
+
+    def test_clear_channels(self):
+        """
+        C{clear_channels} revoves all the channels added to the facade.
+        It also removes the internal .list file.
+        """
+        deb_dir = self.makeDir()
+        self.facade.add_channel_deb_dir(deb_dir)
+        self.facade.add_channel_apt_deb("http://example.com/ubuntu", "lucid")
+        self.facade.clear_channels()
+        self.assertEqual([], self.facade.get_channels())
+        self.assertFalse(
+            os.path.exists(self.facade._get_internal_sources_list()))
+
+    def test_clear_channels_no_channels(self):
+        """
+        If no channels have been added, C{clear_channels()} still succeeds.
+        """
+        self.facade.clear_channels()
+        self.assertEqual([], self.facade.get_channels())
+
+    def test_clear_channels_only_internal(self):
+        """
+        Only channels added through the facade are removed by
+        C{clear_channels}. Other .list files in sources.list.d as well
+        as the sources.list file are intact.
+        """
+        sources_list_file = apt_pkg.config.find_file("Dir::Etc::sourcelist")
+        sources_list_d_file = os.path.join(
+            apt_pkg.config.find_dir("Dir::Etc::sourceparts"), "example.list")
+        create_file(
+            sources_list_file, "deb http://example1.com/ubuntu lucid main")
+        create_file(
+            sources_list_d_file, "deb http://example2.com/ubuntu lucid main")
+
+        self.facade.clear_channels()
+        self.assertEqual(
+            [{'baseurl': 'http://example1.com/ubuntu',
+              'components': 'main', 'distribution': 'lucid', 'type': 'deb'},
+             {'baseurl': 'http://example2.com/ubuntu',
+              'components': 'main', 'distribution': 'lucid', 'type': 'deb'}],
+            self.facade.get_channels())
 
     def test_get_package_stanza(self):
         """
