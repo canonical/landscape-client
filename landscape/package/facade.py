@@ -227,7 +227,8 @@ class AptFacade(object):
         self._cache.open(None)
         if self.refetch_package_index or force_reload_binaries:
             try:
-                self._cache.update()
+                self._cache.update(
+                    sources_list=self._get_internal_sources_list())
             except apt.cache.FetchFailedException:
                 raise ChannelError(
                     "Apt failed to reload channels (%r)" % (
