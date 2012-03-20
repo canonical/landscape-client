@@ -216,7 +216,41 @@ class RunScriptTests(LandscapeTest):
         headers = {"User-Agent": "landscape-client/%s" % VERSION,
                    "Content-Type": "application/octet-stream",
                    "X-Computer-ID": "secure_id"}
-        mock_fetch("https://localhost/attachment/14", headers=headers)
+        mock_fetch("https://localhost/attachment/14", headers=headers,
+                   cainfo=None)
+        self.mocker.result(succeed("some other data"))
+        self.mocker.replay()
+
+        result = self.plugin.run_script(
+            u"/bin/sh",
+            u"ls $LANDSCAPE_ATTACHMENTS && cat $LANDSCAPE_ATTACHMENTS/file1",
+            attachments={u"file1": 14})
+
+        def check(result):
+            self.assertEqual(result, "file1\nsome other data")
+
+        result.addCallback(check)
+        return result
+
+    def test_run_with_attachment_ids_and_ssl(self):
+        """
+        When fetching attachments, L{ScriptExecution} passes the optional ssl
+        certificate file if the configuration specifies it.
+        """
+        self.manager.config.url = "https://localhost/message-system"
+        self.manager.config.ssl_public_key = "/some/key"
+        persist = Persist(
+            filename=os.path.join(self.config.data_path, "broker.bpickle"))
+        registration_persist = persist.root_at("registration")
+        registration_persist.set("secure-id", "secure_id")
+        persist.save()
+        mock_fetch = self.mocker.replace("landscape.lib.fetch.fetch_async",
+                                         passthrough=False)
+        headers = {"User-Agent": "landscape-client/%s" % VERSION,
+                   "Content-Type": "application/octet-stream",
+                   "X-Computer-ID": "secure_id"}
+        mock_fetch("https://localhost/attachment/14", headers=headers,
+                   cainfo="/some/key")
         self.mocker.result(succeed("some other data"))
         self.mocker.replay()
 
@@ -899,7 +933,8 @@ class ScriptExecutionMessageTests(LandscapeTest):
         headers = {"User-Agent": "landscape-client/%s" % VERSION,
                    "Content-Type": "application/octet-stream",
                    "X-Computer-ID": "secure_id"}
-        mock_fetch("https://localhost/attachment/14", headers=headers)
+        mock_fetch("https://localhost/attachment/14", headers=headers,
+                   cainfo=None)
         self.mocker.result(fail(HTTPCodeError(404, "Not found")))
         self.mocker.replay()
 
