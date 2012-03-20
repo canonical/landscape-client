@@ -933,7 +933,8 @@ class ScriptExecutionMessageTests(LandscapeTest):
         headers = {"User-Agent": "landscape-client/%s" % VERSION,
                    "Content-Type": "application/octet-stream",
                    "X-Computer-ID": "secure_id"}
-        mock_fetch("https://localhost/attachment/14", headers=headers)
+        mock_fetch("https://localhost/attachment/14", headers=headers,
+                   cainfo=None)
         self.mocker.result(fail(HTTPCodeError(404, "Not found")))
         self.mocker.replay()
 
