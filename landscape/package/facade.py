@@ -191,12 +191,6 @@ class AptFacade(object):
             ["dpkg", "--set-selections"] + self._dpkg_args,
             stdin=subprocess.PIPE)
         process.communicate(selection)
-        # Make sure the mtime of the status file is at least one second
-        # newer than when the channels was reloaded, otherwise it won't
-        # be parsed by another call to reload_channels().
-        stat = os.stat(self._dpkg_status)
-        mtime = stat.st_mtime + 1
-        os.utime(self._dpkg_status, (mtime, mtime))
 
     def set_package_hold(self, version):
         """Add a dpkg hold for a package.

@@ -1286,6 +1286,11 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         [foo] = self.facade.get_packages_by_name("foo")
         [bar] = self.facade.get_packages_by_name("bar")
         self.facade.set_package_hold(bar)
+        # Make sure that the mtime of the dpkg status file is old when
+        # apt loads it, so that it will be reloaded when asserting the
+        # test result.
+        old_mtime = time.time() - 10
+        os.utime(self.facade._dpkg_status, (old_mtime, old_mtime))
         self.facade.reload_channels()
         self.store.add_task("changer", {"type": "change-package-holds",
                                         "create": [foo.package.id],
