@@ -194,10 +194,9 @@ class AptFacade(object):
         # Make sure the mtime of the status file is at least one second
         # newer than when the channels was reloaded, otherwise it won't
         # be parsed by another call to reload_channels().
-        current_time = time.time()
-        if current_time - self._last_dpkg_status_mtime < 1.0:
-            mtime = self._last_dpkg_status_mtime + 1
-            os.utime(self._dpkg_status, (mtime, mtime))
+        stat = os.stat(self._dpkg_status)
+        mtime = stat.st_mtime + 1
+        os.utime(self._dpkg_status, (mtime, mtime))
 
     def set_package_hold(self, version):
         """Add a dpkg hold for a package.
@@ -222,8 +221,6 @@ class AptFacade(object):
             information about the binaries packages that are in the facade's
             internal repo.
         """
-        stat = os.stat(self._dpkg_status)
-        self._last_dpkg_status_mtime = stat.st_mtime
         self._cache.open(None)
         if self.refetch_package_index or force_reload_binaries:
             try:
