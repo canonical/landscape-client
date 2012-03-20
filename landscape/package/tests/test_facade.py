@@ -474,6 +474,19 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels(force_reload_binaries=False)
         self.assertEqual([None], passed_in_lists)
 
+    def test_reload_channels_force_reload_binaries_new_internal_repos(self):
+        """
+        """
+        passed_in_lists = []
+
+        def apt_update(sources_list=None):
+            passed_in_lists.append(sources_list)
+
+        self.facade.refetch_package_index = False
+        self.facade._cache.update = apt_update
+        self.facade.reload_channels(force_reload_binaries=True)
+        self.assertEqual([], passed_in_lists)
+
     def test_reload_channels_force_reload_binaries_new_apt(self):
         """
         """
