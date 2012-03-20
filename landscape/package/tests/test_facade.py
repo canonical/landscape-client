@@ -444,9 +444,6 @@ class AptFacadeTest(LandscapeTest):
         If C{force_reload_binaries} is True, reload_channels will
         refetch the Packages files in the channels and rebuild the
         internal database.
-
-        XXX: Ideally it would reload only the repo where we store package
-        profiles, but for now it reloads everything. Bug #954822.
         """
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
@@ -461,8 +458,11 @@ class AptFacadeTest(LandscapeTest):
             sorted(version.package.name
                    for version in self.facade.get_packages()))
 
-    def test_reload_channels_no_force_reload_binaries_no_sources_list(self):
+    def test_reload_channels_no_force_reload_binaries(self):
         """
+        If C{force_reload_binaries} False, C{reload_channels} won't pass
+        a sources_list parameter to limit to update to the internal
+        repos only.
         """
         passed_in_lists = []
 
@@ -474,8 +474,11 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels(force_reload_binaries=False)
         self.assertEqual([None], passed_in_lists)
 
-    def test_reload_channels_force_reload_binaries_new_internal_repos(self):
+    def test_reload_channels_force_reload_binaries_no_internal_repos(self):
         """
+        If C{force_reload_binaries} is True, but there are no internal
+        repos, C{reload_channels} won't update the package index if
+        C{refetch_package_index} is False.
         """
         passed_in_lists = []
 
@@ -489,6 +492,9 @@ class AptFacadeTest(LandscapeTest):
 
     def test_reload_channels_force_reload_binaries_refetch_package_index(self):
         """
+        If C{refetch_package_index} is True, C{reload_channels} won't
+        limit the update to the internal repos, even if
+        C{force_reload_binaries} is specified.
         """
         passed_in_lists = []
 
@@ -505,6 +511,11 @@ class AptFacadeTest(LandscapeTest):
 
     def test_reload_channels_force_reload_binaries_new_apt(self):
         """
+        If python-apt is new enough (i.e. the C{update()} method accepts
+        a C{sources_list} parameter), the .list file containing the
+        repos managed by the facade will be passed to C{update()}, so
+        that only the internal repos are updated if
+        C{force_reload_binaries} is specified.
         """
         passed_in_lists = []
 
@@ -522,6 +533,10 @@ class AptFacadeTest(LandscapeTest):
 
     def test_reload_channels_force_reload_binaries_old_apt(self):
         """
+        If python-apt is old (i.e. the C{update()} method doesn't accept
+        a C{sources_list} parameter), everything will be updated if
+        C{force_reload_binaries} is specified, since there is no API for
+        limiting which repos should be updated.
         """
         passed_in_lists = []
 
