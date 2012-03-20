@@ -487,6 +487,22 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels(force_reload_binaries=True)
         self.assertEqual([], passed_in_lists)
 
+    def test_reload_channels_force_reload_binaries_refetch_package_index(self):
+        """
+        """
+        passed_in_lists = []
+
+        def new_apt_update(sources_list=None):
+            passed_in_lists.append(sources_list)
+
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.refetch_package_index = True
+        self.facade._cache.update = new_apt_update
+        self.facade.reload_channels(force_reload_binaries=True)
+        self.assertEqual([None], passed_in_lists)
+
     def test_reload_channels_force_reload_binaries_new_apt(self):
         """
         """

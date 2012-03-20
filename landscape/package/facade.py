@@ -231,7 +231,7 @@ class AptFacade(object):
             # Try to update only the internal repos, if the python-apt
             # version is new enough to accept a sources_list parameter.
             new_apt_args = {}
-            if force_reload_binaries:
+            if force_reload_binaries and not self.refetch_package_index:
                 new_apt_args["sources_list"] = internal_sources_list
             try:
                 try:
