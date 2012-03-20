@@ -13,5 +13,18 @@ from landscape.ui.controller.app import SettingsApplicationController
 
 
 if __name__ == "__main__":
+    pids= [pid for pid in os.listdir('/proc') if pid.isdigit()]
+    for pid in pids:
+        process_name = open(os.path.join('/proc', pid, 'cmdline'), 'rb').read()
+        if process_name.find("landscape-client-settings-ui") > -1:
+            this_pid = os.getpid() 
+            if int(pid) != this_pid:
+                sys.stderr.write("%s != %s\n" % (pid, this_pid))
+                sys.stderr.write("Another instance of "
+                                 "landscape-client-settings-ui is already "
+                                 "running.\n")
+                sys.stderr.flush()
+                sys.exit(1)
+
     app = SettingsApplicationController(args=sys.argv[1:])
     app.run(None)
