@@ -461,6 +461,19 @@ class AptFacadeTest(LandscapeTest):
             sorted(version.package.name
                    for version in self.facade.get_packages()))
 
+    def test_reload_channels_no_force_reload_binaries_no_sources_list(self):
+        """
+        """
+        passed_in_lists = []
+
+        def new_apt_update(sources_list=None):
+            passed_in_lists.append(sources_list)
+
+        self.facade.refetch_package_index = True
+        self.facade._cache.update = new_apt_update
+        self.facade.reload_channels(force_reload_binaries=False)
+        self.assertEqual([None], passed_in_lists)
+
     def test_reload_channels_force_reload_binaries_new_apt(self):
         """
         """

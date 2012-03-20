@@ -225,10 +225,12 @@ class AptFacade(object):
         stat = os.stat(self._dpkg_status)
         self._last_dpkg_status_mtime = stat.st_mtime
         self._cache.open(None)
+        internal_sources_list = self._get_internal_sources_list()
         if self.refetch_package_index or force_reload_binaries:
+            new_apt_args = {}
+            if force_reload_binaries:
+                new_apt_args["sources_list"] = internal_sources_list
             try:
-                new_apt_args = {
-                    "sources_list": self._get_internal_sources_list()}
                 try:
                     self._cache.update(**new_apt_args)
                 except TypeError:
