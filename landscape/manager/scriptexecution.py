@@ -15,6 +15,7 @@ from twisted.internet.defer import (
 from twisted.internet.error import ProcessDone
 
 from landscape import VERSION
+from landscape.constants import UBUNTU_PATH
 from landscape.lib.scriptcontent import build_script
 from landscape.lib.fetch import fetch_async, HTTPCodeError
 from landscape.lib.persist import Persist
@@ -25,9 +26,6 @@ ALL_USERS = object()
 TIMEOUT_RESULT = 102
 PROCESS_FAILED_RESULT = 103
 FETCH_ATTACHMENTS_FAILED_RESULT = 104
-# The name "UBUNTU" is used in the variable name due to the fact that the path
-# is Ubuntu-specific, taken from /etc/login.defs.
-UBUNTU_PATH = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 
 class UnknownUserError(Exception):
