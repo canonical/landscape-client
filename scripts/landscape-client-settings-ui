@@ -10,21 +10,18 @@ else:
     hide_warnings()
 
 from landscape.ui.controller.app import SettingsApplicationController
-
+from landscape.lib.lock import lock_path, LockError
 
 if __name__ == "__main__":
-    pids= [pid for pid in os.listdir('/proc') if pid.isdigit()]
-    for pid in pids:
-        process_name = open(os.path.join('/proc', pid, 'cmdline'), 'rb').read()
-        if process_name.find("landscape-client-settings-ui") > -1:
-            this_pid = os.getpid() 
-            if int(pid) != this_pid:
-                sys.stderr.write("%s != %s\n" % (pid, this_pid))
-                sys.stderr.write("Another instance of "
-                                 "landscape-client-settings-ui is already "
-                                 "running.\n")
-                sys.stderr.flush()
-                sys.exit(1)
-
-    app = SettingsApplicationController(args=sys.argv[1:])
-    app.run(None)
+    lock_file = os.path.join("/var/lock", "landscape-client-settings-ui")
+    try:
+        unlock_path = lock_path(lock_file, timeout=1)
+    except LockError:
+        sys.stderr.write("Another instance of "
+                         "landscape-client-settings-ui is already "
+                         "running.\n")
+        sys.exit(1)
+    else:
+        app = SettingsApplicationController(args=sys.argv[1:])
+        app.run(None)
+        unlock_path()
