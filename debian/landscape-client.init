@@ -20,6 +20,7 @@ PIDFILE=$PIDDIR/$NAME.pid
 RUN=0 # overridden in /etc/default/landscape-client
 CLOUD=0 # overridden in /etc/default/landscape-client
 DAEMON_GROUP=landscape
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 [ -f $DAEMON ] || exit 0
 
