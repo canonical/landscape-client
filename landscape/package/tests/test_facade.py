@@ -24,6 +24,7 @@ from twisted.internet.utils import getProcessOutputAndValue
 
 from landscape.lib.fs import read_file, create_file
 from landscape.package import facade as facade_module
+from landscape.manager.scriptexecution import UBUNTU_PATH
 from landscape.package.facade import (
     TransactionError, DependencyError, ChannelError, SmartError, AptFacade,
     has_new_enough_apt)
@@ -952,6 +953,25 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual("noninteractive", os.environ["DEBIAN_FRONTEND"])
         self.assertEqual(["--force-confold"],
                          apt_pkg.config.value_list("DPkg::options"))
+
+    def test_perform_changes_with_no_path(self):
+        """
+        perform_changes() sets C{PATH} if it's not set already, since
+        dpkg requires it to be set.
+        """
+        del os.environ["PATH"]
+        self.facade.reload_channels()
+        self.assertEqual(self.facade.perform_changes(), None)
+        self.assertEqual(UBUNTU_PATH, os.environ["PATH"])
+
+    def test_perform_changes_with_path(self):
+        """
+        perform_changes() doesn't set C{PATH} if it's set already.
+        """
+        os.environ["PATH"] = "custom-path"
+        self.facade.reload_channels()
+        self.assertEqual(self.facade.perform_changes(), None)
+        self.assertEqual("custom-path", os.environ["PATH"])
 
     def test_perform_changes_fetch_progress(self):
         """

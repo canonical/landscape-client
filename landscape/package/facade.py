@@ -35,6 +35,7 @@ except ImportError:
     has_new_enough_apt = False
 
 from landscape.lib.fs import append_file, create_file, read_file
+from landscape.manager.scriptexecution import UBUNTU_PATH
 from landscape.package.skeleton import build_skeleton, build_skeleton_apt
 
 
@@ -561,6 +562,9 @@ class AptFacade(object):
         os.environ["DEBIAN_FRONTEND"] = "noninteractive"
         os.environ["APT_LISTCHANGES_FRONTEND"] = "none"
         os.environ["APT_LISTBUGS_FRONTEND"] = "none"
+        # dpkg will fail if no path is set.
+        if "PATH" not in os.environ:
+            os.environ["PATH"] = UBUNTU_PATH
         apt_pkg.config.clear("DPkg::options")
         apt_pkg.config.set("DPkg::options::", "--force-confold")
 
