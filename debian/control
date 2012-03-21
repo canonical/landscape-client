@@ -48,7 +48,8 @@ XB-Python-Version: ${python:Versions}
 Package: landscape-client-ui
 Architecture: any
 Depends: ${python:Depends}, ${misc:Depends},
-         landscape-client,
+         landscape-client (>= ${Source-Version}),
+         landscape-client-ui-install (>= ${Source-Version}),
          python-gobject,
          python-dbus,
          policykit-1,
