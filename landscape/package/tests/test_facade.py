@@ -444,9 +444,6 @@ class AptFacadeTest(LandscapeTest):
         If C{force_reload_binaries} is True, reload_channels will
         refetch the Packages files in the channels and rebuild the
         internal database.
-
-        XXX: Ideally it would reload only the repo where we store package
-        profiles, but for now it reloads everything. Bug #954822.
         """
         deb_dir = self.makeDir()
         self._add_package_to_deb_dir(deb_dir, "foo")
@@ -460,6 +457,99 @@ class AptFacadeTest(LandscapeTest):
             ["bar", "foo"],
             sorted(version.package.name
                    for version in self.facade.get_packages()))
+
+    def test_reload_channels_no_force_reload_binaries(self):
+        """
+        If C{force_reload_binaries} False, C{reload_channels} won't pass
+        a sources_list parameter to limit to update to the internal
+        repos only.
+        """
+        passed_in_lists = []
+
+        def new_apt_update(sources_list=None):
+            passed_in_lists.append(sources_list)
+
+        self.facade.refetch_package_index = True
+        self.facade._cache.update = new_apt_update
+        self.facade.reload_channels(force_reload_binaries=False)
+        self.assertEqual([None], passed_in_lists)
+
+    def test_reload_channels_force_reload_binaries_no_internal_repos(self):
+        """
+        If C{force_reload_binaries} is True, but there are no internal
+        repos, C{reload_channels} won't update the package index if
+        C{refetch_package_index} is False.
+        """
+        passed_in_lists = []
+
+        def apt_update(sources_list=None):
+            passed_in_lists.append(sources_list)
+
+        self.facade.refetch_package_index = False
+        self.facade._cache.update = apt_update
+        self.facade.reload_channels(force_reload_binaries=True)
+        self.assertEqual([], passed_in_lists)
+
+    def test_reload_channels_force_reload_binaries_refetch_package_index(self):
+        """
+        If C{refetch_package_index} is True, C{reload_channels} won't
+        limit the update to the internal repos, even if
+        C{force_reload_binaries} is specified.
+        """
+        passed_in_lists = []
+
+        def new_apt_update(sources_list=None):
+            passed_in_lists.append(sources_list)
+
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.refetch_package_index = True
+        self.facade._cache.update = new_apt_update
+        self.facade.reload_channels(force_reload_binaries=True)
+        self.assertEqual([None], passed_in_lists)
+
+    def test_reload_channels_force_reload_binaries_new_apt(self):
+        """
+        If python-apt is new enough (i.e. the C{update()} method accepts
+        a C{sources_list} parameter), the .list file containing the
+        repos managed by the facade will be passed to C{update()}, so
+        that only the internal repos are updated if
+        C{force_reload_binaries} is specified.
+        """
+        passed_in_lists = []
+
+        def new_apt_update(sources_list=None):
+            passed_in_lists.append(sources_list)
+
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.refetch_package_index = False
+        self.facade._cache.update = new_apt_update
+        self.facade.reload_channels(force_reload_binaries=True)
+        self.assertEqual(
+            [self.facade._get_internal_sources_list()], passed_in_lists)
+
+    def test_reload_channels_force_reload_binaries_old_apt(self):
+        """
+        If python-apt is old (i.e. the C{update()} method doesn't accept
+        a C{sources_list} parameter), everything will be updated if
+        C{force_reload_binaries} is specified, since there is no API for
+        limiting which repos should be updated.
+        """
+        passed_in_lists = []
+
+        def old_apt_update():
+            passed_in_lists.append(None)
+
+        deb_dir = self.makeDir()
+        self._add_package_to_deb_dir(deb_dir, "foo")
+        self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self.facade.refetch_package_index = False
+        self.facade._cache.update = old_apt_update
+        self.facade.reload_channels(force_reload_binaries=True)
+        self.assertEqual([None], passed_in_lists)
 
     def test_dont_refetch_package_index_by_default(self):
         """

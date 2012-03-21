@@ -2,7 +2,6 @@ import hashlib
 import os
 import subprocess
 import tempfile
-import time
 from cStringIO import StringIO
 from operator import attrgetter
 
@@ -216,9 +215,19 @@ class AptFacade(object):
             internal repo.
         """
         self._cache.open(None)
-        if self.refetch_package_index or force_reload_binaries:
+        internal_sources_list = self._get_internal_sources_list()
+        if (self.refetch_package_index or
+            (force_reload_binaries and os.path.exists(internal_sources_list))):
+            # Try to update only the internal repos, if the python-apt
+            # version is new enough to accept a sources_list parameter.
+            new_apt_args = {}
+            if force_reload_binaries and not self.refetch_package_index:
+                new_apt_args["sources_list"] = internal_sources_list
             try:
-                self._cache.update()
+                try:
+                    self._cache.update(**new_apt_args)
+                except TypeError:
+                    self._cache.update()
             except apt.cache.FetchFailedException:
                 raise ChannelError(
                     "Apt failed to reload channels (%r)" % (
