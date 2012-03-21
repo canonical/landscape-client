@@ -22,9 +22,9 @@ from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from twisted.internet.utils import getProcessOutputAndValue
 
+from landscape.constants import UBUNTU_PATH
 from landscape.lib.fs import read_file, create_file
 from landscape.package import facade as facade_module
-from landscape.manager.scriptexecution import UBUNTU_PATH
 from landscape.package.facade import (
     TransactionError, DependencyError, ChannelError, SmartError, AptFacade,
     has_new_enough_apt)

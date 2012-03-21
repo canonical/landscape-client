@@ -5,6 +5,10 @@ to look at those values.
 
 APT_PREFERENCES_SIZE_LIMIT = 1048576 # 1 MByte
 
+# The name "UBUNTU" is used in the variable name due to the fact that the path
+# is Ubuntu-specific, taken from /etc/login.defs.
+UBUNTU_PATH = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
 SUCCESS_RESULT = 1
 ERROR_RESULT = 100
 DEPENDENCY_ERROR_RESULT = 101

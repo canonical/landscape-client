@@ -35,7 +35,7 @@ except ImportError:
     has_new_enough_apt = False
 
 from landscape.lib.fs import append_file, create_file, read_file
-from landscape.manager.scriptexecution import UBUNTU_PATH
+from landscape.constants import UBUNTU_PATH
 from landscape.package.skeleton import build_skeleton, build_skeleton_apt
 
 
