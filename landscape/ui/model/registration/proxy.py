@@ -125,7 +125,7 @@ class RegistrationProxy(object):
         if result:
             self._on_disable_succeed()
         else:
-            self._on_disable_error("Failed to disable Landscape client.")
+            self._on_disable_fail()
         return result
 
     def exit(self):
