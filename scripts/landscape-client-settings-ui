@@ -23,5 +23,9 @@ if __name__ == "__main__":
         sys.exit(1)
     else:
         app = SettingsApplicationController(args=sys.argv[1:])
-        app.run(None)
-        unlock_path()
+        try:
+            app.run(None)
+        except Exception, e:
+            sys.stderr.write("%s\n" % str(e))
+        finally:
+            unlock_path()
