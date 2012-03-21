@@ -2,7 +2,6 @@ import hashlib
 import os
 import subprocess
 import tempfile
-import time
 from cStringIO import StringIO
 from operator import attrgetter
 
