@@ -1,8 +1,8 @@
-landscape-client (12.04-0ubuntu0.12.04.0) precise; urgency=low
+landscape-client (12.04.1-0ubuntu0.12.04.0) precise; urgency=low
 
   * Placeholder for new release 
 
- -- Andreas Hasenack <andreas@canonical.com>  Fri, 16 Mar 2012 18:45:29 -0300
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 21 Mar 2012 09:21:54 -0300
 
 landscape-client (11.07.1.1-0ubuntu1.11.10.0) oneiric; urgency=low
 
