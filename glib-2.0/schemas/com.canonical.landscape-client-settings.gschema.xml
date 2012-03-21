@@ -10,7 +10,7 @@
       <summary>The title to register the machine with.</summary>
     </key>
     <key type="s" name="hosted-landscape-host">
-      <default>"canonical.landscape.com"</default>
+      <default>"landscape.canonical.com"</default>
       <summary>The hostname of the Canonical hosted landscape system.</summary>
     </key>
     <key type="s" name="hosted-account-name">

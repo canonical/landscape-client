@@ -217,8 +217,10 @@ class ScriptExecutionPlugin(ManagerPlugin, ScriptRunnerMixin):
                 data = attachment_id
                 yield succeed(None)
             else:
-                data = yield fetch_async("%s%d" % (root_path, attachment_id),
-                                         headers=headers)
+                data = yield fetch_async(
+                    "%s%d" % (root_path, attachment_id),
+                    cainfo=self.registry.config.ssl_public_key,
+                    headers=headers)
             full_filename = os.path.join(attachment_dir, filename)
             attachment = file(full_filename, "wb")
             os.chmod(full_filename, 0600)
