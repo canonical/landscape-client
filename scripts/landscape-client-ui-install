@@ -4,6 +4,8 @@ import os
 import dbus
 import sys
 
+from gettext import gettext as _, bindtextdomain, textdomain
+
 from gi.repository import GObject, Gtk
 
 from aptdaemon.client import AptClient
@@ -41,20 +43,23 @@ def install_package():
 
 
 def main():
+    bindtextdomain("landscape-client", "/usr/share/locale")
+    textdomain("landscape-client")
+
     dialog = Gtk.MessageDialog(
         flags=Gtk.DialogFlags.MODAL, type=Gtk.MessageType.INFO,
         buttons=Gtk.ButtonsType.CANCEL)
-    link = "<a href=\"https://landscape.canonical.com\">Find out more...</a>"
+    link = "<a href=\"https://landscape.canonical.com\">%s</a>" % _("Find out more...")
     dialog.set_markup(
         "<big><b>%s</b></big>\n\n%s\n\n%s\n\n%s" % (
-            "Landscape client",
-            "Landscape is an easy to use systems management and monitoring "
-            "service offered by Canonical that helps administrators manage "
-            "multiple machines efficiently.", link,
-            "You need to install Landscape client to be able to configure it. "
-            "Do you want to install it now?"))
-    dialog.set_title("Install Landscape client?")
-    button = dialog.add_button("Install", Gtk.ResponseType.YES)
+            _("Landscape client"),
+            _("Landscape is an easy to use systems management and monitoring "
+              "service offered by Canonical that helps administrators manage "
+              "multiple machines efficiently."), link,
+            _("You need to install Landscape client to be able to configure it. "
+              "Do you want to install it now?")))
+    dialog.set_title(_("Install Landscape client?"))
+    button = dialog.add_button(_("Install"), Gtk.ResponseType.YES)
     button.grab_focus()
     result = dialog.run()
     dialog.destroy()

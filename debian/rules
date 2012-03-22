@@ -35,6 +35,7 @@ build-stamp:
 	dh_testdir
 	sed -i -e "s/^DEBIAN_REVISION = \"\"/DEBIAN_REVISION = \"-$(revision)\"/g" landscape/__init__.py
 	python setup.py build
+	python setup.py build_i18n
 	make -C apt-update
 	touch build-stamp
 
