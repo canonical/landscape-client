@@ -1,9 +1,15 @@
+import re
 import os
 
 from gi.repository import GObject, Gtk
 
 from landscape.ui.constants import (
     CANONICAL_MANAGED, LOCAL_MANAGED, NOT_MANAGED)
+
+
+HOSTNAME_REGEXP = re.compile(
+    "^(([a-zA-Z]|[a-zA-Z][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)"
+    "*([A-Za-z]|[A-Za-z][A-Za-z0-9\-]*[A-Za-z0-9])$" )
 
 
 class ClientSettingsDialog(Gtk.Dialog):
@@ -32,6 +38,27 @@ class ClientSettingsDialog(Gtk.Dialog):
         self.load_data()
         # One extra revert to reset after loading data
         self.controller.revert()
+
+    def sanitise_host_name(self, host_name):
+        """
+        Do some minimal input sanitation.
+        """
+        return host_name.strip()
+    
+    def is_valid_host_name(self, host_name):
+        return HOSTNAME_REGEXP.match(host_name) is not None
+
+    def validity_check(self):
+        if self.use_type_combobox.get_active() < 2:
+            return True
+        else:
+            host_name = self.sanitise_host_name(
+                self.local_landscape_host_entry.get_text())
+            if self.is_valid_host_name(host_name):
+                self.local_landscape_host_entry.set_text(host_name)
+                return True
+            else:
+                return False
 
     def _set_use_type_combobox_from_controller(self):
         """
@@ -123,7 +150,10 @@ class ClientSettingsDialog(Gtk.Dialog):
         self.response(Gtk.ResponseType.CANCEL)
 
     def register_response(self, widget):
-        self.response(Gtk.ResponseType.OK)
+        if self.validity_check():
+            self.response(Gtk.ResponseType.OK)
+        else:
+            return False
 
     def set_button_text(self, management_type):
         [alignment] = self.register_button.get_children()
