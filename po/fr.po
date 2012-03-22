@@ -1,0 +1,44 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# Thomas Hervé <thomas.herve@canonical.com>, 2012.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2012-03-22 10:33+0100\n"
+"PO-Revision-Date: 2012-03-22 15:32+0100\n"
+"Last-Translator: Thomas Hervé <thomas.herve@canonical.com>\n"
+"Language-Team: français <>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n!=1);\n"
+
+#: ../scripts/landscape-client-ui-install:49
+msgid "Find out more..."
+msgstr "En apprendre plus..."
+
+#: ../scripts/landscape-client-ui-install:52
+msgid "Landscape client"
+msgstr "Client Landscape"
+
+#: ../scripts/landscape-client-ui-install:53
+msgid "Landscape is an easy to use systems management and monitoring service offered by Canonical that helps administrators manage multiple machines efficiently."
+msgstr "Landscape est un système de gestion et de surveillance proposé en tant que service par Canonical, qui aide les administrateurs à gérer plusieurs machine efficacement."
+
+#: ../scripts/landscape-client-ui-install:56
+msgid "You need to install Landscape client to be able to configure it. Do you want to install it now?"
+msgstr "Il faut installer le client Landscape pour le configurer. Voulez-vous l'installer maintenant?"
+
+#: ../scripts/landscape-client-ui-install:58
+msgid "Install Landscape client?"
+msgstr "Installer le client Landscape?"
+
+#: ../scripts/landscape-client-ui-install:59
+msgid "Install"
+msgstr "Installer"
+

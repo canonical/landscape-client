@@ -4,7 +4,8 @@ from distutils.core import setup, Extension
 
 from landscape import UPSTREAM_VERSION
 
-from DistUtilsExtra.command import build_i18n
+from DistUtilsExtra.command import build_extra, build_i18n
+from DistUtilsExtra.auto import clean_build_tree
 
 
 setup(name="Landscape Client",
@@ -64,4 +65,6 @@ setup(name="Landscape Client",
                "scripts/landscape-client-ui-install"],
       ext_modules=[Extension("landscape.lib.initgroups",
                              ["landscape/lib/initgroups.c"])],
-      cmdclass={"build_i18n":  build_i18n.build_i18n})
+      cmdclass={"build_i18n":  build_i18n.build_i18n,
+                "build": build_extra.build_extra,
+                "clean": clean_build_tree})
