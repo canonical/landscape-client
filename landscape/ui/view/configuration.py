@@ -58,6 +58,9 @@ class ClientSettingsDialog(Gtk.Dialog):
                 self.local_landscape_host_entry.set_text(host_name)
                 return True
             else:
+                self.info_message.set_text(
+                    "You have entered an invalid host name.")
+                self.info_bar.show()
                 return False
 
     def _set_use_type_combobox_from_controller(self):
@@ -177,7 +180,29 @@ class ClientSettingsDialog(Gtk.Dialog):
         self.action_area.pack_start(self.register_button, True, True, 0)
         self.register_button.show()
         self.register_button.connect("clicked", self.register_response)
-
+        
+    def dismiss_infobar(self, widget):
+        self.info_bar.hide()
+        
+    def setup_info_bar(self):
+        self.info_bar = Gtk.InfoBar()
+        content_area = self.info_bar.get_content_area()
+        hbox = Gtk.HBox()
+        image = Gtk.Image()
+        image.set_from_stock(Gtk.STOCK_DIALOG_WARNING, Gtk.IconSize.BUTTON)
+        image.show()
+        hbox.pack_start(image, expand=False, fill=False, padding=6)
+        self.info_message = Gtk.Label()
+        self.info_message.set_alignment(0, 0.5)
+        self.info_message.show()
+        hbox.pack_start(self.info_message, expand=True, fill=True, padding=6)
+        ok_button = Gtk.Button("Dismiss")
+        ok_button.connect("clicked", self.dismiss_infobar)
+        ok_button.show()
+        hbox.pack_start(ok_button, expand=False, fill=True, padding=6)
+        hbox.show()
+        content_area.pack_start(hbox, expand=True, fill=True, padding=6)
+        
     def setup_ui(self):
         self._builder = Gtk.Builder()
         self._builder.add_from_file(
@@ -186,6 +211,9 @@ class ClientSettingsDialog(Gtk.Dialog):
         content_area = self.get_content_area()
         content_area.set_spacing(12)
         self.set_border_width(12)
+        self.setup_info_bar()
+        content_area.pack_start(self.info_bar, expand=False, fill=False,
+                                padding=0)
         self._vbox = self._builder.get_object("toplevel-vbox")
         self._vbox.unparent()
         content_area.pack_start(self._vbox, expand=True, fill=True, padding=12)
