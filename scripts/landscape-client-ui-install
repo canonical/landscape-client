@@ -4,7 +4,7 @@ import os
 import dbus
 import sys
 
-from gettext import gettext as _
+from gettext import gettext as _, bindtextdomain, textdomain
 
 from gi.repository import GObject, Gtk
 
@@ -43,6 +43,9 @@ def install_package():
 
 
 def main():
+    bindtextdomain("landscape-client", "/usr/share/locale")
+    textdomain("landscape-client")
+
     dialog = Gtk.MessageDialog(
         flags=Gtk.DialogFlags.MODAL, type=Gtk.MessageType.INFO,
         buttons=Gtk.ButtonsType.CANCEL)
