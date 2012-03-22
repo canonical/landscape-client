@@ -50,7 +50,7 @@ Architecture: any
 Depends: ${python:Depends}, ${misc:Depends},
          landscape-client (>= ${Source-Version}),
          landscape-client-ui-install (>= ${Source-Version}),
-         python-gobject,
+         python-gi,
          python-dbus,
          policykit-1,
          gir1.2-notify-0.7,
@@ -64,11 +64,11 @@ XB-Python-Version: ${python:Versions}
 Package: landscape-client-ui-install
 Architecture: any
 Depends: ${python:Depends}, ${misc:Depends},
-         python-gobject,
+         python-gi,
          python-dbus,
          policykit-1,
          gir1.2-gtk-3.0,
-         python-aptdaemon
+         python-aptdaemon.gtk3widgets
 Description: The Landscape administration system client - UI installer
  Landscape is a web-based tool for managing Ubuntu systems.
  .
