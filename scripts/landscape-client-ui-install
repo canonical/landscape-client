@@ -46,7 +46,7 @@ def main():
     dialog = Gtk.MessageDialog(
         flags=Gtk.DialogFlags.MODAL, type=Gtk.MessageType.INFO,
         buttons=Gtk.ButtonsType.CANCEL)
-    link = _("<a href=\"https://landscape.canonical.com\">Find out more...</a>")
+    link = "<a href=\"https://landscape.canonical.com\">%s</a>" % _("Find out more...")
     dialog.set_markup(
         "<big><b>%s</b></big>\n\n%s\n\n%s\n\n%s" % (
             _("Landscape client"),
