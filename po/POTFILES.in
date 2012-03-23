@@ -3,5 +3,6 @@ landscape/ui/controller/app.py
 landscape/ui/controller/configuration.py
 landscape/ui/view/configuration.py
 landscape/ui/view/ui/landscape-client-settings.glade
-polkit-1/com.canonical.LandscapeClientSettings.policy
+applications/landscape-client-settings.desktop.in
+polkit-1/com.canonical.LandscapeClientSettings.policy.in
 scripts/landscape-client-ui-install

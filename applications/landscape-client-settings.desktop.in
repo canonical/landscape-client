@@ -1,6 +1,6 @@
 [Desktop Entry]
-Name=Management Service
-Comment=Management Service Preferences
+_Name=Management Service
+_Comment=Management Service Preferences
 Exec=landscape-client-ui-install
 Icon=preferences-management-service
 Terminal=False
@@ -13,5 +13,5 @@ X-GNOME-Bugzilla-Product=gnome-control-center
 X-GNOME-Bugzilla-Component=sample
 X-GNOME-Bugzilla-Version=1.0.0
 X-GNOME-Settings-Panel=sample
-X-Ubuntu-Gettext-Domain=gnome-control-center-2.0
 X-GNOME-Keywords=device;system;information;memory;processor;version;default;application;fallback;preferred;
+X-Ubuntu-Gettext-Domain=landscape-client
