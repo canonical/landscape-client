@@ -16,11 +16,6 @@ class ClientSettingsDialog(Gtk.Dialog):
     """
 
     GLADE_FILE = "landscape-client-settings.glade"
-    NO_SERVICE_TEXT = _("None")
-    HOSTED_SERVICE_TEXT = _("Landscape - hosted by Canonical")
-    LOCAL_SERVICE_TEXT = _("Landscape - dedicated server")
-    REGISTER_BUTTON_TEXT = _("Register")
-    DISABLE_BUTTON_TEXT = _("Disable")
 
     def __init__(self, controller):
         super(ClientSettingsDialog, self).__init__(
@@ -34,6 +29,26 @@ class ClientSettingsDialog(Gtk.Dialog):
         self.load_data()
         # One extra revert to reset after loading data
         self.controller.revert()
+
+    @property
+    def NO_SERVICE_TEXT(self):
+        return _("None")
+
+    @property
+    def HOSTED_SERVICE_TEXT(self):
+        return _("Landscape - hosted by Canonical")
+
+    @property
+    def LOCAL_SERVICE_TEXT(self):
+        return _("Landscape - dedicated server")
+
+    @property
+    def REGISTER_BUTTON_TEXT(self):
+        return _("Register")
+
+    @property
+    def DISABLE_BUTTON_TEXT(self):
+        return _("Disable")
 
     def _set_use_type_combobox_from_controller(self):
         """
@@ -152,6 +167,7 @@ class ClientSettingsDialog(Gtk.Dialog):
 
     def setup_ui(self):
         self._builder = Gtk.Builder()
+        self._builder.set_translation_domain("landscape-client")
         self._builder.add_from_file(
             os.path.join(
                 os.path.dirname(__file__), "ui", self.GLADE_FILE))
