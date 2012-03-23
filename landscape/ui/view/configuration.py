@@ -6,7 +6,7 @@ from gi.repository import GObject, Gtk
 from landscape.ui.constants import (
     CANONICAL_MANAGED, LOCAL_MANAGED, NOT_MANAGED)
 
-
+# Note, I think this may not be fully compliant with the changes in RFC 1123
 HOSTNAME_REGEXP = re.compile(
     "^(([a-zA-Z]|[a-zA-Z][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)"
     "*([A-Za-z]|[A-Za-z][A-Za-z0-9\-]*[A-Za-z0-9])$" )
@@ -25,6 +25,7 @@ class ClientSettingsDialog(Gtk.Dialog):
     LOCAL_SERVICE_TEXT = "Landscape - dedicated server"
     REGISTER_BUTTON_TEXT = "Register"
     DISABLE_BUTTON_TEXT = "Disable"
+    INVALID_HOSTNAME_MESSAGE = "You have entered an invalid host name."
 
     def __init__(self, controller):
         super(ClientSettingsDialog, self).__init__(
@@ -58,8 +59,7 @@ class ClientSettingsDialog(Gtk.Dialog):
                 self.local_landscape_host_entry.set_text(host_name)
                 return True
             else:
-                self.info_message.set_text(
-                    "You have entered an invalid host name.")
+                self.info_message.set_text(self.INVALID_HOSTNAME_MESSAGE)
                 self.info_bar.show()
                 return False
 
