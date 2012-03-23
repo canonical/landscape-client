@@ -46,7 +46,7 @@ class SettingsApplicationController(Gtk.Application):
         if action:
             message = action
         else:
-            message = _("Success")
+            message = _("Success.")
         notification = Notify.Notification.new(NOTIFY_ID, message,
                                                "dialog-information")
         notification.show()
