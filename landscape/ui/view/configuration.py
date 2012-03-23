@@ -9,7 +9,7 @@ from landscape.ui.constants import (
 # Note, I think this may not be fully compliant with the changes in RFC 1123
 HOSTNAME_REGEXP = re.compile(
     "^(([a-zA-Z]|[a-zA-Z][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)"
-    "*([A-Za-z]|[A-Za-z][A-Za-z0-9\-]*[A-Za-z0-9])$" )
+    "*([A-Za-z]|[A-Za-z][A-Za-z0-9\-]*[A-Za-z0-9])$")
 
 
 class ClientSettingsDialog(Gtk.Dialog):
@@ -45,7 +45,7 @@ class ClientSettingsDialog(Gtk.Dialog):
         Do some minimal input sanitation.
         """
         return host_name.strip()
-    
+
     def is_valid_host_name(self, host_name):
         return HOSTNAME_REGEXP.match(host_name) is not None
 
@@ -180,10 +180,10 @@ class ClientSettingsDialog(Gtk.Dialog):
         self.action_area.pack_start(self.register_button, True, True, 0)
         self.register_button.show()
         self.register_button.connect("clicked", self.register_response)
-        
+
     def dismiss_infobar(self, widget):
         self.info_bar.hide()
-        
+
     def setup_info_bar(self):
         self.info_bar = Gtk.InfoBar()
         content_area = self.info_bar.get_content_area()
@@ -202,7 +202,7 @@ class ClientSettingsDialog(Gtk.Dialog):
         hbox.pack_start(ok_button, expand=False, fill=True, padding=6)
         hbox.show()
         content_area.pack_start(hbox, expand=True, fill=True, padding=6)
-        
+
     def setup_ui(self):
         self._builder = Gtk.Builder()
         self._builder.add_from_file(

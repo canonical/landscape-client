@@ -227,7 +227,6 @@ class ConfigurationViewTest(LandscapeTest):
         self.assertTrue(dialog.is_valid_host_name("foo.bar"))
         self.assertFalse(dialog.is_valid_host_name("foo bar"))
         self.assertFalse(dialog.is_valid_host_name("f\xc3.bar"))
-                        
 
     def test_validity_check(self):
         """
@@ -236,12 +235,12 @@ class ConfigurationViewTest(LandscapeTest):
         """
         dialog = ClientSettingsDialog(self.controller)
         self.run_gtk_eventloop()
-        
+
         # Checking disable should always return True
         dialog.use_type_combobox.set_active(0)
         self.run_gtk_eventloop()
         self.assertTrue(dialog.validity_check())
-        
+
         # Check for hosted - currently returns True always
         dialog.use_type_combobox.set_active(1)
         self.run_gtk_eventloop()
@@ -264,7 +263,7 @@ class ConfigurationViewTest(LandscapeTest):
         self.assertFalse(dialog.validity_check())
         dialog.local_landscape_host_entry.set_text(u"f\xc3.bar")
         self.run_gtk_eventloop()
-        self.assertFalse(dialog.validity_check())        
+        self.assertFalse(dialog.validity_check())
 
     if not got_gobject_introspection:
         skip = gobject_skip_message
