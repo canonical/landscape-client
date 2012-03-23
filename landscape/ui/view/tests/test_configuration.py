@@ -83,7 +83,7 @@ class ConfigurationViewTest(LandscapeTest):
         self.assertEqual("preferences-management-service",
                          dialog.get_default_icon_name())
         children = content_area.get_children()
-        self.assertEqual(len(children), 2)
+        self.assertEqual(len(children), 3)
         box = children[0]
         self.assertIsInstance(box, Gtk.Box)
         self.assertEqual(1, dialog.use_type_combobox.get_active())
@@ -310,7 +310,7 @@ class LocalConfigurationViewTest(LandscapeTest):
             Gtk.main_iteration()
         content_area = dialog.get_content_area()
         children = content_area.get_children()
-        self.assertEqual(len(children), 2)
+        self.assertEqual(len(children), 3)
         box = children[0]
         self.assertIsInstance(box, Gtk.Box)
         self.assertEqual(2, dialog.use_type_combobox.get_active())
