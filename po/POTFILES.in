@@ -1,2 +1,7 @@
 [encoding: UTF-8]
+landscape/ui/controller/app.py
+landscape/ui/controller/configuration.py
+landscape/ui/view/configuration.py
+landscape/ui/view/ui/landscape-client-settings.glade
+polkit-1/com.canonical.LandscapeClientSettings.policy
 scripts/landscape-client-ui-install

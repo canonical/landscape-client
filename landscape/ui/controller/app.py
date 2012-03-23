@@ -1,5 +1,7 @@
 import sys
 
+from gettext import gettext as _
+
 from gi.repository import Gio, Gtk, Notify
 
 from landscape.ui.model.configuration.proxy import ConfigurationProxy
@@ -42,18 +44,18 @@ class SettingsApplicationController(Gtk.Application):
 
     def on_succeed(self, action=None):
         if action:
-            message = "%s was successful." % action
+            message = action
         else:
-            message = "Success"
+            message = _("Success")
         notification = Notify.Notification.new(NOTIFY_ID, message,
                                                "dialog-information")
         notification.show()
 
     def on_fail(self, action=None):
         if action:
-            message = "%s failed." % action
+            message = action
         else:
-            message = "Failure."
+            message = _("Failure.")
         notification = Notify.Notification.new(NOTIFY_ID, message,
                                                "dialog-information")
         notification.show()
@@ -85,5 +87,5 @@ class SettingsApplicationController(Gtk.Application):
             controller.exit(asynchronous=asynchronous)
             self.settings_dialog.destroy()
         else:
-            self.on_fail(action="Authentication")
+            self.on_fail(action=_("Authentication failed"))
             sys.stderr.write("Authentication failed.\n")

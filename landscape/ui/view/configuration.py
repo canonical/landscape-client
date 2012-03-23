@@ -1,5 +1,7 @@
 import os
 
+from gettext import gettext as _
+
 from gi.repository import GObject, Gtk
 
 from landscape.ui.constants import (
@@ -14,15 +16,15 @@ class ClientSettingsDialog(Gtk.Dialog):
     """
 
     GLADE_FILE = "landscape-client-settings.glade"
-    NO_SERVICE_TEXT = "None"
-    HOSTED_SERVICE_TEXT = "Landscape - hosted by Canonical"
-    LOCAL_SERVICE_TEXT = "Landscape - dedicated server"
-    REGISTER_BUTTON_TEXT = "Register"
-    DISABLE_BUTTON_TEXT = "Disable"
+    NO_SERVICE_TEXT = _("None")
+    HOSTED_SERVICE_TEXT = _("Landscape - hosted by Canonical")
+    LOCAL_SERVICE_TEXT = _("Landscape - dedicated server")
+    REGISTER_BUTTON_TEXT = _("Register")
+    DISABLE_BUTTON_TEXT = _("Disable")
 
     def __init__(self, controller):
         super(ClientSettingsDialog, self).__init__(
-            title="Management Service",
+            title=_("Management Service"),
             flags=Gtk.DialogFlags.MODAL)
         self.set_default_icon_name("preferences-management-service")
         self.set_resizable(False)
