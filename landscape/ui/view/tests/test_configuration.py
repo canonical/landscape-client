@@ -238,9 +238,55 @@ class ConfigurationViewTest(LandscapeTest):
         self.run_gtk_eventloop()
         dialog.hosted_account_name_entry.set_text("Toodleoo")
         self.assertTrue(dialog.is_ascii(dialog.hosted_account_name_entry))
+        self.assertEqual(0, len(dialog._errored_entries))
         dialog.hosted_account_name_entry.set_text(u"T\xc3dle\xc4")
         self.assertFalse(dialog.is_ascii(dialog.hosted_account_name_entry))
-        
+        self.assertEqual(1, len(dialog._errored_entries))
+
+    def test_dismiss_validation_errors(self):
+        """
+        Test that dismissing the validation errors tidies up indicators.
+        """
+        dialog = ClientSettingsDialog(self.controller)
+        self.run_gtk_eventloop()
+        dialog.use_type_combobox.set_active(1)
+        self.run_gtk_eventloop()
+        dialog.hosted_account_name_entry.set_text(u"T\xc3dle\xc4")
+        dialog.hosted_password_entry.set_text(u"T\xc3dle\xc4")
+        self.run_gtk_eventloop()
+        dialog.validity_check()
+        self.run_gtk_eventloop()
+        self.assertEqual(2, len(dialog._errored_entries))
+        [entry1, entry2] = dialog._errored_entries
+        self.assertEqual(Gtk.STOCK_DIALOG_WARNING,
+                         entry1.get_icon_stock(Gtk.EntryIconPosition.PRIMARY))
+        self.assertEqual(Gtk.STOCK_DIALOG_WARNING,
+                         entry2.get_icon_stock(Gtk.EntryIconPosition.PRIMARY))
+        dialog.dismiss_infobar(None)
+        self.run_gtk_eventloop()
+        self.assertEqual(0, len(dialog._errored_entries))
+        self.assertNotEqual(
+            Gtk.STOCK_DIALOG_WARNING,
+            entry1.get_icon_stock(Gtk.EntryIconPosition.PRIMARY))
+        self.assertNotEqual(
+            Gtk.STOCK_DIALOG_WARNING,
+            entry2.get_icon_stock(Gtk.EntryIconPosition.PRIMARY))
+        dialog.use_type_combobox.set_active(2)
+        self.run_gtk_eventloop()
+        dialog.local_landscape_host_entry.set_text("dodgy as hell")
+        self.run_gtk_eventloop()
+        dialog.validity_check()
+        self.run_gtk_eventloop()
+        self.assertEqual(1, len(dialog._errored_entries))
+        [entry1] = dialog._errored_entries
+        self.assertEqual(Gtk.STOCK_DIALOG_WARNING,
+                         entry1.get_icon_stock(Gtk.EntryIconPosition.PRIMARY))
+        dialog.dismiss_infobar(None)
+        self.run_gtk_eventloop()
+        self.assertEqual(0, len(dialog._errored_entries))
+        self.assertNotEqual(
+            Gtk.STOCK_DIALOG_WARNING,
+            entry1.get_icon_stock(Gtk.EntryIconPosition.PRIMARY))
 
     def test_validity_check(self):
         """

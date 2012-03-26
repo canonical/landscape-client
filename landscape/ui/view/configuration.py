@@ -26,6 +26,7 @@ class ClientSettingsDialog(Gtk.Dialog):
     REGISTER_BUTTON_TEXT = "Register"
     DISABLE_BUTTON_TEXT = "Disable"
     INVALID_HOSTNAME_MESSAGE = "Invalid host name."
+    UNICODE_IN_ENTRY_MESSAGE = "Non-ASCII characters are not valid."
 
     def __init__(self, controller):
         super(ClientSettingsDialog, self).__init__(
@@ -34,6 +35,7 @@ class ClientSettingsDialog(Gtk.Dialog):
         self.set_default_icon_name("preferences-management-service")
         self.set_resizable(False)
         self._initialised = False
+        self._errored_entries = []
         self.controller = controller
         self.setup_ui()
         self.load_data()
@@ -57,11 +59,28 @@ class ClientSettingsDialog(Gtk.Dialog):
             entry.get_text().decode("ascii")
             return True
         except UnicodeDecodeError:
+            entry.set_icon_from_stock(Gtk.EntryIconPosition.PRIMARY,
+                                      Gtk.STOCK_DIALOG_WARNING)
+            self._errored_entries.append(entry)
             return False
 
     def validity_check(self):
-        if self.use_type_combobox.get_active() < 2:
+        if self._info_bar_container.get_visible():
+            self.dismiss_infobar(None)
+        active_iter = self.liststore.get_iter(
+            self.use_type_combobox.get_active())
+        [management_type] = self.liststore.get(active_iter, 0)
+        if management_type == NOT_MANAGED:
             return True
+        elif management_type == CANONICAL_MANAGED:
+            account_name_ok = self.is_ascii(self.hosted_account_name_entry)
+            password_ok = self.is_ascii(self.hosted_password_entry)
+            if account_name_ok and password_ok:
+                return True
+            else:
+                self.info_message.set_text(self.UNICODE_IN_ENTRY_MESSAGE)
+                self._info_bar_container.show()
+                return False
         else:
             host_name = self.sanitise_host_name(
                 self.local_landscape_host_entry.get_text())
@@ -73,6 +92,7 @@ class ClientSettingsDialog(Gtk.Dialog):
                 self.local_landscape_host_entry.set_icon_from_stock(
                     Gtk.EntryIconPosition.PRIMARY,
                     Gtk.STOCK_DIALOG_WARNING)
+                self._errored_entries.append(self.local_landscape_host_entry)
                 self._info_bar_container.show()
                 return False
 
@@ -196,8 +216,9 @@ class ClientSettingsDialog(Gtk.Dialog):
 
     def dismiss_infobar(self, widget):
         self._info_bar_container.hide()
-        self.local_landscape_host_entry.set_icon_from_stock(
-            Gtk.EntryIconPosition.PRIMARY, None)
+        for entry in self._errored_entries:
+            entry.set_icon_from_stock(Gtk.EntryIconPosition.PRIMARY, None)
+        self._errored_entries = []
 
     def setup_info_bar(self):
         labels_size_group = self._builder.get_object("labels-sizegroup")
