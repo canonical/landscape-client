@@ -25,11 +25,10 @@ class ClientSettingsDialog(Gtk.Dialog):
     LOCAL_SERVICE_TEXT = "Landscape - dedicated server"
     REGISTER_BUTTON_TEXT = "Register"
     DISABLE_BUTTON_TEXT = "Disable"
-    INVALID_HOST_NAME = 0 
+    INVALID_HOST_NAME = 0
     UNICODE_IN_ENTRY = 1
     INVALID_HOST_NAME_MESSAGE = "Invalid host name."
     UNICODE_IN_ENTRY_MESSAGE = "Non-ASCII characters are not valid."
-    
 
     def __init__(self, controller):
         super(ClientSettingsDialog, self).__init__(
@@ -92,7 +91,7 @@ class ClientSettingsDialog(Gtk.Dialog):
             account_name_ok = self.is_ascii(self.hosted_account_name_entry)
             password_ok = self.is_ascii(self.hosted_password_entry)
             return account_name_ok and password_ok
-        else:            
+        else:
             host_name_ok = (
                 self.is_ascii(self.local_landscape_host_entry) and
                 self.is_valid_host_name(self.local_landscape_host_entry))
