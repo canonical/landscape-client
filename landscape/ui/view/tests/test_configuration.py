@@ -224,9 +224,19 @@ class ConfigurationViewTest(LandscapeTest):
         Test that L{is_valid_host_name} checks host names correctly.
         """
         dialog = ClientSettingsDialog(self.controller)
-        self.assertTrue(dialog.is_valid_host_name("foo.bar"))
-        self.assertFalse(dialog.is_valid_host_name("foo bar"))
-        self.assertFalse(dialog.is_valid_host_name("f\xc3.bar"))
+        dialog.use_type_combobox.set_active(2)
+        dialog.local_landscape_host_entry.set_text("foo.bar")
+        self.assertTrue(
+            dialog.is_valid_host_name(dialog.local_landscape_host_entry))
+        dialog.local_landscape_host_entry.set_text("foo bar")
+        self.assertFalse(
+            dialog.is_valid_host_name(dialog.local_landscape_host_entry))
+        dialog.local_landscape_host_entry.set_text(u"f\xc3.bar")
+        self.assertFalse(
+            dialog.is_valid_host_name(dialog.local_landscape_host_entry))
+        self.assertEqual(2, len(dialog._errored_entries))
+        self.assertEqual(1, len(dialog._validation_errors))
+        self.assertTrue(dialog.INVALID_HOST_NAME in dialog._validation_errors)
 
     def test_input_is_ascii(self):
         """

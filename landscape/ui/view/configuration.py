@@ -7,7 +7,7 @@ from landscape.ui.constants import (
     CANONICAL_MANAGED, LOCAL_MANAGED, NOT_MANAGED)
 
 # Note, I think this may not be fully compliant with the changes in RFC 1123
-HOSTNAME_REGEXP = re.compile(
+HOST_NAME_REGEXP = re.compile(
     "^(([a-zA-Z]|[a-zA-Z][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)"
     "*([A-Za-z]|[A-Za-z][A-Za-z0-9\-]*[A-Za-z0-9])$")
 
@@ -25,8 +25,11 @@ class ClientSettingsDialog(Gtk.Dialog):
     LOCAL_SERVICE_TEXT = "Landscape - dedicated server"
     REGISTER_BUTTON_TEXT = "Register"
     DISABLE_BUTTON_TEXT = "Disable"
-    INVALID_HOSTNAME_MESSAGE = "Invalid host name."
+    INVALID_HOST_NAME = 0 
+    UNICODE_IN_ENTRY = 1
+    INVALID_HOST_NAME_MESSAGE = "Invalid host name."
     UNICODE_IN_ENTRY_MESSAGE = "Non-ASCII characters are not valid."
+    
 
     def __init__(self, controller):
         super(ClientSettingsDialog, self).__init__(
@@ -35,6 +38,7 @@ class ClientSettingsDialog(Gtk.Dialog):
         self.set_default_icon_name("preferences-management-service")
         self.set_resizable(False)
         self._initialised = False
+        self._validation_errors = set()
         self._errored_entries = []
         self.controller = controller
         self.setup_ui()
@@ -48,8 +52,18 @@ class ClientSettingsDialog(Gtk.Dialog):
         """
         return host_name.strip()
 
-    def is_valid_host_name(self, host_name):
-        return HOSTNAME_REGEXP.match(host_name) is not None
+    def is_valid_host_name(self, entry):
+        host_name = self.sanitise_host_name(entry.get_text())
+        host_name_ok = HOST_NAME_REGEXP.match(host_name) is not None
+        if host_name_ok:
+            entry.set_text(host_name)
+            return True
+        else:
+            self._validation_errors.add(self.INVALID_HOST_NAME)
+            self.local_landscape_host_entry.set_icon_from_stock(
+                    Gtk.EntryIconPosition.PRIMARY, Gtk.STOCK_DIALOG_WARNING)
+            self._errored_entries.append(self.local_landscape_host_entry)
+            return False
 
     def is_ascii(self, entry):
         """
@@ -59,12 +73,14 @@ class ClientSettingsDialog(Gtk.Dialog):
             entry.get_text().decode("ascii")
             return True
         except UnicodeDecodeError:
+            self._validation_errors.add(self.UNICODE_IN_ENTRY)
             entry.set_icon_from_stock(Gtk.EntryIconPosition.PRIMARY,
                                       Gtk.STOCK_DIALOG_WARNING)
             self._errored_entries.append(entry)
             return False
 
     def validity_check(self):
+        self._validation_errors = set()
         if self._info_bar_container.get_visible():
             self.dismiss_infobar(None)
         active_iter = self.liststore.get_iter(
@@ -75,26 +91,13 @@ class ClientSettingsDialog(Gtk.Dialog):
         elif management_type == CANONICAL_MANAGED:
             account_name_ok = self.is_ascii(self.hosted_account_name_entry)
             password_ok = self.is_ascii(self.hosted_password_entry)
-            if account_name_ok and password_ok:
-                return True
-            else:
-                self.info_message.set_text(self.UNICODE_IN_ENTRY_MESSAGE)
-                self._info_bar_container.show()
-                return False
-        else:
-            host_name = self.sanitise_host_name(
-                self.local_landscape_host_entry.get_text())
-            if self.is_valid_host_name(host_name):
-                self.local_landscape_host_entry.set_text(host_name)
-                return True
-            else:
-                self.info_message.set_text(self.INVALID_HOSTNAME_MESSAGE)
-                self.local_landscape_host_entry.set_icon_from_stock(
-                    Gtk.EntryIconPosition.PRIMARY,
-                    Gtk.STOCK_DIALOG_WARNING)
-                self._errored_entries.append(self.local_landscape_host_entry)
-                self._info_bar_container.show()
-                return False
+            return account_name_ok and password_ok
+        else:            
+            host_name_ok = (
+                self.is_ascii(self.local_landscape_host_entry) and
+                self.is_valid_host_name(self.local_landscape_host_entry))
+            password_ok = self.is_ascii(self.local_password_entry)
+            return host_name_ok and password_ok
 
     def _set_use_type_combobox_from_controller(self):
         """
@@ -189,6 +192,13 @@ class ClientSettingsDialog(Gtk.Dialog):
         if self.validity_check():
             self.response(Gtk.ResponseType.OK)
         else:
+            error_text = []
+            if self.UNICODE_IN_ENTRY in self._validation_errors:
+                error_text.append(self.UNICODE_IN_ENTRY_MESSAGE)
+            if self.INVALID_HOST_NAME in self._validation_errors:
+                error_text.append(self.INVALID_HOST_NAME_MESSAGE)
+            self.info_message.set_text("\n".join(error_text))
+            self._info_bar_container.show()
             return False
 
     def set_button_text(self, management_type):
