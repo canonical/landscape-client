@@ -1,9 +1,15 @@
+import re
 import os
 
 from gi.repository import GObject, Gtk
 
 from landscape.ui.constants import (
     CANONICAL_MANAGED, LOCAL_MANAGED, NOT_MANAGED)
+
+# Note, I think this may not be fully compliant with the changes in RFC 1123
+HOSTNAME_REGEXP = re.compile(
+    "^(([a-zA-Z]|[a-zA-Z][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)"
+    "*([A-Za-z]|[A-Za-z][A-Za-z0-9\-]*[A-Za-z0-9])$")
 
 
 class ClientSettingsDialog(Gtk.Dialog):
@@ -19,6 +25,7 @@ class ClientSettingsDialog(Gtk.Dialog):
     LOCAL_SERVICE_TEXT = "Landscape - dedicated server"
     REGISTER_BUTTON_TEXT = "Register"
     DISABLE_BUTTON_TEXT = "Disable"
+    INVALID_HOSTNAME_MESSAGE = "Invalid host name."
 
     def __init__(self, controller):
         super(ClientSettingsDialog, self).__init__(
@@ -32,6 +39,32 @@ class ClientSettingsDialog(Gtk.Dialog):
         self.load_data()
         # One extra revert to reset after loading data
         self.controller.revert()
+
+    def sanitise_host_name(self, host_name):
+        """
+        Do some minimal input sanitation.
+        """
+        return host_name.strip()
+
+    def is_valid_host_name(self, host_name):
+        return HOSTNAME_REGEXP.match(host_name) is not None
+
+    def validity_check(self):
+        if self.use_type_combobox.get_active() < 2:
+            return True
+        else:
+            host_name = self.sanitise_host_name(
+                self.local_landscape_host_entry.get_text())
+            if self.is_valid_host_name(host_name):
+                self.local_landscape_host_entry.set_text(host_name)
+                return True
+            else:
+                self.info_message.set_text(self.INVALID_HOSTNAME_MESSAGE)
+                self.local_landscape_host_entry.set_icon_from_stock(
+                    Gtk.EntryIconPosition.PRIMARY,
+                    Gtk.STOCK_DIALOG_WARNING)
+                self._info_bar_container.show()
+                return False
 
     def _set_use_type_combobox_from_controller(self):
         """
@@ -123,7 +156,10 @@ class ClientSettingsDialog(Gtk.Dialog):
         self.response(Gtk.ResponseType.CANCEL)
 
     def register_response(self, widget):
-        self.response(Gtk.ResponseType.OK)
+        if self.validity_check():
+            self.response(Gtk.ResponseType.OK)
+        else:
+            return False
 
     def set_button_text(self, management_type):
         [alignment] = self.register_button.get_children()
@@ -148,6 +184,41 @@ class ClientSettingsDialog(Gtk.Dialog):
         self.register_button.show()
         self.register_button.connect("clicked", self.register_response)
 
+    def dismiss_infobar(self, widget):
+        self._info_bar_container.hide()
+        self.local_landscape_host_entry.set_icon_from_stock(
+            Gtk.EntryIconPosition.PRIMARY, None)
+
+    def setup_info_bar(self):
+        labels_size_group = self._builder.get_object("labels-sizegroup")
+        entries_size_group = self._builder.get_object("entries-sizegroup")
+        labels_size_group.set_ignore_hidden(False)
+        entries_size_group.set_ignore_hidden(False)
+        self._info_bar_container = Gtk.HBox()
+        self._info_bar_container.set_spacing(12)
+        info_bar = Gtk.InfoBar()
+        entries_size_group.add_widget(info_bar)
+        info_bar.show()
+        empty_label = Gtk.Label()
+        labels_size_group.add_widget(empty_label)
+        empty_label.show()
+        self._info_bar_container.pack_start(empty_label, expand=False,
+                                            fill=False, padding=0)
+        self._info_bar_container.pack_start(info_bar, expand=False, fill=False,
+                                            padding=0)
+        content_area = info_bar.get_content_area()
+        hbox = Gtk.HBox()
+        self.info_message = Gtk.Label()
+        self.info_message.set_alignment(0, 0.5)
+        self.info_message.show()
+        hbox.pack_start(self.info_message, expand=True, fill=True, padding=6)
+        ok_button = Gtk.Button("Dismiss")
+        ok_button.connect("clicked", self.dismiss_infobar)
+        ok_button.show()
+        hbox.pack_start(ok_button, expand=True, fill=True, padding=0)
+        hbox.show()
+        content_area.pack_start(hbox, expand=True, fill=True, padding=0)
+
     def setup_ui(self):
         self._builder = Gtk.Builder()
         self._builder.add_from_file(
@@ -156,9 +227,13 @@ class ClientSettingsDialog(Gtk.Dialog):
         content_area = self.get_content_area()
         content_area.set_spacing(12)
         self.set_border_width(12)
+        self.setup_info_bar()
         self._vbox = self._builder.get_object("toplevel-vbox")
         self._vbox.unparent()
-        content_area.pack_start(self._vbox, expand=True, fill=True, padding=12)
+        content_area.pack_start(self._vbox, expand=True, fill=True,
+                                padding=12)
+        self._vbox.pack_start(self._info_bar_container, expand=False,
+                              fill=False, padding=0)
         self.liststore = self.make_liststore()
         self.link_use_type_combobox(self.liststore)
         self.link_hosted_service_widgets()
