@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2012-03-22 16:08+0100\n"
+"POT-Creation-Date: 2012-03-23 11:12+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,8 +17,123 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
+#: ../landscape/ui/controller/app.py:49
+msgid "Success."
+msgstr ""
+
+#: ../landscape/ui/controller/app.py:58
+msgid "Failure."
+msgstr ""
+
+#: ../landscape/ui/controller/app.py:90
+msgid "Authentication failed"
+msgstr ""
+
+#: ../landscape/ui/controller/configuration.py:87
+msgid "Registering client failed"
+msgstr ""
+
+#: ../landscape/ui/controller/configuration.py:90
+msgid "Registering client was successful"
+msgstr ""
+
+#: ../landscape/ui/controller/configuration.py:98
+#: ../landscape/ui/controller/configuration.py:101
+#, python-format
+msgid "Attempting to register at %s"
+msgstr ""
+
+#: ../landscape/ui/controller/configuration.py:112
+msgid "Disabling client failed"
+msgstr ""
+
+#: ../landscape/ui/controller/configuration.py:115
+msgid "Disabling client was successful"
+msgstr ""
+
+#: ../landscape/ui/controller/configuration.py:120
+msgid "Attempting to disable landscape client."
+msgstr ""
+
+#: ../landscape/ui/view/configuration.py:19
+msgid "None"
+msgstr ""
+
+#: ../landscape/ui/view/configuration.py:20
+msgid "Landscape - hosted by Canonical"
+msgstr ""
+
+#: ../landscape/ui/view/configuration.py:21
+msgid "Landscape - dedicated server"
+msgstr ""
+
+#: ../landscape/ui/view/configuration.py:22
+msgid "Register"
+msgstr ""
+
+#: ../landscape/ui/view/configuration.py:23
+msgid "Disable"
+msgstr ""
+
+#: ../landscape/ui/view/configuration.py:27
+#: ../applications/landscape-client-settings.desktop.in.h:1
+msgid "Management Service"
+msgstr ""
+
+#: ../landscape/ui/view/ui/landscape-client-settings.glade.h:1
+msgid "Account name:"
+msgstr ""
+
+#: ../landscape/ui/view/ui/landscape-client-settings.glade.h:2
+msgid "Don't have an account?"
+msgstr ""
+
+#: ../landscape/ui/view/ui/landscape-client-settings.glade.h:3
 #: ../scripts/landscape-client-ui-install:52
 msgid "Find out more..."
+msgstr ""
+
+#: ../landscape/ui/view/ui/landscape-client-settings.glade.h:4
+msgid ""
+"If you click \"Disable\" the Landscape client on this machine will be "
+"disabled.  You can reenable it later by revisiting this dialog."
+msgstr ""
+
+#: ../landscape/ui/view/ui/landscape-client-settings.glade.h:5
+msgid ""
+"Landscape is a remote administration service from Canonical.  If you allow "
+"it, a Landcape server can monitor this computer's performance and send "
+"administration commands."
+msgstr ""
+
+#: ../landscape/ui/view/ui/landscape-client-settings.glade.h:6
+msgid "Landscape server hostname:"
+msgstr ""
+
+#: ../landscape/ui/view/ui/landscape-client-settings.glade.h:7
+msgid "Management service:"
+msgstr ""
+
+#: ../landscape/ui/view/ui/landscape-client-settings.glade.h:8
+msgid "Password:"
+msgstr ""
+
+#: ../landscape/ui/view/ui/landscape-client-settings.glade.h:9
+msgid "Sign up..."
+msgstr ""
+
+#: ../applications/landscape-client-settings.desktop.in.h:2
+msgid "Management Service Preferences"
+msgstr ""
+
+#: ../polkit-1/com.canonical.LandscapeClientSettings.policy.in.h:1
+msgid "Allow the user to read and write Landscape Client settings."
+msgstr ""
+
+#: ../polkit-1/com.canonical.LandscapeClientSettings.policy.in.h:2
+msgid ""
+"System policy prevents you from reading and writing Landscape Client "
+"Settings."
 msgstr ""
 
 #: ../scripts/landscape-client-ui-install:55

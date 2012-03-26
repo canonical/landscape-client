@@ -1,5 +1,7 @@
 import os
 
+from gettext import gettext as _
+
 from gi.repository import GObject, Gtk
 
 from landscape.ui.constants import (
@@ -14,15 +16,10 @@ class ClientSettingsDialog(Gtk.Dialog):
     """
 
     GLADE_FILE = "landscape-client-settings.glade"
-    NO_SERVICE_TEXT = "None"
-    HOSTED_SERVICE_TEXT = "Landscape - hosted by Canonical"
-    LOCAL_SERVICE_TEXT = "Landscape - dedicated server"
-    REGISTER_BUTTON_TEXT = "Register"
-    DISABLE_BUTTON_TEXT = "Disable"
 
     def __init__(self, controller):
         super(ClientSettingsDialog, self).__init__(
-            title="Management Service",
+            title=_("Management Service"),
             flags=Gtk.DialogFlags.MODAL)
         self.set_default_icon_name("preferences-management-service")
         self.set_resizable(False)
@@ -32,6 +29,26 @@ class ClientSettingsDialog(Gtk.Dialog):
         self.load_data()
         # One extra revert to reset after loading data
         self.controller.revert()
+
+    @property
+    def NO_SERVICE_TEXT(self):
+        return _("None")
+
+    @property
+    def HOSTED_SERVICE_TEXT(self):
+        return _("Landscape - hosted by Canonical")
+
+    @property
+    def LOCAL_SERVICE_TEXT(self):
+        return _("Landscape - dedicated server")
+
+    @property
+    def REGISTER_BUTTON_TEXT(self):
+        return _("Register")
+
+    @property
+    def DISABLE_BUTTON_TEXT(self):
+        return _("Disable")
 
     def _set_use_type_combobox_from_controller(self):
         """
@@ -150,6 +167,7 @@ class ClientSettingsDialog(Gtk.Dialog):
 
     def setup_ui(self):
         self._builder = Gtk.Builder()
+        self._builder.set_translation_domain("landscape-client")
         self._builder.add_from_file(
             os.path.join(
                 os.path.dirname(__file__), "ui", self.GLADE_FILE))
