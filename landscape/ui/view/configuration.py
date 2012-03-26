@@ -49,6 +49,16 @@ class ClientSettingsDialog(Gtk.Dialog):
     def is_valid_host_name(self, host_name):
         return HOSTNAME_REGEXP.match(host_name) is not None
 
+    def is_ascii(self, entry):
+        """
+        Check that the text content of a L{Gtk.Entry} is ASCII.
+        """
+        try:
+            entry.get_text().decode("ascii")
+            return True
+        except UnicodeDecodeError:
+            return False
+
     def validity_check(self):
         if self.use_type_combobox.get_active() < 2:
             return True

@@ -228,6 +228,20 @@ class ConfigurationViewTest(LandscapeTest):
         self.assertFalse(dialog.is_valid_host_name("foo bar"))
         self.assertFalse(dialog.is_valid_host_name("f\xc3.bar"))
 
+    def test_input_is_ascii(self):
+        """
+        Test that we can correctly identify non-ASCII input in a L{Gtk.Entry}.
+        """
+        dialog = ClientSettingsDialog(self.controller)
+        self.run_gtk_eventloop()
+        dialog.use_type_combobox.set_active(1)
+        self.run_gtk_eventloop()
+        dialog.hosted_account_name_entry.set_text("Toodleoo")
+        self.assertTrue(dialog.is_ascii(dialog.hosted_account_name_entry))
+        dialog.hosted_account_name_entry.set_text(u"T\xc3dle\xc4")
+        self.assertFalse(dialog.is_ascii(dialog.hosted_account_name_entry))
+        
+
     def test_validity_check(self):
         """
         Test that the L{validity_check} returns True for valid input and False
