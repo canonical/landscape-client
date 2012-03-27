@@ -4,6 +4,9 @@ from distutils.core import setup, Extension
 
 from landscape import UPSTREAM_VERSION
 
+from DistUtilsExtra.command import build_extra, build_i18n
+from DistUtilsExtra.auto import clean_build_tree
+
 
 setup(name="Landscape Client",
       version=UPSTREAM_VERSION,
@@ -33,13 +36,9 @@ setup(name="Landscape Client",
           ("/usr/share/dbus-1/system-services/",
            ["dbus-1/com.canonical.LandscapeClientSettings.service",
           "dbus-1/com.canonical.LandscapeClientRegistration.service"]),
-          ("/usr/share/polkit-1/actions",
-           ["polkit-1/com.canonical.LandscapeClientSettings.policy"]),
           ("/etc/dbus-1/system.d/",
            ["dbus-1/com.canonical.LandscapeClientSettings.conf",
             "dbus-1/com.canonical.LandscapeClientRegistration.conf"]),
-          ("/usr/share/applications/",
-           ["applications/landscape-client-settings.desktop"]),
           ("/usr/share/icons/hicolor/scalable/apps/",
            ["icons/preferences-management-service.svg"]),
           ("/usr/share/glib-2.0/schemas/",
@@ -61,4 +60,7 @@ setup(name="Landscape Client",
                "scripts/landscape-client-settings-ui",
                "scripts/landscape-client-ui-install"],
       ext_modules=[Extension("landscape.lib.initgroups",
-                             ["landscape/lib/initgroups.c"])])
+                             ["landscape/lib/initgroups.c"])],
+      cmdclass={"build_i18n":  build_i18n.build_i18n,
+                "build": build_extra.build_extra,
+                "clean": clean_build_tree})

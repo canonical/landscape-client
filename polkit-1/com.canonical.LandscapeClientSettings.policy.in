@@ -9,8 +9,8 @@
   <icon_name>preferences-management-service</icon_name>
 
   <action id="com.canonical.LandscapeClientSettings.configure">
-    <description>Allow the user to read and write Landscape Client settings.</description>
-    <message>System policy prevents you from reading and writing Landscape Client Settings.</message>
+    <_description>Allow the user to read and write Landscape Client settings.</_description>
+    <_message>System policy prevents you from reading and writing Landscape Client Settings.</_message>
     <defaults>
       <allow_any>auth_admin_keep</allow_any>
       <allow_inactive>auth_admin_keep</allow_inactive>

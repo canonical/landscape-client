@@ -2,6 +2,8 @@
 import os
 import sys
 
+from gettext import bindtextdomain, textdomain
+
 script_dir = os.path.abspath("scripts")
 if os.path.dirname(os.path.abspath(sys.argv[0])) == script_dir:
     sys.path.insert(0, "./")
@@ -22,6 +24,8 @@ if __name__ == "__main__":
                          "running.\n")
         sys.exit(1)
     else:
+        bindtextdomain("landscape-client", "/usr/share/locale")
+        textdomain("landscape-client")
         app = SettingsApplicationController(args=sys.argv[1:])
         try:
             app.run(None)

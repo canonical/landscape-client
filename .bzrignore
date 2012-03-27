@@ -2,6 +2,7 @@ _trial_temp
 docs/api
 build
 build-stamp
+debian/tmp
 debian/files
 debian/landscape-client
 debian/landscape-client.postinst.debhelper
