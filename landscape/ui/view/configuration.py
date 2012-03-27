@@ -119,7 +119,7 @@ class ClientSettingsDialog(Gtk.Dialog):
 
     @property
     def UNICODE_IN_ENTRY_MESSAGE(self):
-        return _("Non-ASCII characters are not valid.")
+        return _("Only ASCII characters are allowed.")
 
     def _set_use_type_combobox_from_controller(self):
         """
