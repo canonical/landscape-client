@@ -24,7 +24,7 @@ class ClientSettingsDialog(Gtk.Dialog):
     GLADE_FILE = "landscape-client-settings.glade"
     INVALID_HOST_NAME = 0
     UNICODE_IN_ENTRY = 1
- 
+
     def __init__(self, controller):
         super(ClientSettingsDialog, self).__init__(
             title=_("Management Service"),
