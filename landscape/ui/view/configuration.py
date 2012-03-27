@@ -1,6 +1,8 @@
 import re
 import os
 
+from gettext import gettext as _
+
 from gi.repository import GObject, Gtk
 
 from landscape.ui.constants import (
@@ -20,19 +22,12 @@ class ClientSettingsDialog(Gtk.Dialog):
     """
 
     GLADE_FILE = "landscape-client-settings.glade"
-    NO_SERVICE_TEXT = "None"
-    HOSTED_SERVICE_TEXT = "Landscape - hosted by Canonical"
-    LOCAL_SERVICE_TEXT = "Landscape - dedicated server"
-    REGISTER_BUTTON_TEXT = "Register"
-    DISABLE_BUTTON_TEXT = "Disable"
     INVALID_HOST_NAME = 0
     UNICODE_IN_ENTRY = 1
-    INVALID_HOST_NAME_MESSAGE = "Invalid host name."
-    UNICODE_IN_ENTRY_MESSAGE = "Non-ASCII characters are not valid."
-
+ 
     def __init__(self, controller):
         super(ClientSettingsDialog, self).__init__(
-            title="Management Service",
+            title=_("Management Service"),
             flags=Gtk.DialogFlags.MODAL)
         self.set_default_icon_name("preferences-management-service")
         self.set_resizable(False)
@@ -97,6 +92,34 @@ class ClientSettingsDialog(Gtk.Dialog):
                 self.is_valid_host_name(self.local_landscape_host_entry))
             password_ok = self.is_ascii(self.local_password_entry)
             return host_name_ok and password_ok
+
+    @property
+    def NO_SERVICE_TEXT(self):
+        return _("None")
+
+    @property
+    def HOSTED_SERVICE_TEXT(self):
+        return _("Landscape - hosted by Canonical")
+
+    @property
+    def LOCAL_SERVICE_TEXT(self):
+        return _("Landscape - dedicated server")
+
+    @property
+    def REGISTER_BUTTON_TEXT(self):
+        return _("Register")
+
+    @property
+    def DISABLE_BUTTON_TEXT(self):
+        return _("Disable")
+
+    @property
+    def INVALID_HOSTNAME_MESSAGE(self):
+        return _("Invalid host name.")
+
+    @property
+    def UNICODE_IN_ENTRY_MESSAGE(self):
+        return _("Non-ASCII characters are not valid.")
 
     def _set_use_type_combobox_from_controller(self):
         """
@@ -261,6 +284,7 @@ class ClientSettingsDialog(Gtk.Dialog):
 
     def setup_ui(self):
         self._builder = Gtk.Builder()
+        self._builder.set_translation_domain("landscape-client")
         self._builder.add_from_file(
             os.path.join(
                 os.path.dirname(__file__), "ui", self.GLADE_FILE))

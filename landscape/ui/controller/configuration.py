@@ -1,5 +1,8 @@
-from landscape.ui.constants import NOT_MANAGED, CANONICAL_MANAGED
 import logging
+
+from gettext import gettext as _
+
+from landscape.ui.constants import NOT_MANAGED, CANONICAL_MANAGED
 
 from landscape.ui.model.registration.proxy import RegistrationProxy
 from landscape.ui.model.configuration.state import StateError
@@ -62,7 +65,7 @@ class ConfigController(object):
                          "changes to revert.")
 
     def persist(self, on_notify, on_error, on_succeed, on_fail):
-        "Persist settings via the configuration object."
+        """Persist settings via the configuration object."""
         try:
             self._configuration.persist()
         except StateError:
@@ -81,10 +84,10 @@ class ConfigController(object):
         """
 
         def registration_fail_wrapper():
-            fail_method(action="Registering client")
+            fail_method(action=_("Registering client failed"))
 
         def registration_succeed_wrapper():
-            succeed_method(action="Registering client")
+            succeed_method(action=_("Registering client was successful"))
 
         registration = RegistrationProxy(
             on_register_notify=notify_method,
@@ -92,10 +95,10 @@ class ConfigController(object):
             on_register_succeed=registration_succeed_wrapper,
             on_register_fail=registration_fail_wrapper)
         if self._configuration.management_type == CANONICAL_MANAGED:
-            notify_method("Attempting to register at %s" %
+            notify_method(_("Attempting to register at %s") %
                           self._configuration.hosted_landscape_host)
         else:
-            notify_method("Attempting to register at %s" %
+            notify_method(_("Attempting to register at %s") %
                           self._configuration.local_landscape_host)
         registration.register(self._configuration.get_config_filename())
         registration.exit()
@@ -106,14 +109,14 @@ class ConfigController(object):
         """
 
         def disabling_fail_wrapper():
-            fail_method(action="Disabling client")
+            fail_method(action=_("Disabling client failed"))
 
         def disabling_succeed_wrapper():
-            succeed_method(action="Disabling client")
+            succeed_method(action=_("Disabling client was successful"))
 
         registration = RegistrationProxy(
             on_disable_succeed=disabling_succeed_wrapper,
             on_disable_fail=disabling_fail_wrapper)
-        notify_method("Attempting to disable landscape client.")
+        notify_method(_("Attempting to disable landscape client."))
         registration.disable()
         registration.exit()
