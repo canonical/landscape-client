@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2012-03-23 11:12+0100\n"
+"POT-Creation-Date: 2012-03-27 15:42+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -55,71 +55,71 @@ msgstr ""
 msgid "Attempting to disable landscape client."
 msgstr ""
 
-#: ../landscape/ui/view/configuration.py:19
-msgid "None"
-msgstr ""
-
-#: ../landscape/ui/view/configuration.py:20
-msgid "Landscape - hosted by Canonical"
-msgstr ""
-
-#: ../landscape/ui/view/configuration.py:21
-msgid "Landscape - dedicated server"
-msgstr ""
-
 #: ../landscape/ui/view/configuration.py:22
-msgid "Register"
-msgstr ""
-
-#: ../landscape/ui/view/configuration.py:23
-msgid "Disable"
-msgstr ""
-
-#: ../landscape/ui/view/configuration.py:27
 #: ../applications/landscape-client-settings.desktop.in.h:1
 msgid "Management Service"
 msgstr ""
 
+#: ../landscape/ui/view/configuration.py:35
+msgid "None"
+msgstr ""
+
+#: ../landscape/ui/view/configuration.py:39
+msgid "Landscape - hosted by Canonical"
+msgstr ""
+
+#: ../landscape/ui/view/configuration.py:43
+msgid "Landscape - dedicated server"
+msgstr ""
+
+#: ../landscape/ui/view/configuration.py:47
+msgid "Register"
+msgstr ""
+
+#: ../landscape/ui/view/configuration.py:51
+msgid "Disable"
+msgstr ""
+
 #: ../landscape/ui/view/ui/landscape-client-settings.glade.h:1
-msgid "Account name:"
-msgstr ""
-
-#: ../landscape/ui/view/ui/landscape-client-settings.glade.h:2
-msgid "Don't have an account?"
-msgstr ""
-
-#: ../landscape/ui/view/ui/landscape-client-settings.glade.h:3
-#: ../scripts/landscape-client-ui-install:52
-msgid "Find out more..."
-msgstr ""
-
-#: ../landscape/ui/view/ui/landscape-client-settings.glade.h:4
-msgid ""
-"If you click \"Disable\" the Landscape client on this machine will be "
-"disabled.  You can reenable it later by revisiting this dialog."
-msgstr ""
-
-#: ../landscape/ui/view/ui/landscape-client-settings.glade.h:5
 msgid ""
 "Landscape is a remote administration service from Canonical.  If you allow "
 "it, a Landcape server can monitor this computer's performance and send "
 "administration commands."
 msgstr ""
 
-#: ../landscape/ui/view/ui/landscape-client-settings.glade.h:6
-msgid "Landscape server hostname:"
+#: ../landscape/ui/view/ui/landscape-client-settings.glade.h:2
+#: ../scripts/landscape-client-ui-install:52
+msgid "Find out more..."
 msgstr ""
 
-#: ../landscape/ui/view/ui/landscape-client-settings.glade.h:7
+#: ../landscape/ui/view/ui/landscape-client-settings.glade.h:3
 msgid "Management service:"
 msgstr ""
 
-#: ../landscape/ui/view/ui/landscape-client-settings.glade.h:8
+#: ../landscape/ui/view/ui/landscape-client-settings.glade.h:4
+msgid "Account name:"
+msgstr ""
+
+#: ../landscape/ui/view/ui/landscape-client-settings.glade.h:5
 msgid "Password:"
 msgstr ""
 
-#: ../landscape/ui/view/ui/landscape-client-settings.glade.h:9
+#: ../landscape/ui/view/ui/landscape-client-settings.glade.h:6
+msgid "Don't have an account?"
+msgstr ""
+
+#: ../landscape/ui/view/ui/landscape-client-settings.glade.h:7
 msgid "Sign up..."
+msgstr ""
+
+#: ../landscape/ui/view/ui/landscape-client-settings.glade.h:8
+msgid "Landscape server hostname:"
+msgstr ""
+
+#: ../landscape/ui/view/ui/landscape-client-settings.glade.h:9
+msgid ""
+"If you click \"Disable\" the Landscape client on this machine will be "
+"disabled.  You can reenable it later by revisiting this dialog."
 msgstr ""
 
 #: ../applications/landscape-client-settings.desktop.in.h:2
@@ -142,9 +142,9 @@ msgstr ""
 
 #: ../scripts/landscape-client-ui-install:56
 msgid ""
-"Landscape is an easy to use systems management and monitoring service "
-"offered by Canonical that helps administrators manage multiple machines "
-"efficiently."
+"Landscape is an easy-to-use commercial systems management and monitoring "
+"service offered by Canonical that helps administrators manage multiple "
+"machines efficiently."
 msgstr ""
 
 #: ../scripts/landscape-client-ui-install:59
