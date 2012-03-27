@@ -14,6 +14,32 @@ HOST_NAME_REGEXP = re.compile(
     "*([A-Za-z]|[A-Za-z][A-Za-z0-9\-]*[A-Za-z0-9])$")
 
 
+def sanitise_host_name(host_name):
+    """
+    Do some minimal host name sanitation.
+    """
+    return host_name.strip()
+
+
+def is_valid_host_name(host_name):
+    """
+    Check that the provided host name complies with L{HOST_NAME_REGEXP} and is
+    therefor valid.
+    """
+    return HOST_NAME_REGEXP.match(host_name) is not None
+
+
+def is_ascii(text):
+    """
+    Test that the provided string contains only characters from the ASCII set.
+    """
+    try:
+        text.decode("ascii")
+        return True
+    except UnicodeDecodeError:
+        return False
+
+
 class ClientSettingsDialog(Gtk.Dialog):
     """
     L{ClientSettingsDialog} is a subclass of Gtk.Dialog that loads the UI
@@ -40,37 +66,40 @@ class ClientSettingsDialog(Gtk.Dialog):
         # One extra revert to reset after loading data
         self.controller.revert()
 
-    def sanitise_host_name(self, host_name):
+    def indicate_error_on_entry(self, entry):
         """
-        Do some minimal input sanitation.
+        Show a warning icon on a L{Gtk.Entry} to indicate some associated
+        error.
         """
-        return host_name.strip()
+        entry.set_icon_from_stock(
+            Gtk.EntryIconPosition.PRIMARY, Gtk.STOCK_DIALOG_WARNING)
+        self._errored_entries.append(entry)
 
-    def is_valid_host_name(self, entry):
-        host_name = self.sanitise_host_name(entry.get_text())
-        host_name_ok = HOST_NAME_REGEXP.match(host_name) is not None
-        if host_name_ok:
-            entry.set_text(host_name)
+    def check_local_landscape_host_name_entry(self):
+        host_name = sanitise_host_name(
+            self.local_landscape_host_entry.get_text())
+        ascii_ok = is_ascii(host_name)
+        host_name_ok = is_valid_host_name(host_name)
+        if ascii_ok and host_name_ok:
+            self.local_landscape_host_entry.set_text(host_name)
             return True
         else:
-            self._validation_errors.add(self.INVALID_HOST_NAME)
-            self.local_landscape_host_entry.set_icon_from_stock(
-                    Gtk.EntryIconPosition.PRIMARY, Gtk.STOCK_DIALOG_WARNING)
-            self._errored_entries.append(self.local_landscape_host_entry)
-            return False
+            self.indicate_error_on_entry(self.local_landscape_host_entry)
+            if not host_name_ok:
+                self._validation_errors.add(self.INVALID_HOST_NAME)
+            if not ascii_ok:
+                self._validation_errors.add(self.UNICODE_IN_ENTRY)
+                return False
 
-    def is_ascii(self, entry):
+    def check_entry(self, entry):
         """
-        Check that the text content of a L{Gtk.Entry} is ASCII.
+        Check that the text content of a L{Gtk.Entry} is acceptable.
         """
-        try:
-            entry.get_text().decode("ascii")
+        if is_ascii(entry.get_text()):
             return True
-        except UnicodeDecodeError:
+        else:
+            self.indicate_error_on_entry(entry)
             self._validation_errors.add(self.UNICODE_IN_ENTRY)
-            entry.set_icon_from_stock(Gtk.EntryIconPosition.PRIMARY,
-                                      Gtk.STOCK_DIALOG_WARNING)
-            self._errored_entries.append(entry)
             return False
 
     def validity_check(self):
@@ -83,14 +112,12 @@ class ClientSettingsDialog(Gtk.Dialog):
         if management_type == NOT_MANAGED:
             return True
         elif management_type == CANONICAL_MANAGED:
-            account_name_ok = self.is_ascii(self.hosted_account_name_entry)
-            password_ok = self.is_ascii(self.hosted_password_entry)
+            account_name_ok = self.check_entry(self.hosted_account_name_entry)
+            password_ok = self.check_entry(self.hosted_password_entry)
             return account_name_ok and password_ok
         else:
-            host_name_ok = (
-                self.is_ascii(self.local_landscape_host_entry) and
-                self.is_valid_host_name(self.local_landscape_host_entry))
-            password_ok = self.is_ascii(self.local_password_entry)
+            host_name_ok = self.check_local_landscape_host_name_entry()
+            password_ok = self.check_entry(self.local_password_entry)
             return host_name_ok and password_ok
 
     @property
