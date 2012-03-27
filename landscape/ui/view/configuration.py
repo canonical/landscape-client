@@ -114,7 +114,7 @@ class ClientSettingsDialog(Gtk.Dialog):
         return _("Disable")
 
     @property
-    def INVALID_HOSTNAME_MESSAGE(self):
+    def INVALID_HOST_NAME_MESSAGE(self):
         return _("Invalid host name.")
 
     @property
