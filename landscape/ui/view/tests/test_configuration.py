@@ -395,9 +395,10 @@ class ConfigurationViewTest(LandscapeTest):
         dialog.check_entry(dialog.hosted_account_name_entry)
         self.assertEqual(1, len(dialog._errored_entries))
 
-    def test_dismiss_validation_errors(self):
+    def test_dismiss_validation_errors_local(self):
         """
-        Test that dismissing the validation errors tidies up indicators.
+        Test that dismissing the validation errors tidies up indicators that
+        have been set against local settings.
         """
         dialog = ClientSettingsDialog(self.controller)
         self.run_gtk_eventloop()
@@ -423,6 +424,14 @@ class ConfigurationViewTest(LandscapeTest):
         self.assertNotEqual(
             Gtk.STOCK_DIALOG_WARNING,
             entry2.get_icon_stock(Gtk.EntryIconPosition.PRIMARY))
+
+    def test_dismiss_validation_errors_hosted(self):
+        """
+        Test that dismissing the validation errors tidies up indicators that
+        have been set against hosted fields.
+        """
+        dialog = ClientSettingsDialog(self.controller)
+        self.run_gtk_eventloop()
         dialog.use_type_combobox.set_active(2)
         self.run_gtk_eventloop()
         dialog.local_landscape_host_entry.set_text("dodgy as hell")
