@@ -1,3 +1,12 @@
+landscape-client (12.04.3-0ubuntu0.12.04.0) precise; urgency=low
+
+  * Warn on unicode entry into settings UI (LP: #956612).
+  * Sanitise hostname field in settings UI (LP: #954507).
+  * Make it clear that the Landscape service is commercial (LP: #965850)
+  * Further internationalize the settings UI (LP: #962899)
+
+ -- David Britton <dpb@canonical.com>  Wed, 28 Mar 2012 10:59:58 -0600
+
 landscape-client (12.04.2-0ubuntu0.12.04.0) precise; urgency=low
 
   * Placeholder for new release 
