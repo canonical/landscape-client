@@ -178,8 +178,6 @@ class ClientSettingsDialog(Gtk.Dialog):
     def register_response(self, widget):
         if self.validity_check():
             self.response(Gtk.ResponseType.OK)
-        else:
-            return False
 
     def set_button_text(self, management_type):
         [alignment] = self.register_button.get_children()
