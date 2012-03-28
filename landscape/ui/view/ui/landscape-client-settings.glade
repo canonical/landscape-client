@@ -466,7 +466,7 @@
       </object>
     </child>
   </object>
-  <object class="GtkSizeGroup" id="entries-sizgroup">
+  <object class="GtkSizeGroup" id="entries-sizegroup">
     <widgets>
       <widget name="hosted-account-name-entry"/>
       <widget name="hosted-password-entry"/>

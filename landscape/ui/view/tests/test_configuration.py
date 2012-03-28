@@ -210,6 +210,62 @@ class ConfigurationViewTest(LandscapeTest):
         self.assertEqual("foo", dialog.hosted_account_name_entry.get_text())
         self.assertEqual("bar", dialog.hosted_password_entry.get_text())
 
+    def test_sanitise_host_name(self):
+        """
+        Test that L{ClientSettingsDialog.sanitise_host_name} removes both
+        leading and trailing white space from a host name.
+        """
+        dialog = ClientSettingsDialog(self.controller)
+        self.assertEquals("foo.bar", dialog.sanitise_host_name(" foo.bar"))
+        self.assertEquals("foo.bar", dialog.sanitise_host_name("foo.bar "))
+        self.assertEquals("foo.bar", dialog.sanitise_host_name(" foo.bar "))
+
+    def test_is_valid_host_name(self):
+        """
+        Test that L{is_valid_host_name} checks host names correctly.
+        """
+        dialog = ClientSettingsDialog(self.controller)
+        self.assertTrue(dialog.is_valid_host_name("foo.bar"))
+        self.assertFalse(dialog.is_valid_host_name("foo bar"))
+        self.assertFalse(dialog.is_valid_host_name("f\xc3.bar"))
+
+    def test_validity_check(self):
+        """
+        Test that the L{validity_check} returns True for valid input and False
+        for invalid input.
+        """
+        dialog = ClientSettingsDialog(self.controller)
+        self.run_gtk_eventloop()
+
+        # Checking disable should always return True
+        dialog.use_type_combobox.set_active(0)
+        self.run_gtk_eventloop()
+        self.assertTrue(dialog.validity_check())
+
+        # Check for hosted - currently returns True always
+        dialog.use_type_combobox.set_active(1)
+        self.run_gtk_eventloop()
+        self.assertTrue(dialog.validity_check())
+
+        # Checks for local
+        dialog.use_type_combobox.set_active(2)
+        self.run_gtk_eventloop()
+        dialog.local_landscape_host_entry.set_text("foo.bar")
+        self.run_gtk_eventloop()
+        self.assertTrue(dialog.validity_check())
+        dialog.local_landscape_host_entry.set_text(" foo.bar")
+        self.run_gtk_eventloop()
+        self.assertTrue(dialog.validity_check())
+        dialog.local_landscape_host_entry.set_text("foo.bar ")
+        self.run_gtk_eventloop()
+        self.assertTrue(dialog.validity_check())
+        dialog.local_landscape_host_entry.set_text("foo bar")
+        self.run_gtk_eventloop()
+        self.assertFalse(dialog.validity_check())
+        dialog.local_landscape_host_entry.set_text(u"f\xc3.bar")
+        self.run_gtk_eventloop()
+        self.assertFalse(dialog.validity_check())
+
     if not got_gobject_introspection:
         skip = gobject_skip_message
 
