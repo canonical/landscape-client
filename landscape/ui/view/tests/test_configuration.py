@@ -470,7 +470,7 @@ class ConfigurationViewTest(LandscapeTest):
         contain Unicode.
         """
         dialog = ClientSettingsDialog(self.controller)
-        self.run_gtk_eventloop()        
+        self.run_gtk_eventloop()
         dialog.use_type_combobox.set_active(1)
         dialog.hosted_account_name_entry.set_text(u"B\xc3b")
         self.run_gtk_eventloop()
