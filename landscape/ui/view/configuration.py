@@ -9,8 +9,34 @@ from landscape.ui.constants import (
     CANONICAL_MANAGED, LOCAL_MANAGED, NOT_MANAGED)
 
 # Note, I think this may not be fully compliant with the changes in RFC 1123
-HOSTNAME_REGEXP = re.compile("^(([a-zA-Z][a-zA-Z0-9\-]*)?[a-zA-Z0-9][\.]?)*"
-                             "(([A-Za-z][A-Za-z0-9\-]*)?[A-Za-z0-9])$")
+HOST_NAME_REGEXP = re.compile("^(([a-zA-Z][a-zA-Z0-9\-]*)?[a-zA-Z0-9][\.]?)*"
+                              "(([A-Za-z][A-Za-z0-9\-]*)?[A-Za-z0-9])$")
+
+
+def sanitise_host_name(host_name):
+    """
+    Do some minimal host name sanitation.
+    """
+    return host_name.strip()
+
+
+def is_valid_host_name(host_name):
+    """
+    Check that the provided host name complies with L{HOST_NAME_REGEXP} and is
+    therefor valid.
+    """
+    return HOST_NAME_REGEXP.match(host_name) is not None
+
+
+def is_ascii(text):
+    """
+    Test that the provided string contains only characters from the ASCII set.
+    """
+    try:
+        text.decode("ascii")
+        return True
+    except UnicodeDecodeError:
+        return False
 
 
 class ClientSettingsDialog(Gtk.Dialog):
@@ -21,6 +47,8 @@ class ClientSettingsDialog(Gtk.Dialog):
     """
 
     GLADE_FILE = "landscape-client-settings.glade"
+    INVALID_HOST_NAME = 0
+    UNICODE_IN_ENTRY = 1
 
     def __init__(self, controller):
         super(ClientSettingsDialog, self).__init__(
@@ -29,37 +57,67 @@ class ClientSettingsDialog(Gtk.Dialog):
         self.set_default_icon_name("preferences-management-service")
         self.set_resizable(False)
         self._initialised = False
+        self._validation_errors = set()
+        self._errored_entries = []
         self.controller = controller
         self.setup_ui()
         self.load_data()
         # One extra revert to reset after loading data
         self.controller.revert()
 
-    def sanitise_host_name(self, host_name):
+    def indicate_error_on_entry(self, entry):
         """
-        Do some minimal input sanitation.
+        Show a warning icon on a L{Gtk.Entry} to indicate some associated
+        error.
         """
-        return host_name.strip()
+        entry.set_icon_from_stock(
+            Gtk.EntryIconPosition.PRIMARY, Gtk.STOCK_DIALOG_WARNING)
+        self._errored_entries.append(entry)
 
-    def is_valid_host_name(self, host_name):
-        return HOSTNAME_REGEXP.match(host_name) is not None
-
-    def validity_check(self):
-        if self.use_type_combobox.get_active() < 2:
+    def check_local_landscape_host_name_entry(self):
+        host_name = sanitise_host_name(
+            self.local_landscape_host_entry.get_text())
+        ascii_ok = is_ascii(host_name)
+        host_name_ok = is_valid_host_name(host_name)
+        if ascii_ok and host_name_ok:
+            self.local_landscape_host_entry.set_text(host_name)
             return True
         else:
-            host_name = self.sanitise_host_name(
-                self.local_landscape_host_entry.get_text())
-            if self.is_valid_host_name(host_name):
-                self.local_landscape_host_entry.set_text(host_name)
-                return True
-            else:
-                self.info_message.set_text(self.INVALID_HOSTNAME_MESSAGE)
-                self.local_landscape_host_entry.set_icon_from_stock(
-                    Gtk.EntryIconPosition.PRIMARY,
-                    Gtk.STOCK_DIALOG_WARNING)
-                self._info_bar_container.show()
-                return False
+            self.indicate_error_on_entry(self.local_landscape_host_entry)
+            if not host_name_ok:
+                self._validation_errors.add(self.INVALID_HOST_NAME)
+            if not ascii_ok:
+                self._validation_errors.add(self.UNICODE_IN_ENTRY)
+            return False
+
+    def check_entry(self, entry):
+        """
+        Check that the text content of a L{Gtk.Entry} is acceptable.
+        """
+        if is_ascii(entry.get_text()):
+            return True
+        else:
+            self.indicate_error_on_entry(entry)
+            self._validation_errors.add(self.UNICODE_IN_ENTRY)
+            return False
+
+    def validity_check(self):
+        self._validation_errors = set()
+        if self._info_bar_container.get_visible():
+            self.dismiss_infobar(None)
+        active_iter = self.liststore.get_iter(
+            self.use_type_combobox.get_active())
+        [management_type] = self.liststore.get(active_iter, 0)
+        if management_type == NOT_MANAGED:
+            return True
+        elif management_type == CANONICAL_MANAGED:
+            account_name_ok = self.check_entry(self.hosted_account_name_entry)
+            password_ok = self.check_entry(self.hosted_password_entry)
+            return account_name_ok and password_ok
+        else:
+            host_name_ok = self.check_local_landscape_host_name_entry()
+            password_ok = self.check_entry(self.local_password_entry)
+            return host_name_ok and password_ok
 
     @property
     def NO_SERVICE_TEXT(self):
@@ -82,8 +140,12 @@ class ClientSettingsDialog(Gtk.Dialog):
         return _("Disable")
 
     @property
-    def INVALID_HOSTNAME_MESSAGE(self):
+    def INVALID_HOST_NAME_MESSAGE(self):
         return _("Invalid host name.")
+
+    @property
+    def UNICODE_IN_ENTRY_MESSAGE(self):
+        return _("Only ASCII characters are allowed.")
 
     def _set_use_type_combobox_from_controller(self):
         """
@@ -177,6 +239,14 @@ class ClientSettingsDialog(Gtk.Dialog):
     def register_response(self, widget):
         if self.validity_check():
             self.response(Gtk.ResponseType.OK)
+        else:
+            error_text = []
+            if self.UNICODE_IN_ENTRY in self._validation_errors:
+                error_text.append(self.UNICODE_IN_ENTRY_MESSAGE)
+            if self.INVALID_HOST_NAME in self._validation_errors:
+                error_text.append(self.INVALID_HOST_NAME_MESSAGE)
+            self.info_message.set_text("\n".join(error_text))
+            self._info_bar_container.show()
 
     def set_button_text(self, management_type):
         [alignment] = self.register_button.get_children()
@@ -203,8 +273,9 @@ class ClientSettingsDialog(Gtk.Dialog):
 
     def dismiss_infobar(self, widget):
         self._info_bar_container.hide()
-        self.local_landscape_host_entry.set_icon_from_stock(
-            Gtk.EntryIconPosition.PRIMARY, None)
+        for entry in self._errored_entries:
+            entry.set_icon_from_stock(Gtk.EntryIconPosition.PRIMARY, None)
+        self._errored_entries = []
 
     def setup_info_bar(self):
         labels_size_group = self._builder.get_object("labels-sizegroup")

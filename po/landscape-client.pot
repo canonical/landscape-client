@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2012-03-28 10:34+0200\n"
+"POT-Creation-Date: 2012-03-28 11:07+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -55,33 +55,37 @@ msgstr ""
 msgid "Attempting to disable landscape client."
 msgstr ""
 
-#: ../landscape/ui/view/configuration.py:27
+#: ../landscape/ui/view/configuration.py:55
 #: ../applications/landscape-client-settings.desktop.in.h:1
 msgid "Management Service"
 msgstr ""
 
-#: ../landscape/ui/view/configuration.py:66
+#: ../landscape/ui/view/configuration.py:124
 msgid "None"
 msgstr ""
 
-#: ../landscape/ui/view/configuration.py:70
+#: ../landscape/ui/view/configuration.py:128
 msgid "Landscape - hosted by Canonical"
 msgstr ""
 
-#: ../landscape/ui/view/configuration.py:74
+#: ../landscape/ui/view/configuration.py:132
 msgid "Landscape - dedicated server"
 msgstr ""
 
-#: ../landscape/ui/view/configuration.py:78
+#: ../landscape/ui/view/configuration.py:136
 msgid "Register"
 msgstr ""
 
-#: ../landscape/ui/view/configuration.py:82
+#: ../landscape/ui/view/configuration.py:140
 msgid "Disable"
 msgstr ""
 
-#: ../landscape/ui/view/configuration.py:86
+#: ../landscape/ui/view/configuration.py:144
 msgid "Invalid host name."
+msgstr ""
+
+#: ../landscape/ui/view/configuration.py:148
+msgid "Only ASCII characters are allowed."
 msgstr ""
 
 #: ../landscape/ui/view/ui/landscape-client-settings.glade.h:1

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2012-03-28 10:34+0200\n"
+"POT-Creation-Date: 2012-03-28 11:07+0200\n"
 "PO-Revision-Date: 2012-03-23 11:25+0100\n"
 "Last-Translator: Thomas Hervé <thomas.herve@canonical.com>\n"
 "Language-Team: français <>\n"
@@ -56,34 +56,38 @@ msgstr "Le client a été désactivé avec succès"
 msgid "Attempting to disable landscape client."
 msgstr "Tentative de désactivation du client Landscape."
 
-#: ../landscape/ui/view/configuration.py:27
+#: ../landscape/ui/view/configuration.py:55
 #: ../applications/landscape-client-settings.desktop.in.h:1
 msgid "Management Service"
 msgstr "Service de gestion"
 
-#: ../landscape/ui/view/configuration.py:66
+#: ../landscape/ui/view/configuration.py:124
 msgid "None"
 msgstr "Aucun"
 
-#: ../landscape/ui/view/configuration.py:70
+#: ../landscape/ui/view/configuration.py:128
 msgid "Landscape - hosted by Canonical"
 msgstr "Landscape - hébergé par Canonical"
 
-#: ../landscape/ui/view/configuration.py:74
+#: ../landscape/ui/view/configuration.py:132
 msgid "Landscape - dedicated server"
 msgstr "Landscape - serveur dédié"
 
-#: ../landscape/ui/view/configuration.py:78
+#: ../landscape/ui/view/configuration.py:136
 msgid "Register"
 msgstr "S'enregistrer"
 
-#: ../landscape/ui/view/configuration.py:82
+#: ../landscape/ui/view/configuration.py:140
 msgid "Disable"
 msgstr "Désactiver"
 
-#: ../landscape/ui/view/configuration.py:86
+#: ../landscape/ui/view/configuration.py:144
 msgid "Invalid host name."
 msgstr "Nom d'hôte invalide."
+
+#: ../landscape/ui/view/configuration.py:148
+msgid "Only ASCII characters are allowed."
+msgstr "Seuls les caractères ASCII sont autritorisés."
 
 #: ../landscape/ui/view/ui/landscape-client-settings.glade.h:1
 msgid ""
