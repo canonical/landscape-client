@@ -212,7 +212,8 @@ class ConfigurationViewTest(LandscapeTest):
 
     def test_sanitise_host_name(self):
         """
-        Test UI level host_name sanitation.
+        Test that L{ClientSettingsDialog.sanitise_host_name} removes both
+        leading and trailing white space from a host name.
         """
         dialog = ClientSettingsDialog(self.controller)
         self.assertEquals("foo.bar", dialog.sanitise_host_name(" foo.bar"))
