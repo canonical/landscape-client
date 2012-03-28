@@ -9,9 +9,8 @@ from landscape.ui.constants import (
     CANONICAL_MANAGED, LOCAL_MANAGED, NOT_MANAGED)
 
 # Note, I think this may not be fully compliant with the changes in RFC 1123
-HOSTNAME_REGEXP = re.compile(
-    "^(([a-zA-Z]|[a-zA-Z][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)"
-    "*([A-Za-z]|[A-Za-z][A-Za-z0-9\-]*[A-Za-z0-9])$")
+HOSTNAME_REGEXP = re.compile("^(([a-zA-Z][a-zA-Z0-9\-]*)?[a-zA-Z0-9][\.]?)*"
+                             "(([A-Za-z][A-Za-z0-9\-]*)?[A-Za-z0-9])$")
 
 
 class ClientSettingsDialog(Gtk.Dialog):
