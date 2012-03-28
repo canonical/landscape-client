@@ -440,39 +440,90 @@ class ConfigurationViewTest(LandscapeTest):
             Gtk.STOCK_DIALOG_WARNING,
             entry1.get_icon_stock(Gtk.EntryIconPosition.PRIMARY))
 
-    def test_validity_check(self):
+    def test_validity_check_disabled(self):
         """
-        Test that the L{validity_check} returns True for valid input and False
-        for invalid input.
+        Test that the L{validity_check} returns True when we disable landscape
+        client.
         """
         dialog = ClientSettingsDialog(self.controller)
         self.run_gtk_eventloop()
-
-        # Checking disable should always return True
         dialog.use_type_combobox.set_active(0)
         self.run_gtk_eventloop()
         self.assertTrue(dialog.validity_check())
 
-        # Check for hosted - currently returns True always
+    def test_validity_check_hosted(self):
+        """
+        Test that the L{validity_check} returns True when the hosted fields are
+        valid.
+        """
+        dialog = ClientSettingsDialog(self.controller)
+        self.run_gtk_eventloop()
         dialog.use_type_combobox.set_active(1)
+        dialog.hosted_account_name_entry.set_text("Bob")
+        dialog.hosted_password_entry.set_text("the builder")
         self.run_gtk_eventloop()
         self.assertTrue(dialog.validity_check())
 
-        # Checks for local
+    def test_validity_check_hosted_unicode(self):
+        """
+        Test that the L{validity_check} returns False when the hosted fields
+        contain Unicode.
+        """
+        dialog = ClientSettingsDialog(self.controller)
+        self.run_gtk_eventloop()        
+        dialog.use_type_combobox.set_active(1)
+        dialog.hosted_account_name_entry.set_text(u"B\xc3b")
+        self.run_gtk_eventloop()
+        self.assertFalse(dialog.validity_check())
+
+    def test_validity_check_local_ok(self):
+        """
+        Test that the L{validity_check} returns True when the local fields
+        are valid.
+        """
+        dialog = ClientSettingsDialog(self.controller)
+        self.run_gtk_eventloop()
         dialog.use_type_combobox.set_active(2)
         self.run_gtk_eventloop()
         dialog.local_landscape_host_entry.set_text("foo.bar")
         self.run_gtk_eventloop()
         self.assertTrue(dialog.validity_check())
+
+    def test_validity_check_local_sanitisable(self):
+        """
+        Test that the L{validity_check} returns True when the local fields
+        are valid after sanitation.
+        """
+        dialog = ClientSettingsDialog(self.controller)
+        self.run_gtk_eventloop()
+        dialog.use_type_combobox.set_active(2)
         dialog.local_landscape_host_entry.set_text(" foo.bar")
         self.run_gtk_eventloop()
         self.assertTrue(dialog.validity_check())
         dialog.local_landscape_host_entry.set_text("foo.bar ")
         self.run_gtk_eventloop()
         self.assertTrue(dialog.validity_check())
+
+    def test_validity_check_local_invalid_host_name(self):
+        """
+        Test that the L{validity_check} returns False when the host name is
+        invalid.
+        """
+        dialog = ClientSettingsDialog(self.controller)
+        self.run_gtk_eventloop()
+        dialog.use_type_combobox.set_active(2)
         dialog.local_landscape_host_entry.set_text("foo bar")
         self.run_gtk_eventloop()
         self.assertFalse(dialog.validity_check())
+
+    def test_validity_check_local_unicode(self):
+        """
+        Test that the L{validity_check} returns False when the host name
+        contains Unicode.
+        """
+        dialog = ClientSettingsDialog(self.controller)
+        self.run_gtk_eventloop()
+        dialog.use_type_combobox.set_active(2)
         dialog.local_landscape_host_entry.set_text(u"f\xc3.bar")
         self.run_gtk_eventloop()
         self.assertFalse(dialog.validity_check())

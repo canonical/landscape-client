@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2012-03-27 20:51+0200\n"
+"POT-Creation-Date: 2012-03-28 11:07+0200\n"
 "PO-Revision-Date: 2012-03-23 11:25+0100\n"
 "Last-Translator: Thomas Hervé <thomas.herve@canonical.com>\n"
 "Language-Team: français <>\n"
@@ -56,36 +56,36 @@ msgstr "Le client a été désactivé avec succès"
 msgid "Attempting to disable landscape client."
 msgstr "Tentative de désactivation du client Landscape."
 
-#: ../landscape/ui/view/configuration.py:56
+#: ../landscape/ui/view/configuration.py:55
 #: ../applications/landscape-client-settings.desktop.in.h:1
 msgid "Management Service"
 msgstr "Service de gestion"
 
-#: ../landscape/ui/view/configuration.py:125
+#: ../landscape/ui/view/configuration.py:124
 msgid "None"
 msgstr "Aucun"
 
-#: ../landscape/ui/view/configuration.py:129
+#: ../landscape/ui/view/configuration.py:128
 msgid "Landscape - hosted by Canonical"
 msgstr "Landscape - hébergé par Canonical"
 
-#: ../landscape/ui/view/configuration.py:133
+#: ../landscape/ui/view/configuration.py:132
 msgid "Landscape - dedicated server"
 msgstr "Landscape - serveur dédié"
 
-#: ../landscape/ui/view/configuration.py:137
+#: ../landscape/ui/view/configuration.py:136
 msgid "Register"
 msgstr "S'enregistrer"
 
-#: ../landscape/ui/view/configuration.py:141
+#: ../landscape/ui/view/configuration.py:140
 msgid "Disable"
 msgstr "Désactiver"
 
-#: ../landscape/ui/view/configuration.py:145
+#: ../landscape/ui/view/configuration.py:144
 msgid "Invalid host name."
 msgstr "Nom d'hôte invalide."
 
-#: ../landscape/ui/view/configuration.py:149
+#: ../landscape/ui/view/configuration.py:148
 msgid "Only ASCII characters are allowed."
 msgstr "Seuls les caractères ASCII sont autritorisés."
 
@@ -159,10 +159,11 @@ msgid "Landscape client"
 msgstr "Client Landscape"
 
 #: ../scripts/landscape-client-ui-install:56
+#, fuzzy
 msgid ""
-"Landscape is an easy to use systems management and monitoring service "
-"offered by Canonical that helps administrators manage multiple machines "
-"efficiently."
+"Landscape is an easy-to-use commercial systems management and monitoring "
+"service offered by Canonical that helps administrators manage multiple "
+"machines efficiently."
 msgstr ""
 "Landscape est un système de gestion et de surveillance proposé en tant que "
 "service par Canonical, qui aide les administrateurs à gérer plusieurs "
@@ -183,3 +184,12 @@ msgstr "Installer le client Landscape?"
 #: ../scripts/landscape-client-ui-install:62
 msgid "Install"
 msgstr "Installer"
+
+#~ msgid ""
+#~ "Landscape is an easy to use systems management and monitoring service "
+#~ "offered by Canonical that helps administrators manage multiple machines "
+#~ "efficiently."
+#~ msgstr ""
+#~ "Landscape est un système de gestion et de surveillance proposé en tant "
+#~ "que service par Canonical, qui aide les administrateurs à gérer plusieurs "
+#~ "machine efficacement."

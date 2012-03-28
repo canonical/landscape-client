@@ -9,9 +9,8 @@ from landscape.ui.constants import (
     CANONICAL_MANAGED, LOCAL_MANAGED, NOT_MANAGED)
 
 # Note, I think this may not be fully compliant with the changes in RFC 1123
-HOST_NAME_REGEXP = re.compile(
-    "^(([a-zA-Z]|[a-zA-Z][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)"
-    "*([A-Za-z]|[A-Za-z][A-Za-z0-9\-]*[A-Za-z0-9])$")
+HOST_NAME_REGEXP = re.compile("^(([a-zA-Z][a-zA-Z0-9\-]*)?[a-zA-Z0-9][\.]?)*"
+                              "(([A-Za-z][A-Za-z0-9\-]*)?[A-Za-z0-9])$")
 
 
 def sanitise_host_name(host_name):
@@ -248,7 +247,6 @@ class ClientSettingsDialog(Gtk.Dialog):
                 error_text.append(self.INVALID_HOST_NAME_MESSAGE)
             self.info_message.set_text("\n".join(error_text))
             self._info_bar_container.show()
-            return False
 
     def set_button_text(self, management_type):
         [alignment] = self.register_button.get_children()

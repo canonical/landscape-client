@@ -53,9 +53,9 @@ def main():
     dialog.set_markup(
         "<big><b>%s</b></big>\n\n%s\n\n%s\n\n%s" % (
             _("Landscape client"),
-            _("Landscape is an easy to use systems management and monitoring "
-              "service offered by Canonical that helps administrators manage "
-              "multiple machines efficiently."), link,
+            _("Landscape is an easy-to-use commercial systems management and "
+              "monitoring service offered by Canonical that helps "
+              "administrators manage multiple machines efficiently."), link,
             _("You need to install Landscape client to be able to configure it. "
               "Do you want to install it now?")))
     dialog.set_title(_("Install Landscape client?"))
