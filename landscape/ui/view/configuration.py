@@ -88,7 +88,7 @@ class ClientSettingsDialog(Gtk.Dialog):
                 self._validation_errors.add(self.INVALID_HOST_NAME)
             if not ascii_ok:
                 self._validation_errors.add(self.UNICODE_IN_ENTRY)
-                return False
+            return False
 
     def check_entry(self, entry):
         """
