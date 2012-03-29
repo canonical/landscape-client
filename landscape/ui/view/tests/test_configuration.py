@@ -57,6 +57,9 @@ class ViewFunctionsTest(LandscapeTest):
         """
         self.assertFalse(is_valid_host_name(u"\xc3a"))
 
+    if not got_gobject_introspection:
+        skip = gobject_skip_message
+
 
 class ConfigurationViewTest(LandscapeTest):
 
