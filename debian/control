@@ -35,7 +35,7 @@ Architecture: any
 Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          python-twisted-web,
          python-twisted-names,
-         landscape-common (>= ${Source-Version})
+         landscape-common (= ${Source-Version})
 Suggests: ${extra:Suggests}
 Description: The Landscape administration system client
  Landscape is a web-based tool for managing Ubuntu systems. This
@@ -48,8 +48,8 @@ XB-Python-Version: ${python:Versions}
 Package: landscape-client-ui
 Architecture: any
 Depends: ${python:Depends}, ${misc:Depends},
-         landscape-client (>= ${Source-Version}),
-         landscape-client-ui-install (>= ${Source-Version}),
+         landscape-client (= ${Source-Version}),
+         landscape-client-ui-install (= ${Source-Version}),
          python-gi,
          python-dbus,
          policykit-1,
