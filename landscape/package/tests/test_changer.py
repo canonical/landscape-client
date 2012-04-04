@@ -1276,7 +1276,7 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
     def test_change_package_holds(self):
         """
         The L{PackageChanger.handle_tasks} method appropriately creates and
-        deletes package holds as requested by the C{change-package-holds}
+        deletes package holds as requested by the C{change-packages}
         message.
         """
         self._add_system_package("foo")
@@ -1316,7 +1316,7 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
     def test_create_package_holds_with_identical_version(self):
         """
         The L{PackageChanger.handle_tasks} method appropriately creates
-        holds as requested by the C{change-package-holds} message even
+        holds as requested by the C{change-packages} message even
         when versions from two different packages are the same.
         """
         self._add_system_package("foo", version="1.1")
@@ -1342,7 +1342,7 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
     def test_delete_package_holds_with_identical_version(self):
         """
         The L{PackageChanger.handle_tasks} method appropriately deletes
-        holds as requested by the C{change-package-holds} message even
+        holds as requested by the C{change-packages} message even
         when versions from two different packages are the same.
         """
         self._add_system_package("foo", version="1.1")
@@ -1355,12 +1355,13 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         self.facade.set_package_hold(foo)
         self.facade.set_package_hold(bar)
         self.facade.reload_channels()
-        self.store.add_task("changer", {"type": "change-package-holds",
-                                        "delete": [foo.package.id,
-                                                   bar.package.id],
+        self.store.add_task("changer", {"type": "change-packages",
+                                        "remove-holds": [foo.package.id,
+                                                         bar.package.id],
                                         "operation-id": 123})
 
         def assert_result(result):
+            self.facade.reload_channels()
             self.assertEqual([], self.facade.get_package_holds())
 
         result = self.changer.handle_tasks()
