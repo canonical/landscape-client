@@ -1100,21 +1100,22 @@ class SmartPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         method fails the activity, since it can't add or remove dpkg holds.
         """
         self.facade.reload_channels()
-        self.store.add_task("changer", {"type": "change-package-holds",
-                                        "create": [1],
-                                        "delete": [2],
+        installed_hash = self.set_pkg1_installed()        
+        self.store.set_hash_ids({installed_hash: 1})
+
+        self.store.add_task("changer", {"type": "change-packages",
+                                        "create-holds": [1],
                                         "operation-id": 123})
 
         def assert_result(result):
-            self.assertIn("Queuing message with change package holds results "
+            self.assertIn("Queuing response with change package results "
                           "to exchange urgently.", self.logfile.getvalue())
             self.assertMessages(
                 self.get_pending_messages(),
-                [{"type": "operation-result",
+                [{"type": "change-packages-result",
                   "operation-id": 123,
-                  "status": FAILED,
                   "result-text": "This client doesn't support package holds.",
-                  "result-code": 1}])
+                  "result-code": 102}])
 
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)

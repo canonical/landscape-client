@@ -863,6 +863,14 @@ class SmartFacade(object):
             if self.is_package_installed(package):
                 self.mark_upgrade(package)
 
+    def mark_create_hold(self, version):
+        """Mark the package to be held."""
+        raise NotImplementedError
+
+    def mark_remove_hold(self, version):
+        """Mark the package to have its hold removed."""
+        raise NotImplementedError
+
     def reset_marks(self):
         self._marks.clear()
 

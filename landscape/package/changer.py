@@ -9,7 +9,8 @@ import grp
 from twisted.internet.defer import maybeDeferred, succeed
 
 from landscape.constants import (
-    SUCCESS_RESULT, ERROR_RESULT, DEPENDENCY_ERROR_RESULT, POLICY_STRICT,
+    SUCCESS_RESULT, ERROR_RESULT, DEPENDENCY_ERROR_RESULT,
+    CLIENT_VERSION_ERROR_RESULT, POLICY_STRICT,
     POLICY_ALLOW_INSTALLS, POLICY_ALLOW_ALL_CHANGES,
     UNKNOWN_PACKAGE_DATA_TIMEOUT)
 
@@ -103,8 +104,6 @@ class PackageChanger(PackageTaskHandler):
             return result.addErrback(self.unknown_package_data_error, task)
         if message["type"] == "change-package-locks":
             return self.handle_change_package_locks(message)
-        if message["type"] == "change-package-holds":
-            return self.handle_change_package_holds(message)
 
     def unknown_package_data_error(self, failure, task):
         """Handle L{UnknownPackageData} data errors.
@@ -168,7 +167,8 @@ class PackageChanger(PackageTaskHandler):
 
         self._facade.ensure_channels_reloaded()
 
-    def mark_packages(self, upgrade=False, install=(), remove=(), reset=True):
+    def mark_packages(self, upgrade=False, install=(), remove=(), 
+                      create_holds=(), remove_holds=(), reset=True):
         """Mark packages for upgrade, installation or removal.
 
         @param upgrade: If C{True} mark all installed packages for upgrade.
@@ -182,8 +182,10 @@ class PackageChanger(PackageTaskHandler):
         if upgrade:
             self._facade.mark_global_upgrade()
 
-        for ids, mark_func in [(install, self._facade.mark_install),
-                                 (remove, self._facade.mark_remove)]:
+        for ids, mark_func in [(create_holds, self._facade.mark_create_hold),
+                               (remove_holds, self._facade.mark_remove_hold),
+                               (install, self._facade.mark_install),
+                               (remove, self._facade.mark_remove)]:
             for id in ids:
                 hash = self._store.get_id_hash(id)
                 if hash is None:
@@ -262,11 +264,24 @@ class PackageChanger(PackageTaskHandler):
 
     def handle_change_packages(self, message):
         """Handle a C{change-packages} message."""
-
+        
         self.init_channels(message.get("binaries", ()))
-        self.mark_packages(message.get("upgrade-all", False),
-                           message.get("install", ()),
-                           message.get("remove", ()))
+        try:
+            self.mark_packages(upgrade=message.get("upgrade-all", False),
+                               install=message.get("install", ()),
+                               remove=message.get("remove", ()),
+                               create_holds=message.get("create-holds", ()),
+                               remove_holds=message.get("remove-holds", ()))
+        except NotImplementedError:
+            response = {"type": "change-packages-result",
+                        "operation-id": message.get("operation-id"),
+                        "status": FAILED,
+                        "result-text": 
+                        "This client doesn't support package holds.",
+                        "result-code": CLIENT_VERSION_ERROR_RESULT}
+            logging.info("Queuing response with change package results to "
+                         "exchange urgently.")
+            return self._broker.send_message(response, True)
 
         result = self.change_packages(message.get("policy", POLICY_STRICT))
         self._clear_binaries()
