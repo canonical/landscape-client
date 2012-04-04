@@ -273,15 +273,14 @@ class PackageChanger(PackageTaskHandler):
                                create_holds=message.get("create-holds", ()),
                                remove_holds=message.get("remove-holds", ()))
         except NotImplementedError:
-            response = {"type": "change-packages-result",
-                        "operation-id": message.get("operation-id"),
-                        "status": FAILED,
-                        "result-text": 
-                        "This client doesn't support package holds.",
-                        "result-code": CLIENT_VERSION_ERROR_RESULT}
-            logging.info("Queuing response with change package results to "
-                         "exchange urgently.")
-            return self._broker.send_message(response, True)
+              response = {"type": "change-packages-result",
+                          "operation-id": message.get("operation-id"),
+                          "result-text": 
+                          "This client doesn't support package holds.",
+                          "result-code": CLIENT_VERSION_ERROR_RESULT}
+              logging.info("Queuing response with change package results to "
+                           "exchange urgently.")
+              return self._broker.send_message(response, True)
 
         result = self.change_packages(message.get("policy", POLICY_STRICT))
         self._clear_binaries()
@@ -332,71 +331,71 @@ class PackageChanger(PackageTaskHandler):
                      "exchange urgently.")
         return self._broker.send_message(response, True)
 
-    def _send_change_package_holds_response(self, response):
-        """Log that a package holds result is sent and send the response."""
-        logging.info("Queuing message with change package holds results to "
-                     "exchange urgently.")
-        return self._broker.send_message(response, True)
+    # def _send_change_package_holds_response(self, response):
+    #     """Log that a package holds result is sent and send the response."""
+    #     logging.info("Queuing message with change package holds results to "
+    #                  "exchange urgently.")
+    #     return self._broker.send_message(response, True)
 
-    def handle_change_package_holds(self, message):
-        """Handle a C{change-package-holds} message.
+    # def handle_change_package_holds(self, message):
+    #     """Handle a C{change-package-holds} message.
 
-        Create and delete package holds as requested by the given C{message}.
-        """
-        if not self._facade.supports_package_holds:
-            response = {
-                "type": "operation-result",
-                "operation-id": message.get("operation-id"),
-                "status": FAILED,
-                "result-text": "This client doesn't support package holds.",
-                "result-code": 1}
-            return self._send_change_package_holds_response(response)
+    #     Create and delete package holds as requested by the given C{message}.
+    #     """
+    #     if not self._facade.supports_package_holds:
+    #         response = {
+    #             "type": "operation-result",
+    #             "operation-id": message.get("operation-id"),
+    #             "status": FAILED,
+    #             "result-text": "This client doesn't support package holds.",
+    #             "result-code": 1}
+    #         return self._send_change_package_holds_response(response)
 
-        not_installed = set()
-        holds_to_create = message.get("create", [])
-        versions_to_create = set()
-        for id in holds_to_create:
-            hash = self._store.get_id_hash(id)
-            hold_version = self._facade.get_package_by_hash(hash)
-            if (hold_version
-                and self._facade.is_package_installed(hold_version)):
-                versions_to_create.add((hold_version.package, hold_version))
-            else:
-                not_installed.add(str(id))
-        holds_to_remove = message.get("delete", [])
-        versions_to_remove = set()
-        for id in holds_to_remove:
-            hash = self._store.get_id_hash(id)
-            hold_version = self._facade.get_package_by_hash(hash)
-            if (hold_version
-                and self._facade.is_package_installed(hold_version)):
-                versions_to_remove.add((hold_version.package, hold_version))
+    #     not_installed = set()
+    #     holds_to_create = message.get("create", [])
+    #     versions_to_create = set()
+    #     for id in holds_to_create:
+    #         hash = self._store.get_id_hash(id)
+    #         hold_version = self._facade.get_package_by_hash(hash)
+    #         if (hold_version
+    #             and self._facade.is_package_installed(hold_version)):
+    #             versions_to_create.add((hold_version.package, hold_version))
+    #         else:
+    #             not_installed.add(str(id))
+    #     holds_to_remove = message.get("delete", [])
+    #     versions_to_remove = set()
+    #     for id in holds_to_remove:
+    #         hash = self._store.get_id_hash(id)
+    #         hold_version = self._facade.get_package_by_hash(hash)
+    #         if (hold_version
+    #             and self._facade.is_package_installed(hold_version)):
+    #             versions_to_remove.add((hold_version.package, hold_version))
 
-        if not_installed:
-            response = {
-                "type": "operation-result",
-                "operation-id": message.get("operation-id"),
-                "status": FAILED,
-                "result-text": "Package holds not changed, since the" +
-                               " following packages are not installed: %s" % (
-                                   ", ".join(sorted(not_installed))),
-                "result-code": 1}
-            return self._send_change_package_holds_response(response)
+    #     if not_installed:
+    #         response = {
+    #             "type": "operation-result",
+    #             "operation-id": message.get("operation-id"),
+    #             "status": FAILED,
+    #             "result-text": "Package holds not changed, since the" +
+    #                            " following packages are not installed: %s" % (
+    #                                ", ".join(sorted(not_installed))),
+    #             "result-code": 1}
+    #         return self._send_change_package_holds_response(response)
 
-        for package, hold_version in versions_to_create:
-            self._facade.set_package_hold(hold_version)
-        for package, hold_version in versions_to_remove:
-            self._facade.remove_package_hold(hold_version)
+    #     for package, hold_version in versions_to_create:
+    #         self._facade.set_package_hold(hold_version)
+    #     for package, hold_version in versions_to_remove:
+    #         self._facade.remove_package_hold(hold_version)
 
-        self._facade.reload_channels()
+    #     self._facade.reload_channels()
 
-        response = {"type": "operation-result",
-                    "operation-id": message.get("operation-id"),
-                    "status": SUCCEEDED,
-                    "result-text": "Package holds successfully changed.",
-                    "result-code": 0}
+    #     response = {"type": "operation-result",
+    #                 "operation-id": message.get("operation-id"),
+    #                 "status": SUCCEEDED,
+    #                 "result-text": "Package holds successfully changed.",
+    #                 "result-code": 0}
 
-        return self._send_change_package_holds_response(response)
+    #     return self._send_change_package_holds_response(response)
 
     @staticmethod
     def find_command():
