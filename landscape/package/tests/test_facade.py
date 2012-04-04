@@ -2391,11 +2391,11 @@ class AptFacadeTest(LandscapeTest):
 
         self.assertEqual([], self.facade.get_package_holds())
 
-    def test_remove_package_hold_no_package(self):
+    def test_mark_remove_hold_no_package(self):
         """
-        If a package doesn't exist, C{remove_package_hold} doesn't
-        return an error. It's up to the caller to make sure that the
-        package exist, if it's important.
+        If a package doesn't exist, C{mark_remove_hold} followed by
+        C{perform_changes} doesn't return an error. It's up to the caller to
+        make sure that the package exist, if it's important.
         """
         self._add_system_package("foo")
         deb_dir = self.makeDir()
@@ -2403,21 +2403,23 @@ class AptFacadeTest(LandscapeTest):
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
         [bar] = self.facade.get_packages_by_name("bar")
-        self.facade.remove_package_hold(bar)
+        self.facade.mark_remove_hold(bar)
+        self.facade.perform_changes()
         self.facade.reload_channels()
 
         self.assertEqual([], self.facade.get_package_holds())
 
-    def test_remove_package_hold_no_hold(self):
+    def test_mark_remove_hold_no_hold(self):
         """
         If a package isn't held, the existing selection is retained when
-        C{remove_package_hold} is called.
+        C{mark_remove_hold} and C{perform_changes} are called.
         """
         self._add_system_package(
             "foo", control_fields={"Status": "deinstall ok installed"})
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
-        self.facade.remove_package_hold(foo)
+        self.facade.mark_remove_hold(foo)
+        self.facade.perform_changes()
         self.facade.reload_channels()
 
         self.assertEqual([], self.facade.get_package_holds())
