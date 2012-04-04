@@ -2377,15 +2377,16 @@ class AptFacadeTest(LandscapeTest):
 
         self.assertEqual(["foo"], self.facade.get_package_holds())
 
-    def test_remove_package_hold(self):
+    def test_mark_remove_hold(self):
         """
-        C{remove_package_hold} marks a package not to be on hold.
+        C{mark_remove_hold} marks a package as not held.
         """
         self._add_system_package(
             "foo", control_fields={"Status": "hold ok installed"})
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
-        self.facade.remove_package_hold(foo)
+        self.facade.mark_remove_hold(foo)
+        self.facade.perform_changes()
         self.facade.reload_channels()
 
         self.assertEqual([], self.facade.get_package_holds())
