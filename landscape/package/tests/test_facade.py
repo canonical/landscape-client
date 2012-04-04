@@ -2350,28 +2350,9 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(
             ["baz", "foo"], sorted(self.facade.get_package_holds()))
 
-    # def test_mark_install_specific_version(self):
-    #     """
-    #     If more than one version is available, the version passed to
-    #     C{mark_install} is marked as the candidate version, so that gets
-    #     installed.
-    #     """
-    #     deb_dir = self.makeDir()
-    #     self._add_package_to_deb_dir(deb_dir, "foo", version="1.0")
-    #     self._add_package_to_deb_dir(deb_dir, "foo", version="2.0")
-    #     self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
-    #     self.facade.reload_channels()
-    #     foo1, foo2 = sorted(self.facade.get_packages_by_name("foo"))
-    #     self.assertEqual(foo2, foo1.package.candidate)
-    #     self.facade.mark_install(foo1)
-    #     self.patch_cache_commit()
-    #     self.facade.perform_changes()
-    #     self.assertEqual(foo1, foo1.package.candidate)
-
-
-    def test_set_package_hold(self):
+    def test_mark_create_hold(self):
         """
-        C{set_package_hold} marks a package to be on hold.
+        C{mark_create_hold} marks a package to be held.
         """
         self._add_system_package("foo")
         self.facade.reload_channels()
@@ -2381,16 +2362,17 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         self.assertEqual(["foo"], self.facade.get_package_holds())
 
-    def test_set_package_hold_existing_hold(self):
+    def test_mark_create_hold_existing_hold(self):
         """
-        If a package is already hel, C{set_package_hold} doesn't return
-        an error.
+        If a package is already held, C{mark_create_hold} and
+        C{perform_changes} won't return an error.
         """
         self._add_system_package(
             "foo", control_fields={"Status": "hold ok installed"})
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
-        self.facade.set_package_hold(foo)
+        self.facade.mark_create_hold(foo)
+        self.facade.perform_changes()
         self.facade.reload_channels()
 
         self.assertEqual(["foo"], self.facade.get_package_holds())
