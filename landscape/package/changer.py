@@ -182,33 +182,29 @@ class PackageChanger(PackageTaskHandler):
         if upgrade:
             self._facade.mark_global_upgrade()
 
-        def make_marker(mark_function, error_on_missing=False):
+        def make_marker(mark_function, error_on_missing=True):
 
             def marker(mark_id):
                 hash = self._store.get_id_hash(mark_id)
                 if hash is None:
                     if error_on_missing:
-                        raise UnknownPackageData(id)
+                        raise UnknownPackageData(mark_id)
+                else:
+                    package = self._facade.get_package_by_hash(hash)
+                    if package is None:
+                        if error_on_missing:
+                            raise UnknownPackageData(hash)
                     else:
-                        package = self._facade.get_package_by_hash(hash)
-                        if package is None:
-                            if error_on_missing:
-                                raise UnknownPackageData(hash)
-                        else:
-                            mark_function(package)
+                        mark_function(package)
 
             return marker
 
-        if create_holds:
-            map(make_marker(self._facade.mark_create_hold), create_holds)
-        if remove_holds:
-            map(make_marker(self._facade.mark_remove_hold), remove_holds)
-        if install:
-            map(make_marker(self._facade.mark_install, error_on_missing=True),
-                install)
-        if remove:
-            map(make_marker(self._facade.mark_remove, error_on_missing=True),
-                remove)
+        map(make_marker(self._facade.mark_install), install)
+        map(make_marker(self._facade.mark_remove), remove)
+        map(make_marker(self._facade.mark_create_hold), create_holds)
+        map(make_marker(self._facade.mark_remove_hold, error_on_missing=False),
+            remove_holds)
+
 
     def change_packages(self, policy):
         """Perform the requested changes.
