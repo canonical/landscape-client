@@ -206,7 +206,8 @@ class AptFacade(object):
 
         @param version: The version of the package to unhold.
         """
-        if not self._is_package_held(version.package):
+        if (not self.is_package_installed(version) or 
+            not self._is_package_held(version.package)):
             return
         self._set_dpkg_selections(version.package.name + " install")
 
@@ -600,6 +601,7 @@ class AptFacade(object):
 
             for version in self._version_hold_removals:
                 self.remove_package_hold(version)
+
             result_text = "Package holds successfully changed."
         if version_changes or self._global_upgrade:
             fixer = apt_pkg.ProblemResolver(self._cache._depcache)

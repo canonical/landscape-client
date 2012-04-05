@@ -1564,9 +1564,11 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
             self.repository_dir, "foo", version="2.0")
         self.facade.reload_channels()
         [foo1, foo2] = sorted(self.facade.get_packages_by_name("foo"))
-        self.facade.set_package_hold(foo1)
         self.store.set_hash_ids({self.facade.get_package_hash(foo1): 1,
                                  self.facade.get_package_hash(foo2): 2})
+        self.facade.mark_install(foo1)
+        self.facade.mark_create_hold(foo1)
+        self.facade.perform_changes()
         self.facade.reload_channels()
         self.store.add_task("changer", {"type": "change-packages",
                                         "remove-holds": [2],
@@ -1575,15 +1577,14 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         def assert_result(result):
             self.facade.reload_channels()
             self.assertEqual(["foo"], self.facade.get_package_holds())
-            self.assertIn("Queuing message with change package holds results "
+            self.assertIn("Queuing response with change package results "
                           "to exchange urgently.", self.logfile.getvalue())
             self.assertMessages(
                 self.get_pending_messages(),
-                [{"type": "operation-result",
+                [{"type": "change-packages-result",
                   "operation-id": 123,
-                  "status": SUCCEEDED,
                   "result-text": "Package holds successfully changed.",
-                  "result-code": 0}])
+                  "result-code": 1}])
 
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
