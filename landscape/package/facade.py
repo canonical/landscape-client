@@ -584,8 +584,20 @@ class AptFacade(object):
             not self._global_upgrade):
             return None
         if hold_changes:
-            for version in self._version_hold_creations:
-                self.set_package_hold(version)
+            not_installed = filter(
+                lambda version: not self.is_package_installed(version),
+                self._version_hold_creations)
+            if not_installed:
+                raise TransactionError(
+                    "Cannot perform the changes, since the following packages" +
+                    " are not installed: %s" % ", ".join(
+                        [version.package.name 
+                         for version in sorted(not_installed)]))
+
+            else:
+                for version in self._version_hold_creations:
+                    self.set_package_hold(version)
+
             for version in self._version_hold_removals:
                 self.remove_package_hold(version)
             result_text = "Package holds successfully changed."

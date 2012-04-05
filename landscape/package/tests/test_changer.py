@@ -1428,16 +1428,15 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         def assert_result(result):
             self.facade.reload_channels()
             self.assertEqual([], self.facade.get_package_holds())
-            self.assertIn("Queuing message with change package holds results "
+            self.assertIn("Queuing response with change package results "
                           "to exchange urgently.", self.logfile.getvalue())
             self.assertMessages(
                 self.get_pending_messages(),
-                [{"type": "operation-result",
+                [{"type": "change-packages-result",
                   "operation-id": 123,
-                  "status": FAILED,
-                  "result-text": "Package holds not changed, since the" +
-                                 " following packages are not installed: 2",
-                  "result-code": 1}])
+                  "result-text": "Cannot perform the changes, since the" +
+                                 " following packages are not installed: foo",
+                  "result-code": 100}])
 
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
@@ -1470,18 +1469,17 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         def assert_result(result):
             self.facade.reload_channels()
             self.assertEqual([], self.facade.get_package_holds())
-            self.assertIn("Queuing message with change package holds results "
+            self.assertIn("Queuing response with change package results "
                           "to exchange urgently.", self.logfile.getvalue())
             self.assertMessages(
                 self.get_pending_messages(),
-                [{"type": "operation-result",
+                [{"type": "change-packages-result",
                   "operation-id": 123,
-                  "status": FAILED,
-                  "result-text": "Package holds not changed, since the "
+                  "result-text": "Cannot perform the changes, since the "
                   "following packages are not installed: "
-                  "%s, %s" % tuple(sorted([bar.package.id,
-                                               baz.package.id])),
-                  "result-code": 1}])
+                  "%s, %s" % tuple(sorted([bar.package.name,
+                                           baz.package.name])),
+                  "result-code": 100}])
 
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
