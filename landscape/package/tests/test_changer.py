@@ -1100,7 +1100,7 @@ class SmartPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         method fails the activity, since it can't add or remove dpkg holds.
         """
         self.facade.reload_channels()
-        installed_hash = self.set_pkg1_installed()        
+        installed_hash = self.set_pkg1_installed()
         self.store.set_hash_ids({installed_hash: 1})
 
         self.store.add_task("changer", {"type": "change-packages",
@@ -1492,7 +1492,7 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         """
 
         self.store.add_task("changer",
-                            {"type": "change-packages", 
+                            {"type": "change-packages",
                              "create-holds": [123],
                              "operation-id": 123})
 
@@ -1520,7 +1520,7 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
                                       "Please retry the operation."}
             self.assertMessages(self.get_pending_messages(), [message])
             self.assertEqual(self.store.get_next_task("changer"), None)
-        return result.addCallback(got_result) 
+        return result.addCallback(got_result)
 
     def test_change_package_holds_delete_not_held(self):
         """

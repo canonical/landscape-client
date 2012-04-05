@@ -1553,7 +1553,6 @@ class AptFacadeTest(LandscapeTest):
         # Make sure we don't leave the tempfile behind.
         self.assertFalse(os.path.exists(outfile))
 
-    # XXX
     def test_reset_marks(self):
         """
         C{reset_marks()} clears things, so that there's nothing to do
@@ -1584,6 +1583,7 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(self.facade._version_hold_creations, [])
         self.assertEqual(self.facade._version_hold_removals, [])
         self.assertEqual(self.facade.perform_changes(), None)
+
     def test_reset_marks_resets_cache(self):
         """
         C{reset_marks()} clears the apt cache, so that no changes will
@@ -2363,7 +2363,7 @@ class AptFacadeTest(LandscapeTest):
         """
         self._add_system_package("foo")
         self.facade.reload_channels()
-        [foo] = self.facade.get_packages_by_name("foo")        
+        [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_create_hold(foo)
         self.facade.perform_changes()
         self.facade.reload_channels()

@@ -206,7 +206,7 @@ class AptFacade(object):
 
         @param version: The version of the package to unhold.
         """
-        if (not self.is_package_installed(version) or 
+        if (not self.is_package_installed(version) or
             not self._is_package_held(version.package)):
             return
         self._set_dpkg_selections(version.package.name + " install")
@@ -581,7 +581,7 @@ class AptFacade(object):
         version_changes.extend(self._version_removals)
         hold_changes = self._version_hold_creations[:]
         hold_changes.extend(self._version_hold_removals)
-        if (not hold_changes and not version_changes and 
+        if (not hold_changes and not version_changes and
             not self._global_upgrade):
             return None
         if hold_changes:
@@ -590,9 +590,9 @@ class AptFacade(object):
                 self._version_hold_creations)
             if not_installed:
                 raise TransactionError(
-                    "Cannot perform the changes, since the following packages" +
-                    " are not installed: %s" % ", ".join(
-                        [version.package.name 
+                    "Cannot perform the changes, since the following " +
+                    "packages are not installed: %s" % ", ".join(
+                        [version.package.name
                          for version in sorted(not_installed)]))
 
             else:
@@ -645,8 +645,8 @@ class AptFacade(object):
                 try:
                     fixer.resolve(True)
                 except SystemError, error:
-                    raise TransactionError(
-                        error.args[0] + "\n" + self._get_unmet_dependency_info())
+                    raise TransactionError(error.args[0] + "\n" +
+                                           self._get_unmet_dependency_info())
             if not self._check_changes(version_changes):
                 return None
             fetch_output = StringIO()
@@ -668,8 +668,9 @@ class AptFacade(object):
             except SystemError, error:
                 result_text = (
                     fetch_output.getvalue() + read_file(install_output_path))
-                raise TransactionError(
-                    error.args[0] + "\n\nPackage operation log:\n" + result_text)
+                raise TransactionError(error.args[0] +
+                                       "\n\nPackage operation log:\n" +
+                                       result_text)
             else:
                 result_text = (
                     fetch_output.getvalue() + read_file(install_output_path))
