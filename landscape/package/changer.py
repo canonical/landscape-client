@@ -182,18 +182,33 @@ class PackageChanger(PackageTaskHandler):
         if upgrade:
             self._facade.mark_global_upgrade()
 
-        for ids, mark_func in [(create_holds, self._facade.mark_create_hold),
-                               (remove_holds, self._facade.mark_remove_hold),
-                               (install, self._facade.mark_install),
-                               (remove, self._facade.mark_remove)]:
-            for id in ids:
-                hash = self._store.get_id_hash(id)
+        def make_marker(mark_function, error_on_missing=False):
+
+            def marker(mark_id):
+                hash = self._store.get_id_hash(mark_id)
                 if hash is None:
-                    raise UnknownPackageData(id)
-                package = self._facade.get_package_by_hash(hash)
-                if package is None:
-                    raise UnknownPackageData(hash)
-                mark_func(package)
+                    if error_on_missing:
+                        raise UnknownPackageData(id)
+                    else:
+                        package = self._facade.get_package_by_hash(hash)
+                        if package is None:
+                            if error_on_missing:
+                                raise UnknownPackageData(hash)
+                        else:
+                            mark_function(package)
+
+            return marker
+
+        if create_holds:
+            map(make_marker(self._facade.mark_create_hold), create_holds)
+        if remove_holds:
+            map(make_marker(self._facade.mark_remove_hold), remove_holds)
+        if install:
+            map(make_marker(self._facade.mark_install, error_on_missing=True),
+                install)
+        if remove:
+            map(make_marker(self._facade.mark_remove, error_on_missing=True),
+                remove)
 
     def change_packages(self, policy):
         """Perform the requested changes.

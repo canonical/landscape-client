@@ -568,7 +568,7 @@ class AptFacade(object):
         if "PATH" not in os.environ:
             os.environ["PATH"] = UBUNTU_PATH
         apt_pkg.config.clear("DPkg::options")
-        apt_pkg.config.set("DPkg::options::", "--force-con fold")
+        apt_pkg.config.set("DPkg::options::", "--force-confold")
 
         held_package_names = set()
         package_installs = set(

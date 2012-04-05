@@ -1379,8 +1379,8 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.set_package_hold(foo)
         self.facade.reload_channels()
-        self.store.add_task("changer", {"type": "change-package-holds",
-                                        "create": [foo.package.id],
+        self.store.add_task("changer", {"type": "change-packages",
+                                        "create-holds": [foo.package.id],
                                         "operation-id": 123})
 
         def assert_result(result):
@@ -1422,8 +1422,8 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
                                  self.facade.get_package_hash(bar1): 3,
                                  self.facade.get_package_hash(bar2): 4})
         self.facade.reload_channels()
-        self.store.add_task("changer", {"type": "change-package-holds",
-                                        "create": [2, 3],
+        self.store.add_task("changer", {"type": "change-packages",
+                                        "create-holds": [2, 3],
                                         "operation-id": 123})
 
         def assert_result(result):
@@ -1462,10 +1462,10 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         [foo] = self.facade.get_packages_by_name("foo")
         [bar] = self.facade.get_packages_by_name("bar")
         [baz] = self.facade.get_packages_by_name("baz")
-        self.store.add_task("changer", {"type": "change-package-holds",
-                                        "create": [foo.package.id,
-                                                   bar.package.id,
-                                                   baz.package.id],
+        self.store.add_task("changer", {"type": "change-packages",
+                                        "create-holds": [foo.package.id,
+                                                         bar.package.id,
+                                                         baz.package.id],
                                         "operation-id": 123})
 
         def assert_result(result):
@@ -1494,8 +1494,8 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         as the packages not being installed.
         """
         self.facade.reload_channels()
-        self.store.add_task("changer", {"type": "change-package-holds",
-                                        "create": [1],
+        self.store.add_task("changer", {"type": "change-packages",
+                                        "create-holds": [1],
                                         "operation-id": 123})
 
         def assert_result(result):
@@ -1526,8 +1526,8 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         self.facade.reload_channels()
         self._hash_packages_by_name(self.facade, self.store, "foo")
         [foo] = self.facade.get_packages_by_name("foo")
-        self.store.add_task("changer", {"type": "change-package-holds",
-                                        "delete": [foo.package.id],
+        self.store.add_task("changer", {"type": "change-packages",
+                                        "remove-holds": [foo.package.id],
                                         "operation-id": 123})
 
         def assert_result(result):
@@ -1562,8 +1562,8 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         self.store.set_hash_ids({self.facade.get_package_hash(foo1): 1,
                                  self.facade.get_package_hash(foo2): 2})
         self.facade.reload_channels()
-        self.store.add_task("changer", {"type": "change-package-holds",
-                                        "delete": [2],
+        self.store.add_task("changer", {"type": "change-packages",
+                                        "remove-holds": [2],
                                         "operation-id": 123})
 
         def assert_result(result):
@@ -1584,27 +1584,26 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
 
     def test_change_package_holds_delete_unknown_hash(self):
         """
-        If the C{change-package-holds} message requests to remove holds
+        If the C{change-packages} message requests to remove holds
         for packages that aren't known by the client, the activity
         succeeds, since the end result is that the package isn't
         held at that version.
         """
-        self.store.add_task("changer", {"type": "change-package-holds",
-                                        "delete": [1],
+        self.store.add_task("changer", {"type": "change-packages",
+                                        "remove-holds": [1],
                                         "operation-id": 123})
 
         def assert_result(result):
             self.facade.reload_channels()
             self.assertEqual([], self.facade.get_package_holds())
-            self.assertIn("Queuing message with change package holds results "
+            self.assertIn("Queuing response with change package results "
                           "to exchange urgently.", self.logfile.getvalue())
+            messages = self.get_pending_messages()
             self.assertMessages(
-                self.get_pending_messages(),
-                [{"type": "operation-result",
+                messages,
+                [{"type": "change-packages-result",
                   "operation-id": 123,
-                  "status": SUCCEEDED,
-                  "result-text": "Package holds successfully changed.",
-                  "result-code": 0}])
+                  "result-code": 1}])
 
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
@@ -1620,8 +1619,8 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         self.facade.reload_channels()
         self._hash_packages_by_name(self.facade, self.store, "foo")
         [foo] = self.facade.get_packages_by_name("foo")
-        self.store.add_task("changer", {"type": "change-package-holds",
-                                        "delete": [foo.package.id],
+        self.store.add_task("changer", {"type": "change-packages",
+                                        "remove-holds": [foo.package.id],
                                         "operation-id": 123})
 
         def assert_result(result):
