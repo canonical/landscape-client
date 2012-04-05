@@ -670,6 +670,8 @@ class AptFacade(object):
         """Clear the pending package operations."""
         del self._version_installs[:]
         del self._version_removals[:]
+        del self._version_hold_removals[:]
+        del self._version_hold_creations[:]
         self._global_upgrade = False
         self._cache.clear()
 

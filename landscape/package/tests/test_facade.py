@@ -1565,18 +1565,25 @@ class AptFacadeTest(LandscapeTest):
         self._add_package_to_deb_dir(deb_dir, "bar", version="1.5")
         self._add_system_package("baz")
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self._add_system_package("quux", version="1.0")
+        self._add_system_package("wibble", version="1.0")
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_install(foo)
         self.facade.mark_global_upgrade()
         [baz] = self.facade.get_packages_by_name("baz")
         self.facade.mark_remove(baz)
+        [quux] = self.facade.get_packages_by_name("quux")
+        self.facade.mark_create_hold(quux)
+        [wibble] = self.facade.get_packages_by_name("wibble")
+        self.facade.mark_remove_hold(wibble)
         self.facade.reset_marks()
         self.assertEqual(self.facade._version_installs, [])
         self.assertEqual(self.facade._version_removals, [])
         self.assertFalse(self.facade._global_upgrade)
+        self.assertEqual(self.facade._version_hold_creations, [])
+        self.assertEqual(self.facade._version_hold_removals, [])
         self.assertEqual(self.facade.perform_changes(), None)
-
     def test_reset_marks_resets_cache(self):
         """
         C{reset_marks()} clears the apt cache, so that no changes will
