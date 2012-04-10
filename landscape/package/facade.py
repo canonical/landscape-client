@@ -585,9 +585,9 @@ class AptFacade(object):
             not self._global_upgrade):
             return None
         if hold_changes:
-            not_installed = filter(
-                lambda version: not self.is_package_installed(version),
-                self._version_hold_creations)
+            not_installed = [version for version in
+                             self._version_hold_creations
+                             if not self.is_package_installed(version)]
             if not_installed:
                 raise TransactionError(
                     "Cannot perform the changes, since the following " +
