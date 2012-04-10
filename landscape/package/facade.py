@@ -579,8 +579,8 @@ class AptFacade(object):
             if version.package in package_installs)
         version_changes = self._version_installs[:]
         version_changes.extend(self._version_removals)
-        hold_changes = self._version_hold_creations[:]
-        hold_changes.extend(self._version_hold_removals)
+        hold_changes = (len(self._version_hold_creations) > 0 or
+                        len(self._version_hold_removals) > 0)
         if (not hold_changes and not version_changes and
             not self._global_upgrade):
             return None
