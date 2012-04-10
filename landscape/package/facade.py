@@ -127,8 +127,8 @@ class AptFacade(object):
         self._version_installs = []
         self._global_upgrade = False
         self._version_removals = []
-        self._version_hold_creations = []
-        self._version_hold_removals = []
+        self._version_hold_creations = set()
+        self._version_hold_removals = set()
         self.refetch_package_index = False
 
     def _ensure_dir_structure(self):
@@ -685,8 +685,8 @@ class AptFacade(object):
         """Clear the pending package operations."""
         del self._version_installs[:]
         del self._version_removals[:]
-        del self._version_hold_removals[:]
-        del self._version_hold_creations[:]
+        self._version_hold_removals = set()
+        self._version_hold_creations = set()
         self._global_upgrade = False
         self._cache.clear()
 
@@ -704,11 +704,11 @@ class AptFacade(object):
 
     def mark_create_hold(self, version):
         """Mark the package to be held."""
-        self._version_hold_creations.append(version)
+        self._version_hold_creations.add(version)
 
     def mark_remove_hold(self, version):
         """Mark the package to have its hold removed."""
-        self._version_hold_removals.append(version)
+        self._version_hold_removals.add(version)
 
 
 class SmartFacade(object):

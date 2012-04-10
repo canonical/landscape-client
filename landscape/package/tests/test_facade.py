@@ -1580,8 +1580,8 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(self.facade._version_installs, [])
         self.assertEqual(self.facade._version_removals, [])
         self.assertFalse(self.facade._global_upgrade)
-        self.assertEqual(self.facade._version_hold_creations, [])
-        self.assertEqual(self.facade._version_hold_removals, [])
+        self.assertEqual(self.facade._version_hold_creations, set())
+        self.assertEqual(self.facade._version_hold_removals, set())
         self.assertEqual(self.facade.perform_changes(), None)
 
     def test_reset_marks_resets_cache(self):
