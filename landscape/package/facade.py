@@ -595,9 +595,8 @@ class AptFacade(object):
                         [version.package.name
                          for version in sorted(not_installed)]))
 
-            else:
-                for version in self._version_hold_creations:
-                    self.set_package_hold(version)
+            for version in self._version_hold_creations:
+                self.set_package_hold(version)
 
             for version in self._version_hold_removals:
                 self.remove_package_hold(version)
