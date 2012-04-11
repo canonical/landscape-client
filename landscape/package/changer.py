@@ -168,12 +168,15 @@ class PackageChanger(PackageTaskHandler):
         self._facade.ensure_channels_reloaded()
 
     def mark_packages(self, upgrade=False, install=(), remove=(),
-                      create_holds=(), remove_holds=(), reset=True):
+                      hold=(), remove_hold=(), reset=True):
         """Mark packages for upgrade, installation or removal.
 
         @param upgrade: If C{True} mark all installed packages for upgrade.
         @param install: A list of package ids to be marked for installation.
         @param remove: A list of package ids to be marked for removal.
+        @param hold: A list of package ids to be marked for holding.
+        @param remove_hold: A list of package ids to be marked to have a hold
+                            removed.
         @param reset: If C{True} all existing marks will be reset.
         """
         if reset:
@@ -201,9 +204,9 @@ class PackageChanger(PackageTaskHandler):
 
         map(make_marker(self._facade.mark_install), install)
         map(make_marker(self._facade.mark_remove), remove)
-        map(make_marker(self._facade.mark_hold), create_holds)
+        map(make_marker(self._facade.mark_hold), hold)
         map(make_marker(self._facade.mark_remove_hold, error_on_missing=False),
-            remove_holds)
+            remove_hold)
 
     def change_packages(self, policy):
         """Perform the requested changes.
@@ -280,8 +283,8 @@ class PackageChanger(PackageTaskHandler):
             self.mark_packages(upgrade=message.get("upgrade-all", False),
                                install=message.get("install", ()),
                                remove=message.get("remove", ()),
-                               create_holds=message.get("create-holds", ()),
-                               remove_holds=message.get("remove-holds", ()))
+                               hold=message.get("hold", ()),
+                               remove_hold=message.get("remove-hold", ()))
         except NotImplementedError:
             response = {"type": "change-packages-result",
                         "operation-id": message.get("operation-id"),

@@ -1575,7 +1575,7 @@ class AptFacadeTest(LandscapeTest):
         [quux] = self.facade.get_packages_by_name("quux")
         self.facade.mark_hold(quux)
         [wibble] = self.facade.get_packages_by_name("wibble")
-        self.facade.mark_unhold(wibble)
+        self.facade.mark_remove_hold(wibble)
         self.facade.reset_marks()
         self.assertEqual(self.facade._version_installs, [])
         self.assertEqual(self.facade._version_removals, [])
@@ -2399,23 +2399,23 @@ class AptFacadeTest(LandscapeTest):
 
         self.assertEqual(["foo"], self.facade.get_package_holds())
 
-    def test_mark_unhold(self):
+    def test_mark_remove_hold(self):
         """
-        C{mark_unhold} marks a package as not held.
+        C{mark_remove_hold} marks a package as not held.
         """
         self._add_system_package(
             "foo", control_fields={"Status": "hold ok installed"})
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
-        self.facade.mark_unhold(foo)
+        self.facade.mark_remove_hold(foo)
         self.facade.perform_changes()
         self.facade.reload_channels()
 
         self.assertEqual([], self.facade.get_package_holds())
 
-    def test_mark_unhold_no_package(self):
+    def test_mark_remove_hold_no_package(self):
         """
-        If a package doesn't exist, C{mark_unhold} followed by
+        If a package doesn't exist, C{mark_remove_hold} followed by
         C{perform_changes} doesn't return an error. It's up to the caller to
         make sure that the package exist, if it's important.
         """
@@ -2425,22 +2425,22 @@ class AptFacadeTest(LandscapeTest):
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
         [bar] = self.facade.get_packages_by_name("bar")
-        self.facade.mark_unhold(bar)
+        self.facade.mark_remove_hold(bar)
         self.facade.perform_changes()
         self.facade.reload_channels()
 
         self.assertEqual([], self.facade.get_package_holds())
 
-    def test_mark_unhold_no_hold(self):
+    def test_mark_remove_hold_no_hold(self):
         """
         If a package isn't held, the existing selection is retained when
-        C{mark_unhold} and C{perform_changes} are called.
+        C{mark_remove_hold} and C{perform_changes} are called.
         """
         self._add_system_package(
             "foo", control_fields={"Status": "deinstall ok installed"})
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
-        self.facade.mark_unhold(foo)
+        self.facade.mark_remove_hold(foo)
         self.facade.perform_changes()
         self.facade.reload_channels()
 
