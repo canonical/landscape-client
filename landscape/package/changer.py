@@ -201,7 +201,7 @@ class PackageChanger(PackageTaskHandler):
 
         map(make_marker(self._facade.mark_install), install)
         map(make_marker(self._facade.mark_remove), remove)
-        map(make_marker(self._facade.mark_create_hold), create_holds)
+        map(make_marker(self._facade.mark_hold), create_holds)
         map(make_marker(self._facade.mark_remove_hold, error_on_missing=False),
             remove_holds)
 

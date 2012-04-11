@@ -1567,7 +1567,7 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         self.store.set_hash_ids({self.facade.get_package_hash(foo1): 1,
                                  self.facade.get_package_hash(foo2): 2})
         self.facade.mark_install(foo1)
-        self.facade.mark_create_hold(foo1)
+        self.facade.mark_hold(foo1)
         self.facade.perform_changes()
         self.facade.reload_channels()
         self.store.add_task("changer", {"type": "change-packages",

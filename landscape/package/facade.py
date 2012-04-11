@@ -705,7 +705,7 @@ class AptFacade(object):
         """Mark the package to be held."""
         self._version_hold_creations.append(version)
 
-    def mark_unhold(self, version):
+    def mark_remove_hold(self, version):
         """Mark the package to have its hold removed."""
         self._version_hold_removals.append(version)
 
@@ -882,7 +882,7 @@ class SmartFacade(object):
             if self.is_package_installed(package):
                 self.mark_upgrade(package)
 
-    def mark_create_hold(self, version):
+    def mark_hold(self, version):
         """Mark the package to be held."""
         raise NotImplementedError
 
