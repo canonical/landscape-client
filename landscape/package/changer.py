@@ -270,22 +270,11 @@ class PackageChanger(PackageTaskHandler):
         """Handle a C{change-packages} message."""
 
         self.init_channels(message.get("binaries", ()))
-        try:
-            self.mark_packages(upgrade=message.get("upgrade-all", False),
-                               install=message.get("install", ()),
-                               remove=message.get("remove", ()),
-                               hold=message.get("hold", ()),
-                               remove_hold=message.get("remove-hold", ()))
-        except NotImplementedError:
-            response = {"type": "change-packages-result",
-                        "operation-id": message.get("operation-id"),
-                        "result-text":
-                            "This client doesn't support package holds.",
-                        "result-code": CLIENT_VERSION_ERROR_RESULT}
-            logging.info("Queuing response with change package results to "
-                         "exchange urgently.")
-            return self._broker.send_message(response, True)
-
+        self.mark_packages(upgrade=message.get("upgrade-all", False),
+                           install=message.get("install", ()),
+                           remove=message.get("remove", ()),
+                           hold=message.get("hold", ()),
+                           remove_hold=message.get("remove-hold", ()))
         result = self.change_packages(message.get("policy", POLICY_STRICT))
         self._clear_binaries()
 
