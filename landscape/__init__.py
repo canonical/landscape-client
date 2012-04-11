@@ -32,7 +32,11 @@ API = SERVER_API
 #  * Add "policy" field to "change-packages"
 #  * Add new "change-package-locks" client accepted message type.
 #
-CLIENT_API = "3.3"
+# 3.4:
+#  * Add "hold" field to "change-packages"
+#  * Add "remove-hold" field to "change-packages"
+
+CLIENT_API = "3.4"
 
 from twisted.python import util
 
