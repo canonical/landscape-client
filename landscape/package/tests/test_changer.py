@@ -1589,32 +1589,6 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
         result = self.changer.handle_tasks()
         return result.addCallback(assert_result)
 
-    def test_change_package_holds_delete_unknown_hash(self):
-        """
-        If the C{change-packages} message requests to remove holds
-        for packages that aren't known by the client, the activity
-        succeeds, since the end result is that the package isn't
-        held at that version.
-        """
-        self.store.add_task("changer", {"type": "change-packages",
-                                        "remove-hold": [1],
-                                        "operation-id": 123})
-
-        def assert_result(result):
-            self.facade.reload_channels()
-            self.assertEqual([], self.facade.get_package_holds())
-            self.assertIn("Queuing response with change package results "
-                          "to exchange urgently.", self.logfile.getvalue())
-            messages = self.get_pending_messages()
-            self.assertMessages(
-                messages,
-                [{"type": "change-packages-result",
-                  "operation-id": 123,
-                  "result-code": 1}])
-
-        result = self.changer.handle_tasks()
-        return result.addCallback(assert_result)
-
     def test_change_package_holds_delete_not_installed(self):
         """
         If the C{change-packages} message requests to remove holds
