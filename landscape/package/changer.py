@@ -10,8 +10,7 @@ from twisted.internet.defer import maybeDeferred, succeed
 
 from landscape.constants import (
     SUCCESS_RESULT, ERROR_RESULT, DEPENDENCY_ERROR_RESULT,
-    CLIENT_VERSION_ERROR_RESULT, POLICY_STRICT,
-    POLICY_ALLOW_INSTALLS, POLICY_ALLOW_ALL_CHANGES,
+    POLICY_STRICT, POLICY_ALLOW_INSTALLS, POLICY_ALLOW_ALL_CHANGES,
     UNKNOWN_PACKAGE_DATA_TIMEOUT)
 
 from landscape.lib.fs import create_file
