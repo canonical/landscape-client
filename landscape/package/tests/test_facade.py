@@ -1564,16 +1564,24 @@ class AptFacadeTest(LandscapeTest):
         self._add_package_to_deb_dir(deb_dir, "bar", version="1.5")
         self._add_system_package("baz")
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
+        self._add_system_package("quux", version="1.0")
+        self._add_system_package("wibble", version="1.0")
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_install(foo)
         self.facade.mark_global_upgrade()
         [baz] = self.facade.get_packages_by_name("baz")
         self.facade.mark_remove(baz)
+        [quux] = self.facade.get_packages_by_name("quux")
+        self.facade.mark_hold(quux)
+        [wibble] = self.facade.get_packages_by_name("wibble")
+        self.facade.mark_remove_hold(wibble)
         self.facade.reset_marks()
         self.assertEqual(self.facade._version_installs, [])
         self.assertEqual(self.facade._version_removals, [])
         self.assertFalse(self.facade._global_upgrade)
+        self.assertEqual(self.facade._version_hold_creations, [])
+        self.assertEqual(self.facade._version_hold_removals, [])
         self.assertEqual(self.facade.perform_changes(), None)
 
     def test_reset_marks_resets_cache(self):
@@ -2349,50 +2357,67 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(
             ["baz", "foo"], sorted(self.facade.get_package_holds()))
 
-    def test_set_package_hold(self):
+    def test_mark_hold(self):
         """
-        C{set_package_hold} marks a package to be on hold.
+        C{mark_hold} marks a package to be held.
         """
         self._add_system_package("foo")
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
-        self.facade.set_package_hold(foo)
+        self.facade.mark_hold(foo)
+        self.facade.perform_changes()
         self.facade.reload_channels()
-
         self.assertEqual(["foo"], self.facade.get_package_holds())
 
-    def test_set_package_hold_existing_hold(self):
+    def test_two_holds_with_the_same_version_id(self):
         """
-        If a package is already hel, C{set_package_hold} doesn't return
-        an error.
+        Test C{mark_hold} can distinguish between two different packages with
+        the same version number (the version number is used to make the unique
+        hash for the package version).
+        """
+        self._add_system_package("foo", version="1.0")
+        self._add_system_package("bar", version="1.0")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        [bar] = self.facade.get_packages_by_name("bar")
+        self.facade.mark_hold(foo)
+        self.facade.mark_hold(bar)
+        self.assertEqual(2, len(self.facade._version_hold_creations))
+
+    def test_mark_hold_existing_hold(self):
+        """
+        If a package is already held, C{mark_hold} and
+        C{perform_changes} won't return an error.
         """
         self._add_system_package(
             "foo", control_fields={"Status": "hold ok installed"})
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
-        self.facade.set_package_hold(foo)
+        self.facade.mark_hold(foo)
+        self.facade.perform_changes()
         self.facade.reload_channels()
 
         self.assertEqual(["foo"], self.facade.get_package_holds())
 
-    def test_remove_package_hold(self):
+    def test_mark_remove_hold(self):
         """
-        C{remove_package_hold} marks a package not to be on hold.
+        C{mark_remove_hold} marks a package as not held.
         """
         self._add_system_package(
             "foo", control_fields={"Status": "hold ok installed"})
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
-        self.facade.remove_package_hold(foo)
+        self.facade.mark_remove_hold(foo)
+        self.facade.perform_changes()
         self.facade.reload_channels()
 
         self.assertEqual([], self.facade.get_package_holds())
 
-    def test_remove_package_hold_no_package(self):
+    def test_mark_remove_hold_no_package(self):
         """
-        If a package doesn't exist, C{remove_package_hold} doesn't
-        return an error. It's up to the caller to make sure that the
-        package exist, if it's important.
+        If a package doesn't exist, C{mark_remove_hold} followed by
+        C{perform_changes} doesn't return an error. It's up to the caller to
+        make sure that the package exist, if it's important.
         """
         self._add_system_package("foo")
         deb_dir = self.makeDir()
@@ -2400,21 +2425,23 @@ class AptFacadeTest(LandscapeTest):
         self.facade.add_channel_apt_deb("file://%s" % deb_dir, "./")
         self.facade.reload_channels()
         [bar] = self.facade.get_packages_by_name("bar")
-        self.facade.remove_package_hold(bar)
+        self.facade.mark_remove_hold(bar)
+        self.facade.perform_changes()
         self.facade.reload_channels()
 
         self.assertEqual([], self.facade.get_package_holds())
 
-    def test_remove_package_hold_no_hold(self):
+    def test_mark_remove_hold_no_hold(self):
         """
         If a package isn't held, the existing selection is retained when
-        C{remove_package_hold} is called.
+        C{mark_remove_hold} and C{perform_changes} are called.
         """
         self._add_system_package(
             "foo", control_fields={"Status": "deinstall ok installed"})
         self.facade.reload_channels()
         [foo] = self.facade.get_packages_by_name("foo")
-        self.facade.remove_package_hold(foo)
+        self.facade.mark_remove_hold(foo)
+        self.facade.perform_changes()
         self.facade.reload_channels()
 
         self.assertEqual([], self.facade.get_package_holds())

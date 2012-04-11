@@ -9,8 +9,8 @@ import grp
 from twisted.internet.defer import maybeDeferred, succeed
 
 from landscape.constants import (
-    SUCCESS_RESULT, ERROR_RESULT, DEPENDENCY_ERROR_RESULT, POLICY_STRICT,
-    POLICY_ALLOW_INSTALLS, POLICY_ALLOW_ALL_CHANGES,
+    SUCCESS_RESULT, ERROR_RESULT, DEPENDENCY_ERROR_RESULT,
+    POLICY_STRICT, POLICY_ALLOW_INSTALLS, POLICY_ALLOW_ALL_CHANGES,
     UNKNOWN_PACKAGE_DATA_TIMEOUT)
 
 from landscape.lib.fs import create_file
@@ -103,8 +103,6 @@ class PackageChanger(PackageTaskHandler):
             return result.addErrback(self.unknown_package_data_error, task)
         if message["type"] == "change-package-locks":
             return self.handle_change_package_locks(message)
-        if message["type"] == "change-package-holds":
-            return self.handle_change_package_holds(message)
 
     def unknown_package_data_error(self, failure, task):
         """Handle L{UnknownPackageData} data errors.
@@ -168,12 +166,16 @@ class PackageChanger(PackageTaskHandler):
 
         self._facade.ensure_channels_reloaded()
 
-    def mark_packages(self, upgrade=False, install=(), remove=(), reset=True):
+    def mark_packages(self, upgrade=False, install=(), remove=(),
+                      hold=(), remove_hold=(), reset=True):
         """Mark packages for upgrade, installation or removal.
 
         @param upgrade: If C{True} mark all installed packages for upgrade.
         @param install: A list of package ids to be marked for installation.
         @param remove: A list of package ids to be marked for removal.
+        @param hold: A list of package ids to be marked for holding.
+        @param remove_hold: A list of package ids to be marked to have a hold
+                            removed.
         @param reset: If C{True} all existing marks will be reset.
         """
         if reset:
@@ -182,16 +184,19 @@ class PackageChanger(PackageTaskHandler):
         if upgrade:
             self._facade.mark_global_upgrade()
 
-        for ids, mark_func in [(install, self._facade.mark_install),
-                                 (remove, self._facade.mark_remove)]:
-            for id in ids:
-                hash = self._store.get_id_hash(id)
+        for mark_function, mark_ids in [
+            (self._facade.mark_install, install),
+            (self._facade.mark_remove, remove),
+            (self._facade.mark_hold, hold),
+            (self._facade.mark_remove_hold, remove_hold)]:
+            for mark_id in mark_ids:
+                hash = self._store.get_id_hash(mark_id)
                 if hash is None:
-                    raise UnknownPackageData(id)
+                    raise UnknownPackageData(mark_id)
                 package = self._facade.get_package_by_hash(hash)
                 if package is None:
                     raise UnknownPackageData(hash)
-                mark_func(package)
+                mark_function(package)
 
     def change_packages(self, policy):
         """Perform the requested changes.
@@ -264,10 +269,11 @@ class PackageChanger(PackageTaskHandler):
         """Handle a C{change-packages} message."""
 
         self.init_channels(message.get("binaries", ()))
-        self.mark_packages(message.get("upgrade-all", False),
-                           message.get("install", ()),
-                           message.get("remove", ()))
-
+        self.mark_packages(upgrade=message.get("upgrade-all", False),
+                           install=message.get("install", ()),
+                           remove=message.get("remove", ()),
+                           hold=message.get("hold", ()),
+                           remove_hold=message.get("remove-hold", ()))
         result = self.change_packages(message.get("policy", POLICY_STRICT))
         self._clear_binaries()
 
@@ -316,72 +322,6 @@ class PackageChanger(PackageTaskHandler):
         logging.info("Queuing message with change package locks results to "
                      "exchange urgently.")
         return self._broker.send_message(response, True)
-
-    def _send_change_package_holds_response(self, response):
-        """Log that a package holds result is sent and send the response."""
-        logging.info("Queuing message with change package holds results to "
-                     "exchange urgently.")
-        return self._broker.send_message(response, True)
-
-    def handle_change_package_holds(self, message):
-        """Handle a C{change-package-holds} message.
-
-        Create and delete package holds as requested by the given C{message}.
-        """
-        if not self._facade.supports_package_holds:
-            response = {
-                "type": "operation-result",
-                "operation-id": message.get("operation-id"),
-                "status": FAILED,
-                "result-text": "This client doesn't support package holds.",
-                "result-code": 1}
-            return self._send_change_package_holds_response(response)
-
-        not_installed = set()
-        holds_to_create = message.get("create", [])
-        versions_to_create = set()
-        for id in holds_to_create:
-            hash = self._store.get_id_hash(id)
-            hold_version = self._facade.get_package_by_hash(hash)
-            if (hold_version
-                and self._facade.is_package_installed(hold_version)):
-                versions_to_create.add((hold_version.package, hold_version))
-            else:
-                not_installed.add(str(id))
-        holds_to_remove = message.get("delete", [])
-        versions_to_remove = set()
-        for id in holds_to_remove:
-            hash = self._store.get_id_hash(id)
-            hold_version = self._facade.get_package_by_hash(hash)
-            if (hold_version
-                and self._facade.is_package_installed(hold_version)):
-                versions_to_remove.add((hold_version.package, hold_version))
-
-        if not_installed:
-            response = {
-                "type": "operation-result",
-                "operation-id": message.get("operation-id"),
-                "status": FAILED,
-                "result-text": "Package holds not changed, since the" +
-                               " following packages are not installed: %s" % (
-                                   ", ".join(sorted(not_installed))),
-                "result-code": 1}
-            return self._send_change_package_holds_response(response)
-
-        for package, hold_version in versions_to_create:
-            self._facade.set_package_hold(hold_version)
-        for package, hold_version in versions_to_remove:
-            self._facade.remove_package_hold(hold_version)
-
-        self._facade.reload_channels()
-
-        response = {"type": "operation-result",
-                    "operation-id": message.get("operation-id"),
-                    "status": SUCCEEDED,
-                    "result-text": "Package holds successfully changed.",
-                    "result-code": 0}
-
-        return self._send_change_package_holds_response(response)
 
     @staticmethod
     def find_command():
