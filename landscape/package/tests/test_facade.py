@@ -2357,6 +2357,20 @@ class AptFacadeTest(LandscapeTest):
         self.assertEqual(
             ["baz", "foo"], sorted(self.facade.get_package_holds()))
 
+    def test_mark_hold_and_perform_hold_changes(self):
+        """
+        Test that L{perform_hold_changes} holds packages that have previously
+        been marked for hold.
+        """
+        self._add_system_package("foo")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        self.facade.mark_hold(foo)
+        self.assertEqual("Package holds successfully changed.",
+                         self.facade.perform_hold_changes())
+        self.facade.reload_channels()
+        self.assertEqual(["foo"], self.facade.get_package_holds())
+
     def test_mark_hold(self):
         """
         C{mark_hold} marks a package to be held.

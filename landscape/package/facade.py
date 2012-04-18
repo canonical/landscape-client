@@ -576,10 +576,37 @@ class AptFacade(object):
         apt_pkg.config.clear("DPkg::options")
         apt_pkg.config.set("DPkg::options::", "--force-confold")
 
+    def perform_hold_changes(self):
+        """
+        Perform pending hold operations on packages.
+        """
+        held_package_names = set()
+        hold_changes = (len(self._version_hold_creations) > 0 or
+                        len(self._version_hold_removals) > 0)
+        if not hold_changes:
+            return None
+        not_installed = [version for version in
+                         self._version_hold_creations
+                         if not self.is_package_installed(version)]
+        if not_installed:
+            raise TransactionError(
+                "Cannot perform the changes, since the following " +
+                "packages are not installed: %s" % ", ".join(
+                    [version.package.name
+                     for version in sorted(not_installed)]))
+
+        for version in self._version_hold_creations:
+            self.set_package_hold(version)
+
+        for version in self._version_hold_removals:
+            self.remove_package_hold(version)
+
+        return "Package holds successfully changed."
+
     def perform_changes(self):
         """Perform the pending package operations."""
         self._setup_dpkg_for_changes()
-        held_package_names = set()
+        result_text = self.perform_hold_changes()
         package_installs = set(
             version.package for version in self._version_installs)
         package_upgrades = set(
@@ -587,29 +614,8 @@ class AptFacade(object):
             if version.package in package_installs)
         version_changes = self._version_installs[:]
         version_changes.extend(self._version_removals)
-        hold_changes = (len(self._version_hold_creations) > 0 or
-                        len(self._version_hold_removals) > 0)
-        if (not hold_changes and not version_changes and
-            not self._global_upgrade):
+        if (not version_changes and not self._global_upgrade):
             return None
-        if hold_changes:
-            not_installed = [version for version in
-                             self._version_hold_creations
-                             if not self.is_package_installed(version)]
-            if not_installed:
-                raise TransactionError(
-                    "Cannot perform the changes, since the following " +
-                    "packages are not installed: %s" % ", ".join(
-                        [version.package.name
-                         for version in sorted(not_installed)]))
-
-            for version in self._version_hold_creations:
-                self.set_package_hold(version)
-
-            for version in self._version_hold_removals:
-                self.remove_package_hold(version)
-
-            result_text = "Package holds successfully changed."
         if version_changes or self._global_upgrade:
             fixer = apt_pkg.ProblemResolver(self._cache._depcache)
             already_broken_packages = self._get_broken_packages()
