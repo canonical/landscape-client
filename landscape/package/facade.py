@@ -559,18 +559,26 @@ class AptFacade(object):
                     all_info.append(info + or_divider.join(relation_infos))
         return "\n".join(all_info)
 
-    def perform_changes(self):
-        """Perform the pending package operations."""
-        # Try to enforce non-interactivity
+    def _set_frontend_noninteractive(self):
+        """
+        Set the environment to avoid attempts by apt to interact with a user.
+        """
         os.environ["DEBIAN_FRONTEND"] = "noninteractive"
         os.environ["APT_LISTCHANGES_FRONTEND"] = "none"
         os.environ["APT_LISTBUGS_FRONTEND"] = "none"
+
+    def _setup_dpkg_for_changes(self):
+        # Try to enforce non-interactivity
+        self._set_frontend_noninteractive()
         # dpkg will fail if no path is set.
         if "PATH" not in os.environ:
             os.environ["PATH"] = UBUNTU_PATH
         apt_pkg.config.clear("DPkg::options")
         apt_pkg.config.set("DPkg::options::", "--force-confold")
 
+    def perform_changes(self):
+        """Perform the pending package operations."""
+        self._setup_dpkg_for_changes()
         held_package_names = set()
         package_installs = set(
             version.package for version in self._version_installs)
