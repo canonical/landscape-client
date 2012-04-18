@@ -580,7 +580,6 @@ class AptFacade(object):
         """
         Perform pending hold operations on packages.
         """
-        held_package_names = set()
         hold_changes = (len(self._version_hold_creations) > 0 or
                         len(self._version_hold_removals) > 0)
         if not hold_changes:
@@ -603,10 +602,9 @@ class AptFacade(object):
 
         return "Package holds successfully changed."
 
-    def perform_changes(self):
-        """Perform the pending package operations."""
-        self._setup_dpkg_for_changes()
-        result_text = self.perform_hold_changes()
+    def perform_package_changes(self):
+        result_text = None
+        held_package_names = set()
         package_installs = set(
             version.package for version in self._version_installs)
         package_upgrades = set(
@@ -623,11 +621,9 @@ class AptFacade(object):
                 # Set the candidate version, so that the version we want to
                 # install actually is the one getting installed.
                 version.package.candidate = version
+                # Set auto_fix=False to avoid removing the package we asked to
+                # install when we need to resolve dependencies.
                 version.package.mark_install(auto_fix=False)
-                # If we need to resolve dependencies, try avoiding having
-                # the package we asked to be installed from being removed.
-                # (This is what would have been done if auto_fix would have
-                # been True.
                 fixer.clear(version.package._pkg)
                 fixer.protect(version.package._pkg)
             if self._global_upgrade:
@@ -692,7 +688,17 @@ class AptFacade(object):
                 os.dup2(old_stdout, 1)
                 os.dup2(old_stderr, 2)
                 os.remove(install_output_path)
-        return result_text
+            return result_text
+
+    def perform_changes(self):
+        """Perform the pending package operations."""
+        self._setup_dpkg_for_changes()
+        hold_result_text = self.perform_hold_changes()
+        package_result_text = self.perform_package_changes()
+        if package_result_text is not None:
+            return package_result_text
+        if hold_result_text is not None:
+            return hold_result_text
 
     def reset_marks(self):
         """Clear the pending package operations."""
