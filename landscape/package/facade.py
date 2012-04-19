@@ -570,14 +570,14 @@ class AptFacade(object):
     def _default_path_when_missing(self):
         """
         If no PATH is set in the environment, use the Ubuntu default PATH.
-        
+
         When the client is launched from the landscape-client-settings-ui the
         PATH variable is incorrectly set, this method rectifies that.
         """
         # dpkg will fail if no path is set.
         if "PATH" not in os.environ:
             os.environ["PATH"] = UBUNTU_PATH
-        
+
     def _setup_dpkg_for_changes(self):
         """
         Setup environment and apt options for successful package operations.
@@ -660,7 +660,7 @@ class AptFacade(object):
             version.package.mark_install(auto_fix=False)
             fixer.clear(version.package._pkg)
             fixer.protect(version.package._pkg)
-        
+
     def _preprocess_removes(self, fixer):
         held_package_names = set()
 
@@ -694,7 +694,7 @@ class AptFacade(object):
 
     def _preprocess_global_upgrade(self):
         if self._global_upgrade:
-            self._cache.upgrade(dist_upgrade=True)        
+            self._cache.upgrade(dist_upgrade=True)
 
     def _resolve_broken_packages(self, fixer, already_broken_packages):
         """
@@ -708,7 +708,7 @@ class AptFacade(object):
                 raise TransactionError(error.args[0] + "\n" +
                                        self._get_unmet_dependency_info())
 
-    def _preprocess_package_changes(self): 
+    def _preprocess_package_changes(self):
         version_changes = self._version_installs[:]
         version_changes.extend(self._version_removals)
         if (not version_changes and not self._global_upgrade):
