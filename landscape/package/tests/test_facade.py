@@ -2367,7 +2367,7 @@ class AptFacadeTest(LandscapeTest):
         [foo] = self.facade.get_packages_by_name("foo")
         self.facade.mark_hold(foo)
         self.assertEqual("Package holds successfully changed.",
-                         self.facade.perform_hold_changes())
+                         self.facade._perform_hold_changes())
         self.facade.reload_channels()
         self.assertEqual(["foo"], self.facade.get_package_holds())
 

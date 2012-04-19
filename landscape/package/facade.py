@@ -567,16 +567,27 @@ class AptFacade(object):
         os.environ["APT_LISTCHANGES_FRONTEND"] = "none"
         os.environ["APT_LISTBUGS_FRONTEND"] = "none"
 
-    def _setup_dpkg_for_changes(self):
-        # Try to enforce non-interactivity
-        self._set_frontend_noninteractive()
+    def _default_path_when_missing(self):
+        """
+        If no PATH is set in the environment, use the Ubuntu default PATH.
+        
+        When the client is launched from the landscape-client-settings-ui the
+        PATH variable is incorrectly set, this method rectifies that.
+        """
         # dpkg will fail if no path is set.
         if "PATH" not in os.environ:
             os.environ["PATH"] = UBUNTU_PATH
+        
+    def _setup_dpkg_for_changes(self):
+        """
+        Setup environment and apt options for successful package operations.
+        """
+        self._set_frontend_noninteractive()
+        self._default_path_when_missing()
         apt_pkg.config.clear("DPkg::options")
         apt_pkg.config.set("DPkg::options::", "--force-confold")
 
-    def perform_hold_changes(self):
+    def _perform_hold_changes(self):
         """
         Perform pending hold operations on packages.
         """
@@ -603,6 +614,10 @@ class AptFacade(object):
         return "Package holds successfully changed."
 
     def _commit_package_changes(self):
+        """
+        Commit cached APT operations and give feedback on the results as a
+        string.
+        """
         fetch_output = StringIO()
         # Redirect stdout and stderr to a file. We need to work with the
         # file descriptors, rather than sys.stdout/stderr, since dpkg is
@@ -677,6 +692,22 @@ class AptFacade(object):
                 "Can't perform the changes, since the following packages" +
                 " are held: %s" % ", ".join(sorted(held_package_names)))
 
+    def _preprocess_global_upgrade(self):
+        if self._global_upgrade:
+            self._cache.upgrade(dist_upgrade=True)        
+
+    def _resolve_broken_packages(self, fixer, already_broken_packages):
+        """
+        Attempt to automatically resolve problems with broken packages.
+        """
+        now_broken_packages = self._get_broken_packages()
+        if now_broken_packages != already_broken_packages:
+            try:
+                fixer.resolve(True)
+            except SystemError, error:
+                raise TransactionError(error.args[0] + "\n" +
+                                       self._get_unmet_dependency_info())
+
     def _preprocess_package_changes(self): 
         version_changes = self._version_installs[:]
         version_changes.extend(self._version_removals)
@@ -685,33 +716,34 @@ class AptFacade(object):
         already_broken_packages = self._get_broken_packages()
         fixer = apt_pkg.ProblemResolver(self._cache._depcache)
         self._preprocess_installs(fixer)
-        if self._global_upgrade:
-            self._cache.upgrade(dist_upgrade=True)
+        self._preprocess_global_upgrade()
         self._preprocess_removes(fixer)
-        now_broken_packages = self._get_broken_packages()
-        if now_broken_packages != already_broken_packages:
-            try:
-                fixer.resolve(True)
-            except SystemError, error:
-                raise TransactionError(error.args[0] + "\n" +
-                                       self._get_unmet_dependency_info())
+        self._resolve_broken_packages(fixer, already_broken_packages)
         return version_changes
 
-    def perform_package_changes(self):
+    def _perform_package_changes(self):
+        """
+        Perform pending install/remove/upgrade operations.
+        """
         version_changes = self._preprocess_package_changes()
         if not self._check_changes(version_changes):
             return None
         return self._commit_package_changes()
 
     def perform_changes(self):
-        """Perform the pending package operations."""
+        """
+        Perform the pending package operations.
+        """
         self._setup_dpkg_for_changes()
-        hold_result_text = self.perform_hold_changes()
-        package_result_text = self.perform_package_changes()
+        hold_result_text = self._perform_hold_changes()
+        package_result_text = self._perform_package_changes()
+        results = []
         if package_result_text is not None:
-            return package_result_text
+            results.append(package_result_text)
         if hold_result_text is not None:
-            return hold_result_text
+            results.append(hold_result_text)
+        if len(results) > 0:
+            return " ".join(results)
 
     def reset_marks(self):
         """Clear the pending package operations."""
