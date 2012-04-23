@@ -559,126 +559,191 @@ class AptFacade(object):
                     all_info.append(info + or_divider.join(relation_infos))
         return "\n".join(all_info)
 
-    def perform_changes(self):
-        """Perform the pending package operations."""
-        # Try to enforce non-interactivity
+    def _set_frontend_noninteractive(self):
+        """
+        Set the environment to avoid attempts by apt to interact with a user.
+        """
         os.environ["DEBIAN_FRONTEND"] = "noninteractive"
         os.environ["APT_LISTCHANGES_FRONTEND"] = "none"
         os.environ["APT_LISTBUGS_FRONTEND"] = "none"
+
+    def _default_path_when_missing(self):
+        """
+        If no PATH is set in the environment, use the Ubuntu default PATH.
+
+        When the client is launched from the landscape-client-settings-ui the
+        PATH variable is incorrectly set, this method rectifies that.
+        """
         # dpkg will fail if no path is set.
         if "PATH" not in os.environ:
             os.environ["PATH"] = UBUNTU_PATH
+
+    def _setup_dpkg_for_changes(self):
+        """
+        Setup environment and apt options for successful package operations.
+        """
+        self._set_frontend_noninteractive()
+        self._default_path_when_missing()
         apt_pkg.config.clear("DPkg::options")
         apt_pkg.config.set("DPkg::options::", "--force-confold")
 
+    def _perform_hold_changes(self):
+        """
+        Perform pending hold operations on packages.
+        """
+        hold_changes = (len(self._version_hold_creations) > 0 or
+                        len(self._version_hold_removals) > 0)
+        if not hold_changes:
+            return None
+        not_installed = [version for version in
+                         self._version_hold_creations
+                         if not self.is_package_installed(version)]
+        if not_installed:
+            raise TransactionError(
+                "Cannot perform the changes, since the following " +
+                "packages are not installed: %s" % ", ".join(
+                    [version.package.name
+                     for version in sorted(not_installed)]))
+
+        for version in self._version_hold_creations:
+            self.set_package_hold(version)
+
+        for version in self._version_hold_removals:
+            self.remove_package_hold(version)
+
+        return "Package holds successfully changed."
+
+    def _commit_package_changes(self):
+        """
+        Commit cached APT operations and give feedback on the results as a
+        string.
+        """
+        fetch_output = StringIO()
+        # Redirect stdout and stderr to a file. We need to work with the
+        # file descriptors, rather than sys.stdout/stderr, since dpkg is
+        # run in a subprocess.
+        fd, install_output_path = tempfile.mkstemp()
+        old_stdout = os.dup(1)
+        old_stderr = os.dup(2)
+        os.dup2(fd, 1)
+        os.dup2(fd, 2)
+        install_progress = LandscapeInstallProgress()
+        try:
+            self._cache.commit(
+                fetch_progress=LandscapeAcquireProgress(fetch_output),
+                install_progress=install_progress)
+            if not install_progress.dpkg_exited:
+                raise SystemError("dpkg didn't exit cleanly.")
+        except SystemError, error:
+            result_text = (
+                fetch_output.getvalue() + read_file(install_output_path))
+            raise TransactionError(error.args[0] +
+                                   "\n\nPackage operation log:\n" +
+                                   result_text)
+        else:
+            result_text = (
+                fetch_output.getvalue() + read_file(install_output_path))
+        finally:
+            # Restore stdout and stderr.
+            os.dup2(old_stdout, 1)
+            os.dup2(old_stderr, 2)
+            os.remove(install_output_path)
+        return result_text
+
+    def _preprocess_installs(self, fixer):
+        for version in self._version_installs:
+            # Set the candidate version, so that the version we want to
+            # install actually is the one getting installed.
+            version.package.candidate = version
+            # Set auto_fix=False to avoid removing the package we asked to
+            # install when we need to resolve dependencies.
+            version.package.mark_install(auto_fix=False)
+            fixer.clear(version.package._pkg)
+            fixer.protect(version.package._pkg)
+
+    def _preprocess_removes(self, fixer):
         held_package_names = set()
+
         package_installs = set(
             version.package for version in self._version_installs)
+
         package_upgrades = set(
             version.package for version in self._version_removals
             if version.package in package_installs)
+
+        for version in self._version_removals:
+            if self._is_package_held(version.package):
+                held_package_names.add(version.package.name)
+            if version.package in package_upgrades:
+                # The server requests the old version to be removed for
+                # upgrades, since Smart worked that way. For Apt we have
+                # to take care not to mark upgraded packages for  removal.
+                continue
+            version.package.mark_delete(auto_fix=False)
+            # Configure the resolver in the same way
+            # mark_delete(auto_fix=True) would have done.
+            fixer.clear(version.package._pkg)
+            fixer.protect(version.package._pkg)
+            fixer.remove(version.package._pkg)
+            fixer.install_protect()
+
+        if held_package_names:
+            raise TransactionError(
+                "Can't perform the changes, since the following packages" +
+                " are held: %s" % ", ".join(sorted(held_package_names)))
+
+    def _preprocess_global_upgrade(self):
+        if self._global_upgrade:
+            self._cache.upgrade(dist_upgrade=True)
+
+    def _resolve_broken_packages(self, fixer, already_broken_packages):
+        """
+        Attempt to automatically resolve problems with broken packages.
+        """
+        now_broken_packages = self._get_broken_packages()
+        if now_broken_packages != already_broken_packages:
+            try:
+                fixer.resolve(True)
+            except SystemError, error:
+                raise TransactionError(error.args[0] + "\n" +
+                                       self._get_unmet_dependency_info())
+
+    def _preprocess_package_changes(self):
         version_changes = self._version_installs[:]
         version_changes.extend(self._version_removals)
-        hold_changes = (len(self._version_hold_creations) > 0 or
-                        len(self._version_hold_removals) > 0)
-        if (not hold_changes and not version_changes and
-            not self._global_upgrade):
+        if (not version_changes and not self._global_upgrade):
+            return []
+        already_broken_packages = self._get_broken_packages()
+        fixer = apt_pkg.ProblemResolver(self._cache._depcache)
+        self._preprocess_installs(fixer)
+        self._preprocess_global_upgrade()
+        self._preprocess_removes(fixer)
+        self._resolve_broken_packages(fixer, already_broken_packages)
+        return version_changes
+
+    def _perform_package_changes(self):
+        """
+        Perform pending install/remove/upgrade operations.
+        """
+        version_changes = self._preprocess_package_changes()
+        if not self._check_changes(version_changes):
             return None
-        if hold_changes:
-            not_installed = [version for version in
-                             self._version_hold_creations
-                             if not self.is_package_installed(version)]
-            if not_installed:
-                raise TransactionError(
-                    "Cannot perform the changes, since the following " +
-                    "packages are not installed: %s" % ", ".join(
-                        [version.package.name
-                         for version in sorted(not_installed)]))
+        return self._commit_package_changes()
 
-            for version in self._version_hold_creations:
-                self.set_package_hold(version)
-
-            for version in self._version_hold_removals:
-                self.remove_package_hold(version)
-
-            result_text = "Package holds successfully changed."
-        if version_changes or self._global_upgrade:
-            fixer = apt_pkg.ProblemResolver(self._cache._depcache)
-            already_broken_packages = self._get_broken_packages()
-            for version in self._version_installs:
-                # Set the candidate version, so that the version we want to
-                # install actually is the one getting installed.
-                version.package.candidate = version
-                version.package.mark_install(auto_fix=False)
-                # If we need to resolve dependencies, try avoiding having
-                # the package we asked to be installed from being removed.
-                # (This is what would have been done if auto_fix would have
-                # been True.
-                fixer.clear(version.package._pkg)
-                fixer.protect(version.package._pkg)
-            if self._global_upgrade:
-                self._cache.upgrade(dist_upgrade=True)
-            for version in self._version_removals:
-                if self._is_package_held(version.package):
-                    held_package_names.add(version.package.name)
-                if version.package in package_upgrades:
-                    # The server requests the old version to be removed for
-                    # upgrades, since Smart worked that way. For Apt we have
-                    # to take care not to mark upgraded packages for # removal.
-                    continue
-                version.package.mark_delete(auto_fix=False)
-                # Configure the resolver in the same way
-                # mark_delete(auto_fix=True) would have done.
-                fixer.clear(version.package._pkg)
-                fixer.protect(version.package._pkg)
-                fixer.remove(version.package._pkg)
-                fixer.install_protect()
-
-            if held_package_names:
-                raise TransactionError(
-                    "Can't perform the changes, since the following packages" +
-                    " are held: %s" % ", ".join(sorted(held_package_names)))
-
-            now_broken_packages = self._get_broken_packages()
-            if now_broken_packages != already_broken_packages:
-                try:
-                    fixer.resolve(True)
-                except SystemError, error:
-                    raise TransactionError(error.args[0] + "\n" +
-                                           self._get_unmet_dependency_info())
-            if not self._check_changes(version_changes):
-                return None
-            fetch_output = StringIO()
-            # Redirect stdout and stderr to a file. We need to work with the
-            # file descriptors, rather than sys.stdout/stderr, since dpkg is
-            # run in a subprocess.
-            fd, install_output_path = tempfile.mkstemp()
-            old_stdout = os.dup(1)
-            old_stderr = os.dup(2)
-            os.dup2(fd, 1)
-            os.dup2(fd, 2)
-            install_progress = LandscapeInstallProgress()
-            try:
-                self._cache.commit(
-                    fetch_progress=LandscapeAcquireProgress(fetch_output),
-                    install_progress=install_progress)
-                if not install_progress.dpkg_exited:
-                    raise SystemError("dpkg didn't exit cleanly.")
-            except SystemError, error:
-                result_text = (
-                    fetch_output.getvalue() + read_file(install_output_path))
-                raise TransactionError(error.args[0] +
-                                       "\n\nPackage operation log:\n" +
-                                       result_text)
-            else:
-                result_text = (
-                    fetch_output.getvalue() + read_file(install_output_path))
-            finally:
-                # Restore stdout and stderr.
-                os.dup2(old_stdout, 1)
-                os.dup2(old_stderr, 2)
-                os.remove(install_output_path)
-        return result_text
+    def perform_changes(self):
+        """
+        Perform the pending package operations.
+        """
+        self._setup_dpkg_for_changes()
+        hold_result_text = self._perform_hold_changes()
+        package_result_text = self._perform_package_changes()
+        results = []
+        if package_result_text is not None:
+            results.append(package_result_text)
+        if hold_result_text is not None:
+            results.append(hold_result_text)
+        if len(results) > 0:
+            return " ".join(results)
 
     def reset_marks(self):
         """Clear the pending package operations."""
