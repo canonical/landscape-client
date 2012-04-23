@@ -90,7 +90,7 @@ msgid "Only ASCII characters are allowed."
 msgstr "Seuls les caractères ASCII sont autritorisés."
 
 #: ../landscape/ui/view/ui/landscape-client-settings.glade.h:1
-msgid "Landscape is a remote administration service from Canonical.  If you allow it, a Landcape server can monitor this computer's performance and send administration commands."
+msgid "Landscape is a remote administration service from Canonical.  If you allow it, a Landscape server can monitor this computer's performance and send administration commands."
 msgstr "Landscape est un service de gestion à distance de Canonical. Si vous l'autorisez, un serveur Landscape peut surveiller les performance de cette machine et envoyer des commandes administratives."
 
 #: ../landscape/ui/view/ui/landscape-client-settings.glade.h:2

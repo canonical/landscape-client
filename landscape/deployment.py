@@ -282,7 +282,7 @@ class Configuration(BaseConfiguration):
               - C{quiet} (C{False})
               - C{log_dir} (C{"/var/log/landscape"})
               - C{log_level} (C{"info"})
-              - C{url} (C{"http://landcape.canonical.com/message-system"})
+              - C{url} (C{"http://landscape.canonical.com/message-system"})
               - C{ping_url} (C{"http://landscape.canonical.com/ping"})
               - C{ssl_public_key}
               - C{server_autodiscover} (C{"false"})

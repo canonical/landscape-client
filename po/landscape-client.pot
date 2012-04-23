@@ -91,7 +91,7 @@ msgstr ""
 #: ../landscape/ui/view/ui/landscape-client-settings.glade.h:1
 msgid ""
 "Landscape is a remote administration service from Canonical.  If you allow "
-"it, a Landcape server can monitor this computer's performance and send "
+"it, a Landscape server can monitor this computer's performance and send "
 "administration commands."
 msgstr ""
 
