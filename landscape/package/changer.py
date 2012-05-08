@@ -290,23 +290,15 @@ class PackageChanger(PackageTaskHandler):
     def handle_change_package_locks(self, message):
         """Handle a C{change-package-locks} message.
 
-        Create and delete package locks as requested by the given C{message}.
+        Package locks aren't supported anymore.
         """
 
-        for lock in message.get("create", ()):
-            self._facade.set_package_lock(*lock)
-        for lock in message.get("delete", ()):
-            self._facade.remove_package_lock(*lock)
-        self._facade.save_config()
-
-        response = {"type": "operation-result",
-                    "operation-id": message.get("operation-id"),
-                    "status": SUCCEEDED,
-                    "result-text": "Package locks successfully changed.",
-                    "result-code": 0}
-
-        logging.info("Queuing message with change package locks results to "
-                     "exchange urgently.")
+        response = {
+            "type": "operation-result",
+            "operation-id": message.get("operation-id"),
+            "status": FAILED,
+            "result-text": "This client doesn't support package locks.",
+            "result-code": 1}
         return self._broker.send_message(response, True)
 
     @staticmethod

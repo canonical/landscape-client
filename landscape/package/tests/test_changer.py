@@ -1323,9 +1323,9 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
 
     def test_change_package_locks(self):
         """
-        If C{AptFacade} is used, the L{PackageChanger.handle_tasks}
-        method fails the activity, since it can't add or remove locks because
-        apt doesn't support this.
+        The L{PackageChanger.handle_tasks} method fails
+        change-package-locks activities, since it can't add or remove
+        locks because apt doesn't support this.
         """
         self.store.add_task("changer", {"type": "change-package-locks",
                                         "create": [("foo", ">=", "1.0")],
