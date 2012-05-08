@@ -9,7 +9,6 @@ from landscape.broker.amp import RemoteBrokerConnector
 from landscape.package.taskhandler import (
     PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler,
     LazyRemoteBroker)
-from landscape.package import facade as facade_module
 from landscape.package.facade import AptFacade
 from landscape.package.store import HashIdStore, PackageStore
 from landscape.package.tests.helpers import AptFacadeHelper
