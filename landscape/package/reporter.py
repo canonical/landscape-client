@@ -57,13 +57,7 @@ class PackageReporter(PackageTaskHandler):
     def run(self):
         result = Deferred()
 
-        if isinstance(self._facade, AptFacade):
-            # Update APT cache if APT facade is enabled.
-            result.addCallback(lambda x: self.run_apt_update())
-        else:
-            # Run smart-update before anything else, to make sure that
-            # the SmartFacade will load freshly updated channels
-            result.addCallback(lambda x: self.run_smart_update())
+        result.addCallback(lambda x: self.run_apt_update())
 
         # If the appropriate hash=>id db is not there, fetch it
         result.addCallback(lambda x: self.fetch_hash_id_db())
@@ -182,44 +176,6 @@ class PackageReporter(PackageTaskHandler):
                 return True
 
         return False
-
-    def run_smart_update(self):
-        """Run smart-update and log a warning in case of non-zero exit code.
-
-        @return: a deferred returning (out, err, code)
-        """
-        if self._config.force_smart_update or self._apt_sources_have_changed():
-            args = ()
-        else:
-            args = ("--after", str(self.smart_update_interval))
-        result = spawn_process(self.smart_update_filename, args=args)
-
-        def callback((out, err, code)):
-            # smart-update --after N will exit with error code 1 when it
-            # doesn't actually run the update code because to enough time
-            # has passed yet, but we don't actually consider it a failure.
-            smart_failed = False
-            if code != 0 and code != 1:
-                smart_failed = True
-            if code == 1 and err.strip() != "":
-                smart_failed = True
-            if smart_failed:
-                logging.warning("'%s' exited with status %d (%s)" % (
-                    self.smart_update_filename, code, err))
-            logging.debug("'%s' exited with status %d (out='%s', err='%s'" % (
-                self.smart_update_filename, code, out, err))
-            touch_file(self._config.update_stamp_filename)
-            if not smart_failed and not self._facade.get_channels():
-                code = 1
-                err = "There are no APT sources configured in %s or %s." % (
-                    self.sources_list_filename, self.sources_list_directory)
-            deferred = self._broker.call_if_accepted(
-                "package-reporter-result", self.send_result, code, err)
-            deferred.addCallback(lambda ignore: (out, err, code))
-            return deferred
-
-        result.addCallback(callback)
-        return result
 
     def _apt_update_timeout_expired(self, interval):
         """Check if the apt-update timeout has passed."""
@@ -405,7 +361,7 @@ class PackageReporter(PackageTaskHandler):
     def request_unknown_hashes(self):
         """Detect available packages for which we have no hash=>id mappings.
 
-        This method will verify if there are packages that Smart knows
+        This method will verify if there are packages that Apt knows
         about but for which we don't have an id yet (no hash => id
         translation), and deliver a message (unknown-package-hashes)
         to request them.

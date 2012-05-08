@@ -10,7 +10,7 @@ from landscape.package.taskhandler import (
     PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler,
     LazyRemoteBroker)
 from landscape.package import facade as facade_module
-from landscape.package.facade import AptFacade, SmartFacade
+from landscape.package.facade import AptFacade
 from landscape.package.store import HashIdStore, PackageStore
 from landscape.package.tests.helpers import AptFacadeHelper
 from landscape.tests.helpers import (
@@ -426,32 +426,6 @@ class PackageTaskHandlerTest(LandscapeTest):
         old_has_new_enough_apt = facade_module.has_new_enough_apt
         facade_module.has_new_enough_apt = value
         self.addCleanup(reset_new_enough_apt)
-
-    def test_run_task_handler_old_apt(self):
-        """
-        If the C{python-apt} module isn't new enough,
-        C{run_task_handler} will create a C{SmartFacade}, since
-        C{AptFacade} doesn't work with old versions of C{python-apt}.
-
-        Hardy has a too old version of C{python-apt}, but lucid and
-        onwards should have a new enough version.
-        """
-
-        HandlerMock, handler_args = self._mock_run_task_handler()
-        self._set_new_enough_apt(False)
-
-        def assert_task_handler(ignored):
-
-            store, facade, broker, config = handler_args
-
-            try:
-                self.assertEqual(type(facade), SmartFacade)
-            finally:
-                # Put reactor back in place before returning.
-                self.mocker.reset()
-
-        result = run_task_handler(HandlerMock, ["-c", self.config_filename])
-        return result.addCallback(assert_task_handler)
 
     def test_run_task_handler_when_already_locked(self):
 

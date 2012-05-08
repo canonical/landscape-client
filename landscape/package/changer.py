@@ -38,7 +38,7 @@ class ChangePackagesResult(object):
     """Value object to hold the results of change packages operation.
 
     @ivar code: The result code of the requested changes.
-    @ivar text: The output from Smart.
+    @ivar text: The output from Apt.
     @ivar installs: Possible additional packages that need to be installed
         in order to fulfill the request.
     @ivar removals: Possible additional packages that need to be removed
@@ -143,7 +143,7 @@ class PackageChanger(PackageTaskHandler):
         self._facade.clear_channels()
 
     def init_channels(self, binaries=()):
-        """Initialize the Smart channels as needed.
+        """Initialize the Apt channels as needed.
 
         @param binaries: A possibly empty list of 3-tuples of the form
             (hash, id, deb), holding the hash, the id and the content of
@@ -207,10 +207,9 @@ class PackageChanger(PackageTaskHandler):
         @return: A L{ChangePackagesResult} holding the details about the
             outcome of the requested changes.
         """
-        # Delay importing these so that we don't import Smart unless
+        # Delay importing these so that we don't import Apt unless
         # we really need to.
-        from landscape.package.facade import (
-            DependencyError, TransactionError, SmartError)
+        from landscape.package.facade import DependencyError, TransactionError
 
         result = ChangePackagesResult()
         count = 0
@@ -218,7 +217,7 @@ class PackageChanger(PackageTaskHandler):
             count += 1
             try:
                 result.text = self._facade.perform_changes()
-            except (TransactionError, SmartError), exception:
+            except TransactionError, exception:
                 result.code = ERROR_RESULT
                 result.text = exception.args[0]
             except DependencyError, exception:
