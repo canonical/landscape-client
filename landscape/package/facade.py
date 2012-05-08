@@ -27,7 +27,7 @@ except ImportError:
 
 from landscape.lib.fs import append_file, create_file, read_file
 from landscape.constants import UBUNTU_PATH
-from landscape.package.skeleton import build_skeleton, build_skeleton_apt
+from landscape.package.skeleton import build_skeleton_apt
 
 
 class TransactionError(Exception):
