@@ -293,15 +293,6 @@ class PackageChanger(PackageTaskHandler):
         Create and delete package locks as requested by the given C{message}.
         """
 
-        if not self._facade.supports_package_locks:
-            response = {
-                "type": "operation-result",
-                "operation-id": message.get("operation-id"),
-                "status": FAILED,
-                "result-text": "This client doesn't support package locks.",
-                "result-code": 1}
-            return self._broker.send_message(response, True)
-
         for lock in message.get("create", ()):
             self._facade.set_package_lock(*lock)
         for lock in message.get("delete", ()):
