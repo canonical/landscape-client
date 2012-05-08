@@ -760,4 +760,3 @@ class AptFacade(object):
     def mark_remove_hold(self, version):
         """Mark the package to have its hold removed."""
         self._version_hold_removals.append(version)
-

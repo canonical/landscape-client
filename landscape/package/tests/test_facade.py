@@ -1,7 +1,4 @@
-import time
 import os
-import re
-import sys
 import textwrap
 import tempfile
 
@@ -9,13 +6,8 @@ import apt_pkg
 from apt.package import Package
 from aptsources.sourceslist import SourcesList
 
-from twisted.internet import reactor
-from twisted.internet.defer import Deferred
-from twisted.internet.utils import getProcessOutputAndValue
-
 from landscape.constants import UBUNTU_PATH
 from landscape.lib.fs import read_file, create_file
-from landscape.package import facade as facade_module
 from landscape.package.facade import (
     TransactionError, DependencyError, ChannelError, AptFacade,
     has_new_enough_apt)
@@ -24,8 +16,8 @@ from landscape.tests.mocker import ANY
 from landscape.tests.helpers import LandscapeTest, EnvironSaverHelper
 from landscape.package.tests.helpers import (
     HASH1, HASH2, HASH3, PKGNAME1, PKGNAME2, PKGNAME3,
-    PKGNAME4, PKGDEB4, PKGDEB1, PKGNAME_MINIMAL, PKGDEB_MINIMAL,
-    create_full_repository, create_deb, AptFacadeHelper,
+    PKGDEB1, PKGNAME_MINIMAL, PKGDEB_MINIMAL,
+    create_deb, AptFacadeHelper,
     create_simple_repository)
 
 

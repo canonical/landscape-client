@@ -1,6 +1,6 @@
 from landscape.package.facade import has_new_enough_apt
 from landscape.package.skeleton import (
-    build_skeleton, PackageTypeError, build_skeleton_apt, DEB_PROVIDES,
+    build_skeleton_apt, DEB_PROVIDES,
     DEB_NAME_PROVIDES, DEB_REQUIRES, DEB_OR_REQUIRES, DEB_UPGRADES,
     DEB_CONFLICTS)
 

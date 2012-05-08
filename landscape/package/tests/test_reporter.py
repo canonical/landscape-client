@@ -1,4 +1,3 @@
-import glob
 import sys
 import os
 import unittest
@@ -1381,7 +1380,6 @@ class PackageReporterAptTest(LandscapeTest, PackageReporterTestMixin):
 
         reactor.callWhenRunning(do_test)
         return deferred
-
 
 
 class GlobalPackageReporterAptTest(LandscapeTest):
