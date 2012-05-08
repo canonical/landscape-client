@@ -80,10 +80,6 @@ class PackageChanger(PackageTaskHandler):
             # Nothing was done
             return
 
-        # In order to let the reporter run smart-update cleanly,
-        # we have to deinitialize Smart, so that the write lock
-        # gets released
-        self._facade.deinit()
         if os.getuid() == 0:
             os.setgid(grp.getgrnam("landscape").gr_gid)
             os.setuid(pwd.getpwnam("landscape").pw_uid)

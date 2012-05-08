@@ -422,8 +422,6 @@ class PackageReporter(PackageTaskHandler):
         """
 
         def changes_detected(results):
-            # Release all smart locks, in case the changer runs after us.
-            self._facade.deinit()
             if True in results:
                 # Something has changed, notify the broker.
                 return self._broker.fire_event("package-data-changed")

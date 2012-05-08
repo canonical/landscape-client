@@ -895,17 +895,13 @@ class PackageReporterTestMixin(object):
     def test_detect_changes_considers_packages_and_locks_changes(self):
         """
         The L{PackageReporter.detect_changes} method considers both package and
-        package locks changes. It also releases smart locks by calling the
-        L{SmartFacade.deinit} method.
+        package locks changes.
         """
         reporter_mock = self.mocker.patch(self.reporter)
         reporter_mock.detect_packages_changes()
         self.mocker.result(succeed(True))
         reporter_mock.detect_package_locks_changes()
         self.mocker.result(succeed(True))
-
-        facade_mock = self.mocker.patch(self.facade)
-        facade_mock.deinit()
 
         self.mocker.replay()
         return self.reporter.detect_changes()
