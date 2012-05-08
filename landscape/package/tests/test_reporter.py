@@ -1019,12 +1019,6 @@ class PackageReporterTestMixin(object):
         self.assertEqual(self.store.get_available_upgrades(), [2])
         self.assertEqual(self.store.get_available(), [1])
         self.assertEqual(self.store.get_installed(), [2])
-        # XXX: Don't check get_locked() and get_package_locks() until
-        # package locks are implemented in AptFacade.
-        if not isinstance(self.facade, AptFacade):
-            self.assertEqual(self.store.get_locked(), [3])
-            self.assertEqual(
-                self.store.get_package_locks(), [("name1", "", "")])
         self.assertEqual(self.store.get_hash_id_request(request1.id).id,
                          request1.id)
 

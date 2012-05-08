@@ -147,17 +147,6 @@ class AptFacade(object):
             if (self.is_package_installed(version)
                 and self._is_package_held(version.package))]
 
-    def get_package_locks(self):
-        """Return all set package locks.
-
-        @return: A C{list} of ternary tuples, contaning the name, relation
-            and version details for each lock currently set on the system.
-
-        XXX: This method isn't implemented yet. It's here to make the
-        transition to Apt in the package reporter easier.
-        """
-        return []
-
     def get_package_holds(self):
         """Return the name of all the packages that are on hold."""
         return [version.package.name for version in self.get_locked_packages()]
