@@ -892,15 +892,12 @@ class PackageReporterTestMixin(object):
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
 
-    def test_detect_changes_considers_packages_and_locks_changes(self):
+    def test_detect_changes_considers_packages_changes(self):
         """
-        The L{PackageReporter.detect_changes} method considers both package and
-        package locks changes.
+        The L{PackageReporter.detect_changes} method package changes.
         """
         reporter_mock = self.mocker.patch(self.reporter)
         reporter_mock.detect_packages_changes()
-        self.mocker.result(succeed(True))
-        reporter_mock.detect_package_locks_changes()
         self.mocker.result(succeed(True))
 
         self.mocker.replay()
@@ -914,8 +911,6 @@ class PackageReporterTestMixin(object):
         """
         reporter_mock = self.mocker.patch(self.reporter)
         reporter_mock.detect_packages_changes()
-        self.mocker.result(succeed(False))
-        reporter_mock.detect_package_locks_changes()
         self.mocker.result(succeed(True))
         callback = self.mocker.mock()
         callback()

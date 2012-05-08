@@ -426,8 +426,7 @@ class PackageReporter(PackageTaskHandler):
                 # Something has changed, notify the broker.
                 return self._broker.fire_event("package-data-changed")
 
-        result = gather_results([self.detect_packages_changes(),
-                                 self.detect_package_locks_changes()])
+        result = gather_results([self.detect_packages_changes()])
         return result.addCallback(changes_detected)
 
     def detect_packages_changes(self):
