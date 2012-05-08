@@ -254,7 +254,7 @@ def run_task_handler(cls, args, reactor=None):
     words = re.findall("[A-Z][a-z]+", cls.__name__)
     init_logging(config, "-".join(word.lower() for word in words))
 
-    # Setup our umask for Smart to use, this needs to setup file permissions to
+    # Setup our umask for Apt to use, this needs to setup file permissions to
     # 0644 so...
     os.umask(022)
 
