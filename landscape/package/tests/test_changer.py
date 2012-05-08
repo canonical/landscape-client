@@ -13,7 +13,7 @@ from landscape.package.changer import (
     POLICY_ALLOW_ALL_CHANGES, ERROR_RESULT)
 from landscape.package.store import PackageStore
 from landscape.package.facade import (
-    DependencyError, TransactionError, has_new_enough_apt)
+    DependencyError, TransactionError)
 from landscape.package.changer import (
     PackageChangerConfiguration, ChangePackagesResult)
 from landscape.tests.mocker import ANY
@@ -866,9 +866,6 @@ class PackageChangerTestMixin(object):
 
 
 class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
-
-    if not has_new_enough_apt:
-        skip = "Can't use AptFacade on hardy"
 
     helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
 

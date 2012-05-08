@@ -16,7 +16,7 @@ from landscape.package.reporter import (
     PackageReporter, HASH_ID_REQUEST_TIMEOUT, main, find_reporter_command,
     PackageReporterConfiguration, FakeGlobalReporter, FakeReporter)
 from landscape.package import reporter
-from landscape.package.facade import AptFacade, has_new_enough_apt
+from landscape.package.facade import AptFacade
 from landscape.package.tests.helpers import (
     AptFacadeHelper, SimpleRepositoryHelper,
     HASH1, HASH2, HASH3, PKGNAME1)
@@ -1084,9 +1084,6 @@ class PackageReporterTestMixin(object):
 
 class PackageReporterAptTest(LandscapeTest, PackageReporterTestMixin):
 
-    if not has_new_enough_apt:
-        skip = "Can't use AptFacade on hardy"
-
     helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
 
     Facade = AptFacade
@@ -1383,9 +1380,6 @@ class PackageReporterAptTest(LandscapeTest, PackageReporterTestMixin):
 
 
 class GlobalPackageReporterAptTest(LandscapeTest):
-
-    if not has_new_enough_apt:
-        skip = "Can't use AptFacade on hardy"
 
     helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
 

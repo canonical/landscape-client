@@ -15,15 +15,9 @@ import apt
 import apt_inst
 import apt_pkg
 
-has_new_enough_apt = True
 from aptsources.sourceslist import SourcesList
-try:
-    from apt.progress.text import AcquireProgress
-    from apt.progress.base import InstallProgress
-except ImportError:
-    AcquireProgress = object
-    InstallProgress = object
-    has_new_enough_apt = False
+from apt.progress.text import AcquireProgress
+from apt.progress.base import InstallProgress
 
 from landscape.lib.fs import append_file, create_file, read_file
 from landscape.constants import UBUNTU_PATH
