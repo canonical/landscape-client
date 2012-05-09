@@ -283,8 +283,9 @@ class LandscapeSetupScript(object):
         self.prompt("account_name", "Account name", True)
 
     def query_registration_password(self):
-        options = self.config.get_command_line_options()
-        if "registration_password" in options or "registration_key" in options:
+        command_line_options = self.config.get_command_line_options()
+        if ("registration_password" in command_line_options or
+            "registration_key" in command_line_options):
             return
 
         self.show_help(
@@ -615,7 +616,7 @@ def register(config, on_message=print_text, on_error=sys.exit, reactor=None):
 
     def failure():
         on_message("Invalid account name or "
-                   "registration password.", error=True)
+                   "registration key.", error=True)
         stop(2)
 
     def success():

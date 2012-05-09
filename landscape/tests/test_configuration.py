@@ -1711,7 +1711,7 @@ class RegisterFunctionTest(LandscapeTest):
         self.mocker.call(register_done)
 
         # The deferred errback finally prints out this message.
-        print_text_mock("Invalid account name or registration password.",
+        print_text_mock("Invalid account name or registration key.",
                         error=True)
 
         reactor_mock.stop()
