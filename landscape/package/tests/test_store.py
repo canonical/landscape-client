@@ -1,6 +1,5 @@
 import threading
 import time
-import sys
 
 import sqlite3
 from landscape.tests.helpers import LandscapeTest

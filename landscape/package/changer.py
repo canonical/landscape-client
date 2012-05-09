@@ -18,7 +18,7 @@ from landscape.package.reporter import find_reporter_command
 from landscape.package.taskhandler import (
     PackageTaskHandler, PackageTaskHandlerConfiguration, PackageTaskError,
     run_task_handler)
-from landscape.manager.manager import FAILED, SUCCEEDED
+from landscape.manager.manager import FAILED
 
 
 class UnknownPackageData(Exception):
