@@ -228,7 +228,7 @@ class LandscapeSetupScript(object):
                 value2 = getpass.getpass("Please confirm: ")
             if value:
                 if value != value2:
-                    self.show_help("Passwords must match.")
+                    self.show_help("Keys must match.")
                 else:
                     setattr(self.config, option, value)
                     break

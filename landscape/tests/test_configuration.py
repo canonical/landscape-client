@@ -182,7 +182,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.mocker.result("password")
 
         script_mock = self.mocker.patch(self.script)
-        script_mock.show_help("Passwords must match.")
+        script_mock.show_help("Keys must match.")
 
         mock("Please confirm: ")
         self.mocker.result("")
@@ -671,7 +671,7 @@ class ConfigurationFunctionsTest(LandscapeTest):
 
         expect(raw_input(C("[Old Title]"))).result("New Title")
         expect(raw_input(C("[Old Name]"))).result("New Name")
-        expect(getpass(C("registration password:"))).result("New Password")
+        expect(getpass(C("Account registration key:"))).result("New Password")
         expect(getpass(C("Please confirm:"))).result("New Password")
         expect(raw_input(C("[http://old.proxy]"))).result("http://new.proxy")
         expect(raw_input(C("[https://old.proxy]"))).result("https://new.proxy")
