@@ -296,7 +296,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.mocker.order()
         script_mock = self.mocker.patch(self.script)
         script_mock.show_help(self.get_matcher(help_snippet))
-        script_mock.password_prompt("registration_password",
+        script_mock.password_prompt("registration_key",
                                     "Account registration key")
         self.mocker.replay()
         self.script.query_registration_password()
@@ -656,7 +656,7 @@ class ConfigurationFunctionsTest(LandscapeTest):
         filename = self.makeFile("[client]\n"
                                  "computer_title = Old Title\n"
                                  "account_name = Old Name\n"
-                                 "registration_password = Old Password\n"
+                                 "registration_key = Old Password\n"
                                  "http_proxy = http://old.proxy\n"
                                  "https_proxy = https://old.proxy\n"
                                  "url = http://url\n"
@@ -696,7 +696,7 @@ class ConfigurationFunctionsTest(LandscapeTest):
 
         self.assertEqual(config.computer_title, "New Title")
         self.assertEqual(config.account_name, "New Name")
-        self.assertEqual(config.registration_password, "New Password")
+        self.assertEqual(config.registration_key, "New Password")
         self.assertEqual(config.http_proxy, "http://new.proxy")
         self.assertEqual(config.https_proxy, "https://new.proxy")
         self.assertEqual(config.include_manager_plugins, "")

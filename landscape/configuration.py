@@ -283,7 +283,8 @@ class LandscapeSetupScript(object):
         self.prompt("account_name", "Account name", True)
 
     def query_registration_password(self):
-        if "registration_password" in self.config.get_command_line_options():
+        options = self.config.get_command_line_options()
+        if "registration_password" in options or "registration_key" in options:
             return
 
         self.show_help(
@@ -297,7 +298,7 @@ class LandscapeSetupScript(object):
             at https://landscape.canonical.com/account/%s
             """ % self.config.account_name)
 
-        self.password_prompt("registration_password",
+        self.password_prompt("registration_key",
                              "Account registration key")
 
     def query_proxies(self):
