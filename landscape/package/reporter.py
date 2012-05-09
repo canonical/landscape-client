@@ -420,13 +420,13 @@ class PackageReporter(PackageTaskHandler):
         reactor.
         """
 
-        def changes_detected(results):
-            if True in results:
+        def changes_detected(result):
+            if result:
                 # Something has changed, notify the broker.
                 return self._broker.fire_event("package-data-changed")
 
-        result = gather_results([self.detect_packages_changes()])
-        return result.addCallback(changes_detected)
+        deferred = self.detect_packages_changes()
+        return deferred.addCallback(changes_detected)
 
     def detect_packages_changes(self):
         """Detect changes in the universe of known packages.
