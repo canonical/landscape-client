@@ -297,7 +297,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         script_mock = self.mocker.patch(self.script)
         script_mock.show_help(self.get_matcher(help_snippet))
         script_mock.password_prompt("registration_password",
-                                    "Account registration password")
+                                    "Account registration key")
         self.mocker.replay()
         self.script.query_registration_password()
 
