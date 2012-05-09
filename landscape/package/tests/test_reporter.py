@@ -992,14 +992,19 @@ class PackageReporterTestMixin(object):
         This is done in the reporter so that we know it happens when
         no other reporter is possibly running at the same time.
         """
+        self._add_system_package("foo")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        foo_hash = self.facade.get_package_hash(foo)
+        self.facade.set_package_hold(foo)
+        self.facade.reload_channels()
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["package-locks"])
-        self.store.set_hash_ids({HASH1: 3, HASH2: 4})
+        self.store.set_hash_ids({foo_hash: 3, HASH2: 4})
         self.store.add_available([1])
         self.store.add_available_upgrades([2])
         self.store.add_installed([2])
         self.store.add_locked([3])
-        self.store.add_package_locks([("name1", None, None)])
         request1 = self.store.add_hash_id_request(["hash3"])
         request2 = self.store.add_hash_id_request(["hash4"])
 
@@ -1022,7 +1027,7 @@ class PackageReporterTestMixin(object):
         def check_result(result):
 
             # The hashes should not go away.
-            hash1 = self.store.get_hash_id(HASH1)
+            hash1 = self.store.get_hash_id(foo_hash)
             hash2 = self.store.get_hash_id(HASH2)
             self.assertEqual([hash1, hash2], [3, 4])
 
@@ -1031,12 +1036,9 @@ class PackageReporterTestMixin(object):
 
             # After running the resychronize task, detect_packages_changes is
             # called, and the existing known hashes are made available.
-            self.assertEqual(self.store.get_available(), [3, 4])
-            self.assertEqual(self.store.get_installed(), [])
-            # XXX: Don't check get_locked() until package locks are
-            # implemented in AptFacade.
-            if not isinstance(self.facade, AptFacade):
-                self.assertEqual(self.store.get_locked(), [3])
+            self.assertEqual(self.store.get_available(), [4])
+            self.assertEqual(self.store.get_installed(), [3])
+            self.assertEqual(self.store.get_locked(), [3])
 
             # The two original hash id requests should be still there, and
             # a new hash id request should also be detected for HASH3.
@@ -1049,17 +1051,10 @@ class PackageReporterTestMixin(object):
                 elif request.id == request2.id:
                     self.assertEqual(request.hashes, ["hash4"])
                 elif not new_request_found:
-                    self.assertEqual(request.hashes, [HASH3])
+                    self.assertEqual(request.hashes, [HASH3, HASH1])
                 else:
                     self.fail("Unexpected hash-id request!")
             self.assertEqual(requests_count, 3)
-
-            # XXX: Don't check for package-locks messages until package
-            # locks are implemented in AptFacade.
-            if not isinstance(self.facade, AptFacade):
-                self.assertMessages(message_store.get_pending_messages(),
-                                    [{"type": "package-locks",
-                                      "created": [("name1", "", "")]}])
 
         deferred.addCallback(check_result)
         return deferred
