@@ -298,7 +298,7 @@ class LandscapeSetupScript(object):
             """ % self.config.account_name)
 
         self.password_prompt("registration_password",
-                             "Account registration password")
+                             "Account registration key")
 
     def query_proxies(self):
         options = self.config.get_command_line_options()
