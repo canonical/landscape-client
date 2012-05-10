@@ -9,7 +9,6 @@ from landscape.broker.amp import RemoteBrokerConnector
 from landscape.package.taskhandler import (
     PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler,
     LazyRemoteBroker)
-from landscape.package import facade as facade_module
 from landscape.package.facade import AptFacade
 from landscape.package.store import HashIdStore, PackageStore
 from landscape.package.tests.helpers import AptFacadeHelper
@@ -374,14 +373,11 @@ class PackageTaskHandlerTest(LandscapeTest):
 
         return HandlerMock, handler_args
 
-    def test_run_task_handler_new_apt(self):
+    def test_run_task_handler(self):
         """
         The L{run_task_handler} function creates and runs the given task
-        handler with the proper arguments. If the system has a new
-        enough version of Apt (i.e. newer than Hardy), AptFacade will
-        be used.
+        handler with the proper arguments.
         """
-        self._set_new_enough_apt(True)
         HandlerMock, handler_args = self._mock_run_task_handler()
 
         def assert_task_handler(ignored):
@@ -412,20 +408,6 @@ class PackageTaskHandlerTest(LandscapeTest):
 
         result = run_task_handler(HandlerMock, ["-c", self.config_filename])
         return result.addCallback(assert_task_handler)
-
-    def _set_new_enough_apt(self, value):
-        """Override landscape.package.facade.has_new_enough_apt.
-
-        The previous value of that attribute is replaced when the test
-        is finished.
-        """
-
-        def reset_new_enough_apt():
-            facade_module.has_new_enough_apt = old_has_new_enough_apt
-
-        old_has_new_enough_apt = facade_module.has_new_enough_apt
-        facade_module.has_new_enough_apt = value
-        self.addCleanup(reset_new_enough_apt)
 
     def test_run_task_handler_when_already_locked(self):
 

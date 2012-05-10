@@ -9,8 +9,7 @@ from aptsources.sourceslist import SourcesList
 from landscape.constants import UBUNTU_PATH
 from landscape.lib.fs import read_file, create_file
 from landscape.package.facade import (
-    TransactionError, DependencyError, ChannelError, AptFacade,
-    has_new_enough_apt)
+    TransactionError, DependencyError, ChannelError, AptFacade)
 
 from landscape.tests.mocker import ANY
 from landscape.tests.helpers import LandscapeTest, EnvironSaverHelper
@@ -42,9 +41,6 @@ class FakeFetchItem(object):
 
 
 class AptFacadeTest(LandscapeTest):
-
-    if not has_new_enough_apt:
-        skip = "Can't use AptFacade on hardy"
 
     helpers = [AptFacadeHelper, EnvironSaverHelper]
 
