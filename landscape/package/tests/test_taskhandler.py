@@ -29,7 +29,7 @@ class PackageTaskHandlerConfigurationTest(LandscapeTest):
     def test_update_stamp_option(self):
         """
         L{PackageReporterConfiguration.update_stamp_filename} points
-        to the smart-update stamp file.
+        to the update-stamp file.
         """
         config = PackageTaskHandlerConfiguration()
         self.assertEqual(
