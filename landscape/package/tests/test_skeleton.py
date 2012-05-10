@@ -1,21 +1,11 @@
-try:
-    import smart
-    from smart.cache import Package
-except ImportError:
-    # Smart is optional if AptFacade is being used.
-    pass
-
-from landscape.package.interface import (
-    install_landscape_interface, uninstall_landscape_interface)
-
 from landscape.package.facade import has_new_enough_apt
 from landscape.package.skeleton import (
-    build_skeleton, PackageTypeError, build_skeleton_apt, DEB_PROVIDES,
+    build_skeleton_apt, DEB_PROVIDES,
     DEB_NAME_PROVIDES, DEB_REQUIRES, DEB_OR_REQUIRES, DEB_UPGRADES,
     DEB_CONFLICTS)
 
 from landscape.package.tests.helpers import (
-    AptFacadeHelper, SmartHelper, HASH1, create_simple_repository, create_deb,
+    AptFacadeHelper, HASH1, create_simple_repository, create_deb,
     PKGNAME_MINIMAL, PKGDEB_MINIMAL, HASH_MINIMAL, PKGNAME_SIMPLE_RELATIONS,
     PKGDEB_SIMPLE_RELATIONS, HASH_SIMPLE_RELATIONS, PKGNAME_VERSION_RELATIONS,
     PKGDEB_VERSION_RELATIONS, HASH_VERSION_RELATIONS,
@@ -253,39 +243,6 @@ class SkeletonTestMixin(object):
             (DEB_UPGRADES, "or-relations < 1.0")]
         self.assertEqual(relations, skeleton.relations)
         self.assertEqual(HASH_OR_RELATIONS, skeleton.get_hash())
-
-
-class SmartSkeletonTest(LandscapeTest, SkeletonTestMixin):
-    """C{PackageSkeleton} tests for smart packages."""
-
-    helpers = [SmartHelper, SkeletonTestHelper]
-
-    def setUp(self):
-        super(SmartSkeletonTest, self).setUp()
-        install_landscape_interface()
-        self.ctrl = smart.init(interface="landscape", datadir=self.smart_dir)
-        smart.sysconf.set(
-            "channels", {"alias": {"type": "deb-dir",
-                                   "path": self.skeleton_repository_dir}})
-        self.ctrl.reloadChannels()
-        self.cache = self.ctrl.getCache()
-
-    def tearDown(self):
-        uninstall_landscape_interface()
-        super(SmartSkeletonTest, self).tearDown()
-
-    def get_package(self, name):
-        """Return the package with the specified name."""
-        [package] = self.cache.getPackages(name)
-        return package
-
-    def build_skeleton(self, *args, **kwargs):
-        """Build the skeleton to be tested."""
-        return build_skeleton(*args, **kwargs)
-
-    def test_refuse_to_build_non_debian_packages(self):
-        self.assertRaises(PackageTypeError, build_skeleton,
-                          Package("name", "version"))
 
 
 class SkeletonAptTest(LandscapeTest, SkeletonTestMixin):

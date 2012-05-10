@@ -254,19 +254,15 @@ def run_task_handler(cls, args, reactor=None):
     words = re.findall("[A-Z][a-z]+", cls.__name__)
     init_logging(config, "-".join(word.lower() for word in words))
 
-    # Setup our umask for Smart to use, this needs to setup file permissions to
+    # Setup our umask for Apt to use, this needs to setup file permissions to
     # 0644 so...
     os.umask(022)
 
     package_store = cls.package_store_class(config.store_filename)
     # Delay importing of the facades so that we don't
-    # import Smart unless we need to.
-    from landscape.package.facade import (
-        AptFacade, SmartFacade, has_new_enough_apt)
-    if  has_new_enough_apt:
-        package_facade = AptFacade()
-    else:
-        package_facade = SmartFacade()
+    # import Apt unless we need to.
+    from landscape.package.facade import AptFacade
+    package_facade = AptFacade()
 
     def finish():
         connector.disconnect()

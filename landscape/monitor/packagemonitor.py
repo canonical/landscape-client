@@ -58,7 +58,7 @@ class PackageMonitor(MonitorPlugin):
 
         class FakeFacade(object):
             """
-            A fake facade to workaround the issue that the SmartFacade
+            A fake facade to workaround the issue that the AptFacade
             essentially allows only once instance per process.
             """
 
