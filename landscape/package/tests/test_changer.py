@@ -435,7 +435,7 @@ class PackageChangerTestMixin(object):
 
     def test_tasks_are_isolated_cache(self):
         """
-        The package (apt/smart) cache should be reset between task runs.
+        The package (apt) cache should be reset between task runs.
         In this test, we try to run two different operations, first
         installing package 2, then removing package 1.  Both tasks will
         fail for lack of superuser privileges.  If the package cache
@@ -527,7 +527,7 @@ class PackageChangerTestMixin(object):
         """
         Besides asking for individual changes, the server may also request
         the client to perform a global upgrade.  This would be the equivalent
-        of a "smart upgrade" command being executed in the command line.
+        of a "apt-get upgrade" command being executed in the command line.
         """
         hash1, hash2 = self.set_pkg2_upgrades_pkg1()
         self.store.set_hash_ids({hash1: 1, hash2: 2})
@@ -640,7 +640,6 @@ class PackageChangerTestMixin(object):
         getuid_mock()
         self.mocker.result(0)
 
-        # The order matters (first smart then gid and finally uid)
         self.mocker.order()
 
         # We want to return a known gid
