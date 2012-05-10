@@ -45,8 +45,8 @@ END
             COMPUTER_TITLE="${RET}"
             db_get $PACKAGE/account_name
             ACCOUNT_NAME="${RET}"
-            db_get $PACKAGE/registration_password
-            REGISTRATION_PASSWORD="${RET}"
+            db_get $PACKAGE/registration_key
+            REGISTRATION_KEY="${RET}"
             db_get $PACKAGE/url
             URL="${RET}"
             db_get $PACKAGE/exchange_interval
@@ -69,7 +69,7 @@ END
                 landscape-config --silent --ok-no-register \
                     --computer-title "$COMPUTER_TITLE" \
                     --account-name "$ACCOUNT_NAME" \
-                    --registration-password "$REGISTRATION_PASSWORD" \
+                    --registration-key "$REGISTRATION_PASSWORD" \
                     --url "$URL" \
                     --exchange-interval "$EXCHANGE_INTERVAL" \
                     --urgent-exchange-interval "$URGENT_EXCHANGE_INTERVAL" \

@@ -10,7 +10,7 @@ _Description: Account Name:
  Short lowercase identifier of the Landscape account this computer
  will be assigned.
 
-Template: landscape-client/registration_password
+Template: landscape-client/registration_key
 Type: password
 _Description: Registration Key:
  Client registration key for the given Landscape account.  Only
