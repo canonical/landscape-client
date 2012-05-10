@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2012-03-28 20:06+0200\n"
+"POT-Creation-Date: 2012-05-10 11:44-0300\n"
 "PO-Revision-Date: 2012-03-28 20:07+0100\n"
 "Last-Translator: Thomas Hervé <thomas.herve@canonical.com>\n"
 "Language-Team: français <>\n"
@@ -90,8 +90,14 @@ msgid "Only ASCII characters are allowed."
 msgstr "Seuls les caractères ASCII sont autritorisés."
 
 #: ../landscape/ui/view/ui/landscape-client-settings.glade.h:1
-msgid "Landscape is a remote administration service from Canonical.  If you allow it, a Landscape server can monitor this computer's performance and send administration commands."
-msgstr "Landscape est un service de gestion à distance de Canonical. Si vous l'autorisez, un serveur Landscape peut surveiller les performance de cette machine et envoyer des commandes administratives."
+msgid ""
+"Landscape is a remote administration service from Canonical.  If you allow "
+"it, a Landscape server can monitor this computer's performance and send "
+"administration commands."
+msgstr ""
+"Landscape est un service de gestion à distance de Canonical. Si vous "
+"l'autorisez, un serveur Landscape peut surveiller les performance de cette "
+"machine et envoyer des commandes administratives."
 
 #: ../landscape/ui/view/ui/landscape-client-settings.glade.h:2
 #: ../scripts/landscape-client-ui-install:52
@@ -123,8 +129,13 @@ msgid "Landscape server hostname:"
 msgstr "Nom d'hôte du serveur Landscape:"
 
 #: ../landscape/ui/view/ui/landscape-client-settings.glade.h:9
-msgid "If you click \"Disable\" the Landscape client on this machine will be disabled.  You can reenable it later by revisiting this dialog."
-msgstr "Si vous cliquez sur \"Désactiver\" le client Landscape sera désactivé sur cette machine. Vous pouvez le réactiver plus tard en rouvrant cette fenêtre de dialogue."
+msgid ""
+"If you click \"Disable\" the Landscape client on this machine will be "
+"disabled.  You can reenable it later by revisiting this dialog."
+msgstr ""
+"Si vous cliquez sur \"Désactiver\" le client Landscape sera désactivé sur "
+"cette machine. Vous pouvez le réactiver plus tard en rouvrant cette fenêtre "
+"de dialogue."
 
 #: ../applications/landscape-client-settings.desktop.in.h:2
 msgid "Management Service Preferences"
@@ -132,23 +143,38 @@ msgstr "Préférences du service de gestion"
 
 #: ../polkit-1/com.canonical.LandscapeClientSettings.policy.in.h:1
 msgid "Allow the user to read and write Landscape Client settings."
-msgstr "Autorise l'utilisateur à lire et écrire la configuration du client Landscape."
+msgstr ""
+"Autorise l'utilisateur à lire et écrire la configuration du client Landscape."
 
 #: ../polkit-1/com.canonical.LandscapeClientSettings.policy.in.h:2
-msgid "System policy prevents you from reading and writing Landscape Client Settings."
-msgstr "Politique système vous empêchant de lire et d'écrire la configuration du client Landscape."
+msgid ""
+"System policy prevents you from reading and writing Landscape Client "
+"Settings."
+msgstr ""
+"Politique système vous empêchant de lire et d'écrire la configuration du "
+"client Landscape."
 
 #: ../scripts/landscape-client-ui-install:55
 msgid "Landscape client"
 msgstr "Client Landscape"
 
 #: ../scripts/landscape-client-ui-install:56
-msgid "Landscape is an easy-to-use commercial systems management and monitoring service offered by Canonical that helps administrators manage multiple machines efficiently."
-msgstr "Landscape est un système de gestion et de surveillance proposé en tant que service payant par Canonical, qui aide les administrateurs à gérer plusieurs machine efficacement."
+msgid ""
+"Landscape is an easy-to-use commercial systems management and monitoring "
+"service offered by Canonical that helps administrators manage multiple "
+"machines efficiently."
+msgstr ""
+"Landscape est un système de gestion et de surveillance proposé en tant que "
+"service payant par Canonical, qui aide les administrateurs à gérer plusieurs "
+"machine efficacement."
 
 #: ../scripts/landscape-client-ui-install:59
-msgid "You need to install Landscape client to be able to configure it. Do you want to install it now?"
-msgstr "Il faut installer le client Landscape pour le configurer. Voulez-vous l'installer maintenant?"
+msgid ""
+"You need to install Landscape client to be able to configure it. Do you want "
+"to install it now?"
+msgstr ""
+"Il faut installer le client Landscape pour le configurer. Voulez-vous "
+"l'installer maintenant?"
 
 #: ../scripts/landscape-client-ui-install:61
 msgid "Install Landscape client?"
