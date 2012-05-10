@@ -36,16 +36,32 @@ class SkeletonTestHelper(object):
             PKGDEB_OR_RELATIONS)
 
 
-class SkeletonTestMixin(object):
-    """Tests for building a skeleton from a package.
+class SkeletonAptTest(LandscapeTest):
+    """C{PackageSkeleton} tests for apt packages."""
 
-    This class should be mixed in to test different backends, like smart
-    and apt.
+    helpers = [AptFacadeHelper, SkeletonTestHelper]
 
-    The main test case classes need to implement C{get_package(name)} to
-    get a package by name, and C{build_skeleton(package, with_info,
-    with_unicode}, which builds the skeleton.
-    """
+    def setUp(self):
+        super(SkeletonAptTest, self).setUp()
+        self.facade.add_channel_deb_dir(self.skeleton_repository_dir)
+        # Don't use reload_channels(), since that causes the test setup
+        # depending on build_skeleton_apt working correctly, which makes
+        # it harder to to TDD for these tests.
+        self.facade._cache.open(None)
+        self.facade._cache.update(None)
+        self.facade._cache.open(None)
+
+    def get_package(self, name):
+        """Return the package with the specified name."""
+        # Don't use get_packages(), since that causes the test setup
+        # depending on build_skeleton_apt working correctly, which makes
+        # it harder to to TDD for these tests.
+        package = self.facade._cache[name]
+        return package.candidate
+
+    def build_skeleton(self, *args, **kwargs):
+        """Build the skeleton to be tested."""
+        return build_skeleton_apt(*args, **kwargs)
 
     def test_build_skeleton(self):
         """
@@ -242,31 +258,3 @@ class SkeletonTestMixin(object):
             (DEB_UPGRADES, "or-relations < 1.0")]
         self.assertEqual(relations, skeleton.relations)
         self.assertEqual(HASH_OR_RELATIONS, skeleton.get_hash())
-
-
-class SkeletonAptTest(LandscapeTest, SkeletonTestMixin):
-    """C{PackageSkeleton} tests for apt packages."""
-
-    helpers = [AptFacadeHelper, SkeletonTestHelper]
-
-    def setUp(self):
-        super(SkeletonAptTest, self).setUp()
-        self.facade.add_channel_deb_dir(self.skeleton_repository_dir)
-        # Don't use reload_channels(), since that causes the test setup
-        # depending on build_skeleton_apt working correctly, which makes
-        # it harder to to TDD for these tests.
-        self.facade._cache.open(None)
-        self.facade._cache.update(None)
-        self.facade._cache.open(None)
-
-    def get_package(self, name):
-        """Return the package with the specified name."""
-        # Don't use get_packages(), since that causes the test setup
-        # depending on build_skeleton_apt working correctly, which makes
-        # it harder to to TDD for these tests.
-        package = self.facade._cache[name]
-        return package.candidate
-
-    def build_skeleton(self, *args, **kwargs):
-        """Build the skeleton to be tested."""
-        return build_skeleton_apt(*args, **kwargs)
