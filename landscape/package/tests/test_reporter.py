@@ -40,7 +40,52 @@ class PackageReporterConfigurationTest(unittest.TestCase):
         self.assertTrue(config.force_apt_update)
 
 
-class PackageReporterTestMixin(object):
+class PackageReporterAptTest(LandscapeTest):
+
+    helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
+
+    Facade = AptFacade
+
+    def setUp(self):
+
+        def set_up(ignored):
+            self.store = PackageStore(self.makeFile())
+            self.config = PackageReporterConfiguration()
+            self.reporter = PackageReporter(
+                self.store, self.facade, self.remote, self.config)
+            self.config.data_path = self.makeDir()
+            os.mkdir(self.config.package_directory)
+
+        result = super(PackageReporterAptTest, self).setUp()
+        return result.addCallback(set_up)
+
+    def _clear_repository(self):
+        """Remove all packages from self.repository."""
+        create_file(self.repository_dir + "/Packages", "")
+
+    def set_pkg1_upgradable(self):
+        """Make it so that package "name1" is considered to be upgradable.
+
+        Return the hash of the package that upgrades "name1".
+        """
+        self._add_package_to_deb_dir(
+            self.repository_dir, "name1", version="version2")
+        self.facade.reload_channels()
+        name1_upgrade = sorted(self.facade.get_packages_by_name("name1"))[1]
+        return self.facade.get_package_hash(name1_upgrade)
+
+    def set_pkg1_installed(self):
+        """Make it so that package "name1" is considered installed."""
+        self._install_deb_file(os.path.join(self.repository_dir, PKGNAME1))
+
+    def _make_fake_apt_update(self, out="output", err="error", code=0):
+        """Create a fake apt-update executable"""
+        self.reporter.apt_update_filename = self.makeFile(
+            "#!/bin/sh\n"
+            "echo -n %s\n"
+            "echo -n %s >&2\n"
+            "exit %d" % (out, err, code))
+        os.chmod(self.reporter.apt_update_filename, 0755)
 
     def test_set_package_ids_with_all_known(self):
         self.store.add_hash_id_request(["hash1", "hash2"])
@@ -1058,54 +1103,6 @@ class PackageReporterTestMixin(object):
 
         deferred.addCallback(check_result)
         return deferred
-
-
-class PackageReporterAptTest(LandscapeTest, PackageReporterTestMixin):
-
-    helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
-
-    Facade = AptFacade
-
-    def setUp(self):
-
-        def set_up(ignored):
-            self.store = PackageStore(self.makeFile())
-            self.config = PackageReporterConfiguration()
-            self.reporter = PackageReporter(
-                self.store, self.facade, self.remote, self.config)
-            self.config.data_path = self.makeDir()
-            os.mkdir(self.config.package_directory)
-
-        result = super(PackageReporterAptTest, self).setUp()
-        return result.addCallback(set_up)
-
-    def _clear_repository(self):
-        """Remove all packages from self.repository."""
-        create_file(self.repository_dir + "/Packages", "")
-
-    def set_pkg1_upgradable(self):
-        """Make it so that package "name1" is considered to be upgradable.
-
-        Return the hash of the package that upgrades "name1".
-        """
-        self._add_package_to_deb_dir(
-            self.repository_dir, "name1", version="version2")
-        self.facade.reload_channels()
-        name1_upgrade = sorted(self.facade.get_packages_by_name("name1"))[1]
-        return self.facade.get_package_hash(name1_upgrade)
-
-    def set_pkg1_installed(self):
-        """Make it so that package "name1" is considered installed."""
-        self._install_deb_file(os.path.join(self.repository_dir, PKGNAME1))
-
-    def _make_fake_apt_update(self, out="output", err="error", code=0):
-        """Create a fake apt-update executable"""
-        self.reporter.apt_update_filename = self.makeFile(
-            "#!/bin/sh\n"
-            "echo -n %s\n"
-            "echo -n %s >&2\n"
-            "exit %d" % (out, err, code))
-        os.chmod(self.reporter.apt_update_filename, 0755)
 
     def test_run_apt_update(self):
         """
