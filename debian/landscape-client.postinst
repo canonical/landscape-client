@@ -69,7 +69,7 @@ END
                 landscape-config --silent --ok-no-register \
                     --computer-title "$COMPUTER_TITLE" \
                     --account-name "$ACCOUNT_NAME" \
-                    --registration-key "$REGISTRATION_PASSWORD" \
+                    --registration-key "$REGISTRATION_KEY" \
                     --url "$URL" \
                     --exchange-interval "$EXCHANGE_INTERVAL" \
                     --urgent-exchange-interval "$URGENT_EXCHANGE_INTERVAL" \
@@ -80,6 +80,8 @@ END
                     --tags "$TAGS"
             fi
         else
+            # Replace old registration_password to registration_key
+            sed -i 's/registration_password/registration_key/' $CONFIG_FILE
             # Fix non-private permissions
             chmod 0600 $CONFIG_FILE
         fi

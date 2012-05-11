@@ -26,7 +26,7 @@ class BrokerConfiguration(Configuration):
         @return: An L{OptionParser} preset for all the options
             from L{Configuration.make_parser} plus:
               - C{account_name}
-              - C{registration_password}
+              - C{registration_key}
               - C{computer_title}
               - C{exchange_interval} (C{15*60})
               - C{urgent_exchange_interval} (C{1*60})
@@ -40,8 +40,8 @@ class BrokerConfiguration(Configuration):
 
         parser.add_option("-a", "--account-name", metavar="NAME",
                           help="The account this computer belongs to.")
-        parser.add_option("-p", "--registration-password", metavar="PASSWORD",
-                          help="The account-wide password used for "
+        parser.add_option("-p", "--registration-key", metavar="PASSWORD",
+                          help="The account-wide key used for "
                                "registering clients.")
         parser.add_option("-t", "--computer-title", metavar="TITLE",
                           help="The title of this computer")

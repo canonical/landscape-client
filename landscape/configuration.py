@@ -290,12 +290,12 @@ class LandscapeSetupScript(object):
 
         self.show_help(
             """
-            A registration password may be associated with your Landscape
+            A registration key may be associated with your Landscape
             account to prevent unauthorized registration attempts.  This
             is not your personal login password.  It is optional, and unless
             explicitly set on the server, it may be skipped here.
 
-            If you don't remember the registration password you can find it
+            If you don't remember the registration key you can find it
             at https://landscape.canonical.com/account/%s
             """ % self.config.account_name)
 

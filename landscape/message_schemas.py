@@ -138,14 +138,14 @@ FREE_SPACE = Message("free-space", {
 
 REGISTER = Message(
     "register",
-    {"registration_password": Any(utf8, Constant(None)),
+    {"registration_key": Any(utf8, Constant(None)),
      "computer_title": utf8,
      "hostname": utf8,
      "account_name": utf8,
      "tags": Any(utf8, Constant(None)),
      "vm-info": String()},
     # hostname wasn't around in old versions
-    optional=["registration_password", "hostname", "tags", "vm-info"])
+    optional=["registration_key", "hostname", "tags", "vm-info"])
 
 
 REGISTER_PROVISIONED_MACHINE = Message(
@@ -159,7 +159,7 @@ REGISTER_CLOUD_VM = Message(
      "otp": Any(String(), Constant(None)),
      "instance_key": Unicode(),
      "account_name": Any(utf8, Constant(None)),
-     "registration_password": Any(utf8, Constant(None)),
+     "registration_key": Any(utf8, Constant(None)),
      "reservation_key": Unicode(),
      "public_hostname": Unicode(),
      "local_hostname": Unicode(),
