@@ -173,8 +173,8 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.mocker.result("password")
         self.mocker.replay()
 
-        self.script.password_prompt("registration_password", "Password")
-        self.assertEqual(self.config.registration_password, "password")
+        self.script.password_prompt("registration_key", "Password")
+        self.assertEqual(self.config.registration_key, "password")
 
     def test_password_prompt_simple_non_matching(self):
         mock = self.mocker.replace(getpass, passthrough=False)
@@ -191,8 +191,8 @@ class LandscapeSetupScriptTest(LandscapeTest):
         mock("Please confirm: ")
         self.mocker.result("password")
         self.mocker.replay()
-        self.script.password_prompt("registration_password", "Password")
-        self.assertEqual(self.config.registration_password, "password")
+        self.script.password_prompt("registration_key", "Password")
+        self.assertEqual(self.config.registration_key, "password")
 
     def test_password_prompt_simple_matching_required(self):
         mock = self.mocker.replace(getpass, passthrough=False)
@@ -210,8 +210,8 @@ class LandscapeSetupScriptTest(LandscapeTest):
 
         self.mocker.replay()
 
-        self.script.password_prompt("registration_password", "Password", True)
-        self.assertEqual(self.config.registration_password, "password")
+        self.script.password_prompt("registration_key", "Password", True)
+        self.assertEqual(self.config.registration_key, "password")
 
     def test_prompt_yes_no(self):
         comparisons = [("Y", True),
@@ -291,24 +291,24 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.config.load_command_line(["-a", "Account name"])
         self.script.query_account_name()
 
-    def test_query_registration_password(self):
-        help_snippet = "A registration password may be"
+    def test_query_registration_key(self):
+        help_snippet = "A registration key may be"
         self.mocker.order()
         script_mock = self.mocker.patch(self.script)
         script_mock.show_help(self.get_matcher(help_snippet))
         script_mock.password_prompt("registration_key",
                                     "Account registration key")
         self.mocker.replay()
-        self.script.query_registration_password()
+        self.script.query_registration_key()
 
-    def test_query_registration_password_defined_on_command_line(self):
+    def test_query_registration_key_defined_on_command_line(self):
         getpass_mock = self.mocker.replace("getpass.getpass",
                                            passthrough=False)
         self.expect(getpass_mock(ANY)).count(0)
         self.mocker.replay()
 
         self.config.load_command_line(["-p", "shared-secret"])
-        self.script.query_registration_password()
+        self.script.query_registration_key()
 
     def test_query_proxies(self):
         help_snippet = "The Landscape client communicates"
@@ -619,7 +619,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         script_mock.show_header()
         script_mock.query_computer_title()
         script_mock.query_account_name()
-        script_mock.query_registration_password()
+        script_mock.query_registration_key()
         script_mock.query_proxies()
         script_mock.query_script_plugin()
         script_mock.query_tags()
@@ -749,7 +749,7 @@ data_path = %s
         args = ["--silent", "--no-start",
                 "--computer-title", "",
                 "--account-name", "",
-                "--registration-password", "",
+                "--registration-key", "",
                 "--url", "https://landscape.canonical.com/message-system",
                 "--exchange-interval", "900",
                 "--urgent-exchange-interval", "60",
@@ -767,7 +767,7 @@ data_path = %s
             "http_proxy = \n"
             "tags = \n"
             "data_path = %s\n"
-            "registration_password = \n"
+            "registration_key = \n"
             "account_name = \n"
             "computer_title = \n"
             "https_proxy = \n"
@@ -883,7 +883,7 @@ bus = session
         filename = self.makeFile("""
 [client]
 ping_url = http://landscape.canonical.com/ping
-registration_password = shared-secret
+registration_key = shared-secret
 log_level = debug
 random_key = random_value
 """)
@@ -895,7 +895,7 @@ random_key = random_value
         parser.read(filename)
         self.assertEqual(
             {"log_level": "debug",
-             "registration_password": "shared-secret",
+             "registration_key": "shared-secret",
              "ping_url": "http://localhost/ping",
              "random_key": "random_value",
              "computer_title": "rex",
@@ -937,7 +937,7 @@ random_key = random_value
 
         filename = self.makeFile("""
 [client]
-registration_password = shared-secret
+registration_key = shared-secret
 """)
         config = self.get_config(["--config", filename, "--silent",
                                   "-a", "account", "-t", "rex"])
@@ -945,7 +945,7 @@ registration_password = shared-secret
         parser = ConfigParser()
         parser.read(filename)
         self.assertEqual(
-            {"registration_password": "shared-secret",
+            {"registration_key": "shared-secret",
              "http_proxy": "http://environ",
              "https_proxy": "https://environ",
              "computer_title": "rex",
@@ -1011,7 +1011,7 @@ registration_password = shared-secret
             "[client]\n"
             "computer_title = Old Title\n"
             "account_name = Old Name\n"
-            "registration_password = Old Password\n"
+            "registration_key = Old Password\n"
             )
         main(["-c", config_filename, "--silent"])
 
@@ -1019,7 +1019,7 @@ registration_password = shared-secret
         return self.makeFile("[client]\n"
                              "computer_title = Old Title\n"
                              "account_name = Old Name\n"
-                             "registration_password = Old Password\n"
+                             "registration_key = Old Password\n"
                              "http_proxy = http://old.proxy\n"
                              "https_proxy = https://old.proxy\n"
                              "url = http://url\n")
@@ -1215,7 +1215,7 @@ registration_password = shared-secret
             "[client]\n"
             "computer_title = New Title\n"
             "account_name = New Name\n"
-            "registration_password = New Password\n"
+            "registration_key = New Password\n"
             "http_proxy = http://new.proxy\n"
             "https_proxy = https://new.proxy\n"
             "url = http://new.url\n")
@@ -1234,7 +1234,7 @@ registration_password = shared-secret
         self.assertEqual(dict(options.items("client")),
                          {"computer_title": "New Title",
                           "account_name": "New Name",
-                          "registration_password": "New Password",
+                          "registration_key": "New Password",
                           "http_proxy": "http://new.proxy",
                           "https_proxy": "https://new.proxy",
                           "url": "http://new.url"})
@@ -1317,7 +1317,7 @@ registration_password = shared-secret
             "[client]\n"
             "computer_title = Old Title\n"
             "account_name = Old Name\n"
-            "registration_password = Old Password\n"
+            "registration_key = Old Password\n"
             "http_proxy = http://old.proxy\n"
             "https_proxy = https://old.proxy\n"
             "url = http://old.url\n")
@@ -1325,7 +1325,7 @@ registration_password = shared-secret
         new_configuration = (
             "[client]\n"
             "account_name = New Name\n"
-            "registration_password = New Password\n"
+            "registration_key = New Password\n"
             "url = http://new.url\n")
 
         config_filename = self.makeFile(old_configuration,
@@ -1345,7 +1345,7 @@ registration_password = shared-secret
         self.assertEqual(dict(options.items("client")),
                          {"computer_title": "Old Title",
                           "account_name": "New Name",
-                          "registration_password": "Command Line Password",
+                          "registration_key": "Command Line Password",
                           "http_proxy": "http://old.proxy",
                           "https_proxy": "https://old.proxy",
                           "url": "http://new.url"})
@@ -1366,12 +1366,12 @@ registration_password = shared-secret
             "[client]\n"
             "computer_title = Old Title\n"
             "account_name = Old Name\n"
-            "registration_password = Old Password\n"
+            "registration_key = Old Password\n"
             "url = http://old.url\n")
 
         new_configuration = (
             "[client]\n"
-            "registration_password =\n")
+            "registration_key =\n")
 
         config_filename = self.makeFile(old_configuration,
                                         basename="final_config")
@@ -1388,7 +1388,7 @@ registration_password = shared-secret
         self.assertEqual(dict(options.items("client")),
                          {"computer_title": "Old Title",
                           "account_name": "Old Name",
-                          "registration_password": "",  # <==
+                          "registration_key": "",  # <==
                           "url": "http://old.url"})
 
     def test_import_from_url(self):
@@ -1401,7 +1401,7 @@ registration_password = shared-secret
             "[client]\n"
             "computer_title = New Title\n"
             "account_name = New Name\n"
-            "registration_password = New Password\n"
+            "registration_key = New Password\n"
             "http_proxy = http://new.proxy\n"
             "https_proxy = https://new.proxy\n"
             "url = http://new.url\n")
@@ -1427,7 +1427,7 @@ registration_password = shared-secret
         self.assertEqual(dict(options.items("client")),
                          {"computer_title": "New Title",
                           "account_name": "New Name",
-                          "registration_password": "New Password",
+                          "registration_key": "New Password",
                           "http_proxy": "http://new.proxy",
                           "https_proxy": "https://new.proxy",
                           "url": "http://new.url"})

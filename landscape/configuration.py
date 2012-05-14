@@ -282,10 +282,9 @@ class LandscapeSetupScript(object):
 
         self.prompt("account_name", "Account name", True)
 
-    def query_registration_password(self):
+    def query_registration_key(self):
         command_line_options = self.config.get_command_line_options()
-        if ("registration_password" in command_line_options or
-            "registration_key" in command_line_options):
+        if "registration_key" in command_line_options:
             return
 
         self.show_help(
@@ -419,7 +418,7 @@ class LandscapeSetupScript(object):
         self.show_header()
         self.query_computer_title()
         self.query_account_name()
-        self.query_registration_password()
+        self.query_registration_key()
         self.query_proxies()
         self.query_script_plugin()
         self.query_tags()

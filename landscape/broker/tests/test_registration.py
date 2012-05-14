@@ -63,8 +63,8 @@ class IdentityTest(LandscapeTest):
     def test_account_name(self):
         self.check_config_property("account_name")
 
-    def test_registration_password(self):
-        self.check_config_property("registration_password")
+    def test_registration_key(self):
+        self.check_config_property("registration_key")
 
     def test_client_tags(self):
         self.check_config_property("tags")
@@ -153,7 +153,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                             [{"type": "register",
                               "computer_title": "Computer Title",
                               "account_name": "account_name",
-                              "registration_password": None,
+                              "registration_key": None,
                               "hostname": "ooga.local",
                               "tags": None,
                               "vm-info": get_vm_info()}])
@@ -179,7 +179,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                             [{"type": "register",
                               "computer_title": "Computer Title",
                               "account_name": "account_name",
-                              "registration_password": None,
+                              "registration_key": None,
                               "hostname": "ooga.local",
                               "tags": None,
                               "vm-info": u"vmware"}])
@@ -192,13 +192,13 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.mstore.set_accepted_types(["register"])
         self.config.computer_title = "Computer Title"
         self.config.account_name = "account_name"
-        self.config.registration_password = "SEKRET"
+        self.config.registration_key = "SEKRET"
         self.reactor.fire("pre-exchange")
         self.assertMessages(self.mstore.get_pending_messages(),
                             [{"type": "register",
                               "computer_title": "Computer Title",
                               "account_name": "account_name",
-                              "registration_password": "SEKRET",
+                              "registration_key": "SEKRET",
                               "hostname": "ooga.local",
                               "tags": None,
                               "vm-info": get_vm_info()}])
@@ -214,14 +214,14 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.mstore.set_accepted_types(["register"])
         self.config.computer_title = "Computer Title"
         self.config.account_name = "account_name"
-        self.config.registration_password = "SEKRET"
+        self.config.registration_key = "SEKRET"
         self.config.tags = u"computer,tag"
         self.reactor.fire("pre-exchange")
         self.assertMessages(self.mstore.get_pending_messages(),
                             [{"type": "register",
                               "computer_title": "Computer Title",
                               "account_name": "account_name",
-                              "registration_password": "SEKRET",
+                              "registration_key": "SEKRET",
                               "hostname": "ooga.local",
                               "tags": u"computer,tag",
                               "vm-info": get_vm_info()}])
@@ -240,14 +240,14 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.mstore.set_accepted_types(["register"])
         self.config.computer_title = "Computer Title"
         self.config.account_name = "account_name"
-        self.config.registration_password = "SEKRET"
+        self.config.registration_key = "SEKRET"
         self.config.tags = u"<script>alert()</script>"
         self.reactor.fire("pre-exchange")
         self.assertMessages(self.mstore.get_pending_messages(),
                             [{"type": "register",
                               "computer_title": "Computer Title",
                               "account_name": "account_name",
-                              "registration_password": "SEKRET",
+                              "registration_key": "SEKRET",
                               "hostname": "ooga.local",
                               "tags": None,
                               "vm-info": get_vm_info()}])
@@ -265,7 +265,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.mstore.set_accepted_types(["register"])
         self.config.computer_title = "Computer Title"
         self.config.account_name = "account_name"
-        self.config.registration_password = "SEKRET"
+        self.config.registration_key = "SEKRET"
         self.config.tags = u"prova\N{LATIN SMALL LETTER J WITH CIRCUMFLEX}o"
         self.reactor.fire("pre-exchange")
         self.assertMessages(
@@ -273,7 +273,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
             [{"type": "register",
               "computer_title": "Computer Title",
               "account_name": "account_name",
-              "registration_password": "SEKRET",
+              "registration_key": "SEKRET",
               "hostname": "ooga.local",
               "tags": u"prova\N{LATIN SMALL LETTER J WITH CIRCUMFLEX}o",
               "vm-info": get_vm_info()}])
@@ -457,13 +457,13 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.mstore.set_accepted_types(["register"])
         self.config.computer_title = "Computer Title"
         self.config.account_name = "account_name"
-        self.config.registration_password = "SEKRET"
+        self.config.registration_key = "SEKRET"
         self.reactor.fire("pre-exchange")
         self.assertMessages(self.mstore.get_pending_messages(),
                             [{"type": "register",
                               "computer_title": "Computer Title",
                               "account_name": "account_name",
-                              "registration_password": "SEKRET",
+                              "registration_key": "SEKRET",
                               "hostname": socket.getfqdn(),
                               "vm-info": get_vm_info(),
                               "tags": None}])
@@ -527,12 +527,12 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
             self.query_results[api_base + url_suffix] = value
 
     def prepare_cloud_registration(self, account_name=None,
-                                   registration_password=None, tags=None):
+                                   registration_key=None, tags=None):
         # Set things up so that the client thinks it should register
         self.mstore.set_accepted_types(list(self.mstore.get_accepted_types())
                                        + ["register-cloud-vm"])
         self.config.account_name = account_name
-        self.config.registration_password = registration_password
+        self.config.registration_key = registration_key
         self.config.computer_title = None
         self.config.tags = tags
         self.identity.secure_id = None
@@ -555,7 +555,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
                        launch_index=0,
                        image_key=u"image1",
                        account_name=None,
-                       registration_password=None,
+                       registration_key=None,
                        local_ipv4=u"10.0.0.1",
                        public_ipv4=u"10.0.0.2",
                        tags=None)
@@ -745,7 +745,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         self.prepare_query_results(user_data="other stuff, not a bpickle",
                                    instance_key=u"key1")
         self.prepare_cloud_registration(account_name=u"onward",
-                                        registration_password=u"password",
+                                        registration_key=u"password",
                                         tags=u"london,server")
 
         self.reactor.fire("run")
@@ -756,7 +756,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
                             [self.get_expected_cloud_message(
                                 otp=None,
                                 account_name=u"onward",
-                                registration_password=u"password",
+                                registration_key=u"password",
                                 tags=u"london,server")])
         self.assertEqual(self.logfile.getvalue().strip()[:-7],
            "INFO: Queueing message to register with account u'onward' and "
@@ -824,7 +824,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         self.log_helper.ignore_errors(HTTPCodeError)
         self.prepare_query_results(user_data=HTTPCodeError(404, "ohno"))
         self.prepare_cloud_registration(account_name="onward",
-                                        registration_password="password")
+                                        registration_key="password")
 
         self.reactor.fire("run")
         self.exchanger.exchange()
@@ -835,7 +835,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
                             [self.get_expected_cloud_message(
                                 otp=None,
                                 account_name=u"onward",
-                                registration_password=u"password")])
+                                registration_key=u"password")])
 
     def test_cloud_registration_continues_without_ramdisk(self):
         """
@@ -883,7 +883,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         self.prepare_query_results(
             public_hostname=HTTPCodeError(404, "ohnoes"))
         self.prepare_cloud_registration(account_name="onward",
-                                        registration_password="password")
+                                        registration_key="password")
         self.config.computer_title = "whatever"
         self.reactor.fire("run")
         self.exchanger.exchange()
@@ -894,7 +894,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
                             [{"type": "register",
                               "computer_title": u"whatever",
                               "account_name": u"onward",
-                              "registration_password": u"password",
+                              "registration_key": u"password",
                               "hostname": socket.getfqdn(),
                               "vm-info": get_vm_info(),
                               "tags": None}])
@@ -907,7 +907,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         self.mstore.set_accepted_types(self.mstore.get_accepted_types()
                                        + ("register-cloud-vm",))
         self.config.account_name = None
-        self.config.registration_password = None
+        self.config.registration_key = None
         self.config.computer_title = None
         self.identity.secure_id = None
         self.assertTrue(self.handler.should_register())
@@ -940,7 +940,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         self.mstore.set_accepted_types(self.mstore.get_accepted_types()
                                        + ("register-cloud-vm",))
         self.config.account_name = None
-        self.config.registration_password = None
+        self.config.registration_key = None
         self.config.computer_title = None
         self.identity.secure_id = "hello"
         self.assertFalse(self.handler.should_register())
@@ -951,7 +951,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         we shouldn't register.
         """
         self.config.account_name = None
-        self.config.registration_password = None
+        self.config.registration_key = None
         self.config.computer_title = None
         self.identity.secure_id = None
         self.assertFalse(self.handler.should_register())
