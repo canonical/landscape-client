@@ -47,54 +47,6 @@ class PackageSkeleton(object):
         return digest.digest()
 
 
-def build_skeleton(pkg, with_info=False, with_unicode=False):
-    if not build_skeleton.inited:
-        build_skeleton.inited = True
-        global DebPackage, DebNameProvides, DebOrDepends
-
-        # Importing from backends depends on smart.init().
-        from smart.backends.deb.base import (
-            DebPackage, DebNameProvides, DebOrDepends)
-
-    if not isinstance(pkg, DebPackage):
-        raise PackageTypeError()
-
-    if with_unicode:
-        skeleton = PackageSkeleton(DEB_PACKAGE, unicode(pkg.name),
-                                   unicode(pkg.version))
-    else:
-        skeleton = PackageSkeleton(DEB_PACKAGE, pkg.name, pkg.version)
-    relations = set()
-    for relation in pkg.provides:
-        if isinstance(relation, DebNameProvides):
-            relations.add((DEB_NAME_PROVIDES, str(relation)))
-        else:
-            relations.add((DEB_PROVIDES, str(relation)))
-    for relation in pkg.requires:
-        if isinstance(relation, DebOrDepends):
-            relations.add((DEB_OR_REQUIRES, str(relation)))
-        else:
-            relations.add((DEB_REQUIRES, str(relation)))
-    for relation in pkg.upgrades:
-        relations.add((DEB_UPGRADES, str(relation)))
-    for relation in pkg.conflicts:
-        relations.add((DEB_CONFLICTS, str(relation)))
-
-    skeleton.relations = sorted(relations)
-
-    if with_info:
-        info = pkg.loaders.keys()[0].getInfo(pkg)
-        skeleton.section = info.getGroup()
-        skeleton.summary = info.getSummary()
-        skeleton.description = info.getDescription()
-        skeleton.size = sum(info.getSize(url) for url in info.getURLs())
-        skeleton.installed_size = info.getInstalledSize()
-
-    return skeleton
-
-build_skeleton.inited = False
-
-
 def relation_to_string(relation_tuple):
     """Convert an apt relation to a string representation.
 

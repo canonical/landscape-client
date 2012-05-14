@@ -3,12 +3,6 @@ import os
 import textwrap
 import time
 
-try:
-    import smart
-except ImportError:
-    # Smart is optional if AptFacade is being used.
-    pass
-
 import apt_inst
 import apt_pkg
 
@@ -125,39 +119,6 @@ class SimpleRepositoryHelper(object):
         test_case.repository_dir = test_case.makeDir()
         create_simple_repository(test_case.repository_dir)
         test_case.facade.add_channel_deb_dir(test_case.repository_dir)
-
-
-class SmartHelper(object):
-
-    def set_up(self, test_case):
-        test_case.smart_dir = test_case.makeDir()
-        test_case.smart_config = test_case.makeFile("")
-        test_case.repository_dir = test_case.makeDir()
-        create_simple_repository(test_case.repository_dir)
-
-    def tear_down(self, test_case):
-        if smart.iface.object:
-            smart.deinit()
-
-
-class SmartFacadeHelper(SmartHelper):
-
-    def set_up(self, test_case):
-        super(SmartFacadeHelper, self).set_up(test_case)
-
-        from landscape.package.facade import SmartFacade
-
-        class Facade(SmartFacade):
-            repository_dir = test_case.repository_dir
-
-            def smart_initialized(self):
-                self.reset_channels()
-                self.add_channel_deb_dir(test_case.repository_dir)
-
-        test_case.Facade = Facade
-        test_case.facade = Facade({"datadir": test_case.smart_dir,
-                                   "configfile": test_case.smart_config},
-                                  {"sync-apt-sources": False})
 
 
 PKGNAME1 = "name1_version1-release1_all.deb"

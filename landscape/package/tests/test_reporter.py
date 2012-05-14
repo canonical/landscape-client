@@ -1,4 +1,3 @@
-import glob
 import sys
 import os
 import unittest
@@ -17,9 +16,9 @@ from landscape.package.reporter import (
     PackageReporter, HASH_ID_REQUEST_TIMEOUT, main, find_reporter_command,
     PackageReporterConfiguration, FakeGlobalReporter, FakeReporter)
 from landscape.package import reporter
-from landscape.package.facade import AptFacade, has_new_enough_apt
+from landscape.package.facade import AptFacade
 from landscape.package.tests.helpers import (
-    SmartFacadeHelper, AptFacadeHelper, SimpleRepositoryHelper,
+    AptFacadeHelper, SimpleRepositoryHelper,
     HASH1, HASH2, HASH3, PKGNAME1)
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
@@ -497,64 +496,6 @@ class PackageReporterTestMixin(object):
 
         return result
 
-    def test_run_smart_update(self):
-        """
-        The L{PackageReporter.run_smart_update} method should run smart-update
-        with the proper arguments.
-        """
-        self.reporter.sources_list_filename = "/I/Dont/Exist"
-        self.reporter.sources_list_directory = "/I/Dont/Exist"
-        self.reporter.smart_update_filename = self.makeFile(
-            "#!/bin/sh\necho -n $@")
-        os.chmod(self.reporter.smart_update_filename, 0755)
-        debug_mock = self.mocker.replace("logging.debug")
-        debug_mock("'%s' exited with status 0 (out='--after %d', err=''" % (
-            self.reporter.smart_update_filename,
-            self.reporter.smart_update_interval))
-        warning_mock = self.mocker.replace("logging.warning")
-        self.expect(warning_mock(ANY)).count(0)
-        self.mocker.replay()
-        deferred = Deferred()
-
-        def do_test():
-
-            result = self.reporter.run_smart_update()
-
-            def callback((out, err, code)):
-                interval = self.reporter.smart_update_interval
-                self.assertEqual(err, "")
-                self.assertEqual(out, "--after %d" % interval)
-                self.assertEqual(code, 0)
-            result.addCallback(callback)
-            result.chainDeferred(deferred)
-
-        reactor.callWhenRunning(do_test)
-        return deferred
-
-    def test_run_smart_update_with_force_smart_update(self):
-        """
-        L{PackageReporter.run_smart_update} forces a smart-update run if
-        the '--force-smart-update' command line option was passed.
-
-        """
-        self.config.load(["--force-smart-update"])
-        self.reporter.smart_update_filename = self.makeFile(
-            "#!/bin/sh\necho -n $@")
-        os.chmod(self.reporter.smart_update_filename, 0755)
-
-        deferred = Deferred()
-
-        def do_test():
-            result = self.reporter.run_smart_update()
-
-            def callback((out, err, code)):
-                self.assertEqual(out, "")
-            result.addCallback(callback)
-            result.chainDeferred(deferred)
-
-        reactor.callWhenRunning(do_test)
-        return deferred
-
     def test_wb_apt_sources_have_changed(self):
         """
         The L{PackageReporter._apt_sources_have_changed} method returns a bool
@@ -580,244 +521,6 @@ class PackageReporterTestMixin(object):
         self.makeFile(dirname=self.reporter.sources_list_directory,
                       content="deb http://foo ./")
         self.assertTrue(self.reporter._apt_sources_have_changed())
-
-    def test_run_smart_update_with_force_smart_update_if_sources_changed(self):
-        """
-        L{PackageReporter.run_smart_update} forces a smart-update run if
-        the APT sources.list file has changed.
-
-        """
-        self.assertEqual(self.reporter.sources_list_filename,
-                         "/etc/apt/sources.list")
-        self.reporter.sources_list_filename = self.makeFile("deb ftp://url ./")
-        self.reporter.smart_update_filename = self.makeFile(
-            "#!/bin/sh\necho -n $@")
-        os.chmod(self.reporter.smart_update_filename, 0755)
-
-        deferred = Deferred()
-
-        def do_test():
-            result = self.reporter.run_smart_update()
-
-            def callback((out, err, code)):
-                # Smart update was called without the --after parameter
-                self.assertEqual(out, "")
-            result.addCallback(callback)
-            result.chainDeferred(deferred)
-
-        reactor.callWhenRunning(do_test)
-        return deferred
-
-    def test_run_smart_update_warns_about_failures(self):
-        """
-        The L{PackageReporter.run_smart_update} method should log a warning
-        in case smart-update terminates with a non-zero exit code other than 1.
-        """
-        self.reporter.smart_update_filename = self.makeFile(
-            "#!/bin/sh\necho -n error >&2\necho -n output\nexit 2")
-        os.chmod(self.reporter.smart_update_filename, 0755)
-        logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("'%s' exited with status 2"
-                     " (error)" % self.reporter.smart_update_filename)
-        self.mocker.replay()
-        deferred = Deferred()
-
-        def do_test():
-            result = self.reporter.run_smart_update()
-
-            def callback((out, err, code)):
-                self.assertEqual(out, "output")
-                self.assertEqual(err, "error")
-                self.assertEqual(code, 2)
-            result.addCallback(callback)
-            result.chainDeferred(deferred)
-
-        reactor.callWhenRunning(do_test)
-        return deferred
-
-    def test_run_smart_update_report_smart_failure(self):
-        """
-        If L{PackageReporter.run_smart_update} fails, a message is sent to the
-        server reporting the error, to be able to fix the problem centrally.
-        """
-        message_store = self.broker_service.message_store
-        message_store.set_accepted_types(["package-reporter-result"])
-        self.reporter.smart_update_filename = self.makeFile(
-            "#!/bin/sh\necho -n error >&2\necho -n output\nexit 2")
-        os.chmod(self.reporter.smart_update_filename, 0755)
-        deferred = Deferred()
-
-        def do_test():
-            result = self.reporter.run_smart_update()
-
-            def callback(ignore):
-                self.assertMessages(message_store.get_pending_messages(),
-                    [{"type": "package-reporter-result",
-                      "code": 2, "err": u"error"}])
-            result.addCallback(callback)
-            result.chainDeferred(deferred)
-
-        reactor.callWhenRunning(do_test)
-        return deferred
-
-    def test_run_smart_update_report_no_sources(self):
-        """
-        L{PackageReporter.run_smart_update} reports a failure if smart
-        succeeds but there are no APT sources defined. Smart doesn't
-        fail if there are no sources, but we fake a failure in order to
-        re-use the PackageReporterAlert on the server.
-        """
-        self.facade.reset_channels()
-        message_store = self.broker_service.message_store
-        message_store.set_accepted_types(["package-reporter-result"])
-        self.reporter.smart_update_filename = self.makeFile(
-            "#!/bin/sh\necho -n error >&2\necho -n output\nexit 0")
-        os.chmod(self.reporter.smart_update_filename, 0755)
-        deferred = Deferred()
-
-        def do_test():
-            result = self.reporter.run_smart_update()
-
-            def callback(ignore):
-                error = "There are no APT sources configured in %s or %s." % (
-                    self.reporter.sources_list_filename,
-                    self.reporter.sources_list_directory)
-                self.assertMessages(message_store.get_pending_messages(),
-                    [{"type": "package-reporter-result",
-                      "code": 1, "err": error}])
-            result.addCallback(callback)
-            result.chainDeferred(deferred)
-
-        reactor.callWhenRunning(do_test)
-        return deferred
-
-    def test_run_smart_update_report_smart_failure_no_sources(self):
-        """
-        If L{PackageReporter.run_smart_update} fails and there are no
-        APT sources configured, the Smart error takes precedence.
-        """
-        self.facade.reset_channels()
-        message_store = self.broker_service.message_store
-        message_store.set_accepted_types(["package-reporter-result"])
-        self.reporter.smart_update_filename = self.makeFile(
-            "#!/bin/sh\necho -n error >&2\necho -n output\nexit 2")
-        os.chmod(self.reporter.smart_update_filename, 0755)
-        deferred = Deferred()
-
-        def do_test():
-            result = self.reporter.run_smart_update()
-
-            def callback(ignore):
-                self.assertMessages(message_store.get_pending_messages(),
-                    [{"type": "package-reporter-result",
-                      "code": 2, "err": u"error"}])
-            result.addCallback(callback)
-            result.chainDeferred(deferred)
-
-        reactor.callWhenRunning(do_test)
-        return deferred
-
-    def test_run_smart_update_report_success(self):
-        """
-        L{PackageReporter.run_smart_update} also reports success to be able to
-        know the proper state of the client.
-        """
-        message_store = self.broker_service.message_store
-        message_store.set_accepted_types(["package-reporter-result"])
-        self.reporter.smart_update_filename = self.makeFile(
-            "#!/bin/sh\necho -n error >&2\necho -n output\nexit 0")
-        os.chmod(self.reporter.smart_update_filename, 0755)
-        deferred = Deferred()
-
-        def do_test():
-            result = self.reporter.run_smart_update()
-
-            def callback(ignore):
-                self.assertMessages(message_store.get_pending_messages(),
-                    [{"type": "package-reporter-result",
-                      "code": 0, "err": u"error"}])
-            result.addCallback(callback)
-            result.chainDeferred(deferred)
-
-        reactor.callWhenRunning(do_test)
-        return deferred
-
-    def test_run_smart_update_warns_exit_code_1_and_non_empty_stderr(self):
-        """
-        The L{PackageReporter.run_smart_update} method should log a warning
-        in case smart-update terminates with exit code 1 and non empty stderr.
-        """
-        self.reporter.smart_update_filename = self.makeFile(
-            "#!/bin/sh\necho -n \"error  \" >&2\nexit 1")
-        os.chmod(self.reporter.smart_update_filename, 0755)
-        logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("'%s' exited with status 1"
-                     " (error  )" % self.reporter.smart_update_filename)
-        self.mocker.replay()
-        deferred = Deferred()
-
-        def do_test():
-            result = self.reporter.run_smart_update()
-
-            def callback((out, err, code)):
-                self.assertEqual(out, "")
-                self.assertEqual(err, "error  ")
-                self.assertEqual(code, 1)
-            result.addCallback(callback)
-            result.chainDeferred(deferred)
-
-        reactor.callWhenRunning(do_test)
-        return deferred
-
-    def test_run_smart_update_ignores_exit_code_1_and_empty_output(self):
-        """
-        The L{PackageReporter.run_smart_update} method should not log anything
-        in case smart-update terminates with exit code 1 and output containing
-        only a newline character.
-        """
-        self.reporter.smart_update_filename = self.makeFile(
-            "#!/bin/sh\necho\nexit 1")
-        os.chmod(self.reporter.smart_update_filename, 0755)
-        logging_mock = self.mocker.replace("logging.warning")
-        self.expect(logging_mock(ANY)).count(0)
-        self.mocker.replay()
-        deferred = Deferred()
-
-        def do_test():
-
-            result = self.reporter.run_smart_update()
-
-            def callback((out, err, code)):
-                self.assertEqual(out, "\n")
-                self.assertEqual(err, "")
-                self.assertEqual(code, 1)
-            result.addCallback(callback)
-            result.chainDeferred(deferred)
-
-        reactor.callWhenRunning(do_test)
-        return deferred
-
-    def test_run_smart_update_touches_stamp_file(self):
-        """
-        The L{PackageReporter.run_smart_update} method touches a stamp file
-        after running the smart-update wrapper.
-        """
-        self.reporter.sources_list_filename = "/I/Dont/Exist"
-        self.reporter.smart_update_filename = "/bin/true"
-        deferred = Deferred()
-
-        def do_test():
-
-            result = self.reporter.run_smart_update()
-
-            def callback(ignored):
-                self.assertTrue(
-                    os.path.exists(self.config.update_stamp_filename))
-            result.addCallback(callback)
-            result.chainDeferred(deferred)
-
-        reactor.callWhenRunning(do_test)
-        return deferred
 
     def test_remove_expired_hash_id_request(self):
         request = self.store.add_hash_id_request(["hash1"])
@@ -1133,11 +836,7 @@ class PackageReporterTestMixin(object):
 
         upgrade_hash = self.set_pkg1_upgradable()
         self.set_pkg1_installed()
-        # Don't reload for SmartFacade, since the hash of pkg2 will be
-        # changed, resulting in that name2 will be considered not
-        # available..
-        if isinstance(self.facade, AptFacade):
-            self.facade.reload_channels()
+        self.facade.reload_channels()
 
         self.store.set_hash_ids(
             {HASH1: 1, upgrade_hash: 2, HASH3: 3})
@@ -1236,11 +935,7 @@ class PackageReporterTestMixin(object):
 
         results = [Deferred() for i in range(7)]
 
-        # Either the Apt or Smart cache will be updated, not both.
-        if isinstance(self.facade, AptFacade):
-            reporter_mock.run_apt_update()
-        else:
-            reporter_mock.run_smart_update()
+        reporter_mock.run_apt_update()
         self.mocker.result(results[0])
 
         reporter_mock.fetch_hash_id_db()
@@ -1387,252 +1082,7 @@ class PackageReporterTestMixin(object):
         return deferred
 
 
-class PackageReporterSmartTest(LandscapeTest, PackageReporterTestMixin):
-
-    helpers = [SmartFacadeHelper, BrokerServiceHelper]
-
-    def setUp(self):
-
-        def set_up(ignored):
-            self.store = PackageStore(self.makeFile())
-            self.config = PackageReporterConfiguration()
-            self.reporter = PackageReporter(
-                self.store, self.facade, self.remote, self.config)
-            self.config.data_path = self.makeDir()
-            os.mkdir(self.config.package_directory)
-
-        result = super(PackageReporterSmartTest, self).setUp()
-        return result.addCallback(set_up)
-
-    def _clear_repository(self):
-        """Remove all packages from self.repository."""
-        for filename in glob.glob(self.repository_dir + "/*"):
-            os.unlink(filename)
-
-    def set_pkg1_upgradable(self):
-        """Make it so that package "name1" is considered to be upgradable.
-
-        Return the hash of the package that upgrades "name1".
-        """
-        previous = self.Facade.channels_reloaded
-
-        def callback(self):
-            from smart.backends.deb.base import DebUpgrades
-            previous(self)
-            pkg2 = self.get_packages_by_name("name2")[0]
-            pkg2.upgrades += (DebUpgrades("name1", "=", "version1-release1"),)
-            self.reload_cache()  # Relink relations.
-        self.Facade.channels_reloaded = callback
-        return HASH2
-
-    def set_pkg1_installed(self):
-        """Make it so that package "name1" is considered installed."""
-        previous = self.Facade.channels_reloaded
-
-        def callback(self):
-            previous(self)
-            self.get_packages_by_name("name1")[0].installed = True
-        self.Facade.channels_reloaded = callback
-
-    def test_detect_packages_changes_with_locked(self):
-        """
-        If Smart indicates locked packages we didn't know about, report
-        them to the server.
-        """
-        message_store = self.broker_service.message_store
-        message_store.set_accepted_types(["packages"])
-
-        self.facade.set_package_lock("name1")
-        self.facade.set_package_lock("name2", ">=", "version2")
-
-        self.store.set_hash_ids({HASH1: 1, HASH2: 2})
-        self.store.add_available([1, 2])
-
-        def got_result(result):
-            self.assertMessages(message_store.get_pending_messages(),
-                                [{"type": "packages", "locked": [1, 2]}])
-            self.assertEqual(sorted(self.store.get_locked()), [1, 2])
-
-        result = self.reporter.detect_packages_changes()
-        return result.addCallback(got_result)
-
-    def test_detect_packages_changes_with_locked_and_ranges(self):
-        """
-        Ranges are used when reporting changes to 3 or more locked packages
-        having consecutive ids.
-        """
-        message_store = self.broker_service.message_store
-        message_store.set_accepted_types(["packages"])
-
-        self.facade.set_package_lock("name1")
-        self.facade.set_package_lock("name2", ">=", "version2")
-        self.facade.set_package_lock("name3", "<", "version4")
-
-        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
-        self.store.add_available([1, 2, 3])
-
-        def got_result(result):
-            self.assertMessages(message_store.get_pending_messages(),
-                                [{"type": "packages", "locked": [(1, 3)]}])
-            self.assertEqual(sorted(self.store.get_locked()), [1, 2, 3])
-
-        result = self.reporter.detect_packages_changes()
-        return result.addCallback(got_result)
-
-    def test_detect_packages_changes_with_locked_with_unknown_hash(self):
-        """
-        Locked packages whose hashes are unknown don't get reported.
-        """
-        self.facade.set_package_lock("name1")
-
-        def got_result(result):
-            self.assertEqual(self.store.get_locked(), [])
-
-        result = self.reporter.detect_packages_changes()
-        return result.addCallback(got_result)
-
-    def test_detect_packages_changes_with_locked_and_previously_known(self):
-        """
-        We don't report locked packages we already know about.
-        """
-        message_store = self.broker_service.message_store
-        message_store.set_accepted_types(["packages"])
-
-        self.facade.set_package_lock("name1")
-        self.facade.set_package_lock("name2", ">=", "version2")
-
-        self.store.set_hash_ids({HASH1: 1, HASH2: 2})
-        self.store.add_available([1, 2])
-        self.store.add_locked([1])
-
-        def got_result(result):
-            self.assertMessages(message_store.get_pending_messages(),
-                                [{"type": "packages", "locked": [2]}])
-
-            self.assertEqual(sorted(self.store.get_locked()), [1, 2])
-
-        result = self.reporter.detect_packages_changes()
-        return result.addCallback(got_result)
-
-    def test_detect_packages_changes_with_not_locked(self):
-        """
-        We report when a package was previously locked and isn't anymore.
-        """
-        message_store = self.broker_service.message_store
-        message_store.set_accepted_types(["packages"])
-
-        self.store.set_hash_ids({HASH1: 1})
-        self.store.add_available([1])
-        self.store.add_locked([1])
-
-        def got_result(result):
-            self.assertMessages(message_store.get_pending_messages(),
-                                [{"type": "packages", "not-locked": [1]}])
-            self.assertEqual(self.store.get_locked(), [])
-
-        result = self.reporter.detect_packages_changes()
-        return result.addCallback(got_result)
-
-    def test_detect_package_locks_changes_with_create_locks(self):
-        """
-        If Smart indicates package locks we didn't know about, report
-        them to the server.
-        """
-        message_store = self.broker_service.message_store
-        message_store.set_accepted_types(["package-locks"])
-
-        self.facade.set_package_lock("name")
-
-        logging_mock = self.mocker.replace("logging.info")
-        logging_mock("Queuing message with changes in known package locks:"
-                     " 1 created, 0 deleted.")
-        self.mocker.replay()
-
-        def got_result(result):
-            self.assertMessages(message_store.get_pending_messages(),
-                                [{"type": "package-locks",
-                                  "created": [("name", "", "")]}])
-            self.assertEqual(self.store.get_package_locks(),
-                             [("name", "", "")])
-
-        result = self.reporter.detect_package_locks_changes()
-        return result.addCallback(got_result)
-
-    def test_detect_package_locks_changes_with_already_known_locks(self):
-        """
-        We don't report changes about locks we already know about.
-        """
-        message_store = self.broker_service.message_store
-        message_store.set_accepted_types(["package-locks"])
-
-        self.facade.set_package_lock("name1")
-        self.facade.set_package_lock("name2", "<", "1.2")
-
-        self.store.add_package_locks([("name1", "", "")])
-
-        logging_mock = self.mocker.replace("logging.info")
-        logging_mock("Queuing message with changes in known package locks:"
-                     " 1 created, 0 deleted.")
-        self.mocker.replay()
-
-        def got_result(result):
-            self.assertMessages(message_store.get_pending_messages(),
-                                [{"type": "package-locks",
-                                  "created": [("name2", "<", "1.2")]}])
-            self.assertEqual(sorted(self.store.get_package_locks()),
-                             [("name1", "", ""),
-                              ("name2", "<", "1.2")])
-
-        result = self.reporter.detect_package_locks_changes()
-        return result.addCallback(got_result)
-
-    def test_detect_package_locks_changes_with_deleted_locks(self):
-        """
-        If Smart indicates newly unset package locks, report them to the
-        server.
-        """
-        message_store = self.broker_service.message_store
-        message_store.set_accepted_types(["package-locks"])
-
-        self.store.add_package_locks([("name1", "", "")])
-
-        logging_mock = self.mocker.replace("logging.info")
-        logging_mock("Queuing message with changes in known package locks:"
-                     " 0 created, 1 deleted.")
-        self.mocker.replay()
-
-        def got_result(result):
-            self.assertMessages(message_store.get_pending_messages(),
-                                [{"type": "package-locks",
-                                  "deleted": [("name1", "", "")]}])
-            self.assertEqual(self.store.get_package_locks(), [])
-
-        result = self.reporter.detect_package_locks_changes()
-        return result.addCallback(got_result)
-
-    def test_detect_package_locks_changes_with_locked_already_known(self):
-        """
-        If we didn't detect any change in the package locks, we don't send any
-        message, and we return a deferred resulting in C{False}.
-        """
-        message_store = self.broker_service.message_store
-        message_store.set_accepted_types(["package-locks"])
-
-        self.facade.set_package_lock("name1")
-        self.store.add_package_locks([("name1", "", "")])
-
-        def got_result(result):
-            self.assertFalse(result)
-            self.assertMessages(message_store.get_pending_messages(), [])
-
-        result = self.reporter.detect_packages_changes()
-        return result.addCallback(got_result)
-
-
 class PackageReporterAptTest(LandscapeTest, PackageReporterTestMixin):
-
-    if not has_new_enough_apt:
-        skip = "Can't use AptFacade on hardy"
 
     helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
 
@@ -1929,44 +1379,7 @@ class PackageReporterAptTest(LandscapeTest, PackageReporterTestMixin):
         return deferred
 
 
-class GlobalPackageReporterTestMixin(object):
-
-    def test_store_messages(self):
-        """
-        L{FakeGlobalReporter} stores messages which are sent.
-        """
-        message_store = self.broker_service.message_store
-        message_store.set_accepted_types(["package-reporter-result"])
-        self.reporter.smart_update_filename = self.makeFile(
-            "#!/bin/sh\necho -n error >&2\necho -n output\nexit 0")
-        os.chmod(self.reporter.smart_update_filename, 0755)
-        deferred = Deferred()
-
-        def do_test():
-            result = self.reporter.run_smart_update()
-
-            def callback(ignore):
-                message = {"type": "package-reporter-result",
-                           "code": 0, "err": u"error"}
-                self.assertMessages(
-                    message_store.get_pending_messages(), [message])
-                stored = list(self.store._db.execute(
-                    "SELECT id, data FROM message").fetchall())
-                self.assertEqual(1, len(stored))
-                self.assertEqual(1, stored[0][0])
-                self.assertEqual(message, bpickle.loads(str(stored[0][1])))
-            result.addCallback(callback)
-            result.chainDeferred(deferred)
-
-        reactor.callWhenRunning(do_test)
-        return deferred
-
-
-class GlobalPackageReporterAptTest(LandscapeTest,
-                                   GlobalPackageReporterTestMixin):
-
-    if not has_new_enough_apt:
-        skip = "Can't use AptFacade on hardy"
+class GlobalPackageReporterAptTest(LandscapeTest):
 
     helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
 
@@ -1983,24 +1396,35 @@ class GlobalPackageReporterAptTest(LandscapeTest,
         result = super(GlobalPackageReporterAptTest, self).setUp()
         return result.addCallback(set_up)
 
+    def test_store_messages(self):
+        """
+        L{FakeGlobalReporter} stores messages which are sent.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["package-reporter-result"])
+        self.reporter.apt_update_filename = self.makeFile(
+            "#!/bin/sh\necho -n error >&2\necho -n output\nexit 0")
+        os.chmod(self.reporter.apt_update_filename, 0755)
+        deferred = Deferred()
 
-class GlobalPackageReporterSmartTest(LandscapeTest,
-                                     GlobalPackageReporterTestMixin):
+        def do_test():
+            result = self.reporter.run_apt_update()
 
-    helpers = [SmartFacadeHelper, BrokerServiceHelper]
+            def callback(ignore):
+                message = {"type": "package-reporter-result",
+                           "code": 0, "err": u"error"}
+                self.assertMessages(
+                    message_store.get_pending_messages(), [message])
+                stored = list(self.store._db.execute(
+                    "SELECT id, data FROM message").fetchall())
+                self.assertEqual(1, len(stored))
+                self.assertEqual(1, stored[0][0])
+                self.assertEqual(message, bpickle.loads(str(stored[0][1])))
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
 
-    def setUp(self):
-
-        def set_up(ignored):
-            self.store = FakePackageStore(self.makeFile())
-            self.config = PackageReporterConfiguration()
-            self.reporter = FakeGlobalReporter(
-                self.store, self.facade, self.remote, self.config)
-            self.config.data_path = self.makeDir()
-            os.mkdir(self.config.package_directory)
-
-        result = super(GlobalPackageReporterSmartTest, self).setUp()
-        return result.addCallback(set_up)
+        reactor.callWhenRunning(do_test)
+        return deferred
 
 
 class FakePackageReporterTest(LandscapeTest):

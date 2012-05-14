@@ -6,12 +6,6 @@ import os
 
 from twisted.internet.defer import Deferred
 
-try:
-    from smart.cache import Provides
-except ImportError:
-    # Smart is optional if AptFacade is being used.
-    pass
-
 from landscape.lib.fs import create_file, read_file, touch_file
 from landscape.package.changer import (
     PackageChanger, main, find_changer_command, UNKNOWN_PACKAGE_DATA_TIMEOUT,
@@ -19,16 +13,16 @@ from landscape.package.changer import (
     POLICY_ALLOW_ALL_CHANGES, ERROR_RESULT)
 from landscape.package.store import PackageStore
 from landscape.package.facade import (
-    DependencyError, TransactionError, SmartError, has_new_enough_apt)
+    DependencyError, TransactionError)
 from landscape.package.changer import (
     PackageChangerConfiguration, ChangePackagesResult)
 from landscape.tests.mocker import ANY
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServiceHelper)
 from landscape.package.tests.helpers import (
-    SmartFacadeHelper, HASH1, HASH2, HASH3, PKGDEB1, PKGDEB2, PKGNAME2,
+    HASH1, HASH2, HASH3, PKGDEB1, PKGDEB2,
     AptFacadeHelper, SimpleRepositoryHelper)
-from landscape.manager.manager import FAILED, SUCCEEDED
+from landscape.manager.manager import FAILED
 
 
 class PackageChangerTestMixin(object):
@@ -810,27 +804,6 @@ class PackageChangerTestMixin(object):
                                   "type": "change-packages-result"}])
         return result.addCallback(got_result)
 
-    def test_smart_error_with_unicode_data(self):
-        self.store.set_hash_ids({HASH1: 1})
-        self.store.add_task("changer",
-                            {"type": "change-packages", "install": [1],
-                             "operation-id": 123})
-
-        def raise_error(self):
-            raise SmartError(u"áéíóú")
-        self.replace_perform_changes(raise_error)
-        self.disable_clear_channels()
-
-        result = self.changer.handle_tasks()
-
-        def got_result(result):
-            self.assertMessages(self.get_pending_messages(),
-                                [{"operation-id": 123,
-                                  "result-code": 100,
-                                  "result-text": u"áéíóú",
-                                  "type": "change-packages-result"}])
-        return result.addCallback(got_result)
-
     def test_update_stamp_exists(self):
         """
         L{PackageChanger.update_exists} returns C{True} if the
@@ -892,247 +865,7 @@ class PackageChangerTestMixin(object):
         self.assertFalse(os.path.exists(existing_deb_path))
 
 
-class SmartPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
-
-    helpers = [SmartFacadeHelper, BrokerServiceHelper]
-
-    def setUp(self):
-
-        def set_up(ignored):
-
-            self.store = PackageStore(self.makeFile())
-            self.config = PackageChangerConfiguration()
-            self.config.data_path = self.makeDir()
-            os.mkdir(self.config.package_directory)
-            os.mkdir(self.config.binaries_path)
-            touch_file(self.config.update_stamp_filename)
-            self.changer = PackageChanger(
-                self.store, self.facade, self.remote, self.config)
-            service = self.broker_service
-            service.message_store.set_accepted_types(["change-packages-result",
-                                                      "operation-result"])
-
-        result = super(SmartPackageChangerTest, self).setUp()
-        return result.addCallback(set_up)
-
-    def set_pkg1_installed(self):
-        previous = self.Facade.channels_reloaded
-
-        def callback(self):
-            previous(self)
-            self.get_packages_by_name("name1")[0].installed = True
-        self.Facade.channels_reloaded = callback
-        return HASH1
-
-    def set_pkg2_upgrades_pkg1(self):
-        previous = self.Facade.channels_reloaded
-
-        def callback(self):
-            from smart.backends.deb.base import DebUpgrades
-            previous(self)
-            [pkg2] = self.get_packages_by_name("name2")
-            pkg2.upgrades += (DebUpgrades("name1", "=", "version1-release1"),)
-            self.reload_cache()  # Relink relations.
-        self.Facade.channels_reloaded = callback
-        self.set_pkg2_satisfied()
-        self.set_pkg1_installed()
-        return HASH1, HASH2
-
-    def set_pkg2_satisfied(self):
-        previous = self.Facade.channels_reloaded
-
-        def callback(self):
-            previous(self)
-            [pkg2] = self.get_packages_by_name("name2")
-            pkg2.requires = ()
-            self.reload_cache()  # Relink relations.
-        self.Facade.channels_reloaded = callback
-        return HASH2
-
-    def set_pkg1_and_pkg2_satisfied(self):
-        previous = self.Facade.channels_reloaded
-
-        def callback(self):
-            previous(self)
-
-            provide1 = Provides("prerequirename1", "prerequireversion1")
-            provide2 = Provides("requirename1", "requireversion1")
-            [pkg2] = self.get_packages_by_name("name2")
-            pkg2.provides += (provide1, provide2)
-
-            provide1 = Provides("prerequirename2", "prerequireversion2")
-            provide2 = Provides("requirename2", "requireversion2")
-            [pkg1] = self.get_packages_by_name("name1")
-            pkg1.provides += (provide1, provide2)
-
-            # Ask Smart to reprocess relationships.
-            self.reload_cache()
-        self.Facade.channels_reloaded = callback
-        return HASH1, HASH2
-
-    def remove_pkg2(self):
-        os.remove(os.path.join(self.repository_dir, PKGNAME2))
-
-    def get_transaction_error_message(self):
-        return "requirename1 = requireversion1"
-
-    def get_binaries_channels(self, binaries_path):
-        return {binaries_path: {"type": "deb-dir",
-                                "path": binaries_path}}
-
-    def get_package_name(self, package):
-        return package.name
-
-    def test_change_package_locks(self):
-        """
-        The L{PackageChanger.handle_tasks} method appropriately creates and
-        deletes package locks as requested by the C{change-package-locks}
-        message.
-        """
-        self.facade.set_package_lock("bar")
-        self.store.add_task("changer", {"type": "change-package-locks",
-                                        "create": [("foo", ">=", "1.0")],
-                                        "delete": [("bar", None, None)],
-                                        "operation-id": 123})
-
-        def assert_result(result):
-            self.facade.deinit()
-            self.assertEqual(self.facade.get_package_locks(),
-                             [("foo", ">=", "1.0")])
-            self.assertIn("Queuing message with change package locks results "
-                          "to exchange urgently.", self.logfile.getvalue())
-            self.assertMessages(self.get_pending_messages(),
-                                [{"type": "operation-result",
-                                  "operation-id": 123,
-                                  "status": SUCCEEDED,
-                                  "result-text": "Package locks successfully"
-                                                 " changed.",
-                                  "result-code": 0}])
-
-        result = self.changer.handle_tasks()
-        return result.addCallback(assert_result)
-
-    def test_change_package_locks_create_with_already_existing(self):
-        """
-        The L{PackageChanger.handle_tasks} method gracefully handles requests
-        for creating package locks that already exist.
-        """
-        self.facade.set_package_lock("foo")
-        self.store.add_task("changer", {"type": "change-package-locks",
-                                        "create": [("foo", None, None)],
-                                        "operation-id": 123})
-
-        def assert_result(result):
-            self.facade.deinit()
-            self.assertEqual(self.facade.get_package_locks(),
-                             [("foo", "", "")])
-            self.assertMessages(self.get_pending_messages(),
-                                [{"type": "operation-result",
-                                  "operation-id": 123,
-                                  "status": SUCCEEDED,
-                                  "result-text": "Package locks successfully"
-                                                 " changed.",
-                                  "result-code": 0}])
-
-        result = self.changer.handle_tasks()
-        return result.addCallback(assert_result)
-
-    def test_change_package_locks_delete_without_already_existing(self):
-        """
-        The L{PackageChanger.handle_tasks} method gracefully handles requests
-        for deleting package locks that don't exist.
-        """
-        self.store.add_task("changer", {"type": "change-package-locks",
-                                        "delete": [("foo", ">=", "1.0")],
-                                        "operation-id": 123})
-
-        def assert_result(result):
-            self.facade.deinit()
-            self.assertEqual(self.facade.get_package_locks(), [])
-            self.assertMessages(self.get_pending_messages(),
-                                [{"type": "operation-result",
-                                  "operation-id": 123,
-                                  "status": SUCCEEDED,
-                                  "result-text": "Package locks successfully"
-                                                 " changed.",
-                                  "result-code": 0}])
-
-        result = self.changer.handle_tasks()
-        return result.addCallback(assert_result)
-
-    def test_dpkg_error(self):
-        """
-        Verify that errors emitted by dpkg are correctly reported to
-        the server as problems.
-
-        This test is to make sure that Smart reports the problem
-        correctly. It doesn't make sense for AptFacade, since there we
-        don't call dpkg.
-        """
-        self.log_helper.ignore_errors(".*dpkg")
-
-        installed_hash = self.set_pkg1_installed()
-        self.store.set_hash_ids({installed_hash: 1})
-        self.store.add_task("changer",
-                            {"type": "change-packages", "remove": [1],
-                             "operation-id": 123})
-
-        result = self.changer.handle_tasks()
-
-        def got_result(result):
-            messages = self.get_pending_messages()
-            self.assertEqual(len(messages), 1, "Too many messages")
-            message = messages[0]
-            self.assertEqual(message["operation-id"], 123)
-            self.assertEqual(message["result-code"], 100)
-            self.assertEqual(message["type"], "change-packages-result")
-            text = message["result-text"]
-            # We can't test the actual content of the message because the dpkg
-            # error can be localized
-            self.assertIn("\n[remove] name1_version1-release1\ndpkg: ", text)
-            self.assertIn("ERROR", text)
-            self.assertIn("(2)", text)
-        return result.addCallback(got_result)
-
-    def test_global_upgrade(self):
-        """
-        Besides asking for individual changes, the server may also request
-        the client to perform a global upgrade.  This would be the equivalent
-        of a "smart upgrade" command being executed in the command line.
-
-        This test should be run for both C{AptFacade} and
-        C{SmartFacade}, but due to the smart test setting up that two
-        packages with different names upgrade each other, the message
-        doesn't correctly report that the old version should be
-        uninstalled. The test is still useful, since it shows that the
-        message contains the changes that smart says are needed.
-
-        Making the test totally correct is a lot of work, that is not
-        worth doing, since we're removing smart soon.
-        """
-        hash1, hash2 = self.set_pkg2_upgrades_pkg1()
-        self.store.set_hash_ids({hash1: 1, hash2: 2})
-
-        self.store.add_task("changer",
-                            {"type": "change-packages", "upgrade-all": True,
-                             "operation-id": 123})
-
-        result = self.changer.handle_tasks()
-
-        def got_result(result):
-            self.assertMessages(self.get_pending_messages(),
-                                [{"operation-id": 123,
-                                  "must-install": [2],
-                                  "result-code": 101,
-                                  "type": "change-packages-result"}])
-
-        return result.addCallback(got_result)
-
-
 class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
-
-    if not has_new_enough_apt:
-        skip = "Can't use AptFacade on hardy"
 
     helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
 
