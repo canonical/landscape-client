@@ -279,7 +279,7 @@ class PersistableHelper(Helper):
                 self._state.get(first_key, LANDSCAPE_HOST))
             self._state._proxy.account_name = self._state.get(
                 first_key, ACCOUNT_NAME)
-            self._state._proxy.registration_password = self._state.get(
+            self._state._proxy.registration_key = self._state.get(
                 first_key, PASSWORD)
             self._state._proxy.computer_title = self._state.get(COMPUTER_TITLE)
             self._state._proxy.write()
@@ -405,7 +405,7 @@ class InitialisedState(ConfigurationState):
             url = self._proxy.url
             if url.find(HOSTED_LANDSCAPE_HOST) > -1:
                 self.set(HOSTED, ACCOUNT_NAME, self._proxy.account_name)
-                self.set(HOSTED, PASSWORD, self._proxy.registration_password)
+                self.set(HOSTED, PASSWORD, self._proxy.registration_key)
             else:
                 self.set(LOCAL, LANDSCAPE_HOST,
                          derive_server_host_name_from_url(url))

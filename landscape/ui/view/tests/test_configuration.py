@@ -82,7 +82,7 @@ class ConfigurationViewTest(LandscapeTest):
             "tags = a_tag\n"
             "url = https://landscape.canonical.com/message-system\n"
             "account_name = foo\n"
-            "registration_password = bar\n"
+            "registration_key = bar\n"
             "computer_title = baz\n"
             "https_proxy = https://proxy.localdomain:6192\n"
             "ping_url = http://landscape.canonical.com/ping\n" % sys.path[0])

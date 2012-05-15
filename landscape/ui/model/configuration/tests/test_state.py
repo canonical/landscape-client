@@ -289,7 +289,7 @@ class ConfigurationModelHostedTest(LandscapeTest):
             "tags = a_tag\n" \
             "url = https://landscape.canonical.com/message-system\n" \
             "account_name = foo\n" \
-            "registration_password = boink\n" \
+            "registration_key = boink\n" \
             "computer_title = baz\n" \
             "https_proxy = https://proxy.localdomain:6192\n" \
             "ping_url = http://landscape.canonical.com/ping\n"
@@ -339,7 +339,7 @@ class ConfigurationModelLocalTest(LandscapeTest):
             "tags = a_tag\n" \
             "url = https://landscape.localdomain/message-system\n" \
             "account_name = foo\n" \
-            "registration_password = boink\n" \
+            "registration_key = boink\n" \
             "computer_title = baz\n" \
             "https_proxy = \n" \
             "ping_url = http://landscape.localdomain/ping\n"
@@ -602,7 +602,7 @@ class StateTransitionWithExistingConfigTest(LandscapeTest):
             "tags = a_tag\n"
             "url = https://landscape.canonical.com/message-system\n"
             "account_name = Sparklehorse\n"
-            "registration_password = Vivadixiesubmarinetransmissionplot\n"
+            "registration_key = Vivadixiesubmarinetransmissionplot\n"
             "computer_title = baz\n"
             "https_proxy = https://proxy.localdomain:6192\n"
             "ping_url = http://landscape.canonical.com/ping\n")
@@ -624,7 +624,7 @@ class StateTransitionWithExistingConfigTest(LandscapeTest):
         model.load_data()
         self.assertEqual("Sparklehorse", self.proxy.account_name)
         self.assertEqual("Vivadixiesubmarinetransmissionplot",
-                        self.proxy.registration_password)
+                        self.proxy.registration_key)
         model.management_type = LOCAL_MANAGED
         model.local_account_name = "ThomasPaine"
         model.local_password = "TheAgeOfReason"
@@ -637,7 +637,7 @@ class StateTransitionWithExistingConfigTest(LandscapeTest):
                          self.proxy.url)
         self.assertEqual("http://the.local.machine/ping", self.proxy.ping_url)
         self.assertEqual("ThomasPaine", self.proxy.account_name)
-        self.assertEqual("TheAgeOfReason", self.proxy.registration_password)
+        self.assertEqual("TheAgeOfReason", self.proxy.registration_key)
 
     if not got_gobject_introspection:
         skip = gobject_skip_message

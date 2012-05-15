@@ -104,7 +104,7 @@ class ConfigurationProxy(object):
     http_proxy = property(*_delegate_to_interface("http_proxy"))
     https_proxy = property(*_delegate_to_interface("https_proxy"))
     ping_url = property(*_delegate_to_interface("ping_url"))
-    registration_password = property(
-        *_delegate_to_interface("registration_password"))
+    registration_key = property(
+        *_delegate_to_interface("registration_key"))
     tags = property(*_delegate_to_interface("tags"))
     url = property(*_delegate_to_interface("url"))
