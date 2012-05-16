@@ -40,7 +40,7 @@ class PackageReporter(PackageTaskHandler):
     """Report information about the system packages.
 
     @cvar queue_name: Name of the task queue to pick tasks from.
-    @cvar apt_update_interval: Don't update the Apt index more often
+    @cvar apt_update_interval: Don't update the APT index more often
         than the given interval in minutes.
     """
     config_factory = PackageReporterConfiguration
@@ -358,7 +358,7 @@ class PackageReporter(PackageTaskHandler):
     def request_unknown_hashes(self):
         """Detect available packages for which we have no hash=>id mappings.
 
-        This method will verify if there are packages that Apt knows
+        This method will verify if there are packages that APT knows
         about but for which we don't have an id yet (no hash => id
         translation), and deliver a message (unknown-package-hashes)
         to request them.

@@ -435,7 +435,7 @@ class PackageChangerTestMixin(object):
 
     def test_tasks_are_isolated_cache(self):
         """
-        The package (apt) cache should be reset between task runs.
+        The package (APT) cache should be reset between task runs.
         In this test, we try to run two different operations, first
         installing package 2, then removing package 1.  Both tasks will
         fail for lack of superuser privileges.  If the package cache
