@@ -30,9 +30,9 @@ class PackageReporterConfiguration(PackageTaskHandlerConfiguration):
         reporter-specific options.
         """
         parser = super(PackageReporterConfiguration, self).make_parser()
-        parser.add_option("--force-smart-update", default=False,
+        parser.add_option("--force-apt-update", default=False,
                           action="store_true",
-                          help="Force running smart-update.")
+                          help="Force running apt-update.")
         return parser
 
 
@@ -40,15 +40,14 @@ class PackageReporter(PackageTaskHandler):
     """Report information about the system packages.
 
     @cvar queue_name: Name of the task queue to pick tasks from.
-    @cvar smart_update_interval: Time interval in minutes to pass to
-        the C{--after} command line option of C{smart-update}.
+    @cvar apt_update_interval: Don't update the APT index more often
+        than the given interval in minutes.
     """
     config_factory = PackageReporterConfiguration
 
     queue_name = "reporter"
 
-    smart_update_interval = 60
-    smart_update_filename = "/usr/lib/landscape/smart-update"
+    apt_update_interval = 60
     apt_update_filename = "/usr/lib/landscape/apt-update"
     sources_list_filename = "/etc/apt/sources.list"
     sources_list_directory = "/etc/apt/sources.list.d"
@@ -192,8 +191,8 @@ class PackageReporter(PackageTaskHandler):
 
         @return: a deferred returning (out, err, code)
         """
-        if (self._config.force_smart_update or self._apt_sources_have_changed()
-            or self._apt_update_timeout_expired(self.smart_update_interval)):
+        if (self._config.force_apt_update or self._apt_sources_have_changed()
+            or self._apt_update_timeout_expired(self.apt_update_interval)):
 
             result = spawn_process(self.apt_update_filename)
 
@@ -359,7 +358,7 @@ class PackageReporter(PackageTaskHandler):
     def request_unknown_hashes(self):
         """Detect available packages for which we have no hash=>id mappings.
 
-        This method will verify if there are packages that Apt knows
+        This method will verify if there are packages that APT knows
         about but for which we don't have an id yet (no hash => id
         translation), and deliver a message (unknown-package-hashes)
         to request them.

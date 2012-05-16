@@ -29,15 +29,15 @@ SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
 
 class PackageReporterConfigurationTest(unittest.TestCase):
 
-    def test_force_smart_update_option(self):
+    def test_force_apt_update_option(self):
         """
-        The L{PackageReporterConfiguration} supports a '--force-smart-update'
+        The L{PackageReporterConfiguration} supports a '--force-apt-update'
         command line option.
         """
         config = PackageReporterConfiguration()
-        self.assertFalse(config.force_smart_update)
-        config.load(["--force-smart-update"])
-        self.assertTrue(config.force_smart_update)
+        self.assertFalse(config.force_apt_update)
+        config.load(["--force-apt-update"])
+        self.assertTrue(config.force_apt_update)
 
 
 class PackageReporterTestMixin(object):
@@ -1136,13 +1136,13 @@ class PackageReporterAptTest(LandscapeTest, PackageReporterTestMixin):
         reactor.callWhenRunning(do_test)
         return deferred
 
-    def test_run_apt_update_with_force_smart_update(self):
+    def test_run_apt_update_with_force_apt_update(self):
         """
         L{PackageReporter.run_apt_update} forces an apt-update run if the
-        '--force-smart-update' command line option was passed.
+        '--force-apt-update' command line option was passed.
         """
         self.makeFile("", path=self.config.update_stamp_filename)
-        self.config.load(["--force-smart-update"])
+        self.config.load(["--force-apt-update"])
         self._make_fake_apt_update()
 
         deferred = Deferred()
@@ -1158,7 +1158,7 @@ class PackageReporterAptTest(LandscapeTest, PackageReporterTestMixin):
         reactor.callWhenRunning(do_test)
         return deferred
 
-    def test_run_apt_update_with_force_smart_update_if_sources_changed(self):
+    def test_run_apt_update_with_force_apt_update_if_sources_changed(self):
         """
         L{PackageReporter.run_apt_update} forces an apt-update run if the APT
         sources.list file has changed.

@@ -26,8 +26,8 @@ POLICY_ALLOW_ALL_CHANGES = 2
 # package reporter.
 # 2.  We lost some package data, for example by a deb archive becoming
 # inaccessible for a while.  The earliest we can reasonably assume that to be
-# resolved is in 60 minutes, when the smart cronjob runs again.
+# resolved is in 60 minutes, when the package reporter runs again.
 
 # So we'll give the problem one chance to resolve itself, by only waiting for
-# one run of smart update.
+# one run of apt-update.
 UNKNOWN_PACKAGE_DATA_TIMEOUT = 70 * 60
