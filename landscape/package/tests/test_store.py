@@ -1,6 +1,5 @@
 import threading
 import time
-import sys
 
 import sqlite3
 from landscape.tests.helpers import LandscapeTest
@@ -356,11 +355,9 @@ class PackageStoreTest(LandscapeTest):
 
         database = sqlite3.connect(filename)
         cursor = database.cursor()
-        for table in ["package_locks", "locked"]:
-            query = "pragma table_info(%s)" % table
-            cursor.execute(query)
-            result = cursor.fetchall()
-            self.assertTrue(len(result) > 0)
+        cursor.execute("pragma table_info(locked)")
+        result = cursor.fetchall()
+        self.assertTrue(len(result) > 0)
 
     def test_add_and_get_locked(self):
         """
@@ -400,103 +397,6 @@ class PackageStoreTest(LandscapeTest):
         self.store1.add_locked([1, 2, 3, 4])
         self.store1.clear_locked()
         self.assertEqual(self.store2.get_locked(), [])
-
-    def test_get_package_locks_with_no_lock(self):
-        """
-        L{PackageStore.get_package_locks} returns an empty list if no package
-        locks are stored.
-        """
-        self.assertEqual(self.store1.get_package_locks(), [])
-
-    def test_add_package_locks(self):
-        """
-        L{PackageStore.add_package_locks} adds a package lock to the store.
-        """
-        self.store1.add_package_locks([("name", "", "")])
-        self.assertEqual(self.store2.get_package_locks(),
-                         [("name", "", "")])
-
-    def test_add_package_locks_idempotence(self):
-        """
-        The operation of adding a lock is idempotent.
-        """
-        self.store1.add_package_locks([("name", "", "")])
-        self.store1.add_package_locks([("name", "", "")])
-        self.assertEqual(self.store2.get_package_locks(),
-                         [("name", "", "")])
-
-    def test_add_package_locks_with_none(self):
-        """
-        If None, package locks relation and version values are automatically
-        converted to empty strings.
-        """
-        self.store1.add_package_locks([("name", None, None)])
-        self.assertEqual(self.store2.get_package_locks(),
-                         [("name", "", "")])
-
-    def test_add_package_locks_multiple_times(self):
-        """
-        L{PackageStore.add_package_locks} can be called multiple times and
-        with multiple locks each time.
-        """
-        self.store1.add_package_locks([("name1", "", "")])
-        self.store1.add_package_locks([("name2", "<", "0.2"),
-                                       ("name3", "", "")])
-        self.assertEqual(sorted(self.store2.get_package_locks()),
-                         sorted([("name1", "", ""),
-                                 ("name2", "<", "0.2"),
-                                 ("name3", "", "")]))
-
-    def test_add_package_locks_without_name(self):
-        """
-        It's not possible to add a package lock without a name.
-        """
-        if sys.version_info >= (2, 5):
-            sqlite_error = sqlite3.IntegrityError
-        else:
-            sqlite_error = sqlite3.OperationalError
-        self.assertRaises(sqlite_error,
-                          self.store1.add_package_locks,
-                          [(None, None, None)])
-
-    def test_remove_package_locks(self):
-        """
-        L{PackageStore.remove_package_locks} removes a package lock from
-        the store.
-        """
-        self.store1.add_package_locks([("name1", "", "")])
-        self.store1.remove_package_locks([("name1", "", "")])
-        self.assertEqual(self.store2.get_package_locks(), [])
-
-    def test_remove_package_locks_multiple_times(self):
-        """
-        L{PackageStore.remove_package_locks} can be called multiple times and
-        with multiple locks each time.
-        """
-        self.store1.add_package_locks([("name1", "", ""),
-                                       ("name2", "<", "0.2"),
-                                       ("name3", "", "")])
-        self.store1.remove_package_locks([("name1", "", "")])
-        self.store1.remove_package_locks([("name2", "<", "0.2"),
-                                          ("name3", "", "")])
-        self.assertEqual(self.store2.get_package_locks(), [])
-
-    def test_remove_package_locks_without_matching_lock(self):
-        """
-        It's fine to remove a non-existent lock.
-        """
-        self.store1.remove_package_locks([("name", "", "")])
-        self.assertEqual(self.store2.get_package_locks(), [])
-
-    def test_clear_package_locks(self):
-        """
-        L{PackageStore.clear_package_locks} removes all package locks
-        from the store.
-        """
-        self.store1.add_package_locks([("name1", "", ""),
-                                       ("name2", "<", "0.2")])
-        self.store1.clear_package_locks()
-        self.assertEqual(self.store2.get_package_locks(), [])
 
     def test_add_hash_id_request(self):
         hashes = ("ha\x00sh1", "ha\x00sh2")

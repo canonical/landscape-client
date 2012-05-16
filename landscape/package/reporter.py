@@ -278,7 +278,6 @@ class PackageReporter(PackageTaskHandler):
         self._store.clear_available_upgrades()
         self._store.clear_installed()
         self._store.clear_locked()
-        self._store.clear_package_locks()
 
         # Don't clear the hash_id_requests table because the messages
         # associated with the existing requests might still have to be
@@ -421,16 +420,13 @@ class PackageReporter(PackageTaskHandler):
         reactor.
         """
 
-        def changes_detected(results):
-            # Release all smart locks, in case the changer runs after us.
-            self._facade.deinit()
-            if True in results:
+        def changes_detected(result):
+            if result:
                 # Something has changed, notify the broker.
                 return self._broker.fire_event("package-data-changed")
 
-        result = gather_results([self.detect_packages_changes(),
-                                 self.detect_package_locks_changes()])
-        return result.addCallback(changes_detected)
+        deferred = self.detect_packages_changes()
+        return deferred.addCallback(changes_detected)
 
     def detect_packages_changes(self):
         """Detect changes in the universe of known packages.
@@ -558,53 +554,6 @@ class PackageReporter(PackageTaskHandler):
             if not_locked:
                 self._store.remove_locked(not_locked)
             # Something has changed wrt the former run, let's return True
-            return True
-
-        result.addCallback(update_currently_known)
-
-        return result
-
-    def detect_package_locks_changes(self):
-        """Detect changes in known package locks.
-
-        This method will verify if there are package locks that:
-
-        - are now set, and were not;
-        - were previously set but are not anymore;
-
-        In all cases, the server is notified of the new situation
-        with a "packages" message.
-
-        @return: A deferred resulting in C{True} if package lock changes were
-            detected with respect to the previous run, or C{False} otherwise.
-        """
-        old_package_locks = set(self._store.get_package_locks())
-        current_package_locks = set(self._facade.get_package_locks())
-
-        set_package_locks = current_package_locks - old_package_locks
-        unset_package_locks = old_package_locks - current_package_locks
-
-        message = {}
-        if set_package_locks:
-            message["created"] = sorted(set_package_locks)
-        if unset_package_locks:
-            message["deleted"] = sorted(unset_package_locks)
-
-        if not message:
-            return succeed(False)
-
-        message["type"] = "package-locks"
-        result = self.send_message(message)
-
-        logging.info("Queuing message with changes in known package locks:"
-                     " %d created, %d deleted." %
-                     (len(set_package_locks), len(unset_package_locks)))
-
-        def update_currently_known(result):
-            if set_package_locks:
-                self._store.add_package_locks(set_package_locks)
-            if unset_package_locks:
-                self._store.remove_package_locks(unset_package_locks)
             return True
 
         result.addCallback(update_currently_known)

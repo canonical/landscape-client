@@ -632,8 +632,7 @@ class PackageChangerTestMixin(object):
         """
         After the package changer has run, we want the package-reporter to run
         to report the recent changes.  If we're running as root, we want to
-        change to the "landscape" user and "landscape" group. We also want to
-        deinitialize Smart to let the reporter run smart-update cleanly.
+        change to the "landscape" user and "landscape" group.
         """
 
         # We are running as root
@@ -643,10 +642,6 @@ class PackageChangerTestMixin(object):
 
         # The order matters (first smart then gid and finally uid)
         self.mocker.order()
-
-        # Deinitialize smart
-        facade_mock = self.mocker.patch(self.facade)
-        facade_mock.deinit()
 
         # We want to return a known gid
         grnam_mock = self.mocker.replace("grp.getgrnam")
@@ -1328,9 +1323,9 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
 
     def test_change_package_locks(self):
         """
-        If C{AptFacade} is used, the L{PackageChanger.handle_tasks}
-        method fails the activity, since it can't add or remove locks because
-        apt doesn't support this.
+        The L{PackageChanger.handle_tasks} method fails
+        change-package-locks activities, since it can't add or remove
+        locks because apt doesn't support this.
         """
         self.store.add_task("changer", {"type": "change-package-locks",
                                         "create": [("foo", ">=", "1.0")],
