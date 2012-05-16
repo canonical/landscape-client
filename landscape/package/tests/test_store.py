@@ -355,11 +355,9 @@ class PackageStoreTest(LandscapeTest):
 
         database = sqlite3.connect(filename)
         cursor = database.cursor()
-        for table in ["locked"]:
-            query = "pragma table_info(%s)" % table
-            cursor.execute(query)
-            result = cursor.fetchall()
-            self.assertTrue(len(result) > 0)
+        cursor.execute("pragma table_info(locked)")
+        result = cursor.fetchall()
+        self.assertTrue(len(result) > 0)
 
     def test_add_and_get_locked(self):
         """
