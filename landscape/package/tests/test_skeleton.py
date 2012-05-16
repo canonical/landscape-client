@@ -46,7 +46,7 @@ class SkeletonAptTest(LandscapeTest):
         self.facade.add_channel_deb_dir(self.skeleton_repository_dir)
         # Don't use reload_channels(), since that causes the test setup
         # depending on build_skeleton_apt working correctly, which makes
-        # it harder to to TDD for these tests.
+        # it harder to do TDD for these tests.
         self.facade._cache.open(None)
         self.facade._cache.update(None)
         self.facade._cache.open(None)
