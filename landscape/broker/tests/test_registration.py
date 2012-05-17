@@ -153,7 +153,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                             [{"type": "register",
                               "computer_title": "Computer Title",
                               "account_name": "account_name",
-                              "registration_key": None,
+                              "registration_password": None,
                               "hostname": "ooga.local",
                               "tags": None,
                               "vm-info": get_vm_info()}])
@@ -179,7 +179,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                             [{"type": "register",
                               "computer_title": "Computer Title",
                               "account_name": "account_name",
-                              "registration_key": None,
+                              "registration_password": None,
                               "hostname": "ooga.local",
                               "tags": None,
                               "vm-info": u"vmware"}])
@@ -198,7 +198,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                             [{"type": "register",
                               "computer_title": "Computer Title",
                               "account_name": "account_name",
-                              "registration_key": "SEKRET",
+                              "registration_password": "SEKRET",
                               "hostname": "ooga.local",
                               "tags": None,
                               "vm-info": get_vm_info()}])
@@ -221,7 +221,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                             [{"type": "register",
                               "computer_title": "Computer Title",
                               "account_name": "account_name",
-                              "registration_key": "SEKRET",
+                              "registration_password": "SEKRET",
                               "hostname": "ooga.local",
                               "tags": u"computer,tag",
                               "vm-info": get_vm_info()}])
@@ -247,7 +247,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                             [{"type": "register",
                               "computer_title": "Computer Title",
                               "account_name": "account_name",
-                              "registration_key": "SEKRET",
+                              "registration_password": "SEKRET",
                               "hostname": "ooga.local",
                               "tags": None,
                               "vm-info": get_vm_info()}])
@@ -273,7 +273,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
             [{"type": "register",
               "computer_title": "Computer Title",
               "account_name": "account_name",
-              "registration_key": "SEKRET",
+              "registration_password": "SEKRET",
               "hostname": "ooga.local",
               "tags": u"prova\N{LATIN SMALL LETTER J WITH CIRCUMFLEX}o",
               "vm-info": get_vm_info()}])
@@ -463,7 +463,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
                             [{"type": "register",
                               "computer_title": "Computer Title",
                               "account_name": "account_name",
-                              "registration_key": "SEKRET",
+                              "registration_password": "SEKRET",
                               "hostname": socket.getfqdn(),
                               "vm-info": get_vm_info(),
                               "tags": None}])
@@ -555,7 +555,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
                        launch_index=0,
                        image_key=u"image1",
                        account_name=None,
-                       registration_key=None,
+                       registration_password=None,
                        local_ipv4=u"10.0.0.1",
                        public_ipv4=u"10.0.0.2",
                        tags=None)
@@ -756,7 +756,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
                             [self.get_expected_cloud_message(
                                 otp=None,
                                 account_name=u"onward",
-                                registration_key=u"password",
+                                registration_password=u"password",
                                 tags=u"london,server")])
         self.assertEqual(self.logfile.getvalue().strip()[:-7],
            "INFO: Queueing message to register with account u'onward' and "
@@ -835,7 +835,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
                             [self.get_expected_cloud_message(
                                 otp=None,
                                 account_name=u"onward",
-                                registration_key=u"password")])
+                                registration_password=u"password")])
 
     def test_cloud_registration_continues_without_ramdisk(self):
         """
@@ -894,7 +894,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
                             [{"type": "register",
                               "computer_title": u"whatever",
                               "account_name": u"onward",
-                              "registration_key": u"password",
+                              "registration_password": u"password",
                               "hostname": socket.getfqdn(),
                               "vm-info": get_vm_info(),
                               "tags": None}])
