@@ -140,7 +140,7 @@ REGISTER = Message(
     "register",
     # registration_password was kept just in case a new client contacts an 
     # older server.
-    {"registration_password": Any(utf8, Constant(None)),
+    {"registration_key": Any(utf8, Constant(None)),
      "computer_title": utf8,
      "hostname": utf8,
      "account_name": utf8,

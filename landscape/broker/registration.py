@@ -50,11 +50,11 @@ class Identity(object):
         the ping server.
     @ivar computer_title: See L{BrokerConfiguration}.
     @ivar account_name: See L{BrokerConfiguration}.
-    @ivar registration_key: See L{BrokerConfiguration}.
+    @ivar registration_password: See L{BrokerConfiguration}.
     @ivar tags: See L{BrokerConfiguration}
 
     @param config: A L{BrokerConfiguration} object, used to set the
-        C{computer_title}, C{account_name} and C{registration_key}
+        C{computer_title}, C{account_name} and C{registration_password}
         instance variables.
     """
 
@@ -62,7 +62,7 @@ class Identity(object):
     insecure_id = persist_property("insecure-id")
     computer_title = config_property("computer_title")
     account_name = config_property("account_name")
-    registration_key = config_property("registration_key")
+    registration_password = config_property("registration_key")
     tags = config_property("tags")
 
     def __init__(self, config, persist):
@@ -260,7 +260,7 @@ class RegistrationHandler(object):
                                "otp": self._otp,
                                "hostname": get_fqdn(),
                                "account_name": None,
-                               "registration_key": None,
+                               "registration_password": None,
                                "tags": tags,
                                "vm-info": get_vm_info()}
                     message.update(self._ec2_data)
@@ -274,8 +274,8 @@ class RegistrationHandler(object):
                                "otp": None,
                                "hostname": get_fqdn(),
                                "account_name": id.account_name,
-                               "registration_key": \
-                                   id.registration_key,
+                               "registration_password": \
+                                   id.registration_password,
                                "tags": tags,
                                "vm-info": get_vm_info()}
                     message.update(self._ec2_data)
@@ -283,7 +283,7 @@ class RegistrationHandler(object):
                 else:
                     self._reactor.fire("registration-failed")
             elif id.account_name:
-                with_word = ["without", "with"][bool(id.registration_key)]
+                with_word = ["without", "with"][bool(id.registration_password)]
                 with_tags = ["", u"and tags %s " % tags][bool(tags)]
                 logging.info(u"Queueing message to register with account %r %s"
                              "%s a password." % (id.account_name, with_tags,
@@ -291,7 +291,7 @@ class RegistrationHandler(object):
                 message = {"type": "register",
                            "computer_title": id.computer_title,
                            "account_name": id.account_name,
-                           "registration_key": id.registration_key,
+                           "registration_password": id.registration_password,
                            "hostname": get_fqdn(),
                            "tags": tags,
                            "vm-info": get_vm_info()}
