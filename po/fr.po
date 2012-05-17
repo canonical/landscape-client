@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2012-05-11 18:39-0300\n"
+"POT-Creation-Date: 2012-05-15 15:37-0300\n"
 "PO-Revision-Date: 2012-03-28 20:07+0100\n"
 "Last-Translator: Thomas Hervé <thomas.herve@canonical.com>\n"
 "Language-Team: français <>\n"
@@ -113,8 +113,8 @@ msgid "Account name:"
 msgstr "Nom du compte:"
 
 #: ../landscape/ui/view/ui/landscape-client-settings.glade.h:5
-msgid "Password:"
-msgstr "Mot de passe:"
+msgid "Key:"
+msgstr ""
 
 #: ../landscape/ui/view/ui/landscape-client-settings.glade.h:6
 msgid "Don't have an account?"
@@ -183,6 +183,9 @@ msgstr "Installer le client Landscape?"
 #: ../scripts/landscape-client-ui-install:62
 msgid "Install"
 msgstr "Installer"
+
+#~ msgid "Password:"
+#~ msgstr "Mot de passe:"
 
 #~ msgid ""
 #~ "Landscape is an easy to use systems management and monitoring service "
