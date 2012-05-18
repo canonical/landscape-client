@@ -82,7 +82,7 @@ class SettingsApplicationControllerUISetupTest(LandscapeTest):
              "tags = a_tag",
              "url = https://landscape.canonical.com/message-system",
              "account_name = foo",
-             "registration_password = bar",
+             "registration_key = bar",
              "computer_title = baz",
              "https_proxy = https://proxy.localdomain:6192",
              "ping_url = http://landscape.canonical.com/ping"])

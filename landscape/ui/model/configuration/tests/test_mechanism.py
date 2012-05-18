@@ -23,7 +23,7 @@ class MechanismTest(LandscapeTest):
         config += "tags = a_tag\n"
         config += "url = https://landscape.canonical.com/message-system\n"
         config += "account_name = foo\n"
-        config += "registration_password = boink\n"
+        config += "registration_key = boink\n"
         config += "computer_title = baz\n"
         config += "https_proxy = https://proxy.localdomain:6192\n"
         config += "ping_url = http://landscape.canonical.com/ping\n"
@@ -154,18 +154,18 @@ class MechanismTest(LandscapeTest):
         self.mechanism.set("ping_url", "bar")
         self.assertEqual("bar", self.mechanism.get("ping_url"))
 
-    def test_get_registration_password(self):
+    def test_get_registration_key(self):
         """
-        Test that we can get the registration password from the mechanism.
+        Test that we can get the registration key from the mechanism.
         """
-        self.assertEqual("boink", self.mechanism.get("registration_password"))
+        self.assertEqual("boink", self.mechanism.get("registration_key"))
 
-    def test_set_registration_password(self):
+    def test_set_registration_key(self):
         """
-        Test that we can set the registration password via the mechanism.
+        Test that we can set the registration key via the mechanism.
         """
-        self.mechanism.set("registration_password", "bar")
-        self.assertEqual("bar", self.mechanism.get("registration_password"))
+        self.mechanism.set("registration_key", "bar")
+        self.assertEqual("bar", self.mechanism.get("registration_key"))
 
     def test_get_computer_title(self):
         """

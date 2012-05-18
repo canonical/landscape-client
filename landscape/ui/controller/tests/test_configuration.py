@@ -24,7 +24,7 @@ class ConfigControllerTest(LandscapeTest):
              "tags = a_tag",
              "url = https://landscape.canonical.com/message-system",
              "account_name = foo",
-             "registration_password = bar",
+             "registration_key = bar",
              "computer_title = baz",
              "https_proxy = https://proxy.localdomain:6192",
              "ping_url = http://landscape.canonical.com/ping"])
@@ -142,7 +142,7 @@ class ConfigControllerTest(LandscapeTest):
         self.assertTrue(self.controller.is_modified)
         self.controller.revert()
         self.assertFalse(self.controller.is_modified)
-        self.controller.registration_password = "HesAnIndianCowboyInTheRodeo"
+        self.controller.registration_key = "HesAnIndianCowboyInTheRodeo"
         self.assertTrue(self.controller.is_modified)
 
     def test_persist(self):

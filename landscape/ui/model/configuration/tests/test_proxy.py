@@ -73,7 +73,7 @@ class ConfigurationProxyInterfaceTest(LandscapeTest):
             "tags = a_tag\n" \
             "url = https://landscape.canonical.com/message-system\n" \
             "account_name = foo\n" \
-            "registration_password = boink\n" \
+            "registration_key = boink\n" \
             "computer_title = baz\n" \
             "https_proxy = https://proxy.localdomain:6192\n" \
             "ping_url = http://landscape.canonical.com/ping\n"
@@ -152,15 +152,15 @@ class ConfigurationProxyInterfaceTest(LandscapeTest):
         self.assertEqual("bar", self.proxy.ping_url)
         self.assertEqual("bar", self.config.ping_url)
 
-    def test_registration_password(self):
+    def test_registration_key(self):
         """
-        Test that we can get and set the registration password via the
+        Test that we can get and set the registration key via the
         configuration proxy.
         """
-        self.assertEqual("boink", self.proxy.registration_password)
-        self.proxy.registration_password = "bar"
-        self.assertEqual("bar", self.proxy.registration_password)
-        self.assertEqual("bar", self.config.registration_password)
+        self.assertEqual("boink", self.proxy.registration_key)
+        self.proxy.registration_key = "bar"
+        self.assertEqual("bar", self.proxy.registration_key)
+        self.assertEqual("bar", self.config.registration_key)
 
     def test_tags(self):
         """
