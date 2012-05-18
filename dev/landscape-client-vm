@@ -103,7 +103,7 @@ script_users = ALL
 ping_url = http://${SERVER}/ping
 include_manager_plugins = ScriptExecution
 account_name = ${ACCOUNT}
-registration_password = ${PASSWORD}
+registration_key = ${PASSWORD}
 #log_level = debug
 EOF
 
