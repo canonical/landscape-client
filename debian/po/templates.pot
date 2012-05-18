@@ -48,15 +48,15 @@ msgstr ""
 #. Type: password
 #. Description
 #: ../landscape-client.templates:3001
-msgid "Registration Password:"
+msgid "Registration Key:"
 msgstr ""
 
 #. Type: password
 #. Description
 #: ../landscape-client.templates:3001
 msgid ""
-"Client registration password for the given Landscape account.  Only needed "
-"if the given account is requesting a client registration password."
+"Client registration key for the given Landscape account.  Only needed "
+"if the given account is requesting a client registration key."
 msgstr ""
 
 #. Type: string

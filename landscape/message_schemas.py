@@ -138,6 +138,9 @@ FREE_SPACE = Message("free-space", {
 
 REGISTER = Message(
     "register",
+    # The term used in the UI is actually 'registration_key', but we keep
+    # the message schema field as 'registration_password' in case a new
+    # client contacts an older server.
     {"registration_password": Any(utf8, Constant(None)),
      "computer_title": utf8,
      "hostname": utf8,

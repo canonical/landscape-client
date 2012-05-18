@@ -63,8 +63,8 @@ class IdentityTest(LandscapeTest):
     def test_account_name(self):
         self.check_config_property("account_name")
 
-    def test_registration_password(self):
-        self.check_config_property("registration_password")
+    def test_registration_key(self):
+        self.check_config_property("registration_key")
 
     def test_client_tags(self):
         self.check_config_property("tags")
@@ -192,7 +192,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.mstore.set_accepted_types(["register"])
         self.config.computer_title = "Computer Title"
         self.config.account_name = "account_name"
-        self.config.registration_password = "SEKRET"
+        self.config.registration_key = "SEKRET"
         self.reactor.fire("pre-exchange")
         self.assertMessages(self.mstore.get_pending_messages(),
                             [{"type": "register",
@@ -214,7 +214,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.mstore.set_accepted_types(["register"])
         self.config.computer_title = "Computer Title"
         self.config.account_name = "account_name"
-        self.config.registration_password = "SEKRET"
+        self.config.registration_key = "SEKRET"
         self.config.tags = u"computer,tag"
         self.reactor.fire("pre-exchange")
         self.assertMessages(self.mstore.get_pending_messages(),
@@ -240,7 +240,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.mstore.set_accepted_types(["register"])
         self.config.computer_title = "Computer Title"
         self.config.account_name = "account_name"
-        self.config.registration_password = "SEKRET"
+        self.config.registration_key = "SEKRET"
         self.config.tags = u"<script>alert()</script>"
         self.reactor.fire("pre-exchange")
         self.assertMessages(self.mstore.get_pending_messages(),
@@ -265,7 +265,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.mstore.set_accepted_types(["register"])
         self.config.computer_title = "Computer Title"
         self.config.account_name = "account_name"
-        self.config.registration_password = "SEKRET"
+        self.config.registration_key = "SEKRET"
         self.config.tags = u"prova\N{LATIN SMALL LETTER J WITH CIRCUMFLEX}o"
         self.reactor.fire("pre-exchange")
         self.assertMessages(
@@ -457,7 +457,7 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.mstore.set_accepted_types(["register"])
         self.config.computer_title = "Computer Title"
         self.config.account_name = "account_name"
-        self.config.registration_password = "SEKRET"
+        self.config.registration_key = "SEKRET"
         self.reactor.fire("pre-exchange")
         self.assertMessages(self.mstore.get_pending_messages(),
                             [{"type": "register",
@@ -527,12 +527,12 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
             self.query_results[api_base + url_suffix] = value
 
     def prepare_cloud_registration(self, account_name=None,
-                                   registration_password=None, tags=None):
+                                   registration_key=None, tags=None):
         # Set things up so that the client thinks it should register
         self.mstore.set_accepted_types(list(self.mstore.get_accepted_types())
                                        + ["register-cloud-vm"])
         self.config.account_name = account_name
-        self.config.registration_password = registration_password
+        self.config.registration_key = registration_key
         self.config.computer_title = None
         self.config.tags = tags
         self.identity.secure_id = None
@@ -745,7 +745,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         self.prepare_query_results(user_data="other stuff, not a bpickle",
                                    instance_key=u"key1")
         self.prepare_cloud_registration(account_name=u"onward",
-                                        registration_password=u"password",
+                                        registration_key=u"password",
                                         tags=u"london,server")
 
         self.reactor.fire("run")
@@ -824,7 +824,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         self.log_helper.ignore_errors(HTTPCodeError)
         self.prepare_query_results(user_data=HTTPCodeError(404, "ohno"))
         self.prepare_cloud_registration(account_name="onward",
-                                        registration_password="password")
+                                        registration_key="password")
 
         self.reactor.fire("run")
         self.exchanger.exchange()
@@ -883,7 +883,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         self.prepare_query_results(
             public_hostname=HTTPCodeError(404, "ohnoes"))
         self.prepare_cloud_registration(account_name="onward",
-                                        registration_password="password")
+                                        registration_key="password")
         self.config.computer_title = "whatever"
         self.reactor.fire("run")
         self.exchanger.exchange()
@@ -907,7 +907,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         self.mstore.set_accepted_types(self.mstore.get_accepted_types()
                                        + ("register-cloud-vm",))
         self.config.account_name = None
-        self.config.registration_password = None
+        self.config.registration_key = None
         self.config.computer_title = None
         self.identity.secure_id = None
         self.assertTrue(self.handler.should_register())
@@ -940,7 +940,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         self.mstore.set_accepted_types(self.mstore.get_accepted_types()
                                        + ("register-cloud-vm",))
         self.config.account_name = None
-        self.config.registration_password = None
+        self.config.registration_key = None
         self.config.computer_title = None
         self.identity.secure_id = "hello"
         self.assertFalse(self.handler.should_register())
@@ -951,7 +951,7 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         we shouldn't register.
         """
         self.config.account_name = None
-        self.config.registration_password = None
+        self.config.registration_key = None
         self.config.computer_title = None
         self.identity.secure_id = None
         self.assertFalse(self.handler.should_register())

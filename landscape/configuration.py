@@ -228,7 +228,7 @@ class LandscapeSetupScript(object):
                 value2 = getpass.getpass("Please confirm: ")
             if value:
                 if value != value2:
-                    self.show_help("Passwords must match.")
+                    self.show_help("Keys must match.")
                 else:
                     setattr(self.config, option, value)
                     break
@@ -282,23 +282,24 @@ class LandscapeSetupScript(object):
 
         self.prompt("account_name", "Account name", True)
 
-    def query_registration_password(self):
-        if "registration_password" in self.config.get_command_line_options():
+    def query_registration_key(self):
+        command_line_options = self.config.get_command_line_options()
+        if "registration_key" in command_line_options:
             return
 
         self.show_help(
             """
-            A registration password may be associated with your Landscape
+            A registration key may be associated with your Landscape
             account to prevent unauthorized registration attempts.  This
             is not your personal login password.  It is optional, and unless
             explicitly set on the server, it may be skipped here.
 
-            If you don't remember the registration password you can find it
+            If you don't remember the registration key you can find it
             at https://landscape.canonical.com/account/%s
             """ % self.config.account_name)
 
-        self.password_prompt("registration_password",
-                             "Account registration password")
+        self.password_prompt("registration_key",
+                             "Account registration key")
 
     def query_proxies(self):
         options = self.config.get_command_line_options()
@@ -417,7 +418,7 @@ class LandscapeSetupScript(object):
         self.show_header()
         self.query_computer_title()
         self.query_account_name()
-        self.query_registration_password()
+        self.query_registration_key()
         self.query_proxies()
         self.query_script_plugin()
         self.query_tags()
@@ -614,7 +615,7 @@ def register(config, on_message=print_text, on_error=sys.exit, reactor=None):
 
     def failure():
         on_message("Invalid account name or "
-                   "registration password.", error=True)
+                   "registration key.", error=True)
         stop(2)
 
     def success():
