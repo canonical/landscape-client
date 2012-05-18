@@ -156,8 +156,8 @@ class AptSources(ManagerPlugin):
         """Once the repositories are modified, trigger a reporter run."""
         reporter = find_reporter_command()
 
-        # Force a smart-update run, because the sources.list has changed
-        args = ["--force-smart-update"]
+        # Force an apt-update run, because the sources.list has changed
+        args = ["--force-apt-update"]
 
         if self.registry.config.config is not None:
             args.append("--config=%s" % self.registry.config.config)

@@ -89,8 +89,6 @@ class AptFacade(object):
         database.
     """
 
-    supports_package_holds = True
-    supports_package_locks = False
     _dpkg_status = "/var/lib/dpkg/status"
 
     def __init__(self, root=None):
@@ -133,9 +131,6 @@ class AptFacade(object):
             os.makedirs(full_path)
         return full_path
 
-    def deinit(self):
-        """This method exists solely to be compatible with C{SmartFacade}."""
-
     def get_packages(self):
         """Get all the packages available in the channels."""
         return self._hash2pkg.itervalues()
@@ -149,17 +144,6 @@ class AptFacade(object):
             version for version in self.get_packages()
             if (self.is_package_installed(version)
                 and self._is_package_held(version.package))]
-
-    def get_package_locks(self):
-        """Return all set package locks.
-
-        @return: A C{list} of ternary tuples, contaning the name, relation
-            and version details for each lock currently set on the system.
-
-        XXX: This method isn't implemented yet. It's here to make the
-        transition to Apt in the package reporter easier.
-        """
-        return []
 
     def get_package_holds(self):
         """Return the name of all the packages that are on hold."""

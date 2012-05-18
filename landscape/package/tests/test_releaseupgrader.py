@@ -655,7 +655,7 @@ class ReleaseUpgraderTest(LandscapeTest):
 
             def check_result((out, err, code)):
                 self.assertFalse(os.path.exists(upgrade_tool_directory))
-                self.assertEqual(out, "--force-smart-update\n%s\n"
+                self.assertEqual(out, "--force-apt-update\n%s\n"
                                   % os.getcwd())
                 self.assertEqual(err, "")
                 self.assertEqual(code, 0)
@@ -738,7 +738,7 @@ class ReleaseUpgraderTest(LandscapeTest):
             result = self.upgrader.finish()
 
             def check_result((out, err, code)):
-                self.assertEqual(out, "--force-smart-update "
+                self.assertEqual(out, "--force-apt-update "
                                        "--config=/some/config\n")
                 self.assertEqual(err, "")
                 self.assertEqual(code, 0)

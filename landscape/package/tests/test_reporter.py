@@ -29,18 +29,63 @@ SAMPLE_LSB_RELEASE = "DISTRIB_CODENAME=codename\n"
 
 class PackageReporterConfigurationTest(unittest.TestCase):
 
-    def test_force_smart_update_option(self):
+    def test_force_apt_update_option(self):
         """
-        The L{PackageReporterConfiguration} supports a '--force-smart-update'
+        The L{PackageReporterConfiguration} supports a '--force-apt-update'
         command line option.
         """
         config = PackageReporterConfiguration()
-        self.assertFalse(config.force_smart_update)
-        config.load(["--force-smart-update"])
-        self.assertTrue(config.force_smart_update)
+        self.assertFalse(config.force_apt_update)
+        config.load(["--force-apt-update"])
+        self.assertTrue(config.force_apt_update)
 
 
-class PackageReporterTestMixin(object):
+class PackageReporterAptTest(LandscapeTest):
+
+    helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
+
+    Facade = AptFacade
+
+    def setUp(self):
+
+        def set_up(ignored):
+            self.store = PackageStore(self.makeFile())
+            self.config = PackageReporterConfiguration()
+            self.reporter = PackageReporter(
+                self.store, self.facade, self.remote, self.config)
+            self.config.data_path = self.makeDir()
+            os.mkdir(self.config.package_directory)
+
+        result = super(PackageReporterAptTest, self).setUp()
+        return result.addCallback(set_up)
+
+    def _clear_repository(self):
+        """Remove all packages from self.repository."""
+        create_file(self.repository_dir + "/Packages", "")
+
+    def set_pkg1_upgradable(self):
+        """Make it so that package "name1" is considered to be upgradable.
+
+        Return the hash of the package that upgrades "name1".
+        """
+        self._add_package_to_deb_dir(
+            self.repository_dir, "name1", version="version2")
+        self.facade.reload_channels()
+        name1_upgrade = sorted(self.facade.get_packages_by_name("name1"))[1]
+        return self.facade.get_package_hash(name1_upgrade)
+
+    def set_pkg1_installed(self):
+        """Make it so that package "name1" is considered installed."""
+        self._install_deb_file(os.path.join(self.repository_dir, PKGNAME1))
+
+    def _make_fake_apt_update(self, out="output", err="error", code=0):
+        """Create a fake apt-update executable"""
+        self.reporter.apt_update_filename = self.makeFile(
+            "#!/bin/sh\n"
+            "echo -n %s\n"
+            "echo -n %s >&2\n"
+            "exit %d" % (out, err, code))
+        os.chmod(self.reporter.apt_update_filename, 0755)
 
     def test_set_package_ids_with_all_known(self):
         self.store.add_hash_id_request(["hash1", "hash2"])
@@ -892,20 +937,13 @@ class PackageReporterTestMixin(object):
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
 
-    def test_detect_changes_considers_packages_and_locks_changes(self):
+    def test_detect_changes_considers_packages_changes(self):
         """
-        The L{PackageReporter.detect_changes} method considers both package and
-        package locks changes. It also releases smart locks by calling the
-        L{SmartFacade.deinit} method.
+        The L{PackageReporter.detect_changes} method package changes.
         """
         reporter_mock = self.mocker.patch(self.reporter)
         reporter_mock.detect_packages_changes()
         self.mocker.result(succeed(True))
-        reporter_mock.detect_package_locks_changes()
-        self.mocker.result(succeed(True))
-
-        facade_mock = self.mocker.patch(self.facade)
-        facade_mock.deinit()
 
         self.mocker.replay()
         return self.reporter.detect_changes()
@@ -918,8 +956,6 @@ class PackageReporterTestMixin(object):
         """
         reporter_mock = self.mocker.patch(self.reporter)
         reporter_mock.detect_packages_changes()
-        self.mocker.result(succeed(False))
-        reporter_mock.detect_package_locks_changes()
         self.mocker.result(succeed(True))
         callback = self.mocker.mock()
         callback()
@@ -1001,16 +1037,19 @@ class PackageReporterTestMixin(object):
         This is done in the reporter so that we know it happens when
         no other reporter is possibly running at the same time.
         """
+        self._add_system_package("foo")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        foo_hash = self.facade.get_package_hash(foo)
+        self.facade.set_package_hold(foo)
+        self.facade.reload_channels()
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["package-locks"])
-        self.store.set_hash_ids({HASH1: 3, HASH2: 4})
+        self.store.set_hash_ids({foo_hash: 3, HASH2: 4})
         self.store.add_available([1])
         self.store.add_available_upgrades([2])
         self.store.add_installed([2])
         self.store.add_locked([3])
-        self.store.add_package_locks([("name1", None, None)])
-        if self.facade.supports_package_locks:
-            self.facade.set_package_lock("name1")
         request1 = self.store.add_hash_id_request(["hash3"])
         request2 = self.store.add_hash_id_request(["hash4"])
 
@@ -1023,12 +1062,6 @@ class PackageReporterTestMixin(object):
         self.assertEqual(self.store.get_available_upgrades(), [2])
         self.assertEqual(self.store.get_available(), [1])
         self.assertEqual(self.store.get_installed(), [2])
-        # XXX: Don't check get_locked() and get_package_locks() until
-        # package locks are implemented in AptFacade.
-        if not isinstance(self.facade, AptFacade):
-            self.assertEqual(self.store.get_locked(), [3])
-            self.assertEqual(
-                self.store.get_package_locks(), [("name1", "", "")])
         self.assertEqual(self.store.get_hash_id_request(request1.id).id,
                          request1.id)
 
@@ -1039,7 +1072,7 @@ class PackageReporterTestMixin(object):
         def check_result(result):
 
             # The hashes should not go away.
-            hash1 = self.store.get_hash_id(HASH1)
+            hash1 = self.store.get_hash_id(foo_hash)
             hash2 = self.store.get_hash_id(HASH2)
             self.assertEqual([hash1, hash2], [3, 4])
 
@@ -1048,12 +1081,9 @@ class PackageReporterTestMixin(object):
 
             # After running the resychronize task, detect_packages_changes is
             # called, and the existing known hashes are made available.
-            self.assertEqual(self.store.get_available(), [3, 4])
-            self.assertEqual(self.store.get_installed(), [])
-            # XXX: Don't check get_locked() until package locks are
-            # implemented in AptFacade.
-            if not isinstance(self.facade, AptFacade):
-                self.assertEqual(self.store.get_locked(), [3])
+            self.assertEqual(self.store.get_available(), [4])
+            self.assertEqual(self.store.get_installed(), [3])
+            self.assertEqual(self.store.get_locked(), [3])
 
             # The two original hash id requests should be still there, and
             # a new hash id request should also be detected for HASH3.
@@ -1066,68 +1096,13 @@ class PackageReporterTestMixin(object):
                 elif request.id == request2.id:
                     self.assertEqual(request.hashes, ["hash4"])
                 elif not new_request_found:
-                    self.assertEqual(request.hashes, [HASH3])
+                    self.assertEqual(request.hashes, [HASH3, HASH1])
                 else:
                     self.fail("Unexpected hash-id request!")
             self.assertEqual(requests_count, 3)
 
-            # XXX: Don't check for package-locks messages until package
-            # locks are implemented in AptFacade.
-            if not isinstance(self.facade, AptFacade):
-                self.assertMessages(message_store.get_pending_messages(),
-                                    [{"type": "package-locks",
-                                      "created": [("name1", "", "")]}])
-
         deferred.addCallback(check_result)
         return deferred
-
-
-class PackageReporterAptTest(LandscapeTest, PackageReporterTestMixin):
-
-    helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
-
-    Facade = AptFacade
-
-    def setUp(self):
-
-        def set_up(ignored):
-            self.store = PackageStore(self.makeFile())
-            self.config = PackageReporterConfiguration()
-            self.reporter = PackageReporter(
-                self.store, self.facade, self.remote, self.config)
-            self.config.data_path = self.makeDir()
-            os.mkdir(self.config.package_directory)
-
-        result = super(PackageReporterAptTest, self).setUp()
-        return result.addCallback(set_up)
-
-    def _clear_repository(self):
-        """Remove all packages from self.repository."""
-        create_file(self.repository_dir + "/Packages", "")
-
-    def set_pkg1_upgradable(self):
-        """Make it so that package "name1" is considered to be upgradable.
-
-        Return the hash of the package that upgrades "name1".
-        """
-        self._add_package_to_deb_dir(
-            self.repository_dir, "name1", version="version2")
-        self.facade.reload_channels()
-        name1_upgrade = sorted(self.facade.get_packages_by_name("name1"))[1]
-        return self.facade.get_package_hash(name1_upgrade)
-
-    def set_pkg1_installed(self):
-        """Make it so that package "name1" is considered installed."""
-        self._install_deb_file(os.path.join(self.repository_dir, PKGNAME1))
-
-    def _make_fake_apt_update(self, out="output", err="error", code=0):
-        """Create a fake apt-update executable"""
-        self.reporter.apt_update_filename = self.makeFile(
-            "#!/bin/sh\n"
-            "echo -n %s\n"
-            "echo -n %s >&2\n"
-            "exit %d" % (out, err, code))
-        os.chmod(self.reporter.apt_update_filename, 0755)
 
     def test_run_apt_update(self):
         """
@@ -1158,13 +1133,13 @@ class PackageReporterAptTest(LandscapeTest, PackageReporterTestMixin):
         reactor.callWhenRunning(do_test)
         return deferred
 
-    def test_run_apt_update_with_force_smart_update(self):
+    def test_run_apt_update_with_force_apt_update(self):
         """
         L{PackageReporter.run_apt_update} forces an apt-update run if the
-        '--force-smart-update' command line option was passed.
+        '--force-apt-update' command line option was passed.
         """
         self.makeFile("", path=self.config.update_stamp_filename)
-        self.config.load(["--force-smart-update"])
+        self.config.load(["--force-apt-update"])
         self._make_fake_apt_update()
 
         deferred = Deferred()
@@ -1180,7 +1155,7 @@ class PackageReporterAptTest(LandscapeTest, PackageReporterTestMixin):
         reactor.callWhenRunning(do_test)
         return deferred
 
-    def test_run_apt_update_with_force_smart_update_if_sources_changed(self):
+    def test_run_apt_update_with_force_apt_update_if_sources_changed(self):
         """
         L{PackageReporter.run_apt_update} forces an apt-update run if the APT
         sources.list file has changed.

@@ -301,8 +301,8 @@ class ReleaseUpgrader(PackageTaskHandler):
 
         reporter = find_reporter_command()
 
-        # Force a smart-update run, because the sources.list has changed
-        args = ["--force-smart-update"]
+        # Force an apt-update run, because the sources.list has changed
+        args = ["--force-apt-update"]
 
         if self._config.config is not None:
             args.append("--config=%s" % self._config.config)

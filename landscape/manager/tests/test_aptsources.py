@@ -388,7 +388,7 @@ class AptSourcesTests(LandscapeTest):
 
         def _run_process(command, args, env={}, path=None, uid=None, gid=None):
             self.assertEqual(find_reporter_command(), command)
-            self.assertEqual(["--force-smart-update", "--config=%s" %
+            self.assertEqual(["--force-apt-update", "--config=%s" %
                               self.manager.config.config], args)
             deferred.callback(("ok", "", 0))
             return deferred

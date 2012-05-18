@@ -25,7 +25,95 @@ from landscape.package.tests.helpers import (
 from landscape.manager.manager import FAILED
 
 
-class PackageChangerTestMixin(object):
+class AptPackageChangerTest(LandscapeTest):
+
+    helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
+
+    def setUp(self):
+
+        def set_up(ignored):
+
+            self.store = PackageStore(self.makeFile())
+            self.config = PackageChangerConfiguration()
+            self.config.data_path = self.makeDir()
+            os.mkdir(self.config.package_directory)
+            os.mkdir(self.config.binaries_path)
+            touch_file(self.config.update_stamp_filename)
+            self.changer = PackageChanger(
+                self.store, self.facade, self.remote, self.config)
+            service = self.broker_service
+            service.message_store.set_accepted_types(["change-packages-result",
+                                                      "operation-result"])
+
+        result = super(AptPackageChangerTest, self).setUp()
+        return result.addCallback(set_up)
+
+    def set_pkg1_installed(self):
+        """Return the hash of a package that is installed."""
+        self._add_system_package("foo")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        return self.facade.get_package_hash(foo)
+
+    def set_pkg2_satisfied(self):
+        """Return the hash of a package that can be installed."""
+        self._add_package_to_deb_dir(self.repository_dir, "bar")
+        self.facade.reload_channels()
+        [bar] = self.facade.get_packages_by_name("bar")
+        return self.facade.get_package_hash(bar)
+
+    def set_pkg1_and_pkg2_satisfied(self):
+        """Make a package depend on another package.
+
+        Return the hashes of the two packages.
+        """
+        self._add_package_to_deb_dir(
+            self.repository_dir, "foo", control_fields={"Depends": "bar"})
+        self._add_package_to_deb_dir(self.repository_dir, "bar")
+        self.facade.reload_channels()
+        [foo] = self.facade.get_packages_by_name("foo")
+        [bar] = self.facade.get_packages_by_name("bar")
+        return (
+            self.facade.get_package_hash(foo),
+            self.facade.get_package_hash(bar))
+
+    def set_pkg2_upgrades_pkg1(self):
+        """Make it so that one package upgrades another.
+
+        Return the hashes of the two packages.
+        """
+        self._add_system_package("foo", version="1.0")
+        self._add_package_to_deb_dir(self.repository_dir, "foo", version="2.0")
+        self.facade.reload_channels()
+        foo_1, foo_2 = sorted(self.facade.get_packages_by_name("foo"))
+        return (
+            self.facade.get_package_hash(foo_1),
+            self.facade.get_package_hash(foo_2))
+
+    def remove_pkg2(self):
+        """Remove package name2 from its repository."""
+        packages_file = os.path.join(self.repository_dir, "Packages")
+        packages_contents = read_file(packages_file)
+        packages_contents = "\n\n".join(
+            [stanza for stanza in packages_contents.split("\n\n")
+             if "Package: name2" not in stanza])
+        create_file(packages_file, packages_contents)
+
+    def get_transaction_error_message(self):
+        """Return part of the apt transaction error message."""
+        return "Unable to correct problems"
+
+    def get_binaries_channels(self, binaries_path):
+        """Return the channels that will be used for the binaries."""
+        return [{"baseurl": "file://%s" % binaries_path,
+                 "components": "",
+                 "distribution": "./",
+                 "type": "deb"}]
+
+    def get_package_name(self, version):
+        """Return the name of the package."""
+        return version.package.name
+
 
     def disable_clear_channels(self):
         """Disable clear_channels(), so that it doesn't remove test setup.
@@ -435,7 +523,7 @@ class PackageChangerTestMixin(object):
 
     def test_tasks_are_isolated_cache(self):
         """
-        The package (apt/smart) cache should be reset between task runs.
+        The package (APT) cache should be reset between task runs.
         In this test, we try to run two different operations, first
         installing package 2, then removing package 1.  Both tasks will
         fail for lack of superuser privileges.  If the package cache
@@ -527,7 +615,7 @@ class PackageChangerTestMixin(object):
         """
         Besides asking for individual changes, the server may also request
         the client to perform a global upgrade.  This would be the equivalent
-        of a "smart upgrade" command being executed in the command line.
+        of a "apt-get upgrade" command being executed in the command line.
         """
         hash1, hash2 = self.set_pkg2_upgrades_pkg1()
         self.store.set_hash_ids({hash1: 1, hash2: 2})
@@ -632,8 +720,7 @@ class PackageChangerTestMixin(object):
         """
         After the package changer has run, we want the package-reporter to run
         to report the recent changes.  If we're running as root, we want to
-        change to the "landscape" user and "landscape" group. We also want to
-        deinitialize Smart to let the reporter run smart-update cleanly.
+        change to the "landscape" user and "landscape" group.
         """
 
         # We are running as root
@@ -641,12 +728,7 @@ class PackageChangerTestMixin(object):
         getuid_mock()
         self.mocker.result(0)
 
-        # The order matters (first smart then gid and finally uid)
         self.mocker.order()
-
-        # Deinitialize smart
-        facade_mock = self.mocker.patch(self.facade)
-        facade_mock.deinit()
 
         # We want to return a known gid
         grnam_mock = self.mocker.replace("grp.getgrnam")
@@ -864,95 +946,6 @@ class PackageChangerTestMixin(object):
         self.changer.init_channels([])
         self.assertFalse(os.path.exists(existing_deb_path))
 
-
-class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
-
-    helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
-
-    def setUp(self):
-
-        def set_up(ignored):
-
-            self.store = PackageStore(self.makeFile())
-            self.config = PackageChangerConfiguration()
-            self.config.data_path = self.makeDir()
-            os.mkdir(self.config.package_directory)
-            os.mkdir(self.config.binaries_path)
-            touch_file(self.config.update_stamp_filename)
-            self.changer = PackageChanger(
-                self.store, self.facade, self.remote, self.config)
-            service = self.broker_service
-            service.message_store.set_accepted_types(["change-packages-result",
-                                                      "operation-result"])
-
-        result = super(AptPackageChangerTest, self).setUp()
-        return result.addCallback(set_up)
-
-    def set_pkg1_installed(self):
-        """Return the hash of a package that is installed."""
-        self._add_system_package("foo")
-        self.facade.reload_channels()
-        [foo] = self.facade.get_packages_by_name("foo")
-        return self.facade.get_package_hash(foo)
-
-    def set_pkg2_satisfied(self):
-        """Return the hash of a package that can be installed."""
-        self._add_package_to_deb_dir(self.repository_dir, "bar")
-        self.facade.reload_channels()
-        [bar] = self.facade.get_packages_by_name("bar")
-        return self.facade.get_package_hash(bar)
-
-    def set_pkg1_and_pkg2_satisfied(self):
-        """Make a package depend on another package.
-
-        Return the hashes of the two packages.
-        """
-        self._add_package_to_deb_dir(
-            self.repository_dir, "foo", control_fields={"Depends": "bar"})
-        self._add_package_to_deb_dir(self.repository_dir, "bar")
-        self.facade.reload_channels()
-        [foo] = self.facade.get_packages_by_name("foo")
-        [bar] = self.facade.get_packages_by_name("bar")
-        return (
-            self.facade.get_package_hash(foo),
-            self.facade.get_package_hash(bar))
-
-    def set_pkg2_upgrades_pkg1(self):
-        """Make it so that one package upgrades another.
-
-        Return the hashes of the two packages.
-        """
-        self._add_system_package("foo", version="1.0")
-        self._add_package_to_deb_dir(self.repository_dir, "foo", version="2.0")
-        self.facade.reload_channels()
-        foo_1, foo_2 = sorted(self.facade.get_packages_by_name("foo"))
-        return (
-            self.facade.get_package_hash(foo_1),
-            self.facade.get_package_hash(foo_2))
-
-    def remove_pkg2(self):
-        """Remove package name2 from its repository."""
-        packages_file = os.path.join(self.repository_dir, "Packages")
-        packages_contents = read_file(packages_file)
-        packages_contents = "\n\n".join(
-            [stanza for stanza in packages_contents.split("\n\n")
-             if "Package: name2" not in stanza])
-        create_file(packages_file, packages_contents)
-
-    def get_transaction_error_message(self):
-        """Return part of the apt transaction error message."""
-        return "Unable to correct problems"
-
-    def get_binaries_channels(self, binaries_path):
-        """Return the channels that will be used for the binaries."""
-        return [{"baseurl": "file://%s" % binaries_path,
-                 "components": "",
-                 "distribution": "./",
-                 "type": "deb"}]
-
-    def get_package_name(self, version):
-        """Return the name of the package."""
-        return version.package.name
 
     def test_binaries_available_in_cache(self):
         """
@@ -1328,9 +1321,9 @@ class AptPackageChangerTest(LandscapeTest, PackageChangerTestMixin):
 
     def test_change_package_locks(self):
         """
-        If C{AptFacade} is used, the L{PackageChanger.handle_tasks}
-        method fails the activity, since it can't add or remove locks because
-        apt doesn't support this.
+        The L{PackageChanger.handle_tasks} method fails
+        change-package-locks activities, since it can't add or remove
+        locks because apt doesn't support this.
         """
         self.store.add_task("changer", {"type": "change-package-locks",
                                         "create": [("foo", ">=", "1.0")],

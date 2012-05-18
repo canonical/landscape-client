@@ -18,7 +18,7 @@ from landscape.package.reporter import find_reporter_command
 from landscape.package.taskhandler import (
     PackageTaskHandler, PackageTaskHandlerConfiguration, PackageTaskError,
     run_task_handler)
-from landscape.manager.manager import FAILED, SUCCEEDED
+from landscape.manager.manager import FAILED
 
 
 class UnknownPackageData(Exception):
@@ -80,10 +80,6 @@ class PackageChanger(PackageTaskHandler):
             # Nothing was done
             return
 
-        # In order to let the reporter run smart-update cleanly,
-        # we have to deinitialize Smart, so that the write lock
-        # gets released
-        self._facade.deinit()
         if os.getuid() == 0:
             os.setgid(grp.getgrnam("landscape").gr_gid)
             os.setuid(pwd.getpwnam("landscape").pw_uid)
@@ -294,32 +290,15 @@ class PackageChanger(PackageTaskHandler):
     def handle_change_package_locks(self, message):
         """Handle a C{change-package-locks} message.
 
-        Create and delete package locks as requested by the given C{message}.
+        Package locks aren't supported anymore.
         """
 
-        if not self._facade.supports_package_locks:
-            response = {
-                "type": "operation-result",
-                "operation-id": message.get("operation-id"),
-                "status": FAILED,
-                "result-text": "This client doesn't support package locks.",
-                "result-code": 1}
-            return self._broker.send_message(response, True)
-
-        for lock in message.get("create", ()):
-            self._facade.set_package_lock(*lock)
-        for lock in message.get("delete", ()):
-            self._facade.remove_package_lock(*lock)
-        self._facade.save_config()
-
-        response = {"type": "operation-result",
-                    "operation-id": message.get("operation-id"),
-                    "status": SUCCEEDED,
-                    "result-text": "Package locks successfully changed.",
-                    "result-code": 0}
-
-        logging.info("Queuing message with change package locks results to "
-                     "exchange urgently.")
+        response = {
+            "type": "operation-result",
+            "operation-id": message.get("operation-id"),
+            "status": FAILED,
+            "result-text": "This client doesn't support package locks.",
+            "result-code": 1}
         return self._broker.send_message(response, True)
 
     @staticmethod

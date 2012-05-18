@@ -30,9 +30,9 @@ class PackageReporterConfiguration(PackageTaskHandlerConfiguration):
         reporter-specific options.
         """
         parser = super(PackageReporterConfiguration, self).make_parser()
-        parser.add_option("--force-smart-update", default=False,
+        parser.add_option("--force-apt-update", default=False,
                           action="store_true",
-                          help="Force running smart-update.")
+                          help="Force running apt-update.")
         return parser
 
 
@@ -40,15 +40,14 @@ class PackageReporter(PackageTaskHandler):
     """Report information about the system packages.
 
     @cvar queue_name: Name of the task queue to pick tasks from.
-    @cvar smart_update_interval: Time interval in minutes to pass to
-        the C{--after} command line option of C{smart-update}.
+    @cvar apt_update_interval: Don't update the APT index more often
+        than the given interval in minutes.
     """
     config_factory = PackageReporterConfiguration
 
     queue_name = "reporter"
 
-    smart_update_interval = 60
-    smart_update_filename = "/usr/lib/landscape/smart-update"
+    apt_update_interval = 60
     apt_update_filename = "/usr/lib/landscape/apt-update"
     sources_list_filename = "/etc/apt/sources.list"
     sources_list_directory = "/etc/apt/sources.list.d"
@@ -192,8 +191,8 @@ class PackageReporter(PackageTaskHandler):
 
         @return: a deferred returning (out, err, code)
         """
-        if (self._config.force_smart_update or self._apt_sources_have_changed()
-            or self._apt_update_timeout_expired(self.smart_update_interval)):
+        if (self._config.force_apt_update or self._apt_sources_have_changed()
+            or self._apt_update_timeout_expired(self.apt_update_interval)):
 
             result = spawn_process(self.apt_update_filename)
 
@@ -278,7 +277,6 @@ class PackageReporter(PackageTaskHandler):
         self._store.clear_available_upgrades()
         self._store.clear_installed()
         self._store.clear_locked()
-        self._store.clear_package_locks()
 
         # Don't clear the hash_id_requests table because the messages
         # associated with the existing requests might still have to be
@@ -360,7 +358,7 @@ class PackageReporter(PackageTaskHandler):
     def request_unknown_hashes(self):
         """Detect available packages for which we have no hash=>id mappings.
 
-        This method will verify if there are packages that Apt knows
+        This method will verify if there are packages that APT knows
         about but for which we don't have an id yet (no hash => id
         translation), and deliver a message (unknown-package-hashes)
         to request them.
@@ -421,16 +419,13 @@ class PackageReporter(PackageTaskHandler):
         reactor.
         """
 
-        def changes_detected(results):
-            # Release all smart locks, in case the changer runs after us.
-            self._facade.deinit()
-            if True in results:
+        def changes_detected(result):
+            if result:
                 # Something has changed, notify the broker.
                 return self._broker.fire_event("package-data-changed")
 
-        result = gather_results([self.detect_packages_changes(),
-                                 self.detect_package_locks_changes()])
-        return result.addCallback(changes_detected)
+        deferred = self.detect_packages_changes()
+        return deferred.addCallback(changes_detected)
 
     def detect_packages_changes(self):
         """Detect changes in the universe of known packages.
@@ -558,53 +553,6 @@ class PackageReporter(PackageTaskHandler):
             if not_locked:
                 self._store.remove_locked(not_locked)
             # Something has changed wrt the former run, let's return True
-            return True
-
-        result.addCallback(update_currently_known)
-
-        return result
-
-    def detect_package_locks_changes(self):
-        """Detect changes in known package locks.
-
-        This method will verify if there are package locks that:
-
-        - are now set, and were not;
-        - were previously set but are not anymore;
-
-        In all cases, the server is notified of the new situation
-        with a "packages" message.
-
-        @return: A deferred resulting in C{True} if package lock changes were
-            detected with respect to the previous run, or C{False} otherwise.
-        """
-        old_package_locks = set(self._store.get_package_locks())
-        current_package_locks = set(self._facade.get_package_locks())
-
-        set_package_locks = current_package_locks - old_package_locks
-        unset_package_locks = old_package_locks - current_package_locks
-
-        message = {}
-        if set_package_locks:
-            message["created"] = sorted(set_package_locks)
-        if unset_package_locks:
-            message["deleted"] = sorted(unset_package_locks)
-
-        if not message:
-            return succeed(False)
-
-        message["type"] = "package-locks"
-        result = self.send_message(message)
-
-        logging.info("Queuing message with changes in known package locks:"
-                     " %d created, %d deleted." %
-                     (len(set_package_locks), len(unset_package_locks)))
-
-        def update_currently_known(result):
-            if set_package_locks:
-                self._store.add_package_locks(set_package_locks)
-            if unset_package_locks:
-                self._store.remove_package_locks(unset_package_locks)
             return True
 
         result.addCallback(update_currently_known)

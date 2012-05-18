@@ -631,7 +631,7 @@ def clean_environment():
     In particular unset all variables beginning with DEBIAN_ or DEBCONF_,
     to avoid any problems when landscape-client is invoked from its
     postinst script.  Some environment variables may be set which would affect
-    *other* maintainer scripts which landscape-client invokes (via smart).
+    *other* maintainer scripts which landscape-client invokes.
     """
     for key in os.environ.keys():
         if (key.startswith("DEBIAN_")
