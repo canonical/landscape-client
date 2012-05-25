@@ -9,7 +9,7 @@ ifeq (,$(filter $(dist_release), hardy lucid))
 endif
 
 dh_extra_flags = -plandscape-common -plandscape-client
-ifneq (,$(filter $(dist_release),precise))
+ifeq (,$(filter $(dist_release),hardy lucid natty oneiric))
 	# We want landscape-client-ui only from precise onward
 	dh_extra_flags += -plandscape-client-ui -plandscape-client-ui-install
 endif
