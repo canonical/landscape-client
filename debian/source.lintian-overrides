@@ -1,0 +1,8 @@
+# we use dh_python or dh_python2 depending on the ubuntu release
+# the package is being built on, this is detected dynamically
+# in the rules file
+landscape-client source: dh_python-is-obsolete
+
+# the package has to build on lucid, where the standards version
+# is 3.8.2
+landscape-client source: ancient-standards-version
