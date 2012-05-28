@@ -73,9 +73,6 @@ binary-indep:
 # do nothing
 #
 binary-arch: build install
-	# That's not present in Ubuntu releases we still support, so
-	# we're just installing the lintian overrides file by hand
-	# for now.
 	dh_lintian
 	dh_testdir
 	dh_testroot
