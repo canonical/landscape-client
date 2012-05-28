@@ -30,6 +30,10 @@ revision = $(shell dpkg-parsechangelog | grep ^Version | cut -f 2 -d " "| cut -f
 landscape_common_substvars = debian/landscape-common.substvars
 landscape_client_substvars = debian/landscape-client.substvars
 
+build-arch: build
+
+build-indep: build
+
 build: build-stamp
 build-stamp:
 	dh_testdir
