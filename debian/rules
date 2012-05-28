@@ -86,8 +86,10 @@ binary-arch: build install
 	dh_installinit -- start 45 2 3 4 5 . stop 15 0 1 6 .
 	dh_installlogrotate
 	dh_installdebconf
+	dh_strip
 	dh_compress
 	dh_fixperms
+	dh_shlibdeps
 
 ifneq (,$(findstring $(dist_release),hardy))
 	# We depend on bug-fixed versions of python-dbus and pycurl on hardy
