@@ -34,6 +34,7 @@ XB-Python-Version: ${python:Versions}
 Package: landscape-client
 Architecture: any
 Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
+         ${shlibs:Depends},
          python-twisted-web,
          python-twisted-names,
          landscape-common (= ${binary:Version})
