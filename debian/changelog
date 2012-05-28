@@ -1,3 +1,26 @@
+landscape-client (12.05-0ubuntu1) quantal; urgency=low
+
+  * New upstream release 12.05 (r561 in trunk) (LP: #1004678).
+  * Make all subpackages that depend on each other require the exact same
+    version, instead of >= $version.
+  * Added python-gi to client depends starting natty.
+  * Make change-packages also handle package holds (LP: #972489).
+  * Fix typo in glade file (LP: #983096).
+  * Tidy up apt facade (LP: #985493).
+  * Remove SmartFacade and its tests, no longer used (LP: #996269).
+  * Remove check for apt version, since we won't release this for
+    Hardy where that check matters (LP: #996837).
+  * Remove methods that were smart specific. We no longer use smart
+    (LP: #996841).
+  * Remove smart-update helper binary. We no longer use smart
+    (LP: #997408).
+  * Remove test-mixins that were useful only during the apt-to-smart
+    code migration. Now with smart gone, they are no longer necessary
+    (LP: #997760).
+  * Build the packages from precise onward, not just precise.
+
+ -- Andreas Hasenack <andreas@canonical.com>  Fri, 25 May 2012 18:24:36 -0300
+
 landscape-client (12.04.3-0ubuntu0.12.04.0) precise; urgency=low
 
   * Warn on unicode entry into settings UI (LP: #956612).
