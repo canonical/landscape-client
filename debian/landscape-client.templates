@@ -64,7 +64,7 @@ _Description: HTTPS proxy (blank for none):
 Template: landscape-client/tags
 Type: string
 Default:
-_Description: Initial tags for first registration
+_Description: Initial tags for first registration:
  Comma separated list of tags which will be assigned to this computer on its
  first registration.  Once the machine is registered, these tags can only be
  changed using the Landscape server.
