@@ -6,9 +6,9 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
+"Project-Id-Version: landscape-client\n"
 "Report-Msgid-Bugs-To: landscape-client@packages.debian.org\n"
-"POT-Creation-Date: 2012-03-07 17:07+0100\n"
+"POT-Creation-Date: 2012-05-28 12:13-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -55,8 +55,8 @@ msgstr ""
 #. Description
 #: ../landscape-client.templates:3001
 msgid ""
-"Client registration key for the given Landscape account.  Only needed "
-"if the given account is requesting a client registration key."
+"Client registration key for the given Landscape account.  Only needed if the "
+"given account is requesting a client registration key."
 msgstr ""
 
 #. Type: string
@@ -187,9 +187,31 @@ msgstr ""
 #. DO NOT USE commas (,) in Choices translations otherwise
 #. this will break the choices shown to users
 #: ../landscape-common.templates:1001
-msgid ""
-"Do not display sysinfo on login, Cache sysinfo in /etc/motd, Run sysinfo on "
-"every login"
+msgid "Do not display sysinfo on login"
+msgstr ""
+
+#. Type: select
+#. Choices
+#. Translators beware! the following three strings form a single
+#. Choices menu. - Every one of these strings has to fit in a standard
+#. 80 characters console, as the fancy screen setup takes up some space
+#. try to keep below ~71 characters.
+#. DO NOT USE commas (,) in Choices translations otherwise
+#. this will break the choices shown to users
+#: ../landscape-common.templates:1001
+msgid "Cache sysinfo in /etc/motd"
+msgstr ""
+
+#. Type: select
+#. Choices
+#. Translators beware! the following three strings form a single
+#. Choices menu. - Every one of these strings has to fit in a standard
+#. 80 characters console, as the fancy screen setup takes up some space
+#. try to keep below ~71 characters.
+#. DO NOT USE commas (,) in Choices translations otherwise
+#. this will break the choices shown to users
+#: ../landscape-common.templates:1001
+msgid "Run sysinfo on every login"
 msgstr ""
 
 #. Type: select
