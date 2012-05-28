@@ -1,4 +1,4 @@
-landscape-client (12.05-0ubuntu1) precise; urgency=low
+landscape-client (12.05) precise; urgency=low
 
   * New upstream release 12.05 (r561 in trunk) (LP: #1004678).
   * Make all subpackages that depend on each other require the exact same
