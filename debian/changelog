@@ -1,3 +1,9 @@
+landscape-client (12.05-0ubuntu0.12.04.0) precise; urgency=low
+
+  * Fake changelog entry to bump version.
+
+ -- Andreas Hasenack <andreas@canonical.com>  Mon, 28 May 2012 14:29:41 -0300
+
 landscape-client (12.04.3-0ubuntu0.12.04.0) precise; urgency=low
 
   * Warn on unicode entry into settings UI (LP: #956612).
