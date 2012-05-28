@@ -9,3 +9,7 @@ landscape-client source: ancient-standards-version
 
 # it's a bug that should be fixed in quantal
 landscape-client source: unknown-field-in-dsc original-maintainer
+
+# this is only used in a very specific client upgrade from
+# the dbus to the amp version
+landscape-client: start-stop-daemon-in-maintainer-script postinst:130
