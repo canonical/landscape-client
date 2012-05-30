@@ -82,13 +82,15 @@ tags:
 etags:
 	-etags --languages=python -R .
 
-UPSTREAM_VERSION=$(shell python -c "from landscape import UPSTREAM_VERSION; print UPSTREAM_VERSION")
+UPSTREAM_VERSION=$(shell dpkg-parsechangelog | grep ^Version | cut -f 2 -d " " | cut -f 1 -d '-')
+BZR_REVNO=$(shell bzr revno)
+TARBALL_VERSION = $(UPSTREAM_VERSION)+bzr$(BZR_REVNO)
 sdist:
 	mkdir -p sdist
-	bzr export sdist/landscape-client-$(UPSTREAM_VERSION)
-	rm -rf sdist/landscape-client-$(UPSTREAM_VERSION)/debian
-	cd sdist && tar cfz landscape-client-$(UPSTREAM_VERSION).tar.gz landscape-client-$(UPSTREAM_VERSION)
-	cd sdist && md5sum landscape-client-$(UPSTREAM_VERSION).tar.gz > landscape-client-$(UPSTREAM_VERSION).tar.gz.md5
-	rm -rf sdist/landscape-client-$(UPSTREAM_VERSION)
+	bzr export sdist/landscape-client-$(TARBALL_VERSION)
+	rm -rf sdist/landscape-client-$(TARBALL_VERSION)/debian
+	cd sdist && tar cfz landscape-client-$(TARBALL_VERSION).tar.gz landscape-client-$(TARBALL_VERSION)
+	cd sdist && md5sum landscape-client-$(TARBALL_VERSION).tar.gz > landscape-client-$(TARBALL_VERSION).tar.gz.md5
+	rm -rf sdist/landscape-client-$(TARBALL_VERSION)
 
 .PHONY: tags etags
