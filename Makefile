@@ -7,9 +7,10 @@ UBUNTU_RELEASE = $(shell lsb_release -cs)
 UPSTREAM_VERSION=$(shell dpkg-parsechangelog | grep ^Version | cut -f 2 -d " " | cut -f 1 -d '-')
 BZR_REVNO=$(shell bzr revno)
 ifneq (,$(findstring +bzr,$(UPSTREAM_VERSION)))
-    # there is a bzr revision in there already
+# there is a bzr revision in there already, so let's just take it
     TARBALL_VERSION = $(UPSTREAM_VERSION)
 else
+# add our bzr revision
     TARBALL_VERSION = $(UPSTREAM_VERSION)+bzr$(BZR_REVNO)
 endif
 
@@ -108,7 +109,7 @@ tags:
 etags:
 	-etags --languages=python -R .
 
-sdist: manpages prepchangelog
+sdist: clean manpages prepchangelog
 	mkdir -p sdist
 	bzr export sdist/landscape-client-$(TARBALL_VERSION)
 	rm -rf sdist/landscape-client-$(TARBALL_VERSION)/debian
