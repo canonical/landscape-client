@@ -3,6 +3,9 @@ TXT2MAN ?= txt2man
 PYTHON ?= python
 TRIAL_ARGS ?= 
 TEST_COMMAND = trial $(TRIAL_ARGS) landscape
+UPSTREAM_VERSION=$(shell dpkg-parsechangelog | grep ^Version | cut -f 2 -d " " | cut -f 1 -d '-')
+BZR_REVNO=$(shell bzr revno)
+TARBALL_VERSION = $(UPSTREAM_VERSION)+bzr$(BZR_REVNO)
 
 all: build
 
@@ -49,9 +52,15 @@ manpages:
 	${TXT2MAN} -P Landscape -s 1 -t landscape-config < man/landscape-config.txt > man/landscape-config.1
 	${TXT2MAN} -P Landscape -s 1 -t landscape-message < man/landscape-message.txt > man/landscape-message.1
 
-package: manpages
-	@fakeroot debian/rules binary
-	@echo "\n\nYou remembered to update the changelog, right?\n\n"
+origtarball: sdist
+	cp -f sdist/landscape-client-$(TARBALL_VERSION).tar.gz \
+		../landscape-client_$(TARBALL_VERSION).orig.tar.gz
+	
+package: origtarball
+	debuild -b
+
+sourcepackage: origtarball
+	debuild -S
 
 MESSAGE_DIR = `pwd`/runclient-messages
 LOG_FILE = `pwd`/runclient.log
@@ -82,10 +91,7 @@ tags:
 etags:
 	-etags --languages=python -R .
 
-UPSTREAM_VERSION=$(shell dpkg-parsechangelog | grep ^Version | cut -f 2 -d " " | cut -f 1 -d '-')
-BZR_REVNO=$(shell bzr revno)
-TARBALL_VERSION = $(UPSTREAM_VERSION)+bzr$(BZR_REVNO)
-sdist:
+sdist: manpages
 	mkdir -p sdist
 	bzr export sdist/landscape-client-$(TARBALL_VERSION)
 	rm -rf sdist/landscape-client-$(TARBALL_VERSION)/debian
