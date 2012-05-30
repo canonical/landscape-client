@@ -63,7 +63,7 @@ origtarball: sdist
 
 prepchangelog:
 # add a temporary entry for a local build if needed
-ifeq (,$(findstring +bzr,$(TARBALL_VERSION)))
+ifeq (,$(findstring +bzr,$(UPSTREAM_VERSION)))
 	dch -v $(TARBALL_VERSION)-0ubuntu0 "New local test build" --distribution $(UBUNTU_RELEASE)
 else
 # just update the timestamp
@@ -72,11 +72,9 @@ endif
     
 package: origtarball
 	debuild -b
-	bzr revert landscape/__init__.py po/* man/* debian/changelog
 
 sourcepackage: origtarball
 	debuild -S
-	bzr revert landscape/__init__.py po/* man/* debian/changelog
 
 MESSAGE_DIR = `pwd`/runclient-messages
 LOG_FILE = `pwd`/runclient.log
