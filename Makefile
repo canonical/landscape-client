@@ -4,8 +4,8 @@ PYTHON ?= python
 TRIAL_ARGS ?= 
 TEST_COMMAND = trial $(TRIAL_ARGS) landscape
 UBUNTU_RELEASE = $(shell lsb_release -cs)
-UPSTREAM_VERSION=$(shell dpkg-parsechangelog | grep ^Version | cut -f 2 -d " " | cut -f 1 -d '-')
-BZR_REVNO=$(shell bzr revno)
+UPSTREAM_VERSION := $(shell dpkg-parsechangelog | grep ^Version | cut -f 2 -d " " | cut -f 1 -d '-')
+BZR_REVNO = $(shell bzr revno)
 ifeq (+bzr,$(findstring +bzr,$(UPSTREAM_VERSION)))
 TARBALL_VERSION = $(UPSTREAM_VERSION)
 else
