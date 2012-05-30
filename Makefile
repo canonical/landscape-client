@@ -72,11 +72,15 @@ else
 # just update the timestamp
 	dch --distribution $(UBUNTU_RELEASE) --release $(UBUNTU_RELEASE)
 endif
-    
-package: origtarball prepchangelog
+
+updateversion:
+	sed -i -e "s/^UPSTREAM_VERSION.*/UPSTREAM_VERSION = \"$(TARBALL_VERSION)\"/g" \
+		landscape/__init__.py
+
+package: clean prepchangelog updateversion
 	debuild -b
 
-sourcepackage: origtarball prepchangelog
+sourcepackage: clean origtarball prepchangelog updateversion
 	rm -rf sdist
 	debuild -S
 
@@ -114,8 +118,7 @@ sdist: clean
 	bzr export --uncommitted sdist/landscape-client-$(TARBALL_VERSION)
 	rm -rf sdist/landscape-client-$(TARBALL_VERSION)/debian
 	sed -i -e "s/^UPSTREAM_VERSION.*/UPSTREAM_VERSION = \"$(TARBALL_VERSION)\"/g" \
-		sdist/landscape-client-$(TARBALL_VERSION)/landscape/__init__.py \
-		landscape/__init__.py
+		sdist/landscape-client-$(TARBALL_VERSION)/landscape/__init__.py
 	cd sdist && tar cfz landscape-client-$(TARBALL_VERSION).tar.gz landscape-client-$(TARBALL_VERSION)
 	cd sdist && md5sum landscape-client-$(TARBALL_VERSION).tar.gz > landscape-client-$(TARBALL_VERSION).tar.gz.md5
 	rm -rf sdist/landscape-client-$(TARBALL_VERSION)
