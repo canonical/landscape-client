@@ -117,6 +117,8 @@ etags:
 
 sdist: clean
 	mkdir -p sdist
+	# --uncommitted because we want any changes the developer might have made
+	# locally to be included in the package without having to commit
 	bzr export --uncommitted sdist/landscape-client-$(TARBALL_VERSION)
 	rm -rf sdist/landscape-client-$(TARBALL_VERSION)/debian
 	sed -i -e "s/^UPSTREAM_VERSION.*/UPSTREAM_VERSION = \"$(TARBALL_VERSION)\"/g" \
