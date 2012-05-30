@@ -40,7 +40,7 @@ class BrokerConfiguration(Configuration):
 
         parser.add_option("-a", "--account-name", metavar="NAME",
                           help="The account this computer belongs to.")
-        parser.add_option("-p", "--registration-key", metavar="PASSWORD",
+        parser.add_option("-p", "--registration-key", metavar="KEY",
                           help="The account-wide key used for "
                                "registering clients.")
         parser.add_option("-t", "--computer-title", metavar="TITLE",
