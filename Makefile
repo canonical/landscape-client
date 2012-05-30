@@ -4,10 +4,12 @@ PYTHON ?= python
 TRIAL_ARGS ?= 
 TEST_COMMAND = trial $(TRIAL_ARGS) landscape
 UBUNTU_RELEASE := $(shell lsb_release -cs)
+# version in the code is authoritative
 # Use := here, not =, it's really important, otherwise UPSTREAM_VERSION
 # will be updated behind your back with the current result of that
-# dpkg-parsechangelog everytime it is mentioned/used.
-UPSTREAM_VERSION := $(shell dpkg-parsechangelog | grep ^Version | cut -f 2 -d " " | cut -f 1 -d '-')
+# command everytime it is mentioned/used.
+UPSTREAM_VERSION := $(shell python -c "from landscape import UPSTREAM_VERSION; print UPSTREAM_VERSION")
+CHANGELOG_VERSION := $(shell dpkg-parsechangelog | grep ^Version | cut -f 2 -d " " | cut -f 1 -d '-')
 BZR_REVNO := $(shell bzr revno)
 ifeq (+bzr,$(findstring +bzr,$(UPSTREAM_VERSION)))
 TARBALL_VERSION := $(UPSTREAM_VERSION)
@@ -66,7 +68,7 @@ origtarball: sdist
 
 prepchangelog:
 # add a temporary entry for a local build if needed
-ifeq (,$(findstring +bzr,$(UPSTREAM_VERSION)))
+ifeq (,$(findstring +bzr,$(CHANGELOG_VERSION)))
 	dch -v $(TARBALL_VERSION)-0ubuntu0 "New local test build" --distribution $(UBUNTU_RELEASE)
 else
 # just update the timestamp
