@@ -28,9 +28,6 @@ lint:
 pyflakes:
 	-pyflakes `find landscape -name \*py|grep -v twisted_amp\.py|grep -v configobj\.py|grep -v mocker\.py`
 
-checkcertificate:
-	-echo | openssl s_client -connect landscape.canonical.com:443 -CAfile /etc/ssl/certs/ca-certificates.crt
-
 clean:
 	-find landscape -name \*.pyc -exec rm {} \;
 	-rm tags
