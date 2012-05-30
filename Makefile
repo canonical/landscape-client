@@ -63,7 +63,7 @@ origtarball: sdist
 
 prepchangelog:
 # add a temporary entry for a local build if needed
-ifeq (,$(findstring +bzr,$(UPSTREAM_VERSION)))
+ifeq (,$(findstring +bzr,$(TARBALL_VERSION)))
 	dch -v $(TARBALL_VERSION)-0ubuntu0 "New local test build" --distribution $(UBUNTU_RELEASE)
 else
 # just update the timestamp
