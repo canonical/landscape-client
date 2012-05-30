@@ -3,13 +3,16 @@ TXT2MAN ?= txt2man
 PYTHON ?= python
 TRIAL_ARGS ?= 
 TEST_COMMAND = trial $(TRIAL_ARGS) landscape
-UBUNTU_RELEASE = $(shell lsb_release -cs)
+UBUNTU_RELEASE := $(shell lsb_release -cs)
+# Use := here, not =, it's really important, otherwise UPSTREAM_VERSION
+# will be updated behind your back with the current result of that
+# dpkg-parsechangelog everytime it is mentioned/used.
 UPSTREAM_VERSION := $(shell dpkg-parsechangelog | grep ^Version | cut -f 2 -d " " | cut -f 1 -d '-')
-BZR_REVNO = $(shell bzr revno)
+BZR_REVNO := $(shell bzr revno)
 ifeq (+bzr,$(findstring +bzr,$(UPSTREAM_VERSION)))
-TARBALL_VERSION = $(UPSTREAM_VERSION)
+TARBALL_VERSION := $(UPSTREAM_VERSION)
 else
-TARBALL_VERSION = $(UPSTREAM_VERSION)+bzr$(BZR_REVNO)
+TARBALL_VERSION := $(UPSTREAM_VERSION)+bzr$(BZR_REVNO)
 endif
 
 all: build
