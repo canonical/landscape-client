@@ -56,22 +56,6 @@ package: manpages
 	@fakeroot debian/rules binary
 	@echo "\n\nYou remembered to update the changelog, right?\n\n"
 
-SSH_USERNAME=`whoami`
-SSH_HOST=people.ubuntu.com
-PACKAGE_DIR=/home/jkakar/public_html/landscape
-deploy:
-ifneq (${PACKAGE},)
-	@echo "Copying ${PACKAGE} to $(SSH_HOST):$(PACKAGE_DIR)"
-	@scp ${PACKAGE} $(SSH_USERNAME)@$(SSH_HOST):$(PACKAGE_DIR)
-	@echo "\nScanning packages and recreating the Packages file."
-	@ssh -l $(SSH_USERNAME) $(SSH_HOST) \
-		"cd $(PACKAGE_DIR) " \
-		"&& dpkg-scanpackages . /dev/null > Packages " \
-		"&& gzip -f Packages"
-else
-	@echo "You need to specify PACKAGE, as in: make deploy PACKAGE=<name>"
-endif
-
 MESSAGE_DIR = `pwd`/runclient-messages
 LOG_FILE = `pwd`/runclient.log
 
