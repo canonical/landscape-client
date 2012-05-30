@@ -3,9 +3,15 @@ TXT2MAN ?= txt2man
 PYTHON ?= python
 TRIAL_ARGS ?= 
 TEST_COMMAND = trial $(TRIAL_ARGS) landscape
+UBUNTU_RELEASE = $(shell lsb_release -cs)
 UPSTREAM_VERSION=$(shell dpkg-parsechangelog | grep ^Version | cut -f 2 -d " " | cut -f 1 -d '-')
 BZR_REVNO=$(shell bzr revno)
-TARBALL_VERSION = $(UPSTREAM_VERSION)+bzr$(BZR_REVNO)
+ifneq (,$(findstring +bzr,$(UPSTREAM_VERSION)))
+    # there is a bzr revision in there already
+    TARBALL_VERSION = $(UPSTREAM_VERSION)
+else
+    TARBALL_VERSION = $(UPSTREAM_VERSION)+bzr$(BZR_REVNO)
+endif
 
 all: build
 
@@ -55,12 +61,23 @@ manpages:
 origtarball: sdist
 	cp -f sdist/landscape-client-$(TARBALL_VERSION).tar.gz \
 		../landscape-client_$(TARBALL_VERSION).orig.tar.gz
-	
+
+prepchangelog:
+# add a temporary entry for a local build if needed
+ifeq (,$(findstring +bzr,$(UPSTREAM_VERSION)))
+	dch -v $(TARBALL_VERSION)-0ubuntu0 "New local test build" --distribution $(UBUNTU_RELEASE)
+else
+# just update the timestamp
+	dch --distribution $(UBUNTU_RELEASE) --release $(UBUNTU_RELEASE)
+endif
+    
 package: origtarball
 	debuild -b
+	bzr revert landscape/__init__.py po/* man/* debian/changelog
 
 sourcepackage: origtarball
 	debuild -S
+	bzr revert landscape/__init__.py po/* man/* debian/changelog
 
 MESSAGE_DIR = `pwd`/runclient-messages
 LOG_FILE = `pwd`/runclient.log
@@ -91,7 +108,7 @@ tags:
 etags:
 	-etags --languages=python -R .
 
-sdist: manpages
+sdist: manpages prepchangelog
 	mkdir -p sdist
 	bzr export sdist/landscape-client-$(TARBALL_VERSION)
 	rm -rf sdist/landscape-client-$(TARBALL_VERSION)/debian
