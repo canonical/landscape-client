@@ -73,10 +73,11 @@ else
 	dch --distribution $(UBUNTU_RELEASE) --release $(UBUNTU_RELEASE)
 endif
     
-package: origtarball
+package: origtarball prepchangelog
 	debuild -b
 
-sourcepackage: origtarball
+sourcepackage: origtarball prepchangelog
+	rm -rf sdist
 	debuild -S
 
 MESSAGE_DIR = `pwd`/runclient-messages
@@ -108,9 +109,9 @@ tags:
 etags:
 	-etags --languages=python -R .
 
-sdist: clean prepchangelog
+sdist: clean
 	mkdir -p sdist
-	bzr export sdist/landscape-client-$(TARBALL_VERSION)
+	bzr export --uncommitted sdist/landscape-client-$(TARBALL_VERSION)
 	rm -rf sdist/landscape-client-$(TARBALL_VERSION)/debian
 	sed -i -e "s/^UPSTREAM_VERSION.*/UPSTREAM_VERSION = \"$(TARBALL_VERSION)\"/g" \
 		sdist/landscape-client-$(TARBALL_VERSION)/landscape/__init__.py
