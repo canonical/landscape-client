@@ -83,6 +83,8 @@ package: clean prepchangelog updateversion
 	debuild -b
 
 sourcepackage: clean origtarball prepchangelog updateversion
+	# need to remove sdist here because it doesn't exist in the
+	# orig tarball
 	rm -rf sdist
 	debuild -S
 
