@@ -80,13 +80,13 @@ updateversion:
 		landscape/__init__.py
 
 package: clean prepchangelog updateversion
-	debuild -b
+	debuild -b $(DEBUILD_OPTS)
 
 sourcepackage: clean origtarball prepchangelog updateversion
 	# need to remove sdist here because it doesn't exist in the
 	# orig tarball
 	rm -rf sdist
-	debuild -S
+	debuild -S $(DEBUILD_OPTS)
 
 MESSAGE_DIR = `pwd`/runclient-messages
 LOG_FILE = `pwd`/runclient.log
