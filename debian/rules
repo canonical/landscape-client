@@ -30,6 +30,10 @@ revision = $(shell dpkg-parsechangelog | grep ^Version | cut -f 2 -d " "| cut -f
 landscape_common_substvars = debian/landscape-common.substvars
 landscape_client_substvars = debian/landscape-client.substvars
 
+build-arch: build
+
+build-indep: build
+
 build: build-stamp
 build-stamp:
 	dh_testdir
@@ -69,10 +73,7 @@ binary-indep:
 # do nothing
 #
 binary-arch: build install
-	# That's not present in Ubuntu releases we still support, so
-	# we're just installing the lintian overrides file by hand
-	# for now.
-	#dh_lintian
+	dh_lintian
 	dh_testdir
 	dh_testroot
 	dh_installdocs
@@ -82,8 +83,10 @@ binary-arch: build install
 	dh_installinit -- start 45 2 3 4 5 . stop 15 0 1 6 .
 	dh_installlogrotate
 	dh_installdebconf
+	dh_strip
 	dh_compress
 	dh_fixperms
+	dh_shlibdeps
 
 ifneq (,$(findstring $(dist_release),hardy))
 	# We depend on bug-fixed versions of python-dbus and pycurl on hardy

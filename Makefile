@@ -3,6 +3,19 @@ TXT2MAN ?= txt2man
 PYTHON ?= python
 TRIAL_ARGS ?= 
 TEST_COMMAND = trial $(TRIAL_ARGS) landscape
+UBUNTU_RELEASE := $(shell lsb_release -cs)
+# version in the code is authoritative
+# Use := here, not =, it's really important, otherwise UPSTREAM_VERSION
+# will be updated behind your back with the current result of that
+# command everytime it is mentioned/used.
+UPSTREAM_VERSION := $(shell python -c "from landscape import UPSTREAM_VERSION; print UPSTREAM_VERSION")
+CHANGELOG_VERSION := $(shell dpkg-parsechangelog | grep ^Version | cut -f 2 -d " " | cut -f 1 -d '-')
+BZR_REVNO := $(shell bzr revno)
+ifeq (+bzr,$(findstring +bzr,$(UPSTREAM_VERSION)))
+TARBALL_VERSION := $(UPSTREAM_VERSION)
+else
+TARBALL_VERSION := $(UPSTREAM_VERSION)+bzr$(BZR_REVNO)
+endif
 
 all: build
 
@@ -28,9 +41,6 @@ lint:
 pyflakes:
 	-pyflakes `find landscape -name \*py|grep -v twisted_amp\.py|grep -v configobj\.py|grep -v mocker\.py`
 
-checkcertificate:
-	-echo | openssl s_client -connect landscape.canonical.com:443 -CAfile /etc/ssl/certs/ca-certificates.crt
-
 clean:
 	-find landscape -name \*.pyc -exec rm {} \;
 	-rm tags
@@ -52,25 +62,31 @@ manpages:
 	${TXT2MAN} -P Landscape -s 1 -t landscape-config < man/landscape-config.txt > man/landscape-config.1
 	${TXT2MAN} -P Landscape -s 1 -t landscape-message < man/landscape-message.txt > man/landscape-message.1
 
-package: manpages
-	@fakeroot debian/rules binary
-	@echo "\n\nYou remembered to update the changelog, right?\n\n"
+origtarball: sdist
+	cp -f sdist/landscape-client-$(TARBALL_VERSION).tar.gz \
+		../landscape-client_$(TARBALL_VERSION).orig.tar.gz
 
-SSH_USERNAME=`whoami`
-SSH_HOST=people.ubuntu.com
-PACKAGE_DIR=/home/jkakar/public_html/landscape
-deploy:
-ifneq (${PACKAGE},)
-	@echo "Copying ${PACKAGE} to $(SSH_HOST):$(PACKAGE_DIR)"
-	@scp ${PACKAGE} $(SSH_USERNAME)@$(SSH_HOST):$(PACKAGE_DIR)
-	@echo "\nScanning packages and recreating the Packages file."
-	@ssh -l $(SSH_USERNAME) $(SSH_HOST) \
-		"cd $(PACKAGE_DIR) " \
-		"&& dpkg-scanpackages . /dev/null > Packages " \
-		"&& gzip -f Packages"
+prepchangelog:
+# add a temporary entry for a local build if needed
+ifeq (,$(findstring +bzr,$(CHANGELOG_VERSION)))
+	dch -v $(TARBALL_VERSION)-0ubuntu0 "New local test build" --distribution $(UBUNTU_RELEASE)
 else
-	@echo "You need to specify PACKAGE, as in: make deploy PACKAGE=<name>"
+# just update the timestamp
+	dch --distribution $(UBUNTU_RELEASE) --release $(UBUNTU_RELEASE)
 endif
+
+updateversion:
+	sed -i -e "s/^UPSTREAM_VERSION.*/UPSTREAM_VERSION = \"$(TARBALL_VERSION)\"/g" \
+		landscape/__init__.py
+
+package: clean prepchangelog updateversion
+	debuild -b $(DEBUILD_OPTS)
+
+sourcepackage: clean origtarball prepchangelog updateversion
+	# need to remove sdist here because it doesn't exist in the
+	# orig tarball
+	rm -rf sdist
+	debuild -S $(DEBUILD_OPTS)
 
 MESSAGE_DIR = `pwd`/runclient-messages
 LOG_FILE = `pwd`/runclient.log
@@ -101,13 +117,16 @@ tags:
 etags:
 	-etags --languages=python -R .
 
-UPSTREAM_VERSION=$(shell python -c "from landscape import UPSTREAM_VERSION; print UPSTREAM_VERSION")
-sdist:
+sdist: clean
 	mkdir -p sdist
-	bzr export sdist/landscape-client-$(UPSTREAM_VERSION)
-	rm -rf sdist/landscape-client-$(UPSTREAM_VERSION)/debian
-	cd sdist && tar cfz landscape-client-$(UPSTREAM_VERSION).tar.gz landscape-client-$(UPSTREAM_VERSION)
-	cd sdist && md5sum landscape-client-$(UPSTREAM_VERSION).tar.gz > landscape-client-$(UPSTREAM_VERSION).tar.gz.md5
-	rm -rf sdist/landscape-client-$(UPSTREAM_VERSION)
+	# --uncommitted because we want any changes the developer might have made
+	# locally to be included in the package without having to commit
+	bzr export --uncommitted sdist/landscape-client-$(TARBALL_VERSION)
+	rm -rf sdist/landscape-client-$(TARBALL_VERSION)/debian
+	sed -i -e "s/^UPSTREAM_VERSION.*/UPSTREAM_VERSION = \"$(TARBALL_VERSION)\"/g" \
+		sdist/landscape-client-$(TARBALL_VERSION)/landscape/__init__.py
+	cd sdist && tar cfz landscape-client-$(TARBALL_VERSION).tar.gz landscape-client-$(TARBALL_VERSION)
+	cd sdist && md5sum landscape-client-$(TARBALL_VERSION).tar.gz > landscape-client-$(TARBALL_VERSION).tar.gz.md5
+	rm -rf sdist/landscape-client-$(TARBALL_VERSION)
 
 .PHONY: tags etags

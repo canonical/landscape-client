@@ -4,12 +4,13 @@ Priority: optional
 Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
 XSBC-Original-Maintainer: Landscape Team <landscape-team@canonical.com>
 Build-Depends: debhelper (>= 5), po-debconf, python-dev, python-central | python-support, lsb-release, gawk, python-twisted-core, python-distutils-extra
-Standards-Version: 3.8.0
+Standards-Version: 3.8.2
 XS-Python-Version: >= 2.4, << 2.8
 
 Package: landscape-common
 Architecture: any
 Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
+         ${shlibs:Depends},
          python-gnupginterface,
          python-twisted-core,
          python-apt,
@@ -33,9 +34,10 @@ XB-Python-Version: ${python:Versions}
 Package: landscape-client
 Architecture: any
 Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
+         ${shlibs:Depends},
          python-twisted-web,
          python-twisted-names,
-         landscape-common (= ${Source-Version})
+         landscape-common (= ${binary:Version})
 Suggests: ${extra:Suggests}
 Description: The Landscape administration system client
  Landscape is a web-based tool for managing Ubuntu systems. This
@@ -48,8 +50,8 @@ XB-Python-Version: ${python:Versions}
 Package: landscape-client-ui
 Architecture: any
 Depends: ${python:Depends}, ${misc:Depends},
-         landscape-client (= ${Source-Version}),
-         landscape-client-ui-install (= ${Source-Version}),
+         landscape-client (= ${binary:Version}),
+         landscape-client-ui-install (= ${binary:Version}),
          python-gi,
          python-dbus,
          policykit-1,
