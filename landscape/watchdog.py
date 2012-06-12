@@ -86,10 +86,19 @@ class Daemon(object):
         self._connector = connector
         self._reactor = reactor
         self._env = os.environ.copy()
-        if os.getuid() == 0:
+        my_uid = os.getuid()
+        if my_uid == 0:
             pwd_info = pwd.getpwnam(self.username)
-            self._uid = pwd_info.pw_uid
-            self._gid = pwd_info.pw_gid
+            target_uid = pwd_info.pw_uid
+            target_gid = pwd_info.pw_gid
+            if target_uid != my_uid:
+                self._uid = target_uid
+            else:
+                self._uid = None
+            if target_gid != os.getgid():
+                self._gid = target_gid
+            else:
+                self._gid = None
             self._env["HOME"] = pwd_info.pw_dir
             self._env["USER"] = self.username
             self._env["LOGNAME"] = self.username
