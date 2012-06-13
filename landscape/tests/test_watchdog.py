@@ -514,7 +514,12 @@ class DaemonTestBase(LandscapeTest):
         super(DaemonTestBase, self).tearDown()
 
     def get_daemon(self, **kwargs):
-        daemon = Daemon(self.connector, **kwargs)
+        if 'username' in kwargs:
+            class MyDaemon(Daemon):
+                username = kwargs.pop('username')
+        else:
+            MyDaemon = Daemon
+        daemon = MyDaemon(self.connector, **kwargs)
         daemon.program = os.path.basename(self.exec_name)
         daemon.factor = 0.01
         return daemon
@@ -833,8 +838,8 @@ time.sleep(999)
     def test_spawn_process_with_uid(self):
         """
         When the current UID as reported by os.getuid is not the uid of the
-        username of the daemon, the watchdog explicitly switched to the uid of
-        the username of the daemon. It also specified the gid as the primary
+        username of the daemon, the watchdog explicitly switches to the uid of
+        the username of the daemon. It also specifies the gid as the primary
         group of that user.
         """
         self.makeFile("", path=self.exec_name)
@@ -860,10 +865,10 @@ time.sleep(999)
         daemon = self.get_daemon(reactor=reactor)
         daemon.start()
 
-    def test_spawn_process_without_uid(self):
+    def test_spawn_process_without_root(self):
         """
-        If the daemon is specified to run as the current user, no uid or gid
-        switching will occur.
+        If the watchdog is not running as root, no uid or gid switching will
+        occur.
         """
         self.makeFile("", path=self.exec_name)
         getuid = self.mocker.replace("os.getuid")
@@ -875,6 +880,25 @@ time.sleep(999)
         self.mocker.replay()
 
         daemon = self.get_daemon(reactor=reactor)
+        daemon.start()
+
+    def test_spawn_process_same_uid(self):
+        """
+        If the daemon is specified to run as root, and the watchdog is running
+        as root, no uid or gid switching will occur.
+        """
+        self.makeFile("", path=self.exec_name)
+        getuid = self.mocker.replace("os.getuid")
+        self.expect(getuid()).result(0)
+        getgid = self.mocker.replace("os.getgid")
+        self.expect(getgid()).result(0)
+        reactor = self.mocker.mock()
+
+        reactor.spawnProcess(ARGS, KWARGS, uid=None, gid=None)
+
+        self.mocker.replay()
+
+        daemon = self.get_daemon(reactor=reactor, username="root")
         daemon.start()
 
     def test_request_exit(self):
