@@ -880,8 +880,8 @@ class AcceptedTypesMessageExchangeTest(LandscapeTest):
 
     def setUp(self):
         super(AcceptedTypesMessageExchangeTest, self).setUp()
-        self.pinger = Pinger(self.reactor, self.config.ping_url, self.identity,
-                             self.exchanger)
+        self.pinger = Pinger(self.reactor, self.identity, self.exchanger,
+                             self.config)
         # The __init__ method of RegistrationHandler registers a few default
         # message types that we want to catch as well
         self.handler = RegistrationHandler(

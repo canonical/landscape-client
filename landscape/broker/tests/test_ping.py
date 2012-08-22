@@ -125,25 +125,35 @@ class PingerTest(LandscapeTest):
 
     def setUp(self):
         super(PingerTest, self).setUp()
-        self.url = "http://localhost:8081/whatever"
+
+        class MockConfig(object):
+            ping_url = "http://localhost:8081/whatever"
+            ping_interval = 10
+            
+            def write(self):
+                pass
+        
+        self.config = MockConfig()
         self.page_getter = FakePageGetter(None)
 
         def factory(reactor, url, insecure_id):
             return PingClient(reactor, url, insecure_id,
                               get_page=self.page_getter.get_page)
         self.pinger = Pinger(self.broker_service.reactor,
-                             self.url, self.broker_service.identity,
+                             self.broker_service.identity,
                              self.broker_service.exchanger,
-                             interval=10, ping_client_factory=factory)
+                             self.config, ping_client_factory=factory)
 
     def test_default_ping_client(self):
         """
         The C{ping_client_factory} argument to L{Pinger} should be optional,
         and default to L{PingClient}.
         """
-        pinger = Pinger(self.broker_service.reactor, "http://foo.com/",
+        self.config.ping_url = "http://foo.com/"
+        pinger = Pinger(self.broker_service.reactor,
                         self.broker_service.identity,
-                        self.broker_service.exchanger)
+                        self.broker_service.exchanger,
+                        self.config)
         self.assertEqual(pinger.ping_client_factory, PingClient)
 
     def test_occasional_ping(self):
@@ -206,9 +216,11 @@ class PingerTest(LandscapeTest):
             def ping(self):
                 return fail(ZeroDivisionError("Couldn't fetch page"))
 
-        pinger = Pinger(self.broker_service.reactor, "http://foo.com/",
+        self.config.ping_url = "http://foo.com/"
+        pinger = Pinger(self.broker_service.reactor,
                         self.broker_service.identity,
                         self.broker_service.exchanger,
+                        self.config,
                         ping_client_factory=BadPingClient)
         pinger.start()
 

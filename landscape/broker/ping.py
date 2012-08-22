@@ -79,10 +79,10 @@ class Pinger(object):
         trigger exchanges with.
     """
 
-    def __init__(self, reactor, url, identity, exchanger,
-                 interval=30, ping_client_factory=PingClient):
-        self._url = url
-        self._interval = interval
+    def __init__(self, reactor, identity, exchanger, config,
+                 ping_client_factory=PingClient):
+        self._config = config
+        self._url = config.ping_url
         self._identity = identity
         self._reactor = reactor
         self._exchanger = exchanger
@@ -100,13 +100,14 @@ class Pinger(object):
             self._ping_client.url = url
 
     def get_interval(self):
-        return self._interval
+        return self._config.ping_interval
 
     def start(self):
         """Start pinging."""
         self._ping_client = self.ping_client_factory(
             self._reactor, self._url, self._identity)
-        self._call_id = self._reactor.call_every(self._interval, self.ping)
+        self._call_id = self._reactor.call_every(self._config.ping_interval,
+                                                 self.ping)
 
     def ping(self):
         """Perform a ping; if there are messages, fire an exchange."""
@@ -127,11 +128,14 @@ class Pinger(object):
 
     def _handle_set_intervals(self, message):
         if message["type"] == "set-intervals" and "ping" in message:
-            self._interval = message["ping"]
-            info("Ping interval set to %d seconds." % self._interval)
+            self._config.ping_interval = message["ping"]
+            self._config.write()
+            info("Ping interval set to %d seconds." %
+                 self._config.ping_interval)
         if self._call_id is not None:
             self._reactor.cancel_call(self._call_id)
-            self._call_id = self._reactor.call_every(self._interval, self.ping)
+            self._call_id = self._reactor.call_every(
+                self._config.ping_interval, self.ping)
 
 
 class FakePinger(object):

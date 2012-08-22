@@ -97,8 +97,8 @@ class RegistrationHelper(ExchangeHelper):
 
     def set_up(self, test_case):
         super(RegistrationHelper, self).set_up(test_case)
-        test_case.pinger = Pinger(test_case.reactor, test_case.config.ping_url,
-                                  test_case.identity, test_case.exchanger)
+        test_case.pinger = Pinger(test_case.reactor, test_case.identity,
+                                  test_case.exchanger, test_case.config)
 
         def fetch_func(*args, **kwargs):
             return test_case.fetch_func(*args, **kwargs)
