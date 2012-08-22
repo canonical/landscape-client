@@ -130,7 +130,8 @@ def get_flags(sock, interface):
     return struct.unpack("H", data[16:18])[0]
 
 
-def get_active_device_info(skipped_interfaces=("lo",)):
+def get_active_device_info(skipped_interfaces=("lo",),
+                           skip_vlan=True, skip_alias=True):
     """
     Returns a dictionary containing information on each active network
     interface present on a machine.
@@ -139,6 +140,10 @@ def get_active_device_info(skipped_interfaces=("lo",)):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_IP)
     for interface in get_active_interfaces(sock):
         if interface in skipped_interfaces:
+            continue
+        if skip_vlan and "." in interface:
+            continue
+        if skip_alias and ":" in interface:
             continue
         interface_info = {"interface": interface}
         interface_info["ip_address"] = get_ip_address(sock, interface)
