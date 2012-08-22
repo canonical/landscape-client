@@ -53,19 +53,23 @@ class NetworkInfoTest(LandscapeTest):
         """VLAN interfaces are not reported by L{get_active_device_info}."""
         mock_get_active_interfaces = self.mocker.replace(get_active_interfaces)
         mock_get_active_interfaces(ANY)
-        self.mocker.result(["eth0", "eth0.1", "eth0.2"])
+        self.mocker.passthrough(
+            result_callback=lambda result: list(result) + ["eth0.1"])
         self.mocker.replay()
         device_info = get_active_device_info()
-        self.assertEqual(["eth0"], [i["interface"] for i in device_info])
+        interfaces = [i["interface"] for i in device_info]
+        self.assertNotIn("eth0.1", interfaces)
 
     def test_skip_alias(self):
         """Interface aliases are not reported by L{get_active_device_info}."""
         mock_get_active_interfaces = self.mocker.replace(get_active_interfaces)
         mock_get_active_interfaces(ANY)
-        self.mocker.result(["eth0", "eth0:foo", "eth0:bar"])
+        self.mocker.passthrough(
+            result_callback=lambda result: list(result) + ["eth0:foo"])
         self.mocker.replay()
         device_info = get_active_device_info()
-        self.assertEqual(["eth0"], [i["interface"] for i in device_info])
+        interfaces = [i["interface"] for i in device_info]
+        self.assertNotIn("eth0:foo", interfaces)
 
     def test_duplicate_network_interfaces(self):
         """
