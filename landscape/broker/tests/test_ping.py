@@ -129,10 +129,10 @@ class PingerTest(LandscapeTest):
         class MockConfig(object):
             ping_url = "http://localhost:8081/whatever"
             ping_interval = 10
-            
+
             def write(self):
                 pass
-        
+
         self.config = MockConfig()
         self.page_getter = FakePageGetter(None)
 
