@@ -44,10 +44,32 @@ class NetworkInfoTest(LandscapeTest):
                 self.assertIn("MULTICAST", block)
 
     def test_skip_loopback(self):
-        """The C{lo} interface is reported by L{get_active_device_info}."""
+        """The C{lo} interface is not reported by L{get_active_device_info}."""
         device_info = get_active_device_info()
         interfaces = [i["interface"] for i in device_info]
         self.assertNotIn("lo", interfaces)
+
+    def test_skip_vlan(self):
+        """VLAN interfaces are not reported by L{get_active_device_info}."""
+        mock_get_active_interfaces = self.mocker.replace(get_active_interfaces)
+        mock_get_active_interfaces(ANY)
+        self.mocker.passthrough(
+            result_callback=lambda result: list(result) + ["eth0.1"])
+        self.mocker.replay()
+        device_info = get_active_device_info()
+        interfaces = [i["interface"] for i in device_info]
+        self.assertNotIn("eth0.1", interfaces)
+
+    def test_skip_alias(self):
+        """Interface aliases are not reported by L{get_active_device_info}."""
+        mock_get_active_interfaces = self.mocker.replace(get_active_interfaces)
+        mock_get_active_interfaces(ANY)
+        self.mocker.passthrough(
+            result_callback=lambda result: list(result) + ["eth0:foo"])
+        self.mocker.replay()
+        device_info = get_active_device_info()
+        interfaces = [i["interface"] for i in device_info]
+        self.assertNotIn("eth0:foo", interfaces)
 
     def test_duplicate_network_interfaces(self):
         """
