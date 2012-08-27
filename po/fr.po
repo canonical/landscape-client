@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2012-05-30 14:57-0300\n"
+"POT-Creation-Date: 2012-08-27 17:32+0200\n"
 "PO-Revision-Date: 2012-03-28 20:07+0100\n"
 "Last-Translator: Thomas Hervé <thomas.herve@canonical.com>\n"
 "Language-Team: français <>\n"
@@ -58,8 +58,8 @@ msgstr "Tentative de désactivation du client Landscape."
 
 #: ../landscape/ui/view/configuration.py:55
 #: ../applications/landscape-client-settings.desktop.in.h:1
-msgid "Management Service"
-msgstr "Service de gestion"
+msgid "Landscape Service"
+msgstr "Service Landscape"
 
 #: ../landscape/ui/view/configuration.py:124
 msgid "None"
@@ -105,8 +105,8 @@ msgid "Find out more..."
 msgstr "En apprendre plus..."
 
 #: ../landscape/ui/view/ui/landscape-client-settings.glade.h:3
-msgid "Management service:"
-msgstr "Service de gestion:"
+msgid "Landscape service:"
+msgstr "Nom d'hôte du serveur Landscape:"
 
 #: ../landscape/ui/view/ui/landscape-client-settings.glade.h:4
 msgid "Account name:"
@@ -138,8 +138,9 @@ msgstr ""
 "de dialogue."
 
 #: ../applications/landscape-client-settings.desktop.in.h:2
-msgid "Management Service Preferences"
-msgstr "Préférences du service de gestion"
+#, fuzzy
+msgid "Landscape Management Service Preferences"
+msgstr "Préférences du service de gestion Landscape"
 
 #: ../polkit-1/com.canonical.LandscapeClientSettings.policy.in.h:1
 msgid "Allow the user to read and write Landscape Client settings."
@@ -183,15 +184,3 @@ msgstr "Installer le client Landscape?"
 #: ../scripts/landscape-client-ui-install:62
 msgid "Install"
 msgstr "Installer"
-
-#~ msgid "Password:"
-#~ msgstr "Mot de passe:"
-
-#~ msgid ""
-#~ "Landscape is an easy to use systems management and monitoring service "
-#~ "offered by Canonical that helps administrators manage multiple machines "
-#~ "efficiently."
-#~ msgstr ""
-#~ "Landscape est un système de gestion et de surveillance proposé en tant "
-#~ "que service par Canonical, qui aide les administrateurs à gérer plusieurs "
-#~ "machine efficacement."
