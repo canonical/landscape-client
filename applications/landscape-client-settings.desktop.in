@@ -1,6 +1,6 @@
 [Desktop Entry]
-_Name=Management Service
-_Comment=Management Service Preferences
+_Name=Landscape Service
+_Comment=Landscape Management Service Preferences
 Exec=landscape-client-ui-install
 Icon=preferences-management-service
 Terminal=False

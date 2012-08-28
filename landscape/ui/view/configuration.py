@@ -52,7 +52,7 @@ class ClientSettingsDialog(Gtk.Dialog):
 
     def __init__(self, controller):
         super(ClientSettingsDialog, self).__init__(
-            title=_("Management Service"),
+            title=_("Landscape Service"),
             flags=Gtk.DialogFlags.MODAL)
         self.set_default_icon_name("preferences-management-service")
         self.set_resizable(False)
