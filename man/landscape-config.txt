@@ -70,6 +70,8 @@ OPTIONS
                            enter: ALL.
   --include-manager-plugins=PLUGINS   A comma-separated list of manager 
                            plugins to load.
+  --monitor-plugins=PLUGINS  A comma-separated list of monitor plugins to load.
+  --flush-interval         The number of seconds between flushes.
   -n, --no-start           Don't start the client automatically.
   --ok-no-register         Return exit code 0 instead of 2 if the client can't be
                            registered.
