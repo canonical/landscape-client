@@ -35,6 +35,7 @@ check_config () {
 		    if landscape-is-cloud-managed; then
 			    # Install the cloud default configuration file
 			    cp /usr/share/landscape/cloud-default.conf /etc/landscape/client.conf
+                cp /usr/share/landscape/example.conf /etc/landscape/example.conf
 			    # Override default file for not going in this conditional again at
 			    # next startup
 			    sed -i "s/^RUN=.*/RUN=1/" $LANDSCAPE_DEFAULTS
