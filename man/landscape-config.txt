@@ -52,7 +52,7 @@ OPTIONS
                            exchanges (default: 900).
   --urgent-exchange-interval=INTERVAL   The number of seconds between urgent
                            server exchanges (default: 60).
-  --ping-interval=INTERVAL The number of seconds between pings (default: 30)
+  --ping-interval=INTERVAL  The number of seconds between pings (default: 30).
   --ping-url=PING_URL      The URL to perform lightweight exchange initiation
                            with.
                            (default: 'http://landscape.canonical.com/ping').
