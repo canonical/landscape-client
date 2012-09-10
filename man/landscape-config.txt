@@ -52,6 +52,7 @@ OPTIONS
                            exchanges (default: 900).
   --urgent-exchange-interval=INTERVAL   The number of seconds between urgent
                            server exchanges (default: 60).
+  --ping-interval=INTERVAL The number of seconds between pings (default: 30)
   --ping-url=PING_URL      The URL to perform lightweight exchange initiation
                            with.
                            (default: 'http://landscape.canonical.com/ping').
@@ -68,6 +69,14 @@ OPTIONS
   --script-users=USERS     A comma-separated list of users to allow scripts to
                            run. To allow scripts to be run by any user, 
                            enter: ALL.
+  --server-autodiscovery=BOOLEAN    Wether to enable server autodiscovery or not.
+                           Defaults to "False".
+  --autodiscovery-srv-query-string=QUERY    The autodicovery string for DNS SRV
+                           queries. Defaults to "_landscape._tcp.localdomain".
+  --autodiscover-a-query-string=QUERY   The autodicovery string for DNS A queries.
+                           Defaults to "landscape.localdomain".
+  --manager-plugins=PLUGINS     A comma-separated list of manager plugins use.
+                           The default value "ALL" will load all plugins.
   --include-manager-plugins=PLUGINS   A comma-separated list of manager 
                            plugins to load.
   --monitor-plugins=PLUGINS  A comma-separated list of monitor plugins to load.
@@ -77,6 +86,8 @@ OPTIONS
                            registered.
   --silent                 Run without manual interaction.
   --disable                Stop running clients and disable start at boot.
+  --opt=OTP                The one-time passowrd (OTP) to use in cloud configuration.
+  --provsisioning-otp=OTP  The one-time passowrd (OTP) to use for a provisionned machine.
 
 CLOUD
 
