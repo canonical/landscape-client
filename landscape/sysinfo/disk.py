@@ -4,13 +4,8 @@ import os
 
 from twisted.internet.defer import succeed
 
-from landscape.lib.disk import get_mount_info, get_filesystem_for_path
-
-
-# List of filesystem types authorized when generating disk use statistics.
-STABLE_FILESYSTEMS = set(
-    ["ext", "ext2", "ext3", "ext4", "reiserfs", "ntfs", "msdos", "dos", "vfat",
-     "xfs", "hpfs", "jfs", "ufs", "hfs", "hfsplus"])
+from landscape.lib.disk import (get_mount_info, get_filesystem_for_path,
+STABLE_FILESYSTEMS)
 
 
 def format_megabytes(megabytes):

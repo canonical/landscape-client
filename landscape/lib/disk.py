@@ -4,6 +4,12 @@ import os
 import statvfs
 
 
+# List of filesystem types authorized when generating disk use statistics.
+STABLE_FILESYSTEMS = set(
+    ["ext", "ext2", "ext3", "ext4", "reiserfs", "ntfs", "msdos", "dos", "vfat",
+     "xfs", "hpfs", "jfs", "ufs", "hfs", "hfsplus"])
+
+
 def get_mount_info(mounts_file, statvfs_, filesystems_whitelist=None):
     """
     This is a generator that yields information about mounted filesystems.
@@ -18,6 +24,9 @@ def get_mount_info(mounts_file, statvfs_, filesystems_whitelist=None):
         is not available, C{None} is returned. Both C{total-space} and
         C{free-space} are in megabytes.
     """
+    if filesystems_whitelist is None:
+        filesystems_whitelist = STABLE_FILESYSTEMS
+
     for line in open(mounts_file):
         try:
             device, mount_point, filesystem = line.split()[:3]
