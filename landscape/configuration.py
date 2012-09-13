@@ -388,7 +388,7 @@ class LandscapeSetupScript(object):
             return
 
         self.show_help("You may provide tags for this computer e.g. "
-                       "server,hardy.")
+                       "server,precise.")
         while True:
             self.prompt("tags", "Tags", False)
             if self._get_invalid_tags(self.config.tags):
