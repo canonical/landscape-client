@@ -73,12 +73,8 @@ OPTIONS
                            queries. Defaults to "_landscape._tcp.localdomain".
   --autodiscover-a-query-string=QUERY   The autodicovery string for DNS A queries.
                            Defaults to "landscape.localdomain".
-  --manager-plugins=PLUGINS     A comma-separated list of manager plugins use.
-                           The default value "ALL" will load all plugins.
   --include-manager-plugins=PLUGINS   A comma-separated list of manager 
-                           plugins to load.
-  --monitor-plugins=PLUGINS  A comma-separated list of monitor plugins to load.
-  --flush-interval         The number of seconds between flushes.
+                           plugins to load explicitly.
   -n, --no-start           Don't start the client automatically.
   --ok-no-register         Return exit code 0 instead of 2 if the client can't be
                            registered.
