@@ -309,7 +309,8 @@ class Configuration(BaseConfiguration):
                           help="The server URL to connect to.")
         parser.add_option("--ping-url",
                           help="The URL to perform lightweight exchange "
-                               "initiation with.")
+                               "initiation with.",
+                          default="http://landscape.canonical.com/ping")
         parser.add_option("-k", "--ssl-public-key",
                           help="The public SSL key to verify the server. "
                                "Only used if the given URL is https.")
