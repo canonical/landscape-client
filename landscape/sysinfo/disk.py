@@ -4,15 +4,14 @@ import os
 
 from twisted.internet.defer import succeed
 
-from landscape.lib.disk import (get_mount_info, get_filesystem_for_path,
-STABLE_FILESYSTEMS)
+from landscape.lib.disk import (get_mount_info, get_filesystem_for_path)
 
 
 def format_megabytes(megabytes):
-    if megabytes >= 1024*1024:
-        return "%.2fTB" % (megabytes/(1024*1024))
+    if megabytes >= 1024 * 1024:
+        return "%.2fTB" % (megabytes / (1024 * 1024))
     elif megabytes >= 1024:
-        return "%.2fGB" % (megabytes/1024)
+        return "%.2fGB" % (megabytes / 1024)
     else:
         return "%dMB" % (megabytes)
 
@@ -34,12 +33,12 @@ class Disk(object):
 
     def run(self):
         main_info = get_filesystem_for_path("/home", self._mounts_file,
-                                            self._statvfs, STABLE_FILESYSTEMS)
+                                            self._statvfs)
         if main_info is not None:
             total = main_info["total-space"]
             if total <= 0:
                 root_main_info = get_filesystem_for_path(
-                    "/", self._mounts_file, self._statvfs, STABLE_FILESYSTEMS)
+                    "/", self._mounts_file, self._statvfs)
                 if root_main_info is not None:
                     total = root_main_info["total-space"]
                     main_info = root_main_info
@@ -54,8 +53,7 @@ class Disk(object):
 
         seen_mounts = set()
         seen_devices = set()
-        infos = list(get_mount_info(self._mounts_file, self._statvfs,
-                                    STABLE_FILESYSTEMS))
+        infos = list(get_mount_info(self._mounts_file, self._statvfs))
         infos.sort(key=lambda i: len(i["mount-point"]))
         for info in infos:
             total = info["total-space"]
