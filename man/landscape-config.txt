@@ -28,8 +28,6 @@ OPTIONS
   -c FILE, --config=FILE   Use config from this file (any command line options
                            override settings from the file) (default:
                            '/etc/landscape/client.conf').
-  --bus=BUS                Which DBUS bus to use. One of 'session' or 'system'
-                           (default: 'system').
   -d PATH, --data-path=PATH   The directory to store data files in (default:
                            '/var/lib/landscape/client').
   -q, --quiet              Do not log to the standard output.
@@ -69,7 +67,7 @@ OPTIONS
   --script-users=USERS     A comma-separated list of users to allow scripts to
                            run. To allow scripts to be run by any user, 
                            enter: ALL.
-  --server-autodiscovery=BOOLEAN    Wether to enable server autodiscovery or not.
+  --server-autodiscovery=BOOLEAN    Whether to enable server autodiscovery or not.
                            Defaults to "False".
   --autodiscovery-srv-query-string=QUERY    The autodicovery string for DNS SRV
                            queries. Defaults to "_landscape._tcp.localdomain".
