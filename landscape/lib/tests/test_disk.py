@@ -70,15 +70,6 @@ class DiskUtilitiesTest(LandscapeTest):
                                        self.mount_file, self.statvfs)
         self.assertEqual(info["mount-point"], "/foo")
 
-    def test_whitelist(self):
-        self.set_mount_points(["/"])
-        info = get_filesystem_for_path(
-            "/", self.mount_file, self.statvfs, ["ext3"])
-        self.assertIdentical(info, None)
-        info = get_filesystem_for_path(
-            "/", self.mount_file, self.statvfs, ["ext3", "ext4"])
-        self.assertNotIdentical(info, None)
-
     def test_ignore_unreadable_mount_point(self):
         """
         We should ignore mountpoints which are unreadable by the user who
