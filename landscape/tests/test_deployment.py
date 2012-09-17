@@ -328,7 +328,7 @@ class ConfigurationTest(LandscapeTest):
     def test_ping_url_default(self):
         """Ensure parse_args sets appropriate ping_url default."""
         options = self.parser.parse_args([])[0]
-        self.assertEqual(options.ping_url, None)
+        self.assertEqual(options.ping_url, "http://landscape.canonical.com/ping")
 
     def test_ssl_public_key_option(self):
         """Ensure options.ssl_public_key option can be read by parse_args."""

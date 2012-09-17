@@ -771,7 +771,6 @@ data_path = %s
             "account_name = \n"
             "computer_title = \n"
             "https_proxy = \n"
-            "ping_url = http://landscape.canonical.com/ping\n"
              % config.data_path)
 
     def test_silent_setup_without_computer_title(self):
