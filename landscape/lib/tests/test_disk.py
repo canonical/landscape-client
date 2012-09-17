@@ -1,6 +1,6 @@
 import os
 
-from landscape.lib.disk import get_filesystem_for_path
+from landscape.lib.disk import get_filesystem_for_path, get_mount_info
 from landscape.tests.helpers import LandscapeTest
 
 
@@ -32,7 +32,7 @@ class DiskUtilitiesTest(LandscapeTest):
         yield a permission denied error when inspected.
         """
         self.read_access = read_access
-        content = "\n".join("/dev/sda%d %s fsfs rw 0 0" % (i, point)
+        content = "\n".join("/dev/sda%d %s ext4 rw 0 0" % (i, point)
                             for i, point in enumerate(points))
         f = open(self.mount_file, "w")
         f.write(content)
@@ -70,15 +70,6 @@ class DiskUtilitiesTest(LandscapeTest):
                                        self.mount_file, self.statvfs)
         self.assertEqual(info["mount-point"], "/foo")
 
-    def test_whitelist(self):
-        self.set_mount_points(["/"])
-        info = get_filesystem_for_path(
-            "/", self.mount_file, self.statvfs, ["ext3"])
-        self.assertIdentical(info, None)
-        info = get_filesystem_for_path(
-            "/", self.mount_file, self.statvfs, ["ext3", "fsfs"])
-        self.assertNotIdentical(info, None)
-
     def test_ignore_unreadable_mount_point(self):
         """
         We should ignore mountpoints which are unreadable by the user who
@@ -88,3 +79,25 @@ class DiskUtilitiesTest(LandscapeTest):
         info = get_filesystem_for_path(
             "/secret", self.mount_file, self.statvfs)
         self.assertIdentical(info, None)
+
+    def test_ignore_unmounted_and_virtual_mountpoints(self):
+        """
+        Make sure autofs and virtual mountpoints are ignored. This is to
+        ensure non-regression on bug #1045374.
+        """
+        self.read_access = True
+        content = "\n".join(["auto_direct /opt/whatever autofs",
+                             "none /run/lock tmpfs",
+                             "proc /proc proc",
+                             "/dev/sda1 /home ext4"])
+
+        f = open(self.mount_file, "w")
+        f.write(content)
+        f.close()
+
+        self.stat_results["/home"] = (4096, 0, 1000, 500, 0, 0, 0, 0, 0)
+
+        result = [x for x in get_mount_info(self.mount_file, self.statvfs)]
+        expected = {"device": "/dev/sda1", "mount-point": "/home",
+                    "filesystem": "ext4", "total-space": 3, "free-space": 1}
+        self.assertEqual([expected], result)
