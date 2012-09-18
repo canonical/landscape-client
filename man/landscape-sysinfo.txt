@@ -28,37 +28,37 @@ administrator logging in to try to fix the problem causing the high load.
 OPTIONS
   --version             show program's version number and exit
   -h, --help            show this help message and exit
-  -c FILE, --config=FILE
+  -c FILE, --config=FILE    
                         Use config from this file (any command line options
                         override settings from the file) (default:
                         '/etc/landscape/client.conf').
-  -d PATH, --data-path=PATH
+  -d PATH, --data-path=PATH     
                         The directory to store data files in (default:
                         '/var/lib/landscape/client/').
   -q, --quiet           Do not log to the standard output.
-  -l FILE, --log-dir=FILE
+  -l FILE, --log-dir=FILE   
                         The directory to write log files to (default:
                         '/var/log/landscape').
-  --log-level=LOG_LEVEL
+  --log-level=LOG_LEVEL     
                         One of debug, info, warning, error or critical.
   -u URL, --url=URL     The server URL to connect to.
   --ping-url=PING_URL   The URL to perform lightweight exchange initiation
                         with.
-  -k SSL_PUBLIC_KEY, --ssl-public-key=SSL_PUBLIC_KEY
+  -k SSL_PUBLIC_KEY, --ssl-public-key=SSL_PUBLIC_KEY    
                         The public SSL key to verify the server. Only used if
                         the given URL is https.
-  --server-autodiscover=SERVER_AUTODISCOVER
+  --server-autodiscover=SERVER_AUTODISCOVER     
                         Enable server autodiscovery.
-  --autodiscover-srv-query-string=AUTODISCOVER_SRV_QUERY_STRING
+  --autodiscover-srv-query-string=AUTODISCOVER_SRV_QUERY_STRING     
                         autodiscovery string for DNS SRV queries
-  --autodiscover-a-query-string=AUTODISCOVER_A_QUERY_STRING
+  --autodiscover-a-query-string=AUTODISCOVER_A_QUERY_STRING     
                         autodiscovery string for DNS A queries
   --ignore-sigint       Ignore interrupt signals.
   --ignore-sigusr1      Ignore SIGUSR1 signal to rotate logs.
-  --sysinfo-plugins=PLUGIN_LIST
+  --sysinfo-plugins=PLUGIN_LIST     
                         Comma-delimited list of sysinfo plugins to use.
                         Default is to use all plugins.
-  --exclude-sysinfo-plugins=PLUGIN_LIST
+  --exclude-sysinfo-plugins=PLUGIN_LIST     
                         Comma-delimited list of sysinfo plugins to NOT use.
                         This always take precedence over plugins to include.
 
