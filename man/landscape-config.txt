@@ -81,7 +81,6 @@ OPTIONS
   --silent                 Run without manual interaction.
   --disable                Stop running clients and disable start at boot.
   --opt=OTP                The one-time passowrd (OTP) to use in cloud configuration.
-  --provsisioning-otp=OTP  The one-time passowrd (OTP) to use for a provisionned machine.
 
 CLOUD
 
