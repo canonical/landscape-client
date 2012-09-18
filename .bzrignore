@@ -25,6 +25,7 @@ debian/landscape-client-ui.substvars
 man/landscape-client.1
 man/landscape-config.1
 man/landscape-message.1
+man/landscape-sysinfo.1
 smart-update/smart-update
 apt-update/apt-update
 docs
