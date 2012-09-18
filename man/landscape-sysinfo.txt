@@ -77,3 +77,46 @@ without having to use the command line option, the following can be added to
 
     [sysinfo]
     exclude_sysinfo_plugins = Temperature, LandscapeLink
+
+
+EXAMPLES
+
+This is the default configuration with all plugins enabled:
+
+    $ landscape-sysinfo
+      System load:    0.66               Processes:             242
+      Usage of /home: 72.0% of 27.50GB   Users logged in:       1
+      Memory usage:   31%                IP address for wlan0:  10.0.1.6
+      Swap usage:     0%                 IP address for virbr0: 192.168.122.1
+      Temperature:    47 C
+
+      => There is 1 zombie process.
+
+      Graph this data and manage this system at https://landscape.canonical.com/
+
+If you want to disable the temperature and Landscape plugins, you could run it like this:
+
+    $ landscape-sysinfo --exclude-sysinfo-plugins=Temperature,LandscapeLink
+      System load:    1.08               Processes:             242
+      Usage of /home: 72.0% of 27.50GB   Users logged in:       1
+      Memory usage:   31%                IP address for wlan0:  10.0.1.6
+      Swap usage:     0%                 IP address for virbr0: 192.168.122.1
+
+      => There is 1 zombie process.
+
+FILES
+/etc/landscape/client.conf  
+
+Configuration FILE
+
+/var/log/landscape/sysinfo.log  
+
+Log file for when the tool is run as root. This file will usually be empty,
+unless something wrong happened. In that case, it will have more information
+about the problem.
+When a regular non-root user runs the tool, the log file is ~/.landscape/sysinfo.log.
+
+SEE ALSO
+landscape-client(1)
+update-motd(5)
+
