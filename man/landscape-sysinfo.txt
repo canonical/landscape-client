@@ -84,11 +84,9 @@ If you want to disable the temperature and Landscape plugins, you could run it l
 
 FILES
 /etc/landscape/client.conf  
-
-Configuration FILE
+Configuration file
 
 /var/log/landscape/sysinfo.log  
-
 Log file for when the tool is run as root. This file will usually be empty,
 unless something wrong happened. In that case, it will have more information
 about the problem.
