@@ -230,12 +230,17 @@ class BaseConfiguration(object):
         @return: An L{OptionParser} preset with options that all
             landscape-related programs accept. These include
               - C{config} (C{None})
+              - C{data_path} (C{"/var/lib/landscape/client/"})
         """
         parser = OptionParser(version=VERSION)
         parser.add_option("-c", "--config", metavar="FILE",
                           help="Use config from this file (any command line "
                                "options override settings from the file) "
                                "(default: '/etc/landscape/client.conf').")
+        parser.add_option("-d", "--data-path", metavar="PATH",
+                          default="/var/lib/landscape/client/",
+                          help="The directory to store data files in "
+                               "(default: '/var/lib/landscape/client/').")
         return parser
 
     def get_config_filename(self):
@@ -278,7 +283,6 @@ class Configuration(BaseConfiguration):
 
         @return: An L{OptionParser} preset for all options
             from L{BaseConfiguration.make_parser} plus:
-              - C{data_path} (C{"/var/lib/landscape/client/"})
               - C{quiet} (C{False})
               - C{log_dir} (C{"/var/log/landscape"})
               - C{log_level} (C{"info"})
@@ -292,10 +296,6 @@ class Configuration(BaseConfiguration):
               - C{ignore_sigint} (C{False})
         """
         parser = super(Configuration, self).make_parser()
-        parser.add_option("-d", "--data-path", metavar="PATH",
-                          default="/var/lib/landscape/client/",
-                          help="The directory to store data files in "
-                               "(default: '/var/lib/landscape/client/').")
         parser.add_option("-q", "--quiet", default=False, action="store_true",
                           help="Do not log to the standard output.")
         parser.add_option("-l", "--log-dir", metavar="FILE",
