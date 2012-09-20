@@ -26,15 +26,11 @@ OPTIONS
   --version                Show program's version number and exit.
   -h, --help               Show this help message and exit.
   -c FILE, --config=FILE   Use config from this file (any command line options
-                           override settings from the file) (default:
-                           '/etc/landscape/client.conf').
-  -d PATH, --data-path=PATH   The directory to store data files in (default:
-                           '/var/lib/landscape/client').
+                           override settings from the file) (default: '/etc/landscape/client.conf').
+  -d PATH, --data-path=PATH   The directory to store data files in (default: '/var/lib/landscape/client').
   -q, --quiet              Do not log to the standard output.
-  -l FILE, --log-dir=FILE   The directory to write log files to (default:
-                           '/var/log/landscape').
-  --log-level=LOG_LEVEL    One of 'debug', 'info', 'warning', 'error' or 
-                           'critical' (default: 'info').
+  -l FILE, --log-dir=FILE   The directory to write log files to (default: '/var/log/landscape').
+  --log-level=LOG_LEVEL    One of 'debug', 'info', 'warning', 'error' or 'critical' (default: 'info').
   --ignore-sigint          Ignore interrupt signals.
   --ignore-sigusr1         Ignore SIGUSR1 signal to rotate logs.
   -a NAME, --account-name=NAME   The account this computer belongs to.

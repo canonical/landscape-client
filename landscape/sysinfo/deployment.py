@@ -7,7 +7,7 @@ from logging.handlers import RotatingFileHandler
 from twisted.python.reflect import namedClass
 from twisted.internet.defer import Deferred, maybeDeferred
 
-from landscape.deployment import Configuration
+from landscape.deployment import BaseConfiguration
 from landscape.sysinfo.sysinfo import SysInfoPluginRegistry, format_sysinfo
 
 
@@ -15,7 +15,7 @@ ALL_PLUGINS = ["Load", "Disk", "Memory", "Temperature", "Processes",
                "LoggedInUsers", "LandscapeLink", "Network"]
 
 
-class SysInfoConfiguration(Configuration):
+class SysInfoConfiguration(BaseConfiguration):
     """Specialized configuration for the Landscape sysinfo tool."""
 
     default_config_filenames = ("/etc/landscape/client.conf",)
