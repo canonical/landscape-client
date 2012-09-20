@@ -26,15 +26,12 @@ OPTIONS
   --version                Show program's version number and exit.
   -h, --help               Show this help message and exit.
   -c FILE, --config=FILE   Use config from this file (any command line options
-                           override settings from the file) (default:
-                           '/etc/landscape/client.conf').
+                           override settings from the file) (default: '/etc/landscape/client.conf').
   --bus=BUS                Which DBUS bus to use. One of 'session' or 'system'
                            (default: 'system').
-  -d PATH, --data-path=PATH   The directory to store data files in (default:
-                           '/var/lib/landscape/client').
+  -d PATH, --data-path=PATH   The directory to store data files in (default: '/var/lib/landscape/client').
   -q, --quiet              Do not log to the standard output.
-  -l FILE, --log-dir=FILE   The directory to write log files to (default:
-                           '/var/log/landscape').
+  -l FILE, --log-dir=FILE   The directory to write log files to (default: '/var/log/landscape').
   --log-level=LOG_LEVEL    One of 'debug', 'info', 'warning', 'error' or 
                            'critical' (default: 'info').
   --ignore-sigint          Ignore interrupt signals.
