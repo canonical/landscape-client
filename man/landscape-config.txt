@@ -30,8 +30,7 @@ OPTIONS
   -d PATH, --data-path=PATH   The directory to store data files in (default: '/var/lib/landscape/client').
   -q, --quiet              Do not log to the standard output.
   -l FILE, --log-dir=FILE   The directory to write log files to (default: '/var/log/landscape').
-  --log-level=LOG_LEVEL    One of 'debug', 'info', 'warning', 'error' or 
-                           'critical' (default: 'info').
+  --log-level=LOG_LEVEL    One of 'debug', 'info', 'warning', 'error' or 'critical' (default: 'info').
   --ignore-sigint          Ignore interrupt signals.
   --ignore-sigusr1         Ignore SIGUSR1 signal to rotate logs.
   -a NAME, --account-name=NAME   The account this computer belongs to.
