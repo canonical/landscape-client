@@ -43,3 +43,21 @@ class HardwareInfoTests(LandscapeTest):
                 [{"data": u"-xml -quiet\n", "type": "hardware-info"}])
 
         return deferred.addCallback(check)
+
+    def test_only_on_register(self):
+        """
+        C{call_on_accepted} is only called at register time, to not accumulate
+        callbacks to the "message-type-acceptance-changed" event.
+        """
+        calls = []
+        self.info.call_on_accepted = lambda x, y: calls.append((x, y))
+
+        deferred = self.info.run()
+
+        def check(ignored):
+            self.assertMessages(
+                self.broker_service.message_store.get_pending_messages(),
+                [{"data": u"-xml -quiet\n", "type": "hardware-info"}])
+            self.assertEqual([], calls)
+
+        return deferred.addCallback(check)

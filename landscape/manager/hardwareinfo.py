@@ -13,10 +13,13 @@ class HardwareInfo(ManagerPlugin):
     run_immediately = True
     command = "/usr/bin/lshw"
 
-    def run(self):
+    def register(self, registry):
+        super(HardwareInfo, self).register(registry)
         self.call_on_accepted(self.message_type, self.send_message)
+
+    def run(self):
         return self.registry.broker.call_if_accepted(
-                self.message_type, self.send_message)
+            self.message_type, self.send_message)
 
     def send_message(self):
         result = getProcessOutput(
