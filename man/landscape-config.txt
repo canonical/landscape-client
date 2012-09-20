@@ -27,8 +27,6 @@ OPTIONS
   -h, --help               Show this help message and exit.
   -c FILE, --config=FILE   Use config from this file (any command line options
                            override settings from the file) (default: '/etc/landscape/client.conf').
-  --bus=BUS                Which DBUS bus to use. One of 'session' or 'system'
-                           (default: 'system').
   -d PATH, --data-path=PATH   The directory to store data files in (default: '/var/lib/landscape/client').
   -q, --quiet              Do not log to the standard output.
   -l FILE, --log-dir=FILE   The directory to write log files to (default: '/var/log/landscape').
@@ -49,6 +47,7 @@ OPTIONS
                            exchanges (default: 900).
   --urgent-exchange-interval=INTERVAL   The number of seconds between urgent
                            server exchanges (default: 60).
+  --ping-interval=INTERVAL  The number of seconds between pings (default: 30).
   --ping-url=PING_URL      The URL to perform lightweight exchange initiation
                            with.
                            (default: 'http://landscape.canonical.com/ping').
@@ -65,13 +64,20 @@ OPTIONS
   --script-users=USERS     A comma-separated list of users to allow scripts to
                            run. To allow scripts to be run by any user, 
                            enter: ALL.
+  --server-autodiscovery=BOOLEAN    Whether to enable server autodiscovery or not.
+                           Defaults to "False".
+  --autodiscovery-srv-query-string=QUERY    The autodicovery string for DNS SRV
+                           queries. Defaults to "_landscape._tcp.localdomain".
+  --autodiscover-a-query-string=QUERY   The autodicovery string for DNS A queries.
+                           Defaults to "landscape.localdomain".
   --include-manager-plugins=PLUGINS   A comma-separated list of manager 
-                           plugins to load.
+                           plugins to load explicitly.
   -n, --no-start           Don't start the client automatically.
   --ok-no-register         Return exit code 0 instead of 2 if the client can't be
                            registered.
   --silent                 Run without manual interaction.
   --disable                Stop running clients and disable start at boot.
+  --opt=OTP                The one-time passowrd (OTP) to use in cloud configuration.
 
 CLOUD
 

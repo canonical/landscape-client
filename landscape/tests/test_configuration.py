@@ -565,7 +565,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.mocker.order()
         script_mock = self.mocker.patch(self.script)
         script_mock.show_help("You may provide tags for this computer e.g. "
-                              "server,hardy.")
+                              "server,precise.")
         script_mock.prompt("tags", "Tags", False)
         self.mocker.replay()
         self.script.query_tags()
@@ -578,7 +578,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         """
         script_mock = self.mocker.patch(self.script)
         script_mock.show_help("You may provide tags for this computer e.g. "
-                              "server,hardy.")
+                              "server,precise.")
         script_mock.prompt_get_input("Tags: ", False)
         self.mocker.result(u"<script>alert();</script>")
         script_mock.show_help("Tag names may only contain alphanumeric "
