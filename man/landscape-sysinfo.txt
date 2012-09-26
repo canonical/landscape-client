@@ -12,10 +12,6 @@ on. This information is displayed upon login for console users
 (ssh and terminal login supported) and can also be seen at anytime
 by just calling landscape-sysinfo from the command line.
 
-The information displayed at login time is updated by update-motd. On
-systems where update-motd is not available, such as Ubuntu Dapper or
-Hardy, the output of landscape-sysinfo is not included.
-
 The output of landscape-sysinfo can be controlled by enabling or
 disabling its plugins. See below how to do that.
 
