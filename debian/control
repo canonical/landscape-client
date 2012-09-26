@@ -22,7 +22,8 @@ Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          bc,
          lshw
 Suggests: ${extra:Suggests}
-Replaces: landscape-client (<= 1.0.23-0ubuntu0.8.10)
+Breaks: landscape-client (<< 12.09+bzr582)
+Replaces: landscape-client (<< 12.09+bzr582)
 Description: The Landscape administration system client - Common files
  Landscape is a web-based tool for managing Ubuntu systems. This
  package is necessary if you want your machine to be managed in a
