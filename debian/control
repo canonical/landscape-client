@@ -22,7 +22,12 @@ Depends: ${python:Depends}, ${misc:Depends}, ${extra:Depends},
          bc,
          lshw
 Suggests: ${extra:Suggests}
-Replaces: landscape-client (<= 1.0.23-0ubuntu0.8.10)
+# added/changed when we moved the sysinfo manpage from client to common
+# in r582. There is no accompaining "Breaks" because -client requires
+# the exact same version of -common, which will trigger the upgrade
+# and avoid the case discussed in
+# http://www.debian.org/doc/debian-policy/footnotes.html#f53
+Replaces: landscape-client (<< 12.09+bzr582)
 Description: The Landscape administration system client - Common files
  Landscape is a web-based tool for managing Ubuntu systems. This
  package is necessary if you want your machine to be managed in a
