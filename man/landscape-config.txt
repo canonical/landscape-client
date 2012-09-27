@@ -37,8 +37,7 @@ OPTIONS
   -p KEY, --registration-key=KEY  The account-wide key 
                            used for registering clients.
   -t TITLE, --computer-title=TITLE   The title of this computer.
-  -u URL, --url=URL        The server URL to connect to (default:
-                           'https://landscape.canonical.com/message-system').
+  -u URL, --url=URL        The server URL to connect to (default: 'https://landscape.canonical.com/message-system').
   -k SSL_PUBLIC_KEY, --ssl-public-key=SSL_PUBLIC_KEY   The SSL CA certificate to 
                            verify the server with. Only used if the server URL
                            to which we connect is https.
@@ -48,8 +47,7 @@ OPTIONS
                            server exchanges (default: 60).
   --ping-interval=INTERVAL  The number of seconds between pings (default: 30).
   --ping-url=PING_URL      The URL to perform lightweight exchange initiation
-                           with.
-                           (default: 'http://landscape.canonical.com/ping').
+                           with (default: 'http://landscape.canonical.com/ping').
   --http-proxy=URL         The URL of the HTTP proxy, if one is needed.
   --https-proxy=URL        The URL of the HTTPS proxy, if one is needed.
   --cloud                  Set this if this computer is a cloud instance in
