@@ -106,13 +106,13 @@ class ProcessInfoTest(LandscapeTest):
         self._add_process_info(12, state="T (tracing stop)")
         process_info = ProcessInformation(self.proc_dir)
         info = process_info.get_process_info(12)
-        self.assertEqual("I", info["state"])
+        self.assertEqual("t", info["state"])
 
     def test_get_process_info_state_tracing_stop(self):
         self._add_process_info(12, state="t (tracing stop)")
         process_info = ProcessInformation(self.proc_dir)
         info = process_info.get_process_info(12)
-        self.assertEqual("I", info["state"])
+        self.assertEqual("t", info["state"])
 
     def test_get_process_info_state_dead(self):
         self._add_process_info(12, state="X (dead)")
