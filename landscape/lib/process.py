@@ -57,8 +57,8 @@ class ProcessInformation(object):
             file = open(os.path.join(process_dir, "cmdline"), "r")
             try:
                 # cmdline is a \0 separated list of strings
-                # We take the first, and then strip off the path, leaving us with
-                # the basename.
+                # We take the first, and then strip off the path, leaving
+                # us with the basename.
                 cmd_line = file.readline()
                 cmd_line_name = os.path.basename(cmd_line.split("\0")[0])
             finally:
@@ -95,14 +95,14 @@ class ProcessInformation(object):
             file = open(os.path.join(process_dir, "stat"), "r")
             try:
                 # These variable names are lifted directly from proc(5)
-                # utime: The number of jiffies that this process has been scheduled in
-                # user mode.
-                # stime: The number of jiffies that this process has been scheduled in
-                # kernel mode.
-                # cutime: The number of jiffies that this process's waited-for children
-                # have been scheduled in user mode.
-                # cstime: The number of jiffies that this process's waited-for children
-                # have been scheduled in kernel mode.
+                # utime: The number of jiffies that this process has been
+                #        scheduled in user mode.
+                # stime: The number of jiffies that this process has been
+                #        scheduled in kernel mode.
+                # cutime: The number of jiffies that this process's waited-for
+                #         children have been scheduled in user mode.
+                # cstime: The number of jiffies that this process's waited-for
+                #         children have been scheduled in kernel mode.
                 parts = file.read().split()
                 start_time = int(parts[21])
                 utime = int(parts[13])
@@ -113,9 +113,11 @@ class ProcessInformation(object):
                 process_info["percent-cpu"] = pcpu
                 delta = timedelta(0, start_time // self._jiffies_per_sec)
                 if self._boot_time is None:
-                   logging.warning("Skipping process (PID %s) without boot time.")
-                   return None
-                process_info["start-time"] = to_timestamp(self._boot_time  + delta)
+                    logging.warning(
+                        "Skipping process (PID %s) without boot time.")
+                    return None
+                process_info["start-time"] = to_timestamp(
+                    self._boot_time + delta)
             finally:
                 file.close()
 
