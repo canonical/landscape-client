@@ -10,15 +10,6 @@ from landscape.lib.jiffies import detect_jiffies
 from landscape.monitor.computeruptime import BootTimes, get_uptime
 
 
-STATES = {"R (running)": "R",
-          "D (disk sleep)": "D",
-          "S (sleeping)": "S",
-          "T (stopped)": "T",
-          "T (tracing stop)": "I",
-          "X (dead)": "X",
-          "Z (zombie)": "Z"}
-
-
 class ProcessInformation(object):
     """
     @param proc_dir: The directory to use for process information.
@@ -82,7 +73,10 @@ class ProcessInformation(object):
                                                 parts[1].strip())
                     elif parts[0] == "State":
                         state = parts[1].strip()
-                        process_info["state"] = STATES[state]
+                        if state.lower() == "t (tracing stop)":
+                            process_info["state"] = "I"
+                        else:
+                            process_info["state"] = state[0]
                     elif parts[0] == "Uid":
                         value_parts = parts[1].split()
                         process_info["uid"] = int(value_parts[0])

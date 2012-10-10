@@ -102,8 +102,14 @@ class ProcessInfoTest(LandscapeTest):
         info = process_info.get_process_info(12)
         self.assertEqual("T", info["state"])
 
-    def test_get_process_info_state_tracing_stop(self):
+    def test_get_process_info_state_tracing_stop_lucid(self):
         self._add_process_info(12, state="T (tracing stop)")
+        process_info = ProcessInformation(self.proc_dir)
+        info = process_info.get_process_info(12)
+        self.assertEqual("I", info["state"])
+
+    def test_get_process_info_state_tracing_stop(self):
+        self._add_process_info(12, state="t (tracing stop)")
         process_info = ProcessInformation(self.proc_dir)
         info = process_info.get_process_info(12)
         self.assertEqual("I", info["state"])
@@ -119,6 +125,12 @@ class ProcessInfoTest(LandscapeTest):
         process_info = ProcessInformation(self.proc_dir)
         info = process_info.get_process_info(12)
         self.assertEqual("Z", info["state"])
+
+    def test_get_process_info_state_new(self):
+        self._add_process_info(12, state="N (new state)")
+        process_info = ProcessInformation(self.proc_dir)
+        info = process_info.get_process_info(12)
+        self.assertEqual("N", info["state"])
 
 
 class CalculatePCPUTest(unittest.TestCase):
