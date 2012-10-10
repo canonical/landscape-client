@@ -73,9 +73,9 @@ class ProcessInformation(object):
                                                 parts[1].strip())
                     elif parts[0] == "State":
                         state = parts[1].strip()
-                        # In Lucid, captial T is used for both tracing
-                        # stop and stopped are both. Starting with
-                        # Natty, lowercase t is used for tracing stop.
+                        # In Lucid, capital T is used for both tracing stop
+                        # and stopped. Starting with Natty, lowercase t is
+                        # used for tracing stop.
                         if state == "T (tracing stop)":
                             state = state.lower()
                         process_info["state"] = state[0]
