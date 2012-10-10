@@ -1,11 +1,37 @@
 import unittest
+import os
 
 from landscape.tests.helpers import LandscapeTest
 
 from landscape.lib.process import calculate_pcpu, ProcessInformation
+from landscape.lib.fs import create_file
 
 
 class ProcessInfoTest(LandscapeTest):
+
+    def setUp(self):
+        super(ProcessInfoTest, self).setUp()
+        self.proc_dir = self.makeDir()
+
+    def _add_process_info(self, process_id, state="R (running)"):
+        process_dir = os.path.join(self.proc_dir, str(process_id))
+        os.mkdir(process_dir)
+
+        cmd_line = "/usr/bin/foo"
+        create_file(os.path.join(process_dir, "cmdline"), cmd_line)
+
+        status = "\n".join([
+            "Name: foo",
+            "State: %s" % state,
+            "Uid: 1000",
+            "Gid: 2000",
+            "VmSize: 3000",
+            "Ignored: value"])
+        create_file(os.path.join(process_dir, "status"), status)
+
+        stat_array = [str(index) for index in range(44)]
+        stat = " ".join(stat_array)
+        create_file(os.path.join(process_dir, "stat"), stat)
 
     def test_missing_process_race(self):
         """
@@ -51,6 +77,48 @@ class ProcessInfoTest(LandscapeTest):
         self.assertEqual(processes, [])
         self.assertTrue(fakefile1.closed)
         self.assertTrue(fakefile2.closed)
+
+    def test_get_process_info_state_running(self):
+        self._add_process_info(12, state="R (running)")
+        process_info = ProcessInformation(self.proc_dir)
+        info = process_info.get_process_info(12)
+        self.assertEqual("R", info["state"])
+
+    def test_get_process_info_state_disk_sleep(self):
+        self._add_process_info(12, state="D (disk sleep)")
+        process_info = ProcessInformation(self.proc_dir)
+        info = process_info.get_process_info(12)
+        self.assertEqual("D", info["state"])
+
+    def test_get_process_info_state_sleeping(self):
+        self._add_process_info(12, state="S (sleeping)")
+        process_info = ProcessInformation(self.proc_dir)
+        info = process_info.get_process_info(12)
+        self.assertEqual("S", info["state"])
+
+    def test_get_process_info_state_stopped(self):
+        self._add_process_info(12, state="T (stopped)")
+        process_info = ProcessInformation(self.proc_dir)
+        info = process_info.get_process_info(12)
+        self.assertEqual("T", info["state"])
+
+    def test_get_process_info_state_tracing_stop(self):
+        self._add_process_info(12, state="T (tracing stop)")
+        process_info = ProcessInformation(self.proc_dir)
+        info = process_info.get_process_info(12)
+        self.assertEqual("I", info["state"])
+
+    def test_get_process_info_state_dead(self):
+        self._add_process_info(12, state="X (dead)")
+        process_info = ProcessInformation(self.proc_dir)
+        info = process_info.get_process_info(12)
+        self.assertEqual("X", info["state"])
+
+    def test_get_process_info_state_zombie(self):
+        self._add_process_info(12, state="Z (zombie)")
+        process_info = ProcessInformation(self.proc_dir)
+        info = process_info.get_process_info(12)
+        self.assertEqual("Z", info["state"])
 
 
 class CalculatePCPUTest(unittest.TestCase):
