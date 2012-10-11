@@ -122,7 +122,7 @@ class ActiveProcessInfoTest(LandscapeTest):
         expected_process_1 = {"state": "T", "gid": 1000, "pid": 671,
                               "vm-size": 11676, "name": "blargh", "uid": 1000,
                               "start-time": 111, "percent-cpu": 0.0}
-        expected_process_2 = {"state": "I", "gid": 1000, "pid": 672,
+        expected_process_2 = {"state": "t", "gid": 1000, "pid": 672,
                               "vm-size": 11676, "name": "blarpy", "uid": 1000,
                               "start-time": 112, "percent-cpu": 0.0}
         processes = message["add-processes"]
@@ -213,7 +213,7 @@ class ActiveProcessInfoTest(LandscapeTest):
                               "vm-size": 11676, "name": "blargh",
                               "uid": 1000, "start-time": 102,
                               "percent-cpu": 0.0}
-        expected_process_2 = {"state": "I", "gid": 1000, "pid": 672,
+        expected_process_2 = {"state": "t", "gid": 1000, "pid": 672,
                               "vm-size": 11676, "name": "blarpy",
                               "uid": 1000, "start-time": 104,
                               "percent-cpu": 0.0}
@@ -376,7 +376,7 @@ class ActiveProcessInfoTest(LandscapeTest):
                                 "name": u"blarpy",
                                 "pid": 672,
                                 "start-time": 112,
-                                "state": "I",
+                                "state": "t",
                                 "uid": 1000,
                                 "vm-size": 11676,
                                 "percent-cpu": 0.0},
