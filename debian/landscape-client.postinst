@@ -82,6 +82,7 @@ END
         else
             # Fix non-private permissions
             chmod 0600 $CONFIG_FILE
+            chown landscape $CONFIG_FILE
         fi
 
         # old monolithic clients have a single persist data file and a single
