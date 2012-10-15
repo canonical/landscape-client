@@ -1,11 +1,43 @@
 import unittest
+import os
 
 from landscape.tests.helpers import LandscapeTest
 
 from landscape.lib.process import calculate_pcpu, ProcessInformation
+from landscape.lib.fs import create_file
 
 
 class ProcessInfoTest(LandscapeTest):
+
+    def setUp(self):
+        super(ProcessInfoTest, self).setUp()
+        self.proc_dir = self.makeDir()
+
+    def _add_process_info(self, process_id, state="R (running)"):
+        """Add information about a process.
+
+        The cmdline, status and stat files will be created in the
+        process directory, so that get_process_info can get the required
+        information.
+        """
+        process_dir = os.path.join(self.proc_dir, str(process_id))
+        os.mkdir(process_dir)
+
+        cmd_line = "/usr/bin/foo"
+        create_file(os.path.join(process_dir, "cmdline"), cmd_line)
+
+        status = "\n".join([
+            "Name: foo",
+            "State: %s" % state,
+            "Uid: 1000",
+            "Gid: 2000",
+            "VmSize: 3000",
+            "Ignored: value"])
+        create_file(os.path.join(process_dir, "status"), status)
+
+        stat_array = [str(index) for index in range(44)]
+        stat = " ".join(stat_array)
+        create_file(os.path.join(process_dir, "stat"), stat)
 
     def test_missing_process_race(self):
         """
@@ -51,6 +83,41 @@ class ProcessInfoTest(LandscapeTest):
         self.assertEqual(processes, [])
         self.assertTrue(fakefile1.closed)
         self.assertTrue(fakefile2.closed)
+
+    def test_get_process_info_state(self):
+        """
+        C{get_process_info} reads the process state from the status file
+        and uses the first character to represent the process state.
+        """
+        self._add_process_info(12, state="A (some state)")
+        process_info = ProcessInformation(self.proc_dir)
+        info = process_info.get_process_info(12)
+        self.assertEqual("A", info["state"])
+
+    def test_get_process_info_state_preserves_case(self):
+        """
+        C{get_process_info} retains the case of the process state, since
+        for example both x and X can be different states.
+        """
+        self._add_process_info(12, state="a (some state)")
+        process_info = ProcessInformation(self.proc_dir)
+        info = process_info.get_process_info(12)
+        self.assertEqual("a", info["state"])
+
+    def test_get_process_info_state_tracing_stop_lucid(self):
+        """
+        In Lucid, capital T was used for both stopped and tracing stop.
+        From Natty and onwards lowercase t is used for tracing stop, so
+        we special-case that state and always return lowercase t for
+        tracing stop.
+        """
+        self._add_process_info(12, state="T (tracing stop)")
+        self._add_process_info(13, state="t (tracing stop)")
+        process_info = ProcessInformation(self.proc_dir)
+        info1 = process_info.get_process_info(12)
+        info2 = process_info.get_process_info(12)
+        self.assertEqual("t", info1["state"])
+        self.assertEqual("t", info2["state"])
 
 
 class CalculatePCPUTest(unittest.TestCase):

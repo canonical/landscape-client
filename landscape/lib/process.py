@@ -10,15 +10,6 @@ from landscape.lib.jiffies import detect_jiffies
 from landscape.monitor.computeruptime import BootTimes, get_uptime
 
 
-STATES = {"R (running)": "R",
-          "D (disk sleep)": "D",
-          "S (sleeping)": "S",
-          "T (stopped)": "T",
-          "T (tracing stop)": "I",
-          "X (dead)": "X",
-          "Z (zombie)": "Z"}
-
-
 class ProcessInformation(object):
     """
     @param proc_dir: The directory to use for process information.
@@ -66,8 +57,8 @@ class ProcessInformation(object):
             file = open(os.path.join(process_dir, "cmdline"), "r")
             try:
                 # cmdline is a \0 separated list of strings
-                # We take the first, and then strip off the path, leaving us with
-                # the basename.
+                # We take the first, and then strip off the path, leaving
+                # us with the basename.
                 cmd_line = file.readline()
                 cmd_line_name = os.path.basename(cmd_line.split("\0")[0])
             finally:
@@ -82,7 +73,12 @@ class ProcessInformation(object):
                                                 parts[1].strip())
                     elif parts[0] == "State":
                         state = parts[1].strip()
-                        process_info["state"] = STATES[state]
+                        # In Lucid, capital T is used for both tracing stop
+                        # and stopped. Starting with Natty, lowercase t is
+                        # used for tracing stop.
+                        if state == "T (tracing stop)":
+                            state = state.lower()
+                        process_info["state"] = state[0]
                     elif parts[0] == "Uid":
                         value_parts = parts[1].split()
                         process_info["uid"] = int(value_parts[0])
@@ -99,14 +95,14 @@ class ProcessInformation(object):
             file = open(os.path.join(process_dir, "stat"), "r")
             try:
                 # These variable names are lifted directly from proc(5)
-                # utime: The number of jiffies that this process has been scheduled in
-                # user mode.
-                # stime: The number of jiffies that this process has been scheduled in
-                # kernel mode.
-                # cutime: The number of jiffies that this process's waited-for children
-                # have been scheduled in user mode.
-                # cstime: The number of jiffies that this process's waited-for children
-                # have been scheduled in kernel mode.
+                # utime: The number of jiffies that this process has been
+                #        scheduled in user mode.
+                # stime: The number of jiffies that this process has been
+                #        scheduled in kernel mode.
+                # cutime: The number of jiffies that this process's waited-for
+                #         children have been scheduled in user mode.
+                # cstime: The number of jiffies that this process's waited-for
+                #         children have been scheduled in kernel mode.
                 parts = file.read().split()
                 start_time = int(parts[21])
                 utime = int(parts[13])
@@ -117,9 +113,11 @@ class ProcessInformation(object):
                 process_info["percent-cpu"] = pcpu
                 delta = timedelta(0, start_time // self._jiffies_per_sec)
                 if self._boot_time is None:
-                   logging.warning("Skipping process (PID %s) without boot time.")
-                   return None
-                process_info["start-time"] = to_timestamp(self._boot_time  + delta)
+                    logging.warning(
+                        "Skipping process (PID %s) without boot time.")
+                    return None
+                process_info["start-time"] = to_timestamp(
+                    self._boot_time + delta)
             finally:
                 file.close()
 
