@@ -144,6 +144,9 @@ class BaseConfiguration(object):
         # Parse configuration file, if found.
         if self.config:
             if os.path.isfile(self.config):
+                if not os.access(self.config, os.R_OK):
+                    sys.exit(
+                        "error: config file %s can't be read" % self.config)
                 self.load_configuration_file(self.config)
             elif not accept_nonexistent_config:
                 sys.exit("error: file not found: %s" % self.config)

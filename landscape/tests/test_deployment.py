@@ -297,6 +297,18 @@ class ConfigurationTest(LandscapeTest):
         self.config.reload()
         self.assertEqual(self.config.hello, "world2")
 
+    def test_load_cant_read(self):
+        """
+        C{config.load} exits the process if the specific config file can't be
+        read because of permission reasons.
+        """
+        filename = self.makeFile("[client]\nhello = world1\n")
+        os.chmod(filename, 0)
+        error = self.assertRaises(
+            SystemExit, self.config.load, ["--config", filename])
+        self.assertEqual("error: config file %s can't be read" % filename,
+                         str(error))
+
     def test_data_directory_option(self):
         """Ensure options.data_path option can be read by parse_args."""
         options = self.parser.parse_args(["--data-path",
