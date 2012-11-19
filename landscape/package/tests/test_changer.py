@@ -18,16 +18,17 @@ from landscape.package.changer import (
     PackageChangerConfiguration, ChangePackagesResult)
 from landscape.tests.mocker import ANY
 from landscape.tests.helpers import (
-    LandscapeTest, BrokerServiceHelper)
+    LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
 from landscape.package.tests.helpers import (
     HASH1, HASH2, HASH3, PKGDEB1, PKGDEB2,
-    AptFacadeHelper, SimpleRepositoryHelper)
+    AptFacadeHelper, SimpleRepositoryHelper, disable_apport)
 from landscape.manager.manager import FAILED
 
 
 class AptPackageChangerTest(LandscapeTest):
 
-    helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
+    helpers = [AptFacadeHelper, EnvironSaverHelper, SimpleRepositoryHelper,
+               BrokerServiceHelper]
 
     def setUp(self):
 
@@ -531,6 +532,7 @@ class AptPackageChangerTest(LandscapeTest):
         dependency error, since it will be marked for installation, but
         we haven't explicitly marked it so.
         """
+        disable_apport(self.makeDir())
         self.log_helper.ignore_errors(".*dpkg")
 
         installable_hash = self.set_pkg2_satisfied()

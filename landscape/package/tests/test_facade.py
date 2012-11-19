@@ -16,8 +16,7 @@ from landscape.tests.helpers import LandscapeTest, EnvironSaverHelper
 from landscape.package.tests.helpers import (
     HASH1, HASH2, HASH3, PKGNAME1, PKGNAME2, PKGNAME3,
     PKGDEB1, PKGNAME_MINIMAL, PKGDEB_MINIMAL,
-    create_deb, AptFacadeHelper,
-    create_simple_repository)
+    create_deb, AptFacadeHelper, create_simple_repository, disable_apport)
 
 
 class FakeOwner(object):
@@ -1046,6 +1045,7 @@ class AptFacadeTest(LandscapeTest):
         This test executes dpkg for real, which should fail, complaining
         that superuser privileges are needed.
         """
+        disable_apport(self.makeDir())
         self._add_system_package("foo")
         self.facade.reload_channels()
         foo = self.facade.get_packages_by_name("foo")[0]
