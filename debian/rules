@@ -109,8 +109,8 @@ ifeq (,$(filter $(dist_release),hardy lucid))
 	echo "extra:Depends=python-pycurl, gir1.2-gudev-1.0 (>= 165-0ubuntu2), python-gi" >> $(landscape_client_substvars)
 	echo "extra:Suggests=python-dbus, hal" >> $(landscape_client_substvars)
 endif
-# from raring onwards, we don't want python-gnupginterface anymore
-ifneq (,$(filter $(dist_release),hardy lucid oneiric precise quantal))
+# from quantal onwards, we don't want python-gnupginterface anymore (#1045237)
+ifneq (,$(filter $(dist_release),hardy lucid oneiric precise))
 	echo "extra:Depends=python-gnupginterface" >> $(landscape_common_substvars)
 endif
 
