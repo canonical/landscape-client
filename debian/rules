@@ -111,7 +111,7 @@ ifeq (,$(filter $(dist_release),hardy lucid))
 endif
 # from raring onwards, we don't want python-gnupginterface anymore
 ifneq (,$(filter $(dist_release),hardy lucid oneiric precise quantal))
-	echo "extra:Depents=python-gnupginterface" >> $(landscape_common_substvars)
+	echo "extra:Depends=python-gnupginterface" >> $(landscape_common_substvars)
 endif
 
 ifeq ($(use_dhpython2),yes)
