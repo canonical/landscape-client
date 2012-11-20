@@ -1,4 +1,5 @@
 import os
+import sys
 import textwrap
 import tempfile
 
@@ -9,7 +10,8 @@ from aptsources.sourceslist import SourcesList
 from landscape.constants import UBUNTU_PATH
 from landscape.lib.fs import read_file, create_file
 from landscape.package.facade import (
-    TransactionError, DependencyError, ChannelError, AptFacade)
+    TransactionError, DependencyError, ChannelError, AptFacade,
+    LandscapeInstallProgress)
 
 from landscape.tests.mocker import ANY
 from landscape.tests.helpers import LandscapeTest, EnvironSaverHelper
@@ -1045,12 +1047,64 @@ class AptFacadeTest(LandscapeTest):
 
         This test executes dpkg for real, which should fail, complaining
         that superuser privileges are needed.
+
+        The error from the dpkg sub process is included.
         """
         self._add_system_package("foo")
         self.facade.reload_channels()
         foo = self.facade.get_packages_by_name("foo")[0]
         self.facade.mark_remove(foo)
+        exception = self.assertRaises(
+            TransactionError, self.facade.perform_changes)
+        self.assertIn("Error in function: \nSystemError:", exception.args[0])
+
+    def test_perform_changes_dpkg_error_retains_excepthook(self):
+        """
+        We install a special excepthook when preforming package
+        operations, to prevent Apport from generating crash reports when
+        dpkg returns a failure. It's only installed when doing the
+        actual package operation, so the original excepthook is there
+        after the perform_changes() method returns.
+        """
+        old_excepthook = sys.excepthook
+        self._add_system_package("foo")
+        self.facade.reload_channels()
+        foo = self.facade.get_packages_by_name("foo")[0]
+        self.facade.mark_remove(foo)
         self.assertRaises(TransactionError, self.facade.perform_changes)
+        self.assertIs(old_excepthook, sys.excepthook)
+
+    def test_prevent_dpkg_apport_error_system_error(self):
+        """
+        C{_prevent_dpkg_apport_error} prevents the Apport excepthook
+        from being called when a SystemError happens, since SystemErrors
+        are expected to happen and will be caught in the Apt C binding..
+        """
+        hook_calls = []
+
+        progress = LandscapeInstallProgress()
+        progress.old_excepthook = (
+            lambda exc_type, exc_value, exc_tb: hook_calls.append(
+                (exc_type, exc_value, exc_tb)))
+        progress._prevent_dpkg_apport_error(
+            SystemError, SystemError("error"), object())
+        self.assertEqual([], hook_calls)
+
+    def test_prevent_dpkg_apport_error_non_system_error(self):
+        """
+        If C{_prevent_dpkg_apport_error} gets an exception that isn't a
+        SystemError, the old Apport hook is being called.
+        """
+        hook_calls = []
+
+        progress = LandscapeInstallProgress()
+        progress.old_excepthook = (
+            lambda exc_type, exc_value, exc_tb: hook_calls.append(
+                (exc_type, exc_value, exc_tb)))
+        error = object()
+        traceback = object()
+        progress._prevent_dpkg_apport_error(Exception, error, traceback)
+        self.assertEqual([(Exception, error, traceback)], hook_calls)
 
     def test_perform_changes_dpkg_exit_dirty(self):
         """

@@ -1,6 +1,7 @@
 import hashlib
 import os
 import subprocess
+import sys
 import tempfile
 from cStringIO import StringIO
 from operator import attrgetter
@@ -59,6 +60,7 @@ class LandscapeAcquireProgress(AcquireProgress):
 class LandscapeInstallProgress(InstallProgress):
 
     dpkg_exited = None
+    old_excepthook = None
 
     def wait_child(self):
         """Override to find out whether dpkg exited or not.
@@ -75,6 +77,32 @@ class LandscapeInstallProgress(InstallProgress):
         res = super(LandscapeInstallProgress, self).wait_child()
         self.dpkg_exited = os.WIFEXITED(res)
         return res
+
+    def fork(self):
+        """Fork and override the excepthook in the child process."""
+        pid = super(LandscapeInstallProgress, self).fork()
+        if pid == 0:
+            # No need to clean up after ourselves, since the child
+            # process will die after dpkg has been run.
+            self.old_excepthook = sys.excepthook
+            sys.excepthook = self._prevent_dpkg_apport_error
+        return pid
+
+    def _prevent_dpkg_apport_error(self, exc_type, exc_obj, exc_tb):
+        """Prevent dpkg errors from generating Apport crash reports.
+
+        When dpkg reports an error, a SystemError is raised and cleaned
+        up in C code. However, it seems like the Apport except hook is
+        called before the C code clears the error, generating crash
+        reports even though nothing crashed.
+
+        This exception hook doesn't call the Apport hook for
+        SystemErrors, but it calls it for all other errors.
+        """
+        if exc_type is SystemError:
+            sys.__excepthook__(exc_type, exc_obj, exc_tb)
+            return
+        self.old_excepthook(exc_type, exc_obj, exc_tb)
 
 
 class AptFacade(object):
