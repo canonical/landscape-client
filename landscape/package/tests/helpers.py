@@ -10,31 +10,6 @@ from landscape.lib.fs import append_file, create_file
 from landscape.package.facade import AptFacade
 
 
-def disable_apport(home_dir):
-    """Don't generate crash reports for trial crashes.
-
-    :param home_dir: A clean directory used as $HOME. A new
-      .apport-ignore.xml file will be created in there. The callsite is
-      responsible for removing this directory after the test is done.
-
-    This function is to be used when a test executes an executable that
-    causes an apport crash report to be generated.
-
-    $HOME will be set to the passed in directory and the caller is
-    responsible for restoring the value, for example by using
-    L{EnvironSaverHelper}.
-    """
-    os.environ["HOME"] = home_dir
-    create_file(
-        os.path.join(home_dir, ".apport-ignore.xml"),
-        "\n".join([
-            '<?xml version="1.0" ?>',
-            '<apport>',
-            '<ignore mtime="%d" program="/usr/bin/trial"/>' % (
-                int(time.time())),
-            '</apport>']))
-
-
 class AptFacadeHelper(object):
     """Helper that sets up an AptFacade with a tempdir as its root."""
 
