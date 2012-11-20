@@ -1,4 +1,4 @@
-landscape-client (12.09-0ubuntu0.12.04.0) precise; urgency=low
+landscape-client (12.11-0ubuntu0) quantal; urgency=low
 
   * Fake changelog entry to bump version.
 
