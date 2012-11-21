@@ -88,6 +88,7 @@ binary-arch: build install
 	dh_fixperms
 	dh_shlibdeps
 
+# hardy only
 ifneq (,$(findstring $(dist_release),hardy))
 	# We depend on bug-fixed versions of python-dbus and pycurl on hardy
 	echo "extra:Depends=python-dbus" >> $(landscape_common_substvars)
@@ -95,16 +96,22 @@ ifneq (,$(findstring $(dist_release),hardy))
 	# The python-image-store-proxy package is needed for the eucalyptus plugin
 	echo "extra:Suggests=python-image-store-proxy" >> $(landscape_common_substvars)
 endif
+# lucid only
 ifneq (,$(filter $(dist_release),lucid))
 	# We want libpam-modules in lucid
 	echo "extra:Depends=libpam-modules (>= 1.0.1-9ubuntu3), python-dbus" >> $(landscape_common_substvars)
 	echo "extra:Depends=python-pycurl, hal" >> $(landscape_client_substvars)
 endif
+# not hardy, not lucid
 ifeq (,$(filter $(dist_release),hardy lucid))
 	# Starting natty, no more hal or dbus
 	echo "extra:Depends=libpam-modules (>= 1.0.1-9ubuntu3)" >> $(landscape_common_substvars)
 	echo "extra:Depends=python-pycurl, gir1.2-gudev-1.0 (>= 165-0ubuntu2), python-gi" >> $(landscape_client_substvars)
 	echo "extra:Suggests=python-dbus, hal" >> $(landscape_client_substvars)
+endif
+# from quantal onwards, we don't want python-gnupginterface anymore (#1045237)
+ifneq (,$(filter $(dist_release),hardy lucid oneiric precise))
+	echo "extra:Depends=python-gnupginterface" >> $(landscape_common_substvars)
 endif
 
 ifeq ($(use_dhpython2),yes)
