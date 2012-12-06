@@ -135,8 +135,9 @@ power management:
         root_path = self.makeDir()
         dmi_path = os.path.join(root_path, "sys", "class", "dmi", "id")
         os.makedirs(dmi_path)
-        with file(os.path.join(dmi_path, "sys_vendor"), "w") as fd:
-            fd.write("VMware, Inc.")
+        fd = file(os.path.join(dmi_path, "sys_vendor"), "w")
+        fd.write("VMware, Inc.")
+        fd.close()
         self.assertEqual("vmware", get_vm_info(root_path=root_path))
 
     def test_get_vm_info_is_empty_without_xen_devices(self):
@@ -166,6 +167,7 @@ power management:
         root_path = self.makeDir()
         dmi_path = os.path.join(root_path, "sys", "class", "dmi", "id")
         os.makedirs(dmi_path)
-        with file(os.path.join(dmi_path, "sys_vendor"), "w") as fd:
-            fd.write("Microsoft Corporation")
+        fd = file(os.path.join(dmi_path, "sys_vendor"), "w")
+        fd.write("Microsoft Corporation")
+        fd.close()
         self.assertEqual("hyperv", get_vm_info(root_path=root_path))
