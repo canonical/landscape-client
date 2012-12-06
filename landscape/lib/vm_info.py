@@ -48,6 +48,8 @@ def get_vm_info(root_path="/"):
             file_content = fd.read()
             if "VMware, Inc." in file_content:
                 return "vmware"
+            elif "Microsoft Corporation" in file_content:
+                return "hyperv"
         finally:
             fd.close()
 
