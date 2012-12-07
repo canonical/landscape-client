@@ -1054,9 +1054,7 @@ class AptFacadeTest(LandscapeTest):
         self.facade.reload_channels()
         foo = self.facade.get_packages_by_name("foo")[0]
         self.facade.mark_remove(foo)
-        exception = self.assertRaises(
-            TransactionError, self.facade.perform_changes)
-        self.assertIn("Error in function: \nSystemError:", exception.args[0])
+        self.assertRaises(TransactionError, self.facade.perform_changes)
 
     def test_perform_changes_dpkg_error_retains_excepthook(self):
         """
@@ -1089,6 +1087,23 @@ class AptFacadeTest(LandscapeTest):
         progress._prevent_dpkg_apport_error(
             SystemError, SystemError("error"), object())
         self.assertEqual([], hook_calls)
+
+    def test_prevent_dpkg_apport_error_system_error_calls_system_hook(self):
+        """
+        C{_prevent_dpkg_apport_error} prevents the Apport excepthook
+        from being called when a SystemError happens, but it does call
+        the system except hook, which is the one that was in place
+        before apport installed a custom one. This makes the exception
+        to be printed to stderr.
+        """
+        progress = LandscapeInstallProgress()
+        sys_except_hook = self.mocker.replace("sys.__excepthook__")
+        error = SystemError("error")
+        tb = object()
+        sys_except_hook(SystemError, error, tb)
+        self.mocker.result(None)
+        self.mocker.replay()
+        progress._prevent_dpkg_apport_error(SystemError, error, tb)
 
     def test_prevent_dpkg_apport_error_non_system_error(self):
         """
