@@ -43,6 +43,15 @@ class PackageMonitorTest(LandscapeTest):
         self.monitor.dispatch_message(message)
         self.assertTrue(os.path.isfile(filename))
 
+    def test_run_interval(self):
+        """
+        The C{run_interval} of L{PackageMonitor} can be customized via the
+        C{package_monitor_interval} configuration parameter.
+        """
+        self.monitor.config.package_monitor_interval = 1234
+        self.package_monitor.register(self.monitor)
+        self.assertEqual(1234, self.package_monitor.run_interval)
+
     def test_dont_spawn_reporter_if_message_not_accepted(self):
         self.monitor.add(self.package_monitor)
 

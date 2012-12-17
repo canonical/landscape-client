@@ -217,8 +217,7 @@ class BaseConfiguration(object):
         all_options.update(self._command_line_options)
         all_options.update(self._set_options)
         for name, value in all_options.items():
-            if (name != "config" and
-                name not in self.unsaved_options):
+            if name != "config" and name not in self.unsaved_options:
                 if value == self._command_line_defaults.get(name):
                     config_parser.remove_option(self.config_section, name)
                 else:
@@ -330,6 +329,14 @@ class Configuration(BaseConfiguration):
         parser.add_option("--ignore-sigusr1", action="store_true",
                           default=False, help="Ignore SIGUSR1 signal to "
                                               "rotate logs.")
+        parser.add_option("--package-monitor-interval", default=30 * 60,
+                          type="int",
+                          help="The interval between package monitor runs "
+                               "(default: 1800).")
+        parser.add_option("--apt-update-interval", default=6 * 60 * 60,
+                          type="int",
+                          help="The interval between apt update runs "
+                               "(default: 21600).")
 
         # Hidden options, used for load-testing to run in-process clones
         parser.add_option("--clones", default=0, type=int, help=SUPPRESS_HELP)

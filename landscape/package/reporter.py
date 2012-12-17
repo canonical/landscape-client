@@ -40,14 +40,11 @@ class PackageReporter(PackageTaskHandler):
     """Report information about the system packages.
 
     @cvar queue_name: Name of the task queue to pick tasks from.
-    @cvar apt_update_interval: Don't update the APT index more often
-        than the given interval in minutes.
     """
     config_factory = PackageReporterConfiguration
 
     queue_name = "reporter"
 
-    apt_update_interval = 60
     apt_update_filename = "/usr/lib/landscape/apt-update"
     sources_list_filename = "/etc/apt/sources.list"
     sources_list_directory = "/etc/apt/sources.list.d"
@@ -184,7 +181,7 @@ class PackageReporter(PackageTaskHandler):
         # check stamp file mtime
         last_update = os.stat(stamp)[8]
         now = int(time.time())
-        return (last_update + interval * 60) < now
+        return (last_update + interval) < now
 
     def run_apt_update(self):
         """Run apt-update and log a warning in case of non-zero exit code.
@@ -192,7 +189,8 @@ class PackageReporter(PackageTaskHandler):
         @return: a deferred returning (out, err, code)
         """
         if (self._config.force_apt_update or self._apt_sources_have_changed()
-            or self._apt_update_timeout_expired(self.apt_update_interval)):
+            or self._apt_update_timeout_expired(
+                self._config.apt_update_interval)):
 
             result = spawn_process(self.apt_update_filename)
 
@@ -204,7 +202,7 @@ class PackageReporter(PackageTaskHandler):
 
                 if code != 0:
                     logging.warning("'%s' exited with status %d (%s)" % (
-                            self.apt_update_filename, code, err))
+                        self.apt_update_filename, code, err))
                 elif not self._facade.get_channels():
                     code = 1
                     err = ("There are no APT sources configured in %s or %s." %

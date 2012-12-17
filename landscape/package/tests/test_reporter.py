@@ -145,7 +145,8 @@ class PackageReporterAptTest(LandscapeTest):
 
             self.assertTrue(message_store.is_pending(message_id))
 
-            self.assertMessages(message_store.get_pending_messages(),
+            self.assertMessages(
+                message_store.get_pending_messages(),
                 [{"packages": [{"description": u"Description1",
                                 "installed-size": 28672,
                                 "name": u"name1",
@@ -164,7 +165,7 @@ class PackageReporterAptTest(LandscapeTest):
                                 "summary": u"Summary1",
                                 "type": 65537,
                                 "version": u"version1-release1"}],
-                                "request-id": request2.id,
+                  "request-id": request2.id,
                   "type": "add-packages"}])
 
         deferred = self.reporter.handle_tasks()
@@ -185,7 +186,8 @@ class PackageReporterAptTest(LandscapeTest):
         def got_result(result):
             message = message_store.get_pending_messages()[0]
             request2 = self.store.get_hash_id_request(message["request-id"])
-            self.assertMessages(message_store.get_pending_messages(),
+            self.assertMessages(
+                message_store.get_pending_messages(),
                 [{"packages": [{"description": u"Description1",
                                 "installed-size": None,
                                 "name": u"name1",
@@ -195,7 +197,7 @@ class PackageReporterAptTest(LandscapeTest):
                                 "summary": u"Summary1",
                                 "type": 65537,
                                 "version": u"version1-release1"}],
-                                "request-id": request2.id,
+                  "request-id": request2.id,
                   "type": "add-packages"}])
 
         class FakePackage(object):
@@ -239,9 +241,9 @@ class PackageReporterAptTest(LandscapeTest):
 
         def got_result(result):
             self.assertMessages(message_store.get_pending_messages(), [])
-            self.assertEqual([request.id for request in
-                               self.store.iter_hash_id_requests()],
-                              [request_id])
+            self.assertEqual(
+                [request.id for request in self.store.iter_hash_id_requests()],
+                [request_id])
 
         result = self.reporter.handle_tasks()
         self.assertFailure(result, Boom)
@@ -391,7 +393,7 @@ class PackageReporterAptTest(LandscapeTest):
 
         # The failure should be properly logged
         logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("Couldn't determine which hash=>id database to use: "\
+        logging_mock("Couldn't determine which hash=>id database to use: "
                      "unknown dpkg architecture")
         self.mocker.result(None)
 
@@ -1218,7 +1220,8 @@ class PackageReporterAptTest(LandscapeTest):
             result = self.reporter.run_apt_update()
 
             def callback(ignore):
-                self.assertMessages(message_store.get_pending_messages(),
+                self.assertMessages(
+                    message_store.get_pending_messages(),
                     [{"type": "package-reporter-result",
                       "code": 2, "err": u"error"}])
             result.addCallback(callback)
@@ -1247,7 +1250,8 @@ class PackageReporterAptTest(LandscapeTest):
                 error = "There are no APT sources configured in %s or %s." % (
                     self.reporter.sources_list_filename,
                     self.reporter.sources_list_directory)
-                self.assertMessages(message_store.get_pending_messages(),
+                self.assertMessages(
+                    message_store.get_pending_messages(),
                     [{"type": "package-reporter-result",
                       "code": 1, "err": error}])
             result.addCallback(callback)
@@ -1271,7 +1275,8 @@ class PackageReporterAptTest(LandscapeTest):
             result = self.reporter.run_apt_update()
 
             def callback(ignore):
-                self.assertMessages(message_store.get_pending_messages(),
+                self.assertMessages(
+                    message_store.get_pending_messages(),
                     [{"type": "package-reporter-result",
                       "code": 2, "err": u"error"}])
             result.addCallback(callback)
@@ -1294,7 +1299,8 @@ class PackageReporterAptTest(LandscapeTest):
             result = self.reporter.run_apt_update()
 
             def callback(ignore):
-                self.assertMessages(message_store.get_pending_messages(),
+                self.assertMessages(
+                    message_store.get_pending_messages(),
                     [{"type": "package-reporter-result",
                       "code": 0, "err": u"message"}])
             result.addCallback(callback)
@@ -1347,6 +1353,37 @@ class PackageReporterAptTest(LandscapeTest):
             def callback(ignored):
                 self.assertTrue(
                     os.path.exists(self.config.update_stamp_filename))
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
+
+    def test_config_apt_update_interval(self):
+        """
+        L{PackageReporter} uses the C{apt_update_interval} configuration
+        parameter to check the age of the update stamp file.
+        """
+        self.config.apt_update_interval = 1234
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["package-reporter-result"])
+        intervals = []
+
+        def apt_update_timeout_expired(interval):
+            intervals.append(interval)
+            return False
+
+        deferred = Deferred()
+
+        self.reporter._apt_sources_have_changed = lambda: False
+        self.reporter._apt_update_timeout_expired = apt_update_timeout_expired
+
+        def do_test():
+            result = self.reporter.run_apt_update()
+
+            def callback(ignore):
+                self.assertMessages(message_store.get_pending_messages(), [])
+                self.assertEqual([1234], intervals)
             result.addCallback(callback)
             result.chainDeferred(deferred)
 

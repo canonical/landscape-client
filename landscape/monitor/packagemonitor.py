@@ -22,6 +22,7 @@ class PackageMonitor(MonitorPlugin):
 
     def register(self, registry):
         self.config = registry.config
+        self.run_interval = self.config.package_monitor_interval
         if self.config.clones and self.config.is_clone:
             # Run clones a bit more frequently in order to catch up
             self.run_interval = 60  # 300
