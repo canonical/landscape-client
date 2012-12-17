@@ -55,7 +55,7 @@ class PackageReporterAptTest(LandscapeTest):
                 self.store, self.facade, self.remote, self.config)
             # Assume update-notifier-common stamp file is not present by
             # default.
-            self.reporter.update_notifier_stamp = "/Not/Existent"
+            self.reporter.update_notifier_stamp = "/Not/Existing"
             self.config.data_path = self.makeDir()
             os.mkdir(self.config.package_directory)
 
@@ -1378,8 +1378,8 @@ class PackageReporterAptTest(LandscapeTest):
     def test_run_apt_update_runs_interval_expired(self):
         """
         L{PackageReporter.run_apt_update} runs if both apt-update and
-        update-notifier-common stamp files are present and the minimum time
-        interval expired.
+        update-notifier-common stamp files are present and the time
+        interval has passed.
         """
         expired_time = time.time() - self.config.apt_update_interval - 1
         # The interval for both stamp files is expired.
