@@ -45,6 +45,10 @@ class PackageReporter(PackageTaskHandler):
 
     queue_name = "reporter"
 
+    # This file is touched after every succesful 'apt-get update' run if the
+    # update-notifier-common package is installed.
+    update_notifier_stamp = "/var/lib/apt/periodic/update-success-stamp"
+
     apt_update_filename = "/usr/lib/landscape/apt-update"
     sources_list_filename = "/etc/apt/sources.list"
     sources_list_directory = "/etc/apt/sources.list.d"
@@ -178,10 +182,13 @@ class PackageReporter(PackageTaskHandler):
 
         if not os.path.exists(stamp):
             return True
-        # check stamp file mtime
-        last_update = os.stat(stamp)[8]
-        now = int(time.time())
-        return (last_update + interval) < now
+
+        if os.path.exists(self.update_notifier_stamp):
+            last_apt_update = os.stat(self.update_notifier_stamp).st_mtime
+        else:
+            last_apt_update = 0
+        last_update = max(os.stat(stamp).st_mtime, last_apt_update)
+        return (last_update + interval) < time.time()
 
     def run_apt_update(self):
         """Run apt-update and log a warning in case of non-zero exit code.

@@ -53,6 +53,9 @@ class PackageReporterAptTest(LandscapeTest):
             self.config = PackageReporterConfiguration()
             self.reporter = PackageReporter(
                 self.store, self.facade, self.remote, self.config)
+            # Assume update-notifier-common stamp file is not present by
+            # default.
+            self.reporter.update_notifier_stamp = "/Not/Existent"
             self.config.data_path = self.makeDir()
             os.mkdir(self.config.package_directory)
 
@@ -1331,6 +1334,75 @@ class PackageReporterAptTest(LandscapeTest):
                 self.assertEqual("", out)
                 self.assertEqual("", err)
                 self.assertEqual(0, code)
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
+
+    def test_run_apt_update_no_run_update_notifier_stamp_in_interval(self):
+        """
+        The L{PackageReporter.run_apt_update} doesn't runs apt-update if the
+        interval is passed but the stamp file from update-notifier-common
+        reports that 'apt-get update' has been run in the interval.
+        """
+        # The interval for the apt-update stamp file is expired.
+        self.makeFile("", path=self.config.update_stamp_filename)
+        expired_time = time.time() - self.config.apt_update_interval - 1
+        os.utime(
+            self.config.update_stamp_filename, (expired_time, expired_time))
+        # The interval for the update-notifier-common stamp file is not
+        # expired.
+        self.reporter.update_notifier_stamp = self.makeFile("")
+
+        logging_mock = self.mocker.replace("logging.debug")
+        logging_mock("'%s' didn't run, update interval has not passed" %
+                     self.reporter.apt_update_filename)
+        self.mocker.replay()
+        deferred = Deferred()
+
+        def do_test():
+
+            result = self.reporter.run_apt_update()
+
+            def callback((out, err, code)):
+                self.assertEqual("", out)
+                self.assertEqual("", err)
+                self.assertEqual(0, code)
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
+
+    def test_run_apt_update_runs_interval_expired(self):
+        """
+        L{PackageReporter.run_apt_update} runs if both apt-update and
+        update-notifier-common stamp files are present and the minimum time
+        interval expired.
+        """
+        expired_time = time.time() - self.config.apt_update_interval - 1
+        # The interval for both stamp files is expired.
+        self.makeFile("", path=self.config.update_stamp_filename)
+        os.utime(
+            self.config.update_stamp_filename, (expired_time, expired_time))
+        self.reporter.update_notifier_stamp = self.makeFile("")
+        os.utime(
+            self.reporter.update_notifier_stamp, (expired_time, expired_time))
+
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["package-reporter-result"])
+        self._make_fake_apt_update(err="message")
+        deferred = Deferred()
+
+        def do_test():
+            result = self.reporter.run_apt_update()
+
+            def callback(ignore):
+                self.assertMessages(
+                    message_store.get_pending_messages(),
+                    [{"type": "package-reporter-result",
+                      "code": 0, "err": u"message"}])
             result.addCallback(callback)
             result.chainDeferred(deferred)
 
