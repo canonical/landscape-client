@@ -1474,6 +1474,9 @@ class GlobalPackageReporterAptTest(LandscapeTest):
             self.config = PackageReporterConfiguration()
             self.reporter = FakeGlobalReporter(
                 self.store, self.facade, self.remote, self.config)
+            # Assume update-notifier-common stamp file is not present by
+            # default.
+            self.reporter.update_notifier_stamp = "/Not/Existing"
             self.config.data_path = self.makeDir()
             os.mkdir(self.config.package_directory)
 

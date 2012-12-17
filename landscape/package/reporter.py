@@ -178,16 +178,14 @@ class PackageReporter(PackageTaskHandler):
 
     def _apt_update_timeout_expired(self, interval):
         """Check if the apt-update timeout has passed."""
-        stamp = self._config.update_stamp_filename
-
-        if not os.path.exists(stamp):
+        if os.path.exists(self.update_notifier_stamp):
+            stamp = self.update_notifier_stamp
+        elif os.path.exists(self._config.update_stamp_filename):
+            stamp = self._config.update_stamp_filename
+        else:
             return True
 
-        if os.path.exists(self.update_notifier_stamp):
-            last_apt_update = os.stat(self.update_notifier_stamp).st_mtime
-        else:
-            last_apt_update = 0
-        last_update = max(os.stat(stamp).st_mtime, last_apt_update)
+        last_update = os.stat(stamp).st_mtime
         return (last_update + interval) < time.time()
 
     def run_apt_update(self):
