@@ -331,12 +331,12 @@ class Configuration(BaseConfiguration):
                                               "rotate logs.")
         parser.add_option("--package-monitor-interval", default=30 * 60,
                           type="int",
-                          help="The interval between apt update runs "
-                               "(default 1800).")
+                          help="The interval between package monitor runs "
+                               "(default: 1800).")
         parser.add_option("--apt-update-interval", default=6 * 60 * 60,
                           type="int",
                           help="The interval between apt update runs "
-                               "(default 21600).")
+                               "(default: 21600).")
 
         # Hidden options, used for load-testing to run in-process clones
         parser.add_option("--clones", default=0, type=int, help=SUPPRESS_HELP)
