@@ -214,7 +214,7 @@ class PackageReporter(PackageTaskHandler):
                         self.apt_update_filename, code, err))
 
                     # Errors caused by missing cache files are acceptable, as
-                    # they don't create problems for the lists update process.
+                    # they are not an issue for the lists update process.
                     # These errors can happen if an 'apt-get clean' is run
                     # while 'apt-get update' is running.
                     for message in accepted_apt_errors:
