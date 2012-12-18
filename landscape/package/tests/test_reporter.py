@@ -85,8 +85,8 @@ class PackageReporterAptTest(LandscapeTest):
         """Create a fake apt-update executable"""
         self.reporter.apt_update_filename = self.makeFile(
             "#!/bin/sh\n"
-            "echo -n %s\n"
-            "echo -n %s >&2\n"
+            "echo -n '%s'\n"
+            "echo -n '%s' >&2\n"
             "exit %d" % (out, err, code))
         os.chmod(self.reporter.apt_update_filename, 0755)
 
@@ -1425,6 +1425,77 @@ class PackageReporterAptTest(LandscapeTest):
             def callback(ignored):
                 self.assertTrue(
                     os.path.exists(self.config.update_stamp_filename))
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
+
+    def test_run_apt_update_error_on_cache_file(self):
+        """
+        If L{PackageReporter.run_apt_update} succeeds if the command fails
+        because one of the cache files is not found (tipically because an
+        'apt-get clean' has been concurrently run, as this is not an issue for
+        the package lists update.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["package-reporter-result"])
+        self._make_fake_apt_update(
+            code=2, out="not important",
+            err=("E: Problem renaming the file "
+                 "/var/cache/apt/pkgcache.bin.6ZsRSX to "
+                 "/var/cache/apt/pkgcache.bin - rename (2: No such file "
+                 "or directory)\n"
+                 "W: You may want to run apt-get update to correct these "
+                 "problems"))
+        deferred = Deferred()
+
+        def do_test():
+            result = self.reporter.run_apt_update()
+
+            def callback(ignore):
+                self.assertMessages(
+                    message_store.get_pending_messages(),
+                    [{"type": "package-reporter-result",
+                      "code": 0, "err": u""}])
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred
+
+    def test_run_apt_update_error_no_cache_files(self):
+        """
+        If L{PackageReporter.run_apt_update} succeeds if the command fails
+        because cache files are not found (tipically because an 'apt-get clean'
+        has been concurrently run, as this is not an issue for the package
+        lists update.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["package-reporter-result"])
+        self._make_fake_apt_update(
+            code=2, out="not important",
+            err=("E: Problem renaming the file "
+                 "/var/cache/apt/srcpkgcache.bin.Pw1Zxy to "
+                 "/var/cache/apt/srcpkgcache.bin - rename (2: No such file "
+                 "or directory)\n"
+                 "E: Problem renaming the file "
+                 "/var/cache/apt/pkgcache.bin.wz8ooS to "
+                 "/var/cache/apt/pkgcache.bin - rename (2: No such file "
+                 "or directory)\n"
+                 "E: The package lists or status file could not be parsed "
+                 "or opened."))
+
+        deferred = Deferred()
+
+        def do_test():
+            result = self.reporter.run_apt_update()
+
+            def callback(ignore):
+                self.assertMessages(
+                    message_store.get_pending_messages(),
+                    [{"type": "package-reporter-result",
+                      "code": 0, "err": u""}])
             result.addCallback(callback)
             result.chainDeferred(deferred)
 

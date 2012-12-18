@@ -200,6 +200,10 @@ class PackageReporter(PackageTaskHandler):
             result = spawn_process(self.apt_update_filename)
 
             def callback((out, err, code)):
+                accepted_apt_errors = (
+                    "Problem renaming the file /var/cache/apt/srcpkgcache.bin",
+                    "Problem renaming the file /var/cache/apt/pkgcache.bin")
+
                 touch_file(self._config.update_stamp_filename)
                 logging.debug(
                     "'%s' exited with status %d (out='%s', err='%s')" % (
@@ -208,6 +212,16 @@ class PackageReporter(PackageTaskHandler):
                 if code != 0:
                     logging.warning("'%s' exited with status %d (%s)" % (
                         self.apt_update_filename, code, err))
+
+                    # Errors caused by missing cache files are acceptable, as
+                    # they don't create problems for the lists update process.
+                    # These errors can happen if an 'apt-get clean' is run
+                    # while 'apt-get update' is running.
+                    for message in accepted_apt_errors:
+                        if message in err:
+                            out, err, code = "", "", 0
+                            break
+
                 elif not self._facade.get_channels():
                     code = 1
                     err = ("There are no APT sources configured in %s or %s." %
