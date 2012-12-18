@@ -1125,7 +1125,6 @@ class PackageReporterAptTest(LandscapeTest):
         deferred = Deferred()
 
         def do_test():
-
             result = self.reporter.run_apt_update()
 
             def callback((out, err, code)):
@@ -1327,7 +1326,6 @@ class PackageReporterAptTest(LandscapeTest):
         deferred = Deferred()
 
         def do_test():
-
             result = self.reporter.run_apt_update()
 
             def callback((out, err, code)):
@@ -1362,7 +1360,6 @@ class PackageReporterAptTest(LandscapeTest):
         deferred = Deferred()
 
         def do_test():
-
             result = self.reporter.run_apt_update()
 
             def callback((out, err, code)):
@@ -1419,7 +1416,6 @@ class PackageReporterAptTest(LandscapeTest):
         deferred = Deferred()
 
         def do_test():
-
             result = self.reporter.run_apt_update()
 
             def callback(ignored):
