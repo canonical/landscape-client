@@ -45,6 +45,10 @@ class PackageReporter(PackageTaskHandler):
 
     queue_name = "reporter"
 
+    # This file is touched after every succesful 'apt-get update' run if the
+    # update-notifier-common package is installed.
+    update_notifier_stamp = "/var/lib/apt/periodic/update-success-stamp"
+
     apt_update_filename = "/usr/lib/landscape/apt-update"
     sources_list_filename = "/etc/apt/sources.list"
     sources_list_directory = "/etc/apt/sources.list.d"
@@ -174,14 +178,15 @@ class PackageReporter(PackageTaskHandler):
 
     def _apt_update_timeout_expired(self, interval):
         """Check if the apt-update timeout has passed."""
-        stamp = self._config.update_stamp_filename
-
-        if not os.path.exists(stamp):
+        if os.path.exists(self.update_notifier_stamp):
+            stamp = self.update_notifier_stamp
+        elif os.path.exists(self._config.update_stamp_filename):
+            stamp = self._config.update_stamp_filename
+        else:
             return True
-        # check stamp file mtime
-        last_update = os.stat(stamp)[8]
-        now = int(time.time())
-        return (last_update + interval) < now
+
+        last_update = os.stat(stamp).st_mtime
+        return (last_update + interval) < time.time()
 
     def run_apt_update(self):
         """Run apt-update and log a warning in case of non-zero exit code.
