@@ -1346,6 +1346,8 @@ class PackageReporterAptTest(LandscapeTest):
         interval is passed but the stamp file from update-notifier-common
         reports that 'apt-get update' has been run in the interval.
         """
+        self.reporter._apt_sources_have_changed = lambda: False
+
         # The interval for the apt-update stamp file is expired.
         self.makeFile("", path=self.config.update_stamp_filename)
         expired_time = time.time() - self.config.apt_update_interval - 1
@@ -1381,6 +1383,8 @@ class PackageReporterAptTest(LandscapeTest):
         update-notifier-common stamp files are present and the time
         interval has passed.
         """
+        self.reporter._apt_sources_have_changed = lambda: False
+
         expired_time = time.time() - self.config.apt_update_interval - 1
         # The interval for both stamp files is expired.
         self.makeFile("", path=self.config.update_stamp_filename)
