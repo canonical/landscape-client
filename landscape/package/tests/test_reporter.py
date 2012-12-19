@@ -1429,10 +1429,10 @@ class PackageReporterAptTest(LandscapeTest):
 
     def test_run_apt_update_error_on_cache_file(self):
         """
-        If L{PackageReporter.run_apt_update} succeeds if the command fails
-        because one of the cache files is not found (tipically because an
-        'apt-get clean' has been concurrently run, as this is not an issue for
-        the package lists update.
+        L{PackageReporter.run_apt_update} succeeds if the command fails because
+        one of the cache files is not found. This generally occurs if 'apt-get
+        clean' has been concurrently run with 'apt-get update'.  This is not an
+        issue for the package lists update.
         """
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["package-reporter-result"])
@@ -1462,10 +1462,8 @@ class PackageReporterAptTest(LandscapeTest):
 
     def test_run_apt_update_error_no_cache_files(self):
         """
-        If L{PackageReporter.run_apt_update} succeeds if the command fails
-        because cache files are not found (tipically because an 'apt-get clean'
-        has been concurrently run, as this is not an issue for the package
-        lists update.
+        L{PackageReporter.run_apt_update} succeeds if the command fails because
+        cache files are not found.
         """
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["package-reporter-result"])
