@@ -13,11 +13,13 @@ class MemoryStats(object):
         for line in open(filename):
             if ":" in line:
                 key, value = line.split(":", 1)
-                if key in ["Active", "MemTotal", "SwapFree", "SwapTotal"]:
+                if key in ["MemTotal", "SwapFree", "SwapTotal", "MemFree",
+                           "Buffers", "Cached"]:
                     data[key] = int(value.split()[0])
 
         self.total_memory = data["MemTotal"] // 1024
-        self.free_memory = (data["MemTotal"] - data["Active"]) // 1024
+        self.free_memory = (data["MemFree"] + data["Buffers"] +
+                            data["Cached"]) // 1024
         self.total_swap = data["SwapTotal"] // 1024
         self.free_swap = data["SwapFree"] // 1024
 
