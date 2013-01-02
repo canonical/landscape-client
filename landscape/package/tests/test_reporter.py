@@ -1670,7 +1670,7 @@ class EqualsHashes(object):
         return self._hashes == sorted(other)
 
 
-class PackageReporterUpgradeManagerConfigTest(LandscapeTest):
+class PackageReporterUpdateManagerConfigTest(LandscapeTest):
     """
     The package reporter should report the "Prompt" variable from the Ubuntu
     update-manager's config so that this can be respected by landscape server.
@@ -1679,13 +1679,13 @@ class PackageReporterUpgradeManagerConfigTest(LandscapeTest):
     helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
 
     def setUp(self):
-        super(PackageReporterUpgradeManagerConfigTest, self).setUp()
+        super(PackageReporterUpdateManagerConfigTest, self).setUp()
         self.store = PackageStore(self.makeFile())
         self.config = PackageReporterConfiguration()
         self.reporter = PackageReporter(
             self.store, self.facade, self.remote, self.config)
 
-    def _set_upgrade_prompt(self, prompt):
+    def _set_update_prompt(self, prompt):
         content = """
 [DEFAULT]
 Prompt=%s
@@ -1693,17 +1693,17 @@ Prompt=%s
         self.reporter.update_manager_config_path = self.makeFile(
             content=content)
         
-    def test_get_upgrade_manager_prompt(self):
+    def test_get_update_manager_prompt(self):
         """
         Retrieve the current value of the Prompt variable from
-        upgrade-managers configuration file.
+        update-managers configuration file.
         """
-        self._set_upgrade_prompt("normal")
-        self.assertEqual("normal", self.reporter.get_upgrade_manager_prompt())
-        self._set_upgrade_prompt("lts")
-        self.assertEqual("lts", self.reporter.get_upgrade_manager_prompt())
-        self._set_upgrade_prompt("never")
-        self.assertEqual("never", self.reporter.get_upgrade_manager_prompt())
+        self._set_update_prompt("normal")
+        self.assertEqual("normal", self.reporter.get_update_manager_prompt())
+        self._set_update_prompt("lts")
+        self.assertEqual("lts", self.reporter.get_update_manager_prompt())
+        self._set_update_prompt("never")
+        self.assertEqual("never", self.reporter.get_update_manager_prompt())
         
 
  

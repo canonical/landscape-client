@@ -583,7 +583,7 @@ class PackageReporter(PackageTaskHandler):
 
         return result
 
-    def get_upgrade_manager_prompt(self):
+    def get_update_manager_prompt(self):
         parser = ConfigParser.SafeConfigParser()
         config_file = open(self.update_manager_config_path)
         parser.readfp(config_file)
