@@ -1,3 +1,4 @@
+import ConfigParser
 import urlparse
 import logging
 import time
@@ -52,6 +53,12 @@ class PackageReporter(PackageTaskHandler):
     apt_update_filename = "/usr/lib/landscape/apt-update"
     sources_list_filename = "/etc/apt/sources.list"
     sources_list_directory = "/etc/apt/sources.list.d"
+
+    # This file is used by the update-manager and may contain a "Prompt"
+    # variable which indicates that users are prompted to upgrade the release
+    # when any new release is available ("normal"); when a new LTS release is
+    # available ("lts"); or never ("never").
+    update_manager_config_path = "/etc/update-manager/release-upgrades"
 
     def run(self):
         result = Deferred()
@@ -575,6 +582,12 @@ class PackageReporter(PackageTaskHandler):
         result.addCallback(update_currently_known)
 
         return result
+
+    def get_upgrade_manager_prompt(self):
+        parser = ConfigParser.SafeConfigParser()
+        parser.readfp(open(self.update_manager_config_path))
+        prompt = parser.get("DEFAULT", "Prompt")
+        return prompt
 
 
 class FakeGlobalReporter(PackageReporter):

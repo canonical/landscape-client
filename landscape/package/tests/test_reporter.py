@@ -58,6 +58,8 @@ class PackageReporterAptTest(LandscapeTest):
             self.reporter.update_notifier_stamp = "/Not/Existing"
             self.config.data_path = self.makeDir()
             os.mkdir(self.config.package_directory)
+            self.reporter.release_upgrades_config_path = self.makeFile(
+                content="Prompt=normal")
 
         result = super(PackageReporterAptTest, self).setUp()
         return result.addCallback(set_up)
@@ -1666,3 +1668,40 @@ class EqualsHashes(object):
 
     def __eq__(self, other):
         return self._hashes == sorted(other)
+
+
+class PackageReporterUpgradeManagerConfigTest(LandscapeTest):
+    """
+    The package reporter should report the "Prompt" variable from the Ubuntu
+    update-manager's config so that this can be respected by landscape server.
+    """
+
+    helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
+
+    def setUp(self):
+        super(PackageReporterUpgradeManagerConfigTest, self).setUp()
+        self.store = PackageStore(self.makeFile())
+        self.config = PackageReporterConfiguration()
+        self.reporter = PackageReporter(
+            self.store, self.facade, self.remote, self.config)
+
+    def _set_upgrade_prompt(self, prompt):
+        content = """
+[DEFAULT]
+Prompt=%s
+"""  % prompt
+        self.reporter.upgrade_manager_config_path = self.makeFile(
+            content=content)
+        
+    def test_get_upgrade_manager_prompt(self):
+        """
+        Retrieve the current value of the Prompt variable from
+        upgrade-managers configuration file.
+        """
+        self._set_upgrade_prompt("normal")
+        self.assertEqual("normal", self.reporter.get_upgrade_manager_prompt())
+        
+
+ 
+
+
