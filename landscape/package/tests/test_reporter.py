@@ -1,8 +1,8 @@
 import sys
 import os
+import shutil
 import unittest
 import time
-import glob
 
 from twisted.internet.defer import Deferred, succeed
 from twisted.internet import reactor
@@ -59,11 +59,11 @@ class PackageReporterAptTest(LandscapeTest):
             self.reporter.update_notifier_stamp = "/Not/Existing"
             self.config.data_path = self.makeDir()
             os.mkdir(self.config.package_directory)
-            # Remove the md5 files to make sure we re-compute the pacakge diff
-            # and not assume nothing changed
-            files = glob.glob(".checksums/*.md5")
-            for f in files:
-                os.remove(f)
+            # Remove the stamp files to make sure we re-compute the pacakge
+            # diff and not assume nothing changed (we're using fixtures, not
+            # the actual files)
+            if os.path.exists(".stamps"):
+                shutil.rmtree(".stamps")
 
         result = super(PackageReporterAptTest, self).setUp()
         return result.addCallback(set_up)

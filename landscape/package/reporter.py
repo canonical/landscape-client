@@ -12,7 +12,6 @@ from landscape.lib.twisted_util import gather_results, spawn_process
 from landscape.lib.fetch import fetch_async
 from landscape.lib.fs import touch_file
 from landscape.lib import bpickle
-from landscape.lib.hashlib import md5sum_file
 
 from landscape.package.taskhandler import (
     PackageTaskHandlerConfiguration, PackageTaskHandler, run_task_handler)
@@ -462,36 +461,33 @@ class PackageReporter(PackageTaskHandler):
 
         @return True if the status changed, False otherwise.
         """
+        STAMPS_DIRECTORY = ".stamps"
         STATUS_FILE = "/var/lib/dpkg/status"
         files = [STATUS_FILE]
         files.extend(glob.glob("/var/lib/apt/lists/*Packages"))
-        if glob.glob(".checksums") == []:
-            os.mkdir(".checksums")
+        if glob.glob(STAMPS_DIRECTORY) == []:
+            os.mkdir(STAMPS_DIRECTORY)
 
         result = False
 
         for f in files:
-            md5_file = f.split("/")[-1]
-            md5_file = ".checksums/%s.md5" % md5_file
+            stamp_file = f.split("/")[-1]
+            stamp_file = "%s/%s.stamp" % (STAMPS_DIRECTORY, stamp_file)
 
-            old_hash = None
+            stored_stamp = 0
+            real_stamp = 1
             try:
-                with open(md5_file, "r") as the_file:
-                    old_hash = the_file.read()
-            except IOError:
-                # First time we check or file not found
-                result = True
-
-            try:
-                new_hash = md5sum_file(f)
+                if not os.path.exists(stamp_file):
+                    touch_file(stamp_file)  # stored_stamp is left at 0
+                else:
+                    stored_stamp = os.stat(stamp_file).st_mtime
+                real_stamp = os.stat(f).st_mtime
             except IOError:
                 result = True
-            finally:
-                with open(md5_file, "w") as the_file:
-                    the_file.write(new_hash)
 
-            if old_hash != new_hash:
+            if stored_stamp < real_stamp:
                 result = True
+            touch_file(stamp_file)
 
         return result
 
