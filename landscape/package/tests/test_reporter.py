@@ -1704,7 +1704,14 @@ Prompt=%s
         self.assertEqual("lts", self.reporter.get_update_manager_prompt())
         self._set_update_prompt("never")
         self.assertEqual("never", self.reporter.get_update_manager_prompt())
-        
+
+    def test_get_update_manager_prompt_with_invalid_value(self):
+        """
+        C{get_update_manager_prompt} should return "normal" if an invalid value
+        is specified in the file.
+        """
+        self._set_update_prompt("slartibartfast")
+        self.assertEqual("normal", self.reporter.get_update_manager_prompt())
 
  
 

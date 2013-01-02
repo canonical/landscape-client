@@ -588,6 +588,14 @@ class PackageReporter(PackageTaskHandler):
         config_file = open(self.update_manager_config_path)
         parser.readfp(config_file)
         prompt = parser.get("DEFAULT", "Prompt")
+        valid_prompts = ["lts", "never", "normal"]
+        if prompt not in valid_prompts:
+            prompt = "normal"
+            message = ("%s contains invalid Prompt value. "
+                       "Should be one of %s. " % (
+                           self.update_manager_config_path,
+                           valid_prompts))
+            logging.warning(message)
         return prompt
 
 
