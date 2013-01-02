@@ -585,7 +585,8 @@ class PackageReporter(PackageTaskHandler):
 
     def get_upgrade_manager_prompt(self):
         parser = ConfigParser.SafeConfigParser()
-        parser.readfp(open(self.update_manager_config_path))
+        config_file = open(self.update_manager_config_path)
+        parser.readfp(config_file)
         prompt = parser.get("DEFAULT", "Prompt")
         return prompt
 

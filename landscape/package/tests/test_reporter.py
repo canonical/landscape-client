@@ -1690,7 +1690,7 @@ class PackageReporterUpgradeManagerConfigTest(LandscapeTest):
 [DEFAULT]
 Prompt=%s
 """  % prompt
-        self.reporter.upgrade_manager_config_path = self.makeFile(
+        self.reporter.update_manager_config_path = self.makeFile(
             content=content)
         
     def test_get_upgrade_manager_prompt(self):
@@ -1700,6 +1700,10 @@ Prompt=%s
         """
         self._set_upgrade_prompt("normal")
         self.assertEqual("normal", self.reporter.get_upgrade_manager_prompt())
+        self._set_upgrade_prompt("lts")
+        self.assertEqual("lts", self.reporter.get_upgrade_manager_prompt())
+        self._set_upgrade_prompt("never")
+        self.assertEqual("never", self.reporter.get_upgrade_manager_prompt())
         
 
  
