@@ -1711,7 +1711,14 @@ Prompt=%s
         is specified in the file.
         """
         self._set_update_prompt("slartibartfast")
+        logging_mock = self.mocker.replace("logging.warning")
+        logging_mock("%s contains invalid Prompt value. "
+                       "Should be one of ['lts', 'never', 'normal']." %
+                     self.reporter.update_manager_config_path)
+        self.mocker.result(None)
+        self.mocker.replay()
         self.assertEqual("normal", self.reporter.get_update_manager_prompt())
+
 
  
 

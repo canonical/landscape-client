@@ -592,7 +592,7 @@ class PackageReporter(PackageTaskHandler):
         if prompt not in valid_prompts:
             prompt = "normal"
             message = ("%s contains invalid Prompt value. "
-                       "Should be one of %s. " % (
+                       "Should be one of %s." % (
                            self.update_manager_config_path,
                            valid_prompts))
             logging.warning(message)
