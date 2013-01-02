@@ -584,8 +584,11 @@ class PackageReporter(PackageTaskHandler):
         return result
 
     def get_update_manager_prompt(self):
-        parser = ConfigParser.SafeConfigParser()
+        if not os.path.exists(self.update_manager_config_path):
+            # There is no config, so we just act as if it's set to 'normal'
+            return "normal"
         config_file = open(self.update_manager_config_path)
+        parser = ConfigParser.SafeConfigParser()
         parser.readfp(config_file)
         prompt = parser.get("DEFAULT", "Prompt")
         valid_prompts = ["lts", "never", "normal"]

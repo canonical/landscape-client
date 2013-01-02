@@ -1707,8 +1707,8 @@ Prompt=%s
 
     def test_get_update_manager_prompt_with_invalid_value(self):
         """
-        C{get_update_manager_prompt} should return "normal" if an invalid value
-        is specified in the file.
+        C{get_update_manager_prompt} returns "normal" if an invalid value
+        is specified in the file.  A warning is also logged.
         """
         self._set_update_prompt("slartibartfast")
         logging_mock = self.mocker.replace("logging.warning")
@@ -1719,7 +1719,11 @@ Prompt=%s
         self.mocker.replay()
         self.assertEqual("normal", self.reporter.get_update_manager_prompt())
 
-
- 
-
-
+    def test_get_update_manager_prompt_with_missing_config_file(self):
+        """
+        When the configuration file does not exist we just return "normal".
+        Any machine that doesn't have update-manager installed would fit into
+        this category, so there's no need to warn about it.
+        """
+        self.reporter.update_manager_config_path = "/I/do/not/exist"
+        self.assertEqual("normal", self.reporter.get_update_manager_prompt())
