@@ -59,7 +59,7 @@ class PackageReporterAptTest(LandscapeTest):
             self.reporter.update_notifier_stamp = "/Not/Existing"
             self.config.data_path = self.makeDir()
             os.mkdir(self.config.package_directory)
-            # Remove the stamp files to make sure we re-compute the pacakge
+            # Remove the stamp files to make sure we re-compute the package
             # diff and not assume nothing changed (we're using fixtures, not
             # the actual files)
             if os.path.exists(".stamps"):

@@ -456,7 +456,7 @@ class PackageReporter(PackageTaskHandler):
         Detect changes in the universe of know packages.
 
         This uses the state of packages in /var/lib/dpkg/state and other files
-        and simply checks wether they have changed against a previously known
+        and simply checks whether they have changed against a previously known
         hash.
 
         @return True if the status changed, False otherwise.
