@@ -465,16 +465,19 @@ class PackageReporter(PackageTaskHandler):
         STATUS_FILE = "/var/lib/dpkg/status"
         files = [STATUS_FILE]
         files.extend(glob.glob("/var/lib/apt/lists/*Packages"))
+        if glob.glob(".checksums") == []:
+            os.mkdir(".checksums")
 
         result = False
 
         for f in files:
             md5_file = f.split("/")[-1]
-            md5_file = "%s.md5" % md5_file
+            md5_file = ".checksums/%s.md5" % md5_file
 
             old_hash = None
             try:
-                old_hash = open(md5_file, "r").read()
+                with open(md5_file, "r") as the_file:
+                    old_hash = the_file.read()
             except IOError:
                 # First time we check or file not found
                 result = True
@@ -484,7 +487,8 @@ class PackageReporter(PackageTaskHandler):
             except IOError:
                 result = True
             finally:
-                open(md5_file, "w").write(new_hash)
+                with open(md5_file, "w") as the_file:
+                    the_file.write(new_hash)
 
             if old_hash != new_hash:
                 result = True

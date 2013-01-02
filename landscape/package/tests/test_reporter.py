@@ -61,7 +61,7 @@ class PackageReporterAptTest(LandscapeTest):
             os.mkdir(self.config.package_directory)
             # Remove the md5 files to make sure we re-compute the pacakge diff
             # and not assume nothing changed
-            files = glob.glob("*.md5")
+            files = glob.glob(".checksums/*.md5")
             for f in files:
                 os.remove(f)
 
