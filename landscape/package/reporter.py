@@ -446,12 +446,16 @@ class PackageReporter(PackageTaskHandler):
         return deferred.addCallback(changes_detected)
 
     def detect_packages_changes(self):
-        if self._has_package_state_changed():
+        """
+        Check if any information regarding packages have changed, and if so
+        compute the changes and send a signal.
+        """
+        if self._package_state_has_changed():
             return self._compute_packages_changes()
         else:
             return succeed(None)
 
-    def _has_package_state_changed(self):
+    def _package_state_has_changed(self, status_file="/var/lib/dpkg/status"):
         """
         Detect changes in the universe of know packages.
 
@@ -461,18 +465,17 @@ class PackageReporter(PackageTaskHandler):
 
         @return True if the status changed, False otherwise.
         """
-        STAMPS_DIRECTORY = ".stamps"
-        STATUS_FILE = "/var/lib/dpkg/status"
-        files = [STATUS_FILE]
+        stamps_directory = ".stamps"
+        files = [status_file]
         files.extend(glob.glob("/var/lib/apt/lists/*Packages"))
-        if glob.glob(STAMPS_DIRECTORY) == []:
-            os.mkdir(STAMPS_DIRECTORY)
+        if glob.glob(stamps_directory) == []:
+            os.mkdir(stamps_directory)
 
         result = False
 
         for f in files:
             stamp_file = f.split("/")[-1]
-            stamp_file = "%s/%s.stamp" % (STAMPS_DIRECTORY, stamp_file)
+            stamp_file = "%s/%s.stamp" % (stamps_directory, stamp_file)
 
             stored_stamp = 0
             real_stamp = 1

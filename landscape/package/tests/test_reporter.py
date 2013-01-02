@@ -3,12 +3,14 @@ import os
 import shutil
 import unittest
 import time
+import glob
+import tempfile
 
 from twisted.internet.defer import Deferred, succeed
 from twisted.internet import reactor
 
 
-from landscape.lib.fs import create_file
+from landscape.lib.fs import create_file, touch_file
 from landscape.lib.fetch import fetch_async, FetchError
 from landscape.lib import bpickle
 from landscape.package.store import (
@@ -1536,6 +1538,29 @@ class PackageReporterAptTest(LandscapeTest):
 
         reactor.callWhenRunning(do_test)
         return deferred
+
+    def test_detect_packages_changes_works(self):
+        """
+        Stamp files are created if none are present, and the method returns
+        that the information changed in that case.
+        If one touches a monitored file, the method detects that something
+        changed.
+        """
+        _, status_file = tempfile.mkstemp()
+        touch_file(status_file)
+        # The first call should change and create the stamp files.
+        result = self.reporter._package_state_has_changed(status_file)
+        self.assertTrue(result)
+        self.assertTrue(os.path.exists(".stamps"))
+        stamps = glob.glob(".stamps/*.stamp")
+        self.assertFalse(len(stamps) == 0)
+        # A second call sees nothing changed.
+        result = self.reporter._package_state_has_changed(status_file)
+        self.assertFalse(result)
+        # Touching a monitored file detects a change.
+        touch_file(status_file)
+        result = self.reporter._package_state_has_changed(status_file)
+        self.assertTrue(result)
 
 
 class GlobalPackageReporterAptTest(LandscapeTest):
