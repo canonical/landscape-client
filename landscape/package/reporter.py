@@ -590,9 +590,6 @@ class PackageReporter(PackageTaskHandler):
                         len(not_installed), len(not_available),
                         len(not_upgrades), len(not_locked)))
 
-        stamp_file = self._config.detect_package_changes_stamp
-        touch_file(stamp_file)
-
         def update_currently_known(result):
             if new_installed:
                 self._store.add_installed(new_installed)
@@ -610,7 +607,10 @@ class PackageReporter(PackageTaskHandler):
                 self._store.remove_available_upgrades(not_upgrades)
             if not_locked:
                 self._store.remove_locked(not_locked)
-            # Something has changed wrt the former run, let's return True
+            # Something has changed wrt the former run, let's update the
+            # timestamp and return True.
+            stamp_file = self._config.detect_package_changes_stamp
+            touch_file(stamp_file)
             return True
 
         result.addCallback(update_currently_known)
