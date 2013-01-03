@@ -974,7 +974,7 @@ class PackageReporterAptTest(LandscapeTest):
 
         self.mocker.order()
 
-        results = [Deferred() for i in range(8)]
+        results = [Deferred() for i in range(7)]
 
         reporter_mock.run_apt_update()
         self.mocker.result(results[0])
