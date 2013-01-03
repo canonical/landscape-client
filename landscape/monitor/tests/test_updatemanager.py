@@ -22,7 +22,7 @@ class UpdateManagerTest(LandscapeTest):
 
     def test_get_prompt(self):
         """
-        L{UpdateManager.get_prompt} returns the value of the
+        L{UpdateManager._get_prompt} returns the value of the
         variable C{Prompt} in the update-manager's configuration.
         """
         content = """
@@ -31,6 +31,27 @@ Prompt=lts
 """
         self.makeFile(path=self.update_manager_filename, content=content)
         self.assertEqual("lts", self.plugin._get_prompt())
+
+    def test_get_prompt_with_invalid_value_configured(self):
+        """
+        L{update_manager._get_prompt} returns "normal" if an invalid value
+        is specified in the file.  A warning is also logged.
+        """
+        content = """
+[DEFAULT]
+Prompt=zarniwhoop
+"""
+        self.makeFile(path=self.update_manager_filename, content=content)
+        self.assertEqual("normal", self.plugin._get_prompt())
+
+    def test_get_prompt_with_missing_config_file(self):
+        """
+        When the configuration file does not exist we just return "normal".
+        Any machine that doesn't have update-manager installed would fit into
+        this category, so there's no need to warn about it.
+        """
+        self.plugin.update_manager_filename = "/I/Do/Not/Exist"
+        self.assertEqual("normal", self.plugin._get_prompt())
 
     def test_send_message(self):
         """
