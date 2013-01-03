@@ -406,7 +406,6 @@ NETWORK_ACTIVITY = Message(
 UPGRADE_RELEASE_PROMPT = Message("upgrade-release-prompt", {"prompt": utf8})
 
 
-
 message_schemas = {}
 for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                OPERATION_RESULT, COMPUTER_INFO, DISTRIBUTION_INFO,

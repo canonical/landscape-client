@@ -1692,10 +1692,10 @@ class PackageReporterUpdateManagerConfigTest(LandscapeTest):
         content = """
 [DEFAULT]
 Prompt=%s
-"""  % prompt
+""" % prompt
         self.reporter.update_manager_config_path = self.makeFile(
             content=content)
-        
+
     def test_get_update_manager_prompt(self):
         """
         Retrieve the current value of the Prompt variable from
