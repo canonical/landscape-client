@@ -53,11 +53,6 @@ class PackageReporter(PackageTaskHandler):
     sources_list_filename = "/etc/apt/sources.list"
     sources_list_directory = "/etc/apt/sources.list.d"
 
-    # This file is used by the update-manager and may contain a "Prompt"
-    # variable which indicates that users are prompted to upgrade the release
-    # when any new release is available ("normal"); when a new LTS release is
-    # available ("lts"); or never ("never").
-
     def run(self):
         result = Deferred()
 

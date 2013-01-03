@@ -13,7 +13,12 @@ class UpdateManager(MonitorPlugin):
         configuration file.
     """
 
+    # This file is used by the update-manager and may contain a "Prompt"
+    # variable which indicates that users are prompted to upgrade the release
+    # when any new release is available ("normal"); when a new LTS release is
+    # available ("lts"); or never ("never").
     update_manager_filename = "/etc/update-manager/release-upgrades"
+
     persist_name = "update-manager"
     run_interval = 900  # 15 minutes
     run_immediately = True
