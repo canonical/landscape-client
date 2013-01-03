@@ -468,7 +468,7 @@ class PackageReporter(PackageTaskHandler):
         stamps_directory = ".stamps"
         files = [status_file]
         files.extend(glob.glob("/var/lib/apt/lists/*Packages"))
-        if glob.glob(stamps_directory) == []:
+        if os.path.exists(stamps_directory):
             os.mkdir(stamps_directory)
 
         result = False
