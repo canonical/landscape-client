@@ -1,5 +1,5 @@
 import ConfigParser
-import os 
+import os
 import logging
 
 from landscape.monitor.plugin import MonitorPlugin
@@ -7,7 +7,7 @@ from landscape.monitor.plugin import MonitorPlugin
 
 class UpdateManager(MonitorPlugin):
     """
-    Report on changes to the update-manager configuration.  
+    Report on changes to the update-manager configuration.
 
     @param update_manager_filename: the path to the update-manager
         configuration file.
@@ -15,7 +15,7 @@ class UpdateManager(MonitorPlugin):
 
     update_manager_filename = "/etc/update-manager/release-upgrades"
     persist_name = "update-manager"
-    run_interval = 900 # 15 minutes
+    run_interval = 900  # 15 minutes
     run_immediately = True
 
     def __init__(self, update_manager_filename=None):

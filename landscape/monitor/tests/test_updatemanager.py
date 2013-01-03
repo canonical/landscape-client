@@ -58,7 +58,7 @@ Prompt=zarniwhoop
         A new C{"update-manager-info"} message should be enqueued if and only
         if the update-manager status of the system has changed.
         """
-        content="""
+        content = """
 [DEFAULT]
 Prompt=never
 """

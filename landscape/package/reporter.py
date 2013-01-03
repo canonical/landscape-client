@@ -1,4 +1,3 @@
-import ConfigParser
 import urlparse
 import logging
 import time
