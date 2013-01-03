@@ -470,7 +470,7 @@ class PackageReporter(PackageTaskHandler):
         lists_dir = apt_pkg.config.find_dir("dir::state::lists")
         stamp_file = self._config.detect_package_changes_stamp
 
-        files = [status_file]
+        files = [status_file, lists_dir]
         files.extend(glob.glob("%s/*Packages" % lists_dir))
         if not os.path.exists(stamp_file):
             touch_file(stamp_file)

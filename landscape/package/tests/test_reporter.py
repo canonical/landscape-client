@@ -1588,6 +1588,20 @@ class PackageReporterAptTest(LandscapeTest):
         result = self.reporter._package_state_has_changed()
         self.assertTrue(result)
 
+    def test_detect_packages_changes_detects_removed_list_file(self):
+        """
+        If a list file is removed from the system, the method returns True.
+        """
+        list_dir = apt_pkg.config.find_dir("dir::state::lists")
+        test_file = os.path.join(list_dir, "testPackages")
+        touch_file(test_file)
+        result = self.reporter._package_state_has_changed()  # Create timestamp
+        self.assertTrue(result)
+
+        os.remove(test_file)
+        result = self.reporter._package_state_has_changed()
+        self.assertTrue(result)
+
 
 class GlobalPackageReporterAptTest(LandscapeTest):
 
