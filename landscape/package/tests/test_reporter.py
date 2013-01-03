@@ -59,12 +59,7 @@ class PackageReporterAptTest(LandscapeTest):
             self.reporter.update_notifier_stamp = "/Not/Existing"
             self.config.data_path = self.makeDir()
             os.mkdir(self.config.package_directory)
-            # Remove the stamp file to make sure we re-compute the package
-            # diff and not assume nothing changed (we're using fixtures, not
-            # the actual files)
             self.check_stamp_file = self.config.detect_package_changes_stamp
-            if os.path.exists(self.check_stamp_file):
-                os.remove(self.check_stamp_file)
 
         result = super(PackageReporterAptTest, self).setUp()
         return result.addCallback(set_up)
@@ -1566,8 +1561,7 @@ class PackageReporterAptTest(LandscapeTest):
         status_file = apt_pkg.config.find_file("dir::state::status")
 
         touch_file(status_file)
-        # The following will create the timestamp.
-        self.reporter._package_state_has_changed()
+        touch_file(self.check_stamp_file)
 
         touch_file(status_file)
         result = self.reporter._package_state_has_changed()
@@ -1579,8 +1573,7 @@ class PackageReporterAptTest(LandscapeTest):
         """
         status_file = apt_pkg.config.find_file("dir::state::status")
         touch_file(status_file)
-        # The following will create the timestamp.
-        self.reporter._package_state_has_changed()
+        touch_file(self.check_stamp_file)
 
         list_dir = apt_pkg.config.find_dir("dir::state::lists")
         # There are no *Packages files in the fixures, let's create one.
@@ -1596,7 +1589,7 @@ class PackageReporterAptTest(LandscapeTest):
         list_dir = apt_pkg.config.find_dir("dir::state::lists")
         test_file = os.path.join(list_dir, "testPackages")
         touch_file(test_file)
-        result = self.reporter._package_state_has_changed()  # Create timestamp
+        touch_file(self.check_stamp_file)
 
         os.remove(test_file)
         result = self.reporter._package_state_has_changed()
