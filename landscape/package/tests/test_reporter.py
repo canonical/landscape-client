@@ -750,6 +750,26 @@ class PackageReporterAptTest(LandscapeTest):
 
         return result.addCallback(got_result)
 
+    def test_detect_packages_creates_stamp_file(self):
+        """
+        When the detect_packages method computes package changes, it creates
+        a stamp file after sending the message.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
+
+        self.assertFalse(os.path.exists(self.check_stamp_file))
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "packages", "available": [(1, 3)]}])
+            self.assertTrue(os.path.exists(self.check_stamp_file))
+
+        result = self.reporter.detect_packages_changes()
+        return result.addCallback(got_result)
+
     def test_detect_packages_changes_with_available(self):
         message_store = self.broker_service.message_store
         message_store.set_accepted_types(["packages"])
@@ -1533,23 +1553,21 @@ class PackageReporterAptTest(LandscapeTest):
         reactor.callWhenRunning(do_test)
         return deferred
 
-    def test_detect_packages_changes_creates_stamp_files(self):
+    def test_detect_packages_doesnt_creates_stamp_files(self):
         """
         Stamp file is created if not present, and the method returns
         that the information changed in that case.
         """
         result = self.reporter._package_state_has_changed()
         self.assertTrue(result)
-        self.assertTrue(os.path.exists(self.check_stamp_file))
+        self.assertFalse(os.path.exists(self.check_stamp_file))
 
     def test_detect_packages_changes_returns_false_if_unchanged(self):
         """
         If a monitored files is not changed (touched), the method returns
         False.
         """
-        apt_pkg.config.find_file("dir::state::status")
-        # The following will create the timestamp.
-        self.reporter._package_state_has_changed()
+        touch_file(self.check_stamp_file)
 
         result = self.reporter._package_state_has_changed()
         self.assertFalse(result)

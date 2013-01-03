@@ -469,22 +469,17 @@ class PackageReporter(PackageTaskHandler):
         status_file = apt_pkg.config.find_file("dir::state::status")
         lists_dir = apt_pkg.config.find_dir("dir::state::lists")
         stamp_file = self._config.detect_package_changes_stamp
+        if not os.path.exists(stamp_file):
+            return True
 
         files = [status_file, lists_dir]
         files.extend(glob.glob("%s/*Packages" % lists_dir))
-        if not os.path.exists(stamp_file):
-            touch_file(stamp_file)
-            return True
 
         last_checked = os.stat(stamp_file).st_mtime
         for f in files:
             last_changed = os.stat(f).st_mtime
-            # We consider equal timestamps to be "changed" to prevent race
-            # conditions.
             if last_changed >= last_checked:
-                touch_file(stamp_file)
                 return True
-        # No need to update the timestamp if nothing changed.
         return False
 
     def _compute_packages_changes(self):
@@ -594,6 +589,9 @@ class PackageReporter(PackageTaskHandler):
                         len(new_upgrades), len(new_locked),
                         len(not_installed), len(not_available),
                         len(not_upgrades), len(not_locked)))
+
+        stamp_file = self._config.detect_package_changes_stamp
+        touch_file(stamp_file)
 
         def update_currently_known(result):
             if new_installed:
