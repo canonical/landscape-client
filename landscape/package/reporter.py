@@ -3,6 +3,8 @@ import logging
 import time
 import sys
 import os
+import glob
+import apt_pkg
 
 from twisted.internet.defer import Deferred, succeed
 
@@ -445,7 +447,43 @@ class PackageReporter(PackageTaskHandler):
         return deferred.addCallback(changes_detected)
 
     def detect_packages_changes(self):
-        """Detect changes in the universe of known packages.
+        """
+        Check if any information regarding packages have changed, and if so
+        compute the changes and send a signal.
+        """
+        if self._package_state_has_changed():
+            return self._compute_packages_changes()
+        else:
+            return succeed(None)
+
+    def _package_state_has_changed(self):
+        """
+        Detect changes in the universe of know packages.
+
+        This uses the state of packages in /var/lib/dpkg/state and other files
+        and simply checks whether they have changed using their "last changed"
+        timestamp on the filesystem.
+
+        @return True if the status changed, False otherwise.
+        """
+        status_file = apt_pkg.config.find_file("dir::state::status")
+        lists_dir = apt_pkg.config.find_dir("dir::state::lists")
+        stamp_file = self._config.detect_package_changes_stamp
+        if not os.path.exists(stamp_file):
+            return True
+
+        files = [status_file, lists_dir]
+        files.extend(glob.glob("%s/*Packages" % lists_dir))
+
+        last_checked = os.stat(stamp_file).st_mtime
+        for f in files:
+            last_changed = os.stat(f).st_mtime
+            if last_changed >= last_checked:
+                return True
+        return False
+
+    def _compute_packages_changes(self):
+        """Analyse changes in the universe of known packages.
 
         This method will verify if there are packages that:
 
@@ -569,7 +607,10 @@ class PackageReporter(PackageTaskHandler):
                 self._store.remove_available_upgrades(not_upgrades)
             if not_locked:
                 self._store.remove_locked(not_locked)
-            # Something has changed wrt the former run, let's return True
+            # Something has changed wrt the former run, let's update the
+            # timestamp and return True.
+            stamp_file = self._config.detect_package_changes_stamp
+            touch_file(stamp_file)
             return True
 
         result.addCallback(update_currently_known)

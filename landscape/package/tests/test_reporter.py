@@ -2,12 +2,13 @@ import sys
 import os
 import unittest
 import time
+import apt_pkg
 
 from twisted.internet.defer import Deferred, succeed
 from twisted.internet import reactor
 
 
-from landscape.lib.fs import create_file
+from landscape.lib.fs import create_file, touch_file
 from landscape.lib.fetch import fetch_async, FetchError
 from landscape.lib import bpickle
 from landscape.package.store import (
@@ -58,6 +59,7 @@ class PackageReporterAptTest(LandscapeTest):
             self.reporter.update_notifier_stamp = "/Not/Existing"
             self.config.data_path = self.makeDir()
             os.mkdir(self.config.package_directory)
+            self.check_stamp_file = self.config.detect_package_changes_stamp
 
         result = super(PackageReporterAptTest, self).setUp()
         return result.addCallback(set_up)
@@ -746,6 +748,26 @@ class PackageReporterAptTest(LandscapeTest):
 
         self.assertFailure(result, Boom)
 
+        return result.addCallback(got_result)
+
+    def test_detect_packages_creates_stamp_file(self):
+        """
+        When the detect_packages method computes package changes, it creates
+        a stamp file after sending the message.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
+
+        self.assertFalse(os.path.exists(self.check_stamp_file))
+
+        def got_result(result):
+            self.assertMessages(message_store.get_pending_messages(),
+                                [{"type": "packages", "available": [(1, 3)]}])
+            self.assertTrue(os.path.exists(self.check_stamp_file))
+
+        result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
 
     def test_detect_packages_changes_with_available(self):
@@ -1530,6 +1552,66 @@ class PackageReporterAptTest(LandscapeTest):
 
         reactor.callWhenRunning(do_test)
         return deferred
+
+    def test_detect_packages_doesnt_creates_stamp_files(self):
+        """
+        Stamp file is created if not present, and the method returns
+        that the information changed in that case.
+        """
+        result = self.reporter._package_state_has_changed()
+        self.assertTrue(result)
+        self.assertFalse(os.path.exists(self.check_stamp_file))
+
+    def test_detect_packages_changes_returns_false_if_unchanged(self):
+        """
+        If a monitored file is not changed (touched), the method returns
+        False.
+        """
+        touch_file(self.check_stamp_file)
+
+        result = self.reporter._package_state_has_changed()
+        self.assertFalse(result)
+
+    def test_detect_packages_changes_returns_true_if_changed(self):
+        """
+        If a monitored file is changed (touched), the method returns True.
+        """
+        status_file = apt_pkg.config.find_file("dir::state::status")
+
+        touch_file(status_file)
+        touch_file(self.check_stamp_file)
+
+        touch_file(status_file)
+        result = self.reporter._package_state_has_changed()
+        self.assertTrue(result)
+
+    def test_detect_packages_changes_works_for_list_files(self):
+        """
+        If a list file is touched, the method returns True.
+        """
+        status_file = apt_pkg.config.find_file("dir::state::status")
+        touch_file(status_file)
+        touch_file(self.check_stamp_file)
+
+        list_dir = apt_pkg.config.find_dir("dir::state::lists")
+        # There are no *Packages files in the fixures, let's create one.
+        touch_file(os.path.join(list_dir, "testPackages"))
+
+        result = self.reporter._package_state_has_changed()
+        self.assertTrue(result)
+
+    def test_detect_packages_changes_detects_removed_list_file(self):
+        """
+        If a list file is removed from the system, the method returns True.
+        """
+        list_dir = apt_pkg.config.find_dir("dir::state::lists")
+        test_file = os.path.join(list_dir, "testPackages")
+        touch_file(test_file)
+        touch_file(self.check_stamp_file)
+
+        os.remove(test_file)
+        result = self.reporter._package_state_has_changed()
+        self.assertTrue(result)
 
 
 class GlobalPackageReporterAptTest(LandscapeTest):

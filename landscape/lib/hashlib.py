@@ -7,7 +7,7 @@ except ImportError:
     from md5 import md5
     from sha import sha as sha1
 else:
-    md5  = _hashlib.md5
+    md5 = _hashlib.md5
     sha1 = _hashlib.sha1
 
 
