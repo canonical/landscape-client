@@ -976,28 +976,31 @@ class PackageReporterAptTest(LandscapeTest):
 
         self.mocker.order()
 
-        results = [Deferred() for i in range(7)]
+        results = [Deferred() for i in range(8)]
 
-        reporter_mock.run_apt_update()
+        reporter_mock.send_upgrade_release_prompt()
         self.mocker.result(results[0])
 
-        reporter_mock.fetch_hash_id_db()
+        reporter_mock.run_apt_update()
         self.mocker.result(results[1])
 
-        reporter_mock.use_hash_id_db()
+        reporter_mock.fetch_hash_id_db()
         self.mocker.result(results[2])
 
-        reporter_mock.handle_tasks()
+        reporter_mock.use_hash_id_db()
         self.mocker.result(results[3])
 
-        reporter_mock.remove_expired_hash_id_requests()
+        reporter_mock.handle_tasks()
         self.mocker.result(results[4])
 
-        reporter_mock.request_unknown_hashes()
+        reporter_mock.remove_expired_hash_id_requests()
         self.mocker.result(results[5])
 
-        reporter_mock.detect_changes()
+        reporter_mock.request_unknown_hashes()
         self.mocker.result(results[6])
+
+        reporter_mock.detect_changes()
+        self.mocker.result(results[7])
 
         self.mocker.replay()
 
@@ -1727,3 +1730,28 @@ Prompt=%s
         """
         self.reporter.update_manager_config_path = "/I/do/not/exist"
         self.assertEqual("normal", self.reporter.get_update_manager_prompt())
+
+    def test_run_send_upgrade_release_prompt(self):
+        """
+        L{PackageReporter.send_upgrade_release_prompt()} sends a message
+        containing the current value of the update-manage release prompt.
+        """
+        self._set_update_prompt("lts")
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["upgrade-release-prompt"])
+        deferred = Deferred()
+
+        def do_test():
+            result = self.reporter.send_upgrade_release_prompt()
+
+            def callback(ignore):
+                message = {"type": "upgrade-release-prompt",
+                           "prompt": u"lts"}
+                self.assertMessages(
+                    message_store.get_pending_messages(), [message])
+
+            result.addCallback(callback)
+            result.chainDeferred(deferred)
+
+        reactor.callWhenRunning(do_test)
+        return deferred

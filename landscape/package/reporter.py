@@ -63,6 +63,9 @@ class PackageReporter(PackageTaskHandler):
     def run(self):
         result = Deferred()
 
+        # Send the current value of the update-manager release prompt
+        result.addCallback(lambda x: self.send_upgrade_release_prompt())
+
         result.addCallback(lambda x: self.run_apt_update())
 
         # If the appropriate hash=>id db is not there, fetch it
@@ -584,6 +587,12 @@ class PackageReporter(PackageTaskHandler):
         return result
 
     def get_update_manager_prompt(self):
+        """
+        Retrieve the update-manager upgrade prompt which dictates when we
+        should prompt users to upgrade the release.  Current valid values are
+        "normal" (prompt on all the availability of all releases), "lts"
+        (prompt only when LTS releases are available), and "never".
+        """
         if not os.path.exists(self.update_manager_config_path):
             # There is no config, so we just act as if it's set to 'normal'
             return "normal"
@@ -600,6 +609,15 @@ class PackageReporter(PackageTaskHandler):
                            valid_prompts))
             logging.warning(message)
         return prompt
+
+    def send_upgrade_release_prompt(self):
+        """
+        Send the current upgrade release prompt to the server.
+        """
+        message = {
+            "type": "upgrade-release-prompt",
+            "prompt": self.get_update_manager_prompt()}
+        return self.send_message(message)
 
 
 class FakeGlobalReporter(PackageReporter):

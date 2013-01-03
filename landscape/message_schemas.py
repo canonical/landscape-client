@@ -403,6 +403,9 @@ NETWORK_ACTIVITY = Message(
     # interval.
     {"activities": Dict(String(), List(Tuple(Int(), Int(), Int())))})
 
+UPGRADE_RELEASE_PROMPT = Message("upgrade-release-prompt", {"prompt": utf8})
+
+
 
 message_schemas = {}
 for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
@@ -415,5 +418,5 @@ for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                ADD_PACKAGES, PACKAGE_REPORTER_RESULT, TEXT_MESSAGE, TEST,
                CUSTOM_GRAPH, REBOOT_REQUIRED, APT_PREFERENCES, EUCALYPTUS_INFO,
                EUCALYPTUS_INFO_ERROR, NETWORK_DEVICE, NETWORK_ACTIVITY,
-               REBOOT_REQUIRED_INFO]:
+               REBOOT_REQUIRED_INFO, UPGRADE_RELEASE_PROMPT]:
     message_schemas[schema.type] = schema
