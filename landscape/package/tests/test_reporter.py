@@ -1553,8 +1553,8 @@ class PackageReporterAptTest(LandscapeTest):
         False.
         """
         apt_pkg.config.find_file("dir::state::status")
-        result = self.reporter._package_state_has_changed()
-        self.assertTrue(result)  # Creates the timestamp
+        # The following will create the timestamp.
+        self.reporter._package_state_has_changed()
 
         result = self.reporter._package_state_has_changed()
         self.assertFalse(result)
@@ -1566,8 +1566,9 @@ class PackageReporterAptTest(LandscapeTest):
         status_file = apt_pkg.config.find_file("dir::state::status")
 
         touch_file(status_file)
-        result = self.reporter._package_state_has_changed()
-        self.assertTrue(result)
+        # The following will create the timestamp.
+        self.reporter._package_state_has_changed()
+
         touch_file(status_file)
         result = self.reporter._package_state_has_changed()
         self.assertTrue(result)
@@ -1596,7 +1597,6 @@ class PackageReporterAptTest(LandscapeTest):
         test_file = os.path.join(list_dir, "testPackages")
         touch_file(test_file)
         result = self.reporter._package_state_has_changed()  # Create timestamp
-        self.assertTrue(result)
 
         os.remove(test_file)
         result = self.reporter._package_state_has_changed()
