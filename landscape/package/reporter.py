@@ -58,13 +58,9 @@ class PackageReporter(PackageTaskHandler):
     # variable which indicates that users are prompted to upgrade the release
     # when any new release is available ("normal"); when a new LTS release is
     # available ("lts"); or never ("never").
-    update_manager_config_path = "/etc/update-manager/release-upgrades"
 
     def run(self):
         result = Deferred()
-
-        # Send the current value of the update-manager release prompt
-        result.addCallback(lambda x: self.send_upgrade_release_prompt())
 
         result.addCallback(lambda x: self.run_apt_update())
 
@@ -585,39 +581,6 @@ class PackageReporter(PackageTaskHandler):
         result.addCallback(update_currently_known)
 
         return result
-
-    def get_update_manager_prompt(self):
-        """
-        Retrieve the update-manager upgrade prompt which dictates when we
-        should prompt users to upgrade the release.  Current valid values are
-        "normal" (prompt on all the availability of all releases), "lts"
-        (prompt only when LTS releases are available), and "never".
-        """
-        if not os.path.exists(self.update_manager_config_path):
-            # There is no config, so we just act as if it's set to 'normal'
-            return "normal"
-        config_file = open(self.update_manager_config_path)
-        parser = ConfigParser.SafeConfigParser()
-        parser.readfp(config_file)
-        prompt = parser.get("DEFAULT", "Prompt")
-        valid_prompts = ["lts", "never", "normal"]
-        if prompt not in valid_prompts:
-            prompt = "normal"
-            message = ("%s contains invalid Prompt value. "
-                       "Should be one of %s." % (
-                           self.update_manager_config_path,
-                           valid_prompts))
-            logging.warning(message)
-        return prompt
-
-    def send_upgrade_release_prompt(self):
-        """
-        Send the current upgrade release prompt to the server.
-        """
-        message = {
-            "type": "upgrade-release-prompt",
-            "prompt": self.get_update_manager_prompt()}
-        return self.send_message(message)
 
 
 class FakeGlobalReporter(PackageReporter):
