@@ -40,6 +40,12 @@ class PackageTaskHandlerConfiguration(Configuration):
         """Get the path to the update-stamp file."""
         return os.path.join(self.package_directory, "update-stamp")
 
+    @property
+    def detect_package_changes_stamp(self):
+        """Get the path to the stamp marking when the last time we checked for
+        changes in the packages was."""
+        return os.path.join(self.data_path, "detect_package_changes_timestamp")
+
 
 class LazyRemoteBroker(object):
     """Wrapper class around L{RemoteBroker} providing lazy initialization.

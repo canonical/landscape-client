@@ -63,8 +63,7 @@ class PackageReporterAptTest(LandscapeTest):
             # Remove the stamp file to make sure we re-compute the package
             # diff and not assume nothing changed (we're using fixtures, not
             # the actual files)
-            self.check_stamp_file = os.path.join(self.config.data_path,
-                                                 "detect_changes_timestamp")
+            self.check_stamp_file = self.config.detect_package_changes_stamp
             if os.path.exists(self.check_stamp_file):
                 os.remove(self.check_stamp_file)
 
@@ -1575,6 +1574,11 @@ class PackageReporterAptTest(LandscapeTest):
         touch_file(status_file)
         result = self.reporter._package_state_has_changed()
         self.assertTrue(result)
+        # The following prevents a race conditions where touch_file() sets
+        # the same time as previously (it is a unix timestamp, therefore only
+        # has a 1 second resolution). This happens because this whole test
+        # usually takes less than a second to run.
+        time.sleep(1)
         touch_file(status_file)
         result = self.reporter._package_state_has_changed()
         self.assertTrue(result)

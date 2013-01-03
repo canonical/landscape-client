@@ -468,8 +468,8 @@ class PackageReporter(PackageTaskHandler):
         """
         status_file = apt_pkg.config.find_file("dir::state::status")
         lists_dir = apt_pkg.config.find_dir("dir::state::lists")
-        stamp_file = os.path.join(self._config.data_path,
-                                        "detect_changes_timestamp")
+        stamp_file = self._config.detect_package_changes_stamp
+
         files = [status_file]
         files.extend(glob.glob("%s/*Packages" % lists_dir))
         if not os.path.exists(stamp_file):
