@@ -50,9 +50,15 @@ class UpdateManager(MonitorPlugin):
         """
         Send the current upgrade release prompt to the server.
         """
+        prompt = self._get_prompt()
+        if prompt == self._persist.get("prompt"):
+            return
+        self._persist.set("prompt", prompt)
         message = {
             "type": "update-manager-info",
-            "prompt": self._get_prompt()}
+            "prompt": prompt}
+        logging.info("Queueing message with updated "
+                     "update-manager status.")
         return self.registry.broker.send_message(message)
 
     def run(self):
