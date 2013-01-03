@@ -60,7 +60,7 @@ class PackageReporterAptTest(LandscapeTest):
             self.reporter.update_notifier_stamp = "/Not/Existing"
             self.config.data_path = self.makeDir()
             os.mkdir(self.config.package_directory)
-            # Remove the stamp files to make sure we re-compute the package
+            # Remove the stamp file to make sure we re-compute the package
             # diff and not assume nothing changed (we're using fixtures, not
             # the actual files)
             self.check_stamp_file = os.path.join(self.config.data_path,
@@ -1542,7 +1542,7 @@ class PackageReporterAptTest(LandscapeTest):
 
     def test_detect_packages_changes_creates_stamp_files(self):
         """
-        Stamp files are created if none are present, and the method returns
+        Stamp file is created if not present, and the method returns
         that the information changed in that case.
         """
         _, status_file = tempfile.mkstemp()
@@ -1554,7 +1554,8 @@ class PackageReporterAptTest(LandscapeTest):
 
     def test_detect_packages_changes_returns_false_if_unchanged(self):
         """
-        If a monitored files is not changed, the method returns False.
+        If a monitored files is not changed (touched), the method returns
+        False.
         """
         _, status_file = tempfile.mkstemp()
         apt_pkg.config.set("dir::state::status", status_file)
@@ -1574,7 +1575,6 @@ class PackageReporterAptTest(LandscapeTest):
         touch_file(status_file)
         result = self.reporter._package_state_has_changed()
         self.assertTrue(result)
-        time.sleep(1)
         touch_file(status_file)
         result = self.reporter._package_state_has_changed()
         self.assertTrue(result)
