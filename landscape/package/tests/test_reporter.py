@@ -1,10 +1,9 @@
 import sys
 import os
-import shutil
 import unittest
 import time
-import glob
 import tempfile
+import apt_pkg
 
 from twisted.internet.defer import Deferred, succeed
 from twisted.internet import reactor
@@ -64,8 +63,10 @@ class PackageReporterAptTest(LandscapeTest):
             # Remove the stamp files to make sure we re-compute the package
             # diff and not assume nothing changed (we're using fixtures, not
             # the actual files)
-            if os.path.exists(".stamps"):
-                shutil.rmtree(".stamps")
+            self.check_stamp_file = os.path.join(self.config.data_path,
+                                                 "detect_changes_timestamp")
+            if os.path.exists(self.check_stamp_file):
+                os.remove(self.check_stamp_file)
 
         result = super(PackageReporterAptTest, self).setUp()
         return result.addCallback(set_up)
@@ -1539,27 +1540,43 @@ class PackageReporterAptTest(LandscapeTest):
         reactor.callWhenRunning(do_test)
         return deferred
 
-    def test_detect_packages_changes_works(self):
+    def test_detect_packages_changes_creates_stamp_files(self):
         """
         Stamp files are created if none are present, and the method returns
         that the information changed in that case.
-        If one touches a monitored file, the method detects that something
-        changed.
         """
         _, status_file = tempfile.mkstemp()
+        apt_pkg.config.set("dir::state::status", status_file)
         touch_file(status_file)
-        # The first call should change and create the stamp files.
-        result = self.reporter._package_state_has_changed(status_file)
+        result = self.reporter._package_state_has_changed()
         self.assertTrue(result)
-        self.assertTrue(os.path.exists(".stamps"))
-        stamps = glob.glob(".stamps/*.stamp")
-        self.assertFalse(len(stamps) == 0)
-        # A second call sees nothing changed.
-        result = self.reporter._package_state_has_changed(status_file)
-        self.assertFalse(result)
-        # Touching a monitored file detects a change.
+        self.assertTrue(os.path.exists(self.check_stamp_file))
+
+    def test_detect_packages_changes_returns_false_if_unchanged(self):
+        """
+        If a monitored files is not changed, the method returns False.
+        """
+        _, status_file = tempfile.mkstemp()
+        apt_pkg.config.set("dir::state::status", status_file)
         touch_file(status_file)
-        result = self.reporter._package_state_has_changed(status_file)
+        result = self.reporter._package_state_has_changed()
+        self.assertTrue(result)
+        result = self.reporter._package_state_has_changed()
+        self.assertFalse(result)
+
+    def test_detect_packages_changes_returns_true_if_changed(self):
+        """
+        If a monitored file is changed (touched), the method returns True.
+        """
+        _, status_file = tempfile.mkstemp()
+        apt_pkg.config.set("dir::state::status", status_file)
+
+        touch_file(status_file)
+        result = self.reporter._package_state_has_changed()
+        self.assertTrue(result)
+        time.sleep(1)
+        touch_file(status_file)
+        result = self.reporter._package_state_has_changed()
         self.assertTrue(result)
 
 

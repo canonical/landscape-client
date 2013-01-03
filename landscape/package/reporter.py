@@ -4,6 +4,7 @@ import time
 import sys
 import os
 import glob
+import apt_pkg
 
 from twisted.internet.defer import Deferred, succeed
 
@@ -455,44 +456,33 @@ class PackageReporter(PackageTaskHandler):
         else:
             return succeed(None)
 
-    def _package_state_has_changed(self, status_file="/var/lib/dpkg/status"):
+    def _package_state_has_changed(self):
         """
         Detect changes in the universe of know packages.
 
         This uses the state of packages in /var/lib/dpkg/state and other files
-        and simply checks whether they have changed against a previously known
-        hash.
+        and simply checks whether they have changed since last check.
 
         @return True if the status changed, False otherwise.
         """
-        stamps_directory = ".stamps"
+        status_file = apt_pkg.config.find_file("dir::state::status")
+        lists_dir = apt_pkg.config.find_dir("dir::state::lists")
+        stamp_file = os.path.join(self._config.data_path,
+                                        "detect_changes_timestamp")
         files = [status_file]
-        files.extend(glob.glob("/var/lib/apt/lists/*Packages"))
-        if os.path.exists(stamps_directory):
-            os.mkdir(stamps_directory)
-
-        result = False
-
-        for f in files:
-            stamp_file = f.split("/")[-1]
-            stamp_file = "%s/%s.stamp" % (stamps_directory, stamp_file)
-
-            stored_stamp = 0
-            real_stamp = 1
-            try:
-                if not os.path.exists(stamp_file):
-                    touch_file(stamp_file)  # stored_stamp is left at 0
-                else:
-                    stored_stamp = os.stat(stamp_file).st_mtime
-                real_stamp = os.stat(f).st_mtime
-            except IOError:
-                result = True
-
-            if stored_stamp < real_stamp:
-                result = True
+        files.extend(glob.glob("%s/*Packages" % lists_dir))
+        if not os.path.exists(stamp_file):
             touch_file(stamp_file)
+            return True
 
-        return result
+        last_checked = os.stat(stamp_file).st_mtime
+        for f in files:
+            last_changed = os.stat(f).st_mtime
+            if last_changed > last_checked:
+                touch_file(stamp_file)
+                return True
+        # No need to update the timestamp if nothing changed.
+        return False
 
     def _compute_packages_changes(self):
         """Analyse changes in the universe of known packages.
