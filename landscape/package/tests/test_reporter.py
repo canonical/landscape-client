@@ -1564,7 +1564,7 @@ class PackageReporterAptTest(LandscapeTest):
 
     def test_detect_packages_changes_returns_false_if_unchanged(self):
         """
-        If a monitored files is not changed (touched), the method returns
+        If a monitored file is not changed (touched), the method returns
         False.
         """
         touch_file(self.check_stamp_file)
