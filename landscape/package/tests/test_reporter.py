@@ -58,8 +58,6 @@ class PackageReporterAptTest(LandscapeTest):
             self.reporter.update_notifier_stamp = "/Not/Existing"
             self.config.data_path = self.makeDir()
             os.mkdir(self.config.package_directory)
-            self.reporter.release_upgrades_config_path = self.makeFile(
-                content="Prompt=normal")
 
         result = super(PackageReporterAptTest, self).setUp()
         return result.addCallback(set_up)
