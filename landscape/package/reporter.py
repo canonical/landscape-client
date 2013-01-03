@@ -479,7 +479,9 @@ class PackageReporter(PackageTaskHandler):
         last_checked = os.stat(stamp_file).st_mtime
         for f in files:
             last_changed = os.stat(f).st_mtime
-            if last_changed > last_checked:
+            # We consider equal timestamps to be "changed" to prevent race
+            # conditions.
+            if last_changed >= last_checked:
                 touch_file(stamp_file)
                 return True
         # No need to update the timestamp if nothing changed.

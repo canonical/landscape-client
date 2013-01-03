@@ -2,7 +2,6 @@ import sys
 import os
 import unittest
 import time
-import tempfile
 import apt_pkg
 
 from twisted.internet.defer import Deferred, succeed
@@ -1544,9 +1543,6 @@ class PackageReporterAptTest(LandscapeTest):
         Stamp file is created if not present, and the method returns
         that the information changed in that case.
         """
-        _, status_file = tempfile.mkstemp()
-        apt_pkg.config.set("dir::state::status", status_file)
-        touch_file(status_file)
         result = self.reporter._package_state_has_changed()
         self.assertTrue(result)
         self.assertTrue(os.path.exists(self.check_stamp_file))
@@ -1556,11 +1552,10 @@ class PackageReporterAptTest(LandscapeTest):
         If a monitored files is not changed (touched), the method returns
         False.
         """
-        _, status_file = tempfile.mkstemp()
-        apt_pkg.config.set("dir::state::status", status_file)
-        touch_file(status_file)
+        apt_pkg.config.find_file("dir::state::status")
         result = self.reporter._package_state_has_changed()
-        self.assertTrue(result)
+        self.assertTrue(result)  # Creates the timestamp
+
         result = self.reporter._package_state_has_changed()
         self.assertFalse(result)
 
@@ -1568,18 +1563,28 @@ class PackageReporterAptTest(LandscapeTest):
         """
         If a monitored file is changed (touched), the method returns True.
         """
-        _, status_file = tempfile.mkstemp()
-        apt_pkg.config.set("dir::state::status", status_file)
+        status_file = apt_pkg.config.find_file("dir::state::status")
 
         touch_file(status_file)
         result = self.reporter._package_state_has_changed()
         self.assertTrue(result)
-        # The following prevents a race conditions where touch_file() sets
-        # the same time as previously (it is a unix timestamp, therefore only
-        # has a 1 second resolution). This happens because this whole test
-        # usually takes less than a second to run.
-        time.sleep(1)
         touch_file(status_file)
+        result = self.reporter._package_state_has_changed()
+        self.assertTrue(result)
+
+    def test_detect_packages_changes_works_for_list_files(self):
+        """
+        If a list file is touched, the method returns True.
+        """
+        status_file = apt_pkg.config.find_file("dir::state::status")
+        touch_file(status_file)
+        # The following will create the timestamp.
+        self.reporter._package_state_has_changed()
+
+        list_dir = apt_pkg.config.find_dir("dir::state::lists")
+        # There are no *Packages files in the fixures, let's create one.
+        touch_file(os.path.join(list_dir, "testPackages"))
+
         result = self.reporter._package_state_has_changed()
         self.assertTrue(result)
 
