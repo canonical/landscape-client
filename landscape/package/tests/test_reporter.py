@@ -978,29 +978,26 @@ class PackageReporterAptTest(LandscapeTest):
 
         results = [Deferred() for i in range(8)]
 
-        reporter_mock.send_upgrade_release_prompt()
+        reporter_mock.run_apt_update()
         self.mocker.result(results[0])
 
-        reporter_mock.run_apt_update()
+        reporter_mock.fetch_hash_id_db()
         self.mocker.result(results[1])
 
-        reporter_mock.fetch_hash_id_db()
+        reporter_mock.use_hash_id_db()
         self.mocker.result(results[2])
 
-        reporter_mock.use_hash_id_db()
+        reporter_mock.handle_tasks()
         self.mocker.result(results[3])
 
-        reporter_mock.handle_tasks()
+        reporter_mock.remove_expired_hash_id_requests()
         self.mocker.result(results[4])
 
-        reporter_mock.remove_expired_hash_id_requests()
+        reporter_mock.request_unknown_hashes()
         self.mocker.result(results[5])
 
-        reporter_mock.request_unknown_hashes()
-        self.mocker.result(results[6])
-
         reporter_mock.detect_changes()
-        self.mocker.result(results[7])
+        self.mocker.result(results[6])
 
         self.mocker.replay()
 
@@ -1671,87 +1668,3 @@ class EqualsHashes(object):
 
     def __eq__(self, other):
         return self._hashes == sorted(other)
-
-
-class PackageReporterUpdateManagerConfigTest(LandscapeTest):
-    """
-    The package reporter should report the "Prompt" variable from the Ubuntu
-    update-manager's config so that this can be respected by landscape server.
-    """
-
-    helpers = [AptFacadeHelper, SimpleRepositoryHelper, BrokerServiceHelper]
-
-    def setUp(self):
-        super(PackageReporterUpdateManagerConfigTest, self).setUp()
-        self.store = PackageStore(self.makeFile())
-        self.config = PackageReporterConfiguration()
-        self.reporter = PackageReporter(
-            self.store, self.facade, self.remote, self.config)
-
-    def _set_update_prompt(self, prompt):
-        content = """
-[DEFAULT]
-Prompt=%s
-""" % prompt
-        self.reporter.update_manager_config_path = self.makeFile(
-            content=content)
-
-    def test_get_update_manager_prompt(self):
-        """
-        Retrieve the current value of the Prompt variable from
-        update-managers configuration file.
-        """
-        self._set_update_prompt("normal")
-        self.assertEqual("normal", self.reporter.get_update_manager_prompt())
-        self._set_update_prompt("lts")
-        self.assertEqual("lts", self.reporter.get_update_manager_prompt())
-        self._set_update_prompt("never")
-        self.assertEqual("never", self.reporter.get_update_manager_prompt())
-
-    def test_get_update_manager_prompt_with_invalid_value(self):
-        """
-        C{get_update_manager_prompt} returns "normal" if an invalid value
-        is specified in the file.  A warning is also logged.
-        """
-        self._set_update_prompt("slartibartfast")
-        logging_mock = self.mocker.replace("logging.warning")
-        logging_mock("%s contains invalid Prompt value. "
-                       "Should be one of ['lts', 'never', 'normal']." %
-                     self.reporter.update_manager_config_path)
-        self.mocker.result(None)
-        self.mocker.replay()
-        self.assertEqual("normal", self.reporter.get_update_manager_prompt())
-
-    def test_get_update_manager_prompt_with_missing_config_file(self):
-        """
-        When the configuration file does not exist we just return "normal".
-        Any machine that doesn't have update-manager installed would fit into
-        this category, so there's no need to warn about it.
-        """
-        self.reporter.update_manager_config_path = "/I/do/not/exist"
-        self.assertEqual("normal", self.reporter.get_update_manager_prompt())
-
-    def test_run_send_upgrade_release_prompt(self):
-        """
-        L{PackageReporter.send_upgrade_release_prompt()} sends a message
-        containing the current value of the update-manage release prompt.
-        """
-        self._set_update_prompt("lts")
-        message_store = self.broker_service.message_store
-        message_store.set_accepted_types(["upgrade-release-prompt"])
-        deferred = Deferred()
-
-        def do_test():
-            result = self.reporter.send_upgrade_release_prompt()
-
-            def callback(ignore):
-                message = {"type": "upgrade-release-prompt",
-                           "prompt": u"lts"}
-                self.assertMessages(
-                    message_store.get_pending_messages(), [message])
-
-            result.addCallback(callback)
-            result.chainDeferred(deferred)
-
-        reactor.callWhenRunning(do_test)
-        return deferred
