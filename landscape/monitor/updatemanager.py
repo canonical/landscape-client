@@ -20,7 +20,7 @@ class UpdateManager(MonitorPlugin):
     update_manager_filename = "/etc/update-manager/release-upgrades"
 
     persist_name = "update-manager"
-    run_interval = 900  # 15 minutes
+    run_interval = 3600  # 1 hour
     run_immediately = True
 
     def __init__(self, update_manager_filename=None):

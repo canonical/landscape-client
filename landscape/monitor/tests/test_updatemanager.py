@@ -75,9 +75,9 @@ Prompt=never
 
     def test_run_interval(self):
         """
-        The L{UpdateManager} plugin will be scheduled to run every 15 minutes.
+        The L{UpdateManager} plugin will be scheduled to run every hour.
         """
-        self.assertEqual(900, self.plugin.run_interval)
+        self.assertEqual(3600, self.plugin.run_interval)
 
     def test_run_immediately(self):
         """
