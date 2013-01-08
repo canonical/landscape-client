@@ -39,14 +39,14 @@ class MemoryStatsTest(LandscapeTest):
         filename = self.makeFile(SAMPLE_MEMORY_INFO)
         memstats = MemoryStats(filename)
         self.assertEqual(memstats.total_memory, 1510)
-        self.assertEqual(memstats.free_memory, 503)
-        self.assertEqual(memstats.used_memory, 1007)
+        self.assertEqual(memstats.free_memory, 852)
+        self.assertEqual(memstats.used_memory, 658)
         self.assertEqual(memstats.total_swap, 1584)
         self.assertEqual(memstats.free_swap, 1567)
         self.assertEqual(memstats.used_swap, 17)
-        self.assertEqual("%.2f" % memstats.free_memory_percentage, "33.31")
+        self.assertEqual("%.2f" % memstats.free_memory_percentage, "56.42")
         self.assertEqual("%.2f" % memstats.free_swap_percentage, "98.93")
-        self.assertEqual("%.2f" % memstats.used_memory_percentage, "66.69")
+        self.assertEqual("%.2f" % memstats.used_memory_percentage, "43.58")
         self.assertEqual("%.2f" % memstats.used_swap_percentage, "1.07")
 
     def test_get_memory_info_without_swap(self):

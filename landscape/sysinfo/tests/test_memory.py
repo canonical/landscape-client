@@ -49,5 +49,5 @@ class MemoryTest(LandscapeTest):
     def test_run_adds_header(self):
         self.memory.run()
         self.assertEqual(self.sysinfo.get_headers(),
-                         [("Memory usage", "34%"),
+                         [("Memory usage", "27%"),
                           ("Swap usage", "39%")])

@@ -75,7 +75,7 @@ VmallocChunk:   510252 kB
         self.reactor.advance(step_size)
 
         message = plugin.create_message()
-        self.assertEqual(message["memory-info"][0], (step_size, 503, 1567))
+        self.assertEqual(message["memory-info"][0], (step_size, 852, 1567))
 
     def test_messaging_flushes(self):
         """
@@ -150,8 +150,8 @@ VmallocChunk:   510252 kB
 
         self.assertMessages(self.mstore.get_pending_messages(),
                             [{"type": "memory-info",
-                              "memory-info": [(step_size, 503, 1567),
-                                              (step_size * 2, 503, 1567)]}])
+                              "memory-info": [(step_size, 852, 1567),
+                                              (step_size * 2, 852, 1567)]}])
 
     def test_call_on_accepted(self):
         plugin = MemoryInfo(source_filename=self.makeFile(self.SAMPLE_DATA),
