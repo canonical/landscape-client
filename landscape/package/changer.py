@@ -181,10 +181,10 @@ class PackageChanger(PackageTaskHandler):
             self._facade.mark_global_upgrade()
 
         for mark_function, mark_ids in [
-            (self._facade.mark_install, install),
-            (self._facade.mark_remove, remove),
-            (self._facade.mark_hold, hold),
-            (self._facade.mark_remove_hold, remove_hold)]:
+                (self._facade.mark_install, install),
+                (self._facade.mark_remove, remove),
+                (self._facade.mark_hold, hold),
+                (self._facade.mark_remove_hold, remove_hold)]:
             for mark_id in mark_ids:
                 hash = self._store.get_id_hash(mark_id)
                 if hash is None:
@@ -256,6 +256,8 @@ class PackageChanger(PackageTaskHandler):
         if policy == POLICY_ALLOW_ALL_CHANGES:
             return True
         if policy == POLICY_ALLOW_INSTALLS:
+            # Note that package upgrades are one removal and one install, so
+            # are not allowed here.
             if result.installs and not result.removals:
                 return True
         return False
@@ -273,7 +275,7 @@ class PackageChanger(PackageTaskHandler):
         self._clear_binaries()
 
         response = {"type": "change-packages-result",
-                   "operation-id": message.get("operation-id")}
+                    "operation-id": message.get("operation-id")}
 
         response["result-code"] = result.code
         if result.text:
