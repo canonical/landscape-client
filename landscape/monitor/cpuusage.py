@@ -4,7 +4,6 @@ import logging
 from landscape.lib.monitor import CoverageMonitor
 from landscape.monitor.plugin import MonitorPlugin
 
-
 LAST_MESURE_KEY = "last-cpu-usage-mesure"
 
 
@@ -12,7 +11,6 @@ class CPUUsage(MonitorPlugin):
     """
     Plugin that captures CPU usage information.
     """
-
     persist_name = "cpu-usage"
     # Prevent the Plugin base-class from scheduling looping calls.
     run_interval = None
@@ -91,25 +89,29 @@ class CPUUsage(MonitorPlugin):
 
         previous_fields = self._persist.get(LAST_MESURE_KEY)
         if previous_fields is not None:
-            # That's a shortcut for the trivial case where nothing changes.
-            if previous_fields == fields:
-                return 0
-
             delta_fields = []
             used_delta = 0
+            reboot = False
             for i in range(len(fields)):
-                delta_fields.append(int(fields[i]) - int(previous_fields[i]))
+                delta = int(fields[i]) - int(previous_fields[i])
+                if delta < 0:
+                    reboot = True
+                    break
+                delta_fields.append(delta)
                 # Sum up all delta fields except idle
                 if i != 3:
                     used_delta = used_delta + delta_fields[i]
 
-            idle_delta = delta_fields[3]
+            if not reboot:
+                idle_delta = delta_fields[3]
+                divisor = idle_delta + used_delta
+                if not divisor == 0:
+                    result = used_delta / float(divisor)
 
-            divisor = idle_delta + used_delta
-            if divisor == 0:
-                result = 0
-            else:
-                result = used_delta / float(divisor)
-
+        # If we just rebooted the result will be aberrant (since the current
+        # fields will be small that the previous fields). In that case, simply
+        # return None for this run (no message will be sent to the server).
+        if result is not None and (result < 0 or result > 1):
+            result = None
         self._persist.set(LAST_MESURE_KEY, fields)
         return result

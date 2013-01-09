@@ -1,4 +1,4 @@
-from landscape.monitor.cpuusage import CPUUsage
+from landscape.monitor.cpuusage import CPUUsage, LAST_MESURE_KEY
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
 
 
@@ -33,7 +33,7 @@ class CPUUsagePluginTest(LandscapeTest):
         self.assertEqual(None, result)
 
         result = plugin._get_cpu_usage(stat_file=thefile)
-        self.assertEqual(result, 0)
+        self.assertEqual(result, None)
 
     def test_get_cpu_usage_multiline_files(self):
         """
@@ -52,7 +52,7 @@ class CPUUsagePluginTest(LandscapeTest):
         self.assertEqual(None, result)
 
         result = plugin._get_cpu_usage(stat_file=thefile)
-        self.assertEqual(result, 0)
+        self.assertEqual(result, None)
 
     def test_get_cpu_usage_100_percent_usage(self):
         """
@@ -115,8 +115,34 @@ class CPUUsagePluginTest(LandscapeTest):
         result = plugin._get_cpu_usage(stat_file=thefile2)
         self.assertEqual(result, 0.5)
 
-    def test_cpu_load(self):
+    def test_get_cpu_usage_after_reboot(self):
         """
+        When the computer just rebooted, we might have a case where the
+        previous values are larger that the current values (since the kernel
+        counts quantums allocated since boot). In this case, the method should
+        return None.
+        """
+        contents1 = """cpu  100 100 100 100 100 100 100 0 0 0"""
+        contents2 = """cpu  200 100 100 200 100 100 100 0 0 0"""
+        mesure1 = ["100", "100", "100", "100", "100", "100", "100", "0",
+                      "0", "0"]
+        mesure2 = ["200", "100", "100", "200", "100", "100", "100", "0",
+                      "0", "0"]
+
+        thefile, thefile2 = self._write_2_stat_files(contents1, contents2)
+        plugin = CPUUsage(create_time=self.reactor.time)
+        self.monitor.add(plugin)
+        plugin._persist.set(LAST_MESURE_KEY, mesure2)
+
+        result = plugin._get_cpu_usage(stat_file=thefile)
+        # The first run will return None since we don't have a previous mesure
+        # yet.
+        self.assertEqual(None, result)
+        self.assertEqual(mesure1, plugin._persist.get(LAST_MESURE_KEY))
+
+    def test_create_message(self):
+        """
+        Calling create_message returns an expected message.
         """
         contents1 = """cpu  100 100 100 100 100 100 100 0 0 0"""
         contents2 = """cpu  200 100 100 100 100 100 100 0 0 0"""
