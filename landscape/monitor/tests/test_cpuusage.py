@@ -130,9 +130,9 @@ class CPUUsagePluginTest(LandscapeTest):
         message = plugin.create_message()
         self.assertTrue("type" in message)
         self.assertEqual(message["type"], "cpu-usage")
-        self.assertTrue("cpu-usage" in message)
+        self.assertTrue("cpu-usages" in message)
 
-        cpu_usages = message["cpu-usage"]
+        cpu_usages = message["cpu-usages"]
         self.assertEqual(len(cpu_usages), 0)
 
         # Trigger a plugin run
@@ -141,9 +141,9 @@ class CPUUsagePluginTest(LandscapeTest):
         message = plugin.create_message()
         self.assertTrue("type" in message)
         self.assertEqual(message["type"], "cpu-usage")
-        self.assertTrue("cpu-usage" in message)
+        self.assertTrue("cpu-usages" in message)
 
-        cpu_usages = message["cpu-usage"]
+        cpu_usages = message["cpu-usages"]
         self.assertEqual(len(cpu_usages), 0)
 
         # Trigger a second plugin run, changing the stat file
@@ -151,6 +151,6 @@ class CPUUsagePluginTest(LandscapeTest):
         self.reactor.advance(interval)
 
         message2 = plugin.create_message()
-        cpu_usages2 = message2["cpu-usage"]
+        cpu_usages2 = message2["cpu-usages"]
         self.assertNotEqual(cpu_usages, cpu_usages2)
         self.assertEqual([(60, 1.0)], cpu_usages2)

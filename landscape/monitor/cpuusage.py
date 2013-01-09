@@ -41,7 +41,7 @@ class CPUUsage(MonitorPlugin):
     def create_message(self):
         cpu_points = self._cpu_usage_points
         self._cpu_usage_points = []
-        return {"type": "cpu-usage", "cpu-usage": cpu_points}
+        return {"type": "cpu-usage", "cpu-usages": cpu_points}
 
     def send_message(self, urgent=False):
         message = self.create_message()
