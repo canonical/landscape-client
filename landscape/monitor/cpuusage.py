@@ -1,8 +1,11 @@
 import time
+import logging
 
-from landscape.accumulate import Accumulator
 from landscape.lib.monitor import CoverageMonitor
 from landscape.monitor.plugin import MonitorPlugin
+
+
+LAST_MESURE_KEY = "last-cpu-usage-mesure"
 
 class CPUUsage(MonitorPlugin):
     """
@@ -19,10 +22,10 @@ class CPUUsage(MonitorPlugin):
         self._monitor_interval = monitor_interval
         self._cpu_usage_points = []
         self._create_time = create_time
+        self._stat_file = "/proc/stat"
 
     def register(self, registry):
         super(CPUUsage, self).register(registry)
-        self._accumulate = Accumulator(self._persist, registry.step_size)
 
         self.registry.reactor.call_every(self._interval, self.run)
 
@@ -51,14 +54,61 @@ class CPUUsage(MonitorPlugin):
     def run(self):
         self._monitor.ping()
         new_timestamp = int(self._create_time())
-        new_cpu_usage = self._get_cpu_usage()
-        step_data = self._accumulate(new_timestamp, new_cpu_usage, "cpu")
-        if step_data:
-            self._cpu_usage_points.append(step_data)
+        new_cpu_usage = self._get_cpu_usage(self._stat_file)
+        if new_cpu_usage is not None:
+            self._cpu_usage_points.append((new_timestamp, new_cpu_usage))
 
+    def _get_cpu_usage(self, stat_file):
+        """
+        This method computes the CPU usage from C{stat_file}.
+        """
+        result = None
+        stat = None
 
-    def _get_cpu_usage(self):
-        """
-        This method computes the CPU usage from /proc/stat.
-        """
-        return True
+        try:
+            with open(stat_file, "r") as f:
+                # The first line of the file is the CPU information aggregated
+                # across cores.
+                stat = f.readline()
+        except IOError:
+            logging.error("Could not open %s for reading, "
+                          "CPU usage cannot be computed.", stat_file)
+            return None
+
+        # The cpu line is composed of:
+        # ["cpu", user, nice, system, idle, iowait, irq, softirq, steal, guest, 
+        # guest nice]
+        # The fields are a sum of USER_HZ quantums since boot spent in each
+        # "category". We need to keep track of what the previous measure was, 
+        # since the current CPU usage will be calculated on the delta between
+        # the previous measure and the current measure.
+        # Remove the trailing "\n"
+        fields = stat.replace("\n", "")
+        fields = fields.split(" ")
+        # remove the "cpu" line header and the first field ("")
+        fields = fields[2:]
+
+        previous_fields = self._persist.get(LAST_MESURE_KEY)
+        if previous_fields is not None:
+            # That's a shortcut for the trivial case where nothing changes.
+            if previous_fields == fields:
+                return 0
+
+            delta_fields = []
+            used_delta = 0
+            for i in range(len(fields)):
+                delta_fields.append(int(fields[i]) - int(previous_fields[i]))
+                # Sum up all delta fields except idle
+                if i != 3:
+                    used_delta = used_delta + delta_fields[i]
+
+            idle_delta = delta_fields[3]
+
+            divisor = idle_delta + used_delta
+            if divisor == 0:
+                result = 0
+            else:
+                result = used_delta / float(divisor)
+
+        self._persist.set(LAST_MESURE_KEY, fields)
+        return result
