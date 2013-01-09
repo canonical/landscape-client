@@ -1,15 +1,6 @@
 from landscape.monitor.cpuusage import CPUUsage
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
 
-class DummyPersist(object):
-
-    state = {}
-
-    def get(self, key):
-        return self.state.get(key)
-
-    def set(self, key, value):
-        self.state[key] = value
 
 class CPUUsagePluginTest(LandscapeTest):
 
@@ -135,7 +126,6 @@ class CPUUsagePluginTest(LandscapeTest):
         plugin = CPUUsage(create_time=self.reactor.time, interval=interval)
         self.monitor.add(plugin)
         plugin._stat_file = thefile
-        plugin._persist = DummyPersist()
 
         message = plugin.create_message()
         self.assertTrue("type" in message)

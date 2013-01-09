@@ -7,6 +7,7 @@ from landscape.monitor.plugin import MonitorPlugin
 
 LAST_MESURE_KEY = "last-cpu-usage-mesure"
 
+
 class CPUUsage(MonitorPlugin):
     """
     Plugin that captures CPU usage information.
@@ -16,7 +17,7 @@ class CPUUsage(MonitorPlugin):
     # Prevent the Plugin base-class from scheduling looping calls.
     run_interval = None
 
-    def __init__(self, interval=30, monitor_interval=60*60,
+    def __init__(self, interval=30, monitor_interval=60 * 60,
                  create_time=time.time):
         self._interval = interval
         self._monitor_interval = monitor_interval
@@ -76,10 +77,10 @@ class CPUUsage(MonitorPlugin):
             return None
 
         # The cpu line is composed of:
-        # ["cpu", user, nice, system, idle, iowait, irq, softirq, steal, guest, 
+        # ["cpu", user, nice, system, idle, iowait, irq, softirq, steal, guest,
         # guest nice]
         # The fields are a sum of USER_HZ quantums since boot spent in each
-        # "category". We need to keep track of what the previous measure was, 
+        # "category". We need to keep track of what the previous measure was,
         # since the current CPU usage will be calculated on the delta between
         # the previous measure and the current measure.
         # Remove the trailing "\n"
