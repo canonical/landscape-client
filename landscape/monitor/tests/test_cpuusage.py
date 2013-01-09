@@ -154,3 +154,63 @@ class CPUUsagePluginTest(LandscapeTest):
         cpu_usages2 = message2["cpu-usages"]
         self.assertNotEqual(cpu_usages, cpu_usages2)
         self.assertEqual([(60, 1.0)], cpu_usages2)
+
+    def test_never_exchange_empty_messages(self):
+        """
+        The plugin will create a message with an empty
+        C{cpu-usages} list when no previous data is available.  If an empty
+        message is created during exchange, it should not be queued.
+        """
+        self.mstore.set_accepted_types(["cpu-usage"])
+
+        plugin = CPUUsage(create_time=self.reactor.time)
+        self.monitor.add(plugin)
+
+        self.monitor.exchange()
+        self.assertEqual(len(self.mstore.get_pending_messages()), 0)
+
+    def test_exchange_messages(self):
+        """
+        The CPU usage plugin queues message when manager.exchange()
+        is called.
+        """
+        contents1 = """cpu  100 100 100 100 100 100 100 0 0 0"""
+        contents2 = """cpu  200 100 100 100 100 100 100 0 0 0"""
+
+        thefile, thefile2 = self._write_2_stat_files(contents1, contents2)
+
+        interval = 30
+        self.mstore.set_accepted_types(["cpu-usage"])
+
+        plugin = CPUUsage(create_time=self.reactor.time,
+                          interval=interval)
+        plugin._stat_file = thefile
+        self.monitor.add(plugin)
+
+        self.reactor.advance(interval)
+        plugin._stat_file = thefile2
+
+        self.reactor.advance(interval)
+        self.monitor.exchange()
+
+        self.assertMessages(self.mstore.get_pending_messages(),
+                            [{"type": "cpu-usage",
+                              "cpu-usages": [(60, 1.0)]}])
+
+    def test_no_message_if_not_accepted(self):
+        """
+        Don't add any messages at all if the broker isn't currently
+        accepting their type.
+        """
+        interval = 30
+
+        plugin = CPUUsage(create_time=self.reactor.time,
+                          interval=interval)
+
+        self.monitor.add(plugin)
+
+        self.reactor.advance(self.monitor.step_size * 2)
+        self.monitor.exchange()
+
+        self.mstore.set_accepted_types(["cpu-usage"])
+        self.assertMessages(list(self.mstore.get_pending_messages()), [])
