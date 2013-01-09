@@ -6,14 +6,11 @@ class CPUUsagePluginTest(LandscapeTest):
 
     helpers = [MonitorHelper]
 
-    def _write_2_stat_files(self, contents_1, contents_2):
-        statfile1 = self.makeFile()
-        statfile2 = self.makeFile()
-        with open(statfile1, "w") as f:
-            f.write(contents_1)
-        with open(statfile2, "w") as f:
-            f.write(contents_2)
-        return (statfile1, statfile2)
+    def _write_stat_file(self, contents):
+        statfile = self.makeFile()
+        with open(statfile, "w") as f:
+            f.write(contents)
+        return statfile
 
     def test_get_cpu_usage_file_not_changed(self):
         """
@@ -21,9 +18,8 @@ class CPUUsagePluginTest(LandscapeTest):
         C{_get_cpu_usage} method returns 0.
         """
         contents1 = """cpu  100 100 100 100 100 100 100 0 0 0"""
-        contents2 = """cpu  100 100 100 100 100 100 100 0 0 0"""
 
-        thefile, thefile2 = self._write_2_stat_files(contents1, contents2)
+        thefile = self._write_stat_file(contents1)
         plugin = CPUUsage(create_time=self.reactor.time)
         self.monitor.add(plugin)
 
@@ -40,9 +36,8 @@ class CPUUsagePluginTest(LandscapeTest):
         The C{_get_cpu_usage} method parses multiline stat files correctly.
         """
         contents1 = """cpu  100 100 100 100 100 100 100 0 0 0\nsome garbage"""
-        contents2 = """cpu  100 100 100 100 100 100 100 0 0 0\nsome stuff"""
 
-        thefile, thefile2 = self._write_2_stat_files(contents1, contents2)
+        thefile = self._write_stat_file(contents1)
         plugin = CPUUsage(create_time=self.reactor.time)
         self.monitor.add(plugin)
 
@@ -62,7 +57,8 @@ class CPUUsagePluginTest(LandscapeTest):
         contents1 = """cpu  100 100 100 100 100 100 100 0 0 0"""
         contents2 = """cpu  200 100 100 100 100 100 100 0 0 0"""
 
-        thefile, thefile2 = self._write_2_stat_files(contents1, contents2)
+        thefile = self._write_stat_file(contents1)
+        thefile2 = self._write_stat_file(contents2)
         plugin = CPUUsage(create_time=self.reactor.time)
         self.monitor.add(plugin)
 
@@ -82,7 +78,8 @@ class CPUUsagePluginTest(LandscapeTest):
         contents1 = """cpu  100 100 100 100 100 100 100 0 0 0"""
         contents2 = """cpu  100 100 100 200 100 100 100 0 0 0"""
 
-        thefile, thefile2 = self._write_2_stat_files(contents1, contents2)
+        thefile = self._write_stat_file(contents1)
+        thefile2 = self._write_stat_file(contents2)
         plugin = CPUUsage(create_time=self.reactor.time)
         self.monitor.add(plugin)
 
@@ -103,7 +100,8 @@ class CPUUsagePluginTest(LandscapeTest):
         contents1 = """cpu  100 100 100 100 100 100 100 0 0 0"""
         contents2 = """cpu  200 100 100 200 100 100 100 0 0 0"""
 
-        thefile, thefile2 = self._write_2_stat_files(contents1, contents2)
+        thefile = self._write_stat_file(contents1)
+        thefile2 = self._write_stat_file(contents2)
         plugin = CPUUsage(create_time=self.reactor.time)
         self.monitor.add(plugin)
 
@@ -123,13 +121,13 @@ class CPUUsagePluginTest(LandscapeTest):
         return None.
         """
         contents1 = """cpu  100 100 100 100 100 100 100 0 0 0"""
-        contents2 = """cpu  200 100 100 200 100 100 100 0 0 0"""
+
         mesure1 = ["100", "100", "100", "100", "100", "100", "100", "0",
                       "0", "0"]
         mesure2 = ["200", "100", "100", "200", "100", "100", "100", "0",
                       "0", "0"]
 
-        thefile, thefile2 = self._write_2_stat_files(contents1, contents2)
+        thefile = self._write_stat_file(contents1)
         plugin = CPUUsage(create_time=self.reactor.time)
         self.monitor.add(plugin)
         plugin._persist.set(LAST_MESURE_KEY, mesure2)
@@ -147,7 +145,8 @@ class CPUUsagePluginTest(LandscapeTest):
         contents1 = """cpu  100 100 100 100 100 100 100 0 0 0"""
         contents2 = """cpu  200 100 100 100 100 100 100 0 0 0"""
 
-        thefile, thefile2 = self._write_2_stat_files(contents1, contents2)
+        thefile = self._write_stat_file(contents1)
+        thefile2 = self._write_stat_file(contents2)
         interval = 30
         plugin = CPUUsage(create_time=self.reactor.time, interval=interval)
         self.monitor.add(plugin)
@@ -203,7 +202,8 @@ class CPUUsagePluginTest(LandscapeTest):
         contents1 = """cpu  100 100 100 100 100 100 100 0 0 0"""
         contents2 = """cpu  200 100 100 100 100 100 100 0 0 0"""
 
-        thefile, thefile2 = self._write_2_stat_files(contents1, contents2)
+        thefile = self._write_stat_file(contents1)
+        thefile2 = self._write_stat_file(contents2)
 
         interval = 30
         self.mstore.set_accepted_types(["cpu-usage"])
