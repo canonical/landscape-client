@@ -1,10 +1,12 @@
 import time
 import logging
 
+from landscape.accumulate import Accumulator
 from landscape.lib.monitor import CoverageMonitor
 from landscape.monitor.plugin import MonitorPlugin
 
 LAST_MESURE_KEY = "last-cpu-usage-mesure"
+ACCUMULATOR_KEY = "cpu-usage-accumulator"
 
 
 class CPUUsage(MonitorPlugin):
@@ -25,6 +27,7 @@ class CPUUsage(MonitorPlugin):
 
     def register(self, registry):
         super(CPUUsage, self).register(registry)
+        self._accumulate = Accumulator(self._persist, registry.step_size)
 
         self.registry.reactor.call_every(self._interval, self.run)
 
@@ -54,8 +57,13 @@ class CPUUsage(MonitorPlugin):
         self._monitor.ping()
         new_timestamp = int(self._create_time())
         new_cpu_usage = self._get_cpu_usage(self._stat_file)
+
+        step_data = None
         if new_cpu_usage is not None:
-            self._cpu_usage_points.append((new_timestamp, new_cpu_usage))
+            step_data = self._accumulate(new_timestamp, new_cpu_usage,
+                                        ACCUMULATOR_KEY)
+        if step_data is not None:
+            self._cpu_usage_points.append(step_data)
 
     def _get_cpu_usage(self, stat_file):
         """

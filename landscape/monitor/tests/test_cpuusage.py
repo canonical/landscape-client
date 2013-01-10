@@ -142,43 +142,26 @@ class CPUUsagePluginTest(LandscapeTest):
         """
         Calling create_message returns an expected message.
         """
-        contents1 = """cpu  100 100 100 100 100 100 100 0 0 0"""
-        contents2 = """cpu  200 100 100 100 100 100 100 0 0 0"""
-
-        thefile = self._write_stat_file(contents1)
-        thefile2 = self._write_stat_file(contents2)
-        interval = 30
-        plugin = CPUUsage(create_time=self.reactor.time, interval=interval)
+        plugin = CPUUsage(create_time=self.reactor.time)
         self.monitor.add(plugin)
-        plugin._stat_file = thefile
 
+        plugin._cpu_usage_points = []
         message = plugin.create_message()
         self.assertTrue("type" in message)
         self.assertEqual(message["type"], "cpu-usage")
         self.assertTrue("cpu-usages" in message)
-
         cpu_usages = message["cpu-usages"]
         self.assertEqual(len(cpu_usages), 0)
 
-        # Trigger a plugin run
-        self.reactor.advance(interval)
-
+        point = (60, 1.0)
+        plugin._cpu_usage_points = [point]
         message = plugin.create_message()
         self.assertTrue("type" in message)
         self.assertEqual(message["type"], "cpu-usage")
         self.assertTrue("cpu-usages" in message)
-
         cpu_usages = message["cpu-usages"]
-        self.assertEqual(len(cpu_usages), 0)
-
-        # Trigger a second plugin run, changing the stat file
-        plugin._stat_file = thefile2
-        self.reactor.advance(interval)
-
-        message2 = plugin.create_message()
-        cpu_usages2 = message2["cpu-usages"]
-        self.assertNotEqual(cpu_usages, cpu_usages2)
-        self.assertEqual([(60, 1.0)], cpu_usages2)
+        self.assertEqual(len(cpu_usages), 1)
+        self.assertEqual(point, cpu_usages[0])
 
     def test_never_exchange_empty_messages(self):
         """
@@ -199,24 +182,12 @@ class CPUUsagePluginTest(LandscapeTest):
         The CPU usage plugin queues message when manager.exchange()
         is called.
         """
-        contents1 = """cpu  100 100 100 100 100 100 100 0 0 0"""
-        contents2 = """cpu  200 100 100 100 100 100 100 0 0 0"""
-
-        thefile = self._write_stat_file(contents1)
-        thefile2 = self._write_stat_file(contents2)
-
-        interval = 30
         self.mstore.set_accepted_types(["cpu-usage"])
 
-        plugin = CPUUsage(create_time=self.reactor.time,
-                          interval=interval)
-        plugin._stat_file = thefile
+        plugin = CPUUsage(create_time=self.reactor.time)
+        plugin._cpu_usage_points = [(60, 1.0)]
         self.monitor.add(plugin)
 
-        self.reactor.advance(interval)
-        plugin._stat_file = thefile2
-
-        self.reactor.advance(interval)
         self.monitor.exchange()
 
         self.assertMessages(self.mstore.get_pending_messages(),
@@ -240,3 +211,51 @@ class CPUUsagePluginTest(LandscapeTest):
 
         self.mstore.set_accepted_types(["cpu-usage"])
         self.assertMessages(list(self.mstore.get_pending_messages()), [])
+
+    def test_plugin_run(self):
+        """
+        The plugin's run() method fills in the _cpu_usage_points with
+        accumulated samples after each C{monitor.step_size} period.
+        """
+        plugin = CPUUsage(create_time=self.reactor.time)
+        self.monitor.add(plugin)
+
+        def fake_get_cpu_usage(self):
+            return 1.0
+
+        plugin._get_cpu_usage = fake_get_cpu_usage
+        self.reactor.advance(self.monitor.step_size * 2)
+
+        self.assertNotEqual([], plugin._cpu_usage_points)
+        self.assertEqual([(300, 1.0), (600, 1.0)], plugin._cpu_usage_points)
+
+    def test_plugin_run_with_None(self):
+        """
+        The plugin's run() method fills in the _cpu_usage_points with
+        accumulated samples after each C{monitor.step_size} period.
+        Holes in the data (in case of error the method returns None) are
+        handled gracefully, and are filled with averaged data.
+        """
+        plugin = CPUUsage(create_time=self.reactor.time)
+        self.monitor.add(plugin)
+
+        def fake_get_cpu_usage(self):
+            return 1.0
+
+        def fake_get_cpu_usage_none(self):
+            return None
+
+        plugin._get_cpu_usage = fake_get_cpu_usage
+        self.reactor.advance(self.monitor.step_size)
+        plugin._get_cpu_usage = fake_get_cpu_usage_none
+        self.reactor.advance(self.monitor.step_size)
+
+        self.assertNotEqual([], plugin._cpu_usage_points)
+        self.assertEqual([(300, 1.0)], plugin._cpu_usage_points)
+
+        # If we record values once again the "blank" period will be smoothed
+        # over with the new points.
+        plugin._get_cpu_usage = fake_get_cpu_usage
+        self.reactor.advance(self.monitor.step_size)
+        self.assertEqual([(300, 1.0), (600, 1.0), (900, 1.0)],
+                         plugin._cpu_usage_points)
