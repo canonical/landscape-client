@@ -89,7 +89,6 @@ class CPUUsage(MonitorPlugin):
         # the previous measure and the current measure.
         # Remove the trailing "\n"
         fields = stat.split()[1:]
-
         idle = int(fields[3])
         value = sum(int(i) for i in fields)
 
@@ -99,8 +98,6 @@ class CPUUsage(MonitorPlugin):
             if delta >= 0:
                 result = (delta - idle + previous[1]) / float(delta)
 
-        if result is not None and (result < 0 or result > 1):
-            result = None
         self._persist.set(LAST_MESURE_KEY, (value, idle))
 
         return result

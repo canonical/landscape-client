@@ -144,8 +144,6 @@ class CPUUsagePluginTest(LandscapeTest):
         plugin._persist.set(LAST_MESURE_KEY, mesure2)
 
         result = plugin._get_cpu_usage(stat_file=thefile)
-        # The first run will return None since we don't have a previous mesure
-        # yet.
         self.assertIs(None, result)
         self.assertEqual(mesure1, plugin._persist.get(LAST_MESURE_KEY))
 
