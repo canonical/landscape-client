@@ -26,10 +26,10 @@ class CPUUsagePluginTest(LandscapeTest):
         result = plugin._get_cpu_usage(stat_file=thefile)
         # The first run will return None since we don't have a previous mesure
         # yet.
-        self.assertEqual(None, result)
+        self.assertIs(None, result)
 
         result = plugin._get_cpu_usage(stat_file=thefile)
-        self.assertEqual(result, None)
+        self.assertIs(None, result)
 
     def test_get_cpu_usage_multiline_files(self):
         """
@@ -44,10 +44,10 @@ class CPUUsagePluginTest(LandscapeTest):
         result = plugin._get_cpu_usage(stat_file=thefile)
         # The first run will return None since we don't have a previous mesure
         # yet.
-        self.assertEqual(None, result)
+        self.assertIs(None, result)
 
         result = plugin._get_cpu_usage(stat_file=thefile)
-        self.assertEqual(result, None)
+        self.assertIs(None, result)
 
     def test_get_cpu_usage_100_percent_usage(self):
         """
@@ -65,7 +65,7 @@ class CPUUsagePluginTest(LandscapeTest):
         result = plugin._get_cpu_usage(stat_file=thefile)
         # The first run will return None since we don't have a previous mesure
         # yet.
-        self.assertEqual(None, result)
+        self.assertIs(None, result)
 
         result = plugin._get_cpu_usage(stat_file=thefile2)
         self.assertEqual(result, 1)
@@ -86,7 +86,7 @@ class CPUUsagePluginTest(LandscapeTest):
         result = plugin._get_cpu_usage(stat_file=thefile)
         # The first run will return None since we don't have a previous mesure
         # yet.
-        self.assertEqual(None, result)
+        self.assertIs(None, result)
 
         result = plugin._get_cpu_usage(stat_file=thefile2)
         self.assertEqual(result, 0)
@@ -108,7 +108,7 @@ class CPUUsagePluginTest(LandscapeTest):
         result = plugin._get_cpu_usage(stat_file=thefile)
         # The first run will return None since we don't have a previous mesure
         # yet.
-        self.assertEqual(None, result)
+        self.assertIs(None, result)
 
         result = plugin._get_cpu_usage(stat_file=thefile2)
         self.assertEqual(result, 0.5)
@@ -123,9 +123,9 @@ class CPUUsagePluginTest(LandscapeTest):
         contents1 = """cpu  100 100 100 100 100 100 100 0 0 0"""
 
         mesure1 = ["100", "100", "100", "100", "100", "100", "100", "0",
-                      "0", "0"]
+                   "0", "0"]
         mesure2 = ["200", "100", "100", "200", "100", "100", "100", "0",
-                      "0", "0"]
+                   "0", "0"]
 
         thefile = self._write_stat_file(contents1)
         plugin = CPUUsage(create_time=self.reactor.time)
@@ -135,7 +135,7 @@ class CPUUsagePluginTest(LandscapeTest):
         result = plugin._get_cpu_usage(stat_file=thefile)
         # The first run will return None since we don't have a previous mesure
         # yet.
-        self.assertEqual(None, result)
+        self.assertIs(None, result)
         self.assertEqual(mesure1, plugin._persist.get(LAST_MESURE_KEY))
 
     def test_create_message(self):

@@ -70,8 +70,6 @@ class CPUUsage(MonitorPlugin):
         This method computes the CPU usage from C{stat_file}.
         """
         result = None
-        stat = None
-
         try:
             with open(stat_file, "r") as f:
                 # The first line of the file is the CPU information aggregated
@@ -90,10 +88,7 @@ class CPUUsage(MonitorPlugin):
         # since the current CPU usage will be calculated on the delta between
         # the previous measure and the current measure.
         # Remove the trailing "\n"
-        fields = stat.replace("\n", "")
-        fields = fields.split(" ")
-        # remove the "cpu" line header and the first field ("")
-        fields = fields[2:]
+        fields = stat.split()[1:]
 
         previous_fields = self._persist.get(LAST_MESURE_KEY)
         if previous_fields is not None:
