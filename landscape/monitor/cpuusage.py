@@ -90,31 +90,17 @@ class CPUUsage(MonitorPlugin):
         # Remove the trailing "\n"
         fields = stat.split()[1:]
 
-        previous_fields = self._persist.get(LAST_MESURE_KEY)
-        if previous_fields is not None:
-            delta_fields = []
-            used_delta = 0
-            reboot = False
-            for i in range(len(fields)):
-                delta = int(fields[i]) - int(previous_fields[i])
-                if delta < 0:
-                    reboot = True
-                    break
-                delta_fields.append(delta)
-                # Sum up all delta fields except idle
-                if i != 3:
-                    used_delta = used_delta + delta_fields[i]
+        idle = int(fields[3])
+        value = sum(int(i) for i in fields)
 
-            if not reboot:
-                idle_delta = delta_fields[3]
-                divisor = idle_delta + used_delta
-                if not divisor == 0:
-                    result = used_delta / float(divisor)
+        previous = self._persist.get(LAST_MESURE_KEY)
+        if previous is not None and value != previous[0]:
+            delta = value - previous[0]
+            if delta >= 0:
+                result = (delta - idle + previous[1]) / float(delta)
 
-        # If we just rebooted the result will be aberrant (since the current
-        # fields will be small that the previous fields). In that case, simply
-        # return None for this run (no message will be sent to the server).
         if result is not None and (result < 0 or result > 1):
             result = None
-        self._persist.set(LAST_MESURE_KEY, fields)
+        self._persist.set(LAST_MESURE_KEY, (value, idle))
+
         return result

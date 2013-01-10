@@ -122,10 +122,8 @@ class CPUUsagePluginTest(LandscapeTest):
         """
         contents1 = """cpu  100 100 100 100 100 100 100 0 0 0"""
 
-        mesure1 = ["100", "100", "100", "100", "100", "100", "100", "0",
-                   "0", "0"]
-        mesure2 = ["200", "100", "100", "200", "100", "100", "100", "0",
-                   "0", "0"]
+        mesure1 = (700, 100)
+        mesure2 = (900, 10)
 
         thefile = self._write_stat_file(contents1)
         plugin = CPUUsage(create_time=self.reactor.time)
