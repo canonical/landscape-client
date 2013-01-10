@@ -158,18 +158,18 @@ class CPUUsagePluginTest(LandscapeTest):
 
         plugin._cpu_usage_points = []
         message = plugin.create_message()
-        self.assertTrue("type" in message)
+        self.assertIn("type", message)
         self.assertEqual(message["type"], "cpu-usage")
-        self.assertTrue("cpu-usages" in message)
+        self.assertIn("cpu-usages", message)
         cpu_usages = message["cpu-usages"]
         self.assertEqual(len(cpu_usages), 0)
 
         point = (60, 1.0)
         plugin._cpu_usage_points = [point]
         message = plugin.create_message()
-        self.assertTrue("type" in message)
+        self.assertIn("type", message)
         self.assertEqual(message["type"], "cpu-usage")
-        self.assertTrue("cpu-usages" in message)
+        self.assertIn("cpu-usages", message)
         cpu_usages = message["cpu-usages"]
         self.assertEqual(len(cpu_usages), 1)
         self.assertEqual(point, cpu_usages[0])
