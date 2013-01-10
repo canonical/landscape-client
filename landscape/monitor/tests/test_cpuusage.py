@@ -12,10 +12,23 @@ class CPUUsagePluginTest(LandscapeTest):
             f.write(contents)
         return statfile
 
+    def test_get_cpu_usage_file_unreadable(self):
+        """
+        When the file is unreadable or somehow creates an IOError (like when
+        it doesn't exist), the method returns None.
+        """
+        self.log_helper.ignore_errors("Could not open.*")
+        thefile = "/tmp/whatever/I/do/not/exist"
+        plugin = CPUUsage(create_time=self.reactor.time)
+        self.monitor.add(plugin)
+
+        result = plugin._get_cpu_usage(stat_file=thefile)
+        self.assertIs(None, result)
+
     def test_get_cpu_usage_file_not_changed(self):
         """
         When the stat file did not change between calls, the
-        C{_get_cpu_usage} method returns 0.
+        C{_get_cpu_usage} method returns None.
         """
         contents1 = """cpu  100 100 100 100 100 100 100 0 0 0"""
 
