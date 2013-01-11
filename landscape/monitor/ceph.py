@@ -3,6 +3,7 @@ import os
 
 from landscape.accumulate import Accumulator
 from landscape.lib.monitor import CoverageMonitor
+from landscape.lib.command import run_command, CommandError
 from landscape.monitor.plugin import MonitorPlugin
 
 ACCUMULATOR_KEY = "ceph-usage-accumulator"
@@ -66,9 +67,40 @@ class CephUsage(MonitorPlugin):
             self._ceph_usage_points.append(step_data)
 
     def _get_ceph_usage(self, config_file):
-        # Execute "ceph status" , get output.
+
+        # Check if a ceph config file is available.
         if not os.path.exists(config_file):
-            # There is no config file - it's probably not a ceph machine.
+            # There is no config file - it's not a ceph machine.
             return None
 
-        return True
+        output = self._get_ceph_command_output()
+
+        if output is None:
+            return None
+
+        lines = output.split("\n")
+
+        pg_line = None
+        for line in lines:
+            if "pgmap" in line:
+                pg_line = line.split()
+                break
+
+        total = pg_line[-3]  # Total space
+        available = pg_line[-6]  # Available for objects
+        #used = pg_line[-9]  # Used by objects
+        # Note: used + available is NOT equal to total (there is some used
+        # space for duplication and system info etc...)
+
+        filled = int(total) - int(available)
+
+        return filled / float(total)
+
+    def _get_ceph_command_output(self):
+        try:
+            output = run_command("ceph status")
+        except (OSError, CommandError):
+            # If the command line client isn't available, we assume it's not
+            # a ceph monitor machine.
+            return None
+        return output
