@@ -30,14 +30,14 @@ class CPUUsagePluginTest(LandscapeTest):
         When the stat file did not change between calls, the
         C{_get_cpu_usage} method returns None.
         """
-        contents1 = """cpu  100 100 100 100 100 100 100 0 0 0"""
+        contents1 = "cpu  100 100 100 100 100 100 100 0 0 0"
 
         thefile = self._write_stat_file(contents1)
         plugin = CPUUsage(create_time=self.reactor.time)
         self.monitor.add(plugin)
 
         result = plugin._get_cpu_usage(stat_file=thefile)
-        # The first run will return None since we don't have a previous mesure
+        # The first run will return None since we don't have a previous measure
         # yet.
         self.assertIs(None, result)
 
@@ -48,14 +48,14 @@ class CPUUsagePluginTest(LandscapeTest):
         """
         The C{_get_cpu_usage} method parses multiline stat files correctly.
         """
-        contents1 = """cpu  100 100 100 100 100 100 100 0 0 0\nsome garbage"""
+        contents1 = "cpu  100 100 100 100 100 100 100 0 0 0\nsome garbage"
 
         thefile = self._write_stat_file(contents1)
         plugin = CPUUsage(create_time=self.reactor.time)
         self.monitor.add(plugin)
 
         result = plugin._get_cpu_usage(stat_file=thefile)
-        # The first run will return None since we don't have a previous mesure
+        # The first run will return None since we don't have a previous measure
         # yet.
         self.assertIs(None, result)
 
@@ -67,8 +67,8 @@ class CPUUsagePluginTest(LandscapeTest):
         When two consecutive calls to C{_get_cpu_usage} show a CPU usage of
         100%, the method returns 1.
         """
-        contents1 = """cpu  100 100 100 100 100 100 100 0 0 0"""
-        contents2 = """cpu  200 100 100 100 100 100 100 0 0 0"""
+        contents1 = "cpu  100 100 100 100 100 100 100 0 0 0"
+        contents2 = "cpu  200 100 100 100 100 100 100 0 0 0"
 
         thefile = self._write_stat_file(contents1)
         thefile2 = self._write_stat_file(contents2)
@@ -76,7 +76,7 @@ class CPUUsagePluginTest(LandscapeTest):
         self.monitor.add(plugin)
 
         result = plugin._get_cpu_usage(stat_file=thefile)
-        # The first run will return None since we don't have a previous mesure
+        # The first run will return None since we don't have a previous measure
         # yet.
         self.assertIs(None, result)
 
@@ -88,8 +88,8 @@ class CPUUsagePluginTest(LandscapeTest):
         When two consecutive calls to C{_get_cpu_usage} show a CPU usage of
         0% (all the changes are in the idle column) the method returns 0.
         """
-        contents1 = """cpu  100 100 100 100 100 100 100 0 0 0"""
-        contents2 = """cpu  100 100 100 200 100 100 100 0 0 0"""
+        contents1 = "cpu  100 100 100 100 100 100 100 0 0 0"
+        contents2 = "cpu  100 100 100 200 100 100 100 0 0 0"
 
         thefile = self._write_stat_file(contents1)
         thefile2 = self._write_stat_file(contents2)
@@ -97,7 +97,7 @@ class CPUUsagePluginTest(LandscapeTest):
         self.monitor.add(plugin)
 
         result = plugin._get_cpu_usage(stat_file=thefile)
-        # The first run will return None since we don't have a previous mesure
+        # The first run will return None since we don't have a previous measure
         # yet.
         self.assertIs(None, result)
 
@@ -110,8 +110,8 @@ class CPUUsagePluginTest(LandscapeTest):
         50% (as much changed in an "active" column that in the idle column)
         the method returns 0.5.
         """
-        contents1 = """cpu  100 100 100 100 100 100 100 0 0 0"""
-        contents2 = """cpu  200 100 100 200 100 100 100 0 0 0"""
+        contents1 = "cpu  100 100 100 100 100 100 100 0 0 0"
+        contents2 = "cpu  200 100 100 200 100 100 100 0 0 0"
 
         thefile = self._write_stat_file(contents1)
         thefile2 = self._write_stat_file(contents2)
@@ -119,7 +119,7 @@ class CPUUsagePluginTest(LandscapeTest):
         self.monitor.add(plugin)
 
         result = plugin._get_cpu_usage(stat_file=thefile)
-        # The first run will return None since we don't have a previous mesure
+        # The first run will return None since we don't have a previous measure
         # yet.
         self.assertIs(None, result)
 
@@ -133,19 +133,19 @@ class CPUUsagePluginTest(LandscapeTest):
         counts quantums allocated since boot). In this case, the method should
         return None.
         """
-        contents1 = """cpu  100 100 100 100 100 100 100 0 0 0"""
+        contents1 = "cpu  100 100 100 100 100 100 100 0 0 0"
 
-        mesure1 = (700, 100)
-        mesure2 = (900, 10)
+        measure1 = (700, 100)
+        measure2 = (900, 10)
 
         thefile = self._write_stat_file(contents1)
         plugin = CPUUsage(create_time=self.reactor.time)
         self.monitor.add(plugin)
-        plugin._persist.set(LAST_MESURE_KEY, mesure2)
+        plugin._persist.set(LAST_MESURE_KEY, measure2)
 
         result = plugin._get_cpu_usage(stat_file=thefile)
         self.assertIs(None, result)
-        self.assertEqual(mesure1, plugin._persist.get(LAST_MESURE_KEY))
+        self.assertEqual(measure1, plugin._persist.get(LAST_MESURE_KEY))
 
     def test_create_message(self):
         """

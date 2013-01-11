@@ -5,7 +5,7 @@ from landscape.accumulate import Accumulator
 from landscape.lib.monitor import CoverageMonitor
 from landscape.monitor.plugin import MonitorPlugin
 
-LAST_MESURE_KEY = "last-cpu-usage-mesure"
+LAST_MESURE_KEY = "last-cpu-usage-measure"
 ACCUMULATOR_KEY = "cpu-usage-accumulator"
 
 
