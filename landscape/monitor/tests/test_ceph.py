@@ -247,3 +247,31 @@ class CephUsagePluginTest(LandscapeTest):
 
         result = plugin._get_ceph_ring_id()
         self.assertEqual(None, result)
+
+    def test_plugin_run(self):
+        """
+        The plugin's run() method fills the _ceph_usage_points with
+        accumulated samples after each C{monitor.step_size} period.
+        The _ceph_ring_id member of the plugin is also filled with the output
+        of the _get_ceph_ring_id method.
+        """
+        plugin = CephUsage(create_time=self.reactor.time)
+        uuid = "i-am-a-unique-snowflake"
+
+        def return_quorum():
+            return SAMPLE_QUORUM % uuid
+
+        def return_full_disk():
+            return SAMPLE_TEMPLATE % (100, 0, 100)
+
+        plugin._ceph_config = "/etc/hosts"
+        plugin._get_quorum_command_output = return_quorum
+        plugin._get_ceph_command_output = return_full_disk
+
+        self.monitor.add(plugin)
+
+        self.reactor.advance(self.monitor.step_size * 2)
+
+        self.assertNotEqual([], plugin._ceph_usage_points)
+        self.assertEqual([(300, 1.0), (600, 1.0)], plugin._ceph_usage_points)
+        self.assertEqual(uuid, plugin._ceph_ring_id)

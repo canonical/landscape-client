@@ -7,7 +7,7 @@ from landscape.lib.command import run_command, CommandError
 from landscape.monitor.plugin import MonitorPlugin
 
 ACCUMULATOR_KEY = "ceph-usage-accumulator"
-
+CEPH_CONFIG_FILE = "/etc/ceph/ceph.conf"
 
 class CephUsage(MonitorPlugin):
     """
@@ -25,7 +25,7 @@ class CephUsage(MonitorPlugin):
         self._ceph_usage_points = []
         self._ceph_ring_id = None
         self._create_time = create_time
-        self._ceph_config = "/etc/ceph/ceph.conf"
+        self._ceph_config = CEPH_CONFIG_FILE
 
     def register(self, registry):
         super(CephUsage, self).register(registry)
@@ -57,13 +57,12 @@ class CephUsage(MonitorPlugin):
         self.registry.broker.call_if_accepted("ceph-usage",
                                               self.send_message, urgent)
 
-    def run(self, config_file=None):
+    def run(self):
         self._monitor.ping()
 
-        if config_file is None:
-            config_file = self._ceph_config
-
-        # Check if a ceph config file is available.
+        config_file = self._ceph_config
+        # Check if a ceph config file is available. No need to run anything
+        # if we know that we're not on a Ceph monitor node anyway.
         if not os.path.exists(config_file):
             # There is no config file - it's not a ceph machine.
             return None
@@ -71,7 +70,7 @@ class CephUsage(MonitorPlugin):
         # Extract the ceph ring Id and cache it.
         ring_id = self._ceph_ring_id
         if ring_id is None:
-            ring_id = self._get_ceph_ring_id
+            ring_id = self._get_ceph_ring_id()
         self._ceph_ring_id = ring_id
 
         new_timestamp = int(self._create_time())
