@@ -23,6 +23,7 @@ class CephUsage(MonitorPlugin):
         self._interval = interval
         self._monitor_interval = monitor_interval
         self._ceph_usage_points = []
+        self._ceph_ring_id = None
         self._create_time = create_time
         self._ceph_config = "/etc/ceph/ceph.conf"
 
@@ -42,22 +43,38 @@ class CephUsage(MonitorPlugin):
 
     def create_message(self):
         ceph_points = self._ceph_usage_points
+        ring_id = self._ceph_ring_id
         self._ceph_usage_points = []
-        return {"type": "ceph-usage", "ceph-usages": ceph_points}
+        return {"type": "ceph-usage", "ceph-usages": ceph_points,
+                "ring-id": ring_id}
 
     def send_message(self, urgent=False):
         message = self.create_message()
-        if len(message["ceph-usages"]):
+        if len(message["ceph-usages"]) and message["ring-id"] is not None:
             self.registry.broker.send_message(message, urgent=urgent)
 
     def exchange(self, urgent=False):
         self.registry.broker.call_if_accepted("ceph-usage",
                                               self.send_message, urgent)
 
-    def run(self):
+    def run(self, config_file=None):
         self._monitor.ping()
+
+        if config_file is None:
+            config_file = self._ceph_config
+        # Check if a ceph config file is available.
+        if not os.path.exists(config_file):
+            # There is no config file - it's not a ceph machine.
+            return None
+
+        # Extract the ceph ring Id and cache it.
+        ring_id = self._ceph_ring_id
+        if ring_id is None:
+            ring_id = self._get_ceph_ring_id
+        self._ceph_ring_id = ring_id
+
         new_timestamp = int(self._create_time())
-        new_ceph_usage = self._get_ceph_usage(self._ceph_config)
+        new_ceph_usage = self._get_ceph_usage()
 
         step_data = None
         if new_ceph_usage is not None:
@@ -66,13 +83,11 @@ class CephUsage(MonitorPlugin):
         if step_data is not None:
             self._ceph_usage_points.append(step_data)
 
-    def _get_ceph_usage(self, config_file):
-
-        # Check if a ceph config file is available.
-        if not os.path.exists(config_file):
-            # There is no config file - it's not a ceph machine.
-            return None
-
+    def _get_ceph_usage(self):
+        """
+        Grab the ceph usage data by parsing the output of the "ceph status"
+        command output.
+        """
         output = self._get_ceph_command_output()
 
         if output is None:
@@ -104,3 +119,7 @@ class CephUsage(MonitorPlugin):
             # a ceph monitor machine.
             return None
         return output
+
+    def _get_ceph_ring_id(self):
+        # TODO: make this query the real ceph ring id.
+        return "someID"

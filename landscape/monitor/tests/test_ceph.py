@@ -18,27 +18,14 @@ SAMPLE_TEMPLATE = ("   health HEALTH_WARN 6 pgs degraded; 6 pgs stuck unclean\n"
 SAMPLE_OUTPUT = SAMPLE_TEMPLATE % (4296, 53880, 61248)
 
 
-class CPUUsagePluginTest(LandscapeTest):
+class CephUsagePluginTest(LandscapeTest):
     helpers = [MonitorHelper]
-
-    def test_get_ceph_usage_if_settings_file_does_not_exist(self):
-        """
-        If the config file passed to _get_ceph_usage does not exist, then
-        we assume the machine is not a ceph monitor, and return None.
-        """
-        thefile = "/tmp/whatever/I/do/not/exist"
-        plugin = CephUsage(create_time=self.reactor.time)
-        self.monitor.add(plugin)
-
-        result = plugin._get_ceph_usage(config_file=thefile)
-        self.assertIs(None, result)
 
     def test_get_ceph_usage_if_command_not_found(self):
         """
         When the ceph command cannot be found or accessed, the
         C{_get_ceph_usage} method returns None.
         """
-        thefile = "/etc/hosts"  # This *does* exist
         plugin = CephUsage(create_time=self.reactor.time)
 
         def return_none():
@@ -48,7 +35,7 @@ class CPUUsagePluginTest(LandscapeTest):
 
         self.monitor.add(plugin)
 
-        result = plugin._get_ceph_usage(config_file=thefile)
+        result = plugin._get_ceph_usage()
         self.assertIs(None, result)
 
     def test_get_ceph_usage(self):
@@ -56,7 +43,6 @@ class CPUUsagePluginTest(LandscapeTest):
         When the ceph command call returns output, the _get_ceph_usage method
         returns the percentage of used space.
         """
-        thefile = "/etc/hosts"
         plugin = CephUsage(create_time=self.reactor.time)
 
         def return_output():
@@ -66,7 +52,7 @@ class CPUUsagePluginTest(LandscapeTest):
 
         self.monitor.add(plugin)
 
-        result = plugin._get_ceph_usage(config_file=thefile)
+        result = plugin._get_ceph_usage()
         self.assertEqual(0.12029780564263323, result)
 
     def test_get_ceph_usage_empty_disk(self):
@@ -74,7 +60,6 @@ class CPUUsagePluginTest(LandscapeTest):
         When the ceph command call returns output for empty disks, the
         _get_ceph_usage method returns 0.0 .
         """
-        thefile = "/etc/hosts"
         plugin = CephUsage(create_time=self.reactor.time)
 
         def return_output():
@@ -84,7 +69,7 @@ class CPUUsagePluginTest(LandscapeTest):
 
         self.monitor.add(plugin)
 
-        result = plugin._get_ceph_usage(config_file=thefile)
+        result = plugin._get_ceph_usage()
         self.assertEqual(0.0, result)
 
     def test_get_ceph_usage_full_disk(self):
@@ -92,7 +77,6 @@ class CPUUsagePluginTest(LandscapeTest):
         When the ceph command call returns output for empty disks, the
         _get_ceph_usage method returns 1.0 .
         """
-        thefile = "/etc/hosts"
         plugin = CephUsage(create_time=self.reactor.time)
 
         def return_output():
@@ -102,5 +86,87 @@ class CPUUsagePluginTest(LandscapeTest):
 
         self.monitor.add(plugin)
 
-        result = plugin._get_ceph_usage(config_file=thefile)
+        result = plugin._get_ceph_usage()
         self.assertEqual(1.0, result)
+
+    def test_never_exchange_empty_messages(self):
+        """
+        The plugin will create a message with an empty
+        C{ceph-usages} list when no previous data is available.  If an empty
+        message is created during exchange, it should not be queued.
+        """
+        self.mstore.set_accepted_types(["ceph-usage"])
+
+        plugin = CephUsage(create_time=self.reactor.time)
+        self.monitor.add(plugin)
+
+        self.monitor.exchange()
+        self.assertEqual(len(self.mstore.get_pending_messages()), 0)
+
+    def test_exchange_messages(self):
+        """
+        The Ceph usage plugin queues message when manager.exchange()
+        is called.
+        """
+        ring_id = "whatever"
+        self.mstore.set_accepted_types(["ceph-usage"])
+
+        plugin = CephUsage(create_time=self.reactor.time)
+        plugin._ceph_usage_points = [(60, 1.0)]
+        plugin._ceph_ring_id = ring_id
+        self.monitor.add(plugin)
+
+        self.monitor.exchange()
+
+        self.assertMessages(self.mstore.get_pending_messages(),
+                            [{"type": "ceph-usage",
+                              "ceph-usages": [(60, 1.0)],
+                              "ring-id": ring_id}])
+
+    def test_create_message(self):
+        """
+        Calling create_message returns an expected message.
+        """
+        plugin = CephUsage(create_time=self.reactor.time)
+        self.monitor.add(plugin)
+
+        ring_id = "blah"
+        plugin._ceph_usage_points = []
+        plugin._ceph_ring_id = ring_id
+        message = plugin.create_message()
+
+        self.assertIn("type", message)
+        self.assertEqual(message["type"], "ceph-usage")
+        self.assertIn("ceph-usages", message)
+        self.assertEqual(ring_id, message["ring-id"])
+        ceph_usages = message["ceph-usages"]
+        self.assertEqual(len(ceph_usages), 0)
+
+        point = (60, 1.0)
+        plugin._ceph_usage_points = [point]
+        message = plugin.create_message()
+        self.assertIn("type", message)
+        self.assertEqual(message["type"], "ceph-usage")
+        self.assertIn("ceph-usages", message)
+        self.assertEqual(ring_id, message["ring-id"])
+        ceph_usages = message["ceph-usages"]
+        self.assertEqual(len(ceph_usages), 1)
+        self.assertEqual([point], ceph_usages)
+
+    def test_no_message_if_not_accepted(self):
+        """
+        Don't add any messages at all if the broker isn't currently
+        accepting their type.
+        """
+        interval = 30
+
+        plugin = CephUsage(create_time=self.reactor.time,
+                          interval=interval)
+
+        self.monitor.add(plugin)
+
+        self.reactor.advance(self.monitor.step_size * 2)
+        self.monitor.exchange()
+
+        self.mstore.set_accepted_types(["ceph-usage"])
+        self.assertMessages(list(self.mstore.get_pending_messages()), [])
