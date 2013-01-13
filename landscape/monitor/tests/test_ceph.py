@@ -17,6 +17,30 @@ SAMPLE_TEMPLATE = ("   health HEALTH_WARN 6 pgs degraded; 6 pgs stuck unclean\n"
 
 SAMPLE_OUTPUT = SAMPLE_TEMPLATE % (4296, 53880, 61248)
 
+SAMPLE_QUORUM = (''
+'{ "election_epoch": 8,\n'
+'  "quorum": [\n'
+'        0,\n'
+'        1,\n'
+'        2],\n'
+'  "monmap": { "epoch": 2,\n'
+'      "fsid": "%s",\n'
+'      "modified": "2013-01-13 16:58:00.141737",\n'
+'      "created": "0.000000",\n'
+'      "mons": [\n'
+'            { "rank": 0,\n'
+'              "name": "server-1be72d64-0ff2-4ac1-ad13-1c06c8201011",\n'
+'              "addr": "10.55.60.188:6789\/0"},\n'
+'            { "rank": 1,\n'
+'              "name": "server-e847f147-ed13-46c2-8e6d-768aa32657ab",\n'
+'              "addr": "10.55.60.202:6789\/0"},\n'
+'            { "rank": 2,\n'
+'              "name": "server-3c831a0b-51d5-43a9-95d5-63644f0965cc",\n'
+'              "addr": "10.55.60.205:6789\/0"}]}}\n'
+)
+
+SAMPLE_QUORUM_OUTPUT = SAMPLE_QUORUM % "ecbb8960-0e21-11e2-b495-83a88f44db01"
+
 
 class CephUsagePluginTest(LandscapeTest):
     helpers = [MonitorHelper]
@@ -88,6 +112,23 @@ class CephUsagePluginTest(LandscapeTest):
 
         result = plugin._get_ceph_usage()
         self.assertEqual(1.0, result)
+
+    def test_get_ceph_usage_no_information(self):
+        """
+        When the ceph command outputs something that does not contain the
+        disk usage information, the _get_ceph_usage method returns None.
+        """
+        plugin = CephUsage(create_time=self.reactor.time)
+
+        def return_output():
+            return "Blah\nblah"
+
+        plugin._get_ceph_command_output = return_output
+
+        self.monitor.add(plugin)
+
+        result = plugin._get_ceph_usage()
+        self.assertEqual(None, result)
 
     def test_never_exchange_empty_messages(self):
         """
@@ -170,3 +211,39 @@ class CephUsagePluginTest(LandscapeTest):
 
         self.mstore.set_accepted_types(["ceph-usage"])
         self.assertMessages(list(self.mstore.get_pending_messages()), [])
+
+    def test_get_ceph_ring_id(self):
+        """
+        When given a well formatted command output, the _get_ceph_ring_id()
+        method returns the correct ring_id.
+        """
+        plugin = CephUsage(create_time=self.reactor.time)
+
+        uuid = "i-am-a-uuid"
+        def return_output():
+            return SAMPLE_QUORUM % uuid
+
+        plugin._get_quorum_command_output = return_output
+
+        self.monitor.add(plugin)
+
+        result = plugin._get_ceph_ring_id()
+        self.assertEqual(uuid, result)
+
+    def test_get_ceph_ring_id_no_information(self):
+        """
+        When the _get_quorum_command_output method returns something without
+        the ring uuid information present, the _get-ceph_ring_id method returns
+        None.
+        """
+        plugin = CephUsage(create_time=self.reactor.time)
+
+        def return_output():
+            return "Blah\nblah"
+
+        plugin._get_quorum_command_output = return_output
+
+        self.monitor.add(plugin)
+
+        result = plugin._get_ceph_ring_id()
+        self.assertEqual(None, result)

@@ -62,6 +62,7 @@ class CephUsage(MonitorPlugin):
 
         if config_file is None:
             config_file = self._ceph_config
+
         # Check if a ceph config file is available.
         if not os.path.exists(config_file):
             # There is no config file - it's not a ceph machine.
@@ -101,6 +102,9 @@ class CephUsage(MonitorPlugin):
                 pg_line = line.split()
                 break
 
+        if pg_line is None:
+            return None
+
         total = pg_line[-3]  # Total space
         available = pg_line[-6]  # Available for objects
         #used = pg_line[-9]  # Used by objects
@@ -121,5 +125,28 @@ class CephUsage(MonitorPlugin):
         return output
 
     def _get_ceph_ring_id(self):
-        # TODO: make this query the real ceph ring id.
-        return "someID"
+        output = self._get_quorum_command_output()
+        lines = output.split("\n")
+        fsid_line = None
+        for line in lines:
+            if "fsid" in line:
+                fsid_line = line.split()
+                break
+
+        if fsid_line is None:
+            return None
+
+        wrapped_id = fsid_line[-1]
+        ring_id = wrapped_id.replace('",', '')
+        ring_id = ring_id.replace('"', '')
+
+        return ring_id
+
+    def _get_quorum_command_output(self):
+        try:
+            output = run_command("ceph quorum_status")
+        except (OSError, CommandError):
+            # If the command line client isn't available, we assume it's not
+            # a ceph monitor machine.
+            return None
+        return output
