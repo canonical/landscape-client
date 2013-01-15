@@ -51,7 +51,7 @@ class CephUsage(MonitorPlugin):
 
     def send_message(self, urgent=False):
         message = self.create_message()
-        if len(message["ceph-usages"]) and message["ring-id"] is not None:
+        if message["ceph-usages"] and message["ring-id"] is not None:
             self.registry.broker.send_message(message, urgent=urgent)
 
     def exchange(self, urgent=False):
@@ -69,10 +69,8 @@ class CephUsage(MonitorPlugin):
             return None
 
         # Extract the ceph ring Id and cache it.
-        ring_id = self._ceph_ring_id
-        if ring_id is None:
-            ring_id = self._get_ceph_ring_id()
-        self._ceph_ring_id = ring_id
+        if self._ceph_ring_id is None:
+            self._ceph_ring_id = self._get_ceph_ring_id()
 
         new_timestamp = int(self._create_time())
         new_ceph_usage = self._get_ceph_usage()

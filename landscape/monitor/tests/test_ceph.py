@@ -274,6 +274,5 @@ class CephUsagePluginTest(LandscapeTest):
 
         self.reactor.advance(self.monitor.step_size * 2)
 
-        self.assertNotEqual([], plugin._ceph_usage_points)
         self.assertEqual([(300, 1.0), (600, 1.0)], plugin._ceph_usage_points)
         self.assertEqual(uuid, plugin._ceph_ring_id)
