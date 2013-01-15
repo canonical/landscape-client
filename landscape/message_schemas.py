@@ -111,6 +111,11 @@ CPU_USAGE = Message("cpu-usage", {
     "cpu-usages": List(Tuple(Int(), Float())),
     })
 
+CEPH_USAGE = Message("ceph-usage", {
+    "ceph-usages": List(Tuple(Int(), Float())),
+    "ring-id": utf8,
+    })
+
 MEMORY_INFO = Message("memory-info", {
     "memory-info": List(Tuple(Float(), Int(), Int())),
     })
@@ -420,5 +425,6 @@ for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                ADD_PACKAGES, PACKAGE_REPORTER_RESULT, TEXT_MESSAGE, TEST,
                CUSTOM_GRAPH, REBOOT_REQUIRED, APT_PREFERENCES, EUCALYPTUS_INFO,
                EUCALYPTUS_INFO_ERROR, NETWORK_DEVICE, NETWORK_ACTIVITY,
-               REBOOT_REQUIRED_INFO, UPDATE_MANAGER_INFO, CPU_USAGE]:
+               REBOOT_REQUIRED_INFO, UPDATE_MANAGER_INFO, CPU_USAGE,
+               CEPH_USAGE]:
     message_schemas[schema.type] = schema
