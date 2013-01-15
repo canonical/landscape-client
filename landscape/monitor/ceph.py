@@ -9,6 +9,7 @@ from landscape.monitor.plugin import MonitorPlugin
 ACCUMULATOR_KEY = "ceph-usage-accumulator"
 CEPH_CONFIG_FILE = "/etc/ceph/ceph.conf"
 
+
 class CephUsage(MonitorPlugin):
     """
     Plugin that captures Ceph usage information. This only works if the client

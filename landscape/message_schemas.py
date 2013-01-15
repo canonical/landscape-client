@@ -113,7 +113,7 @@ CPU_USAGE = Message("cpu-usage", {
 
 CEPH_USAGE = Message("ceph-usage", {
     "ceph-usages": List(Tuple(Int(), Float())),
-    "ring-id" : utf8,
+    "ring-id": utf8,
     })
 
 MEMORY_INFO = Message("memory-info", {

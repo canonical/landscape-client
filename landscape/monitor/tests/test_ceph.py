@@ -2,7 +2,8 @@ from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.monitor.ceph import CephUsage
 
 
-SAMPLE_TEMPLATE = ("   health HEALTH_WARN 6 pgs degraded; 6 pgs stuck unclean\n"
+SAMPLE_TEMPLATE = ("   health HEALTH_WARN 6 pgs degraded; 6 pgs stuck "
+"unclean\n"
 "monmap e2: 3 mons at {server-269703f4-5217-495a-b7f2-b3b3473c1719="
 "10.55.60.238:6789/0,server-3f370698-f3b0-4cbe-8db9-a18e304c952b="
 "10.55.60.141:6789/0,server-f635fa07-e36f-453c-b3d5-b4ce86fbc6ff="
@@ -220,6 +221,7 @@ class CephUsagePluginTest(LandscapeTest):
         plugin = CephUsage(create_time=self.reactor.time)
 
         uuid = "i-am-a-uuid"
+
         def return_output():
             return SAMPLE_QUORUM % uuid
 
