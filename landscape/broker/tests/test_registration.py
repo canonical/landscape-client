@@ -297,6 +297,35 @@ class RegistrationHandlerTest(RegistrationHandlerTestBase):
         self.assertEqual(len(messages), 1)
         self.assertEqual(messages[0]["type"], "register")
 
+    def test_registration_with_extra_data(self):
+        """
+        The broker sends the content of the extra data file if present during
+        registration.
+        """
+        extra_file = os.path.join(self.config.data_path, "extra")
+        fd = file(extra_file, "wb")
+        fd.write("data!\n")
+        fd.close()
+
+        self.mstore.set_accepted_types(["register"])
+        self.config.computer_title = "Computer Title"
+        self.config.account_name = "account_name"
+        self.config.registration_key = "SEKRET"
+        self.reactor.fire("pre-exchange")
+        self.assertMessages(
+            self.mstore.get_pending_messages(),
+            [{"type": "register",
+              "computer_title": "Computer Title",
+              "account_name": "account_name",
+              "registration_password": "SEKRET",
+              "hostname": "ooga.local",
+              "tags": None,
+              "extra": "data!\n",
+              "vm-info": get_vm_info()}])
+        self.assertEqual(self.logfile.getvalue().strip(),
+                         "INFO: Queueing message to register with account "
+                         "'account_name' with a password.")
+
     def test_no_message_when_should_register_is_false(self):
         """If we already have a secure id, do not queue a register message.
         """
@@ -499,11 +528,11 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         return user_data
 
     def prepare_query_results(
-        self, user_data=None, instance_key="key1", launch_index=0,
-        local_hostname="ooga.local", public_hostname="ooga.amazon.com",
-        reservation_key=u"res1", ramdisk_key=u"ram1", kernel_key=u"kernel1",
-        image_key=u"image1", local_ip="10.0.0.1", public_ip="10.0.0.2",
-        ssl_ca_certificate=None):
+            self, user_data=None, instance_key="key1", launch_index=0,
+            local_hostname="ooga.local", public_hostname="ooga.amazon.com",
+            reservation_key=u"res1", ramdisk_key=u"ram1",
+            kernel_key=u"kernel1", image_key=u"image1", local_ip="10.0.0.1",
+            public_ip="10.0.0.2", ssl_ca_certificate=None):
         if user_data is None:
             user_data = self.get_user_data(
                 ssl_ca_certificate=ssl_ca_certificate)
@@ -512,18 +541,17 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         api_base = "http://169.254.169.254/latest"
         self.query_results.clear()
         for url_suffix, value in [
-            ("/user-data", user_data),
-            ("/meta-data/instance-id", instance_key),
-            ("/meta-data/reservation-id", reservation_key),
-            ("/meta-data/local-hostname", local_hostname),
-            ("/meta-data/public-hostname", public_hostname),
-            ("/meta-data/ami-launch-index", str(launch_index)),
-            ("/meta-data/kernel-id", kernel_key),
-            ("/meta-data/ramdisk-id", ramdisk_key),
-            ("/meta-data/ami-id", image_key),
-            ("/meta-data/local-ipv4", local_ip),
-            ("/meta-data/public-ipv4", public_ip),
-            ]:
+                ("/user-data", user_data),
+                ("/meta-data/instance-id", instance_key),
+                ("/meta-data/reservation-id", reservation_key),
+                ("/meta-data/local-hostname", local_hostname),
+                ("/meta-data/public-hostname", public_hostname),
+                ("/meta-data/ami-launch-index", str(launch_index)),
+                ("/meta-data/kernel-id", kernel_key),
+                ("/meta-data/ramdisk-id", ramdisk_key),
+                ("/meta-data/ami-id", image_key),
+                ("/meta-data/local-ipv4", local_ip),
+                ("/meta-data/public-ipv4", public_ip)]:
             self.query_results[api_base + url_suffix] = value
 
     def prepare_cloud_registration(self, account_name=None,
@@ -664,7 +692,8 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
         If we have an SSL certificate CA included in the user-data, this should
         be written out, and the configuration updated to reflect this.
         """
-        key_filename = os.path.join(self.config.data_path,
+        key_filename = os.path.join(
+            self.config.data_path,
             "%s.ssl_public_key" % os.path.basename(self.config_filename))
 
         print_text_mock = self.mocker.replace(print_text)
@@ -758,11 +787,12 @@ class CloudRegistrationHandlerTest(RegistrationHandlerTestBase):
                                 account_name=u"onward",
                                 registration_password=u"password",
                                 tags=u"london,server")])
-        self.assertEqual(self.logfile.getvalue().strip()[:-7],
-           "INFO: Queueing message to register with account u'onward' and "
-           "tags london,server as an EC2 instance.\n    "
-           "INFO: Starting message exchange with http://localhost:91919.\n    "
-           "INFO: Message exchange completed in")
+        self.assertEqual(
+            self.logfile.getvalue().strip()[:-7],
+            "INFO: Queueing message to register with account u'onward' and "
+            "tags london,server as an EC2 instance.\n    "
+            "INFO: Starting message exchange with http://localhost:91919.\n"
+            "    INFO: Message exchange completed in")
 
     def test_queueing_cloud_registration_message_resets_message_store(self):
         """
