@@ -1,3 +1,4 @@
+import os
 import time
 import logging
 import socket
@@ -97,6 +98,7 @@ class RegistrationHandler(object):
         self._fetch_async = fetch_async
         self._otp = None
         self._ec2_data = None
+        self.extra_data_path = os.path.join(self._config.data_path, "extra")
 
     def should_register(self):
         id = self._identity
@@ -280,6 +282,11 @@ class RegistrationHandler(object):
                 else:
                     self._reactor.fire("registration-failed")
             elif id.account_name:
+                if os.path.exists(self.extra_data_path):
+                    fd = file(self.extra_data_path)
+                    extra = fd.read()
+                    fd.close()
+                    message["extra"] = extra
                 with_word = ["without", "with"][bool(id.registration_key)]
                 with_tags = ["", u"and tags %s " % tags][bool(tags)]
                 logging.info(u"Queueing message to register with account %r %s"
