@@ -1,5 +1,5 @@
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
-from landscape.monitor.ceph import CephUsage
+from landscape.monitor.cephusage import CephUsage
 
 
 SAMPLE_TEMPLATE = ("   health HEALTH_WARN 6 pgs degraded; 6 pgs stuck "
