@@ -205,8 +205,8 @@ class RegistrationHandler(object):
                     self._config.url = exchange_url
                     self._config.ping_url = ping_url
                     if "ssl-ca-certificate" in instance_data:
-                        from landscape.configuration import \
-                            store_public_key_data
+                        from landscape.configuration import (
+                            store_public_key_data)
                         public_key_file = store_public_key_data(
                             self._config, instance_data["ssl-ca-certificate"])
                         self._config.ssl_public_key = public_key_file
@@ -253,16 +253,16 @@ class RegistrationHandler(object):
                 tags = None
                 logging.error("Invalid tags provided for cloud "
                               "registration.")
+            message = {"hostname": get_fqdn(),
+                       "vm-info": get_vm_info(),
+                       "tags": tags}
             if self._config.cloud and self._ec2_data is not None:
                 if self._otp:
                     logging.info("Queueing message to register with OTP")
-                    message = {"type": "register-cloud-vm",
-                               "otp": self._otp,
-                               "hostname": get_fqdn(),
-                               "account_name": None,
-                               "registration_password": None,
-                               "tags": tags,
-                               "vm-info": get_vm_info()}
+                    message.update({"type": "register-cloud-vm",
+                                    "otp": self._otp,
+                                    "account_name": None,
+                                    "registration_password": None})
                     message.update(self._ec2_data)
                     self._exchange.send(message)
                 elif id.account_name:
@@ -270,14 +270,11 @@ class RegistrationHandler(object):
                     logging.info(
                         u"Queueing message to register with account %r %s"
                         u"as an EC2 instance." % (id.account_name, with_tags))
-                    message = {"type": "register-cloud-vm",
-                               "otp": None,
-                               "hostname": get_fqdn(),
-                               "account_name": id.account_name,
-                               "registration_password": \
-                                   id.registration_key,
-                               "tags": tags,
-                               "vm-info": get_vm_info()}
+                    message.update({
+                        "type": "register-cloud-vm",
+                        "otp": None,
+                        "account_name": id.account_name,
+                        "registration_password": id.registration_key})
                     message.update(self._ec2_data)
                     self._exchange.send(message)
                 else:
@@ -288,13 +285,10 @@ class RegistrationHandler(object):
                 logging.info(u"Queueing message to register with account %r %s"
                              "%s a password." % (id.account_name, with_tags,
                                                  with_word))
-                message = {"type": "register",
-                           "computer_title": id.computer_title,
-                           "account_name": id.account_name,
-                           "registration_password": id.registration_key,
-                           "hostname": get_fqdn(),
-                           "tags": tags,
-                           "vm-info": get_vm_info()}
+                message.update({"type": "register",
+                                "computer_title": id.computer_title,
+                                "account_name": id.account_name,
+                                "registration_password": id.registration_key})
                 self._exchange.send(message)
             elif self._config.provisioning_otp:
                 logging.info(u"Queueing message to register with OTP as a"
