@@ -1,7 +1,7 @@
 import os
 from landscape.tests.helpers import LandscapeTest
 
-from landscape.monitor.keystonetoken import KeystoneToken
+from landscape.manager.keystonetoken import KeystoneToken
 
 
 class KeystoneTokenTest(LandscapeTest):
