@@ -2,9 +2,12 @@ import os
 from landscape.tests.helpers import LandscapeTest
 
 from landscape.manager.keystonetoken import KeystoneToken
+from landscape.tests.helpers import ManagerHelper
 
 
 class KeystoneTokenTest(LandscapeTest):
+
+    helpers = [ManagerHelper]
 
     def setUp(self):
         super(KeystoneTokenTest, self).setUp()
@@ -55,3 +58,19 @@ class KeystoneTokenTest(LandscapeTest):
             path=self.keystone_file,
             content=content)
         self.assertEqual("\xff", self.plugin.get_data())
+
+    def test_get_message(self):
+        """
+        L{KeystoneToken.get_message} only returns a message when the keystone
+        token has changed.
+        """
+        self.makeFile(
+            path=self.keystone_file,
+            content="[DEFAULT]\nadmin_token = foobar")
+        self.plugin.register(self.manager)
+        message = self.plugin.get_message()
+        self.assertEqual(
+            {'type': 'keystone-token', 'data': 'foobar'},
+            message)
+        message = self.plugin.get_message()
+        self.assertIs(None, message)
