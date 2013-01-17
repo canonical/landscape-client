@@ -113,6 +113,10 @@ CEPH_USAGE = Message("ceph-usage", {
     "ceph-usages": List(Tuple(Int(), Float())),
     "ring-id": utf8})
 
+KEYSTONE_TOKEN = Message("keystone-token", {
+    "data": Any(String(), Constant(None))
+})
+
 MEMORY_INFO = Message("memory-info", {
     "memory-info": List(Tuple(Float(), Int(), Int()))})
 
@@ -418,5 +422,5 @@ for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                CUSTOM_GRAPH, REBOOT_REQUIRED, APT_PREFERENCES, EUCALYPTUS_INFO,
                EUCALYPTUS_INFO_ERROR, NETWORK_DEVICE, NETWORK_ACTIVITY,
                REBOOT_REQUIRED_INFO, UPDATE_MANAGER_INFO, CPU_USAGE,
-               CEPH_USAGE]:
+               CEPH_USAGE, KEYSTONE_TOKEN]:
     message_schemas[schema.type] = schema
