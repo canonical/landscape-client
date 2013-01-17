@@ -1,13 +1,10 @@
 import os
 from landscape.tests.helpers import LandscapeTest
-# from landscape.tests.helpers import MonitorHelper
 
 from landscape.monitor.keystonetoken import KeystoneToken
 
 
 class KeystoneTokenTest(LandscapeTest):
-
-    # helpers = [MonitorHelper]
 
     def setUp(self):
         super(KeystoneTokenTest, self).setUp()
@@ -20,7 +17,7 @@ class KeystoneTokenTest(LandscapeTest):
         doesn't exist.
         """
         self.log_helper.ignore_errors("KeystoneToken: No admin_token found .*")
-        self.assertIdentical(None, self.plugin.get_data())
+        self.assertIs(None, self.plugin.get_data())
 
     def test_get_keystone_token_empty(self):
         """
@@ -29,7 +26,7 @@ class KeystoneTokenTest(LandscapeTest):
         """
         self.log_helper.ignore_errors("KeystoneToken: No admin_token found .*")
         self.makeFile(path=self.keystone_file, content="")
-        self.assertIdentical(None, self.plugin.get_data())
+        self.assertIs(None, self.plugin.get_data())
 
     def test_get_keystone_token_no_admin_token(self):
         """
@@ -38,7 +35,7 @@ class KeystoneTokenTest(LandscapeTest):
         """
         self.log_helper.ignore_errors("KeystoneToken: No admin_token found .*")
         self.makeFile(path=self.keystone_file, content="[DEFAULT]")
-        self.assertIdentical(None, self.plugin.get_data())
+        self.assertIs(None, self.plugin.get_data())
 
     def test_get_keystone_token(self):
         """
