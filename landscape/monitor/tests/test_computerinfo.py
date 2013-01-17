@@ -1,3 +1,5 @@
+import os
+import json
 import re
 
 from landscape.monitor.computerinfo import ComputerInfo
@@ -325,3 +327,41 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
 
         self.mstore.set_accepted_types(["distribution-info", "computer-info"])
         self.assertMessages(list(self.mstore.get_pending_messages()), [])
+
+    def test_juju_info(self):
+        """
+        L{ComputerInfo} sends data from the juju environment if the juju info
+        file is present.
+        """
+        juju_info = os.path.join(self.monitor.config.data_path, "juju-info")
+        fd = open(juju_info, "w")
+        fd.write(json.dumps({"JUJU_ENV_UUID": "uuid1",
+                             "JUJU_UNIT_NAME": "unit/0"}))
+        fd.close()
+        self.mstore.set_accepted_types(["computer-info"])
+
+        plugin = ComputerInfo()
+        self.monitor.add(plugin)
+        plugin.exchange()
+        messages = self.mstore.get_pending_messages()
+        self.assertEqual(1, len(messages))
+        self.assertEqual("uuid1", messages[0]["juju-env-uuid"])
+        self.assertEqual("unit/0", messages[0]["juju-unit-name"])
+
+    def test_juju_info_error(self):
+        """
+        L{ComputerInfo} is resilient to issues reading the juju info file.
+        """
+        juju_info = os.path.join(self.monitor.config.data_path, "juju-info")
+        fd = open(juju_info, "w")
+        fd.write("foo")
+        fd.close()
+        os.chmod(juju_info, 0)
+        self.mstore.set_accepted_types(["computer-info"])
+
+        plugin = ComputerInfo()
+        self.monitor.add(plugin)
+        plugin.exchange()
+        messages = self.mstore.get_pending_messages()
+        self.assertEqual(1, len(messages))
+        self.assertNotIn("juju-env-uuid", messages[0])
