@@ -33,9 +33,9 @@ class CephUsage(ManagerPlugin):
         super(CephUsage, self).register(registry)
         self.registry.reactor.call_every(self._interval, self.run)
 
-        self._persist = Persist(
-            filename=os.path.join(self.registry.config.data_path,
-            "ceph.bpickle"))
+        self._persist_filename = os.path.join(self.registry.config.data_path,
+                                              "ceph.bpickle")
+        self._persist = Persist(filename=self._persist_filename)
 
         self._accumulate = Accumulator(self._persist, self._interval)
 
@@ -46,6 +46,16 @@ class CephUsage(ManagerPlugin):
                                          self._monitor.log)
         self.registry.reactor.call_on("stop", self._monitor.log, priority=2000)
         self.call_on_accepted("ceph-usage", self.send_message, True)
+        self.registry.reactor.call_on("resynchronize", self._resynchronize)
+        self.registry.reactor.call_every(self.registry.config.flush_interval,
+                                         self.flush)
+
+    def _resynchronize(self):
+        self.registry._persist.remove(self.persist_name)
+
+    def flush(self):
+        if self._persist_filename:
+            self._persist.save(self._persist_filename)
 
     def create_message(self):
         ceph_points = self._ceph_usage_points

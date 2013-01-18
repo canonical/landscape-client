@@ -22,9 +22,6 @@ class MonitorConfiguration(Configuration):
                           help="Comma-delimited list of monitor plugins to "
                                "use. ALL means use all plugins.",
                           default="ALL")
-        parser.add_option("--flush-interval", default=5 * 60, type="int",
-                          metavar="INTERVAL",
-                          help="The number of seconds between flushes.")
         return parser
 
     @property

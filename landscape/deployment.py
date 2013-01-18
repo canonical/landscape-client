@@ -337,6 +337,10 @@ class Configuration(BaseConfiguration):
                           type="int",
                           help="The interval between apt update runs "
                                "(default: 21600).")
+        parser.add_option("--flush-interval", default=5 * 60, type="int",
+                          metavar="INTERVAL",
+                          help="The number of seconds between flushes to disk "
+                               "for persistant data.")
 
         # Hidden options, used for load-testing to run in-process clones
         parser.add_option("--clones", default=0, type=int, help=SUPPRESS_HELP)
