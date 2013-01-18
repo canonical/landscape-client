@@ -1,3 +1,5 @@
+import os
+import json
 import logging
 
 from landscape.lib.lsb_release import LSB_RELEASE_FILENAME, parse_lsb_release
@@ -25,6 +27,8 @@ class ComputerInfo(MonitorPlugin):
 
     def register(self, registry):
         super(ComputerInfo, self).register(registry)
+        self._juju_info_path = os.path.join(registry.config.data_path,
+                                            "juju-info")
         self.call_on_accepted("computer-info",
                               self.send_computer_message, True)
         self.call_on_accepted("distribution-info",
@@ -59,6 +63,21 @@ class ComputerInfo(MonitorPlugin):
         self._add_if_new(message, "total-memory",
                          total_memory)
         self._add_if_new(message, "total-swap", total_swap)
+        if os.path.exists(self._juju_info_path):
+            fd = None
+            try:
+                fd = open(self._juju_info_path)
+                data = fd.read()
+                juju_info = json.loads(data)
+                env_uuid = juju_info.get("JUJU_ENV_UUID")
+                unit_name = juju_info.get("JUJU_UNIT_NAME")
+                self._add_if_new(message, "juju-env-uuid", env_uuid)
+                self._add_if_new(message, "juju-unit-name", unit_name)
+            except Exception:
+                pass
+            finally:
+                if fd is not None:
+                    fd.close()
         return message
 
     def _add_if_new(self, message, key, value):

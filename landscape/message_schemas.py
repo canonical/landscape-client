@@ -68,10 +68,13 @@ COMPUTER_INFO = Message(
     "computer-info",
     {"hostname": utf8,
      "total-memory": Int(),
-     "total-swap": Int()},
+     "total-swap": Int(),
+     "juju-env-uuid": utf8,
+     "juju-unit-name": utf8},
     # Not sure why these are all optional, but it's explicitly tested
     # in the server
-    optional=["hostname", "total-memory", "total-swap"])
+    optional=["hostname", "total-memory", "total-swap", "juju-env-uuid",
+              "juju-unit-name"])
 
 DISTRIBUTION_INFO = Message(
     "distribution-info",
