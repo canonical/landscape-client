@@ -2,6 +2,7 @@ import tempfile
 
 from twisted.internet.defer import succeed
 
+from landscape.lib.fetch import HTTPCodeError
 from landscape.monitor.mountinfo import MountInfo
 from landscape.tests.test_hal import MockHALManager, MockRealHALDevice
 from landscape.tests.helpers import LandscapeTest, mock_counter, MonitorHelper
@@ -9,6 +10,13 @@ from landscape.tests.mocker import ANY
 
 
 mb = lambda x: x * 1024 * 1024
+
+
+class FakeRingInfo(object):
+    def __init__(self, ip_port_tuples=[]):
+        self.devs = []
+        for ip, port in ip_port_tuples:
+            self.devs.append({"ip": ip, "port": port})
 
 
 class MountInfoTest(LandscapeTest):
@@ -492,6 +500,49 @@ addr=ennui 0 0
         self.assertTrue(isinstance(messages[1]["free-space"][0][2],
                                    (int, long)))
 
+    def test_messages_with_swift_data(self):
+        """
+        Only swift-affiliated devices present C{designated-devices} optional
+        parameters in mount-info messages.
+        """
+        def statvfs(path):
+            return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
+
+        def fake_swift_devices():
+            return ["/dev/hdf", "/dev/hda2"]
+
+        filename = self.makeFile("""\
+/dev/hda2 / xfs rw 0 0
+/dev/hda3 /mnt xfs rw 0 0
+""")
+        plugin = self.get_mount_info(mounts_file=filename, statvfs=statvfs,
+                                     create_time=self.reactor.time,
+                                     mtab_file=filename)
+        plugin._get_swift_devices = fake_swift_devices
+
+        step_size = self.monitor.step_size
+        self.monitor.add(plugin)
+
+        self.reactor.advance(step_size)
+        self.monitor.exchange()
+
+        messages = self.mstore.get_pending_messages()
+        self.assertEqual(len(messages), 2)
+        # designated-service: swift should only be presented on hda2
+        self.assertEqual(messages[0].get("mount-info"),
+                         [(step_size,
+                           {"designated-service": "swift",
+                            "device": "/dev/hda2", "mount-point": "/",
+                            "filesystem": "xfs", "total-space": 4096000}),
+                          (step_size,
+                           {"device": "/dev/hda3", "mount-point": "/mnt",
+                            "filesystem": "xfs", "total-space": 4096000})])
+        self.assertEqual(messages[1].get("free-space"),
+                         [(step_size, "/", 409600),
+                          (step_size, "/mnt", 409600)])
+        self.assertTrue(isinstance(messages[1]["free-space"][0][2],
+                                   (int, long)))
+
     def test_resynchronize(self):
         """
         On the reactor "resynchronize" event, new mount-info messages
@@ -749,3 +800,116 @@ addr=ennui 0 0
         self.monitor.exchange()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(len(messages), 0)
+
+    def test_get_swift_devices_when_not_a_swift_node(self):
+        """
+        When not a swift node, _get_swift_devices returns an empty list and
+        no error messages.
+        """
+        plugin = self.get_mount_info(create_time=self.reactor.time)
+        self.assertEqual(plugin._get_swift_devices(), [])
+
+    def test_get_swift_devices_when_on_a_swift_node(self):
+        """
+        When on a swift node, _get_swift_devices reports a warning if the ring
+        files don't exist yet.
+        """
+        plugin = self.get_mount_info(create_time=self.reactor.time,
+                                     swift_config="/etc/hosts")
+        logging_mock = self.mocker.replace("logging.warning")
+        logging_mock("Swift ring files are not available yet.")
+        self.mocker.replay()
+        self.assertEqual(plugin._get_swift_devices(), [])
+
+    def test_get_swift_devices_no_swift_python_libs_available(self):
+        """
+        The plugin logs an error and doesn't find swift devices when it can't
+        import the swift python libs which it requires.
+        """
+        plugin = self.get_mount_info(create_time=self.reactor.time,
+                                     swift_config="/etc/hosts",
+                                     swift_ring="/etc/hosts")
+
+        logging_mock = self.mocker.replace("logging.error")
+        logging_mock("Swift python common libraries not found.")
+        self.mocker.replay()
+
+        self.assertEqual(plugin._get_swift_devices(), [])
+
+    def test_get_swift_disk_usage_when_no_swift_service_running(self):
+        """
+        When the swift service is running, but recon middleware is not active,
+        the Swift storage usage logs an error.
+        """
+        plugin = self.get_mount_info(create_time=self.reactor.time)
+
+        plugin._swift_recon_url = "http://localhost:12654"
+
+        logging_mock = self.mocker.replace("logging.error")
+        logging_mock(
+            "Swift service not available at %s. "
+            "Error 7: couldn't connect to host" %
+                     plugin._swift_recon_url)
+        self.mocker.result(None)
+        self.mocker.replay()
+
+        result = plugin._get_swift_disk_usage()
+        self.assertIs(None, result)
+
+    def test_get_swift_disk_usage_when_no_recon_service_configured(self):
+        """
+        When the swift service is running, but recon middleware is not active,
+        an error is logged.
+        """
+        plugin = self.get_mount_info(create_time=self.reactor.time)
+
+        plugin._swift_recon_url = "http://localhost:12654"
+
+        def fetch_error(url):
+            raise HTTPCodeError(400, "invalid path: /recon/diskusage")
+        plugin._fetch = fetch_error
+
+        logging_mock = self.mocker.replace("logging.error", passthrough=False)
+        logging_mock(
+            "Swift service is running without swift-recon enabled.")
+        self.mocker.result(None)
+        self.mocker.replay()
+
+        result = plugin._get_swift_disk_usage()
+        self.assertIs(None, result)
+
+    def test_get_swift_usage_no_information(self):
+        """
+        When the swift recon service returns no disk usage information,
+        the _get_swift_disk_usage method returns None.
+        """
+        plugin = self.get_mount_info(create_time=self.reactor.time)
+
+        def fetch_none(url):
+            return None
+
+        plugin._fetch = fetch_none
+
+        result = plugin._get_swift_disk_usage()
+        self.assertEqual(None, result)
+
+    def test_get_swift_devices_no_matched_local_service(self):
+        """
+        The plugin logs an error when the swift ring file does not represent
+        a swift service running local IP address on the current node.
+        """
+        plugin = self.get_mount_info(create_time=self.reactor.time,
+                                     swift_config="/etc/hosts")
+
+        def get_fake_ring():
+            return FakeRingInfo([("192.168.1.10", 6000)])
+        plugin._get_ring = get_fake_ring
+
+        def local_network_devices():
+            return [{"ip_address": "10.1.2.3"}]
+        plugin._get_network_devices = local_network_devices
+
+        logging_mock = self.mocker.replace("logging.error")
+        logging_mock("Local swift service not found.")
+        self.mocker.replay()
+        self.assertEqual(plugin._get_swift_devices(), [])
