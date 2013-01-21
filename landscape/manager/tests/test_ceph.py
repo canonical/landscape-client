@@ -1,7 +1,7 @@
 import os
 
 from landscape.tests.helpers import LandscapeTest, ManagerHelper
-from landscape.manager.cephusage import CephUsage, ACCUMULATOR_KEY
+from landscape.manager.cephusage import CephUsage
 
 
 SAMPLE_TEMPLATE = ("   health HEALTH_WARN 6 pgs degraded; 6 pgs stuck "
@@ -303,3 +303,22 @@ class CephUsagePluginTest(LandscapeTest):
         self.reactor.advance(flush_interval)
 
         self.assertTrue(os.path.exists(persist_filename))
+
+    def test_resynchronize_message_calls_resynchronize_method(self):
+        """
+        If the reactor fires a "resynchronize" even the C{_resynchronize}
+        method on the ceph plugin object is called.
+        """
+        plugin = CephUsage(create_time=self.reactor.time)
+
+        self.called = False
+
+        def stub_resynchronize():
+            self.called = True
+        plugin._resynchronize = stub_resynchronize
+
+        self.manager.add(plugin)
+
+        self.reactor.fire("resynchronize")
+
+        self.assertTrue(self.called)
