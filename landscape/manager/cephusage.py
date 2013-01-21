@@ -51,7 +51,7 @@ class CephUsage(ManagerPlugin):
                                          self.flush)
 
     def _resynchronize(self):
-        self.registry._persist.remove(self.persist_name)
+        self._persist.remove(self.persist_name)
 
     def flush(self):
         if self._persist_filename:

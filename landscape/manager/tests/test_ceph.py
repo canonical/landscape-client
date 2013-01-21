@@ -1,5 +1,7 @@
+import os
+
 from landscape.tests.helpers import LandscapeTest, ManagerHelper
-from landscape.manager.cephusage import CephUsage
+from landscape.manager.cephusage import CephUsage, ACCUMULATOR_KEY
 
 
 SAMPLE_TEMPLATE = ("   health HEALTH_WARN 6 pgs degraded; 6 pgs stuck "
@@ -262,7 +264,6 @@ class CephUsagePluginTest(LandscapeTest):
         The _ceph_ring_id member of the plugin is also filled with the output
         of the _get_ceph_ring_id method.
         """
-
         exchange_interval = 300
         interval = exchange_interval
         plugin = CephUsage(create_time=self.reactor.time,
@@ -286,3 +287,19 @@ class CephUsagePluginTest(LandscapeTest):
 
         self.assertEqual([(300, 1.0), (600, 1.0)], plugin._ceph_usage_points)
         self.assertEqual(uuid, plugin._ceph_ring_id)
+
+    def test_flush_persists_data_to_disk(self):
+        """
+        The plugin's C{flush} method is called every C{flush_interval} and
+        creates the perists file.
+        """
+        flush_interval = self.config.flush_interval
+        persist_filename = os.path.join(self.config.data_path, "ceph.bpickle")
+
+        self.assertFalse(os.path.exists(persist_filename))
+        plugin = CephUsage(create_time=self.reactor.time)
+        self.manager.add(plugin)
+
+        self.reactor.advance(flush_interval)
+
+        self.assertTrue(os.path.exists(persist_filename))
