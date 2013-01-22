@@ -17,7 +17,7 @@ class MountInfo(MonitorPlugin):
 
     max_free_space_items_to_exchange = 200
 
-    def __init__(self, interval=90, monitor_interval=60 * 3,
+    def __init__(self, interval=300, monitor_interval=60 * 60,
                  mounts_file="/proc/mounts", create_time=time.time,
                  statvfs=None, hal_manager=None, mtab_file="/etc/mtab",
                  swift_config="/etc/swift/object-server.conf",
