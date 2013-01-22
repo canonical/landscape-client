@@ -260,7 +260,7 @@ class CephUsagePluginTest(LandscapeTest):
     def test_plugin_run(self):
         """
         The plugin's run() method fills the _ceph_usage_points with
-        accumulated samples after each C{manager.step_size} period.
+        accumulated samples after each C{interval} period.
         The _ceph_ring_id member of the plugin is also filled with the output
         of the _get_ceph_ring_id method.
         """
