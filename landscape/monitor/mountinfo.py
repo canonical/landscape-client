@@ -6,6 +6,7 @@ import json
 from landscape.lib.disk import get_mount_info
 from landscape.lib.fetch import fetch, HTTPCodeError, PyCurlError, FetchError
 from landscape.lib.monitor import CoverageMonitor
+from landscape.lib.network import get_active_device_info
 from landscape.accumulate import Accumulator
 from landscape.monitor.plugin import MonitorPlugin
 
@@ -16,7 +17,7 @@ class MountInfo(MonitorPlugin):
 
     max_free_space_items_to_exchange = 200
 
-    def __init__(self, interval=300, monitor_interval=60 * 60,
+    def __init__(self, interval=90, monitor_interval=60 * 3,
                  mounts_file="/proc/mounts", create_time=time.time,
                  statvfs=None, hal_manager=None, mtab_file="/etc/mtab",
                  swift_config="/etc/swift/object-server.conf",
@@ -25,6 +26,7 @@ class MountInfo(MonitorPlugin):
         self._monitor_interval = monitor_interval
         self._create_time = create_time
         self._fetch = fetch
+        self._get_network_devices = get_active_device_info
         self._mounts_file = mounts_file
         self._mtab_file = mtab_file
         if statvfs is None:
