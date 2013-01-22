@@ -139,9 +139,9 @@ MOUNT_INFO = Message("mount-info", {
                              KeyDict({"mount-point": utf8,
                                       "device": utf8,
                                       "filesystem": utf8,
-                                      "designated-service": utf8,
+                                      "service-designation": utf8,
                                       "total-space": Int()},
-                                      optional=["designated-service"]),
+                                      optional=["service-designation"]),
                              )),
     })
 

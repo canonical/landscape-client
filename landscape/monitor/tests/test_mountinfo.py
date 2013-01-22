@@ -528,10 +528,10 @@ addr=ennui 0 0
 
         messages = self.mstore.get_pending_messages()
         self.assertEqual(len(messages), 2)
-        # designated-service: swift should only be presented on hda2
+        # service-designation: swift should only be presented on hda2
         self.assertEqual(messages[0].get("mount-info"),
                          [(step_size,
-                           {"designated-service": "swift",
+                           {"service-designation": "swift",
                             "device": "/dev/hda2", "mount-point": "/",
                             "filesystem": "xfs", "total-space": 4096000}),
                           (step_size,

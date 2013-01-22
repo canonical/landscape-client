@@ -119,7 +119,7 @@ class MountInfo(MonitorPlugin):
         for mount_info in self._get_mount_info():
             mount_point = mount_info["mount-point"]
             if mount_info["device"] in swift_devices:
-                mount_info["designated-service"] = "swift"
+                mount_info["service-designation"] = "swift"
             free_space = mount_info.pop("free-space")
 
             key = ("accumulate-free-space", mount_point)
