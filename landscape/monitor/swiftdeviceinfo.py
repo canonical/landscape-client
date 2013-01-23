@@ -40,7 +40,6 @@ class SwiftDeviceInfo(MonitorPlugin):
         self.call_on_accepted("swift-device-info", self.send_messages, True)
 
     def create_swift_device_info_message(self):
-        logging.info("CHAD calling create swift device info message.")
         if self._swift_device_info:
             message = {"type": "swift-device-info",
                        "swift-device-info": self._swift_device_info}
@@ -50,7 +49,7 @@ class SwiftDeviceInfo(MonitorPlugin):
         return None
 
     def send_messages(self, urgent=False):
-        message = self.create_swift_device_info_message
+        message = self.create_swift_device_info_message()
         if message:
             logging.info("Queueing message with updated swift device info.")
             d = self.registry.broker.send_message(message, urgent=urgent)
@@ -74,7 +73,6 @@ class SwiftDeviceInfo(MonitorPlugin):
     def run(self):
         self._monitor.ping()
 
-        logging.info("CHAD calling swift device info run.")
         for swift_info in self._get_swift_devices():
             device_name = swift_info["device"]
 
@@ -82,7 +80,7 @@ class SwiftDeviceInfo(MonitorPlugin):
             prev_swift_info = self._persist.get(key)
             if not prev_swift_info or prev_swift_info != swift_info:
                 if swift_info not in self._swift_device_info:
-                    self._swift_device_info.append((now, swift_info))
+                    self._swift_device_info.append(swift_info)
 
     def _get_swift_devices(self):
         config_file = self._swift_config
@@ -114,9 +112,9 @@ class SwiftDeviceInfo(MonitorPlugin):
                 return []
 
         recon_disk_info = self._get_swift_disk_usage()
-        return [
-            "/dev/%s" % device["device"]
-                for device in recon_disk_info if device["mounted"]]
+        return [{"device": "/dev/%s" % device["device"],
+                 "mounted":  device["mounted"]} for device in recon_disk_info]
+
 
     def _get_swift_disk_usage(self):
         """
