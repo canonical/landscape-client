@@ -1,12 +1,8 @@
-import logging
 import time
 import os
-import json
 
 from landscape.lib.disk import get_mount_info
-from landscape.lib.fetch import fetch, HTTPCodeError, PyCurlError, FetchError
 from landscape.lib.monitor import CoverageMonitor
-from landscape.lib.network import get_active_device_info
 from landscape.accumulate import Accumulator
 from landscape.monitor.plugin import MonitorPlugin
 
@@ -19,22 +15,15 @@ class MountInfo(MonitorPlugin):
 
     def __init__(self, interval=300, monitor_interval=60 * 60,
                  mounts_file="/proc/mounts", create_time=time.time,
-                 statvfs=None, hal_manager=None, mtab_file="/etc/mtab",
-                 swift_config="/etc/swift/object-server.conf",
-                 swift_ring="/etc/swift/account.ring.gz"):
+                 statvfs=None, hal_manager=None, mtab_file="/etc/mtab"):
         self.run_interval = interval
         self._monitor_interval = monitor_interval
         self._create_time = create_time
-        self._fetch = fetch
-        self._get_network_devices = get_active_device_info
         self._mounts_file = mounts_file
         self._mtab_file = mtab_file
         if statvfs is None:
             statvfs = os.statvfs
         self._statvfs = statvfs
-        self._swift_config = swift_config  # If exists, we are a swift node
-        self._swift_ring = swift_ring      # To discover swift recon port
-        self._swift_recon_url = None
         self._create_time = create_time
         self._free_space = []
         self._mount_info = []
@@ -114,12 +103,8 @@ class MountInfo(MonitorPlugin):
         self._monitor.ping()
         now = int(self._create_time())
         current_mount_points = set()
-
-        swift_devices = self._get_swift_devices()
         for mount_info in self._get_mount_info():
             mount_point = mount_info["mount-point"]
-            if mount_info["device"] in swift_devices:
-                mount_info["service-designation"] = "swift"
             free_space = mount_info.pop("free-space")
 
             key = ("accumulate-free-space", mount_point)
@@ -241,78 +226,3 @@ class MountInfo(MonitorPlugin):
             if "bind" in options.split(","):
                 bound_points.add(mount_point)
         return bound_points
-
-    def _get_swift_devices(self):
-        config_file = self._swift_config
-        # Check if a swift storage config file is available. No need to run
-        # if we know that we're not on a swif monitor node anyway.
-        if not os.path.exists(config_file):
-            # There is no config file - it's not a swift storage machine.
-            return []
-
-        # Extract the swift service URL from the ringfile and cache it.
-        if self._swift_recon_url is None:
-            ring = self._get_ring()
-            if ring is None:
-                return []
-
-            network_devices = self._get_network_devices()
-            local_ips = [device["ip_address"] for device in network_devices]
-
-            # Grab first swift service with an IP on this host
-            for dev in ring.devs:
-                if dev and dev["ip"] in local_ips:
-                    self._swift_recon_url = "http://%s:%d/recon/diskusage" % (
-                        dev['ip'], dev['port'])
-                    break
-
-            if self._swift_recon_url is None:
-                logging.error(
-                    "Local swift service not found.")
-                return []
-
-        recon_disk_info = self._get_swift_disk_usage()
-        return [
-            "/dev/%s" % device["device"]
-                for device in recon_disk_info if device["mounted"]]
-
-    def _get_swift_disk_usage(self):
-        """
-        Query the swift storage usage data by parsing the curled recon data
-        from http://localhost:<_swift_service_port>/recon/diskusage.
-        Lots of recon data for the picking described at:
-        http://docs.openstack.org/developer/swift/admin_guide.html
-        """
-        error_message = None
-        try:
-            content = self._fetch(self._swift_recon_url)
-        except HTTPCodeError, error:
-            error_message = (
-                "Swift service is running without swift-recon enabled.")
-        except (FetchError, PyCurlError), error:
-            error_message = (
-                "Swift service not available at %s. %s" %
-                (self._swift_recon_url, str(error)))
-        if error_message is not None:
-            logging.error(error_message)
-            return None
-
-        if content is None:
-            return None
-
-        swift_disk_usages = json.loads(content)  # list of device dicts
-        return swift_disk_usages
-
-    def _get_ring(self):
-        """Return ring-file object from self._swift_ring location"""
-        if not os.path.exists(self._swift_ring):
-            logging.warning(
-                "Swift ring files are not available yet.")
-            return None
-        try:
-            from swift.common.ring import Ring
-        except ImportError:
-            logging.error(
-                "Swift python common libraries not found.")
-            return None
-        return Ring(self._swift_ring)
