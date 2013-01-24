@@ -68,10 +68,13 @@ COMPUTER_INFO = Message(
     "computer-info",
     {"hostname": utf8,
      "total-memory": Int(),
-     "total-swap": Int()},
+     "total-swap": Int(),
+     "juju-env-uuid": utf8,
+     "juju-unit-name": utf8},
     # Not sure why these are all optional, but it's explicitly tested
     # in the server
-    optional=["hostname", "total-memory", "total-swap"])
+    optional=["hostname", "total-memory", "total-swap", "juju-env-uuid",
+              "juju-unit-name"])
 
 DISTRIBUTION_INFO = Message(
     "distribution-info",
@@ -104,21 +107,25 @@ HARDWARE_INFO = Message("hardware-info", {
 
 
 LOAD_AVERAGE = Message("load-average", {
-    "load-averages": List(Tuple(Int(), Float()))})
+    "load-averages": List(Tuple(Int(), Float())),
+    })
 
 CPU_USAGE = Message("cpu-usage", {
-    "cpu-usages": List(Tuple(Int(), Float()))})
+    "cpu-usages": List(Tuple(Int(), Float())),
+    })
 
 CEPH_USAGE = Message("ceph-usage", {
     "ceph-usages": List(Tuple(Int(), Float())),
-    "ring-id": utf8})
+    "ring-id": utf8,
+    })
 
 KEYSTONE_TOKEN = Message("keystone-token", {
     "data": Any(String(), Constant(None))
 })
 
 MEMORY_INFO = Message("memory-info", {
-    "memory-info": List(Tuple(Float(), Int(), Int()))})
+    "memory-info": List(Tuple(Float(), Int(), Int())),
+    })
 
 RESYNCHRONIZE = Message(
     "resynchronize",
@@ -137,7 +144,8 @@ MOUNT_INFO = Message("mount-info", {
                                       "device": utf8,
                                       "filesystem": utf8,
                                       "total-space": Int()}),
-                             ))})
+                             )),
+    })
 
 FREE_SPACE = Message("free-space", {
     "free-space": List(Tuple(Float(), utf8, Int()))})
@@ -153,10 +161,9 @@ REGISTER = Message(
      "hostname": utf8,
      "account_name": utf8,
      "tags": Any(utf8, Constant(None)),
-     "vm-info": String(),
-     "extra": Any(utf8, None)},
+     "vm-info": String()},
     # hostname wasn't around in old versions
-    optional=["registration_password", "hostname", "tags", "vm-info", "extra"])
+    optional=["registration_password", "hostname", "tags", "vm-info"])
 
 
 REGISTER_PROVISIONED_MACHINE = Message(
@@ -182,11 +189,12 @@ REGISTER_CLOUD_VM = Message(
      "vm-info": String(),
      "public_ipv4": Unicode(),
      "local_ipv4": Unicode()},
-    optional=["tags", "vm-info", "public_ipv4", "local_ipv4"])
+     optional=["tags", "vm-info", "public_ipv4", "local_ipv4"])
 
 TEMPERATURE = Message("temperature", {
     "thermal-zone": utf8,
-    "temperatures": List(Tuple(Int(), Float()))})
+    "temperatures": List(Tuple(Int(), Float())),
+    })
 
 PROCESSOR_INFO = Message(
     "processor-info",
@@ -195,7 +203,8 @@ PROCESSOR_INFO = Message(
                                  "model": utf8,
                                  "cache-size": Int(),
                                  },
-                                optional=["vendor", "cache-size"]))})
+                                optional=["vendor", "cache-size"])),
+    })
 
 user_data = KeyDict({
     "uid": Int(),
@@ -322,7 +331,8 @@ CHANGE_PACKAGES_RESULT = Message(
 
 UNKNOWN_PACKAGE_HASHES = Message("unknown-package-hashes", {
     "hashes": List(String()),
-    "request-id": Int()})
+    "request-id": Int(),
+    })
 
 PACKAGE_REPORTER_RESULT = Message("package-reporter-result", {
     "code": Int(),
@@ -339,7 +349,8 @@ ADD_PACKAGES = Message("add-packages", {
                               "version": utf8,
                               "type": Int(),
                               })),
-    "request-id": Int()})
+    "request-id": Int(),
+    })
 
 TEXT_MESSAGE = Message("text-message", {
     "message": Unicode()})
