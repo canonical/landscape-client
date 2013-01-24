@@ -32,10 +32,15 @@ class SwiftDeviceInfoTest(LandscapeTest):
         """
         The swift_device_info plugin queues message when manager.exchange()
         is called.  Each message should be aligned to a step boundary;
-        messages collected between exchange periods should be
-        delivered in a single message.
+        only a sing message with the latest swift device information will
+        be delivered in a single message.
         """
+        def fake_swift_devices():
+            return [{"device": "/dev/hdf", "mounted": True},
+                    {"device": "/dev/hda2", "mounted": False}]
+
         plugin = SwiftDeviceInfo(create_time=self.reactor.time)
+        plugin._get_swift_devices = fake_swift_devices
 
         step_size = self.monitor.step_size
         self.monitor.add(plugin)
@@ -46,41 +51,38 @@ class SwiftDeviceInfoTest(LandscapeTest):
         self.mocker.result(None)
         self.mocker.replay()
 
-        import pdb;pdb.set_trace()
         self.reactor.advance(step_size * 2)
         self.monitor.exchange()
 
         messages = self.mstore.get_pending_messages()
-        self.assertEqual(len(messages), 2)
+        self.assertEqual(len(messages), 1)
+        expected_message_content = [
+                {"device": "/dev/hdf", "mounted": True},
+                {"device": "/dev/hda2", "mounted": False}]
 
-        message = [d for d in messages if d["type"] == "free-space"][0]
-        free_space = message["free-space"]
-        for i in range(len(free_space)):
-            self.assertEqual(free_space[i][0], (i + 1) * step_size)
-            self.assertEqual(free_space[i][1], "/")
-            self.assertEqual(free_space[i][2], 409600)
+        swift_devices = messages[0]["swift-device-info"]
+        self.assertEqual(swift_devices, expected_message_content)
 
     def test_messaging_flushes(self):
         """
         Duplicate message should never be created.  If no data is
         available, None will be returned when messages are created.
         """
-        def statvfs(path):
-            return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
+        def fake_swift_devices():
+            return [{"device": "/dev/hdf", "mounted": True},
+                    {"device": "/dev/hda2", "mounted": False}]
 
-        filename = self.makeFile("""\
-/dev/hda1 / ext3 rw 0 0
-""")
         plugin = SwiftDeviceInfo(create_time=self.reactor.time)
         self.monitor.add(plugin)
+        plugin._get_swift_devices = fake_swift_devices
 
         self.reactor.advance(self.monitor.step_size)
 
-        messages = plugin.create_swift_device_info_message()
-        self.assertEqual(len(messages), 2)
+        message = plugin.create_swift_device_info_message()
+        self.assertEqual(message.keys(), ["swift-device-info", "type"])
 
-        messages = plugin.create_messages()
-        self.assertEqual(len(messages), 0)
+        message = plugin.create_swift_device_info_message()
+        self.assertEqual(message, None)
 
     def test_never_exchange_empty_messages(self):
         """
@@ -101,29 +103,23 @@ class SwiftDeviceInfoTest(LandscapeTest):
         Test ensures all expected messages are created and contain the
         right datatypes.
         """
-        def statvfs(path):
-            return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
+        def fake_swift_devices():
+            return [{"device": "/dev/hdf", "mounted": True},
+                    {"device": "/dev/hda2", "mounted": False}]
 
-        filename = self.makeFile("""\
-/dev/hda2 / xfs rw 0 0
-""")
         plugin = SwiftDeviceInfo(create_time=self.reactor.time)
         step_size = self.monitor.step_size
         self.monitor.add(plugin)
+        plugin._get_swift_devices = fake_swift_devices
 
         self.reactor.advance(step_size)
         self.monitor.exchange()
 
         messages = self.mstore.get_pending_messages()
-        self.assertEqual(len(messages), 2)
-        self.assertEqual(messages[0].get("mount-info"),
-                         [(step_size,
-                           {"device": "/dev/hda2", "mount-point": "/",
-                            "filesystem": "xfs", "total-space": 4096000})])
-        self.assertEqual(messages[1].get("free-space"),
-                         [(step_size, "/", 409600)])
-        self.assertTrue(isinstance(messages[1]["free-space"][0][2],
-                                   (int, long)))
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(messages[0].get("swift-device-info"),
+                         [{"device": "/dev/hdf", "mounted": True},
+                          {"device": "/dev/hda2", "mounted": False}])
 
     def test_messages_with_swift_data(self):
         """
@@ -223,35 +219,30 @@ class SwiftDeviceInfoTest(LandscapeTest):
         didn't get the mount info at all. This test ensures that mount info are
         only saved when exchange happens.
         """
-        def statvfs(path):
-            return (4096, 0, mb(1000), mb(100), 0, 0, 0, 0, 0)
+        def fake_swift_devices():
+            return [{"device": "/dev/hdf", "mounted": True},
+                    {"device": "/dev/hda2", "mounted": False}]
 
-        filename = self.makeFile("""\
-/dev/hda1 / ext3 rw 0 0
-""")
         plugin = SwiftDeviceInfo(create_time=self.reactor.time)
         self.monitor.add(plugin)
+        plugin._get_swift_devices = fake_swift_devices
         plugin.run()
-        message1 = plugin.create_mount_info_message()
+        message1 = plugin.create_swift_device_info_message()
         self.assertEqual(
-            message1.get("mount-info"),
-            [(0, {"device": "/dev/hda1",
-                  "filesystem": "ext3",
-                  "mount-point": "/",
-                  "total-space": 4096000L})])
+            message1.get("swift-device-info"),
+            [{"device": "/dev/hdf", "mounted": True},
+             {"device": "/dev/hda2", "mounted": False}])
         plugin.run()
-        message2 = plugin.create_mount_info_message()
+        message2 = plugin.create_swift_device_info_message()  # CHAD
         self.assertEqual(
             message2.get("mount-info"),
-            [(0, {"device": "/dev/hda1",
-                  "filesystem": "ext3",
-                  "mount-point": "/",
-                  "total-space": 4096000L})])
+            [{"device": "/dev/hdf", "mounted": True},
+             {"device": "/dev/hda2", "mounted": False}])
         # Run again, calling create_mount_info_message purge the information
         plugin.run()
         plugin.exchange()
         plugin.run()
-        message3 = plugin.create_mount_info_message()
+        message3 = plugin.create_swift_device_info_message()
         self.assertIdentical(message3, None)
 
     def test_wb_get_swift_devices_when_not_a_swift_node(self):
