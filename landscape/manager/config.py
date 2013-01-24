@@ -9,7 +9,6 @@ ALL_PLUGINS = ["ProcessKiller", "PackageManager", "UserManager",
                "CephUsage", "KeystoneToken"]
 
 
-
 class ManagerConfiguration(Configuration):
     """Specialized configuration for the Landscape Manager."""
 
