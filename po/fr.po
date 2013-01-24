@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2013-01-24 10:38-0200\n"
+"POT-Creation-Date: 2013-01-24 10:45-0200\n"
 "PO-Revision-Date: 2012-03-28 20:07+0100\n"
 "Last-Translator: Thomas Hervé <thomas.herve@canonical.com>\n"
 "Language-Team: français <>\n"
@@ -106,7 +106,7 @@ msgstr "En apprendre plus..."
 
 #: ../landscape/ui/view/ui/landscape-client-settings.glade.h:3
 msgid "Landscape service:"
-msgstr "Nom d'hôte du serveur Landscape:"
+msgstr "Serveur Landscape à utiliser:"
 
 #: ../landscape/ui/view/ui/landscape-client-settings.glade.h:4
 msgid "Account name:"
