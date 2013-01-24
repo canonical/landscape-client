@@ -1,11 +1,8 @@
-import tempfile
-
 from twisted.internet.defer import succeed
 
 from landscape.lib.fetch import HTTPCodeError
 from landscape.monitor.swiftdeviceinfo import SwiftDeviceInfo
-from landscape.tests.test_hal import MockHALManager, MockRealHALDevice
-from landscape.tests.helpers import LandscapeTest, mock_counter, MonitorHelper
+from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.tests.mocker import ANY
 
 
@@ -92,7 +89,6 @@ class SwiftDeviceInfoTest(LandscapeTest):
         """
         self.mstore.set_accepted_types(["load-average"])
 
-        filename = self.makeFile("")
         plugin = SwiftDeviceInfo()
         self.monitor.add(plugin)
         self.monitor.exchange()
@@ -100,7 +96,7 @@ class SwiftDeviceInfoTest(LandscapeTest):
 
     def test_messages(self):
         """
-        Test ensures all expected messages are created and contain the
+        Test ensures the expected message is created and contains the
         right datatypes.
         """
         def fake_swift_devices():
@@ -124,6 +120,7 @@ class SwiftDeviceInfoTest(LandscapeTest):
     def test_messages_with_swift_data(self):
         """
         All swift-affiliated devices are sent in swift-device-info messages.
+        Both mounted and unmounted swift devices send data.
         """
         def fake_swift_devices():
             return [{"device": "/dev/hdf", "mounted": True},
@@ -155,6 +152,7 @@ class SwiftDeviceInfoTest(LandscapeTest):
         should be sent.
         """
         plugin = SwiftDeviceInfo(create_time=self.reactor.time)
+
         def fake_swift_devices():
             return [{"device": "/dev/hdf", "mounted": True},
                     {"device": "/dev/hda2", "mounted": False}]
@@ -197,25 +195,33 @@ class SwiftDeviceInfoTest(LandscapeTest):
         self.assertMessages(list(self.mstore.get_pending_messages()), [])
 
     def test_call_on_accepted(self):
+        """
+        When message type acceptance is added for swift-device-info,
+        send_message gets called.
+        """
+        def fake_swift_devices():
+            return [{"device": "/dev/hdf", "mounted": True},
+                    {"device": "/dev/hda2", "mounted": False}]
+
         plugin = SwiftDeviceInfo(create_time=self.reactor.time)
         self.monitor.add(plugin)
+        plugin._get_swift_devices = fake_swift_devices
 
         self.reactor.advance(plugin.run_interval)
 
         remote_broker_mock = self.mocker.replace(self.remote)
         remote_broker_mock.send_message(ANY, urgent=True)
         self.mocker.result(succeed(None))
-        self.mocker.count(2)
+        self.mocker.count(1)  # 1 send message is called for swift-device-info
         self.mocker.replay()
 
-        self.reactor.fire(("message-type-acceptance-changed", "swift-device-info"),
-                          True)
+        self.reactor.fire(
+            ("message-type-acceptance-changed", "swift-device-info"), True)
 
     def test_persist_timing(self):
-        """Mount info are only persisted when exchange happens.
+        """Swift device info is only persisted when exchange happens.
 
-        Previously mount info were persisted as soon as they were gathered: if
-        an event happened between the persist and the exchange, the server
+        If an event happened between the persist and the exchange, the server
         didn't get the mount info at all. This test ensures that mount info are
         only saved when exchange happens.
         """
@@ -235,10 +241,10 @@ class SwiftDeviceInfoTest(LandscapeTest):
         plugin.run()
         message2 = plugin.create_swift_device_info_message()  # CHAD
         self.assertEqual(
-            message2.get("mount-info"),
+            message2.get("swift-device-info"),
             [{"device": "/dev/hdf", "mounted": True},
              {"device": "/dev/hda2", "mounted": False}])
-        # Run again, calling create_mount_info_message purge the information
+        # Run again, calling create_swift_device_info_message which purges info
         plugin.run()
         plugin.exchange()
         plugin.run()
