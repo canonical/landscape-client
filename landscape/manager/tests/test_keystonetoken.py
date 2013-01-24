@@ -74,3 +74,18 @@ class KeystoneTokenTest(LandscapeTest):
             message)
         message = self.plugin.get_message()
         self.assertIs(None, message)
+
+    def test_resynchronize_message_calls_resynchronize_method(self):
+        """
+        If the reactor fires a "resynchronize" even the C{_resynchronize}
+        method on the ceph plugin object is called.
+        """
+        self.called = False
+
+        def stub_resynchronize():
+            self.called = True
+        self.plugin._resynchronize = stub_resynchronize
+
+        self.manager.add(plugin)
+        self.reactor.fire("resynchronize")
+        self.assertTrue(self.called)
