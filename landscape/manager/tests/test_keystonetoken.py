@@ -75,10 +75,24 @@ class KeystoneTokenTest(LandscapeTest):
         message = self.plugin.get_message()
         self.assertIs(None, message)
 
+    def test_flush_persists_data_to_disk(self):
+        """
+        The plugin's C{flush} method is called every C{flush_interval} and
+        creates the perists file.
+        """
+        flush_interval = self.config.flush_interval
+        persist_filename = os.path.join(self.config.data_path,
+                                        "keystone.bpickle")
+
+        self.assertFalse(os.path.exists(persist_filename))
+        self.manager.add(self.plugin)
+        self.reactor.advance(flush_interval)
+        self.assertTrue(os.path.exists(persist_filename))
+
     def test_resynchronize_message_calls_resynchronize_method(self):
         """
         If the reactor fires a "resynchronize" even the C{_resynchronize}
-        method on the ceph plugin object is called.
+        method on the keystone plugin object is called.
         """
         self.called = False
 
@@ -86,6 +100,6 @@ class KeystoneTokenTest(LandscapeTest):
             self.called = True
         self.plugin._resynchronize = stub_resynchronize
 
-        self.manager.add(plugin)
+        self.manager.add(self.plugin)
         self.reactor.fire("resynchronize")
         self.assertTrue(self.called)

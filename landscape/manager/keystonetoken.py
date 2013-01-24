@@ -9,8 +9,6 @@ from landscape.lib.persist import Persist
 KEYSTONE_CONFIG_FILE = "/etc/keystone/keystone.conf"
 
 
-# Yes, it should be just fine that we're using a MonitorPlugin
-# (DataWatcher) from the landscape manager process.
 class KeystoneToken(DataWatcher):
     """
     A plugin which pulls the admin_token from the keystone configuration file
@@ -25,15 +23,22 @@ class KeystoneToken(DataWatcher):
 
     def register(self, client):
         super(KeystoneToken, self).register(client)
-        self._persist = Persist(
-            filename=os.path.join(self.registry.config.data_path,
-                "keystone.bpickle"))
-        # radix XXX resynchronize is untested. does it even work in manager?
+        self._persist_filename = os.path.join(self.registry.config.data_path,
+                                              "keystone.bpickle")
+        self._persist = Persist(filename=self._persist_filename)
         self.registry.reactor.call_on("resynchronize", self._resynchronize)
+        self.registry.reactor.call_every(self.registry.config.flush_interval,
+                                         self.flush)
 
     def _resynchronize(self):
-        # radix XXX resynchronize is untested. does it even work in manager?
+        """
+        Recreate the persist upon C{_resynchronize}.
+        """
         self._persist.remove("data")
+
+    def flush(self):
+        if self._persist_filename:
+            self._persist.save(self._persist_filename)
 
     def get_data(self):
         """
