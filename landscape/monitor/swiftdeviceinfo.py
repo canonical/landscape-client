@@ -112,6 +112,8 @@ class SwiftDeviceInfo(MonitorPlugin):
                 return []
 
         recon_disk_info = self._get_swift_disk_usage()
+        # We don't care about avail and free figures because we track
+        # free_space for mounted devices in free-space messages 
         return [{"device": "/dev/%s" % device["device"],
                  "mounted":  device["mounted"]} for device in recon_disk_info]
 
@@ -137,7 +139,7 @@ class SwiftDeviceInfo(MonitorPlugin):
             logging.error(error_message)
             return None
 
-        if content is None:
+        if not content:
             return None
 
         swift_disk_usages = json.loads(content)  # list of device dicts
