@@ -114,7 +114,7 @@ msgstr "Nom du compte:"
 
 #: ../landscape/ui/view/ui/landscape-client-settings.glade.h:5
 msgid "Registration Key:"
-msgstr ""
+msgstr "Clé d'enregistrement:"
 
 #: ../landscape/ui/view/ui/landscape-client-settings.glade.h:6
 msgid "Don't have an account?"
