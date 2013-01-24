@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2012-08-27 17:32+0200\n"
+"POT-Creation-Date: 2013-01-24 10:38-0200\n"
 "PO-Revision-Date: 2012-03-28 20:07+0100\n"
 "Last-Translator: Thomas Hervé <thomas.herve@canonical.com>\n"
 "Language-Team: français <>\n"
@@ -138,7 +138,6 @@ msgstr ""
 "de dialogue."
 
 #: ../applications/landscape-client-settings.desktop.in.h:2
-#, fuzzy
 msgid "Landscape Management Service Preferences"
 msgstr "Préférences du service de gestion Landscape"
 
