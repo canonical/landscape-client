@@ -80,7 +80,7 @@ class SwiftDeviceInfoTest(LandscapeTest):
 
     def test_never_exchange_empty_messages(self):
         """
-        When the plugin has no data, it's various create_X_message()
+        When the plugin has no data, its various create_X_message()
         methods will return None.  Empty or null messages should never
         be queued.
         """
@@ -90,29 +90,6 @@ class SwiftDeviceInfoTest(LandscapeTest):
         self.monitor.add(plugin)
         self.monitor.exchange()
         self.assertEqual(len(self.mstore.get_pending_messages()), 0)
-
-    def test_messages(self):
-        """
-        Test ensures the expected message is created and contains the
-        right datatypes.
-        """
-        def fake_swift_devices():
-            return [{"device": "/dev/hdf", "mounted": True},
-                    {"device": "/dev/hda2", "mounted": False}]
-
-        plugin = SwiftDeviceInfo(create_time=self.reactor.time)
-        step_size = self.monitor.step_size
-        self.monitor.add(plugin)
-        plugin._get_swift_devices = fake_swift_devices
-
-        self.reactor.advance(step_size)
-        self.monitor.exchange()
-
-        messages = self.mstore.get_pending_messages()
-        self.assertEqual(len(messages), 1)
-        self.assertEqual(messages[0].get("swift-device-info"),
-                         [{"device": "/dev/hdf", "mounted": True},
-                          {"device": "/dev/hda2", "mounted": False}])
 
     def test_messages_with_swift_data(self):
         """
@@ -215,6 +192,42 @@ class SwiftDeviceInfoTest(LandscapeTest):
         self.reactor.fire(
             ("message-type-acceptance-changed", "swift-device-info"), True)
 
+    def test_persist_deltas(self):
+        """
+        Swift persistent device info drops old devices from persist storage if
+        the device no longer exists in the current device list.
+        """
+        def fake_swift_devices():
+            return [{"device": "/dev/hdf", "mounted": True},
+                    {"device": "/dev/hda2", "mounted": False}]
+
+        def fake_swift_devices_no_hdf():
+            return [{"device": "/dev/hda2", "mounted": False}]
+
+        plugin = SwiftDeviceInfo(create_time=self.reactor.time)
+        self.monitor.add(plugin)
+        plugin._get_swift_devices = fake_swift_devices
+        plugin.run()
+        plugin.exchange()  # To persist swift recon data
+        self.assertEqual(
+            plugin._persist.get("swift-device-info"),
+            {"/dev/hdf": {"device": "/dev/hdf", "mounted": True},
+             "/dev/hda2": {"device": "/dev/hda2", "mounted": False}})
+
+        # Drop a device
+        plugin._get_swift_devices = fake_swift_devices_no_hdf
+        plugin.run()
+        plugin.exchange()
+        self.assertEqual(
+            plugin._persist.get("swift-device-info"),
+            {"/dev/hda2": {"device": "/dev/hda2", "mounted": False}})
+
+        # Run again, calling create_swift_device_info_message which purges info
+        plugin.run()
+        plugin.exchange()
+        message3 = plugin.create_swift_device_info_message()
+        self.assertIdentical(message3, None)
+
     def test_persist_timing(self):
         """Swift device info is only persisted when exchange happens.
 
@@ -236,7 +249,7 @@ class SwiftDeviceInfoTest(LandscapeTest):
             [{"device": "/dev/hdf", "mounted": True},
              {"device": "/dev/hda2", "mounted": False}])
         plugin.run()
-        message2 = plugin.create_swift_device_info_message()  # CHAD
+        message2 = plugin.create_swift_device_info_message()
         self.assertEqual(
             message2.get("swift-device-info"),
             [{"device": "/dev/hdf", "mounted": True},

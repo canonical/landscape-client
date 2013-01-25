@@ -27,7 +27,7 @@ class SwiftDeviceInfo(MonitorPlugin):
         self._swift_recon_url = None
         self._create_time = create_time
         self._swift_device_info = []
-        self._swift_device_info_to_persist = None
+        self._swift_device_info_to_persist = []
 
     def register(self, registry):
         super(SwiftDeviceInfo, self).register(registry)
@@ -62,9 +62,9 @@ class SwiftDeviceInfo(MonitorPlugin):
     def persist_swift_info(self):
         for swift_device_info in self._swift_device_info_to_persist:
             device_name = swift_device_info["device"]
-            key = ("swift-device-info", device_name)
+            key = (self.persist_name, device_name)
             self._persist.set(key, swift_device_info)
-        self._mount_info_to_persist = None
+        self._swift_device_info_to_persist = None
         # This forces the registry to write the persistent store to disk
         # This means that the persistent data reflects the state of the
         # messages sent.
@@ -73,14 +73,23 @@ class SwiftDeviceInfo(MonitorPlugin):
     def run(self):
         self._monitor.ping()
 
-        for swift_info in self._get_swift_devices():
+        current_swift_devices = self._get_swift_devices()
+        current_device_names = []
+        for swift_info in current_swift_devices:
             device_name = swift_info["device"]
-
-            key = ("swift-device-info", device_name)
+            current_device_names.append(device_name)
+            key = (self.persist_name, device_name)
             prev_swift_info = self._persist.get(key)
             if not prev_swift_info or prev_swift_info != swift_info:
                 if swift_info not in self._swift_device_info:
                     self._swift_device_info.append(swift_info)
+
+        # Get all persisted devices and remove those that no longer exist
+        persisted_devices = self._persist.get(self.persist_name)
+        if persisted_devices:
+            for device_name in persisted_devices.keys():
+                if device_name not in current_device_names:
+                    self._persist.remove((self.persist_name, device_name))
 
     def _get_swift_devices(self):
         config_file = self._swift_config
