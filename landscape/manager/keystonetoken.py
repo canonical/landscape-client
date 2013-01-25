@@ -37,13 +37,15 @@ class KeystoneToken(DataWatcher):
         self._persist.remove("data")
 
     def flush(self):
-        if self._persist_filename:
-            self._persist.save(self._persist_filename)
+        self._persist.save(self._persist_filename)
 
     def get_data(self):
         """
         Return the Keystone administrative token.
         """
+        if not os.path.exists(self._keystone_config_file):
+            return None
+
         config = ConfigParser()
         config.read(self._keystone_config_file)
         try:

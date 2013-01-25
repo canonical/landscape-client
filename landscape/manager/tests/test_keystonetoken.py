@@ -19,7 +19,6 @@ class KeystoneTokenTest(LandscapeTest):
         The plugin provides no data when the keystone configuration file
         doesn't exist.
         """
-        self.log_helper.ignore_errors("KeystoneToken: No admin_token found .*")
         self.assertIs(None, self.plugin.get_data())
 
     def test_get_keystone_token_empty(self):
@@ -103,3 +102,17 @@ class KeystoneTokenTest(LandscapeTest):
         self.manager.add(self.plugin)
         self.reactor.fire("resynchronize")
         self.assertTrue(self.called)
+
+    def test_send_message_with_no_data(self):
+        """
+        If the plugin could not extract the C{admin_token} from the Keystone
+        config file, upon exchange, C{None} is returned.
+        """
+        self.makeFile(path=self.keystone_file,
+                      content="[DEFAULT]\nadmin_token =")
+        self.manager.add(self.plugin)
+
+        def check(result):
+            self.assertIs(None, result)
+
+        return self.plugin.exchange().addCallback(check)
