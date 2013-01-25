@@ -6,9 +6,6 @@ from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.tests.mocker import ANY
 
 
-mb = lambda x: x * 1024 * 1024
-
-
 class FakeRingInfo(object):
     def __init__(self, ip_port_tuples=[]):
         self.devs = []

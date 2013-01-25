@@ -85,7 +85,7 @@ class SwiftDeviceInfo(MonitorPlugin):
     def _get_swift_devices(self):
         config_file = self._swift_config
         # Check if a swift storage config file is available. No need to run
-        # if we know that we're not on a swif monitor node anyway.
+        # if we know that we're not on a swift monitor node anyway.
         if not os.path.exists(config_file):
             # There is no config file - it's not a swift storage machine.
             return []
