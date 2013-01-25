@@ -281,6 +281,22 @@ class SwiftDeviceInfoTest(LandscapeTest):
         self.mocker.replay()
         self.assertEqual(plugin._get_swift_devices(), [])
 
+    def test_run_disabled_when_missing_swift_config(self):
+        """
+        When on a node that doesn't have the appropriate swift config file. The
+        plugin logs an info message and is disabled.
+        """
+        plugin = SwiftDeviceInfo(create_time=self.reactor.time,
+                                     swift_config="/config/file/doesnotexist")
+        logging_mock = self.mocker.replace("logging.info")
+        logging_mock("This does not appear to be a swift storage server. "
+                     "'swift-device-info' plugin has been disabled.")
+        self.mocker.replay()
+        self.monitor.add(plugin)
+        self.assertEqual(plugin.enabled, True)
+        plugin.run()
+        self.assertEqual(plugin.enabled, False)
+
     def test_wb_get_swift_devices_no_swift_python_libs_available(self):
         """
         The plugin logs an error and doesn't find swift devices when it can't
@@ -291,7 +307,8 @@ class SwiftDeviceInfoTest(LandscapeTest):
                                      swift_ring="/etc/hosts")
 
         logging_mock = self.mocker.replace("logging.error")
-        logging_mock("Swift python common libraries not found.")
+        logging_mock("Swift python common libraries not found. "
+                     "'swift-device-info' plugin has been disabled.")
         self.mocker.replay()
 
         self.assertEqual(plugin._get_swift_devices(), [])
@@ -305,10 +322,11 @@ class SwiftDeviceInfoTest(LandscapeTest):
 
         plugin._swift_recon_url = "http://localhost:12654"
 
-        logging_mock = self.mocker.replace("logging.error")
+        logging_mock = self.mocker.replace("logging.error", passthrough=False)
         logging_mock(
             "Swift service not available at %s. "
-            "Error 7: couldn't connect to host" %
+            "Error 7: couldn't connect to host. "
+            "'swift-device-info' plugin has been disabled." %
                      plugin._swift_recon_url)
         self.mocker.result(None)
         self.mocker.replay()
@@ -331,7 +349,8 @@ class SwiftDeviceInfoTest(LandscapeTest):
 
         logging_mock = self.mocker.replace("logging.error", passthrough=False)
         logging_mock(
-            "Swift service is running without swift-recon enabled.")
+            "Swift service is running without swift-recon enabled. "
+            "'swift-device-info' plugin has been disabled.")
         self.mocker.result(None)
         self.mocker.replay()
 
@@ -370,6 +389,7 @@ class SwiftDeviceInfoTest(LandscapeTest):
         plugin._get_network_devices = local_network_devices
 
         logging_mock = self.mocker.replace("logging.error")
-        logging_mock("Local swift service not found.")
+        logging_mock("Local swift service not found. "
+                     "'swift-device-info' plugin has been disabled.")
         self.mocker.replay()
         self.assertEqual(plugin._get_swift_devices(), [])

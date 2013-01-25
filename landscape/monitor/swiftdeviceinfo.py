@@ -28,6 +28,7 @@ class SwiftDeviceInfo(MonitorPlugin):
         self._create_time = create_time
         self._swift_device_info = []
         self._swift_device_info_to_persist = []
+        self.enabled = True
 
     def register(self, registry):
         super(SwiftDeviceInfo, self).register(registry)
@@ -71,6 +72,8 @@ class SwiftDeviceInfo(MonitorPlugin):
         self.registry.flush()
 
     def run(self):
+        if not self.enabled:
+            return
         self._monitor.ping()
 
         current_swift_devices = self._get_swift_devices()
@@ -97,6 +100,10 @@ class SwiftDeviceInfo(MonitorPlugin):
         # if we know that we're not on a swift monitor node anyway.
         if not os.path.exists(config_file):
             # There is no config file - it's not a swift storage machine.
+            self.enabled = False
+            logging.info(
+                    "This does not appear to be a swift storage server. '%s' "
+                    "plugin has been disabled." % self.persist_name)
             return []
 
         # Extract the swift service URL from the ringfile and cache it.
@@ -116,8 +123,10 @@ class SwiftDeviceInfo(MonitorPlugin):
                     break
 
             if self._swift_recon_url is None:
+                self.enabled = False
                 logging.error(
-                    "Local swift service not found.")
+                    "Local swift service not found. '%s' plugin has "
+                    "been disabled." % self.persist_name)
                 return []
 
         recon_disk_info = self._get_swift_disk_usage()
@@ -141,10 +150,12 @@ class SwiftDeviceInfo(MonitorPlugin):
                 "Swift service is running without swift-recon enabled.")
         except (FetchError, PyCurlError), error:
             error_message = (
-                "Swift service not available at %s. %s" %
+                "Swift service not available at %s. %s." %
                 (self._swift_recon_url, str(error)))
         if error_message is not None:
-            logging.error(error_message)
+            self.enabled = False
+            logging.error("%s '%s' plugin has been disabled." % (
+                error_message, self.persist_name))
             return None
 
         if not content:
@@ -162,7 +173,9 @@ class SwiftDeviceInfo(MonitorPlugin):
         try:
             from swift.common.ring import Ring
         except ImportError:
+            self.enabled = False
             logging.error(
-                "Swift python common libraries not found.")
+                "Swift python common libraries not found. '%s' plugin has "
+                "been disabled." % self.persist_name)
             return None
         return Ring(self._swift_ring)
