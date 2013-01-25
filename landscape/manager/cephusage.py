@@ -54,8 +54,7 @@ class CephUsage(ManagerPlugin):
         self._persist.remove(self.persist_name)
 
     def flush(self):
-        if self._persist_filename:
-            self._persist.save(self._persist_filename)
+        self._persist.save(self._persist_filename)
 
     def create_message(self):
         ceph_points = self._ceph_usage_points
