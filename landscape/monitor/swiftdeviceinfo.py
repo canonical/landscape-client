@@ -13,7 +13,7 @@ class SwiftDeviceInfo(MonitorPlugin):
 
     persist_name = "swift-device-info"
 
-    def __init__(self, interval=60, monitor_interval=60 * 2,
+    def __init__(self, interval=300, monitor_interval=60 * 60,
                  create_time=time.time,
                  swift_config="/etc/swift/object-server.conf",
                  swift_ring="/etc/swift/object.ring.gz"):
