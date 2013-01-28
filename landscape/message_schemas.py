@@ -119,6 +119,10 @@ CEPH_USAGE = Message("ceph-usage", {
     "ring-id": utf8,
     })
 
+SWIFT_DEVICE_INFO = Message("swift-device-info", {
+    "swift-device-info": List(KeyDict({"device": utf8, "mounted": Bool()}))
+    })
+
 KEYSTONE_TOKEN = Message("keystone-token", {
     "data": Any(String(), Constant(None))
 })
@@ -143,7 +147,7 @@ MOUNT_INFO = Message("mount-info", {
                              KeyDict({"mount-point": utf8,
                                       "device": utf8,
                                       "filesystem": utf8,
-                                      "total-space": Int()}),
+                                      "total-space": Int()})
                              )),
     })
 
@@ -433,5 +437,5 @@ for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                CUSTOM_GRAPH, REBOOT_REQUIRED, APT_PREFERENCES, EUCALYPTUS_INFO,
                EUCALYPTUS_INFO_ERROR, NETWORK_DEVICE, NETWORK_ACTIVITY,
                REBOOT_REQUIRED_INFO, UPDATE_MANAGER_INFO, CPU_USAGE,
-               CEPH_USAGE, KEYSTONE_TOKEN]:
+               CEPH_USAGE, SWIFT_DEVICE_INFO, KEYSTONE_TOKEN]:
     message_schemas[schema.type] = schema
