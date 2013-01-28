@@ -123,6 +123,10 @@ SWIFT_DEVICE_INFO = Message("swift-device-info", {
     "swift-device-info": List(KeyDict({"device": utf8, "mounted": Bool()}))
     })
 
+KEYSTONE_TOKEN = Message("keystone-token", {
+    "data": Any(String(), Constant(None))
+})
+
 MEMORY_INFO = Message("memory-info", {
     "memory-info": List(Tuple(Float(), Int(), Int())),
     })
@@ -433,5 +437,5 @@ for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                CUSTOM_GRAPH, REBOOT_REQUIRED, APT_PREFERENCES, EUCALYPTUS_INFO,
                EUCALYPTUS_INFO_ERROR, NETWORK_DEVICE, NETWORK_ACTIVITY,
                REBOOT_REQUIRED_INFO, UPDATE_MANAGER_INFO, CPU_USAGE,
-               CEPH_USAGE, SWIFT_DEVICE_INFO]:
+               CEPH_USAGE, SWIFT_DEVICE_INFO, KEYSTONE_TOKEN]:
     message_schemas[schema.type] = schema

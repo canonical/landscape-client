@@ -6,7 +6,7 @@ from landscape.manager.scriptexecution import ALL_USERS
 
 ALL_PLUGINS = ["ProcessKiller", "PackageManager", "UserManager",
                "ShutdownManager", "Eucalyptus", "AptSources", "HardwareInfo",
-               "CephUsage"]
+               "CephUsage", "KeystoneToken"]
 
 
 class ManagerConfiguration(Configuration):
