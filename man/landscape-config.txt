@@ -48,10 +48,10 @@ OPTIONS
   --ping-interval=INTERVAL  The number of seconds between pings (default: 30).
   --ping-url=PING_URL      The URL to perform lightweight exchange initiation
                            with (default: 'http://landscape.canonical.com/ping').
-  --package-monitor-interval=PACKAGE_MONITOR_INTERVAL
-                           The interval between package monitor runs (default: 1800).
-  --apt-update-interval=APT_UPDATE_INTERVAL
-                           The interval between apt update runs (default: 21600).
+  --package-monitor-interval=PACKAGE_MONITOR_INTERVAL  The interval between
+                           package monitor runs (default: 1800).
+  --apt-update-interval=APT_UPDATE_INTERVAL  The interval between apt update
+                           runs (default: 21600).
   --http-proxy=URL         The URL of the HTTP proxy, if one is needed.
   --https-proxy=URL        The URL of the HTTPS proxy, if one is needed.
   --cloud                  Set this if this computer is a cloud instance in
