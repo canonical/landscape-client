@@ -18,5 +18,5 @@ class LandscapeLinkTest(LandscapeTest):
         self.landscape_link.run()
         self.assertEqual(
             self.sysinfo.get_footnotes(),
-            ["Graph this data and manage this system at "
-             "https://landscape.canonical.com/"])
+            ["Graph this data and manage this system at:\n"
+             "    https://landscape.canonical.com/"])

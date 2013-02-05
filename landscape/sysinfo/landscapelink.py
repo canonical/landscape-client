@@ -8,6 +8,6 @@ class LandscapeLink(object):
 
     def run(self):
         self._sysinfo.add_footnote(
-            "Graph this data and manage this system at "
-            "https://landscape.canonical.com/")
+            "Graph this data and manage this system at:\n"
+            "    https://landscape.canonical.com/")
         return succeed(None)
