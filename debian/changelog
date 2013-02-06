@@ -1,8 +1,8 @@
-landscape-client (13.01-0ubuntu0) quantal; urgency=low
+landscape-client (13.02-0ubuntu0) quantal; urgency=low
 
   * Fake changelog entry to bump version.
 
- -- Andreas Hasenack <andreas@canonical.com>  Wed, 23 Jan 2013 11:22:53 -0200
+ -- Andreas Hasenack <andreas@canonical.com>  Wed, 06 Feb 2013 11:51:17 -0200
 
 landscape-client (12.04.3-0ubuntu0.12.04.0) precise; urgency=low
 
