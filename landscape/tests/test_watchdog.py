@@ -8,6 +8,7 @@ import logging
 from twisted.internet.utils import getProcessOutput
 from twisted.internet.defer import Deferred, succeed, fail
 from twisted.internet import reactor
+from twisted.internet.task import deferLater
 
 from landscape.tests.mocker import ARGS, KWARGS, ANY
 from landscape.tests.clock import Clock
@@ -1426,12 +1427,18 @@ class WatchDogServiceTest(LandscapeTest):
 
         # We fire the signal
         os.kill(os.getpid(), signal.SIGUSR1)
-        new_streams = [handler.stream for handler in
-                       logging.getLogger().handlers if
-                       isinstance(handler, logging.FileHandler)]
 
-        for stream in new_streams:
-            self.assertTrue(stream not in original_streams)
+        def check(ign):
+            new_streams = [handler.stream for handler in
+                           logging.getLogger().handlers if
+                           isinstance(handler, logging.FileHandler)]
+
+            for stream in new_streams:
+                self.assertTrue(stream not in original_streams)
+
+        # We need to give some room for the callFromThread to run
+        d = deferLater(reactor, 0, lambda: None)
+        return d.addCallback(check)
 
 
 STUB_BROKER = """\

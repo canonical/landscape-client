@@ -1,6 +1,9 @@
 import logging
 import signal
 
+from twisted.internet import reactor
+from twisted.internet.task import deferLater
+
 from landscape.reactor import FakeReactor
 from landscape.deployment import Configuration
 from landscape.service import LandscapeService
@@ -81,12 +84,18 @@ class LandscapeServiceTest(LandscapeTest):
         handler = signal.getsignal(signal.SIGUSR1)
         self.assertTrue(handler)
         handler(None, None)
-        new_streams = [handler.stream for handler in
-                       logging.getLogger().handlers if
-                       isinstance(handler, logging.FileHandler)]
 
-        for stream in new_streams:
-            self.assertTrue(stream not in original_streams)
+        def check(ign):
+            new_streams = [handler.stream for handler in
+                           logging.getLogger().handlers if
+                           isinstance(handler, logging.FileHandler)]
+
+            for stream in new_streams:
+                self.assertTrue(stream not in original_streams)
+
+        # We need to give some room for the callFromThread to run
+        d = deferLater(reactor, 0, lambda: None)
+        return d.addCallback(check)
 
     def test_ignore_sigusr1(self):
         """

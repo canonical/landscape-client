@@ -308,8 +308,8 @@ class WatchedProcessProtocol(ProcessProtocol):
         """The process has ended; restart it."""
         if self._delayed_really_kill is not None:
             self._delayed_really_kill.cancel()
-        if (self._delayed_terminate is not None
-            and self._delayed_terminate.active()):
+        if (self._delayed_terminate is not None and
+                self._delayed_terminate.active()):
             self._delayed_terminate.cancel()
         if self._wait_result is not None:
             self._wait_result.callback(None)
@@ -349,7 +349,10 @@ class WatchDog(object):
         self.reactor = reactor
         self._checking = None
         self._stopping = False
-        signal.signal(signal.SIGUSR1, self._notify_rotate_logs)
+        signal.signal(
+            signal.SIGUSR1,
+            lambda signal, frame: reactor.callFromThread(
+                self._notify_rotate_logs))
         if config is not None and config.clones > 0:
             options = ["--clones", str(config.clones),
                        "--start-clones-over", str(config.start_clones_over)]
@@ -448,7 +451,7 @@ class WatchDog(object):
         result = self.broker.request_exit()
         return result.addCallback(terminate_processes)
 
-    def _notify_rotate_logs(self, signal, frame):
+    def _notify_rotate_logs(self):
         for daemon in self.daemons:
             daemon.rotate_logs()
         rotate_logs()
@@ -630,8 +633,7 @@ bootstrap_list = BootstrapList([
     BootstrapDirectory(
         "$data_path/custom-graph-scripts", "landscape", "root", 0755),
     BootstrapDirectory("$log_dir", "landscape", "root", 0755),
-    BootstrapFile("$data_path/package/database", "landscape", "root", 0644),
-    ])
+    BootstrapFile("$data_path/package/database", "landscape", "root", 0644)])
 
 
 def clean_environment():
@@ -643,9 +645,8 @@ def clean_environment():
     *other* maintainer scripts which landscape-client invokes.
     """
     for key in os.environ.keys():
-        if (key.startswith("DEBIAN_")
-            or key.startswith("DEBCONF_")
-            or key in ["LANDSCAPE_ATTACHMENTS", "MAIL"]):
+        if (key.startswith(("DEBIAN_", "DEBCONF_")) or
+                key in ["LANDSCAPE_ATTACHMENTS", "MAIL"]):
             del os.environ[key]
 
 

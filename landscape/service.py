@@ -39,7 +39,10 @@ class LandscapeService(Service, object):
         if self.persist_filename:
             self.persist = get_versioned_persist(self)
         if not (self.config is not None and self.config.ignore_sigusr1):
-            signal.signal(signal.SIGUSR1, lambda signal, frame: rotate_logs())
+            from twisted.internet import reactor
+            signal.signal(
+                signal.SIGUSR1,
+                lambda signal, frame: reactor.callFromThread(rotate_logs))
         self.socket = os.path.join(self.config.sockets_path,
                                    self.service_name + ".sock")
 
