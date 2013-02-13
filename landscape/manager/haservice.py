@@ -10,24 +10,9 @@ from landscape.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
 JUJU_UNITS_DIR = "/var/lib/juju/units"
 CLUSTER_ONLINE = "add_to_cluster"
 CLUSTER_STANDBY = "remove_from_cluster"
-HEALTH_SCRIPTS_DIR = JUJU_UNITS_DIR + "/%s/health_checks.d/"
+HEALTH_SCRIPTS_DIR = JUJU_UNITS_DIR + "/%s/health_checks.d"
 STATE_STANDBY = u"standby"
 STATE_ONLINE = u"online"
-
-
-class CharmScriptError(Exception):
-    """
-    Raised when a charm-provided script fails with a non-zero exit code.
-
-    @ivar script: the name of the failed script
-    """
-
-    def __init__(self, script):
-        self.script = script
-        Exception.__init__(self, self._get_message())
-
-    def _get_message(self):
-        return "Failed charm script: '%s'" % self.script
 
 
 class HAService(ManagerPlugin):
@@ -43,27 +28,28 @@ class HAService(ManagerPlugin):
                                   self._handle_change_ha_service)
 
     def _respond(self, status, data, opid):
-        if not isinstance(data, unicode):
+        message = {"type": "operation-result",
+                   "status": status,
+                   "operation-id": opid}
+        if data and not isinstance(data, unicode):
             # Let's decode result-text, replacing non-printable
             # characters
-            data = data.decode("utf-8", "replace")
-        message = {"type": "ha-service-change-result",
-                   "status": status,
-                   "result-text": data,
-                   "operation-id": opid}
+            message["result-text"] = data.decode("utf-8", "replace")
         return self.registry.broker.send_message(message, True)
 
     def _validate_exit_code(self, code, script):
         """Validates each script return code as success"""
         if code != 0:
-            return fail(CharmScriptError(script))
+            return fail("Failed charm script: %s" % script)
 
-    def _respond_success(self, data, opid):
-        logging.error("CHAD succeeded %d: %s" % (opid, data))
+    def _respond_success(self, data, message, opid):
+        logging.info(message)
         return self._respond(SUCCEEDED, data, opid)
 
     def _respond_failure(self, failure, opid):
-        logging.error("CHAD failed sorry %d: %s" % (opid, failure))
+        if hasattr(failure, "value"):
+            failure = "%s" % (failure.value)
+        logging.error(failure)
         return self._respond(FAILED, str(failure), opid)
 
     def _format_exception(self, e):
@@ -76,9 +62,10 @@ class HAService(ManagerPlugin):
         health_dir = HEALTH_SCRIPTS_DIR % unit_name
         if not os.path.exists(health_dir) or len(os.listdir(health_dir)) == 0:
             # No scripts, no problem
-            logging.info("Skipping charm health checks. No scripts at %s." %
-                         health_dir)
-            return succeed(None)
+            message = (
+                "Skipping juju charm health checks. No scripts at %s." %
+                health_dir)
+            return succeed(message)
 
         d = succeed(None)
         for filename in sorted(os.listdir(health_dir)):
@@ -99,10 +86,15 @@ class HAService(ManagerPlugin):
             script = "%s/%s/%s" % (JUJU_UNITS_DIR, unit_name, CLUSTER_STANDBY)
 
         if not os.path.exists(script):
-            logging.info("Ignoring charm cluster state change: %s. "
-                         "Charm scripts do not exist." % service_state)
-            return succeed(None)
-        return getProcessValue(script)
+            logging.info("Ignoring juju charm cluster state change to '%s'. "
+                         "Charm script does not exist at %s." %
+                         (service_state, script))
+            return succeed(
+                "Computer is a default participant in high-availabilty "
+                "cluster. No juju charm cluster settings changed.")
+        d = getProcessValue(script)
+        d.addCallback(self._validate_exit_code, script)
+        return d
 
     def _perform_state_change(self, unit_name, service_state, opid):
         """
@@ -112,54 +104,51 @@ class HAService(ManagerPlugin):
         exist for a given task.
         """
         d = succeed(None)
-        self.failed_scripts = []
         if service_state == STATE_ONLINE:
             # Validate health of local service before we bring it online
             # in the HAcluster
             d = self._run_health_checks(unit_name)
         d.addCallback(
             self._change_cluster_participation, unit_name, service_state)
-        d.addErrback(self._respond_failure, opid)
         return d
 
     def _handle_change_ha_service(self, message):
         """Parse incoming change-ha-service messages"""
-        self._respond_success("CHAD here", 113)
-        return
         opid = message["operation-id"]
         try:
-            message = u""
+            error_message = u""
 
             service_name = message["service-name"]   # keystone
             unit_name = message["unit-name"]         # keystone-0
             service_state = message["service-state"]  # "online" | "standby"
-            if service_state not in [u"online", u"standby"]:
-                message = (
+            change_message = (
+                "%s high-availability service set to %s" %
+                (service_name, service_state))
+
+            if service_state not in [STATE_STANDBY, STATE_ONLINE]:
+                error_message = (
                    u"Invalid cluster participation state requested %s." %
                    service_state)
 
             if not os.path.exists(JUJU_UNITS_DIR):
-                message = (u"This computer is not deployed with JUJU. Setting "
-                           u"high-availability services not supported.")
-            if not os.path.exists("%s/%s" % (JUJU_UNITS_DIR, unit_name)):
-                message = (u"This computer is not JUJU unit %s. Unable to "
-                           u"modify high-availability services." % unit_name)
-            if not os.path.exists(HEALTH_SCRIPTS_DIR % unit_name):
-                logging.info(u"JUJU charm %s doesn't implement health check "
-                             u"scripts. Assuming service is healthy." %
-                             service_name)
+                error_message = (
+                    u"This computer is not deployed with JUJU. "
+                    u"Changing high-availability service not supported.")
+            elif not os.path.exists("%s/%s" % (JUJU_UNITS_DIR, unit_name)):
+                error_message = (
+                    u"This computer is not JUJU unit %s. Unable to "
+                    u"modify high-availability services." % unit_name)
 
-            if message:
-                logging.warning(message)
-                return self._respond_failure(message, opid)
+            if error_message:
+                logging.error(error_message)
+                return self._respond_failure(error_message, opid)
 
             if service_state == STATE_ONLINE:
                 d = self._run_health_checks(unit_name)
                 d.addErrback(self._respond_failure, opid)
 
-            d = self._perform_state_change(unit_name, service_state)
-            d.addCallback(self._respond_success, opid)
+            d = self._perform_state_change(unit_name, service_state, opid)
+            d.addCallback(self._respond_success, change_message, opid)
             d.addErrback(self._respond_failure, opid)
         except Exception, e:
-            self._respond(FAILED, self._format_exception(e), opid)
-            raise
+            self._respond_failure(self._format_exception(e), opid)
