@@ -127,6 +127,20 @@ KEYSTONE_TOKEN = Message("keystone-token", {
     "data": Any(String(), Constant(None))
 })
 
+CHANGE_HA_SERVICE = Message(
+    "change-ha-service",
+    {"service-name": String(),  # keystone
+     "unit-name": String(),     # keystone-9
+     "state": String()})        # online or standby
+
+HA_SERVICE_CHANGE_RESULT = Message(
+    "ha-service-change-result",
+    {"operation-id": Int(),
+     "status": Int(),
+     "result-code": Int(),
+     "result-text": utf8},
+    optional=["result-code", "result-text"])
+
 MEMORY_INFO = Message("memory-info", {
     "memory-info": List(Tuple(Float(), Int(), Int())),
     })
@@ -437,5 +451,6 @@ for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                CUSTOM_GRAPH, REBOOT_REQUIRED, APT_PREFERENCES, EUCALYPTUS_INFO,
                EUCALYPTUS_INFO_ERROR, NETWORK_DEVICE, NETWORK_ACTIVITY,
                REBOOT_REQUIRED_INFO, UPDATE_MANAGER_INFO, CPU_USAGE,
-               CEPH_USAGE, SWIFT_DEVICE_INFO, KEYSTONE_TOKEN]:
+               CEPH_USAGE, SWIFT_DEVICE_INFO, KEYSTONE_TOKEN,
+               CHANGE_HA_SERVICE, HA_SERVICE_CHANGE_RESULT]:
     message_schemas[schema.type] = schema
