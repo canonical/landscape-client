@@ -133,14 +133,6 @@ CHANGE_HA_SERVICE = Message(
      "unit-name": String(),     # keystone-9
      "state": String()})        # online or standby
 
-HA_SERVICE_CHANGE_RESULT = Message(
-    "ha-service-change-result",
-    {"operation-id": Int(),
-     "status": Int(),
-     "result-code": Int(),
-     "result-text": utf8},
-    optional=["result-code", "result-text"])
-
 MEMORY_INFO = Message("memory-info", {
     "memory-info": List(Tuple(Float(), Int(), Int())),
     })
@@ -452,5 +444,5 @@ for schema in [ACTIVE_PROCESS_INFO, COMPUTER_UPTIME, CLIENT_UPTIME,
                EUCALYPTUS_INFO_ERROR, NETWORK_DEVICE, NETWORK_ACTIVITY,
                REBOOT_REQUIRED_INFO, UPDATE_MANAGER_INFO, CPU_USAGE,
                CEPH_USAGE, SWIFT_DEVICE_INFO, KEYSTONE_TOKEN,
-               CHANGE_HA_SERVICE, HA_SERVICE_CHANGE_RESULT]:
+               CHANGE_HA_SERVICE]:
     message_schemas[schema.type] = schema
