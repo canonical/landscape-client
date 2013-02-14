@@ -7,20 +7,19 @@ from twisted.internet.defer import succeed, fail
 from landscape.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
 
 
-JUJU_UNITS_DIR = "/var/lib/juju/units"
-CLUSTER_ONLINE = "add_to_cluster"
-CLUSTER_STANDBY = "remove_from_cluster"
-HEALTH_SCRIPTS_DIR = JUJU_UNITS_DIR + "/%s/health_checks.d"
-STATE_STANDBY = u"standby"
-STATE_ONLINE = u"online"
-
-
 class HAService(ManagerPlugin):
     """
     Plugin to manage this computer's active participation in a
     high-availability cluster. It depends on charms delivering both health
     scripts and cluster_add cluster_remove scripts to function.
     """
+
+    JUJU_UNITS_BASE = "/var/lib/juju/units"
+    CLUSTER_ONLINE = "add_to_cluster"
+    CLUSTER_STANDBY = "remove_from_cluster"
+    HEALTH_SCRIPTS_DIR = "health_checks.d"
+    STATE_STANDBY = u"standby"
+    STATE_ONLINE = u"online"
 
     def register(self, registry):
         super(HAService, self).register(registry)
@@ -59,7 +58,7 @@ class HAService(ManagerPlugin):
         """
         Exercise any discovered health check scripts, return True on success.
         """
-        health_dir = HEALTH_SCRIPTS_DIR % unit_name
+        health_dir = self.HEALTH_SCRIPTS_DIR % unit_name
         if not os.path.exists(health_dir) or len(os.listdir(health_dir)) == 0:
             # No scripts, no problem
             message = (
@@ -80,10 +79,11 @@ class HAService(ManagerPlugin):
         running charm-delivered CLUSTER_ONLINE and CLUSTER_STANDBY scripts
         if they exist. If the charm doesn't deliver scripts, return succeed().
         """
+        unit_dir = "%s/%s/" % (self.JUJU_UNITS_BASE, unit_name)
         if service_state == u"online":
-            script = "%s/%s/%s" % (JUJU_UNITS_DIR, unit_name, CLUSTER_ONLINE)
+            script = unit_dir + self.CLUSTER_ONLINE
         else:
-            script = "%s/%s/%s" % (JUJU_UNITS_DIR, unit_name, CLUSTER_STANDBY)
+            script = unit_dir + self.CLUSTER_STANDBY
 
         if not os.path.exists(script):
             logging.info("Ignoring juju charm cluster state change to '%s'. "
@@ -104,7 +104,7 @@ class HAService(ManagerPlugin):
         exist for a given task.
         """
         d = succeed(None)
-        if service_state == STATE_ONLINE:
+        if service_state == self.STATE_ONLINE:
             # Validate health of local service before we bring it online
             # in the HAcluster
             d = self._run_health_checks(unit_name)
@@ -125,25 +125,25 @@ class HAService(ManagerPlugin):
                 "%s high-availability service set to %s" %
                 (service_name, service_state))
 
-            if service_state not in [STATE_STANDBY, STATE_ONLINE]:
+            if service_state not in [self.STATE_STANDBY, self.STATE_ONLINE]:
                 error_message = (
                    u"Invalid cluster participation state requested %s." %
                    service_state)
 
-            if not os.path.exists(JUJU_UNITS_DIR):
+            unit_dir = "%s/%s" % (self.JUJU_UNITS_BASE, unit_name)
+            if not os.path.exists(self.JUJU_UNITS_BASE):
                 error_message = (
                     u"This computer is not deployed with JUJU. "
                     u"Changing high-availability service not supported.")
-            elif not os.path.exists("%s/%s" % (JUJU_UNITS_DIR, unit_name)):
+            elif not os.path.exists(unit_dir):
                 error_message = (
                     u"This computer is not JUJU unit %s. Unable to "
                     u"modify high-availability services." % unit_name)
 
             if error_message:
-                logging.error(error_message)
                 return self._respond_failure(error_message, opid)
 
-            if service_state == STATE_ONLINE:
+            if service_state == self.STATE_ONLINE:
                 d = self._run_health_checks(unit_name)
                 d.addErrback(self._respond_failure, opid)
 
