@@ -203,6 +203,43 @@ def get_fqdn():
     return fqdn
 
 
+SIOCETHTOOL = 0x8946  # As defined in include/uapi/linux/sockios.h
+
+ETHTOOL_GSET = 0x00000001 # Get status
+ETHTOOL_GLINK = 0x0000000a # Get link status (ethtool_value)
+
+
+def get_link_speed(interface_name):
+    """
+    Return the ethernet device's advertised link speed.
+
+    The return value can be one of:
+        * 10, 100, 1000, 2500, 10000: The interface speed in Mbps
+        * -1: The interface does not support querying for max speed, such as
+          virtio devices for instance.
+        * 65535: The cable is not connected to the interface. We cannot mesure
+          interface speed, but could if it was plugged in.
+    """
+    # First get link params
+    status_cmd = array.array('B', struct.pack('I39s', ETHTOOL_GSET, '\x00'*39))
+
+    status_req = struct.pack('16sP', interface_name, status_cmd.buffer_info()[0])
+    speed = -1
+    try:
+        # We need a socket to make the ioctl() calls
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        fcntl.ioctl(sock, SIOCETHTOOL, status_req)  # Status ioctl() call
+        res = status_cmd.tostring()
+        speed = struct.unpack('12xH29x', res)[0]
+    except IOError as e:
+        speed = -1
+        raise e
+    finally:
+        sock.close()
+
+    return speed
+
+
 if __name__ == "__main__":
     import pprint
     pprint.pprint(get_active_device_info())
