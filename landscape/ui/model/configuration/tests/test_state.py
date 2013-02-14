@@ -1,8 +1,8 @@
 from landscape.ui.tests.helpers import (
     ConfigurationProxyHelper, FakeGSettings, dbus_test_should_skip,
-    dbus_skip_message, gobject_skip_message, got_gobject_introspection)
+    dbus_skip_message)
 
-if got_gobject_introspection:
+if not dbus_test_should_skip:
     from landscape.ui.model.configuration.uisettings import UISettings
     import landscape.ui.model.configuration.state
     from landscape.ui.model.configuration.state import (
@@ -64,8 +64,8 @@ class AuthenticationFailureTest(LandscapeTest):
                                          exit_method=fake_exit_method))
         self.assertTrue(isinstance(model.get_state(), ExitedState))
 
-    if not got_gobject_introspection:
-        skip = gobject_skip_message
+    if dbus_test_should_skip:
+        skip = dbus_skip_message
 
 
 class ConfigurationModelTest(LandscapeTest):
@@ -253,9 +253,7 @@ class ConfigurationModelTest(LandscapeTest):
         model = ConfigurationModel(proxy=self.proxy, uisettings=uisettings)
         self.assertRaises(SystemExit, model.exit, asynchronous=False)
 
-    if not got_gobject_introspection:
-        skip = gobject_skip_message
-    elif dbus_test_should_skip:
+    if dbus_test_should_skip:
         skip = dbus_skip_message
 
 
@@ -313,9 +311,7 @@ class ConfigurationModelHostedTest(LandscapeTest):
         self.assertEqual("CrazyHorse", model.local_account_name)
         self.assertEqual("boink", model.hosted_password)
 
-    if not got_gobject_introspection:
-        skip = gobject_skip_message
-    elif dbus_test_should_skip:
+    if dbus_test_should_skip:
         skip = dbus_skip_message
 
 
@@ -364,9 +360,7 @@ class ConfigurationModelLocalTest(LandscapeTest):
         self.assertEqual("Vivadixiesubmarinetransmissionplot",
                          model.hosted_password)
 
-    if not got_gobject_introspection:
-        skip = gobject_skip_message
-    elif dbus_test_should_skip:
+    if dbus_test_should_skip:
         skip = dbus_skip_message
 
 
@@ -580,9 +574,7 @@ class StateTransitionTest(LandscapeTest):
         self.assertRaises(StateError, state.persist)
         self.assertRaises(StateError, state.revert)
 
-    if not got_gobject_introspection:
-        skip = gobject_skip_message
-    elif dbus_test_should_skip:
+    if dbus_test_should_skip:
         skip = dbus_skip_message
 
 
@@ -639,7 +631,5 @@ class StateTransitionWithExistingConfigTest(LandscapeTest):
         self.assertEqual("ThomasPaine", self.proxy.account_name)
         self.assertEqual("TheAgeOfReason", self.proxy.registration_key)
 
-    if not got_gobject_introspection:
-        skip = gobject_skip_message
-    elif dbus_test_should_skip:
+    if dbus_test_should_skip:
         skip = dbus_skip_message

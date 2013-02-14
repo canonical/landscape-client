@@ -1,9 +1,8 @@
 import dbus
 
 from landscape.tests.helpers import LandscapeTest
-from landscape.ui.tests.helpers import (
-    got_gobject_introspection, gobject_skip_message)
-if got_gobject_introspection:
+from landscape.ui.tests.helpers import dbus_test_should_skip, dbus_skip_message
+if not dbus_test_should_skip:
     from landscape.ui.model.registration.mechanism import (
         RegistrationMechanism, INTERFACE_NAME)
     from landscape.ui.model.registration.proxy import RegistrationProxy
@@ -66,8 +65,8 @@ class TimeoutTest(LandscapeTest):
         [message] = self.error_handler_messages
         self.assertEqual("Registration timed out.", message)
 
-    if not got_gobject_introspection:
-        skip = gobject_skip_message
+    if dbus_test_should_skip:
+        skip = dbus_skip_message
 
 
 class RegistrationProxyTest(LandscapeTest):
@@ -137,12 +136,5 @@ class RegistrationProxyTest(LandscapeTest):
         """
         self.assertRaises(SystemExit, self.proxy.exit)
 
-    if not got_gobject_introspection:
-        skip = gobject_skip_message
-    else:
-        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-        try:
-            bus = dbus.SessionBus(private=True)
-        except dbus.exceptions.DBusException:
-            test_register.skip = ("Cannot launch private DBus session without "
-                                  "X11")
+    if dbus_test_should_skip:
+        skip = dbus_skip_message

@@ -2,7 +2,7 @@
 from landscape.tests.helpers import LandscapeTest
 from landscape.ui.model.configuration.uisettings import UISettings
 from landscape.ui.tests.helpers import (
-    FakeGSettings, got_gobject_introspection, gobject_skip_message)
+    FakeGSettings, dbus_test_should_skip, dbus_skip_message)
 
 
 class UISettingsTest(LandscapeTest):
@@ -163,5 +163,5 @@ class UISettingsTest(LandscapeTest):
         self.uisettings.set_local_password("Bang")
         self.assertEqual("Bang", self.uisettings.get_local_password())
 
-    if not got_gobject_introspection:
-        skip = gobject_skip_message
+    if dbus_test_should_skip:
+        skip = dbus_skip_message

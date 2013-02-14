@@ -5,18 +5,19 @@ import dbus
 
 from landscape.configuration import LandscapeSetupConfiguration
 
+dbus_test_should_skip = False
 dbus_skip_message = "Cannot launch private DBus session without X11"
 try:
     from gi.repository import GObject, Gtk
     got_gobject_introspection = True
     # Shut up pyflakes
-    gobject_skip_message = GObject._version + str(Gtk.MAJOR_VERSION)
+    dbus_skip_message = GObject._version + str(Gtk.MAJOR_VERSION) 
 except (ImportError, RuntimeError):
     got_gobject_introspection = False
-    gobject_skip_message = "GObject Introspection module unavailable"
+    dbus_test_should_skip = True
+    dbus_skip_message = "GObject Introspection module unavailable"
     bus = object
     bus_name = ""
-    dbus_test_should_skip = True
 
 
 if got_gobject_introspection:
@@ -28,7 +29,6 @@ if got_gobject_introspection:
     # from dbus.service.Object which throws a fit if it notices you using
     # it without a mainloop.
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-    dbus_test_should_skip = False
     try:
         bus = dbus.SessionBus(private=True)
         bus_name = dbus.service.BusName(INTERFACE_NAME, bus)
@@ -36,6 +36,7 @@ if got_gobject_introspection:
         bus = object
         bus_name = ""
         dbus_test_should_skip = True
+        dbus_skip_message = "Cannot launch private DBus session without X11"
 
 
 class ConfigurationProxyHelper(object):

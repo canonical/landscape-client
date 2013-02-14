@@ -2,9 +2,9 @@ import sys
 
 from landscape.ui.tests.helpers import (
     ConfigurationProxyHelper, dbus_test_should_skip, dbus_skip_message,
-    got_gobject_introspection, gobject_skip_message, FakeGSettings)
+    FakeGSettings)
 
-if got_gobject_introspection:
+if not dbus_test_should_skip:
     from gi.repository import Gtk
     from landscape.ui.controller.app import SettingsApplicationController
     from landscape.ui.controller.configuration import ConfigController
@@ -66,8 +66,8 @@ class SettingsApplicationControllerInitTest(LandscapeTest):
         app = ConnectionRecordingSettingsApplicationController()
         self.assertTrue(app.is_connected("activate", app.setup_ui))
 
-    if not got_gobject_introspection:
-        skip = gobject_skip_message
+    if dbus_test_should_skip:
+        skip = dbus_skip_message
 
 
 class SettingsApplicationControllerUISetupTest(LandscapeTest):
@@ -131,7 +131,5 @@ class SettingsApplicationControllerUISetupTest(LandscapeTest):
         self.assertIsInstance(self.app.settings_dialog.controller,
                               ConfigController)
 
-    if not got_gobject_introspection:
-        skip = gobject_skip_message
-    elif dbus_test_should_skip:
+    if dbus_test_should_skip:
         skip = dbus_skip_message
