@@ -58,7 +58,8 @@ class HAService(ManagerPlugin):
         """
         Exercise any discovered health check scripts, return True on success.
         """
-        health_dir = self.HEALTH_SCRIPTS_DIR % unit_name
+        health_dir = "%s/%s/%s" % (
+            self.JUJU_UNITS_BASE, unit_name, self.HEALTH_SCRIPTS_DIR)
         if not os.path.exists(health_dir) or len(os.listdir(health_dir)) == 0:
             # No scripts, no problem
             message = (
@@ -73,7 +74,7 @@ class HAService(ManagerPlugin):
             d.addBoth(self._validate_exit_code, health_script)
         return d
 
-    def _change_cluster_participation(self, result, unit_name, service_state):
+    def _change_cluster_participation(self, _, unit_name, service_state):
         """
         Enables or disables a unit's participation in a cluster based on
         running charm-delivered CLUSTER_ONLINE and CLUSTER_STANDBY scripts
@@ -90,8 +91,8 @@ class HAService(ManagerPlugin):
                          "Charm script does not exist at %s." %
                          (service_state, script))
             return succeed(
-                "Computer is a default participant in high-availabilty "
-                "cluster. No juju charm cluster settings changed.")
+                "This computer is always a participant in its high-availabilty"
+                " cluster. No juju charm cluster settings changed.")
         d = getProcessValue(script)
         d.addCallback(self._validate_exit_code, script)
         return d
@@ -133,11 +134,11 @@ class HAService(ManagerPlugin):
             unit_dir = "%s/%s" % (self.JUJU_UNITS_BASE, unit_name)
             if not os.path.exists(self.JUJU_UNITS_BASE):
                 error_message = (
-                    u"This computer is not deployed with JUJU. "
+                    u"This computer is not deployed with juju. "
                     u"Changing high-availability service not supported.")
             elif not os.path.exists(unit_dir):
                 error_message = (
-                    u"This computer is not JUJU unit %s. Unable to "
+                    u"This computer is not juju unit %s. Unable to "
                     u"modify high-availability services." % unit_name)
 
             if error_message:
