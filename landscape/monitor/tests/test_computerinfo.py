@@ -1,7 +1,8 @@
-import os
 import json
+import os
 import re
 
+from landscape.lib.fs import create_file
 from landscape.monitor.computerinfo import ComputerInfo
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.tests.mocker import ANY
@@ -328,16 +329,16 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         self.mstore.set_accepted_types(["distribution-info", "computer-info"])
         self.assertMessages(list(self.mstore.get_pending_messages()), [])
 
-    def test_juju_info(self):
+    def test_extra_meta_data(self):
         """
-        L{ComputerInfo} sends data from the juju environment if the juju info
-        file is present.
+        L{ComputerInfo} sends extra meta data the meta-data.d directory
+        if it's present.
         """
-        juju_info = os.path.join(self.monitor.config.data_path, "juju-info")
-        fd = open(juju_info, "w")
-        fd.write(json.dumps({"JUJU_ENV_UUID": "uuid1",
-                             "JUJU_UNIT_NAME": "unit/0"}))
-        fd.close()
+        meta_data_dir = os.path.join(
+            self.monitor.config.data_path, "meta-data.d")
+        os.mkdir(meta_data_dir)
+        create_file(os.path.join(meta_data_dir, "juju-env-uuid"), "uuid1")
+        create_file(os.path.join(meta_data_dir, "juju-unit-name"), "unit/0")
         self.mstore.set_accepted_types(["computer-info"])
 
         plugin = ComputerInfo()
@@ -345,23 +346,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(1, len(messages))
-        self.assertEqual("uuid1", messages[0]["juju-env-uuid"])
-        self.assertEqual("unit/0", messages[0]["juju-unit-name"])
-
-    def test_juju_info_error(self):
-        """
-        L{ComputerInfo} is resilient to issues reading the juju info file.
-        """
-        juju_info = os.path.join(self.monitor.config.data_path, "juju-info")
-        fd = open(juju_info, "w")
-        fd.write("foo")
-        fd.close()
-        os.chmod(juju_info, 0)
-        self.mstore.set_accepted_types(["computer-info"])
-
-        plugin = ComputerInfo()
-        self.monitor.add(plugin)
-        plugin.exchange()
-        messages = self.mstore.get_pending_messages()
-        self.assertEqual(1, len(messages))
-        self.assertNotIn("juju-env-uuid", messages[0])
+        meta_data = json.loads(messages[0]["extra-meta-data"])
+        self.assertEqual(2, len(meta_data))
+        self.assertEqual("uuid1", meta_data["juju-env-uuid"])
+        self.assertEqual("unit/0", meta_data["juju-unit-name"])
