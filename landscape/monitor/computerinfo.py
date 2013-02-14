@@ -63,13 +63,14 @@ class ComputerInfo(MonitorPlugin):
         self._add_if_new(message, "total-memory",
                          total_memory)
         self._add_if_new(message, "total-swap", total_swap)
+        extra_meta_data = {}
         if os.path.exists(self._meta_data_path):
-            meta_data = {}
             for key in os.listdir(self._meta_data_path):
-                meta_data[key] = read_file(
+                extra_meta_data[key] = read_file(
                     os.path.join(self._meta_data_path, key))
 
-            self._add_if_new(message, "extra-meta-data", meta_data)
+        if extra_meta_data:
+            self._add_if_new(message, "extra-meta-data", extra_meta_data)
         return message
 
     def _add_if_new(self, message, key, value):

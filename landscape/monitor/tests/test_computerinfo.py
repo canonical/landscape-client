@@ -332,6 +332,12 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         """
         L{ComputerInfo} sends extra meta data the meta-data.d directory
         if it's present.
+
+        Each file name is used as a key in the extra-meta-data dict and
+        the file's contents are used as values.
+
+        This allows, for example, the landscape-client charm to send
+        information about the juju environment to the landscape server.
         """
         meta_data_dir = os.path.join(
             self.monitor.config.data_path, "meta-data.d")
@@ -349,3 +355,37 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         self.assertEqual(2, len(meta_data))
         self.assertEqual("uuid1", meta_data["juju-env-uuid"])
         self.assertEqual("unit/0", meta_data["juju-unit-name"])
+
+    def test_extra_meta_data_no_directory(self):
+        """
+        L{ComputerInfo} doesn't include the extra-meta-data key if there
+        is no meta-data.d directory.
+        """
+        meta_data_dir = os.path.join(
+            self.monitor.config.data_path, "meta-data.d")
+        self.assertFalse(os.path.exists(meta_data_dir))
+        self.mstore.set_accepted_types(["computer-info"])
+
+        plugin = ComputerInfo()
+        self.monitor.add(plugin)
+        plugin.exchange()
+        messages = self.mstore.get_pending_messages()
+        self.assertEqual(1, len(messages))
+        self.assertNotIn("extra-meta-data", messages[0])
+
+    def test_extra_meta_data_empty_directory(self):
+        """
+        L{ComputerInfo} doesn't include the extra-meta-data key if the
+        meta-data.d directory doesn't contain any files.
+        """
+        meta_data_dir = os.path.join(
+            self.monitor.config.data_path, "meta-data.d")
+        os.mkdir(meta_data_dir)
+        self.mstore.set_accepted_types(["computer-info"])
+
+        plugin = ComputerInfo()
+        self.monitor.add(plugin)
+        plugin.exchange()
+        messages = self.mstore.get_pending_messages()
+        self.assertEqual(1, len(messages))
+        self.assertNotIn("extra-meta-data", messages[0])
