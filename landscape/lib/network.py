@@ -16,6 +16,8 @@ SIOCGIFBRDADDR = 0x8919
 SIOCGIFADDR = 0x8915
 SIOCGIFHWADDR = 0x8927
 
+SIOCETHTOOL = 0x8946  # As defined in include/uapi/linux/sockios.h
+ETHTOOL_GSET = 0x00000001  # Get status command.
 
 # struct definition from header /usr/include/net/if.h
 # the struct size varies according to the platform arch size
@@ -203,12 +205,6 @@ def get_fqdn():
     return fqdn
 
 
-SIOCETHTOOL = 0x8946  # As defined in include/uapi/linux/sockios.h
-
-ETHTOOL_GSET = 0x00000001 # Get status
-ETHTOOL_GLINK = 0x0000000a # Get link status (ethtool_value)
-
-
 def get_link_speed(interface_name):
     """
     Return the ethernet device's advertised link speed.
@@ -221,21 +217,24 @@ def get_link_speed(interface_name):
           interface speed, but could if it was plugged in.
     """
     # First get link params
-    status_cmd = array.array('B', struct.pack('I39s', ETHTOOL_GSET, '\x00'*39))
+    cmd_struct = struct.pack('I39s', ETHTOOL_GSET, '\x00' * 39)
+    status_cmd = array.array('B', cmd_struct)
+    packed = struct.pack('16sP', interface_name, status_cmd.buffer_info()[0])
 
-    status_req = struct.pack('16sP', interface_name, status_cmd.buffer_info()[0])
     speed = -1
     try:
         # We need a socket to make the ioctl() calls
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        fcntl.ioctl(sock, SIOCETHTOOL, status_req)  # Status ioctl() call
+        fcntl.ioctl(sock, SIOCETHTOOL, packed)  # Status ioctl() call
         res = status_cmd.tostring()
         speed = struct.unpack('12xH29x', res)[0]
     except IOError as e:
+        # IOError errno 95 is "Operation not supported".
+        if e.errno != 95:
+            raise e
         speed = -1
-        raise e
     finally:
-        sock.close()
+        sock.close()  # Not certain it's really needed but doesn't hurt.
 
     return speed
 
