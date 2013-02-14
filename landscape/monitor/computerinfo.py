@@ -1,5 +1,4 @@
 import os
-import json
 import logging
 
 from landscape.lib.fs import read_file
@@ -70,7 +69,7 @@ class ComputerInfo(MonitorPlugin):
                 meta_data[key] = read_file(
                     os.path.join(self._meta_data_path, key))
 
-            self._add_if_new(message, "extra-meta-data", json.dumps(meta_data))
+            self._add_if_new(message, "extra-meta-data", meta_data)
         return message
 
     def _add_if_new(self, message, key, value):

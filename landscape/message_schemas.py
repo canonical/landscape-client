@@ -69,7 +69,7 @@ COMPUTER_INFO = Message(
     {"hostname": utf8,
      "total-memory": Int(),
      "total-swap": Int(),
-     "extra-meta-data": utf8},
+     "extra-meta-data": Dict(utf8, utf8)},
     # Not sure why these are all optional, but it's explicitly tested
     # in the server
     optional=["hostname", "total-memory", "total-swap", "extra-meta-data"])

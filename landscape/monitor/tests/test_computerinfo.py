@@ -1,4 +1,3 @@
-import json
 import os
 import re
 
@@ -346,7 +345,7 @@ DISTRIB_NEW_UNEXPECTED_KEY=ooga
         plugin.exchange()
         messages = self.mstore.get_pending_messages()
         self.assertEqual(1, len(messages))
-        meta_data = json.loads(messages[0]["extra-meta-data"])
+        meta_data = messages[0]["extra-meta-data"]
         self.assertEqual(2, len(meta_data))
         self.assertEqual("uuid1", meta_data["juju-env-uuid"])
         self.assertEqual("unit/0", meta_data["juju-unit-name"])
