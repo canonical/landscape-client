@@ -1,5 +1,7 @@
 import os
 
+from twisted.internet.defer import Deferred
+
 from landscape.manager.haservice import HAService
 from landscape.manager.plugin import SUCCEEDED, FAILED
 from landscape.tests.helpers import LandscapeTest, ManagerHelper
@@ -39,8 +41,6 @@ class HAServiceTests(LandscapeTest):
 
         service = self.broker_service
         service.message_store.set_accepted_types(["operation-result"])
-
-#        self.sourceslist._run_process = lambda cmd, args, *aarg, **kargs: None
 
     def test_invalid_server_service_state_request(self):
         """
@@ -163,9 +163,9 @@ class HAServiceTests(LandscapeTest):
         """
         def expected_failure(result):
             self.assertEqual(
-                result,
-                "Skipping juju charm health checks. No scripts at "
-                "%s/%s/%s." %
+                str(result.value),
+                "Failed charm script: %s/%s/%s/my-health-script-2 exited with "
+                "return code 1." %
                 (self.ha_service.JUJU_UNITS_BASE, self.unit_name,
                  self.ha_service.HEALTH_SCRIPTS_DIR))
 
@@ -173,30 +173,20 @@ class HAServiceTests(LandscapeTest):
             self.fail(
                 "_run_health_checks succeded despite a failed health script.")
 
-        health_script = file(
-            "%s/my-health-script-1" % self.health_check_d, "w")
-        health_script.write("#!/bin/bash\nexit 1")
-        health_script.close()
-
-        os.chmod("%s/my-health-script-1" % self.health_check_d, 0755)
-
-        result = self.ha_service._run_health_checks(self.unit_name)
-        result.addCallbacks(check_success_result, expected_failure)
-
-    def test_failed_health_script(self):
-        def check_success_result(result):
-            self.fail(
-                "_run_health_checks succeded despite a failed health script.")
-
-        health_script = file(
-            "%s/my-health-script-1" % self.health_check_d, "w")
-        health_script.write("#!/bin/bash\nexit 1")
-        health_script.close()
-
-        os.chmod("%s/my-health-script-1" % self.health_check_d, 0755)
+        for number in [1, 2, 3]:
+            script_path = (
+                "%s/my-health-script-%d" % (self.health_check_d, number))
+            health_script = file(script_path, "w")
+            if number == 2:
+                health_script.write("#!/bin/bash\nexit 1")
+            else:
+                health_script.write("#!/bin/bash\nexit 0")
+            health_script.close()
+            os.chmod(script_path, 0755)
 
         result = self.ha_service._run_health_checks(self.unit_name)
         result.addCallbacks(check_success_result, expected_failure)
+        return result
 
     def test_missing_cluster_standby_or_cluster_online_scripts(self):
         def should_not_be_called(result):
@@ -209,6 +199,9 @@ class HAServiceTests(LandscapeTest):
                 "This computer is always a participant in its high-availabilty"
                 " cluster. No juju charm cluster settings changed.")
 
+        self.ha_service.CLUSTER_ONLINE = "I/don't/exist"
+        self.ha_service.CLUSTER_STANDBY = "I/don't/exist"
+
         result = self.ha_service._change_cluster_participation(
             None, self.unit_name, self.ha_service.STATE_ONLINE)
         result.addCallbacks(check_success_result, should_not_be_called)
@@ -217,19 +210,66 @@ class HAServiceTests(LandscapeTest):
         result = self.ha_service._change_cluster_participation(
             None, self.unit_name, self.ha_service.STATE_STANDBY)
         result.addCallbacks(check_success_result, should_not_be_called)
+        return result
 
     def test_failed_cluster_standby_or_cluster_online_scripts(self):
-        pass
+        def expected_failure(result, script_path):
+            self.assertEqual(
+                str(result.value),
+                "Failed charm script: %s exited with return code 2." %
+                (script_path))
+
+        def check_success_result(result):
+            self.fail(
+                "_change_cluster_participation ignored charm script failure.")
+
+        # Rewrite both cluster scripts as failures
+        unit_dir = "%s/%s" % (self.ha_service.JUJU_UNITS_BASE, self.unit_name)
+        for script_name in [
+            self.ha_service.CLUSTER_ONLINE, self.ha_service.CLUSTER_STANDBY]:
+
+            cluster_online = file("%s/%s" % (unit_dir, script_name), "w")
+            cluster_online.write("#!/bin/bash\nexit 2")
+            cluster_online.close()
+
+        result = self.ha_service._change_cluster_participation(
+            None, self.unit_name, self.ha_service.STATE_ONLINE)
+        result.addCallback(check_success_result)
+        script_path = ("%s/%s/%s" %
+                (self.ha_service.JUJU_UNITS_BASE, self.unit_name,
+                 self.ha_service.CLUSTER_ONLINE))
+        result.addErrback(expected_failure, script_path)
+
+        # Now test the cluster standby script
+        result = self.ha_service._change_cluster_participation(
+            None, self.unit_name, self.ha_service.STATE_STANDBY)
+        result.addCallback(check_success_result)
+        script_path = ("%s/%s/%s" %
+                (self.ha_service.JUJU_UNITS_BASE, self.unit_name,
+                 self.ha_service.CLUSTER_STANDBY))
+        result.addErrback(expected_failure, script_path)
+        return result
 
     def test_run_success(self):
-        self.manager.dispatch_message(
-            {"type": "change-ha-service", "service-name": "my-service",
-             "unit-name": self.unit_name,
-             "service-state": self.ha_service.STATE_STANDBY, 
-             "operation-id": 1})
+        ha_service_mock = self.mocker.patch(self.ha_service)
+        message = ({"type": "change-ha-service", "service-name": "my-service",
+                    "unit-name": self.unit_name,
+                    "service-state": self.ha_service.STATE_STANDBY,
+                    "operation-id": 1})
+        deferred = Deferred()
+
+        def handle_has_run(handle_result_deferred):
+            return handle_result_deferred.chainDeferred(deferred)
+
+        ha_service_mock._handle_change_ha_service(message)
+        self.mocker.passthrough(handle_has_run)
+        self.mocker.replay()
+
+        self.manager.dispatch_message(message)
 
         service = self.broker_service
         self.assertMessages(
             service.message_store.get_pending_messages(),
-            [{"type": "operation-result", 
+            [{"type": "operation-result",
               "status": SUCCEEDED, "operation-id": 1}])
+        return deferred

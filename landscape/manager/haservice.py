@@ -1,7 +1,7 @@
 import logging
 import os
 
-from twisted.internet.utils import getProcessValue
+from twisted.internet.utils import getProcessValue, getProcessOutputAndValue
 from twisted.internet.defer import succeed, fail
 
 from landscape.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
@@ -39,7 +39,9 @@ class HAService(ManagerPlugin):
     def _validate_exit_code(self, code, script):
         """Validates each script return code as success"""
         if code != 0:
-            return fail("Failed charm script: %s" % script)
+            return fail(
+                "Failed charm script: %s exited with return code %s." %
+                (script, code))
 
     def _respond_success(self, data, message, opid):
         logging.info(message)
@@ -67,12 +69,20 @@ class HAService(ManagerPlugin):
                 health_dir)
             return succeed(message)
 
-        d = succeed(None)
-        for filename in sorted(os.listdir(health_dir)):
-            health_script = "%s/%s" % (health_dir, filename)
-            d = getProcessValue(health_script)
-            d.addBoth(self._validate_exit_code, health_script)
-        return d
+        def run_parts(script_dir):
+            result = getProcessOutputAndValue(
+                "run-parts", [script_dir], env=os.environ)
+
+            def parse_output((stdout_data, stderr_data, status)):
+                if status != 0:
+                    return fail(
+                        "Failed charm script: %s." %
+                        stderr_data.split(":")[1].strip())
+                else:
+                    return succeed("All health checks succeeded.")
+            return result.addCallback(parse_output)
+
+        return run_parts(health_dir)
 
     def _change_cluster_participation(self, _, unit_name, service_state):
         """
@@ -151,5 +161,6 @@ class HAService(ManagerPlugin):
             d = self._perform_state_change(unit_name, service_state, opid)
             d.addCallback(self._respond_success, change_message, opid)
             d.addErrback(self._respond_failure, opid)
+            return d
         except Exception, e:
             self._respond_failure(self._format_exception(e), opid)
