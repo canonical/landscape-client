@@ -5,6 +5,7 @@ import array
 import fcntl
 import socket
 import struct
+import errno
 
 __all__ = ["get_active_device_info", "get_network_traffic", "is_64"]
 
@@ -232,11 +233,13 @@ def get_network_interface_speed(sock, interface_name):
         res = status_cmd.tostring()
         speed = struct.unpack('12xH29x', res)[0]
     except IOError as e:
-        # IOError errno 95 is "Operation not supported".
-        if e.errno != 95:
+        if e.errno != errno.EOPNOTSUPP:
             raise e
+        # e is "Operation not supported".
         speed = -1
 
+    # Drivers apparently report speed as 65535 when the link is not available
+    # (cable unplugged for example).
     if speed == 65535:
         speed = 0
 
