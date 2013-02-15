@@ -222,7 +222,6 @@ def get_network_interface_speed(sock, interface_name):
         * 0: The cable is not connected to the interface. We cannot mesure
           interface speed, but could if it was plugged in.
     """
-    # First get link params
     cmd_struct = struct.pack('I39s', ETHTOOL_GSET, '\x00' * 39)
     status_cmd = array.array('B', cmd_struct)
     packed = struct.pack('16sP', interface_name, status_cmd.buffer_info()[0])
