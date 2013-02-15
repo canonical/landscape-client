@@ -6,7 +6,7 @@ from landscape.tests.helpers import LandscapeTest
 
 from landscape.lib.network import (
     get_network_traffic, get_active_device_info, get_active_interfaces,
-    get_fqdn)
+    get_fqdn, get_network_interface_speed)
 from landscape.tests.mocker import ANY
 
 
@@ -201,3 +201,60 @@ class FQDNTest(LandscapeTest):
         self.addCleanup(setattr, socket, "getfqdn", socket.getfqdn)
         socket.getfqdn = lambda: "localhost6.localdomain6"
         self.assertNotIn("localhost", get_fqdn())
+
+
+class NetworkInterfaceSpeedTest(LandscapeTest):
+
+    def test_get_network_interface_speed(self):
+        """
+        The link speed is reported as unpacked from the ioctl() call.
+        """
+        # ioctl always succeeds
+        mock_ioctl = self.mocker.replace("fcntl")
+        mock_ioctl.ioctl(ANY, ANY, ANY)
+        self.mocker.result(0)
+
+        mock_unpack = self.mocker.replace("struct")
+        mock_unpack.unpack("12xH29x", ANY)
+        self.mocker.result((100,))
+
+        self.mocker.replay()
+
+        self.assertEqual(100, get_network_interface_speed("eth0"))
+
+    def test_get_network_interface_speed_not_available(self):
+        """
+        Some drivers do not report the needed interface speed. In this case
+        an C{IOError} with errno 95 is raised ("Operation not supported").
+        If such an error is rasied, report the speed as -1.
+        """
+        theerror = IOError()
+        theerror.errno = 95
+        theerror.message = "Operation not supported"
+
+        # ioctl always succeeds
+        mock_ioctl = self.mocker.replace("fcntl")
+        mock_ioctl.ioctl(ANY, ANY, ANY)
+        self.mocker.throw(theerror)
+
+        self.mocker.replay()
+
+        self.assertEqual(-1, get_network_interface_speed("eth0"))
+
+    def test_get_network_interface_speed_other_io_error(self):
+        """
+        In case we get an IOError that is not "Operation not permitted", the
+        exception should be raised.
+        """
+        theerror = IOError()
+        theerror.errno = 999
+        theerror.message = "Whatever"
+
+        # ioctl always succeeds
+        mock_ioctl = self.mocker.replace("fcntl")
+        mock_ioctl.ioctl(ANY, ANY, ANY)
+        self.mocker.throw(theerror)
+
+        self.mocker.replay()
+
+        self.assertRaises(IOError, get_network_interface_speed, "eth0")

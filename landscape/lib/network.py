@@ -205,7 +205,7 @@ def get_fqdn():
     return fqdn
 
 
-def get_link_speed(interface_name):
+def get_network_interface_speed(interface_name):
     """
     Return the ethernet device's advertised link speed.
 
@@ -234,11 +234,6 @@ def get_link_speed(interface_name):
             raise e
         speed = -1
     finally:
-        sock.close()  # Not certain it's really needed but doesn't hurt.
+        del sock
 
     return speed
-
-
-if __name__ == "__main__":
-    import pprint
-    pprint.pprint(get_active_device_info())
