@@ -7,6 +7,40 @@ from twisted.internet.defer import succeed, fail
 from landscape.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
 
 
+class CharmScriptError(Exception):
+    """
+    Raised when a charm-provided script fails with a non-zero exit code.
+
+    @ivar script: the name of the failed script
+    @ivar code: the exit code of the failed script
+    """
+
+    def __init__(self, script, code):
+        self.script = script
+        self.code = code
+        Exception.__init__(self, self._get_message())
+
+    def _get_message(self):
+        return ("Failed charm script: %s exited with return code %d." %
+                (self.script, self.code))
+
+
+class RunPartsError(Exception):
+    """
+    Raised when a charm-provided health script run-parts directory contains
+    a health script that fails with a non-zero exit code.
+
+    @ivar stderr: the stderr from the failed run-parts command
+    """
+
+    def __init__(self, stderr):
+        self.message = ("%s" % stderr.split(":")[1].strip())
+        Exception.__init__(self, self._get_message())
+
+    def _get_message(self):
+        return "Failed charm script: %s." % self.message
+
+
 class HAService(ManagerPlugin):
     """
     Plugin to manage this computer's active participation in a
@@ -70,9 +104,7 @@ class HAService(ManagerPlugin):
 
             def parse_output((stdout_data, stderr_data, status)):
                 if status != 0:
-                    return fail(
-                        "Failed charm script: %s." %
-                        stderr_data.split(":")[1].strip())
+                    return fail(RunPartsError(stderr_data))
                 else:
                     return succeed("All health checks succeeded.")
             return result.addCallback(parse_output)
@@ -99,14 +131,13 @@ class HAService(ManagerPlugin):
             return succeed(
                 "This computer is always a participant in its high-availabilty"
                 " cluster. No juju charm cluster settings changed.")
+
         def run_script(script):
             result = getProcessValue(script)
 
             def validate_exit_code(code, script):
                 if code != 0:
-                    return fail(
-                        "Failed charm script: %s exited with return code %s." %
-                        (script, code))
+                    return fail(CharmScriptError(script, code))
                 else:
                     return succeed("%s succeeded." % script)
             return result.addCallback(validate_exit_code, script)

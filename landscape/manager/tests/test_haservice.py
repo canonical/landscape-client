@@ -284,7 +284,7 @@ class HAServiceTests(LandscapeTest):
                   "status": SUCCEEDED, "operation-id": 1}])
 
         def handle_has_run(handle_result_deferred):
-            result = handle_result_deferred.chainDeferred(deferred)
+            handle_result_deferred.chainDeferred(deferred)
             return deferred.addCallback(validate_messages)
 
         ha_service_mock = self.mocker.patch(self.ha_service)
