@@ -24,7 +24,7 @@ class HAService(ManagerPlugin):
     def register(self, registry):
         super(HAService, self).register(registry)
         registry.register_message("change-ha-service",
-                                  self._handle_change_ha_service)
+                                  self.handle_change_ha_service)
 
     def _respond(self, status, data, opid):
         message = {"type": "operation-result",
@@ -35,13 +35,6 @@ class HAService(ManagerPlugin):
             # characters
             message["result-text"] = data.decode("utf-8", "replace")
         return self.registry.broker.send_message(message, True)
-
-    def _validate_exit_code(self, code, script):
-        """Validates each script return code as success"""
-        if code != 0:
-            return fail(
-                "Failed charm script: %s exited with return code %s." %
-                (script, code))
 
     def _respond_success(self, data, message, opid):
         logging.info(message)
@@ -58,7 +51,8 @@ class HAService(ManagerPlugin):
 
     def _run_health_checks(self, unit_name):
         """
-        Exercise any discovered health check scripts, return True on success.
+        Exercise any discovered health check scripts, will return a deferred
+        success or fail.
         """
         health_dir = "%s/%s/%s" % (
             self.JUJU_UNITS_BASE, unit_name, self.HEALTH_SCRIPTS_DIR)
@@ -67,6 +61,7 @@ class HAService(ManagerPlugin):
             message = (
                 "Skipping juju charm health checks. No scripts at %s." %
                 health_dir)
+            logging.info(message)
             return succeed(message)
 
         def run_parts(script_dir):
@@ -90,6 +85,7 @@ class HAService(ManagerPlugin):
         running charm-delivered CLUSTER_ONLINE and CLUSTER_STANDBY scripts
         if they exist. If the charm doesn't deliver scripts, return succeed().
         """
+
         unit_dir = "%s/%s/" % (self.JUJU_UNITS_BASE, unit_name)
         if service_state == u"online":
             script = unit_dir + self.CLUSTER_ONLINE
@@ -103,9 +99,19 @@ class HAService(ManagerPlugin):
             return succeed(
                 "This computer is always a participant in its high-availabilty"
                 " cluster. No juju charm cluster settings changed.")
-        d = getProcessValue(script)
-        d.addCallback(self._validate_exit_code, script)
-        return d
+        def run_script(script):
+            result = getProcessValue(script)
+
+            def validate_exit_code(code, script):
+                if code != 0:
+                    return fail(
+                        "Failed charm script: %s exited with return code %s." %
+                        (script, code))
+                else:
+                    return succeed("%s succeeded." % script)
+            return result.addCallback(validate_exit_code, script)
+
+        return run_script(script)
 
     def _perform_state_change(self, unit_name, service_state, opid):
         """
@@ -123,7 +129,7 @@ class HAService(ManagerPlugin):
             self._change_cluster_participation, unit_name, service_state)
         return d
 
-    def _handle_change_ha_service(self, message):
+    def handle_change_ha_service(self, message):
         """Parse incoming change-ha-service messages"""
         opid = message["operation-id"]
         try:
@@ -153,10 +159,6 @@ class HAService(ManagerPlugin):
 
             if error_message:
                 return self._respond_failure(error_message, opid)
-
-            if service_state == self.STATE_ONLINE:
-                d = self._run_health_checks(unit_name)
-                d.addErrback(self._respond_failure, opid)
 
             d = self._perform_state_change(unit_name, service_state, opid)
             d.addCallback(self._respond_success, change_message, opid)
