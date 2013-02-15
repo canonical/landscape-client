@@ -412,7 +412,8 @@ NETWORK_DEVICE = Message(
                               "mac_address": String(),
                               "broadcast_address": String(),
                               "netmask": String(),
-                              "flags": Int()}))})
+                              "flags": Int(),
+                              "speed": Int()}))})
 
 NETWORK_ACTIVITY = Message(
     "network-activity",

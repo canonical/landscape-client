@@ -139,23 +139,29 @@ def get_active_device_info(skipped_interfaces=("lo",),
     interface present on a machine.
     """
     results = []
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_IP)
-    for interface in get_active_interfaces(sock):
-        if interface in skipped_interfaces:
-            continue
-        if skip_vlan and "." in interface:
-            continue
-        if skip_alias and ":" in interface:
-            continue
-        interface_info = {"interface": interface}
-        interface_info["ip_address"] = get_ip_address(sock, interface)
-        interface_info["mac_address"] = get_mac_address(sock, interface)
-        interface_info["broadcast_address"] = get_broadcast_address(sock,
-                                                                    interface)
-        interface_info["netmask"] = get_netmask(sock, interface)
-        interface_info["flags"] = get_flags(sock, interface)
-        results.append(interface_info)
-    del sock
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM,
+                             socket.IPPROTO_IP)
+        for interface in get_active_interfaces(sock):
+            if interface in skipped_interfaces:
+                continue
+            if skip_vlan and "." in interface:
+                continue
+            if skip_alias and ":" in interface:
+                continue
+            interface_info = {"interface": interface}
+            interface_info["ip_address"] = get_ip_address(sock, interface)
+            interface_info["mac_address"] = get_mac_address(sock, interface)
+            interface_info["broadcast_address"] = get_broadcast_address(
+                sock, interface)
+            interface_info["netmask"] = get_netmask(sock, interface)
+            interface_info["flags"] = get_flags(sock, interface)
+            interface_info["speed"] = get_network_interface_speed(sock,
+                                                                  interface)
+            results.append(interface_info)
+    finally:
+        del sock
+
     return results
 
 
@@ -205,7 +211,7 @@ def get_fqdn():
     return fqdn
 
 
-def get_network_interface_speed(interface_name):
+def get_network_interface_speed(sock, interface_name):
     """
     Return the ethernet device's advertised link speed.
 
@@ -213,7 +219,7 @@ def get_network_interface_speed(interface_name):
         * 10, 100, 1000, 2500, 10000: The interface speed in Mbps
         * -1: The interface does not support querying for max speed, such as
           virtio devices for instance.
-        * 65535: The cable is not connected to the interface. We cannot mesure
+        * 0: The cable is not connected to the interface. We cannot mesure
           interface speed, but could if it was plugged in.
     """
     # First get link params
@@ -223,8 +229,6 @@ def get_network_interface_speed(interface_name):
 
     speed = -1
     try:
-        # We need a socket to make the ioctl() calls
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         fcntl.ioctl(sock, SIOCETHTOOL, packed)  # Status ioctl() call
         res = status_cmd.tostring()
         speed = struct.unpack('12xH29x', res)[0]
@@ -233,7 +237,8 @@ def get_network_interface_speed(interface_name):
         if e.errno != 95:
             raise e
         speed = -1
-    finally:
-        del sock
+
+    if speed == 65535:
+        speed = 0
 
     return speed
