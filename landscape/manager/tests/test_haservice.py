@@ -2,9 +2,11 @@ import os
 
 from twisted.internet.defer import Deferred
 
+
 from landscape.manager.haservice import HAService
 from landscape.manager.plugin import SUCCEEDED, FAILED
 from landscape.tests.helpers import LandscapeTest, ManagerHelper
+from landscape.tests.mocker import ANY
 
 
 class HAServiceTests(LandscapeTest):
@@ -161,6 +163,7 @@ class HAServiceTests(LandscapeTest):
         C{HEALTH_CHECK_DIR}. If any script fails, L{HAService} will return a
         deferred L{fail}.
         """
+
         def expected_failure(result):
             self.assertEqual(
                 str(result.value),
@@ -189,6 +192,13 @@ class HAServiceTests(LandscapeTest):
         return result
 
     def test_missing_cluster_standby_or_cluster_online_scripts(self):
+        """
+        When no cluster status change scripts are delivered by the charm,
+        L{HAService} will still return a L{succeeded}.
+        C{HEALTH_CHECK_DIR}. If any script fails, L{HAService} will return a
+        deferred L{fail}.
+        """
+
         def should_not_be_called(result):
             self.fail(
                 "_change_cluster_participation failed on absent charm script.")
@@ -250,26 +260,74 @@ class HAServiceTests(LandscapeTest):
         result.addErrback(expected_failure, script_path)
         return result
 
-    def test_run_success(self):
-        ha_service_mock = self.mocker.patch(self.ha_service)
+    def test_run_success_cluster_standby(self):
+        """
+        When receives a C{change-ha-service message} with C{STATE_STANDBY}
+        requested the manager runs the C{CLUSTER_STANDBY} script and returns
+        a successful operation-result to the server.
+        """
         message = ({"type": "change-ha-service", "service-name": "my-service",
                     "unit-name": self.unit_name,
                     "service-state": self.ha_service.STATE_STANDBY,
                     "operation-id": 1})
         deferred = Deferred()
 
-        def handle_has_run(handle_result_deferred):
-            return handle_result_deferred.chainDeferred(deferred)
+        def validate_messages(value):
+            cluster_script = "%s/%s/%s" % (
+                self.ha_service.JUJU_UNITS_BASE, self.unit_name,
+                self.ha_service.CLUSTER_STANDBY)
+            service = self.broker_service
+            self.assertMessages(
+                service.message_store.get_pending_messages(),
+                [{"type": "operation-result",
+                  "result-text": u"%s succeeded." % cluster_script,
+                  "status": SUCCEEDED, "operation-id": 1}])
 
-        ha_service_mock._handle_change_ha_service(message)
+        def handle_has_run(handle_result_deferred):
+            result = handle_result_deferred.chainDeferred(deferred)
+            return deferred.addCallback(validate_messages)
+
+        ha_service_mock = self.mocker.patch(self.ha_service)
+        ha_service_mock.handle_change_ha_service(ANY)
         self.mocker.passthrough(handle_has_run)
         self.mocker.replay()
-
+        self.manager.add(self.ha_service)
         self.manager.dispatch_message(message)
 
-        service = self.broker_service
-        self.assertMessages(
-            service.message_store.get_pending_messages(),
-            [{"type": "operation-result",
-              "status": SUCCEEDED, "operation-id": 1}])
+        return deferred
+
+    def test_run_success_cluster_online(self):
+        """
+        When receives a C{change-ha-service message} with C{STATE_ONLINE}
+        requested the manager runs the C{CLUSTER_ONLINE} script and returns
+        a successful operation-result to the server.
+        """
+        message = ({"type": "change-ha-service", "service-name": "my-service",
+                    "unit-name": self.unit_name,
+                    "service-state": self.ha_service.STATE_ONLINE,
+                    "operation-id": 1})
+        deferred = Deferred()
+
+        def validate_messages(value):
+            cluster_script = "%s/%s/%s" % (
+                self.ha_service.JUJU_UNITS_BASE, self.unit_name,
+                self.ha_service.CLUSTER_ONLINE)
+            service = self.broker_service
+            self.assertMessages(
+                service.message_store.get_pending_messages(),
+                [{"type": "operation-result",
+                  "result-text": u"%s succeeded." % cluster_script,
+                  "status": SUCCEEDED, "operation-id": 1}])
+
+        def handle_has_run(handle_result_deferred):
+            handle_result_deferred.chainDeferred(deferred)
+            return deferred.addCallback(validate_messages)
+
+        ha_service_mock = self.mocker.patch(self.ha_service)
+        ha_service_mock.handle_change_ha_service(ANY)
+        self.mocker.passthrough(handle_has_run)
+        self.mocker.replay()
+        self.manager.add(self.ha_service)
+        self.manager.dispatch_message(message)
+
         return deferred
