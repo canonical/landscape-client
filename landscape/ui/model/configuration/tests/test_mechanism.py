@@ -33,7 +33,9 @@ class MechanismTest(LandscapeTest):
             default_config_filenames = [self.config_filename]
 
         self.config = MyLandscapeSetupConfiguration()
-        bus_name = dbus.service.BusName(INTERFACE_NAME, MechanismTest.bus)
+        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+        bus = dbus.SessionBus(private=True)
+        bus_name = dbus.service.BusName(INTERFACE_NAME, bus)
         self.mechanism = ConfigurationMechanism(self.config, bus_name)
         self.config.load(["-c", self.config_filename])
 

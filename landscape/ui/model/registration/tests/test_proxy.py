@@ -77,8 +77,9 @@ class RegistrationProxyTest(LandscapeTest):
 
     def setUp(self):
         super(RegistrationProxyTest, self).setUp()
-        bus_name = dbus.service.BusName(INTERFACE_NAME,
-                                        RegistrationProxyTest.bus)
+        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+        bus = dbus.SessionBus(private=True)
+        bus_name = dbus.service.BusName(INTERFACE_NAME, bus)
 
         def fake_do__registration(this, config_path):
             return True, ""

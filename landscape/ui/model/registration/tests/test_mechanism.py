@@ -16,7 +16,9 @@ class MechanismTest(LandscapeTest):
 
     def setUp(self):
         super(MechanismTest, self).setUp()
-        self.bus_name = dbus.service.BusName(INTERFACE_NAME, MechanismTest.bus)
+        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+        bus = dbus.SessionBus(private=True)
+        self.bus_name = dbus.service.BusName(INTERFACE_NAME, bus)
         self.mechanism = None
 
     def tearDown(self):
