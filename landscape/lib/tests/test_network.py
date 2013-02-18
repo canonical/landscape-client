@@ -263,7 +263,7 @@ class NetworkInterfaceSpeedTest(LandscapeTest):
         theerror.errno = 95
         theerror.message = "Operation not supported"
 
-        # ioctl always succeeds
+        # ioctl always raises
         mock_ioctl = self.mocker.replace("fcntl")
         mock_ioctl.ioctl(ANY, ANY, ANY)
         self.mocker.throw(theerror)
@@ -283,7 +283,7 @@ class NetworkInterfaceSpeedTest(LandscapeTest):
         theerror.errno = 999
         theerror.message = "Whatever"
 
-        # ioctl always succeeds
+        # ioctl always raises
         mock_ioctl = self.mocker.replace("fcntl")
         mock_ioctl.ioctl(ANY, ANY, ANY)
         self.mocker.throw(theerror)
