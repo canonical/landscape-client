@@ -6,7 +6,7 @@ from landscape.tests.helpers import LandscapeTest
 
 from landscape.lib.network import (
     get_network_traffic, get_active_device_info, get_active_interfaces,
-    get_fqdn)
+    get_fqdn, get_network_interface_speed)
 from landscape.tests.mocker import ANY
 
 
@@ -18,6 +18,13 @@ class NetworkInfoTest(LandscapeTest):
         network devices, compare and verify the output against
         that returned by ifconfig.
         """
+        mock_get_interface_speed = self.mocker.replace(
+            get_network_interface_speed)
+        mock_get_interface_speed(ANY, ANY)
+        self.mocker.result(100)
+        self.mocker.count(min=1, max=None)
+        self.mocker.replay()
+
         device_info = get_active_device_info()
         result = Popen(["/sbin/ifconfig"], stdout=PIPE).communicate()[0]
         interface_blocks = dict(
@@ -42,6 +49,7 @@ class NetworkInfoTest(LandscapeTest):
                 self.assertIn("RUNNING", block)
             if flags & 4096:
                 self.assertIn("MULTICAST", block)
+            self.assertEqual(100, device["speed"])
 
     def test_skip_loopback(self):
         """The C{lo} interface is not reported by L{get_active_device_info}."""
@@ -201,3 +209,85 @@ class FQDNTest(LandscapeTest):
         self.addCleanup(setattr, socket, "getfqdn", socket.getfqdn)
         socket.getfqdn = lambda: "localhost6.localdomain6"
         self.assertNotIn("localhost", get_fqdn())
+
+
+class NetworkInterfaceSpeedTest(LandscapeTest):
+
+    def test_get_network_interface_speed(self):
+        """
+        The link speed is reported as unpacked from the ioctl() call.
+        """
+        sock = socket.socket(
+            socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_IP)
+        # ioctl always succeeds
+        mock_ioctl = self.mocker.replace("fcntl")
+        mock_ioctl.ioctl(ANY, ANY, ANY)
+        self.mocker.result(0)
+
+        mock_unpack = self.mocker.replace("struct")
+        mock_unpack.unpack("12xH29x", ANY)
+        self.mocker.result((100,))
+
+        self.mocker.replay()
+
+        self.assertEqual(100, get_network_interface_speed(sock, "eth0"))
+
+    def test_get_network_interface_speed_unplugged(self):
+        """
+        The link speed for an unplugged interface is reported as 0.
+        """
+        sock = socket.socket(
+            socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_IP)
+        # ioctl always succeeds
+        mock_ioctl = self.mocker.replace("fcntl")
+        mock_ioctl.ioctl(ANY, ANY, ANY)
+        self.mocker.result(0)
+
+        mock_unpack = self.mocker.replace("struct")
+        mock_unpack.unpack("12xH29x", ANY)
+        self.mocker.result((65535,))
+
+        self.mocker.replay()
+
+        self.assertEqual(0, get_network_interface_speed(sock, "eth0"))
+
+    def test_get_network_interface_speed_not_supported(self):
+        """
+        Some drivers do not report the needed interface speed. In this case
+        an C{IOError} with errno 95 is raised ("Operation not supported").
+        If such an error is rasied, report the speed as -1.
+        """
+        sock = socket.socket(
+            socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_IP)
+        theerror = IOError()
+        theerror.errno = 95
+        theerror.message = "Operation not supported"
+
+        # ioctl always raises
+        mock_ioctl = self.mocker.replace("fcntl")
+        mock_ioctl.ioctl(ANY, ANY, ANY)
+        self.mocker.throw(theerror)
+
+        self.mocker.replay()
+
+        self.assertEqual(-1, get_network_interface_speed(sock, "eth0"))
+
+    def test_get_network_interface_speed_other_io_error(self):
+        """
+        In case we get an IOError that is not "Operation not permitted", the
+        exception should be raised.
+        """
+        sock = socket.socket(
+            socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_IP)
+        theerror = IOError()
+        theerror.errno = 999
+        theerror.message = "Whatever"
+
+        # ioctl always raises
+        mock_ioctl = self.mocker.replace("fcntl")
+        mock_ioctl.ioctl(ANY, ANY, ANY)
+        self.mocker.throw(theerror)
+
+        self.mocker.replay()
+
+        self.assertRaises(IOError, get_network_interface_speed, sock, "eth0")

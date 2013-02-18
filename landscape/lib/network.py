@@ -5,6 +5,7 @@ import array
 import fcntl
 import socket
 import struct
+import errno
 
 __all__ = ["get_active_device_info", "get_network_traffic", "is_64"]
 
@@ -16,6 +17,8 @@ SIOCGIFBRDADDR = 0x8919
 SIOCGIFADDR = 0x8915
 SIOCGIFHWADDR = 0x8927
 
+SIOCETHTOOL = 0x8946  # As defined in include/uapi/linux/sockios.h
+ETHTOOL_GSET = 0x00000001  # Get status command.
 
 # struct definition from header /usr/include/net/if.h
 # the struct size varies according to the platform arch size
@@ -137,23 +140,29 @@ def get_active_device_info(skipped_interfaces=("lo",),
     interface present on a machine.
     """
     results = []
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_IP)
-    for interface in get_active_interfaces(sock):
-        if interface in skipped_interfaces:
-            continue
-        if skip_vlan and "." in interface:
-            continue
-        if skip_alias and ":" in interface:
-            continue
-        interface_info = {"interface": interface}
-        interface_info["ip_address"] = get_ip_address(sock, interface)
-        interface_info["mac_address"] = get_mac_address(sock, interface)
-        interface_info["broadcast_address"] = get_broadcast_address(sock,
-                                                                    interface)
-        interface_info["netmask"] = get_netmask(sock, interface)
-        interface_info["flags"] = get_flags(sock, interface)
-        results.append(interface_info)
-    del sock
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM,
+                             socket.IPPROTO_IP)
+        for interface in get_active_interfaces(sock):
+            if interface in skipped_interfaces:
+                continue
+            if skip_vlan and "." in interface:
+                continue
+            if skip_alias and ":" in interface:
+                continue
+            interface_info = {"interface": interface}
+            interface_info["ip_address"] = get_ip_address(sock, interface)
+            interface_info["mac_address"] = get_mac_address(sock, interface)
+            interface_info["broadcast_address"] = get_broadcast_address(
+                sock, interface)
+            interface_info["netmask"] = get_netmask(sock, interface)
+            interface_info["flags"] = get_flags(sock, interface)
+            interface_info["speed"] = get_network_interface_speed(sock,
+                                                                  interface)
+            results.append(interface_info)
+    finally:
+        del sock
+
     return results
 
 
@@ -203,6 +212,35 @@ def get_fqdn():
     return fqdn
 
 
-if __name__ == "__main__":
-    import pprint
-    pprint.pprint(get_active_device_info())
+def get_network_interface_speed(sock, interface_name):
+    """
+    Return the ethernet device's advertised link speed.
+
+    The return value can be one of:
+        * 10, 100, 1000, 2500, 10000: The interface speed in Mbps
+        * -1: The interface does not support querying for max speed, such as
+          virtio devices for instance.
+        * 0: The cable is not connected to the interface. We cannot mesure
+          interface speed, but could if it was plugged in.
+    """
+    cmd_struct = struct.pack('I39s', ETHTOOL_GSET, '\x00' * 39)
+    status_cmd = array.array('B', cmd_struct)
+    packed = struct.pack('16sP', interface_name, status_cmd.buffer_info()[0])
+
+    speed = -1
+    try:
+        fcntl.ioctl(sock, SIOCETHTOOL, packed)  # Status ioctl() call
+        res = status_cmd.tostring()
+        speed = struct.unpack('12xH29x', res)[0]
+    except IOError as e:
+        if e.errno != errno.EOPNOTSUPP:
+            raise e
+        # e is "Operation not supported".
+        speed = -1
+
+    # Drivers apparently report speed as 65535 when the link is not available
+    # (cable unplugged for example).
+    if speed == 65535:
+        speed = 0
+
+    return speed
