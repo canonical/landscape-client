@@ -35,6 +35,21 @@ class NetworkDeviceTest(LandscapeTest):
         self.assertEqual(8, flags & 8)  # LOOPBACK
         self.assertEqual(64, flags & 64)  # RUNNING
 
+    def test_no_speed(self):
+        """
+        A message is sent with the device info, and no error is raised if the
+        speed parameter is omitted (to be backwards-compatible).
+        """
+        def test_get_active_device_info_no_speed():
+            devices = get_active_device_info(skipped_interfaces=())
+            for device in devices:
+                device.pop("speed")
+            return devices
+
+        plugin = NetworkDevice(test_get_active_device_info_no_speed)
+        self.monitor.add(plugin)
+        plugin.exchange()
+
     def test_no_message_with_no_changes(self):
         """If no device changes from the last message, no message is sent."""
         self.plugin.exchange()

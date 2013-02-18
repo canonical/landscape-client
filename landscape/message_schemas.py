@@ -411,7 +411,8 @@ NETWORK_DEVICE = Message(
                               "broadcast_address": String(),
                               "netmask": String(),
                               "flags": Int(),
-                              "speed": Int()}))})
+                              "speed": Int()},
+                             optional=["speed"]))})
 
 NETWORK_ACTIVITY = Message(
     "network-activity",
