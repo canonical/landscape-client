@@ -1,6 +1,7 @@
 import logging
 import os
 
+from twisted.python.failure import Failure
 from twisted.internet.utils import getProcessValue, getProcessOutputAndValue
 from twisted.internet.defer import succeed, fail
 
@@ -65,10 +66,14 @@ class HAService(ManagerPlugin):
         message = {"type": "operation-result",
                    "status": status,
                    "operation-id": opid}
-        if data and not isinstance(data, unicode):
+        if data:
+            if not isinstance(data, unicode):
             # Let's decode result-text, replacing non-printable
             # characters
-            message["result-text"] = data.decode("utf-8", "replace")
+                message["result-text"] = data.decode("utf-8", "replace")
+            else:
+                message["result-text"] = data.decode("utf-8", "replace")
+            
         return self.registry.broker.send_message(message, True)
 
     def _respond_success(self, data, message, opid):
@@ -76,10 +81,15 @@ class HAService(ManagerPlugin):
         return self._respond(SUCCEEDED, data, opid)
 
     def _respond_failure(self, failure, opid):
-        if hasattr(failure, "value"):
-            failure = "%s" % (failure.value)
+        """Handle exception failures."""
         log_failure(failure)
-        return self._respond(FAILED, str(failure), opid)
+        failure_string = "%s" % (failure.value)
+        return self._respond(FAILED, failure_string, opid)
+
+    def _respond_failure_string(self, failure_string, opid):
+        """Only handle string failures."""
+        logging.error(failure_string)
+        return self._respond(FAILED, failure_string, opid)
 
     def _run_health_checks(self, unit_name):
         """
@@ -184,7 +194,7 @@ class HAService(ManagerPlugin):
                     u"modify high-availability services." % unit_name)
 
             if error_message:
-                return self._respond_failure(error_message, opid)
+                return self._respond_failure_string(error_message, opid)
 
             d = self._perform_state_change(unit_name, service_state, opid)
             d.addCallback(self._respond_success, change_message, opid)
@@ -192,3 +202,4 @@ class HAService(ManagerPlugin):
             return d
         except:
             self._respond_failure(Failure(), opid)
+            return d
