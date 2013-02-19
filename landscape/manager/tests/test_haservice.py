@@ -3,6 +3,7 @@ import os
 from twisted.internet.defer import Deferred
 
 
+from landscape.lib.log import log_failure
 from landscape.manager.haservice import HAService
 from landscape.manager.plugin import SUCCEEDED, FAILED
 from landscape.tests.helpers import LandscapeTest, ManagerHelper
@@ -49,7 +50,7 @@ class HAServiceTests(LandscapeTest):
         When the landscape server requests a C{service-state} other than
         'online' or 'standby' the client responds with the appropriate error.
         """
-        logging_mock = self.mocker.replace("logging.error")
+        logging_mock = self.mocker.replace(log_failure)
         logging_mock("Invalid cluster participation state requested BOGUS.")
         self.mocker.replay()
 
@@ -72,7 +73,7 @@ class HAServiceTests(LandscapeTest):
         """
         self.ha_service.JUJU_UNITS_BASE = "/I/don't/exist"
 
-        logging_mock = self.mocker.replace("logging.error")
+        logging_mock = self.mocker.replace(log_failure)
         logging_mock("This computer is not deployed with juju. "
                      "Changing high-availability service not supported.")
         self.mocker.replay()
@@ -96,7 +97,7 @@ class HAServiceTests(LandscapeTest):
         When not the specific juju charmed computer, L{HAService} reponds
         with an error due to missing the JUJU_UNITS_BASE/$JUJU_UNIT dir.
         """
-        logging_mock = self.mocker.replace("logging.error")
+        logging_mock = self.mocker.replace(log_failure)
         logging_mock("This computer is not juju unit some-other-service-0. "
                      "Unable to modify high-availability services.")
         self.mocker.replay()

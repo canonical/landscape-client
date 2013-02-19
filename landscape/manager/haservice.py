@@ -4,6 +4,7 @@ import os
 from twisted.internet.utils import getProcessValue, getProcessOutputAndValue
 from twisted.internet.defer import succeed, fail
 
+from landscape.lib.log import log_failure
 from landscape.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
 
 
@@ -77,11 +78,8 @@ class HAService(ManagerPlugin):
     def _respond_failure(self, failure, opid):
         if hasattr(failure, "value"):
             failure = "%s" % (failure.value)
-        logging.error(failure)
+        log_failure(failure)
         return self._respond(FAILED, str(failure), opid)
-
-    def _format_exception(self, e):
-        return u"%s: %s" % (e.__class__.__name__, e.args[0])
 
     def _run_health_checks(self, unit_name):
         """
@@ -98,18 +96,15 @@ class HAService(ManagerPlugin):
             logging.info(message)
             return succeed(message)
 
-        def run_parts(script_dir):
-            result = getProcessOutputAndValue(
-                "run-parts", [script_dir], env=os.environ)
+        def parse_output((stdout_data, stderr_data, status)):
+            if status != 0:
+                raise RunPartsError(stderr_data)
+            else:
+                return "All health checks succeeded."
 
-            def parse_output((stdout_data, stderr_data, status)):
-                if status != 0:
-                    return fail(RunPartsError(stderr_data))
-                else:
-                    return succeed("All health checks succeeded.")
-            return result.addCallback(parse_output)
-
-        return run_parts(health_dir)
+        result = getProcessOutputAndValue(
+            "run-parts", [health_dir], env=os.environ)
+        return result.addCallback(parse_output)
 
     def _change_cluster_participation(self, _, unit_name, service_state):
         """
@@ -133,13 +128,13 @@ class HAService(ManagerPlugin):
                 " cluster. No juju charm cluster settings changed.")
 
         def run_script(script):
-            result = getProcessValue(script)
+            result = getProcessValue(script, env=os.environ)
 
             def validate_exit_code(code, script):
                 if code != 0:
-                    return fail(CharmScriptError(script, code))
+                    raise CharmScriptError(script, code)
                 else:
-                    return succeed("%s succeeded." % script)
+                    return "%s succeeded." % script
             return result.addCallback(validate_exit_code, script)
 
         return run_script(script)
@@ -195,5 +190,5 @@ class HAService(ManagerPlugin):
             d.addCallback(self._respond_success, change_message, opid)
             d.addErrback(self._respond_failure, opid)
             return d
-        except Exception, e:
-            self._respond_failure(self._format_exception(e), opid)
+        except:
+            self._respond_failure(Failure(), opid)
