@@ -1,11 +1,16 @@
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
-from landscape.lib.network import get_active_device_info
+from landscape.lib.network import (
+    get_active_device_info, get_active_device_speed)
 from landscape.monitor.networkdevice import NetworkDevice
 
 
 def test_get_active_device_info():
     # Don't skip any interfaces for the tests
     return get_active_device_info(skipped_interfaces=())
+
+def test_get_active_device_speed():
+    # Don't skip any interfaces for the tests
+    return get_active_device_speed(skipped_interfaces=())
 
 
 class NetworkDeviceTest(LandscapeTest):
@@ -14,7 +19,8 @@ class NetworkDeviceTest(LandscapeTest):
 
     def setUp(self):
         super(NetworkDeviceTest, self).setUp()
-        self.plugin = NetworkDevice(test_get_active_device_info)
+        self.plugin = NetworkDevice(test_get_active_device_info,
+                                    test_get_active_device_speed)
         self.monitor.add(self.plugin)
         self.broker_service.message_store.set_accepted_types(
             [self.plugin.message_type])
@@ -34,21 +40,6 @@ class NetworkDeviceTest(LandscapeTest):
         self.assertEqual(1, flags & 1)  # UP
         self.assertEqual(8, flags & 8)  # LOOPBACK
         self.assertEqual(64, flags & 64)  # RUNNING
-
-    def test_no_speed(self):
-        """
-        A message is sent with the device info, and no error is raised if the
-        speed parameter is omitted (to be backwards-compatible).
-        """
-        def test_get_active_device_info_no_speed():
-            devices = get_active_device_info(skipped_interfaces=())
-            for device in devices:
-                device.pop("speed")
-            return devices
-
-        plugin = NetworkDevice(test_get_active_device_info_no_speed)
-        self.monitor.add(plugin)
-        plugin.exchange()
 
     def test_no_message_with_no_changes(self):
         """If no device changes from the last message, no message is sent."""

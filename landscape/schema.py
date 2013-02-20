@@ -128,7 +128,7 @@ class Tuple(object):
     @param schema: A sequence of schemas, which will be applied to
         each value in the tuple respectively.
     """
-    
+
     def __init__(self, *schema):
         self.schema = schema
 

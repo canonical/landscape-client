@@ -157,9 +157,36 @@ def get_active_device_info(skipped_interfaces=("lo",),
                 sock, interface)
             interface_info["netmask"] = get_netmask(sock, interface)
             interface_info["flags"] = get_flags(sock, interface)
-            interface_info["speed"] = get_network_interface_speed(sock,
-                                                                  interface)
             results.append(interface_info)
+    finally:
+        del sock
+
+    return results
+
+
+def get_active_device_speed(skipped_interfaces=("lo",), skip_vlan=True,
+                            skip_alias=True):
+    """
+    Returns a dictionary containing speed information for each active network
+    interface present on a machine.
+    """
+    results = []
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM,
+                             socket.IPPROTO_IP)
+        for interface in get_active_interfaces(sock):
+            if interface in skipped_interfaces:
+                continue
+            if skip_vlan and "." in interface:
+                continue
+            if skip_alias and ":" in interface:
+                continue
+            speed_data = {"interface": interface}
+            speed, duplex = get_network_interface_speed(sock, interface)
+
+            speed_data["speed"] = speed
+            speed_data["duplex"] = duplex
+            results.append(speed_data)
     finally:
         del sock
 
@@ -231,16 +258,24 @@ def get_network_interface_speed(sock, interface_name):
     try:
         fcntl.ioctl(sock, SIOCETHTOOL, packed)  # Status ioctl() call
         res = status_cmd.tostring()
-        speed = struct.unpack('12xH29x', res)[0]
+        #speed = struct.unpack('12xH29x', res)[0]
+        speed, duplex = struct.unpack('12xHB28x', res)
     except IOError as e:
         if e.errno != errno.EOPNOTSUPP:
             raise e
         # e is "Operation not supported".
         speed = -1
+        duplex = False
 
     # Drivers apparently report speed as 65535 when the link is not available
     # (cable unplugged for example).
     if speed == 65535:
         speed = 0
 
-    return speed
+    # The drivers report "duplex" to be 255 when the information is not
+    # avaialble. We'll just assume it's False in that case.
+    if duplex == 255:
+        duplex = False
+    duplex = bool(duplex)
+
+    return speed, duplex

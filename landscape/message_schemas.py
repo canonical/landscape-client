@@ -410,9 +410,13 @@ NETWORK_DEVICE = Message(
                               "mac_address": String(),
                               "broadcast_address": String(),
                               "netmask": String(),
-                              "flags": Int(),
-                              "speed": Int()},
-                             optional=["speed"]))})
+                              "flags": Int()})),
+
+     "device-speeds": List(KeyDict({"interface": String(),
+                                    "speed": Int(),
+                                    "duplex": Bool()}))
+     })
+
 
 NETWORK_ACTIVITY = Message(
     "network-activity",
