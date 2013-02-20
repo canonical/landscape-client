@@ -26,7 +26,12 @@ class NetworkDevice(DataWatcher):
     def get_message(self):
         device_data = self._device_info()
         device_speed = self._device_speed()
+        if (self._persist.get("device-data") != device_data or
+            self._persist.get("device-speed") != device_speed):
 
-        return {"type": self.message_type,
-                "devices": device_data,
-                "device_speeds": device_speed}
+            self._persist.set("device-data", device_data)
+            self._persist.set("device-speed", device_speed)
+
+            return {"type": self.message_type,
+                    "devices": device_data,
+                    "device-speeds": device_speed}
