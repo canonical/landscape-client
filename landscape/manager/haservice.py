@@ -83,8 +83,7 @@ class HAService(ManagerPlugin):
     def _respond_failure(self, failure, opid):
         """Handle exception failures."""
         log_failure(failure)
-        failure_string = "%s" % (failure.value)
-        return self._respond(FAILED, failure_string, opid)
+        return self._respond(FAILED, failure.getErrorMessage(), opid)
 
     def _respond_failure_string(self, failure_string, opid):
         """Only handle string failures."""
