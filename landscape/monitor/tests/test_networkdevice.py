@@ -8,6 +8,7 @@ def test_get_active_device_info():
     # Don't skip any interfaces for the tests
     return get_active_device_info(skipped_interfaces=())
 
+
 def test_get_active_device_speed():
     # Don't skip any interfaces for the tests
     return get_active_device_speed(skipped_interfaces=())

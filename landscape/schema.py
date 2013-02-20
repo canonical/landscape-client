@@ -38,6 +38,7 @@ class Any(object):
         raise InvalidError("%r did not match any schema in %s"
                            % (value, self.schemas))
 
+
 class Bool(object):
     """Something that must be a C{bool}."""
     def coerce(self, value):

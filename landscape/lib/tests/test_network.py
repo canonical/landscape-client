@@ -6,7 +6,7 @@ from landscape.tests.helpers import LandscapeTest
 
 from landscape.lib.network import (
     get_network_traffic, get_active_device_info, get_active_interfaces,
-    get_fqdn, get_network_interface_speed)
+    get_fqdn, get_network_interface_speed, get_active_device_speed)
 from landscape.tests.mocker import ANY
 
 
@@ -134,6 +134,25 @@ class NetworkInfoTest(LandscapeTest):
         self.mocker.replay()
         traffic = get_network_traffic()
         self.assertEqual(traffic, test_proc_net_dev_parsed)
+
+    def test_get_active_device_speed(self):
+        """
+        Device speed returns a sequence of speed information about active
+        network devices.
+        """
+        mock_get_active_interfaces = self.mocker.replace(get_active_interfaces)
+        mock_get_active_interfaces(ANY)
+        self.mocker.result(["eth0", "eth0:pub", "lo"])
+
+        mock_get_network_interface_speed = self.mocker.replace(
+            get_network_interface_speed)
+        mock_get_network_interface_speed(ANY, "eth0")
+        self.mocker.result((100, True))
+        self.mocker.replay()
+
+        result = get_active_device_speed()
+        expected = [{"interface": "eth0", "speed": 100, "duplex": True}]
+        self.assertEqual(expected, result)
 
 
 #exact output of cat /proc/net/dev snapshot with line continuations for pep8
