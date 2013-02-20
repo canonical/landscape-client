@@ -414,8 +414,8 @@ NETWORK_DEVICE = Message(
 
      "device-speeds": List(KeyDict({"interface": String(),
                                     "speed": Int(),
-                                    "duplex": Bool()}))
-     })
+                                    "duplex": Bool()}))},
+    optional=["device-speeds"])
 
 
 NETWORK_ACTIVITY = Message(
