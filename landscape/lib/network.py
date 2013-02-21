@@ -40,7 +40,7 @@ def is_64():
     return struct.calcsize("l") == 8
 
 
-# initialize the struct size as per the machine's archictecture
+# initialize the struct size as per the machine's architecture
 IF_STRUCT_SIZE = is_64() and IF_STRUCT_SIZE_64 or IF_STRUCT_SIZE_32
 
 
@@ -51,7 +51,7 @@ def get_active_interfaces(sock):
     """
     max_interfaces = 128
 
-    # Setup an an array to hold our response, and initialized to null strings.
+    # Setup an array to hold our response, and initialized to null strings.
     interfaces = array.array("B", "\0" * max_interfaces * IF_STRUCT_SIZE)
     buffer_size = interfaces.buffer_info()[0]
     packed_bytes = struct.pack(
@@ -157,8 +157,9 @@ def get_active_device_info(skipped_interfaces=("lo",),
                 sock, interface)
             interface_info["netmask"] = get_netmask(sock, interface)
             interface_info["flags"] = get_flags(sock, interface)
-            interface_info["speed"] = get_network_interface_speed(sock,
-                                                                  interface)
+            speed, duplex = get_network_interface_speed(sock, interface)
+            interface_info["speed"] = speed
+            interface_info["duplex"] = duplex
             results.append(interface_info)
     finally:
         del sock
@@ -220,7 +221,7 @@ def get_network_interface_speed(sock, interface_name):
         * 10, 100, 1000, 2500, 10000: The interface speed in Mbps
         * -1: The interface does not support querying for max speed, such as
           virtio devices for instance.
-        * 0: The cable is not connected to the interface. We cannot mesure
+        * 0: The cable is not connected to the interface. We cannot measure
           interface speed, but could if it was plugged in.
     """
     cmd_struct = struct.pack('I39s', ETHTOOL_GSET, '\x00' * 39)
@@ -231,16 +232,23 @@ def get_network_interface_speed(sock, interface_name):
     try:
         fcntl.ioctl(sock, SIOCETHTOOL, packed)  # Status ioctl() call
         res = status_cmd.tostring()
-        speed = struct.unpack('12xH29x', res)[0]
+        speed, duplex = struct.unpack('12xHB28x', res)
     except IOError as e:
         if e.errno != errno.EOPNOTSUPP:
             raise e
         # e is "Operation not supported".
         speed = -1
+        duplex = False
 
     # Drivers apparently report speed as 65535 when the link is not available
     # (cable unplugged for example).
     if speed == 65535:
         speed = 0
 
-    return speed
+    # The drivers report "duplex" to be 255 when the information is not
+    # available. We'll just assume it's False in that case.
+    if duplex == 255:
+        duplex = False
+    duplex = bool(duplex)
+
+    return speed, duplex

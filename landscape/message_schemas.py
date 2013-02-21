@@ -403,6 +403,10 @@ EUCALYPTUS_INFO_ERROR = Message(
     "eucalyptus-info-error",
     {"error": String()})
 
+# The network-device message is split in two top level keys because we don't
+# support adding sub-keys in a backwards-compatible way (only top-level keys).
+# New servers will see an optional device-speeds key, and old servers will
+# simply ignore the extra info..
 NETWORK_DEVICE = Message(
     "network-device",
     {"devices": List(KeyDict({"interface": String(),
@@ -410,9 +414,13 @@ NETWORK_DEVICE = Message(
                               "mac_address": String(),
                               "broadcast_address": String(),
                               "netmask": String(),
-                              "flags": Int(),
-                              "speed": Int()},
-                             optional=["speed"]))})
+                              "flags": Int()})),
+
+     "device-speeds": List(KeyDict({"interface": String(),
+                                    "speed": Int(),
+                                    "duplex": Bool()}))},
+    optional=["device-speeds"])
+
 
 NETWORK_ACTIVITY = Message(
     "network-activity",

@@ -38,6 +38,7 @@ class Any(object):
         raise InvalidError("%r did not match any schema in %s"
                            % (value, self.schemas))
 
+
 class Bool(object):
     """Something that must be a C{bool}."""
     def coerce(self, value):
@@ -128,7 +129,7 @@ class Tuple(object):
     @param schema: A sequence of schemas, which will be applied to
         each value in the tuple respectively.
     """
-    
+
     def __init__(self, *schema):
         self.schema = schema
 

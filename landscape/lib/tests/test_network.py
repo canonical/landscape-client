@@ -18,10 +18,10 @@ class NetworkInfoTest(LandscapeTest):
         network devices, compare and verify the output against
         that returned by ifconfig.
         """
-        mock_get_interface_speed = self.mocker.replace(
+        mock_get_network_interface_speed = self.mocker.replace(
             get_network_interface_speed)
-        mock_get_interface_speed(ANY, ANY)
-        self.mocker.result(100)
+        mock_get_network_interface_speed(ANY, ANY)
+        self.mocker.result((100, True))
         self.mocker.count(min=1, max=None)
         self.mocker.replay()
 
@@ -50,6 +50,7 @@ class NetworkInfoTest(LandscapeTest):
             if flags & 4096:
                 self.assertIn("MULTICAST", block)
             self.assertEqual(100, device["speed"])
+            self.assertEqual(True, device["duplex"])
 
     def test_skip_loopback(self):
         """The C{lo} interface is not reported by L{get_active_device_info}."""
@@ -225,12 +226,13 @@ class NetworkInterfaceSpeedTest(LandscapeTest):
         self.mocker.result(0)
 
         mock_unpack = self.mocker.replace("struct")
-        mock_unpack.unpack("12xH29x", ANY)
-        self.mocker.result((100,))
+        mock_unpack.unpack("12xHB28x", ANY)
+        self.mocker.result((100, False))
 
         self.mocker.replay()
 
-        self.assertEqual(100, get_network_interface_speed(sock, "eth0"))
+        self.assertEqual((100, False),
+                         get_network_interface_speed(sock, "eth0"))
 
     def test_get_network_interface_speed_unplugged(self):
         """
@@ -241,15 +243,15 @@ class NetworkInterfaceSpeedTest(LandscapeTest):
         # ioctl always succeeds
         mock_ioctl = self.mocker.replace("fcntl")
         mock_ioctl.ioctl(ANY, ANY, ANY)
-        self.mocker.result(0)
+        self.mocker.result((0, False))
 
         mock_unpack = self.mocker.replace("struct")
-        mock_unpack.unpack("12xH29x", ANY)
-        self.mocker.result((65535,))
+        mock_unpack.unpack("12xHB28x", ANY)
+        self.mocker.result((65535, False))
 
         self.mocker.replay()
 
-        self.assertEqual(0, get_network_interface_speed(sock, "eth0"))
+        self.assertEqual((0, False), get_network_interface_speed(sock, "eth0"))
 
     def test_get_network_interface_speed_not_supported(self):
         """
@@ -270,7 +272,8 @@ class NetworkInterfaceSpeedTest(LandscapeTest):
 
         self.mocker.replay()
 
-        self.assertEqual(-1, get_network_interface_speed(sock, "eth0"))
+        self.assertEqual((-1, False),
+                         get_network_interface_speed(sock, "eth0"))
 
     def test_get_network_interface_speed_other_io_error(self):
         """
