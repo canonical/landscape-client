@@ -6,7 +6,7 @@ from landscape.tests.helpers import LandscapeTest
 
 from landscape.lib.network import (
     get_network_traffic, get_active_device_info, get_active_interfaces,
-    get_fqdn, get_network_interface_speed, get_active_device_speed)
+    get_fqdn, get_network_interface_speed)
 from landscape.tests.mocker import ANY
 
 
@@ -18,6 +18,13 @@ class NetworkInfoTest(LandscapeTest):
         network devices, compare and verify the output against
         that returned by ifconfig.
         """
+        mock_get_network_interface_speed = self.mocker.replace(
+            get_network_interface_speed)
+        mock_get_network_interface_speed(ANY, ANY)
+        self.mocker.result((100, True))
+        self.mocker.count(min=1, max=None)
+        self.mocker.replay()
+
         device_info = get_active_device_info()
         result = Popen(["/sbin/ifconfig"], stdout=PIPE).communicate()[0]
         interface_blocks = dict(
@@ -42,6 +49,8 @@ class NetworkInfoTest(LandscapeTest):
                 self.assertIn("RUNNING", block)
             if flags & 4096:
                 self.assertIn("MULTICAST", block)
+            self.assertEqual(100, device["speed"])
+            self.assertEqual(True, device["duplex"])
 
     def test_skip_loopback(self):
         """The C{lo} interface is not reported by L{get_active_device_info}."""
@@ -134,25 +143,6 @@ class NetworkInfoTest(LandscapeTest):
         self.mocker.replay()
         traffic = get_network_traffic()
         self.assertEqual(traffic, test_proc_net_dev_parsed)
-
-    def test_get_active_device_speed(self):
-        """
-        Device speed returns a sequence of speed information about active
-        network devices.
-        """
-        mock_get_active_interfaces = self.mocker.replace(get_active_interfaces)
-        mock_get_active_interfaces(ANY)
-        self.mocker.result(["eth0", "eth0:pub", "lo"])
-
-        mock_get_network_interface_speed = self.mocker.replace(
-            get_network_interface_speed)
-        mock_get_network_interface_speed(ANY, "eth0")
-        self.mocker.result((100, True))
-        self.mocker.replay()
-
-        result = get_active_device_speed()
-        expected = [{"interface": "eth0", "speed": 100, "duplex": True}]
-        self.assertEqual(expected, result)
 
 
 #exact output of cat /proc/net/dev snapshot with line continuations for pep8

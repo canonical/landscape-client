@@ -44,16 +44,6 @@ def is_64():
 IF_STRUCT_SIZE = is_64() and IF_STRUCT_SIZE_64 or IF_STRUCT_SIZE_32
 
 
-def skip_interface(interface, skipped_interfaces, skip_vlan, skip_alias):
-    if interface in skipped_interfaces:
-        return True
-    if skip_vlan and "." in interface:
-        return True
-    if skip_alias and ":" in interface:
-        return True
-    return False
-
-
 def get_active_interfaces(sock):
     """Generator yields active network interface names.
 
@@ -154,9 +144,11 @@ def get_active_device_info(skipped_interfaces=("lo",),
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM,
                              socket.IPPROTO_IP)
         for interface in get_active_interfaces(sock):
-
-            if skip_interface(interface, skipped_interfaces, skip_vlan,
-                              skip_alias):
+            if interface in skipped_interfaces:
+                continue
+            if skip_vlan and "." in interface:
+                continue
+            if skip_alias and ":" in interface:
                 continue
             interface_info = {"interface": interface}
             interface_info["ip_address"] = get_ip_address(sock, interface)
@@ -165,33 +157,10 @@ def get_active_device_info(skipped_interfaces=("lo",),
                 sock, interface)
             interface_info["netmask"] = get_netmask(sock, interface)
             interface_info["flags"] = get_flags(sock, interface)
-            results.append(interface_info)
-    finally:
-        del sock
-
-    return results
-
-
-def get_active_device_speed(skipped_interfaces=("lo",), skip_vlan=True,
-                            skip_alias=True):
-    """
-    Returns a dictionary containing speed information for each active network
-    interface present on a machine.
-    """
-    results = []
-    try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM,
-                             socket.IPPROTO_IP)
-        for interface in get_active_interfaces(sock):
-            if skip_interface(interface, skipped_interfaces, skip_vlan,
-                              skip_alias):
-                continue
-            speed_data = {"interface": interface}
             speed, duplex = get_network_interface_speed(sock, interface)
-
-            speed_data["speed"] = speed
-            speed_data["duplex"] = duplex
-            results.append(speed_data)
+            interface_info["speed"] = speed
+            interface_info["duplex"] = duplex
+            results.append(interface_info)
     finally:
         del sock
 

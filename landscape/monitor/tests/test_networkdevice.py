@@ -1,6 +1,6 @@
 from landscape.tests.helpers import LandscapeTest, MonitorHelper
 from landscape.lib.network import (
-    get_active_device_info, get_active_device_speed)
+    get_active_device_info)
 from landscape.monitor.networkdevice import NetworkDevice
 
 
@@ -9,19 +9,13 @@ def test_get_active_device_info():
     return get_active_device_info(skipped_interfaces=())
 
 
-def test_get_active_device_speed():
-    # Don't skip any interfaces for the tests
-    return get_active_device_speed(skipped_interfaces=())
-
-
 class NetworkDeviceTest(LandscapeTest):
 
     helpers = [MonitorHelper]
 
     def setUp(self):
         super(NetworkDeviceTest, self).setUp()
-        self.plugin = NetworkDevice(test_get_active_device_info,
-                                    test_get_active_device_speed)
+        self.plugin = NetworkDevice(test_get_active_device_info)
         self.monitor.add(self.plugin)
         self.broker_service.message_store.set_accepted_types(
             [self.plugin.message_type])
