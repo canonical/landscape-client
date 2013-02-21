@@ -40,7 +40,7 @@ def is_64():
     return struct.calcsize("l") == 8
 
 
-# initialize the struct size as per the machine's archictecture
+# initialize the struct size as per the machine's architecture
 IF_STRUCT_SIZE = is_64() and IF_STRUCT_SIZE_64 or IF_STRUCT_SIZE_32
 
 
@@ -51,7 +51,7 @@ def get_active_interfaces(sock):
     """
     max_interfaces = 128
 
-    # Setup an an array to hold our response, and initialized to null strings.
+    # Setup an array to hold our response, and initialized to null strings.
     interfaces = array.array("B", "\0" * max_interfaces * IF_STRUCT_SIZE)
     buffer_size = interfaces.buffer_info()[0]
     packed_bytes = struct.pack(
@@ -221,7 +221,7 @@ def get_network_interface_speed(sock, interface_name):
         * 10, 100, 1000, 2500, 10000: The interface speed in Mbps
         * -1: The interface does not support querying for max speed, such as
           virtio devices for instance.
-        * 0: The cable is not connected to the interface. We cannot mesure
+        * 0: The cable is not connected to the interface. We cannot measure
           interface speed, but could if it was plugged in.
     """
     cmd_struct = struct.pack('I39s', ETHTOOL_GSET, '\x00' * 39)
@@ -246,7 +246,7 @@ def get_network_interface_speed(sock, interface_name):
         speed = 0
 
     # The drivers report "duplex" to be 255 when the information is not
-    # avaialble. We'll just assume it's False in that case.
+    # available. We'll just assume it's False in that case.
     if duplex == 255:
         duplex = False
     duplex = bool(duplex)
