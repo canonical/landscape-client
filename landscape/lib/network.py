@@ -44,6 +44,16 @@ def is_64():
 IF_STRUCT_SIZE = is_64() and IF_STRUCT_SIZE_64 or IF_STRUCT_SIZE_32
 
 
+def skip_interface(interface, skipped_interfaces, skip_vlan, skip_alias):
+    if interface in skipped_interfaces:
+        return True
+    if skip_vlan and "." in interface:
+        return True
+    if skip_alias and ":" in interface:
+        return True
+    return False
+
+
 def get_active_interfaces(sock):
     """Generator yields active network interface names.
 
@@ -144,11 +154,9 @@ def get_active_device_info(skipped_interfaces=("lo",),
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM,
                              socket.IPPROTO_IP)
         for interface in get_active_interfaces(sock):
-            if interface in skipped_interfaces:
-                continue
-            if skip_vlan and "." in interface:
-                continue
-            if skip_alias and ":" in interface:
+
+            if skip_interface(interface, skipped_interfaces, skip_vlan,
+                              skip_alias):
                 continue
             interface_info = {"interface": interface}
             interface_info["ip_address"] = get_ip_address(sock, interface)
@@ -175,11 +183,8 @@ def get_active_device_speed(skipped_interfaces=("lo",), skip_vlan=True,
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM,
                              socket.IPPROTO_IP)
         for interface in get_active_interfaces(sock):
-            if interface in skipped_interfaces:
-                continue
-            if skip_vlan and "." in interface:
-                continue
-            if skip_alias and ":" in interface:
+            if skip_interface(interface, skipped_interfaces, skip_vlan,
+                              skip_alias):
                 continue
             speed_data = {"interface": interface}
             speed, duplex = get_network_interface_speed(sock, interface)
