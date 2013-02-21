@@ -62,10 +62,10 @@ class HAService(ManagerPlugin):
         registry.register_message("change-ha-service",
                                   self.handle_change_ha_service)
 
-    def _respond(self, status, data, opid):
+    def _respond(self, status, data, operation_id):
         message = {"type": "operation-result",
                    "status": status,
-                   "operation-id": opid}
+                   "operation-id": operation_id}
         if data:
             if not isinstance(data, unicode):
             # Let's decode result-text, replacing non-printable
@@ -75,19 +75,19 @@ class HAService(ManagerPlugin):
                 message["result-text"] = data.decode("utf-8", "replace")
         return self.registry.broker.send_message(message, True)
 
-    def _respond_success(self, data, message, opid):
+    def _respond_success(self, data, message, operation_id):
         logging.info(message)
-        return self._respond(SUCCEEDED, data, opid)
+        return self._respond(SUCCEEDED, data, operation_id)
 
-    def _respond_failure(self, failure, opid):
+    def _respond_failure(self, failure, operation_id):
         """Handle exception failures."""
         log_failure(failure)
-        return self._respond(FAILED, failure.getErrorMessage(), opid)
+        return self._respond(FAILED, failure.getErrorMessage(), operation_id)
 
-    def _respond_failure_string(self, failure_string, opid):
+    def _respond_failure_string(self, failure_string, operation_id):
         """Only handle string failures."""
         logging.error(failure_string)
-        return self._respond(FAILED, failure_string, opid)
+        return self._respond(FAILED, failure_string, operation_id)
 
     def _run_health_checks(self, unit_name):
         """
@@ -147,7 +147,7 @@ class HAService(ManagerPlugin):
 
         return run_script(script)
 
-    def _perform_state_change(self, unit_name, service_state, opid):
+    def _perform_state_change(self, unit_name, service_state, operation_id):
         """
         Handle specific state change requests through calls to available
         charm scripts like C{CLUSTER_ONLINE}, C{CLUSTER_STANDBY} and any
@@ -165,7 +165,7 @@ class HAService(ManagerPlugin):
 
     def handle_change_ha_service(self, message):
         """Parse incoming change-ha-service messages"""
-        opid = message["operation-id"]
+        operation_id = message["operation-id"]
         try:
             error_message = u""
 
@@ -192,12 +192,14 @@ class HAService(ManagerPlugin):
                     u"modify high-availability services." % unit_name)
 
             if error_message:
-                return self._respond_failure_string(error_message, opid)
+                return self._respond_failure_string(
+                    error_message, operation_id)
 
-            d = self._perform_state_change(unit_name, service_state, opid)
-            d.addCallback(self._respond_success, change_message, opid)
-            d.addErrback(self._respond_failure, opid)
+            d = self._perform_state_change(
+                unit_name, service_state, operation_id)
+            d.addCallback(self._respond_success, change_message, operation_id)
+            d.addErrback(self._respond_failure, operation_id)
             return d
         except:
-            self._respond_failure(Failure(), opid)
+            self._respond_failure(Failure(), operation_id)
             return d
