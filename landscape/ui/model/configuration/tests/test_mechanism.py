@@ -1,10 +1,10 @@
-import dbus
 
 from landscape.configuration import LandscapeSetupConfiguration
 from landscape.tests.helpers import LandscapeTest
 from landscape.ui.tests.helpers import (
-    got_gobject_introspection, gobject_skip_message)
-if got_gobject_introspection:
+    dbus_test_should_skip, dbus_skip_message)
+if not dbus_test_should_skip:
+    import dbus
     from landscape.ui.model.configuration.mechanism import (
         ConfigurationMechanism, INTERFACE_NAME)
 
@@ -33,7 +33,9 @@ class MechanismTest(LandscapeTest):
             default_config_filenames = [self.config_filename]
 
         self.config = MyLandscapeSetupConfiguration()
-        bus_name = dbus.service.BusName(INTERFACE_NAME, MechanismTest.bus)
+        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+        bus = dbus.SessionBus(private=True)
+        bus_name = dbus.service.BusName(INTERFACE_NAME, bus)
         self.mechanism = ConfigurationMechanism(self.config, bus_name)
         self.config.load(["-c", self.config_filename])
 
@@ -200,11 +202,5 @@ class MechanismTest(LandscapeTest):
         """
         self.assertRaises(SystemExit, self.mechanism.exit)
 
-    if not got_gobject_introspection:
-        skip = gobject_skip_message
-    else:
-        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-        try:
-            bus = dbus.SessionBus(private=True)
-        except dbus.exceptions.DBusException:
-            skip = "Cannot create private DBus session without X11"
+    if dbus_test_should_skip:
+        skip = dbus_skip_message

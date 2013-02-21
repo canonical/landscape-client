@@ -1,10 +1,10 @@
 import sys
 
 from landscape.ui.tests.helpers import (
-    ConfigurationProxyHelper, FakeGSettings, gobject_skip_message,
-    got_gobject_introspection, simulate_gtk_key_release, simulate_gtk_paste)
+    ConfigurationProxyHelper, FakeGSettings, dbus_test_should_skip,
+    dbus_skip_message, simulate_gtk_key_release, simulate_gtk_paste)
 
-if got_gobject_introspection:
+if not dbus_test_should_skip:
     from gi.repository import Gtk
     from landscape.ui.view.configuration import (
         ClientSettingsDialog, sanitise_host_name, is_valid_host_name)
@@ -57,8 +57,8 @@ class ViewFunctionsTest(LandscapeTest):
         """
         self.assertFalse(is_valid_host_name(u"\xc3a"))
 
-    if not got_gobject_introspection:
-        skip = gobject_skip_message
+    if dbus_test_should_skip:
+        skip = dbus_skip_message
 
 
 class ConfigurationViewTest(LandscapeTest):
@@ -540,8 +540,8 @@ class ConfigurationViewTest(LandscapeTest):
         self.run_gtk_eventloop()
         self.assertFalse(dialog.validity_check())
 
-    if not got_gobject_introspection:
-        skip = gobject_skip_message
+    if dbus_test_should_skip:
+        skip = dbus_skip_message
 
 
 class LocalConfigurationViewTest(LandscapeTest):
@@ -604,5 +604,5 @@ class LocalConfigurationViewTest(LandscapeTest):
                          dialog.local_landscape_host_entry.get_text())
         self.assertEqual("manky", dialog.local_password_entry.get_text())
 
-    if not got_gobject_introspection:
-        skip = gobject_skip_message
+    if dbus_test_should_skip:
+        skip = dbus_skip_message
