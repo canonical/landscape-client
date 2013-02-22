@@ -13,7 +13,8 @@ class ManagerConfigurationTest(LandscapeTest):
         """By default all plugins are enabled."""
         self.assertEqual(["ProcessKiller", "PackageManager", "UserManager",
                           "ShutdownManager", "Eucalyptus", "AptSources",
-                          "HardwareInfo", "CephUsage", "KeystoneToken"],
+                          "HardwareInfo", "CephUsage", "KeystoneToken",
+                          "HAService"],
                          ALL_PLUGINS)
         self.assertEqual(ALL_PLUGINS, self.config.plugin_factories)
 
