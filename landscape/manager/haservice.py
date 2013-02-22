@@ -94,7 +94,7 @@ class HAService(ManagerPlugin):
         Exercise any discovered health check scripts, will return a deferred
         success or fail.
         """
-        health_dir = "%s/%s/charm/%s" % (
+        health_dir = "%s/%s/charm/scripts/%s" % (
             self.JUJU_UNITS_BASE, unit_name, self.HEALTH_SCRIPTS_DIR)
         if not os.path.exists(health_dir) or len(os.listdir(health_dir)) == 0:
             # No scripts, no problem
@@ -121,7 +121,7 @@ class HAService(ManagerPlugin):
         if they exist. If the charm doesn't deliver scripts, return succeed().
         """
 
-        unit_dir = "%s/%s/charm/" % (self.JUJU_UNITS_BASE, unit_name)
+        unit_dir = "%s/%s/charm/scripts/" % (self.JUJU_UNITS_BASE, unit_name)
         if service_state == u"online":
             script = unit_dir + self.CLUSTER_ONLINE
         else:

@@ -19,28 +19,28 @@ class HAServiceTests(LandscapeTest):
         self.unit_name = "my-service-9"
 
         self.health_check_d = os.path.join(
-            self.ha_service.JUJU_UNITS_BASE, self.unit_name, "charm",
+            self.ha_service.JUJU_UNITS_BASE, self.unit_name, "charm/scripts",
              self.ha_service.HEALTH_SCRIPTS_DIR)
         # create entire dir path
         os.makedirs(self.health_check_d)
 
         self.manager.add(self.ha_service)
 
-        unit_dir = "%s/%s/charm" % (
+        self.scripts_dir = "%s/%s/charm/scripts" % (
             self.ha_service.JUJU_UNITS_BASE, self.unit_name)
         cluster_online = file(
-            "%s/add_to_cluster" % unit_dir, "w")
+            "%s/add_to_cluster" % self.scripts_dir, "w")
         cluster_online.write("#!/bin/bash\nexit 0")
         cluster_online.close()
         cluster_standby = file(
-            "%s/remove_from_cluster" % unit_dir, "w")
+            "%s/remove_from_cluster" % self.scripts_dir, "w")
         cluster_standby.write("#!/bin/bash\nexit 0")
         cluster_standby.close()
 
         os.chmod(
-            "%s/add_to_cluster" % unit_dir, 0755)
+            "%s/add_to_cluster" % self.scripts_dir, 0755)
         os.chmod(
-            "%s/remove_from_cluster" % unit_dir, 0755)
+            "%s/remove_from_cluster" % self.scripts_dir, 0755)
 
         service = self.broker_service
         service.message_store.set_accepted_types(["operation-result"])
@@ -130,8 +130,7 @@ class HAServiceTests(LandscapeTest):
             self.assertEqual(
                 result,
                 "Skipping juju charm health checks. No scripts at "
-                "%s/%s/charm/I/don't/exist." %
-                (self.ha_service.JUJU_UNITS_BASE, self.unit_name))
+                "%s/I/don't/exist." % self.scripts_dir)
 
         result = self.ha_service._run_health_checks(self.unit_name)
         result.addCallbacks(check_success_result, should_not_be_called)
@@ -151,9 +150,8 @@ class HAServiceTests(LandscapeTest):
             self.assertEqual(
                 result,
                 "Skipping juju charm health checks. No scripts at "
-                "%s/%s/charm/%s." %
-                (self.ha_service.JUJU_UNITS_BASE, self.unit_name,
-                 self.ha_service.HEALTH_SCRIPTS_DIR))
+                "%s/%s." %
+                (self.scripts_dir, self.ha_service.HEALTH_SCRIPTS_DIR))
 
         result = self.ha_service._run_health_checks(self.unit_name)
         result.addCallbacks(check_success_result, should_not_be_called)
@@ -168,10 +166,9 @@ class HAServiceTests(LandscapeTest):
         def expected_failure(result):
             self.assertEqual(
                 str(result.value),
-                "Failed charm script: %s/%s/charm/%s/my-health-script-2 "
+                "Failed charm script: %s/%s/my-health-script-2 "
                 "exited with return code 1." %
-                (self.ha_service.JUJU_UNITS_BASE, self.unit_name,
-                 self.ha_service.HEALTH_SCRIPTS_DIR))
+                (self.scripts_dir, self.ha_service.HEALTH_SCRIPTS_DIR))
 
         def check_success_result(result):
             self.fail(
@@ -235,26 +232,27 @@ class HAServiceTests(LandscapeTest):
                 "_change_cluster_participation ignored charm script failure.")
 
         # Rewrite both cluster scripts as failures
-        unit_dir = "%s/%s/charm" % (
-            self.ha_service.JUJU_UNITS_BASE, self.unit_name)
         for script_name in [
             self.ha_service.CLUSTER_ONLINE, self.ha_service.CLUSTER_STANDBY]:
 
-            cluster_online = file("%s/%s" % (unit_dir, script_name), "w")
+            cluster_online = file(
+                "%s/%s" % (self.scripts_dir, script_name), "w")
             cluster_online.write("#!/bin/bash\nexit 2")
             cluster_online.close()
 
         result = self.ha_service._change_cluster_participation(
             None, self.unit_name, self.ha_service.STATE_ONLINE)
         result.addCallback(check_success_result)
-        script_path = ("%s/%s" % (unit_dir, self.ha_service.CLUSTER_ONLINE))
+        script_path = (
+            "%s/%s" % (self.scripts_dir, self.ha_service.CLUSTER_ONLINE))
         result.addErrback(expected_failure, script_path)
 
         # Now test the cluster standby script
         result = self.ha_service._change_cluster_participation(
             None, self.unit_name, self.ha_service.STATE_STANDBY)
         result.addCallback(check_success_result)
-        script_path = ("%s/%s" % (unit_dir, self.ha_service.CLUSTER_STANDBY))
+        script_path = (
+            "%s/%s" % (self.scripts_dir, self.ha_service.CLUSTER_STANDBY))
         result.addErrback(expected_failure, script_path)
         return result
 
@@ -271,9 +269,8 @@ class HAServiceTests(LandscapeTest):
         deferred = Deferred()
 
         def validate_messages(value):
-            cluster_script = "%s/%s/charm/%s" % (
-                self.ha_service.JUJU_UNITS_BASE, self.unit_name,
-                self.ha_service.CLUSTER_STANDBY)
+            cluster_script = "%s/%s" % (
+                self.scripts_dir, self.ha_service.CLUSTER_STANDBY)
             service = self.broker_service
             self.assertMessages(
                 service.message_store.get_pending_messages(),
@@ -307,9 +304,8 @@ class HAServiceTests(LandscapeTest):
         deferred = Deferred()
 
         def validate_messages(value):
-            cluster_script = "%s/%s/charm/%s" % (
-                self.ha_service.JUJU_UNITS_BASE, self.unit_name,
-                self.ha_service.CLUSTER_ONLINE)
+            cluster_script = "%s/%s" % (
+                self.scripts_dir, self.ha_service.CLUSTER_ONLINE)
             service = self.broker_service
             self.assertMessages(
                 service.message_store.get_pending_messages(),
