@@ -3,7 +3,6 @@ import os
 from twisted.internet.defer import Deferred
 
 
-from landscape.lib.log import log_failure
 from landscape.manager.haservice import HAService
 from landscape.manager.plugin import SUCCEEDED, FAILED
 from landscape.tests.helpers import LandscapeTest, ManagerHelper
