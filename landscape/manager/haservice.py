@@ -89,13 +89,13 @@ class HAService(ManagerPlugin):
         logging.error(failure_string)
         return self._respond(FAILED, failure_string, operation_id)
 
-    def _run_health_checks(self, unit_name):
+    def _run_health_checks(self, unit_path):
         """
         Exercise any discovered health check scripts, will return a deferred
         success or fail.
         """
         health_dir = "%s/%s/charm/scripts/%s" % (
-            self.JUJU_UNITS_BASE, unit_name, self.HEALTH_SCRIPTS_DIR)
+            self.JUJU_UNITS_BASE, unit_path, self.HEALTH_SCRIPTS_DIR)
         if not os.path.exists(health_dir) or len(os.listdir(health_dir)) == 0:
             # No scripts, no problem
             message = (
@@ -114,14 +114,14 @@ class HAService(ManagerPlugin):
             "run-parts", [health_dir], env=os.environ)
         return result.addCallback(parse_output)
 
-    def _change_cluster_participation(self, _, unit_name, service_state):
+    def _change_cluster_participation(self, _, unit_path, service_state):
         """
         Enables or disables a unit's participation in a cluster based on
         running charm-delivered CLUSTER_ONLINE and CLUSTER_STANDBY scripts
         if they exist. If the charm doesn't deliver scripts, return succeed().
         """
 
-        unit_dir = "%s/%s/charm/scripts/" % (self.JUJU_UNITS_BASE, unit_name)
+        unit_dir = "%s/%s/charm/scripts/" % (self.JUJU_UNITS_BASE, unit_path)
         if service_state == u"online":
             script = unit_dir + self.CLUSTER_ONLINE
         else:
@@ -147,7 +147,7 @@ class HAService(ManagerPlugin):
 
         return run_script(script)
 
-    def _perform_state_change(self, unit_name, service_state, operation_id):
+    def _perform_state_change(self, unit_path, service_state, operation_id):
         """
         Handle specific state change requests through calls to available
         charm scripts like C{CLUSTER_ONLINE}, C{CLUSTER_STANDBY} and any
@@ -158,9 +158,9 @@ class HAService(ManagerPlugin):
         if service_state == self.STATE_ONLINE:
             # Validate health of local service before we bring it online
             # in the HAcluster
-            d = self._run_health_checks(unit_name)
+            d = self._run_health_checks(unit_path)
         d.addCallback(
-            self._change_cluster_participation, unit_name, service_state)
+            self._change_cluster_participation, unit_path, service_state)
         return d
 
     def handle_change_ha_service(self, message):
@@ -170,7 +170,7 @@ class HAService(ManagerPlugin):
             error_message = u""
 
             service_name = message["service-name"]   # keystone
-            unit_name = message["unit-name"]         # keystone-0
+            unit_name = message["unit-name"]         # keystone/0
             service_state = message["service-state"]  # "online" | "standby"
             change_message = (
                 "%s high-availability service set to %s" %
@@ -181,7 +181,8 @@ class HAService(ManagerPlugin):
                    u"Invalid cluster participation state requested %s." %
                    service_state)
 
-            unit_dir = "%s/%s/charm" % (self.JUJU_UNITS_BASE, unit_name)
+            unit_path = unit_name.replace("/", "-")
+            unit_dir = "%s/%s/charm" % (self.JUJU_UNITS_BASE, unit_path)
             if not os.path.exists(self.JUJU_UNITS_BASE):
                 error_message = (
                     u"This computer is not deployed with juju. "
@@ -196,7 +197,7 @@ class HAService(ManagerPlugin):
                     error_message, operation_id)
 
             d = self._perform_state_change(
-                unit_name, service_state, operation_id)
+                unit_path, service_state, operation_id)
             d.addCallback(self._respond_success, change_message, operation_id)
             d.addErrback(self._respond_failure, operation_id)
             return d
