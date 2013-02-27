@@ -458,7 +458,7 @@ class PackageReporter(PackageTaskHandler):
 
     def _package_state_has_changed(self):
         """
-        Detect changes in the universe of know packages.
+        Detect changes in the universe of known packages.
 
         This uses the state of packages in /var/lib/dpkg/state and other files
         and simply checks whether they have changed using their "last changed"
