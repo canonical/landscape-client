@@ -127,7 +127,8 @@ class PackageChanger(PackageTaskHandler):
         """
         Return a boolean indicating if the update-stamp stamp file exists.
         """
-        return os.path.exists(self._config.update_stamp_filename)
+        return (os.path.exists(self._config.update_stamp_filename) or
+                os.path.exists(self.update_notifier_stamp))
 
     def _clear_binaries(self):
         """Remove any binaries and its associated channel."""

@@ -47,10 +47,6 @@ class PackageReporter(PackageTaskHandler):
 
     queue_name = "reporter"
 
-    # This file is touched after every succesful 'apt-get update' run if the
-    # update-notifier-common package is installed.
-    update_notifier_stamp = "/var/lib/apt/periodic/update-success-stamp"
-
     apt_update_filename = "/usr/lib/landscape/apt-update"
     sources_list_filename = "/etc/apt/sources.list"
     sources_list_directory = "/etc/apt/sources.list.d"
