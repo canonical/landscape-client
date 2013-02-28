@@ -272,7 +272,6 @@ class PackageChanger(PackageTaskHandler):
                            hold=message.get("hold", ()),
                            remove_hold=message.get("remove-hold", ()))
         result = self.change_packages(message.get("policy", POLICY_STRICT))
-
         self._clear_binaries()
 
         response = {"type": "change-packages-result",

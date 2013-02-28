@@ -33,7 +33,7 @@ class ShutdownManager(ManagerPlugin):
         super(ShutdownManager, self).register(registry)
         registry.register_message("shutdown", self.perform_shutdown)
 
-    def perform_shutdown(self, message):
+    def perform_shutdown(self, message, reboot=False):
         """Request a system restart or shutdown.
 
         If the call to C{/sbin/shutdown} runs without errors the activity
@@ -41,7 +41,7 @@ class ShutdownManager(ManagerPlugin):
         it will be responded as failed.
         """
         operation_id = message["operation-id"]
-        reboot = message["reboot"]
+        reboot = message["reboot"] or reboot
         protocol = ShutdownProcessProtocol()
         protocol.set_timeout(self.registry.reactor)
         protocol.result.addCallback(self._respond_success, operation_id)
