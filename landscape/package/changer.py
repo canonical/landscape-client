@@ -19,7 +19,6 @@ from landscape.package.taskhandler import (
     PackageTaskHandler, PackageTaskHandlerConfiguration, PackageTaskError,
     run_task_handler)
 from landscape.manager.manager import FAILED
-from landscape.manager.shutdownmanager import ShutdownProcessProtocol
 
 
 class UnknownPackageData(Exception):
@@ -273,17 +272,6 @@ class PackageChanger(PackageTaskHandler):
                            hold=message.get("hold", ()),
                            remove_hold=message.get("remove-hold", ()))
         result = self.change_packages(message.get("policy", POLICY_STRICT))
-
-        if message.get("reboot-if-necessary"):
-            # It seems that a reboot is necessary after changing packages.
-            from twisted.internet import reactor as process_factory
-            operation_id = message["operation-id"]
-            protocol = ShutdownProcessProtocol()
-            protocol.set_timeout(self.registry.reactor)
-            protocol.result.addCallback(self._respond_success, operation_id)
-            protocol.result.addErrback(self._respond_failure, operation_id)
-            command, args = self._get_command_and_args(protocol, True)
-            process_factory.spawnProcess(protocol, command, args=args)
 
         self._clear_binaries()
 

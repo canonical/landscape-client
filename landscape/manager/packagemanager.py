@@ -8,12 +8,18 @@ from landscape.package.store import PackageStore
 from landscape.package.changer import PackageChanger
 from landscape.package.releaseupgrader import ReleaseUpgrader
 from landscape.manager.plugin import ManagerPlugin
+from landscape.manager.shutdownmanager import ShutdownProcessProtocol
 
 
 class PackageManager(ManagerPlugin):
 
     run_interval = 1800
     _package_store = None
+
+    def __init__(self, process_factory=None):
+        if process_factory is None:
+            from twisted.internet import reactor as process_factory
+        self._process_factory = process_factory
 
     def register(self, registry):
         super(PackageManager, self).register(registry)
@@ -44,8 +50,18 @@ class PackageManager(ManagerPlugin):
         self.spawn_handler(cls)
 
     def handle_change_packages(self, message):
-        return self._handle(PackageChanger, message)
-
+        result = self._handle(PackageChanger, message)
+        if message.get("reboot-if-necessary"):
+            # It seems that a reboot is necessary after changing packages.
+            operation_id = message["operation-id"]
+            protocol = ShutdownProcessProtocol()
+            protocol.set_timeout(self.registry.reactor)
+            protocol.result.addCallback(self._respond_success, operation_id)
+            protocol.result.addErrback(self._respond_failure, operation_id)
+            command, args = self._get_command_and_args(protocol, True)
+            self._process_factory.spawnProcess(protocol, command, args=args)
+        return result
+            
     def handle_change_package_locks(self, message):
         return self._handle(PackageChanger, message)
 
