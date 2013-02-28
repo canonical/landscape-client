@@ -50,8 +50,11 @@ class PackageReporter(PackageTaskHandler):
     apt_update_filename = "/usr/lib/landscape/apt-update"
     sources_list_filename = "/etc/apt/sources.list"
     sources_list_directory = "/etc/apt/sources.list.d"
+    _got_task = False
 
     def run(self):
+        self._got_task = False
+
         result = Deferred()
 
         result.addCallback(lambda x: self.run_apt_update())
@@ -251,8 +254,10 @@ class PackageReporter(PackageTaskHandler):
     def handle_task(self, task):
         message = task.data
         if message["type"] == "package-ids":
+            self._got_task = True
             return self._handle_package_ids(message)
         if message["type"] == "resynchronize":
+            self._got_task = True
             return self._handle_resynchronize()
 
     def _handle_package_ids(self, message):
@@ -447,7 +452,7 @@ class PackageReporter(PackageTaskHandler):
         Check if any information regarding packages have changed, and if so
         compute the changes and send a signal.
         """
-        if self._package_state_has_changed():
+        if self._got_task or self._package_state_has_changed():
             return self._compute_packages_changes()
         else:
             return succeed(None)
@@ -462,12 +467,12 @@ class PackageReporter(PackageTaskHandler):
 
         @return True if the status changed, False otherwise.
         """
-        status_file = apt_pkg.config.find_file("dir::state::status")
-        lists_dir = apt_pkg.config.find_dir("dir::state::lists")
         stamp_file = self._config.detect_package_changes_stamp
         if not os.path.exists(stamp_file):
             return True
 
+        status_file = apt_pkg.config.find_file("dir::state::status")
+        lists_dir = apt_pkg.config.find_dir("dir::state::lists")
         files = [status_file, lists_dir]
         files.extend(glob.glob("%s/*Packages" % lists_dir))
 

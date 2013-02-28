@@ -4,7 +4,7 @@ import unittest
 import time
 import apt_pkg
 
-from twisted.internet.defer import Deferred, succeed
+from twisted.internet.defer import Deferred, succeed, inlineCallbacks
 from twisted.internet import reactor
 
 
@@ -942,6 +942,31 @@ class PackageReporterAptTest(LandscapeTest):
 
         result = self.reporter.detect_packages_changes()
         return result.addCallback(got_result)
+
+    @inlineCallbacks
+    def test_detect_packages_after_tasks(self):
+        """
+        When the L{PackageReporter} got a task to handle, it forces itself to
+        detect package changes, not checking the local state of package.
+        """
+        message_store = self.broker_service.message_store
+        message_store.set_accepted_types(["packages"])
+
+        self.store.set_hash_ids({HASH1: 1, HASH2: 2, HASH3: 3})
+
+        touch_file(self.check_stamp_file)
+
+        self.store.add_task("reporter",
+                            {"type": "package-ids", "ids": [123, 456],
+                             "request-id": 123})
+
+        yield self.reporter.handle_tasks()
+
+        yield self.reporter.detect_packages_changes()
+
+        self.assertMessages(message_store.get_pending_messages(),
+                            [{"type": "packages", "available": [(1, 3)]}])
+        self.assertTrue(os.path.exists(self.check_stamp_file))
 
     def test_detect_packages_changes_with_not_locked_and_ranges(self):
         """
