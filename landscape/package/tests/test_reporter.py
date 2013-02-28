@@ -964,9 +964,9 @@ class PackageReporterAptTest(LandscapeTest):
 
         yield self.reporter.detect_packages_changes()
 
+        # We check that detect changes run by looking at messages
         self.assertMessages(message_store.get_pending_messages(),
                             [{"type": "packages", "available": [(1, 3)]}])
-        self.assertTrue(os.path.exists(self.check_stamp_file))
 
     def test_detect_packages_changes_with_not_locked_and_ranges(self):
         """
