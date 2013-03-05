@@ -19,6 +19,7 @@ from landscape.package.taskhandler import (
     PackageTaskHandler, PackageTaskHandlerConfiguration, PackageTaskError,
     run_task_handler)
 from landscape.manager.manager import FAILED
+from landscape.manager.shutdownmanager import ShutdownProcessProtocol
 
 
 class UnknownPackageData(Exception):
@@ -274,6 +275,23 @@ class PackageChanger(PackageTaskHandler):
         result = self.change_packages(message.get("policy", POLICY_STRICT))
         self._clear_binaries()
 
+        if message.get("reboot-if-necessary"):
+            self._run_reboot(message).addCallback(self._send_response)
+
+    def _run_reboot(self, message):
+        """
+        Perform a reboot.
+        """
+        operation_id = message["operation-id"]
+        reboot = message["reboot"]
+        protocol = ShutdownProcessProtocol()
+        protocol.set_timeout(self.registry.reactor)
+        protocol.result.addCallback(self._respond_success, operation_id)
+        protocol.result.addErrback(self._respond_failure, operation_id)
+        command, args = self._get_command_and_args(protocol, reboot)
+        self._process_factory.spawnProcess(protocol, command, args=args)
+
+    def _send_response(self, message):
         response = {"type": "change-packages-result",
                     "operation-id": message.get("operation-id")}
 
@@ -287,7 +305,7 @@ class PackageChanger(PackageTaskHandler):
 
         logging.info("Queuing response with change package results to "
                      "exchange urgently.")
-        return self._broker.send_message(response, True)
+        return self._broker.send_message(response, True)        
 
     def handle_change_package_locks(self, message):
         """Handle a C{change-package-locks} message.
