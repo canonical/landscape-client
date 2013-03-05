@@ -275,23 +275,22 @@ class PackageChanger(PackageTaskHandler):
         result = self.change_packages(message.get("policy", POLICY_STRICT))
         self._clear_binaries()
 
-        if message.get("reboot-if-necessary"):
-            self._run_reboot(message).addCallback(self._send_response)
+        #if message.get("reboot-if-necessary"):
+        #    self._run_reboot(message).addCallback(self._send_response, result)
+
+        return self._send_response(message, result)
 
     def _run_reboot(self, message):
         """
         Perform a reboot.
         """
-        operation_id = message["operation-id"]
         reboot = message["reboot"]
         protocol = ShutdownProcessProtocol()
         protocol.set_timeout(self.registry.reactor)
-        protocol.result.addCallback(self._respond_success, operation_id)
-        protocol.result.addErrback(self._respond_failure, operation_id)
         command, args = self._get_command_and_args(protocol, reboot)
         self._process_factory.spawnProcess(protocol, command, args=args)
 
-    def _send_response(self, message):
+    def _send_response(self, message, result):
         response = {"type": "change-packages-result",
                     "operation-id": message.get("operation-id")}
 
