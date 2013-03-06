@@ -21,7 +21,6 @@ from landscape.package.taskhandler import (
     run_task_handler)
 from landscape.manager.manager import FAILED
 from landscape.manager.shutdownmanager import ShutdownProcessProtocol
-from landscape.reactor import TwistedReactor
 
 
 class UnknownPackageData(Exception):
@@ -63,10 +62,14 @@ class PackageChanger(PackageTaskHandler):
     queue_name = "changer"
 
     def __init__(self, store, facade, remote, config, process_factory=reactor,
-                 twisted_reactor=TwistedReactor):
+                 twisted_reactor=None):
         super(PackageChanger, self).__init__(store, facade, remote, config)
         self._process_factory = process_factory
-        self._twisted_reactor = twisted_reactor()
+        if twisted_reactor is None:
+            from landscape.reactor import TwistedReactor
+            self._twisted_reactor = TwistedReactor()
+        else:
+            self._twisted_reactor = twisted_reactor
 
     def run(self):
         """
