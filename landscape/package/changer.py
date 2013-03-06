@@ -298,7 +298,7 @@ class PackageChanger(PackageTaskHandler):
 
     def _run_reboot(self):
         """
-        Create a C{ShutdownProcessProtocol} and return its result.
+        Create a C{ShutdownProcessProtocol} and return its result deferred.
         """
         protocol = ShutdownProcessProtocol()
         protocol.set_timeout(self._twisted_reactor)
