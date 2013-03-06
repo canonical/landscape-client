@@ -18,7 +18,7 @@ from landscape.package.changer import (
     PackageChangerConfiguration, ChangePackagesResult)
 from landscape.tests.mocker import ANY
 from landscape.tests.helpers import (
-    LandscapeTest, BrokerServiceHelper)
+    LandscapeTest, BrokerServiceHelper, StubProcessFactory)
 from landscape.package.tests.helpers import (
     HASH1, HASH2, HASH3, PKGDEB1, PKGDEB2,
     AptFacadeHelper, SimpleRepositoryHelper)
@@ -36,11 +36,13 @@ class AptPackageChangerTest(LandscapeTest):
             self.store = PackageStore(self.makeFile())
             self.config = PackageChangerConfiguration()
             self.config.data_path = self.makeDir()
+            self.process_factory = StubProcessFactory()
             os.mkdir(self.config.package_directory)
             os.mkdir(self.config.binaries_path)
             touch_file(self.config.update_stamp_filename)
             self.changer = PackageChanger(
-                self.store, self.facade, self.remote, self.config)
+                self.store, self.facade, self.remote, self.config,
+                process_factory=self.process_factory)
             service = self.broker_service
             service.message_store.set_accepted_types(["change-packages-result",
                                                       "operation-result"])
@@ -1370,3 +1372,30 @@ class AptPackageChangerTest(LandscapeTest):
                 os.path.exists(self.facade._get_internal_sources_list()))
 
         return result.addCallback(got_result)
+
+    def test_change_packages_with_reboot_flag(self):
+        """
+        """
+        self.store.add_task("changer",
+                            {"type": "change-packages", "install": [2],
+                             "binaries": [(HASH2, 2, PKGDEB2)],
+                             "operation-id": 123,
+                             "reboot-if-necessary": True})
+
+        def return_good_result(self):
+            return "Yeah, I did whatever you've asked for!"
+        self.replace_perform_changes(return_good_result)
+
+        result = self.changer.handle_tasks()
+
+        def got_result(result):
+            self.assertMessages(self.get_pending_messages(),
+                                [{"operation-id": 123,
+                                  "result-code": 1,
+                                  "result-text": "Yeah, I did whatever you've "
+                                                 "asked for!",
+                                  "type": "change-packages-result"}])
+
+        return result.addCallback(got_result)
+
+

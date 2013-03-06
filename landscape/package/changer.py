@@ -7,6 +7,7 @@ import pwd
 import grp
 
 from twisted.internet.defer import maybeDeferred, succeed
+from twisted.internet import reactor
 
 from landscape.constants import (
     SUCCESS_RESULT, ERROR_RESULT, DEPENDENCY_ERROR_RESULT,
@@ -20,6 +21,7 @@ from landscape.package.taskhandler import (
     run_task_handler)
 from landscape.manager.manager import FAILED
 from landscape.manager.shutdownmanager import ShutdownProcessProtocol
+from landscape.reactor import TwistedReactor
 
 
 class UnknownPackageData(Exception):
@@ -59,6 +61,10 @@ class PackageChanger(PackageTaskHandler):
     config_factory = PackageChangerConfiguration
 
     queue_name = "changer"
+
+    def __init__(self, store, facade, remote, config, process_factory=reactor):
+        super(PackageChanger, self).__init__(store, facade, remote, config)
+        self._process_factory = process_factory
 
     def run(self):
         """
@@ -275,36 +281,43 @@ class PackageChanger(PackageTaskHandler):
         result = self.change_packages(message.get("policy", POLICY_STRICT))
         self._clear_binaries()
 
-        #if message.get("reboot-if-necessary"):
-        #    self._run_reboot(message).addCallback(self._send_response, result)
+        if message.get("reboot-if-necessary"):
+            return self._run_reboot().addCallback(
+                self._send_response, message, result)
 
-        return self._send_response(message, result)
+        return self._send_response(None, message, result)
 
-    def _run_reboot(self, message):
+    def _run_reboot(self):
         """
         Perform a reboot.
         """
-        reboot = message["reboot"]
+        reactor = TwistedReactor()
         protocol = ShutdownProcessProtocol()
-        protocol.set_timeout(self.registry.reactor)
-        command, args = self._get_command_and_args(protocol, reboot)
-        self._process_factory.spawnProcess(protocol, command, args=args)
+        protocol.set_timeout(reactor)
+        minutes = "+%d" % (protocol.delay // 60,)        
+        args = ["/sbin/shutdown", "-r", minutes,
+                "Landscape is rebooting the system"]
+        self._process_factory.spawnProcess(
+            protocol, "/bin/shutdown", args=args)
+        return protocol.result
 
-    def _send_response(self, message, result):
+    def _send_response(self, reboot_result, message, package_change_result):
+        """
+        """
         response = {"type": "change-packages-result",
                     "operation-id": message.get("operation-id")}
 
-        response["result-code"] = result.code
-        if result.text:
-            response["result-text"] = result.text
-        if result.installs:
-            response["must-install"] = sorted(result.installs)
-        if result.removals:
-            response["must-remove"] = sorted(result.removals)
+        response["result-code"] = package_change_result.code
+        if package_change_result.text:
+            response["result-text"] = package_change_result.text
+        if package_change_result.installs:
+            response["must-install"] = sorted(package_change_result.installs)
+        if package_change_result.removals:
+            response["must-remove"] = sorted(package_change_result.removals)
 
         logging.info("Queuing response with change package results to "
                      "exchange urgently.")
-        return self._broker.send_message(response, True)        
+        return self._broker.send_message(response, True)
 
     def handle_change_package_locks(self, message):
         """Handle a C{change-package-locks} message.
