@@ -134,7 +134,8 @@ class PackageChanger(PackageTaskHandler):
         """
         Return a boolean indicating if the update-stamp stamp file exists.
         """
-        return os.path.exists(self._config.update_stamp_filename)
+        return (os.path.exists(self._config.update_stamp_filename) or
+                os.path.exists(self.update_notifier_stamp))
 
     def _clear_binaries(self):
         """Remove any binaries and its associated channel."""
@@ -283,8 +284,10 @@ class PackageChanger(PackageTaskHandler):
 
         if message.get("reboot-if-necessary"):
             # Reboot the system returning the package changes result first.
-            return self._run_reboot().addCallback(
+            deferred = self._run_reboot().addCallback(
                 self._send_response, message, result)
+            deferred.addErrback(self._send_response, message, result)
+            return deferred
 
         return self._send_response(None, message, result)
 

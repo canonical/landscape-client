@@ -43,6 +43,7 @@ class AptPackageChangerTest(LandscapeTest):
             self.changer = PackageChanger(
                 self.store, self.facade, self.remote, self.config,
                 process_factory=self.process_factory)
+            self.changer.update_notifier_stamp = "/Not/Existing"
             service = self.broker_service
             service.message_store.set_accepted_types(["change-packages-result",
                                                       "operation-result"])
@@ -890,12 +891,23 @@ class AptPackageChangerTest(LandscapeTest):
 
     def test_update_stamp_exists(self):
         """
-        L{PackageChanger.update_exists} returns C{True} if the
+        L{PackageChanger.update_stamp_exists} returns C{True} if the
         update-stamp file is there, C{False} otherwise.
         """
         self.assertTrue(self.changer.update_stamp_exists())
         os.remove(self.config.update_stamp_filename)
         self.assertFalse(self.changer.update_stamp_exists())
+
+    def test_update_stamp_exists_notifier(self):
+        """
+        L{PackageChanger.update_stamp_exists} also checks the existence of the
+        C{update_notifier_stamp} file.
+        """
+        self.assertTrue(self.changer.update_stamp_exists())
+        os.remove(self.config.update_stamp_filename)
+        self.assertFalse(self.changer.update_stamp_exists())
+        self.changer.update_notifier_stamp = self.makeFile("")
+        self.assertTrue(self.changer.update_stamp_exists())
 
     def test_binaries_path(self):
         self.assertEqual(

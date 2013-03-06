@@ -93,6 +93,10 @@ class PackageTaskHandler(object):
     lsb_release_filename = LSB_RELEASE_FILENAME
     package_store_class = PackageStore
 
+    # This file is touched after every succesful 'apt-get update' run if the
+    # update-notifier-common package is installed.
+    update_notifier_stamp = "/var/lib/apt/periodic/update-success-stamp"
+
     def __init__(self, package_store, package_facade, remote_broker, config):
         self._store = package_store
         self._facade = package_facade
