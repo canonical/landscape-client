@@ -62,9 +62,11 @@ class PackageChanger(PackageTaskHandler):
 
     queue_name = "changer"
 
-    def __init__(self, store, facade, remote, config, process_factory=reactor):
+    def __init__(self, store, facade, remote, config, process_factory=reactor,
+                 twisted_reactor=TwistedReactor):
         super(PackageChanger, self).__init__(store, facade, remote, config)
         self._process_factory = process_factory
+        self._twisted_reactor = twisted_reactor()
 
     def run(self):
         """
@@ -295,9 +297,8 @@ class PackageChanger(PackageTaskHandler):
         """
         Create a C{ShutdownProcessProtocol} and return its result.
         """
-        reactor = TwistedReactor()
         protocol = ShutdownProcessProtocol()
-        protocol.set_timeout(reactor)
+        protocol.set_timeout(self._twisted_reactor)
         minutes = "+%d" % (protocol.delay // 60,)        
         args = ["/sbin/shutdown", "-r", minutes,
                 "Landscape is rebooting the system"]

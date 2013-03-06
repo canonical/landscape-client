@@ -23,6 +23,7 @@ from landscape.package.tests.helpers import (
     HASH1, HASH2, HASH3, PKGDEB1, PKGDEB2,
     AptFacadeHelper, SimpleRepositoryHelper)
 from landscape.manager.manager import FAILED
+from landscape.reactor import FakeReactor
 
 
 class AptPackageChangerTest(LandscapeTest):
@@ -36,13 +37,14 @@ class AptPackageChangerTest(LandscapeTest):
             self.store = PackageStore(self.makeFile())
             self.config = PackageChangerConfiguration()
             self.config.data_path = self.makeDir()
-            self.process_factory = StubProcessFactory()
+            process_factory = StubProcessFactory()
             os.mkdir(self.config.package_directory)
             os.mkdir(self.config.binaries_path)
             touch_file(self.config.update_stamp_filename)
             self.changer = PackageChanger(
                 self.store, self.facade, self.remote, self.config,
-                process_factory=self.process_factory)
+                process_factory=process_factory,
+                twisted_reactor=FakeReactor)
             self.changer.update_notifier_stamp = "/Not/Existing"
             service = self.broker_service
             service.message_store.set_accepted_types(["change-packages-result",
