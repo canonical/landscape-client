@@ -1375,6 +1375,9 @@ class AptPackageChangerTest(LandscapeTest):
 
     def test_change_packages_with_reboot_flag(self):
         """
+        When a C{reboot-if-necessary} flag is passed in the C{change-packages},
+        A C{ShutdownProtocol} is created and the package result change is
+        returned.
         """
         self.store.add_task("changer",
                             {"type": "change-packages", "install": [2],
