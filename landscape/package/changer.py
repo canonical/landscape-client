@@ -65,7 +65,7 @@ class PackageChanger(PackageTaskHandler):
                  twisted_reactor=None):
         super(PackageChanger, self).__init__(store, facade, remote, config)
         self._process_factory = process_factory
-        if twisted_reactor is None:
+        if twisted_reactor is None:  # For testing purposes.
             from landscape.reactor import TwistedReactor
             self._twisted_reactor = TwistedReactor()
         else:
