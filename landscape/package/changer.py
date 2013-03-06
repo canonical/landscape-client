@@ -282,6 +282,7 @@ class PackageChanger(PackageTaskHandler):
         self._clear_binaries()
 
         if message.get("reboot-if-necessary"):
+            # Reboot the system returning the package changes result first.
             return self._run_reboot().addCallback(
                 self._send_response, message, result)
 
@@ -289,7 +290,7 @@ class PackageChanger(PackageTaskHandler):
 
     def _run_reboot(self):
         """
-        Perform a reboot.
+        Create a C{ShutdownProcessProtocol} and return its result.
         """
         reactor = TwistedReactor()
         protocol = ShutdownProcessProtocol()
@@ -303,6 +304,7 @@ class PackageChanger(PackageTaskHandler):
 
     def _send_response(self, reboot_result, message, package_change_result):
         """
+        Create a response and dispatch to the broker.
         """
         response = {"type": "change-packages-result",
                     "operation-id": message.get("operation-id")}
