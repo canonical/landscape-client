@@ -302,7 +302,7 @@ class PackageChanger(PackageTaskHandler):
         """
         protocol = ShutdownProcessProtocol()
         protocol.set_timeout(self._twisted_reactor)
-        minutes = "+%d" % (protocol.delay // 60,)        
+        minutes = "+%d" % (protocol.delay // 60,)
         args = ["/sbin/shutdown", "-r", minutes,
                 "Landscape is rebooting the system"]
         self._process_factory.spawnProcess(

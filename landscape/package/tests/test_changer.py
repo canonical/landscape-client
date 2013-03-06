@@ -122,7 +122,6 @@ class AptPackageChangerTest(LandscapeTest):
         """Return the name of the package."""
         return version.package.name
 
-
     def disable_clear_channels(self):
         """Disable clear_channels(), so that it doesn't remove test setup.
 
@@ -964,7 +963,6 @@ class AptPackageChangerTest(LandscapeTest):
         self.makeFile(basename=existing_deb_path, content="foo")
         self.changer.init_channels([])
         self.assertFalse(os.path.exists(existing_deb_path))
-
 
     def test_binaries_available_in_cache(self):
         """
