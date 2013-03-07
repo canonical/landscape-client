@@ -61,6 +61,8 @@ class PackageChanger(PackageTaskHandler):
 
     queue_name = "changer"
 
+    reboot_failed = False
+
     def __init__(self, store, facade, remote, config, process_factory=reactor,
                  twisted_reactor=None):
         super(PackageChanger, self).__init__(store, facade, remote, config)
@@ -302,12 +304,19 @@ class PackageChanger(PackageTaskHandler):
         """
         protocol = ShutdownProcessProtocol()
         protocol.set_timeout(self._twisted_reactor)
+        protocol.result.addErrback(self._set_reboot_failed)
         minutes = "+%d" % (protocol.delay // 60,)
         args = ["/sbin/shutdown", "-r", minutes,
                 "Landscape is rebooting the system"]
         self._process_factory.spawnProcess(
             protocol, "/bin/shutdown", args=args)
         return protocol.result
+
+    def _set_reboot_failed(self, result):
+        """
+        Reboot failed. Set the C{reboot_failed} flag to signalize the failure.
+        """
+        self.reboot_failed = True
 
     def _send_response(self, reboot_result, message, package_change_result):
         """
@@ -316,9 +325,14 @@ class PackageChanger(PackageTaskHandler):
         response = {"type": "change-packages-result",
                     "operation-id": message.get("operation-id")}
 
-        response["result-code"] = package_change_result.code
+        if self.reboot_failed:
+            response["result-code"] = FAILED
+        else:
+            response["result-code"] = package_change_result.code
         if package_change_result.text:
             response["result-text"] = package_change_result.text
+            if self.reboot_failed:
+                response["result-text"] += u" Reboot failed."
         if package_change_result.installs:
             response["must-install"] = sorted(package_change_result.installs)
         if package_change_result.removals:

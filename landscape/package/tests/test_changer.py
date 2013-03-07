@@ -1438,9 +1438,9 @@ class AptPackageChangerTest(LandscapeTest):
         def got_result(result):
             self.assertMessages(self.get_pending_messages(),
                                 [{"operation-id": 123,
-                                  "result-code": 1,
+                                  "result-code": 5,
                                   "result-text": "Yeah, I did whatever you've "
-                                                 "asked for!",
+                                                 "asked for! Reboot failed.",
                                   "type": "change-packages-result"}])
 
         [arguments] = self.process_factory.spawns
