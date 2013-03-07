@@ -1440,7 +1440,8 @@ class AptPackageChangerTest(LandscapeTest):
                                 [{"operation-id": 123,
                                   "result-code": 5,
                                   "result-text": "Yeah, I did whatever you've "
-                                                 "asked for! Reboot failed.",
+                                                 "asked for!\r\nReboot "
+                                                 "failed.",
                                   "type": "change-packages-result"}])
 
         [arguments] = self.process_factory.spawns

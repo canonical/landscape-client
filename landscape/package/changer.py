@@ -332,7 +332,7 @@ class PackageChanger(PackageTaskHandler):
         if package_change_result.text:
             response["result-text"] = package_change_result.text
             if self.reboot_failed:
-                response["result-text"] += u" Reboot failed."
+                response["result-text"] += u"\r\nReboot failed."
         if package_change_result.installs:
             response["must-install"] = sorted(package_change_result.installs)
         if package_change_result.removals:
