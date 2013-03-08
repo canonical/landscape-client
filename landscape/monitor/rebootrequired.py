@@ -5,6 +5,9 @@ from landscape.lib.fs import read_file
 from landscape.monitor.plugin import MonitorPlugin
 
 
+REBOOT_REQUIRED_FILENAME = "/var/run/reboot-required"
+
+
 class RebootRequired(MonitorPlugin):
     """
     Report whether the system requires a reboot.
@@ -17,7 +20,7 @@ class RebootRequired(MonitorPlugin):
     run_interval = 900  # 15 minutes
     run_immediately = True
 
-    def __init__(self, reboot_required_filename="/var/run/reboot-required"):
+    def __init__(self, reboot_required_filename=REBOOT_REQUIRED_FILENAME):
         self._flag_filename = reboot_required_filename
         self._packages_filename = reboot_required_filename + ".pkgs"
 

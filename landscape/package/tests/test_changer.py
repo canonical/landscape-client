@@ -1423,6 +1423,14 @@ class AptPackageChangerTest(LandscapeTest):
         A C{ShutdownProtocol} is created and the package result change is
         returned, even if the reboot fails.
         """
+        reboot_required_filename = self.makeFile("reboot required")
+        self.changer = PackageChanger(
+            self.store, self.facade, self.remote, self.config,
+            process_factory=self.process_factory,
+            twisted_reactor=self.twisted_reactor,
+            reboot_required_filename=reboot_required_filename)
+        self.changer.update_notifier_stamp = "/Not/Existing"
+
         self.store.add_task("changer",
                             {"type": "change-packages", "install": [2],
                              "binaries": [(HASH2, 2, PKGDEB2)],

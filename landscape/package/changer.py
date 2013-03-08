@@ -21,6 +21,7 @@ from landscape.package.taskhandler import (
     run_task_handler)
 from landscape.manager.manager import FAILED
 from landscape.manager.shutdownmanager import ShutdownProcessProtocol
+from landscape.monitor.rebootrequired import REBOOT_REQUIRED_FILENAME
 
 
 class UnknownPackageData(Exception):
@@ -64,7 +65,8 @@ class PackageChanger(PackageTaskHandler):
     reboot_failed = False
 
     def __init__(self, store, facade, remote, config, process_factory=reactor,
-                 twisted_reactor=None):
+                 twisted_reactor=None,
+                 reboot_required_filename=REBOOT_REQUIRED_FILENAME):
         super(PackageChanger, self).__init__(store, facade, remote, config)
         self._process_factory = process_factory
         if twisted_reactor is None:  # For testing purposes.
@@ -72,6 +74,7 @@ class PackageChanger(PackageTaskHandler):
             self._twisted_reactor = TwistedReactor()
         else:
             self._twisted_reactor = twisted_reactor
+        self.reboot_required_filename = reboot_required_filename
 
     def run(self):
         """
@@ -289,7 +292,8 @@ class PackageChanger(PackageTaskHandler):
         result = self.change_packages(message.get("policy", POLICY_STRICT))
         self._clear_binaries()
 
-        if message.get("reboot-if-necessary"):
+        if (message.get("reboot-if-necessary")
+            and os.path.exists(self.reboot_required_filename)):
             # Reboot the system returning the package changes result first.
             deferred = self._run_reboot().addCallback(
                 self._send_response, message, result)
