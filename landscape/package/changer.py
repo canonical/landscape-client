@@ -308,6 +308,7 @@ class PackageChanger(PackageTaskHandler):
         """
         protocol = ShutdownProcessProtocol()
         protocol.set_timeout(self._twisted_reactor)
+        protocol.result.addCallback(self._log_reboot)
         protocol.result.addErrback(self._set_reboot_failed)
         minutes = "+%d" % (protocol.delay // 60,)
         args = ["/sbin/shutdown", "-r", minutes,
@@ -321,6 +322,10 @@ class PackageChanger(PackageTaskHandler):
         Reboot failed. Set the C{reboot_failed} flag to signalize the failure.
         """
         self.reboot_failed = True
+
+    def _log_reboot(self, result):
+        """Log the reboot."""
+        logging.warning("Landscape is rebooting the system.")
 
     def _send_response(self, reboot_result, message, package_change_result):
         """

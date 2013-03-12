@@ -6,7 +6,7 @@ import os
 
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
-from twisted.internet.error import ProcessTerminated
+from twisted.internet.error import ProcessTerminated, ProcessDone
 
 from landscape.lib.fs import create_file, read_file, touch_file
 from landscape.package.changer import (
@@ -41,13 +41,15 @@ class AptPackageChangerTest(LandscapeTest):
             self.config.data_path = self.makeDir()
             self.process_factory = StubProcessFactory()
             self.twisted_reactor = FakeReactor()
+            reboot_required_filename = self.makeFile("reboot required")
             os.mkdir(self.config.package_directory)
             os.mkdir(self.config.binaries_path)
             touch_file(self.config.update_stamp_filename)
             self.changer = PackageChanger(
                 self.store, self.facade, self.remote, self.config,
                 process_factory=self.process_factory,
-                twisted_reactor=self.twisted_reactor)
+                twisted_reactor=self.twisted_reactor,
+                reboot_required_filename=reboot_required_filename)
             self.changer.update_notifier_stamp = "/Not/Existing"
             service = self.broker_service
             service.message_store.set_accepted_types(["change-packages-result",
@@ -1407,15 +1409,18 @@ class AptPackageChangerTest(LandscapeTest):
         result = self.changer.handle_tasks()
 
         def got_result(result):
+            self.assertIn("Landscape is rebooting the system",
+                          self.logfile.getvalue())
             self.assertMessages(self.get_pending_messages(),
                                 [{"operation-id": 123,
                                   "result-code": 1,
                                   "result-text": "Yeah, I did whatever you've "
                                                  "asked for!",
                                   "type": "change-packages-result"}])
-            self.assertIn("Landscape is rebooting the system",
-                          self.logfile.getvalue())
 
+        [arguments] = self.process_factory.spawns
+        protocol = arguments[0]
+        protocol.processEnded(Failure(ProcessDone(status=0)))
         self.twisted_reactor.advance(10)
         return result.addCallback(got_result)
 
@@ -1425,14 +1430,6 @@ class AptPackageChangerTest(LandscapeTest):
         A C{ShutdownProtocol} is created and the package result change is
         returned, even if the reboot fails.
         """
-        reboot_required_filename = self.makeFile("reboot required")
-        self.changer = PackageChanger(
-            self.store, self.facade, self.remote, self.config,
-            process_factory=self.process_factory,
-            twisted_reactor=self.twisted_reactor,
-            reboot_required_filename=reboot_required_filename)
-        self.changer.update_notifier_stamp = "/Not/Existing"
-
         self.store.add_task("changer",
                             {"type": "change-packages", "install": [2],
                              "binaries": [(HASH2, 2, PKGDEB2)],
