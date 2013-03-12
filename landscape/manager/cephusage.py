@@ -1,5 +1,6 @@
 import time
 import os
+import json
 
 from landscape.accumulate import Accumulator
 from landscape.lib.monitor import CoverageMonitor
@@ -138,20 +139,11 @@ class CephUsage(ManagerPlugin):
 
     def _get_ceph_ring_id(self):
         output = self._get_quorum_command_output()
-        lines = output.split("\n")
-        fsid_line = None
-        for line in lines:
-            if "fsid" in line:
-                fsid_line = line.split()
-                break
-
-        if fsid_line is None:
+        try:
+            quorum_status = json.loads(output)
+            ring_id = quorum_status["monmap"]["fsid"]
+        except:
             return None
-
-        wrapped_id = fsid_line[-1]
-        ring_id = wrapped_id.replace('",', '')
-        ring_id = ring_id.replace('"', '')
-
         return ring_id
 
     def _get_quorum_command_output(self):
