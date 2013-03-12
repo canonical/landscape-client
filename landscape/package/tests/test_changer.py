@@ -1413,6 +1413,8 @@ class AptPackageChangerTest(LandscapeTest):
                                   "result-text": "Yeah, I did whatever you've "
                                                  "asked for!",
                                   "type": "change-packages-result"}])
+            self.assertIn("Landscape is rebooting the system",
+                          self.logfile.getvalue())
 
         self.twisted_reactor.advance(10)
         return result.addCallback(got_result)
