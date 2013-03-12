@@ -330,7 +330,7 @@ class PackageChanger(PackageTaskHandler):
                     "operation-id": message.get("operation-id")}
 
         if self.reboot_failed:
-            response["result-code"] = FAILED
+            response["result-code"] = ERROR_RESULT
         else:
             response["result-code"] = package_change_result.code
         if package_change_result.text:

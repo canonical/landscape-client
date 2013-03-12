@@ -1446,7 +1446,7 @@ class AptPackageChangerTest(LandscapeTest):
         def got_result(result):
             self.assertMessages(self.get_pending_messages(),
                                 [{"operation-id": 123,
-                                  "result-code": 5,
+                                  "result-code": 100,
                                   "result-text": "Yeah, I did whatever you've "
                                                  "asked for!\r\nReboot "
                                                  "failed.",
