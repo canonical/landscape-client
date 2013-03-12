@@ -307,10 +307,10 @@ class PackageChanger(PackageTaskHandler):
         Create a C{ShutdownProcessProtocol} and return its result deferred.
         """
         protocol = ShutdownProcessProtocol(delay=60)
-        protocol.set_timeout(self._twisted_reactor)
-        protocol.result.addCallback(self._log_reboot)
-        protocol.result.addErrback(self._set_reboot_failed)
         minutes = "+%d" % (protocol.delay // 60,)
+        protocol.set_timeout(self._twisted_reactor)
+        protocol.result.addCallback(self._log_reboot, minutes)
+        protocol.result.addErrback(self._set_reboot_failed)
         args = ["/sbin/shutdown", "-r", minutes,
                 "Landscape is rebooting the system"]
         self._process_factory.spawnProcess(
@@ -323,9 +323,10 @@ class PackageChanger(PackageTaskHandler):
         """
         self.reboot_failed = True
 
-    def _log_reboot(self, result):
+    def _log_reboot(self, result, minutes):
         """Log the reboot."""
-        logging.warning("Landscape is rebooting the system.")
+        logging.warning(
+            "Landscape is rebooting the system in %s minutes" % minutes)
 
     def _send_response(self, reboot_result, message, package_change_result):
         """
