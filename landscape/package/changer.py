@@ -306,7 +306,7 @@ class PackageChanger(PackageTaskHandler):
         """
         Create a C{ShutdownProcessProtocol} and return its result deferred.
         """
-        protocol = ShutdownProcessProtocol()
+        protocol = ShutdownProcessProtocol(delay=60)
         protocol.set_timeout(self._twisted_reactor)
         protocol.result.addCallback(self._log_reboot)
         protocol.result.addErrback(self._set_reboot_failed)
