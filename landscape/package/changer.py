@@ -313,7 +313,7 @@ class PackageChanger(PackageTaskHandler):
         args = ["/sbin/shutdown", "-r", minutes,
                 "Landscape is rebooting the system"]
         self._process_factory.spawnProcess(
-            protocol, "/bin/shutdown", args=args)
+            protocol, "/sbin/shutdown", args=args)
         return protocol.result
 
     def _set_reboot_failed(self, result):
