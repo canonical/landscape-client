@@ -22,16 +22,20 @@ from landscape.tests.mocker import ARGS, ANY, MATCH, CONTAINS, expect
 from landscape.broker.amp import RemoteBroker, BrokerClientProtocol
 
 
-def get_config(self, args):
-    if "--config" not in args and "-c" not in args:
-        filename = self.makeFile("""
+class LandscapeConfigurationTest(LandscapeTest):
+
+    def get_config(self, args):
+        data_path = os.path.join(self.makeDir(), "client")
+
+        if "--config" not in args and "-c" not in args:
+            filename = self.makeFile("""
 [client]
 url = https://landscape.canonical.com/message-system
 """)
-        args.extend(["--config", filename, "--data-path", self.makeDir()])
-    config = LandscapeSetupConfiguration()
-    config.load(args)
-    return config
+            args.extend(["--config", filename, "--data-path", data_path])
+        config = LandscapeSetupConfiguration()
+        config.load(args)
+        return config
 
 
 class PrintTextTest(LandscapeTest):
@@ -628,7 +632,7 @@ class LandscapeSetupScriptTest(LandscapeTest):
         self.script.run()
 
 
-class ConfigurationFunctionsTest(LandscapeTest):
+class ConfigurationFunctionsTest(LandscapeConfigurationTest):
 
     helpers = [EnvironSaverHelper]
 
@@ -637,9 +641,6 @@ class ConfigurationFunctionsTest(LandscapeTest):
         self.mocker.replace("os.getuid")()
         self.mocker.count(0, None)
         self.mocker.result(0)
-
-    def get_config(self, args):
-        return get_config(self, args)
 
     def get_content(self, config):
         """Write C{config} to a file and return it's contents as a string."""
@@ -1617,7 +1618,7 @@ registration_key = shared-secret
                   # we care about are done.
 
 
-class RegisterFunctionTest(LandscapeTest):
+class RegisterFunctionTest(LandscapeConfigurationTest):
 
     helpers = [BrokerServiceHelper]
 
@@ -1852,7 +1853,7 @@ class RegisterFunctionTest(LandscapeTest):
 
         self.mocker.replay()
 
-        config = get_config(self, ["-a", "accountname", "--silent"])
+        config = self.get_config(["-a", "accountname", "--silent"])
         return register(config, print_text, sys.exit)
 
     def test_register_bus_connection_failure_ok_no_register(self):
@@ -1878,8 +1879,8 @@ class RegisterFunctionTest(LandscapeTest):
 
         self.mocker.replay()
 
-        config = get_config(self, ["-a", "accountname", "--silent",
-                                   "--ok-no-register"])
+        config = self.get_config(
+            ["-a", "accountname", "--silent", "--ok-no-register"])
         return self.assertSuccess(register(config, print_text, sys.exit))
 
 
@@ -1937,7 +1938,7 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
         return register(configuration, print_text, sys.exit)
 
 
-class SSLCertificateDataTest(LandscapeTest):
+class SSLCertificateDataTest(LandscapeConfigurationTest):
 
     def test_store_public_key_data(self):
         """
@@ -1945,7 +1946,7 @@ class SSLCertificateDataTest(LandscapeTest):
         file for later use, this file is called after the name of the
         configuration file with .ssl_public_key.
         """
-        config = get_config(self, [])
+        config = self.get_config([])
         key_filename = os.path.join(config.data_path,
             os.path.basename(config.get_config_filename()) + ".ssl_public_key")
 
