@@ -7,6 +7,7 @@ import pwd
 import grp
 
 from twisted.internet.defer import maybeDeferred, succeed
+from twisted.internet import reactor
 
 from landscape.constants import (
     SUCCESS_RESULT, ERROR_RESULT, DEPENDENCY_ERROR_RESULT,
@@ -19,6 +20,8 @@ from landscape.package.taskhandler import (
     PackageTaskHandler, PackageTaskHandlerConfiguration, PackageTaskError,
     run_task_handler)
 from landscape.manager.manager import FAILED
+from landscape.manager.shutdownmanager import ShutdownProcessProtocol
+from landscape.monitor.rebootrequired import REBOOT_REQUIRED_FILENAME
 
 
 class UnknownPackageData(Exception):
@@ -58,6 +61,20 @@ class PackageChanger(PackageTaskHandler):
     config_factory = PackageChangerConfiguration
 
     queue_name = "changer"
+
+    reboot_failed = False
+
+    def __init__(self, store, facade, remote, config, process_factory=reactor,
+                 twisted_reactor=None,
+                 reboot_required_filename=REBOOT_REQUIRED_FILENAME):
+        super(PackageChanger, self).__init__(store, facade, remote, config)
+        self._process_factory = process_factory
+        if twisted_reactor is None:  # For testing purposes.
+            from landscape.reactor import TwistedReactor
+            self._twisted_reactor = TwistedReactor()
+        else:
+            self._twisted_reactor = twisted_reactor
+        self.reboot_required_filename = reboot_required_filename
 
     def run(self):
         """
@@ -275,16 +292,61 @@ class PackageChanger(PackageTaskHandler):
         result = self.change_packages(message.get("policy", POLICY_STRICT))
         self._clear_binaries()
 
+        if (message.get("reboot-if-necessary")
+            and os.path.exists(self.reboot_required_filename)):
+            # Reboot the system returning the package changes result first.
+            deferred = self._run_reboot().addCallback(
+                self._send_response, message, result)
+            deferred.addErrback(self._send_response, message, result)
+            return deferred
+
+        return self._send_response(None, message, result)
+
+    def _run_reboot(self):
+        """
+        Create a C{ShutdownProcessProtocol} and return its result deferred.
+        """
+        protocol = ShutdownProcessProtocol(delay=60)
+        minutes = "+%d" % (protocol.delay // 60,)
+        protocol.set_timeout(self._twisted_reactor)
+        protocol.result.addCallback(self._log_reboot, minutes)
+        protocol.result.addErrback(self._set_reboot_failed)
+        args = ["/sbin/shutdown", "-r", minutes,
+                "Landscape is rebooting the system"]
+        self._process_factory.spawnProcess(
+            protocol, "/sbin/shutdown", args=args)
+        return protocol.result
+
+    def _set_reboot_failed(self, result):
+        """
+        Reboot failed. Set the C{reboot_failed} flag to signalize the failure.
+        """
+        self.reboot_failed = True
+
+    def _log_reboot(self, result, minutes):
+        """Log the reboot."""
+        logging.warning(
+            "Landscape is rebooting the system in %s minutes" % minutes)
+
+    def _send_response(self, reboot_result, message, package_change_result):
+        """
+        Create a response and dispatch to the broker.
+        """
         response = {"type": "change-packages-result",
                     "operation-id": message.get("operation-id")}
 
-        response["result-code"] = result.code
-        if result.text:
-            response["result-text"] = result.text
-        if result.installs:
-            response["must-install"] = sorted(result.installs)
-        if result.removals:
-            response["must-remove"] = sorted(result.removals)
+        if self.reboot_failed:
+            response["result-code"] = ERROR_RESULT
+        else:
+            response["result-code"] = package_change_result.code
+        if package_change_result.text:
+            response["result-text"] = package_change_result.text
+            if self.reboot_failed:
+                response["result-text"] += u"\r\nReboot failed."
+        if package_change_result.installs:
+            response["must-install"] = sorted(package_change_result.installs)
+        if package_change_result.removals:
+            response["must-remove"] = sorted(package_change_result.removals)
 
         logging.info("Queuing response with change package results to "
                      "exchange urgently.")

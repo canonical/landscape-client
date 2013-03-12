@@ -5,6 +5,8 @@ import sys
 import os
 
 from twisted.internet.defer import Deferred
+from twisted.python.failure import Failure
+from twisted.internet.error import ProcessTerminated, ProcessDone
 
 from landscape.lib.fs import create_file, read_file, touch_file
 from landscape.package.changer import (
@@ -18,11 +20,12 @@ from landscape.package.changer import (
     PackageChangerConfiguration, ChangePackagesResult)
 from landscape.tests.mocker import ANY
 from landscape.tests.helpers import (
-    LandscapeTest, BrokerServiceHelper)
+    LandscapeTest, BrokerServiceHelper, StubProcessFactory)
 from landscape.package.tests.helpers import (
     HASH1, HASH2, HASH3, PKGDEB1, PKGDEB2,
     AptFacadeHelper, SimpleRepositoryHelper)
 from landscape.manager.manager import FAILED
+from landscape.reactor import FakeReactor
 
 
 class AptPackageChangerTest(LandscapeTest):
@@ -36,11 +39,17 @@ class AptPackageChangerTest(LandscapeTest):
             self.store = PackageStore(self.makeFile())
             self.config = PackageChangerConfiguration()
             self.config.data_path = self.makeDir()
+            self.process_factory = StubProcessFactory()
+            self.twisted_reactor = FakeReactor()
+            reboot_required_filename = self.makeFile("reboot required")
             os.mkdir(self.config.package_directory)
             os.mkdir(self.config.binaries_path)
             touch_file(self.config.update_stamp_filename)
             self.changer = PackageChanger(
-                self.store, self.facade, self.remote, self.config)
+                self.store, self.facade, self.remote, self.config,
+                process_factory=self.process_factory,
+                twisted_reactor=self.twisted_reactor,
+                reboot_required_filename=reboot_required_filename)
             self.changer.update_notifier_stamp = "/Not/Existing"
             service = self.broker_service
             service.message_store.set_accepted_types(["change-packages-result",
@@ -114,7 +123,6 @@ class AptPackageChangerTest(LandscapeTest):
     def get_package_name(self, version):
         """Return the name of the package."""
         return version.package.name
-
 
     def disable_clear_channels(self):
         """Disable clear_channels(), so that it doesn't remove test setup.
@@ -958,7 +966,6 @@ class AptPackageChangerTest(LandscapeTest):
         self.changer.init_channels([])
         self.assertFalse(os.path.exists(existing_deb_path))
 
-
     def test_binaries_available_in_cache(self):
         """
         If binaries are included in the changes-packages message, those
@@ -1381,4 +1388,71 @@ class AptPackageChangerTest(LandscapeTest):
             self.assertFalse(
                 os.path.exists(self.facade._get_internal_sources_list()))
 
+        return result.addCallback(got_result)
+
+    def test_change_packages_with_reboot_flag(self):
+        """
+        When a C{reboot-if-necessary} flag is passed in the C{change-packages},
+        A C{ShutdownProtocolProcess} is created and the package result change
+        is returned.
+        """
+        self.store.add_task("changer",
+                            {"type": "change-packages", "install": [2],
+                             "binaries": [(HASH2, 2, PKGDEB2)],
+                             "operation-id": 123,
+                             "reboot-if-necessary": True})
+
+        def return_good_result(self):
+            return "Yeah, I did whatever you've asked for!"
+        self.replace_perform_changes(return_good_result)
+
+        result = self.changer.handle_tasks()
+
+        def got_result(result):
+            self.assertIn("Landscape is rebooting the system",
+                          self.logfile.getvalue())
+            self.assertMessages(self.get_pending_messages(),
+                                [{"operation-id": 123,
+                                  "result-code": 1,
+                                  "result-text": "Yeah, I did whatever you've "
+                                                 "asked for!",
+                                  "type": "change-packages-result"}])
+
+        [arguments] = self.process_factory.spawns
+        protocol = arguments[0]
+        protocol.processEnded(Failure(ProcessDone(status=0)))
+        self.twisted_reactor.advance(10)
+        return result.addCallback(got_result)
+
+    def test_change_packages_with_failed_reboot(self):
+        """
+        When a C{reboot-if-necessary} flag is passed in the C{change-packages},
+        A C{ShutdownProtocol} is created and the package result change is
+        returned, even if the reboot fails.
+        """
+        self.store.add_task("changer",
+                            {"type": "change-packages", "install": [2],
+                             "binaries": [(HASH2, 2, PKGDEB2)],
+                             "operation-id": 123,
+                             "reboot-if-necessary": True})
+
+        def return_good_result(self):
+            return "Yeah, I did whatever you've asked for!"
+        self.replace_perform_changes(return_good_result)
+
+        result = self.changer.handle_tasks()
+
+        def got_result(result):
+            self.assertMessages(self.get_pending_messages(),
+                                [{"operation-id": 123,
+                                  "result-code": 100,
+                                  "result-text": "Yeah, I did whatever you've "
+                                                 "asked for!\r\nReboot "
+                                                 "failed.",
+                                  "type": "change-packages-result"}])
+
+        [arguments] = self.process_factory.spawns
+        protocol = arguments[0]
+        protocol.processEnded(Failure(ProcessTerminated(exitCode=1)))
+        self.twisted_reactor.advance(10)
         return result.addCallback(got_result)

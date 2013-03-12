@@ -156,6 +156,19 @@ class PackageManagerTest(LandscapeTest):
         self.assertTrue(task)
         self.assertEqual(task.data, message)
 
+    def test_change_packages_handling_with_reboot(self):
+        self.manager.add(self.package_manager)
+
+        package_manager_mock = self.mocker.patch(self.package_manager)
+        package_manager_mock.spawn_handler(PackageChanger)
+        self.mocker.replay()
+
+        message = {"type": "change-packages", "reboot-if-necessary": True}
+        self.manager.dispatch_message(message)
+        task = self.package_store.get_next_task("changer")
+        self.assertTrue(task)
+        self.assertEqual(task.data, message)
+
     def test_release_upgrade_handling(self):
         """
         The L{PackageManager.handle_release_upgrade} method is registered has
