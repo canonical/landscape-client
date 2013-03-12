@@ -239,10 +239,29 @@ class CephUsagePluginTest(LandscapeTest):
         result = plugin._get_ceph_ring_id()
         self.assertEqual(uuid, result)
 
+    def test_get_ceph_ring_id_valid_json_no_information(self):
+        """
+        When the _get_quorum_command_output method returns something without
+        the ring uuid information present but that is valid JSON, the
+        _get_ceph_ring_id method returns None.
+        """
+        plugin = CephUsage(create_time=self.reactor.time)
+
+        def return_output():
+            # Valid JSON - just without the info we're looking for.
+            return '{ "election_epoch": 8,\n  "quorum": [\n        0]\n}'
+
+        plugin._get_quorum_command_output = return_output
+
+        self.manager.add(plugin)
+
+        result = plugin._get_ceph_ring_id()
+        self.assertEqual(None, result)
+
     def test_get_ceph_ring_id_no_information(self):
         """
         When the _get_quorum_command_output method returns something without
-        the ring uuid information present, the _get-ceph_ring_id method returns
+        the ring uuid information present, the _get_ceph_ring_id method returns
         None.
         """
         plugin = CephUsage(create_time=self.reactor.time)
