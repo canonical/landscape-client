@@ -1959,6 +1959,28 @@ class SSLCertificateDataTest(LandscapeConfigurationTest):
                          store_public_key_data(config, "123456789"))
         self.assertEqual("123456789", open(key_filename, "r").read())
 
+    def test_store_public_key_data_doesnt_create_dir_if_present(self):
+        """
+        If the data-path directory already exists, L{store_public_key_data}
+        doesn't try to create it.
+        """
+        config = self.get_config([])
+        key_filename = os.path.join(
+            config.data_path,
+            os.path.basename(config.get_config_filename()) + ".ssl_public_key")
+        os.mkdir(config.data_path)
+
+        mock_mkdir = self.mocker.replace("os.mkdir")
+        mock_mkdir(ANY)
+        self.mocker.count(0)
+        print_text_mock = self.mocker.replace(print_text)
+        print_text_mock(
+            "Writing SSL CA certificate to %s..." % key_filename)
+        self.mocker.replay()
+
+        self.assertEqual(
+            key_filename, store_public_key_data(config, "123456789"))
+
     def test_fetch_base64_ssl(self):
         """
         L{fetch_base64_ssl_public_certificate} should pull a JSON object from
