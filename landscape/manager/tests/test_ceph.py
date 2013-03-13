@@ -5,7 +5,7 @@ from landscape.tests.helpers import LandscapeTest, ManagerHelper
 from landscape.manager.cephusage import CephUsage
 
 
-SAMPLE_TEMPLATE = ("   health HEALTH_WARN 6 pgs degraded; 6 pgs stuck "
+SAMPLE_OLD_TEMPLATE = ("   health HEALTH_WARN 6 pgs degraded; 6 pgs stuck "
 "unclean\n"
 "monmap e2: 3 mons at {server-269703f4-5217-495a-b7f2-b3b3473c1719="
 "10.55.60.238:6789/0,server-3f370698-f3b0-4cbe-8db9-a18e304c952b="
@@ -19,7 +19,17 @@ SAMPLE_TEMPLATE = ("   health HEALTH_WARN 6 pgs degraded; 6 pgs stuck "
 "0 bytes data, %s MB used, %s MB / %s MB avail\n   "
 "mdsmap e1: 0/0/1 up\n\n")
 
-SAMPLE_OUTPUT = SAMPLE_TEMPLATE % (4296, 53880, 61248)
+SAMPLE_NEW_TEMPLATE = ("health HEALTH_OK\n"
+"   monmap e2: 3 mons at {inst-007=192.168.64.139:6789/0,"
+"inst-008=192.168.64.140:6789/0,inst-009=192.168.64.141:6789/0}, "
+"election epoch 6, quorum 0,1,2 inst-007,inst-008,inst-009\n"
+"   osdmap e28: 3 osds: 3 up, 3 in\n"
+"    pgmap v193861: 208 pgs: 208 active+clean; 5514 MB data, %s MB used, "
+"%s MB / %s MB avail; 1739KB/s wr, 54op/s\n"
+"   mdsmap e1: 0/0/1 up\n")
+
+SAMPLE_OUTPUT = SAMPLE_NEW_TEMPLATE % (4296, 53880, 61248)
+SAMPLE_OLD_OUTPUT = SAMPLE_OLD_TEMPLATE % (4296, 53880, 61248)
 
 SAMPLE_QUORUM = (''
 '{ "election_epoch": 8,\n'
@@ -87,6 +97,23 @@ class CephUsagePluginTest(LandscapeTest):
         result = plugin._get_ceph_usage()
         self.assertEqual(0.12029780564263323, result)
 
+    def test_get_ceph_usage_old_format(self):
+        """
+        The _get_ceph_usage method understands command output in the "old"
+        format (the output changed around version 0.56.1)
+        """
+        plugin = CephUsage(create_time=self.reactor.time)
+
+        def return_output():
+            return SAMPLE_OLD_OUTPUT
+
+        plugin._get_ceph_command_output = return_output
+
+        self.manager.add(plugin)
+
+        result = plugin._get_ceph_usage()
+        self.assertEqual(0.12029780564263323, result)
+
     def test_get_ceph_usage_empty_disk(self):
         """
         When the ceph command call returns output for empty disks, the
@@ -95,7 +122,7 @@ class CephUsagePluginTest(LandscapeTest):
         plugin = CephUsage(create_time=self.reactor.time)
 
         def return_output():
-            return SAMPLE_TEMPLATE % (0, 100, 100)
+            return SAMPLE_NEW_TEMPLATE % (0, 100, 100)
 
         plugin._get_ceph_command_output = return_output
 
@@ -112,7 +139,7 @@ class CephUsagePluginTest(LandscapeTest):
         plugin = CephUsage(create_time=self.reactor.time)
 
         def return_output():
-            return SAMPLE_TEMPLATE % (100, 0, 100)
+            return SAMPLE_NEW_TEMPLATE % (100, 0, 100)
 
         plugin._get_ceph_command_output = return_output
 
@@ -127,10 +154,12 @@ class CephUsagePluginTest(LandscapeTest):
         disk usage information, the _get_ceph_usage method returns None.
         """
         plugin = CephUsage(create_time=self.reactor.time)
+        output = "Blah\nblah"
+        error = "Could not parse command output: '%s'" % output
+        self.log_helper.ignore_errors(error)
 
         def return_output():
-            return "Blah\nblah"
-
+            return output
         plugin._get_ceph_command_output = return_output
 
         self.manager.add(plugin)
@@ -300,7 +329,7 @@ class CephUsagePluginTest(LandscapeTest):
             return SAMPLE_QUORUM % uuid
 
         def return_full_disk():
-            return SAMPLE_TEMPLATE % (100, 0, 100)
+            return SAMPLE_NEW_TEMPLATE % (100, 0, 100)
 
         plugin._ceph_config = "/etc/hosts"
         plugin._get_quorum_command_output = return_quorum
