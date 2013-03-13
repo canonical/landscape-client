@@ -1962,7 +1962,7 @@ class SSLCertificateDataTest(LandscapeConfigurationTest):
     def test_store_public_key_data_doesnt_create_dir_if_present(self):
         """
         If the data-path directory already exists, L{store_public_key_data}
-        doesn't try to create it.
+        doesn't fail.
         """
         config = self.get_config([])
         key_filename = os.path.join(
@@ -1970,9 +1970,6 @@ class SSLCertificateDataTest(LandscapeConfigurationTest):
             os.path.basename(config.get_config_filename()) + ".ssl_public_key")
         os.mkdir(config.data_path)
 
-        mock_mkdir = self.mocker.replace("os.mkdir")
-        mock_mkdir(ANY)
-        self.mocker.count(0)
         print_text_mock = self.mocker.replace(print_text)
         print_text_mock(
             "Writing SSL CA certificate to %s..." % key_filename)
