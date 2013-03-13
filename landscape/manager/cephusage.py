@@ -145,7 +145,7 @@ class CephUsage(ManagerPlugin):
             ring_id = quorum_status["monmap"]["fsid"]
         except:
             logging.error(
-                "Could not get ring_id from output: '%d'." % output)
+                "Could not get ring_id from output: '%s'." % output)
             return None
         return ring_id
 

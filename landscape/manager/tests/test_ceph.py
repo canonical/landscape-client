@@ -1,4 +1,5 @@
 import os
+import json
 
 from landscape.tests.helpers import LandscapeTest, ManagerHelper
 from landscape.manager.cephusage import CephUsage
@@ -246,10 +247,13 @@ class CephUsagePluginTest(LandscapeTest):
         _get_ceph_ring_id method returns None.
         """
         plugin = CephUsage(create_time=self.reactor.time)
+        error = "Could not get ring_id from output: '{\"election_epoch\": 8}'."
+        self.log_helper.ignore_errors(error)
 
         def return_output():
             # Valid JSON - just without the info we're looking for.
-            return '{ "election_epoch": 8,\n  "quorum": [\n        0]\n}'
+            data = {"election_epoch": 8}
+            return json.dumps(data)
 
         plugin._get_quorum_command_output = return_output
 
@@ -265,6 +269,8 @@ class CephUsagePluginTest(LandscapeTest):
         None.
         """
         plugin = CephUsage(create_time=self.reactor.time)
+        error = "Could not get ring_id from output: 'Blah\nblah'."
+        self.log_helper.ignore_errors(error)
 
         def return_output():
             return "Blah\nblah"
