@@ -134,6 +134,7 @@ class ShutdownManagerTest(LandscapeTest):
 
     def test_restart_stops_exchanger(self):
         """
+        After a successful shutdown, the broker stops processing new messaged.
         """
         message = {"type": "shutdown", "reboot": False, "operation-id": 100}
         self.plugin.perform_shutdown(message)
@@ -141,9 +142,10 @@ class ShutdownManagerTest(LandscapeTest):
         [arguments] = self.process_factory.spawns
         protocol = arguments[0]
         protocol.processEnded(Failure(ProcessDone(status=0)))
-        self.manager.reactor.advance(10)
-        
-        # New messages will not be exchanged after a reboot process is in 
+        self.broker_service.reactor.advance(100)
+        self.manager.reactor.advance(100)
+
+        # New messages will not be exchanged after a reboot process is in
         # process.
         self.manager.broker.exchanger.schedule_exchange()
         payloads = self.manager.broker.exchanger._transport.payloads

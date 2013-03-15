@@ -353,7 +353,7 @@ class PackageChanger(PackageTaskHandler):
         
         deferred = self._broker.send_message(response, True)
         deferred.addCallback(
-            lambda _: self._broker.stop_exchanger)
+            lambda _: self._broker.stop_exchanger())
         return deferred
 
     def handle_change_package_locks(self, message):

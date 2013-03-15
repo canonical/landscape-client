@@ -55,7 +55,7 @@ class ShutdownManager(ManagerPlugin):
         # After sending the result to the server, stop accepting messages and
         # wait for the reboot/shutdown.
         deferred.addCallback(
-            lambda _: self.registry.broker.stop_exchanger)
+            lambda _: self.registry.broker.stop_exchanger())
         return deferred
 
     def _respond_failure(self, failure, operation_id):

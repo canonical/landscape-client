@@ -25,7 +25,8 @@ class BrokerServerProtocol(ComponentProtocol):
                 "reload_configuration",
                 "send_message",
                 "stop_clients",
-                "listen_events"])
+                "listen_events",
+                "stop_exchanger"])
 
 
 class BrokerServerProtocolFactory(ComponentProtocolFactory):
@@ -92,6 +93,12 @@ class FakeRemoteBroker(object):
         by the Landscape server.
         """
         return execute(self.message_store.get_accepted_types)
+
+    def stop_exchanger(self):
+        """
+        Stop the exchanger so no new messages are consumed.
+        """
+        return execute(self.exchanger.stop)
 
 
 class BrokerClientProtocol(ComponentProtocol):
