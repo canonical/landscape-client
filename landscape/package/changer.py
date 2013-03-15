@@ -328,8 +328,7 @@ class PackageChanger(PackageTaskHandler):
         logging.warning(
             "Landscape is rebooting the system in %s minutes" % minutes)
 
-    def _send_response(self, reboot_result, message, package_change_result,
-                       stop_exchanger=False):
+    def _send_response(self, reboot_result, message, package_change_result):
         """
         Create a response and dispatch to the broker.
         """
@@ -353,9 +352,8 @@ class PackageChanger(PackageTaskHandler):
                      "exchange urgently.")
         
         deferred = self._broker.send_message(response, True)
-        if stop_exchanger:
-            deferred.addCallback(
-                lambda _: self._broker.stop_exchanger)
+        deferred.addCallback(
+            lambda _: self._broker.stop_exchanger)
         return deferred
 
     def handle_change_package_locks(self, message):

@@ -277,4 +277,5 @@ support this feature.
         """
         Stop exchaging messages with the message server.
         """
+        import pdb; pdb.set_trace()
         self._exchanger.stop()

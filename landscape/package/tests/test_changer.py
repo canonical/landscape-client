@@ -1421,6 +1421,7 @@ class AptPackageChangerTest(LandscapeTest):
         [arguments] = self.process_factory.spawns
         protocol = arguments[0]
         protocol.processEnded(Failure(ProcessDone(status=0)))
+        self.broker_service.reactor.advance(100)
         self.twisted_reactor.advance(10)
         return result.addCallback(got_result)
 
