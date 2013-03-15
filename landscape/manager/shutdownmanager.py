@@ -54,9 +54,8 @@ class ShutdownManager(ManagerPlugin):
         deferred = self._respond(SUCCEEDED, data, operation_id)
         # After sending the result to the server, stop accepting messages and
         # wait for the reboot/shutdown.
-        import pdb; pdb.set_trace()
         deferred.addCallback(
-            lambda _: self.manager.fire_event("stop-exchanger"))
+            lambda _: self.registry.broker.stop_exchanger)
         return deferred
 
     def _respond_failure(self, failure, operation_id):

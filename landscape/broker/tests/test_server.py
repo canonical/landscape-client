@@ -489,15 +489,3 @@ class HandlersTest(LandscapeTest):
         self.mocker.result(succeed(None))
         self.mocker.replay()
         self.reactor.fire("resynchronize-clients")
-
-    def test_stop_exchanger(self):
-        """
-        When a C{stop-exchange} event is fired by the reactor, the broker
-        stops the exchanger.
-        """
-        self.exchanger.schedule_exchange()
-        self.reactor.fire("stop-exchanger")
-        self.reactor.advance(self.config.exchange_interval)
-        self.assertFalse(self.transport.payloads)
-
-

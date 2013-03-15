@@ -56,7 +56,6 @@ class BrokerServer(object):
         reactor.call_on("server-uuid-changed", self.server_uuid_changed)
         reactor.call_on("package-data-changed", self.package_data_changed)
         reactor.call_on("resynchronize-clients", self.resynchronize)
-        reactor.call_on("stop-exchanger", self.stop_exchanger)
 
     def ping(self):
         """Return C{True}."""
@@ -278,5 +277,4 @@ support this feature.
         """
         Stop exchaging messages with the message server.
         """
-        import pdb; pdb.set_trace()
         self._exchanger.stop()
