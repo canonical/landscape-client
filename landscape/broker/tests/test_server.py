@@ -288,6 +288,15 @@ class BrokerServerTest(LandscapeTest):
         self.assertEqual(self.reactor.fire("event"), [])
         return self.assertSuccess(result, "event")
 
+    def test_stop_exchnager(self):
+        """
+        The L{BrokerServer.stop_exchanger} stops the exchanger so no further
+        messages are sent or consumed.
+        """
+        self.exchanger.schedule_exchange()
+        self.broker.stop_exchanger()
+        self.reactor.advance(self.config.exchange_interval)
+        self.assertFalse(self.transport.payloads)
 
 class EventTest(LandscapeTest):
 
@@ -480,3 +489,15 @@ class HandlersTest(LandscapeTest):
         self.mocker.result(succeed(None))
         self.mocker.replay()
         self.reactor.fire("resynchronize-clients")
+
+    def test_stop_exchanger(self):
+        """
+        When a C{stop-exchange} event is fired by the reactor, the broker
+        stops the exchanger.
+        """
+        self.exchanger.schedule_exchange()
+        self.reactor.fire("stop-exchanger")
+        self.reactor.advance(self.config.exchange_interval)
+        self.assertFalse(self.transport.payloads)
+
+
