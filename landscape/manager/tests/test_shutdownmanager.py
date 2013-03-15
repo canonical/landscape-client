@@ -1,5 +1,5 @@
 from twisted.python.failure import Failure
-from twisted.internet.error import ProcessTerminated
+from twisted.internet.error import ProcessTerminated, ProcessDone
 
 from landscape import SERVER_API
 from landscape.manager.plugin import SUCCEEDED, FAILED
@@ -131,3 +131,21 @@ class ShutdownManagerTest(LandscapeTest):
         self.assertEqual(protocol.get_data(), "Data may arrive in batches.")
         protocol.childDataReceived(0, "Even when you least expect it.")
         self.assertEqual(protocol.get_data(), "Data may arrive in batches.")
+
+    def test_restart_stops_exchanger(self):
+        """
+        """
+        message = {"type": "shutdown", "reboot": False, "operation-id": 100}
+        self.plugin.perform_shutdown(message)
+
+        [arguments] = self.process_factory.spawns
+        protocol = arguments[0]
+        protocol.processEnded(Failure(ProcessDone(status=0)))
+        self.manager.reactor.advance(10)
+        
+        # New messages will not be exchanged after a reboot process is in 
+        # process.
+        self.manager.broker.exchanger.schedule_exchange()
+        payloads = self.manager.broker.exchanger._transport.payloads
+        self.assertEqual(0, len(payloads))
+        return protocol.result

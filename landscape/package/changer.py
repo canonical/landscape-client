@@ -296,7 +296,7 @@ class PackageChanger(PackageTaskHandler):
             and os.path.exists(self.reboot_required_filename)):
             # Reboot the system returning the package changes result first.
             deferred = self._run_reboot().addCallback(
-                self._send_response, message, result, stop_exchanger=True)
+                self._send_response, message, result)
             deferred.addErrback(self._send_response, message, result)
             return deferred
 
@@ -355,7 +355,7 @@ class PackageChanger(PackageTaskHandler):
         deferred = self._broker.send_message(response, True)
         if stop_exchanger:
             deferred.addCallback(
-                lambda fired: self._broker.fire_event("stop-exchanger"))
+                lambda _: self._broker.fire_event("stop-exchanger"))
         return deferred
 
     def handle_change_package_locks(self, message):
