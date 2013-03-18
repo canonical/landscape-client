@@ -351,10 +351,10 @@ class PackageChanger(PackageTaskHandler):
 
         logging.info("Queuing response with change package results to "
                      "exchange urgently.")
-        
+
         deferred = self._broker.send_message(response, True)
         if stop_exchanger:
-             deferred.addCallback(lambda _: self._broker.stop_exchanger())
+            deferred.addCallback(lambda _: self._broker.stop_exchanger())
         return deferred
 
     def handle_change_package_locks(self, message):

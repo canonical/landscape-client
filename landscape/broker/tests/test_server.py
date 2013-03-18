@@ -298,6 +298,7 @@ class BrokerServerTest(LandscapeTest):
         self.reactor.advance(self.config.exchange_interval)
         self.assertFalse(self.transport.payloads)
 
+
 class EventTest(LandscapeTest):
 
     helpers = [RemoteClientHelper]
@@ -418,7 +419,7 @@ class HandlersTest(LandscapeTest):
         self.mocker.result(succeed(False))
         self.mocker.replay()
         result = self.reactor.fire("message", message)
-        result = [result for result in result if result is not None][0]
+        result = [i for i in result if i is not None][0]
 
         class StartsWith(object):
 
