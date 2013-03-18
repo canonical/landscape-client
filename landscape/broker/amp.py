@@ -94,12 +94,6 @@ class FakeRemoteBroker(object):
         """
         return execute(self.message_store.get_accepted_types)
 
-    def stop_exchanger(self):
-        """
-        Stop the exchanger so no new messages are consumed.
-        """
-        return execute(self.exchanger.stop)
-
 
 class BrokerClientProtocol(ComponentProtocol):
     """Communication protocol between a client and the broker."""
