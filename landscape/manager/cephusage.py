@@ -1,5 +1,8 @@
 import time
 import os
+import json
+import logging
+import re
 
 from landscape.accumulate import Accumulator
 from landscape.lib.monitor import CoverageMonitor
@@ -9,6 +12,9 @@ from landscape.manager.plugin import ManagerPlugin
 
 ACCUMULATOR_KEY = "ceph-usage-accumulator"
 CEPH_CONFIG_FILE = "/etc/ceph/ceph.conf"
+
+EXP = re.compile(".*pgmap.*data, (\d+) MB used, (\d+) MB / (\d+) MB avail.*",
+                 flags=re.S)
 
 
 class CephUsage(ManagerPlugin):
@@ -106,20 +112,13 @@ class CephUsage(ManagerPlugin):
         if output is None:
             return None
 
-        lines = output.split("\n")
+        result = EXP.match(output)
 
-        pg_line = None
-        for line in lines:
-            if "pgmap" in line:
-                pg_line = line.split()
-                break
-
-        if pg_line is None:
+        if not result:
+            logging.error("Could not parse command output: '%s'." % output)
             return None
 
-        total = pg_line[-3]  # Total space
-        available = pg_line[-6]  # Available for objects
-        #used = pg_line[-9]  # Used by objects
+        (used, available, total) = result.groups()
         # Note: used + available is NOT equal to total (there is some used
         # space for duplication and system info etc...)
 
@@ -138,20 +137,13 @@ class CephUsage(ManagerPlugin):
 
     def _get_ceph_ring_id(self):
         output = self._get_quorum_command_output()
-        lines = output.split("\n")
-        fsid_line = None
-        for line in lines:
-            if "fsid" in line:
-                fsid_line = line.split()
-                break
-
-        if fsid_line is None:
+        try:
+            quorum_status = json.loads(output)
+            ring_id = quorum_status["monmap"]["fsid"]
+        except:
+            logging.error(
+                "Could not get ring_id from output: '%s'." % output)
             return None
-
-        wrapped_id = fsid_line[-1]
-        ring_id = wrapped_id.replace('",', '')
-        ring_id = ring_id.replace('"', '')
-
         return ring_id
 
     def _get_quorum_command_output(self):
