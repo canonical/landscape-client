@@ -4,7 +4,7 @@ def encode_if_needed(value):
     """
     A small helper to decode unicode to utf-8 if needed.
     """
-    if type(value) == unicode:
+    if isinstance(value, unicode):
         value = value.encode("utf-8")
     return value
 
