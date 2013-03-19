@@ -8,6 +8,7 @@ def encode_if_needed(value):
         value = value.encode("utf-8")
     return value
 
+
 def encode_dict_if_needed(values):
     """
     A wrapper taking a dict and passing each of the values to encode_if_needed.

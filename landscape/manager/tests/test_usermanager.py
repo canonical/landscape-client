@@ -155,7 +155,6 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         result.addCallback(handle_callback)
         return result
 
-
     def test_failing_add_user_event(self):
         """
         When an C{add-user} event is received the user should be
