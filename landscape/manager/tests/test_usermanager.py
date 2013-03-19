@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 
 from landscape.lib.persist import Persist
@@ -83,6 +84,77 @@ class UserOperationsMessagingTest(UserGroupTestBase):
 
         result.addCallback(handle_callback)
         return result
+
+    def test_add_user_event_utf8(self):
+
+        def handle_callback(result):
+            messages = self.broker_service.message_store.get_pending_messages()
+            self.assertMessages(messages,
+                                [{"type": "operation-result",
+                                  "status": SUCCEEDED,
+                                  "operation-id": 123, "timestamp": 0,
+                                  "result-text": "add_user succeeded"},
+                                  {"timestamp": 0, "type": "users",
+                                  "operation-id": 123,
+                                  "create-users": [{"home-phone": None,
+                                                    "username": "jdoe",
+                                                    "uid": 1000,
+                                                    "enabled": True,
+                                                    "location": "Room 101",
+                                                    "work-phone": "+12345",
+                                                    "name": u"請不要刪除",
+                                                    "primary-gid": 1000}]}])
+
+        self.setup_environment([], [], None)
+
+        result = self.manager.dispatch_message(
+            {"username": "jdoe", "name": "請不要刪除", "password": "password",
+             "operation-id": 123, "require-password-reset": False,
+             "primary-group-name": None, "location": "Room 101",
+             "work-number": "+12345", "home-number": None,
+             "type": "add-user"})
+
+        result.addCallback(handle_callback)
+        return result
+
+    def test_add_user_event_utf8_wire_data(self):
+
+        def handle_callback(result):
+            messages = self.broker_service.message_store.get_pending_messages()
+            self.assertMessages(messages,
+                                [{"type": "operation-result",
+                                  "status": SUCCEEDED,
+                                  "operation-id": 123, "timestamp": 0,
+                                  "result-text": "add_user succeeded"},
+                                  {"timestamp": 0, "type": "users",
+                                  "operation-id": 123,
+                                  "create-users": [
+                                      {"home-phone": u"請不要刪除",
+                                       "username": u"請不要刪除",
+                                       "uid": 1000,
+                                       "enabled": True,
+                                       "location": u"請不要刪除",
+                                       "work-phone": u"請不要刪除",
+                                       "name": u"請不要刪除",
+                                       "primary-gid": 1000}]}])
+
+        self.setup_environment([], [], None)
+
+        result = self.manager.dispatch_message(
+            {'username': u'\u8acb\u4e0d\u8981\u522a\u9664',
+             'work-number': u'\u8acb\u4e0d\u8981\u522a\u9664',
+             'home-number': u'\u8acb\u4e0d\u8981\u522a\u9664',
+             'name': u'\u8acb\u4e0d\u8981\u522a\u9664',
+             'operation-id': 123,
+             'require-password-reset': False,
+             'password': u'\u8acb\u4e0d\u8981\u522a\u9664',
+             'type': 'add-user',
+             'primary-group-name': u'\u8acb\u4e0d\u8981\u522a\u9664',
+             'location': u'\u8acb\u4e0d\u8981\u522a\u9664'})
+
+        result.addCallback(handle_callback)
+        return result
+
 
     def test_failing_add_user_event(self):
         """
