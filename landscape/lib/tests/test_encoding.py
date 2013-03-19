@@ -15,6 +15,17 @@ class EncodingTestTest(LandscapeTest):
         result = encode_if_needed(value)
         self.assertEqual(value, result)
 
+    def test_encode_if_needed_utf16_string(self):
+        """
+        When passed an unicode instace that is a decode()'d unicode (utf-16),
+        the encode_if_needed function returns the utf-16 str() equivalent
+        (in utf-8).
+        """
+        value = u"Alex \U0001f603"
+        result = encode_if_needed(value)
+        expected = 'Alex \xf0\x9f\x98\x83'
+        self.assertEqual(expected, result)
+
     def test_encode_if_needed_utf_unicode(self):
         """
         When passed an unicode instace that is a decode()'d unicode,
