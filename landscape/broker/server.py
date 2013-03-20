@@ -277,6 +277,15 @@ support this feature.
     def stop_exchanger(self):
         """
         Stop exchaging messages with the message server.
+        
+        Eventually, it is required by the plugin that no more message exchanges
+        are performed.
+        For example, when a reboot process in running, the client stops
+        accepting new messages so that no client action is running while the
+        machine is rebooting.
+        Also, some activities should be explicitly require that no more
+        messages are exchanged so some level of serialization in the client
+        could be achieved.
         """
         self._exchanger.stop()
         self._pinger.stop()

@@ -4,6 +4,8 @@ from landscape.manager.manager import FAILED
 from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
 from landscape.broker.tests.helpers import (
     BrokerServerHelper, RemoteClientHelper)
+from landscape.broker.tests.test_ping import FakePageGetter
+from landscape.broker.ping import PingClient
 
 
 class FakeClient(object):
@@ -296,9 +298,25 @@ class BrokerServerTest(LandscapeTest):
         self.pinger.start()
         self.exchanger.schedule_exchange()
         self.broker.stop_exchanger()
+
         self.reactor.advance(self.config.exchange_interval)
         self.assertFalse(self.transport.payloads)
 
+    def test_stop_exchanger_stops_pinger(self):
+        """
+        The L{BrokerServer.stop_exchanger} stops the pinger and no further
+        pings are performed.
+        """
+        url = "http://example.com/mysuperping"
+        page_getter = FakePageGetter(None)
+        self.pinger.start()
+        self.pinger.set_url(url)
+        self.pinger._ping_client.get_page = page_getter.get_page
+        self.identity.insecure_id = 23
+
+        self.broker.stop_exchanger()
+        self.reactor.advance(self.config.exchange_interval)
+        self.assertEqual([], page_getter.fetches)
 
 class EventTest(LandscapeTest):
 
