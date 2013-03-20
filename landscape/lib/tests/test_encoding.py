@@ -17,7 +17,7 @@ class EncodingTestTest(LandscapeTest):
 
     def test_encode_if_needed_utf16_string(self):
         """
-        When passed an unicode instace that is a decode()'d unicode (utf-16),
+        When passed an unicode instance that is a decode()'d unicode (utf-16),
         the encode_if_needed function returns the utf-16 str() equivalent
         (in utf-8).
         """
@@ -28,7 +28,7 @@ class EncodingTestTest(LandscapeTest):
 
     def test_encode_if_needed_utf_unicode(self):
         """
-        When passed an unicode instace that is a decode()'d unicode,
+        When passed an unicode instance that is a decode()'d unicode,
         the encode_if_needed function returns the utf-8 str() equivalent.
         """
         value = u'\u8acb\u4e0d\u8981\u522a\u9664'
@@ -57,7 +57,6 @@ class EncodingTestTest(LandscapeTest):
         The encode_dict_if_needed function returns a dict for which every
         value was passed to the encode_if_needed function.
         """
-
         value = {"a": "請不要刪除", "b": u'\u8acb\u4e0d\u8981\u522a\u9664',
                  "c": u"請不要刪除", "d": None, "e": 123}
         expected = {"a": "請不要刪除", "b": "請不要刪除", "c": "請不要刪除",

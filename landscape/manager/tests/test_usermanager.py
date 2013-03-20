@@ -86,7 +86,10 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         return result
 
     def test_add_user_event_utf8(self):
-
+        """
+        When an C{add-user} event with utf-8 unicode strings is received the
+        user should be added.
+        """
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertMessages(messages,
@@ -118,7 +121,11 @@ class UserOperationsMessagingTest(UserGroupTestBase):
         return result
 
     def test_add_user_event_utf8_wire_data(self):
-
+        """
+        When an C{add-user} event with utf-8 decoded unicode string is
+        received the user should be added. This is what the server is
+        sending over the wire in the real-world.
+        """
         def handle_callback(result):
             messages = self.broker_service.message_store.get_pending_messages()
             self.assertMessages(messages,
