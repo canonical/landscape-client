@@ -667,7 +667,7 @@ def register(config, on_message=print_text, on_error=sys.exit, reactor=None):
         stop(2)
 
     connector = RemoteBrokerConnector(reactor, config)
-    result = connector.connect(max_retries=0, quiet=True)
+    result = connector.connect(max_retries=300, quiet=True)
     result.addCallback(got_connection)
     result.addErrback(got_error)
 
