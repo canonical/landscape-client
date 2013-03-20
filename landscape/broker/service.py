@@ -64,7 +64,7 @@ class BrokerService(LandscapeService):
             self.message_store, fetch_async)
         self.reactor.call_on("post-exit", self._exit)
         self.broker = BrokerServer(self.config, self.reactor, self.exchanger,
-                                   self.registration, self.message_store)
+                                   self.registration, self.message_store, self.pinger)
         self.factory = BrokerServerProtocolFactory(object=self.broker)
 
     def _exit(self):

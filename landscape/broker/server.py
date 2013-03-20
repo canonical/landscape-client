@@ -40,7 +40,7 @@ class BrokerServer(object):
     connectors_registry = RemoteComponentsRegistry
 
     def __init__(self, config, reactor, exchange, registration,
-                 message_store):
+                 message_store, pinger):
         self._config = config
         self._reactor = reactor
         self._exchanger = exchange
@@ -48,6 +48,7 @@ class BrokerServer(object):
         self._message_store = message_store
         self._registered_clients = {}
         self._connectors = {}
+        self._pinger = pinger
 
         reactor.call_on("message", self.broadcast_message)
         reactor.call_on("impending-exchange", self.impending_exchange)
@@ -278,3 +279,4 @@ support this feature.
         Stop exchaging messages with the message server.
         """
         self._exchanger.stop()
+        self._pinger.stop()

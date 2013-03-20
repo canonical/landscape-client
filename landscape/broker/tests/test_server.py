@@ -293,6 +293,7 @@ class BrokerServerTest(LandscapeTest):
         The L{BrokerServer.stop_exchanger} stops the exchanger so no further
         messages are sent or consumed.
         """
+        self.pinger.start()
         self.exchanger.schedule_exchange()
         self.broker.stop_exchanger()
         self.reactor.advance(self.config.exchange_interval)
