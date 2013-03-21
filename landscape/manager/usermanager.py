@@ -2,6 +2,7 @@ import os
 import logging
 
 from landscape.lib.amp import RemoteObject
+from landscape.lib.encoding import encode_dict_if_needed
 from landscape.amp import (
     ComponentProtocol, ComponentProtocolFactory, RemoteComponentConnector)
 
@@ -90,6 +91,7 @@ class UserManager(ManagerPlugin):
     def _perform_operation(self, result, message):
         message_type = message["type"]
         message_method = self._message_types[message_type]
+        message = encode_dict_if_needed(message)
         return self.call_with_operation_result(message, message_method,
                                                message)
 

@@ -19,6 +19,7 @@ from landscape.constants import UBUNTU_PATH
 from landscape.lib.scriptcontent import build_script
 from landscape.lib.fetch import fetch_async, HTTPCodeError
 from landscape.lib.persist import Persist
+from landscape.lib.encoding import encode_if_needed
 from landscape.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
 
 
@@ -37,7 +38,7 @@ def get_user_info(username=None):
     gid = None
     path = None
     if username is not None:
-        username_str = username.encode("utf-8")
+        username_str = encode_if_needed(username)
         try:
             info = pwd.getpwnam(username_str)
         except KeyError:
