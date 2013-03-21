@@ -17,6 +17,7 @@ class ShutdownManagerTest(LandscapeTest):
         super(ShutdownManagerTest, self).setUp()
         self.broker_service.message_store.set_accepted_types(
             ["shutdown", "operation-result"])
+        self.broker_service.pinger.start()
         self.process_factory = StubProcessFactory()
         self.plugin = ShutdownManager(process_factory=self.process_factory)
         self.manager.add(self.plugin)
