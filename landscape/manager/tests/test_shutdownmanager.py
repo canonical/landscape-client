@@ -134,7 +134,7 @@ class ShutdownManagerTest(LandscapeTest):
 
     def test_restart_stops_exchanger(self):
         """
-        After a successful shutdown, the broker stops processing new messaged.
+        After a successful shutdown, the broker stops processing new messages.
         """
         message = {"type": "shutdown", "reboot": False, "operation-id": 100}
         self.plugin.perform_shutdown(message)

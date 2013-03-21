@@ -290,7 +290,7 @@ class BrokerServerTest(LandscapeTest):
         self.assertEqual(self.reactor.fire("event"), [])
         return self.assertSuccess(result, "event")
 
-    def test_stop_exchnager(self):
+    def test_stop_exchanger(self):
         """
         The L{BrokerServer.stop_exchanger} stops the exchanger so no further
         messages are sent or consumed.
