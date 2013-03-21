@@ -5,7 +5,6 @@ from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
 from landscape.broker.tests.helpers import (
     BrokerServerHelper, RemoteClientHelper)
 from landscape.broker.tests.test_ping import FakePageGetter
-from landscape.broker.ping import PingClient
 
 
 class FakeClient(object):
@@ -317,6 +316,7 @@ class BrokerServerTest(LandscapeTest):
         self.broker.stop_exchanger()
         self.reactor.advance(self.config.exchange_interval)
         self.assertEqual([], page_getter.fetches)
+
 
 class EventTest(LandscapeTest):
 

@@ -277,7 +277,7 @@ support this feature.
     def stop_exchanger(self):
         """
         Stop exchaging messages with the message server.
-        
+
         Eventually, it is required by the plugin that no more message exchanges
         are performed.
         For example, when a reboot process in running, the client stops
