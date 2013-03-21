@@ -272,3 +272,13 @@ class PingerTest(LandscapeTest):
         self.broker_service.identity.insecure_id = 23
         self.broker_service.reactor.advance(10)
         self.assertEqual(self.page_getter.fetches[0][0], url)
+
+    def test_ping_doesnt_ping_if_stopped(self):
+        """If the L{Pinger} is stopped, no pings are performed."""
+        url = "http://example.com/mysuperping"
+        self.pinger.start()
+        self.pinger.set_url(url)
+        self.broker_service.identity.insecure_id = 23
+        self.pinger.stop()
+        self.broker_service.reactor.advance(10)
+        self.assertEqual([], self.page_getter.fetches)

@@ -1,6 +1,6 @@
 from twisted.internet.defer import maybeDeferred, execute, succeed
 
-from landscape.lib.amp import RemoteObject
+from landscape.lib.amp import RemoteObject, MethodCallArgument
 from landscape.amp import (
     ComponentProtocol, ComponentProtocolFactory, RemoteComponentConnector,
     RemoteComponentsRegistry)
@@ -25,7 +25,8 @@ class BrokerServerProtocol(ComponentProtocol):
                 "reload_configuration",
                 "send_message",
                 "stop_clients",
-                "listen_events"])
+                "listen_events",
+                "stop_exchanger"])
 
 
 class BrokerServerProtocolFactory(ComponentProtocolFactory):
@@ -60,38 +61,35 @@ class RemoteBroker(RemoteObject):
 class FakeRemoteBroker(object):
     """Looks like L{RemoteBroker}, but actually talks to local objects."""
 
-    def __init__(self, exchanger, message_store):
+    def __init__(self, exchanger, message_store, broker_server):
         self.exchanger = exchanger
         self.message_store = message_store
         self.protocol = BrokerServerProtocol()
+        self.broker_server = broker_server
 
-    def ping(self):
-        return succeed(True)
+    def __getattr__(self, name):
+        """
+        Pass attributes through to the real L{BrokerServer}, after checking
+        that they're encodable with AMP.
+        """
+        original = getattr(self.broker_server, name, None)
+        if (name in BrokerServerProtocol.methods
+            and original is not None
+            and callable(original)):
+            def method(*args, **kwargs):
+                for arg in args:
+                    assert MethodCallArgument.check(arg)
+                for k, v in kwargs.iteritems():
+                    assert MethodCallArgument.check(arg)
+                return execute(original, *args, **kwargs)
+            return method
+        else:
+            raise AttributeError(name)
 
     def call_if_accepted(self, type, callable, *args):
         if type in self.message_store.get_accepted_types():
             return maybeDeferred(callable, *args)
         return succeed(None)
-
-    def send_message(self, message, urgent=False):
-        """Send to the previously given L{MessageExchange} object."""
-
-        # Check that the message to be sent is serializable over AMP
-        from landscape.lib.amp import MethodCallArgument
-        assert(MethodCallArgument.check(message))
-
-        return execute(self.exchanger.send, message, urgent=urgent)
-
-    def register_client_accepted_message_type(self, type):
-        return execute(self.exchanger.register_client_accepted_message_type,
-                       type)
-
-    def get_accepted_message_types(self):
-        """
-        Return a deferred resulting in the list of message types accepted
-        by the Landscape server.
-        """
-        return execute(self.message_store.get_accepted_types)
 
 
 class BrokerClientProtocol(ComponentProtocol):

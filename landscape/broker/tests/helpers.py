@@ -122,7 +122,7 @@ class BrokerServerHelper(RegistrationHelper):
         super(BrokerServerHelper, self).set_up(test_case)
         test_case.broker = BrokerServer(test_case.config, test_case.reactor,
                                         test_case.exchanger, test_case.handler,
-                                        test_case.mstore)
+                                        test_case.mstore, test_case.pinger)
 
 
 class RemoteBrokerHelper(BrokerServerHelper):

@@ -40,7 +40,7 @@ class BrokerServer(object):
     connectors_registry = RemoteComponentsRegistry
 
     def __init__(self, config, reactor, exchange, registration,
-                 message_store):
+                 message_store, pinger):
         self._config = config
         self._reactor = reactor
         self._exchanger = exchange
@@ -48,6 +48,7 @@ class BrokerServer(object):
         self._message_store = message_store
         self._registered_clients = {}
         self._connectors = {}
+        self._pinger = pinger
 
         reactor.call_on("message", self.broadcast_message)
         reactor.call_on("impending-exchange", self.impending_exchange)
@@ -272,3 +273,19 @@ support this feature.
                 "result-text": result_text,
                 "operation-id": opid}
             self._exchanger.send(response, urgent=True)
+
+    def stop_exchanger(self):
+        """
+        Stop exchaging messages with the message server.
+
+        Eventually, it is required by the plugin that no more message exchanges
+        are performed.
+        For example, when a reboot process in running, the client stops
+        accepting new messages so that no client action is running while the
+        machine is rebooting.
+        Also, some activities should be explicitly require that no more
+        messages are exchanged so some level of serialization in the client
+        could be achieved.
+        """
+        self._exchanger.stop()
+        self._pinger.stop()
