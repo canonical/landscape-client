@@ -1833,7 +1833,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         connector_factory = self.mocker.replace(
             "landscape.broker.amp.RemoteBrokerConnector", passthrough=False)
         connector = connector_factory(ANY, ANY)
-        connector.connect(max_retries=0, quiet=True)
+        connector.connect(quiet=True, max_retries=60, factor=1, initial_delay=1)
         self.mocker.result(fail(ZeroDivisionError))
 
         print_text_mock(ARGS)
@@ -1911,7 +1911,7 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
 
         # SNORE
         connector = connector_factory(ANY, configuration)
-        connector.connect(max_retries=0, quiet=True)
+        connector.connect(quiet=True, max_retries=60, factor=1, initial_delay=1)
         self.mocker.result(succeed(remote_broker))
         remote_broker.reload_configuration()
         self.mocker.result(succeed(None))

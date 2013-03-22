@@ -663,7 +663,7 @@ def register(config, on_message=print_text, on_error=sys.exit, reactor=None,
             remote.register().addErrback(handle_registration_errors)]
         # We consume errors here to ignore errors after the first one.
         # catch_all will be called for the very first deferred that fails.
-        results = gather_results(deferreds, consume_errors=False)
+        results = gather_results(deferreds, consume_errors=True)
         return results.addErrback(catch_all)
 
     def got_error(failure):
@@ -674,8 +674,8 @@ def register(config, on_message=print_text, on_error=sys.exit, reactor=None,
         stop(2)
 
     connector = RemoteBrokerConnector(reactor, config)
-    result = connector.connect(
-        max_retries=max_retries, factor=factor, initial_delay=initial_delay)
+    result = connector.connect(quiet=True, max_retries=max_retries,
+                               factor=factor, initial_delay=initial_delay)
     result.addCallback(got_connection)
     result.addErrback(got_error)
 
