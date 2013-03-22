@@ -469,6 +469,7 @@ class RemoteObjectConnector(object):
         @param initial_delay: The initial interval between reconnect attempts.
         """
         self._connected = Deferred()
+#        import pdb; pdb.set_trace()
         self._factory = self.factory(reactor=self._reactor)
         self._factory.maxRetries = max_retries
         if factor:

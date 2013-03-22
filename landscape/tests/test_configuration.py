@@ -1886,6 +1886,31 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
 
 class RegisterFunctionNoServiceTest(LandscapeTest):
 
+    def test_register_retry_configuration(self):
+        """
+        Registration has control over the retry behavior when connecting
+        to the landscape client.
+        """
+        config = LandscapeSetupConfiguration()
+        config.ok_no_register = True
+
+        def silence(p1, error=None):
+            """Do not print out messages."""
+            pass
+
+        mock_factory = self.mocker.replace(
+            "landscape.broker.amp.RemoteBrokerConnector.factory", passthrough=False)
+
+        mock_factory(ANY)
+        mock_factory(reactor=ANY)
+        self.mocker.result(self.mocker.mock())
+
+        self.mocker.replay()
+
+        # DO IT!
+        return register(config, silence, sys.exit, max_retries=2, initial_delay=0.001,
+                        factor=0.09)
+
     def test_register_unknown_error(self):
         """
         When registration fails because of an unknown error, a message is
