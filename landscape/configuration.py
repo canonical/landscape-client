@@ -596,7 +596,8 @@ def store_public_key_data(config, certificate_data):
     return key_filename
 
 
-def register(config, on_message=print_text, on_error=sys.exit, reactor=None):
+def register(config, on_message=print_text, on_error=sys.exit, reactor=None,
+             max_retries=60, factor=1, initial_delay=1):
     """Instruct the Landscape Broker to register the client.
 
     The broker will be instructed to reload its configuration and then to
@@ -605,6 +606,12 @@ def register(config, on_message=print_text, on_error=sys.exit, reactor=None):
     @param reactor: The reactor to use.  Please only pass reactor when you
         have totally mangled everything with mocker.  Otherwise bad things
         will happen.
+    @param max_retries: The number of reconnect attempts to make when
+        connecting to landscape client.  Becomes maxRetries on the factory.
+    @param factor: Multiply the initial delay by this number between connection
+        attempts.
+    @param initial_delay: The initial interval between reconnect attempts.
+        Becomes initialDelay on the factory.  (Seconds)
     """
     reactor = TwistedReactor()
     exit_with_error = []
@@ -667,7 +674,8 @@ def register(config, on_message=print_text, on_error=sys.exit, reactor=None):
         stop(2)
 
     connector = RemoteBrokerConnector(reactor, config)
-    result = connector.connect(max_retries=300, quiet=False)
+    result = connector.connect(
+        max_retries=max_retries, factor=factor, initial_delay=initial_delay)
     result.addCallback(got_connection)
     result.addErrback(got_error)
 

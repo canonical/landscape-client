@@ -455,7 +455,7 @@ class RemoteObjectConnector(object):
         self._remote = None
         self._factory = None
 
-    def connect(self, max_retries=None, factor=None):
+    def connect(self, max_retries=None, factor=None, initial_delay=None):
         """Connect to a remote object exposed by a L{MethodCallProtocol}.
 
         This method will connect to the socket provided in the constructor
@@ -466,12 +466,15 @@ class RemoteObjectConnector(object):
         @param factor: Optionally a float indicating by which factor the
             delay between subsequent retries should increase. Smaller values
             result in a faster reconnection attempts pace.
+        @param initial_delay: The initial interval between reconnect attempts.
         """
         self._connected = Deferred()
         self._factory = self.factory(reactor=self._reactor)
         self._factory.maxRetries = max_retries
         if factor:
             self._factory.factor = factor
+        if initial_delay:
+            self._factory.initialDelay = initial_delay
         self._factory.add_notifier(self._success, self._failure)
         self._reactor.connectUNIX(self._socket_path, self._factory)
         return self._connected
