@@ -18,7 +18,7 @@ from landscape.broker.registration import InvalidCredentialsError
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
-from landscape.tests.mocker import ARGS, ANY, MATCH, CONTAINS, expect, KWARGS
+from landscape.tests.mocker import ARGS, ANY, MATCH, CONTAINS, expect
 from landscape.broker.amp import (
     RemoteBroker, BrokerClientProtocol, RemoteBrokerConnector,
     BrokerClientProtocolFactory)
@@ -1886,15 +1886,15 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         return self.assertSuccess(register(config, print_text, sys.exit))
 
 
-class RegisterFunctionNoServiceTest(LandscapeTest):
+class RegisterFunctionRetryTest(LandscapeTest):
 
     def setUp(self):
-        super(RegisterFunctionNoServiceTest, self).setUp()
+        super(RegisterFunctionRetryTest, self).setUp()
         self._original_factory = RemoteBrokerConnector.factory
 
     def tearDown(self):
+        super(RegisterFunctionRetryTest, self).tearDown()
         RemoteBrokerConnector.factory = self._original_factory
-        super(RegisterFunctionNoServiceTest, self).tearDown()
 
     def test_register_retry_defaults(self):
         """
@@ -1920,9 +1920,9 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
 
         def verify(obj):
             custom_factory = ProtocolFactory.instances[0]
-            self.assertEqual(2, custom_factory.maxRetries)
-            self.assertEqual(0.001, custom_factory.initialDelay)
-            self.assertEqual(0.09, custom_factory.factor)
+            self.assertEqual(60, custom_factory.maxRetries)
+            self.assertEqual(1, custom_factory.initialDelay)
+            self.assertEqual(1, custom_factory.factor)
         result.addCallback(verify)
 
 
@@ -1956,6 +1956,9 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
             self.assertEqual(0.09, custom_factory.factor)
         result.addCallback(verify)
 
+
+class RegisterFunctionNoServiceTest(LandscapeTest):
+
     def test_register_unknown_error(self):
         """
         When registration fails because of an unknown error, a message is
@@ -1981,7 +1984,7 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
 
         # SNORE
         connector = connector_factory(ANY, configuration)
-        connector.connect(quiet=True, max_retries=0, factor=1, initial_delay=1)
+        connector.connect(quiet=True, max_retries=60, factor=1, initial_delay=1)
         self.mocker.result(succeed(remote_broker))
         remote_broker.reload_configuration()
         self.mocker.result(succeed(None))
@@ -1995,6 +1998,7 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
         print_text_mock(ANY, error=True)
 
         def check_logged_failure(text, error):
+            import pdb; pdb.set_trace()
             self.assertTrue("ZeroDivisionError" in text)
         self.mocker.call(check_logged_failure)
         print_text_mock("Unknown error occurred.", error=True)

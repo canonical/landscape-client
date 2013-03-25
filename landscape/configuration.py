@@ -675,7 +675,7 @@ def register(config, on_message=print_text, on_error=sys.exit, reactor=None,
         stop(2)
 
     connector = broker_connector(reactor, config)
-    result = connector.connect(quiet=False, max_retries=max_retries,
+    result = connector.connect(quiet=True, max_retries=max_retries,
                                factor=factor, initial_delay=initial_delay)
     result.addCallback(got_connection)
     result.addErrback(got_error)
