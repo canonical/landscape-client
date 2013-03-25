@@ -317,7 +317,8 @@ class FakeBrokerServiceHelper(object):
         test_case.broker_service = FakeBrokerService(config)
         test_case.remote = FakeRemoteBroker(
             test_case.broker_service.exchanger,
-            test_case.broker_service.message_store)
+            test_case.broker_service.message_store,
+            test_case.broker_service.broker)
 
 
 class BrokerServiceHelper(FakeBrokerServiceHelper):

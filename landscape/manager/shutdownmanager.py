@@ -51,7 +51,12 @@ class ShutdownManager(ManagerPlugin):
 
     def _respond_success(self, data, operation_id):
         logging.info("Shutdown request succeeded.")
-        return self._respond(SUCCEEDED, data, operation_id)
+        deferred = self._respond(SUCCEEDED, data, operation_id)
+        # After sending the result to the server, stop accepting messages and
+        # wait for the reboot/shutdown.
+        deferred.addCallback(
+            lambda _: self.registry.broker.stop_exchanger())
+        return deferred
 
     def _respond_failure(self, failure, operation_id):
         logging.info("Shutdown request failed.")

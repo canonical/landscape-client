@@ -296,7 +296,7 @@ class PackageChanger(PackageTaskHandler):
             and os.path.exists(self.reboot_required_filename)):
             # Reboot the system returning the package changes result first.
             deferred = self._run_reboot().addCallback(
-                self._send_response, message, result)
+                self._send_response, message, result, stop_exchanger=True)
             deferred.addErrback(self._send_response, message, result)
             return deferred
 
@@ -328,7 +328,8 @@ class PackageChanger(PackageTaskHandler):
         logging.warning(
             "Landscape is rebooting the system in %s minutes" % minutes)
 
-    def _send_response(self, reboot_result, message, package_change_result):
+    def _send_response(self, reboot_result, message, package_change_result,
+                       stop_exchanger=False):
         """
         Create a response and dispatch to the broker.
         """
@@ -350,7 +351,11 @@ class PackageChanger(PackageTaskHandler):
 
         logging.info("Queuing response with change package results to "
                      "exchange urgently.")
-        return self._broker.send_message(response, True)
+
+        deferred = self._broker.send_message(response, True)
+        if stop_exchanger:
+            deferred.addCallback(lambda _: self._broker.stop_exchanger())
+        return deferred
 
     def handle_change_package_locks(self, message):
         """Handle a C{change-package-locks} message.

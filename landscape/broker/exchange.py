@@ -54,6 +54,7 @@ class MessageExchange(object):
         self._client_accepted_types_hash = None
         self._message_handlers = {}
         self._exchange_store = exchange_store
+        self._stopped = False
 
         self.register_message("accepted-types", self._handle_accepted_types)
         self.register_message("resynchronize", self._handle_resynchronize)
@@ -122,6 +123,7 @@ class MessageExchange(object):
         if self._notification_id is not None:
             self._reactor.cancel_call(self._notification_id)
             self._notification_id = None
+        self._stopped = True
 
     def _handle_accepted_types(self, message):
         """
@@ -243,6 +245,8 @@ class MessageExchange(object):
         @param force: If true, an exchange will necessarily be scheduled,
             even if it was already scheduled before.
         """
+        if self._stopped:
+            return
         # The 'not self._exchanging' check below is currently untested.
         # It's a bit tricky to test as it is preventing rehooking 'exchange'
         # while there's a background thread doing the exchange itself.

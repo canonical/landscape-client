@@ -4,6 +4,7 @@ from landscape.manager.manager import FAILED
 from landscape.tests.helpers import LandscapeTest, DEFAULT_ACCEPTED_TYPES
 from landscape.broker.tests.helpers import (
     BrokerServerHelper, RemoteClientHelper)
+from landscape.broker.tests.test_ping import FakePageGetter
 
 
 class FakeClient(object):
@@ -288,6 +289,34 @@ class BrokerServerTest(LandscapeTest):
         self.assertEqual(self.reactor.fire("event"), [])
         return self.assertSuccess(result, "event")
 
+    def test_stop_exchanger(self):
+        """
+        The L{BrokerServer.stop_exchanger} stops the exchanger so no further
+        messages are sent or consumed.
+        """
+        self.pinger.start()
+        self.exchanger.schedule_exchange()
+        self.broker.stop_exchanger()
+
+        self.reactor.advance(self.config.exchange_interval)
+        self.assertFalse(self.transport.payloads)
+
+    def test_stop_exchanger_stops_pinger(self):
+        """
+        The L{BrokerServer.stop_exchanger} stops the pinger and no further
+        pings are performed.
+        """
+        url = "http://example.com/mysuperping"
+        page_getter = FakePageGetter(None)
+        self.pinger.start()
+        self.pinger.set_url(url)
+        self.pinger._ping_client.get_page = page_getter.get_page
+        self.identity.insecure_id = 23
+
+        self.broker.stop_exchanger()
+        self.reactor.advance(self.config.exchange_interval)
+        self.assertEqual([], page_getter.fetches)
+
 
 class EventTest(LandscapeTest):
 
@@ -409,7 +438,7 @@ class HandlersTest(LandscapeTest):
         self.mocker.result(succeed(False))
         self.mocker.replay()
         result = self.reactor.fire("message", message)
-        result = [result for result in result if result is not None][0]
+        result = [i for i in result if i is not None][0]
 
         class StartsWith(object):
 

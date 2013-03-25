@@ -137,6 +137,11 @@ class Pinger(object):
             self._call_id = self._reactor.call_every(
                 self._config.ping_interval, self.ping)
 
+    def stop(self):
+        """Stop pinging the message server."""
+        self._reactor.cancel_call(self._call_id)
+        self._call_id = None
+
 
 class FakePinger(object):
 
