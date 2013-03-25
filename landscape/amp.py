@@ -76,7 +76,8 @@ class RemoteComponentConnector(RemoteObjectConnector):
             return failure
 
         result = super(RemoteComponentConnector, self).connect(
-            max_retries=max_retries, factor=factor, initial_delay=initial_delay)
+            max_retries=max_retries, factor=factor,
+            initial_delay=initial_delay)
         if not quiet:
             result.addErrback(log_error)
         result.addCallback(connected)

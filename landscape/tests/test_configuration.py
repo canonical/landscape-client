@@ -1835,7 +1835,8 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         connector_factory = self.mocker.replace(
             "landscape.broker.amp.RemoteBrokerConnector", passthrough=False)
         connector = connector_factory(ANY, ANY)
-        connector.connect(quiet=True, max_retries=60, factor=1, initial_delay=1)
+        connector.connect(quiet=True, max_retries=60, factor=1,
+                          initial_delay=1)
         self.mocker.result(fail(ZeroDivisionError))
 
         print_text_mock(ARGS)
@@ -1925,7 +1926,6 @@ class RegisterFunctionRetryTest(LandscapeTest):
             self.assertEqual(1, custom_factory.factor)
         result.addCallback(verify)
 
-
     def test_register_retry_configuration(self):
         """
         Registration has control over the retry behavior when connecting
@@ -1946,8 +1946,8 @@ class RegisterFunctionRetryTest(LandscapeTest):
                 self.instances.append(self)
 
         RemoteBrokerConnector.factory = ProtocolFactory
-        result = register(config, silence, sys.exit, max_retries=2, initial_delay=0.001,
-                        factor=0.09)
+        result = register(config, silence, sys.exit, max_retries=2,
+                          initial_delay=0.001, factor=0.09)
 
         def verify(obj):
             custom_factory = ProtocolFactory.instances[0]
@@ -1984,7 +1984,8 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
 
         # SNORE
         connector = connector_factory(ANY, configuration)
-        connector.connect(quiet=True, max_retries=60, factor=1, initial_delay=1)
+        connector.connect(quiet=True, max_retries=60, factor=1,
+                          initial_delay=1)
         self.mocker.result(succeed(remote_broker))
         remote_broker.reload_configuration()
         self.mocker.result(succeed(None))
@@ -1998,7 +1999,6 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
         print_text_mock(ANY, error=True)
 
         def check_logged_failure(text, error):
-            import pdb; pdb.set_trace()
             self.assertTrue("ZeroDivisionError" in text)
         self.mocker.call(check_logged_failure)
         print_text_mock("Unknown error occurred.", error=True)

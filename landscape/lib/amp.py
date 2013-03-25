@@ -361,7 +361,7 @@ class RemoteObject(object):
         """
         result = response["result"]
         if call is not None:
-            call.cancel() # This is a successful retry, cancel the timeout.
+            call.cancel()  # This is a successful retry, cancel the timeout.
         deferred.callback(result)
 
     def _handle_failure(self, failure, method, args, kwargs, deferred,
