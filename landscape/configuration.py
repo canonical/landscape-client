@@ -597,7 +597,8 @@ def store_public_key_data(config, certificate_data):
 
 
 def register(config, on_message=print_text, on_error=sys.exit, reactor=None,
-             max_retries=60, factor=1, initial_delay=1):
+             max_retries=60, factor=1, initial_delay=1,
+             broker_connector=RemoteBrokerConnector):
     """Instruct the Landscape Broker to register the client.
 
     The broker will be instructed to reload its configuration and then to
@@ -673,8 +674,8 @@ def register(config, on_message=print_text, on_error=sys.exit, reactor=None,
                    "details when the client runs.", error=True)
         stop(2)
 
-    connector = RemoteBrokerConnector(reactor, config)
-    result = connector.connect(quiet=True, max_retries=max_retries,
+    connector = broker_connector(reactor, config)
+    result = connector.connect(quiet=False, max_retries=max_retries,
                                factor=factor, initial_delay=initial_delay)
     result.addCallback(got_connection)
     result.addErrback(got_error)

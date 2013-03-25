@@ -18,8 +18,10 @@ from landscape.broker.registration import InvalidCredentialsError
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
-from landscape.tests.mocker import ARGS, ANY, MATCH, CONTAINS, expect
-from landscape.broker.amp import RemoteBroker, BrokerClientProtocol
+from landscape.tests.mocker import ARGS, ANY, MATCH, CONTAINS, expect, KWARGS
+from landscape.broker.amp import (
+    RemoteBroker, BrokerClientProtocol, RemoteBrokerConnector,
+    BrokerClientProtocolFactory)
 
 
 class LandscapeConfigurationTest(LandscapeTest):
@@ -1886,6 +1888,44 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
 
 class RegisterFunctionNoServiceTest(LandscapeTest):
 
+    def setUp(self):
+        super(RegisterFunctionNoServiceTest, self).setUp()
+        self._original_factory = RemoteBrokerConnector.factory
+
+    def tearDown(self):
+        RemoteBrokerConnector.factory = self._original_factory
+        super(RegisterFunctionNoServiceTest, self).tearDown()
+
+    def test_register_retry_defaults(self):
+        """
+        Registration has default behavior for retrying when connecting to the
+        landscape client.
+        """
+        config = LandscapeSetupConfiguration()
+        config.ok_no_register = True
+
+        def silence(p1, error=None):
+            """Do not print out messages."""
+            pass
+
+        class ProtocolFactory(BrokerClientProtocolFactory):
+            instances = []
+
+            def __init__(self, object=None, reactor=None):
+                BrokerClientProtocolFactory.__init__(self, object, reactor)
+                self.instances.append(self)
+
+        RemoteBrokerConnector.factory = ProtocolFactory
+        result = register(config, silence, sys.exit)
+
+        def verify(obj):
+            custom_factory = ProtocolFactory.instances[0]
+            self.assertEqual(2, custom_factory.maxRetries)
+            self.assertEqual(0.001, custom_factory.initialDelay)
+            self.assertEqual(0.09, custom_factory.factor)
+        result.addCallback(verify)
+
+
     def test_register_retry_configuration(self):
         """
         Registration has control over the retry behavior when connecting
@@ -1898,18 +1938,23 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
             """Do not print out messages."""
             pass
 
-        mock_factory = self.mocker.replace(
-            "landscape.broker.amp.RemoteBrokerConnector.factory", passthrough=False)
+        class ProtocolFactory(BrokerClientProtocolFactory):
+            instances = []
 
-        mock_factory(ANY)
-        mock_factory(reactor=ANY)
-        self.mocker.result(self.mocker.mock())
+            def __init__(self, object=None, reactor=None):
+                BrokerClientProtocolFactory.__init__(self, object, reactor)
+                self.instances.append(self)
 
-        self.mocker.replay()
-
-        # DO IT!
-        return register(config, silence, sys.exit, max_retries=2, initial_delay=0.001,
+        RemoteBrokerConnector.factory = ProtocolFactory
+        result = register(config, silence, sys.exit, max_retries=2, initial_delay=0.001,
                         factor=0.09)
+
+        def verify(obj):
+            custom_factory = ProtocolFactory.instances[0]
+            self.assertEqual(2, custom_factory.maxRetries)
+            self.assertEqual(0.001, custom_factory.initialDelay)
+            self.assertEqual(0.09, custom_factory.factor)
+        result.addCallback(verify)
 
     def test_register_unknown_error(self):
         """
@@ -1936,7 +1981,7 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
 
         # SNORE
         connector = connector_factory(ANY, configuration)
-        connector.connect(quiet=True, max_retries=60, factor=1, initial_delay=1)
+        connector.connect(quiet=True, max_retries=0, factor=1, initial_delay=1)
         self.mocker.result(succeed(remote_broker))
         remote_broker.reload_configuration()
         self.mocker.result(succeed(None))
