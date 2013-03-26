@@ -14,10 +14,12 @@ from landscape.configuration import (
     stop_client_and_disable_init_script, ConfigurationError,
     ImportOptionError, store_public_key_data,
     fetch_base64_ssl_public_certificate)
+from landscape.broker.registration import InvalidCredentialsError
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
 from landscape.tests.mocker import ARGS, ANY, MATCH, CONTAINS, expect
+from landscape.broker.amp import RemoteBroker, BrokerClientProtocol
 
 
 class LandscapeConfigurationTest(LandscapeTest):
@@ -1831,7 +1833,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         connector_factory = self.mocker.replace(
             "landscape.broker.amp.RemoteBrokerConnector", passthrough=False)
         connector = connector_factory(ANY, ANY)
-        connector.connect(max_retries=0, quiet=True)
+        connector.connect(quiet=True, max_retries=0, factor=1, initial_delay=1)
         self.mocker.result(fail(ZeroDivisionError))
 
         print_text_mock(ARGS)
@@ -1852,7 +1854,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         self.mocker.replay()
 
         config = self.get_config(["-a", "accountname", "--silent"])
-        return register(config, print_text, sys.exit)
+        return register(config, print_text, sys.exit, max_retries=0)
 
     def test_register_bus_connection_failure_ok_no_register(self):
         """
