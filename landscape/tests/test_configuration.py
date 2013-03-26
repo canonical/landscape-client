@@ -14,14 +14,10 @@ from landscape.configuration import (
     stop_client_and_disable_init_script, ConfigurationError,
     ImportOptionError, store_public_key_data,
     fetch_base64_ssl_public_certificate)
-from landscape.broker.registration import InvalidCredentialsError
 from landscape.sysvconfig import SysVConfig, ProcessError
 from landscape.tests.helpers import (
     LandscapeTest, BrokerServiceHelper, EnvironSaverHelper)
 from landscape.tests.mocker import ARGS, ANY, MATCH, CONTAINS, expect
-from landscape.broker.amp import (
-    RemoteBroker, BrokerClientProtocol, RemoteBrokerConnector,
-    BrokerClientProtocolFactory)
 
 
 class LandscapeConfigurationTest(LandscapeTest):
@@ -1620,213 +1616,59 @@ registration_key = shared-secret
                   # we care about are done.
 
 
-class RegisterFunctionTest(LandscapeConfigurationTest):
+class RegisterFunctionRetryTest(LandscapeConfigurationTest):
 
     helpers = [BrokerServiceHelper]
 
     def setUp(self):
-        super(RegisterFunctionTest, self).setUp()
+        super(RegisterFunctionRetryTest, self).setUp()
         self.config = LandscapeSetupConfiguration()
         self.config.load(["-c", self.config_filename])
 
-    def test_register_success(self):
-        service = self.broker_service
-
-        registration_mock = self.mocker.replace(service.registration)
-        config_mock = self.mocker.replace(service.config)
+    def test_register_with_retry_parameters(self):
+        """
+        Retry parameters are passed to the L{connect} method of the connector.
+        """
         print_text_mock = self.mocker.replace(print_text)
+        time_mock = self.mocker.replace("time")
+        sys_mock = self.mocker.replace("sys")
         reactor_mock = self.mocker.patch(TwistedReactor)
 
-        # This must necessarily happen in the following order.
-        self.mocker.order()
+        connector_factory = self.mocker.replace(
+            "landscape.broker.amp.RemoteBrokerConnector", passthrough=False)
+        connector = connector_factory(ANY, ANY)
+        connector.connect(quiet=True, max_retries=60, factor=0.1,
+                          initial_delay=42)
 
-        # This very informative message is printed out.
-        print_text_mock("Please wait... ", "")
-
-        time_mock = self.mocker.replace("time")
-        time_mock.sleep(ANY)
-        self.mocker.count(1)
-
-        reactor_mock.run()
-
-        # After a nice dance the configuration is reloaded.
-        config_mock.reload()
-
-        # The register() method is called.  We fire the "registration-done"
-        # event after it's done, so that it cascades into a deferred callback.
-
-        def register_done():
-            service.reactor.fire("registration-done")
-
-        registration_mock.register()
-        self.mocker.call(register_done)
-
-        # The deferred callback finally prints out this message.
-        print_text_mock("System successfully registered.")
-
-        reactor_mock.stop()
-
-        # Nothing else is printed!
-        print_text_mock(ANY)
-        self.mocker.count(0)
-
-        self.mocker.replay()
-
-        # DO IT!
-        return register(self.config, print_text, sys.exit)
-
-    def test_register_failure(self):
-        """
-        When registration fails because of invalid credentials, a message will
-        be printed to the console and the program will exit.
-        """
-        service = self.broker_service
-
-        self.log_helper.ignore_errors(InvalidCredentialsError)
-        registration_mock = self.mocker.replace(service.registration)
-        config_mock = self.mocker.replace(service.config)
-        print_text_mock = self.mocker.replace(print_text)
-        reactor_mock = self.mocker.patch(TwistedReactor)
-
-        # This must necessarily happen in the following order.
-        self.mocker.order()
-
-        # This very informative message is printed out.
-        print_text_mock("Please wait... ", "")
-
-        time_mock = self.mocker.replace("time")
-        time_mock.sleep(ANY)
-        self.mocker.count(1)
-
-        reactor_mock.run()
-
-        # After a nice dance the configuration is reloaded.
-        config_mock.reload()
-
-        # The register() method is called.  We fire the "registration-failed"
-        # event after it's done, so that it cascades into a deferred errback.
-
-        def register_done():
-            service.reactor.fire("registration-failed")
-
-        registration_mock.register()
-        self.mocker.call(register_done)
-
-        # The deferred errback finally prints out this message.
-        print_text_mock("Invalid account name or registration key.",
-                        error=True)
-
-        reactor_mock.stop()
-
-        # Nothing else is printed!
-        print_text_mock(ANY)
-        self.mocker.count(0)
-
-        self.mocker.replay()
-
-        # DO IT!
-        return register(self.config, print_text, sys.exit)
-
-    def test_register_exchange_failure(self):
-        """
-        When registration fails because the server couldn't be contacted, a
-        message is printed and the program quits.
-        """
-        service = self.broker_service
-
-        registration_mock = self.mocker.replace(service.registration)
-        config_mock = self.mocker.replace(service.config)
-        print_text_mock = self.mocker.replace(print_text)
-        reactor_mock = self.mocker.patch(TwistedReactor)
-
-        # This must necessarily happen in the following order.
-        self.mocker.order()
-
-        # This very informative message is printed out.
-        print_text_mock("Please wait... ", "")
-
-        time_mock = self.mocker.replace("time")
-        time_mock.sleep(ANY)
-        self.mocker.count(1)
-
-        reactor_mock.run()
-
-        # After a nice dance the configuration is reloaded.
-        config_mock.reload()
-
-        def register_done():
-            service.reactor.fire("exchange-failed")
-        registration_mock.register()
-        self.mocker.call(register_done)
-
-        # The deferred errback finally prints out this message.
-        print_text_mock("We were unable to contact the server. "
-                        "Your internet connection may be down. "
-                        "The landscape client will continue to try and "
-                        "contact the server periodically.",
-                        error=True)
-
-        reactor_mock.stop()
-
-        # Nothing else is printed!
-        print_text_mock(ANY)
-        self.mocker.count(0)
-
-        self.mocker.replay()
-
-        # DO IT!
-        return register(self.config, print_text, sys.exit)
-
-    def test_register_timeout_failure(self):
-        service = self.broker_service
-
-        registration_mock = self.mocker.replace(service.registration)
-        config_mock = self.mocker.replace(service.config)
-        print_text_mock = self.mocker.replace(print_text)
-        reactor_mock = self.mocker.patch(TwistedReactor)
-        remote_mock = self.mocker.patch(RemoteBroker)
-
-        protocol_mock = self.mocker.patch(BrokerClientProtocol)
-        protocol_mock.timeout
-        self.mocker.result(0.1)
-        self.mocker.count(0, None)
-
-        # This must necessarily happen in the following order.
-        self.mocker.order()
-
-        # This very informative message is printed out.
-        print_text_mock("Please wait... ", "")
-
-        time_mock = self.mocker.replace("time")
-        time_mock.sleep(ANY)
-        self.mocker.count(1)
-
-        reactor_mock.run()
-
-        remote_mock.call_on_event(ANY)
         self.mocker.result(succeed(None))
 
-        # After a nice dance the configuration is reloaded.
-        config_mock.reload()
+        print_text_mock(ARGS)
+        time_mock.sleep(ANY)
+        reactor_mock.run()
 
-        registration_mock.register()
-        self.mocker.passthrough()
+        print_text_mock(
+            CONTAINS("There was an error communicating with the "
+                     "Landscape client"),
+            error=True)
+        print_text_mock(CONTAINS("This machine will be registered"),
+                        error=True)
 
-        # Nothing else is printed!
-        print_text_mock(ANY)
-        self.mocker.count(0)
+        sys_mock.exit(2)
+        connector.disconnect()
+        reactor_mock.stop()
 
         self.mocker.replay()
 
-        # DO IT!
-        return register(self.config, print_text, sys.exit)
+        config = self.get_config(["-a", "accountname", "--silent"])
+        return register(config, print_text, sys.exit, max_retries=60,
+                        factor=0.1, initial_delay=42)
 
-    def test_register_bus_connection_failure(self):
+    def test_register_with_default_retry_parameters(self):
         """
-        If the socket can't be connected to, landscape-config will print an
-        explanatory message and exit cleanly.
+        Retry parameters have reasonable default behavior - retry every second
+        for several seconds until the broker has time to start on heavily
+        loaded systems.
         """
-        # This will make the RemoteBrokerConnector.connect call fail
         print_text_mock = self.mocker.replace(print_text)
         time_mock = self.mocker.replace("time")
         sys_mock = self.mocker.replace("sys")
@@ -1837,7 +1679,8 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         connector = connector_factory(ANY, ANY)
         connector.connect(quiet=True, max_retries=60, factor=1,
                           initial_delay=1)
-        self.mocker.result(fail(ZeroDivisionError))
+
+        self.mocker.result(succeed(None))
 
         print_text_mock(ARGS)
         time_mock.sleep(ANY)
@@ -1858,103 +1701,6 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
 
         config = self.get_config(["-a", "accountname", "--silent"])
         return register(config, print_text, sys.exit)
-
-    def test_register_bus_connection_failure_ok_no_register(self):
-        """
-        Exit code 0 will be returned if we can't contact Landscape via DBus and
-        --ok-no-register was passed.
-        """
-        print_text_mock = self.mocker.replace(print_text)
-        time_mock = self.mocker.replace("time")
-        reactor_mock = self.mocker.patch(TwistedReactor)
-
-        print_text_mock(ARGS)
-        time_mock.sleep(ANY)
-        reactor_mock.run()
-        reactor_mock.stop()
-
-        print_text_mock(
-            CONTAINS("There was an error communicating with the "
-                     "Landscape client"),
-            error=True)
-        print_text_mock(CONTAINS("This machine will be registered"),
-                        error=True)
-
-        self.mocker.replay()
-
-        config = self.get_config(
-            ["-a", "accountname", "--silent", "--ok-no-register"])
-        return self.assertSuccess(register(config, print_text, sys.exit))
-
-
-class RegisterFunctionRetryTest(LandscapeTest):
-
-    def setUp(self):
-        super(RegisterFunctionRetryTest, self).setUp()
-        self._original_factory = RemoteBrokerConnector.factory
-
-    def tearDown(self):
-        super(RegisterFunctionRetryTest, self).tearDown()
-        RemoteBrokerConnector.factory = self._original_factory
-
-    def test_register_retry_defaults(self):
-        """
-        Registration has default behavior for retrying when connecting to the
-        landscape client.
-        """
-        config = LandscapeSetupConfiguration()
-        config.ok_no_register = True
-
-        def silence(p1, error=None):
-            """Do not print out messages."""
-            pass
-
-        class ProtocolFactory(BrokerClientProtocolFactory):
-            instances = []
-
-            def __init__(self, object=None, reactor=None):
-                BrokerClientProtocolFactory.__init__(self, object, reactor)
-                self.instances.append(self)
-
-        RemoteBrokerConnector.factory = ProtocolFactory
-        result = register(config, silence, sys.exit)
-
-        def verify(obj):
-            custom_factory = ProtocolFactory.instances[0]
-            self.assertEqual(60, custom_factory.maxRetries)
-            self.assertEqual(1, custom_factory.initialDelay)
-            self.assertEqual(1, custom_factory.factor)
-        result.addCallback(verify)
-
-    def test_register_retry_configuration(self):
-        """
-        Registration has control over the retry behavior when connecting
-        to the landscape client.
-        """
-        config = LandscapeSetupConfiguration()
-        config.ok_no_register = True
-
-        def silence(p1, error=None):
-            """Do not print out messages."""
-            pass
-
-        class ProtocolFactory(BrokerClientProtocolFactory):
-            instances = []
-
-            def __init__(self, object=None, reactor=None):
-                BrokerClientProtocolFactory.__init__(self, object, reactor)
-                self.instances.append(self)
-
-        RemoteBrokerConnector.factory = ProtocolFactory
-        result = register(config, silence, sys.exit, max_retries=2,
-                          initial_delay=0.001, factor=0.09)
-
-        def verify(obj):
-            custom_factory = ProtocolFactory.instances[0]
-            self.assertEqual(2, custom_factory.maxRetries)
-            self.assertEqual(0.001, custom_factory.initialDelay)
-            self.assertEqual(0.09, custom_factory.factor)
-        result.addCallback(verify)
 
 
 class RegisterFunctionNoServiceTest(LandscapeTest):
@@ -1984,8 +1730,7 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
 
         # SNORE
         connector = connector_factory(ANY, configuration)
-        connector.connect(quiet=True, max_retries=60, factor=1,
-                          initial_delay=1)
+        connector.connect(quiet=True, max_retries=0, initial_delay=1, factor=1)
         self.mocker.result(succeed(remote_broker))
         remote_broker.reload_configuration()
         self.mocker.result(succeed(None))
@@ -2009,7 +1754,7 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
 
         self.mocker.replay()
 
-        return register(configuration, print_text, sys.exit)
+        return register(configuration, print_text, sys.exit, max_retries=0)
 
 
 class SSLCertificateDataTest(LandscapeConfigurationTest):

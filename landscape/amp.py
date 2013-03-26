@@ -62,7 +62,6 @@ class RemoteComponentConnector(RemoteObjectConnector):
         @param initial_delay: The initial interval between reconnect attempts.
         @param quiet: A boolean indicating whether to log errors.
         """
-
         def fire_reconnect(remote):
             self._twisted_reactor.fire("%s-reconnect" %
                                        self.component.name)

@@ -39,7 +39,6 @@ class RemoteComponentTest(LandscapeTest):
         factory = ComponentProtocolFactory(object=self.component)
         self.port = reactor.listen_unix(socket, factory)
 
-
         self.connector = RemoteTestComponentConnector(reactor, config)
         connected = self.connector.connect()
         connected.addCallback(lambda remote: setattr(self, "remote", remote))
@@ -103,6 +102,18 @@ class RemoteComponentConnectorTest(LandscapeTest):
         If the C{quiet} option is passed, no errors will be logged.
         """
         result = self.connector.connect(max_retries=0, quiet=True)
+        return self.assertFailure(result, ConnectError)
+
+    def test_connect_with_retry(self):
+        """
+        Retry parameters are passed to the L{RemoteObjectConnector} and set
+        on the factory.
+        """
+        result = self.connector.connect(quiet=True, max_retries=60, factor=1,
+                                        initial_delay=0.5)
+        self.assertEqual(60, self.connector._factory.maxRetries)
+        self.assertEqual(1, self.connector._factory.factor)
+        self.assertEqual(0.5, self.connector._factory.initialDelay)
         return self.assertFailure(result, ConnectError)
 
     def test_reconnect_fires_event(self):
