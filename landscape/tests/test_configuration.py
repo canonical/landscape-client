@@ -1833,7 +1833,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         connector_factory = self.mocker.replace(
             "landscape.broker.amp.RemoteBrokerConnector", passthrough=False)
         connector = connector_factory(ANY, ANY)
-        connector.connect(quiet=True, max_retries=0, factor=1, initial_delay=1)
+        connector.connect(max_retries=0, quiet=True)
         self.mocker.result(fail(ZeroDivisionError))
 
         print_text_mock(ARGS)
@@ -1881,7 +1881,8 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
 
         config = self.get_config(
             ["-a", "accountname", "--silent", "--ok-no-register"])
-        return self.assertSuccess(register(config, print_text, sys.exit))
+        return self.assertSuccess(register(config, print_text, sys.exit,
+                                           max_retries=0))
 
 
 class RegisterFunctionRetryTest(LandscapeConfigurationTest):
@@ -1905,8 +1906,7 @@ class RegisterFunctionRetryTest(LandscapeConfigurationTest):
         connector_factory = self.mocker.replace(
             "landscape.broker.amp.RemoteBrokerConnector", passthrough=False)
         connector = connector_factory(ANY, ANY)
-        connector.connect(quiet=True, max_retries=60, factor=0.1,
-                          initial_delay=42)
+        connector.connect(quiet=True, max_retries=12)
 
         self.mocker.result(succeed(None))
 
@@ -1928,14 +1928,20 @@ class RegisterFunctionRetryTest(LandscapeConfigurationTest):
         self.mocker.replay()
 
         config = self.get_config(["-a", "accountname", "--silent"])
-        return register(config, print_text, sys.exit, max_retries=60,
-                        factor=0.1, initial_delay=42)
+        return register(config, print_text, sys.exit, max_retries=12)
 
     def test_register_with_default_retry_parameters(self):
         """
-        Retry parameters have reasonable default behavior - retry every second
-        for several seconds until the broker has time to start on heavily
-        loaded systems.
+        max_retries has reasonable default behavior - retry 14 times which
+        will result in a wait of about 60 seconds, until the broker has time
+        to start on heavily loaded systems.
+
+        initialDelay = 0.05
+        factor =  1.62
+        maxDelay = 30
+        max_retries = 14
+
+        0.05 * (1 - 1.62 ** 14) / (1 - 1.62) = 69 seconds
         """
         print_text_mock = self.mocker.replace(print_text)
         time_mock = self.mocker.replace("time")
@@ -1945,8 +1951,7 @@ class RegisterFunctionRetryTest(LandscapeConfigurationTest):
         connector_factory = self.mocker.replace(
             "landscape.broker.amp.RemoteBrokerConnector", passthrough=False)
         connector = connector_factory(ANY, ANY)
-        connector.connect(quiet=True, max_retries=60, factor=1,
-                          initial_delay=1)
+        connector.connect(quiet=True, max_retries=14)
 
         self.mocker.result(succeed(None))
 
@@ -1998,7 +2003,7 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
 
         # SNORE
         connector = connector_factory(ANY, configuration)
-        connector.connect(quiet=True, max_retries=0, initial_delay=1, factor=1)
+        connector.connect(max_retries=0, quiet=True)
         self.mocker.result(succeed(remote_broker))
         remote_broker.reload_configuration()
         self.mocker.result(succeed(None))

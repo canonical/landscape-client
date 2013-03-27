@@ -46,8 +46,7 @@ class RemoteComponentConnector(RemoteObjectConnector):
         super(RemoteComponentConnector, self).__init__(
             self._twisted_reactor._reactor, socket, *args, **kwargs)
 
-    def connect(self, max_retries=None, factor=None, initial_delay=None,
-                quiet=False):
+    def connect(self, max_retries=None, factor=None, quiet=False):
         """Connect to the remote Landscape component.
 
         If the connection is lost after having been established, and then
@@ -59,9 +58,9 @@ class RemoteComponentConnector(RemoteObjectConnector):
         @param factor: Optionally a float indicating by which factor the
             delay between subsequent retries should increase. Smaller values
             result in a faster reconnection attempts pace.
-        @param initial_delay: The initial interval between reconnect attempts.
         @param quiet: A boolean indicating whether to log errors.
         """
+
         def fire_reconnect(remote):
             self._twisted_reactor.fire("%s-reconnect" %
                                        self.component.name)
@@ -75,8 +74,7 @@ class RemoteComponentConnector(RemoteObjectConnector):
             return failure
 
         result = super(RemoteComponentConnector, self).connect(
-            max_retries=max_retries, factor=factor,
-            initial_delay=initial_delay)
+            max_retries=max_retries, factor=factor)
         if not quiet:
             result.addErrback(log_error)
         result.addCallback(connected)
