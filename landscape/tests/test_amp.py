@@ -39,7 +39,6 @@ class RemoteComponentTest(LandscapeTest):
         factory = ComponentProtocolFactory(object=self.component)
         self.port = reactor.listen_unix(socket, factory)
 
-
         self.connector = RemoteTestComponentConnector(reactor, config)
         connected = self.connector.connect()
         connected.addCallback(lambda remote: setattr(self, "remote", remote))

@@ -596,7 +596,8 @@ def store_public_key_data(config, certificate_data):
     return key_filename
 
 
-def register(config, on_message=print_text, on_error=sys.exit, reactor=None):
+def register(config, on_message=print_text, on_error=sys.exit, reactor=None,
+             max_retries=14):
     """Instruct the Landscape Broker to register the client.
 
     The broker will be instructed to reload its configuration and then to
@@ -605,7 +606,18 @@ def register(config, on_message=print_text, on_error=sys.exit, reactor=None):
     @param reactor: The reactor to use.  Please only pass reactor when you
         have totally mangled everything with mocker.  Otherwise bad things
         will happen.
-    """
+    @param max_retries: The number of times to retry connecting to the
+        landscape client service.  The delay between retries is calculated
+        by Twisted and increases geometrically.  The default of 14 results in
+        a total wait time of about 70 seconds.
+
+        initialDelay = 0.05
+        factor =  1.62
+        maxDelay = 30
+        max_retries = 14
+
+        0.05 * (1 - 1.62 ** 14) / (1 - 1.62) = 69 seconds
+   """
     reactor = TwistedReactor()
     exit_with_error = []
 
@@ -667,7 +679,7 @@ def register(config, on_message=print_text, on_error=sys.exit, reactor=None):
         stop(2)
 
     connector = RemoteBrokerConnector(reactor, config)
-    result = connector.connect(max_retries=0, quiet=True)
+    result = connector.connect(max_retries=max_retries, quiet=True)
     result.addCallback(got_connection)
     result.addErrback(got_error)
 

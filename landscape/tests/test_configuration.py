@@ -1854,7 +1854,7 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
         self.mocker.replay()
 
         config = self.get_config(["-a", "accountname", "--silent"])
-        return register(config, print_text, sys.exit)
+        return register(config, print_text, sys.exit, max_retries=0)
 
     def test_register_bus_connection_failure_ok_no_register(self):
         """
@@ -1881,7 +1881,99 @@ class RegisterFunctionTest(LandscapeConfigurationTest):
 
         config = self.get_config(
             ["-a", "accountname", "--silent", "--ok-no-register"])
-        return self.assertSuccess(register(config, print_text, sys.exit))
+        return self.assertSuccess(register(config, print_text, sys.exit,
+                                           max_retries=0))
+
+
+class RegisterFunctionRetryTest(LandscapeConfigurationTest):
+
+    helpers = [BrokerServiceHelper]
+
+    def setUp(self):
+        super(RegisterFunctionRetryTest, self).setUp()
+        self.config = LandscapeSetupConfiguration()
+        self.config.load(["-c", self.config_filename])
+
+    def test_register_with_retry_parameters(self):
+        """
+        Retry parameters are passed to the L{connect} method of the connector.
+        """
+        print_text_mock = self.mocker.replace(print_text)
+        time_mock = self.mocker.replace("time")
+        sys_mock = self.mocker.replace("sys")
+        reactor_mock = self.mocker.patch(TwistedReactor)
+
+        connector_factory = self.mocker.replace(
+            "landscape.broker.amp.RemoteBrokerConnector", passthrough=False)
+        connector = connector_factory(ANY, ANY)
+        connector.connect(quiet=True, max_retries=12)
+
+        self.mocker.result(succeed(None))
+
+        print_text_mock(ARGS)
+        time_mock.sleep(ANY)
+        reactor_mock.run()
+
+        print_text_mock(
+            CONTAINS("There was an error communicating with the "
+                     "Landscape client"),
+            error=True)
+        print_text_mock(CONTAINS("This machine will be registered"),
+                        error=True)
+
+        sys_mock.exit(2)
+        connector.disconnect()
+        reactor_mock.stop()
+
+        self.mocker.replay()
+
+        config = self.get_config(["-a", "accountname", "--silent"])
+        return register(config, print_text, sys.exit, max_retries=12)
+
+    def test_register_with_default_retry_parameters(self):
+        """
+        max_retries has reasonable default behavior - retry 14 times which
+        will result in a wait of about 60 seconds, until the broker has time
+        to start on heavily loaded systems.
+
+        initialDelay = 0.05
+        factor =  1.62
+        maxDelay = 30
+        max_retries = 14
+
+        0.05 * (1 - 1.62 ** 14) / (1 - 1.62) = 69 seconds
+        """
+        print_text_mock = self.mocker.replace(print_text)
+        time_mock = self.mocker.replace("time")
+        sys_mock = self.mocker.replace("sys")
+        reactor_mock = self.mocker.patch(TwistedReactor)
+
+        connector_factory = self.mocker.replace(
+            "landscape.broker.amp.RemoteBrokerConnector", passthrough=False)
+        connector = connector_factory(ANY, ANY)
+        connector.connect(quiet=True, max_retries=14)
+
+        self.mocker.result(succeed(None))
+
+        print_text_mock(ARGS)
+        time_mock.sleep(ANY)
+        reactor_mock.run()
+
+        print_text_mock(
+            CONTAINS("There was an error communicating with the "
+                     "Landscape client"),
+            error=True)
+        print_text_mock(CONTAINS("This machine will be registered"),
+                        error=True)
+
+        sys_mock.exit(2)
+        connector.disconnect()
+        reactor_mock.stop()
+
+        self.mocker.replay()
+
+        config = self.get_config(["-a", "accountname", "--silent"])
+        return register(config, print_text, sys.exit)
 
 
 class RegisterFunctionNoServiceTest(LandscapeTest):
@@ -1935,7 +2027,7 @@ class RegisterFunctionNoServiceTest(LandscapeTest):
 
         self.mocker.replay()
 
-        return register(configuration, print_text, sys.exit)
+        return register(configuration, print_text, sys.exit, max_retries=0)
 
 
 class SSLCertificateDataTest(LandscapeConfigurationTest):
