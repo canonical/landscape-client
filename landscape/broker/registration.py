@@ -1,3 +1,11 @@
+"""
+Handle client registration against the server.
+
+When the service is started for the first time it connects to the server
+as a new client without providing any identification credential, and the
+server replies with the available registration mechanisms. At this point
+the broker sends a further
+"""
 import time
 import logging
 import socket

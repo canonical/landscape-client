@@ -149,8 +149,6 @@ class BrokerServer(object):
 
     def get_server_uuid(self):
         """Return the uuid of the Landscape server we're pointing at."""
-        # Convert Nones to empty strings.  The Remote will
-        # convert them back to Nones.
         return self._message_store.get_server_uuid()
 
     def register_client_accepted_message_type(self, type):

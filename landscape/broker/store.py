@@ -43,7 +43,7 @@ class MessageStore(object):
     api = SERVER_API
 
     def __init__(self, persist, directory, directory_size=1000,
-                 monitor_interval=60 * 60, get_time=time.time):
+                 get_time=time.time):
         self._get_time = get_time
         self._directory = directory
         self._directory_size = directory_size

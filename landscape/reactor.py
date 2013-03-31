@@ -1,3 +1,6 @@
+"""
+Extend the regular Twisted reactor with event-handling features.
+"""
 import time
 import sys
 import logging
@@ -42,6 +45,10 @@ class EventHandlingReactorMixin(object):
 
     def call_on(self, event_type, handler, priority=0):
         """Register an event handler.
+
+        The handler will be invoked every time an event of the given type
+        is fired (there's no need to re-register the handler after the
+        event is fired).
 
         @param event_type: The name of the event type to handle.
         @param handler: The function handling the given event type.
