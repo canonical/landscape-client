@@ -14,7 +14,7 @@ class Temperature(MonitorPlugin):
     # Prevent the Plugin base-class from scheduling looping calls.
     run_interval = None
 
-    def __init__(self, interval=30, monitor_interval=60*60,
+    def __init__(self, interval=30, monitor_interval=60 * 60,
                  thermal_zone_path=None, create_time=time.time):
         self.thermal_zone_path = thermal_zone_path
         self._interval = interval

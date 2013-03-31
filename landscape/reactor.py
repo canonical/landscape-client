@@ -397,7 +397,6 @@ class TwistedReactor(EventHandlingReactorMixin,
 
     def stop(self):
         """Stop the reactor, a C{"stop"} event will be fired."""
-
         self._reactor.stop()
         self._cleanup()
 

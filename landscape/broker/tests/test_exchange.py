@@ -638,15 +638,6 @@ class MessageExchangeTest(LandscapeTest):
         self.wait_for_exchange()
         self.assertFalse(self.transport.payloads)
 
-    def test_firing_pre_exit_will_stop_exchange(self):
-        self.exchanger.schedule_exchange()
-        self.reactor.fire("pre-exit")
-        self.wait_for_exchange()
-        self.assertFalse(self.transport.payloads)
-
-    def test_default_exchange_intervals(self):
-        self.assertEqual(self.exchanger.get_exchange_intervals(), (60, 900))
-
     def test_set_intervals(self):
         """
         When a C{set-intervals} message is received, the runtime attributes of
@@ -659,8 +650,6 @@ class MessageExchangeTest(LandscapeTest):
 
         self.exchanger.exchange()
 
-        self.assertEqual(self.exchanger.get_exchange_intervals(),
-                         (1234, 5678))
         self.assertEqual(self.config.exchange_interval, 5678)
         self.assertEqual(self.config.urgent_exchange_interval, 1234)
 
@@ -675,8 +664,6 @@ class MessageExchangeTest(LandscapeTest):
 
         self.exchanger.exchange()
 
-        self.assertEqual(self.exchanger.get_exchange_intervals(), (1234, 900))
-
         # Let's make sure it works.
         self.exchanger.schedule_exchange(urgent=True)
         self.reactor.advance(1233)
@@ -689,8 +676,6 @@ class MessageExchangeTest(LandscapeTest):
         self.transport.responses.append(server_message)
 
         self.exchanger.exchange()
-
-        self.assertEqual(self.exchanger.get_exchange_intervals(), (60, 5678))
 
         # Let's make sure it works.
         self.reactor.advance(5677)

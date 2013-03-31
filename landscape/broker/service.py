@@ -62,19 +62,10 @@ class BrokerService(LandscapeService):
         self.registration = RegistrationHandler(
             config, self.identity, self.reactor, self.exchanger, self.pinger,
             self.message_store, fetch_async)
-        self.reactor.call_on("post-exit", self._exit)
         self.broker = BrokerServer(self.config, self.reactor, self.exchanger,
                                    self.registration, self.message_store,
                                    self.pinger)
         self.factory = BrokerServerProtocolFactory(object=self.broker)
-
-    def _exit(self):
-        # Our reactor calls the Twisted reactor's crash() method rather
-        # than the real stop.  As a consequence, if we use it here, normal
-        # termination doesn't happen, and stopService() would never get
-        # called.
-        from twisted.internet import reactor
-        reactor.stop()
 
     def startService(self):
         """Start the broker.
@@ -90,6 +81,7 @@ class BrokerService(LandscapeService):
     def stopService(self):
         """Stop the broker."""
         self.exchanger.stop()
+        self.pinger.stop()
         super(BrokerService, self).stopService()
 
 

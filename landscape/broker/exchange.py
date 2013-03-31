@@ -36,10 +36,11 @@ class MessageExchange(object):
         @param store: The L{MessageStore} used to queue outgoing messages.
         @param transport: The L{HTTPTransport} used to deliver messages.
         @param registration_info: The L{Identity} storing our secure ID.
-        @param exchange_interval: time interval between subsequent exchanges
-            of non-urgent messages.
-        @param urgent_exchange_interval: time interval between subsequent
-            exchanges of urgent messages.
+        @param config: The L{BrokerConfiguration} with the `exchange_interval`
+            and `urgent_exchange_interval` parameters, respectively holding
+            the time interval between subsequent exchanges of non-urgent
+            messages, and the time interval between subsequent exchanges
+            of urgent messages.
         """
         self._reactor = reactor
         self._message_store = store
@@ -63,11 +64,6 @@ class MessageExchange(object):
         self.register_message("resynchronize", self._handle_resynchronize)
         self.register_message("set-intervals", self._handle_set_intervals)
         reactor.call_on("resynchronize-clients", self._resynchronize)
-        reactor.call_on("pre-exit", self.stop)
-
-    def get_exchange_intervals(self):
-        """Return a binary tuple with urgent and normal exchange intervals."""
-        return (self._urgent_exchange_interval, self._exchange_interval)
 
     def _message_is_obsolete(self, message):
         """Returns C{True} if message is obsolete.
@@ -157,8 +153,7 @@ class MessageExchange(object):
 
     def _handle_resynchronize(self, message):
         opid = message["operation-id"]
-        self._message_store.add({"type": "resynchronize",
-                                 "operation-id": opid})
+        self.send({"type": "resynchronize", "operation-id": opid})
         self._reactor.fire("resynchronize-clients")
 
     def _resynchronize(self):
@@ -166,16 +161,13 @@ class MessageExchange(object):
 
     def _handle_set_intervals(self, message):
         if "exchange" in message:
-            self._exchange_interval = message["exchange"]
-            self._config.exchange_interval = self._exchange_interval
+            self._config.exchange_interval = message["exchange"]
             logging.info("Exchange interval set to %d seconds." %
-                         self._exchange_interval)
+                         self._config.exchange_interval)
         if "urgent-exchange" in message:
-            self._urgent_exchange_interval = message["urgent-exchange"]
-            self._config.urgent_exchange_interval = \
-                self._urgent_exchange_interval
+            self._config.urgent_exchange_interval = message["urgent-exchange"]
             logging.info("Urgent exchange interval set to %d seconds." %
-                         self._urgent_exchange_interval)
+                         self._config.urgent_exchange_interval)
         self._config.write()
 
     def exchange(self):
@@ -265,9 +257,9 @@ class MessageExchange(object):
                 self._reactor.cancel_call(self._exchange_id)
 
             if self._urgent_exchange:
-                interval = self._urgent_exchange_interval
+                interval = self._config.urgent_exchange_interval
             else:
-                interval = self._exchange_interval
+                interval = self._config.exchange_interval
 
             if self._notification_id is not None:
                 self._reactor.cancel_call(self._notification_id)
@@ -365,8 +357,7 @@ class MessageExchange(object):
             # up-to-date data.
             logging.info("Server asked for ancient data: resynchronizing all "
                          "state with the server.")
-
-            message_store.add({"type": "resynchronize"})
+            self.send({"type": "resynchronize"})
             self._reactor.fire("resynchronize-clients")
 
         old_uuid = message_store.get_server_uuid()
