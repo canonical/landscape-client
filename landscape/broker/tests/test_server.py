@@ -309,7 +309,7 @@ class BrokerServerTest(LandscapeTest):
         url = "http://example.com/mysuperping"
         page_getter = FakePageGetter(None)
         self.pinger.start()
-        self.pinger.set_url(url)
+        self.config.ping_url = url
         self.pinger._ping_client.get_page = page_getter.get_page
         self.identity.insecure_id = 23
 
