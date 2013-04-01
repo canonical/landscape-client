@@ -1,6 +1,6 @@
 import os
 
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import Deferred, succeed
 
 from landscape.manager.aptsources import AptSources
 from landscape.manager.plugin import SUCCEEDED, FAILED
@@ -39,7 +39,8 @@ class AptSourcesTests(LandscapeTest):
         service = self.broker_service
         service.message_store.set_accepted_types(["operation-result"])
 
-        self.sourceslist._run_process = lambda cmd, args, *aarg, **kargs: None
+        self.sourceslist._run_process = lambda *args, **kwargs: succeed(None)
+        self.log_helper.ignore_errors(".*")
 
     def test_comment_sources_list(self):
         """
@@ -329,7 +330,7 @@ class AptSourcesTests(LandscapeTest):
 
         def _run_process(command, args, env={}, path=None, uid=None, gid=None):
             if not deferreds:
-                return None
+                return succeed(None)
             return deferreds.pop(0)
 
         self.sourceslist._run_process = _run_process

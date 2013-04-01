@@ -9,7 +9,7 @@ from twisted.internet.defer import succeed
 
 from landscape.lib.twisted_util import spawn_process
 
-from landscape.manager.plugin import ManagerPlugin, SUCCEEDED, FAILED
+from landscape.manager.plugin import ManagerPlugin
 from landscape.package.reporter import find_reporter_command
 
 
@@ -25,38 +25,14 @@ class AptSources(ManagerPlugin):
 
     def register(self, registry):
         super(AptSources, self).register(registry)
-        registry.register_message(
-            "apt-sources-replace", self._wrap_handle_repositories)
+        registry.register_message("apt-sources-replace",
+                                  self._handle_repositories)
 
     def _run_process(self, command, args, uid=None, gid=None):
         """
         Run the process in an asynchronous fashion, to be overriden in tests.
         """
         return spawn_process(command, args, uid=uid, gid=gid)
-
-    def _wrap_handle_repositories(self, message):
-        """
-        Wrap C{_handle_repositories} to generate an activity result based on
-        the returned value.
-        """
-        deferred = self._handle_repositories(message)
-
-        operation_result = {"type": "operation-result",
-                            "operation-id": message["operation-id"]}
-
-        def success(ignored):
-            operation_result["status"] = SUCCEEDED
-            return operation_result
-
-        def fail(failure):
-            operation_result["status"] = FAILED
-            text = "%s: %s" % (failure.type.__name__, failure.value)
-            operation_result["result-text"] = text
-            return operation_result
-
-        deferred.addCallbacks(success, fail)
-        deferred.addBoth(lambda result:
-                         self.manager.broker.send_message(result, urgent=True))
 
     def _handle_process_error(self, result):
         """
@@ -119,8 +95,8 @@ class AptSources(ManagerPlugin):
             deferred.addCallback(self._handle_process_error)
             deferred.addBoth(self._remove_and_continue, path)
         deferred.addErrback(self._handle_process_failure)
-        return deferred.addCallback(
-            self._handle_sources, message["sources"])
+        deferred.addCallback(self._handle_sources, message["sources"])
+        return self.call_with_operation_result(message, lambda: deferred)
 
     def _handle_sources(self, ignored, sources):
         """Handle sources repositories."""
@@ -150,7 +126,7 @@ class AptSources(ManagerPlugin):
             sources_file.write(source["content"])
             sources_file.close()
             os.chmod(filename, 0644)
-        return self._run_reporter()
+        return self._run_reporter().addCallback(lambda ignored: None)
 
     def _run_reporter(self):
         """Once the repositories are modified, trigger a reporter run."""
