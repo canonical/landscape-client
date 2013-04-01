@@ -24,7 +24,7 @@ import copy
 import re
 
 
-__all__ = ["Persist", "PickleBackend", "BPickleBackend", "ConfigObjBackend",
+__all__ = ["Persist", "PickleBackend", "BPickleBackend",
            "path_string_to_tuple", "path_tuple_to_string", "RootedPersist",
            "PersistError", "PersistReadOnlyError"]
 
@@ -141,6 +141,9 @@ class Persist(object):
 
         If None is specified, then the filename passed during construction will
         be used.
+
+        If the destination file already exists, it will be renamed
+        to C{<filepath>.old}.
         """
         if filepath is None:
             if self.filename is None:
@@ -414,6 +417,21 @@ _splitpath = re.compile(r"(\[-?\d+\])|(?<!\\)\.").split
 
 
 def path_string_to_tuple(path):
+    """Convert a L{Persist} path string to a path tuple.
+
+    Examples:
+
+        >>> path_string_to_tuple("ab")
+        ("ab",)
+        >>> path_string_to_tuple("ab.cd")
+        ("ab", "cd"))
+        >>> path_string_to_tuple("ab[0][1]")
+        ("ab", 0, 1)
+        >>> path_string_to_tuple("ab[0].cd[1]")
+        ("ab", 0, "cd", 1)
+
+    Raises L{PersistError} if the given path string is invalid.
+    """
     if "." not in path and "[" not in path:
         return (path,)
     result = []
@@ -441,6 +459,35 @@ def path_tuple_to_string(path):
 
 
 class Backend(object):
+    """
+    Base class for L{Persist} backends implementing hierarchical storage
+    functionality.
+
+    Each node of the hierarchy is an object of type C{dict}, C{list}
+    or C{tuple}. A node can have zero or more children, each child can be
+    another node or a leaf value compatible with the backend's serialization
+    mechanism.
+
+    Each child element is associated with a unique key, that can be used to
+    get, set or remove the child itself from its containing node. If the node
+    object is of type C{dict}, then the child keys will be the keys of the
+    dictionary, otherwise if the node object is of type C{list} or C{tuple}
+    the child element keys are the indexes of the available items, or the value
+    of items theselves.
+
+    The root node object is always a C{dict}.
+
+    For example:
+
+        >>> root = backend.new()
+        >>> backend.set(root, "foo", "bar")
+        'bar'
+        >>> egg = backend.set(root, "egg", [1, 2, 3])
+        >>> backend.set(egg, 0, 10)
+        10
+        >>> root
+        {'foo': 'bar', 'egg': [10, 2, 3]}
+    """
 
     def new(self):
         raise NotImplementedError
@@ -452,6 +499,7 @@ class Backend(object):
         raise NotImplementedError
 
     def get(self, obj, elem, _marker=NOTHING):
+        """Lookup a child in the given node object."""
         if type(obj) is dict:
             newobj = obj.get(elem, _marker)
         elif type(obj) in (tuple, list):
@@ -469,6 +517,7 @@ class Backend(object):
         return newobj
 
     def set(self, obj, elem, value):
+        """Set the value of the given child in the given node object."""
         if type(obj) is dict:
             newobj = obj[elem] = value
         elif type(obj) is list and type(elem) is int:
@@ -485,6 +534,12 @@ class Backend(object):
         return newobj
 
     def remove(self, obj, elem, isvalue):
+        """Remove a the given child in the given node object.
+
+        @param isvalue: In case the node object is a C{list}, a boolean
+            indicating if C{elem} is the index of the child or the value
+            of the child itself.
+        """
         result = False
         if type(obj) is dict:
             if elem in obj:
@@ -505,20 +560,24 @@ class Backend(object):
         return result
 
     def copy(self, value):
+        """Copy a node or a value."""
         if type(value) in (dict, list):
             return copy.deepcopy(value)
         return value
 
     def empty(self, obj):
+        """Whether the given node object has no children."""
         return (not obj)
 
     def has(self, obj, elem):
+        """Whether the given node object contains the given child element."""
         contains = getattr(obj, "__contains__", None)
         if contains:
             return contains(elem)
         return NotImplemented
 
     def keys(self, obj):
+        """Return the keys of the child elements of the given node object."""
         keys = getattr(obj, "keys", None)
         if keys:
             return keys()
@@ -573,50 +632,5 @@ class BPickleBackend(Backend):
             file.write(self._bpickle.dumps(map))
         finally:
             file.close()
-
-
-class ConfigObjBackend(Backend):
-
-    def __init__(self):
-        from landscape.lib import configobj
-        self.ConfigObj = configobj.ConfigObj
-        self.Section = configobj.Section
-
-    def new(self):
-        return self.ConfigObj(unrepr=True)
-
-    def load(self, filepath):
-        return self.ConfigObj(filepath, unrepr=True)
-
-    def save(self, filepath, map):
-        file = open(filepath, "w")
-        try:
-            map.write(file)
-        finally:
-            file.close()
-
-    def get(self, obj, elem, _marker=NOTHING):
-        if isinstance(obj, self.Section):
-            return obj.get(elem, _marker)
-        return Backend.get(self, obj, elem)
-
-    def set(self, obj, elem, value):
-        if isinstance(obj, self.Section):
-            obj[elem] = value
-            return obj[elem]
-        return Backend.set(self, obj, elem, value)
-
-    def remove(self, obj, elem, isvalue):
-        if isinstance(obj, self.Section):
-            if elem in obj:
-                del obj[elem]
-                return True
-            return False
-        return Backend.remove(self, obj, elem, isvalue)
-
-    def copy(self, value):
-        if isinstance(value, self.Section):
-            return value.dict()
-        return Backend.copy(self, value)
 
 # vim:ts=4:sw=4:et

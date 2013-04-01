@@ -3,7 +3,7 @@ import os
 
 from landscape.lib.persist import (
     path_string_to_tuple, path_tuple_to_string, Persist, RootedPersist,
-    PickleBackend, ConfigObjBackend, PersistError, PersistReadOnlyError)
+    PickleBackend, PersistError, PersistReadOnlyError)
 from landscape.tests.helpers import LandscapeTest
 
 
@@ -442,12 +442,6 @@ class PicklePersistTest(GeneralPersistTest, SaveLoadPersistTest):
 
     def build_persist(self, *args, **kwargs):
         return Persist(PickleBackend(), *args, **kwargs)
-
-
-class ConfigObjPersistTest(GeneralPersistTest, SaveLoadPersistTest):
-
-    def build_persist(self, *args, **kwargs):
-        return Persist(ConfigObjBackend(), *args, **kwargs)
 
 
 class RootedPersistTest(GeneralPersistTest):
