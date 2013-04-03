@@ -122,7 +122,7 @@ class MessageExchange(object):
     def stop(self):
         """Stop scheduling exchanges."""
         if self._exchange_id is not None:
-            # Cancel the next scheduled exchanged
+            # Cancel the next scheduled exchange
             self._reactor.cancel_call(self._exchange_id)
             self._exchange_id = None
         if self._notification_id is not None:
