@@ -1,6 +1,5 @@
 """Message storage.
 
-
 The sequencing system we use in the message store may be quite confusing
 if you haven't looked at it in the last 10 minutes. For that reason, let's
 review the mechanics here.
@@ -21,7 +20,7 @@ would like like::
     messages: A, B, C, D, E, F, G, H, I, J
               ^
 
-The "^" marker  is what we call "pending offset" and is the displacement of the
+The "^" marker is what we call "pending offset" and is the displacement of the
 message we want to send next from the first message we have in the store.
 
 Let's say we now send to our peer a batch of 3 sequential messages. In the
@@ -82,6 +81,11 @@ again, we update our sequence and pending offset and the store looks like::
                     ^
 
 We can now start again sending messages using the same strategy.
+
+Note however that in the worst case scenario we could receive from our peer
+a next-expected-sequence value which is so old to be outside our buffer
+of already-sent messages. In that case there is now way we can recover the
+lost messages, and we'll just send the oldest one that we have.
 
 See L{MessageStore} for details about how messages are stored on the file
 system and L{landscape.lib.message.got_next_expected} to check how the

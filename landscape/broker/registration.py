@@ -108,14 +108,14 @@ class RegistrationHandler(object):
 
     def should_register(self):
         id = self._identity
-        # boolean logic is hard, I'm gonna use an if
+        if id.secure_id:
+            # We already have a secure ID, no need to register
+            return False
         if self._config.cloud:
-            return bool(not id.secure_id
-                        and self._message_store.accepts("register-cloud-vm"))
+            return self._message_store.accepts("register-cloud-vm")
         elif self._config.provisioning_otp:
-            return (not id.secure_id) and\
-                self._message_store.accepts("register-provisioned-machine")
-        return bool(not id.secure_id and id.computer_title and id.account_name
+            return self._message_store.accepts("register-provisioned-machine")
+        return bool(id.computer_title and id.account_name
                     and self._message_store.accepts("register"))
 
     def register(self):
