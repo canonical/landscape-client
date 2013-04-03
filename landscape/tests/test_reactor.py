@@ -115,6 +115,21 @@ class ReactorTestMixin(object):
         reactor.fire("foobar")
         self.assertEqual(called, [True])
 
+    def test_event_multiple_fire(self):
+        """
+        Once an event handler is registered, it's called all times that event
+        type is fired.
+        """
+        reactor = self.get_reactor()
+        called = []
+
+        def handle_foobar():
+            called.append(True)
+        reactor.call_on("foobar", handle_foobar)
+        reactor.fire("foobar")
+        reactor.fire("foobar")
+        self.assertEqual(called, [True, True])
+
     def test_event_with_args(self):
         reactor = self.get_reactor()
         called = []

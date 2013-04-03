@@ -1,3 +1,13 @@
+"""
+Handle client registration against the server.
+
+When the service is started for the first time it connects to the server
+as a new client without providing any identification credentials, and the
+server replies with the available registration mechanisms. At this point
+the machinery in this module will notice that we have no identification
+credentials yet and that the server accepts regiration messages, so it
+will craft an appropriate one and send it out.
+"""
 import time
 import logging
 import socket

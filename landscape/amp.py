@@ -1,3 +1,7 @@
+"""Communication between components in different services via twisted AMP.
+
+See also L{landscape.lib.amp}.
+"""
 import os
 import logging
 

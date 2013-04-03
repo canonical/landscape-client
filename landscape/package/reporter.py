@@ -304,7 +304,7 @@ class PackageReporter(PackageTaskHandler):
         # that new request could get the same id of one of the deleted ones,
         # and when the pending message eventually gets delivered the reporter
         # would think that the message is associated to the newly created
-        # request, as it have the same id has the deleted request the message
+        # request, as it has the same id has the deleted request the message
         # actually refers to. This would cause the ids in the message to be
         # possibly mapped to the wrong hashes.
         #

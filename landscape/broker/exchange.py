@@ -1,4 +1,13 @@
-"""The part of the broker which deals with communications with the server."""
+"""Manage outgoing and incoming messages when communicating with the server.
+
+The L{MessageExchange} is the place where messages are sent to go out to the
+Landscape server. It accumulates messages in its L{MessageStore} and
+periodically delivers them to the server.
+
+It is also the place where messages coming from the server are handled. For
+each message type the L{MessageExchange} supports setting an handler that
+will be invoked when a message of the that type is received.
+"""
 import time
 import logging
 from landscape.lib.hashlib import md5
@@ -11,35 +20,29 @@ from landscape import SERVER_API, CLIENT_API
 
 
 class MessageExchange(object):
-    """
-    The Message Exchange is the place where messages are sent to go
-    out to the Landscape server.
+    """Schedule and handle message exchanges with the server.
 
-    The Message Exchange will accumulate messages in its message store
-    and periodically deliver them to the server.
+    An exchange is an HTTP POST request, whose body contains outgoing messages
+    and whose response contains incoming messages.
     """
 
     plugin_name = "message-exchange"
 
     def __init__(self, reactor, store, transport, registration_info,
-                 exchange_store,
-                 config,
-                 monitor_interval=None,
-                 max_messages=100,
-                 create_time=time.time):
+                 exchange_store, config,  max_messages=100):
         """
-        @param reactor: A L{TwistedReactor} used to fire events in response
+        @param reactor: The L{TwistedReactor} used to fire events in response
             to messages received by the server.
-        @param store: A L{MessageStore} used to queue outgoing messages.
-        @param transport: A L{HTTPTransport} used to deliver messages.
-        @param exchange_interval: time interval between subsequent
-            exchanges of non-urgent messages.
+        @param store: The L{MessageStore} used to queue outgoing messages.
+        @param transport: The L{HTTPTransport} used to deliver messages.
+        @param registration_info: The L{Identity} storing our secure ID.
+        @param exchange_interval: time interval between subsequent exchanges
+            of non-urgent messages.
         @param urgent_exchange_interval: time interval between subsequent
             exchanges of urgent messages.
         """
         self._reactor = reactor
         self._message_store = store
-        self._create_time = create_time
         self._transport = transport
         self._registration_info = registration_info
         self._config = config
@@ -117,10 +120,13 @@ class MessageExchange(object):
         self.schedule_exchange(urgent=True)
 
     def stop(self):
+        """Stop scheduling exchanges."""
         if self._exchange_id is not None:
+            # Cancel the next scheduled exchange
             self._reactor.cancel_call(self._exchange_id)
             self._exchange_id = None
         if self._notification_id is not None:
+            # Cancel the next scheduled notification of an impending exchange
             self._reactor.cancel_call(self._notification_id)
             self._notification_id = None
         self._stopped = True
@@ -193,9 +199,9 @@ class MessageExchange(object):
 
         self._reactor.fire("pre-exchange")
 
-        payload = self.make_payload()
+        payload = self._make_payload()
 
-        start_time = self._create_time()
+        start_time = time.time()
         if self._urgent_exchange:
             logging.info("Starting urgent message exchange with %s."
                          % self._transport.get_url())
@@ -217,7 +223,7 @@ class MessageExchange(object):
             self.schedule_exchange(force=True)
             self._reactor.fire("exchange-done")
             logging.info("Message exchange completed in %s.",
-                         format_delta(self._create_time() - start_time))
+                         format_delta(time.time() - start_time))
 
         self._reactor.call_in_thread(handle_result, None,
                                      self._transport.exchange, payload,
@@ -275,7 +281,7 @@ class MessageExchange(object):
     def _notify_impending_exchange(self):
         self._reactor.fire("impending-exchange")
 
-    def make_payload(self):
+    def _make_payload(self):
         """Return a dict representing the complete exchange payload.
 
         The payload will contain all pending messages eligible for

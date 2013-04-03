@@ -1,24 +1,34 @@
+"""Programmatically manage the Landscape client SysV-style init script."""
+
 import os
+
 
 class ProcessError(Exception):
     """ Error running a process with os.system. """
 
 
 class SysVConfig(object):
+    """Configure and drive the Landscape client init script.
+
+    @param filename: Path to the file holding init scripts env variables.
+    """
 
     def __init__(self, filename="/etc/default/landscape-client"):
         self._filename = filename
 
     def set_start_on_boot(self, flag):
+        """Make the init script decide to start the client when it's run."""
         current = self._parse_file()
         current["RUN"] = flag and 1 or 0
         self._write_file(current)
 
     def restart_landscape(self):
+        """Restart the Landscape client service."""
         if os.system("/etc/init.d/landscape-client restart"):
             raise ProcessError("Could not restart client")
 
     def stop_landscape(self):
+        """Stop the Landscape client service."""
         if os.system("/etc/init.d/landscape-client stop"):
             raise ProcessError("Could not stop client")
 

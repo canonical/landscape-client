@@ -89,16 +89,16 @@ class MessageExchangeTest(LandscapeTest):
         self.mstore.add_pending_offset(1)
         self.assertFalse(self.mstore.is_pending(message_id))
 
-    def test_include_accepted_types(self):
+    def test_wb_include_accepted_types(self):
         """
         Every payload from the client needs to specify an ID which
         represents the types that we think the server wants.
         """
-        payload = self.exchanger.make_payload()
+        payload = self.exchanger._make_payload()
         self.assertTrue("accepted-types" in payload)
         self.assertEqual(payload["accepted-types"], md5("").digest())
 
-    def test_set_accepted_types(self):
+    def test_handle_message_sets_accepted_types(self):
         """
         An incoming "accepted-types" message should set the accepted
         types.
@@ -120,14 +120,14 @@ class MessageExchangeTest(LandscapeTest):
         self.assertEqual(stash, [("a", True), ("b", True),
                                  ("a", False), ("c", True)])
 
-    def test_accepted_types_roundtrip(self):
+    def test_wb_accepted_types_roundtrip(self):
         """
         Telling the client to set the accepted types with a message
         should affect its future payloads.
         """
         self.exchanger.handle_message(
             {"type": "accepted-types", "types": ["ack", "bar"]})
-        payload = self.exchanger.make_payload()
+        payload = self.exchanger._make_payload()
         self.assertTrue("accepted-types" in payload)
         self.assertEqual(payload["accepted-types"],
                          md5("ack;bar").digest())
