@@ -244,8 +244,8 @@ class BrokerServerTest(LandscapeTest):
 
     def test_exit_fires_reactor_events(self):
         """
-        The L{BrokerServer.exit} method fires a C{pre-exit} event before the
-        clients are stopped and a C{post-exit} event after.
+        The L{BrokerServer.exit} method stops the reactor after having
+        requested all broker clients to shutdown.
         """
         self.broker.connectors_registry = {"foo": FakeCreator}
         self.broker.register_client("foo")
