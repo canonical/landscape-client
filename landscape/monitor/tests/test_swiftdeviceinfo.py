@@ -1,3 +1,5 @@
+import logging
+
 from twisted.internet.defer import succeed
 
 from landscape.lib.fetch import HTTPCodeError
@@ -318,21 +320,14 @@ class SwiftDeviceInfoTest(LandscapeTest):
         When the swift service is running, but recon middleware is not active,
         the Swift storage usage logs an error.
         """
+        self.log_helper.ignore_errors(".*")
         plugin = SwiftDeviceInfo(create_time=self.reactor.time)
-
         plugin._swift_recon_url = "http://localhost:12654"
-
-        logging_mock = self.mocker.replace("logging.error", passthrough=False)
-        logging_mock(
-            "Swift service not available at %s. "
-            "Error 7: couldn't connect to host. "
-            "'swift-device-info' plugin has been disabled." %
-                     plugin._swift_recon_url)
-        self.mocker.result(None)
-        self.mocker.replay()
-
         result = plugin._get_swift_disk_usage()
         self.assertIs(None, result)
+        self.assertIn(
+            "Swift service not available at %s." % plugin._swift_recon_url,
+            self.logfile.getvalue())
 
     def test_wb_get_swift_disk_usage_when_no_recon_service_configured(self):
         """
