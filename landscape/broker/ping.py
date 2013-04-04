@@ -131,8 +131,9 @@ class Pinger(object):
 
     def stop(self):
         """Stop pinging the message server."""
-        self._reactor.cancel_call(self._call_id)
-        self._call_id = None
+        if self._call_id is not None:
+            self._reactor.cancel_call(self._call_id)
+            self._call_id = None
 
 
 class FakePinger(object):

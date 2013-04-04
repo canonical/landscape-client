@@ -6,7 +6,6 @@ from landscape.broker.service import BrokerService
 from landscape.broker.transport import HTTPTransport
 from landscape.broker.amp import RemoteBrokerConnector
 from landscape.reactor import FakeReactor
-from twisted.internet import reactor
 
 
 class BrokerServiceTest(LandscapeTest):
@@ -44,13 +43,6 @@ class BrokerServiceTest(LandscapeTest):
         """
         self.assertEqual(self.service.identity.account_name, "some_account")
 
-    def test_exchanger(self):
-        """
-        A L{BrokerService} instance has a proper C{exchanger} attribute.
-        """
-        self.assertEqual(self.service.exchanger.get_exchange_intervals(),
-                         (60, 900))
-
     def test_pinger(self):
         """
         A L{BrokerService} instance has a proper C{pinger} attribute. Its
@@ -67,16 +59,6 @@ class BrokerServiceTest(LandscapeTest):
         A L{BrokerService} instance has a proper C{registration} attribute.
         """
         self.assertEqual(self.service.registration.should_register(), False)
-
-    def test_wb_exit(self):
-        """
-        A L{BrokerService} instance registers an handler for the C{post-exit}
-        event that makes the Twisted reactor stop.
-        """
-        reactor.stop = self.mocker.mock()
-        reactor.stop()
-        self.mocker.replay()
-        self.service.reactor.fire("post-exit")
 
     def test_start_stop(self):
         """

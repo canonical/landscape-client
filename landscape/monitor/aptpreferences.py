@@ -1,5 +1,6 @@
 import os
 
+from landscape.lib.fs import read_file
 from landscape.constants import APT_PREFERENCES_SIZE_LIMIT
 
 from landscape.monitor.plugin import DataWatcher
@@ -26,25 +27,19 @@ class AptPreferences(DataWatcher):
         simply return C{None}
         """
         data = {}
-
-        def read_file(filename):
-            fd = open(filename, "r")
-            content = fd.read()
-            fd.close()
-            return unicode(content)
-
+        read_unicode = lambda filename: unicode(read_file(filename))
         preferences_filename = os.path.join(self._etc_apt_directory,
                                             u"preferences")
         if os.path.exists(preferences_filename):
-            data[preferences_filename] = read_file(preferences_filename)
+            data[preferences_filename] = read_unicode(preferences_filename)
 
         preferences_directory = os.path.join(self._etc_apt_directory,
-                                            u"preferences.d")
+                                             u"preferences.d")
         if os.path.isdir(preferences_directory):
             for entry in os.listdir(preferences_directory):
                 filename = os.path.join(preferences_directory, entry)
                 if os.path.isfile(filename):
-                    data[filename] = read_file(filename)
+                    data[filename] = read_unicode(filename)
 
         if data == {}:
             return None

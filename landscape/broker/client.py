@@ -195,6 +195,7 @@ class BrokerClient(object):
 
     def exit(self):
         """Stop the reactor and exit the process."""
-        # Stop with a short delay to give a chance to reply to the
-        # caller over AMP.
+        # Stop with a short delay to give a chance to reply to the caller when
+        # this method is invoked over AMP (typically by the broker, see also
+        # landscape.broker.server.BrokerServer.exit).
         self.reactor.call_later(0.1, self.reactor.stop)

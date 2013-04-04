@@ -62,6 +62,12 @@ class ConfigurationTests(LandscapeTest):
         self.assertEqual(os.environ["http_proxy"], "original")
         self.assertEqual(os.environ["https_proxy"], "originals")
 
+    def test_default_exchange_intervals(self):
+        """Exchange intervales are set to sane defaults."""
+        configuration = BrokerConfiguration()
+        self.assertEqual(60, configuration.urgent_exchange_interval)
+        self.assertEqual(900, configuration.exchange_interval)
+
     def test_intervals_are_ints(self):
         """
         The 'urgent_exchange_interval, 'exchange_interval' and 'ping_interval'

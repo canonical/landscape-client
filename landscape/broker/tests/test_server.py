@@ -233,11 +233,8 @@ class BrokerServerTest(LandscapeTest):
         self.broker.register_client("foo")
         [client] = self.broker.get_clients()
         client.exit = self.mocker.mock()
-        post_exit = self.mocker.mock()
         self.expect(client.exit()).result(fail(ZeroDivisionError()))
-        post_exit()
         self.mocker.replay()
-        self.reactor.call_on("post-exit", post_exit)
 
         def assert_event(ignored):
             self.reactor.advance(1)
@@ -247,28 +244,26 @@ class BrokerServerTest(LandscapeTest):
 
     def test_exit_fires_reactor_events(self):
         """
-        The L{BrokerServer.exit} method fires a C{pre-exit} event before the
-        clients are stopped and a C{post-exit} event after.
+        The L{BrokerServer.exit} method stops the reactor after having
+        requested all broker clients to shutdown.
         """
         self.broker.connectors_registry = {"foo": FakeCreator}
         self.broker.register_client("foo")
         [client] = self.broker.get_clients()
         self.mocker.order()
-        pre_exit = self.mocker.mock()
-        client.exit = self.mocker.mock()
-        post_exit = self.mocker.mock()
-        pre_exit()
-        self.expect(client.exit()).result(fail(ZeroDivisionError()))
-        post_exit()
-        self.mocker.replay()
-        self.reactor.call_on("pre-exit", pre_exit)
-        self.reactor.call_on("post-exit", post_exit)
 
-        def assert_event(ignored):
+        client.exit = self.mocker.mock()
+        self.reactor.stop = self.mocker.mock()
+        self.broker.stop_exchanger()
+        self.expect(client.exit()).result(fail(ZeroDivisionError()))
+        self.reactor.stop()
+        self.mocker.replay()
+
+        def assert_stopped(ignored):
             self.reactor.advance(1)
 
         result = self.broker.exit()
-        return result.addCallback(assert_event)
+        return result.addCallback(assert_stopped)
 
     def test_listen_events(self):
         """

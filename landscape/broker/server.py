@@ -173,20 +173,19 @@ class BrokerServer(object):
         This method will only return a result when all plugins returned
         their own results.
         """
-        # Fire pre-exit before calling any of the plugins, so that everything
-        # in the broker acknowledges that we're about to exit and asking
-        # broker clients to die.  This prevents any exchanges from happening,
-        # for instance.
-        self._reactor.fire("pre-exit")
-
         clients_stopped = self.stop_clients()
 
-        def fire_post_exit(ignored):
-            # Fire it shortly, to give us a chance to send an AMP reply.
-            self._reactor.call_later(
-                1, lambda: self._reactor.fire("post-exit"))
+        def schedule_reactor_stop(ignored):
+            # Stop the reactor with a short delay to give us a chance to reply
+            # to the caller when this method is invoked over AMP (typically
+            # by the watchdog, see landscape.watchdog.Watchdog.request_exit).
+            #
+            # Note that stopping the reactor will cause the Twisted machinery
+            # to invoke BrokerService.stopService, which in turn will stop the
+            # exchanger/pinger and cleanly close all AMP sockets.
+            self._reactor.call_later(1, lambda: self._reactor.stop())
 
-        return clients_stopped.addBoth(fire_post_exit)
+        return clients_stopped.addBoth(schedule_reactor_stop)
 
     @event
     def resynchronize(self):
