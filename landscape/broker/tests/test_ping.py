@@ -90,8 +90,8 @@ class PingClientTest(LandscapeTest):
 
     def test_errback(self):
         """
-        If a L{PingClient} does not have an insecure-id yet, then the ping
-        should not happen.
+        If the HTTP request fails the deferred returned by L{PingClient.ping}
+        fires back with an error.
         """
         client = FakePageGetter(None)
         pinger = PingClient(self.reactor, get_page=client.failing_get_page)
@@ -273,11 +273,11 @@ class PingerTest(LandscapeTest):
         self.identity.insecure_id = 23
         self.pinger.start()
         self.reactor.advance(5)
-        # Simulate interval changing in the meanting
+        # Simulate interval changing in the meantime
         self.config.ping_interval = 20
         self.reactor.advance(5)
         self.assertEqual(1, len(self.page_getter.fetches))
-        # The new intervale is 20, so after only 10 seconds nothing happens
+        # The new interval is 20, so after only 10 seconds nothing happens
         self.reactor.advance(10)
         self.assertEqual(1, len(self.page_getter.fetches))
         # After another 10 seconds we reach the 20 seconds interval and the
