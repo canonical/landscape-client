@@ -137,6 +137,8 @@ class CephUsage(ManagerPlugin):
 
     def _get_ceph_ring_id(self):
         output = self._get_quorum_command_output()
+        if output is None:
+            return None
         try:
             quorum_status = json.loads(output)
             ring_id = quorum_status["monmap"]["fsid"]

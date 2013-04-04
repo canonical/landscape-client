@@ -12,7 +12,7 @@ class ManagerConfigurationTest(LandscapeTest):
     def test_plugin_factories(self):
         """By default all plugins are enabled."""
         self.assertEqual(["ProcessKiller", "PackageManager", "UserManager",
-                          "ShutdownManager", "Eucalyptus", "AptSources",
+                          "ShutdownManager", "AptSources",
                           "HardwareInfo", "CephUsage", "KeystoneToken",
                           "HAService"],
                          ALL_PLUGINS)

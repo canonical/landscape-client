@@ -311,6 +311,24 @@ class CephUsagePluginTest(LandscapeTest):
         result = plugin._get_ceph_ring_id()
         self.assertEqual(None, result)
 
+    def test_get_ceph_ring_id_command_exception(self):
+        """
+        When the _get_quorum_command_output method returns None (if an
+        exception happened for example), the _get_ceph_ring_id method
+        returns None and logs no error.
+        """
+        plugin = CephUsage(create_time=self.reactor.time)
+
+        def return_output():
+            return None
+
+        plugin._get_quorum_command_output = return_output
+
+        self.manager.add(plugin)
+
+        result = plugin._get_ceph_ring_id()
+        self.assertEqual(None, result)
+
     def test_plugin_run(self):
         """
         The plugin's run() method fills the _ceph_usage_points with
